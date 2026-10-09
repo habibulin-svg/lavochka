@@ -5,5 +5,6 @@ lavochka/data/
 # сканы полей — только для личного использования, в репозиторий не кладём (ссылки — в materials/README.md)
 materials/**/*.jpg
 materials/**/*.png
+materials/**/*.webp
 .claude/settings.local.json
 .claude/.cache/

@@ -236,3 +236,9 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 /* служебный режим ?thumb= — сцена для снимка превью */
 .thumb-stage { position: fixed; inset: 0; background: #17141f; display: grid; place-items: center; }
 .thumb-board { width: 100vmin; height: 100vmin; container-type: size; }
+
+/* Карта — картинка с картоном и скруглением; тень — «приподнятый» картон. */
+.card { display: block; user-select: none; -webkit-user-drag: none; }
+.card-joker { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: 320 / 496; background: #f7f3e8; border-radius: 5% / 3.2%; color: #14141a; font: 700 28px 'PT Serif', Georgia, serif; }
+.card-joker small { font-size: 11px; letter-spacing: 0.08em; }
+.card-joker[data-red='1'] { color: #c8102e; }

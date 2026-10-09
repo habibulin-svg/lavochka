@@ -41,7 +41,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'checkers', title: 'Шашки', sub: 'дамка ходит далеко', cat: 'board', players: '2', wave: 2, icon: '⛀', tint: '#6b1f1a', variants: ['русские', 'международные', 'поддавки'] },
   { id: 'domino', title: 'Домино «Козёл»', sub: 'забить рыбу!', cat: 'board', players: '2–4', wave: 2, icon: '🁫', tint: '#2f4a3a', variants: ['козёл', 'морской козёл', 'на двоих'] },
   // — карты —
-  { id: 'durak', title: 'Дурак', sub: 'козыри, отбой и погоны', cat: 'cards', players: '2–6', wave: 1, icon: '♠', tint: '#1f3d6b', variants: ['классический', 'подкидной', 'переводной', 'длинный', 'японский', 'г*вно'] },
+  { id: 'durak', title: 'Дурак', sub: 'козыри, отбой и погоны', cat: 'cards', players: '2–6', wave: 1, icon: '♠', tint: '#1f3d6b', thumb: 'durak.webp', load: () => import('./durak'), variants: ['классический', 'подкидной', 'переводной', 'длинный', 'японский', 'г*вно'] },
   { id: 'thousand', title: 'Тысяча', sub: 'марьяжи и прикуп', cat: 'cards', players: '2–4', wave: 3, icon: '♥', tint: '#7a1c15', variants: ['классическая', 'с бочкой', 'с болтами', 'на троих и четверых'] },
   { id: '101', title: '101', sub: 'дворовый уно на обычных картах', cat: 'cards', players: '2–6', wave: 3, icon: '♣', tint: '#2f5d3a', variants: ['классическая', 'с джокерами', 'до 101 и до 121'] },
   { id: 'bura', title: 'Бура', sub: 'три карты и 31 очко', cat: 'cards', players: '2–4', wave: 3, icon: '♦', tint: '#8a3a12', variants: ['на троих', 'на четверых', 'с «москвой»'] },

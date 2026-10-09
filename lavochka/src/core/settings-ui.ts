@@ -1,5 +1,5 @@
 /* Окно общих настроек сборника. */
-import { cardSVG, DECK_STYLES } from '../cards/render';
+import { cardHTML, DECK_STYLES } from '../cards/render';
 import type { Card } from '../cards/deck';
 import { serverBase } from './net/ws';
 import { saveSettings, settings, type DeckStyle, type NetMode } from './settings';
@@ -55,7 +55,7 @@ export function openSettings() {
     pick.innerHTML = '';
     for (const d of DECK_STYLES) {
       const b = h(`<button class="deck-opt${settings.deck === d.id ? ' on' : ''}">
-          <span class="deck-cards">${SAMPLE.map((c) => cardSVG(c, d.id)).join('')}${cardSVG(null, d.id)}</span>
+          <span class="deck-cards">${SAMPLE.map((c) => cardHTML(c, d.id)).join('')}${cardHTML(null, d.id)}</span>
           <b>${d.title}</b><small>${d.hint}</small></button>`);
       b.onclick = () => {
         settings.deck = d.id as DeckStyle;
