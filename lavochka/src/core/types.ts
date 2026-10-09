@@ -56,6 +56,8 @@ export interface SeatLook {
   color: string;
   light: string;
   dark: string;
+  /** Цвет имени в тексте, если основной слишком светлый для светлой панели (белые шашки). */
+  ink?: string;
 }
 
 export interface BotDef<V, A> {

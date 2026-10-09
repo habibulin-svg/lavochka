@@ -1,0 +1,29 @@
+/* Нарды: доска, шашки, цели. Стол — «под дерево», как у Шиш-беша. */
+.table--nardy {
+  --panel-bg: repeating-linear-gradient(178deg, rgba(120, 60, 20, 0.1) 0 3px, transparent 3px 11px), linear-gradient(180deg, #d9aa6c, #bd8448);
+  --panel-ink: #2a1206;
+  --panel-edge: rgba(60, 25, 5, 0.55);
+  --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 220, 160, 0.1), transparent 60%), repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 9px), linear-gradient(160deg, #3a2414, #1e120a 70%);
+}
+.nd-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.nd-board { width: 100%; height: auto; max-height: 100%; aspect-ratio: 1040 / 760; filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.6)); user-select: none; }
+.nd-controls { display: flex; flex-direction: column; gap: 8px; }
+.nd-tray { height: 104px; }
+.nd-left { font-size: 14px; min-height: 20px; }
+.nd-btns { display: flex; flex-direction: column; gap: 6px; }
+.nd-btns .btn { width: 100%; font-size: 17px; }
+
+.nd-board .nd-ch .nd-ring { stroke: transparent; stroke-width: 3.5; }
+.nd-board .nd-ch.movable { cursor: pointer; }
+.nd-board .nd-ch.movable .nd-ring { stroke: #ffb020; stroke-width: 5; stroke-dasharray: 9 5; animation: nd-spin 2.5s linear infinite, nd-glow 1.2s ease-in-out infinite; }
+.nd-board .nd-ch.selected .nd-ring { stroke: #ff5a1f; stroke-width: 6; animation: nd-glow 0.8s ease-in-out infinite; }
+.nd-board .nd-count { font: 700 24px 'PT Serif', Georgia, serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.nd-board .nd-target { cursor: pointer; }
+.nd-board .nd-target .t-bg { fill: rgba(255, 190, 60, 0.45); stroke: #ffb020; stroke-width: 4; animation: nd-glow 1s ease-in-out infinite; }
+.nd-board .nd-target:hover .t-bg { fill: rgba(255, 250, 220, 0.75); }
+.nd-board .nd-target .t-label { font: 700 24px 'PT Serif', Georgia, serif; fill: #2a1206; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.nd-board .nd-cube { font: 700 24px 'PT Serif', Georgia, serif; fill: #2a1206; text-anchor: middle; dominant-baseline: central; }
+.nd-board .nd-banner rect { fill: rgba(30, 14, 4, 0.82); stroke: #c9a24a; stroke-width: 3; }
+.nd-board .nd-banner text { font: 700 38px 'PT Serif', Georgia, serif; fill: #f6e2b0; text-anchor: middle; dominant-baseline: central; }
+@keyframes nd-spin { to { stroke-dashoffset: -48; } }
+@keyframes nd-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }

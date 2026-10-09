@@ -48,7 +48,7 @@ class DemoPlayer {
       mySeats: [],
       demo: true,
       controls: this.el.querySelector('.demo-controls') as HTMLElement,
-      name: (seat) => `<span class="nm" style="--c:${this.def.seats[seat]?.color}">${esc(names.get(seat) ?? this.def.seats[seat]?.name)}</span>`,
+      name: (seat) => `<span class="nm" style="--c:${this.def.seats[seat]?.ink ?? this.def.seats[seat]?.color}">${esc(names.get(seat) ?? this.def.seats[seat]?.name)}</span>`,
       speed: () => settings.speed,
       autoSingle: () => false,
     };

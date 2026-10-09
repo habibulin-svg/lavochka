@@ -225,7 +225,7 @@ export class Table {
   name(seat: number): string {
     const look = this.o.mod.def.seats[seat];
     const st = this.seats.find((s) => s.seat === seat);
-    return `<span class="nm" style="--c:${look?.color ?? '#333'}">${esc(st?.name || look?.name || 'Игрок')}</span>`;
+    return `<span class="nm" style="--c:${look?.ink ?? look?.color ?? '#333'}">${esc(st?.name || look?.name || 'Игрок')}</span>`;
   }
 
   private kindLabel(s: SeatStatus) {
