@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "shish", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "8765"], "port": 8765 },
+    { "name": "lavochka", "runtimeExecutable": "node", "runtimeArgs": ["lavochka/node_modules/vite/bin/vite.js", "lavochka", "--port", "5173", "--strictPort"], "port": 5173 },
+    { "name": "lavochka-server", "runtimeExecutable": "node", "runtimeArgs": ["lavochka/node_modules/tsx/dist/cli.mjs", "lavochka/server/index.ts"], "port": 8787 }
+  ]
+}

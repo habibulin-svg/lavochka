@@ -1,0 +1,91 @@
+/* Двор: фон фиксирован, карточки прокручиваются поверх. */
+.yard { position: relative; min-height: 100vh; background: linear-gradient(180deg, #1d1b23, #121016 60vh); }
+.yard-bg { position: absolute; left: 0; top: 0; width: 100%; height: var(--hero-h); z-index: 0; display: block; }
+.yard { --hero-h: max(420px, 64vh); }
+.yard-bg .tw { animation: y-tw 3s ease-in-out infinite; }
+.yard-bg .tv { animation: y-tv 1.8s steps(5) infinite; }
+.yard-bg .blink { animation: y-blink 9s steps(1) infinite; }
+.yard-bg .lamp { animation: y-lamp 7s ease-in-out infinite; transform-origin: 560px 466px; }
+@keyframes y-tw { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } }
+@keyframes y-tv { 0% { opacity: 0.55; fill: #8fb3ff; } 25% { opacity: 0.8; fill: #b9d2ff; } 50% { opacity: 0.45; fill: #7aa0f0; } 75% { opacity: 0.75; fill: #cfe0ff; } }
+@keyframes y-blink { 0%, 60% { opacity: 0.85; } 61%, 100% { opacity: 0.08; } }
+@keyframes y-lamp { 0%, 100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: 0.7; } 52% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .yard-bg * { animation: none !important; } }
+
+.yard-shade { position: absolute; left: 0; right: 0; top: 0; height: var(--hero-h); z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 10, 25, 0.3), rgba(10, 10, 25, 0) 25%, rgba(10, 10, 25, 0) 80%, #141218); }
+.yard-spacer { height: calc(var(--hero-h) - 330px); min-height: 40px; }
+.yard-content { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: 22px 16px 40px; }
+
+.yard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.yard-title h1 {
+  font-family: 'Caveat', cursive; font-weight: 700; font-size: clamp(46px, 8vw, 86px); line-height: 0.95; margin: 0;
+  color: #f4f0e4; transform: rotate(-2.5deg); transform-origin: left;
+  text-shadow: 0 0 1px #fff, 0 0 12px rgba(255, 220, 160, 0.35), 2px 3px 0 rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.5px;
+}
+.yard-title p { margin: 6px 0 0 8px; color: #e8d9b8; font-family: 'Caveat', cursive; font-size: 26px; opacity: 0.85; transform: rotate(-1.5deg); }
+.yard-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.join-form { display: flex; gap: 6px; }
+.join-form .code-input { width: 112px; font-size: 18px; letter-spacing: 4px; text-align: center; text-transform: uppercase; font-weight: 700; }
+
+.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 16px; }
+.cats button {
+  font: 600 15px 'PT Sans', sans-serif; color: #f1ead8; cursor: pointer;
+  padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255, 240, 210, 0.35);
+  background: rgba(20, 16, 30, 0.55); backdrop-filter: blur(4px);
+}
+.cats button:hover { background: rgba(60, 50, 80, 0.7); }
+.cats button.on { background: #f1ead8; color: #241c14; border-color: #f1ead8; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.game-card {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px;
+  min-height: 180px; padding: 16px 16px 14px; border-radius: 10px; cursor: pointer; overflow: hidden;
+  font: inherit; color: #261c12; border: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 90, 50, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(170deg, #f6eedb, #e6d6b4);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(80, 50, 20, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.game-card:hover { transform: translateY(-4px) rotate(-0.4deg); box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(80, 50, 20, 0.25); }
+.game-card:focus-visible { outline: 3px solid #ffd27a; outline-offset: 2px; }
+.game-card:not(.ready) { filter: saturate(0.55) brightness(0.88); }
+.game-card:not(.ready):hover { filter: saturate(0.8) brightness(0.95); }
+.gc-pic {
+  display: block; margin: -16px -16px 0; width: calc(100% + 32px); aspect-ratio: 16 / 10; overflow: hidden; position: relative;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0 10px, transparent 10px 20px),
+    radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--tint) 75%, white), var(--tint) 55%, color-mix(in srgb, var(--tint) 55%, black));
+  border-bottom: 4px solid var(--tint);
+}
+.gc-pic img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s; }
+.game-card:hover .gc-pic img { transform: scale(1.05); }
+.gc-glyph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 64px; color: rgba(255, 255, 255, 0.85); text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); }
+.gc-icon {
+  width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; margin: -26px 0 4px; position: relative; z-index: 1; font-size: 22px !important;
+  font-size: 28px; color: #fff; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tint) 60%, white), var(--tint) 60%, color-mix(in srgb, var(--tint) 70%, black));
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35), inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+.gc-title { font-family: 'Russo One', 'PT Sans', sans-serif; font-size: 19px; line-height: 1.1; }
+.gc-sub { font-size: 13.5px; opacity: 0.78; line-height: 1.25; }
+.gc-vars { margin-top: 6px; font-size: 12.5px; line-height: 1.35; color: color-mix(in srgb, var(--tint) 70%, #261c12); font-weight: 700; border-top: 1px dashed rgba(80, 50, 20, 0.3); padding-top: 6px; width: 100%; }
+.gc-meta { margin-top: auto; padding-top: 8px; display: flex; gap: 8px; font-size: 12.5px; align-items: center; width: 100%; }
+.gc-players { opacity: 0.75; }
+.gc-save { margin-left: auto; background: #b3322a; color: #fff; border-radius: 6px; padding: 1px 7px; font-weight: 700; }
+.stamp {
+  position: absolute; right: 10px; top: 12px; background: rgba(246, 238, 219, 0.92); transform: rotate(9deg);
+  font: 700 12px 'Russo One', sans-serif; text-transform: uppercase; letter-spacing: 1px;
+  color: #a3241c; border: 2px solid #a3241c; border-radius: 6px; padding: 2px 7px; opacity: 0.8;
+}
+.yard-foot { margin-top: 26px; color: #e8dcc0; opacity: 0.75; font-size: 14px; text-align: center; }
+
+@media (max-width: 560px) {
+  .cards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .game-card { min-height: 160px; padding: 14px 12px 12px; }
+  .gc-pic { margin: -14px -12px 0; width: calc(100% + 24px); }
+  .gc-glyph { font-size: 44px; }
+  .gc-title { font-size: 16px; }
+  .yard-actions { width: 100%; }
+}

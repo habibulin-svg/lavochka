@@ -1,0 +1,8 @@
+node_modules/
+lavochka/dist/
+lavochka/dist-server/
+lavochka/data/
+# сканы полей — только для личного использования, в репозиторий не кладём (ссылки — в materials/README.md)
+materials/**/*.jpg
+materials/**/*.png
+.claude/settings.local.json

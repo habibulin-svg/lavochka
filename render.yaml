@@ -1,0 +1,13 @@
+# Render.com: New → Blueprint → этот репозиторий (сборник лежит в папке lavochka). Бесплатный тариф засыпает после 15 минут простоя.
+services:
+  - type: web
+    name: vecherom-na-lavochke
+    runtime: node
+    plan: free
+    rootDir: lavochka
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

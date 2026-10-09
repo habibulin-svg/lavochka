@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Шиш-беш</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ruslan+Display&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Главное меню -->
+  <section id="scr-menu" class="screen active">
+    <div class="plaque menu-plaque">
+      <h1 class="title">Шиш-беш</h1>
+      <p class="subtitle">настольная игра на кресте</p>
+      <div class="menu-buttons">
+        <button class="btn big" id="btn-new">Новая игра</button>
+        <button class="btn big" id="btn-continue" hidden>Продолжить игру</button>
+        <button class="btn big" id="btn-join">Присоединиться по сети</button>
+        <button class="btn" id="btn-rules">Правила</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Настройка партии -->
+  <section id="scr-setup" class="screen">
+    <div class="plaque setup-plaque">
+      <h2>Новая партия</h2>
+      <div class="row count-row">
+        <span class="lbl">Игроков:</span>
+        <div class="seg" id="count-seg">
+          <button data-n="2">2</button><button data-n="3">3</button><button data-n="4" class="on">4</button>
+        </div>
+      </div>
+      <div id="seat-rows"></div>
+      <p class="hint">«Человек» — игра за этим экраном (хот-сит, по очереди). «Сеть» — место для друга, подключившегося по коду комнаты.</p>
+      <div class="row opts">
+        <label><input type="checkbox" id="opt-auto"> Ходить автоматически, если вариант один</label>
+      </div>
+      <div class="row buttons">
+        <button class="btn" data-go="menu">Назад</button>
+        <button class="btn primary" id="btn-start">Начать</button>
+      </div>
+      <p class="err" id="setup-err"></p>
+    </div>
+  </section>
+
+  <!-- Лобби хоста -->
+  <section id="scr-lobby" class="screen">
+    <div class="plaque lobby-plaque">
+      <h2>Сетевая комната</h2>
+      <div id="lobby-code-box">
+        <div class="lbl">Код комнаты — сообщите друзьям:</div>
+        <div class="code" id="lobby-code">·····</div>
+        <button class="btn small" id="btn-copy">Копировать</button>
+      </div>
+      <div id="lobby-status" class="status-line">Создаём комнату…</div>
+      <ul id="lobby-seats" class="lobby-seats"></ul>
+      <div class="row buttons">
+        <button class="btn" id="btn-lobby-back">Отмена</button>
+        <button class="btn" id="btn-lobby-bots">Пустые места — ботам</button>
+        <button class="btn primary" id="btn-lobby-start" disabled>Начать игру</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Присоединение -->
+  <section id="scr-join" class="screen">
+    <div class="plaque join-plaque">
+      <h2>Присоединиться</h2>
+      <label class="field">Ваше имя <input id="join-name" maxlength="16" placeholder="Имя"></label>
+      <label class="field">Код комнаты <input id="join-code" maxlength="5" placeholder="ABCDE" class="code-input"></label>
+      <div id="join-status" class="status-line"></div>
+      <ul id="join-seats" class="lobby-seats"></ul>
+      <div class="row buttons">
+        <button class="btn" id="btn-join-back">Назад</button>
+        <button class="btn primary" id="btn-join-go">Подключиться</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Игра -->
+  <section id="scr-game" class="screen">
+    <div class="game-layout">
+      <div class="board-wrap"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <aside class="panel">
+        <div class="panel-top">
+          <button class="icon-btn" id="btn-menu" title="Меню">☰</button>
+          <div class="panel-title">Шиш-беш</div>
+          <button class="icon-btn" id="btn-sound" title="Звук">🔊</button>
+        </div>
+        <ul id="players" class="players"></ul>
+        <div class="tray-box">
+          <div id="tray" class="tray"></div>
+          <div id="status" class="status">—</div>
+          <button class="btn primary roll" id="btn-roll" disabled>Бросить кости</button>
+          <div class="hint small-hint">Пробел — бросок. Нажмите на подсвеченную фишку, затем на цель.</div>
+        </div>
+        <div class="speed-row">
+          <span>Скорость</span>
+          <input type="range" id="speed" min="0.5" max="3" step="0.25" value="1">
+        </div>
+        <ol id="log" class="log"></ol>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<!-- Модальное окно -->
+<div id="modal" class="modal" hidden>
+  <div class="plaque modal-body">
+    <div id="modal-content"></div>
+    <div class="row buttons" id="modal-buttons"></div>
+  </div>
+</div>
+
+<template id="rules-tpl">
+  <h2>Правила</h2>
+  <ol class="rules">
+    <li>Играют 2–4 игрока, у каждого 4 фишки. Кидают два кубика; ходят по очереди против часовой стрелки.</li>
+    <li>Выйти из «парка» можно только выбросив <b>6</b>: фишка встаёт на <b>стартовое поле</b> своего цвета (выступ в конце своего луча, с треугольником). Второй кубик — ход этой или любой другой фишкой.</li>
+    <li>На каждой стороне 6 клеток до креста включительно: со старта шестёркой фишка встаёт ровно на угол креста.</li>
+    <li>Каждый кубик — отдельный ход; порядок выбираете сами. Если кубиком сходить можно — ходить обязательно.</li>
+    <li>Фишки идут по кругу против часовой стрелки и после круга через торец своего луча заходят в «домик» — 4 клетки своего цвета («песочные часы»).</li>
+    <li><b>Дубль</b> — после хода бросаете ещё раз.</li>
+    <li>Встав на клетку с чужой фишкой, вы её <b>рубите</b> — она возвращается в парк и снова ждёт шестёрку. <b>Срубивший бросает ещё раз.</b></li>
+    <li>Две свои фишки на одной клетке стоять не могут.</li>
+    <li><b>Угловые клетки креста.</b> Стоя на углу, кубиком «1» можно прыгнуть по прямой стрелке на соседний угол (прямо или вбок) или просто шагнуть, кубиком «3» — по диагонали на противоположный угол. Затем можно продолжить ход вторым кубиком. Срезы разрешены. Если других ходов нет — прыжок обязателен.</li>
+    <li><b>Домики-укрытия</b> (значок избушки) — на 3-м поле с края каждой дорожки, друг напротив друга. Встав на такое поле, фишка занимает свободный домик; из домика её не выбить. Если домик занят, фишка встаёт на само поле (и её там можно срубить) — а фишка в домике заблокирована, пока поле не освободится.</li>
+    <li>Заход в свой домик — строго по выпавшим очкам. Перепрыгивать свои фишки в домике нельзя; можно встать на любую доступную клетку (ближняя клетка закроет вход остальным), внутри домика фишки двигаются дальше по выпавшим очкам.</li>
+    <li>Побеждает тот, кто первым заведёт все 4 фишки в домик.</li>
+  </ol>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" async></script>
+<script src="js/engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/board.js"></script>
+<script src="js/dice.js"></script>
+<script src="js/net.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
