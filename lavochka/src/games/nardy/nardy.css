@@ -27,3 +27,9 @@
 .nd-board .nd-banner text { font: 700 38px 'PT Serif', Georgia, serif; fill: #f6e2b0; text-anchor: middle; dominant-baseline: central; }
 @keyframes nd-spin { to { stroke-dashoffset: -48; } }
 @keyframes nd-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* пункт, куда может пойти шашка: светится всё «копьё»; под курсором — бледнее и без нажатия */
+.nd-board .nd-pt-hi { fill: rgba(255, 196, 70, 0.42); stroke: #ffb020; stroke-width: 4; cursor: pointer; animation: nd-glow 1s ease-in-out infinite; }
+.nd-board .nd-preview { pointer-events: none; }
+.nd-board .nd-pt-hi.nd-preview { fill: rgba(255, 220, 140, 0.26); stroke-dasharray: 10 6; animation: none; }
+.nd-board .nd-target.nd-preview .t-bg { fill: rgba(255, 220, 140, 0.3); animation: none; }

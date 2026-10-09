@@ -507,6 +507,12 @@ export class Board {
           e.stopPropagation();
           this._pieceClick(pl.seat, k);
         });
+        g.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'touch') this._pieceHover(pl.seat, k);
+        });
+        g.addEventListener('pointerleave', (e) => {
+          if (e.pointerType !== 'touch') this._pieceHover(pl.seat, null);
+        });
         this.gPieces.appendChild(g);
         this.pieceEls.set(pl.seat + '-' + k, g);
       }
@@ -674,25 +680,40 @@ export class Board {
     this.pieceEls.forEach((el) => el.classList.remove('selected'));
   }
 
-  _pieceClick(seat, k) {
-    if (!this.onMove || seat !== this._curSeat) return;
-    const mv = this.moves.filter((m) => m.piece === k);
-    if (!mv.length) return;
+  /** Ходы фишки k без повторов (одна клетка — одна цель). */
+  _optsOf(k) {
     const uniq = new Map();
-    for (const m of mv) {
+    for (const m of this.moves.filter((m) => m.piece === k)) {
       const key = m.to + ':' + m.kind;
       if (!uniq.has(key)) uniq.set(key, m);
     }
-    const opts = [...uniq.values()];
-    if (opts.length === 1) {
-      const cb = this.onMove;
-      this.clearInteraction();
-      cb(opts[0]);
-      return;
-    }
+    return [...uniq.values()];
+  }
+
+  _pieceClick(seat, k) {
+    if (!this.onMove || seat !== this._curSeat) return;
+    const opts = this._optsOf(k);
+    if (!opts.length) return;
+    // выбор фишки только подсвечивает цели — куда ходить, игрок выбирает сам
     this.selected = k;
     this.pieceEls.forEach((el) => el.classList.remove('selected'));
     this.pieceEls.get(seat + '-' + k).classList.add('selected');
+    this._showTargets(seat, opts, true);
+  }
+
+  /** Наведение на фишку: бледная подсказка, куда она может пойти (пока ничего не выбрано). */
+  _pieceHover(seat, k) {
+    if (!this.onMove || this.selected != null) return;
+    if (k == null || seat !== this._curSeat) {
+      this.gTargets.innerHTML = '';
+      return;
+    }
+    const opts = this._optsOf(k);
+    if (opts.length) this._showTargets(seat, opts, false);
+    else this.gTargets.innerHTML = '';
+  }
+
+  _showTargets(seat, opts, live) {
     this.gTargets.innerHTML = '';
     const byPos = new Map();
     for (const m of opts) {
@@ -705,16 +726,17 @@ export class Board {
       const m = list[0];
       const [x, y] = this.posXY(seat, m.to);
       const g = document.createElementNS(NS, 'g');
-      g.setAttribute('class', 'target' + (m.kind === 'jump' ? ' jump' : ''));
+      g.setAttribute('class', 'target' + (m.kind === 'jump' ? ' jump' : '') + (live ? '' : ' preview'));
       g.setAttribute('transform', `translate(${x},${y})`);
       const label = m.kind === 'jump' ? (m.value === 1 ? '↷1' : '✕3') : String(m.value);
       g.innerHTML = `<circle r="21" class="t-bg"/><text transform="rotate(${-this.rotation})" text-anchor="middle" dominant-baseline="central" class="t-label">${label}</text>`;
-      g.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cb = this.onMove;
-        this.clearInteraction();
-        if (cb) cb(m);
-      });
+      if (live)
+        g.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cb = this.onMove;
+          this.clearInteraction();
+          if (cb) cb(m);
+        });
       this.gTargets.appendChild(g);
     });
   }

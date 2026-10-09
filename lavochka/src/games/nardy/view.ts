@@ -56,6 +56,7 @@ class NardyView implements GameView<State, Event> {
   private rotor!: SVGGElement;
   private gCheckers!: SVGGElement;
   private gMarks!: SVGGElement;
+  private gHi!: SVGGElement;
   private gCube!: SVGGElement;
   private gBanner!: SVGGElement;
   private tray!: DiceTray;
@@ -67,6 +68,8 @@ class NardyView implements GameView<State, Event> {
   private skin: Skin = loadSkin();
   private actSeat: number | null = null;
   private selected: number | null = null;
+  /** Шашка под курсором — показываем, куда она может пойти. */
+  private hover: number | null = null;
   private steps: Step[] = [];
   private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private onKey = (e: KeyboardEvent) => {
@@ -124,6 +127,20 @@ class NardyView implements GameView<State, Event> {
         if (this.steps.some((st) => st.from === i)) this.select(i);
         else this.select(null);
       }
+    });
+    this.svg.addEventListener('pointerover', (e) => {
+      if (e.pointerType === 'touch') return;
+      const el = (e.target as Element).closest('[data-from]') as SVGElement | null;
+      const from = el ? +el.dataset.from! : null;
+      if (from !== this.hover) {
+        this.hover = from;
+        this.renderMarks();
+      }
+    });
+    this.svg.addEventListener('pointerleave', () => {
+      if (this.hover == null) return;
+      this.hover = null;
+      this.renderMarks();
     });
     if (!ctx.demo) document.addEventListener('keydown', this.onKey);
   }
@@ -209,11 +226,12 @@ class NardyView implements GameView<State, Event> {
     s += dark ? `<g filter="url(#ndInlayShadow)">${pts}</g><g filter="url(#ndBurn)" opacity=".8">${fil}</g>` : `<g filter="url(#ndBurn)">${pts}${fil}</g>`;
     // лаковый отблеск поверх корпуса
     s += `<rect width="${W}" height="${H}" rx="20" fill="url(#ndLacquer)" pointer-events="none"/>`;
-    s += `<g id="ndCheckers"></g><g id="ndMarks"></g><g id="ndCube"></g></g><g id="ndBanner"></g>`;
+    s += `<g id="ndHi"></g><g id="ndCheckers"></g><g id="ndMarks"></g><g id="ndCube"></g></g><g id="ndBanner"></g>`;
     this.svg.innerHTML = s;
     this.rotor = this.svg.querySelector('#ndRotor') as SVGGElement;
     this.gCheckers = this.svg.querySelector('#ndCheckers') as SVGGElement;
     this.gMarks = this.svg.querySelector('#ndMarks') as SVGGElement;
+    this.gHi = this.svg.querySelector('#ndHi') as SVGGElement;
     this.gCube = this.svg.querySelector('#ndCube') as SVGGElement;
     this.gBanner = this.svg.querySelector('#ndBanner') as SVGGElement;
     if (this.flipped) this.rotor.setAttribute('transform', `rotate(180 ${W / 2} ${H / 2})`);
@@ -306,29 +324,47 @@ class NardyView implements GameView<State, Event> {
     this.renderCube();
   }
 
+  /** Куда может пойти шашка from: пункт пути (или OFF) и кубик. */
+  private targetsOf(from: number) {
+    const st = this.state!;
+    const out: { to: number; die: number }[] = [];
+    for (const step of this.steps.filter((x) => x.from === from)) {
+      const to = targetOf(st, step);
+      if (to == null || out.some((o) => o.to === to)) continue;
+      out.push({ to, die: step.die });
+    }
+    return out;
+  }
+
   private renderMarks() {
     let s = '';
-    if (this.selected != null && this.state && this.actSeat != null) {
+    let hi = '';
+    const from = this.selected ?? this.hover;
+    if (from != null && this.state && this.actSeat != null && this.steps.some((x) => x.from === from)) {
       const st = this.state;
       const p = this.actSeat;
-      const seen = new Set<number>();
-      for (const step of this.steps.filter((x) => x.from === this.selected)) {
-        const to = targetOf(st, step);
-        if (to == null || seen.has(to)) continue;
-        seen.add(to);
+      // выбранная шашка — цели можно нажимать; под курсором — только подсказка
+      const live = this.selected != null;
+      const cls = live ? 'nd-target' : 'nd-target nd-preview';
+      for (const { to, die } of this.targetsOf(from)) {
+        const attrs = live ? ` data-to="${to}" data-die="${die}"` : '';
         if (to === OFF) {
           const tr = this.trayOf(p);
           const y = tr.bottom ? H - F - 150 : F + 150;
-          s += `<g class="nd-target" data-to="${to}" data-die="${step.die}"><rect x="${tr.x - 32}" y="${y - 140}" width="64" height="280" rx="10" class="t-bg"/><text x="${tr.x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${tr.x} ${y})">${step.die}</text></g>`;
+          s += `<g class="${cls}"${attrs}><rect x="${tr.x - 32}" y="${y - 140}" width="64" height="280" rx="10" class="t-bg"/><text x="${tr.x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${tr.x} ${y})">${die}</text></g>`;
           continue;
         }
         const a = absOf(st.cfg, p, to);
         const { x, bottom } = pointGeo(a);
+        // сам пункт-«копьё» светится под шашками
+        const base = bottom ? H - F - 12 : F + 12;
+        hi += `<path class="${cls} nd-pt-hi"${attrs} d="${spearPath(x, base, PH - 12, PW - 22, bottom ? -1 : 1)}"/>`;
         const n = Math.abs(this.model.pts[a]) + (this.model.pts[a] * (p === 0 ? 1 : -1) < 0 ? 0 : 1);
         const y = stackY(bottom, Math.min(n - 1, 4), Math.max(n, 1));
-        s += `<g class="nd-target" data-to="${to}" data-die="${step.die}"><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${step.die}</text></g>`;
+        s += `<g class="${cls}"${attrs}><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${die}</text></g>`;
       }
     }
+    this.gHi.innerHTML = hi;
     this.gMarks.innerHTML = s;
   }
 
@@ -522,6 +558,7 @@ class NardyView implements GameView<State, Event> {
     clearTimeout(this.autoTimer);
     this.actSeat = null;
     this.selected = null;
+    this.hover = null;
     this.steps = [];
     this.btns.innerHTML = '';
     if (this.state) this.render();
@@ -578,13 +615,6 @@ class NardyView implements GameView<State, Event> {
     if (this.actSeat == null) return;
     this.selected = from != null && this.steps.some((x) => x.from === from) ? from : null;
     this.render();
-    // одна цель — ходим сразу
-    if (this.selected != null) {
-      const s = this.state!;
-      const opts = this.steps.filter((x) => x.from === this.selected);
-      const targets = new Set(opts.map((x) => targetOf(s, x)));
-      if (targets.size === 1 && opts.length >= 1) this.send(opts.sort((a, b) => b.die - a.die)[0]);
-    }
   }
 
   private pickTarget(to: number, die: number) {

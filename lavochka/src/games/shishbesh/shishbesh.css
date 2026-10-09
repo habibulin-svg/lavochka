@@ -24,3 +24,7 @@
 .sb-board .target .t-label { font: 700 17px 'PT Serif', Georgia, serif; fill: #2a1206; pointer-events: none; }
 @keyframes sb-spin { to { stroke-dashoffset: -44; } }
 @keyframes sb-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+/* подсказка при наведении: куда может пойти фишка (нажимать — после выбора фишки) */
+.sb-board .target.preview { pointer-events: none; }
+.sb-board .target.preview .t-bg { fill: rgba(255, 242, 176, 0.18); stroke-dasharray: 5 4; animation: none; }
+.sb-board .target.preview .t-label { opacity: 0.7; }
