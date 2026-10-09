@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build && npm run build:server",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist-server/index.js --packages=external",
     "start": "node dist-server/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
@@ -17,7 +19,8 @@
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vite": "^6.4.4"
+    "vite": "^6.4.4",
+    "vitest": "^3.2.7"
   },
   "dependencies": {
     "peerjs": "^1.5.4",

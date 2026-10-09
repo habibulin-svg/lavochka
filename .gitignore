@@ -6,3 +6,4 @@ lavochka/data/
 materials/**/*.jpg
 materials/**/*.png
 .claude/settings.local.json
+.claude/.cache/

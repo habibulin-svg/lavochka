@@ -54,6 +54,8 @@ export class Room {
   private botToken = 0;
   private botRng = new SeededRng(randomSeed());
   private closed = false;
+  /** Кто отвалился посреди партии — чтобы объявить его возвращение. */
+  private dropped = new Set<string>();
 
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
@@ -146,7 +148,9 @@ export class Room {
     this.send(conn, { t: 'welcome', code: this.code, game: this.def.id, options: this.options, mySeats: conn.seats, owner: conn.owner });
     if (this.auth) {
       this.sendStart(conn);
-      if (conn.seats.length && !conn.link.local) this.broadcast({ t: 'info', text: `${conn.owner ? conn.name : this.seatName(conn.seats[0])}: снова в игре` });
+      if (conn.seats.length && this.dropped.delete(conn.clientId)) {
+        this.broadcast({ t: 'info', text: `${conn.owner ? conn.name : this.seatName(conn.seats[0])}: снова в игре` });
+      }
       this.broadcast({ t: 'seats', seats: this.seatStatus() });
     } else {
       if (!conn.seats.length && !conn.owner) this.send(conn, { t: 'info', text: 'Свободных мест нет — вы зритель.' });
@@ -203,6 +207,7 @@ export class Room {
       for (const s of conn.seats) if (this.holders.get(s)?.clientId === conn.clientId) this.holders.delete(s);
       this.broadcast({ t: 'lobby', seats: this.seatStatus() });
     } else if (conn.seats.length) {
+      if (conn.clientId) this.dropped.add(conn.clientId);
       const who = conn.owner ? conn.name || 'Хозяин стола' : this.seatName(conn.seats[0]);
       this.broadcast({ t: 'info', text: `${who}: потерял связь — пока за него ходит бот` });
       this.broadcast({ t: 'seats', seats: this.seatStatus() });

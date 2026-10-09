@@ -21,11 +21,11 @@ export class RoomClient {
 
   constructor(
     private link: Link,
-    hello: { name: string; ownerKey?: string }
+    hello: { name: string; ownerKey?: string; clientId?: string }
   ) {
     link.onMessage = (m: RoomMsg) => this.receive(m);
     link.onClose = () => this.lost();
-    this.send({ t: 'hello', clientId: settings.clientId, name: hello.name, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
+    this.send({ t: 'hello', clientId: hello.clientId ?? settings.clientId, name: hello.name, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
     if (!link.local) {
       this.watchdog = setInterval(() => {
         if (Date.now() - this.lastSeen > LOST_MS) this.lost();
