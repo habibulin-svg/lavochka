@@ -1,17 +1,7 @@
-/* Нарды — «ручная работа»: выжженные картины, резьба по рамке, арки, латунные петли (SVG-строки). */
+/* Нарды — «ручная работа»: пункты-копья, медальоны, резьба по рамке, арки, желоба, латунные петли (SVG-строки). */
 
 export const BURN = '#2a1206';
 const f1 = (v: number) => Math.round(v * 10) / 10;
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 /** Фильтр «выжигатель»: дрожащая линия с подпалиной вокруг. */
 export const burnDefs = `
@@ -25,7 +15,6 @@ export const burnDefs = `
     <feGaussianBlur in="d" stdDeviation="0.35" result="core"/>
     <feMerge><feMergeNode in="halo"/><feMergeNode in="core"/></feMerge>
   </filter>
-  <filter id="ndSoft"><feGaussianBlur stdDeviation="6"/></filter>
   <pattern id="ndLattice" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
     <rect width="18" height="18" fill="none"/>
     <path d="M0,0 V18 M0,0 H18" stroke="#1a0a02" stroke-width="2.2" opacity=".55"/>
@@ -80,14 +69,6 @@ export function arches(x0: number, w: number, y: number, dir: 1 | -1, n = 6) {
   return `<path d="${d}" fill="none" stroke="${BURN}" stroke-width="2.6"/>${dots}`;
 }
 
-/** «Язычок пламени» — выжженный орнамент у основания пункта. */
-export function flame(x: number, base: number, dir: 1 | -1, h = 54) {
-  const y0 = base + dir * 8;
-  const y1 = y0 + dir * h;
-  return `<path d="M${x},${y1} C${x + 11},${f1(y0 + dir * h * 0.55)} ${x + 9},${f1(y0 + dir * 10)} ${x},${y0} C${x - 9},${f1(y0 + dir * 10)} ${x - 11},${f1(y0 + dir * h * 0.55)} ${x},${y1}Z" fill="${BURN}" opacity=".55"/>
-    <path d="M${x},${f1(y1 - dir * 12)} C${x + 4},${f1(y0 + dir * h * 0.5)} ${x + 3},${f1(y0 + dir * 16)} ${x},${f1(y0 + dir * 12)}" fill="none" stroke="#e8c48a" stroke-width="1.3" opacity=".7"/>`;
-}
-
 /** Латунная петля с винтами. */
 export function hinge(x: number, y: number) {
   let s = `<g transform="translate(${x},${y})"><rect x="-13" y="-46" width="26" height="92" rx="4" fill="url(#ndBrass)" stroke="#5a4010" stroke-width="1.5"/>`;
@@ -96,28 +77,97 @@ export function hinge(x: number, y: number) {
   return s + `</g>`;
 }
 
-/** Лоза: волнистый стебель с листьями и завитками вдоль средней полосы (ширина w, центр по y = 0). */
-export function vine(w: number, seed: number) {
-  const rnd = mulberry32(seed);
-  const n = 6;
-  const step = (w - 40) / n;
-  let d = `M20,0`;
-  for (let i = 0; i < n; i++) {
-    const x = 20 + i * step;
-    const dir = i % 2 ? 1 : -1;
-    d += ` C${f1(x + step * 0.3)},${dir * 14} ${f1(x + step * 0.7)},${dir * 14} ${f1(x + step)},0`;
+/**
+ * Пункт-«копьё», как на резных нардах: скруглённая головка у борта, длинное остриё к середине.
+ * base — y борта, dir = 1 — остриё вниз (верхний ряд), -1 — вверх.
+ */
+export function spearPath(x: number, base: number, len: number, w: number, dir: 1 | -1) {
+  const hw = w / 2;
+  const y = (v: number) => f1(base + dir * v);
+  return `M${x},${y(len)} C${f1(x + hw * 0.18)},${y(len * 0.55)} ${f1(x + hw)},${y(w * 1.5)} ${f1(x + hw)},${y(w * 0.62)} C${f1(x + hw)},${y(w * 0.1)} ${f1(x + hw * 0.5)},${y(2)} ${x},${y(2)} C${f1(x - hw * 0.5)},${y(2)} ${f1(x - hw)},${y(w * 0.1)} ${f1(x - hw)},${y(w * 0.62)} C${f1(x - hw)},${y(w * 1.5)} ${f1(x - hw * 0.18)},${y(len * 0.55)} ${x},${y(len)}Z`;
+}
+
+/** Узор внутри копья: цветок в головке, «ёлочка» вдоль оси. */
+export function spearFiligree(x: number, base: number, len: number, w: number, dir: 1 | -1, color: string) {
+  const y = (v: number) => f1(base + dir * v);
+  const cy = base + dir * w * 0.6;
+  let s = '';
+  for (let i = 0; i < 8; i++) {
+    const a = i * 45;
+    s += `<ellipse cx="${x}" cy="${f1(cy - 6)}" rx="2.1" ry="4.6" transform="rotate(${a} ${x} ${f1(cy)})" fill="${color}" opacity=".8"/>`;
   }
-  let s = `<path d="${d}" fill="none" stroke="${BURN}" stroke-width="2.2"/>`;
-  for (let i = 0; i < n; i++) {
-    const x = 20 + i * step + step / 2;
-    const dir = i % 2 ? 1 : -1;
-    const y = dir * 10.5;
-    const a = dir * (35 + rnd() * 20);
-    // лист
-    s += `<path d="M${f1(x)},${f1(y)} c6,${dir * 2} 12,${dir * 9} 12,${dir * 18} c-8,${dir * -1} -12,${dir * -8} -12,${dir * -18}Z" fill="${BURN}" fill-opacity=".55" stroke="${BURN}" stroke-width="1" transform="rotate(${f1(a * 0.4)} ${f1(x)} ${f1(y)})"/>`;
-    // завиток с другой стороны
-    s += `<path d="M${f1(x - step * 0.25)},${f1(-dir * 6)} q${f1(-6)},${f1(-dir * 10)} ${f1(2)},${f1(-dir * 14)} q7,${f1(dir * 2)} 2,${f1(dir * 7)}" fill="none" stroke="${BURN}" stroke-width="1.4"/>`;
-    s += `<circle cx="${f1(x + step * 0.3)}" cy="${f1(-dir * 9)}" r="2.2" fill="${BURN}"/>`;
+  s += `<circle cx="${x}" cy="${f1(cy)}" r="2.4" fill="${color}"/><circle cx="${x}" cy="${f1(cy)}" r="11.5" fill="none" stroke="${color}" stroke-width=".9" opacity=".6"/>`;
+  let d = `M${x},${y(w * 1.25)} L${x},${y(len * 0.86)}`;
+  for (let t = w * 1.5; t < len * 0.8; t += 13) {
+    const hw = (w / 2) * (1 - t / len) * 0.75;
+    d += ` M${f1(x - hw)},${y(t - 5)} L${x},${y(t)} L${f1(x + hw)},${y(t - 5)}`;
+  }
+  s += `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.3" opacity=".8"/>`;
+  return s;
+}
+
+/** Восьмиконечная звезда-инкрустация: каждый луч из светлой и тёмной половинки. */
+export function star8(cx: number, cy: number, r: number, light: string, dark: string, edge: string) {
+  let s = '';
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 - Math.PI / 2;
+    const tip = [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+    const side = (k: number) => {
+      const b = a + (k * Math.PI) / 8;
+      return [cx + Math.cos(b) * r * 0.42, cy + Math.sin(b) * r * 0.42];
+    };
+    const l = side(-1);
+    const rr = side(1);
+    s += `<path d="M${f1(cx)},${f1(cy)} L${f1(l[0])},${f1(l[1])} L${f1(tip[0])},${f1(tip[1])}Z" fill="${light}" stroke="${edge}" stroke-width="1.2"/>`;
+    s += `<path d="M${f1(cx)},${f1(cy)} L${f1(rr[0])},${f1(rr[1])} L${f1(tip[0])},${f1(tip[1])}Z" fill="${dark}" stroke="${edge}" stroke-width="1.2"/>`;
   }
   return s;
+}
+
+/** Выжженная розетка-медальон: лепестки в два яруса, зубчатый пояс, сердцевина. */
+export function rosette(cx: number, cy: number, r: number) {
+  let s = `<g transform="translate(${f1(cx)},${f1(cy)})" fill="none" stroke="${BURN}">`;
+  // внешний фигурный контур: 12 лопастей
+  let d = '';
+  const lobes = 12;
+  for (let i = 0; i <= lobes; i++) {
+    const a = (i / lobes) * Math.PI * 2;
+    const a2 = ((i + 0.5) / lobes) * Math.PI * 2;
+    const p = [Math.cos(a) * r * 0.86, Math.sin(a) * r * 0.86];
+    const c = [Math.cos(a2) * r * 1.08, Math.sin(a2) * r * 1.08];
+    const n = [Math.cos(((i + 1) / lobes) * Math.PI * 2) * r * 0.86, Math.sin(((i + 1) / lobes) * Math.PI * 2) * r * 0.86];
+    if (i === 0) d += `M${f1(p[0])},${f1(p[1])}`;
+    if (i < lobes) d += ` Q${f1(c[0])},${f1(c[1])} ${f1(n[0])},${f1(n[1])}`;
+  }
+  s += `<path d="${d}Z" stroke-width="2.4"/>`;
+  s += `<circle r="${f1(r * 0.78)}" stroke-width="1.2"/>`;
+  // лепестки
+  for (let i = 0; i < 8; i++) {
+    const a = i * 45;
+    s += `<g transform="rotate(${a})"><path d="M0,${f1(-r * 0.2)} C${f1(r * 0.16)},${f1(-r * 0.35)} ${f1(r * 0.14)},${f1(-r * 0.62)} 0,${f1(-r * 0.72)} C${f1(-r * 0.14)},${f1(-r * 0.62)} ${f1(-r * 0.16)},${f1(-r * 0.35)} 0,${f1(-r * 0.2)}Z" stroke-width="1.8"/>`;
+    s += `<path d="M0,${f1(-r * 0.28)} L0,${f1(-r * 0.62)}" stroke-width="1"/><circle cy="${f1(-r * 0.46)}" r="2.2" fill="${BURN}" stroke="none"/></g>`;
+    s += `<g transform="rotate(${a + 22.5})"><path d="M0,${f1(-r * 0.3)} q${f1(r * 0.08)},${f1(-r * 0.14)} 0,${f1(-r * 0.3)} q${f1(-r * 0.08)},${f1(r * 0.14)} 0,${f1(r * 0.3)}Z" fill="${BURN}" fill-opacity=".5" stroke-width="1"/></g>`;
+  }
+  // зубчатый пояс и сердцевина
+  let z = '';
+  for (let i = 0; i <= 32; i++) {
+    const a = (i / 32) * Math.PI * 2;
+    const rr = i % 2 ? r * 0.2 : r * 0.14;
+    z += (i ? 'L' : 'M') + f1(Math.cos(a) * rr) + ',' + f1(Math.sin(a) * rr);
+  }
+  s += `<path d="${z}" stroke-width="1.4"/><circle r="${f1(r * 0.08)}" fill="${BURN}"/>`;
+  return s + `</g>`;
+}
+
+/** Желоб для снятых шашек на борту — длинная овальная выемка. */
+export function slot(cx: number, y0: number, y1: number, w: number) {
+  const r = w / 2;
+  return `<rect x="${f1(cx - r)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(y1 - y0)}" rx="${f1(r)}" fill="#140802" opacity=".7"/>
+    <rect x="${f1(cx - r + 2)}" y="${f1(y0 + 2)}" width="${f1(w - 4)}" height="${f1(y1 - y0 - 4)}" rx="${f1(r - 2)}" fill="none" stroke="#000" stroke-opacity=".7" stroke-width="7" filter="url(#ndInset)"/>
+    <rect x="${f1(cx - r)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(y1 - y0)}" rx="${f1(r)}" fill="none" stroke="#e2b77c" stroke-opacity=".25" stroke-width="1.5"/>`;
+}
+
+/** Круглая лунка на борту (для кубиков). */
+export function cup(cx: number, cy: number, r: number) {
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#140802" opacity=".7"/><circle cx="${cx}" cy="${cy}" r="${r - 2}" fill="none" stroke="#000" stroke-opacity=".7" stroke-width="6" filter="url(#ndInset)"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e2b77c" stroke-opacity=".25" stroke-width="1.5"/>`;
 }

@@ -5,7 +5,7 @@ import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { absOf, BAR, CHECKERS, legalSteps, mayDouble, OFF, pipCount, targetOf, type Event, type State, type Step } from './engine';
 import { woodTexture, WOODS } from '../../core/wood';
-import { arches, BURN, burnDefs, carvedFrame, flame, hinge, vine } from './decor';
+import { arches, BURN, burnDefs, carvedFrame, cup, hinge, rosette, slot, spearFiligree, spearPath, star8 } from './decor';
 import './nardy.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -16,7 +16,7 @@ const B = 60; // бар
 const W = F * 2 + T * 2 + B + PW * 12; // 1040
 const H = 760;
 const R = 29; // радиус шашки
-const PH = 296; // высота треугольника
+const PH = 262; // длина пункта-«копья»
 const STACK = 5 * 2 * R; // наибольшая высота стопки
 
 const colX = (col: number) => F + T + col * PW + PW / 2 + (col >= 6 ? B : 0);
@@ -32,6 +32,16 @@ function pointGeo(a: number) {
 function stackY(bottom: boolean, k: number, n: number) {
   const sp = n > 5 ? (STACK - 2 * R) / (n - 1) : 2 * R;
   return bottom ? H - F - R - k * sp : F + R + k * sp;
+}
+
+export type Skin = 'dark' | 'light';
+const SKIN_KEY = 'lavochka.nardy.skin';
+function loadSkin(): Skin {
+  try {
+    return localStorage.getItem(SKIN_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 interface Model {
@@ -54,6 +64,7 @@ class NardyView implements GameView<State, Event> {
   private state: State | null = null;
   private model: Model = { pts: new Array(24).fill(0), bar: [0, 0], off: [0, 0] };
   private flipped = false;
+  private skin: Skin = loadSkin();
   private actSeat: number | null = null;
   private selected: number | null = null;
   private steps: Step[] = [];
@@ -79,94 +90,28 @@ class NardyView implements GameView<State, Event> {
         <div class="nd-tray"></div>
         <div class="nd-left"></div>
         <div class="nd-btns"></div>
+        <button class="btn small nd-skin"></button>
         ${ctx.demo ? '' : '<div class="hint small-hint">Пробел — бросок. Нажмите на шашку, затем на подсвеченный пункт.</div>'}
       </div>`);
     ctx.controls.appendChild(ctl);
     this.tray = new DiceTray(ctl.querySelector('.nd-tray') as HTMLElement);
     this.btns = ctl.querySelector('.nd-btns') as HTMLElement;
     this.leftInfo = ctl.querySelector('.nd-left') as HTMLElement;
-    if (!ctx.demo) document.addEventListener('keydown', this.onKey);
-  }
-
-  // ---------------------------------------------------------------- доска
-
-  private build() {
-    const wField = woodTexture(WOODS.linden, 512, 11);
-    const wField2 = woodTexture(WOODS.linden, 512, 23);
-    const wFrame = woodTexture(WOODS.walnut, 512, 5, false);
-    const wLight = woodTexture(WOODS.maple, 256, 3);
-    const wDark = woodTexture(WOODS.wenge, 256, 9);
-    const half = 6 * PW;
-    const fieldL = F + T;
-    const rightL = fieldL + half + B;
-    let s = `<defs>${burnDefs}
-      <pattern id="ndWL" patternUnits="userSpaceOnUse" width="150" height="150"><image href="${wLight}" width="150" height="150" preserveAspectRatio="none"/></pattern>
-      <pattern id="ndWD" patternUnits="userSpaceOnUse" width="150" height="150"><image href="${wDark}" width="150" height="150" preserveAspectRatio="none"/></pattern>
-      <radialGradient id="ndBevel" cx="50%" cy="50%" r="50%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
-      <radialGradient id="ndGloss" cx="34%" cy="28%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-      <linearGradient id="ndLacquer" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>
-      <filter id="ndShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="2" dy="3.5" stdDeviation="2.4" flood-color="#1a0a02" flood-opacity=".6"/></filter>
-      <filter id="ndInset" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="7"/></filter>
-      <clipPath id="ndClipL"><rect x="${fieldL}" y="${F}" width="${half}" height="${H - 2 * F}"/></clipPath>
-      <clipPath id="ndClipR"><rect x="${rightL}" y="${F}" width="${half}" height="${H - 2 * F}"/></clipPath>
-      <clipPath id="ndClipAll"><rect width="${W}" height="${H}" rx="20"/></clipPath>
-    </defs>`;
-    s += `<g id="ndRotor">`;
-    // корпус: орех под лаком, резная рамка
-    s += `<rect width="${W}" height="${H}" rx="20" fill="#3a1d0c"/>`;
-    s += `<image href="${wFrame}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#ndClipAll)"/>`;
-    s += `<g filter="url(#ndBurn)">${carvedFrame(W, H, F)}</g>`;
-    // лотки снятых шашек — утопленные желобки
-    for (const x0 of [F, W - F - T + 8]) {
-      s += `<rect x="${x0}" y="${F}" width="${T - 8}" height="${H - 2 * F}" rx="10" fill="#1e0e05" opacity=".55"/>`;
-      s += `<rect x="${x0 + 3}" y="${F + 3}" width="${T - 14}" height="${H - 2 * F - 6}" rx="8" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="6" filter="url(#ndInset)"/>`;
-    }
-    // две половины-доски: светлое дерево и выжженная картина (левая повёрнута — «лицом» ко второму игроку)
-    const halves: [number, string, string, boolean][] = [
-      [fieldL, wField2, 'ndClipL', true],
-      [rightL, wField, 'ndClipR', false],
-    ];
-    for (const [x0, tex, clip, rot] of halves) {
-      const cx = x0 + half / 2;
-      const fh = H - 2 * F;
-      s += `<g clip-path="url(#${clip})">`;
-      s += `<image href="${tex}" x="${x0}" y="${F}" width="${half}" height="${fh}" preserveAspectRatio="none"/>`;
-      // узкая выжженная лоза в средней полосе — там, где шашки не стоят
-      s += `<g filter="url(#ndBurn)" transform="${rot ? `rotate(180 ${cx} ${H / 2}) ` : ''}translate(${x0},${H / 2})">${vine(half, rot ? 5 : 9)}</g>`;
-      s += `<g filter="url(#ndBurn)">${arches(x0 + 4, half - 8, F + 4, 1)}${arches(x0 + 4, half - 8, H - F - 4, -1)}</g>`;
-      // тень от бортика рамки — поле утоплено
-      s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/>`;
-      s += `</g>`;
-    }
-    // сгиб «книжки»: два бортика и латунные петли
-    s += `<rect x="${BAR_X - B / 2}" y="${F - 6}" width="${B}" height="${H - 2 * F + 12}" fill="#2a1206" opacity=".35"/>`;
-    s += `<rect x="${BAR_X - 1.5}" y="${F - 6}" width="3" height="${H - 2 * F + 12}" fill="#0d0502" opacity=".8"/>`;
-    s += hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8);
-    // пункты: выжженные клинья — тёмные залиты подпалом, светлые обведены
-    let pts = '';
-    for (let a = 0; a < 24; a++) {
-      const { x, bottom } = pointGeo(a);
-      const base = bottom ? H - F - 6 : F + 6;
-      const tip = bottom ? H - F - PH : F + PH;
-      const dark = a % 2 === 0;
-      const wl = PW / 2 - 5;
-      const midY = base + (tip - base) * 0.55;
-      const bend = bottom ? 30 : -30;
-      const d = `M${x - wl},${base} C${x - wl + 2},${midY} ${x - 5},${tip + bend} ${x},${tip} C${x + 5},${tip + bend} ${x + wl - 2},${midY} ${x + wl},${base}Z`;
-      pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="${dark ? '#5a2408' : '#fff3d6'}" fill-opacity="${dark ? 0.6 : 0.2}" stroke="${BURN}" stroke-width="2.2"/>`;
-      pts += flame(x, base, bottom ? -1 : 1, dark ? 46 : 38);
-      pts += `<circle cx="${x}" cy="${tip + (bottom ? -14 : 14)}" r="3" fill="${BURN}"/>`;
-    }
-    s += `<g filter="url(#ndBurn)">${pts}</g>`;
-    // лаковый отблеск поверх корпуса
-    s += `<rect width="${W}" height="${H}" rx="20" fill="url(#ndLacquer)" pointer-events="none"/>`;
-    s += `<g id="ndCheckers"></g><g id="ndMarks"></g><g id="ndCube"></g></g><g id="ndBanner"></g>`;
-    this.svg.innerHTML = s;
-    this.rotor = this.svg.querySelector('#ndRotor') as SVGGElement;
-    this.gCheckers = this.svg.querySelector('#ndCheckers') as SVGGElement;
-    this.gMarks = this.svg.querySelector('#ndMarks') as SVGGElement;
-    this.gCube = this.svg.querySelector('#ndCube') as SVGGElement;
-    this.gBanner = this.svg.querySelector('#ndBanner') as SVGGElement;
+    const skinBtn = ctl.querySelector('.nd-skin') as HTMLButtonElement;
+    const skinText = () => (skinBtn.textContent = this.skin === 'dark' ? 'Доска: тёмная резная' : 'Доска: светлая выжженная');
+    skinText();
+    skinBtn.hidden = ctx.demo;
+    skinBtn.onclick = () => {
+      this.skin = this.skin === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem(SKIN_KEY, this.skin);
+      } catch {
+        /* без сохранения */
+      }
+      skinText();
+      this.build();
+      if (this.state) this.render();
+    };
     this.svg.addEventListener('click', (e) => {
       const el = (e.target as Element).closest('[data-from],[data-to],.nd-pt') as SVGElement | null;
       if (!el) return this.select(null);
@@ -180,6 +125,98 @@ class NardyView implements GameView<State, Event> {
         else this.select(null);
       }
     });
+    if (!ctx.demo) document.addEventListener('keydown', this.onKey);
+  }
+
+  // ---------------------------------------------------------------- доска
+
+  private build() {
+    const dark = this.skin === 'dark';
+    const wField = woodTexture(dark ? WOODS.stained : WOODS.linden, 512, 11);
+    const wField2 = woodTexture(dark ? WOODS.stained : WOODS.linden, 512, 23);
+    const wFrame = woodTexture(WOODS.walnut, 512, 5, false);
+    const wLight = woodTexture(WOODS.maple, 256, 3);
+    const wDark = woodTexture(WOODS.wenge, 256, 9);
+    const half = 6 * PW;
+    const fieldL = F + T;
+    const rightL = fieldL + half + B;
+    const fh = H - 2 * F;
+    let s = `<defs>${burnDefs}
+      <pattern id="ndWL" patternUnits="userSpaceOnUse" width="150" height="150"><image href="${wLight}" width="150" height="150" preserveAspectRatio="none"/></pattern>
+      <pattern id="ndWD" patternUnits="userSpaceOnUse" width="150" height="150"><image href="${wDark}" width="150" height="150" preserveAspectRatio="none"/></pattern>
+      <pattern id="ndInlay" patternUnits="userSpaceOnUse" width="300" height="300"><image href="${wLight}" width="300" height="300" preserveAspectRatio="none"/></pattern>
+      <radialGradient id="ndBevel" cx="50%" cy="50%" r="50%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
+      <radialGradient id="ndGloss" cx="34%" cy="28%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <linearGradient id="ndLacquer" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>
+      <filter id="ndShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="2" dy="3.5" stdDeviation="2.4" flood-color="#1a0a02" flood-opacity=".6"/></filter>
+      <filter id="ndInset" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="7"/></filter>
+      <filter id="ndInlayShadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="#000" flood-opacity=".6"/></filter>
+      <clipPath id="ndClipL"><rect x="${fieldL}" y="${F}" width="${half}" height="${fh}"/></clipPath>
+      <clipPath id="ndClipR"><rect x="${rightL}" y="${F}" width="${half}" height="${fh}"/></clipPath>
+      <clipPath id="ndClipAll"><rect width="${W}" height="${H}" rx="20"/></clipPath>
+    </defs>`;
+    s += `<g id="ndRotor">`;
+    // корпус: орех под лаком, резная рамка
+    s += `<rect width="${W}" height="${H}" rx="20" fill="#3a1d0c"/>`;
+    s += `<image href="${wFrame}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#ndClipAll)"/>`;
+    s += `<g filter="url(#ndBurn)">${carvedFrame(W, H, F)}</g>`;
+    // борта: желоба для снятых шашек и лунки для кубиков
+    for (const cx of [F + T / 2 - 4, W - F - T / 2 + 4]) {
+      s += slot(cx, F + 8, H / 2 - 46, 54) + slot(cx, H / 2 + 46, H - F - 8, 54) + cup(cx, H / 2, 22);
+    }
+    // две половины-доски
+    const halves: [number, string, string][] = [
+      [fieldL, wField2, 'ndClipL'],
+      [rightL, wField, 'ndClipR'],
+    ];
+    const inlayEdge = dark ? '#1a0a02' : BURN;
+    for (const [x0, tex, clip] of halves) {
+      const cx = x0 + half / 2;
+      s += `<g clip-path="url(#${clip})">`;
+      s += `<image href="${tex}" x="${x0}" y="${F}" width="${half}" height="${fh}" preserveAspectRatio="none"/>`;
+      // медальон в середине — между рядами пунктов, где шашки не стоят
+      if (dark) s += `<g filter="url(#ndInlayShadow)">${star8(cx, H / 2, 88, 'url(#ndInlay)', '#6a3c18', inlayEdge)}</g>`;
+      else s += `<g filter="url(#ndBurn)">${rosette(cx, H / 2, 92)}</g>`;
+      // арки у торцов: резные (тёмная) или выжженные (светлая)
+      const arch = arches(x0, half, F + 2, 1) + arches(x0, half, H - F - 2, -1);
+      // тёмная: резьба — тень под кромкой и блик на ней
+      s += dark
+        ? `<g opacity=".7" transform="translate(0,2.5)" stroke-width="4">${arch.replace(new RegExp(BURN, 'g'), '#140802')}</g><g opacity=".6">${arch.replace(new RegExp(BURN, 'g'), '#f0cf9a')}</g>`
+        : `<g filter="url(#ndBurn)">${arch}</g>`;
+      // тень от бортика рамки — поле утоплено
+      s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/>`;
+      s += `</g>`;
+    }
+    // сгиб «книжки»: бортики и латунные петли
+    s += `<rect x="${BAR_X - B / 2}" y="${F - 6}" width="${B}" height="${fh + 12}" fill="#2a1206" opacity=".35"/>`;
+    s += `<rect x="${BAR_X - 1.5}" y="${F - 6}" width="3" height="${fh + 12}" fill="#0d0502" opacity=".8"/>`;
+    s += hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8);
+    // пункты-«копья»: инкрустация из клёна (тёмная доска) или выжженный контур с узором (светлая)
+    let pts = '';
+    let fil = '';
+    for (let a = 0; a < 24; a++) {
+      const { x, bottom } = pointGeo(a);
+      const dir = bottom ? -1 : 1;
+      const base = bottom ? H - F - 12 : F + 12;
+      const w = PW - 22;
+      const d = spearPath(x, base, PH - 12, w, dir);
+      if (dark) pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="url(#ndInlay)" stroke="${inlayEdge}" stroke-width="1.2"/>`;
+      else pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="#fff6e0" fill-opacity=".25" stroke="${BURN}" stroke-width="2.2"/>`;
+      fil += spearFiligree(x, base, PH - 12, w, dir, dark ? '#7a4a20' : BURN);
+      const dotY = base + dir * (PH + 8);
+      fil += `<circle cx="${x}" cy="${dotY}" r="4" fill="${dark ? 'url(#ndInlay)' : BURN}" stroke="${inlayEdge}" stroke-width=".8"/>`;
+    }
+    s += dark ? `<g filter="url(#ndInlayShadow)">${pts}</g><g filter="url(#ndBurn)" opacity=".8">${fil}</g>` : `<g filter="url(#ndBurn)">${pts}${fil}</g>`;
+    // лаковый отблеск поверх корпуса
+    s += `<rect width="${W}" height="${H}" rx="20" fill="url(#ndLacquer)" pointer-events="none"/>`;
+    s += `<g id="ndCheckers"></g><g id="ndMarks"></g><g id="ndCube"></g></g><g id="ndBanner"></g>`;
+    this.svg.innerHTML = s;
+    this.rotor = this.svg.querySelector('#ndRotor') as SVGGElement;
+    this.gCheckers = this.svg.querySelector('#ndCheckers') as SVGGElement;
+    this.gMarks = this.svg.querySelector('#ndMarks') as SVGGElement;
+    this.gCube = this.svg.querySelector('#ndCube') as SVGGElement;
+    this.gBanner = this.svg.querySelector('#ndBanner') as SVGGElement;
+    if (this.flipped) this.rotor.setAttribute('transform', `rotate(180 ${W / 2} ${H / 2})`);
   }
 
   private pathIdx(p: number, a: number) {
@@ -191,7 +228,7 @@ class NardyView implements GameView<State, Event> {
   private trayOf(p: number) {
     const a = absOf(this.state!.cfg, p, 21);
     const { x, bottom } = pointGeo(a);
-    return { x: x < W / 2 ? F + T / 2 - 3 : W - F - T / 2 + 3, bottom };
+    return { x: x < W / 2 ? F + T / 2 - 4 : W - F - T / 2 + 4, bottom };
   }
 
   private barPos(p: number, k: number) {
@@ -259,8 +296,8 @@ class NardyView implements GameView<State, Event> {
       // снятые шашки — плашками в лотке
       const tr = this.trayOf(p);
       for (let k = 0; k < m.off[p]; k++) {
-        const y = tr.bottom ? H - F - 10 - k * 17 : F + 10 + k * 17;
-        s += `<rect x="${tr.x - 27}" y="${y - 7}" width="54" height="14" rx="5" fill="${p === 0 ? '#efe3c6' : '#2e231d'}" stroke="${p === 0 ? '#9a8a6a' : '#000'}" stroke-width="1.5"/>`;
+        const y = tr.bottom ? H - F - 20 - k * 17 : F + 20 + k * 17;
+        s += `<rect x="${tr.x - 24}" y="${y - 7}" width="48" height="14" rx="5" fill="${p === 0 ? '#efe3c6' : '#2e231d'}" stroke="${p === 0 ? '#9a8a6a' : '#000'}" stroke-width="1.5"/>`;
       }
     }
     this.gCheckers.innerHTML = s.replace(/ class-add="(\w+)"/g, (_m, c) => ` data-cls="${c}"`);
@@ -412,7 +449,7 @@ class NardyView implements GameView<State, Event> {
     if (a === 24) {
       const tr = this.trayOf(p);
       const k = m.off[p];
-      return { x: tr.x, y: tr.bottom ? H - F - 10 - k * 17 : F + 10 + k * 17 };
+      return { x: tr.x, y: tr.bottom ? H - F - 20 - k * 17 : F + 20 + k * 17 };
     }
     const { x, bottom } = pointGeo(a);
     const n = Math.abs(m.pts[a]) + (leaving ? 0 : 1);
