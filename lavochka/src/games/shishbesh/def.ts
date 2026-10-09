@@ -1,7 +1,7 @@
 /* Шиш-беш — описание игры для сборника: правила, боты, показ правил. Без DOM. */
 import type { GameDef, Rng, SeatSpec } from '../../core/types';
 import { chooseMove } from './ai';
-import { applyMove, applyRoll, HOME_START, newGame, type Action, type Event, type State } from './engine';
+import { applyMove, applyRoll, cfgFrom, DEFAULT_CFG, newGame, type Action, type Cfg, type Event, type State } from './engine';
 
 export const SEATS = [
   { name: 'Красный', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -23,7 +23,7 @@ function describe(ev: Event, name: (seat: number) => string): string {
     let t: string;
     if (ev.kind === 'enter') t = `${who} выводит фишку на старт`;
     else if (ev.kind === 'jump') t = `${who} прыгает с угла по ${ev.value === 1 ? 'прямой' : 'диагонали'} (${ev.value})`;
-    else if (ev.to >= HOME_START && ev.from < HOME_START) t = `${who} заводит фишку в домик (${ev.value})`;
+    else if (ev.homeIn) t = `${who} заводит фишку в домик (${ev.value})`;
     else t = `${who} ходит на ${ev.value}`;
     if (ev.house) t += ' и занимает домик';
     if (ev.captured.length) t += ' и рубит ' + ev.captured.map((c) => name(c.seat)).join(', ') + '!';
@@ -44,8 +44,9 @@ const demoSeats: SeatSpec[] = [
 ];
 
 /** Позиция для показа: фишки красного и зелёного, ход красного. */
-function pos(red: number[], green: number[]): State {
+function pos(red: number[], green: number[], cfg: Cfg = DEFAULT_CFG): State {
   return {
+    cfg,
     players: [
       { seat: 0, pieces: red, house: red.map(() => false) },
       { seat: 1, pieces: green, house: green.map(() => false) },
@@ -70,7 +71,49 @@ export const def: GameDef<State, Action, Event, State> = {
   seats: SEATS,
   seatsFor: (n) => ({ 2: [3, 1], 3: [3, 0, 1], 4: [3, 0, 1, 2] })[n] ?? [3, 0, 1, 2],
 
-  setup: (seats, _opts, rng) => newGame(seats.map((s) => s.seat), rng),
+  options: [
+    {
+      key: 'arm',
+      label: 'Поле',
+      type: 'select',
+      choices: [
+        { value: 5, label: 'обычное: 5 клеток в плече' },
+        { value: 6, label: 'длинное: 6 клеток в плече' },
+      ],
+      default: 5,
+      hint: 'На длинном поле круг 56 клеток, а домик — 5 клеток.',
+    },
+    {
+      key: 'houses',
+      label: 'Домики-укрытия',
+      type: 'select',
+      choices: [
+        { value: 'opposite', label: 'напротив друг друга (8)' },
+        { value: 'alternate', label: 'через один (4)' },
+        { value: 'none', label: 'без укрытий' },
+      ],
+      default: 'opposite',
+    },
+    {
+      key: 'start',
+      label: 'Выход из парка',
+      type: 'select',
+      choices: [
+        { value: 'six', label: 'на шестёрку' },
+        { value: 'double', label: 'на дубль' },
+        { value: 'both', label: 'на шестёрку или дубль' },
+      ],
+      default: 'six',
+    },
+  ],
+  presets: [
+    { id: 'classic', label: 'Классический', options: { arm: 5, houses: 'opposite', start: 'six' } },
+    { id: 'long', label: 'Длинное поле', hint: 'Плечо креста на клетку длиннее', options: { arm: 6, houses: 'opposite', start: 'six' } },
+    { id: 'alternate', label: 'Домики через один', hint: 'Укрытие одно на луч, на дорожке выхода', options: { arm: 5, houses: 'alternate', start: 'six' } },
+    { id: 'double', label: 'Старт на дубль', hint: 'Фишка выходит из парка только на дубль', options: { arm: 5, houses: 'opposite', start: 'double' } },
+  ],
+
+  setup: (seats, opts, rng) => newGame(seats.map((s) => s.seat), rng, cfgFrom(opts)),
 
   toAct: (s) => (s.phase === 'over' ? [] : [s.players[s.cur].seat]),
 
@@ -99,6 +142,7 @@ export const def: GameDef<State, Action, Event, State> = {
   describe,
 
   showcase: () => ({
+    cfg: DEFAULT_CFG,
     players: [
       { seat: 0, pieces: [5, 14, -1, 50], house: [false, false, false, false] },
       { seat: 1, pieces: [22, 0, -1, -1], house: [false, false, false, false] },
@@ -181,6 +225,42 @@ export const def: GameDef<State, Action, Event, State> = {
             { seat: 0, action: { type: 'roll' }, rig: dice(2, 5), caption: 'Выпало 2 и 5.' },
             { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 3 }, caption: 'Двойкой фишка встаёт на поле с избушкой и прячется в укрытие.' },
             { seat: 0, action: { type: 'move', piece: 1, die: 1, to: 5 }, caption: 'Пятёркой ходит фишка со старта.' },
+          ],
+        },
+      },
+      {
+        title: 'Варианты поля и старта',
+        html: `<p><b>Длинное поле</b> — плечо креста на клетку длиннее: 6 клеток вместо 5, круг 56 клеток, домик — 5 клеток.
+          Со старта шестёрка уже не доводит до угла.</p>
+          <p><b>Домики через один</b> — укрытие только одно на луч: на дорожке, по которой хозяин луча выходит со старта (3-е поле).
+          <b>Без укрытий</b> — рубить можно везде.</p>
+          <p><b>Старт на дубль</b> — фишка выходит из парка только на дубль, любым его кубиком; вторым кубиком ходят как обычно, а за дубль — ещё бросок.
+          Бывает и смешанное правило: выход на шестёрку <i>или</i> на дубль.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { arm: 5, houses: 'opposite', start: 'double' },
+          setup: () => pos([-1, -1, -1, -1], [20, -1, -1, -1], { arm: 5, houses: 'opposite', start: 'double' }),
+          intro: 'Правило «старт на дубль». Все красные фишки в парке.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice(3, 3), caption: 'Выпал дубль 3:3 — можно выводить фишку.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 0 }, caption: 'Одна тройка выводит фишку на старт.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 3 }, caption: 'Вторая тройка — вперёд, прямо в укрытие. За дубль красный бросает ещё раз.' },
+          ],
+        },
+      },
+      {
+        title: 'Длинное поле',
+        html: `<p>На длинном поле в каждой четверти круга 14 клеток: 6 к центру, угол, 6 от центра и торец.
+          Прыжки с углов те же: «1» — на соседний угол, «3» — по диагонали.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { arm: 6, houses: 'opposite', start: 'six' },
+          setup: () => pos([0, -1, -1, -1], [30, -1, -1, -1], { arm: 6, houses: 'opposite', start: 'six' }),
+          intro: 'Длинное поле. Красная фишка стоит на старте.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice(6, 1), caption: 'Выпало 6 и 1.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 6 }, caption: 'Шестёрка доводит только до последней клетки плеча.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 7 }, caption: 'Единицей — на угол. В следующий раз отсюда можно прыгать.' },
           ],
         },
       },

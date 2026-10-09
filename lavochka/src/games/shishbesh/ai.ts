@@ -1,6 +1,6 @@
 /* Шиш-беш — боты трёх уровней сложности. */
 import type { Rng } from '../../core/types';
-import { HOME_START, LOOP_END, isBlocked, isCorner, legalMoves, movePiece, onLoop, toGlobal, wrap, type Move, type State } from './engine';
+import { geoOf, isBlocked, legalMoves, movePiece, type Geo, type Move, type State } from './engine';
 
 // 21 уникальная комбинация двух кубиков с весами (из 36).
 const OUTCOMES: [number, number, number][] = [];
@@ -30,30 +30,32 @@ function simApply(s: Sim, m: Move): Sim {
 }
 
 // Куда фишка может попасть одним кубиком (без учёта занятости клеток — для оценки угроз).
-function reach(p: number, d: number): number[] {
-  if (p === -1) return d === 6 ? [0] : [];
-  if (p >= HOME_START) return [];
+function reach(G: Geo, p: number, d: number, dice: [number, number]): number[] {
+  if (p === -1) return G.canEnter(d, dice) ? [0] : [];
+  if (p >= G.HS) return [];
   const r: number[] = [];
-  if (p + d <= LOOP_END) r.push(p + d);
-  if (isCorner(p)) {
-    if (d === 1) r.push(wrap(p, 12), wrap(p, -12));
-    if (d === 3) r.push(wrap(p, 24));
+  if (p + d <= G.L) r.push(p + d);
+  if (G.isCorner(p)) {
+    if (d === 1) r.push(G.wrap(p, G.Q), G.wrap(p, -G.Q));
+    if (d === 3) r.push(G.wrap(p, 2 * G.Q));
   }
   return r;
 }
 
 // Глобальные клетки, на которые соперник может встать этим броском (a, b).
 function hitCells(s: State, oi: number, a: number, b: number, into: Set<number>) {
+  const G = geoOf(s);
   const op = s.players[oi];
+  const dice: [number, number] = [a, b];
   op.pieces.forEach((p, k) => {
     if (isBlocked(s, oi, k)) return;
     for (const [d1, d2] of [
       [a, b],
       [b, a],
     ]) {
-      for (const t of reach(p, d1)) {
-        if (onLoop(t)) into.add(toGlobal(op.seat, t));
-        for (const t2 of reach(t, d2)) if (onLoop(t2)) into.add(toGlobal(op.seat, t2));
+      for (const t of reach(G, p, d1, dice)) {
+        if (G.onLoop(t)) into.add(G.toGlobal(op.seat, t));
+        for (const t2 of reach(G, t, d2, dice)) if (G.onLoop(t2)) into.add(G.toGlobal(op.seat, t2));
       }
     }
   });
@@ -78,13 +80,14 @@ function threatMap(s: State, meIdx: number, cells: number[]) {
 }
 
 function pieceValue(s: State, pi: number, k: number) {
+  const G = geoOf(s);
   const p = s.players[pi].pieces[k];
   if (p < 0) return 0;
   if (p === 0) return 9; // на старте — уже в игре и в безопасности
-  if (p >= HOME_START) return 64 + (p - HOME_START) * 4;
+  if (p >= G.HS) return G.L + 16 + (p - G.HS) * 4;
   let v = 11 + p;
-  // С угла одним прыжком можно уйти на угол у своего домика (позиция 42).
-  if (isCorner(p) && p < 42) v += (42 - p) * 0.3;
+  // С угла одним прыжком можно уйти на угол у своего луча — это почти весь круг.
+  if (G.isCorner(p) && p < G.homeCorner) v += (G.homeCorner - p) * 0.3;
   if (isBlocked(s, pi, k)) v -= 1.5;
   return v;
 }
@@ -96,12 +99,13 @@ function playerValue(s: State, pi: number) {
 }
 
 function evaluate(s: Sim, meIdx: number, dangerW: number) {
+  const G = geoOf(s);
   const me = s.players[meIdx];
   let mine = playerValue(s, meIdx) + (s.captures || 0) * EXTRA_ROLL;
   if (dangerW > 0) {
     const exposed: [number, number][] = [];
     me.pieces.forEach((p, k) => {
-      if (onLoop(p) && !me.house[k]) exposed.push([toGlobal(me.seat, p), pieceValue(s, meIdx, k) + 9]);
+      if (G.onLoop(p) && !me.house[k]) exposed.push([G.toGlobal(me.seat, p), pieceValue(s, meIdx, k) + 9]);
     });
     if (exposed.length) {
       const tm = threatMap(s, meIdx, exposed.map((e) => e[0]));

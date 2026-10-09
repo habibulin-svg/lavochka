@@ -4,12 +4,14 @@ import { DiceTray } from '../../core/dice';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { Board } from './board';
-import { HOME_START, legalMoves, playerBySeat, type Event, type State } from './engine';
+import { DEFAULT_CFG, geoOf, legalMoves, playerBySeat, type Event, type State } from './engine';
 import './shishbesh.css';
 
 class ShishView implements GameView<State, Event> {
   private ctx!: ViewCtx;
   private board!: any;
+  private svg!: SVGSVGElement;
+  private cfgKey = JSON.stringify(DEFAULT_CFG);
   private tray!: DiceTray;
   private rollBtn!: HTMLButtonElement;
   private state: State | null = null;
@@ -28,7 +30,8 @@ class ShishView implements GameView<State, Event> {
     this.ctx = ctx;
     const wrap = h(`<div class="sb-wrap"><svg class="sb-board" xmlns="http://www.w3.org/2000/svg"></svg></div>`);
     root.appendChild(wrap);
-    this.board = new Board(wrap.querySelector('svg'));
+    this.svg = wrap.querySelector('svg') as SVGSVGElement;
+    this.board = new Board(this.svg);
     const ctl = h(`<div class="sb-controls">
         <div class="sb-tray"></div>
         ${ctx.demo ? '' : '<button class="btn primary sb-roll" disabled>Бросить кости</button><div class="hint small-hint">Пробел — бросок. Нажмите на подсвеченную фишку, затем на цель.</div>'}
@@ -48,6 +51,15 @@ class ShishView implements GameView<State, Event> {
 
   setView(s: State) {
     this.state = s;
+    const cfg = s.cfg ?? DEFAULT_CFG;
+    const cfgKey = JSON.stringify(cfg);
+    if (cfgKey !== this.cfgKey) {
+      // другой вариант поля — перестраиваем доску целиком
+      this.cfgKey = cfgKey;
+      this.board.clearInteraction();
+      this.board = new Board(this.svg, cfg);
+      this.piecesKey = '';
+    }
     const key = s.players.map((p) => p.seat).join(',');
     if (key !== this.piecesKey) {
       this.piecesKey = key;
@@ -135,7 +147,7 @@ class ShishView implements GameView<State, Event> {
   playerStats(s: State, seat: number) {
     const p = playerBySeat(s, seat);
     if (!p) return '';
-    const home = p.pieces.filter((x) => x >= HOME_START).length;
+    const home = p.pieces.filter((x) => x >= geoOf(s).HS).length;
     const park = p.pieces.filter((x) => x < 0).length;
     return `<span title="В домике">🏠 ${home}</span><span title="В парке">⬤ ${park}</span>`;
   }

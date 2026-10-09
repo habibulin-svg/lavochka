@@ -2,59 +2,62 @@
  * Перенесено из первой версии игры почти без изменений. */
 // @ts-nocheck — геометрия и SVG-строки перенесены как есть, типизация здесь ничего не даёт
 import { Sound } from '../../core/audio';
-import { HOME_START, isHouseG, toGlobal } from './engine';
+import { makeGeo, DEFAULT_CFG } from './engine';
 import { SEATS } from './def';
 
 const NS = 'http://www.w3.org/2000/svg';
-const E = { SEATS, HOME_START, isHouseG, toGlobal };
-
 
 const C = 50; // размер клетки
 const F = 40; // ширина рамки
 const O = F + 20; // отступ креста от края поля
-const N = 15; // клеток по стороне: плечо 5 + центр 3 + плечо 5 + два стартовых выступа
-const S = O * 2 + N * C; // 870
-const MID = S / 2;
 const PIECE_R = 18;
 const BURN = '#2a1206';
 
 // ---------- геометрия ----------
-// Координаты креста: центр (6,6), плечи 0..4 и 8..12, стартовые клетки на -1 и 13.
-const rotCell = ([x, y]) => [y, 12 - x];
-const rotPt = ([x, y]) => [y, 13 - x];
+// Плечо A клеток (5 обычно). Координаты креста: центр (A+1, A+1), плечи 0..A-1 и A+3..2A+2,
+// стартовые клетки на -1 и 2A+3. При A = 5 — центр (6,6), плечи 0..4 и 8..12, старт на -1 и 13.
+const cx2px = (c) => O + (c + 1) * C + C / 2; // центр клетки креста
+const ex2px = (e) => O + (e + 1) * C; // «рёберная» координата креста
+const cellXY = ([x, y]) => [cx2px(x), cx2px(y)];
 const rotN = (f, p, n) => {
   for (let i = 0; i < n; i++) p = f(p);
   return p;
 };
-const cx2px = (c) => O + (c + 1) * C + C / 2; // центр клетки креста
-const ex2px = (e) => O + (e + 1) * C; // «рёберная» координата креста
-const cellXY = ([x, y]) => [cx2px(x), cx2px(y)];
 
-// Четверть 0: верхняя дорожка правого плеча к центру, угол, правая колонка верхнего плеча, торец верхнего плеча.
-const Q0 = [];
-for (let i = 0; i < 5; i++) Q0.push([12 - i, 5]);
-Q0.push([7, 5]);
-for (let i = 0; i < 5; i++) Q0.push([7, 4 - i]);
-Q0.push([6, 0]);
-const TRACK = [];
-for (let q = 0; q < 4; q++) for (const c of Q0) TRACK.push(rotN(rotCell, c, q));
+function boardGeom(cfg) {
+  const G = makeGeo(cfg);
+  const A = G.arm, Q = G.Q, L = G.L, M = 2 * A + 2;
+  const N = M + 3; // клеток по стороне: два плеча, центр 3 и два стартовых выступа
+  const S = O * 2 + N * C;
+  const rotCell = ([x, y]) => [y, M - x];
+  const rotPt = ([x, y]) => [y, M + 1 - x];
+  // Четверть 0: верхняя дорожка правого плеча к центру, угол, правая колонка верхнего плеча, торец верхнего плеча.
+  const Q0 = [];
+  for (let i = 0; i < A; i++) Q0.push([M - i, A]);
+  Q0.push([A + 2, A]);
+  for (let i = 0; i < A; i++) Q0.push([A + 2, A - 1 - i]);
+  Q0.push([A + 1, 0]);
+  const TRACK = [];
+  for (let q = 0; q < 4; q++) for (const c of Q0) TRACK.push(rotN(rotCell, c, q));
+  const homeCell = (seat, j) => rotN(rotCell, [M - 1 - j, A + 1], seat);
+  const startCell = (seat) => rotN(rotCell, [M + 1, A], seat);
+  const housePocket = (g) => rotN(rotCell, g % Q === 2 ? [M - 2, A - 1] : [A + 3, 2], Math.floor(g / Q));
+  const parkCenter = (seat) => {
+    const [x, y] = rotN(rotPt, [(3 * A + 8) / 2, (A - 2) / 2], seat);
+    return [ex2px(x), ex2px(y)];
+  };
+  const parkR = C * (2.36 + (A - 5) * 0.4);
+  const parkPit = (seat, k) => {
+    const [x, y] = parkCenter(seat);
+    const o = 25;
+    const offs = [[-o, -o], [o, -o], [-o, o], [o, o]];
+    return [x + offs[k][0], y + offs[k][1]];
+  };
+  const center = [A + 1, A + 1];
+  const centerCells = [[A + 1, A], [A, A + 1], [A + 2, A + 1], [A + 1, A + 2], center];
+  return { G, A, Q, L, M, N, S, MID: S / 2, TRACK, homeCell, startCell, housePocket, parkCenter, parkR, parkPit, center, centerCells, HS: G.HS, H: G.HE - G.HS + 1 };
+}
 
-const homeCell = (seat, j) => rotN(rotCell, [11 - j, 6], seat);
-const startCell = (seat) => rotN(rotCell, [13, 5], seat);
-const housePocket = (g) => {
-  const q = Math.floor(g / 12);
-  return rotN(rotCell, g % 12 === 2 ? [10, 4] : [8, 2], q);
-};
-const parkCenter = (seat) => {
-  const [x, y] = rotN(rotPt, [11.5, 1.5], seat);
-  return [ex2px(x), ex2px(y)];
-};
-const parkPit = (seat, k) => {
-  const [x, y] = parkCenter(seat);
-  const o = 25;
-  const offs = [[-o, -o], [o, -o], [-o, o], [o, o]];
-  return [x + offs[k][0], y + offs[k][1]];
-};
 // Поворот текста — «лицом» к игроку, сидящему у этого луча.
 const armAngle = (seat) => -90 * (seat + 1);
 
@@ -242,7 +245,7 @@ function pips6(x, y) {
   return s + `</g>`;
 }
 
-function frameBand() {
+function frameBand(S) {
   // зубчатый орнамент по рамке + розетки по углам
   let s = '';
   const a = 9, b = S - 9, i1 = 31, i2 = S - 31;
@@ -287,8 +290,9 @@ export class Board {
     return html.replace(/id="([\w-]+)"/g, `id="$1-${this.uid}"`).replace(/url\(#([\w-]+)\)/g, `url(#$1-${this.uid})`);
   }
 
-  constructor(svg) {
+  constructor(svg, cfg = DEFAULT_CFG) {
     this.svg = svg;
+    this.g = boardGeom(cfg);
     this.uid = 'sb' + ++boardCounter;
     this.pieceEls = new Map();
     this.speed = 1;
@@ -301,6 +305,7 @@ export class Board {
 
   build() {
     const svg = this.svg;
+    const { S, Q, L, A, TRACK, homeCell, startCell, housePocket, parkCenter, parkR, parkPit, center, centerCells, H, G } = this.g;
     svg.setAttribute('viewBox', `0 0 ${S} ${S}`);
     const wood = (woodCache ||= woodTexture(620, 7));
     const defs = `
@@ -330,7 +335,7 @@ export class Board {
         <stop offset="0" stop-color="#fff" stop-opacity="0.12"/>
         <stop offset="1" stop-color="#000" stop-opacity="0.18"/>
       </linearGradient>
-      ${E.SEATS.map(
+      ${SEATS.map(
         (s, i) => `<radialGradient id="pg${i}" cx="38%" cy="32%" r="75%">
           <stop offset="0%" stop-color="${s.light}"/><stop offset="55%" stop-color="${s.color}"/><stop offset="100%" stop-color="${s.dark}"/></radialGradient>`
       ).join('')}
@@ -349,30 +354,30 @@ export class Board {
     // пятна-морилка цветов игроков
     let stain = `<g style="mix-blend-mode:multiply" opacity="0.62">`;
     for (let s = 0; s < 4; s++) {
-      const col = E.SEATS[s].color;
+      const col = SEATS[s].color;
       const cell = (c, inset = 2) => {
         const [x, y] = cellXY(c);
         return `<rect x="${x - C / 2 + inset}" y="${y - C / 2 + inset}" width="${C - 2 * inset}" height="${C - 2 * inset}" fill="${col}"/>`;
       };
       stain += cell(startCell(s));
-      for (let j = 0; j < 4; j++) stain += cell(homeCell(s, j));
+      for (let j = 0; j < H; j++) stain += cell(homeCell(s, j));
       const [px, py] = parkCenter(s);
       stain += `<circle cx="${px}" cy="${py}" r="${C * 1.2 - 4}" fill="${col}" opacity="0.55"/>`;
     }
     // углы и центр креста — тёмные, как на классической доске
     for (let q = 0; q < 4; q++) {
-      const [x, y] = cellXY(TRACK[q * 12 + 5]);
+      const [x, y] = cellXY(TRACK[q * Q + A]);
       stain += `<rect x="${x - C / 2 + 2}" y="${y - C / 2 + 2}" width="${C - 4}" height="${C - 4}" fill="#3a1a06" opacity="0.95"/>`;
     }
     {
-      const [x, y] = cellXY([6, 6]);
+      const [x, y] = cellXY(center);
       stain += `<rect x="${x - C / 2 + 2}" y="${y - C / 2 + 2}" width="${C - 4}" height="${C - 4}" fill="#3a1a06" opacity="0.95"/>`;
     }
     stain += `</g>`;
 
     // выжженные линии
     let burn = `<g filter="url(#burn)">`;
-    burn += frameBand();
+    burn += frameBand(S);
     const rect = ([cx, cy], extra = '') => {
       const [x, y] = cellXY([cx, cy]);
       return `<rect x="${x - C / 2}" y="${y - C / 2}" width="${C}" height="${C}" fill="none" stroke="${BURN}" stroke-width="2.2" ${extra}/>`;
@@ -380,16 +385,16 @@ export class Board {
     const allCells = new Set();
     TRACK.forEach((c) => allCells.add(c.join(',')));
     for (let s = 0; s < 4; s++) {
-      for (let j = 0; j < 4; j++) allCells.add(homeCell(s, j).join(','));
+      for (let j = 0; j < H; j++) allCells.add(homeCell(s, j).join(','));
       allCells.add(startCell(s).join(','));
     }
-    for (const c of [[6, 5], [5, 6], [7, 6], [6, 7], [6, 6]]) allCells.add(c.join(','));
+    for (const c of centerCells) allCells.add(c.join(','));
     allCells.forEach((k) => (burn += rect(k.split(',').map(Number))));
 
     // «песочные часы» на средней дорожке каждого луча: торец + 4 клетки домика
     for (let s = 0; s < 4; s++) {
-      const cells = [TRACK[((s + 3) % 4) * 12 + 11]];
-      for (let j = 0; j < 4; j++) cells.push(homeCell(s, j));
+      const cells = [TRACK[((s + 3) % 4) * Q + Q - 1]];
+      for (let j = 0; j < H; j++) cells.push(homeCell(s, j));
       const vertical = s % 2 === 1;
       for (const c of cells) burn += hourglass(...cellXY(c), vertical);
     }
@@ -397,44 +402,44 @@ export class Board {
     // стартовые поля: треугольник-указатель к первой клетке
     for (let s = 0; s < 4; s++) {
       const [x, y] = cellXY(startCell(s));
-      const [nx, ny] = cellXY(TRACK[s * 12]);
+      const [nx, ny] = cellXY(TRACK[s * Q]);
       const ang = (Math.atan2(ny - y, nx - x) * 180) / Math.PI;
       burn += `<g transform="translate(${x},${y}) rotate(${ang})"><path d="M-17,-17 L15,0 L-17,17Z" fill="${BURN}" opacity="0.85"/></g>`;
     }
     // домики-укрытия
-    for (let g = 0; g < 48; g++) {
-      if (!E.isHouseG(g)) continue;
+    for (let g = 0; g < L; g++) {
+      if (!G.isHouseG(g)) continue;
       const [x, y] = cellXY(housePocket(g));
       burn += `<rect x="${x - C / 2 + 3}" y="${y - C / 2 + 3}" width="${C - 6}" height="${C - 6}" rx="4" fill="none" stroke="${BURN}" stroke-width="2.4"/>`;
       burn += hut(x, y);
     }
 
     // номера клеток плеч
-    for (let g = 0; g < 48; g++) {
-      const idx = g % 12;
-      if (idx === 5 || idx === 11) continue;
-      const q = Math.floor(g / 12);
-      const arm = idx < 5 ? q : (q + 1) % 4;
+    for (let g = 0; g < L; g++) {
+      const idx = g % Q;
+      if (idx === A || idx === Q - 1) continue;
+      const q = Math.floor(g / Q);
+      const arm = idx < A ? q : (q + 1) % 4;
       const [x, y] = cellXY(TRACK[g]);
-      const num = idx < 5 ? idx + 1 : 11 - idx;
+      const num = idx < A ? idx + 1 : 2 * A + 1 - idx;
       burn += `<text x="${x}" y="${y}" transform="rotate(${armAngle(arm)} ${x} ${y})" text-anchor="middle" dominant-baseline="central" font-family="PT Serif, Georgia, serif" font-size="19" font-weight="700" fill="${BURN}" opacity="0.6">${num}</text>`;
     }
 
     // центр креста: углы, стрелки, роза ветров
     for (let q = 0; q < 4; q++) {
-      const [x, y] = cellXY(TRACK[q * 12 + 5]);
+      const [x, y] = cellXY(TRACK[q * Q + A]);
       burn += wheel(x, y, 15).replace(/stroke="#2a1206"/, 'stroke="#f0cf9a"');
     }
     {
-      const [ax, ay] = cellXY([6, 5]);
+      const [ax, ay] = cellXY(centerCells[0]);
       burn += arrow(ax - 17, ay, ax + 17, ay);
-      const [bx, by] = cellXY([6, 7]);
+      const [bx, by] = cellXY(centerCells[3]);
       burn += arrow(bx - 17, by, bx + 17, by);
-      const [lx, ly] = cellXY([5, 6]);
+      const [lx, ly] = cellXY(centerCells[1]);
       burn += arrow(lx, ly - 17, lx, ly + 17);
-      const [rx, ry] = cellXY([7, 6]);
+      const [rx, ry] = cellXY(centerCells[2]);
       burn += arrow(rx, ry - 17, rx, ry + 17);
-      const [mx, my] = cellXY([6, 6]);
+      const [mx, my] = cellXY(center);
       burn += arrow(mx - 17, my - 17, mx + 17, my + 17, 5).replace(/stroke="#2a1206"/, 'stroke="#f0cf9a"');
       burn += arrow(mx + 17, my - 17, mx - 17, my + 17, 5).replace(/stroke="#2a1206"/, 'stroke="#f0cf9a"');
       burn += compass(mx, my, 12);
@@ -442,7 +447,7 @@ export class Board {
     // мандалы-парки
     for (let s = 0; s < 4; s++) {
       const [px, py] = parkCenter(s);
-      burn += mandala(px, py, C * 2.36, 11 + s * 7);
+      burn += mandala(px, py, parkR, 11 + s * 7);
     }
     // угловые завитки на поле
     for (const [x, y, r] of [[F + 16, F + 16, 0], [S - F - 16, F + 16, 90], [S - F - 16, S - F - 16, 180], [F + 16, S - F - 16, 270]]) {
@@ -477,7 +482,7 @@ export class Board {
   setRotation(seatAtBottom) {
     // по умолчанию снизу — место 3
     this.rotation = seatAtBottom == null ? 0 : -90 * ((3 - seatAtBottom + 4) % 4);
-    this.rotor.setAttribute('transform', `rotate(${this.rotation} ${MID} ${MID})`);
+    this.rotor.setAttribute('transform', `rotate(${this.rotation} ${this.g.MID} ${this.g.MID})`);
     this.pieceEls.forEach((el) => this._applyTransform(el));
   }
 
@@ -493,9 +498,9 @@ export class Board {
         g.dataset.k = k;
         g.innerHTML = this._u(`<g class="piece-body" filter="url(#pieceShadow)">
             <circle r="${PIECE_R + 6}" class="piece-ring" fill="none"/>
-            <circle r="${PIECE_R}" fill="url(#pg${pl.seat})" stroke="${E.SEATS[pl.seat].dark}" stroke-width="2"/>
-            <circle r="${PIECE_R - 4.5}" fill="none" stroke="${E.SEATS[pl.seat].dark}" stroke-width="1.2" opacity="0.7"/>
-            <g class="emblem" opacity="0.78" transform="scale(0.95)">${EMBLEMS[pl.seat]().replace(/#2a1206/g, E.SEATS[pl.seat].dark)}</g>
+            <circle r="${PIECE_R}" fill="url(#pg${pl.seat})" stroke="${SEATS[pl.seat].dark}" stroke-width="2"/>
+            <circle r="${PIECE_R - 4.5}" fill="none" stroke="${SEATS[pl.seat].dark}" stroke-width="1.2" opacity="0.7"/>
+            <g class="emblem" opacity="0.78" transform="scale(0.95)">${EMBLEMS[pl.seat]().replace(/#2a1206/g, SEATS[pl.seat].dark)}</g>
             <ellipse cx="-6" cy="-8" rx="7" ry="4" fill="#fff" opacity="0.22" transform="rotate(-30 -6 -8)"/>
           </g>`);
         g.addEventListener('click', (e) => {
@@ -513,7 +518,7 @@ export class Board {
     const out = new Map();
     for (const pl of state.players) {
       pl.pieces.forEach((p, k) => {
-        out.set(pl.seat + '-' + k, p < 0 ? parkPit(pl.seat, k) : this.posXY(pl.seat, p, pl.house[k]));
+        out.set(pl.seat + '-' + k, p < 0 ? this.g.parkPit(pl.seat, k) : this.posXY(pl.seat, p, pl.house[k]));
       });
     }
     return out;
@@ -521,10 +526,11 @@ export class Board {
 
   posXY(seat, p, inHouse = false) {
     if (p < 0) return null;
-    if (p === 0) return cellXY(startCell(seat));
-    if (p >= E.HOME_START) return cellXY(homeCell(seat, p - E.HOME_START));
-    const g = E.toGlobal(seat, p);
-    return cellXY(inHouse ? housePocket(g) : TRACK[g]);
+    const B = this.g;
+    if (p === 0) return cellXY(B.startCell(seat));
+    if (p >= B.HS) return cellXY(B.homeCell(seat, p - B.HS));
+    const g = B.G.toGlobal(seat, p);
+    return cellXY(inHouse ? B.housePocket(g) : B.TRACK[g]);
   }
 
   _applyTransform(el) {
@@ -609,7 +615,7 @@ export class Board {
         cur = to;
         if (i < ev.path.length - 1) Snd.step();
       }
-      if (ev.to >= E.HOME_START || ev.house) Snd.home();
+      if (ev.to >= this.g.HS || ev.house) Snd.home();
       else Snd.place();
     }
     if (ev.captured && ev.captured.length) {
@@ -619,7 +625,7 @@ export class Board {
           const cel = this.pieceEls.get(c.seat + '-' + c.piece);
           if (!cel) return null;
           this.gPieces.appendChild(cel);
-          return this._tween(cel, [cel._x, cel._y], parkPit(c.seat, c.piece), 650, 40);
+          return this._tween(cel, [cel._x, cel._y], this.g.parkPit(c.seat, c.piece), 650, 40);
         })
       );
     }
@@ -629,9 +635,9 @@ export class Board {
   _markLast(ev) {
     const pts = [];
     if (ev.from >= 0) pts.push(this.posXY(ev.seat, ev.from));
-    else pts.push(parkPit(ev.seat, ev.piece));
+    else pts.push(this.g.parkPit(ev.seat, ev.piece));
     pts.push(this.posXY(ev.seat, ev.to, ev.house));
-    const col = E.SEATS[ev.seat].light;
+    const col = SEATS[ev.seat].light;
     this.gLast.innerHTML = pts
       .map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${i ? 23 : 16}" fill="none" stroke="${col}" stroke-width="${i ? 3 : 2}" stroke-dasharray="${i ? '' : '4 4'}" opacity="0.8"/>`)
       .join('');
@@ -718,4 +724,3 @@ export class Board {
   }
 }
 
-export const BoardGeom = { TRACK, homeCell, parkPit, cellXY, S };

@@ -1,21 +1,92 @@
 /* Шиш-беш — правила (чистая логика, без DOM).
  *
+ * Геометрия зависит от варианта (cfg): A — клеток в плече креста (5 обычно, 6 на длинном поле).
+ * Четверть круга Q = 2A + 2 клеток: 0..A-1 к центру, A — угол креста, A+1..2A от центра по соседнему лучу,
+ * 2A+1 — торец соседнего луча. Круг L = 4Q (48 на обычном поле).
  * Позиция фишки p хранится относительно её владельца:
- *   -1        — в парке (вне поля)
- *    0        — на стартовом поле (выступ в конце своего луча, вне круга)
- *    1..48    — на круге (1 — первая клетка своей дорожки, 48 — торец своего луча)
- *   49..52    — в домике (4 клетки своего цвета)
- * Глобальная клетка круга: g = (p - 1 + 12*seat) % 48.
- * Четверть круга — 12 клеток: 0..4 к центру, 5 — угол креста, 6..10 от центра по соседнему лучу, 11 — торец соседнего луча.
- * У клеток 2 и 8 каждой четверти (3-е поле с края луча) есть «домик»-укрытие на одну фишку.
+ *   -1          — в парке (вне поля)
+ *    0          — на стартовом поле (выступ в конце своего луча, вне круга)
+ *    1..L       — на круге (1 — первая клетка своей дорожки, L — торец своего луча)
+ *    L+1..L+A-1 — в домике (клетки своего цвета на средней дорожке луча)
+ * Глобальная клетка круга: g = (p - 1 + Q*seat) % L.
+ * Укрытия — на 3-м поле с края дорожки: клетки 2 и Q-4 каждой четверти («напротив»),
+ * только клетки 2 («через один») или нигде.
  */
-import type { Rng } from '../../core/types';
+import type { Options, Rng } from '../../core/types';
 
-export const LOOP = 48;
-export const LOOP_END = 48;
-export const HOME_START = 49;
-export const HOME_END = 52;
 export const PIECES = 4;
+
+export type Houses = 'opposite' | 'alternate' | 'none';
+export type StartRule = 'six' | 'double' | 'both';
+
+export interface Cfg {
+  arm: number;
+  houses: Houses;
+  start: StartRule;
+}
+
+export const DEFAULT_CFG: Cfg = { arm: 5, houses: 'opposite', start: 'six' };
+
+export function cfgFrom(o: Options): Cfg {
+  const arm = Number(o.arm) === 6 ? 6 : 5;
+  const houses = (['opposite', 'alternate', 'none'] as const).find((x) => x === o.houses) ?? 'opposite';
+  const start = (['six', 'double', 'both'] as const).find((x) => x === o.start) ?? 'six';
+  return { arm, houses, start };
+}
+
+/** Размеры и проверки клеток для варианта поля. */
+export interface Geo {
+  cfg: Cfg;
+  arm: number;
+  /** Клеток в четверти круга. */
+  Q: number;
+  /** Клеток на круге — это же последняя позиция на круге (торец своего луча). */
+  L: number;
+  /** Первая и последняя клетки своего домика. */
+  HS: number;
+  HE: number;
+  /** Угол креста у своего луча: с других углов сюда ведёт срез. */
+  homeCorner: number;
+  onLoop(p: number): boolean;
+  isCorner(p: number): boolean;
+  toGlobal(seat: number, p: number): number;
+  isHouseG(g: number): boolean;
+  wrap(p: number, delta: number): number;
+  /** Можно ли вывести фишку из парка кубиком d при броске dice. */
+  canEnter(d: number, dice: [number, number]): boolean;
+}
+
+const geoCache = new Map<string, Geo>();
+
+export function makeGeo(cfg: Cfg): Geo {
+  const key = `${cfg.arm}:${cfg.houses}:${cfg.start}`;
+  const hit = geoCache.get(key);
+  if (hit) return hit;
+  const A = cfg.arm;
+  const Q = 2 * A + 2;
+  const L = 4 * Q;
+  const onLoop = (p: number) => p >= 1 && p <= L;
+  const g: Geo = {
+    cfg,
+    arm: A,
+    Q,
+    L,
+    HS: L + 1,
+    HE: L + A - 1,
+    homeCorner: 3 * Q + A + 1,
+    onLoop,
+    isCorner: (p) => onLoop(p) && (p - 1) % Q === A,
+    toGlobal: (seat, p) => (p - 1 + Q * seat) % L,
+    isHouseG: (x) => cfg.houses !== 'none' && (x % Q === 2 || (cfg.houses === 'opposite' && x % Q === Q - 4)),
+    wrap: (p, delta) => ((((p - 1 + delta) % L) + L) % L) + 1,
+    canEnter: (d, dice) => (cfg.start !== 'double' && d === 6) || (cfg.start !== 'six' && dice[0] === dice[1] && dice[0] > 0),
+  };
+  geoCache.set(key, g);
+  return g;
+}
+
+/** Геометрия партии. Старые сохранения без cfg — обычное поле. */
+export const geoOf = (s: { cfg?: Cfg }) => makeGeo(s.cfg ?? DEFAULT_CFG);
 
 export interface Player {
   seat: number;
@@ -24,6 +95,7 @@ export interface Player {
 }
 
 export interface State {
+  cfg?: Cfg;
   players: Player[];
   /** Индекс в players того, чей ход. */
   cur: number;
@@ -67,25 +139,25 @@ export type Event =
       path: number[];
       captured: { seat: number; piece: number; from: number }[];
       house: boolean;
+      /** Фишка с круга зашла в свой домик. */
+      homeIn?: boolean;
+      /** Фишка дошла до своего домика (для звука и подсветки). */
+      atHome?: boolean;
       win?: boolean;
       forfeit?: boolean;
       turnEnd?: TurnEnd;
     };
 
 export const clone = (o: State): State => JSON.parse(JSON.stringify(o));
-export const onLoop = (p: number) => p >= 1 && p <= LOOP_END;
-export const isCorner = (p: number) => onLoop(p) && (p - 1) % 12 === 5;
-export const toGlobal = (seat: number, p: number) => (p - 1 + 12 * seat) % LOOP;
-export const isHouseG = (g: number) => g % 12 === 2 || g % 12 === 8;
-export const wrap = (p: number, delta: number) => ((((p - 1 + delta) % LOOP) + LOOP) % LOOP) + 1;
 export const playerBySeat = (s: State, seat: number) => s.players.find((p) => p.seat === seat);
 
 /** Все фишки, стоящие на глобальной клетке g. */
 export function piecesAt(s: State, g: number) {
+  const G = geoOf(s);
   const out: { pi: number; k: number; house: boolean }[] = [];
   s.players.forEach((pl, pi) => {
     pl.pieces.forEach((p, k) => {
-      if (onLoop(p) && toGlobal(pl.seat, p) === g) out.push({ pi, k, house: !!pl.house[k] });
+      if (G.onLoop(p) && G.toGlobal(pl.seat, p) === g) out.push({ pi, k, house: !!pl.house[k] });
     });
   });
   return out;
@@ -95,49 +167,51 @@ export function piecesAt(s: State, g: number) {
 export function isBlocked(s: State, pi: number, k: number) {
   const pl = s.players[pi];
   if (!pl.house[k]) return false;
-  const g = toGlobal(pl.seat, pl.pieces[k]);
+  const g = geoOf(s).toGlobal(pl.seat, pl.pieces[k]);
   return piecesAt(s, g).some((o) => !o.house);
 }
 
 /** Можно ли фишке игрока pi встать на клетку круга t (позиция владельца). */
 function canLand(s: State, pi: number, k: number, t: number) {
+  const G = geoOf(s);
   const pl = s.players[pi];
-  const g = toGlobal(pl.seat, t);
+  const g = G.toGlobal(pl.seat, t);
   const here = piecesAt(s, g).filter((o) => !(o.pi === pi && o.k === k));
-  if (isHouseG(g) && !here.some((o) => o.house)) return true; // свободный домик
+  if (G.isHouseG(g) && !here.some((o) => o.house)) return true; // свободный домик
   return !here.some((o) => o.pi === pi && !o.house); // на клетке своя фишка — нельзя
 }
 
 /** Куда может пойти фишка k игрока pi значением кубика d. */
 export function pieceTargets(s: State, pi: number, k: number, d: number) {
+  const G = geoOf(s);
   const pieces = s.players[pi].pieces;
   const p = pieces[k];
   const res: { to: number; kind: MoveKind }[] = [];
   const ownAt = (pos: number) => pieces.some((q, i) => i !== k && q === pos);
   const homeFree = (a: number, b: number) => {
-    for (let x = Math.max(a, HOME_START); x <= b; x++) if (ownAt(x)) return false;
+    for (let x = Math.max(a, G.HS); x <= b; x++) if (ownAt(x)) return false;
     return true;
   };
 
   if (p === -1) {
-    if (d === 6 && !ownAt(0)) res.push({ to: 0, kind: 'enter' });
+    if (G.canEnter(d, s.dice) && !ownAt(0)) res.push({ to: 0, kind: 'enter' });
     return res;
   }
-  if (p >= HOME_START) {
+  if (p >= G.HS) {
     const t = p + d;
-    if (t <= HOME_END && homeFree(p + 1, t)) res.push({ to: t, kind: 'home' });
+    if (t <= G.HE && homeFree(p + 1, t)) res.push({ to: t, kind: 'home' });
     return res;
   }
   if (isBlocked(s, pi, k)) return res;
   const t = p + d;
-  if (t <= LOOP_END) {
+  if (t <= G.L) {
     if (canLand(s, pi, k, t)) res.push({ to: t, kind: 'step' });
-  } else if (t <= HOME_END && homeFree(HOME_START, t)) {
+  } else if (t <= G.HE && homeFree(G.HS, t)) {
     res.push({ to: t, kind: 'home' });
   }
-  if (isCorner(p)) {
+  if (G.isCorner(p)) {
     // «1» — по прямым стрелкам на соседние углы, «3» — по диагонали.
-    const jumps = d === 1 ? [wrap(p, 12), wrap(p, -12)] : d === 3 ? [wrap(p, 24)] : [];
+    const jumps = d === 1 ? [G.wrap(p, G.Q), G.wrap(p, -G.Q)] : d === 3 ? [G.wrap(p, 2 * G.Q)] : [];
     for (const j of jumps) if (canLand(s, pi, k, j)) res.push({ to: j, kind: 'jump' });
   }
   return res;
@@ -165,15 +239,16 @@ export function legalMoves(s: State): Move[] {
 
 /** Переставляет фишку (мутирует s), решает вопрос с домиком и рубкой. */
 export function movePiece(s: State, pi: number, k: number, to: number) {
+  const G = geoOf(s);
   const pl = s.players[pi];
   pl.pieces[k] = to;
   pl.house[k] = false;
   const captured: { seat: number; piece: number; from: number }[] = [];
   let house = false;
-  if (onLoop(to)) {
-    const g = toGlobal(pl.seat, to);
+  if (G.onLoop(to)) {
+    const g = G.toGlobal(pl.seat, to);
     const here = piecesAt(s, g).filter((o) => !(o.pi === pi && o.k === k));
-    if (isHouseG(g) && !here.some((o) => o.house)) {
+    if (G.isHouseG(g) && !here.some((o) => o.house)) {
       pl.house[k] = true; // занимаем укрытие — из него не выбивают
       house = true;
     } else {
@@ -189,12 +264,13 @@ export function movePiece(s: State, pi: number, k: number, to: number) {
   return { captured, house };
 }
 
-export function newGame(seats: number[], rng: Rng): State {
+export function newGame(seats: number[], rng: Rng, cfg: Cfg = DEFAULT_CFG): State {
   const players = seats
     .slice()
     .sort((a, b) => a - b)
     .map((seat) => ({ seat, pieces: [-1, -1, -1, -1], house: [false, false, false, false] }));
   return {
+    cfg: { ...cfg },
     players,
     cur: rng.int(players.length),
     phase: 'roll',
@@ -237,6 +313,7 @@ export function applyRoll(state: State, dice: [number, number]) {
 export function applyMove(state: State, mv: { piece: number; die: number; to: number }) {
   const legal = legalMoves(state).find((m) => m.piece === mv.piece && m.die === mv.die && m.to === mv.to);
   if (!legal) return null;
+  const G = geoOf(state);
   const s = clone(state);
   const pl = s.players[s.cur];
   const from = pl.pieces[legal.piece];
@@ -264,8 +341,10 @@ export function applyMove(state: State, mv: { piece: number; die: number; to: nu
     captured,
     house,
   };
+  if (legal.to >= G.HS) ev.atHome = true;
+  if (legal.to >= G.HS && from < G.HS) ev.homeIn = true;
 
-  if (pl.pieces.every((p) => p >= HOME_START)) {
+  if (pl.pieces.every((p) => p >= G.HS)) {
     s.phase = 'over';
     s.winner = pl.seat;
     ev.win = true;
