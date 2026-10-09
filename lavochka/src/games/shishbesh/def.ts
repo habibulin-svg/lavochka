@@ -88,9 +88,8 @@ export const def: GameDef<State, Action, Event, State> = {
       label: 'Домики-укрытия',
       type: 'select',
       choices: [
-        { value: 'opposite', label: 'напротив друг друга (8)' },
-        { value: 'alternate', label: 'через один (4)' },
-        { value: 'none', label: 'без укрытий' },
+        { value: 'opposite', label: 'напротив друг друга' },
+        { value: 'alternate', label: 'через один (лесенкой)' },
       ],
       default: 'opposite',
     },
@@ -109,7 +108,7 @@ export const def: GameDef<State, Action, Event, State> = {
   presets: [
     { id: 'classic', label: 'Классический', options: { arm: 5, houses: 'opposite', start: 'six' } },
     { id: 'long', label: 'Длинное поле', hint: 'Плечо креста на клетку длиннее', options: { arm: 6, houses: 'opposite', start: 'six' } },
-    { id: 'alternate', label: 'Домики через один', hint: 'Укрытие одно на луч, на дорожке выхода', options: { arm: 5, houses: 'alternate', start: 'six' } },
+    { id: 'alternate', label: 'Домики через один', hint: 'Укрытия на луче не напротив, а со сдвигом на клетку', options: { arm: 5, houses: 'alternate', start: 'six' } },
     { id: 'double', label: 'Старт на дубль', hint: 'Фишка выходит из парка только на дубль', options: { arm: 5, houses: 'opposite', start: 'double' } },
   ],
 
@@ -232,8 +231,7 @@ export const def: GameDef<State, Action, Event, State> = {
         title: 'Варианты поля и старта',
         html: `<p><b>Длинное поле</b> — плечо креста на клетку длиннее: 6 клеток вместо 5, круг 56 клеток, домик — 5 клеток.
           Со старта шестёрка уже не доводит до угла.</p>
-          <p><b>Домики через один</b> — укрытие только одно на луч: на дорожке, по которой хозяин луча выходит со старта (3-е поле).
-          <b>Без укрытий</b> — рубить можно везде.</p>
+          <p><b>Домики через один</b> — укрытия на луче стоят не друг напротив друга, а лесенкой: на одной дорожке на 3-м поле с края, на другой — на 4-м.</p>
           <p><b>Старт на дубль</b> — фишка выходит из парка только на дубль, любым его кубиком; вторым кубиком ходят как обычно, а за дубль — ещё бросок.
           Бывает и смешанное правило: выход на шестёрку <i>или</i> на дубль.</p>`,
         demo: {

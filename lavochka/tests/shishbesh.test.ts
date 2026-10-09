@@ -22,13 +22,15 @@ describe('шиш-беш: геометрия вариантов', () => {
     expect(G.homeCorner).toBe(49);
   });
 
-  it('укрытий 8, 4 или ни одного', () => {
-    const count = (h: Cfg['houses'], arm = 5) => {
+  it('укрытий всегда 8: напротив — 3-е поле на обеих дорожках, через один — 3-е и 4-е', () => {
+    const cells = (h: Cfg['houses'], arm = 5) => {
       const G = makeGeo(cfg({ houses: h, arm }));
-      return [...Array(G.L).keys()].filter((g) => G.isHouseG(g)).length;
+      return [...Array(G.L).keys()].filter((g) => G.isHouseG(g));
     };
-    expect([count('opposite'), count('alternate'), count('none')]).toEqual([8, 4, 0]);
-    expect(count('opposite', 6)).toBe(8);
+    expect(cells('opposite').slice(0, 2)).toEqual([2, 8]);
+    expect(cells('alternate').slice(0, 2)).toEqual([2, 7]);
+    expect(cells('alternate', 6).slice(0, 2)).toEqual([2, 9]);
+    for (const h of ['opposite', 'alternate'] as const) for (const a of [5, 6]) expect(cells(h, a)).toHaveLength(8);
   });
 });
 
@@ -58,7 +60,7 @@ describe('шиш-беш: выход из парка', () => {
 
 describe('шиш-беш: все сочетания настроек играбельны', () => {
   for (const arm of [5, 6])
-    for (const houses of ['opposite', 'alternate', 'none'])
+    for (const houses of ['opposite', 'alternate'])
       for (const st of ['six', 'double', 'both'])
         it(`плечо ${arm}, укрытия ${houses}, старт ${st}`, async () => {
           const res = await simulate(def, botSeats(def, 4, [0, 1, 2]), { arm, houses, start: st }, arm * 100 + st.length);

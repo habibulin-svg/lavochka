@@ -9,14 +9,15 @@
  *    1..L       — на круге (1 — первая клетка своей дорожки, L — торец своего луча)
  *    L+1..L+A-1 — в домике (клетки своего цвета на средней дорожке луча)
  * Глобальная клетка круга: g = (p - 1 + Q*seat) % L.
- * Укрытия — на 3-м поле с края дорожки: клетки 2 и Q-4 каждой четверти («напротив»),
- * только клетки 2 («через один») или нигде.
+ * Укрытия — по одному у каждой внешней дорожки луча. «Напротив»: 3-е поле с края на обеих дорожках
+ * (клетки 2 и Q-4 четверти). «Через один»: на дорожке входа 3-е поле, на дорожке выхода 4-е (клетки 2 и Q-5) —
+ * укрытия стоят лесенкой, со сдвигом на клетку.
  */
 import type { Options, Rng } from '../../core/types';
 
 export const PIECES = 4;
 
-export type Houses = 'opposite' | 'alternate' | 'none';
+export type Houses = 'opposite' | 'alternate';
 export type StartRule = 'six' | 'double' | 'both';
 
 export interface Cfg {
@@ -29,7 +30,7 @@ export const DEFAULT_CFG: Cfg = { arm: 5, houses: 'opposite', start: 'six' };
 
 export function cfgFrom(o: Options): Cfg {
   const arm = Number(o.arm) === 6 ? 6 : 5;
-  const houses = (['opposite', 'alternate', 'none'] as const).find((x) => x === o.houses) ?? 'opposite';
+  const houses = (['opposite', 'alternate'] as const).find((x) => x === o.houses) ?? 'opposite';
   const start = (['six', 'double', 'both'] as const).find((x) => x === o.start) ?? 'six';
   return { arm, houses, start };
 }
@@ -77,7 +78,7 @@ export function makeGeo(cfg: Cfg): Geo {
     onLoop,
     isCorner: (p) => onLoop(p) && (p - 1) % Q === A,
     toGlobal: (seat, p) => (p - 1 + Q * seat) % L,
-    isHouseG: (x) => cfg.houses !== 'none' && (x % Q === 2 || (cfg.houses === 'opposite' && x % Q === Q - 4)),
+    isHouseG: (x) => x % Q === 2 || x % Q === (cfg.houses === 'alternate' ? Q - 5 : Q - 4),
     wrap: (p, delta) => ((((p - 1 + delta) % L) + L) % L) + 1,
     canEnter: (d, dice) => (cfg.start !== 'double' && d === 6) || (cfg.start !== 'six' && dice[0] === dice[1] && dice[0] > 0),
   };

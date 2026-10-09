@@ -41,7 +41,7 @@ function boardGeom(cfg) {
   for (let q = 0; q < 4; q++) for (const c of Q0) TRACK.push(rotN(rotCell, c, q));
   const homeCell = (seat, j) => rotN(rotCell, [M - 1 - j, A + 1], seat);
   const startCell = (seat) => rotN(rotCell, [M + 1, A], seat);
-  const housePocket = (g) => rotN(rotCell, g % Q === 2 ? [M - 2, A - 1] : [A + 3, 2], Math.floor(g / Q));
+  const housePocket = (g) => rotN(rotCell, g % Q === 2 ? [M - 2, A - 1] : [A + 3, 2 * A - (g % Q)], Math.floor(g / Q));
   const parkCenter = (seat) => {
     const [x, y] = rotN(rotPt, [(3 * A + 8) / 2, (A - 2) / 2], seat);
     return [ex2px(x), ex2px(y)];
