@@ -73,3 +73,6 @@
 .dk-c.red { color: #c8102e; }
 .demo-controls .dk-info { color: #efe6cc; }
 .demo-controls .dk-info .red { color: #ff7a6a; }
+.dk-team { display: inline-block; min-width: 18px; padding: 0 4px; border-radius: 4px; font: 700 12px/18px 'PT Sans', sans-serif; text-align: center; color: #fff; }
+.dk-team.t0 { background: #2f6a9e; }
+.dk-team.t1 { background: #9e3a2f; }

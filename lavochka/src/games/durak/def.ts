@@ -59,7 +59,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} вышел${ev.place === 1 ? ' первым' : ''}.`;
     case 'gameEnd': {
       if (ev.draw) return `🤝 <b>Ничья</b> — карты кончились у всех разом.`;
-      let t = `🃏 <b>${name(ev.fool!)} — дурак!</b>`;
+      let t = ev.losers.length > 1 ? `🃏 <b>Дураки — ${ev.losers.map(name).join(' и ')}!</b>` : `🃏 <b>${name(ev.fool!)} — дурак!</b>`;
       if (ev.pogony) t += ` И с ${ev.pogony === 2 ? 'погонами на обоих плечах' : 'погоном'}!`;
       return t;
     }
@@ -149,6 +149,14 @@ export const def: GameDef<State, Action, Event, View> = {
     { key: 'multiLead', label: 'Ходить несколькими картами одного достоинства', type: 'toggle', default: true },
     { key: 'spades', label: 'Пики бьются только пиками', hint: 'Японский дурак: на пику можно положить только старшую пику, козырь её не бьёт.', type: 'toggle', default: false },
     { key: 'diamonds', label: 'Козырь всегда бубны', type: 'toggle', default: false },
+    {
+      key: 'teams',
+      label: 'Командами',
+      hint: 'На четверых — 2 на 2, на шестерых — 3 на 3. Напарники сидят через одного: ходят и переводят только на соперника, на напарника не подкидывают. Вышла вся команда — она выиграла.',
+      type: 'toggle',
+      default: false,
+      showIf: (o) => o.ranks !== true,
+    },
     { key: 'pogony', label: 'Погоны', hint: 'Если дурака добили шестёркой (или двумя) — ему вешают погоны.', type: 'toggle', default: false },
     {
       key: 'ranks',
@@ -178,7 +186,8 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'perevodnoy', label: 'Переводной', hint: 'Перевод картой или показом козыря', options: { throwers: 'all', transfer: true, transferShow: true, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 } },
     { id: 'long', label: 'Длинный', hint: 'Полная колода в 52 карты', options: { throwers: 'all', transfer: false, deck: 52, spades: false, diamonds: false, ranks: false, games: 1 } },
     { id: 'japan', label: 'Японский', hint: 'Пики пиками, козырь — бубны', options: { throwers: 'all', transfer: false, deck: 36, spades: true, diamonds: true, ranks: false, games: 1 } },
-    { id: 'govno', label: 'Г*вно', hint: 'Со званиями: король выбирает козырь, г*вно сдаёт', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, pogony: true, games: 5 } },
+    { id: 'pairs', label: '2 на 2', hint: 'Подкидной парами: напарники через одного (на шестерых — 3 на 3)', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: true, games: 1 } },
+    { id: 'govno', label: 'Г*вно', hint: 'Со званиями: король выбирает козырь, г*вно сдаёт', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, teams: false, pogony: true, games: 5 } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -193,6 +202,7 @@ export const def: GameDef<State, Action, Event, View> = {
     for (const x of s.seats) scores[x] = s.fools[x];
     if (s.cfg.games > 1) return { winners: w, text: `реже всех оставались дураком (${s.game} ${plural(s.game, 'партия', 'партии', 'партий')})`, scores };
     if (s.draw) return { winners: w, text: 'ничья — карты кончились у всех разом', scores };
+    if (s.losers.length > 1) return { winners: w, text: 'команда вышла первой', scores };
     return { winners: w, text: `не остались в дураках`, scores };
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
@@ -289,6 +299,25 @@ export const def: GameDef<State, Action, Event, View> = {
             { seat: 1, action: { type: 'transfer', card: cd('8S') }, caption: 'У Ленки тоже восьмёрка — она переводит на Серёгу.' },
             { seat: 2, action: { type: 'show', card: cd('8C') }, caption: 'Серёга показывает козырную восьмёрку — и переводит обратно на Вовку, не выкладывая её.' },
             { ...B(0, 0, '10C'), caption: 'Вовке приходится отбиваться самому.' },
+          ],
+        },
+      },
+      {
+        title: '2 на 2: командами',
+        html: `<p>Вчетвером можно играть <b>пара на пару</b> (вшестером — тройка на тройку). Напарники сидят <b>через одного</b>, так что ход всегда идёт на соперника.</p>
+          <ul><li>Подкидывают только соперники отбивающегося — на напарника не подкидывают.</li>
+          <li>Переводят тоже только на соперника — следующего игрока другой команды.</li>
+          <li>Вышли все игроки команды — она выиграла; оставшиеся — <b>дураки</b>, сколько бы карт у них ни было.</li></ul>`,
+        demo: {
+          seats: demoSeats(4),
+          options: { teams: true },
+          setup: () => pos({ teams: true }, ['8H 6S QD', '9H JH', '8C 6C', 'KH 7D'], '', { team: [0, 1, 0, 1, -1, -1], trump: 'S' }),
+          intro: 'Колода кончилась, козырь — пики. Вовка с Серёгой — против Ленки с Танькой. Ходит Вовка под Ленку.',
+          steps: [
+            { ...A(0, '8H'), caption: 'Вовка ходит восьмёркой червей.' },
+            { ...B(1, 0, '9H'), caption: 'Ленка кроет девяткой.' },
+            { ...T(2, '8C'), caption: 'Подкидывает напарник Вовки — Серёга. Танька, напарница Ленки, подкидывать на неё не может.' },
+            { seat: 1, action: { type: 'take' }, caption: 'Покрыть нечем — Ленка берёт.' },
           ],
         },
       },

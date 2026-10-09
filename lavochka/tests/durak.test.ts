@@ -245,3 +245,72 @@ describe('показ', () => {
     expect(new Set(all.map((c) => c.s + c.r)).size).toBe(36);
   });
 });
+
+describe('командами (2 на 2, 3 на 3)', () => {
+  const teamPos = (hands: string[], deck = '') => pos({ teams: true }, hands, deck, { team: hands.length === 4 ? [0, 1, 0, 1, -1, -1] : [0, 1, 0, 1, 0, 1], trump: 'S' });
+  it('напарник отбивающегося не подкидывает', () => {
+    let s = teamPos(['8H 6S', '9H JH', '8C 6C', '8D 7D']);
+    s = act(s, 0, { type: 'attack', cards: cl('8H') });
+    s = act(s, 1, { type: 'beat', i: 0, card: cd('9H') });
+    expect(s.asker).toBe(2); // Таньку (3, напарница Ленки) с восьмёркой бубен не спрашивают
+    no(s, 3, { type: 'throw', cards: cl('8D') });
+  });
+  it('перевод — на соперника, через напарника', () => {
+    let s = pos({ teams: true, transfer: true }, ['8H 6S 7S', '8S JH 9H', '9C 6C 7C', 'KH 7D QD'], 'AS', { team: [0, 1, 0, 1, -1, -1] });
+    s = act(s, 0, { type: 'attack', cards: cl('8H') });
+    s = act(s, 1, { type: 'transfer', card: cd('8S') });
+    expect([s.attacker, s.defender]).toEqual([1, 2]);
+  });
+  it('вышла вся команда — партия кончена, дураки — оба соперника', () => {
+    // колоды нет; Вовка ходит последней картой, Ленка кроет — Вовка вышел, у Серёги одна карта
+    let s = teamPos(['8H', '9H JH', '6C', 'KH 7D']);
+    s = act(s, 0, { type: 'attack', cards: cl('8H') });
+    s = act(s, 1, { type: 'beat', i: 0, card: cd('9H') });
+    expect(s.out).toEqual([0]);
+    expect(s.phase).not.toBe('over');
+    // ход у отбившейся Ленки — на соперника Серёгу (Вовка уже вышел)
+    expect([s.attacker, s.defender]).toEqual([1, 2]);
+    s = act(s, 1, { type: 'attack', cards: cl('JH') });
+    s = act(s, 2, { type: 'take' });
+    // Серёга взял; ход у Таньки на Серёгу
+    expect([s.attacker, s.defender]).toEqual([3, 2]);
+    s = act(s, 3, { type: 'attack', cards: cl('7D') });
+    s = act(s, 2, { type: 'take' });
+    s = act(s, 3, { type: 'attack', cards: cl('KH') });
+    s = act(s, 2, { type: 'take' });
+    // Ленка вышла, сыграв последнюю карту, теперь и Танька — их команда вся вышла:
+    // дураки — Вовка с Серёгой, хоть Вовка и вышел первым
+    expect(s.out).toEqual([0, 1, 3]);
+    expect(s.phase).toBe('over');
+    expect(s.losers).toEqual([0, 2]);
+    expect(def.result(s)!.winners).toEqual([1, 3]);
+  });
+  it('партии ботов командами доигрываются, проигрывает целая команда', async () => {
+    for (const n of [4, 6]) {
+      for (let g = 0; g < 12; g++) {
+        const seats = botSeats(def, n, [g % 3]);
+        const opts = { ...defaults(def), teams: true, transfer: g % 2 === 1 };
+        const a = new Authority(def, seats, opts);
+        a.rng = new SeededRng(300 + 10 * n + g);
+        a.state = def.setup(seats, opts, a.rng);
+        const brng = new SeededRng(g);
+        let steps = 0;
+        while (!a.result && steps < 5000) {
+          const seat = a.toAct()[0];
+          const s = a.state as State;
+          if (s.phase === 'attack') expect(s.team[s.attacker]).not.toBe(s.team[s.defender]);
+          const r = a.act(seat, await def.bot.choose(a.viewFor([seat]), seat, seats.find((x) => x.seat === seat)!.level, brng));
+          expect(r, `n=${n} g=${g} шаг ${steps}`).not.toBeNull();
+          steps++;
+        }
+        const s = a.state as State;
+        expect(a.result).not.toBeNull();
+        if (!s.draw) {
+          expect(s.losers.length).toBe(n / 2);
+          expect(new Set(s.losers.map((x) => s.team[x])).size).toBe(1);
+          expect(a.result!.winners.every((x) => !s.losers.includes(x))).toBe(true);
+        }
+      }
+    }
+  });
+});

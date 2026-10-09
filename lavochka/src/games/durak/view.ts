@@ -306,12 +306,13 @@ class DurakView implements GameView<View, Event> {
               : '';
       const title = v.cfg.ranks && v.ranking.length === v.seats.length ? titleOf(v.ranking.indexOf(seat), v.seats.length) : '';
       const pog = v.pogony[seat] ? `<span class="dk-pog" title="Погоны">${'★'.repeat(Math.min(4, v.pogony[seat]))}</span>` : '';
+      const team = v.team[seat] >= 0 ? `<span class="dk-team t${v.team[seat]}" title="Команда">${v.team[seat] ? 'Б' : 'А'}</span>` : '';
       const fool = v.cfg.games > 1 && v.fools[seat] ? `<span class="dk-fools" title="Сколько раз был дураком">🃏${v.fools[seat]}</span>` : '';
       const y = me ? HAND_Y - 120 : a.y + 58;
       const x = me ? 500 : a.x;
       const look = SEATS[seat];
       s += `<div class="dk-plate${toAct === seat && v.phase !== 'over' ? ' on' : ''}${me ? ' me' : ''}" style="left:${x}px;top:${y}px;--c:${look.color}">
-        <b>${this.ctx.name(seat)}</b>${title ? `<i>${esc(title)}</i>` : ''}${role ? `<em>${role}</em>` : ''}${pog}${fool}</div>`;
+        ${team}<b>${this.ctx.name(seat)}</b>${title ? `<i>${esc(title)}</i>` : ''}${role ? `<em>${role}</em>` : ''}${pog}${fool}</div>`;
     }
     this.plates.innerHTML = s;
   }
@@ -511,7 +512,7 @@ class DurakView implements GameView<View, Event> {
     const parts: string[] = [];
     if (v.cfg.games > 1) parts.push(`Партия <b>${v.game}</b> из ${v.cfg.games}`);
     parts.push(`Козырь: <b class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]} ${SUIT_NAME[v.trump]}</b>`);
-    const variant = [v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
+    const variant = [v.team.some((t) => t >= 0) ? (v.seats.length === 6 ? '3 на 3' : '2 на 2') : '', v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
     parts.push(`<small>${variant}</small>`);
     this.info.innerHTML = parts.map((p) => `<div>${p}</div>`).join('');
   }
@@ -603,7 +604,8 @@ class DurakView implements GameView<View, Event> {
           continue;
         case 'gameEnd': {
           Sound.win();
-          const t = ev.draw ? 'Ничья!' : `${this.plain(ev.fool!)} — дурак!${ev.pogony ? (ev.pogony === 2 ? ' С погонами!' : ' С погоном!') : ''}`;
+          const who = ev.losers.length > 1 ? `Дураки — ${ev.losers.map((x) => this.plain(x)).join(' и ')}!` : `${this.plain(ev.fool!)} — дурак!`;
+          const t = ev.draw ? 'Ничья!' : `${who}${ev.pogony ? (ev.pogony === 2 ? ' С погонами!' : ' С погоном!') : ''}`;
           await this.showBanner(t, ev.last ? 0 : 2200 / speed, ev.last);
           continue;
         }
@@ -674,6 +676,7 @@ class DurakView implements GameView<View, Event> {
     const name = (p: number) => this.ctx.name(p);
     if (v.phase === 'over') {
       if (v.cfg.games > 1) return 'Серия окончена';
+      if (v.losers.length > 1) return `Дураки — ${v.losers.map(name).join(' и ')}`;
       return v.draw ? 'Ничья!' : v.fool != null ? `Дурак — ${name(v.fool)}` : 'Партия окончена';
     }
     const who = toAct[0];

@@ -42,6 +42,8 @@ export interface Cfg {
   pogony: boolean;
   /** Сколько партий в серии (1 — одна партия). */
   games: number;
+  /** Командами: напарники сидят через одного (на четверых — 2×2, на шестерых — 3×3). */
+  teams: boolean;
 }
 
 export const DEFAULT_CFG: Cfg = {
@@ -57,6 +59,7 @@ export const DEFAULT_CFG: Cfg = {
   ranks: false,
   pogony: false,
   games: 1,
+  teams: false,
 };
 
 export function cfgFrom(o: Options): Cfg {
@@ -76,6 +79,7 @@ export function cfgFrom(o: Options): Cfg {
     ranks,
     pogony: bool(o.pogony, false),
     games: Math.max(1, Math.min(20, Number(o.games) || (ranks ? 5 : 1))),
+    teams: bool(o.teams, false),
   };
 }
 
@@ -121,6 +125,10 @@ export interface State {
   fools: number[];
   /** Погоны: сколько шестёрок «повесили» на погоны каждому. */
   pogony: number[];
+  /** Команда места (0 / 1) или −1, если играют каждый за себя. */
+  team: number[];
+  /** Проигравшие партии (дурак; в командной игре — вся его команда). */
+  losers: number[];
   /** Звания по итогам прошлой партии: места от лучшего к худшему. */
   ranking: number[];
   /** Сколько конов сыграно в партии. */
@@ -185,7 +193,7 @@ export type Event =
   | { type: 'pickup'; seat: number; cards: Card[] }
   | { type: 'draw'; seat: number; count: number; cards?: Card[]; trump?: Card }
   | { type: 'out'; seat: number; place: number }
-  | { type: 'gameEnd'; game: number; fool: number | null; draw: boolean; pogony: number; ranking: number[]; fools: number[]; last: boolean };
+  | { type: 'gameEnd'; game: number; fool: number | null; draw: boolean; pogony: number; ranking: number[]; fools: number[]; last: boolean; losers: number[] };
 
 // ---------------------------------------------------------------- карты
 
@@ -236,6 +244,27 @@ export function prevSeat(s: State, seat: number): number {
   return seat;
 }
 
+/** Команды через одного — только на четверых и шестерых. */
+export function teamsOf(cfg: Cfg, seats: number[]): number[] {
+  const t = [-1, -1, -1, -1, -1, -1];
+  if (cfg.teams && (seats.length === 4 || seats.length === 6)) seats.forEach((x, i) => (t[x] = i % 2));
+  return t;
+}
+
+export const teamsOn = (s: State) => s.team.some((t) => t >= 0);
+export const mates = (s: State, a: number, b: number) => a !== b && s.team[a] >= 0 && s.team[a] === s.team[b];
+
+/** Следующий по кругу соперник (в командной игре напарников пропускаем). */
+export function nextOpp(s: State, seat: number): number {
+  let x = seat;
+  for (let k = 0; k < s.seats.length; k++) {
+    x = nextSeat(s, x);
+    if (x === seat) break;
+    if (!mates(s, seat, x)) return x;
+  }
+  return nextSeat(s, seat);
+}
+
 /** Все, кто в игре, по кругу начиная с from. */
 export function circleFrom(s: State, from: number): number[] {
   const out: number[] = [];
@@ -250,7 +279,8 @@ export function circleFrom(s: State, from: number): number[] {
 
 /** Кто может подкидывать в этом коне, в порядке очереди (сначала ходивший). */
 export function throwersOf(s: State): number[] {
-  const order = circleFrom(s, s.attacker).filter((x) => x !== s.defender);
+  // напарник отбивающегося на него не подкидывает
+  const order = circleFrom(s, s.attacker).filter((x) => x !== s.defender && !mates(s, x, s.defender));
   if (s.cfg.throwers === 'none') return [];
   if (s.cfg.throwers === 'attacker') return [s.attacker];
   if (s.cfg.throwers === 'neighbors') {
@@ -279,7 +309,7 @@ export function throwable(s: State, seat: number): Card[] {
 export function transferTarget(s: State): number | null {
   if (!s.cfg.transfer || s.phase !== 'defend' || !s.table.length) return null;
   if (s.table.some((p) => p.d)) return null;
-  const to = nextSeat(s, s.defender);
+  const to = nextOpp(s, s.defender);
   if (to === s.defender) return null;
   return to;
 }
@@ -330,6 +360,8 @@ export function newState(cfg: Cfg, seats: number[]): State {
     ranking: [],
     bouts: 0,
     lastPlay: [],
+    team: teamsOf(cfg, seats),
+    losers: [],
     size: 36,
   };
 }
@@ -371,7 +403,7 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
     }
   s.deck = deck;
   // со званиями король (лучший прошлой партии) сам назначает козырь — до этого колода закрыта
-  const chooser = cfg.ranks && !cfg.diamonds && s.game > 1 && prev.ranking.length ? prev.ranking[0] : null;
+  const chooser = cfg.ranks && !teamsOn(s) && !cfg.diamonds && s.game > 1 && prev.ranking.length ? prev.ranking[0] : null;
   if (chooser != null) {
     s.trumpCard = null;
     s.phase = 'trump';
@@ -383,7 +415,7 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
   s.trump = cfg.diamonds ? 'D' : last.s;
   s.trumpCard = deck.length && !cfg.diamonds ? last : null;
   const { first, low } = firstAttacker(s, prev);
-  startBout(s, first, nextSeat(s, first));
+  startBout(s, first, nextOpp(s, first));
   const ev: Event = { type: 'deal', game: s.game, dealer, counts: s.seats.map((x) => s.hands[x].length), trumpCard: s.trumpCard, trump: s.trump, first, low };
   return { state: s, events: [ev] };
 }
@@ -446,6 +478,8 @@ function clone(s: State): State {
     pogony: s.pogony.slice(),
     ranking: s.ranking.slice(),
     lastPlay: s.lastPlay.slice(),
+    team: s.team.slice(),
+    losers: s.losers.slice(),
   };
 }
 
@@ -467,7 +501,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       s.trump = a.suit;
       s.trumpCard = null;
       const { first } = firstAttacker(s, { ...s0, game: s.game - 1, fool: s.ranking[s.ranking.length - 1] ?? null } as State);
-      startBout(s, first, nextSeat(s, first));
+      startBout(s, first, nextOpp(s, first));
       ev.push({ type: 'trump', seat, suit: a.suit, first });
       break;
     }
@@ -627,18 +661,21 @@ function endBout(s: State, ev: Event[], def: number, took: boolean, lastAttacker
   }
   const left = s.seats.filter((x) => !isOut(s, x));
   if (left.length <= 1) return finishGame(s, ev, left[0] ?? null, rng);
+  // командная игра кончается, когда в игре осталась одна команда: она и проиграла
+  if (teamsOn(s) && new Set(left.map((x) => s.team[x])).size === 1) return finishGame(s, ev, left[0], rng);
   // следующий кон: после отбоя ходит отбивавшийся, после взятия — следующий за ним
   let att = took ? nextSeat(s, def) : isOut(s, def) ? nextSeat(s, def) : def;
   if (isOut(s, att)) att = nextSeat(s, att);
-  startBout(s, att, nextSeat(s, att));
+  startBout(s, att, nextOpp(s, att));
 }
 
 function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
   s.fool = fool;
   s.draw = fool == null;
+  s.losers = fool == null ? [] : teamsOn(s) ? s.seats.filter((x) => x === fool || mates(s, x, fool)) : [fool];
   let pog = 0;
   if (fool != null) {
-    s.fools[fool]++;
+    for (const x of s.losers) s.fools[x]++;
     // погоны: последний кон против дурака закончили шестёрками
     const lp = s.lastPlay;
     if (s.cfg.pogony && lp.length && lp.length <= 2 && lp.every((c) => c.r === 6)) {
@@ -647,11 +684,11 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
     }
   }
   // звания: кто раньше вышел — тот выше; дурак — последний
-  s.ranking = fool != null ? [...s.out, fool] : s.out.slice();
+  s.ranking = fool != null ? [...s.out, ...s.seats.filter((x) => !s.out.includes(x))] : s.out.slice();
   s.table = [];
   s.asker = -1;
   const last = s.game >= s.cfg.games;
-  ev.push({ type: 'gameEnd', game: s.game, fool, draw: s.draw, pogony: pog, ranking: s.ranking.slice(), fools: s.fools.slice(), last });
+  ev.push({ type: 'gameEnd', game: s.game, fool, draw: s.draw, pogony: pog, ranking: s.ranking.slice(), fools: s.fools.slice(), last, losers: s.losers.slice() });
   if (last) {
     s.phase = 'over';
     return;
@@ -664,7 +701,7 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
 /** Итог серии: меньше всего раз был дураком — победитель (без дураков в одной партии — все, кроме дурака). */
 export function winners(s: State): number[] {
   if (s.phase !== 'over') return [];
-  if (s.cfg.games <= 1) return s.fool == null ? s.seats.slice() : s.seats.filter((x) => x !== s.fool);
+  if (s.cfg.games <= 1) return s.fool == null ? s.seats.slice() : s.seats.filter((x) => !s.losers.includes(x));
   const min = Math.min(...s.seats.map((x) => s.fools[x]));
   return s.seats.filter((x) => s.fools[x] === min);
 }
