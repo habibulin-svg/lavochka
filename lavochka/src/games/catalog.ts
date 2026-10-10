@@ -69,7 +69,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'kosmos2000', title: 'Космос 2000', sub: '«Менеджер» на орбите', cat: 'tabletop', players: '2–6', wave: 7, icon: '🛰', tint: '#5a1d7a' },
   { id: 'nep', title: 'НЭП', sub: 'капитализм по-советски', cat: 'tabletop', players: '2–6', wave: 7, icon: '💼', tint: '#3a3a3a' },
   // — настольный спорт —
-  { id: 'billiards', title: 'Бильярд', sub: 'кий, мел и лузы', cat: 'sport', players: '1–2', wave: 6, icon: '🎱', tint: '#14532d', variants: ['пул', 'русский', 'снукер'] },
+  { id: 'billiards', title: 'Бильярд', sub: 'кий, мел и лузы', cat: 'sport', players: '1–2', wave: 6, icon: '🎱', tint: '#14532d', thumb: 'billiards.webp', load: () => import('./billiards'), variants: ['восьмёрка', 'американка', 'московская', 'невская', 'классика 71'] },
   { id: 'hockey', title: 'Настольный хоккей', sub: 'на штырьках', cat: 'sport', players: '1–2', wave: 6, icon: '🏒', tint: '#1f4f7a' },
   { id: 'football', title: 'Настольный футбол', sub: 'жми рычаги', cat: 'sport', players: '1–2', wave: 6, icon: '⚽', tint: '#2f6a2a' },
   { id: 'basketball', title: 'Настольный баскетбол', sub: 'щелчок — и в кольцо', cat: 'sport', players: '1–2', wave: 6, icon: '🏀', tint: '#a0521a' },

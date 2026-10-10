@@ -1,0 +1,17 @@
+/* Бильярд: стол на канве и панель. */
+.table--billiards { --table-bg: radial-gradient(ellipse at 50% 20%, rgba(255, 230, 160, 0.18), transparent 60%), linear-gradient(180deg, #1c1410, #0c0806); }
+.bl-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; }
+.bl-canvas { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; aspect-ratio: auto; touch-action: none; cursor: crosshair;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6)); }
+.bl-panel { display: flex; flex-direction: column; gap: 8px; }
+.bl-title { font-weight: 700; }
+.bl-score { padding: 3px 8px; border-left: 5px solid var(--c); border-radius: 6px; background: rgba(60, 40, 10, 0.06); font-size: 14px; }
+.bl-score.on { background: #fff4c2; }
+.bl-last { font-size: 13px; opacity: 0.8; }
+.bl-ctl { display: flex; flex-direction: column; gap: 6px; }
+.bl-ctl label { display: flex; align-items: center; gap: 8px; }
+.bl-ctl input[type=range] { flex: 1; }
+.bl-spin-row { display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.85; }
+.bl-spin { width: 64px; height: 64px; cursor: pointer; }
+.bl-call { font-size: 13px; }
+.bl-hint { font-size: 13px; font-style: italic; }
