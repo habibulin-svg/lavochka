@@ -43,7 +43,7 @@ export const CATALOG: CatalogEntry[] = [
   // — карты —
   { id: 'durak', title: 'Дурак', sub: 'козыри, отбой и погоны', cat: 'cards', players: '2–6', wave: 1, icon: '♠', tint: '#1f3d6b', thumb: 'durak.webp', load: () => import('./durak'), variants: ['классический', 'подкидной', 'переводной', 'длинный', 'японский', 'король-говно', '2 на 2', 'польский', 'потайной'] },
   { id: 'thousand', title: 'Тысяча', sub: 'марьяжи и прикуп', cat: 'cards', players: '3–4', wave: 3, icon: '♥', tint: '#7a1c15', thumb: 'thousand.webp', load: () => import('./thousand'), variants: ['классическая', 'простая', 'с самосвалом', 'на троих и четверых'] },
-  { id: '101', title: '101', sub: 'дворовый уно на обычных картах', cat: 'cards', players: '2–6', wave: 3, icon: '♣', tint: '#2f5d3a', variants: ['классическая', 'с джокерами', 'до 101 и до 121'] },
+  { id: '101', title: '101', sub: 'дворовый уно на обычных картах', cat: 'cards', players: '2–6', wave: 3, icon: '♣', tint: '#2f5d3a', thumb: '101.webp', load: () => import('./sto'), variants: ['классическая', 'с разворотом', 'до 101 и до 121', '36 или 52 карты'] },
   { id: 'bura', title: 'Бура', sub: 'три карты и 31 очко', cat: 'cards', players: '2–4', wave: 3, icon: '♦', tint: '#8a3a12', thumb: 'bura.webp', load: () => import('./bura'), variants: ['с «москвой»', 'вслепую', 'на 2–4'] },
   { id: 'preferans', title: 'Преферанс', sub: 'пуля, гора и вист', cat: 'cards', players: '3–4', wave: 3, icon: '♤', tint: '#24304f', variants: ['сочи', 'ленинград', 'ростов'] },
   { id: 'holdem', title: 'Техасский холдем', sub: 'ставки и блеф', cat: 'cards', players: '2–9', wave: 3, icon: '🂡', tint: '#14532d', variants: ['3D-стол', 'вид сверху'] },
