@@ -1,0 +1,33 @@
+/* Шашки: складная доска на тёмном столе (как у шахмат). */
+.table--checkers {
+  --panel-bg: repeating-linear-gradient(178deg, rgba(120, 60, 20, 0.1) 0 3px, transparent 3px 11px), linear-gradient(180deg, #d9aa6c, #bd8448);
+  --panel-ink: #2a1206;
+  --panel-edge: rgba(60, 25, 5, 0.55);
+  --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 220, 160, 0.1), transparent 60%), linear-gradient(160deg, #3a2c2a, #1c1414 70%);
+}
+.ck-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ck-board { width: 100%; height: auto; max-height: 100%; aspect-ratio: 1; filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.6)); user-select: none; }
+.ck-board .ck-coord { font: 700 20px 'PT Serif', Georgia, serif; fill: #e8cf9a; text-anchor: middle; dominant-baseline: central; opacity: 0.85; pointer-events: none; }
+.ck-board .ck-num { font: 700 11px 'PT Sans', Arial, sans-serif; fill: #f0d8a8; opacity: 0.55; dominant-baseline: hanging; pointer-events: none; }
+.ck-board .ck-last { fill: rgba(255, 214, 90, 0.3); }
+.ck-board .ck-sel { fill: rgba(255, 196, 60, 0.45); stroke: #ffb020; stroke-width: 3; }
+.ck-board .ck-sel.ck-preview { fill: rgba(255, 220, 140, 0.2); stroke: none; }
+.ck-board .ck-ghost { fill: none; stroke: #ffb020; stroke-width: 3; stroke-dasharray: 6 5; }
+.ck-board .ck-dot { fill: rgba(255, 210, 120, 0.6); stroke: rgba(40, 20, 6, 0.6); stroke-width: 2; }
+.ck-board .ck-ring { fill: none; stroke: rgba(255, 190, 70, 0.75); stroke-width: 4; stroke-dasharray: 7 5; }
+.ck-board .ck-hit { fill: rgba(220, 40, 20, 0.55); pointer-events: none; }
+.ck-board .ck-tgt { cursor: pointer; }
+.ck-board .ck-tgt:hover .ck-dot { fill: rgba(255, 176, 32, 0.95); }
+.ck-board .ck-tgt.ck-preview { pointer-events: none; opacity: 0.45; }
+.ck-board .ck-pc { cursor: pointer; transition: opacity 0.25s; }
+.ck-board .ck-pc.ck-hit-pc { opacity: 0.45; }
+.ck-board .ck-pc.ck-gone { opacity: 0; }
+.ck-board .ck-fuk { fill: none; stroke: #e0321c; stroke-width: 5; animation: ck-pulse 0.9s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes ck-pulse { from { opacity: 0.45; } to { opacity: 1; } }
+.ck-board .ck-banner rect { fill: rgba(30, 14, 4, 0.85); stroke: #c9a24a; stroke-width: 3; }
+.ck-board .ck-banner text { font: 700 34px 'PT Serif', Georgia, serif; fill: #f6e2b0; text-anchor: middle; dominant-baseline: central; }
+.ck-controls { display: flex; flex-direction: column; gap: 8px; }
+.ck-btns { display: flex; flex-direction: column; gap: 6px; }
+.ck-btns .btn { width: 100%; }
+.ck-ask { font-weight: 700; }
+.ck-fuk-ask { color: #8a1206; }

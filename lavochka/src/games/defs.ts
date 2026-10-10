@@ -6,4 +6,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   nardy: () => import('./nardy/def').then((m) => m.def),
   durak: () => import('./durak/def').then((m) => m.def),
   chess: () => import('./chess/def').then((m) => m.def),
+  checkers: () => import('./checkers/def').then((m) => m.def),
 };
