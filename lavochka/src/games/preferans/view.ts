@@ -8,7 +8,7 @@ import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
-import { allBids, bidName, bidRank, finalScores, handCount, isMisere, legalCards, type Bid, type Event, type View } from './engine';
+import { allBids, bidName, bidRank, DUTY, finalScores, goraForFinal, handCount, isMisere, legalCards, levelOk, minLevel, SKAKS, type Bid, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './preferans.css';
 
@@ -97,7 +97,7 @@ class PrefView implements GameView<View, Event> {
 
   private layout(v: View): StageItem[] {
     const items: StageItem[] = [];
-    if (v.phase === 'bid') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 30 + i * 60, y: 240, r: (i - 0.5) * 8, s: 0.62, z: 5 + i });
+    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 30 + i * 60, y: 240, r: (i - 0.5) * 8, s: 0.62, z: 5 + i });
     const t = v.trick;
     if (t) {
       if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: CENTER.x, y: 230, r: 0, s: 0.66, z: 18, cls: 'pf-prk', from: 'p:' });
@@ -113,7 +113,7 @@ class PrefView implements GameView<View, Event> {
       if (!n) continue;
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const up = this.faceUp(v, seat);
+      const up = this.faceUp(v, seat) && v.hands[seat].length === n;
       const list = up ? sortHand(v.hands[seat], v.trump && v.trump !== 'NT' ? (v.trump as Suit) : undefined) : [];
       for (let k = 0; k < n; k++) {
         const p = me ? fan(n, k, a.x, a.y, 720, 64, 40, 24) : fan(n, k, a.x, a.y, up ? 250 : 150, up ? 26 : 14, 8, up ? 20 : 30);
@@ -147,7 +147,9 @@ class PrefView implements GameView<View, Event> {
       if (v.phase === 'bid' && v.passed.includes(seat)) marks.push('<em>пас</em>');
       if (v.phase === 'bid' && seat === v.bidder && v.bid) marks.push(`<b>${bidName(v.bid)}</b>`);
       if (v.phase !== 'bid' && seat === v.declarer && v.contract) marks.push(`<b>${bidName(v.contract)}</b>`);
-      if (v.whist[seat]) marks.push(`<em>${v.whist[seat] === 'whist' ? 'вист' : 'пас'}</em>`);
+      if (v.whist[seat]) marks.push(`<em>${{ whist: 'вист', pass: 'пас', half: 'полвиста' }[v.whist[seat]]}</em>`);
+      if (v.phase === 'bid' && seat === v.darkSeat) marks.push('<em>втёмную</em>');
+      if (v.bombs[seat]?.length) marks.push(`<em title="Бомбы: ${v.bombs[seat].map((b) => '×' + b).join(', ')}">💣${v.bombs[seat].length > 1 ? v.bombs[seat].length : ''}</em>`);
       if (v.phase === 'play') marks.push(`<i>${v.tricks[seat]}</i>`);
       const on = v.turn === seat && v.phase !== 'over';
       s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
@@ -165,10 +167,16 @@ class PrefView implements GameView<View, Event> {
     const head = seats.map((x) => `<th style="color:${SEATS[x].ink ?? SEATS[x].color}">${esc(this.plain(x)).slice(0, 7)}</th>`).join('');
     const row = (label: string, f: (x: number) => string | number) => `<tr><td>${label}</td>${seats.map((x) => `<td>${f(x)}</td>`).join('')}</tr>`;
     const fin = v.final ?? finalScores(v);
+    const num = (n: number) => String(Math.round(n * 10) / 10);
+    const sk = v.cfg.variant === 'skachki';
+    const g = goraForFinal(v);
     this.sheet.innerHTML = `<table><tr><th></th>${head}</tr>
-      ${row(`пуля /${v.cfg.pulya}`, (x) => v.pulya[x])}
-      ${row('гора', (x) => v.gora[x])}
-      ${row('висты', (x) => seats.reduce((a, y) => a + (y !== x ? v.whists[x][y] : 0), 0))}
+      ${sk ? `<tr><td colspan="${seats.length + 1}" class="pf-sk">скак ${Math.min(v.skak, SKAKS)} из ${SKAKS} · до ${v.cfg.pulya}</td></tr>` : ''}
+      ${row(sk ? 'пуля скака' : `пуля /${v.cfg.pulya}`, (x) => v.pulya[x])}
+      ${row(sk ? 'гора скака' : 'гора', (x) => num(v.gora[x]))}
+      ${sk ? row('пуля всего', (x) => v.totPulya[x] + v.pulya[x]) : ''}
+      ${sk || v.cfg.variant === 'leningrad' ? row(sk ? 'гора всего' : 'гора с пулей', (x) => num(g[x])) : ''}
+      ${row('висты', (x) => num(seats.reduce((a, y) => a + (y !== x ? v.whists[x][y] : 0), 0)))}
       <tr class="sum"><td>итог</td>${seats.map((x) => `<td>${fin[x] > 0 ? '+' : ''}${fin[x]}</td>`).join('')}</tr></table>`;
   }
 
@@ -227,11 +235,11 @@ class PrefView implements GameView<View, Event> {
     this.btns.appendChild(b);
   }
 
-  private bidGrid(min: Bid | null, onPick: (b: Bid) => void, allowMisere: boolean) {
+  private bidGrid(min: Bid | null, onPick: (b: Bid) => void, allowMisere: boolean, level = 6) {
     const grid = h('<div class="pf-grid"></div>');
     for (const b of allBids()) {
       if (isMisere(b) && !allowMisere) continue;
-      const off = min != null && bidRank(b) <= bidRank(min);
+      const off = (min != null && bidRank(b) <= bidRank(min)) || !levelOk(b, level);
       const label = isMisere(b) ? 'мизер' : `${b.level}${b.trump === 'NT' ? 'БК' : SUIT_SYM[b.trump as Suit]}`;
       const red = !isMisere(b) && (b.trump === 'H' || b.trump === 'D');
       const el = h<HTMLButtonElement>(`<button class="btn pf-bid${red ? ' red' : ''}${isMisere(b) ? ' mis' : ''}"${off ? ' disabled' : ''}>${label}</button>`);
@@ -247,11 +255,18 @@ class PrefView implements GameView<View, Event> {
     const seat = this.actSeat;
     if (!v || seat == null || this.ctx.demo || this.hidden) return;
     switch (v.phase) {
-      case 'bid':
-        this.btns.appendChild(h(`<div class="pf-ask">Торговля: ${v.bid ? `сейчас ${bidName(v.bid)}` : 'ставок не было'}</div>`));
-        this.bidGrid(v.bid, (b) => this.send({ type: 'bid', bid: b }), !v.spoke.includes(seat));
+      case 'dark':
+        this.btns.appendChild(h('<div class="pf-ask">Ваше первое слово. Спасовать втёмную, не глядя в карты? Если будут распасы — они вдвое, а вам бомба; перебить пас втёмную можно только семерной.</div>'));
+        this.button('Пас втёмную', true, () => this.send({ type: 'dark-pass' }));
+        this.button('Смотреть карты', false, () => this.send({ type: 'look' }));
+        return;
+      case 'bid': {
+        const min = minLevel(v);
+        this.btns.appendChild(h(`<div class="pf-ask">Торговля: ${v.bid ? `сейчас ${bidName(v.bid)}` : 'ставок не было'}${min > 6 ? ` · не ниже ${min}-й (${v.darkSeat != null ? 'пас втёмную' : 'выход из распасов'})` : ''}</div>`));
+        this.bidGrid(v.bid, (b) => this.send({ type: 'bid', bid: b }), !v.spoke.includes(seat), min);
         this.button('Пас', false, () => this.send({ type: 'pass' }));
         return;
+      }
       case 'discard':
         this.btns.appendChild(h(`<div class="pf-ask">Снесите две карты (выбрано ${this.selected.length})</div>`));
         this.button('Снести', true, () => this.send({ type: 'discard', cards: this.selected }), this.selected.length !== 2);
@@ -268,13 +283,34 @@ class PrefView implements GameView<View, Event> {
           grid.appendChild(el);
         }
         this.btns.appendChild(grid);
+        if (v.cfg.concede) this.button(`Сдать без ${v.cfg.concede === 2 ? 'двух' : 'трёх'}`, false, () => this.send({ type: 'concede' }));
         return;
       }
-      case 'whist':
-        this.btns.appendChild(h(`<div class="pf-ask">${esc(this.plain(v.declarer))} играет ${bidName(v.contract)}. Вистовать?</div>`));
+      case 'whist': {
+        const c = v.contract as { level: number };
+        const who = esc(this.plain(v.declarer));
+        const halfAsk = v.cfg.halfWhist && c.level <= 7;
+        if (v.wstep === 'choose') {
+          this.btns.appendChild(h(`<div class="pf-ask">Вистуете один против ${who} (${bidName(v.contract)}). Как играть?</div>`));
+          this.button('В светлую', true, () => this.send({ type: 'show', open: true }));
+          this.button('Втёмную', false, () => this.send({ type: 'show', open: false }));
+          if (!v.cfg.greedy && halfAsk && !v.wback && v.players.find((x) => x !== v.declarer && x !== seat && v.whist[x] === 'pass') != null && v.whistOrder[0] === seat)
+            this.button(`Полвиста (+${DUTY[c.level] / 2} взятки)`, false, () => this.send({ type: 'half-whist' }));
+          return;
+        }
+        if (v.wstep === 'return') {
+          this.btns.appendChild(h(`<div class="pf-ask">Сосед ушёл за полвиста. Вернуть вист — играть против ${who} самому?</div>`));
+          this.button('Вернуть вист', true, () => this.send({ type: 'whist' }));
+          this.button('Пас', false, () => this.send({ type: 'pass-whist' }));
+          return;
+        }
+        this.btns.appendChild(h(`<div class="pf-ask">${who} играет ${bidName(v.contract)}. Вистовать?</div>`));
         this.button('Вист', true, () => this.send({ type: 'whist' }));
         this.button('Пас', false, () => this.send({ type: 'pass-whist' }));
+        const firstPassed = Object.values(v.whist).includes('pass');
+        if (v.wstep === 'd2' && halfAsk && firstPassed) this.button(`Полвиста (+${DUTY[c.level] / 2} взятки)`, false, () => this.send({ type: 'half-whist' }));
         return;
+      }
       case 'play':
         if (v.turn !== seat) this.btns.appendChild(h(`<div class="pf-ask">Ходите за ${esc(this.plain(v.turn))} (его карты открыты)</div>`));
         return;
@@ -365,7 +401,16 @@ class PrefView implements GameView<View, Event> {
         this.v = next;
         await sleep(380 / speed);
       } else if (ev.type === 'raspasy') {
-        await this.showBanner('Распасы!', 1000 / speed);
+        await this.showBanner(ev.forced ? 'Распасы (обязательные)' : 'Распасы!', 1000 / speed);
+      } else if (ev.type === 'dark') {
+        Sound.ui();
+        if (ev.dark) await this.showBanner(`${this.plain(ev.seat)}: пас втёмную!`, 1000 / speed);
+      } else if (ev.type === 'show') {
+        Sound.ui();
+        await this.showBanner(`${this.plain(ev.seat)}: ${ev.open ? 'в светлую' : 'втёмную'}`, 800 / speed);
+      } else if (ev.type === 'skak') {
+        Sound.win();
+        await this.showBanner(`Скак ${ev.skak} окончен`, 1600 / speed);
       } else if (ev.type === 'contract') {
         Sound.ui();
         await this.showBanner(`${this.plain(ev.seat)}: ${bidName(ev.bid)}`, 900 / speed);
@@ -374,7 +419,18 @@ class PrefView implements GameView<View, Event> {
       } else if (ev.type === 'score') {
         this.v = { ...v, trick: null };
         this.draw();
-        const msg = ev.kind === 'raspasy' ? 'Распасы сыграны' : ev.kind === 'free' ? 'Без розыгрыша — сыграна' : ev.made ? `${bidName(ev.contract)} — сыграна!` : `${bidName(ev.contract)} — без взяток!`;
+        const msg =
+          ev.kind === 'raspasy'
+            ? 'Распасы сыграны'
+            : ev.kind === 'free'
+              ? 'Без розыгрыша — сыграна'
+              : ev.kind === 'half'
+                ? 'Полвиста — сыграна'
+                : ev.kind === 'concede'
+                  ? `${bidName(ev.contract)} — сдана без розыгрыша`
+                  : ev.made
+                    ? `${bidName(ev.contract)} — сыграна!`
+                    : `${bidName(ev.contract)} — без взяток!`;
         await this.showBanner(msg, 1400 / speed);
       } else if (ev.type === 'deal') Sound.shuffle();
       else if (ev.type === 'end') {
@@ -416,6 +472,8 @@ class PrefView implements GameView<View, Event> {
     const who = toAct[0];
     const mine = interactive.includes(who);
     switch (v.phase) {
+      case 'dark':
+        return mine ? 'Пас втёмную или смотреть карты?' : `${name(who)} решает, пасовать ли втёмную…`;
       case 'bid':
         return mine ? 'Торгуйтесь' : `Торгуется ${name(who)}…`;
       case 'discard':
@@ -423,14 +481,15 @@ class PrefView implements GameView<View, Event> {
       case 'contract':
         return mine ? 'Закажите игру' : `${name(who)} заказывает…`;
       case 'whist':
-        return mine ? 'Вист или пас?' : `${name(who)} думает, вистовать ли…`;
+        if (v.wstep === 'choose') return mine ? 'В светлую или втёмную?' : `${name(who)} решает, как вистовать…`;
+        return mine ? (v.wstep === 'return' ? 'Вернуть вист?' : 'Вист или пас?') : `${name(who)} думает, вистовать ли…`;
       default:
         return mine ? 'Ваш ход' : `Ходит ${name(v.turn)}…`;
     }
   }
 
   playerStats(v: View, seat: number) {
-    return `пуля ${v.pulya[seat]} · гора ${v.gora[seat]}`;
+    return `пуля ${v.pulya[seat]} · гора ${Math.round(v.gora[seat] * 10) / 10}`;
   }
 
   destroy() {

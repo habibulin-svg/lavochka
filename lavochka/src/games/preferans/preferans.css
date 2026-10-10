@@ -30,3 +30,4 @@
 .pf-sheet th, .pf-sheet td { border-bottom: 1px solid rgba(60, 40, 10, 0.25); padding: 2px 4px; text-align: center; }
 .pf-sheet td:first-child { text-align: left; opacity: 0.75; }
 .pf-sheet tr.sum td { font-weight: 700; border-top: 2px solid rgba(60, 40, 10, 0.5); }
+.pf-sheet td.pf-sk { text-align: center; font-style: italic; opacity: 0.85; }

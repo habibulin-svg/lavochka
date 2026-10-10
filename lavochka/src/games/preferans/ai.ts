@@ -1,10 +1,11 @@
 /* Преферанс — боты. Видят свою руку, открытый прикуп, открытые руки (в светлую, на мизере) и стол.
  *   Лёгкий — торгуется по тузам и длине, мизер не играет, ходит простыми правилами;
  *   Средний — считает взятки по мастям, вистует по обязательным взяткам, на распасах «сбрасывает» старшие;
- *   Сложный — ещё и находит чистый мизер, сносит в пустоту, вистует смелее, когда второй уже спасовал. */
+ *   Сложный — ещё и находит чистый мизер, сносит в пустоту, вистует смелее, когда второй уже спасовал.
+ * Все уровни: торгуются не ниже «выхода» из распасов, слабую руку уводят за полвиста, играют в светлую, безнадёжную игру сдают (если можно). */
 import type { Rng } from '../../core/types';
 import type { Card, Suit } from '../../cards/deck';
-import { allBids, bidRank, BID_SUITS, DUTY, isMisere, legalCards, trickWinner, type Action, type Bid, type State, type Trick, type Trump } from './engine';
+import { allBids, bidRank, BID_SUITS, DUTY, isMisere, legalCards, levelOk, minLevel, trickWinner, type Action, type Bid, type State, type Trick, type Trump } from './engine';
 
 const SUITS: Suit[] = ['S', 'C', 'D', 'H'];
 const bySuit = (h: Card[], s: Suit) => h.filter((c) => c.s === s).sort((a, b) => b.r - a.r);
@@ -104,16 +105,20 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const who = s.turn;
   const hand = s.hands[who];
   switch (s.phase) {
+    case 'dark':
+      // пас втёмную — азарт: изредка
+      return { type: rng.next() < [0.08, 0.12, 0.15][level] ? 'dark-pass' : 'look' };
     case 'bid': {
       const { trump, est } = bestTrump(hand);
       const e = est * (level === 0 ? 0.85 + rng.next() * 0.2 : level === 1 ? 0.95 : 1) + 0.4; // прикуп
+      const min = minLevel(s);
       // мизер — только первым словом
-      if (level === 2 && !s.spoke.includes(who) && misereRisk(hand) === 0 && (!s.bid || bidRank(s.bid) < 14.5)) return { type: 'bid', bid: { misere: true } };
+      if (level === 2 && !s.spoke.includes(who) && misereRisk(hand) === 0 && min <= 8 && (!s.bid || bidRank(s.bid) < 14.5)) return { type: 'bid', bid: { misere: true } };
       const level6 = Math.floor(e);
-      if (level6 < 6) return { type: 'pass' };
+      if (level6 < Math.max(6, min)) return { type: 'pass' };
       const target: Bid = { level: Math.min(10, level6), trump };
       // ставим следующую по старшинству, но не выше своей оценки
-      const next = allBids().find((b) => !isMisere(b) && (!s.bid || bidRank(b) > bidRank(s.bid)));
+      const next = allBids().find((b) => !isMisere(b) && levelOk(b, min) && (!s.bid || bidRank(b) > bidRank(s.bid)));
       if (!next || bidRank(next) > bidRank(target)) return { type: 'pass' };
       return { type: 'bid', bid: next };
     }
@@ -132,6 +137,9 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       return { type: 'discard', cards: level === 0 ? [hand[0], hand[1]] : pick.slice(0, 2) };
     }
     case 'contract': {
+      // безнадёжно (недобор больше, чем «без трёх / двух») — сдать без розыгрыша
+      const b0 = s.bid as { level: number; trump: Trump };
+      if (s.cfg.concede && level > 0 && b0.level - Math.max(...BID_SUITS.map((t) => estimate(hand, t))) > s.cfg.concede + 0.5) return { type: 'concede' };
       // самая выгодная игра не ниже ставки
       let best: { bid: Bid; margin: number } | null = null;
       for (const t of BID_SUITS) {
@@ -148,6 +156,8 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     }
     case 'whist': {
       const c = s.contract as { level: number; trump: Trump };
+      // одиночный вистующий: в светлую (лёгкий — как придётся)
+      if (s.wstep === 'choose') return { type: 'show', open: level > 0 || rng.next() < 0.5 };
       const duty = DUTY[c.level];
       // оборона: тузы и защищённые короли вне козыря, козырные старшие
       let def = 0;
@@ -162,9 +172,14 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       }
       const otherPassed = Object.values(s.whist).includes('pass');
       const need = c.level >= 9 ? 1 : duty / 2 + (otherPassed ? duty / 4 : 0);
-      if (c.level === 10) return { type: 'pass-whist' };
       const brave = level === 2 ? 0.3 : level === 0 ? -0.5 : 0;
-      return { type: def + brave >= need ? 'whist' : 'pass-whist' };
+      const strong = c.level < 10 && def + brave >= need;
+      // возврат виста после «полвиста» — только с хорошей картой
+      if (s.wstep === 'return') return { type: strong && def + brave >= need + 0.5 ? 'whist' : 'pass-whist' };
+      // полвиста — без риска: если сам вистовать не готов
+      const halfOk = s.wstep === 'd2' && s.cfg.halfWhist && c.level <= 7 && s.whist[s.players.find((x) => x !== who && x !== s.declarer)!] === 'pass';
+      if (!strong && halfOk && level > 0) return { type: 'half-whist' };
+      return { type: strong ? 'whist' : 'pass-whist' };
     }
     case 'play': {
       let mode: 'win' | 'lose' = 'win';
