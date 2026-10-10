@@ -3,7 +3,7 @@
  * финиш — комета в левом верхнем углу. Знаки: кружок — пропуск хода, квадрат — ещё ход, треугольник вверх/вниз — на N рядов (в той же колонке),
  * треугольник вбок — на N делений вперёд или назад (по стрелке на поле), чёрный кружок — начать сначала. Знак срабатывает один раз
  * (на клетке, куда перенесло, знак уже не действует). До кометы считать точно не нужно — дошёл или перешёл, значит, встретился. */
-import type { Board, Cell, Sign } from './core';
+import { snake, SNAKE_RULES, type Board } from './core';
 
 /** Ряды сверху вниз (1…10) и колонки слева направо (1…10); знаки сняты с поля. Сторона: 'R' — стрелка вправо, 'L' — влево. */
 const SIGNS: Record<string, string> = {
@@ -25,40 +25,7 @@ const YS = [22, 145, 268, 390, 512, 635, 757, 880, 1002, 1125, 1250];
 const XS = [22, 225, 415, 610, 805, 1000, 1200, 1395, 1590, 1790, 1985];
 const IMG = { w: 3131, h: 2000, url: '/hodilki/kosmos.webp' };
 
-const rowWord = (n: number) => (n === 1 ? 'ряд' : n < 5 ? 'ряда' : 'рядов');
-
-/** Путь от старта к комете: «змейка» снизу вверх. Знаки «вверх/вниз» — на N рядов в той же колонке, «вбок» — на N делений по стрелке. */
-const CELLS: Cell[] = (() => {
-  const geo: { row: number; col: number; dir: 1 | -1; code?: string }[] = [];
-  for (let row = 10; row >= 1; row--) {
-    const n = row >= 9 ? 7 : 10;
-    const dir: 1 | -1 = row % 2 === 0 ? 1 : -1;
-    for (let i = 0; i < n; i++) {
-      const col = dir === 1 ? i + 1 : n - i;
-      geo.push({ row, col, dir, code: SIGNS[`${row},${col}`] });
-    }
-  }
-  const at = (row: number, col: number) => geo.findIndex((c) => c.row === row && c.col === col);
-  return geo.map((c, idx): Cell => {
-    const x = ((XS[c.col - 1] + XS[c.col]) / 2) * K;
-    const y = ((YS[c.row - 1] + YS[c.row]) / 2) * K;
-    const code = c.code;
-    let sign: Sign | null = null;
-    if (code === 'skip' || code === 'again' || code === 'start') sign = { k: code };
-    else if (code?.startsWith('up') || code?.startsWith('down')) {
-      const up = code.startsWith('up');
-      const n = +code.slice(up ? 2 : 4);
-      const to = at(up ? c.row - n : c.row + n, c.col);
-      if (to >= 0) sign = { k: 'jump', to, good: up, text: up ? `взлетает на ${n} ${rowWord(n)} вверх` : `падает на ${n} ${rowWord(n)} вниз` };
-    } else if (code) {
-      // стрелка вбок: по ходу «змейки» — вперёд, против — назад
-      const n = +code.slice(1);
-      const fwd = (code[0] === 'R' ? 1 : -1) === c.dir;
-      sign = { k: 'jump', to: idx + (fwd ? n : -n), good: fwd, text: fwd ? `вперёд на ${n}` : `назад на ${n}` };
-    }
-    return { x, y, sign };
-  });
-})();
+const CELLS = snake({ signs: SIGNS, xs: XS, ys: YS, k: K, cols: (row) => [1, row >= 9 ? 7 : 10] });
 
 export const board: Board = {
   id: 'kosmos',
@@ -68,9 +35,7 @@ export const board: Board = {
   token: 0.032,
   goal: 'Первым встретиться с кометой в левом верхнем углу поля.',
   winText: 'первым встретился с кометой',
-  rules: `<p>Бросьте кубик и передвиньте пуговицу на столько делений, сколько выпало, — по пунктирным стрелкам. Старт — левая клетка нижнего ряда.</p>
-    <p>Знаки: <b>кружок</b> — пропуск хода, <b>квадрат</b> — ещё ход, <b>треугольник вверх/вниз</b> — на столько рядов вверх или вниз, сколько написано,
-    <b>треугольник вбок</b> — на столько делений вперёд или назад, <b>чёрный кружок</b> — начинайте сначала.</p>`,
+  rules: SNAKE_RULES,
   demo: [
     { rig: 1, caption: 'Выпало 2 — на клетке кружок: следующий ход Вовка пропустит.' },
     { rig: 2, caption: 'Выпало 3 — треугольник вверх: Ленка взлетает на два ряда!' },

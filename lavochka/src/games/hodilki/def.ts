@@ -3,8 +3,9 @@ import type { GameDef, SeatSpec } from '../../core/types';
 import { SEATS, signText, type Action, type Board, type Event, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
+import { board as put } from './put';
 
-export const BOARDS: Board[] = [krugosvet, kosmos];
+export const BOARDS: Board[] = [krugosvet, kosmos, put];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -68,6 +69,7 @@ export const def: GameDef<State, Action, Event, State> = {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     return { map: boardOf(String(opts.map ?? BOARDS[0].id)).id, seats: ids, pos: Array(10).fill(0), skip: Array(10).fill(false), turn: ids[0], last: null, winner: null };
   },
+  showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, last: 4, winner: null }),
   toAct: (s) => (s.winner != null ? [] : [s.turn]),
   apply,
   view: (s) => s,

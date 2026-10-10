@@ -6,6 +6,7 @@ lavochka/data/
 materials/**/*.jpg
 materials/**/*.png
 materials/**/*.webp
+materials/**/*.pdf
 .claude/settings.local.json
 .claude/.cache/
 __pycache__/
