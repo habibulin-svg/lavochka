@@ -37,7 +37,7 @@ export const CATALOG: CatalogEntry[] = [
   // — доска и кости —
   { id: 'shishbesh', title: 'Шиш-беш', sub: 'на кресте, с прыжками по углам', cat: 'board', players: '2–4', wave: 0, icon: '✚', tint: '#b3322a', thumb: 'shishbesh.webp', load: () => import('./shishbesh'), variants: ['классический', 'длинное поле', 'домики через один', 'старт на дубль'] },
   { id: 'nardy', title: 'Нарды', sub: 'с костями, марсом и коксом', cat: 'board', players: '2', wave: 1, icon: '⚂', tint: '#8a4f24', thumb: 'nardy.webp', load: () => import('./nardy'), variants: ['длинные', 'короткие', 'гюльбара', 'матч с кубом'] },
-  { id: 'chess', title: 'Шахматы', sub: 'на резной доске', cat: 'board', players: '2', wave: 1, icon: '♞', tint: '#3d2b1f', variants: ['классические', 'фишер 960', 'с часами'] },
+  { id: 'chess', title: 'Шахматы', sub: 'на резной доске', cat: 'board', players: '2', wave: 1, icon: '♞', tint: '#3d2b1f', thumb: 'chess.webp', load: () => import('./chess'), variants: ['классические', 'фишер 960', 'блиц с часами'] },
   { id: 'checkers', title: 'Шашки', sub: 'дамка ходит далеко', cat: 'board', players: '2', wave: 2, icon: '⛀', tint: '#6b1f1a', variants: ['русские', 'международные', 'поддавки'] },
   { id: 'domino', title: 'Домино «Козёл»', sub: 'забить рыбу!', cat: 'board', players: '2–4', wave: 2, icon: '🁫', tint: '#2f4a3a', variants: ['козёл', 'морской козёл', 'на двоих'] },
   // — карты —

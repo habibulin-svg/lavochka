@@ -129,7 +129,8 @@ class NardyView implements GameView<State, Event> {
       }
     });
     this.svg.addEventListener('pointerover', (e) => {
-      if (e.pointerType === 'touch') return;
+      // шашка выбрана — цели уже показаны, перерисовка под курсором сорвала бы нажатие
+      if (e.pointerType === 'touch' || this.selected != null) return;
       const el = (e.target as Element).closest('[data-from]') as SVGElement | null;
       const from = el ? +el.dataset.from! : null;
       if (from !== this.hover) {
