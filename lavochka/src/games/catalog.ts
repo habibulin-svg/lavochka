@@ -76,6 +76,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'zarulem', title: 'За рулём', sub: 'дорога крутится, руль в руках', cat: 'sport', players: '1', wave: 5, icon: '🚗', tint: '#8a1a1a' },
   // — электроника —
   { id: 'nupogodi', title: 'Ну, погоди!', sub: 'ИМ-02: волк ловит яйца', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', arcade: true, load: () => import('./nupogodi'), variants: ['игра А', 'игра Б'] },
+  { id: 'brick', title: 'Brick Game', sub: 'тетрис 9999 в 1', cat: 'electronics', players: '1', wave: 5, icon: '🧱', tint: '#d8a800', arcade: true, load: () => import('./brick'), variants: ['тетрис', 'змейка', 'гонки', 'арканоид', 'стрелялка'] },
   { id: 'tainy', title: 'Тайны океана', sub: 'ИМ-03: водолазы и сокровища', cat: 'electronics', players: '1', wave: 5, icon: '🐙', tint: '#0f6a8a' },
   { id: 'povar', title: 'Весёлый повар', sub: 'ИМ: жонглируй сковородкой', cat: 'electronics', players: '1', wave: 5, icon: '🍳', tint: '#c25a10' },
   { id: 'razvedchiki', title: 'Разведчики космоса', sub: 'ИМ: межпланетный десант', cat: 'electronics', players: '1', wave: 5, icon: '🚀', tint: '#3a2a8a' },
