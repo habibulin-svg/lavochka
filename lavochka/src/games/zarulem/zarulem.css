@@ -1,0 +1,4 @@
+/* «За рулём»: голубая пластмассовая панель с окном, рулём, ключом и рычагом. */
+.zr-dev { width: min(100%, 540px, calc((100vh - 150px) * 0.84)); margin: 0 auto; border-radius: 26px 26px 40px 40px; overflow: hidden;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 14px 30px rgba(0, 0, 0, 0.45); touch-action: none; user-select: none; }
+.zr-dev canvas { display: block; width: 100%; height: auto; }
