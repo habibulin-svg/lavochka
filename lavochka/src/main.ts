@@ -2,6 +2,7 @@
 import './styles/base.css';
 import { Sound } from './core/audio';
 import { openHome } from './core/home';
+import { isArcade, openArcade } from './core/arcade';
 import { nav, offerResume } from './core/session';
 import { modal } from './core/ui';
 import { esc } from './core/util';
@@ -14,7 +15,8 @@ async function openGame(g: CatalogEntry) {
   if (!g.load) return;
   try {
     const mod = (await g.load()).default;
-    openHome(mod, () => yard.show());
+    if (isArcade(mod)) openArcade(mod, () => yard.show());
+    else openHome(mod, () => yard.show());
   } catch (e: any) {
     modal(`<h2>Не загрузилось</h2><p>${esc(e?.message || e)}</p>`, [{ text: 'Ок', primary: true }]);
   }
@@ -40,6 +42,11 @@ async function thumbMode(id: string) {
   const controls = document.createElement('div');
   stage.append(board);
   document.body.append(stage);
+  // аркада: устройство как есть (в ожидании — показывает часы или заставку)
+  if (isArcade(mod)) {
+    mod.mount(board, { mode: mod.modes[0]?.id ?? 'A', onScore() {} });
+    return;
+  }
   const view = mod.createView();
   view.mount(board, { act() {}, mySeats: [], demo: true, controls, name: (s) => mod.def.seats[s]?.name ?? String(s), speed: () => 1, autoSingle: () => false });
   const st = mod.def.showcase ? mod.def.showcase() : null;

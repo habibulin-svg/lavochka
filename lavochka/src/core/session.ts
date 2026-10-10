@@ -1,4 +1,5 @@
 /* Сессии: локальная игра, хост P2P, хост на сервере, гость. Все сводятся к Room + RoomClient + Table. */
+import { isArcade } from './arcade';
 import { byId } from '../games/catalog';
 import type { Snapshot } from './authority';
 import { RoomClient } from './client';
@@ -60,6 +61,7 @@ async function rejoinOwner(m: RoomMemo) {
     const entry = byId(w.game);
     if (!entry?.load) throw new Error('Игра не найдена.');
     const mod = (await entry.load()).default;
+    if (isArcade(mod)) throw new Error('В эту игру по сети не играют.');
     attach(mod, client, 'server', m.code, true, () => void rejoinOwner(m), m.ownerKey);
   } catch (e: any) {
     memo(null);
@@ -203,6 +205,7 @@ export async function joinGame(code: string) {
     const entry = byId(w.game);
     if (!entry?.load) throw new Error('У вас нет этой игры — обновите страницу.');
     const mod = (await entry.load()).default;
+    if (isArcade(mod)) throw new Error('В эту игру по сети не играют.');
     attach(mod, client, mode, code, false, () => joinGame(code));
   } catch (e: any) {
     closeActive();

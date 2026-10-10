@@ -103,6 +103,11 @@ export const Sound = {
   unlock() {
     ensure();
   },
+  /** Писк пьезоизлучателя ЖК-игры: прямоугольная волна. */
+  beep(freq = 2000, dur = 0.05, gain = 0.12) {
+    const c = on();
+    if (c) tone(c.currentTime, { freq, dur, gain, type: 'square' });
+  },
   diceRoll(duration = 0.9) {
     const c = on();
     if (!c) return;

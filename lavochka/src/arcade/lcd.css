@@ -1,0 +1,24 @@
+/* Корпус «Электроники»: пластик, серебристая окантовка экрана, большие кнопки. */
+.lcd-device { width: min(100%, 860px); aspect-ratio: 1.75; background: linear-gradient(180deg, color-mix(in srgb, var(--body) 92%, #fff), var(--body) 30%, var(--dark));
+  border-radius: 26px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+  padding: 2% 3% 3%; box-sizing: border-box; display: flex; flex-direction: column; user-select: none; touch-action: manipulation; }
+.lcd-brand { text-align: center; font: 700 clamp(12px, 2.2vw, 20px) 'Russo One', 'PT Sans', sans-serif; letter-spacing: 0.35em; color: var(--label); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); margin-bottom: 1.5%; }
+.lcd-face { flex: 1; display: grid; grid-template-columns: 15% 1fr 15%; gap: 2.5%; align-items: center; }
+.lcd-col { display: flex; flex-direction: column; align-items: center; justify-content: space-around; height: 100%; gap: 8%; }
+.lcd-bezel { background: linear-gradient(160deg, #e8e8e0, #b8b8ae 40%, #8a8a82); border-radius: 12px; padding: 4% 4% 2.5%; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.5); }
+.lcd-screen { display: block; width: 100%; height: auto; border-radius: 4px; box-shadow: inset 0 0 0 2px #444, 0 0 0 3px #2a2a28; }
+.lcd-screen .lcd-bg { fill: #c9ccb4; }
+.lcd-screen .lcd-art { opacity: 0.55; }
+.lcd-screen .lcd-segs g { fill: #1c1e1a; opacity: 0.045; transition: opacity 0.05s; }
+.lcd-screen .lcd-segs g.on { opacity: 0.92; }
+.lcd-screen .lcd-glass { fill: url(#lcdGlass); pointer-events: none; fill: rgba(255, 255, 255, 0.06); }
+.lcd-model { margin-top: 2%; text-align: center; font: 700 clamp(9px, 1.4vw, 14px) 'PT Sans', sans-serif; color: #3a3a36; letter-spacing: 0.08em; }
+.lcd-big { width: 74%; aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--trim) 70%, #fff), var(--trim) 55%, color-mix(in srgb, var(--trim) 70%, #000));
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--trim) 50%, #000), 0 8px 14px rgba(0, 0, 0, 0.45); color: rgba(255, 255, 255, 0.85); font: 700 clamp(14px, 2.4vw, 26px) 'PT Sans', sans-serif; transition: transform 0.05s; }
+.lcd-big.down, .lcd-big:active { transform: translateY(4px); box-shadow: 0 1px 0 color-mix(in srgb, var(--trim) 50%, #000), 0 3px 6px rgba(0, 0, 0, 0.45); }
+.lcd-big-gap { width: 74%; aspect-ratio: 1; }
+.lcd-small { display: flex; flex-direction: column; gap: 6px; width: 100%; align-items: center; }
+.lcd-small button { width: 90%; border: 0; border-radius: 6px; padding: 3px 0; cursor: pointer; font: 700 clamp(8px, 1.2vw, 12px) 'PT Sans', sans-serif; letter-spacing: 0.05em;
+  background: linear-gradient(180deg, #4a4a46, #2a2a28); color: #e8e4d0; box-shadow: 0 2px 0 #111, inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+.lcd-small button:active { transform: translateY(2px); box-shadow: 0 0 0 #111; }

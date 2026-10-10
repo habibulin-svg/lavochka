@@ -12,7 +12,7 @@ const LEVEL_MIXES = [[0], [1], [2], [0, 1, 2]];
 
 describe('каталог', () => {
   it('готовые игры каталога зарегистрированы для сервера и наоборот', () => {
-    const ready = CATALOG.filter((g) => g.load).map((g) => g.id).sort();
+    const ready = CATALOG.filter((g) => g.load && !g.arcade).map((g) => g.id).sort();
     expect(Object.keys(DEFS).sort()).toEqual(ready);
   });
   it('id в каталоге уникальны', () => {
