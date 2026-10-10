@@ -127,6 +127,13 @@ export class Table {
     if (o.mode !== 'local' && Voice.supported()) {
       this.voice = new Voice(o.client);
       this.voice.onChange = () => this.renderVoice();
+      this.voice.onFail = (name) => {
+        const why = this.voice?.turn
+          ? 'связь не устанавливается даже через промежуточный сервер'
+          : 'напрямую не соединиться (строгий NAT — мобильный интернет, роутер провайдера), а промежуточный TURN-сервер не настроен';
+        this.log(`🎤 Нет связи с ${esc(name.replace(/<[^>]+>/g, ''))}: ${why}.`, 'muted');
+        toast(`Голос: нет связи с ${name.replace(/<[^>]+>/g, '')}`, 4000);
+      };
       this.renderVoice();
     }
   }
@@ -194,7 +201,11 @@ export class Table {
     el.classList.toggle('talk', t.level > 0.08 && !t.muted);
     el.classList.toggle('muted', t.muted);
     el.classList.toggle('me', t.me);
-    (el.querySelector('.voice-name') as HTMLElement).textContent = (t.me ? 'вы' : t.name) + (t.muted ? ' 🔇' : '');
+    el.classList.toggle('wait', t.link === 'wait');
+    el.classList.toggle('fail', t.link === 'fail');
+    el.title = t.link === 'wait' ? 'Соединяемся…' : t.link === 'fail' ? 'Нет связи' : '';
+    (el.querySelector('.voice-name') as HTMLElement).textContent =
+      (t.me ? 'вы' : t.name) + (t.muted ? ' 🔇' : '') + (t.link === 'wait' ? ' …' : t.link === 'fail' ? ' ✕' : '');
     const face = el.querySelector('.voice-face') as HTMLElement;
     // видео — только когда есть картинка; звук чужих — отдельным <audio>
     let vid = face.querySelector('video');
@@ -207,7 +218,10 @@ export class Table {
         face.innerHTML = '';
         face.appendChild(vid);
       }
-      if (vid.srcObject !== t.stream) vid.srcObject = t.stream;
+      if (vid.srcObject !== t.stream) {
+        vid.srcObject = t.stream;
+        void vid.play().catch(() => {});
+      }
     } else if (vid || !face.textContent) {
       face.innerHTML = '';
       face.textContent = (t.me ? 'Я' : t.name.replace(/<[^>]+>/g, '').trim()[0] ?? '?').toUpperCase();

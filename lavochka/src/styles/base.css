@@ -236,6 +236,10 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
   .table.active { display: block; height: auto; min-height: 100vh; }
   .table-main { height: min(100vw, 75vh); }
   .table-panel { overflow: visible; margin-top: 10px; }
+  /* карточные игры: стол выше (вертикальная раскладка), кнопки хода — сразу под ним */
+  .table--cards .table-main { height: min(175vw, calc(100svh - 150px)); min-height: min(100vw, 75vh); }
+  .table--cards .table-panel > .game-controls { order: -2; }
+  .table--cards .table-panel > .table-status { order: -1; }
   .log, .chat { max-height: 220px; }
   .home-cols { grid-template-columns: 1fr; }
   .rules-layout { grid-template-columns: 1fr; }
@@ -273,5 +277,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .voice-tile.me .voice-face video { transform: scaleX(-1); }
 .voice-tile.talk .voice-face { box-shadow: 0 0 0 3px #ffd24a, 0 0 calc(var(--lv) * 18px) #ffd24a; }
 .voice-tile.muted .voice-face { opacity: 0.6; }
+.voice-tile.wait .voice-face { opacity: 0.55; animation: voice-wait 1.2s ease-in-out infinite; }
+.voice-tile.fail .voice-face { opacity: 0.5; box-shadow: 0 0 0 2px #b8322a; }
+@keyframes voice-wait { 50% { opacity: 0.3; } }
 .voice-name { font-size: 11px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voice-tile audio { display: none; }

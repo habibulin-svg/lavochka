@@ -3,9 +3,25 @@
  * Согласование — «perfect negotiation»: вежливая сторона (больший clientId) уступает при столкновении предложений.
  * Тишина (ночь в мафии): свой микрофон и камера выключаются, пока игра не разрешит. */
 import type { RoomClient } from './client';
+import { serverBase } from './net/ws';
 import type { RoomMsg, VoiceMember } from './protocol';
 
-const ICE: RTCIceServer[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+const STUN: RTCIceServer[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+/** ICE-серверы с нашего сервера (там же TURN, если настроен); без сервера — только STUN. */
+let iceReq: Promise<{ servers: RTCIceServer[]; turn: boolean }> | null = null;
+function iceServers() {
+  iceReq ??= fetch(serverBase() + '/api/ice', { cache: 'no-store', signal: AbortSignal.timeout(4000) })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then((b: { iceServers?: RTCIceServer[]; turn?: boolean }) => ({ servers: b.iceServers?.length ? b.iceServers : STUN, turn: !!b.turn }))
+    .catch(() => {
+      iceReq = null;
+      return { servers: STUN, turn: false };
+    });
+  return iceReq;
+}
+
+/** Связь с собеседником: соединяемся / есть / не вышло. */
+export type VoiceLink = 'wait' | 'ok' | 'fail';
 
 interface Peer {
   pc: RTCPeerConnection;
@@ -15,6 +31,11 @@ interface Peer {
   stream: MediaStream | null;
   level: number;
   analyser: AnalyserNode | null;
+  /** Сигналы обрабатываются строго по очереди. */
+  chain: Promise<void>;
+  restarted: boolean;
+  failTimer: ReturnType<typeof setTimeout> | undefined;
+  link: VoiceLink;
 }
 
 export interface VoiceTile {
@@ -27,7 +48,10 @@ export interface VoiceTile {
   /** Громкость 0..1 — для подсветки говорящего. */
   level: number;
   muted: boolean;
+  link: VoiceLink;
 }
+
+type Signal = { description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
 
 export class Voice {
   private peers = new Map<string, Peer>();
@@ -37,12 +61,17 @@ export class Voice {
   private myLevel: AnalyserNode | null = null;
   private unsub: () => void;
   private timer: ReturnType<typeof setInterval> | undefined;
+  private ice: RTCIceServer[] = STUN;
+  /** Есть ли TURN (без него за строгим NAT не соединиться). */
+  turn = false;
   joined = false;
   micOn = true;
   camOn = false;
   /** Причина тишины (ночь) или null. */
   quiet: string | null = null;
   onChange: (() => void) | null = null;
+  /** Не удалось соединиться с собеседником (имя). */
+  onFail: ((name: string) => void) | null = null;
 
   constructor(private client: RoomClient) {
     this.unsub = client.on((m) => this.onMsg(m));
@@ -55,10 +84,20 @@ export class Voice {
   /** Войти в голосовой чат (спросит разрешение на микрофон, с камерой — и на неё). */
   async join(video: boolean) {
     if (this.joined) return;
-    this.local = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      video: video ? { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 15 } } : false,
-    });
+    const [local, ice] = await Promise.all([
+      navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: video ? { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 15 } } : false,
+      }),
+      iceServers(),
+    ]);
+    if (this.joined) {
+      local.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    this.local = local;
+    this.ice = ice.servers;
+    this.turn = ice.turn;
     this.camOn = video;
     this.joined = true;
     this.ctx = new AudioContext();
@@ -123,6 +162,7 @@ export class Voice {
         video: m.video && !this.quiet,
         level: me ? this.level(this.myLevel) : (p?.level ?? 0),
         muted: me ? !this.micOn || !!this.quiet : false,
+        link: me ? 'ok' : (p?.link ?? 'wait'),
       });
     }
     return out;
@@ -135,7 +175,7 @@ export class Voice {
       this.members = m.members;
       if (this.joined) this.sync();
       this.changed();
-    } else if (m.t === 'rtc' && this.joined) void this.signal(m.from, m.data as { description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit });
+    } else if (m.t === 'rtc' && this.joined) this.queueSignal(m.from, m.data as Signal);
   }
 
   /** Соединения — со всеми, кто в чате; с ушедшими — закрыть. */
@@ -147,9 +187,22 @@ export class Voice {
   }
 
   private openPeer(id: string) {
-    const pc = new RTCPeerConnection({ iceServers: ICE });
-    const p: Peer = { pc, polite: this.client.id > id, making: false, ignore: false, stream: null, level: 0, analyser: null };
+    const pc = new RTCPeerConnection({ iceServers: this.ice });
+    const p: Peer = {
+      pc,
+      polite: this.client.id > id,
+      making: false,
+      ignore: false,
+      stream: null,
+      level: 0,
+      analyser: null,
+      chain: Promise.resolve(),
+      restarted: false,
+      failTimer: undefined,
+      link: 'wait',
+    };
     this.peers.set(id, p);
+    p.failTimer = setTimeout(() => pc.connectionState !== 'connected' && this.fail(id, p), 25000);
     for (const t of this.local?.getTracks() ?? []) pc.addTrack(t, this.local!);
     pc.onnegotiationneeded = async () => {
       try {
@@ -171,25 +224,57 @@ export class Voice {
       this.changed();
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed') pc.restartIce();
+      const st = pc.connectionState;
+      console.info('voice:', id, st);
+      clearTimeout(p.failTimer);
+      if (st === 'connected') {
+        p.link = 'ok';
+        p.restarted = false;
+      } else if (st === 'failed') {
+        // одна попытка заново; не вышло — честно говорим, что напрямую не соединиться
+        if (!p.restarted) {
+          p.restarted = true;
+          p.link = 'wait';
+          pc.restartIce();
+        } else this.fail(id, p);
+      } else if (st === 'disconnected') {
+        p.failTimer = setTimeout(() => pc.connectionState === 'disconnected' && pc.restartIce(), 4000);
+      } else if (st === 'new' || st === 'connecting') {
+        if (p.link !== 'ok') p.link = 'wait';
+        // ICE в Chrome может «соединяться» очень долго — через 20 с считаем, что не вышло
+        p.failTimer = setTimeout(() => pc.connectionState !== 'connected' && this.fail(id, p), 20000);
+      }
       this.changed();
     };
+  }
+
+  private fail(id: string, p: Peer) {
+    if (p.link === 'fail' || this.peers.get(id) !== p) return;
+    p.link = 'fail';
+    this.onFail?.(this.members.find((m) => m.id === id)?.name ?? 'собеседник');
+    this.changed();
   }
 
   private closePeer(id: string) {
     const p = this.peers.get(id);
     if (!p) return;
     this.peers.delete(id);
+    clearTimeout(p.failTimer);
     p.pc.close();
   }
 
-  private async signal(from: string, data: { description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }) {
+  private queueSignal(from: string, data: Signal) {
     if (!data || typeof data !== 'object') return;
     if (!this.peers.has(from)) {
       if (!this.members.some((m) => m.id === from)) return;
       this.openPeer(from);
     }
     const p = this.peers.get(from)!;
+    p.chain = p.chain.then(() => this.signal(p, from, data));
+  }
+
+  private async signal(p: Peer, from: string, data: Signal) {
+    if (this.peers.get(from) !== p) return;
     const pc = p.pc;
     try {
       if (data.description) {

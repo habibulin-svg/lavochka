@@ -4,6 +4,9 @@
  *
  *   PORT      — порт (по умолчанию 8787)
  *   DATA_DIR  — куда писать рекорды (по умолчанию ./data)
+ *   TURN для голосового чата (/api/ice), одно из двух:
+ *     CF_TURN_KEY_ID + CF_TURN_API_TOKEN          — Cloudflare Realtime TURN (временные логины)
+ *     TURN_URLS + TURN_USERNAME + TURN_CREDENTIAL — любой TURN с постоянным логином (адреса через запятую)
  */
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -170,6 +173,48 @@ function json(res: ServerResponse, code: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+// ------------------------------------------------------------------ ICE (голосовой чат)
+// Без TURN-сервера браузеры за строгим NAT (мобильный интернет, офисы) не соединяются напрямую.
+// На Render свой TURN не поднять (нет UDP), поэтому — внешний: Cloudflare (ключ из Realtime → TURN)
+// или любой другой с постоянным логином.
+
+const STUN: RTCIceServerLike[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+let iceCache: { at: number; servers: RTCIceServerLike[] } | null = null;
+
+interface RTCIceServerLike {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
+async function iceServers(): Promise<RTCIceServerLike[]> {
+  const env = process.env;
+  if (env.TURN_URLS && env.TURN_USERNAME && env.TURN_CREDENTIAL) {
+    return [...STUN, { urls: env.TURN_URLS.split(',').map((s) => s.trim()).filter(Boolean), username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
+  }
+  if (env.CF_TURN_KEY_ID && env.CF_TURN_API_TOKEN) {
+    // временные логины на сутки, раздаём из кэша полдня
+    if (iceCache && Date.now() - iceCache.at < 12 * 3600_000) return iceCache.servers;
+    try {
+      const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(env.CF_TURN_KEY_ID)}/credentials/generate-ice-servers`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${env.CF_TURN_API_TOKEN}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ ttl: 86400 }),
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const b = (await r.json()) as { iceServers?: RTCIceServerLike | RTCIceServerLike[] };
+      const list = Array.isArray(b.iceServers) ? b.iceServers : b.iceServers ? [b.iceServers] : [];
+      if (!list.length) throw new Error('empty');
+      iceCache = { at: Date.now(), servers: list };
+      return list;
+    } catch (e) {
+      console.warn('TURN (Cloudflare):', (e as Error).message);
+    }
+  }
+  return STUN;
+}
+
 function readBody(req: IncomingMessage, limit = 4096): Promise<string> {
   return new Promise((ok, bad) => {
     const parts: Buffer[] = [];
@@ -193,6 +238,12 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     return res.end();
   }
   if (path === '/api/health') return json(res, 200, { ok: true, rooms: rooms.size });
+  if (path === '/api/ice') {
+    // логины TURN — только своему сайту (без access-control-allow-origin)
+    const servers = await iceServers();
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify({ iceServers: servers, turn: servers.some((s) => [s.urls].flat().some((u) => /^turns?:/.test(u))) }));
+  }
   const m = path.match(/^\/api\/records\/([\w-]{1,40})$/);
   if (m) {
     const game = m[1];

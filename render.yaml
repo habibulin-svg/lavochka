@@ -11,3 +11,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      # TURN для голосового чата (Cloudflare → Realtime → TURN Server): без него за строгим NAT голос и камера не соединяются
+      - key: CF_TURN_KEY_ID
+        sync: false
+      - key: CF_TURN_API_TOKEN
+        sync: false

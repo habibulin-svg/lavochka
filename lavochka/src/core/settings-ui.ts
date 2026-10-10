@@ -97,7 +97,12 @@ export function openSettings() {
     try {
       const r = await fetch(serverBase() + '/api/health', { cache: 'no-store' });
       const j = await r.json();
-      res.textContent = j.ok ? `✔ Сервер на связи (комнат: ${j.rooms})` : '✖ Странный ответ';
+      const ice = await fetch(serverBase() + '/api/ice', { cache: 'no-store' })
+        .then((x) => x.json())
+        .catch(() => null);
+      res.textContent = j.ok
+        ? `✔ Сервер на связи (комнат: ${j.rooms}) · голос ${ice?.turn ? 'через TURN — соединится почти всегда' : 'без TURN — за строгим NAT может не соединиться'}`
+        : '✖ Странный ответ';
     } catch {
       res.textContent = '✖ Сервер не отвечает';
     }
