@@ -4,8 +4,6 @@
   --panel-ink: #2a1a0a;
   --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.12), transparent 65%), #1d2b22;
 }
-.dk-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
-.dk-stage { position: absolute; left: 0; top: 0; width: 1000px; height: 720px; transform-origin: 0 0; --dk-dur: 360ms; }
 /* клеёнка в клетку, выцветшая */
 .dk-cloth {
   position: absolute; inset: 14px; border-radius: 22px;
@@ -16,22 +14,6 @@
     linear-gradient(160deg, #3f6e58, #2e5644 70%);
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.45), 0 18px 30px rgba(0, 0, 0, 0.5);
 }
-.dk-card {
-  position: absolute; left: 0; top: 0; width: 100px; height: 155px; transform-origin: 50% 50%;
-  transition: transform var(--dk-dur) cubic-bezier(0.2, 0.7, 0.3, 1), opacity var(--dk-dur), filter 0.15s;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
-  will-change: transform;
-}
-.dk-card .card { width: 100%; height: 100%; }
-/* блик — лёгкий лак на картоне */
-.dk-card::after { content: ''; position: absolute; inset: 0; border-radius: 5% / 3.2%; pointer-events: none;
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.06)); }
-.dk-card.dk-can { cursor: pointer; }
-.dk-card.dk-can:hover { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)) drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35)) brightness(1.04); }
-.dk-card.dk-sel { cursor: pointer; filter: drop-shadow(0 0 0 #ffd24a) drop-shadow(0 0 6px #ffd24a) drop-shadow(0 12px 16px rgba(0, 0, 0, 0.4)); }
-.dk-card.dk-dim { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)) brightness(0.78) saturate(0.8); }
-.dk-card.dk-target { cursor: pointer; filter: drop-shadow(0 0 3px #ffd24a) drop-shadow(0 0 10px #ffb020); animation: dk-glow 1s ease-in-out infinite; }
-@keyframes dk-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
 .dk-deck::before { content: ''; position: absolute; inset: 0; transform: translate(-3px, 4px); border-radius: 5% / 3.2%; background: #d9cfba; box-shadow: -1px 2px 0 #bfb39a, -2px 4px 0 #a99d84; z-index: -1; }
 
 .dk-plates { position: absolute; inset: 0; pointer-events: none; z-index: 400; }
@@ -51,6 +33,7 @@
 
 .dk-zone { position: absolute; width: 110px; height: 150px; border: 3px dashed #ffd24a; border-radius: 12px; background: rgba(255, 210, 74, 0.14);
   display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 300; animation: dk-glow 1s ease-in-out infinite; }
+@keyframes dk-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
 .dk-zone span { font: 700 18px 'PT Serif', Georgia, serif; color: #fff4c2; text-shadow: 0 1px 2px #000; }
 .dk-zone.tr { border-color: #8fd3ff; background: rgba(143, 211, 255, 0.15); }
 .dk-zone.tr span { color: #dff3ff; }
@@ -80,5 +63,18 @@
 .dk-pt.red { color: #c8102e; }
 .dk-plate .dk-title { font-size: 16px; color: #7a1f10; }
 .dk-plate small { font-size: 12px; opacity: 0.7; }
-.dk-card.dk-laid { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); }
-.dk-card.dk-hidden { filter: brightness(0.82) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4)); }
+.dk-laid .cs-face { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+.dk-hidden .cs-face::after { background: rgba(20, 20, 30, 0.2); }
+
+/* вертикальная раскладка (телефон): надписи крупнее — сцена ужата сильнее */
+.cs-port .dk-plate { font-size: 21px; padding: 4px 12px 4px 10px; gap: 8px; }
+.cs-port .dk-plate:not(.me) { flex-direction: column; gap: 0; line-height: 1.15; border-radius: 14px; padding: 3px 12px 4px 10px; font-size: 19px; }
+.cs-port .dk-plate:not(.me) em { font-size: 16px; }
+.cs-port .dk-plate.sm { font-size: 16px; padding: 2px 8px 3px 6px; }
+.cs-port .dk-plate.sm em { font-size: 14px; }
+.cs-port .dk-count { font-size: 19px; }
+.cs-port .dk-trump span { width: 58px; height: 58px; line-height: 58px; font-size: 40px; }
+.cs-port .dk-trump small { font-size: 16px; }
+.cs-port .dk-banner { font-size: 34px; white-space: normal; text-align: center; width: max-content; max-width: 88%; padding: 16px 24px; }
+.cs-port .dk-cover-box { font-size: 26px; max-width: 86%; }
+.cs-port .dk-zone span { font-size: 22px; }

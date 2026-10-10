@@ -1,47 +1,48 @@
 /* Дурак — отрисовка: дворовый стол под клеёнкой, веер своих карт, соперники по дуге, колода с козырем, бито.
- * Карты — HTML-элементы на «сцене» 1000×720 (масштабируется под экран). Каждая карта живёт под своим ключом,
- * а анимация — это CSS-переход transform от старого места к новому (новые карты влетают из колоды или от игрока). */
+ * Карты — общая сцена CardStage (cards/stage.ts): 1000×720, на телефоне — вертикальная 540×900 со своей раскладкой.
+ * Анимация — CSS-переход transform от старого места к новому (новые карты влетают из колоды или от игрока). */
 import { Sound } from '../../core/audio';
 import { settings } from '../../core/settings';
-import { esc, h, sleep } from '../../core/util';
+import { esc, h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { cardHTML, preloadDeck } from '../../cards/render';
-import { cardId, sameCard, sortHand, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
+import { preloadDeck } from '../../cards/render';
+import { CardStage, cardKey, portraitArc, portraitHand, type StageItem } from '../../cards/stage';
+import { sameCard, sortHand, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { beats, canTransfer, deckLeft, has, longOn, polishBeaters, room, throwable, transferTarget, trumpOf, unbeaten, type Action, type Event, type View } from './engine';
 import { SEATS, titleOf } from './def';
 import './durak.css';
 
-const SW = 1000;
-const SH = 720;
-const CW = 100; // карта
-const CH = 155;
-const HAND_Y = 618;
-const DECK = { x: 92, y: 360 };
-const BITO = { x: 908, y: 360 };
-/** Польский: центр со стопкой и кольцо колоды рубашкой вверх вокруг него. */
-const PCENTER = { x: 500, y: 356 };
-function stockPos(i: number, n: number) {
-  const a = -Math.PI / 2 + (i / Math.max(1, n)) * Math.PI * 2;
-  return { x: PCENTER.x + Math.cos(a) * 285, y: PCENTER.y + Math.sin(a) * 92, r: (a * 180) / Math.PI + 90 };
-}
-
 type Anchor = { x: number; y: number };
 
-interface Item {
-  key: string;
-  card: Card | null;
-  x: number;
-  y: number;
-  r: number;
-  s: number;
-  z: number;
-  role?: 'hand' | 'att' | 'def' | 'ptop' | 'stock';
-  i?: number;
-  cls?: string;
+/** Геометрия стола: альбомная (1000×720) и вертикальная для телефона (540×900). */
+interface Geo {
+  port: boolean;
+  W: number;
+  /** Центр своей руки. */
+  hand: Anchor;
+  /** Колода (козырь — поперёк справа от неё), бито, значок козыря. */
+  deck: Anchor;
+  bito: Anchor;
+  trump: Anchor;
+  /** Масштаб карт: рука, стол, колода, бито — одного размера. */
+  ds: number;
+  /** Польский: центр со стопкой и полуоси кольца колоды. */
+  pc: Anchor;
+  ring: Anchor;
 }
 
-/** Места соперников по дуге сверху: слева направо — по часовой стрелке от меня. */
-function arc(n: number): Anchor[] {
+const LAND: Geo = { port: false, W: 1000, hand: { x: 500, y: 612 }, deck: { x: 100, y: 345 }, bito: { x: 900, y: 345 }, trump: { x: 100, y: 214 }, ds: 1.1, pc: { x: 500, y: 356 }, ring: { x: 285, y: 92 } };
+const PORT: Geo = { port: true, W: 540, hand: { x: 270, y: 792 }, deck: { x: 170, y: 236 }, bito: { x: 460, y: 236 }, trump: { x: 56, y: 236 }, ds: 1.05, pc: { x: 270, y: 450 }, ring: { x: 205, y: 125 } };
+
+/** Польский: кольцо колоды рубашкой вверх вокруг стопки. */
+function stockPos(g: Geo, i: number, n: number) {
+  const a = -Math.PI / 2 + (i / Math.max(1, n)) * Math.PI * 2;
+  return { x: g.pc.x + Math.cos(a) * g.ring.x, y: g.pc.y + Math.sin(a) * g.ring.y, r: (a * 180) / Math.PI + 90 };
+}
+
+/** Места соперников сверху: слева направо — по часовой стрелке от меня. */
+function arc(g: Geo, n: number): Anchor[] {
+  if (g.port) return portraitArc(n, g.W);
   if (n === 1) return [{ x: 500, y: 92 }];
   const out: Anchor[] = [];
   const span = Math.min(760, 220 * (n - 1));
@@ -54,19 +55,42 @@ function arc(n: number): Anchor[] {
   return out;
 }
 
+/** Место i-й пары на столе из n. В вертикальной раскладке — сетка по три, места не съезжают при добавлении карт. */
+function tablePos(g: Geo, i: number, n: number): Anchor {
+  if (g.port) return { x: 120 + (i % 3) * 142, y: 408 + Math.floor(i / 3) * 160 };
+  const rows = n > 3 ? 2 : 1;
+  const perRow = rows === 2 ? Math.ceil(n / 2) : n;
+  const row = rows === 2 && i >= perRow ? 1 : 0;
+  const col = row ? i - perRow : i;
+  const inRow = row ? n - perRow : perRow;
+  return { x: 500 + (col - (inRow - 1) / 2) * 140 - 10, y: rows === 2 ? (row ? 412 : 242) : 330 };
+}
+
+/** Своя рука: веер; на телефоне при многих картах — в два ряда. */
+function handPos(g: Geo, n: number, k: number) {
+  if (!g.port) {
+    const step = Math.min(80, 780 / Math.max(1, n - 1));
+    const t = n > 1 ? k / (n - 1) - 0.5 : 0;
+    return { x: g.hand.x + (k - (n - 1) / 2) * step, y: g.hand.y + t * t * 40 * (n > 8 ? 1.4 : 1), r: t * Math.min(26, n * 2.6), s: g.ds };
+  }
+  return portraitHand(n, k, g.hand.x, g.hand.y, 410, g.ds, false);
+}
+
+interface Item extends StageItem {
+  role?: 'hand' | 'att' | 'def' | 'ptop' | 'stock';
+  i?: number;
+}
+
 class DurakView implements GameView<View, Event> {
   private ctx!: ViewCtx;
-  private wrap!: HTMLElement;
-  private stage!: HTMLElement;
+  private cs!: CardStage;
   private plates!: HTMLElement;
   private zone!: HTMLElement;
   private banner!: HTMLElement;
   private cover!: HTMLElement;
   private btns!: HTMLElement;
   private info!: HTMLElement;
-  private els = new Map<string, HTMLElement>();
   private m: View | null = null;
-  private ro: ResizeObserver | null = null;
   /** Чьи карты внизу экрана (за этим экраном). */
   private viewer = 0;
   /** Хот-сит: карты скрыты, пока игрок не нажмёт «показать». */
@@ -80,22 +104,20 @@ class DurakView implements GameView<View, Event> {
     if (e.key === 'Escape') this.select(null);
   };
 
+  private get g(): Geo {
+    return this.cs.portrait ? PORT : LAND;
+  }
+
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.wrap = h(`<div class="dk-wrap"><div class="dk-stage">
-        <div class="dk-cloth"></div>
-        <div class="dk-plates"></div>
-        <div class="dk-zone" hidden><span>Сюда</span></div>
-        <div class="dk-banner" hidden></div>
-        <div class="dk-cover" hidden><div class="dk-cover-box"><div class="dk-cover-t"></div><button class="btn primary">Показать карты</button></div></div>
-      </div></div>`);
-    root.appendChild(this.wrap);
-    this.stage = this.wrap.querySelector('.dk-stage') as HTMLElement;
-    this.plates = this.wrap.querySelector('.dk-plates') as HTMLElement;
-    this.zone = this.wrap.querySelector('.dk-zone') as HTMLElement;
-    this.banner = this.wrap.querySelector('.dk-banner') as HTMLElement;
-    this.cover = this.wrap.querySelector('.dk-cover') as HTMLElement;
+    this.cs = new CardStage(root, 1000, 720, 'dk-wrap', '<div class="dk-cloth"></div>', { portrait: { W: 540, H: 900 } });
+    this.cs.over.innerHTML = '<div class="dk-plates"></div><div class="dk-banner" hidden></div>';
+    this.plates = this.cs.over.querySelector('.dk-plates') as HTMLElement;
+    this.banner = this.cs.over.querySelector('.dk-banner') as HTMLElement;
+    this.zone = h('<div class="dk-zone" hidden><span>Сюда</span></div>');
+    this.cover = h('<div class="dk-cover" hidden><div class="dk-cover-box"><div class="dk-cover-t"></div><button class="btn primary">Показать карты</button></div></div>');
+    this.cs.stage.append(this.zone, this.cover);
     (this.cover.querySelector('button') as HTMLButtonElement).onclick = () => {
       Sound.unlock();
       this.hidden = false;
@@ -104,27 +126,18 @@ class DurakView implements GameView<View, Event> {
       this.refreshTurn();
     };
     const ctl = h(`<div class="dk-controls"><div class="dk-info"></div><div class="dk-btns"></div>
-      ${ctx.demo ? '' : '<div class="hint small-hint">Нажмите карту, потом — куда её положить (подсвечено). Esc — отменить выбор.</div>'}</div>`);
+      ${ctx.demo ? '' : `<div class="hint small-hint">Нажмите карту, потом — куда её положить (подсвечено). Отменить выбор — ${touchScreen() ? 'нажмите на пустое место стола' : 'Esc или щелчок по пустому месту стола'}.</div>`}</div>`);
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.dk-btns') as HTMLElement;
     this.info = ctl.querySelector('.dk-info') as HTMLElement;
 
-    this.stage.addEventListener('click', (e) => this.onClick(e));
+    this.cs.stage.addEventListener('click', (e) => this.onClick(e));
     this.zone.addEventListener('click', (e) => {
       e.stopPropagation();
       this.playToZone();
     });
-    this.ro = new ResizeObserver(() => this.fit());
-    this.ro.observe(this.wrap);
-    this.fit();
+    this.cs.onMode = () => this.draw();
     if (!ctx.demo) document.addEventListener('keydown', this.onKey);
-  }
-
-  private fit() {
-    const r = this.wrap.getBoundingClientRect();
-    if (!r.width || !r.height) return;
-    const k = Math.min(r.width / SW, r.height / SH);
-    this.stage.style.transform = `translate(${(r.width - SW * k) / 2}px, ${(r.height - SH * k) / 2}px) scale(${k})`;
   }
 
   // ---------------------------------------------------------------- кто где сидит
@@ -136,9 +149,10 @@ class DurakView implements GameView<View, Event> {
   }
 
   private anchorOf(v: View, seat: number): Anchor {
-    if (seat === this.viewer) return { x: 500, y: HAND_Y };
+    const g = this.g;
+    if (seat === this.viewer) return g.hand;
     const others = this.order(v).slice(1);
-    return arc(others.length)[others.indexOf(seat)] ?? { x: 500, y: 90 };
+    return arc(g, others.length)[others.indexOf(seat)] ?? { x: g.W / 2, y: 90 };
   }
 
   private chooseViewer(v: View, toAct: number[]) {
@@ -168,29 +182,28 @@ class DurakView implements GameView<View, Event> {
   // ---------------------------------------------------------------- раскладка
 
   private layout(v: View): Item[] {
+    const g = this.g;
     const items: Item[] = [];
     if (v.cfg.polish) this.layoutPolish(v, items);
     // колода и козырь
     const dl = v.cfg.polish ? 0 : deckLeft(v);
+    const D = g.deck;
+    const ds = g.ds;
     // потайной: закрытая карта под козырем
-    if (v.hasHidden && v.trumpCard) items.push({ key: 'hidden', card: null, x: DECK.x + 44, y: DECK.y + 36, r: 78, s: 0.92, z: 0, cls: 'dk-hidden' });
-    if (v.trumpCard && dl > 0) items.push({ key: 'c:' + cardId(v.trumpCard), card: v.trumpCard, x: DECK.x + 34, y: DECK.y, r: 90, s: 0.92, z: 1 });
-    if (dl > (v.trumpCard ? 1 : 0)) items.push({ key: 'deck', card: null, x: DECK.x, y: DECK.y - Math.min(8, dl / 4), r: 0, s: 0.92, z: 2, cls: 'dk-deck' });
+    if (v.hasHidden && v.trumpCard) items.push({ key: 'hidden', card: null, x: D.x + 44 * ds, y: D.y + 36 * ds, r: 78, s: ds, z: 0, cls: 'dk-hidden' });
+    if (v.trumpCard && dl > 0) items.push({ key: cardKey(v.trumpCard), card: v.trumpCard, x: D.x + 34 * ds, y: D.y, r: 90, s: ds, z: 1 });
+    if (dl > (v.trumpCard ? 1 : 0)) items.push({ key: 'deck', card: null, x: D.x, y: D.y - Math.min(8, dl / 4), r: 0, s: ds, z: 2, cls: 'dk-deck' });
     // бито
-    if (v.bito.length) items.push({ key: 'bito', card: null, x: BITO.x, y: BITO.y, r: 12, s: 0.92, z: 1, cls: 'dk-bito' });
+    if (v.bito.length) items.push({ key: 'bito', card: null, x: g.bito.x, y: g.bito.y, r: 12, s: ds, z: 1, cls: 'dk-bito' });
     // стол
     const n = v.table.length;
-    const rows = n > 3 ? 2 : 1;
-    const perRow = rows === 2 ? Math.ceil(n / 2) : n;
+    const targets = this.targetsFor(v);
     v.table.forEach((p, i) => {
-      const row = rows === 2 && i >= perRow ? 1 : 0;
-      const col = row ? i - perRow : i;
-      const inRow = row ? n - perRow : perRow;
-      const x = 500 + (col - (inRow - 1) / 2) * 128 - 10;
-      const y = rows === 2 ? (row ? 438 : 272) : 352;
-      const sel = this.targetsFor(v).has(i);
-      items.push({ key: 'c:' + cardId(p.a), card: p.a, x, y, r: -3 + ((i * 7) % 6), s: 0.86, z: 10 + i * 2, role: 'att', i, cls: sel ? 'dk-target' : '' });
-      if (p.d) items.push({ key: 'c:' + cardId(p.d), card: p.d, x: x + 20, y: y + 26, r: 8 - ((i * 5) % 7), s: 0.86, z: 11 + i * 2, role: 'def', i });
+      const { x, y } = tablePos(g, i, n);
+      const cls = targets.has(i) ? 'cs-target' : '';
+      const ts = g.ds;
+      items.push({ key: cardKey(p.a), card: p.a, x, y, r: -3 + ((i * 7) % 6), s: ts, z: 10 + i * 2, cls, data: { role: 'att', i: String(i) } });
+      if (p.d) items.push({ key: cardKey(p.d), card: p.d, x: x + 20, y: y + 26, r: 8 - ((i * 5) % 7), s: ts, z: 11 + i * 2, data: { role: 'def', i: String(i) } });
     });
     // руки
     for (const seat of v.seats) {
@@ -200,22 +213,18 @@ class DurakView implements GameView<View, Event> {
         const up = this.faceUp(v, seat);
         const hand = up ? sortHand(v.hands[seat], v.trump) : [];
         const N = up ? hand.length : cnt;
-        const step = Math.min(64, 760 / Math.max(1, N - 1));
         const playable = up ? this.playable(v) : [];
         for (let k = 0; k < N; k++) {
-          const t = N > 1 ? k / (N - 1) - 0.5 : 0;
-          const x = 500 + (k - (N - 1) / 2) * step;
-          const y = HAND_Y + Math.abs(t) * Math.abs(t) * 40 * (N > 8 ? 1.4 : 1);
-          const r = t * Math.min(26, N * 2.6);
+          const p = handPos(g, N, k);
           if (!up) {
-            items.push({ key: `b:${seat}:${k}`, card: null, x, y, r, s: 1, z: 100 + k });
+            items.push({ key: `b:${seat}:${k}`, card: null, ...p, z: 100 + k });
             continue;
           }
           const c = hand[k];
           const isSel = this.selected.some((x) => sameCard(x, c));
           const can = playable.some((x) => sameCard(x, c));
-          const cls = this.actSeat != null ? (isSel ? 'dk-sel' : can ? 'dk-can' : 'dk-dim') : '';
-          items.push({ key: 'c:' + cardId(c), card: c, x, y: y - (isSel ? 34 : 0), r, s: 1, z: 100 + k, role: 'hand', cls });
+          const cls = this.actSeat != null ? (isSel ? 'cs-sel' : can ? 'cs-can' : 'cs-dim') : '';
+          items.push({ key: cardKey(c), card: c, ...p, y: p.y - (isSel ? 34 : 0), z: 100 + k, cls, data: { role: 'hand', k: cardKey(c) } });
         }
         continue;
       }
@@ -223,13 +232,14 @@ class DurakView implements GameView<View, Event> {
       const up = this.faceUp(v, seat);
       const list = up ? sortHand(v.hands[seat], v.trump) : [];
       const N = up ? list.length : cnt;
-      const step = Math.min(up ? 26 : 14, 150 / Math.max(1, N - 1));
+      const s = g.port ? 0.5 : 0.66;
+      const step = Math.min(up ? 26 : 14, (g.port ? 90 : 150) / Math.max(1, N - 1));
       for (let k = 0; k < N; k++) {
         const t = N > 1 ? k / (N - 1) - 0.5 : 0;
         const x = a.x + (k - (N - 1) / 2) * step;
         const y = a.y + Math.abs(t) * 8;
         const r = t * Math.min(30, N * 4);
-        items.push(up ? { key: 'c:' + cardId(list[k]), card: list[k], x, y, r, s: 0.6, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, x, y, r, s: 0.6, z: 50 + k });
+        items.push(up ? { key: cardKey(list[k]), card: list[k], x, y, r, s, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, x, y, r, s, z: 50 + k });
       }
     }
     // длинный дурак: шестёрка (личный козырь) и выложенные карты — веером рядом с игроком
@@ -238,11 +248,11 @@ class DurakView implements GameView<View, Event> {
         const list = v.laid[seat] || [];
         const me = seat === this.viewer;
         const a = this.anchorOf(v, seat);
-        const right = !me && a.x > 640;
+        const right = !me && a.x > g.W * 0.64;
         list.forEach((c, i) => {
-          const x = me ? 150 + i * 17 : right ? a.x - 112 - i * 15 : a.x + 112 + i * 15;
-          const y = me ? HAND_Y + 20 : a.y + 6;
-          items.push({ key: 'c:' + cardId(c), card: c, x, y, r: me ? -4 : 0, s: me ? 0.46 : 0.4, z: 30 + i, cls: 'dk-laid' });
+          const x = g.port ? (me ? 34 + i * 17 : a.x - 30 + i * 13) : me ? 150 + i * 17 : right ? a.x - 112 - i * 15 : a.x + 112 + i * 15;
+          const y = g.port ? (me ? g.hand.y - 150 : a.y + 100) : me ? g.hand.y + 20 : a.y + 6;
+          items.push({ key: cardKey(c), card: c, x, y, r: me ? -4 : 0, s: g.port ? (me ? 0.42 : 0.34) : me ? 0.46 : 0.4, z: 30 + i, cls: 'dk-laid' });
         });
       }
     }
@@ -251,28 +261,31 @@ class DurakView implements GameView<View, Event> {
 
   /** Польский: стопка в центре (внизу — козырь поперёк) и колода кольцом вокруг. */
   private layoutPolish(v: View, items: Item[]) {
+    const g = this.g;
     const n = v.deckCount;
     for (let i = 0; i < n; i++) {
-      const p = stockPos(i, n);
-      items.push({ key: 's:' + i, card: null, x: p.x, y: p.y, r: p.r, s: 0.42, z: 5, role: 'stock', cls: this.stockLive(v) ? 'dk-can' : '' });
+      const p = stockPos(g, i, n);
+      items.push({ key: 's:' + i, card: null, x: p.x, y: p.y, r: p.r, s: 0.42, z: 5, cls: this.stockLive(v) ? 'cs-can' : '', data: { role: 'stock' } });
     }
     const c = v.center;
     const from = Math.max(0, c.length - 7);
-    for (let i = from; i < c.length; i++) {
+    for (let i = 0; i < c.length; i++) {
       const top = i === c.length - 1;
       const base = i === 0;
+      const old = i < from;
       const k = i - from;
       const target = top && this.polishTarget(v);
       items.push({
-        key: 'c:' + cardId(c[i]),
+        key: cardKey(c[i]),
         card: c[i],
-        x: PCENTER.x + (base ? 0 : (k % 3) * 9 - 9),
-        y: PCENTER.y + (base ? 0 : (k % 2) * 6 - 3),
-        r: base ? 90 : ((i * 37) % 30) - 15,
+        // старые карты стопки лежат ровно под верхними семью (чтобы не исчезали из-под низа)
+        x: g.pc.x + (base || old ? 0 : (k % 3) * 9 - 9),
+        y: g.pc.y + (base || old ? 0 : (k % 2) * 6 - 3),
+        r: base ? 90 : old ? 0 : ((i * 37) % 30) - 15,
         s: 0.82,
-        z: 20 + k,
-        role: top ? 'ptop' : undefined,
-        cls: target ? 'dk-target' : '',
+        z: old ? 19 : 20 + k,
+        cls: target ? 'cs-target' : '',
+        data: top ? { role: 'ptop' } : undefined,
       });
     }
   }
@@ -288,73 +301,27 @@ class DurakView implements GameView<View, Event> {
     return polishBeaters(v, this.actSeat).some((x) => sameCard(x, this.selected[0]));
   }
 
-  private transform(it: { x: number; y: number; r: number; s: number }) {
-    return `translate(${it.x - CW / 2}px, ${it.y - CH / 2}px) rotate(${it.r}deg) scale(${it.s})`;
-  }
-
   /** Разложить карты по местам. Новые влетают из enter, исчезнувшие улетают в exit. */
   private draw(enter: Anchor | null = null, exit: Anchor | null = null) {
     const v = this.m;
     if (!v) return;
-    const dur = Math.round(360 / this.ctx.speed());
-    this.stage.style.setProperty('--dk-dur', dur + 'ms');
-    const items = this.layout(v);
-    const seen = new Set<string>();
-    let fresh = 0;
-    for (const it of items) {
-      seen.add(it.key);
-      let el = this.els.get(it.key);
-      const face = it.card ? cardId(it.card) : 'back';
-      if (!el) {
-        el = document.createElement('div');
-        el.className = 'dk-card';
-        el.dataset.k = it.key;
-        this.els.set(it.key, el);
-        const from = enter ?? it;
-        el.style.transition = 'none';
-        el.style.transform = this.transform({ x: from.x, y: from.y, r: 0, s: it.s * (enter ? 0.7 : 1) });
-        el.style.opacity = enter ? '1' : '0';
-        this.stage.insertBefore(el, this.plates);
-        void el.offsetWidth;
-        el.style.transition = '';
-        el.style.transitionDelay = enter ? `${Math.min(fresh++ * 45, 400)}ms` : '0ms';
-        el.style.opacity = '1';
-      } else el.style.transitionDelay = '0ms';
-      if (el.dataset.face !== face) {
-        el.dataset.face = face;
-        el.innerHTML = cardHTML(it.card, settings.deck);
-      }
-      el.style.transform = this.transform(it);
-      el.style.zIndex = String(it.z);
-      el.className = `dk-card${it.cls ? ' ' + it.cls : ''}`;
-      if (it.role) el.dataset.role = it.role;
-      else delete el.dataset.role;
-      if (it.i != null) el.dataset.i = String(it.i);
-    }
-    for (const [k, el] of [...this.els]) {
-      if (seen.has(k)) continue;
-      this.els.delete(k);
-      if (exit) {
-        el.style.transitionDelay = '0ms';
-        el.style.transform = this.transform({ x: exit.x, y: exit.y, r: 20, s: 0.6 });
-        el.style.opacity = '0.2';
-        setTimeout(() => el.remove(), dur + 60);
-      } else el.remove();
-    }
+    this.cs.render(this.layout(v), this.ctx.speed(), enter, exit);
     this.drawPlates(v);
     this.drawZone(v);
   }
 
   private drawPlates(v: View) {
+    const g = this.g;
     let s = '';
     const dl = deckLeft(v);
     if (v.cfg.polish) {
-      if (v.deckCount) s += `<div class="dk-count" style="left:${PCENTER.x - 40}px;top:${PCENTER.y + 82}px">в колоде ${v.deckCount}</div>`;
-    } else if (dl > 0) s += `<div class="dk-count" style="left:${DECK.x - 40}px;top:${DECK.y + 92}px">${dl}</div>`;
+      if (v.deckCount) s += `<div class="dk-count" style="left:${g.pc.x - 40}px;top:${g.pc.y + 82}px">в колоде ${v.deckCount}</div>`;
+    } else if (dl > 0) s += `<div class="dk-count" style="left:${g.deck.x - 40}px;top:${g.deck.y + 92 * g.ds}px">${dl}</div>`;
     if (!longOn(v))
-      s += `<div class="dk-trump" style="left:${DECK.x - 60}px;top:${DECK.y - 136}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span>${dl ? '' : '<small>козырь</small>'}</div>`;
-    if (v.bito.length) s += `<div class="dk-count" style="left:${BITO.x - 40}px;top:${BITO.y + 96}px">бито ${v.bito.length}</div>`;
+      s += `<div class="dk-trump" style="left:${g.trump.x - 60}px;top:${g.trump.y - 30}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span>${dl ? '' : '<small>козырь</small>'}</div>`;
+    if (v.bito.length) s += `<div class="dk-count" style="left:${g.bito.x - 40}px;top:${g.bito.y + 104 * g.ds}px">бито ${v.bito.length}</div>`;
     const toAct = v.phase === 'attack' || v.phase === 'pbeat' || v.phase === 'plead' ? v.attacker : v.phase === 'defend' ? v.defender : v.asker;
+    const many = v.seats.length > 4;
     for (const seat of v.seats) {
       const a = this.anchorOf(v, seat);
       const me = seat === this.viewer;
@@ -381,16 +348,21 @@ class DurakView implements GameView<View, Event> {
       const pog = v.pogony[seat] ? `<span class="dk-pog" title="Погоны">${'★'.repeat(Math.min(4, v.pogony[seat]))}</span>` : '';
       const team = v.team[seat] >= 0 ? `<span class="dk-team t${v.team[seat]}" title="Команда">${v.team[seat] ? 'Б' : 'А'}</span>` : '';
       const fool = v.cfg.games > 1 && v.fools[seat] ? `<span class="dk-fools" title="Сколько раз был дураком">🃏${v.fools[seat]}</span>` : '';
-      const y = me ? HAND_Y - 120 : a.y + 58;
-      const x = me ? 500 : a.x;
+      // своя табличка — над верхним краем веера
+      const y = me ? (g.port ? g.hand.y - (v.counts[seat] > 9 ? 150 : 100) : g.hand.y - 124) : a.y + (g.port ? 44 : 58);
+      // у края узкой сцены табличка не вылезает за стол
+      const x = me ? g.hand.x : g.port ? Math.max(78, Math.min(g.W - 78, a.x)) : a.x;
       const look = SEATS[seat];
-      s += `<div class="dk-plate${toAct === seat && v.phase !== 'over' ? ' on' : ''}${me ? ' me' : ''}" style="left:${x}px;top:${y}px;--c:${look.color}">
+      // в узкой раскладке при многих игроках таблички соперников мельче
+      const sm = g.port && many && !me;
+      s += `<div class="dk-plate${toAct === seat && v.phase !== 'over' ? ' on' : ''}${me ? ' me' : ''}${sm ? ' sm' : ''}" style="left:${x}px;top:${y}px;--c:${look.color}">
         ${team}${ptChip}${title ? `<i class="dk-title">${esc(title)}</i><small>${this.ctx.name(seat)}</small>` : `<b>${this.ctx.name(seat)}</b>`}${role ? `<em>${role}</em>` : ''}${pog}${fool}</div>`;
     }
     this.plates.innerHTML = s;
   }
 
   private drawZone(v: View) {
+    const g = this.g;
     const show = this.actSeat != null && this.selected.length > 0 && this.zoneAction(v) != null;
     this.zone.hidden = !show;
     if (!show) return;
@@ -399,19 +371,22 @@ class DurakView implements GameView<View, Event> {
     const tr = act.type === 'transfer';
     const label = act.type === 'attack' || act.type === 'plead' ? 'Ходить' : act.type === 'throw' ? 'Подкинуть' : 'Перевести';
     (this.zone.firstElementChild as HTMLElement).textContent = label;
-    let x = 500;
-    let y = 352;
-    if (v.cfg.polish) x = 640;
-    else if (n) {
+    let x = g.port ? 270 : 500;
+    let y = g.port ? 408 : 330;
+    if (v.cfg.polish) x = g.port ? g.pc.x + 150 : 640;
+    else if (g.port) {
+      // следующее место в сетке по три
+      if (n < 6) ({ x, y } = tablePos(g, n, n + 1));
+    } else if (n) {
       // справа от последней карты
       const rows = n > 3 ? 2 : 1;
       const perRow = rows === 2 ? Math.ceil(n / 2) : n;
       const inRow = rows === 2 ? n - perRow : perRow;
-      x = 500 + (inRow - (inRow - 1) / 2) * 128 - 10;
-      y = rows === 2 ? 438 : 352;
+      x = 500 + (inRow - (inRow - 1) / 2) * 140 - 10;
+      y = rows === 2 ? 412 : 330;
       if (x > 800) {
         x = 500;
-        y = 352;
+        y = 330;
       }
     }
     this.zone.style.left = x - 55 + 'px';
@@ -456,14 +431,14 @@ class DurakView implements GameView<View, Event> {
   }
 
   private onClick(e: MouseEvent) {
-    const el = (e.target as Element).closest('.dk-card') as HTMLElement | null;
+    const el = (e.target as Element).closest('.cs-card') as HTMLElement | null;
     const v = this.m;
     if (!v || this.actSeat == null || this.hidden) return;
     if (!el) return this.select(null);
     const role = el.dataset.role;
     const key = el.dataset.k || '';
     if (role === 'hand') {
-      const c = (v.hands[this.actSeat] || []).find((x) => 'c:' + cardId(x) === key);
+      const c = (v.hands[this.actSeat] || []).find((x) => cardKey(x) === key);
       if (c) this.select(c);
       return;
     }
@@ -471,12 +446,12 @@ class DurakView implements GameView<View, Event> {
       if (!this.stockLive(v)) return;
       return this.send(v.phase === 'pbeat' ? { type: 'pflip' } : { type: 'pflipLead' });
     }
-    if (role === 'ptop' && el.classList.contains('dk-target')) {
+    if (role === 'ptop' && el.classList.contains('cs-target')) {
       const c = this.selected[0];
       if (c) this.send({ type: 'pbeat', card: c });
       return;
     }
-    if (role === 'att' && el.classList.contains('dk-target')) {
+    if (role === 'att' && el.classList.contains('cs-target')) {
       const i = +(el.dataset.i ?? -1);
       const c = this.selected[0];
       if (c) this.send({ type: 'beat', i, card: c });
@@ -589,8 +564,7 @@ class DurakView implements GameView<View, Event> {
   setView(v: View) {
     this.m = v;
     this.chooseViewer(v, this.toActOf(v));
-    for (const el of this.els.values()) el.remove();
-    this.els.clear();
+    this.cs.clear();
     this.banner.hidden = true;
     this.draw();
     this.renderInfo(v);
@@ -644,7 +618,7 @@ class DurakView implements GameView<View, Event> {
       case 'bito':
         m.bito = [...m.bito, ...m.table.flatMap((p) => (p.d ? [p.a, p.d] : [p.a]))];
         m.table = [];
-        return { enter: null, exit: BITO };
+        return { enter: null, exit: this.g.bito };
       case 'pickup': {
         const seat = ev.seat;
         if (this.faceUp(m, seat) || m.hands[seat].length) m.hands[seat] = [...m.hands[seat], ...ev.cards];
@@ -658,7 +632,7 @@ class DurakView implements GameView<View, Event> {
         if (ev.cards && (this.faceUp(m, seat) || m.hands[seat].length)) m.hands[seat] = [...m.hands[seat], ...ev.cards];
         m.deckCount = Math.max(0, m.deckCount - ev.count);
         if (!m.deckCount) m.trumpCard = null;
-        return { enter: DECK, exit: null };
+        return { enter: this.g.deck, exit: null };
       }
       case 'out':
         m.out = [...m.out, ev.seat];
@@ -677,10 +651,10 @@ class DurakView implements GameView<View, Event> {
         if (ev.blind) m.deckCount = Math.max(0, m.deckCount - 1);
         else takeFrom(ev.seat, [ev.card]);
         m.center = [...m.center, ev.card];
-        return { enter: ev.blind ? stockPos(m.deckCount, m.deckCount + 1) : this.anchorOf(m, ev.seat), exit: null };
+        return { enter: ev.blind ? stockPos(this.g, m.deckCount, m.deckCount + 1) : this.anchorOf(m, ev.seat), exit: null };
       case 'pflip': {
         m.deckCount = Math.max(0, m.deckCount - 1);
-        const from = stockPos(m.deckCount, m.deckCount + 1);
+        const from = stockPos(this.g, m.deckCount, m.deckCount + 1);
         if (ev.beat) {
           m.center = [...m.center, ev.card];
           return { enter: from, exit: null };
@@ -698,7 +672,7 @@ class DurakView implements GameView<View, Event> {
       case 'laid':
         m.laid = m.laid.map((x, i) => (i === ev.seat ? [...x, ev.card] : x));
         m.level = m.level.map((x, i) => (i === ev.seat ? ev.card.r : x));
-        return { enter: DECK, exit: null };
+        return { enter: this.g.deck, exit: null };
       default:
         return { enter: null, exit: null };
     }
@@ -716,7 +690,7 @@ class DurakView implements GameView<View, Event> {
           Sound.shuffle();
           this.m = v;
           this.chooseViewer(v, this.toActOf(v));
-          this.draw(DECK, DECK);
+          this.draw(this.g.deck, this.g.deck);
           this.renderInfo(v);
           await sleep(dur + 700 / speed);
           if (ev.chooser != null) await this.showBanner(`${SEATS[ev.chooser] ? this.plain(ev.chooser) : ''} выбирает козырь`, 900 / speed);
@@ -804,8 +778,7 @@ class DurakView implements GameView<View, Event> {
     }
     this.actSeat = seat;
     if (prev !== this.viewer) {
-      for (const el of this.els.values()) el.remove();
-      this.els.clear();
+      this.cs.clear();
     }
     this.draw();
     this.renderButtons();
@@ -858,7 +831,7 @@ class DurakView implements GameView<View, Event> {
   }
 
   destroy() {
-    this.ro?.disconnect();
+    this.cs.destroy();
     document.removeEventListener('keydown', this.onKey);
   }
 }

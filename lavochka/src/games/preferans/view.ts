@@ -7,15 +7,16 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
-import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
+import { CardStage, cardKey, fan, portraitHand, type Point, type StageItem } from '../../cards/stage';
 import { allBids, bidName, bidRank, DUTY, finalScores, goraForFinal, handCount, isMisere, legalCards, levelOk, minLevel, SKAKS, type Bid, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './preferans.css';
 
-const W = 1000;
-const H = 720;
-const HAND_Y = 615;
-const CENTER = { x: 500, y: 320 };
+/** Геометрия стола: альбомная 1000×720 и вертикальная для телефона 540×900.
+ * S — размер карт на руке, на столе и прикупа (одинаковый); os / oo — закрытые и открытые руки соперников. */
+const LAND = { port: false, W: 1000, hand: { x: 500, y: 606 }, c: { x: 500, y: 300 }, S: 1.05, prik: 226, os: 0.6, oo: 0.66, kx: 0.24, ky: 0.2 };
+const PORT = { port: true, W: 540, hand: { x: 270, y: 792 }, c: { x: 270, y: 440 }, S: 1, prik: 250, os: 0.5, oo: 0.5, kx: 0.3, ky: 0.25 };
+type Geo = typeof LAND;
 
 class PrefView implements GameView<View, Event> {
   private ctx!: ViewCtx;
@@ -36,7 +37,8 @@ class PrefView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.cs = new CardStage(root, W, H, 'pf-wrap', '<div class="pf-cloth"></div>');
+    this.cs = new CardStage(root, 1000, 720, 'pf-wrap', '<div class="pf-cloth"></div>', { portrait: { W: 540, H: 900 } });
+    this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="pf-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.pf-plates') as HTMLElement;
     this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;
@@ -61,9 +63,17 @@ class PrefView implements GameView<View, Event> {
     return v.seats.map((_, k) => v.seats[(i0 + k) % v.seats.length]);
   }
 
+  private get g(): Geo {
+    return this.cs.portrait ? PORT : LAND;
+  }
+
   private anchor(v: View, seat: number): Point {
     const k = this.order(v).indexOf(seat);
-    if (k === 0) return { x: 500, y: HAND_Y };
+    if (k === 0) return this.g.hand;
+    if (this.g.port) {
+      if (v.seats.length === 3) return k === 1 ? { x: 120, y: 92 } : { x: 420, y: 92 };
+      return k === 1 ? { x: 82, y: 160 } : k === 2 ? { x: 270, y: 72 } : { x: 458, y: 160 };
+    }
     if (v.seats.length === 3) return k === 1 ? { x: 160, y: 230 } : { x: 840, y: 230 };
     return k === 1 ? { x: 140, y: 260 } : k === 2 ? { x: 500, y: 92 } : { x: 860, y: 260 };
   }
@@ -96,14 +106,16 @@ class PrefView implements GameView<View, Event> {
   }
 
   private layout(v: View): StageItem[] {
+    const g = this.g;
+    const C = g.c;
     const items: StageItem[] = [];
-    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 30 + i * 60, y: 240, r: (i - 0.5) * 8, s: 0.62, z: 5 + i });
+    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: C.x - 35 + i * 70, y: g.prik, r: (i - 0.5) * 8, s: g.S, z: 5 + i });
     const t = v.trick;
     if (t) {
-      if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: CENTER.x, y: 230, r: 0, s: 0.66, z: 18, cls: 'pf-prk', from: 'p:' });
+      if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: C.x, y: g.prik - 10, r: 0, s: g.S, z: 18, cls: 'pf-prk', from: 'p:' });
       t.cards.forEach((x, i) => {
         const a = this.anchor(v, x.seat);
-        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + (a.x - CENTER.x) * 0.24, y: CENTER.y + 30 + (a.y - CENTER.y) * 0.2, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
+        items.push({ key: cardKey(x.card), card: x.card, x: C.x + (a.x - C.x) * g.kx, y: C.y + 30 + (a.y - C.y) * g.ky, r: ((i * 23) % 20) - 10, s: g.S, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
       });
     }
     const ctl = this.controlled(v);
@@ -116,8 +128,8 @@ class PrefView implements GameView<View, Event> {
       const up = this.faceUp(v, seat) && v.hands[seat].length === n;
       const list = up ? sortHand(v.hands[seat], v.trump && v.trump !== 'NT' ? (v.trump as Suit) : undefined) : [];
       for (let k = 0; k < n; k++) {
-        const p = me ? fan(n, k, a.x, a.y, 720, 64, 40, 24) : fan(n, k, a.x, a.y, up ? 250 : 150, up ? 26 : 14, 8, up ? 20 : 30);
-        const s = me ? 1 : up ? 0.62 : 0.52;
+        const p = me ? (g.port ? portraitHand(n, k, a.x, a.y, 410, g.S, false) : fan(n, k, a.x, a.y, 760, 74, 40, 24)) : fan(n, k, a.x, a.y, up ? (g.port ? 190 : 250) : g.port ? 110 : 150, up ? 26 : 14, 8, up ? 20 : 30);
+        const s = me ? g.S : up ? g.oo : g.os;
         if (!up) {
           items.push({ key: `b:${seat}:${k}`, card: null, ...p, s, z: (me ? 100 : 50) + k });
           continue;
@@ -137,11 +149,13 @@ class PrefView implements GameView<View, Event> {
     const v = this.v;
     if (!v) return;
     this.cs.render(this.layout(v), this.ctx.speed(), enter, exit);
+    const g = this.g;
     let s = '';
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const y = me ? a.y - 112 : a.y + 66;
+      const y = me ? a.y - (g.port ? (handCount(v, seat) > 9 ? 184 : 126) : 124) : a.y + (g.port ? 44 : 66);
+      const x = g.port && !me ? Math.max(80, Math.min(g.W - 80, a.x)) : a.x;
       const marks: string[] = [];
       if (v.seats.length === 4 && seat === v.dealer && v.phase !== 'over') marks.push('<em>сдаёт</em>');
       if (v.phase === 'bid' && v.passed.includes(seat)) marks.push('<em>пас</em>');
@@ -152,12 +166,12 @@ class PrefView implements GameView<View, Event> {
       if (v.bombs[seat]?.length) marks.push(`<em title="Бомбы: ${v.bombs[seat].map((b) => '×' + b).join(', ')}">💣${v.bombs[seat].length > 1 ? v.bombs[seat].length : ''}</em>`);
       if (v.phase === 'play') marks.push(`<i>${v.tricks[seat]}</i>`);
       const on = v.turn === seat && v.phase !== 'over';
-      s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
+      s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
     }
     if (v.trump && v.trump !== 'NT') s += `<div class="pf-trump"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump as Suit]}</span><small>козырь</small></div>`;
     else if (v.kind === 'raspasy' && v.phase === 'play') s += '<div class="pf-trump"><span>☰</span><small>распасы</small></div>';
     else if (v.kind === 'misere' && v.phase === 'play') s += '<div class="pf-trump"><span>∅</span><small>мизер</small></div>';
-    if (v.prikup.length && v.phase !== 'bid' && v.kind !== 'raspasy') s += `<div class="pf-label" style="left:${CENTER.x}px;top:200px">прикуп был: ${v.prikup.map((c) => SUIT_SYM[c.s] + (c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r)).join(' ')}</div>`;
+    if (v.prikup.length && v.phase !== 'bid' && v.kind !== 'raspasy') s += `<div class="pf-label" style="left:${g.c.x}px;top:${g.port ? g.c.y + 190 : g.prik - 40}px">прикуп был: ${v.prikup.map((c) => SUIT_SYM[c.s] + (c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r)).join(' ')}</div>`;
     this.plates.innerHTML = s;
     this.drawSheet(v);
   }
@@ -379,7 +393,7 @@ class PrefView implements GameView<View, Event> {
         await sleep(260 / speed);
       } else if (ev.type === 'prikup') {
         // прикуп переворачивается на месте и лежит, пока его не рассмотрят (10 с или «Дальше»), потом уходит заказчику
-        this.cs.render([...this.layout({ ...cur, phase: 'bid', bid: null }).filter((it) => !it.key.startsWith('p:')), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 52 + i * 104, y: 240, r: 0, s: 0.9, z: 30 + i, from: 'p:' }))], speed);
+        this.cs.render([...this.layout({ ...cur, phase: 'bid', bid: null }).filter((it) => !it.key.startsWith('p:')), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: this.g.c.x - 57 + i * 114, y: this.g.prik, r: 0, s: this.g.S, z: 30 + i, from: 'p:' }))], speed);
         Sound.card();
         const mine = !this.ctx.demo && ev.seat === this.viewer && this.ctx.mySeats.includes(ev.seat);
         this.banner.textContent = `Прикуп — ${this.plain(ev.seat)}`;
@@ -441,7 +455,7 @@ class PrefView implements GameView<View, Event> {
       }
     }
     this.v = v;
-    this.draw({ x: CENTER.x, y: 240 });
+    this.draw({ x: this.g.c.x, y: this.g.prik });
   }
 
   setTurn(toAct: number[], interactive: number[]) {

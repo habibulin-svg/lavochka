@@ -11,11 +11,10 @@ import { covers, deckLeft, handCount, isBura, isMoscow, type Event, type View } 
 import { SEATS } from './def';
 import './bura.css';
 
-const W = 1000;
-const H = 720;
-const HAND_Y = 615;
-const CENTER = { x: 520, y: 320 };
-const DECK = { x: 110, y: 330 };
+/** Геометрия стола: альбомная 1000×720 и вертикальная для телефона 540×900. */
+const LAND = { port: false, W: 1000, hand: { x: 520, y: 606 }, hs: 1.1, center: { x: 520, y: 318 }, cs: 1.1, deck: { x: 116, y: 330 }, ds: 1.1, os: 0.62, skip: { x: 790, y: 290 } };
+const PORT = { port: true, W: 540, hand: { x: 270, y: 790 }, hs: 1.1, center: { x: 280, y: 480 }, cs: 1.1, deck: { x: 92, y: 268 }, ds: 1.1, os: 0.55, skip: { x: 440, y: 268 } };
+type Geo = typeof LAND;
 
 class BuraView implements GameView<View, Event> {
   private ctx!: ViewCtx;
@@ -33,7 +32,8 @@ class BuraView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.cs = new CardStage(root, W, H, 'br-wrap', '<div class="br-cloth"></div>');
+    this.cs = new CardStage(root, 1000, 720, 'br-wrap', '<div class="br-cloth"></div>', { portrait: { W: 540, H: 900 } });
+    this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="br-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.br-plates') as HTMLElement;
     this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;
@@ -59,10 +59,19 @@ class BuraView implements GameView<View, Event> {
     return v.seats.map((_, k) => v.seats[(i0 + k) % v.seats.length]);
   }
 
+  private get g(): Geo {
+    return this.cs.portrait ? PORT : LAND;
+  }
+
   private anchor(v: View, seat: number): Point {
     const k = this.order(v).indexOf(seat);
     const n = v.seats.length;
-    if (k === 0) return { x: 520, y: HAND_Y };
+    if (k === 0) return this.g.hand;
+    if (this.g.port) {
+      if (n === 2) return { x: 270, y: 82 };
+      if (n === 3) return k === 1 ? { x: 140, y: 82 } : { x: 400, y: 82 };
+      return k === 1 ? { x: 92, y: 96 } : k === 2 ? { x: 270, y: 76 } : { x: 448, y: 96 };
+    }
     if (n === 2) return { x: 520, y: 92 };
     if (n === 3) return k === 1 ? { x: 300, y: 100 } : { x: 740, y: 100 };
     return k === 1 ? { x: 230, y: 120 } : k === 2 ? { x: 520, y: 92 } : { x: 810, y: 120 };
@@ -91,22 +100,25 @@ class BuraView implements GameView<View, Event> {
   // ---------------------------------------------------------------- раскладка
 
   private layout(v: View): StageItem[] {
+    const g = this.g;
+    const CENTER = g.center;
+    const DECK = g.deck;
     const items: StageItem[] = [];
     const dl = deckLeft(v);
-    if (dl > 0) items.push({ key: cardKey(v.trumpCard), card: v.trumpCard, x: DECK.x + 36, y: DECK.y, r: 90, s: 0.85, z: 1 });
-    if (dl > 1) items.push({ key: 'deck', card: null, x: DECK.x, y: DECK.y - Math.min(8, dl / 4), r: 0, s: 0.85, z: 2, cls: 'br-deck' });
+    if (dl > 0) items.push({ key: cardKey(v.trumpCard), card: v.trumpCard, x: DECK.x + 40 * g.ds, y: DECK.y, r: 90, s: g.ds, z: 1 });
+    if (dl > 1) items.push({ key: 'deck', card: null, x: DECK.x, y: DECK.y - Math.min(8, dl / 4), r: 0, s: g.ds, z: 2, cls: 'br-deck' });
     // заход и ответы
     if (v.lead) {
       const k = v.lead.cards.length;
       const row = (cs: Card[], dy: number, z: number, dx = 0) =>
-        cs.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: CENTER.x + (i - (k - 1) / 2) * 88 + dx, y: CENTER.y + dy, r: (i - (k - 1) / 2) * 3, s: 0.78, z: z + i }));
-      row(v.lead.cards, -18, 20);
+        cs.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: CENTER.x + (i - (k - 1) / 2) * 98 * g.cs + dx, y: CENTER.y + dy, r: (i - (k - 1) / 2) * 3, s: g.cs, z: z + i }));
+      row(v.lead.cards, -22, 20);
       v.answers.forEach((a, j) => {
-        if (a.beat) row(a.cards, 14 + j * 14, 30 + j * 4, 14 + j * 6);
+        if (a.beat) row(a.cards, 18 + j * 16, 30 + j * 4, 14 + j * 6);
         else
           for (let i = 0; i < k; i++) {
             const c = a.cards[i];
-            items.push({ key: c ? `sk:${cardKey(c)}` : `sk:${a.seat}:${i}`, card: null, x: CENTER.x + 250 + i * 14, y: CENTER.y - 30 + j * 30, r: 12 + i * 4, s: 0.6, z: 15 + i });
+            items.push({ key: c ? `sk:${cardKey(c)}` : `sk:${a.seat}:${i}`, card: null, x: g.skip.x + i * 14, y: g.skip.y + j * 30, r: 12 + i * 4, s: g.cs, z: 15 + i });
           }
       });
     }
@@ -119,24 +131,24 @@ class BuraView implements GameView<View, Event> {
       const list = up ? sortHand(v.hands[seat], v.trump) : [];
       for (let k = 0; k < n; k++) {
         if (me) {
-          const p = fan(n, k, a.x, a.y, 260, 96, 20, 12);
+          const p = fan(n, k, a.x, a.y, g.port ? 300 : 300, g.port ? 104 : 110, 20, 12);
           if (!up) {
-            items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: 1, z: 100 + k });
+            items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: g.hs, z: 100 + k });
             continue;
           }
           const c = list[k];
           const sel = this.selected.some((x) => sameCard(x, c));
           const cls = this.actSeat != null ? (sel ? 'cs-sel' : 'cs-can') : '';
-          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: 1, z: 100 + k, cls, data: { hand: c.s + c.r } });
+          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: g.hs, z: 100 + k, cls, data: { hand: c.s + c.r } });
         } else {
           const p = fan(n, k, a.x, a.y, 70, 30, 6, 16);
-          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s: 0.55, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: 0.55, z: 50 + k });
+          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s: g.os, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: g.os, z: 50 + k });
         }
       }
       // взятки стопкой
       if (v.tricks[seat]) {
-        const px = me ? a.x + 230 : a.x + 110;
-        const py = me ? a.y - 10 : a.y;
+        const px = g.port ? (me ? 478 : Math.min(g.W - 40, a.x + 80)) : me ? a.x + 250 : a.x + 110;
+        const py = g.port ? (me ? a.y - 150 : a.y + 6) : me ? a.y - 10 : a.y;
         items.push({ key: `pile:${seat}`, card: null, x: px, y: py, r: 80, s: 0.5, z: 40, cls: 'br-pile' });
       }
     }
@@ -147,19 +159,21 @@ class BuraView implements GameView<View, Event> {
     const v = this.v;
     if (!v) return;
     this.cs.render(this.layout(v), this.ctx.speed(), enter, exit);
+    const g = this.g;
     let s = '';
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const y = me ? a.y - 118 : a.y + 62;
+      const y = me ? a.y - 78 * g.hs - 46 : a.y + (g.port ? 48 : 62);
       const marks: string[] = [];
       if (v.palki[seat]) marks.push(`<i title="Палки">${'|'.repeat(Math.min(v.palki[seat], 16))} ${v.palki[seat]}</i>`);
       if (v.tricks[seat]) marks.push(`<em>взяток ${v.tricks[seat]}</em>`);
       if (v.pts[seat] >= 0) marks.push(`<b title="Очки во взятках">${v.pts[seat]}</b>`);
       const on = v.turn === seat && v.phase !== 'over';
-      s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
+      const x = g.port && !me ? Math.max(80, Math.min(g.W - 80, a.x)) : a.x;
+      s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
     }
-    s += `<div class="br-trump" style="left:${DECK.x - 40}px;top:${DECK.y + 100}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span><small>${deckLeft(v) ? `в колоде ${deckLeft(v)}` : 'козырь'}</small></div>`;
+    s += `<div class="br-trump" style="left:${g.deck.x - 40}px;top:${g.deck.y + 110 * g.ds}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span><small>${deckLeft(v) ? `в колоде ${deckLeft(v)}` : 'козырь'}</small></div>`;
     this.plates.innerHTML = s;
   }
 
@@ -295,7 +309,7 @@ class BuraView implements GameView<View, Event> {
       }
     }
     this.v = v;
-    this.draw(DECK);
+    this.draw(this.g.deck);
   }
 
   setTurn(toAct: number[], interactive: number[]) {

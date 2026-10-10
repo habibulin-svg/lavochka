@@ -166,7 +166,7 @@ class HoldemView implements GameView<View, Event> {
 
   private layout(v: View): StageItem[] {
     const items: StageItem[] = [];
-    v.board.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: C.x - 160 + i * 80, y: C.y - 10, r: 0, s: 0.72, z: 10 + i }));
+    v.board.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: C.x - 184 + i * 92, y: C.y - 10, r: 0, s: 0.86, z: 10 + i }));
     for (const seat of v.seats) {
       if (!holding(v, seat)) continue;
       const a = this.anchor(v, seat);
@@ -174,7 +174,7 @@ class HoldemView implements GameView<View, Event> {
       const cards: (Card | null)[] = v.hole[seat].length && (me ? !this.hidden || this.ctx.demo : true) ? v.hole[seat] : [null, null];
       const toward = { x: (C.x - a.x) * 0.12, y: (C.y - a.y) * 0.12 };
       cards.forEach((c, i) => {
-        const s = me ? 0.82 : 0.5;
+        const s = me ? 0.86 : 0.5;
         const x = a.x + toward.x + (i - 0.5) * (me ? 64 : 30);
         const y = a.y + toward.y - (me ? 40 : 0);
         const r = (i - 0.5) * (me ? 8 : 12);

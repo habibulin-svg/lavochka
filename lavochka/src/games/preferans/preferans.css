@@ -15,7 +15,9 @@
 .pf-trump span.red { color: #c8102e; }
 .pf-trump small { display: block; font-size: 12px; font-weight: 400; }
 .pf-label { position: absolute; transform: translate(-50%, 0); color: #f5ecd0; font: 600 14px 'PT Serif', Georgia, serif; text-shadow: 0 1px 2px #000; white-space: nowrap; }
-.cs-card.pf-prk { filter: drop-shadow(0 0 6px #ffd24a); }
+.pf-prk .cs-face { box-shadow: 0 0 0 2px #ffd24a, 0 0 12px 3px rgba(255, 210, 74, 0.8); }
+.cs-port .pf-trump { left: 14px; top: 560px; }
+.cs-port .pf-trump small, .cs-port .pf-label { font-size: 17px; }
 .pf-controls { display: flex; flex-direction: column; gap: 8px; }
 .pf-btns { display: flex; flex-direction: column; gap: 6px; }
 .pf-btns > .btn { width: 100%; }

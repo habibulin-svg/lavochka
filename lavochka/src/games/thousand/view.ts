@@ -8,15 +8,16 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
-import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
+import { CardStage, cardKey, fan, portraitHand, type Point, type StageItem } from '../../cards/stage';
 import { canRospis, handCount, legalCards, marriageFor, marriageValue, maxBid, prikupRedeal, rospisPay, type Event, type MarriageKind, type View } from './engine';
 import { SEATS } from './def';
 import './thousand.css';
 
-const W = 1000;
-const H = 720;
-const HAND_Y = 615;
-const CENTER = { x: 500, y: 330 };
+/** Геометрия стола: альбомная 1000×720 и вертикальная для телефона 540×900.
+ * S — размер карт на руке, на столе и прикупа (одинаковый); os — закрытые руки соперников. */
+const LAND = { port: false, W: 1000, hand: { x: 500, y: 606 }, c: { x: 500, y: 306 }, S: 1.05, prik: 236, os: 0.6, oo: 0.62, kx: 0.22, ky: 0.22 };
+const PORT = { port: true, W: 540, hand: { x: 270, y: 792 }, c: { x: 270, y: 440 }, S: 1, prik: 250, os: 0.5, oo: 0.5, kx: 0.3, ky: 0.25 };
+type Geo = typeof LAND;
 
 class ThousandView implements GameView<View, Event> {
   private ctx!: ViewCtx;
@@ -38,7 +39,8 @@ class ThousandView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.cs = new CardStage(root, W, H, 'th-wrap', '<div class="th-cloth"></div>');
+    this.cs = new CardStage(root, 1000, 720, 'th-wrap', '<div class="th-cloth"></div>', { portrait: { W: 540, H: 900 } });
+    this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="th-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.th-plates') as HTMLElement;
     this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;
@@ -69,10 +71,18 @@ class ThousandView implements GameView<View, Event> {
     return v.seats.map((_, k) => v.seats[(i0 + k) % v.seats.length]);
   }
 
+  private get g(): Geo {
+    return this.cs.portrait ? PORT : LAND;
+  }
+
   private anchor(v: View, seat: number): Point {
     const ord = this.order(v);
     const k = ord.indexOf(seat);
-    if (k === 0) return { x: 500, y: HAND_Y };
+    if (k === 0) return this.g.hand;
+    if (this.g.port) {
+      if (v.seats.length === 3) return k === 1 ? { x: 120, y: 92 } : { x: 420, y: 92 };
+      return k === 1 ? { x: 82, y: 160 } : k === 2 ? { x: 270, y: 72 } : { x: 458, y: 160 };
+    }
     if (v.seats.length === 3) return k === 1 ? { x: 150, y: 210 } : { x: 850, y: 210 };
     return k === 1 ? { x: 130, y: 260 } : k === 2 ? { x: 500, y: 92 } : { x: 870, y: 260 };
   }
@@ -108,17 +118,19 @@ class ThousandView implements GameView<View, Event> {
   }
 
   private layout(v: View): StageItem[] {
+    const g = this.g;
+    const CENTER = g.c;
     const items: StageItem[] = [];
     // прикуп
-    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 60 + i * 60, y: 250, r: (i - 1) * 6, s: 0.62, z: 5 + i });
+    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 70 + i * 70, y: g.prik, r: (i - 1) * 6, s: g.S, z: 5 + i });
     // взятка
     const t = v.trick;
     if (t)
       t.cards.forEach((x, i) => {
         const a = this.anchor(v, x.seat);
-        const dx = (a.x - CENTER.x) * 0.22;
-        const dy = (a.y - CENTER.y) * 0.22;
-        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + dx, y: CENTER.y + dy, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
+        const dx = (a.x - CENTER.x) * g.kx;
+        const dy = (a.y - CENTER.y) * g.ky;
+        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + dx, y: CENTER.y + dy, r: ((i * 23) % 20) - 10, s: g.S, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
       });
     // руки
     for (const seat of v.seats) {
@@ -131,19 +143,20 @@ class ThousandView implements GameView<View, Event> {
       const playable = me ? this.playable(v) : [];
       for (let k = 0; k < n; k++) {
         if (me) {
-          const p = fan(n, k, a.x, a.y, 640, 70, 40, 24);
+          const p = g.port ? portraitHand(n, k, a.x, a.y, 410, g.S, false) : { ...fan(n, k, a.x, a.y, 720, 80, 40, 24), s: g.S };
           if (!up) {
-            items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: 1, z: 100 + k });
+            items.push({ key: `b:${seat}:${k}`, card: null, ...p, z: 100 + k });
             continue;
           }
           const c = list[k];
           const sel = this.selected && sameCard(this.selected, c);
           const can = playable.some((x) => sameCard(x, c));
           const cls = this.actSeat != null && (v.phase === 'play' || v.phase === 'give') ? (sel ? 'cs-sel' : can ? 'cs-can' : 'cs-dim') : '';
-          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: 1, z: 100 + k, cls, data: { hand: '1', card: c.s + c.r } });
+          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: p.s, z: 100 + k, cls, data: { hand: '1', card: c.s + c.r } });
         } else {
-          const p = fan(n, k, a.x, a.y, 150, 16, 8, 30);
-          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s: 0.55, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: 0.55, z: 50 + k });
+          const p = fan(n, k, a.x, a.y, g.port ? 110 : 150, 16, 8, 30);
+          const s = up ? g.oo : g.os;
+          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s, z: 50 + k });
         }
       }
     }
@@ -159,12 +172,15 @@ class ThousandView implements GameView<View, Event> {
   }
 
   private drawPlates(v: View) {
+    const g = this.g;
+    const CENTER = g.c;
     let s = '';
     const giving = this.actSeat != null && v.phase === 'give' && this.selected;
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const y = me ? a.y - 112 : a.y + 62;
+      const y = me ? a.y - (g.port ? (handCount(v, seat) > 9 ? 184 : 126) : 124) : a.y + (g.port ? 44 : 62);
+      const x = g.port && !me ? Math.max(80, Math.min(g.W - 80, a.x)) : a.x;
       const marks: string[] = [];
       if (v.scores[seat]) marks.push(`<i>${v.scores[seat]}</i>`);
       if (v.barrel[seat]) marks.push(`<em title="На бочке">🛢${v.barrel[seat]}</em>`);
@@ -176,11 +192,11 @@ class ThousandView implements GameView<View, Event> {
       if (v.phase === 'play' && v.players.includes(seat)) marks.push(`<em>${v.roundPts[seat]}</em>`);
       const pick = giving && v.players.includes(seat) && seat !== this.actSeat && !v.given.includes(seat);
       const on = v.turn === seat && v.phase !== 'over';
-      s += `<div class="cs-plate${on ? ' on' : ''}${pick ? ' pick' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px"${pick ? ` data-give="${seat}"` : ''}>${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
+      s += `<div class="cs-plate${on ? ' on' : ''}${pick ? ' pick' : ''}" style="--c:${SEATS[seat].color};left:${x}px;top:${y}px"${pick ? ` data-give="${seat}"` : ''}>${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
     }
     if (v.trump) s += `<div class="th-trump" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span><small>козырь</small></div>`;
-    if (v.phase === 'bid' || v.phase === 'dark') s += `<div class="th-label" style="left:${CENTER.x}px;top:330px">прикуп</div>`;
-    else if (v.prikup.length && v.phase !== 'over') s += `<div class="th-label th-was" style="left:${CENTER.x}px;top:${v.trick?.cards.length ? 172 : 236}px">прикуп был: ${v.prikup.map((c) => `<b class="${c.s === 'H' || c.s === 'D' ? 'red' : ''}">${c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r}${SUIT_SYM[c.s]}</b>`).join(' ')}</div>`;
+    if (v.phase === 'bid' || v.phase === 'dark') s += `<div class="th-label" style="left:${CENTER.x}px;top:${g.prik + 86 * g.S}px">прикуп</div>`;
+    else if (v.prikup.length && v.phase !== 'over') s += `<div class="th-label th-was" style="left:${CENTER.x}px;top:${g.port ? CENTER.y + 190 : v.trick?.cards.length ? g.prik - 86 : g.prik - 14}px">прикуп был: ${v.prikup.map((c) => `<b class="${c.s === 'H' || c.s === 'D' ? 'red' : ''}">${c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r}${SUIT_SYM[c.s]}</b>`).join(' ')}</div>`;
     if (v.golden && v.phase !== 'over') s += '<div class="th-golden">золотой кон · ×2</div>';
     this.plates.innerHTML = s;
   }
@@ -394,7 +410,7 @@ class ThousandView implements GameView<View, Event> {
         // прикуп переворачивается на месте и лежит, пока его не рассмотрят (10 с или «Дальше»), потом уходит заказчику
         const cur = this.v!;
         this.cs.render(
-          [...this.layout({ ...cur, phase: 'give' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 85 + i * 85, y: 250, r: 0, s: 0.9, z: 30 + i, from: 'p:' }))],
+          [...this.layout({ ...cur, phase: 'give' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: this.g.c.x - 114 + i * 114, y: this.g.prik, r: 0, s: this.g.S, z: 30 + i, from: 'p:' }))],
           speed
         );
         Sound.card();
@@ -471,7 +487,7 @@ class ThousandView implements GameView<View, Event> {
       }
     }
     this.v = v;
-    this.draw({ x: CENTER.x, y: 250 });
+    this.draw({ x: this.g.c.x, y: this.g.prik });
   }
 
   setTurn(toAct: number[], interactive: number[]) {

@@ -30,3 +30,6 @@
 .th-label.th-was { padding: 2px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.28); white-space: nowrap; }
 .th-label.th-was b { color: #fff; margin: 0 2px; }
 .th-label.th-was b.red { color: #ff9a8a; }
+.cs-port .th-trump { left: 14px; top: 560px; }
+.cs-port .th-trump small, .cs-port .th-label { font-size: 17px; }
+.cs-port .th-golden { left: 270px; font-size: 18px; }

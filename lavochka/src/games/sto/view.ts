@@ -6,18 +6,18 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_NAME, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
-import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
+import { CardStage, cardKey, fan, portraitArc, portraitHand, type Point, type StageItem } from '../../cards/stage';
 import { handCount, playable, stockLeft, top, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './sto.css';
 
-const W = 1000;
-const H = 720;
-const HAND_Y = 615;
-const PILE = { x: 520, y: 320 };
-const STOCK = { x: 300, y: 320 };
+/** Геометрия стола: альбомная 1000×720 и вертикальная для телефона 540×900. */
+const LAND = { port: false, W: 1000, hand: { x: 520, y: 606 }, pile: { x: 560, y: 318 }, stock: { x: 330, y: 318 }, ps: 1.1, os: 0.6 };
+const PORT = { port: true, W: 540, hand: { x: 270, y: 792 }, pile: { x: 350, y: 440 }, stock: { x: 150, y: 440 }, ps: 1.05, os: 0.5 };
+type Geo = typeof LAND;
 
-function arc(n: number): Point[] {
+function arc(g: Geo, n: number): Point[] {
+  if (g.port) return portraitArc(n, g.W);
   if (n === 1) return [{ x: 520, y: 92 }];
   const out: Point[] = [];
   const span = Math.min(760, 230 * (n - 1));
@@ -44,7 +44,8 @@ class StoView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.cs = new CardStage(root, W, H, 'st-wrap', '<div class="st-cloth"></div>');
+    this.cs = new CardStage(root, 1000, 720, 'st-wrap', '<div class="st-cloth"></div>', { portrait: { W: 540, H: 900 } });
+    this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="st-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.st-plates') as HTMLElement;
     this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;
@@ -68,11 +69,15 @@ class StoView implements GameView<View, Event> {
     return v.seats.map((_, k) => v.seats[(i0 + k) % v.seats.length]);
   }
 
+  private get g(): Geo {
+    return this.cs.portrait ? PORT : LAND;
+  }
+
   private anchor(v: View, seat: number): Point {
     const ord = this.order(v);
     const k = ord.indexOf(seat);
-    if (k === 0) return { x: 520, y: HAND_Y };
-    return arc(ord.length - 1)[k - 1];
+    if (k === 0) return this.g.hand;
+    return arc(this.g, ord.length - 1)[k - 1];
   }
 
   private chooseViewer(v: View, toAct: number[]) {
@@ -96,12 +101,18 @@ class StoView implements GameView<View, Event> {
   }
 
   private layout(v: View): StageItem[] {
+    const g = this.g;
+    const PILE = g.pile;
     const items: StageItem[] = [];
     const sl = stockLeft(v);
-    if (sl) items.push({ key: 'stock', card: null, x: STOCK.x, y: STOCK.y - Math.min(8, sl / 4), r: 0, s: 0.85, z: 2, cls: `st-stock${this.canDraw(v) ? ' cs-can' : ''}`, data: sl ? { stock: '1' } : undefined });
-    // сброс: верхние пять карт веером
-    const pile = v.pile.slice(-5);
-    pile.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: PILE.x + (i - pile.length + 1) * 14, y: PILE.y + ((i * 7) % 5) - 2, r: ((i * 37) % 24) - 12, s: 0.85, z: 10 + i }));
+    if (sl) items.push({ key: 'stock', card: null, x: g.stock.x, y: g.stock.y - Math.min(8, sl / 4), r: 0, s: g.ps, z: 2, cls: `st-stock${this.canDraw(v) ? ' cs-can' : ''}`, data: sl ? { stock: '1' } : undefined });
+    // сброс: верхние пять карт веером, старые — ровно под ними (чтобы не исчезали из-под низа)
+    const old = Math.max(0, v.pile.length - 5);
+    v.pile.forEach((c, j) => {
+      const i = j - old;
+      if (i < 0) items.push({ key: cardKey(c), card: c, x: PILE.x - 56, y: PILE.y, r: 0, s: g.ps, z: 9 });
+      else items.push({ key: cardKey(c), card: c, x: PILE.x + (i - (v.pile.length - old) + 1) * 14, y: PILE.y + ((i * 7) % 5) - 2, r: ((i * 37) % 24) - 12, s: g.ps, z: 10 + i });
+    });
     for (const seat of v.seats) {
       if (!v.alive.includes(seat)) continue;
       const n = handCount(v, seat);
@@ -112,18 +123,18 @@ class StoView implements GameView<View, Event> {
       const can = me && this.actSeat === seat ? playable(v, v.hands[seat]) : [];
       for (let k = 0; k < n; k++) {
         if (me) {
-          const p = fan(n, k, a.x, a.y, 700, 70, 40, 24);
+          const p = g.port ? portraitHand(n, k, a.x, a.y, 410, g.ps, false) : { ...fan(n, k, a.x, a.y, 760, 84, 40, 24), s: g.ps };
           if (!up) {
-            items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: 1, z: 100 + k });
+            items.push({ key: `b:${seat}:${k}`, card: null, ...p, z: 100 + k });
             continue;
           }
           const c = list[k];
           const ok = can.some((x) => sameCard(x, c));
           const sel = this.askSuit && sameCard(this.askSuit, c);
-          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: 1, z: 100 + k, cls: this.actSeat != null ? (sel ? 'cs-sel' : ok ? 'cs-can' : 'cs-dim') : '', data: { hand: c.s + c.r } });
+          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : 0), r: p.r, s: p.s, z: 100 + k, cls: this.actSeat != null ? (sel ? 'cs-sel' : ok ? 'cs-can' : 'cs-dim') : '', data: { hand: c.s + c.r } });
         } else {
-          const p = fan(n, k, a.x, a.y, 120, 14, 8, 30);
-          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s: 0.55, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: 0.55, z: 50 + k });
+          const p = fan(n, k, a.x, a.y, g.port ? 90 : 120, 14, 8, 30);
+          items.push(up ? { key: cardKey(list[k]), card: list[k], ...p, s: g.os, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: g.os, z: 50 + k });
         }
       }
     }
@@ -140,20 +151,25 @@ class StoView implements GameView<View, Event> {
     const v = this.v;
     if (!v) return;
     this.cs.render(this.layout(v), this.ctx.speed(), enter);
+    const g = this.g;
+    const PILE = g.pile;
+    const STOCK = g.stock;
     let s = '';
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const y = me ? a.y - 112 : a.y + 58;
+      const many = me && g.port && handCount(v, seat) > 9;
+      const y = me ? a.y - (g.port ? (many ? 184 : 126) : 124) : a.y + (g.port ? 44 : 58);
+      const x = g.port && !me ? Math.max(80, Math.min(g.W - 80, a.x)) : a.x;
       const out = !v.alive.includes(seat);
       const on = v.turn === seat && v.phase !== 'over';
-      s += `<div class="cs-plate${on ? ' on' : ''}${out ? ' st-out' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px">${esc(this.plain(seat))} <i>${v.scores[seat]}</i>${out ? ' <em>выбыл</em>' : ''}</div>`;
+      s += `<div class="cs-plate${on ? ' on' : ''}${out ? ' st-out' : ''}" style="--c:${SEATS[seat].color};left:${x}px;top:${y}px">${esc(this.plain(seat))} <i>${v.scores[seat]}</i>${out ? ' <em>выбыл</em>' : ''}</div>`;
     }
     const t = top(v);
     const suit = v.suit ?? (t ? t.s : null);
-    if (suit) s += `<div class="st-suit" style="left:${PILE.x + 120}px;top:${PILE.y - 40}px"><span class="${suit === 'H' || suit === 'D' ? 'red' : ''}">${SUIT_SYM[suit]}</span><small>${v.suit ? 'заказ' : 'масть'}${v.cover ? ' · крыть!' : ''}</small></div>`;
-    if (stockLeft(v)) s += `<div class="st-count" style="left:${STOCK.x - 40}px;top:${STOCK.y + 86}px">колода ${stockLeft(v)}</div>`;
-    if (v.alive.length > 2 && v.cfg.reverse) s += `<div class="st-dir" style="left:${PILE.x - 30}px;top:${PILE.y + 96}px">${v.dir === 1 ? '↻' : '↺'}</div>`;
+    if (suit) s += `<div class="st-suit" style="left:${g.port ? PILE.x - 40 : PILE.x + 120}px;top:${g.port ? PILE.y - 196 : PILE.y - 40}px"><span class="${suit === 'H' || suit === 'D' ? 'red' : ''}">${SUIT_SYM[suit]}</span><small>${v.suit ? 'заказ' : 'масть'}${v.cover ? ' · крыть!' : ''}</small></div>`;
+    if (stockLeft(v)) s += `<div class="st-count" style="left:${STOCK.x - 40}px;top:${STOCK.y + 90}px">колода ${stockLeft(v)}</div>`;
+    if (v.alive.length > 2 && v.cfg.reverse) s += `<div class="st-dir" style="left:${PILE.x - 30}px;top:${PILE.y + 100}px">${v.dir === 1 ? '↻' : '↺'}</div>`;
     this.plates.innerHTML = s;
   }
 
@@ -273,7 +289,7 @@ class StoView implements GameView<View, Event> {
           counts: cur.counts.map((n, i) => (i === ev.seat ? n + ev.count : n)),
           stockCount: Math.max(0, cur.stockCount - ev.count),
         };
-        this.draw(STOCK);
+        this.draw(this.g.stock);
         Sound.card();
         await sleep((ev.forced ? 420 : 200) / speed);
       } else if (ev.type === 'skip') {
@@ -294,7 +310,7 @@ class StoView implements GameView<View, Event> {
       }
     }
     this.v = v;
-    this.draw(STOCK);
+    this.draw(this.g.stock);
   }
 
   setTurn(toAct: number[], interactive: number[]) {

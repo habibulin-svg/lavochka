@@ -24,3 +24,5 @@
 .br-btns { display: flex; flex-direction: column; gap: 6px; }
 .br-btns .btn { width: 100%; }
 .br-ask { font-weight: 700; }
+.cs-port .br-trump span { width: 54px; height: 54px; line-height: 54px; font-size: 36px; }
+.cs-port .br-trump small { font-size: 17px; }

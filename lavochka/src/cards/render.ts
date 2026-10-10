@@ -19,18 +19,24 @@ export function cardHTML(c: Card | null, st: DeckStyle, cls = 'card'): string {
   return `<img class="${cls}" src="${cardUrl(c, st)}" alt="${c ? cardName(c) : 'рубашка'}" draggable="false" decoding="async">`;
 }
 
-const loaded = new Set<string>();
-/** Подгрузить колоду заранее, чтобы при раздаче карты не мигали. */
+/** Подгруженные картинки: держим ссылки, чтобы браузер не выбросил раскодированное. */
+const loaded = new Map<string, HTMLImageElement[]>();
+/** Подгрузить и раскодировать колоду заранее, чтобы при раздаче и перевороте карты не мигали пустотой. */
 export function preloadDeck(st: DeckStyle) {
   if (loaded.has(st)) return;
-  loaded.add(st);
   const urls = [cardUrl(null, st)];
   for (const s of ['S', 'C', 'D', 'H'] as const) for (let r = 2; r <= 14; r++) urls.push(cardUrl({ s, r }, st));
-  for (const u of urls) {
-    const im = new Image();
-    im.decoding = 'async';
-    im.src = u;
-  }
+  loaded.set(
+    st,
+    urls.map((u) => {
+      const im = new Image();
+      im.src = u;
+      im.decode().catch(() => {
+        /* не раскодировалась заранее — раскодируется при показе */
+      });
+      return im;
+    })
+  );
 }
 
 export const DECK_STYLES: { id: DeckStyle; title: string; hint: string }[] = [
