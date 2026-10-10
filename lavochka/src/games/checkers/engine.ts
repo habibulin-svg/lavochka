@@ -1,12 +1,16 @@
-/* Шашки — правила (без DOM): русские, международные (10×10), бразильские; поддавки на любой доске; «фук» по-дворовому.
+/* Шашки — правила (без DOM): русские, международные (10×10), бразильские, столбовые (башни) и Ласка (7×7);
+ * поддавки и «фук» по-дворовому — на любой доске.
  *
  * Доска n×n, индекс = ряд * n + вертикаль (a1 = 0, ряд 0 — со стороны белых). Играют только тёмные поля: (ряд + вертикаль) чётно.
- * Шашки: 'w' / 'W' — белая простая / дамка, 'b' / 'B' — чёрная. Место 0 — белые (ходят первыми), 1 — чёрные.
- * Взятие «турецким ударом»: побитые шашки снимаются после хода, а до того мешают и второй раз их не бьют.
+ * Поле — строка шашек сверху вниз: '' — пусто, 'w' / 'W' — белая простая / дамка, 'b' / 'B' — чёрная.
+ * В обычных шашках на поле не больше одной шашки; в столбовых — башня, ходит она на правах верхней («wbB» — белая простая сверху).
+ * Место 0 — белые (ходят первыми), 1 — чёрные.
+ * Обычные шашки бьют «турецким ударом»: побитые снимаются после хода, а до того мешают и второй раз их не бьют.
+ * В столбовых побитая (верхняя шашка башни) сразу уходит под низ бьющей башни — с одной башни можно взять несколько.
  */
 import type { Options } from '../../core/types';
 
-export type Variant = 'russian' | 'international' | 'brazil';
+export type Variant = 'russian' | 'international' | 'brazil' | 'bashni' | 'lasca';
 
 export interface Cfg {
   variant: Variant;
@@ -18,10 +22,12 @@ export interface Cfg {
 
 export const DEFAULT_CFG: Cfg = { variant: 'russian', giveaway: false, fuk: false };
 
+const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca'];
+
 export function cfgFrom(o: Options): Cfg {
-  const v = String(o.variant);
+  const v = String(o.variant) as Variant;
   return {
-    variant: v === 'international' || v === 'brazil' ? v : 'russian',
+    variant: VARIANTS.includes(v) ? v : 'russian',
     giveaway: !!o.giveaway,
     fuk: !!o.fuk,
   };
@@ -33,23 +39,33 @@ interface Rules {
   rows: number;
   /** Бить наибольшее число шашек. */
   maxCapture: boolean;
-  /** Простая, дошедшая до последнего ряда во время боя, сразу становится дамкой и бьёт дальше как дамка. */
-  promoteMid: boolean;
-  /** Ничья, если столько полуходов подряд у обоих есть дамки и никто не бил и не ходил простой. */
-  kingsLimit: number;
+  /** Простая дошла до последнего ряда во время боя: 'continue' — сразу дамка и бьёт дальше как дамка,
+   *  'stop' — становится дамкой и останавливается, 'none' — остаётся простой (дамка — только если там закончит ход). */
+  promoteMid: 'continue' | 'stop' | 'none';
+  /** Простая бьёт и назад. */
+  backCapture: boolean;
+  /** Дамка ходит и бьёт издалека (иначе — только на соседнее поле). */
+  flying: boolean;
+  /** Столбовые: побитые уходят под бьющую башню. */
+  columns: boolean;
+  /** Ничья через столько полуходов: в обычных — у обоих есть дамки, никто не бил и не ходил простой;
+   *  в столбовых — никто не бил и не делал дамку (соотношение сил не менялось). */
+  quietLimit: number;
 }
 
 export const RULES: Record<Variant, Rules> = {
-  russian: { n: 8, rows: 3, maxCapture: false, promoteMid: true, kingsLimit: 30 },
-  international: { n: 10, rows: 4, maxCapture: true, promoteMid: false, kingsLimit: 50 },
-  brazil: { n: 8, rows: 3, maxCapture: true, promoteMid: false, kingsLimit: 50 },
+  russian: { n: 8, rows: 3, maxCapture: false, promoteMid: 'continue', backCapture: true, flying: true, columns: false, quietLimit: 30 },
+  international: { n: 10, rows: 4, maxCapture: true, promoteMid: 'none', backCapture: true, flying: true, columns: false, quietLimit: 50 },
+  brazil: { n: 8, rows: 3, maxCapture: true, promoteMid: 'none', backCapture: true, flying: true, columns: false, quietLimit: 50 },
+  bashni: { n: 8, rows: 3, maxCapture: false, promoteMid: 'continue', backCapture: true, flying: true, columns: true, quietLimit: 30 },
+  lasca: { n: 7, rows: 3, maxCapture: false, promoteMid: 'stop', backCapture: false, flying: false, columns: true, quietLimit: 30 },
 };
 
 export interface Move {
   from: number;
   /** Поля, на которые встаёт шашка по ходу (последнее — куда пришла). */
   path: number[];
-  /** Побитые шашки по порядку. */
+  /** Побитые шашки по порядку (в столбовых одно поле может встретиться несколько раз). */
   caps: number[];
   /** Шашка стала дамкой. */
   promo: boolean;
@@ -60,9 +76,10 @@ export interface MoveRec {
   seat: number;
 }
 
-export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'endgame' | 'agreed';
+export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'material' | 'endgame' | 'agreed';
 
 export interface State {
+  game: 'draughts';
   cfg: Cfg;
   n: number;
   board: string[];
@@ -71,7 +88,7 @@ export interface State {
   last: { from: number; path: number[]; caps: number[] } | null;
   /** Ключи позиций — для троекратного повторения. */
   keys: string[];
-  /** Полуходы без взятий и ходов простыми, пока у обоих есть дамки. */
+  /** Полуходы для ничьей «без толку» (см. Rules.quietLimit). */
   kq: number;
   /** Полуходы в окончании «одинокая дамка против трёх и меньше» (международные). */
   eg: number;
@@ -103,8 +120,9 @@ export type Event =
 
 // ---------------------------------------------------------------- клетки
 
-export const colorOf = (p: string): 0 | 1 => (p === 'w' || p === 'W' ? 0 : 1);
-export const isKing = (p: string) => p === 'W' || p === 'B';
+/** Цвет шашки (или башни — по верхней). */
+export const colorOf = (p: string): 0 | 1 => (p.charAt(0) === 'w' || p.charAt(0) === 'W' ? 0 : 1);
+export const isKing = (p: string) => p.charAt(0) === 'W' || p.charAt(0) === 'B';
 const own = (p: string, c: number) => p !== '' && colorOf(p) === c;
 const DIRS = [
   [1, 1],
@@ -113,11 +131,12 @@ const DIRS = [
   [-1, -1],
 ];
 
-/** Имя поля: в 8×8 — «c3», в 10×10 — номер 1…50 (1 — в левом верхнем углу со стороны чёрных). */
+/** Имя поля: в 8×8 — «c3»; в 10×10 — номер 1…50 (1 — в левом верхнем углу со стороны чёрных); в 7×7 (Ласка) — номер 1…25 от белых. */
 export function sqName(n: number, sq: number): string {
   const r = Math.floor(sq / n);
   const f = sq % n;
   if (n === 8) return 'abcdefgh'[f] + (r + 1);
+  if (n === 7) return String(Math.floor(r / 2) * 7 + (r % 2 ? 4 : 0) + Math.floor(f / 2) + 1);
   return String((n - 1 - r) * (n / 2) + Math.floor(f / 2) + 1);
 }
 
@@ -152,6 +171,7 @@ export function newGame(cfg: Cfg): State {
 
 export function fromBoard(cfg: Cfg, board: string[], turn: 0 | 1): State {
   const s: State = {
+    game: 'draughts',
     cfg,
     n: RULES[cfg.variant].n,
     board,
@@ -172,87 +192,77 @@ export function fromBoard(cfg: Cfg, board: string[], turn: 0 | 1): State {
   return s;
 }
 
-/** Позиция по списку полей: fromList(cfg, { w: ['c3'], W: ['d8'], b: ['f6'] }, 0). */
-export function fromList(cfg: Cfg, pcs: Partial<Record<'w' | 'W' | 'b' | 'B', string[]>>, turn: 0 | 1 = 0): State {
+/** Позиция по списку полей: fromList(cfg, { w: ['c3'], W: ['d8'], b: ['f6'] }, 0). Башни — ключом-строкой: { 'wbb': ['e5'] }. */
+export function fromList(cfg: Cfg, pcs: Record<string, string[] | undefined>, turn: 0 | 1 = 0): State {
   const n = RULES[cfg.variant].n;
   const board = Array<string>(n * n).fill('');
   for (const [p, list] of Object.entries(pcs)) for (const name of list || []) board[sqOf(n, name)] = p;
   return fromBoard(cfg, board, turn);
 }
 
-export const posKey = (s: Pick<State, 'board' | 'turn'>) => s.board.map((p) => p || '.').join('') + s.turn;
+export const posKey = (s: Pick<State, 'board' | 'turn'>) => s.board.map((p) => p || '.').join(',') + s.turn;
 
 // ---------------------------------------------------------------- ходы
 
-/** Все серии взятий шашкой с поля from. */
+/** Все серии взятий шашкой (башней) с поля from. */
 function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: Move[]) {
   const p = b[from];
   const c = colorOf(p);
+  const fwd = c === 0 ? 1 : -1;
   // на время хода поле, с которого ушли, свободно
   const work = b.slice();
   work[from] = '';
   const caps: number[] = [];
   const path: number[] = [];
+  const dirs = (king: boolean) => (king || rules.backCapture ? DIRS : DIRS.filter(([dr]) => dr === fwd));
+  // побитую в обычных шашках второй раз не бьют; в столбовых она уже ушла, а башня под ней — снова цель
+  const target = (t: number) => own(work[t], 1 - c) && (rules.columns || !caps.includes(t));
 
-  /** Можно ли продолжить бой с поля sq (без записи ходов). */
-  const canCapture = (sq: number, king: boolean): boolean => {
-    for (const [dr, df] of DIRS) {
-      if (king) {
-        let t = step(n, sq, dr, df);
-        while (t >= 0 && work[t] === '') t = step(n, t, dr, df);
-        if (t < 0 || !own(work[t], 1 - c) || caps.includes(t)) continue;
-        const land = step(n, t, dr, df);
-        if (land >= 0 && work[land] === '') return true;
-      } else {
-        const mid = step(n, sq, dr, df);
-        if (mid < 0 || !own(work[mid], 1 - c) || caps.includes(mid)) continue;
-        const land = step(n, mid, dr, df);
-        if (land >= 0 && work[land] === '') return true;
-      }
+  /** Кого можно бить с поля sq в направлении (dr, df): поле жертвы и поля, куда можно встать. */
+  const victimAt = (sq: number, king: boolean, dr: number, df: number): { v: number; lands: number[] } | null => {
+    let t = step(n, sq, dr, df);
+    if (king && rules.flying) while (t >= 0 && work[t] === '') t = step(n, t, dr, df);
+    if (t < 0 || !target(t)) return null;
+    const lands: number[] = [];
+    let l = step(n, t, dr, df);
+    while (l >= 0 && work[l] === '') {
+      lands.push(l);
+      if (!king || !rules.flying) break;
+      l = step(n, l, dr, df);
     }
-    return false;
+    return lands.length ? { v: t, lands } : null;
   };
 
+  const canCapture = (sq: number, king: boolean) => dirs(king).some(([dr, df]) => victimAt(sq, king, dr, df));
+
   const dfs = (sq: number, king: boolean) => {
-    let any = false;
-    for (const [dr, df] of DIRS) {
-      let victim = -1;
-      if (king) {
-        let t = step(n, sq, dr, df);
-        while (t >= 0 && work[t] === '') t = step(n, t, dr, df);
-        if (t >= 0 && own(work[t], 1 - c) && !caps.includes(t)) victim = t;
-      } else {
-        const mid = step(n, sq, dr, df);
-        if (mid >= 0 && own(work[mid], 1 - c) && !caps.includes(mid)) victim = mid;
-      }
-      if (victim < 0) continue;
-      const lands: number[] = [];
-      let t = step(n, victim, dr, df);
-      while (t >= 0 && work[t] === '') {
-        lands.push(t);
-        if (!king) break;
-        t = step(n, t, dr, df);
-      }
-      if (!lands.length) continue;
-      caps.push(victim);
+    for (const [dr, df] of dirs(king)) {
+      const hit = victimAt(sq, king, dr, df);
+      if (!hit) continue;
+      caps.push(hit.v);
+      // столбовые: верхняя шашка жертвы сразу уходит под бьющую башню
+      const saved = work[hit.v];
+      if (rules.columns) work[hit.v] = saved.slice(1);
+      const next = hit.lands.map((l) => {
+        const promoted = !king && lastRow(n, c, l) && rules.promoteMid !== 'none';
+        return { l, k: king || (promoted && rules.promoteMid === 'continue'), promoted, stop: promoted && rules.promoteMid === 'stop' };
+      });
       // дамка обязана встать туда, откуда бой продолжается (если такое поле есть)
-      const next = lands.map((l) => ({ l, k: king || (rules.promoteMid && lastRow(n, c, l)) }));
-      const cont = next.filter((x) => canCapture(x.l, x.k));
+      const cont = next.filter((x) => !x.stop && canCapture(x.l, x.k));
       for (const x of cont.length ? cont : next) {
-        any = true;
         path.push(x.l);
         if (cont.length) dfs(x.l, x.k);
-        else out.push({ from, path: path.slice(), caps: caps.slice(), promo: !isKing(p) && (x.k || lastRow(n, c, x.l)) });
+        else out.push({ from, path: path.slice(), caps: caps.slice(), promo: !isKing(p) && (x.k || x.promoted || lastRow(n, c, x.l)) });
         path.pop();
       }
+      work[hit.v] = saved;
       caps.pop();
     }
-    return any;
   };
   dfs(from, isKing(p));
 }
 
-function quietFrom(b: string[], n: number, from: number, out: Move[]) {
+function quietFrom(b: string[], n: number, from: number, rules: Rules, out: Move[]) {
   const p = b[from];
   const c = colorOf(p);
   if (isKing(p)) {
@@ -260,6 +270,7 @@ function quietFrom(b: string[], n: number, from: number, out: Move[]) {
       let t = step(n, from, dr, df);
       while (t >= 0 && b[t] === '') {
         out.push({ from, path: [t], caps: [], promo: false });
+        if (!rules.flying) break;
         t = step(n, t, dr, df);
       }
     }
@@ -283,7 +294,7 @@ export function properMoves(s: Pick<State, 'board' | 'turn' | 'cfg' | 'n'>): Mov
     return caps.filter((m) => m.caps.length === max);
   }
   const out: Move[] = [];
-  for (let sq = 0; sq < s.board.length; sq++) if (own(s.board[sq], s.turn)) quietFrom(s.board, s.n, sq, out);
+  for (let sq = 0; sq < s.board.length; sq++) if (own(s.board[sq], s.turn)) quietFrom(s.board, s.n, sq, rules, out);
   return out;
 }
 
@@ -294,7 +305,7 @@ export function legalMoves(s: Pick<State, 'board' | 'turn' | 'cfg' | 'n'>): Move
   const rules = RULES[s.cfg.variant];
   const out: Move[] = [];
   for (let sq = 0; sq < s.board.length; sq++) if (own(s.board[sq], s.turn)) capturesFrom(s.board, s.n, sq, rules, out);
-  for (let sq = 0; sq < s.board.length; sq++) if (own(s.board[sq], s.turn)) quietFrom(s.board, s.n, sq, out);
+  for (let sq = 0; sq < s.board.length; sq++) if (own(s.board[sq], s.turn)) quietFrom(s.board, s.n, sq, rules, out);
   return out;
 }
 
@@ -302,18 +313,27 @@ const samePath = (a: number[], b: number[]) => a.length === b.length && a.every(
 
 /** Сделать ход на доске (без проверки правил), счётчики ничьей — тоже. */
 export function play(s: State, m: Move): State {
+  const rules = RULES[s.cfg.variant];
   const b = s.board.slice();
-  const p = b[m.from];
+  let p = b[m.from];
   b[m.from] = '';
-  for (const c of m.caps) b[c] = '';
+  if (rules.columns)
+    for (const v of m.caps) {
+      p += b[v].charAt(0);
+      b[v] = b[v].slice(1);
+    }
+  else for (const v of m.caps) b[v] = '';
   const to = m.path[m.path.length - 1];
-  b[to] = m.promo ? p.toUpperCase() : p;
+  b[to] = m.promo ? p.charAt(0).toUpperCase() + p.slice(1) : p;
   const turn = (1 - s.turn) as 0 | 1;
-  const kings = (c: number) => b.some((x) => own(x, c) && isKing(x));
-  const reset = m.caps.length > 0 || !isKing(p);
-  const kq = kings(0) && kings(1) && !reset ? s.kq + 1 : 0;
+  let kq: number;
+  if (rules.columns) kq = m.caps.length || m.promo ? 0 : s.kq + 1;
+  else {
+    const kings = (c: number) => b.some((x) => own(x, c) && isKing(x));
+    kq = kings(0) && kings(1) && !m.caps.length && isKing(p) ? s.kq + 1 : 0;
+  }
   const n: State = { ...s, board: b, turn, kq, last: { from: m.from, path: m.path, caps: m.caps }, fuk: [] };
-  n.eg = endgameLimit(n) && !reset ? s.eg + 1 : 0;
+  n.eg = endgameLimit(n) && !m.caps.length && isKing(p) ? s.eg + 1 : 0;
   return n;
 }
 
@@ -333,7 +353,7 @@ function endgameLimit(s: State): number {
 }
 
 export function moveText(n: number, m: Move): string {
-  const sep = m.caps.length ? (n === 8 ? ':' : '×') : '-';
+  const sep = m.caps.length ? (n === 10 ? '×' : ':') : '-';
   return [m.from, ...m.path].map((x) => sqName(n, x)).join(sep);
 }
 
@@ -389,6 +409,7 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
     case 'fuk': {
       if (!s0.fuk.includes(a.sq)) return null;
       const b = s0.board.slice();
+      // за фук снимают провинившуюся шашку (в столбовых — всю башню)
       b[a.sq] = '';
       const s: State = { ...s0, board: b, fuk: [], taken: [...s0.taken] as [number, number], kq: 0, eg: 0 };
       s.taken[seat]++;
@@ -420,8 +441,9 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
       const key = posKey(s);
       s.keys = [...s0.keys, key];
       if (checkStuck(s, ev)) return { state: s, events: ev };
+      const rules = RULES[s.cfg.variant];
       if (s.keys.filter((k) => k === key).length >= 3) finish(s, null, 'repetition', ev);
-      else if (s.kq >= RULES[s.cfg.variant].kingsLimit) finish(s, null, 'kings', ev);
+      else if (s.kq >= rules.quietLimit) finish(s, null, rules.columns ? 'material' : 'kings', ev);
       else if (s.eg && s.eg >= endgameLimit(s)) finish(s, null, 'endgame', ev);
       return { state: s, events: ev };
     }

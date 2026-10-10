@@ -1,10 +1,12 @@
-/* Шашки — отрисовка: складная доска (клён и орех) 8×8 или 10×10, точёные шашки, дамка — две шашки стопкой.
+/* Шашки — отрисовка: складная доска (клён и орех) 7×7, 8×8 или 10×10, точёные шашки, дамка — две шашки стопкой с короной,
+ * в столбовых — башни (дамка внутри башни — с золотой полосой). Уголки — та же доска, дома подсвечены.
  * Выбор шашки → подсветка полей → ход; бой в несколько прыжков — по полям или сразу на конечное поле. Фук, ничья, сдача. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
-import { colorOf, dark, isKing, legalMoves, properMoves, sqName, type Event, type Move, type State } from './engine';
+import { arrived, cMoves, homeOf, pieceCount, type CEvent, type CState } from './corners';
+import { colorOf, dark, isKing, legalMoves, properMoves, RULES, sqName, type Event, type Move, type State } from './engine';
 import './checkers.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -14,7 +16,10 @@ const W = F * 2 + IN; // 728
 
 let boards = 0;
 
-class CheckersView implements GameView<State, Event> {
+type S = State | CState;
+type E = Event | CEvent;
+
+class CheckersView implements GameView<S, E> {
   /** Приставка id в SVG: досок на странице бывает несколько (стол и показ правил), а размер клеток у них разный. */
   private uid = `ck${++boards}`;
   private ctx!: ViewCtx;
@@ -25,7 +30,7 @@ class CheckersView implements GameView<State, Event> {
   private gBanner!: SVGGElement;
   private gCoords!: SVGGElement;
   private btns!: HTMLElement;
-  private s: State | null = null;
+  private s: S | null = null;
   private n = 0;
   private flipped = false;
   private userFlip: boolean | null = null;
@@ -36,6 +41,15 @@ class CheckersView implements GameView<State, Event> {
   private pre: number[] = [];
   private hover: number | null = null;
   private confirmResign = false;
+
+  /** Уголки: играют все поля, ходы — на конечное поле. */
+  private get corners() {
+    return this.s?.game === 'corners';
+  }
+  /** Столбовые: побитые остаются на доске в башнях. */
+  private get columns() {
+    return this.s?.game === 'draughts' && RULES[this.s.cfg.variant].columns;
+  }
 
   private get SQ() {
     return IN / this.n;
@@ -97,10 +111,11 @@ class CheckersView implements GameView<State, Event> {
     s += `<rect width="${W}" height="${W}" rx="14" fill="#2a1408"/><image href="${frame}" width="${W}" height="${W}" preserveAspectRatio="none" opacity=".95" clip-path="url(#${this.uid}Round)"/>`;
     s += `<rect x="${F - 6}" y="${F - 6}" width="${IN + 12}" height="${IN + 12}" rx="3" fill="#1a0c04"/>`;
     for (let r = 0; r < n; r++)
-      for (let f = 0; f < n; f++) s += `<rect x="${F + f * SQ}" y="${F + r * SQ}" width="${SQ}" height="${SQ}" fill="url(#${this.uid}${(r + f) % 2 ? 'D' : 'L'})"/>`;
+      for (let f = 0; f < n; f++) s += `<rect x="${F + f * SQ}" y="${F + r * SQ}" width="${SQ}" height="${SQ}" fill="url(#${this.uid}${dark(n, (n - 1 - r) * n + f) ? 'D' : 'L'})"/>`;
     s += `<rect x="${F}" y="${F}" width="${IN}" height="${IN}" fill="url(#${this.uid}Lac)" pointer-events="none"/>`;
     s += `<g id="${this.uid}Coords"></g><g id="${this.uid}Marks"></g><g id="${this.uid}Targets"></g><g id="${this.uid}Pieces"></g><g id="${this.uid}Banner"></g>`;
-    s += `<rect x="${W / 2 - 3}" y="${F - 6}" width="6" height="${IN + 12}" fill="#0d0502" opacity=".35" pointer-events="none"/>`;
+    // шов складной доски — только там, где он идёт по краю клеток
+    if (n % 2 === 0) s += `<rect x="${W / 2 - 3}" y="${F - 6}" width="6" height="${IN + 12}" fill="#0d0502" opacity=".35" pointer-events="none"/>`;
     this.svg.innerHTML = s;
     this.gCoords = this.svg.querySelector(`#${this.uid}Coords`) as SVGGElement;
     this.gMarks = this.svg.querySelector(`#${this.uid}Marks`) as SVGGElement;
@@ -132,7 +147,7 @@ class CheckersView implements GameView<State, Event> {
       s += `<text class="ck-coord" x="${F / 2}" y="${x}">${rank}</text><text class="ck-coord" x="${W - F / 2}" y="${x}">${rank}</text>`;
     }
     // в международных ходы пишут номерами полей — номера мелко в углу тёмных полей
-    if (n === 10)
+    if ((n === 10 || n === 7) && !this.corners)
       for (let sq = 0; sq < n * n; sq++) {
         if (!dark(n, sq)) continue;
         const { x, y } = this.xy(sq);
@@ -144,10 +159,11 @@ class CheckersView implements GameView<State, Event> {
   /** Точёная шашка: волокна, бороздки, фаска, лак. Дамка — две шашки стопкой. */
   private checker(p: string, sq: number, extra = '') {
     const { x, y } = this.xy(sq);
-    const white = colorOf(p) === 0;
     const R = this.R;
     const rot = Math.round((sq * 47.3) % 360);
-    const one = (dy: number) => `<g transform="translate(0,${dy})" filter="url(#${this.uid}Shadow)">
+    const one = (dy: number, ch: string, stripe = false) => {
+      const white = colorOf(ch) === 0;
+      return `<g transform="translate(0,${dy})" filter="url(#${this.uid}Shadow)">
       <circle r="${R}" fill="${white ? '#9a7a4a' : '#050302'}"/>
       <circle r="${R - 1.5}" fill="url(#${this.uid}P${white ? 'W' : 'B'})" transform="rotate(${rot})"/>
       ${white ? '' : `<circle r="${R - 1.5}" fill="#000" opacity=".42"/>`}
@@ -157,11 +173,32 @@ class CheckersView implements GameView<State, Event> {
       <circle r="${R * 0.38}" fill="none" stroke="${white ? '#9a7448' : '#000'}" stroke-width="1.2" opacity=".45"/>
       <circle r="${R * 0.38 + 1}" fill="none" stroke="${white ? '#fff6e0' : '#9a7a62'}" stroke-width=".8" opacity=".4"/>
       <circle r="${R - 1.5}" fill="url(#${this.uid}Gloss)"/>
+      ${stripe ? `<path d="M${-R * 0.92} ${R * 0.32}A${R} ${R} 0 0 0 ${R * 0.92} ${R * 0.32}" fill="none" stroke="#d8a940" stroke-width="${R * 0.16}" opacity=".9"/>` : ''}
     </g>`;
+    };
     // корона на верхней шашке дамки: у белых — выжжена, у чёрных — золотом
-    const k = R * 0.5;
-    const crown = `<path transform="translate(0,${-R * 0.2})" d="M${-k} ${k * 0.45}L${-k} ${-k * 0.35}L${-k * 0.5} ${k * 0.1}L0 ${-k * 0.6}L${k * 0.5} ${k * 0.1}L${k} ${-k * 0.35}L${k} ${k * 0.45}Z" fill="${white ? '#6a3a14' : '#d8a940'}" opacity="${white ? 0.75 : 0.9}"/>`;
-    const body = isKing(p) ? one(R * 0.18) + one(-R * 0.2) + crown : one(0);
+    const crown = (ch: string, dy: number) => {
+      const k = R * 0.5;
+      const white = colorOf(ch) === 0;
+      return `<path transform="translate(0,${dy})" d="M${-k} ${k * 0.45}L${-k} ${-k * 0.35}L${-k * 0.5} ${k * 0.1}L0 ${-k * 0.6}L${k * 0.5} ${k * 0.1}L${k} ${-k * 0.35}L${k} ${k * 0.45}Z" fill="${white ? '#6a3a14' : '#d8a940'}" opacity="${white ? 0.75 : 0.9}"/>`;
+    };
+    let body: string;
+    if (this.columns) {
+      // башня: верхние семь шашек стопкой, сверху — та, что ходит
+      const shown = [...p].slice(0, 7);
+      const k = shown.length;
+      const d = k > 1 ? Math.min(R * 0.32, (R * 1.1) / (k - 1)) : 0;
+      body = '';
+      for (let i = k - 1; i >= 0; i--) body += one((i - (k - 1) / 2) * d, shown[i], i > 0 && isKing(shown[i]));
+      const topY = -((k - 1) / 2) * d;
+      if (isKing(p)) body += crown(p, topY);
+      if (p.length > 1) {
+        const mine = [...p].filter((c) => colorOf(c) === colorOf(p)).length;
+        body += `<g class="ck-badge" transform="translate(${R * 0.78},${topY - R * 0.72})"><circle r="${R * 0.36}"/><text>${p.length}</text></g>`;
+        body += `<title>Башня из ${p.length}: своих ${mine}, пленных ${p.length - mine}</title>`;
+      }
+    } else if (this.corners) body = one(0, p);
+    else body = isKing(p) ? one(R * 0.18, p) + one(-R * 0.2, p) + crown(p, -R * 0.2) : one(0, p);
     return `<g class="ck-pc" data-sq="${sq}" transform="translate(${x},${y})" ${extra}>${body}</g>`;
   }
 
@@ -182,6 +219,13 @@ class CheckersView implements GameView<State, Event> {
         const { x, y } = this.xy(sq);
         m += `<rect x="${x - SQ / 2}" y="${y - SQ / 2}" width="${SQ}" height="${SQ}" class="ck-last"/>`;
       }
+    // дома в уголках: белый — у a1, чёрный — у h8
+    if (st.game === 'corners')
+      for (const c of [0, 1])
+        for (const sq of homeOf(st.cfg, c)) {
+          const { x, y } = this.xy(sq);
+          m += `<rect x="${x - SQ / 2}" y="${y - SQ / 2}" width="${SQ}" height="${SQ}" class="ck-home ck-home${c}"/>`;
+        }
     // кого можно взять за фук
     if (this.actSeat != null)
       for (const sq of st.fuk) {
@@ -218,7 +262,7 @@ class CheckersView implements GameView<State, Event> {
       }
       const k = live ? this.pre.length : 0;
       const cands = this.candidates(from);
-      const next = new Set(cands.map((m) => m.path[k]));
+      const next = new Set(this.corners ? cands.map((m) => m.path[m.path.length - 1]) : cands.map((m) => m.path[k]));
       const finals = new Set(cands.filter((m) => m.path.length > k + 1).map((m) => m.path[m.path.length - 1]));
       const cls = `ck-tgt${live ? '' : ' ck-preview'}`;
       const box = (cx: number, cy: number) => `<rect x="${cx - SQ / 2}" y="${cy - SQ / 2}" width="${SQ}" height="${SQ}" fill="transparent"/>`;
@@ -257,7 +301,7 @@ class CheckersView implements GameView<State, Event> {
     if (sq != null && this.selected != null) {
       const k = this.pre.length;
       const cands = this.candidates(this.selected);
-      if (cands.some((m) => m.path[k] === sq)) {
+      if (!this.corners && cands.some((m) => m.path[k] === sq)) {
         this.pre = [...this.pre, sq];
         const done = this.candidates(this.selected).find((m) => m.path.length === this.pre.length);
         if (done) return this.send(done);
@@ -373,14 +417,14 @@ class CheckersView implements GameView<State, Event> {
     this.render();
   }
 
-  setView(s: State) {
+  setView(s: S) {
     this.s = s;
     if (s.n !== this.n) this.build(s.n);
     this.gBanner.innerHTML = '';
     this.applyFlip();
   }
 
-  async play(events: Event[], s: State) {
+  async play(events: E[], s: S) {
     const speed = this.ctx.speed();
     this.clearTurn();
     for (const ev of events) {
@@ -418,7 +462,7 @@ class CheckersView implements GameView<State, Event> {
         const step = (now: number) => {
           const t = Math.min(1, (now - t0) / dur);
           const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-          const lift = 1 + Math.sin(Math.PI * t) * (m.caps.length ? 0.16 : 0.06);
+          const lift = 1 + Math.sin(Math.PI * t) * (m.caps.length || m.path.length > 1 ? 0.16 : 0.06);
           el.setAttribute('transform', `translate(${from.x + (b.x - from.x) * e},${from.y + (b.y - from.y) * e}) scale(${lift})`);
           if (t < 1) requestAnimationFrame(step);
           else res();
@@ -427,13 +471,13 @@ class CheckersView implements GameView<State, Event> {
         setTimeout(res, dur + 150);
       });
       if (m.caps[i] != null) {
-        this.gPieces.querySelector(`[data-sq="${m.caps[i]}"]`)?.classList.add('ck-hit-pc');
+        if (!this.columns) this.gPieces.querySelector(`[data-sq="${m.caps[i]}"]`)?.classList.add('ck-hit-pc');
         Sound.capture();
       } else Sound.place();
       a = b;
     }
     // турецкий удар: побитые снимаются после хода
-    for (const c of m.caps) this.gPieces.querySelector(`[data-sq="${c}"]`)?.classList.add('ck-gone');
+    if (!this.columns) for (const c of m.caps) this.gPieces.querySelector(`[data-sq="${c}"]`)?.classList.add('ck-gone');
     if (m.caps.length) await sleep(180);
   }
 
@@ -460,29 +504,34 @@ class CheckersView implements GameView<State, Event> {
     }
     this.actSeat = seat;
     if (this.ctx.mySeats.length > 1 && this.userFlip == null) this.flipped = false;
-    if (st.phase === 'play') this.moves = legalMoves(st);
+    if (st.phase === 'play') this.moves = st.game === 'corners' ? cMoves(st) : legalMoves(st);
     this.renderButtons();
     this.renderCoords();
     this.render();
   }
 
-  status(st: State, _toAct: number[], interactive: number[]) {
+  status(st: S, _toAct: number[], interactive: number[]) {
     const name = (p: number) => this.ctx.name(p);
     if (st.phase === 'over') return st.winner == null ? 'Ничья' : `Победа: ${name(st.winner)}`;
     if (st.phase === 'draw') return interactive.includes(1 - st.offer) ? 'Вам предлагают ничью' : `${name(st.offer)} предложили ничью…`;
     const who = name(st.turn);
+    if (st.game === 'corners') {
+      const last = st.whiteDone ? ' — <b>последний ход!</b>' : '';
+      return interactive.includes(st.turn) ? `Ваш ход: ${who}${last}` : `Ходят ${who}…`;
+    }
     const pm = properMoves(st);
     const must = pm.length && pm[0].caps.length ? (st.cfg.fuk ? ' — <b>есть что бить</b>' : ' — <b>бить обязательно</b>') : '';
     return interactive.includes(st.turn) ? `Ваш ход: ${who}${must}` : `Ходят ${who}…`;
   }
 
-  playerStats(st: State, seat: number) {
+  playerStats(st: S, seat: number) {
+    if (st.game === 'corners') return `<span title="Шашек в доме соперника">🏠 ${arrived(st, seat)} из ${pieceCount(st.cfg)}</span> · ход ${st.made[seat]}`;
     const left = st.board.filter((p) => p && colorOf(p) === seat);
     const kings = left.filter(isKing).length;
     return `<span title="На доске">⛀ ${left.length}${kings ? ` (дамок ${kings})` : ''}</span>`;
   }
 }
 
-export function createView(): GameView<State, Event> {
+export function createView(): GameView<S, E> {
   return new CheckersView();
 }

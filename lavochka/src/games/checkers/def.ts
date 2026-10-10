@@ -1,25 +1,45 @@
-/* Шашки — описание игры для сборника: русские, международные, бразильские, поддавки, фук; боты, журнал, правила с показом. Без DOM. */
-import type { GameDef, SeatSpec } from '../../core/types';
+/* Шашки — описание игры для сборника: русские, международные, бразильские, столбовые, Ласка, поддавки, фук и уголки;
+ * боты, журнал, правила с показом. Без DOM. Уголки — своя игра на той же доске (corners.ts), состояние различается по полю game. */
+import type { GameDef, Options, SeatSpec } from '../../core/types';
 import { choose } from './ai';
+import { cApply, ccfgFrom, cNewGame, cToAct, type CAction, type CEndReason, type CEvent, type CState } from './corners';
+import { cChoose } from './corners-ai';
 import { apply, cfgFrom, fromList, newGame, setup, sqOf, toAct, type Action, type EndReason, type Event, type State, type Variant } from './engine';
+
+type S = State | CState;
+type A = Action | CAction;
+type E = Event | CEvent;
+const isC = (s: S): s is CState => s.game === 'corners';
 
 export const SEATS = [
   { name: 'Белые', color: '#efe0c0', light: '#fffaf0', dark: '#8a7a5a', ink: '#7a5f30' },
   { name: 'Чёрные', color: '#2a211c', light: '#5a4a40', dark: '#0d0a08' },
 ];
 
-const REASON: Record<EndReason, string> = {
+const REASON: Record<EndReason | CEndReason, string> = {
   nomoves: 'ходить нечем',
   resign: 'соперник сдался',
   repetition: 'троекратное повторение — ничья',
   kings: 'дамки ходят без толку — ничья',
+  material: '15 ходов без взятий — ничья',
   endgame: 'одинокую дамку не поймать — ничья',
   agreed: 'ничья по согласию',
+  home: 'первыми заняли дом соперника',
+  equal: 'дом заняли за одинаковое число ходов — ничья',
+  stayed: 'соперник не вывел шашки из дома вовремя',
+  returned: 'соперник вернул шашку в свой дом',
+  eighty: 'после 80-го хода у соперника больше шашек вне дома',
 };
 
-const VARIANT: Record<Variant, string> = { russian: 'Русские шашки', international: 'Международные шашки (10×10)', brazil: 'Бразильские шашки' };
+const VARIANT: Record<Variant, string> = {
+  russian: 'Русские шашки',
+  international: 'Международные шашки (10×10)',
+  brazil: 'Бразильские шашки',
+  bashni: 'Столбовые шашки (башни)',
+  lasca: 'Ласка — столбовые 7×7',
+};
 
-function describe(ev: Event, name: (seat: number) => string): string | null {
+function describe(ev: E, name: (seat: number) => string): string | null {
   switch (ev.type) {
     case 'start':
       return `${VARIANT[ev.variant]}${ev.giveaway ? ', поддавки' : ''}.`;
@@ -32,7 +52,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'decline':
       return `${name(ev.seat)} отказываются от ничьей.`;
     case 'end':
-      if (ev.winner == null) return `🤝 <b>${REASON[ev.reason]}</b>.`;
+      if (ev.winner == null) return ev.reason === 'eighty' ? '🤝 <b>После 80-го хода поровну — ничья</b>.' : `🤝 <b>${REASON[ev.reason]}</b>.`;
       return `🏆 <b>${name(ev.winner)}</b> победили: ${ev.reason === 'nomoves' ? 'у соперника нет ходов' : REASON[ev.reason]}.`;
   }
   return null;
@@ -48,14 +68,16 @@ const demoSeats: SeatSpec[] = [
 /** Ход для показа: mv(0, 8, 'c3', 'e5', 'g7') — поля по порядку. */
 const mv = (seat: number, n: number, ...sqs: string[]) => {
   const [from, ...path] = sqs.map((x) => sqOf(n, x));
-  return { seat, action: { type: 'move', from, path } as Action };
+  return { seat, action: { type: 'move', from, path } as A };
 };
 const cap = (step: ReturnType<typeof mv>, caption: string) => ({ ...step, caption });
 
 const RU = cfgFrom({});
 const INT = cfgFrom({ variant: 'international' });
+const BASHNI = cfgFrom({ variant: 'bashni' });
+const notUg = (o: Options) => o.variant !== 'ugolki';
 
-export const def: GameDef<State, Action, Event, State> = {
+export const def: GameDef<S, A, E, S> = {
   id: 'checkers',
   title: 'Шашки',
   players: { min: 2, max: 2, default: 2 },
@@ -64,14 +86,40 @@ export const def: GameDef<State, Action, Event, State> = {
   options: [
     {
       key: 'variant',
-      label: 'Шашки',
+      label: 'Игра',
       type: 'select',
       choices: [
         { value: 'russian', label: 'русские — 8×8, бить можно любой веткой' },
         { value: 'international', label: 'международные — 10×10, бить больше всех' },
         { value: 'brazil', label: 'бразильские — 8×8 по международным правилам' },
+        { value: 'bashni', label: 'столбовые (башни) — побитые уходят в плен' },
+        { value: 'lasca', label: 'Ласка — столбовые 7×7, дамка на шаг' },
+        { value: 'ugolki', label: 'уголки — перевести шашки в чужой угол' },
       ],
       default: 'russian',
+    },
+    {
+      key: 'ugHome',
+      label: 'Дом',
+      type: 'select',
+      choices: [
+        { value: '3x3', label: '3×3 — девять шашек' },
+        { value: '3x4', label: '3×4 — двенадцать шашек' },
+        { value: 'corner', label: 'углом (4+3+2+1) — десять шашек' },
+      ],
+      default: '3x3',
+      showIf: (o) => o.variant === 'ugolki',
+    },
+    {
+      key: 'ugMoves',
+      label: 'Ходы',
+      type: 'select',
+      choices: [
+        { value: 'classic', label: 'классические — по вертикали и горизонтали' },
+        { value: 'diagonal', label: 'диагональные — во все стороны' },
+      ],
+      default: 'classic',
+      showIf: (o) => o.variant === 'ugolki',
     },
     {
       key: 'giveaway',
@@ -79,6 +127,7 @@ export const def: GameDef<State, Action, Event, State> = {
       type: 'toggle',
       default: false,
       hint: 'Наоборот: выигрывает тот, кто первым отдаст все шашки или запрёт их.',
+      showIf: notUg,
     },
     {
       key: 'fuk',
@@ -86,6 +135,7 @@ export const def: GameDef<State, Action, Event, State> = {
       type: 'toggle',
       default: false,
       hint: 'Бить не обязательно, но если не побил — соперник забирает шашку «за фук», а потом ходит сам.',
+      showIf: notUg,
     },
   ],
   presets: [
@@ -94,20 +144,24 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'giveaway', label: 'Поддавки', hint: 'Кто первым отдаст все шашки — тот и выиграл', options: { variant: 'russian', giveaway: true, fuk: false } },
     { id: 'fuk', label: 'С фуком', hint: 'Как во дворе: не побил — отдай шашку', options: { variant: 'russian', giveaway: false, fuk: true } },
     { id: 'brazil', label: 'Бразильские', hint: '8×8, но бить обязательно больше всех', options: { variant: 'brazil', giveaway: false, fuk: false } },
+    { id: 'bashni', label: 'Столбовые', hint: 'Башни: побитые шашки не снимают, а забирают в плен', options: { variant: 'bashni', giveaway: false, fuk: false } },
+    { id: 'lasca', label: 'Ласка', hint: 'Международные столбовые на доске 7×7', options: { variant: 'lasca', giveaway: false, fuk: false } },
+    { id: 'ugolki', label: 'Уголки', hint: 'Дом 3×3, ходы по вертикали и горизонтали', options: { variant: 'ugolki', ugHome: '3x3', ugMoves: 'classic' } },
+    { id: 'ugolki-diag', label: 'Диагональные уголки', hint: 'Ходы и прыжки во все стороны', options: { variant: 'ugolki', ugHome: '3x3', ugMoves: 'diagonal' } },
   ],
 
-  setup: (_seats, opts) => setup(opts).state,
-  toAct,
-  apply: (s, seat, a) => apply(s, seat, a),
+  setup: (_seats, opts) => (opts.variant === 'ugolki' ? cNewGame(ccfgFrom(opts)) : setup(opts).state),
+  toAct: (s) => (isC(s) ? cToAct(s) : toAct(s)),
+  apply: (s, seat, a) => (isC(s) ? cApply(s, seat, a as CAction) : apply(s, seat, a as Action)),
   view: (s) => s,
   result(s) {
     if (s.phase !== 'over' || !s.reason) return null;
     const scores = { 0: s.winner === 0 ? 1 : s.winner === 1 ? 0 : 0.5, 1: s.winner === 1 ? 1 : s.winner === 0 ? 0 : 0.5 };
     if (s.winner == null) return { winners: [0, 1], text: REASON[s.reason], scores };
-    const text = s.reason === 'nomoves' ? (s.cfg.giveaway ? 'отдали все шашки' : 'у соперника не осталось ходов') : REASON[s.reason];
+    const text = s.reason === 'nomoves' ? (!isC(s) && s.cfg.giveaway ? 'отдали все шашки' : 'у соперника не осталось ходов') : REASON[s.reason];
     return { winners: [s.winner], text, scores };
   },
-  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isC(v) ? cChoose(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
   describe,
 
   // середина партии: у белых дамка, чёрные давят в центре
@@ -119,7 +173,7 @@ export const def: GameDef<State, Action, Event, State> = {
     }),
 
   rules: {
-    goal: 'Побить или запереть все шашки соперника — так, чтобы ему стало нечем ходить. В <b>поддавках</b> — наоборот: первым отдать все свои.',
+    goal: 'Побить или запереть все шашки соперника — так, чтобы ему стало нечем ходить. В <b>поддавках</b> — наоборот: первым отдать все свои. В <b>уголках</b> — первым перевести все свои шашки в угол соперника.',
     sections: [
       {
         title: 'Доска и ход',
@@ -226,8 +280,97 @@ export const def: GameDef<State, Action, Event, State> = {
           intro: 'Белые могут побить c3:e5.',
           steps: [
             cap(mv(0, 8, 'g3', 'h4'), 'Но зевают и ходят g3-h4.'),
-            { seat: 1, action: { type: 'fuk', sq: sqOf(8, 'c3') } as Action, caption: 'Чёрные снимают шашку c3 «за фук»…' },
+            { seat: 1, action: { type: 'fuk', sq: sqOf(8, 'c3') } as A, caption: 'Чёрные снимают шашку c3 «за фук»…' },
             cap(mv(1, 8, 'd4', 'e3'), '…и делают свой ход.'),
+          ],
+        },
+      },
+      {
+        title: 'Столбовые шашки (башни)',
+        html: `<p>Ходят как в русских шашках, но побитую шашку <b>не снимают</b>: бьющая забирает её в плен — подкладывает под себя.
+          Так получаются <b>башни</b>. Башня ходит на правах верхней шашки и принадлежит тому, чья шашка сверху.</p>
+          <p>Бьют только верхнюю шашку башни, и она сразу уходит в плен — поэтому с одной башни за ход можно взять несколько шашек, прыгая через неё туда и обратно.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'bashni' },
+          setup: () => fromList(BASHNI, { w: ['c3', 'a1'], bb: ['d4'], b: ['h8'] }),
+          intro: 'На d4 — чёрная башня из двух шашек.',
+          steps: [
+            cap(mv(0, 8, 'c3', 'e5', 'c3'), 'Белые бьют башню d4 дважды — туда и обратно: обе чёрные шашки уходят в плен под белую.'),
+            cap(mv(1, 8, 'h8', 'g7'), 'Теперь на c3 белая башня из трёх шашек.'),
+          ],
+        },
+      },
+      {
+        title: 'Плен и освобождение',
+        html: `<p>Если побить верхнюю шашку башни, шашки под ней <b>освобождаются</b>: башня переходит к тому, чья шашка теперь сверху.
+          Пленная дамка, выйдя на свободу, снова становится дамкой.</p>
+          <p>Дамкой становится только верхняя шашка башни, дошедшей до последнего ряда. Ничья — если 15 ходов подряд никто не брал и не делал дамку.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'bashni' },
+          setup: () => fromList(BASHNI, { wb: ['e5'], w: ['a1'], b: ['d4', 'h8'] }, 1),
+          intro: 'Белая шашка на e5 держит в плену чёрную.',
+          steps: [
+            cap(mv(1, 8, 'd4', 'f6'), 'Чёрные бьют белую верхушку и забирают её в плен, а чёрная шашка на e5 освобождена.'),
+            cap(mv(0, 8, 'a1', 'b2'), 'Белые потеряли шашку, а чёрных на доске стало больше.'),
+          ],
+        },
+      },
+      {
+        title: 'Ласка',
+        html: `<p>Международные столбовые шашки: доска 7×7, по 11 шашек, поля записывают номерами от 1 до 25. Башни и плен — как в столбовых, но:</p><ul>
+          <li>простые ходят и бьют <b>только вперёд</b>;</li>
+          <li>дамка ходит и бьёт во все стороны, но <b>только на соседнее поле</b>;</li>
+          <li>простая, дошедшая во время боя до последнего ряда, становится дамкой, и на этом ход заканчивается.</li></ul>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'lasca' },
+          setup: () => newGame(cfgFrom({ variant: 'lasca' })),
+          steps: [
+            cap(mv(0, 7, 'c3', 'd4'), 'Белые выходят в центр.'),
+            cap(mv(1, 7, 'e5', 'c3'), 'Чёрные бьют — белая шашка уходит в плен под чёрную.'),
+            cap(mv(0, 7, 'b2', 'd4'), 'Белые бьют верхушку башни: чёрная — в плен, а белая на c3 снова свободна.'),
+          ],
+        },
+      },
+      {
+        title: 'Уголки',
+        html: `<p>Своя игра на шашечной доске: шашки стоят в противоположных углах — в «домах» (3×3, 3×4 или углом 4+3+2+1). Цель — первым переставить
+          все свои шашки в дом соперника.</p>
+          <p>За ход двигают одну шашку: на соседнее свободное поле или <b>прыжками</b> — через соседнюю шашку (свою или чужую) на свободное поле за ней,
+          и так сколько угодно раз подряд; остановиться можно на любом поле цепочки. Никого не бьют.
+          В <b>классических</b> уголках ходят по вертикали и горизонтали, в <b>диагональных</b> — во все стороны.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'ugolki' },
+          setup: () => cNewGame(ccfgFrom({ variant: 'ugolki' })),
+          intro: 'Дом белых — угол a1, дом чёрных — угол h8.',
+          steps: [
+            cap(mv(0, 8, 'c3', 'd3'), 'Белые выводят шашку на шаг.'),
+            cap(mv(1, 8, 'f6', 'e6'), 'Чёрные — тоже.'),
+            cap(mv(0, 8, 'a3', 'c3', 'e3'), 'Прыжки: через b3 на c3 и через d3 на e3 — за один ход.'),
+            cap(mv(1, 8, 'h6', 'f6', 'd6'), 'Чёрные отвечают такой же «лесенкой».'),
+          ],
+        },
+      },
+      {
+        title: 'Уголки: конец партии',
+        html: `<p>Выигрывает тот, кто первым занял весь дом соперника. Белые ходят первыми, поэтому если они закончили, у чёрных есть ещё один ход:
+          успели закончить тоже — <b>ничья</b>.</p>
+          <p>Чтобы никто не держал оборону в своём доме:</p><ul>
+          <li>после 40-го хода (в диагональных — 30-го) в своём доме не должно остаться ни одной своей шашки — иначе проигрыш;</li>
+          <li>вернул шашку в свой дом после 40-го (30-го) хода — проигрыш;</li>
+          <li>после 80-го хода проигрывает тот, у кого вне дома соперника шашек больше (поровну — ничья).</li></ul>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'ugolki', ugMoves: 'diagonal' },
+          setup: () => cNewGame(ccfgFrom({ variant: 'ugolki', ugMoves: 'diagonal' })),
+          intro: 'Диагональные уголки: ходят и прыгают во все стороны.',
+          steps: [
+            cap(mv(0, 8, 'c3', 'd4'), 'Шаг по диагонали.'),
+            cap(mv(1, 8, 'f6', 'e5'), 'Чёрные — навстречу.'),
+            cap(mv(0, 8, 'a1', 'c3'), 'Прыжок по диагонали через b2.'),
           ],
         },
       },
@@ -236,6 +379,7 @@ export const def: GameDef<State, Action, Event, State> = {
         html: `<p>Ничья бывает, если:</p><ul>
           <li>одна и та же позиция повторилась три раза;</li>
           <li>у обоих есть дамки, а 15 ходов подряд (в международных — 25) никто не бил и не ходил простой шашкой;</li>
+          <li>в столбовых и Ласке: 15 ходов подряд никто не брал и не делал дамку;</li>
           <li>в международных: одинокая дамка против трёх шашек с дамкой продержалась 16 ходов (против двух — 5);</li>
           <li>игроки договорились — ничью можно предложить перед своим ходом.</li></ul>`,
       },

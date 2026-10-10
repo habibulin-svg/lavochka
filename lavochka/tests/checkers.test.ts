@@ -4,6 +4,7 @@ import { SeededRng } from '../src/core/rng';
 import { tuning } from '../src/games/checkers/ai';
 import { def } from '../src/games/checkers/def';
 import { apply, cfgFrom, fromList, legalMoves, newGame, play, sqOf, type Action, type State } from '../src/games/checkers/engine';
+import { cApply, ccfgFrom, cFromBoard, cMoves, cNewGame, homeOf, type CState } from '../src/games/checkers/corners';
 import { botSeats, simulate } from './harness';
 
 function perft(s: State, d: number): number {
@@ -129,6 +130,98 @@ describe('правила', () => {
     expect(apply(s, 1, { type: 'accept' })!.state.reason).toBe('agreed');
     const g = apply(d, 0, { type: 'resign' })!.state;
     expect([g.winner, g.reason]).toEqual([1, 'resign']);
+  });
+});
+
+describe('столбовые и Ласка', () => {
+  const BA = cfgFrom({ variant: 'bashni' });
+  const LA = cfgFrom({ variant: 'lasca' });
+  it('побитая уходит под бьющую; с одной башни можно взять дважды', () => {
+    const s = fromList(BA, { w: ['c3', 'a1'], bb: ['d4'], b: ['h8'] });
+    expect(names(s)).toEqual(['c3:e5:c3']);
+    const n = go(s, 'c3', 'e5', 'c3');
+    expect(n.board[sqOf(8, 'c3')]).toBe('wbb');
+    expect(n.board[sqOf(8, 'd4')]).toBe('');
+  });
+  it('освобождение: побили верхушку — башня переходит, пленная дамка снова дамка', () => {
+    let s = fromList(BA, { wb: ['e5'], w: ['a1'], b: ['d4', 'h8'] }, 1);
+    s = go(s, 'd4', 'f6');
+    expect(s.board[sqOf(8, 'e5')]).toBe('b');
+    expect(s.board[sqOf(8, 'f6')]).toBe('bw');
+    const k = go(fromList(BA, { wB: ['e5'], w: ['a1'], b: ['d4', 'h8'] }, 1), 'd4', 'f6');
+    expect(k.board[sqOf(8, 'e5')]).toBe('B');
+  });
+  it('Ласка: 7×7 по 11 шашек, простые бьют только вперёд, дамка — на шаг', () => {
+    const s = newGame(LA);
+    expect(s.n).toBe(7);
+    expect(s.board.filter((p) => p === 'w').length).toBe(11);
+    expect(names(fromList(LA, { w: ['d4', 'a1'], b: ['c3', 'g7'] }))).not.toContain('d4:b2');
+    const k = fromList(LA, { W: ['d4'], b: ['g7'] });
+    expect(names(k).every((m) => m.split(':').length === 2)).toBe(true);
+    expect(legalMoves(k).every((m) => m.path.length === 1 && Math.abs(Math.floor(m.path[0] / 7) - 3) === 1)).toBe(true);
+  });
+  it('Ласка: дошла до края во время боя — дамка, и ход окончен', () => {
+    // c5:e7 — край; дамкой можно было бы бить дальше (f6), но ход кончается
+    const s = fromList(LA, { w: ['c5', 'a1'], b: ['d6', 'f6', 'g1'] });
+    expect(names(s)).toEqual(['c5:e7']);
+    expect(go(s, 'c5', 'e7').board[sqOf(7, 'e7')]).toBe('Wb');
+  });
+  it('ничья: 15 ходов без взятий', () => {
+    const s = go({ ...fromList(BA, { W: ['e1'], B: ['h8'] }), kq: 29 }, 'e1', 'f2');
+    expect(s.reason).toBe('material');
+  });
+});
+
+describe('уголки', () => {
+  const UG = ccfgFrom({ variant: 'ugolki' });
+  const at = (sq: string) => sqOf(8, sq);
+  const goC = (s: CState, ...sqs: string[]) => {
+    const [from, ...path] = sqs.map(at);
+    const r = cApply(s, s.turn, { type: 'move', from, path });
+    expect(r, sqs.join('-')).not.toBeNull();
+    return r!.state;
+  };
+  it('расстановки и первые ходы', () => {
+    expect(homeOf(UG, 0).length).toBe(9);
+    expect(homeOf(ccfgFrom({ variant: 'ugolki', ugHome: '3x4' }), 0).length).toBe(12);
+    expect(homeOf(ccfgFrom({ variant: 'ugolki', ugHome: 'corner' }), 1).length).toBe(10);
+    expect(cMoves(cNewGame(UG)).length).toBe(12);
+  });
+  it('прыжки цепочкой, можно остановиться на любом поле', () => {
+    let s = cNewGame(UG);
+    s = goC(s, 'c3', 'd3');
+    s = goC(s, 'f6', 'e6');
+    const dests = cMoves(s).filter((m) => m.from === at('a3')).map((m) => m.path[m.path.length - 1]);
+    expect(dests).toContain(at('c3'));
+    expect(dests).toContain(at('e3'));
+    s = goC(s, 'a3', 'c3', 'e3');
+    expect(s.board[at('e3')]).toBe('w');
+  });
+  it('конец: белые заняли дом — у чёрных последний ход; успели — ничья', () => {
+    const b = Array<string>(64).fill('');
+    const wh = homeOf(UG, 1);
+    const bh = homeOf(UG, 0);
+    // белым остался шаг g5→g6, чёрным — b4→b3
+    wh.forEach((sq) => (b[sq] = 'w'));
+    bh.forEach((sq) => (b[sq] = 'b'));
+    b[at('g6')] = '';
+    b[at('g5')] = 'w';
+    b[at('b3')] = '';
+    b[at('b4')] = 'b';
+    let s = cFromBoard(UG, b, 0);
+    s = { ...s, made: [30, 30] };
+    s = goC(s, 'g5', 'g6');
+    expect(s.phase).toBe('play');
+    expect(s.whiteDone).toBe(true);
+    const draw = goC(s, 'b4', 'b3');
+    expect([draw.phase, draw.winner, draw.reason]).toEqual(['over', null, 'equal']);
+    const lost = goC(s, 'b4', 'c4');
+    expect([lost.winner, lost.reason]).toEqual([0, 'home']);
+  });
+  it('после 40-го хода шашки в своём доме — проигрыш', () => {
+    let s = { ...cNewGame(UG), made: [39, 39] as [number, number] };
+    s = goC(s, 'c3', 'd3');
+    expect([s.winner, s.reason]).toEqual([1, 'stayed']);
   });
 });
 

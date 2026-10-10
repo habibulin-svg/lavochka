@@ -4,7 +4,7 @@
  *   Сложный — до восьми полуходов (с ограничением по числу позиций), ценит центр, дамки и тыл.
  * В поддавках оценка наоборот: чем меньше своих шашек и ходов, тем лучше. */
 import type { Rng } from '../../core/types';
-import { colorOf, isKing, play, posKey, properMoves, type Action, type Move, type State } from './engine';
+import { colorOf, isKing, legalMoves, play, posKey, properMoves, RULES, type Action, type Move, type State } from './engine';
 
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 /** Быстрый прогон проверок: боты думают мельче. Тест силы включает полную глубину сам. */
@@ -30,7 +30,7 @@ export function evaluate(s: Pick<State, 'board' | 'n' | 'cfg'>): number {
     const adv = c === 0 ? r : n - 1 - r;
     const center = Math.min(f, n - 1 - f);
     let v: number;
-    if (isKing(p)) v = n === 8 ? 300 : 330;
+    if (isKing(p)) v = n === 10 ? 330 : RULES[s.cfg.variant].flying ? 300 : 200;
     else {
       v = 100 + adv * adv * (n === 8 ? 1.2 : 0.8) + center * 3;
       // тыл держит поля превращения, пока у соперника много шашек
@@ -38,6 +38,8 @@ export function evaluate(s: Pick<State, 'board' | 'n' | 'cfg'>): number {
       // краевые шашки малоподвижны
       if (f === 0 || f === n - 1) v -= 4;
     }
+    // столбовые: всё, что под верхней шашкой, — запас (свои) или пленные (чужие); и то и другое — в пользу хозяина башни
+    if (p.length > 1) v += (p.length - 1) * 45 + [...p.slice(1)].filter((x) => colorOf(x) === c).length * 25;
     sc += c === 0 ? v : -v;
   }
   return sc;
@@ -100,7 +102,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   if (level === 0) {
     // с фуком лёгкий иногда «не видит» взятия
     if (s.cfg.fuk && legal[0].caps.length && rng.next() < 0.2) {
-      const quiet = quietMoves(s);
+      const quiet = legalMoves(s).filter((m) => !m.caps.length);
       if (quiet.length) return toAction(quiet[rng.int(quiet.length)]);
     }
     if (rng.next() < 0.2) return toAction(legal[rng.int(legal.length)]);
@@ -118,28 +120,4 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const sc = rootScores(s, depth, tuning.fast ? 6000 : big ? 120000 : 200000);
   const top = sc.filter((x) => x.v >= sc[0].v - 4);
   return toAction(top[rng.int(top.length)].m);
-}
-
-/** Тихие ходы (без взятий) — для «забывчивого» лёгкого бота при игре с фуком. */
-function quietMoves(s: State): Move[] {
-  const out: Move[] = [];
-  const n = s.n;
-  const dr = s.turn === 0 ? 1 : -1;
-  for (let sq = 0; sq < s.board.length; sq++) {
-    const p = s.board[sq];
-    if (!p || colorOf(p) !== s.turn) continue;
-    const dirs = isKing(p) ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] : [[dr, 1], [dr, -1]];
-    for (const [r0, f0] of dirs) {
-      let r = Math.floor(sq / n) + r0;
-      let f = (sq % n) + f0;
-      while (r >= 0 && r < n && f >= 0 && f < n && !s.board[r * n + f]) {
-        const t = r * n + f;
-        out.push({ from: sq, path: [t], caps: [], promo: !isKing(p) && r === (s.turn === 0 ? n - 1 : 0) });
-        if (!isKing(p)) break;
-        r += r0;
-        f += f0;
-      }
-    }
-  }
-  return out;
 }

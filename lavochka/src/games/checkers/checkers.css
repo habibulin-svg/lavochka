@@ -31,3 +31,10 @@
 .ck-btns .btn { width: 100%; }
 .ck-ask { font-weight: 700; }
 .ck-fuk-ask { color: #8a1206; }
+/* уголки: дома игроков */
+.ck-board .ck-home { pointer-events: none; }
+.ck-board .ck-home0 { fill: rgba(255, 236, 190, 0.16); stroke: rgba(255, 230, 170, 0.35); stroke-width: 1.5; }
+.ck-board .ck-home1 { fill: rgba(40, 18, 8, 0.22); stroke: rgba(30, 12, 4, 0.4); stroke-width: 1.5; }
+/* столбовые: высота башни */
+.ck-board .ck-badge circle { fill: #f3e2b8; stroke: #5a3412; stroke-width: 1.5; }
+.ck-board .ck-badge text { font: 700 13px 'PT Sans', Arial, sans-serif; fill: #3a1a06; text-anchor: middle; dominant-baseline: central; }
