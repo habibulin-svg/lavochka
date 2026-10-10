@@ -13,4 +13,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   thousand: () => import('./thousand/def').then((m) => m.def),
   bura: () => import('./bura/def').then((m) => m.def),
   '101': () => import('./sto/def').then((m) => m.def),
+  preferans: () => import('./preferans/def').then((m) => m.def),
 };

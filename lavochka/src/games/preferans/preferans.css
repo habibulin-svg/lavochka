@@ -1,0 +1,32 @@
+/* Преферанс: зелёное сукно, «пулька» в панели. */
+.table--preferans {
+  --panel-bg: linear-gradient(180deg, #f4ecd8, #e6d9b8);
+  --panel-ink: #2a1a0a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.12), transparent 65%), #17241c;
+}
+.pf-cloth {
+  position: absolute; inset: 14px; border-radius: 30px;
+  background: radial-gradient(ellipse at 50% 42%, #2f6a46, #1f4e32 70%, #183e28);
+  box-shadow: inset 0 0 0 9px #4a2a12, inset 0 0 0 12px #2a1606, inset 0 0 60px rgba(0, 0, 0, 0.5), 0 18px 30px rgba(0, 0, 0, 0.5);
+}
+.pf-plates { position: absolute; inset: 0; }
+.pf-trump { position: absolute; left: 900px; top: 520px; width: 80px; text-align: center; color: #f5ecd0; font: 700 30px 'PT Serif', Georgia, serif; text-shadow: 0 1px 3px #000; }
+.pf-trump span { display: inline-block; width: 46px; height: 46px; line-height: 46px; border-radius: 50%; background: rgba(250, 244, 228, 0.92); color: #14141a; text-shadow: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.pf-trump span.red { color: #c8102e; }
+.pf-trump small { display: block; font-size: 12px; font-weight: 400; }
+.pf-label { position: absolute; transform: translate(-50%, 0); color: #f5ecd0; font: 600 14px 'PT Serif', Georgia, serif; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.cs-card.pf-prk { filter: drop-shadow(0 0 6px #ffd24a); }
+.pf-controls { display: flex; flex-direction: column; gap: 8px; }
+.pf-btns { display: flex; flex-direction: column; gap: 6px; }
+.pf-btns > .btn { width: 100%; }
+.pf-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.pf-bid { padding: 4px 0; font-size: 14px; color: #14141a; background: #f6efdc; border: 1px solid #8a6a40; box-shadow: none; text-shadow: none; }
+.pf-bid:hover:not(:disabled) { background: #fff6dc; }
+.pf-bid:disabled { opacity: 0.35; }
+.pf-bid.red { color: #c8102e; }
+.pf-bid.mis { grid-column: span 5; }
+.pf-ask { font-weight: 700; }
+.pf-sheet table { width: 100%; border-collapse: collapse; font: 13px 'PT Sans', Arial, sans-serif; }
+.pf-sheet th, .pf-sheet td { border-bottom: 1px solid rgba(60, 40, 10, 0.25); padding: 2px 4px; text-align: center; }
+.pf-sheet td:first-child { text-align: left; opacity: 0.75; }
+.pf-sheet tr.sum td { font-weight: 700; border-top: 2px solid rgba(60, 40, 10, 0.5); }

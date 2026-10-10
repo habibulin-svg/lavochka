@@ -1,0 +1,394 @@
+/* Преферанс — отрисовка: стол под сукном, свой веер снизу, соперники слева и справа (открытые руки — лицом), прикуп и взятка в центре.
+ * Торговля — сеткой ставок в панели; снос — выбрать две карты; вист — кнопками; «пулька» (пуля, гора, висты) — там же.
+ * Игра в светлую: за открытого пасующего ходит вистующий — его карты тоже нажимаются. */
+import { Sound } from '../../core/audio';
+import { esc, h, sleep } from '../../core/util';
+import type { GameView, ViewCtx } from '../../core/view';
+import { preloadDeck } from '../../cards/render';
+import { settings } from '../../core/settings';
+import { sameCard, sortHand, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
+import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
+import { allBids, bidName, bidRank, finalScores, handCount, isMisere, legalCards, type Bid, type Event, type View } from './engine';
+import { SEATS } from './def';
+import './preferans.css';
+
+const W = 1000;
+const H = 720;
+const HAND_Y = 615;
+const CENTER = { x: 500, y: 320 };
+
+class PrefView implements GameView<View, Event> {
+  private ctx!: ViewCtx;
+  private cs!: CardStage;
+  private plates!: HTMLElement;
+  private banner!: HTMLElement;
+  private cover!: HTMLElement;
+  private btns!: HTMLElement;
+  private sheet!: HTMLElement;
+  private v: View | null = null;
+  private viewer = 0;
+  private hidden = false;
+  private actSeat: number | null = null;
+  private selected: Card[] = [];
+
+  mount(root: HTMLElement, ctx: ViewCtx) {
+    this.ctx = ctx;
+    preloadDeck(settings.deck);
+    this.cs = new CardStage(root, W, H, 'pf-wrap', '<div class="pf-cloth"></div>');
+    this.cs.over.innerHTML = '<div class="pf-plates"></div><div class="cs-banner" hidden></div>';
+    this.plates = this.cs.over.querySelector('.pf-plates') as HTMLElement;
+    this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;
+    this.cover = h('<div class="cs-cover" hidden><div class="cs-cover-box"><div class="pf-cover-t"></div><button class="btn primary">Показать карты</button></div></div>');
+    this.cs.stage.appendChild(this.cover);
+    (this.cover.querySelector('button') as HTMLButtonElement).onclick = () => {
+      Sound.unlock();
+      this.hidden = false;
+      this.cover.hidden = true;
+      this.draw();
+      this.renderButtons();
+    };
+    const ctl = h(`<div class="pf-controls"><div class="pf-btns"></div><div class="pf-sheet"></div>${ctx.demo ? '' : '<div class="hint small-hint">Ход — нажать на карту. Снос — выбрать две карты и «Снести».</div>'}</div>`);
+    ctx.controls.appendChild(ctl);
+    this.btns = ctl.querySelector('.pf-btns') as HTMLElement;
+    this.sheet = ctl.querySelector('.pf-sheet') as HTMLElement;
+    this.cs.stage.addEventListener('click', (e) => this.onClick(e));
+  }
+
+  private order(v: View): number[] {
+    const i0 = Math.max(0, v.seats.indexOf(this.viewer));
+    return v.seats.map((_, k) => v.seats[(i0 + k) % v.seats.length]);
+  }
+
+  private anchor(v: View, seat: number): Point {
+    const k = this.order(v).indexOf(seat);
+    if (k === 0) return { x: 500, y: HAND_Y };
+    if (v.seats.length === 3) return k === 1 ? { x: 160, y: 230 } : { x: 840, y: 230 };
+    return k === 1 ? { x: 140, y: 260 } : k === 2 ? { x: 500, y: 92 } : { x: 860, y: 260 };
+  }
+
+  private chooseViewer(v: View, toAct: number[]) {
+    const mine = this.ctx.mySeats.filter((x) => v.seats.includes(x));
+    if (!mine.length) return;
+    if (mine.length === 1) {
+      this.viewer = mine[0];
+      return;
+    }
+    const next = toAct.find((x) => mine.includes(x));
+    if (next != null && next !== this.viewer) {
+      this.viewer = next;
+      this.hidden = true;
+      this.cs.clear();
+    }
+  }
+
+  /** Чьими картами сейчас ходит этот экран (своими или открытого пасующего). */
+  private controlled(v: View): number | null {
+    if (this.actSeat == null || this.hidden) return null;
+    return v.phase === 'play' ? v.turn : this.actSeat;
+  }
+
+  private faceUp(v: View, seat: number) {
+    if (seat === this.viewer) return this.ctx.demo || (!this.hidden && this.ctx.mySeats.includes(seat));
+    // открытые руки (в светлую, ловящие на мизере) и все — в показе правил
+    return v.hands[seat].length > 0 && (this.ctx.demo || !this.hidden);
+  }
+
+  private layout(v: View): StageItem[] {
+    const items: StageItem[] = [];
+    if (v.phase === 'bid') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 30 + i * 60, y: 240, r: (i - 0.5) * 8, s: 0.62, z: 5 + i });
+    const t = v.trick;
+    if (t) {
+      if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: CENTER.x, y: 230, r: 0, s: 0.66, z: 18, cls: 'pf-prk' });
+      t.cards.forEach((x, i) => {
+        const a = this.anchor(v, x.seat);
+        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + (a.x - CENTER.x) * 0.24, y: CENTER.y + 30 + (a.y - CENTER.y) * 0.2, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i });
+      });
+    }
+    const ctl = this.controlled(v);
+    const legal = ctl != null && v.phase === 'play' ? legalCards(v, ctl) : [];
+    for (const seat of v.seats) {
+      const n = handCount(v, seat);
+      if (!n) continue;
+      const a = this.anchor(v, seat);
+      const me = seat === this.viewer;
+      const up = this.faceUp(v, seat);
+      const list = up ? sortHand(v.hands[seat], v.trump && v.trump !== 'NT' ? (v.trump as Suit) : undefined) : [];
+      for (let k = 0; k < n; k++) {
+        const p = me ? fan(n, k, a.x, a.y, 720, 64, 40, 24) : fan(n, k, a.x, a.y, up ? 250 : 150, up ? 26 : 14, 8, up ? 20 : 30);
+        const s = me ? 1 : up ? 0.62 : 0.52;
+        if (!up) {
+          items.push({ key: `b:${seat}:${k}`, card: null, ...p, s, z: (me ? 100 : 50) + k });
+          continue;
+        }
+        const c = list[k];
+        const mine = ctl === seat;
+        const sel = mine && this.selected.some((x) => sameCard(x, c));
+        const can = mine && (v.phase === 'discard' || legal.some((x) => sameCard(x, c)));
+        const cls = mine && (v.phase === 'play' || v.phase === 'discard') ? (sel ? 'cs-sel' : can ? 'cs-can' : 'cs-dim') : '';
+        items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? (me ? 30 : 16) : 0), r: p.r, s, z: (me ? 100 : 50) + k, cls, data: mine ? { hand: c.s + c.r, seat: String(seat) } : undefined });
+      }
+    }
+    return items;
+  }
+
+  private draw(enter: Point | null = null, exit: Point | null = null) {
+    const v = this.v;
+    if (!v) return;
+    this.cs.render(this.layout(v), this.ctx.speed(), enter, exit);
+    let s = '';
+    for (const seat of v.seats) {
+      const a = this.anchor(v, seat);
+      const me = seat === this.viewer;
+      const y = me ? a.y - 112 : a.y + 66;
+      const marks: string[] = [];
+      if (v.seats.length === 4 && seat === v.dealer && v.phase !== 'over') marks.push('<em>сдаёт</em>');
+      if (v.phase === 'bid' && v.passed.includes(seat)) marks.push('<em>пас</em>');
+      if (v.phase === 'bid' && seat === v.bidder && v.bid) marks.push(`<b>${bidName(v.bid)}</b>`);
+      if (v.phase !== 'bid' && seat === v.declarer && v.contract) marks.push(`<b>${bidName(v.contract)}</b>`);
+      if (v.whist[seat]) marks.push(`<em>${v.whist[seat] === 'whist' ? 'вист' : 'пас'}</em>`);
+      if (v.phase === 'play') marks.push(`<i>${v.tricks[seat]}</i>`);
+      const on = v.turn === seat && v.phase !== 'over';
+      s += `<div class="cs-plate${on ? ' on' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px">${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
+    }
+    if (v.trump && v.trump !== 'NT') s += `<div class="pf-trump"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump as Suit]}</span><small>козырь</small></div>`;
+    else if (v.kind === 'raspasy' && v.phase === 'play') s += '<div class="pf-trump"><span>☰</span><small>распасы</small></div>';
+    else if (v.kind === 'misere' && v.phase === 'play') s += '<div class="pf-trump"><span>∅</span><small>мизер</small></div>';
+    if (v.prikup.length && v.phase !== 'bid' && v.kind !== 'raspasy') s += `<div class="pf-label" style="left:${CENTER.x}px;top:200px">прикуп был: ${v.prikup.map((c) => SUIT_SYM[c.s] + (c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r)).join(' ')}</div>`;
+    this.plates.innerHTML = s;
+    this.drawSheet(v);
+  }
+
+  private drawSheet(v: View) {
+    const seats = v.seats;
+    const head = seats.map((x) => `<th style="color:${SEATS[x].ink ?? SEATS[x].color}">${esc(this.plain(x)).slice(0, 7)}</th>`).join('');
+    const row = (label: string, f: (x: number) => string | number) => `<tr><td>${label}</td>${seats.map((x) => `<td>${f(x)}</td>`).join('')}</tr>`;
+    const fin = v.final ?? finalScores(v);
+    this.sheet.innerHTML = `<table><tr><th></th>${head}</tr>
+      ${row(`пуля /${v.cfg.pulya}`, (x) => v.pulya[x])}
+      ${row('гора', (x) => v.gora[x])}
+      ${row('висты', (x) => seats.reduce((a, y) => a + (y !== x ? v.whists[x][y] : 0), 0))}
+      <tr class="sum"><td>итог</td>${seats.map((x) => `<td>${fin[x] > 0 ? '+' : ''}${fin[x]}</td>`).join('')}</tr></table>`;
+  }
+
+  private plain(seat: number) {
+    return this.ctx.name(seat).replace(/<[^>]+>/g, '');
+  }
+
+  private onClick(e: MouseEvent) {
+    const v = this.v;
+    const ctl = v ? this.controlled(v) : null;
+    if (!v || ctl == null) return;
+    const el = (e.target as Element).closest('[data-hand]') as HTMLElement | null;
+    if (!el) return;
+    const card = v.hands[ctl].find((c) => c.s + c.r === el.dataset.hand);
+    if (!card) return;
+    if (v.phase === 'discard') {
+      const i = this.selected.findIndex((x) => sameCard(x, card));
+      if (i >= 0) this.selected.splice(i, 1);
+      else {
+        if (this.selected.length >= 2) this.selected.shift();
+        this.selected.push(card);
+      }
+      Sound.ui();
+      this.draw();
+      this.renderButtons();
+      return;
+    }
+    if (v.phase !== 'play') return;
+    if (!legalCards(v, ctl).some((c) => sameCard(c, card))) {
+      Sound.nomove();
+      return;
+    }
+    this.send({ type: 'play', card });
+  }
+
+  private send(a: Parameters<ViewCtx['act']>[1]) {
+    const seat = this.actSeat;
+    if (seat == null) return;
+    Sound.unlock();
+    this.clearTurn();
+    this.ctx.act(seat, a);
+  }
+
+  private clearTurn() {
+    this.actSeat = null;
+    this.selected = [];
+    this.btns.innerHTML = '';
+  }
+
+  private button(text: string, primary: boolean, on: () => void, disabled = false) {
+    const b = h<HTMLButtonElement>(`<button class="btn ${primary ? 'primary' : ''}"${disabled ? ' disabled' : ''}>${text}</button>`);
+    b.onclick = () => {
+      Sound.unlock();
+      on();
+    };
+    this.btns.appendChild(b);
+  }
+
+  private bidGrid(min: Bid | null, onPick: (b: Bid) => void, allowMisere: boolean) {
+    const grid = h('<div class="pf-grid"></div>');
+    for (const b of allBids()) {
+      if (isMisere(b) && !allowMisere) continue;
+      const off = min != null && bidRank(b) <= bidRank(min);
+      const label = isMisere(b) ? 'мизер' : `${b.level}${b.trump === 'NT' ? 'БК' : SUIT_SYM[b.trump as Suit]}`;
+      const red = !isMisere(b) && (b.trump === 'H' || b.trump === 'D');
+      const el = h<HTMLButtonElement>(`<button class="btn pf-bid${red ? ' red' : ''}${isMisere(b) ? ' mis' : ''}"${off ? ' disabled' : ''}>${label}</button>`);
+      el.onclick = () => onPick(b);
+      grid.appendChild(el);
+    }
+    this.btns.appendChild(grid);
+  }
+
+  private renderButtons() {
+    this.btns.innerHTML = '';
+    const v = this.v;
+    const seat = this.actSeat;
+    if (!v || seat == null || this.ctx.demo || this.hidden) return;
+    switch (v.phase) {
+      case 'bid':
+        this.btns.appendChild(h(`<div class="pf-ask">Торговля: ${v.bid ? `сейчас ${bidName(v.bid)}` : 'ставок не было'}</div>`));
+        this.bidGrid(v.bid, (b) => this.send({ type: 'bid', bid: b }), !v.spoke.includes(seat));
+        this.button('Пас', false, () => this.send({ type: 'pass' }));
+        return;
+      case 'discard':
+        this.btns.appendChild(h(`<div class="pf-ask">Снесите две карты (выбрано ${this.selected.length})</div>`));
+        this.button('Снести', true, () => this.send({ type: 'discard', cards: this.selected }), this.selected.length !== 2);
+        return;
+      case 'contract': {
+        this.btns.appendChild(h(`<div class="pf-ask">Какую игру заказать? Не ниже ${bidName(v.bid)}</div>`));
+        const grid = h('<div class="pf-grid"></div>');
+        for (const b of allBids()) {
+          if (isMisere(b)) continue;
+          const off = bidRank(b) < bidRank(v.bid!);
+          const red = b.trump === 'H' || b.trump === 'D';
+          const el = h<HTMLButtonElement>(`<button class="btn pf-bid${red ? ' red' : ''}"${off ? ' disabled' : ''}>${b.level}${b.trump === 'NT' ? 'БК' : SUIT_SYM[b.trump as Suit]}</button>`);
+          el.onclick = () => this.send({ type: 'contract', bid: b });
+          grid.appendChild(el);
+        }
+        this.btns.appendChild(grid);
+        return;
+      }
+      case 'whist':
+        this.btns.appendChild(h(`<div class="pf-ask">${esc(this.plain(v.declarer))} играет ${bidName(v.contract)}. Вистовать?</div>`));
+        this.button('Вист', true, () => this.send({ type: 'whist' }));
+        this.button('Пас', false, () => this.send({ type: 'pass-whist' }));
+        return;
+      case 'play':
+        if (v.turn !== seat) this.btns.appendChild(h(`<div class="pf-ask">Ходите за ${esc(this.plain(v.turn))} (его карты открыты)</div>`));
+        return;
+    }
+  }
+
+  setView(v: View) {
+    this.v = v;
+    this.banner.hidden = true;
+    this.draw();
+  }
+
+  private async showBanner(text: string, ms: number) {
+    this.banner.textContent = text;
+    this.banner.hidden = false;
+    if (!ms) return;
+    await sleep(ms);
+    this.banner.hidden = true;
+  }
+
+  async play(events: Event[], v: View) {
+    const speed = this.ctx.speed();
+    this.clearTurn();
+    for (const ev of events) {
+      const cur = this.v!;
+      if (ev.type === 'play') {
+        const t = cur.trick ?? { leader: ev.seat, cards: [] };
+        this.v = {
+          ...cur,
+          trick: { ...t, cards: [...t.cards, { seat: ev.seat, card: ev.card }] },
+          hands: cur.hands.map((hh, i) => (i === ev.seat ? hh.filter((c) => !sameCard(c, ev.card)) : hh)),
+          counts: cur.counts.map((n, i) => (i === ev.seat ? n - 1 : n)),
+        };
+        this.draw();
+        Sound.card();
+        await sleep(240 / speed);
+      } else if (ev.type === 'trick') {
+        await sleep(480 / speed);
+        this.v = { ...this.v!, trick: null, tricks: this.v!.tricks.map((x, i) => (i === ev.winner ? x + 1 : x)) };
+        this.draw(null, this.anchor(cur, ev.winner));
+        Sound.step();
+        await sleep(260 / speed);
+      } else if (ev.type === 'prikup') {
+        this.cs.render([...this.layout({ ...cur, phase: 'discard' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 40 + i * 80, y: 240, r: 0, s: 0.75, z: 30 + i }))], speed);
+        Sound.card();
+        await this.showBanner(`Прикуп — ${this.plain(ev.seat)}`, 1300 / speed);
+      } else if (ev.type === 'raspasy') {
+        await this.showBanner('Распасы!', 1000 / speed);
+      } else if (ev.type === 'contract') {
+        Sound.ui();
+        await this.showBanner(`${this.plain(ev.seat)}: ${bidName(ev.bid)}`, 900 / speed);
+      } else if (ev.type === 'bid' || ev.type === 'pass' || ev.type === 'whist') {
+        Sound.ui();
+      } else if (ev.type === 'score') {
+        this.v = { ...v, trick: null };
+        this.draw();
+        const msg = ev.kind === 'raspasy' ? 'Распасы сыграны' : ev.kind === 'free' ? 'Без розыгрыша — сыграна' : ev.made ? `${bidName(ev.contract)} — сыграна!` : `${bidName(ev.contract)} — без взяток!`;
+        await this.showBanner(msg, 1400 / speed);
+      } else if (ev.type === 'deal') Sound.shuffle();
+      else if (ev.type === 'end') {
+        Sound.win();
+        this.v = v;
+        this.draw();
+        await this.showBanner('Пуля закрыта!', 0);
+      }
+    }
+    this.v = v;
+    this.draw({ x: CENTER.x, y: 240 });
+  }
+
+  setTurn(toAct: number[], interactive: number[]) {
+    this.clearTurn();
+    const v = this.v;
+    if (!v || v.phase === 'over' || this.ctx.demo) return;
+    this.chooseViewer(v, toAct);
+    const seat = interactive.find((x) => x === this.viewer) ?? null;
+    if (this.hidden && interactive.length && this.ctx.mySeats.length > 1) {
+      (this.cover.querySelector('.pf-cover-t') as HTMLElement).innerHTML = `Ход: ${this.ctx.name(this.viewer)}.<br><small>Передайте устройство — остальным не подглядывать!</small>`;
+      this.cover.hidden = false;
+    } else {
+      this.hidden = false;
+      this.cover.hidden = true;
+    }
+    this.actSeat = seat;
+    this.draw();
+    this.renderButtons();
+  }
+
+  status(v: View, toAct: number[], interactive: number[]) {
+    const name = (p: number) => this.ctx.name(p);
+    if (v.phase === 'over') return 'Пуля закрыта';
+    const who = toAct[0];
+    const mine = interactive.includes(who);
+    switch (v.phase) {
+      case 'bid':
+        return mine ? 'Торгуйтесь' : `Торгуется ${name(who)}…`;
+      case 'discard':
+        return mine ? 'Снесите две карты' : `${name(who)} сносит…`;
+      case 'contract':
+        return mine ? 'Закажите игру' : `${name(who)} заказывает…`;
+      case 'whist':
+        return mine ? 'Вист или пас?' : `${name(who)} думает, вистовать ли…`;
+      default:
+        return mine ? 'Ваш ход' : `Ходит ${name(v.turn)}…`;
+    }
+  }
+
+  playerStats(v: View, seat: number) {
+    return `пуля ${v.pulya[seat]} · гора ${v.gora[seat]}`;
+  }
+
+  destroy() {
+    this.cs.destroy();
+  }
+}
+
+export function createView(): GameView<View, Event> {
+  return new PrefView();
+}
