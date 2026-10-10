@@ -51,7 +51,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'mafia', title: 'Мафия', sub: 'город засыпает…', cat: 'company', players: '6–16', wave: 4, icon: '🎭', tint: '#2a1a2e', variants: ['классическая', 'с доктором и путаной', 'спортивная'] },
   // — на бумаге —
   { id: 'seabattle', title: 'Морской бой', sub: 'в клеточку, ручкой', cat: 'paper', players: '2', wave: 2, icon: '⚓', tint: '#2b5c9e', thumb: 'seabattle.webp', load: () => import('./seabattle'), variants: ['классика', 'сальво', 'западный флот'] },
-  { id: 'dots', title: 'Точки', sub: 'окружи соседа', cat: 'paper', players: '2–4', wave: 2, icon: '⁘', tint: '#3a4f8a' },
+  { id: 'dots', title: 'Точки', sub: 'окружи соседа', cat: 'paper', players: '2–4', wave: 2, icon: '⁘', tint: '#3a4f8a', thumb: 'dots.webp', load: () => import('./dots'), variants: ['на листочке', 'быстрая', 'спортивная'] },
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a' },
   // — настолки —
   { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12' },
