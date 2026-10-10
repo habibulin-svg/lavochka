@@ -87,7 +87,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'sport', label: 'Спортивная', hint: 'Дон, ночь знакомства, роли не открывают', options: { variant: 'sport', reveal: false } },
   ],
 
-  setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
+  setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng, seats.filter((x) => x.kind !== 'bot').map((x) => x.seat)),
   toAct,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view: (s, seats) => makeView(s, seats),

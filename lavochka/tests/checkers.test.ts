@@ -133,6 +133,19 @@ describe('правила', () => {
   });
 });
 
+describe('часы', () => {
+  it('время тратится, добавка прибавляется, флажок — проигрыш', () => {
+    const c = cfgFrom({ clock: 1, inc: 2 });
+    let s = { ...newGame(c), turnStart: 1000 };
+    const r = apply(s, 0, { type: 'move', from: sqOf(8, 'c3'), path: [sqOf(8, 'd4')] }, 11_000)!;
+    s = r.state;
+    expect(s.clock[0]).toBe(60_000 - 10_000 + 2000);
+    expect(apply(s, 1, { type: 'flag' }, 20_000)).toBeNull();
+    const f = apply(s, 1, { type: 'flag' }, 11_000 + 61_000)!;
+    expect([f.state.winner, f.state.reason]).toEqual([0, 'time']);
+  });
+});
+
 describe('столбовые и Ласка', () => {
   const BA = cfgFrom({ variant: 'bashni' });
   const LA = cfgFrom({ variant: 'lasca' });

@@ -30,6 +30,10 @@ class CheckersView implements GameView<S, E> {
   private gBanner!: SVGGElement;
   private gCoords!: SVGGElement;
   private btns!: HTMLElement;
+  private clocks!: HTMLElement;
+  private recvAt = Date.now();
+  private tick: ReturnType<typeof setInterval> | undefined;
+  private flagSent = 0;
   private s: S | null = null;
   private n = 0;
   private flipped = false;
@@ -64,11 +68,14 @@ class CheckersView implements GameView<S, E> {
     root.appendChild(wrap);
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
     const ctl = h(`<div class="ck-controls">
+        <div class="ck-clocks" hidden></div>
         <div class="ck-btns"></div>
         ${ctx.demo ? '' : '<div class="hint small-hint">Нажмите на шашку, потом — на подсвеченное поле. Бой в несколько прыжков — по полям или сразу на последнее.</div>'}
       </div>`);
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.ck-btns') as HTMLElement;
+    this.clocks = ctl.querySelector('.ck-clocks') as HTMLElement;
+    if (!ctx.demo) this.tick = setInterval(() => this.renderClocks(), 200);
     this.svg.addEventListener('click', (e) => this.onClick(e));
     this.svg.addEventListener('pointerover', (e) => {
       if (e.pointerType === 'touch' || this.selected != null) return;
@@ -417,8 +424,42 @@ class CheckersView implements GameView<S, E> {
     this.render();
   }
 
+  /** Часы, как у шахмат: идут у того, чей ход; своё время вышло — сообщаем (хозяин проверит). */
+  private renderClocks() {
+    const st = this.s;
+    if (!st || st.game !== 'draughts' || !st.cfg.clock) {
+      this.clocks.hidden = true;
+      return;
+    }
+    this.clocks.hidden = false;
+    const running = st.phase === 'play' && st.moves.length > 0;
+    const left = (seat: number) => Math.max(0, st.clock[seat] - (running && st.turn === seat ? Date.now() - this.recvAt : 0));
+    const fmt = (ms: number) => {
+      const t = Math.ceil(ms / 1000);
+      return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    };
+    const order = this.flipped ? [0, 1] : [1, 0];
+    this.clocks.innerHTML = order
+      .map((seat) => {
+        const ms = left(seat);
+        const on = running && st.turn === seat;
+        return `<div class="ck-clock${on ? ' on' : ''}${ms < 20000 ? ' low' : ''}"><span>${seat === 0 ? 'Белые' : 'Чёрные'}</span><b>${fmt(ms)}</b></div>`;
+      })
+      .join('');
+    const me = this.actSeat;
+    if (running && me != null && me === st.turn && left(me) <= 0 && Date.now() - this.flagSent > 1500) {
+      this.flagSent = Date.now();
+      this.ctx.act(me, { type: 'flag' });
+    }
+  }
+
+  destroy() {
+    clearInterval(this.tick);
+  }
+
   setView(s: S) {
     this.s = s;
+    this.recvAt = Date.now();
     if (s.n !== this.n) this.build(s.n);
     this.gBanner.innerHTML = '';
     this.applyFlip();
@@ -446,7 +487,9 @@ class CheckersView implements GameView<S, E> {
       }
     }
     this.s = s;
+    this.recvAt = Date.now();
     this.render();
+    this.renderClocks();
   }
 
   private async animate(m: Move, dur: number) {

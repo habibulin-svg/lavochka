@@ -33,20 +33,15 @@ export interface CatalogEntry {
   thumb?: string;
   /** Аркада (реальное время, один игрок): свой экран, без пошагового стола и сервера партий. */
   arcade?: boolean;
-  /** «Как оригинал» (электроника, кинь-двинь) — только для личного пользования: в боевую сборку не попадает. */
-  personal?: boolean;
   load?: () => Promise<{ default: GameModule | ArcadeModule }>;
 }
 
-/** Личные игры видны при разработке и в сборке с VITE_PERSONAL=1 (на Render их нет). */
-export const PERSONAL = import.meta.env.DEV || import.meta.env.VITE_PERSONAL === '1';
-
-const ALL: CatalogEntry[] = [
+export const CATALOG: CatalogEntry[] = [
   // — доска и кости —
-  { id: 'shishbesh', title: 'Шиш-беш', sub: 'на кресте, с прыжками по углам', cat: 'board', players: '2–4', wave: 0, icon: '✚', tint: '#b3322a', thumb: 'shishbesh.webp', load: () => import('./shishbesh'), variants: ['классический', 'длинное поле', 'домики через один', 'старт на дубль'] },
+  { id: 'shishbesh', title: 'Шиш-беш', sub: 'на кресте, с прыжками по углам', cat: 'board', players: '2–4', wave: 0, icon: '✚', tint: '#b3322a', thumb: 'shishbesh.webp', load: () => import('./shishbesh'), variants: ['классический', 'длинное поле', 'домики через один', 'старт на дубль', 'быстрый заряд'] },
   { id: 'nardy', title: 'Нарды', sub: 'с костями, марсом и коксом', cat: 'board', players: '2', wave: 1, icon: '⚂', tint: '#8a4f24', thumb: 'nardy.webp', load: () => import('./nardy'), variants: ['длинные', 'короткие', 'гюльбара', 'матч с кубом'] },
   { id: 'chess', title: 'Шахматы', sub: 'на резной доске', cat: 'board', players: '2', wave: 1, icon: '♞', tint: '#3d2b1f', thumb: 'chess.webp', load: () => import('./chess'), variants: ['классические', 'фишер 960', 'блиц с часами'] },
-  { id: 'checkers', title: 'Шашки', sub: 'дамка ходит далеко', cat: 'board', players: '2', wave: 2, icon: '⛀', tint: '#6b1f1a', thumb: 'checkers.webp', load: () => import('./checkers'), variants: ['русские', 'международные', 'поддавки', 'с фуком', 'бразильские', 'столбовые', 'ласка', 'уголки'] },
+  { id: 'checkers', title: 'Шашки', sub: 'дамка ходит далеко', cat: 'board', players: '2', wave: 2, icon: '⛀', tint: '#6b1f1a', thumb: 'checkers.webp', load: () => import('./checkers'), variants: ['русские', 'международные', 'поддавки', 'с фуком', 'бразильские', 'столбовые', 'ласка', 'уголки', 'блиц с часами'] },
   { id: 'domino', title: 'Домино «Козёл»', sub: 'забить рыбу!', cat: 'board', players: '2–4', wave: 2, icon: '🁫', tint: '#2f4a3a', thumb: 'domino.webp', load: () => import('./domino'), variants: ['козёл', 'морской козёл', 'осёл', 'на двоих и троих'] },
   // — карты —
   { id: 'durak', title: 'Дурак', sub: 'козыри, отбой и погоны', cat: 'cards', players: '2–6', wave: 1, icon: '♠', tint: '#1f3d6b', thumb: 'durak.webp', load: () => import('./durak'), variants: ['классический', 'подкидной', 'переводной', 'длинный', 'японский', 'король-говно', '2 на 2', 'польский', 'потайной'] },
@@ -63,9 +58,9 @@ const ALL: CatalogEntry[] = [
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a' },
   // — настолки —
   { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12' },
-  { id: 'krugosvet', title: 'Кругосветное путешествие', sub: 'из Москвы и обратно', cat: 'tabletop', players: '2–8', wave: 7, icon: '🌍', tint: '#1d6a7a', personal: true },
-  { id: 'puteshestvie', title: 'Путешествие', sub: 'журнальная игра-ходилка', cat: 'tabletop', players: '2–8', wave: 7, icon: '🧭', tint: '#4f7a1d', personal: true },
-  { id: 'kosmos', title: 'Большое космическое путешествие', sub: 'догони комету', cat: 'tabletop', players: '2–10', wave: 7, icon: '☄', tint: '#20307a', personal: true },
+  { id: 'krugosvet', title: 'Кругосветное путешествие', sub: 'из Москвы и обратно', cat: 'tabletop', players: '2–8', wave: 7, icon: '🌍', tint: '#1d6a7a' },
+  { id: 'puteshestvie', title: 'Путешествие', sub: 'журнальная игра-ходилка', cat: 'tabletop', players: '2–8', wave: 7, icon: '🧭', tint: '#4f7a1d' },
+  { id: 'kosmos', title: 'Большое космическое путешествие', sub: 'догони комету', cat: 'tabletop', players: '2–10', wave: 7, icon: '☄', tint: '#20307a' },
   { id: 'manager', title: 'Менеджер', sub: 'Гостиный Двор, ДЛТ и прочие', cat: 'tabletop', players: '2–6', wave: 7, icon: '₽', tint: '#7a2a1d' },
   { id: 'kosmos2000', title: 'Космос 2000', sub: '«Менеджер» на орбите', cat: 'tabletop', players: '2–6', wave: 7, icon: '🛰', tint: '#5a1d7a' },
   { id: 'nep', title: 'НЭП', sub: 'капитализм по-советски', cat: 'tabletop', players: '2–6', wave: 7, icon: '💼', tint: '#3a3a3a' },
@@ -76,11 +71,11 @@ const ALL: CatalogEntry[] = [
   { id: 'basketball', title: 'Настольный баскетбол', sub: 'щелчок — и в кольцо', cat: 'sport', players: '1–2', wave: 6, icon: '🏀', tint: '#a0521a' },
   { id: 'zarulem', title: 'За рулём', sub: 'дорога крутится, руль в руках', cat: 'sport', players: '1', wave: 5, icon: '🚗', tint: '#8a1a1a' },
   // — электроника —
-  { id: 'nupogodi', title: 'Ну, погоди!', sub: 'ИМ-02: волк ловит яйца', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', arcade: true, personal: true, load: PERSONAL ? () => import('./nupogodi') : undefined, variants: ['игра А', 'игра Б'] },
-  { id: 'tainy', title: 'Тайны океана', sub: 'ИМ-03: водолазы и сокровища', cat: 'electronics', players: '1', wave: 5, icon: '🐙', tint: '#0f6a8a', personal: true },
-  { id: 'povar', title: 'Весёлый повар', sub: 'ИМ: жонглируй сковородкой', cat: 'electronics', players: '1', wave: 5, icon: '🍳', tint: '#c25a10', personal: true },
-  { id: 'razvedchiki', title: 'Разведчики космоса', sub: 'ИМ: межпланетный десант', cat: 'electronics', players: '1', wave: 5, icon: '🚀', tint: '#3a2a8a', personal: true },
-  { id: 'avtoslalom', title: 'Автослалом', sub: 'ИМ: между флажками', cat: 'electronics', players: '1', wave: 5, icon: '🏁', tint: '#1a7a3a', personal: true },
+  { id: 'nupogodi', title: 'Ну, погоди!', sub: 'ИМ-02: волк ловит яйца', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', arcade: true, load: () => import('./nupogodi'), variants: ['игра А', 'игра Б'] },
+  { id: 'tainy', title: 'Тайны океана', sub: 'ИМ-03: водолазы и сокровища', cat: 'electronics', players: '1', wave: 5, icon: '🐙', tint: '#0f6a8a' },
+  { id: 'povar', title: 'Весёлый повар', sub: 'ИМ: жонглируй сковородкой', cat: 'electronics', players: '1', wave: 5, icon: '🍳', tint: '#c25a10' },
+  { id: 'razvedchiki', title: 'Разведчики космоса', sub: 'ИМ: межпланетный десант', cat: 'electronics', players: '1', wave: 5, icon: '🚀', tint: '#3a2a8a' },
+  { id: 'avtoslalom', title: 'Автослалом', sub: 'ИМ: между флажками', cat: 'electronics', players: '1', wave: 5, icon: '🏁', tint: '#1a7a3a' },
   { id: 'brickgame', title: 'Brick Game', sub: '9999 игр в одном', cat: 'electronics', players: '1–2', wave: 5, icon: '▦', tint: '#5d6b4f', variants: ['тетрис', 'танки', 'гонки', 'змейка', 'арканоид'] },
   // — аркады —
   { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1–2', wave: 6, icon: '💎', tint: '#1a6a5a' },
@@ -88,7 +83,5 @@ const ALL: CatalogEntry[] = [
   { id: 'eggs', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'arcade', players: '1–2', wave: 6, icon: '🦕', tint: '#7a5a10' },
   { id: 'gops', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'arcade', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a' },
 ];
-
-export const CATALOG: CatalogEntry[] = ALL.filter((g) => !g.personal || PERSONAL);
 
 export const byId = (id: string) => CATALOG.find((g) => g.id === id);

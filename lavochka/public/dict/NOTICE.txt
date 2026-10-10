@@ -1,0 +1,3 @@
+nouns.txt — из словаря «Russian Nouns» (https://github.com/Harrix/Russian-Nouns).
+Copyright © 2018-present Sergienko Anton. Лицензия MIT — полный текст в LICENSE-russian-nouns.md.
+Обработка (tools/dict/build.py): нижний регистр, «ё» заменено на «е», только слова из букв кириллицы длиной 2–15.

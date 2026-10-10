@@ -38,3 +38,10 @@
 /* столбовые: высота башни */
 .ck-board .ck-badge circle { fill: #f3e2b8; stroke: #5a3412; stroke-width: 1.5; }
 .ck-board .ck-badge text { font: 700 13px 'PT Sans', Arial, sans-serif; fill: #3a1a06; text-anchor: middle; dominant-baseline: central; }
+/* часы — как советские шахматные */
+.ck-clocks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ck-clock { display: flex; flex-direction: column; align-items: center; padding: 6px; border-radius: 10px; background: #3a2a1a; color: #e8d6b0; border: 2px solid #1a0e06; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5); }
+.ck-clock span { font-size: 12px; opacity: 0.8; }
+.ck-clock b { font: 700 26px 'PT Mono', 'Courier New', monospace; letter-spacing: 1px; }
+.ck-clock.on { background: #f3e2b8; color: #2a1206; border-color: #c9a24a; }
+.ck-clock.low.on { background: #ffd0c0; color: #8a1206; }

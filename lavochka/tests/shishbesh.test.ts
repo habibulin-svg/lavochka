@@ -58,12 +58,41 @@ describe('шиш-беш: выход из парка', () => {
   });
 });
 
+describe('шиш-беш: быстрый заряд', () => {
+  const fresh = (c: Cfg) => {
+    const s = newGame([0, 1], new SeededRng(1), c);
+    s.cur = 0;
+    return s;
+  };
+  it('пустое поле — три броска подряд, потом ход переходит', () => {
+    let s = fresh(cfg({ quick: true }));
+    const r1 = applyRoll(s, [2, 3])!;
+    expect([r1.state.phase, r1.state.cur, r1.event.retry]).toEqual(['roll', 0, 2]);
+    const r2 = applyRoll(r1.state, [1, 4])!;
+    expect([r2.state.cur, r2.event.retry]).toEqual([0, 1]);
+    const r3 = applyRoll(r2.state, [5, 4])!;
+    expect(r3.event.retry).toBeUndefined();
+    expect(r3.state.cur).toBe(1);
+    expect(r3.state.tries).toBe(0);
+    s = applyRoll(r1.state, [6, 1])!.state;
+    expect(legalMoves(s).some((m) => m.kind === 'enter')).toBe(true);
+  });
+  it('без настройки и с фишкой на поле — один бросок', () => {
+    expect(applyRoll(fresh(cfg({})), [2, 3])!.state.cur).toBe(1);
+    const s = fresh(cfg({ quick: true }));
+    s.players[0].pieces[0] = 47; // фишка на круге — быстрый заряд не действует
+    const r = applyRoll(s, [2, 3])!;
+    expect(r.event.retry).toBeUndefined();
+  });
+});
+
 describe('шиш-беш: все сочетания настроек играбельны', () => {
   for (const arm of [5, 6])
     for (const houses of ['opposite', 'alternate'])
       for (const st of ['six', 'double', 'both'])
         it(`плечо ${arm}, укрытия ${houses}, старт ${st}`, async () => {
-          const res = await simulate(def, botSeats(def, 4, [0, 1, 2]), { arm, houses, start: st }, arm * 100 + st.length);
+          const quick = houses === 'alternate';
+          const res = await simulate(def, botSeats(def, 4, [0, 1, 2]), { arm, houses, start: st, quick }, arm * 100 + st.length);
           expect(res.error).toBeUndefined();
           expect(res.finished).toBe(true);
         });

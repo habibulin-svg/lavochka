@@ -85,6 +85,8 @@ export interface State {
   claims: Record<number, { target: number; mafia: boolean }[]>;
   /** Прошедшие дни: кто кого выставлял, кто за кого голосовал, кто ушёл. */
   history: { nominations: [number, number][]; votes: [number, number][]; out: number | null }[];
+  /** Места живых людей (не ботов): мафия-боты в первые ночи их щадят — иначе человека «съедают» сразу. */
+  humans: number[];
 }
 
 export interface View extends State {
@@ -119,7 +121,7 @@ function shuffle<T>(a: T[], rng: Rng): T[] {
   return r;
 }
 
-export function setup(seats: number[], opts: Options, rng: Rng): State {
+export function setup(seats: number[], opts: Options, rng: Rng, humans: number[] = []): State {
   const cfg = cfgFrom(opts);
   const roles: Role[] = Array(16).fill('civ');
   const dealt = shuffle(roleSet(seats.length, cfg.variant), rng);
@@ -149,6 +151,7 @@ export function setup(seats: number[], opts: Options, rng: Rng): State {
     meet: cfg.variant === 'sport',
     claims: {},
     history: [],
+    humans: humans.slice(),
   };
   startNight(s);
   return s;

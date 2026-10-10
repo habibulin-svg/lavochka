@@ -18,9 +18,12 @@ export interface Cfg {
   giveaway: boolean;
   /** Бить не обязательно, но за пропущенное взятие соперник может «взять за фук» шашку, которая должна была бить. */
   fuk: boolean;
+  /** Часы: минут на партию каждому (0 — без часов), добавка за ход в секундах. */
+  clock: number;
+  inc: number;
 }
 
-export const DEFAULT_CFG: Cfg = { variant: 'russian', giveaway: false, fuk: false };
+export const DEFAULT_CFG: Cfg = { variant: 'russian', giveaway: false, fuk: false, clock: 0, inc: 0 };
 
 const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca'];
 
@@ -30,6 +33,8 @@ export function cfgFrom(o: Options): Cfg {
     variant: VARIANTS.includes(v) ? v : 'russian',
     giveaway: !!o.giveaway,
     fuk: !!o.fuk,
+    clock: Math.max(0, Math.min(180, Number(o.clock) || 0)),
+    inc: Math.max(0, Math.min(60, Number(o.inc) || 0)),
   };
 }
 
@@ -76,7 +81,7 @@ export interface MoveRec {
   seat: number;
 }
 
-export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'material' | 'endgame' | 'agreed';
+export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'material' | 'endgame' | 'agreed' | 'time';
 
 export interface State {
   game: 'draughts';
@@ -100,6 +105,9 @@ export interface State {
   taken: [number, number];
   /** Шашки соперника, которые ходящий может взять за фук (соперник не побил, хотя был обязан). */
   fuk: number[];
+  /** Остаток времени, мс, и когда начался текущий ход (время хозяина партии). */
+  clock: [number, number];
+  turnStart: number;
 }
 
 export type Action =
@@ -108,7 +116,8 @@ export type Action =
   | { type: 'resign' }
   | { type: 'offer' }
   | { type: 'accept' }
-  | { type: 'decline' };
+  | { type: 'decline' }
+  | { type: 'flag' };
 
 export type Event =
   | { type: 'start'; variant: Variant; giveaway: boolean }
@@ -187,6 +196,8 @@ export function fromBoard(cfg: Cfg, board: string[], turn: 0 | 1): State {
     reason: null,
     taken: [0, 0],
     fuk: [],
+    clock: [cfg.clock * 60000, cfg.clock * 60000],
+    turnStart: Date.now(),
   };
   s.keys = [posKey(s)];
   return s;
@@ -380,9 +391,24 @@ export function setup(opts: Options): { state: State; events: Event[] } {
   return { state: newGame(cfg), events: [{ type: 'start', variant: cfg.variant, giveaway: cfg.giveaway }] };
 }
 
-export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
+/** Сколько времени ушло на ход: перерыв больше получаса не считается (партию отложили). */
+function spent(s: State, now: number) {
+  const e = now - s.turnStart;
+  return e < 0 || e > 30 * 60000 ? 0 : e;
+}
+
+export function apply(s0: State, seat: number, a: Action, now: number = Date.now()): { state: State; events: Event[] } | null {
   if (!toAct(s0).includes(seat) || !a || typeof a !== 'object') return null;
   const ev: Event[] = [];
+  const timed = s0.cfg.clock > 0;
+  if (a.type === 'flag') {
+    // своё время вышло — проигрыш (сообщает клиент, хозяин проверяет по своим часам)
+    if (!timed || s0.phase !== 'play' || spent(s0, now) < s0.clock[seat]) return null;
+    const s = { ...s0, clock: [...s0.clock] as [number, number] };
+    s.clock[seat] = 0;
+    finish(s, 1 - seat, 'time', ev);
+    return { state: s, events: ev };
+  }
   if (s0.phase === 'draw') {
     if (a.type === 'accept') {
       const s = { ...s0 };
@@ -426,8 +452,21 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
       if (!m) return null;
       const proper = s0.cfg.fuk ? properMoves(s0) : [];
       const missed = s0.cfg.fuk && proper.length > 0 && proper[0].caps.length > 0 && !proper.some((x) => x.from === m.from && samePath(x.path, m.path));
+      const clock = [...s0.clock] as [number, number];
+      if (timed) {
+        clock[seat] -= spent(s0, now);
+        if (clock[seat] <= 0) {
+          const s = { ...s0, clock };
+          clock[seat] = 0;
+          finish(s, 1 - seat, 'time', ev);
+          return { state: s, events: ev };
+        }
+        clock[seat] += s0.cfg.inc * 1000;
+      }
       const text = moveText(s0.n, m);
       const s = play(s0, m);
+      s.clock = clock;
+      s.turnStart = now;
       s.offer = -1;
       s.taken = [...s0.taken] as [number, number];
       s.taken[seat] += m.caps.length;

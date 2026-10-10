@@ -24,6 +24,8 @@ export interface Cfg {
   arm: number;
   houses: Houses;
   start: StartRule;
+  /** Быстрый заряд: пока на поле нет ни одной фишки, на выход даётся три броска подряд. */
+  quick?: boolean;
 }
 
 export const DEFAULT_CFG: Cfg = { arm: 5, houses: 'opposite', start: 'six' };
@@ -32,7 +34,7 @@ export function cfgFrom(o: Options): Cfg {
   const arm = Number(o.arm) === 6 ? 6 : 5;
   const houses = (['opposite', 'alternate'] as const).find((x) => x === o.houses) ?? 'opposite';
   const start = (['six', 'double', 'both'] as const).find((x) => x === o.start) ?? 'six';
-  return { arm, houses, start };
+  return { arm, houses, start, quick: o.quick === true };
 }
 
 /** Размеры и проверки клеток для варианта поля. */
@@ -106,6 +108,8 @@ export interface State {
   bonus: boolean;
   winner: number | null;
   turn: number;
+  /** Сколько бросков на выход уже сделано в этот ход (быстрый заряд). */
+  tries?: number;
 }
 
 export type Action = { type: 'roll' } | { type: 'move'; piece: number; die: number; to: number };
@@ -128,7 +132,7 @@ export interface TurnEnd {
 }
 
 export type Event =
-  | { type: 'roll'; seat: number; dice: [number, number]; noMoves?: boolean; turnEnd?: TurnEnd }
+  | { type: 'roll'; seat: number; dice: [number, number]; noMoves?: boolean; turnEnd?: TurnEnd; retry?: number }
   | {
       type: 'move';
       seat: number;
@@ -291,10 +295,13 @@ function finishTurn(s: State): TurnEnd {
   s.phase = 'roll';
   s.used = [true, true];
   s.bonus = false;
+  s.tries = 0;
   if (!again) s.cur = (s.cur + 1) % s.players.length;
   s.turn++;
   return { again, reason, next: s.players[s.cur].seat };
 }
+
+export const QUICK_TRIES = 3;
 
 export function applyRoll(state: State, dice: [number, number]) {
   if (state.phase !== 'roll') return null;
@@ -306,7 +313,16 @@ export function applyRoll(state: State, dice: [number, number]) {
   const ev: Event = { type: 'roll', seat: s.players[s.cur].seat, dice: [dice[0], dice[1]] };
   if (legalMoves(s).length === 0) {
     ev.noMoves = true;
-    ev.turnEnd = finishTurn(s);
+    const G = geoOf(s);
+    const empty = !s.players[s.cur].pieces.some((p) => G.onLoop(p));
+    const tries = (s.tries ?? 0) + 1;
+    if (s.cfg?.quick && empty && tries < QUICK_TRIES) {
+      // быстрый заряд: фишек на поле нет — бросает ещё раз, ход не переходит
+      s.tries = tries;
+      s.phase = 'roll';
+      s.used = [true, true];
+      ev.retry = QUICK_TRIES - tries;
+    } else ev.turnEnd = finishTurn(s);
   }
   return { state: s, event: ev };
 }

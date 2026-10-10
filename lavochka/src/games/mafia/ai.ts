@@ -59,9 +59,12 @@ const CIV_TALK = [
 const QUIET = ['Пока сказать нечего, я мирный.', 'Пас, послушаю других.', 'Я мирный житель, всем удачи.'];
 
 /** В кого стреляет мафиози: туда же, куда свои; сложный — по заявившемуся комиссару; средний — по самому «доверенному». */
-function mafiaShot(s: State, seat: number, level: number, rng: Rng, victims: number[], sc: Map<number, number>): number {
+function mafiaShot(s: State, seat: number, level: number, rng: Rng, all: number[], sc: Map<number, number>): number {
+  // первые две ночи живых людей не трогаем — пусть поиграют
+  const spare = s.day <= 2 ? all.filter((x) => !(s.humans ?? []).includes(x)) : all;
+  const victims = spare.length ? spare : all;
   const mate = s.alive.find((x) => isMafia(s.roles[x]) && x !== seat && s.night[x] != null);
-  if (mate != null && level > 0) return s.night[mate];
+  if (mate != null && level > 0 && victims.includes(s.night[mate])) return s.night[mate];
   const claimed = victims.filter((x) => s.claims[x]?.length);
   if (level === 2 && claimed.length) return claimed[0];
   if (level >= 1) {

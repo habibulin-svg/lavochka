@@ -17,7 +17,8 @@ function describe(ev: Event, name: (seat: number) => string): string {
   if (ev.type === 'roll') {
     const dbl = ev.dice[0] === ev.dice[1] ? ' — <b>дубль!</b>' : '';
     lines.push(`${name(ev.seat)} выбросил <b>${ev.dice[0]}:${ev.dice[1]}</b>${dbl}`);
-    if (ev.noMoves) lines.push('<i>Ходов нет.</i>');
+    if (ev.retry) lines.push(`<i>Не вышло. Быстрый заряд — ещё ${ev.retry === 1 ? 'одна попытка' : ev.retry + ' попытки'}.</i>`);
+    else if (ev.noMoves) lines.push('<i>Ходов нет.</i>');
   } else {
     const who = name(ev.seat);
     let t: string;
@@ -103,6 +104,13 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'both', label: 'на шестёрку или дубль' },
       ],
       default: 'six',
+    },
+    {
+      key: 'quick',
+      label: 'Быстрый заряд',
+      type: 'toggle',
+      default: false,
+      hint: 'Пока на поле нет ни одной своей фишки, на выход даётся три броска подряд.',
     },
   ],
   presets: [
@@ -233,7 +241,9 @@ export const def: GameDef<State, Action, Event, State> = {
           Со старта шестёрка уже не доводит до угла.</p>
           <p><b>Домики через один</b> — укрытия на луче стоят не друг напротив друга, а лесенкой: на одной дорожке на 3-м поле с края, на другой — на 4-м.</p>
           <p><b>Старт на дубль</b> — фишка выходит из парка только на дубль, любым его кубиком; вторым кубиком ходят как обычно, а за дубль — ещё бросок.
-          Бывает и смешанное правило: выход на шестёрку <i>или</i> на дубль.</p>`,
+          Бывает и смешанное правило: выход на шестёрку <i>или</i> на дубль.</p>
+          <p><b>Быстрый заряд</b> — пока на поле нет ни одной своей фишки (все в парке или уже в домике), на выход даётся три броска подряд.
+          Не выпало за три раза — ход переходит дальше.</p>`,
         demo: {
           seats: demoSeats,
           options: { arm: 5, houses: 'opposite', start: 'double' },
