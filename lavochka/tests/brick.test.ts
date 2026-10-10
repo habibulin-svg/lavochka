@@ -1,7 +1,7 @@
 /* Brick Game: тетрис (повороты, ряды, конец), змейка (рост, стена, жизни), гонки (столкновение), арканоид (кирпичи), стрелялка;
  * каждая игра без падений проходит долгую случайную партию. */
 import { describe, expect, it } from 'vitest';
-import { Arkanoid, GAMES, H, makeGame, Race, rotate, Shooter, Snake, Tetris, W, type Key } from '../src/games/brick/logic';
+import { Arkanoid, GAMES, H, makeGame, Race, rotate, Shooter, Snake, Tanks, Tetris, W, type Key } from '../src/games/brick/logic';
 
 const lit = (g: { draw(m: Uint8Array, n: Uint8Array): void }) => {
   const m = new Uint8Array(W * H);
@@ -111,6 +111,26 @@ describe('стрелялка', () => {
     s.update(1000);
     expect(s.wall.filter((v) => v).length).toBeLessThan(before + W);
     expect(s.score).toBeGreaterThan(0);
+  });
+});
+
+describe('танки', () => {
+  it('выстрел подбивает врага на линии ствола', () => {
+    const t = new Tanks(1, 1, 11);
+    t.foes = [{ x: 4, y: 2, dir: 2, move: 1e9, fire: 1e9 }];
+    t.press('rotate');
+    for (let i = 0; i < 20 && !t.kills; i++) t.update(45);
+    expect(t.kills).toBe(1);
+    expect(t.score).toBe(100);
+  });
+  it('в чужой танк не въехать', () => {
+    const t = new Tanks(1, 1, 12);
+    t.foes = [{ x: 4, y: 13, dir: 2, move: 1e9, fire: 1e9 }];
+    t.press('up');
+    t.press('up');
+    expect(t.me.y).toBe(16);
+    t.press('up');
+    expect(t.me.y).toBe(16);
   });
 });
 

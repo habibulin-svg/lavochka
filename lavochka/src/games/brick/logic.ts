@@ -1,5 +1,5 @@
 /* Brick Game («тетрис 9999 в 1») — логика без DOM. Экран — матрица 10×20 точек, справа табло: счёт, «следующая» 4×4, скорость, уровень.
- * Игры: Тетрис, Змейка, Гонки, Арканоид, Стрелялка. Скорость 1–10 — темп, уровень 1–10 — сложность на старте
+ * Игры: Тетрис, Змейка, Гонки, Арканоид, Стрелялка, Танки. Скорость 1–10 — темп, уровень 1–10 — сложность на старте
  * (в тетрисе — заполненные снизу ряды, в змейке — стенки, в гонках — плотность машин, в арканоиде — ряды кирпичей, в стрелялке — ряды сверху).
  * Время идёт через update(ms); кнопки — press/release. Звуки — очередь sounds (интерфейс проигрывает и очищает). */
 
@@ -8,7 +8,7 @@ export const H = 20;
 
 export type Key = 'left' | 'right' | 'up' | 'down' | 'rotate';
 export type BrickSound = 'move' | 'turn' | 'drop' | 'line' | 'eat' | 'hit' | 'crash' | 'shot' | 'level';
-export type GameId = 'tetris' | 'snake' | 'race' | 'arkanoid' | 'shooter';
+export type GameId = 'tetris' | 'snake' | 'race' | 'arkanoid' | 'shooter' | 'tanks';
 
 export interface Rng {
   next(): number;
@@ -702,12 +702,202 @@ export class Shooter implements Game {
   }
 }
 
+// ---------------------------------------------------------------- танки
+
+type Dir = 0 | 1 | 2 | 3; // вверх, вправо, вниз, влево
+const DXY: [number, number][] = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+];
+/** Танк 3×3, ствол вверх; остальные направления — поворотом. */
+const TANK_UP = ['.#.', '###', '#.#'];
+export function tankCells(dir: Dir): [number, number][] {
+  const out: [number, number][] = [];
+  for (let y = 0; y < 3; y++)
+    for (let x = 0; x < 3; x++) {
+      if (TANK_UP[y][x] !== '#') continue;
+      let [cx, cy] = [x, y];
+      for (let i = 0; i < dir; i++) [cx, cy] = [2 - cy, cx];
+      out.push([cx, cy]);
+    }
+  return out;
+}
+
+export interface Tank {
+  x: number;
+  y: number;
+  dir: Dir;
+  /** Врагу: когда ходить и стрелять. */
+  move: number;
+  fire: number;
+}
+
+export class Tanks implements Game {
+  readonly id = 'tanks';
+  score = 0;
+  over = false;
+  lives = 4;
+  sounds: BrickSound[] = [];
+  me: Tank = { x: 4, y: 17, dir: 0, move: 0, fire: 0 };
+  foes: Tank[] = [];
+  bullets: { x: number; y: number; d: Dir; mine: boolean }[] = [];
+  kills = 0;
+  private bAcc = 0;
+  private spawnT = 0;
+  private rng: Rng;
+
+  constructor(
+    public speed: number,
+    public level: number,
+    seed: number
+  ) {
+    this.rng = rngFrom(seed);
+  }
+
+  cells(t: Tank): [number, number][] {
+    return tankCells(t.dir).map(([x, y]) => [t.x + x, t.y + y]);
+  }
+
+  /** Свободно ли место для танка (в поле, не на другом танке). */
+  private free(t: Tank, x: number, y: number): boolean {
+    if (x < 0 || y < 0 || x > W - 3 || y > H - 3) return false;
+    for (const o of [this.me, ...this.foes]) {
+      if (o === t) continue;
+      if (Math.abs(o.x - x) < 3 && Math.abs(o.y - y) < 3) return false;
+    }
+    return true;
+  }
+
+  private step(t: Tank, d: Dir): boolean {
+    if (t.dir !== d) {
+      t.dir = d;
+      return true;
+    }
+    const nx = t.x + DXY[d][0];
+    const ny = t.y + DXY[d][1];
+    if (!this.free(t, nx, ny)) return false;
+    t.x = nx;
+    t.y = ny;
+    return true;
+  }
+
+  shoot(t: Tank, mine: boolean) {
+    // ствол — середина передней стороны
+    const [dx, dy] = DXY[t.dir];
+    this.bullets.push({ x: t.x + 1 + dx, y: t.y + 1 + dy, d: t.dir, mine });
+    if (mine) this.sounds.push('shot');
+  }
+
+  private hitTank(x: number, y: number, shooterMine: boolean): Tank | null {
+    const list = shooterMine ? this.foes : [this.me];
+    for (const t of list) if (this.cells(t).some(([cx, cy]) => cx === x && cy === y)) return t;
+    return null;
+  }
+
+  private respawn() {
+    this.me = { x: 4, y: 17, dir: 0, move: 0, fire: 0 };
+    this.foes = this.foes.filter((f) => f.y < 12);
+    this.bullets = [];
+  }
+
+  update(ms: number) {
+    if (this.over) return;
+    this.bAcc += ms;
+    while (this.bAcc >= 45 && !this.over) {
+      this.bAcc -= 45;
+      const left: typeof this.bullets = [];
+      let died = false;
+      for (const b of this.bullets) {
+        b.x += DXY[b.d][0];
+        b.y += DXY[b.d][1];
+        if (!inside(b.x, b.y)) continue;
+        const t = this.hitTank(b.x, b.y, b.mine);
+        if (!t) {
+          left.push(b);
+          continue;
+        }
+        if (t === this.me) {
+          died = true;
+          break;
+        }
+        this.foes = this.foes.filter((f) => f !== t);
+        this.score += 100 * this.speed;
+        this.kills++;
+        this.sounds.push('hit');
+        if (this.kills % 10 === 0) {
+          this.level = Math.min(10, this.level + 1);
+          this.sounds.push('level');
+        }
+      }
+      if (died) {
+        this.sounds.push('crash');
+        this.lives--;
+        if (this.lives <= 0) this.over = true;
+        this.respawn();
+      } else this.bullets = left;
+    }
+    // враги: сколько одновременно — по уровню
+    const max = Math.min(4, 1 + Math.floor((this.level + 1) / 3));
+    this.spawnT -= ms;
+    if (this.foes.length < max && this.spawnT <= 0) {
+      const x = this.rng.next() < 0.5 ? 0 : W - 3;
+      const t: Tank = { x, y: 0, dir: 2, move: 300, fire: 800 + this.rng.next() * 800 };
+      if (this.free(t, x, 0)) this.foes.push(t);
+      this.spawnT = 1500;
+    }
+    const iv = stepMs(this.speed, 700, 160);
+    for (const f of this.foes) {
+      f.move -= ms;
+      f.fire -= ms;
+      if (f.move <= 0) {
+        f.move = iv;
+        // иногда — к игроку, иногда — наугад
+        let d: Dir = f.dir;
+        if (this.rng.next() < 0.35) {
+          const dx = this.me.x - f.x;
+          const dy = this.me.y - f.y;
+          d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0;
+        } else if (this.rng.next() < 0.3) d = ri(this.rng, 4) as Dir;
+        if (!this.step(f, d)) this.step(f, ri(this.rng, 4) as Dir);
+      }
+      if (f.fire <= 0) {
+        f.fire = 900 + (this.rng.next() * 1500) / this.speed;
+        // стреляет, если игрок на линии ствола (или наугад)
+        const lined = (f.dir % 2 === 0 && Math.abs(this.me.x - f.x) <= 1) || (f.dir % 2 === 1 && Math.abs(this.me.y - f.y) <= 1);
+        if (lined || this.rng.next() < 0.25) this.shoot(f, false);
+      }
+    }
+  }
+
+  press(k: Key) {
+    if (this.over) return;
+    if (k === 'rotate') {
+      if (this.bullets.filter((b) => b.mine).length < 2) this.shoot(this.me, true);
+      return;
+    }
+    const d = ({ up: 0, right: 1, down: 2, left: 3 } as const)[k];
+    if (this.step(this.me, d)) this.sounds.push('move');
+  }
+
+  release() {}
+
+  draw(m: Uint8Array, next: Uint8Array) {
+    m.fill(0);
+    for (const t of [this.me, ...this.foes]) for (const [x, y] of this.cells(t)) if (inside(x, y)) m[at(x, y)] = 1;
+    for (const b of this.bullets) if (inside(b.x, b.y)) m[at(b.x, b.y)] = 1;
+    lifeIcons(next, this.lives);
+  }
+}
+
 export const GAMES: { id: GameId; label: string; letter: string; hint: string }[] = [
   { id: 'tetris', label: 'Тетрис', letter: 'A', hint: 'Собирайте ряды из падающих фигур' },
   { id: 'snake', label: 'Змейка', letter: 'B', hint: 'Ешьте мигающие точки, не врезайтесь' },
   { id: 'race', label: 'Гонки', letter: 'C', hint: 'Объезжайте машины' },
   { id: 'arkanoid', label: 'Арканоид', letter: 'D', hint: 'Отбивайте мяч, разбивайте кирпичи' },
   { id: 'shooter', label: 'Стрелялка', letter: 'E', hint: 'Сбивайте опускающуюся стену' },
+  { id: 'tanks', label: 'Танки', letter: 'F', hint: 'Подбейте вражеские танки, не попав под выстрел' },
 ];
 
 export function makeGame(id: GameId, speed: number, level: number, seed: number): Game {
@@ -720,6 +910,8 @@ export function makeGame(id: GameId, speed: number, level: number, seed: number)
       return new Arkanoid(speed, level, seed);
     case 'shooter':
       return new Shooter(speed, level, seed);
+    case 'tanks':
+      return new Tanks(speed, level, seed);
     default:
       return new Tetris(speed, level, seed);
   }
