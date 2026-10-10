@@ -1,0 +1,35 @@
+/* Холдем: овальный стол с бортом, сукно, фишки. */
+.table--holdem {
+  --panel-bg: linear-gradient(180deg, #f4ecd8, #e6d9b8);
+  --panel-ink: #2a1a0a;
+  --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 230, 160, 0.16), transparent 60%), linear-gradient(180deg, #1a1210, #0e0a08);
+}
+.hd-floor { position: absolute; inset: 0; }
+.hd-table { position: absolute; left: 40px; top: 40px; width: 920px; height: 560px; border-radius: 280px / 280px;
+  background: linear-gradient(160deg, #6a3a1a, #3a1c0a); box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 220, 160, 0.25); }
+.hd-felt { position: absolute; inset: 26px; border-radius: 260px / 260px;
+  background: radial-gradient(ellipse at 50% 40%, #2f7a4a, #1f5a34 65%, #174a2a);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55), inset 0 0 0 3px rgba(255, 230, 160, 0.25); }
+.hd-felt::after { content: ''; position: absolute; left: 50%; top: 50%; width: 420px; height: 150px; transform: translate(-50%, -62%); border-radius: 80px; border: 2px solid rgba(255, 230, 160, 0.18); }
+.hd-plates { position: absolute; inset: 0; }
+.hd-plate { transform: translate(-50%, 0); }
+.hd-plate.hd-dim { opacity: 0.55; }
+.hd-bet, .hd-pot { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; }
+.hd-bet span, .hd-pot span { font: 700 14px 'PT Sans', Arial, sans-serif; color: #fff4c2; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.hd-stack { position: relative; width: 26px; height: 30px; }
+.hd-chip { position: absolute; left: 0; bottom: calc(var(--i) * 3px); width: 26px; height: 9px; border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.85); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+.hd-chip.r { background: #c0281e; }
+.hd-chip.g { background: #2a8a3e; }
+.hd-chip.k { background: #1a1a1a; }
+.hd-chip.p { background: #6a2a9a; }
+.hd-button { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 50%; background: #f8f4e8; color: #2a1a0a;
+  font: 700 14px/26px 'PT Sans', Arial, sans-serif; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
+.hd-blinds { position: absolute; left: 50%; top: 6px; transform: translate(-50%, 0); color: #e8d6b0; font: 13px 'PT Sans', Arial, sans-serif; opacity: 0.8; }
+.hd-controls { display: flex; flex-direction: column; gap: 8px; }
+.hd-btns { display: flex; flex-direction: column; gap: 6px; }
+.hd-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hd-quick { grid-template-columns: repeat(3, 1fr); }
+.hd-raise { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: rgba(60, 40, 10, 0.08); }
+.hd-raise input { width: 100%; }
+.hd-rlabel { font-weight: 700; }

@@ -33,6 +33,8 @@ export class CardStage {
   readonly over: HTMLElement;
   private els = new Map<string, HTMLElement>();
   private ro: ResizeObserver;
+  /** Наклон сцены «в 3D» (например, rotateX(24deg)); перспектива — на обёртке. */
+  private tilt = '';
 
   constructor(
     root: HTMLElement,
@@ -56,7 +58,15 @@ export class CardStage {
     const r = this.wrap.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const k = Math.min(r.width / this.W, r.height / this.H);
-    this.stage.style.transform = `translate(${(r.width - this.W * k) / 2}px, ${(r.height - this.H * k) / 2}px) scale(${k})`;
+    this.stage.style.transform = `translate(${(r.width - this.W * k) / 2}px, ${(r.height - this.H * k) / 2}px) scale(${k}) ${this.tilt}`;
+  }
+
+  /** Наклонить сцену (пустая строка — вид сверху). */
+  setTilt(tilt: string, perspective = '1500px') {
+    this.tilt = tilt;
+    this.wrap.style.perspective = tilt ? perspective : '';
+    this.wrap.style.perspectiveOrigin = '50% 20%';
+    this.fit();
   }
 
   private transform(it: { x: number; y: number; r: number; s: number }) {

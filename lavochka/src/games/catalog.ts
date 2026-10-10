@@ -46,7 +46,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: '101', title: '101', sub: 'дворовый уно на обычных картах', cat: 'cards', players: '2–6', wave: 3, icon: '♣', tint: '#2f5d3a', thumb: '101.webp', load: () => import('./sto'), variants: ['классическая', 'с разворотом', 'до 101 и до 121', '36 или 52 карты'] },
   { id: 'bura', title: 'Бура', sub: 'три карты и 31 очко', cat: 'cards', players: '2–4', wave: 3, icon: '♦', tint: '#8a3a12', thumb: 'bura.webp', load: () => import('./bura'), variants: ['с «москвой»', 'вслепую', 'на 2–4'] },
   { id: 'preferans', title: 'Преферанс', sub: 'пуля, гора и вист', cat: 'cards', players: '3–4', wave: 3, icon: '♤', tint: '#24304f', thumb: 'preferans.webp', load: () => import('./preferans'), variants: ['сочи', 'ленинград', 'мизер и распасы'] },
-  { id: 'holdem', title: 'Техасский холдем', sub: 'ставки и блеф', cat: 'cards', players: '2–9', wave: 3, icon: '🂡', tint: '#14532d', variants: ['3D-стол', 'вид сверху'] },
+  { id: 'holdem', title: 'Техасский холдем', sub: 'ставки и блеф', cat: 'cards', players: '2–9', wave: 3, icon: '🂡', tint: '#14532d', thumb: 'holdem.webp', load: () => import('./holdem'), variants: ['турнир', 'турбо', '3D-стол и вид сверху'] },
   // — компанией —
   { id: 'mafia', title: 'Мафия', sub: 'город засыпает…', cat: 'company', players: '6–16', wave: 4, icon: '🎭', tint: '#2a1a2e', variants: ['классическая', 'с доктором и путаной', 'спортивная'] },
   // — на бумаге —
