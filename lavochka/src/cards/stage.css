@@ -27,3 +27,4 @@
   background: rgba(20, 30, 22, 0.88); border: 2px solid #c9a24a; color: #f6e2b0; font: 700 32px 'PT Serif', Georgia, serif; white-space: nowrap; pointer-events: none; }
 .cs-cover { position: absolute; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; background: rgba(15, 25, 18, 0.82); }
 .cs-cover-box { text-align: center; background: #f4ecd8; color: #2a1a0a; padding: 24px 32px; border-radius: 16px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); font: 22px 'PT Serif', Georgia, serif; display: flex; flex-direction: column; gap: 12px; }
+.cs-banner.cs-banner-top { top: 9%; font-size: 24px; padding: 10px 26px; }

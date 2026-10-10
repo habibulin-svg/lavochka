@@ -32,6 +32,8 @@ class ThousandView implements GameView<View, Event> {
   private actSeat: number | null = null;
   private selected: Card | null = null;
   private askMarriage: Card | null = null;
+  /** Идёт анимация play(): setTurn в это время только снимает управление (не перерисовывает и не убирает «Дальше»). */
+  private busy = false;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -116,7 +118,7 @@ class ThousandView implements GameView<View, Event> {
         const a = this.anchor(v, x.seat);
         const dx = (a.x - CENTER.x) * 0.22;
         const dy = (a.y - CENTER.y) * 0.22;
-        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + dx, y: CENTER.y + dy, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i });
+        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + dx, y: CENTER.y + dy, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
       });
     // руки
     for (const seat of v.seats) {
@@ -178,6 +180,7 @@ class ThousandView implements GameView<View, Event> {
     }
     if (v.trump) s += `<div class="th-trump" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span><small>козырь</small></div>`;
     if (v.phase === 'bid' || v.phase === 'dark') s += `<div class="th-label" style="left:${CENTER.x}px;top:330px">прикуп</div>`;
+    else if (v.prikup.length && v.phase !== 'over') s += `<div class="th-label th-was" style="left:${CENTER.x}px;top:${v.trick?.cards.length ? 172 : 236}px">прикуп был: ${v.prikup.map((c) => `<b class="${c.s === 'H' || c.s === 'D' ? 'red' : ''}">${c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r}${SUIT_SYM[c.s]}</b>`).join(' ')}</div>`;
     if (v.golden && v.phase !== 'over') s += '<div class="th-golden">золотой кон · ×2</div>';
     this.plates.innerHTML = s;
   }
@@ -330,6 +333,21 @@ class ThousandView implements GameView<View, Event> {
     this.draw();
   }
 
+  /** Подождать ms или до нажатия «Дальше». */
+  private hold(ms: number): Promise<void> {
+    return new Promise((done) => {
+      const b = h<HTMLButtonElement>('<button class="btn primary">Дальше ▸</button>');
+      const end = () => {
+        clearTimeout(t);
+        b.remove();
+        done();
+      };
+      const t = setTimeout(end, ms);
+      b.onclick = end;
+      if (ms > 2000) this.btns.appendChild(b);
+    });
+  }
+
   private async showBanner(text: string, ms: number) {
     this.banner.textContent = text;
     this.banner.hidden = false;
@@ -339,6 +357,15 @@ class ThousandView implements GameView<View, Event> {
   }
 
   async play(events: Event[], v: View) {
+    this.busy = true;
+    try {
+      await this.animate(events, v);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async animate(events: Event[], v: View) {
     const speed = this.ctx.speed();
     this.clearTurn();
     for (const ev of events) {
@@ -364,15 +391,58 @@ class ThousandView implements GameView<View, Event> {
         Sound.step();
         await sleep(300 / speed);
       } else if (ev.type === 'prikup') {
-        // прикуп открывается и уходит заказчику
+        // прикуп переворачивается на месте и лежит, пока его не рассмотрят (10 с или «Дальше»), потом уходит заказчику
         const cur = this.v!;
-        this.v = { ...cur, prikup: ev.cards, shown: true, phase: 'give' };
         this.cs.render(
-          [...this.layout({ ...cur, phase: 'give' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 70 + i * 70, y: 250, r: 0, s: 0.75, z: 30 + i }))],
+          [...this.layout({ ...cur, phase: 'give' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 85 + i * 85, y: 250, r: 0, s: 0.9, z: 30 + i, from: 'p:' }))],
           speed
         );
         Sound.card();
-        await this.showBanner(`${this.plain(ev.seat)} берёт прикуп за ${ev.bid}`, 1200 / speed);
+        const mine = !this.ctx.demo && ev.seat === this.viewer && this.ctx.mySeats.includes(ev.seat);
+        this.banner.textContent = `${this.plain(ev.seat)} берёт прикуп за ${ev.bid}`;
+        this.banner.hidden = false;
+        this.banner.classList.add('cs-banner-top');
+        await this.hold(this.ctx.demo ? 1200 / speed : mine ? 1500 : 10000);
+        this.banner.classList.remove('cs-banner-top');
+        this.banner.hidden = true;
+        // карты прикупа уходят в руку заказчику (соперник — рубашками)
+        const known = cur.hands[ev.seat].length === handCount(cur, ev.seat);
+        const next: View = {
+          ...cur,
+          prikup: ev.cards,
+          shown: true,
+          phase: 'give',
+          hands: cur.hands.map((hh, i) => (i === ev.seat && known ? [...hh, ...ev.cards] : hh)),
+          counts: cur.counts.map((n, i) => (i === ev.seat ? n + ev.cards.length : n)),
+        };
+        const left = known ? [] : ev.cards.slice();
+        const fresh = this.layout(next).map((it) => {
+          if (this.cs.has(it.key) || !it.key.startsWith(`b:${ev.seat}:`) || !left.length) return it;
+          return { ...it, from: cardKey(left.shift()!) };
+        });
+        this.cs.render(fresh, speed);
+        this.v = next;
+        this.drawPlates(next);
+        await sleep(380 / speed);
+      } else if (ev.type === 'give') {
+        // отданная карта летит к получателю
+        const cur = this.v!;
+        const c = ev.card;
+        const seeTo = cur.hands[ev.to].length === handCount(cur, ev.to);
+        const next: View = {
+          ...cur,
+          given: [...cur.given, ev.to],
+          hands: cur.hands.map((hh, i) => (i === ev.seat && c ? hh.filter((x) => !sameCard(x, c)) : i === ev.to && c && seeTo ? [...hh, c] : hh)),
+          counts: cur.counts.map((n, i) => (i === ev.seat ? n - 1 : i === ev.to ? n + 1 : n)),
+        };
+        const from = c && this.cs.has(cardKey(c)) ? cardKey(c) : `b:${ev.seat}:`;
+        const fromPt = this.anchor(cur, ev.seat);
+        const items = this.layout(next).map((it) => (!this.cs.has(it.key) && (it.key.startsWith(`b:${ev.to}:`) || (c && it.key === cardKey(c))) ? { ...it, from, fromPt } : it));
+        this.v = next;
+        this.cs.render(items, speed);
+        this.drawPlates(next);
+        Sound.card();
+        await sleep(420 / speed);
       } else if (ev.type === 'bid' || ev.type === 'pass') {
         Sound.ui();
       } else if (ev.type === 'dark') {
@@ -405,6 +475,10 @@ class ThousandView implements GameView<View, Event> {
   }
 
   setTurn(toAct: number[], interactive: number[]) {
+    if (this.busy) {
+      this.actSeat = null;
+      return;
+    }
     this.clearTurn();
     const v = this.v;
     if (!v || v.phase === 'over' || this.ctx.demo) return;

@@ -1,6 +1,6 @@
 /* Сцена с картами для карточных игр: карты — HTML-элементы на «сцене» фиксированного размера (масштабируется под экран).
  * Каждая карта живёт под своим ключом; анимация — CSS-переход transform от старого места к новому.
- * Новые карты влетают из точки enter, исчезнувшие улетают в exit. Тот же приём, что у дурака. */
+ * Новые карты влетают из точки enter (или своей from / fromPt), исчезнувшие улетают в exit. Тот же приём, что у дурака. */
 import { settings } from '../core/settings';
 import { cardHTML } from './render';
 import { cardId, type Card } from './deck';
@@ -20,6 +20,10 @@ export interface StageItem {
   cls?: string;
   /** Данные для нажатий: data-* атрибуты. */
   data?: Record<string, string>;
+  /** Новая карта забирает исчезающую карту, чей ключ начинается с from (рубашка из руки соперника — переворачивается на лету). */
+  from?: string;
+  /** Новая карта (если забрать нечего) вылетает из этой точки. */
+  fromPt?: Point;
 }
 
 export type Point = { x: number; y: number };
@@ -78,23 +82,35 @@ export class CardStage {
     const dur = Math.round(360 / speed);
     this.stage.style.setProperty('--cs-dur', dur + 'ms');
     const seen = new Set<string>();
+    const keep = new Set(items.map((it) => it.key));
     let fresh = 0;
     for (const it of items) {
       seen.add(it.key);
       let el = this.els.get(it.key);
+      if (!el && it.from) {
+        // забрать исчезающую карту (последнюю подходящую — край веера)
+        const gone = [...this.els.keys()].filter((k) => k.startsWith(it.from!) && !keep.has(k)).pop();
+        if (gone) {
+          el = this.els.get(gone)!;
+          this.els.delete(gone);
+          this.els.set(it.key, el);
+          el.style.transitionDelay = '0ms';
+        }
+      }
       const face = it.card ? cardId(it.card) : 'back';
       if (!el) {
         el = document.createElement('div');
         el.className = 'cs-card';
         this.els.set(it.key, el);
-        const from = enter ?? it;
+        const from = it.fromPt ?? enter ?? it;
+        const fly = from !== it;
         el.style.transition = 'none';
-        el.style.transform = this.transform({ x: from.x, y: from.y, r: 0, s: it.s * (enter ? 0.7 : 1) });
-        el.style.opacity = enter ? '1' : '0';
+        el.style.transform = this.transform({ x: from.x, y: from.y, r: 0, s: it.s * (fly ? 0.7 : 1) });
+        el.style.opacity = fly ? '1' : '0';
         this.stage.insertBefore(el, this.over);
         void el.offsetWidth;
         el.style.transition = '';
-        el.style.transitionDelay = enter ? `${Math.min(fresh++ * 45, 400)}ms` : '0ms';
+        el.style.transitionDelay = enter && !it.fromPt ? `${Math.min(fresh++ * 45, 400)}ms` : '0ms';
         el.style.opacity = '1';
       } else el.style.transitionDelay = '0ms';
       if (el.dataset.face !== face) {
@@ -117,6 +133,10 @@ export class CardStage {
         setTimeout(() => el.remove(), dur + 60);
       } else el.remove();
     }
+  }
+
+  has(key: string) {
+    return this.els.has(key);
   }
 
   /** Убрать все карты (например, при смене зрителя в хот-сите). */

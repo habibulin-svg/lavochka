@@ -30,6 +30,8 @@ class PrefView implements GameView<View, Event> {
   private hidden = false;
   private actSeat: number | null = null;
   private selected: Card[] = [];
+  /** Идёт анимация play(): setTurn в это время только снимает управление. */
+  private busy = false;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -98,10 +100,10 @@ class PrefView implements GameView<View, Event> {
     if (v.phase === 'bid') for (let i = 0; i < 2; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 30 + i * 60, y: 240, r: (i - 0.5) * 8, s: 0.62, z: 5 + i });
     const t = v.trick;
     if (t) {
-      if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: CENTER.x, y: 230, r: 0, s: 0.66, z: 18, cls: 'pf-prk' });
+      if (t.prikup) items.push({ key: cardKey(t.prikup), card: t.prikup, x: CENTER.x, y: 230, r: 0, s: 0.66, z: 18, cls: 'pf-prk', from: 'p:' });
       t.cards.forEach((x, i) => {
         const a = this.anchor(v, x.seat);
-        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + (a.x - CENTER.x) * 0.24, y: CENTER.y + 30 + (a.y - CENTER.y) * 0.2, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i });
+        items.push({ key: cardKey(x.card), card: x.card, x: CENTER.x + (a.x - CENTER.x) * 0.24, y: CENTER.y + 30 + (a.y - CENTER.y) * 0.2, r: ((i * 23) % 20) - 10, s: 0.8, z: 20 + i, from: `b:${x.seat}:`, fromPt: a });
       });
     }
     const ctl = this.controlled(v);
@@ -294,6 +296,30 @@ class PrefView implements GameView<View, Event> {
   }
 
   async play(events: Event[], v: View) {
+    this.busy = true;
+    try {
+      await this.animate(events, v);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** Подождать ms или до нажатия «Дальше». */
+  private hold(ms: number): Promise<void> {
+    return new Promise((done) => {
+      const b = h<HTMLButtonElement>('<button class="btn primary">Дальше ▸</button>');
+      const end = () => {
+        clearTimeout(t);
+        b.remove();
+        done();
+      };
+      const t = setTimeout(end, ms);
+      b.onclick = end;
+      if (ms > 2000) this.btns.appendChild(b);
+    });
+  }
+
+  private async animate(events: Event[], v: View) {
     const speed = this.ctx.speed();
     this.clearTurn();
     for (const ev of events) {
@@ -316,9 +342,28 @@ class PrefView implements GameView<View, Event> {
         Sound.step();
         await sleep(260 / speed);
       } else if (ev.type === 'prikup') {
-        this.cs.render([...this.layout({ ...cur, phase: 'discard' }), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 40 + i * 80, y: 240, r: 0, s: 0.75, z: 30 + i }))], speed);
+        // прикуп переворачивается на месте и лежит, пока его не рассмотрят (10 с или «Дальше»), потом уходит заказчику
+        this.cs.render([...this.layout({ ...cur, phase: 'bid', bid: null }).filter((it) => !it.key.startsWith('p:')), ...ev.cards.map((c, i) => ({ key: cardKey(c), card: c, x: CENTER.x - 52 + i * 104, y: 240, r: 0, s: 0.9, z: 30 + i, from: 'p:' }))], speed);
         Sound.card();
-        await this.showBanner(`Прикуп — ${this.plain(ev.seat)}`, 1300 / speed);
+        const mine = !this.ctx.demo && ev.seat === this.viewer && this.ctx.mySeats.includes(ev.seat);
+        this.banner.textContent = `Прикуп — ${this.plain(ev.seat)}`;
+        this.banner.hidden = false;
+        this.banner.classList.add('cs-banner-top');
+        await this.hold(this.ctx.demo ? 1300 / speed : mine ? 1500 : 10000);
+        this.banner.classList.remove('cs-banner-top');
+        this.banner.hidden = true;
+        const known = cur.hands[ev.seat].length === handCount(cur, ev.seat);
+        const next: View = {
+          ...cur,
+          phase: 'discard',
+          prikup: ev.cards,
+          hands: cur.hands.map((hh, i) => (i === ev.seat && known ? [...hh, ...ev.cards] : hh)),
+          counts: cur.counts.map((n, i) => (i === ev.seat ? n + ev.cards.length : n)),
+        };
+        const left = known ? [] : ev.cards.slice();
+        this.cs.render(this.layout(next).map((it) => (this.cs.has(it.key) || !it.key.startsWith(`b:${ev.seat}:`) || !left.length ? it : { ...it, from: cardKey(left.shift()!) })), speed);
+        this.v = next;
+        await sleep(380 / speed);
       } else if (ev.type === 'raspasy') {
         await this.showBanner('Распасы!', 1000 / speed);
       } else if (ev.type === 'contract') {
@@ -344,6 +389,10 @@ class PrefView implements GameView<View, Event> {
   }
 
   setTurn(toAct: number[], interactive: number[]) {
+    if (this.busy) {
+      this.actSeat = null;
+      return;
+    }
     this.clearTurn();
     const v = this.v;
     if (!v || v.phase === 'over' || this.ctx.demo) return;

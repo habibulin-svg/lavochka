@@ -27,3 +27,6 @@
 .th-sheet tr.sum td { font-weight: 700; border-top: 2px solid rgba(60, 40, 10, 0.5); }
 .th-golden { position: absolute; left: 500px; top: 22px; transform: translate(-50%, 0); padding: 3px 14px; border-radius: 12px; background: linear-gradient(180deg, #f3d36a, #c99a1e); color: #3a2604; font: 700 14px 'PT Serif', Georgia, serif; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); }
 .th-sheet sup { font-size: 9px; color: #8a6410; margin-left: 1px; }
+.th-label.th-was { padding: 2px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.28); white-space: nowrap; }
+.th-label.th-was b { color: #fff; margin: 0 2px; }
+.th-label.th-was b.red { color: #ff9a8a; }
