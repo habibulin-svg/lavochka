@@ -15,7 +15,7 @@ import type { Options, Rng } from '../../core/types';
 import { makeDeck, sameCard, type Card, type Suit, SUITS } from '../../cards/deck';
 
 export type Throwers = 'all' | 'neighbors' | 'attacker' | 'none';
-export type Phase = 'trump' | 'attack' | 'defend' | 'throw' | 'take' | 'over';
+export type Phase = 'trump' | 'attack' | 'defend' | 'throw' | 'take' | 'pbeat' | 'plead' | 'over';
 
 export interface Cfg {
   /** Размер колоды. */
@@ -46,6 +46,10 @@ export interface Cfg {
   games: number;
   /** Командами: напарники сидят через одного (на четверых — 2×2, на шестерых — 3×3). */
   teams: boolean;
+  /** Потайной: под открытым козырем лежит закрытая карта — когда колода кончится, она станет новым козырем. */
+  hidden: boolean;
+  /** Польский дурак: карт не сдают, колода рубашкой вверх вокруг козыря, бьют карту предыдущего и ходят под следующего. */
+  polish: boolean;
 }
 
 export const DEFAULT_CFG: Cfg = {
@@ -63,6 +67,8 @@ export const DEFAULT_CFG: Cfg = {
   pogony: false,
   games: 1,
   teams: false,
+  hidden: false,
+  polish: false,
 };
 
 export function cfgFrom(o: Options): Cfg {
@@ -83,7 +89,9 @@ export function cfgFrom(o: Options): Cfg {
     long: bool(o.long, false),
     pogony: bool(o.pogony, false),
     games: Math.max(1, Math.min(20, Number(o.games) || (ranks ? 5 : 1))),
-    teams: bool(o.teams, false),
+    teams: bool(o.teams, false) && !bool(o.polish, false),
+    hidden: bool(o.hidden, false),
+    polish: bool(o.polish, false),
   };
 }
 
@@ -143,6 +151,12 @@ export interface State {
   ptrump: (Suit | null)[];
   level: number[];
   laid: Card[][];
+  /** Потайной козырь (закрытая карта под открытым козырем). */
+  hidden: Card | null;
+  /** Польский: стопка в центре (внизу — козырь), счётчик ходов, победитель партии. */
+  center: Card[];
+  pmoves: number;
+  winner: number | null;
   /** Сколько карт в колоде этой партии. */
   size: number;
 }
@@ -151,6 +165,8 @@ export interface State {
 export interface View extends State {
   counts: number[];
   deckCount: number;
+  /** Есть ли потайная карта (сама карта игрокам не видна). */
+  hasHidden: boolean;
   /** Чьи руки показаны. */
   me: number[];
 }
@@ -172,6 +188,8 @@ export function makeView(s: State, seats: number[] | 'all'): View {
     ...s,
     hands: s.hands.map((h, x) => (see(x) ? h.slice() : [])),
     deck: [],
+    hidden: null,
+    hasHidden: !!s.hidden,
     counts: s.hands.map((h) => h.length),
     deckCount: s.deck.length,
     me: seats === 'all' ? s.seats.slice() : seats.slice(),
@@ -186,7 +204,12 @@ export type Action =
   | { type: 'show'; card: Card }
   | { type: 'take' }
   | { type: 'throw'; cards: Card[] }
-  | { type: 'pass' };
+  | { type: 'pass' }
+  | { type: 'pbeat'; card: Card }
+  | { type: 'pflip' }
+  | { type: 'ptake' }
+  | { type: 'plead'; card: Card }
+  | { type: 'pflipLead' };
 
 export type Event =
   | { type: 'deal'; game: number; dealer: number | null; counts: number[]; trumpCard: Card | null; trump: Suit; first: number; low: Card | null; chooser?: number; ptrump?: (Suit | null)[] }
@@ -202,6 +225,11 @@ export type Event =
   | { type: 'draw'; seat: number; count: number; cards?: Card[]; trump?: Card }
   | { type: 'out'; seat: number; place: number }
   | { type: 'laid'; seat: number; card: Card; hand: number }
+  | { type: 'retrump'; card: Card }
+  | { type: 'pbeat'; seat: number; card: Card }
+  | { type: 'pflip'; seat: number; card: Card; beat: boolean; taken: Card[] }
+  | { type: 'ptake'; seat: number; cards: Card[] }
+  | { type: 'plead'; seat: number; card: Card; blind: boolean }
   | { type: 'gameEnd'; game: number; fool: number | null; draw: boolean; pogony: number; ranking: number[]; fools: number[]; last: boolean; losers: number[] };
 
 // ---------------------------------------------------------------- карты
@@ -254,7 +282,7 @@ export function prevSeat(s: State, seat: number): number {
 }
 
 /** Длинный дурак идёт на 2–4 игроков (шестёрок всего четыре). */
-export const longOn = (s: Pick<State, 'cfg' | 'seats'>) => s.cfg.long && s.seats.length <= 4;
+export const longOn = (s: Pick<State, 'cfg' | 'seats'>) => s.cfg.long && !s.cfg.polish && s.seats.length <= 4;
 
 /** Козырь для места: общий, а в длинном дураке — масть его шестёрки. */
 export function trumpOf(s: Pick<State, 'trump' | 'cfg' | 'ptrump' | 'seats'>, seat: number): Suit {
@@ -271,7 +299,7 @@ export function handOf(s: Pick<State, 'cfg' | 'seats' | 'level'>, seat: number):
 /** Команды через одного — только на четверых и шестерых. */
 export function teamsOf(cfg: Cfg, seats: number[]): number[] {
   const t = [-1, -1, -1, -1, -1, -1];
-  if (cfg.teams && !(cfg.long && seats.length <= 4) && (seats.length === 4 || seats.length === 6)) seats.forEach((x, i) => (t[x] = i % 2));
+  if (cfg.teams && !cfg.polish && !(cfg.long && seats.length <= 4) && (seats.length === 4 || seats.length === 6)) seats.forEach((x, i) => (t[x] = i % 2));
   return t;
 }
 
@@ -387,6 +415,10 @@ export function newState(cfg: Cfg, seats: number[]): State {
     ptrump: [null, null, null, null, null, null],
     level: [6, 6, 6, 6, 6, 6],
     laid: emptyHands(),
+    hidden: null,
+    center: [],
+    pmoves: 0,
+    winner: null,
     team: teamsOf(cfg, seats),
     losers: [],
     size: 36,
@@ -420,6 +452,7 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
     level: prev.level.slice(),
     laid: prev.laid.map((x) => x.slice()),
   };
+  if (cfg.polish) return dealPolish(s, prev, rng);
   const long = longOn(s);
   const size = long ? 36 : deckSize(cfg, s.seats.length);
   let deck = shuffle(makeDeck(size), rng);
@@ -463,6 +496,8 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
     const last = deck.length ? deck[deck.length - 1] : s.hands[order[order.length - 1]][cfg.hand - 1];
     s.trump = cfg.diamonds ? 'D' : last.s;
     s.trumpCard = deck.length && !cfg.diamonds ? last : null;
+    // потайной: ещё одну карту сверху кладут закрытой под козырь
+    if (cfg.hidden && s.trumpCard && s.deck.length >= 2) s.hidden = s.deck.shift()!;
   }
   const { first, low } = firstAttacker(s, prev);
   startBout(s, first, nextOpp(s, first));
@@ -513,6 +548,9 @@ export function toAct(s: State): number[] {
     case 'take':
     case 'trump':
       return s.asker >= 0 ? [s.asker] : [];
+    case 'pbeat':
+    case 'plead':
+      return [s.attacker];
     default:
       return [];
   }
@@ -537,6 +575,7 @@ function clone(s: State): State {
     ptrump: s.ptrump.slice(),
     level: s.level.slice(),
     laid: s.laid.map((x) => x.slice()),
+    center: s.center.slice(),
     team: s.team.slice(),
     losers: s.losers.slice(),
   };
@@ -554,6 +593,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (!toAct(s0).includes(seat) || !a || typeof a !== 'object') return null;
   const s = clone(s0);
   const ev: Event[] = [];
+  if (s.cfg.polish) return applyPolish(s, seat, a, rng, ev) ? { state: s, events: ev } : null;
   switch (a.type) {
     case 'trump': {
       if (s.phase !== 'trump' || !SUITS.includes(a.suit)) return null;
@@ -692,18 +732,31 @@ function refill(s: State, ev: Event[], def: number, took = false) {
   const order = circleFrom(s, s.attacker).filter((x) => x !== def);
   if (!took) order.push(def);
   for (const seat of order) {
-    const need = handOf(s, seat) - s.hands[seat].length;
-    if (need <= 0 || !s.deck.length) continue;
-    const got = s.deck.splice(0, need);
-    s.hands[seat].push(...got);
-    let trump: Card | undefined;
-    if (!s.deck.length && s.trumpCard && got.some((c) => sameCard(c, s.trumpCard!))) {
-      trump = s.trumpCard;
-      s.known[seat].push(trump);
+    let need = handOf(s, seat) - s.hands[seat].length;
+    while (need > 0 && s.deck.length) {
+      const got = s.deck.splice(0, need);
+      need -= got.length;
+      s.hands[seat].push(...got);
+      let trump: Card | undefined;
+      if (!s.deck.length && s.trumpCard && got.some((c) => sameCard(c, s.trumpCard!))) {
+        trump = s.trumpCard;
+        s.known[seat].push(trump);
+      }
+      if (!s.deck.length) s.trumpCard = null;
+      ev.push({ type: 'draw', seat, count: got.length, cards: got, trump });
+      if (!s.deck.length && s.hidden) revealHidden(s, ev);
     }
-    if (!s.deck.length) s.trumpCard = null;
-    ev.push({ type: 'draw', seat, count: got.length, cards: got, trump });
   }
+}
+
+/** Потайной: колода с козырем кончилась — закрытая карта открывается и становится новым козырем. */
+function revealHidden(s: State, ev: Event[]) {
+  const c = s.hidden!;
+  s.hidden = null;
+  s.trump = c.s;
+  s.trumpCard = c;
+  s.deck = [c];
+  ev.push({ type: 'retrump', card: c });
 }
 
 function endBout(s: State, ev: Event[], def: number, took: boolean, lastAttacker: number, rng: Rng) {
@@ -778,9 +831,133 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
 /** Итог серии: меньше всего раз был дураком — победитель (без дураков в одной партии — все, кроме дурака). */
 export function winners(s: State): number[] {
   if (s.phase !== 'over') return [];
+  if (s.cfg.polish && s.cfg.games <= 1) return s.winner != null ? [s.winner] : [];
   if (longOn(s)) return s.seats.filter((x) => !s.losers.includes(x));
   if (s.cfg.ranks && s.ranking.length) return [s.ranking[0]];
   if (s.cfg.games <= 1) return s.fool == null ? s.seats.slice() : s.seats.filter((x) => !s.losers.includes(x));
   const min = Math.min(...s.seats.map((x) => s.fools[x]));
   return s.seats.filter((x) => s.fools[x] === min);
+}
+
+// ---------------------------------------------------------------- польский дурак
+
+/** Польский: карт не сдают; верхняя карта — козырь в центр, остальная колода рубашкой вверх вокруг. */
+function dealPolish(s: State, prev: State, rng: Rng): { state: State; events: Event[] } {
+  const deck = shuffle(makeDeck(36), rng);
+  const tr = deck.shift()!;
+  s.size = 36;
+  s.trump = tr.s;
+  s.trumpCard = null;
+  s.center = [tr];
+  s.deck = deck;
+  // сдающий — по жребию; первым ходит сосед слева от него
+  const dealer = s.seats[rng.int(s.seats.length)];
+  const first = nextSeat(s, dealer);
+  s.attacker = first;
+  s.defender = nextSeat(s, first);
+  s.phase = 'plead';
+  const ev: Event = { type: 'deal', game: s.game, dealer: prev.game > 0 ? dealer : null, counts: s.seats.map(() => 0), trumpCard: tr, trump: tr.s, first, low: null };
+  return { state: s, events: [ev] };
+}
+
+/** Что может побить верхнюю карту центра из руки. */
+export function polishBeaters(s: State, seat: number): Card[] {
+  const top = s.center[s.center.length - 1];
+  if (!top) return [];
+  return s.hands[seat].filter((c) => beats({ ...s, defender: seat }, top, c));
+}
+
+function passTurn(s: State, seat: number) {
+  s.attacker = nextSeat(s, seat);
+  s.defender = nextSeat(s, s.attacker);
+}
+
+function applyPolish(s: State, seat: number, a: Action, rng: Rng, ev: Event[]): boolean {
+  const top = s.center[s.center.length - 1];
+  const draw = () => s.deck.splice(rng.int(s.deck.length), 1)[0];
+  switch (a.type) {
+    case 'pbeat': {
+      if (s.phase !== 'pbeat' || !top || !a.card || !has(s.hands[seat], a.card) || !beats({ ...s, defender: seat }, top, a.card)) return false;
+      removeFromHand(s, seat, [a.card]);
+      s.center.push(a.card);
+      ev.push({ type: 'pbeat', seat, card: a.card });
+      s.phase = 'plead';
+      break;
+    }
+    case 'pflip': {
+      if (s.phase !== 'pbeat' || !s.deck.length) return false;
+      const c = draw();
+      if (top && beats({ ...s, defender: seat }, top, c)) {
+        s.center.push(c);
+        ev.push({ type: 'pflip', seat, card: c, beat: true, taken: [] });
+      } else {
+        const taken = top ? [s.center.pop()!, c] : [c];
+        s.hands[seat].push(...taken);
+        s.known[seat].push(...taken);
+        ev.push({ type: 'pflip', seat, card: c, beat: false, taken });
+      }
+      s.phase = 'plead';
+      break;
+    }
+    case 'ptake': {
+      // колода кончилась, отбиться нечем — берут три верхние карты из центра
+      if (s.phase !== 'pbeat' || s.deck.length || polishBeaters(s, seat).length) return false;
+      const cards = s.center.splice(Math.max(0, s.center.length - 3));
+      s.hands[seat].push(...cards);
+      s.known[seat].push(...cards);
+      ev.push({ type: 'ptake', seat, cards });
+      passTurn(s, seat);
+      s.phase = s.center.length ? 'pbeat' : 'plead';
+      break;
+    }
+    case 'plead': {
+      if (s.phase !== 'plead' || !a.card || !has(s.hands[seat], a.card)) return false;
+      removeFromHand(s, seat, [a.card]);
+      s.center.push(a.card);
+      ev.push({ type: 'plead', seat, card: a.card, blind: false });
+      passTurn(s, seat);
+      s.phase = 'pbeat';
+      break;
+    }
+    case 'pflipLead': {
+      if (s.phase !== 'plead' || !s.deck.length) return false;
+      const c = draw();
+      s.center.push(c);
+      ev.push({ type: 'plead', seat, card: c, blind: true });
+      passTurn(s, seat);
+      s.phase = 'pbeat';
+      break;
+    }
+    default:
+      return false;
+  }
+  s.pmoves++;
+  // победа: колода кончилась, а у игрока карт нет (сначала — у того, кто ходил, потом по кругу)
+  if (!s.deck.length) {
+    const empty = circleFrom(s, seat).find((x) => !s.hands[x].length);
+    if (empty != null) finishPolish(s, empty, ev, rng);
+  }
+  // страховка от бесконечной партии: меньше всех карт — тот и выиграл
+  if (s.winner == null && s.pmoves > 3000) {
+    const best = s.seats.slice().sort((x, y) => s.hands[x].length - s.hands[y].length)[0];
+    finishPolish(s, best, ev, rng);
+  }
+  return true;
+}
+
+function finishPolish(s: State, winner: number, ev: Event[], rng: Rng) {
+  s.winner = winner;
+  s.losers = s.seats.filter((x) => x !== winner);
+  for (const x of s.losers) s.fools[x]++;
+  s.fool = null;
+  s.draw = false;
+  const last = s.game >= s.cfg.games;
+  ev.push({ type: 'gameEnd', game: s.game, fool: null, draw: false, pogony: 0, ranking: [winner], fools: s.fools.slice(), last, losers: s.losers.slice() });
+  if (last) {
+    s.phase = 'over';
+    return;
+  }
+  const next = deal(s, rng);
+  Object.assign(s, next.state);
+  ev.push(...next.events);
 }

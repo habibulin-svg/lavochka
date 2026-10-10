@@ -7,7 +7,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { cardHTML, preloadDeck } from '../../cards/render';
 import { cardId, sameCard, sortHand, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
-import { beats, canTransfer, deckLeft, has, longOn, room, throwable, transferTarget, trumpOf, unbeaten, type Action, type Event, type View } from './engine';
+import { beats, canTransfer, deckLeft, has, longOn, polishBeaters, room, throwable, transferTarget, trumpOf, unbeaten, type Action, type Event, type View } from './engine';
 import { SEATS, titleOf } from './def';
 import './durak.css';
 
@@ -18,6 +18,12 @@ const CH = 155;
 const HAND_Y = 618;
 const DECK = { x: 92, y: 360 };
 const BITO = { x: 908, y: 360 };
+/** Польский: центр со стопкой и кольцо колоды рубашкой вверх вокруг него. */
+const PCENTER = { x: 500, y: 356 };
+function stockPos(i: number, n: number) {
+  const a = -Math.PI / 2 + (i / Math.max(1, n)) * Math.PI * 2;
+  return { x: PCENTER.x + Math.cos(a) * 285, y: PCENTER.y + Math.sin(a) * 92, r: (a * 180) / Math.PI + 90 };
+}
 
 type Anchor = { x: number; y: number };
 
@@ -29,7 +35,7 @@ interface Item {
   r: number;
   s: number;
   z: number;
-  role?: 'hand' | 'att' | 'def';
+  role?: 'hand' | 'att' | 'def' | 'ptop' | 'stock';
   i?: number;
   cls?: string;
 }
@@ -163,8 +169,11 @@ class DurakView implements GameView<View, Event> {
 
   private layout(v: View): Item[] {
     const items: Item[] = [];
+    if (v.cfg.polish) this.layoutPolish(v, items);
     // колода и козырь
-    const dl = deckLeft(v);
+    const dl = v.cfg.polish ? 0 : deckLeft(v);
+    // потайной: закрытая карта под козырем
+    if (v.hasHidden && v.trumpCard) items.push({ key: 'hidden', card: null, x: DECK.x + 44, y: DECK.y + 36, r: 78, s: 0.92, z: 0, cls: 'dk-hidden' });
     if (v.trumpCard && dl > 0) items.push({ key: 'c:' + cardId(v.trumpCard), card: v.trumpCard, x: DECK.x + 34, y: DECK.y, r: 90, s: 0.92, z: 1 });
     if (dl > (v.trumpCard ? 1 : 0)) items.push({ key: 'deck', card: null, x: DECK.x, y: DECK.y - Math.min(8, dl / 4), r: 0, s: 0.92, z: 2, cls: 'dk-deck' });
     // бито
@@ -240,6 +249,45 @@ class DurakView implements GameView<View, Event> {
     return items;
   }
 
+  /** Польский: стопка в центре (внизу — козырь поперёк) и колода кольцом вокруг. */
+  private layoutPolish(v: View, items: Item[]) {
+    const n = v.deckCount;
+    for (let i = 0; i < n; i++) {
+      const p = stockPos(i, n);
+      items.push({ key: 's:' + i, card: null, x: p.x, y: p.y, r: p.r, s: 0.42, z: 5, role: 'stock', cls: this.stockLive(v) ? 'dk-can' : '' });
+    }
+    const c = v.center;
+    const from = Math.max(0, c.length - 7);
+    for (let i = from; i < c.length; i++) {
+      const top = i === c.length - 1;
+      const base = i === 0;
+      const k = i - from;
+      const target = top && this.polishTarget(v);
+      items.push({
+        key: 'c:' + cardId(c[i]),
+        card: c[i],
+        x: PCENTER.x + (base ? 0 : (k % 3) * 9 - 9),
+        y: PCENTER.y + (base ? 0 : (k % 2) * 6 - 3),
+        r: base ? 90 : ((i * 37) % 30) - 15,
+        s: 0.82,
+        z: 20 + k,
+        role: top ? 'ptop' : undefined,
+        cls: target ? 'dk-target' : '',
+      });
+    }
+  }
+
+  /** Можно ли сейчас тянуть из колоды (польский). */
+  private stockLive(v: View) {
+    return this.actSeat != null && v.cfg.polish && v.deckCount > 0 && (v.phase === 'pbeat' || v.phase === 'plead');
+  }
+
+  /** Подсветить верхнюю карту центра: выбранная карта её бьёт. */
+  private polishTarget(v: View) {
+    if (this.actSeat == null || v.phase !== 'pbeat' || this.selected.length !== 1) return false;
+    return polishBeaters(v, this.actSeat).some((x) => sameCard(x, this.selected[0]));
+  }
+
   private transform(it: { x: number; y: number; r: number; s: number }) {
     return `translate(${it.x - CW / 2}px, ${it.y - CH / 2}px) rotate(${it.r}deg) scale(${it.s})`;
   }
@@ -300,11 +348,13 @@ class DurakView implements GameView<View, Event> {
   private drawPlates(v: View) {
     let s = '';
     const dl = deckLeft(v);
-    if (dl > 0) s += `<div class="dk-count" style="left:${DECK.x - 40}px;top:${DECK.y + 92}px">${dl}</div>`;
+    if (v.cfg.polish) {
+      if (v.deckCount) s += `<div class="dk-count" style="left:${PCENTER.x - 40}px;top:${PCENTER.y + 82}px">в колоде ${v.deckCount}</div>`;
+    } else if (dl > 0) s += `<div class="dk-count" style="left:${DECK.x - 40}px;top:${DECK.y + 92}px">${dl}</div>`;
     if (!longOn(v))
       s += `<div class="dk-trump" style="left:${DECK.x - 60}px;top:${DECK.y - 136}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span>${dl ? '' : '<small>козырь</small>'}</div>`;
     if (v.bito.length) s += `<div class="dk-count" style="left:${BITO.x - 40}px;top:${BITO.y + 96}px">бито ${v.bito.length}</div>`;
-    const toAct = v.phase === 'attack' ? v.attacker : v.phase === 'defend' ? v.defender : v.asker;
+    const toAct = v.phase === 'attack' || v.phase === 'pbeat' || v.phase === 'plead' ? v.attacker : v.phase === 'defend' ? v.defender : v.asker;
     for (const seat of v.seats) {
       const a = this.anchorOf(v, seat);
       const me = seat === this.viewer;
@@ -312,6 +362,12 @@ class DurakView implements GameView<View, Event> {
         ? `вышел${v.out.indexOf(seat) === 0 ? ' первым' : ''}`
         : v.phase === 'over' || v.phase === 'trump'
           ? ''
+          : v.cfg.polish
+            ? seat === v.attacker
+              ? v.phase === 'pbeat'
+                ? 'кроет'
+                : 'ходит'
+              : ''
           : seat === v.attacker
             ? 'ходит'
             : seat === v.defender
@@ -341,11 +397,12 @@ class DurakView implements GameView<View, Event> {
     const act = this.zoneAction(v)!;
     const n = v.table.length;
     const tr = act.type === 'transfer';
-    const label = act.type === 'attack' ? 'Ходить' : act.type === 'throw' ? 'Подкинуть' : 'Перевести';
+    const label = act.type === 'attack' || act.type === 'plead' ? 'Ходить' : act.type === 'throw' ? 'Подкинуть' : 'Перевести';
     (this.zone.firstElementChild as HTMLElement).textContent = label;
     let x = 500;
     let y = 352;
-    if (n) {
+    if (v.cfg.polish) x = 640;
+    else if (n) {
       // справа от последней карты
       const rows = n > 3 ? 2 : 1;
       const perRow = rows === 2 ? Math.ceil(n / 2) : n;
@@ -368,6 +425,7 @@ class DurakView implements GameView<View, Event> {
   private zoneAction(v: View): Action | null {
     const sel = this.selected;
     if (!sel.length || this.actSeat == null) return null;
+    if (v.phase === 'plead' && v.attacker === this.actSeat) return { type: 'plead', card: sel[0] };
     if (v.phase === 'attack' && v.attacker === this.actSeat) return { type: 'attack', cards: sel };
     if ((v.phase === 'throw' || v.phase === 'take') && v.asker === this.actSeat) return { type: 'throw', cards: sel };
     if (v.phase === 'defend' && v.defender === this.actSeat && sel.length === 1 && canTransfer(v, sel[0], false)) return { type: 'transfer', card: sel[0] };
@@ -390,7 +448,8 @@ class DurakView implements GameView<View, Event> {
     const seat = this.actSeat;
     if (seat == null) return [];
     const hand = v.hands[seat] || [];
-    if (v.phase === 'attack') return hand;
+    if (v.phase === 'attack' || v.phase === 'plead') return hand;
+    if (v.phase === 'pbeat') return polishBeaters(v, seat);
     if (v.phase === 'throw' || v.phase === 'take') return throwable(v, seat);
     if (v.phase === 'defend') return hand.filter((c) => v.table.some((p) => !p.d && beats(v, p.a, c)) || canTransfer(v, c, false));
     return [];
@@ -406,6 +465,15 @@ class DurakView implements GameView<View, Event> {
     if (role === 'hand') {
       const c = (v.hands[this.actSeat] || []).find((x) => 'c:' + cardId(x) === key);
       if (c) this.select(c);
+      return;
+    }
+    if (role === 'stock') {
+      if (!this.stockLive(v)) return;
+      return this.send(v.phase === 'pbeat' ? { type: 'pflip' } : { type: 'pflipLead' });
+    }
+    if (role === 'ptop' && el.classList.contains('dk-target')) {
+      const c = this.selected[0];
+      if (c) this.send({ type: 'pbeat', card: c });
       return;
     }
     if (role === 'att' && el.classList.contains('dk-target')) {
@@ -487,7 +555,7 @@ class DurakView implements GameView<View, Event> {
       this.btns.appendChild(row);
       return;
     }
-    if (za && za.type !== 'transfer') this.button(`${za.type === 'attack' ? 'Ходить' : 'Подкинуть'} (${this.selected.length})`, true, () => this.send(za));
+    if (za && (za.type === 'attack' || za.type === 'throw')) this.button(`${za.type === 'attack' ? 'Ходить' : 'Подкинуть'} (${this.selected.length})`, true, () => this.send(za));
     if (v.phase === 'defend') {
       if (za?.type === 'transfer') this.button('Перевести', true, () => this.send(za));
       if (transferTarget(v) != null) {
@@ -496,6 +564,16 @@ class DurakView implements GameView<View, Event> {
           if (canTransfer(v, c, true)) this.button(`Показать ${this.cardTxt(c)} — перевести`, false, () => this.send({ type: 'show', card: c }));
       }
       this.button('Беру', false, () => this.send({ type: 'take' }), 'dk-take');
+    }
+    if (v.phase === 'plead') {
+      if (za) this.button('Ходить', true, () => this.send(za));
+      if (v.deckCount) this.button('Ходить вслепую из колоды', !za && !(v.hands[seat] || []).length, () => this.send({ type: 'pflipLead' }));
+    }
+    if (v.phase === 'pbeat') {
+      const sel = this.selected[0];
+      if (sel && polishBeaters(v, seat).some((x) => sameCard(x, sel))) this.button('Покрыть', true, () => this.send({ type: 'pbeat', card: sel }));
+      if (v.deckCount) this.button('Тянуть из колоды', !polishBeaters(v, seat).length, () => this.send({ type: 'pflip' }));
+      else if (!polishBeaters(v, seat).length) this.button('Крыть нечем — забрать три', true, () => this.send({ type: 'ptake' }));
     }
     if (v.phase === 'throw') this.button(v.attacker === seat ? 'Бито' : 'Пас', !za, () => this.send({ type: 'pass' }));
     if (v.phase === 'take') this.button('Хватит — пусть забирает', !za, () => this.send({ type: 'pass' }));
@@ -522,6 +600,7 @@ class DurakView implements GameView<View, Event> {
     if (v.phase === 'attack') return [v.attacker];
     if (v.phase === 'defend') return [v.defender];
     if (v.phase === 'throw' || v.phase === 'take' || v.phase === 'trump') return v.asker >= 0 ? [v.asker] : [];
+    if (v.phase === 'pbeat' || v.phase === 'plead') return [v.attacker];
     return [];
   }
 
@@ -533,7 +612,7 @@ class DurakView implements GameView<View, Event> {
       parts.push(`Ваш козырь: <b class="${mine === 'H' || mine === 'D' ? 'red' : ''}">${SUIT_SYM[mine]} ${SUIT_NAME[mine]}</b>`);
       parts.push(`<small>у каждого свой козырь — масть его шестёрки</small>`);
     } else parts.push(`Козырь: <b class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]} ${SUIT_NAME[v.trump]}</b>`);
-    const variant = [longOn(v) ? 'длинный' : '', v.cfg.ranks ? 'Король-говно' : '', v.team.some((t) => t >= 0) ? (v.seats.length === 6 ? '3 на 3' : '2 на 2') : '', v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
+    const variant = [v.cfg.polish ? 'польский' : '', v.cfg.hidden && !v.cfg.polish ? 'потайной козырь' : '', longOn(v) ? 'длинный' : '', v.cfg.ranks ? 'Король-говно' : '', v.team.some((t) => t >= 0) ? (v.seats.length === 6 ? '3 на 3' : '2 на 2') : '', v.cfg.polish ? '' : v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
     parts.push(`<small>${variant}</small>`);
     this.info.innerHTML = parts.map((p) => `<div>${p}</div>`).join('');
   }
@@ -584,6 +663,38 @@ class DurakView implements GameView<View, Event> {
       case 'out':
         m.out = [...m.out, ev.seat];
         return { enter: null, exit: null };
+      case 'retrump':
+        m.trump = ev.card.s;
+        m.trumpCard = ev.card;
+        m.deckCount = 1;
+        m.hasHidden = false;
+        return { enter: null, exit: null };
+      case 'pbeat':
+        takeFrom(ev.seat, [ev.card]);
+        m.center = [...m.center, ev.card];
+        return { enter: this.anchorOf(m, ev.seat), exit: null };
+      case 'plead':
+        if (ev.blind) m.deckCount = Math.max(0, m.deckCount - 1);
+        else takeFrom(ev.seat, [ev.card]);
+        m.center = [...m.center, ev.card];
+        return { enter: ev.blind ? stockPos(m.deckCount, m.deckCount + 1) : this.anchorOf(m, ev.seat), exit: null };
+      case 'pflip': {
+        m.deckCount = Math.max(0, m.deckCount - 1);
+        const from = stockPos(m.deckCount, m.deckCount + 1);
+        if (ev.beat) {
+          m.center = [...m.center, ev.card];
+          return { enter: from, exit: null };
+        }
+        m.center = m.center.filter((x) => !ev.taken.some((t) => sameCard(t, x)));
+        if (this.faceUp(m, ev.seat) || m.hands[ev.seat].length) m.hands[ev.seat] = [...m.hands[ev.seat], ...ev.taken];
+        m.counts[ev.seat] += ev.taken.length;
+        return { enter: from, exit: this.anchorOf(m, ev.seat) };
+      }
+      case 'ptake':
+        m.center = m.center.filter((x) => !ev.cards.some((t) => sameCard(t, x)));
+        if (this.faceUp(m, ev.seat) || m.hands[ev.seat].length) m.hands[ev.seat] = [...m.hands[ev.seat], ...ev.cards];
+        m.counts[ev.seat] += ev.cards.length;
+        return { enter: null, exit: this.anchorOf(m, ev.seat) };
       case 'laid':
         m.laid = m.laid.map((x, i) => (i === ev.seat ? [...x, ev.card] : x));
         m.level = m.level.map((x, i) => (i === ev.seat ? ev.card.r : x));
@@ -629,7 +740,7 @@ class DurakView implements GameView<View, Event> {
           continue;
         case 'gameEnd': {
           Sound.win();
-          const who = ev.losers.length > 1 ? `Дураки — ${ev.losers.map((x) => this.plain(x)).join(' и ')}!` : `${this.plain(ev.fool!)} — дурак!`;
+          const who = ev.fool == null && ev.ranking.length === 1 ? `${this.plain(ev.ranking[0])} — без карт, победа!` : ev.losers.length > 1 ? `Дураки — ${ev.losers.map((x) => this.plain(x)).join(' и ')}!` : `${this.plain(ev.fool!)} — дурак!`;
           const t = ev.draw ? 'Ничья!' : `${who}${ev.pogony ? (ev.pogony === 2 ? ' С погонами!' : ' С погоном!') : ''}`;
           await this.showBanner(t, ev.last ? 0 : 2200 / speed, ev.last);
           continue;
@@ -644,6 +755,12 @@ class DurakView implements GameView<View, Event> {
       this.draw(enter, exit);
       await sleep(dur + (ev.type === 'draw' ? Math.min(ev.count, 8) * 45 : 0) + 60);
       if (ev.type === 'out') await this.showBanner(`${this.plain(ev.seat)} вышел`, 700 / speed);
+      if (ev.type === 'retrump') {
+        this.renderInfo(m);
+        await this.showBanner(`Потайная карта ${this.cardPlain(ev.card)} — новый козырь ${SUIT_SYM[ev.card.s]}!`, 1500 / speed);
+      }
+      if (ev.type === 'pflip' && !ev.beat) await this.showBanner(`${this.plain(ev.seat)}: не кроет — забирает`, 700 / speed);
+      if (ev.type === 'ptake') await this.showBanner(`${this.plain(ev.seat)} забирает три`, 800 / speed);
       if (ev.type === 'laid') await this.showBanner(`${this.plain(ev.seat)} выкладывает ${this.cardPlain(ev.card)}${ev.card.r === 14 ? ' — длинный дурак!' : ''}`, 1300 / speed);
       if (ev.type === 'transfer') {
         const how = ev.shown ? `показывает ${this.cardPlain(ev.shown)} — ` : '';
@@ -703,12 +820,20 @@ class DurakView implements GameView<View, Event> {
     if (v.phase === 'over') {
       if (v.cfg.games > 1) return 'Серия окончена';
       if (v.losers.length > 1) return `Дураки — ${v.losers.map(name).join(' и ')}`;
+      if (v.cfg.polish && v.winner != null) return `Победа: ${name(v.winner)} — первым без карт`;
       return v.draw ? 'Ничья!' : v.fool != null ? `Дурак — ${name(v.fool)}` : 'Партия окончена';
     }
     const who = toAct[0];
     if (who == null) return '';
     const mine = interactive.includes(who);
     switch (v.phase) {
+      case 'pbeat': {
+        const top = v.center[v.center.length - 1];
+        const t = top ? this.cardPlain(top) : '';
+        return mine ? `Кройте ${t}: с руки${v.deckCount ? ' или тяните из колоды' : ' — или забирайте три'}` : `${name(who)} кроет ${t}…`;
+      }
+      case 'plead':
+        return mine ? `Ходите под ${name(v.defender)}: картой с руки${v.deckCount ? ' или вслепую из колоды' : ''}` : `${name(who)} ходит…`;
       case 'trump':
         return mine ? 'Назначьте козырь' : `${name(who)} выбирает козырь…`;
       case 'attack':

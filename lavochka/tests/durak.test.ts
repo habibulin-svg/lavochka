@@ -368,3 +368,92 @@ describe('длинный дурак', () => {
     }
   }, 60_000);
 });
+
+describe('потайной козырь', () => {
+  it('под козырем — закрытая карта: её нет ни в колоде, ни у игроков, и в view она не видна', () => {
+    const s = setup([0, 1, 2], { ...defaults(def), hidden: true }, new SeededRng(4));
+    expect(s.hidden).not.toBeNull();
+    const all = [...s.deck, ...s.seats.flatMap((x) => s.hands[x])];
+    expect(all.some((c) => c.s === s.hidden!.s && c.r === s.hidden!.r)).toBe(false);
+    expect(all.length).toBe(35);
+    const v = makeView(s, [0]);
+    expect(v.hidden).toBeNull();
+    expect(v.hasHidden).toBe(true);
+  });
+  it('колода и козырь кончились — потайная карта открывается и становится новым козырем', () => {
+    let s = pos({ hidden: true }, ['8C 6S 6D', '10C JD QS'], '9S 7H', { hidden: cd('KC') });
+    expect(s.trump).toBe('H');
+    s = act(s, 0, { type: 'attack', cards: cl('8C') });
+    const r = apply(s, 1, { type: 'beat', i: 0, card: cd('10C') }, rng())!;
+    expect(r.events.some((e) => e.type === 'retrump')).toBe(true);
+    s = r.state;
+    expect(s.trump).toBe('C');
+    expect(s.hidden).toBeNull();
+    expect(s.hands[0].some((c) => c.s === 'C' && c.r === 13)).toBe(true);
+  });
+});
+
+describe('польский дурак', () => {
+  const polishPos = (hands: string[], deck: string, center: string, extra: Partial<State> = {}) =>
+    pos({ polish: true }, hands, deck, { center: cl(center), trump: cl(center)[0].s, trumpCard: null, phase: 'pbeat', attacker: 1, defender: 2, ...extra });
+  it('раздачи нет: козырь в центре, вся колода вокруг, первым ходит сосед сдающего', () => {
+    const s = setup([0, 1, 2], { ...defaults(def), polish: true }, new SeededRng(11));
+    expect(s.seats.every((x) => s.hands[x].length === 0)).toBe(true);
+    expect(s.center.length).toBe(1);
+    expect(s.trump).toBe(s.center[0].s);
+    expect(s.deck.length).toBe(35);
+    expect(s.phase).toBe('plead');
+  });
+  it('крыть с руки — потом ходить под следующего', () => {
+    let s = polishPos(['9H', '10S 7D', 'QC'], 'AC KC', '9D 8S');
+    no(s, 1, { type: 'pbeat', card: cd('7H') });
+    s = act(s, 1, { type: 'pbeat', card: cd('10S') });
+    expect(s.phase).toBe('plead');
+    s = act(s, 1, { type: 'plead', card: cd('7D') });
+    expect([s.phase, s.attacker]).toEqual(['pbeat', 2]);
+  });
+  it('вытянул и не покрыл — забирает обе и всё равно ходит', () => {
+    let s = polishPos(['9H', '', 'QC'], '7C', '9D 8S');
+    const r = apply(s, 1, { type: 'pflip' }, rng())!;
+    expect(r.events[0]).toMatchObject({ type: 'pflip', beat: false });
+    s = r.state;
+    expect(s.hands[1].length).toBe(2);
+    expect(s.phase).toBe('plead');
+  });
+  it('колода кончилась: нечем крыть — забрать три сверху, крыть дальше следующему', () => {
+    let s = polishPos(['9H', '7H', 'QC 6C'], '', '9D 10S JS 8S');
+    no(s, 1, { type: 'pflip' });
+    s = act(s, 1, { type: 'ptake' });
+    expect(s.hands[1].map((c) => c.r).sort((x, y) => x - y)).toEqual([7, 8, 10, 11]);
+    expect(s.center.length).toBe(1);
+    expect([s.attacker, s.phase]).toEqual([2, 'pbeat']);
+  });
+  it('выигрывает первый без карт, когда колода кончилась', () => {
+    const s = polishPos(['9H', 'JS', 'QC 6C'], '', '9D 8S');
+    const r = apply(s, 1, { type: 'pbeat', card: cd('JS') }, rng())!;
+    expect(r.state.phase).toBe('over');
+    expect(r.state.winner).toBe(1);
+    expect(def.result(r.state)!.winners).toEqual([1]);
+  });
+  it('партии ботов доигрываются на 2–6 игроков', async () => {
+    for (const n of [2, 3, 4, 6]) {
+      for (let g = 0; g < 6; g++) {
+        const seats = botSeats(def, n, [g % 3]);
+        const opts = { ...defaults(def), polish: true };
+        const a = new Authority(def, seats, opts);
+        a.rng = new SeededRng(500 + n * 10 + g);
+        a.state = def.setup(seats, opts, a.rng);
+        const brng = new SeededRng(g);
+        let steps = 0;
+        while (!a.result && steps < 8000) {
+          const seat = a.toAct()[0];
+          const r = a.act(seat, await def.bot.choose(a.viewFor([seat]), seat, seats.find((x) => x.seat === seat)!.level, brng));
+          expect(r, `n=${n} g=${g} шаг ${steps}`).not.toBeNull();
+          steps++;
+        }
+        expect(a.result).not.toBeNull();
+        expect((a.state as State).pmoves).toBeLessThan(3000);
+      }
+    }
+  }, 60_000);
+});

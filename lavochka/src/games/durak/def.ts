@@ -1,5 +1,5 @@
 /* Дурак — описание игры для сборника: варианты, боты, журнал, скрытие карт, правила с показом. Без DOM. */
-import type { GameDef, SeatSpec } from '../../core/types';
+import type { GameDef, OptionDef, Options, SeatSpec } from '../../core/types';
 import { plural } from '../../core/util';
 import { SUIT_NAME, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
@@ -58,12 +58,23 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} забирает ${ev.cards.length} ${plural(ev.cards.length, 'карту', 'карты', 'карт')}.`;
     case 'draw':
       return ev.trump ? `${name(ev.seat)} добирает и забирает козырь ${cards([ev.trump])}.` : null;
+    case 'retrump':
+      return `Колода кончилась — открывается потайная карта ${cards([ev.card])}: новый козырь — <b>${suitWord(ev.card.s)}</b>!`;
+    case 'pbeat':
+      return `${name(ev.seat)} кроет с руки: ${cards([ev.card])}`;
+    case 'pflip':
+      return ev.beat ? `${name(ev.seat)} тянет из колоды ${cards([ev.card])} — и кроет!` : `${name(ev.seat)} тянет ${cards([ev.card])} — не кроет, забирает ${cards(ev.taken)}.`;
+    case 'ptake':
+      return `${name(ev.seat)}: крыть нечем — забирает сверху ${cards(ev.cards)}.`;
+    case 'plead':
+      return `${name(ev.seat)} ходит${ev.blind ? ' вслепую из колоды' : ''}: ${cards([ev.card])}`;
     case 'laid':
       return `${name(ev.seat)} выкладывает ${cards([ev.card])}${ev.card.r === 14 ? ' — <b>длинный дурак!</b>' : ev.hand < 6 ? ` — теперь ему сдают по ${ev.hand}` : ''}.`;
     case 'out':
       return `${name(ev.seat)} вышел${ev.place === 1 ? ' первым' : ''}.`;
     case 'gameEnd': {
       if (ev.draw) return `🤝 <b>Ничья</b> — карты кончились у всех разом.`;
+      if (ev.fool == null && ev.ranking.length === 1) return `🏆 <b>${name(ev.ranking[0])}</b> первым избавился от карт!`;
       let t = ev.losers.length > 1 ? `🃏 <b>Дураки — ${ev.losers.map(name).join(' и ')}!</b>` : `🃏 <b>${name(ev.fool!)} — дурак!</b>`;
       if (ev.pogony) t += ` И с ${ev.pogony === 2 ? 'погонами на обоих плечах' : 'погоном'}!`;
       return t;
@@ -116,13 +127,34 @@ const B = (seat: number, i: number, card: string) => ({ seat, action: { type: 'b
 const T = (seat: number, list: string) => ({ seat, action: { type: 'throw', cards: cl(list) } as Action });
 const P = (seat: number) => ({ seat, action: { type: 'pass' } as Action });
 
+/** Польский дурак — своя механика: прячем настройки, которые к нему не относятся. */
+function withPolish(list: OptionDef[]): OptionDef[] {
+  const keep = ['polish', 'games', 'spades'];
+  return list.map((o) => (keep.includes(o.key) ? o : { ...o, showIf: (x: Options) => x.polish !== true && (o.showIf ? o.showIf(x) : true) }));
+}
+
 export const def: GameDef<State, Action, Event, View> = {
   id: 'durak',
   title: 'Дурак',
   players: { min: 2, max: 6, default: 3 },
   seats: SEATS,
 
-  options: [
+  options: withPolish([
+    {
+      key: 'polish',
+      label: 'Польский дурак',
+      hint: 'Совсем другая игра: карт не сдают. Козырь — в центр, колода рубашкой вверх вокруг. Каждый кроет карту предыдущего (с руки или вытянув из колоды) и ходит под следующего. Не покрыл — забираешь; без колоды — бери три сверху. Выигрывает первый, у кого не осталось карт, когда колода кончилась.',
+      type: 'toggle',
+      default: false,
+    },
+    {
+      key: 'hidden',
+      label: 'Потайной козырь',
+      hint: 'Под открытым козырем лежит закрытая карта. Когда кончатся колода и козырь, она открывается и становится новым козырем.',
+      type: 'toggle',
+      default: false,
+      showIf: (o) => o.diamonds !== true && o.long !== true,
+    },
     {
       key: 'throwers',
       label: 'Кто подкидывает',
@@ -192,15 +224,17 @@ export const def: GameDef<State, Action, Event, View> = {
       default: 1,
       hint: 'В серии выигрывает тот, кто реже всех оставался дураком.',
     },
-  ],
+  ]),
   presets: [
-    { id: 'classic', label: 'Классический', hint: 'Простой дурак: без подкидывания', options: { throwers: 'none', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
-    { id: 'podkidnoy', label: 'Подкидной', hint: 'Подкидывают все', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
-    { id: 'perevodnoy', label: 'Переводной', hint: 'Перевод картой или показом козыря', options: { throwers: 'all', transfer: true, transferShow: true, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
-    { id: 'long', label: 'Длинный', hint: 'Личные козыри из шестёрок, проигравший выкладывает карты до туза', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: false, long: true, games: 1 } },
-    { id: 'japan', label: 'Японский', hint: 'Пики пиками, козырь — бубны', options: { throwers: 'all', transfer: false, deck: 36, spades: true, diamonds: true, ranks: false, games: 1 , long: false} },
-    { id: 'pairs', label: '2 на 2', hint: 'Подкидной парами: напарники через одного (на шестерых — 3 на 3)', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: true, games: 1 , long: false} },
-    { id: 'govno', label: 'Король-говно', hint: 'Звания: Король назначает козырь, первым ходит Говно', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, teams: false, long: false, pogony: true, games: 5 } },
+    { id: 'classic', label: 'Классический', hint: 'Простой дурак: без подкидывания', options: { throwers: 'none', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false, polish: false, hidden: false} },
+    { id: 'podkidnoy', label: 'Подкидной', hint: 'Подкидывают все', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false, polish: false, hidden: false} },
+    { id: 'perevodnoy', label: 'Переводной', hint: 'Перевод картой или показом козыря', options: { throwers: 'all', transfer: true, transferShow: true, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false, polish: false, hidden: false} },
+    { id: 'long', label: 'Длинный', hint: 'Личные козыри из шестёрок, проигравший выкладывает карты до туза', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: false, long: true, games: 1 , polish: false, hidden: false} },
+    { id: 'japan', label: 'Японский', hint: 'Пики пиками, козырь — бубны', options: { throwers: 'all', transfer: false, deck: 36, spades: true, diamonds: true, ranks: false, games: 1 , long: false, polish: false, hidden: false} },
+    { id: 'pairs', label: '2 на 2', hint: 'Подкидной парами: напарники через одного (на шестерых — 3 на 3)', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: true, games: 1 , long: false, polish: false, hidden: false} },
+    { id: 'polish', label: 'Польский', hint: 'Без раздачи: тянешь из колоды вокруг козыря, кроешь предыдущего и ходишь под следующего', options: { polish: true, hidden: false, long: false, ranks: false, teams: false, spades: false, diamonds: false, games: 1 } },
+    { id: 'hidden', label: 'Потайной', hint: 'Под козырем — закрытая карта: в конце она станет новым козырем', options: { polish: false, hidden: true, throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: false, long: false, games: 1 } },
+    { id: 'govno', label: 'Король-говно', hint: 'Звания: Король назначает козырь, первым ходит Говно', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, teams: false, long: false, pogony: true, games: 5 , polish: false, hidden: false} },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -213,6 +247,7 @@ export const def: GameDef<State, Action, Event, View> = {
     const w = winners(s);
     const scores: Record<number, number> = {};
     for (const x of s.seats) scores[x] = s.fools[x];
+    if (s.cfg.polish && s.cfg.games <= 1) return { winners: w, text: 'первым избавился от карт, когда колода кончилась', scores };
     if (s.cfg.long && s.seats.length <= 4) return { winners: w, text: 'не дошли до туза — длинный дурак другой', scores };
     if (s.cfg.ranks) return { winners: w, text: `Король после ${s.game} ${plural(s.game, 'партии', 'партий', 'партий')}`, scores };
     if (s.cfg.games > 1) return { winners: w, text: `реже всех оставались дураком (${s.game} ${plural(s.game, 'партия', 'партии', 'партий')})`, scores };
@@ -355,6 +390,43 @@ export const def: GameDef<State, Action, Event, View> = {
             { ...B(1, 0, '10S'), caption: 'Ленка кроет десяткой пик.' },
             { ...T(0, '10H'), caption: 'Вовка подкидывает десятку червей…' },
             { ...B(1, 1, '6D'), caption: '…а её козырь бьёт как обычно: особые только пики.' },
+          ],
+        },
+      },
+      {
+        title: 'Потайной козырь',
+        html: `<p>После раздачи верхнюю карту кладут поперёк колоды открытой — это козырь, а <b>ещё одну карту</b> — закрытой под неё.</p>
+          <p>Когда колода и козырь кончились, потайная карта открывается и становится <b>новым козырем</b> до конца партии — расклад может перевернуться в самом конце.</p>`,
+        demo: {
+          seats: demoSeats(2),
+          options: { hidden: true },
+          setup: () => pos({ hidden: true }, ['8C 6S 6D', '10C JD QS'], '9S 7H', { hidden: cd('KC') }),
+          intro: 'Козырь — черви, в колоде две карты, под козырем — потайная.',
+          steps: [
+            { ...A(0, '8C'), caption: 'Вовка ходит восьмёркой треф.' },
+            { ...B(1, 0, '10C'), caption: 'Ленка кроет — бито. Вовка добирает последние карты, и открывается потайная: король треф. Теперь козыри — трефы!' },
+          ],
+        },
+      },
+      {
+        title: 'Польский дурак',
+        html: `<p>Совсем другая игра. Карт не сдают: верхнюю карту колоды кладут в центр открытой — это <b>козырь</b>, остальные раскладывают вокруг рубашкой вверх.</p>
+          <p>Первый ходит — открывает любую карту и кладёт на козырь. Следующий должен <b>покрыть</b> её: с руки или вытянув карту из колоды. Покрыл — открывает (или кладёт с руки) новую карту, её кроет уже следующий.
+          Вытянул и не покрыл — забирает и эту, и непокрытую карту себе, а потом всё равно ходит под следующего.</p>
+          <p>Когда колода кончилась, кто не может покрыть — забирает <b>три верхние</b> карты из центра, и крыть то, что осталось сверху, будет следующий.
+          Выигрывает тот, кто <b>первым остался без карт</b>, когда колода уже кончилась.</p>`,
+        demo: {
+          seats: demoSeats(2),
+          options: { polish: true },
+          setup: () => pos({ polish: true }, ['7S QH', '9S 8H'], 'AC KC 10D', { center: [cd('9D')], trump: 'D', trumpCard: null, phase: 'plead' }),
+          intro: 'Козырь — бубны (девятка бубен в центре). У Вовки и Ленки уже по две карты.',
+          steps: [
+            { seat: 0, action: { type: 'plead', card: cd('7S') }, caption: 'Вовка кладёт семёрку пик — Ленке крыть.' },
+            { seat: 1, action: { type: 'pbeat', card: cd('9S') }, caption: 'Ленка кроет девяткой пик с руки…' },
+            { seat: 1, action: { type: 'plead', card: cd('8H') }, caption: '…и ходит восьмёркой червей под Вовку.' },
+            { seat: 0, action: { type: 'pbeat', card: cd('QH') }, caption: 'Вовка кроет дамой червей. Рука пуста —' },
+            { seat: 0, action: { type: 'pflipLead' }, rig: [2], caption: 'теперь он ходит вслепую: открывает карту из колоды — десятку бубен, козырь!' },
+            { seat: 1, action: { type: 'pflip' }, rig: [0], caption: 'Ленке крыть нечем — тянет из колоды туза треф. Не кроет: забирает обе карты.' },
           ],
         },
       },

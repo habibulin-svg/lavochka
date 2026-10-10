@@ -81,3 +81,4 @@
 .dk-plate .dk-title { font-size: 16px; color: #7a1f10; }
 .dk-plate small { font-size: 12px; opacity: 0.7; }
 .dk-card.dk-laid { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); }
+.dk-card.dk-hidden { filter: brightness(0.82) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4)); }

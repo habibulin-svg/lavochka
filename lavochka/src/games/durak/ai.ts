@@ -5,7 +5,7 @@
  *             под конец колоды избавляется от мелочи, а при пустой колоде старается выйти первым. */
 import type { Rng } from '../../core/types';
 import { sameCard, type Card } from '../../cards/deck';
-import { beats, canTransfer, room, throwable, trumpOf, unbeaten, type Action, type View } from './engine';
+import { beats, canTransfer, polishBeaters, room, throwable, trumpOf, unbeaten, type Action, type View } from './engine';
 import type { Suit } from '../../cards/deck';
 
 /** Козырь бота, который сейчас думает (в длинном дураке у каждого свой). */
@@ -187,6 +187,28 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
     case 'throw':
     case 'take':
       return chooseThrow(v, seat, level, rng);
+    case 'pbeat': {
+      // польский: крыть с руки самой дешёвой подходящей; нечем — тянуть из колоды, а без колоды — брать три
+      const can = polishBeaters(v, seat).sort(byValue(v));
+      if (can.length) return { type: 'pbeat', card: level === 0 ? can[rng.int(can.length)] : can[0] };
+      return v.deckCount ? { type: 'pflip' } : { type: 'ptake' };
+    }
+    case 'plead': {
+      // польский: ходить своей картой (рука тает). Сильнейшим козырём ходить незачем — его заберут и вернут.
+      const hand = (v.hands[seat] || []).slice().sort(byValue(v));
+      if (!hand.length) return { type: 'pflipLead' };
+      if (level === 0) return { type: 'plead', card: hand[rng.int(hand.length)] };
+      if (level === 1) return { type: 'plead', card: hand[0] };
+      // сложный: самая мелкая из карт, которые следующему (по известным картам) нечем покрыть, иначе — самая мелкая
+      const next = v.defender;
+      const known = v.known[next] || [];
+      const fullyKnown = known.length >= v.counts[next];
+      if (fullyKnown) {
+        const safe = hand.find((c) => !known.some((k) => beats({ ...v, defender: next }, c, k)));
+        if (safe) return { type: 'plead', card: safe };
+      }
+      return { type: 'plead', card: hand[0] };
+    }
     default:
       return null;
   }
