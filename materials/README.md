@@ -31,3 +31,15 @@
 - «Русский стиль» — WWPCM04410/04 (после 1980): http://a.trionfi.eu/WWPCM/decks06/d04410/d04410.htm (файлы `002/d04410d02<масть><ранг>.jpg`)
 - На каждую колоду — тузы, короли, дамы, валеты и по одной числовой карте масти (♠10, ♥9, ♦8, ♣7); остальные числовые 2–10 собираются скриптом из масти и шрифта.
 - Рубашка — `cards/back.webp` (прислал пользователь, решётка), перекрашивается в три близких оттенка.
+
+# Материалы для волн 8+ (бэклог — `docs/BACKLOG.md`)
+
+- **Лото «Вокруг света»** — весь комплект: https://samoe-vazhnoe.blogspot.com/2014/02/vokrug-sveta-old.html
+- **Ромашка** (советские китайские шашки): https://www.livemaster.ru/item/56682372-aktivnyj-otdyh-i-razvlecheniya-nastolnaya-igra-romashka-igra-
+- **Воздушный бой**: https://tesera.ru/game/1vozdushny-boy/
+- **Сражение** (клон «Стратего»): https://tesera.ru/game/srazheniye/
+- **«Герои кастета и семок»** — механика по правилам настольных «Героев» (только механика, тексты и образы — свои):
+  - https://hobbygames.ru/download/rules/geroi-rules.pdf
+  - https://hobbygames.ru/download/rules/geroi-2-rules.pdf
+  - https://hobbygames.ru/download/rules/geroi-3-rules.pdf
+  - районы для карты — список спальников Новосибирска со старого Луркмора (Затулинка, Расточка, Затон, Первомайка, Чемской…).
