@@ -1,15 +1,16 @@
 /* Тысяча — боты. Видят свою руку, открытый прикуп, взятки на столе и отданные им карты.
  *   Лёгкий — торгуется осторожно и наугад, ходит простыми правилами;
- *   Средний — оценивает руку (тузы, «десятки при тузе», марьяжи, длина козыря), отдаёт мелочь, объявляет марьяжи;
+ *   Средний — оценивает руку (тузы, «десятки при тузе», марьяжи, длина козыря), отдаёт мелочь, объявляет марьяжи,
+ *             пересдаёт по плохому прикупу и расписывается в безнадёжном коне; темнят все редко (сложный — когда сильно отстал);
  *   Сложный — ещё и считает вышедшие карты: знает, когда десятка уже старшая, и подыгрывает второму обороняющемуся. */
 import type { Rng } from '../../core/types';
 import { sameCard, type Card, type Suit } from '../../cards/deck';
-import { GOAL, legalCards, MARRIAGE, marriagesIn, maxBid, POINTS, POWER, round5, trickWinner, type Action, type State } from './engine';
+import { ACES, canRospis, fourAces, legalCards, MARRIAGE, marriageFor, marriagesIn, maxBid, POINTS, POWER, prikupRedeal, round5, trickWinner, type Action, type State } from './engine';
 
 const SUITS: Suit[] = ['H', 'D', 'C', 'S'];
 
 /** Сколько очков рука, скорее всего, наберёт (с прикупом и марьяжами). */
-export function estimate(hand: Card[], withPrikup: boolean): number {
+export function estimate(hand: Card[], withPrikup: boolean, aces = false): number {
   let v = 0;
   for (const s of SUITS) {
     const cs = hand.filter((c) => c.s === s);
@@ -21,6 +22,7 @@ export function estimate(hand: Card[], withPrikup: boolean): number {
     if (cs.length >= 4) v += (cs.length - 3) * 6;
   }
   for (const s of marriagesIn(hand)) v += MARRIAGE[s] * 0.9;
+  if (aces && fourAces(hand)) v += ACES * 0.9;
   if (withPrikup) v += 14;
   return v;
 }
@@ -38,17 +40,28 @@ const higherLeft = (c: Card, gone: Card[], hand: Card[]) =>
 export function choose(s: State, seat: number, level: number, rng: Rng): Action | null {
   if (s.phase === 'over' || s.turn !== seat) return null;
   const hand = s.hands[seat];
+  const aces = s.cfg.aces;
+  const max = maxBid(hand, aces);
+  const goal = s.cfg.goal;
+  if (s.phase === 'dark') {
+    // карт не видно: темнят редко — лёгкий наугад, сложный — когда сильно отстал
+    const lead = Math.max(...s.seats.map((x) => s.scores[x]));
+    const p = level === 0 ? 0.08 : level === 1 ? 0.03 : lead - s.scores[seat] > 300 ? 0.2 : 0;
+    return { type: rng.next() < p ? 'dark' : 'light' };
+  }
   if (s.phase === 'bid') {
-    const est = estimate(hand, true) * (level === 0 ? 0.78 + rng.next() * 0.12 : level === 1 ? 0.92 : 1);
-    const want = Math.min(maxBid(hand), Math.floor(est / 5) * 5);
+    const est = estimate(hand, true, aces) * (level === 0 ? 0.78 + rng.next() * 0.12 : level === 1 ? 0.92 : 1);
+    const want = Math.min(max, Math.floor(est / 5) * 5);
     const next = s.bid + s.cfg.step;
     // на бочке нужен заказ не меньше, чем до тысячи: торгуемся смелее, иначе с неё не слезть
-    const need = s.cfg.barrel && s.barrel[seat] > 0 ? GOAL - s.scores[seat] : 0;
+    const need = s.cfg.barrel && s.barrel[seat] > 0 ? Math.ceil((goal - s.scores[seat]) / 5) * 5 : 0;
     const brave = need && est >= need - 30 ? Math.max(want, need) : want;
-    if (next <= Math.min(maxBid(hand), brave)) return { type: 'bid', value: next };
+    if (next <= Math.min(max, brave)) return { type: 'bid', value: next };
     return { type: 'pass' };
   }
   if (s.phase === 'give') {
+    // плохой прикуп и рука не тянет заказ — пересдача
+    if (prikupRedeal(s) && (level === 0 ? rng.next() < 0.5 : estimate(hand, false, aces) < s.bid)) return { type: 'redeal' };
     const to = s.players.find((x) => x !== seat && !s.given.includes(x))!;
     // отдаём мелочь, не ломая марьяжей и не отдавая тузов
     const keep = new Set(marriagesIn(hand));
@@ -59,12 +72,14 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     return { type: 'give', to, card: pick };
   }
   if (s.phase === 'raise') {
-    const need = s.cfg.barrel && s.barrel[seat] > 0 ? GOAL - s.scores[seat] : 0;
-    const est = round5(estimate(hand, false) * (level === 2 ? 1 : level === 1 ? 0.95 : 0.85));
+    const need = s.cfg.barrel && s.barrel[seat] > 0 ? Math.ceil((goal - s.scores[seat]) / 5) * 5 : 0;
+    const est = round5(estimate(hand, false, aces) * (level === 2 ? 1 : level === 1 ? 0.95 : 0.85));
+    // безнадёжно — расписаться (лёгкий не умеет)
+    if (level > 0 && canRospis(s) && est < s.bid * 0.6) return { type: 'rospis' };
     // на бочке без нужного заказа с неё не выйти — поднимаем до тысячи, если хоть как-то похоже
-    if (need > s.bid && need <= maxBid(hand) && est >= need - 25) return { type: 'raise', value: need };
+    if (need > s.bid && need <= max && est >= need - 25) return { type: 'raise', value: need };
     if (level === 0) return { type: 'raise', value: s.bid };
-    const v = Math.min(maxBid(hand), Math.max(s.bid, est - 10));
+    const v = Math.min(max, Math.max(s.bid, est - 10));
     return { type: 'raise', value: Math.max(s.bid, Math.floor(v / 5) * 5) };
   }
   // розыгрыш
@@ -73,16 +88,17 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const gone = level === 2 ? seen(s) : [];
   const mar = marriagesIn(hand);
   if (leading) {
-    // объявить марьяж: со старшего, кроме первого хода кона
-    if (s.tricksPlayed > 0 && mar.length) {
+    // объявить марьяж: тузовый, потом со старшего (не в первый ход кона, если так не договорились)
+    const ace = hand.find((c) => c.r === 14 && marriageFor(s, seat, c) === 'A');
+    if (ace) return { type: 'play', card: ace, marriage: true };
+    if (mar.length) {
       const best = mar.sort((a, b) => MARRIAGE[b] - MARRIAGE[a])[0];
       const q = hand.find((c) => c.s === best && c.r === 12)!;
-      return { type: 'play', card: q, marriage: true };
+      if (marriageFor(s, seat, q)) return { type: 'play', card: q, marriage: true };
     }
     if (level === 0 && rng.next() < 0.35) {
       const c = legal[rng.int(legal.length)];
-      const can = s.tricksPlayed > 0 && (c.r === 13 || c.r === 12) && mar.includes(c.s);
-      return { type: 'play', card: c, marriage: can || undefined };
+      return { type: 'play', card: c, marriage: marriageFor(s, seat, c) ? true : undefined };
     }
     // туз — с него; иначе старшая, если она уже старшая в масти; иначе мелочь
     const aces = legal.filter((c) => c.r === 14);

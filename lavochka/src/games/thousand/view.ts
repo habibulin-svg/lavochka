@@ -1,6 +1,7 @@
 /* Тысяча — отрисовка: стол под зелёным сукном, свой веер снизу, соперники по бокам (вчетвером — и сверху),
  * прикуп и взятка в центре. Торговля, отдача карт и подъём заказа — кнопками в панели; запись очков — «пулька» там же.
- * Ход — нажать на карту; король или дама марьяжа на своём ходу — спросит, объявить ли марьяж. */
+ * Ход — нажать на карту; король или дама марьяжа (туз при тузовом) на своём ходу — спросит, объявить ли марьяж.
+ * Тёмная — первая рука решает, не видя своих карт (рубашки); роспись и пересдача — кнопками. */
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -8,7 +9,7 @@ import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
-import { handCount, legalCards, MARRIAGE, marriagesIn, maxBid, type Event, type View } from './engine';
+import { canRospis, handCount, legalCards, marriageFor, marriageValue, maxBid, prikupRedeal, rospisPay, type Event, type MarriageKind, type View } from './engine';
 import { SEATS } from './def';
 import './thousand.css';
 
@@ -76,7 +77,8 @@ class ThousandView implements GameView<View, Event> {
 
   private faceUp(v: View, seat: number) {
     if (this.ctx.demo) return v.hands[seat].length > 0 || handCount(v, seat) === 0;
-    return seat === this.viewer && !this.hidden && this.ctx.mySeats.includes(seat);
+    // темнящий видит рубашки, пока не решит
+    return seat === this.viewer && !this.hidden && this.ctx.mySeats.includes(seat) && v.hands[seat].length === handCount(v, seat);
   }
 
   private chooseViewer(v: View, toAct: number[]) {
@@ -106,7 +108,7 @@ class ThousandView implements GameView<View, Event> {
   private layout(v: View): StageItem[] {
     const items: StageItem[] = [];
     // прикуп
-    if (v.phase === 'bid') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 60 + i * 60, y: 250, r: (i - 1) * 6, s: 0.62, z: 5 + i });
+    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 60 + i * 60, y: 250, r: (i - 1) * 6, s: 0.62, z: 5 + i });
     // взятка
     const t = v.trick;
     if (t)
@@ -166,8 +168,8 @@ class ThousandView implements GameView<View, Event> {
       if (v.barrel[seat]) marks.push(`<em title="На бочке">🛢${v.barrel[seat]}</em>`);
       if (v.bolts[seat]) marks.push(`<em title="Болты">${'⚬'.repeat(v.bolts[seat])}</em>`);
       if (v.seats.length === 4 && seat === v.dealer && v.phase !== 'over') marks.push('<em>сдаёт</em>');
-      if (seat === v.bidder && v.phase !== 'bid') marks.push(`<b>заказ ${v.bid}</b>`);
-      if (v.phase === 'bid' && seat === v.bidder) marks.push(`<b>${v.bid}</b>`);
+      if (seat === v.bidder && v.phase !== 'bid' && v.phase !== 'dark') marks.push(`<b>заказ ${v.bid}${v.dark ? ' втёмную' : ''}</b>`);
+      if (v.phase === 'bid' && seat === v.bidder) marks.push(`<b>${v.bid}${v.dark ? ' втёмную' : ''}</b>`);
       if (v.phase === 'bid' && v.passed.includes(seat)) marks.push('<em>пас</em>');
       if (v.phase === 'play' && v.players.includes(seat)) marks.push(`<em>${v.roundPts[seat]}</em>`);
       const pick = giving && v.players.includes(seat) && seat !== this.actSeat && !v.given.includes(seat);
@@ -175,7 +177,8 @@ class ThousandView implements GameView<View, Event> {
       s += `<div class="cs-plate${on ? ' on' : ''}${pick ? ' pick' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${y}px"${pick ? ` data-give="${seat}"` : ''}>${esc(this.plain(seat))} ${marks.join(' ')}</div>`;
     }
     if (v.trump) s += `<div class="th-trump" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span><small>козырь</small></div>`;
-    if (v.phase === 'bid') s += `<div class="th-label" style="left:${CENTER.x}px;top:330px">прикуп</div>`;
+    if (v.phase === 'bid' || v.phase === 'dark') s += `<div class="th-label" style="left:${CENTER.x}px;top:330px">прикуп</div>`;
+    if (v.golden && v.phase !== 'over') s += '<div class="th-golden">золотой кон · ×2</div>';
     this.plates.innerHTML = s;
   }
 
@@ -183,8 +186,9 @@ class ThousandView implements GameView<View, Event> {
   private drawSheet(v: View) {
     const rows = v.sheet.slice(-6);
     const head = v.seats.map((x) => `<th style="color:${SEATS[x].ink ?? SEATS[x].color}">${esc(this.plain(x)).slice(0, 7)}</th>`).join('');
+    const TAG = { dark: 'т', rospis: 'р', golden: 'з' } as const;
     const body = rows
-      .map((r) => `<tr><td>${r.round}</td>${v.seats.map((x) => `<td class="${x === r.bidder ? (r.made ? 'ok' : 'bad') : ''}">${r.deltas[x] > 0 ? '+' : ''}${r.deltas[x] || '·'}</td>`).join('')}</tr>`)
+      .map((r) => `<tr><td>${r.round}${r.tag ? `<sup title="${r.tag === 'dark' ? 'тёмная' : r.tag === 'rospis' ? 'роспись' : 'золотой кон'}">${TAG[r.tag]}</sup>` : ''}</td>${v.seats.map((x) => `<td class="${x === r.bidder ? (r.made ? 'ok' : 'bad') : ''}">${r.deltas[x] > 0 ? '+' : ''}${r.deltas[x] || '·'}</td>`).join('')}</tr>`)
       .join('');
     const total = `<tr class="sum"><td>Σ</td>${v.seats.map((x) => `<td>${v.scores[x]}</td>`).join('')}</tr>`;
     this.sheet.innerHTML = `<table><tr><th>#</th>${head}</tr>${body}${total}</table>`;
@@ -215,8 +219,7 @@ class ThousandView implements GameView<View, Event> {
       Sound.nomove();
       return;
     }
-    const leading = !v.trick || !v.trick.cards.length;
-    if (leading && v.tricksPlayed > 0 && (card.r === 13 || card.r === 12) && marriagesIn(v.hands[this.actSeat]).includes(card.s)) {
+    if (marriageFor(v, this.actSeat, card)) {
       this.askMarriage = card;
       this.selected = card;
       this.draw();
@@ -256,8 +259,14 @@ class ThousandView implements GameView<View, Event> {
     const seat = this.actSeat;
     if (!v || seat == null || this.ctx.demo || this.hidden) return;
     const hand = v.hands[seat];
+    if (v.phase === 'dark') {
+      this.btns.appendChild(h('<div class="th-ask">Вы первая рука. Темнить — сыграть 120, не глядя в карты? Очки вдвойне: +240 или −240.</div>'));
+      this.button('Темню!', false, () => this.send({ type: 'dark' }));
+      this.button('Смотрю карты', true, () => this.send({ type: 'light' }));
+      return;
+    }
     if (v.phase === 'bid') {
-      const max = maxBid(hand);
+      const max = maxBid(hand, v.cfg.aces);
       const next = v.bid + v.cfg.step;
       this.btns.appendChild(h(`<div class="th-ask">Торговля: сейчас ${v.bid}${v.bidder >= 0 ? ` (${esc(this.plain(v.bidder))})` : ''}. Вам можно до ${max}.</div>`));
       const row = h('<div class="th-row"></div>');
@@ -276,26 +285,32 @@ class ThousandView implements GameView<View, Event> {
       const left = v.players.filter((x) => x !== seat && !v.given.includes(x));
       this.btns.appendChild(h(`<div class="th-ask">${this.selected ? 'Кому отдать карту?' : 'Выберите карту, которую отдадите'}</div>`));
       if (this.selected) for (const to of left) this.button(`Отдать — ${esc(this.plain(to))}`, true, () => this.send({ type: 'give', to, card: this.selected! }));
+      const why = prikupRedeal(v);
+      if (why) this.button(`Пересдать (${why === 'prikup9' ? 'две девятки в прикупе' : 'пустой прикуп'})`, false, () => this.send({ type: 'redeal' }));
       return;
     }
     if (v.phase === 'raise') {
-      const max = Math.max(v.bid, maxBid(hand));
+      const max = Math.max(v.bid, maxBid(hand, v.cfg.aces));
       this.btns.appendChild(h(`<div class="th-ask">Заказ ${v.bid}. Поднять?</div>`));
       const row = h('<div class="th-row"></div>');
-      for (const add of [0, 10, 20, 30, 50]) {
+      this.button(`Играю ${v.bid}`, true, () => this.send({ type: 'raise', value: v.bid }));
+      for (const add of [10, 20, 30, 50]) {
         const val = v.bid + add;
         if (val > max) break;
-        const b = h<HTMLButtonElement>(`<button class="btn ${add === 0 ? 'primary' : ''}">${add ? val : `Играю ${val}`}</button>`);
+        const b = h<HTMLButtonElement>(`<button class="btn">${val}</button>`);
         b.onclick = () => this.send({ type: 'raise', value: val });
         row.appendChild(b);
       }
       this.btns.appendChild(row);
+      if (canRospis(v)) this.button(`Расписаться (${v.dark ? -2 * v.bid : -v.bid}, соперникам по ${rospisPay(v)})`, false, () => this.send({ type: 'rospis' }), 'th-rospis');
       return;
     }
     if (v.phase === 'play' && this.askMarriage) {
       const c = this.askMarriage;
-      this.btns.appendChild(h(`<div class="th-ask">Объявить марьяж ${SUIT_SYM[c.s]}? (+${MARRIAGE[c.s]}, козырь — ${SUIT_SYM[c.s]})</div>`));
-      this.button(`Марьяж! +${MARRIAGE[c.s]}`, true, () => this.send({ type: 'play', card: c, marriage: true }));
+      const m = marriageFor(v, seat, c) as MarriageKind;
+      const pts = marriageValue(m);
+      this.btns.appendChild(h(`<div class="th-ask">${m === 'A' ? `Объявить тузовый марьяж? (+${pts}, козырь не меняется)` : `Объявить марьяж ${SUIT_SYM[m]}? (+${pts}, козырь — ${SUIT_SYM[m]})`}</div>`));
+      this.button(`Марьяж! +${pts}`, true, () => this.send({ type: 'play', card: c, marriage: true }));
       this.button('Просто сходить', false, () => this.send({ type: 'play', card: c }));
       this.button('Отмена', false, () => {
         this.askMarriage = null;
@@ -338,7 +353,7 @@ class ThousandView implements GameView<View, Event> {
         };
         this.draw(null);
         Sound.card();
-        if (ev.marriage) await this.showBanner(`Марьяж ${SUIT_SYM[ev.marriage]}! +${MARRIAGE[ev.marriage]}`, 900 / speed);
+        if (ev.marriage) await this.showBanner(`${ev.marriage === 'A' ? 'Тузовый марьяж' : `Марьяж ${SUIT_SYM[ev.marriage]}`}! +${marriageValue(ev.marriage)}`, 900 / speed);
         else await sleep(260 / speed);
       } else if (ev.type === 'trick') {
         await sleep(500 / speed);
@@ -359,10 +374,18 @@ class ThousandView implements GameView<View, Event> {
         await this.showBanner(`${this.plain(ev.seat)} берёт прикуп за ${ev.bid}`, 1200 / speed);
       } else if (ev.type === 'bid' || ev.type === 'pass') {
         Sound.ui();
+      } else if (ev.type === 'dark') {
+        Sound.ui();
+        if (ev.dark) await this.showBanner(`${this.plain(ev.seat)}: темню!`, 1000 / speed);
+      } else if (ev.type === 'redeal') {
+        Sound.shuffle();
+        await this.showBanner(ev.reason === 'nines' ? `Четыре девятки у ${this.plain(ev.seat)} — пересдача` : 'Пересдача', 1100 / speed);
+      } else if (ev.type === 'rospis') {
+        await this.showBanner(`${this.plain(ev.seat)} расписывается`, 1000 / speed);
       } else if (ev.type === 'score') {
         this.v = { ...v, trick: null };
         this.draw();
-        await this.showBanner(ev.made ? `Заказ ${ev.bid} сыгран!` : `Заказ ${ev.bid} не сыгран`, 1400 / speed);
+        if (!ev.rospis) await this.showBanner(ev.made ? `Заказ ${ev.bid} сыгран!` : `Заказ ${ev.bid} не сыгран`, 1400 / speed);
       } else if (ev.type === 'deal') {
         Sound.shuffle();
       } else if (ev.type === 'end') {
@@ -400,19 +423,21 @@ class ThousandView implements GameView<View, Event> {
     const who = toAct[0];
     const mine = interactive.includes(who);
     switch (v.phase) {
+      case 'dark':
+        return mine ? 'Темнить или смотреть карты?' : `${name(who)} решает, темнить ли…`;
       case 'bid':
         return mine ? 'Торгуйтесь: больше или пас?' : `Торгуется ${name(who)}…`;
       case 'give':
         return mine ? 'Отдайте по карте соперникам' : `${name(who)} отдаёт карты…`;
       case 'raise':
-        return mine ? 'Поднять заказ?' : `${name(who)} думает над заказом…`;
+        return mine ? (canRospis(v) ? 'Поднять заказ, играть или расписаться?' : 'Поднять заказ?') : `${name(who)} думает над заказом…`;
       default:
         return mine ? 'Ваш ход' : `Ходит ${name(who)}…`;
     }
   }
 
   playerStats(v: View, seat: number) {
-    return `<span title="Очки">${v.scores[seat]}</span>${v.barrel[seat] ? ' · на бочке' : ''}`;
+    return `<span title="Очки">${v.scores[seat]}</span>${v.barrel[seat] ? ' · на бочке' : ''}${v.falls?.[seat] ? ` · слётов ${v.falls[seat]}` : ''}`;
   }
 
   destroy() {
