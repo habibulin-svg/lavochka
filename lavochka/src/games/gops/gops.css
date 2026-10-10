@@ -1,0 +1,10 @@
+/* ГОПС: двор на канве, кнопки для телефона. */
+.gp-dev { width: min(100%, 900px, calc((100vh - 230px) * 1.36)); margin: 0 auto; touch-action: none; user-select: none; }
+.gp-hud { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; color: #f0f0e0; font: 14px 'PT Sans', Arial, sans-serif; margin-bottom: 6px; }
+.gp-dev canvas { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
+.gp-touch { display: none; justify-content: space-between; align-items: center; margin-top: 10px; }
+.gp-pad { position: relative; width: 150px; height: 150px; }
+.gp-pad button, .gp-bomb { position: absolute; width: 52px; height: 52px; border-radius: 50%; border: 0; font-size: 20px; background: rgba(255,255,255,.8); box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.gp-pad button:nth-child(1) { left: 49px; top: 0; } .gp-pad button:nth-child(2) { left: 0; top: 49px; } .gp-pad button:nth-child(3) { right: 0; top: 49px; } .gp-pad button:nth-child(4) { left: 49px; bottom: 0; }
+.gp-bomb { position: static; width: 84px; height: 84px; font-size: 34px; background: #e8402a; }
+@media (pointer: coarse) { .gp-touch { display: flex; } }
