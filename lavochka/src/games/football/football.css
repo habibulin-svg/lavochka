@@ -1,0 +1,8 @@
+/* Настольный футбол: коробка на канве и рычаги под полем. */
+.fb-dev { width: min(100%, 1000px, calc((100vh - 230px) * 1.45)); margin: 0 auto; touch-action: none; user-select: none; }
+.fb-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
+.fb-levers { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.fb-levers > div { display: flex; gap: 6px; }
+.fb-levers button { min-width: 48px; height: 44px; border-radius: 10px; border: 0; color: #fff; font: 700 14px 'PT Sans', Arial, sans-serif; cursor: pointer;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45); }
+.fb-levers button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
