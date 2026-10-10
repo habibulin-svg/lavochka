@@ -1,6 +1,10 @@
 /* Каталог сборника: все игры, включая ещё не сделанные (карточка «скоро»). */
 import type { GameModule } from '../core/view';
 import type { ArcadeModule } from '../core/arcade';
+import { loadDict } from '../words/dict';
+
+/** Словесные игры: модуль готов, когда загружен словарь (движку он нужен синхронно). */
+const withDict = <T>(m: Promise<T>) => Promise.all([m, loadDict()]).then(([x]) => x);
 
 export type Category = 'board' | 'cards' | 'company' | 'paper' | 'tabletop' | 'sport' | 'electronics' | 'arcade';
 
@@ -55,7 +59,7 @@ export const CATALOG: CatalogEntry[] = [
   // — на бумаге —
   { id: 'seabattle', title: 'Морской бой', sub: 'в клеточку, ручкой', cat: 'paper', players: '2', wave: 2, icon: '⚓', tint: '#2b5c9e', thumb: 'seabattle.webp', load: () => import('./seabattle'), variants: ['классика', 'сальво', 'западный флот'] },
   { id: 'dots', title: 'Точки', sub: 'окружи соседа', cat: 'paper', players: '2–4', wave: 2, icon: '⁘', tint: '#3a4f8a', thumb: 'dots.webp', load: () => import('./dots'), variants: ['на листочке', 'быстрая', 'спортивная'] },
-  { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a' },
+  { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a', thumb: 'balda.webp', load: () => withDict(import('./balda')), variants: ['5×5', '6×6 и 7×7', 'с диагоналями'] },
   // — настолки —
   { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12' },
   { id: 'krugosvet', title: 'Кругосветное путешествие', sub: 'из Москвы и обратно', cat: 'tabletop', players: '2–8', wave: 7, icon: '🌍', tint: '#1d6a7a' },

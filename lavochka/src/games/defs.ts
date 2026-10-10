@@ -1,5 +1,6 @@
 /* Описания игр без DOM — для сервера (он ведёт партии сам). */
 import type { GameDef } from '../core/types';
+import { loadDict } from '../words/dict';
 
 export const DEFS: Record<string, () => Promise<GameDef>> = {
   shishbesh: () => import('./shishbesh/def').then((m) => m.def),
@@ -16,4 +17,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   preferans: () => import('./preferans/def').then((m) => m.def),
   holdem: () => import('./holdem/def').then((m) => m.def),
   mafia: () => import('./mafia/def').then((m) => m.def),
+  balda: () => Promise.all([import('./balda/def'), loadDict()]).then(([m]) => m.def),
 };
