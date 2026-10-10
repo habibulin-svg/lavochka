@@ -33,3 +33,14 @@
 .hd-raise { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: rgba(60, 40, 10, 0.08); }
 .hd-raise input { width: 100%; }
 .hd-rlabel { font-weight: 700; }
+/* 3D-стол (three.js): холст под сценой, плоские карты и стол спрятаны, подписи — поверх по проекции. */
+.hd-gl { position: absolute; inset: 0; display: none; }
+.hd-webgl .hd-gl { display: block; }
+.hd-gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hd-gl-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hd-gl-labels > div { position: absolute; }
+.hd-gl-labels .cs-plate { transform: translate(-50%, -50%); }
+.hd-webgl .cs-card, .hd-webgl .hd-table, .hd-webgl .hd-floor { visibility: hidden; }
+.hd-webgl .cs-stage { pointer-events: none; }
+.hd-webgl .cs-cover { pointer-events: auto; }
+.hd-bet-gl span { padding: 1px 7px; border-radius: 8px; background: rgba(10, 6, 2, 0.55); }

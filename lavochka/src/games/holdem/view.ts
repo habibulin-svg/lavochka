@@ -1,5 +1,6 @@
 /* Холдем — отрисовка: овальный стол с сукном, места по кругу, свои карты крупно снизу, общие карты и банк в центре,
- * ставки фишками перед игроками, баттон «D». Вид — «3D» (стол наклонён в перспективе) или «сверху»; выбор запоминается.
+ * ставки фишками перед игроками, баттон «D». Вид — «3D» (настоящий стол на three.js, scene3d.ts, грузится лениво),
+ * «наклон» (плоский стол в CSS-перспективе; он же — если нет WebGL) или «сверху»; выбор запоминается.
  * Ход — кнопками: пас, чек/колл, рейз (ползунок и быстрые: ½ банка, банк), ва-банк. */
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
@@ -8,6 +9,7 @@ import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import type { Card } from '../../cards/deck';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
+import type { Chips3D, Label3D, Table3D } from './scene3d';
 import { holding, minRaiseTo, toCall, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './holdem.css';
@@ -16,6 +18,23 @@ const W = 1000;
 const H = 720;
 const C = { x: 500, y: 320 };
 const KEY = 'lavochka.holdem.view';
+type Mode = 'gl' | 'tilt' | 'top';
+const MODES: Mode[] = ['gl', 'tilt', 'top'];
+const MODE_NAME: Record<Mode, string> = { gl: '3D', tilt: 'наклон', top: 'сверху' };
+
+function webglOk(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
+/** Подпись поверх стола (и в плоском виде, и в 3D). */
+interface Label extends Label3D {
+  style?: string;
+}
 
 class HoldemView implements GameView<View, Event> {
   private ctx!: ViewCtx;
@@ -28,7 +47,11 @@ class HoldemView implements GameView<View, Event> {
   private viewer = 0;
   private hidden = false;
   private actSeat: number | null = null;
-  private three = true;
+  private mode: Mode = 'gl';
+  private gl: Table3D | null = null;
+  private glHost!: HTMLElement;
+  private glLoading = false;
+  private canGl = false;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -46,35 +69,68 @@ class HoldemView implements GameView<View, Event> {
       this.draw();
       this.renderButtons();
     };
+    this.glHost = h('<div class="hd-gl"></div>');
+    this.cs.wrap.prepend(this.glHost);
+    this.canGl = !ctx.demo && webglOk();
+    let saved: string | null = null;
     try {
-      this.three = localStorage.getItem(KEY) !== 'top';
+      saved = localStorage.getItem(KEY);
     } catch {
-      this.three = true;
+      /* без хранилища — по умолчанию */
     }
-    if (ctx.demo) this.three = false;
+    // старое значение «3d» («3D-стол» на CSS) — теперь настоящий 3D
+    this.mode = saved === 'top' ? 'top' : saved === 'tilt' ? 'tilt' : 'gl';
+    if (this.mode === 'gl' && !this.canGl) this.mode = 'tilt';
+    if (ctx.demo) this.mode = 'top';
     this.applyView();
     const ctl = h(`<div class="hd-controls"><div class="hd-btns"></div><button class="btn hd-vbtn"></button></div>`);
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.hd-btns') as HTMLElement;
     const vb = ctl.querySelector('.hd-vbtn') as HTMLButtonElement;
     vb.hidden = ctx.demo;
-    const label = () => (vb.textContent = this.three ? 'Вид: 3D-стол → сверху' : 'Вид: сверху → 3D-стол');
+    const modes = () => MODES.filter((m) => m !== 'gl' || this.canGl);
+    const label = () => {
+      const list = modes();
+      vb.textContent = `Вид: ${MODE_NAME[this.mode]} → ${MODE_NAME[list[(list.indexOf(this.mode) + 1) % list.length]]}`;
+    };
     label();
     vb.onclick = () => {
-      this.three = !this.three;
+      const list = modes();
+      this.mode = list[(list.indexOf(this.mode) + 1) % list.length];
       try {
-        localStorage.setItem(KEY, this.three ? '3d' : 'top');
+        localStorage.setItem(KEY, this.mode);
       } catch {
         /* без хранилища — просто не запомним */
       }
       label();
       this.applyView();
+      this.draw();
     };
   }
 
   private applyView() {
-    this.cs.wrap.classList.toggle('hd-3d', this.three);
-    this.cs.setTilt(this.three ? 'translate(70px, 40px) scale(0.86) rotateX(24deg)' : '');
+    this.cs.wrap.classList.toggle('hd-3d', this.mode === 'tilt');
+    this.cs.wrap.classList.toggle('hd-webgl', this.mode === 'gl');
+    this.cs.setTilt(this.mode === 'tilt' ? 'translate(70px, 40px) scale(0.86) rotateX(24deg)' : '');
+    if (this.mode === 'gl' && !this.gl && !this.glLoading) {
+      this.glLoading = true;
+      import('./scene3d')
+        .then((m) => {
+          this.glLoading = false;
+          if (!this.cs.wrap.isConnected) return;
+          this.gl = new m.Table3D(this.glHost, settings.deck);
+          this.draw();
+        })
+        .catch((e) => {
+          // не вышло (нет WebGL, не загрузилось) — наклонный стол
+          console.error(e);
+          this.glLoading = false;
+          this.canGl = false;
+          this.mode = 'tilt';
+          this.applyView();
+          this.draw();
+        });
+    }
   }
 
   // ---------------------------------------------------------------- места
@@ -131,8 +187,12 @@ class HoldemView implements GameView<View, Event> {
   private draw(enter: Point | null = null, exit: Point | null = null) {
     const v = this.v;
     if (!v) return;
-    this.cs.render(this.layout(v), this.ctx.speed(), enter, exit);
-    let s = '';
+    const items = this.layout(v);
+    this.cs.render(items, this.ctx.speed(), enter, exit);
+    const gl = this.mode === 'gl' && this.gl;
+    const labels: Label[] = [];
+    const chips: Chips3D[] = [];
+    let button: Point | null = null;
     const pot = v.inHand.reduce((a, x) => a + v.total[x], 0);
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
@@ -140,25 +200,48 @@ class HoldemView implements GameView<View, Event> {
       const busted = v.chips[seat] <= 0 && !v.inHand.includes(seat);
       const out = v.folded[seat];
       const on = v.turn === seat && v.phase !== 'over';
-      const py = me ? a.y + 62 : a.y + 46;
       const tag = v.allin[seat] ? ' <em>ва-банк</em>' : out ? ' <em>пас</em>' : busted ? ' <em>вылетел</em>' : '';
-      s += `<div class="cs-plate hd-plate${on ? ' on' : ''}${out || busted ? ' hd-dim' : ''}" style="--c:${SEATS[seat].color};left:${a.x}px;top:${py}px">${esc(this.plain(seat))} <i>${v.chips[seat]}</i>${tag}</div>`;
-      // ставка этого круга — фишками к центру
+      // в 3D табличка — за бортом, у места игрока
+      const px = gl ? a.x + (a.x - C.x) * 0.2 : a.x;
+      const py = gl ? a.y + (a.y - C.y) * 0.26 + (me ? 30 : 0) : me ? a.y + 62 : a.y + 46;
+      labels.push({ cls: `cs-plate hd-plate${on ? ' on' : ''}${out || busted ? ' hd-dim' : ''}`, style: `--c:${SEATS[seat].color}`, x: px, y: py, html: `${esc(this.plain(seat))} <i>${v.chips[seat]}</i>${tag}` });
+      // ставка этого круга — фишками к центру; своя — справа от карт, чужие — по пути к центру
       if (v.bet[seat] > 0) {
-        // своя ставка — справа от карт, чужие — по пути к центру
         const bx = me ? a.x + 130 : a.x + (C.x - a.x) * 0.36;
         const by = me ? a.y - 70 : a.y + (C.y - a.y) * 0.36;
-        s += `<div class="hd-bet" style="left:${bx}px;top:${by}px">${this.chipStack(v.bet[seat])}<span>${v.bet[seat]}</span></div>`;
+        if (gl) {
+          chips.push({ key: `bet:${seat}`, x: bx, y: by, amount: v.bet[seat] });
+          labels.push({ cls: 'hd-bet hd-bet-gl', x: bx, y: by, h: 0.5, html: `<span>${v.bet[seat]}</span>` });
+        } else labels.push({ cls: 'hd-bet', x: bx, y: by, html: `${this.chipStack(v.bet[seat])}<span>${v.bet[seat]}</span>` });
       }
       if (seat === v.button && v.phase !== 'over') {
-        const dx = a.x + (C.x - a.x) * 0.2 + 46;
-        const dy = a.y + (C.y - a.y) * 0.2 - 10;
-        s += `<div class="hd-button" style="left:${dx}px;top:${dy}px">D</div>`;
+        button = { x: a.x + (C.x - a.x) * 0.2 + 46, y: a.y + (C.y - a.y) * 0.2 - 10 };
+        if (!gl) labels.push({ cls: 'hd-button', x: button.x, y: button.y, html: 'D' });
       }
     }
-    if (pot) s += `<div class="hd-pot" style="left:${C.x}px;top:${C.y + 70}px">${this.chipStack(pot)}<span>банк ${pot}</span></div>`;
-    s += `<div class="hd-blinds">блайнды ${v.big / 2}/${v.big} · раздача ${v.hand}</div>`;
-    this.plates.innerHTML = s;
+    if (pot) {
+      if (gl) {
+        chips.push({ key: 'pot', x: C.x, y: C.y + 70, amount: pot });
+        labels.push({ cls: 'hd-pot hd-bet-gl', x: C.x, y: C.y + 70, h: 0.7, html: `<span>банк ${pot}</span>` });
+      } else labels.push({ cls: 'hd-pot', x: C.x, y: C.y + 70, html: `${this.chipStack(pot)}<span>банк ${pot}</span>` });
+    }
+    const blinds = `<div class="hd-blinds">блайнды ${v.big / 2}/${v.big} · раздача ${v.hand}</div>`;
+    if (gl) {
+      this.plates.innerHTML = blinds;
+      this.gl!.setDeck(settings.deck);
+      const mine = (key: string) => items.some((it) => it.key === key && it.card && it.z >= 100);
+      this.gl!.set(
+        items.map((it) => ({ key: it.key, card: it.card, x: it.x, y: it.y, r: it.r, s: mine(it.key) ? it.s * 1.3 : it.s, lift: mine(it.key) })),
+        chips,
+        button,
+        labels.map((l) => ({ ...l, cls: l.cls, html: l.html, style: l.style })),
+        this.ctx.speed(),
+        enter,
+        exit
+      );
+      return;
+    }
+    this.plates.innerHTML = labels.map((l) => `<div class="${l.cls}" style="${l.style ? l.style + ';' : ''}left:${l.x}px;top:${l.y}px">${l.html}</div>`).join('') + blinds;
   }
 
   /** Стопка фишек по номиналам 500/100/25/5. */
@@ -349,6 +432,8 @@ class HoldemView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.gl?.destroy();
+    this.gl = null;
     this.cs.destroy();
   }
 }
