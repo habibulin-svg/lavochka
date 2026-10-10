@@ -1,0 +1,7 @@
+/* Настольный баскетбол: коробка на канве и кнопки броска. */
+.bb-dev { width: min(100%, 960px, calc((100vh - 230px) * 1.5)); margin: 0 auto; touch-action: none; user-select: none; }
+.bb-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
+.bb-btns { display: flex; justify-content: space-between; margin-top: 10px; gap: 12px; }
+.bb-btns button { flex: 0 0 40%; height: 56px; border: 0; border-radius: 14px; color: #fff; font: 700 18px 'PT Sans', Arial, sans-serif; cursor: pointer;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c)); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45); }
+.bb-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
