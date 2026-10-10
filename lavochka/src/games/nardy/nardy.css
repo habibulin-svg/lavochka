@@ -18,6 +18,9 @@
 .nd-board .nd-ch.movable .nd-ring { stroke: #ffb020; stroke-width: 5; stroke-dasharray: 9 5; animation: nd-spin 2.5s linear infinite, nd-glow 1.2s ease-in-out infinite; }
 .nd-board .nd-ch.selected .nd-ring { stroke: #ff5a1f; stroke-width: 6; animation: nd-glow 0.8s ease-in-out infinite; }
 .nd-board .nd-count { font: 700 24px 'PT Serif', Georgia, serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.nd-board .nd-offn { pointer-events: none; }
+.nd-board .nd-offn rect { fill: rgba(250, 242, 222, 0.92); stroke: #5a3a18; stroke-width: 1.5; }
+.nd-board .nd-offn text { font: 700 17px 'PT Sans', sans-serif; fill: #3a2410; text-anchor: middle; dominant-baseline: central; }
 .nd-board .nd-target { cursor: pointer; }
 .nd-board .nd-target .t-bg { fill: rgba(255, 190, 60, 0.45); stroke: #ffb020; stroke-width: 4; animation: nd-glow 1s ease-in-out infinite; }
 .nd-board .nd-target:hover .t-bg { fill: rgba(255, 250, 220, 0.75); }

@@ -101,6 +101,9 @@ export class RoomClient {
   restart() {
     this.send({ t: 'restart' });
   }
+  sync() {
+    this.send({ t: 'sync' });
+  }
   voice(on: boolean, video = false) {
     this.send({ t: 'voice', on, video });
   }

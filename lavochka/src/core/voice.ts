@@ -6,7 +6,7 @@ import type { RoomClient } from './client';
 import { serverBase } from './net/ws';
 import type { RoomMsg, VoiceMember } from './protocol';
 
-const STUN: RTCIceServer[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+const STUN: RTCIceServer[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
 /** ICE-серверы с нашего сервера (там же TURN, если настроен); без сервера — только STUN. */
 let iceReq: Promise<{ servers: RTCIceServer[]; turn: boolean }> | null = null;
 function iceServers() {

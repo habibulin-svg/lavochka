@@ -69,6 +69,7 @@ export class AutoClient {
   mySeats: number[] = [];
   result: any = null;
   seq = 0;
+  toAct: number[] = [];
   playing = true;
   private rng: SeededRng;
 
@@ -92,6 +93,7 @@ export class AutoClient {
       this.view = m.view;
       this.seq = m.seq;
       this.result = m.result;
+      this.toAct = m.toAct;
       if (m.t === 'start') this.mySeats = m.mySeats;
       this.client.idle(m.seq);
       void this.maybeAct(m.toAct);

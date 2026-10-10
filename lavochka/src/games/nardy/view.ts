@@ -1,7 +1,7 @@
 /* Нарды — отрисовка: резная доска (SVG), шашки, бар, лотки снятых шашек, куб; кубики и кнопки в панели. */
 import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
-import { h, sleep } from '../../core/util';
+import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { absOf, BAR, CHECKERS, legalSteps, mayDouble, OFF, pipCount, targetOf, type Event, type State, type Step } from './engine';
 import { woodTexture, WOODS } from '../../core/wood';
@@ -16,6 +16,7 @@ const B = 60; // бар
 const W = F * 2 + T * 2 + B + PW * 12; // 1040
 const H = 760;
 const R = 29; // радиус шашки
+const OFF_STEP = 16; // толщина снятой шашки «на ребре» в лотке
 const PH = 262; // длина пункта-«копья»
 const STACK = 5 * 2 * R; // наибольшая высота стопки
 
@@ -94,7 +95,7 @@ class NardyView implements GameView<State, Event> {
         <div class="nd-left"></div>
         <div class="nd-btns"></div>
         <button class="btn small nd-skin"></button>
-        ${ctx.demo ? '' : '<div class="hint small-hint">Пробел — бросок. Нажмите на шашку, затем на подсвеченный пункт.</div>'}
+        ${ctx.demo ? '' : `<div class="hint small-hint">${touchScreen() ? 'Бросок — кнопкой или тапом по доске.' : 'Пробел — бросок.'} Нажмите на шашку, затем на подсвеченный пункт.</div>`}
       </div>`);
     ctx.controls.appendChild(ctl);
     this.tray = new DiceTray(ctl.querySelector('.nd-tray') as HTMLElement);
@@ -166,6 +167,8 @@ class NardyView implements GameView<State, Event> {
       <radialGradient id="ndBevel" cx="50%" cy="50%" r="50%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
       <radialGradient id="ndGloss" cx="34%" cy="28%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
       <linearGradient id="ndLacquer" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>
+      <linearGradient id="ndRim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".22" stop-color="#fff" stop-opacity=".08"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
+      <linearGradient id="ndRimEnds" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset=".14" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
       <filter id="ndShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="2" dy="3.5" stdDeviation="2.4" flood-color="#1a0a02" flood-opacity=".6"/></filter>
       <filter id="ndInset" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="7"/></filter>
       <filter id="ndInlayShadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="#000" flood-opacity=".6"/></filter>
@@ -250,6 +253,29 @@ class NardyView implements GameView<State, Event> {
     return { x: x < W / 2 ? F + T / 2 - 4 : W - F - T / 2 + 4, bottom };
   }
 
+  /** Центр k-й снятой шашки в лотке (от торца лотка к середине доски). */
+  private offY(tr: { bottom: boolean }, k: number) {
+    return tr.bottom ? H - F - 18 - k * OFF_STEP : F + 18 + k * OFF_STEP;
+  }
+
+  /** Снятая шашка, стоящая на ребре: тот же точёный бок — дерево, бороздки по ободу, скруглённые торцы, лак. */
+  private edgeSvg(p: number, x: number, y: number) {
+    const wood = p === 0 ? 'url(#ndWL)' : 'url(#ndWD)';
+    const edge = p === 0 ? '#7a5a34' : '#050302';
+    const groove = p === 0 ? '#8a6438' : '#000';
+    const lite = p === 0 ? '#fff6e0' : '#9a826c';
+    const w = 2 * R - 6;
+    const t = OFF_STEP - 1;
+    return `<g transform="translate(${x},${y})">
+      <rect x="${-w / 2}" y="${-t / 2}" width="${w}" height="${t}" rx="${t / 2.4}" fill="${edge}"/>
+      <rect x="${-w / 2 + 1.2}" y="${-t / 2 + 1}" width="${w - 2.4}" height="${t - 2}" rx="${t / 2.8}" fill="${wood}"/>
+      <path d="M${-w / 2 + 5} -2.2H${w / 2 - 5}M${-w / 2 + 5} 2.6H${w / 2 - 5}" stroke="${groove}" stroke-width="1.1" opacity=".5"/>
+      <path d="M${-w / 2 + 5} -1.2H${w / 2 - 5}" stroke="${lite}" stroke-width=".7" opacity=".45"/>
+      <rect x="${-w / 2 + 1.2}" y="${-t / 2 + 1}" width="${w - 2.4}" height="${t - 2}" rx="${t / 2.8}" fill="url(#ndRim)"/>
+      <rect x="${-w / 2 + 1.2}" y="${-t / 2 + 1}" width="${w - 2.4}" height="${t - 2}" rx="${t / 2.8}" fill="url(#ndRimEnds)"/>
+    </g>`;
+  }
+
   private barPos(p: number, k: number) {
     // белые на баре — в верхней половине, чёрные — в нижней (ближе к дому, куда входить)
     const top = p === 0;
@@ -312,11 +338,14 @@ class NardyView implements GameView<State, Event> {
         const { x, y } = this.barPos(p, Math.min(m.bar[p] - 1, 3));
         s += this.label(x, y, m.bar[p], p);
       }
-      // снятые шашки — плашками в лотке
+      // снятые шашки — стопкой на ребре в лотке, у открытого конца стопки — сколько снято
       const tr = this.trayOf(p);
-      for (let k = 0; k < m.off[p]; k++) {
-        const y = tr.bottom ? H - F - 20 - k * 17 : F + 20 + k * 17;
-        s += `<rect x="${tr.x - 24}" y="${y - 7}" width="48" height="14" rx="5" fill="${p === 0 ? '#efe3c6' : '#2e231d'}" stroke="${p === 0 ? '#9a8a6a' : '#000'}" stroke-width="1.5"/>`;
+      if (m.off[p]) {
+        let stack = '';
+        for (let k = 0; k < m.off[p]; k++) stack += this.edgeSvg(p, tr.x, this.offY(tr, k));
+        s += `<g filter="url(#ndShadow)">${stack}</g>`;
+        const ly = this.offY(tr, m.off[p]) + (tr.bottom ? -6 : 6);
+        s += `<g class="nd-offn" transform="translate(${tr.x},${ly}) rotate(${this.flipped ? 180 : 0})"><rect x="-17" y="-12" width="34" height="24" rx="12"/><text y="1">${m.off[p]}</text></g>`;
       }
     }
     this.gCheckers.innerHTML = s.replace(/ class-add="(\w+)"/g, (_m, c) => ` data-cls="${c}"`);
@@ -485,8 +514,7 @@ class NardyView implements GameView<State, Event> {
     if (a === -1) return this.barPos(p, Math.max(0, Math.min(m.bar[p] - (leaving ? 1 : 0), 3)));
     if (a === 24) {
       const tr = this.trayOf(p);
-      const k = m.off[p];
-      return { x: tr.x, y: tr.bottom ? H - F - 20 - k * 17 : F + 20 + k * 17 };
+      return { x: tr.x, y: this.offY(tr, m.off[p]) };
     }
     const { x, bottom } = pointGeo(a);
     const n = Math.abs(m.pts[a]) + (leaving ? 0 : 1);
@@ -566,7 +594,9 @@ class NardyView implements GameView<State, Event> {
   }
 
   private button(a: string, text: string, primary: boolean, on: () => void) {
-    const b = h<HTMLButtonElement>(`<button class="btn ${primary ? 'primary pulse' : ''}" data-a="${a}">${text}</button>`);
+    // бросок и розыгрыш первого хода — ещё и тапом по доске (стол сам нажмёт кнопку с data-tap)
+    const tap = a === 'roll' || a === 'opening' ? ' data-tap' : '';
+    const b = h<HTMLButtonElement>(`<button class="btn ${primary ? 'primary pulse' : ''}" data-a="${a}"${tap}>${text}</button>`);
     b.onclick = () => {
       Sound.unlock();
       this.btns.innerHTML = '';

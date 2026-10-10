@@ -5,7 +5,8 @@
  *   • на сервере Node (каналы WebSocket) — тогда скрытую информацию не видит никто из игроков.
  *
  * Места: 'human' принадлежат владельцу комнаты (хот-сит за его экраном), 'remote' занимают подключившиеся,
- * 'bot' — боты. Если игрок отключился, за его место ходит бот, пока он не вернётся (по clientId или имени).
+ * 'bot' — боты. Если игрок отключился, за его место ходит бот, пока он не вернётся (по clientId или имени);
+ * первые DROP_GRACE_MS бот не ходит — даём перезагрузиться и вернуться.
  */
 import { Authority, type Snapshot, type StepResult } from './authority';
 import { PROTOCOL_VERSION, type ClientMsg, type Link, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
@@ -16,6 +17,8 @@ const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
 /** Сколько ждать, пока клиенты доиграют анимацию, прежде чем ходит бот. */
 const PACE_TIMEOUT_MS = 6000;
+/** Сколько ждать отключившегося, прежде чем за него сядет бот. */
+const DROP_GRACE_MS = 45000;
 
 interface Conn {
   link: Link;
@@ -41,6 +44,8 @@ export interface RoomConfig {
   /** Все ушли — комнату можно удалять (сервер). */
   onEmpty?(): void;
   botDelay?: number;
+  /** Сколько ждать отключившегося до бота (по умолчанию DROP_GRACE_MS). */
+  dropGraceMs?: number;
 }
 
 export class Room {
@@ -58,6 +63,9 @@ export class Room {
   private closed = false;
   /** Кто отвалился посреди партии — чтобы объявить его возвращение. */
   private dropped = new Set<string>();
+  /** Место → когда его игрок отключился (пока ждём, бот за него не ходит). */
+  private offSince = new Map<number, number>();
+  private graceTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
@@ -119,6 +127,9 @@ export class Room {
         return;
       case 'bye':
         return this.drop(conn);
+      case 'sync':
+        if (this.auth && conn.clientId) this.sendStart(conn, true);
+        return;
       case 'voice':
         if (!conn.clientId) return;
         conn.voice = m.on ? { video: !!m.video } : null;
@@ -238,7 +249,13 @@ export class Room {
     } else if (conn.seats.length) {
       if (conn.clientId) this.dropped.add(conn.clientId);
       const who = conn.owner ? conn.name || 'Хозяин стола' : this.seatName(conn.seats[0]);
-      this.broadcast({ t: 'info', text: `${who}: потерял связь — пока за него ходит бот` });
+      const grace = this.grace();
+      const now = Date.now();
+      for (const s of conn.seats) if (!this.isOnline(s)) this.offSince.set(s, now);
+      this.broadcast({
+        t: 'info',
+        text: grace >= 1000 ? `${who}: потерял связь — ждём ${Math.round(grace / 1000)} с, потом за него будет ходить бот` : `${who}: потерял связь — пока за него ходит бот`,
+      });
       this.broadcast({ t: 'seats', seats: this.seatStatus() });
       this.pumpBots();
     }
@@ -265,9 +282,21 @@ export class Room {
     return !!h && [...this.conns].some((c) => c.clientId === h.clientId);
   }
 
+  private grace() {
+    return this.cfg.dropGraceMs ?? DROP_GRACE_MS;
+  }
+
   private isBotSeat(seat: number): boolean {
     const spec = this.seats.find((s) => s.seat === seat);
-    return !!spec && (spec.kind === 'bot' || !this.isOnline(seat));
+    if (!spec) return false;
+    if (spec.kind === 'bot') return true;
+    if (this.isOnline(seat)) {
+      this.offSince.delete(seat);
+      return false;
+    }
+    // только что отключился — ждём; за тех, кого ждать некому (все люди ушли), ходить тоже незачем
+    const since = this.offSince.get(seat);
+    return since == null || Date.now() - since >= this.grace();
   }
 
   private seatName(seat: number): string {
@@ -321,7 +350,7 @@ export class Room {
     return conn.seats;
   }
 
-  private sendStart(conn: Conn) {
+  private sendStart(conn: Conn, resync = false) {
     const a = this.auth!;
     this.send(conn, {
       t: 'start',
@@ -331,6 +360,7 @@ export class Room {
       toAct: a.toAct(),
       seq: a.seq,
       result: a.result,
+      ...(resync ? { resync: true } : {}),
     });
   }
 
@@ -372,8 +402,17 @@ export class Room {
     const token = ++this.botToken;
     const a = this.auth;
     if (!a || a.result || this.closed) return;
+    clearTimeout(this.graceTimer);
     const seat = a.toAct().find((s) => this.isBotSeat(s));
-    if (seat == null) return;
+    if (seat == null) {
+      // ход за отключившимся, которого ещё ждём, — проверить снова, когда ожидание кончится
+      const waiting = a
+        .toAct()
+        .filter((s) => this.offSince.has(s) && !this.isOnline(s))
+        .map((s) => this.offSince.get(s)!);
+      if (waiting.length) this.graceTimer = setTimeout(() => this.pumpBots(), Math.max(50, Math.min(...waiting) + this.grace() - Date.now() + 20));
+      return;
+    }
     const seq = a.seq;
     void (async () => {
       const deadline = Date.now() + PACE_TIMEOUT_MS;
@@ -408,6 +447,7 @@ export class Room {
     this.closed = true;
     this.botToken++;
     clearInterval(this.heartbeat);
+    clearTimeout(this.graceTimer);
     const conns = [...this.conns];
     this.conns.clear();
     // даём сообщению «closed» уйти

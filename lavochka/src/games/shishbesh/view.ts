@@ -1,7 +1,7 @@
 /* Шиш-беш — отрисовка на столе сборника: поле, лоток кубиков, кнопка броска. */
 import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
-import { h, sleep } from '../../core/util';
+import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { Board } from './board';
 import { DEFAULT_CFG, geoOf, legalMoves, playerBySeat, type Event, type State } from './engine';
@@ -34,7 +34,7 @@ class ShishView implements GameView<State, Event> {
     this.board = new Board(this.svg);
     const ctl = h(`<div class="sb-controls">
         <div class="sb-tray"></div>
-        ${ctx.demo ? '' : '<button class="btn primary sb-roll" disabled>Бросить кости</button><div class="hint small-hint">Пробел — бросок. Нажмите на подсвеченную фишку, затем на цель.</div>'}
+        ${ctx.demo ? '' : `<button class="btn primary sb-roll" data-tap disabled>Бросить кости</button><div class="hint small-hint">${touchScreen() ? 'Бросок — кнопкой или тапом по доске.' : 'Пробел — бросок.'} Нажмите на подсвеченную фишку, затем на цель.</div>`}
       </div>`);
     ctx.controls.appendChild(ctl);
     this.tray = new DiceTray(ctl.querySelector('.sb-tray') as HTMLElement);

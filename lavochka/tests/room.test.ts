@@ -9,13 +9,13 @@ import { AutoClient, until } from './harness';
 const rooms: Room[] = [];
 afterEach(() => rooms.splice(0).forEach((r) => r.close()));
 
-async function setup() {
+async function setup(dropGraceMs = 0) {
   const def = await DEFS.shishbesh();
   const seats: SeatSpec[] = [
     { seat: 3, kind: 'human', name: 'Хозяин', level: 1 },
     { seat: 1, kind: 'remote', name: '', level: 1 },
   ];
-  const room = new Room({ def, options: {}, seats, code: 'TEST', ownerKey: 'key', botDelay: 0 });
+  const room = new Room({ def, options: {}, seats, code: 'TEST', ownerKey: 'key', botDelay: 0, dropGraceMs });
   rooms.push(room);
   const join = (name: string, ownerKey?: string, seed = 1) => {
     const [a, b] = localPair();
@@ -62,6 +62,36 @@ describe('комната', () => {
     await until(() => back.seq === owner.seq, 5000, 'гость догнал');
     expect(JSON.stringify(back.view)).toBe(JSON.stringify(owner.view));
   }, 120_000);
+
+  it('за отключившегося бот садится не сразу — сначала его ждут', async () => {
+    const { join } = await setup(2500);
+    const owner = join('Хозяин', 'key', 1).client;
+    const g = join('Гость', undefined, 2);
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)));
+    g.client.playing = false;
+    owner.client.start(false);
+    await until(() => owner.has('start'), 5000, 'старт');
+    g.link.close();
+    await until(() => owner.log.some((m) => m.t === 'info' && m.text.includes('ждём')), 5000, 'сообщение об ожидании');
+    // хозяин доходит до хода гостя, а дальше стол стоит: бот за гостя пока не ходит
+    const last = () => owner.log.filter((m) => m.t === 'start' || m.t === 'step').pop() as { toAct: number[]; seq: number };
+    await until(() => last().toAct.includes(1), 5000, 'ход гостя');
+    const at = owner.seq;
+    await new Promise((r) => setTimeout(r, 700));
+    expect(owner.seq).toBe(at);
+    await until(() => owner.seq > at, 6000, 'после ожидания ходит бот');
+  }, 30_000);
+
+  it('по запросу «sync» комната присылает тот же стол заново', async () => {
+    const { join } = await setup();
+    const owner = join('Хозяин', 'key', 1).client;
+    join('Гость', undefined, 2);
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)));
+    owner.client.start(false);
+    await until(() => owner.seq > 3, 10000);
+    owner.client.sync();
+    await until(() => owner.log.some((m) => m.t === 'start' && m.resync), 5000, 'стол заново');
+  }, 30_000);
 
   it('если хозяин ушёл из лобби — комната закрывается у всех', async () => {
     const { join } = await setup();

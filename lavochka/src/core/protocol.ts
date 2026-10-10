@@ -31,6 +31,8 @@ export type ClientMsg =
   | { t: 'restart' }
   | { t: 'pong' }
   | { t: 'bye' }
+  /** Клиент не дождался ответа на свой ход — прислать стол заново. */
+  | { t: 'sync' }
   | { t: 'voice'; on: boolean; video?: boolean }
   | { t: 'rtc'; to: string; data: unknown };
 
@@ -45,6 +47,8 @@ export type RoomMsg =
       toAct: number[];
       seq: number;
       result: GameResult | null;
+      /** Тот же стол заново (после «sync»), не новая партия. */
+      resync?: boolean;
     }
   | {
       t: 'step';

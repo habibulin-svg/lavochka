@@ -46,6 +46,9 @@ export class Table {
   private closed = false;
   private voice: Voice | null = null;
   private voiceEls = new Map<string, HTMLElement>();
+  /** Сторож хода: свой ход отправлен, а стол не сдвинулся — попросить комнату прислать его заново. */
+  private actTimer: ReturnType<typeof setTimeout> | undefined;
+  private actTries = 0;
 
   constructor(private o: TableOpts) {
     const def = o.mod.def;
@@ -109,7 +112,10 @@ export class Table {
 
     this.view = o.mod.createView();
     const ctx: ViewCtx = {
-      act: (seat, action) => o.client.act(seat, action),
+      act: (seat, action) => {
+        o.client.act(seat, action);
+        this.watchAct();
+      },
       get mySeats() {
         return self.mySeats;
       },
@@ -121,6 +127,13 @@ export class Table {
     };
     const self = this;
     this.view.mount(q('.table-board'), ctx);
+    // тап по свободному месту доски — главная кнопка хода (бросок кубиков): на телефоне кнопка бывает под краем экрана
+    q('.table-board').addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (e.defaultPrevented || t.closest('button, a, input, select, textarea, label')) return;
+      const b = this.el.querySelector<HTMLButtonElement>('.game-controls [data-tap]');
+      if (b && !b.disabled && !b.hidden && b.offsetParent) b.click();
+    });
 
     this.unsub = o.client.on((m) => this.onMsg(m));
     o.client.onLost = () => this.lost();
@@ -246,6 +259,23 @@ export class Table {
     this.voice.setQuiet(this.view.quiet ? this.view.quiet(this.current) : null);
   }
 
+  private watchAct(since = Date.now()) {
+    if (this.o.mode === 'local' || this.actTimer) return;
+    const seq = this.seq;
+    this.actTimer = setTimeout(() => {
+      this.actTimer = undefined;
+      if (this.closed || this.seq !== seq || this.result) return;
+      // ещё доигрываются анимации — подождать (но не бесконечно: анимация могла встать)
+      if (this.pending > 0 && Date.now() - since < 24000) return this.watchAct(since);
+      // ход ушёл, а стол не сдвинулся — просим комнату прислать его заново (совсем мёртвую связь заметит сторож клиента)
+      if (++this.actTries <= 2) {
+        console.warn('Нет ответа на ход — запрашиваем стол заново');
+        this.o.client.sync();
+        this.watchAct(since);
+      } else this.actTries = 0;
+    }, 8000);
+  }
+
   // ---------------------------------------------------------------- сообщения комнаты
 
   private onMsg(m: RoomMsg) {
@@ -276,6 +306,14 @@ export class Table {
   }
 
   private start(m: Extract<RoomMsg, { t: 'start' }>) {
+    clearTimeout(this.actTimer);
+    this.actTimer = undefined;
+    this.actTries = 0;
+    if (m.resync && this.started) {
+      // тот же стол: без «новой партии» и без очистки журнала
+      if (m.seq === this.seq && this.pending === 0) return this.afterIdle();
+      this.log('<i>Стол обновлён.</i>', 'muted');
+    }
     this.gen++;
     this.queue = Promise.resolve();
     this.pending = 0;
@@ -287,11 +325,13 @@ export class Table {
     this.result = m.result;
     this.resultShown = false;
     this.lastTurnKey = '';
-    closeAllModals();
-    (this.el.querySelector('.log') as HTMLElement).innerHTML = '';
+    if (!m.resync) {
+      closeAllModals();
+      (this.el.querySelector('.log') as HTMLElement).innerHTML = '';
+    }
     this.view.setView(m.view);
     this.applyQuiet();
-    this.log(this.started ? '<b>Новая партия.</b>' : '<b>Партия началась.</b>');
+    if (!m.resync) this.log(this.started ? '<b>Новая партия.</b>' : '<b>Партия началась.</b>');
     this.started = true;
     this.renderPlayers();
     showScreen('table');
@@ -316,6 +356,11 @@ export class Table {
         this.toAct = m.toAct;
         this.seq = m.seq;
         this.result = m.result;
+        if (this.actTimer) {
+          clearTimeout(this.actTimer);
+          this.actTimer = undefined;
+          this.actTries = 0;
+        }
         this.renderPlayers();
         this.applyQuiet();
       })
@@ -369,7 +414,7 @@ export class Table {
       const active = this.toAct.includes(s.seat) && !this.result;
       const win = this.result?.winners.includes(s.seat);
       const me = this.mySeats.includes(s.seat) && this.mySeats.length < this.seats.length ? '<span class="you">вы</span>' : '';
-      const off = !s.online && s.kind !== 'bot' ? ' · <b class="off">нет связи — ходит бот</b>' : '';
+      const off = !s.online && s.kind !== 'bot' ? ' · <b class="off">нет связи</b>' : '';
       const stats = this.view.playerStats && this.current ? this.view.playerStats(this.current, s.seat) : '';
       ul.appendChild(
         h(`<li class="player${active ? ' active' : ''}${win ? ' winner' : ''}">
@@ -477,6 +522,7 @@ export class Table {
     if (this.closed) return;
     this.closed = true;
     this.gen++;
+    clearTimeout(this.actTimer);
     this.unsub();
     this.voice?.destroy();
     this.voice = null;

@@ -178,7 +178,7 @@ function json(res: ServerResponse, code: number, body: unknown) {
 // На Render свой TURN не поднять (нет UDP), поэтому — внешний: Cloudflare (ключ из Realtime → TURN)
 // или любой другой с постоянным логином.
 
-const STUN: RTCIceServerLike[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+const STUN: RTCIceServerLike[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
 let iceCache: { at: number; servers: RTCIceServerLike[] } | null = null;
 
 interface RTCIceServerLike {

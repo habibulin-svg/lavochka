@@ -236,10 +236,12 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
   .table.active { display: block; height: auto; min-height: 100vh; }
   .table-main { height: min(100vw, 75vh); }
   .table-panel { overflow: visible; margin-top: 10px; }
-  /* карточные игры: стол выше (вертикальная раскладка), кнопки хода — сразу под ним */
+  /* кнопки хода и статус — сразу под столом, чтобы не мотать вниз; карточным играм стол выше (вертикальная раскладка) */
+  .table-panel > .game-controls { order: -2; }
+  .table-panel > .table-status { order: -1; }
   .table--cards .table-main { height: min(175vw, calc(100svh - 150px)); min-height: min(100vw, 75vh); }
-  .table--cards .table-panel > .game-controls { order: -2; }
-  .table--cards .table-panel > .table-status { order: -1; }
+  /* нарды — доска шире, чем выше (1040×760): без пустых полос над и под ней */
+  .table--nardy .table-main { height: min(76vw, 75vh); }
   .log, .chat { max-height: 220px; }
   .home-cols { grid-template-columns: 1fr; }
   .rules-layout { grid-template-columns: 1fr; }
