@@ -82,7 +82,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'razvedchiki', title: 'Разведчики космоса', sub: 'ИМ: межпланетный десант', cat: 'electronics', players: '1', wave: 5, icon: '🚀', tint: '#3a2a8a' },
   { id: 'avtoslalom', title: 'Автослалом', sub: 'ИМ: между флажками', cat: 'electronics', players: '1', wave: 5, icon: '🏁', tint: '#1a7a3a' },
   // — аркады —
-  { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1–2', wave: 6, icon: '💎', tint: '#1a6a5a' },
+  { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'лопата, динамит, самородок'] },
   { id: 'shariki', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'arcade', players: '1–2', wave: 6, icon: '🐸', tint: '#4a7a10' },
   { id: 'eggs', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'arcade', players: '1–2', wave: 6, icon: '🦕', tint: '#7a5a10' },
   { id: 'gops', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'arcade', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a' },

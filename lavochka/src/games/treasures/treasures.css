@@ -1,0 +1,17 @@
+/* «Клад»: карта уровней и поле. */
+.tr-dev { width: min(100%, 620px); margin: 0 auto; }
+.tr-map { background: linear-gradient(180deg, #3a2a14, #241808); border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
+.tr-map-t { color: #f4dca0; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; }
+.tr-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; max-height: calc(100vh - 260px); overflow: auto; }
+.tr-lv { aspect-ratio: 1; border: 0; border-radius: 10px; background: linear-gradient(180deg, #f4d890, #c89a40); color: #3a2408; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+.tr-lv b { font: 700 15px 'PT Sans', Arial, sans-serif; }
+.tr-lv span { font-size: 10px; color: #a8600a; min-height: 12px; }
+.tr-lv.dig { background: linear-gradient(180deg, #d8b080, #8a5a2a); color: #fff4d8; }
+.tr-lv.locked { background: #4a3a24; color: #8a7a60; cursor: default; }
+.tr-play { position: relative; display: flex; flex-direction: column; gap: 8px; }
+.tr-hud { display: flex; flex-wrap: wrap; gap: 6px 14px; color: #f4e8c8; font: 14px 'PT Sans', Arial, sans-serif; justify-content: center; }
+.tr-stars { color: #ffd24a; letter-spacing: 2px; }
+.tr-play canvas { width: 100%; aspect-ratio: 1; border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.5), inset 0 0 0 4px #6a4a1a; touch-action: none; }
+.tr-btns { display: flex; gap: 8px; justify-content: center; }
+.tr-end { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.tr-end h2 { margin: 0 0 6px; } .tr-end div { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
