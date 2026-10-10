@@ -20,6 +20,7 @@ const NOTE: Record<string, (who: string) => string> = {
   bolt: (w) => `${w} — болт`,
   bolt3: (w) => `${w}: третий болт, −120`,
   bolt5: (w) => `${w}: пятый болт, −120`,
+  rospis3: (w) => `${w}: третья роспись, ещё −120`,
   barrel: (w) => `${w} на бочке!`,
   fall: (w) => `${w} слетает с бочки`,
   zero: (w) => `${w} в третий раз слетает с бочки — счёт в ноль`,
@@ -37,6 +38,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return ev.dark ? `${name(ev.seat)}: <b>темню!</b> 120 не глядя, очки ×2.` : null;
     case 'rospis':
       return `${name(ev.seat)} <b>расписывается</b> на ${ev.bid}.`;
+    case 'fine':
+      return `Третья пересдача подряд — плохая раздача: ${name(ev.seat)} ${ev.amount}.`;
     case 'bid':
       return `${name(ev.seat)}: ${ev.value}`;
     case 'pass':
@@ -173,6 +176,7 @@ export const def: GameDef<State, Action, Event, View> = {
       ],
       default: '60',
     },
+    { key: 'rospis3', label: 'Третья роспись — минус 120', type: 'toggle', default: true, hint: 'Каждая третья роспись — расписавшемуся ещё минус 120.', showIf: (o) => o.rospis !== 'off' },
     { key: 'redeal9', label: 'Пересдача: 4 девятки на руке', type: 'toggle', default: true },
     { key: 'redealPrikup9', label: 'Пересдача: 2 девятки в прикупе', type: 'toggle', default: true, hint: 'Решает взявший прикуп.' },
     {
@@ -189,6 +193,7 @@ export const def: GameDef<State, Action, Event, View> = {
       ],
       default: 5,
     },
+    { key: 'redeal3', label: 'Три пересдачи подряд — минус 120', type: 'toggle', default: true, hint: '«Плохая раздача»: штраф сдающему.' },
     { key: 'aces', label: 'Тузовый марьяж', type: 'toggle', default: false, hint: 'Четыре туза — 200 очков, объявляют заходом с туза; козырь не меняется.' },
     { key: 'firstMarriage', label: 'Марьяж с первого хода', type: 'toggle', default: false },
     { key: 'golden', label: 'Золотой кон', type: 'toggle', default: false, hint: 'Первые коны (по числу игроков) каждый по очереди играет 120 без торговли; все очки и штрафы вдвойне.' },
@@ -208,25 +213,25 @@ export const def: GameDef<State, Action, Event, View> = {
       id: 'classic',
       label: 'Классическая',
       hint: 'Бочка, болты, самосвал ±555, тёмная, роспись по 60, пересдачи',
-      options: { barrel: true, barrelAt: 880, goal: 1000, barrelZero: true, boltMode: '3', dumpMode: 'both', dark: true, rospis: '60', redeal9: true, redealPrikup9: true, redealPrikupMin: 5, aces: false, firstMarriage: false, golden: false, step: 5 },
+      options: { barrel: true, barrelAt: 880, goal: 1000, barrelZero: true, boltMode: '3', dumpMode: 'both', dark: true, rospis: '60', redeal9: true, redealPrikup9: true, redealPrikupMin: 5, rospis3: true, redeal3: true, aces: false, firstMarriage: false, golden: false, step: 5 },
     },
     {
       id: 'simple',
       label: 'Простая',
       hint: 'Без бочки, болтов и договорённостей — кто первым до тысячи',
-      options: { barrel: false, boltMode: 'off', dumpMode: 'off', dark: false, rospis: 'off', redeal9: false, redealPrikup9: false, redealPrikupMin: 0, aces: false, firstMarriage: false, golden: false, step: 5 },
+      options: { barrel: false, boltMode: 'off', dumpMode: 'off', dark: false, rospis: 'off', redeal9: false, redealPrikup9: false, redealPrikupMin: 0, rospis3: false, redeal3: false, aces: false, firstMarriage: false, golden: false, step: 5 },
     },
     {
       id: 'golden',
       label: 'Золотой кон',
       hint: 'Классика + золотой кон в начале и тузовый марьяж',
-      options: { barrel: true, barrelAt: 880, goal: 1000, barrelZero: true, boltMode: '3', dumpMode: 'both', dark: true, rospis: '60', redeal9: true, redealPrikup9: true, redealPrikupMin: 5, aces: true, firstMarriage: false, golden: true, step: 5 },
+      options: { barrel: true, barrelAt: 880, goal: 1000, barrelZero: true, boltMode: '3', dumpMode: 'both', dark: true, rospis: '60', redeal9: true, redealPrikup9: true, redealPrikupMin: 5, rospis3: true, redeal3: true, aces: true, firstMarriage: false, golden: true, step: 5 },
     },
     {
       id: 'strict',
       label: '1001',
       hint: 'Строже: с бочки до 1001, болты три подряд, роспись по половине заказа',
-      options: { barrel: true, barrelAt: 880, goal: 1001, barrelZero: true, boltMode: '3row', dumpMode: 'both', dark: true, rospis: 'half', redeal9: true, redealPrikup9: true, redealPrikupMin: 2, aces: false, firstMarriage: false, golden: false, step: 5 },
+      options: { barrel: true, barrelAt: 880, goal: 1001, barrelZero: true, boltMode: '3row', dumpMode: 'both', dark: true, rospis: 'half', redeal9: true, redealPrikup9: true, redealPrikupMin: 2, rospis3: true, redeal3: true, aces: false, firstMarriage: false, golden: false, step: 5 },
     },
   ],
 
@@ -333,8 +338,8 @@ export const def: GameDef<State, Action, Event, View> = {
       {
         title: 'Роспись и пересдача',
         html: `<p><b>Роспись</b>: взявший прикуп видит, что заказ не сыграть, — может расписаться до первого хода. Себе он пишет минус заказ, соперникам — по 60
-          (по договорённости — по половине заказа). На бочке и на золотом коне не расписываются.</p>
-          <p><b>Пересдача</b>: четыре девятки на руке — пересдают сразу. Если в прикупе две девятки или меньше 5 очков, взявший прикуп может пересдать, пока не отдал карт.</p>
+          (по договорённости — по половине заказа). Каждая третья роспись — ещё минус 120. На бочке и на золотом коне не расписываются.</p>
+          <p><b>Пересдача</b>: четыре девятки на руке — пересдают сразу. Если в прикупе две девятки или меньше 5 очков, взявший прикуп может пересдать, пока не отдал карт. Три пересдачи подряд — «плохая раздача»: сдающему минус 120.</p>
           <p><b>Тузовый марьяж</b> (по договорённости) — четыре туза, 200 очков. <b>Золотой кон</b> — в начале партии каждый по очереди играет 120 без торговли, все очки вдвойне.</p>`,
         demo: {
           seats: demoSeats,

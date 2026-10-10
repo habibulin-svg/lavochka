@@ -186,9 +186,10 @@ class ThousandView implements GameView<View, Event> {
   private drawSheet(v: View) {
     const rows = v.sheet.slice(-6);
     const head = v.seats.map((x) => `<th style="color:${SEATS[x].ink ?? SEATS[x].color}">${esc(this.plain(x)).slice(0, 7)}</th>`).join('');
-    const TAG = { dark: 'т', rospis: 'р', golden: 'з' } as const;
+    const TAG = { dark: 'т', rospis: 'р', golden: 'з', fine: 'ш' } as const;
+    const TITLE = { dark: 'тёмная', rospis: 'роспись', golden: 'золотой кон', fine: 'штраф за плохую раздачу' } as const;
     const body = rows
-      .map((r) => `<tr><td>${r.round}${r.tag ? `<sup title="${r.tag === 'dark' ? 'тёмная' : r.tag === 'rospis' ? 'роспись' : 'золотой кон'}">${TAG[r.tag]}</sup>` : ''}</td>${v.seats.map((x) => `<td class="${x === r.bidder ? (r.made ? 'ok' : 'bad') : ''}">${r.deltas[x] > 0 ? '+' : ''}${r.deltas[x] || '·'}</td>`).join('')}</tr>`)
+      .map((r) => `<tr><td>${r.round}${r.tag ? `<sup title="${TITLE[r.tag]}">${TAG[r.tag]}</sup>` : ''}</td>${v.seats.map((x) => `<td class="${x === r.bidder ? (r.made ? 'ok' : 'bad') : ''}">${r.deltas[x] > 0 ? '+' : ''}${r.deltas[x] || '·'}</td>`).join('')}</tr>`)
       .join('');
     const total = `<tr class="sum"><td>Σ</td>${v.seats.map((x) => `<td>${v.scores[x]}</td>`).join('')}</tr>`;
     this.sheet.innerHTML = `<table><tr><th>#</th>${head}</tr>${body}${total}</table>`;
@@ -380,6 +381,10 @@ class ThousandView implements GameView<View, Event> {
       } else if (ev.type === 'redeal') {
         Sound.shuffle();
         await this.showBanner(ev.reason === 'nines' ? `Четыре девятки у ${this.plain(ev.seat)} — пересдача` : 'Пересдача', 1100 / speed);
+      } else if (ev.type === 'fine') {
+        this.v = { ...this.v!, scores: ev.scores };
+        this.draw();
+        await this.showBanner(`Три пересдачи подряд: ${this.plain(ev.seat)} ${ev.amount}`, 1300 / speed);
       } else if (ev.type === 'rospis') {
         await this.showBanner(`${this.plain(ev.seat)} расписывается`, 1000 / speed);
       } else if (ev.type === 'score') {

@@ -212,6 +212,33 @@ describe('роспись и пересдача', () => {
     const given = go(givePos({}, '9D 9H AD'), 0, { type: 'give', to: 1, card: C('9S') }).state;
     expect(apply(given, 0, { type: 'redeal' }, rng())).toBeNull();
   });
+  it('каждая третья роспись — ещё минус 120, счёт росписей заново', () => {
+    const third = (opts: Options) => {
+      let s = { ...givePos(opts, 'QD JD 9D'), rospisN: [2, 0, 0, 0] };
+      s = go(s, 0, { type: 'give', to: 1, card: C('9S') }).state;
+      s = go(s, 0, { type: 'give', to: 2, card: C('9C') }).state;
+      return go(s, 0, { type: 'rospis' });
+    };
+    const r = third({});
+    const sc = r.events.find((e) => e.type === 'score')!;
+    expect(sc.type === 'score' && sc.deltas.slice(0, 3)).toEqual([-230, 60, 60]);
+    expect(sc.type === 'score' && sc.notes).toContain('rospis3:0');
+    expect(r.state.rospisN[0]).toBe(0);
+    const off = third({ rospis3: false }).events.find((e) => e.type === 'score')!;
+    expect(off.type === 'score' && off.deltas[0]).toBe(-110);
+  });
+  it('три пересдачи подряд — сдающему минус 120', () => {
+    const first = go(givePos({}, '9D 9H AD'), 0, { type: 'redeal' });
+    expect(first.events.some((e) => e.type === 'fine')).toBe(false);
+    expect(first.state.redeals).toBeGreaterThanOrEqual(1);
+    const third = go({ ...givePos({}, '9D 9H AD'), redeals: 2 }, 0, { type: 'redeal' });
+    expect(third.events.find((e) => e.type === 'fine')).toMatchObject({ seat: 2, amount: -120 });
+    expect(third.state.scores[2]).toBe(-120);
+    expect(third.state.sheet[third.state.sheet.length - 1]).toMatchObject({ tag: 'fine', bidder: 2 });
+    const off = go({ ...givePos({ redeal3: false }, '9D 9H AD'), redeals: 2 }, 0, { type: 'redeal' });
+    expect(off.events.some((e) => e.type === 'fine')).toBe(false);
+    expect(off.state.scores[2]).toBe(0);
+  });
   it('четыре девятки на руке — пересдают сами', () => {
     for (let seed = 1; seed < 400; seed++) {
       const s = deal(newState(cfgFrom({}), [0, 1, 2]), new SeededRng(seed)).state;

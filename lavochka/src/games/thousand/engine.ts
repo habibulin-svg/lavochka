@@ -11,7 +11,8 @@
  * Роспись: заказчик сдаётся до первого хода — пишет минус заказ, соперникам по 60 (или по половине заказа).
  * Бочка: с 880 (900) очков — «на бочке»: выше не пишут, чтобы выйти на 1000 (1001), надо сыграть свой заказ; три кона без выхода — минус 120;
  * трижды слетел — счёт в ноль. Болт: кон без единой взятки; каждый третий (три подряд, каждый пятый) — минус 120.
- * Самосвал: ровно 555 (и −555) — в ноль. Пересдача: 4 девятки на руке; по выбору заказчика — две девятки или мало очков в прикупе.
+ * Самосвал: ровно 555 (и −555) — в ноль. Пересдача: 4 девятки на руке; по выбору заказчика — две девятки или мало очков в прикупе;
+ * три пересдачи подряд — сдающему минус 120. Каждая третья роспись — расписавшемуся ещё минус 120.
  * Золотой кон: первые N конов (N — число игроков) каждый по очереди играет 120 без торговли, все очки ×2.
  */
 import type { Options, Rng } from '../../core/types';
@@ -41,6 +42,10 @@ export interface Cfg {
   redealPrikup9: boolean;
   /** Пересдача по выбору заказчика: в прикупе меньше N очков (0 — нет). */
   redealPrikupMin: number;
+  /** Каждая третья роспись — ещё минус 120. */
+  rospis3: boolean;
+  /** Три пересдачи подряд — сдающему минус 120. */
+  redeal3: boolean;
   /** Тузовый марьяж — 200. */
   aces: boolean;
   /** Марьяж можно объявить первым ходом кона. */
@@ -71,6 +76,8 @@ export function cfgFrom(o: Options): Cfg {
     aces: !!o.aces,
     firstMarriage: !!o.firstMarriage,
     golden: !!o.golden,
+    rospis3: o.rospis3 !== false,
+    redeal3: o.redeal3 !== false,
   };
 }
 
@@ -131,12 +138,16 @@ export interface State {
   /** Общий счёт. */
   scores: number[];
   /** Запись по конам: строки «пули». */
-  sheet: { round: number; deltas: number[]; bidder: number; bid: number; made: boolean; tag?: 'dark' | 'rospis' | 'golden' }[];
+  sheet: { round: number; deltas: number[]; bidder: number; bid: number; made: boolean; tag?: 'dark' | 'rospis' | 'golden' | 'fine' }[];
   bolts: number[];
   /** Сколько конов сидит на бочке (0 — не на бочке). */
   barrel: number[];
   /** Сколько раз слетал с бочки. */
   falls: number[];
+  /** Сколько раз расписывался (с последнего штрафа). */
+  rospisN: number[];
+  /** Пересдач подряд в этом коне. */
+  redeals: number;
   round: number;
   winner: number | null;
 }
@@ -169,6 +180,7 @@ export type Event =
   | { type: 'give'; seat: number; to: number; card?: Card }
   | { type: 'raise'; seat: number; value: number }
   | { type: 'rospis'; seat: number; bid: number }
+  | { type: 'fine'; seat: number; reason: 'redeal3'; amount: number; scores: number[] }
   | { type: 'play'; seat: number; card: Card; marriage?: MarriageKind; trump: Suit | null }
   | { type: 'trick'; winner: number; points: number; cards: Card[] }
   | { type: 'score'; deltas: number[]; scores: number[]; bidder: number; bid: number; made: boolean; pts: number[]; notes: string[]; dealerBonus?: number; dark?: boolean; rospis?: boolean; golden?: boolean }
@@ -281,6 +293,8 @@ export function newState(cfg: Cfg, seats: number[]): State {
     bolts: Array(n).fill(0),
     barrel: Array(n).fill(0),
     falls: Array(n).fill(0),
+    rospisN: Array(n).fill(0),
+    redeals: 0,
     round: 0,
     winner: null,
   };
@@ -302,6 +316,18 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
   const ev: Event[] = [];
   let hands: Card[][] = [[], [], [], []];
   let prikup: Card[] = [];
+  // пересдачи подряд: пересдача по прикупу уже одна, каждые четыре девятки — ещё одна
+  let redeals = again ? (s0.redeals ?? 0) + 1 : 0;
+  let fines = 0;
+  const count = () => {
+    if (++redeals < 3 || !s0.cfg.redeal3) return;
+    redeals = 0;
+    fines++;
+  };
+  if (again && s0.cfg.redeal3 && redeals >= 3) {
+    redeals = 0;
+    fines++;
+  }
   // четыре девятки на руке — пересдают сразу (страховка от бесконечного круга)
   for (let tries = 0; ; tries++) {
     const deck = shuffle(makeDeck24(), rng);
@@ -311,6 +337,7 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
     const bad = s0.cfg.redeal9 && tries < 20 ? players.find((p) => nines(hands[p]) === 4) : undefined;
     if (bad == null) break;
     ev.push({ type: 'redeal', seat: bad, reason: 'nines', cards: hands[bad].filter((c) => c.r === 9) });
+    count();
   }
   // первым торгуется следующий за сдающим (вчетвером — среди играющих), он «сидит на ста»
   const first = s0.seats.length === 4 ? nextIn(s0.seats, dealer) : nextIn(players, dealer);
@@ -340,8 +367,11 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
     marriages: [],
     tricksPlayed: 0,
     round,
+    redeals,
     scores: s0.scores.slice(),
   };
+  // три пересдачи подряд — «плохая раздача»: сдающему минус 120
+  for (let i = 0; i < fines; i++) fine(s, dealer, ev);
   // тёмная: только первая рука, не в минусе и пока никто не сидит на бочке
   const darkOk = s.cfg.dark && !golden && s.scores[first] >= 0 && !(s.cfg.barrel && s.seats.some((x) => s.barrel[x] > 0));
   if (darkOk) {
@@ -355,6 +385,21 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
     startPlay(s, ev);
   }
   return { state: s, events: ev };
+}
+
+/** Штраф сдающему за плохую раздачу (вне подсчёта кона). */
+function fine(s: State, seat: number, ev: Event[]) {
+  const before = s.scores[seat];
+  let v = before - PENALTY;
+  s.barrel = s.barrel.slice();
+  if (s.cfg.barrel && s.barrel[seat] > 0 && v < s.cfg.barrelAt) s.barrel[seat] = 0;
+  if ((s.cfg.dump === 'both' && v === -555) || (s.cfg.dump !== 'off' && v === 555)) v = 0;
+  s.scores = s.scores.slice();
+  s.scores[seat] = v;
+  const deltas = [0, 0, 0, 0];
+  deltas[seat] = v - before;
+  s.sheet = [...s.sheet, { round: s.round, deltas, bidder: seat, bid: 0, made: false, tag: 'fine' }];
+  ev.push({ type: 'fine', seat, reason: 'redeal3', amount: v - before, scores: s.scores.slice() });
 }
 
 export function setup(seats: number[], opts: Options, rng: Rng): State {
@@ -385,8 +430,8 @@ function startPlay(s: State, ev: Event[]) {
 
 /** Сохранённая партия старой версии: настройки и новые поля — по умолчанию. */
 function migrate(s: State): State {
-  if (s.cfg.goal && s.falls) return s;
-  return { ...s, cfg: cfgFrom(s.cfg as unknown as Options), falls: s.falls ?? [0, 0, 0, 0], first: s.first ?? s.bidder, dark: !!s.dark, golden: !!s.golden };
+  if (s.cfg.goal && s.falls && s.rospisN) return s;
+  return { ...s, cfg: cfgFrom(s.cfg as unknown as Options), falls: s.falls ?? [0, 0, 0, 0], rospisN: s.rospisN ?? [0, 0, 0, 0], redeals: s.redeals ?? 0, first: s.first ?? s.bidder, dark: !!s.dark, golden: !!s.golden };
 }
 
 export function apply(raw: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
@@ -510,6 +555,7 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
   const bolts = s.bolts.slice();
   const barrel = s.barrel.slice();
   const falls = s.falls.slice();
+  const rospisN = s.rospisN.slice();
   const made = !rospis && s.roundPts[s.bidder] >= s.bid;
   const k = s.golden ? 2 : 1;
   const kb = k * (s.dark ? 2 : 1);
@@ -540,6 +586,12 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
     else if (onBarrel) d = 0; // на бочке очки обороняющегося не пишутся
     else d = rospis ? rospisPay(s) * k : round5(s.roundPts[p]) * k;
     let v = scores[p] + d;
+    // каждая третья роспись — ещё минус 120
+    if (rospis && p === s.bidder && cfg.rospis3 && ++rospisN[p] >= 3) {
+      rospisN[p] = 0;
+      v -= PENALTY;
+      notes.push(`rospis3:${p}`);
+    }
     // болт — кон без взятки (на бочке не пишут)
     if (playing && !rospis && cfg.bolts !== 'off' && !onBarrel) {
       if (s.tricksTaken[p] === 0) {
@@ -597,7 +649,7 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
         scores[q] = v;
       }
   const tag = rospis ? 'rospis' : s.dark ? 'dark' : s.golden ? 'golden' : undefined;
-  const st: State = { ...s, scores, bolts, barrel, falls, sheet: [...s.sheet, { round: s.round, deltas, bidder: s.bidder, bid: s.bid, made, tag }] };
+  const st: State = { ...s, scores, bolts, barrel, falls, rospisN, redeals: 0, sheet: [...s.sheet, { round: s.round, deltas, bidder: s.bidder, bid: s.bid, made, tag }] };
   ev.push({
     type: 'score',
     deltas,
