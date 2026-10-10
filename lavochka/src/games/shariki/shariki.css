@@ -1,0 +1,15 @@
+/* «Шарики»: карта уровней и поле. */
+.zm-dev { width: min(100%, 900px, calc((100vh - 220px) * 1.33)); margin: 0 auto; }
+.zm-map { background: linear-gradient(180deg, #2a3a14, #18240a); border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
+.zm-map-t { color: #e0f0b0; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; }
+.zm-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; max-height: calc(100vh - 260px); overflow: auto; }
+.zm-lv { aspect-ratio: 1; border: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #b8f080, #4a9a2a); color: #10300a; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+.zm-lv b { font: 700 15px 'PT Sans', Arial, sans-serif; } .zm-lv span { font-size: 9px; }
+.zm-lv.done { background: radial-gradient(circle at 35% 30%, #fff0a0, #d0a020); }
+.zm-lv.locked { background: #3a4a2a; color: #7a8a60; cursor: default; }
+.zm-play { position: relative; display: flex; flex-direction: column; gap: 8px; }
+.zm-hud { display: flex; gap: 16px; justify-content: center; color: #f0f4d8; font: 14px 'PT Sans', Arial, sans-serif; }
+.zm-play canvas { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.5); touch-action: none; cursor: crosshair; }
+.zm-btns { display: flex; gap: 8px; justify-content: center; }
+.zm-end { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.zm-end h2 { margin: 0 0 6px; } .zm-end div { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
