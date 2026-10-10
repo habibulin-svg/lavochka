@@ -1,0 +1,29 @@
+/* Сцена с картами (общая для карточных игр). */
+.cs-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.cs-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; --cs-dur: 360ms; }
+.cs-over { position: absolute; inset: 0; pointer-events: none; z-index: 400; }
+.cs-card {
+  position: absolute; left: 0; top: 0; width: 100px; height: 155px; transform-origin: 50% 50%;
+  transition: transform var(--cs-dur) cubic-bezier(0.2, 0.7, 0.3, 1), opacity var(--cs-dur), filter 0.15s;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  will-change: transform;
+}
+.cs-card .card { width: 100%; height: 100%; }
+.cs-card::after { content: ''; position: absolute; inset: 0; border-radius: 5% / 3.2%; pointer-events: none;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.06)); }
+.cs-card.cs-can { cursor: pointer; }
+.cs-card.cs-can:hover { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)) drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35)) brightness(1.04); }
+.cs-card.cs-sel { cursor: pointer; filter: drop-shadow(0 0 0 #ffd24a) drop-shadow(0 0 6px #ffd24a) drop-shadow(0 12px 16px rgba(0, 0, 0, 0.4)); }
+.cs-card.cs-dim { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)) brightness(0.78) saturate(0.8); }
+.cs-plate { position: absolute; transform: translate(-50%, 0); display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 3px 10px 3px 8px; border-radius: 999px; background: rgba(250, 244, 228, 0.92); color: #2a1a0a; font: 15px 'PT Serif', Georgia, serif;
+  border-left: 6px solid var(--c); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.cs-plate.on { background: #fff4c2; box-shadow: 0 0 0 3px #ffd24a, 0 2px 8px rgba(0, 0, 0, 0.4); }
+.cs-plate.pick { pointer-events: auto; cursor: pointer; animation: cs-glow 1s ease-in-out infinite; box-shadow: 0 0 0 3px #ffb020, 0 2px 8px rgba(0, 0, 0, 0.4); }
+.cs-plate i { font-style: normal; font-weight: 700; color: #7a3a10; }
+.cs-plate em { font-style: italic; opacity: 0.75; }
+@keyframes cs-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+.cs-banner { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); z-index: 500; padding: 16px 34px; border-radius: 14px;
+  background: rgba(20, 30, 22, 0.88); border: 2px solid #c9a24a; color: #f6e2b0; font: 700 32px 'PT Serif', Georgia, serif; white-space: nowrap; pointer-events: none; }
+.cs-cover { position: absolute; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; background: rgba(15, 25, 18, 0.82); }
+.cs-cover-box { text-align: center; background: #f4ecd8; color: #2a1a0a; padding: 24px 32px; border-radius: 16px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); font: 22px 'PT Serif', Georgia, serif; display: flex; flex-direction: column; gap: 12px; }

@@ -11,7 +11,7 @@ export const SEATS = [
 function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
     case 'placed':
-      return `${name(ev.seat)} расставил флот.`;
+      return `${name(ev.seat)}: флот на местах.`;
     case 'start':
       return `Флоты на местах. Первым стреляет ${name(ev.first)}.`;
     case 'shots':
@@ -19,7 +19,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
         .map((r) => `<b>${cellName(r.cell)}</b> — ${r.sunk ? `убит${r.sunk.length > 1 ? ` (${NAMES[r.sunk.length]}палубный)` : ' (одиночка)'}!` : r.hit ? 'ранен!' : 'мимо'}`)
         .join(', ')}`;
     case 'end':
-      return ev.resign ? `🏳 Соперник сдался. Победа — ${name(ev.winner)}.` : `🏆 <b>${name(ev.winner)}</b> потопил весь флот!`;
+      return ev.resign ? `🏳 Соперник сдался. Победа — ${name(ev.winner)}.` : `🏆 <b>${name(ev.winner)}</b>: весь флот соперника на дне!`;
   }
   return null;
 }
@@ -113,7 +113,7 @@ export const def: GameDef<State, Action, Event, State> = {
           setup: () => newState(cfgFrom({})),
           intro: 'Пустые поля — сейчас оба расставят флот.',
           steps: [
-            { seat: 0, action: { type: 'place', ships: FLEET } as Action, caption: 'Вовка расставил свои корабли.' },
+            { seat: 0, action: { type: 'place', ships: FLEET } as Action, caption: 'Вовка расставляет свои корабли.' },
             { seat: 1, action: { type: 'place', ships: FLEET2 } as Action, rig: [0], caption: 'Серёга тоже готов. Первым стреляет Вовка.' },
           ],
         },

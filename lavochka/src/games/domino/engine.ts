@@ -396,8 +396,9 @@ export function makeView(s: State, seats: number[] | 'all'): View {
     ...s,
     hands: s.hands.map((h, x) => (see(x) ? h.slice() : [])),
     bazaar: [],
-    counts: s.hands.map((h) => h.length),
-    bazaarCount: s.bazaar.length,
+    // повторный вызов на готовом виде (превью) не теряет счётчиков
+    counts: s.hands.map((h, i) => (s as Partial<View>).counts?.[i] ?? h.length),
+    bazaarCount: (s as Partial<View>).bazaarCount ?? s.bazaar.length,
     me: seats === 'all' ? s.seats.slice() : seats.slice(),
   };
 }

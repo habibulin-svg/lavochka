@@ -1,0 +1,27 @@
+/* Тысяча: стол под зелёным сукном, «пулька» в панели. */
+.table--thousand {
+  --panel-bg: linear-gradient(180deg, #f4ecd8, #e6d9b8);
+  --panel-ink: #2a1a0a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.12), transparent 65%), #1b2a20;
+}
+.th-cloth {
+  position: absolute; inset: 14px; border-radius: 120px / 90px;
+  background: radial-gradient(ellipse at 50% 42%, #3f7a52, #2a5a3a 70%, #1f4a2e);
+  box-shadow: inset 0 0 0 10px #5a3416, inset 0 0 0 14px #3a200c, inset 0 0 60px rgba(0, 0, 0, 0.5), 0 18px 30px rgba(0, 0, 0, 0.5);
+}
+.th-plates { position: absolute; inset: 0; }
+.th-trump { position: absolute; left: 900px; top: 520px; width: 80px; text-align: center; color: #f5ecd0; font: 700 32px 'PT Serif', Georgia, serif; text-shadow: 0 1px 3px #000; }
+.th-trump span { display: inline-block; width: 46px; height: 46px; line-height: 46px; border-radius: 50%; background: rgba(250, 244, 228, 0.92); color: #14141a; text-shadow: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.th-trump span.red { color: #c8102e; }
+.th-trump small { display: block; font-size: 12px; font-weight: 400; }
+.th-label { position: absolute; transform: translate(-50%, 0); color: #f5ecd0; font: 600 14px 'PT Serif', Georgia, serif; text-shadow: 0 1px 2px #000; }
+.th-controls { display: flex; flex-direction: column; gap: 8px; }
+.th-btns { display: flex; flex-direction: column; gap: 6px; }
+.th-btns .btn { width: 100%; }
+.th-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 6px; }
+.th-ask { font-weight: 700; }
+.th-sheet table { width: 100%; border-collapse: collapse; font: 13px 'PT Sans', Arial, sans-serif; }
+.th-sheet th, .th-sheet td { border-bottom: 1px solid rgba(60, 40, 10, 0.25); padding: 2px 4px; text-align: center; }
+.th-sheet td.ok { color: #2a7a3a; font-weight: 700; }
+.th-sheet td.bad { color: #b3322a; font-weight: 700; }
+.th-sheet tr.sum td { font-weight: 700; border-top: 2px solid rgba(60, 40, 10, 0.5); }

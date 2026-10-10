@@ -10,4 +10,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   domino: () => import('./domino/def').then((m) => m.def),
   seabattle: () => import('./seabattle/def').then((m) => m.def),
   dots: () => import('./dots/def').then((m) => m.def),
+  thousand: () => import('./thousand/def').then((m) => m.def),
 };

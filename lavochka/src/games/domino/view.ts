@@ -312,7 +312,7 @@ class DominoView implements GameView<View, Event> {
       } else {
         // чужие руки — рубашками (в показе правил — лицом)
         const size = 20;
-        const list = up && this.ctx.demo ? v.hands[seat] : Array.from({ length: n }, () => null);
+        const list = up && this.ctx.demo && v.hands[seat].length ? v.hands[seat] : Array.from({ length: n }, () => null);
         list.forEach((b, i) => {
           const off = (i - (list.length - 1) / 2) * size * 1.1;
           let x: number;
