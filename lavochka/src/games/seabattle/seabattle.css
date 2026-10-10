@@ -1,0 +1,40 @@
+/* Морской бой: тетрадный лист, синяя ручка. */
+.table--seabattle {
+  --panel-bg: repeating-linear-gradient(0deg, rgba(120, 160, 200, 0.18) 0 1px, transparent 1px 18px), repeating-linear-gradient(90deg, rgba(120, 160, 200, 0.18) 0 1px, transparent 1px 18px), #f6f3e8;
+  --panel-ink: #1f2a50;
+  --panel-edge: rgba(40, 60, 120, 0.4);
+  --table-bg: radial-gradient(ellipse at 50% 25%, rgba(255, 240, 200, 0.12), transparent 60%), linear-gradient(160deg, #3a3226, #1c1812 70%);
+}
+.sb-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.sb-board { width: 100%; height: auto; max-height: 100%; aspect-ratio: 1000 / 560; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55)); user-select: none; border-radius: 4px; }
+.sb-board .sb-ink { stroke: #23408f; fill: none; stroke-linecap: round; opacity: 0.85; }
+.sb-board .sb-hand, .sb-board .sb-title, .sb-board .sb-note { font-family: 'Caveat', cursive; fill: #23408f; text-anchor: middle; }
+.sb-board .sb-hand { font-size: 24px; font-weight: 700; }
+.sb-board .sb-title { font-size: 34px; font-weight: 700; }
+.sb-board .sb-note { font-size: 24px; text-anchor: start; }
+.sb-board .sb-ship { fill: url(#sbHatch); stroke: #23408f; stroke-width: 2.4; }
+.sb-board .sb-enemy { opacity: 0.55; }
+.sb-board .sb-sunk { stroke: #b3322a; fill: rgba(179, 50, 42, 0.12); }
+.sb-board .sb-hit { stroke: #c0281e; stroke-width: 3.2; stroke-linecap: round; }
+.sb-board .sb-miss { fill: #23408f; }
+.sb-board .sb-auto { fill: #23408f; opacity: 0.45; }
+.sb-board .sb-aim { fill: none; stroke: #c0281e; stroke-width: 2.5; stroke-dasharray: 4 3; }
+.sb-board .sb-sight { fill: none; stroke: #c0281e; stroke-width: 1.8; opacity: 0.8; pointer-events: none; }
+.sb-board .sb-ghost { pointer-events: none; stroke-width: 2.6; stroke-dasharray: 6 4; }
+.sb-board .sb-ghost.ok { fill: rgba(40, 140, 60, 0.18); stroke: #2a8a3e; }
+.sb-board .sb-ghost.bad { fill: rgba(200, 40, 30, 0.18); stroke: #c0281e; }
+.sb-board .sb-splash { fill: none; stroke: #5a8ad0; stroke-width: 3; animation: sb-splash 0.4s ease-out forwards; }
+.sb-board .sb-splash.hit { stroke: #e05020; }
+@keyframes sb-splash { from { r: 4; opacity: 1; } to { r: 22; opacity: 0; } }
+.sb-board .sb-bannerbox rect { fill: rgba(246, 243, 232, 0.95); stroke: #23408f; stroke-width: 2.5; }
+.sb-board .sb-bannerbox text { font: 700 40px 'Caveat', cursive; fill: #c0281e; text-anchor: middle; dominant-baseline: central; }
+.sb-cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(20, 24, 40, 0.94); border-radius: 6px; z-index: 5; }
+.sb-cover-box { text-align: center; color: #f0eadc; font-size: 20px; display: flex; flex-direction: column; gap: 14px; }
+.sb-controls { display: flex; flex-direction: column; gap: 8px; }
+.sb-btns { display: flex; flex-direction: column; gap: 6px; }
+.sb-btns .btn { width: 100%; }
+.sb-dock { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sb-dk { font-size: 14px; }
+.sb-dk.on { outline: 3px solid #23408f; }
+.sb-cells { letter-spacing: -2px; color: #23408f; }
+.sb-ask { font-weight: 700; }
