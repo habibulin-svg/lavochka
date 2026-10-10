@@ -1,0 +1,6 @@
+/* Настольный хоккей: коробка на канве и кнопки для телефона. */
+.hk-dev { position: relative; width: min(100%, 1000px, calc((100vh - 170px) * 1.55)); margin: 0 auto; touch-action: none; user-select: none; }
+.hk-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
+.hk-touch { display: none; position: absolute; right: 12px; bottom: 12px; gap: 10px; }
+.hk-touch button { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 30px; background: rgba(255, 255, 255, 0.75); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); }
+@media (pointer: coarse) { .hk-touch { display: flex; } }

@@ -70,7 +70,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'nep', title: 'НЭП', sub: 'капитализм по-советски', cat: 'tabletop', players: '2–6', wave: 7, icon: '💼', tint: '#3a3a3a' },
   // — настольный спорт —
   { id: 'billiards', title: 'Бильярд', sub: 'кий, мел и лузы', cat: 'sport', players: '1–2', wave: 6, icon: '🎱', tint: '#14532d', thumb: 'billiards.webp', load: () => import('./billiards'), variants: ['восьмёрка', 'американка', 'московская', 'невская', 'классика 71'] },
-  { id: 'hockey', title: 'Настольный хоккей', sub: 'на штырьках', cat: 'sport', players: '1–2', wave: 6, icon: '🏒', tint: '#1f4f7a' },
+  { id: 'hockey', title: 'Настольный хоккей', sub: 'на штырьках', cat: 'sport', players: '1–2', wave: 6, icon: '🏒', tint: '#1f4f7a', arcade: true, load: () => import('./hockey'), variants: ['против компьютера', 'вдвоём', 'до 5 шайб или 3 минуты'] },
   { id: 'football', title: 'Настольный футбол', sub: 'жми рычаги', cat: 'sport', players: '1–2', wave: 6, icon: '⚽', tint: '#2f6a2a' },
   { id: 'basketball', title: 'Настольный баскетбол', sub: 'щелчок — и в кольцо', cat: 'sport', players: '1–2', wave: 6, icon: '🏀', tint: '#a0521a' },
   { id: 'zarulem', title: 'За рулём', sub: 'дорога крутится, руль в руках', cat: 'sport', players: '1', wave: 5, icon: '🚗', tint: '#8a1a1a', arcade: true, load: () => import('./zarulem'), variants: ['внешнее кольцо', 'внутреннее кольцо'] },
