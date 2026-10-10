@@ -85,3 +85,28 @@ describe('комната', () => {
     await until(() => extra.seq === owner.seq, 5000);
   }, 30_000);
 });
+
+describe('голосовой чат', () => {
+  it('комната ведёт список участников и пересылает сигналы только между ними', async () => {
+    const { join } = await setup();
+    const owner = join('Хозяин', 'key', 1).client;
+    const guest = join('Гость', undefined, 2).client;
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)), 5000, 'гость в лобби');
+    // не в чате — сигнал не уходит
+    guest.client.rtc('Хозяин', { candidate: { candidate: 'x' } });
+    owner.client.voice(true, true);
+    await until(() => guest.log.some((m) => m.t === 'voice' && m.members.length === 1), 5000, 'список у гостя');
+    const list = guest.log.filter((m) => m.t === 'voice').pop();
+    expect(list && list.t === 'voice' && list.members[0]).toMatchObject({ id: 'Хозяин', video: true });
+    guest.client.voice(true);
+    await until(() => owner.log.some((m) => m.t === 'voice' && m.members.length === 2), 5000, 'оба в чате');
+    guest.client.rtc('Хозяин', { description: { type: 'offer', sdp: 'v=0' } });
+    await until(() => owner.log.some((m) => m.t === 'rtc'), 5000, 'сигнал дошёл');
+    const sig = owner.log.filter((m) => m.t === 'rtc');
+    expect(sig.length).toBe(1);
+    expect(sig[0]).toMatchObject({ from: 'Гость', data: { description: { type: 'offer' } } });
+    // гость вышел — список обновился
+    guest.client.voice(false);
+    await until(() => owner.log.filter((m) => m.t === 'voice').pop()?.t === 'voice' && (owner.log.filter((m) => m.t === 'voice').pop() as { members: unknown[] }).members.length === 1, 5000, 'гость вышел из чата');
+  });
+});

@@ -259,3 +259,19 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .card-joker { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: 320 / 496; background: #f7f3e8; border-radius: 5% / 3.2%; color: #14141a; font: 700 28px 'PT Serif', Georgia, serif; }
 .card-joker small { font-size: 11px; letter-spacing: 0.08em; }
 .card-joker[data-red='1'] { color: #c8102e; }
+
+/* Голосовой чат за сетевым столом */
+.voice { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px; border-radius: 10px; background: rgba(60, 40, 10, 0.08); }
+.voice-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.voice-who, .voice-quiet { font-size: 12px; opacity: 0.8; }
+.voice-quiet { font-style: italic; color: #4a3a8a; opacity: 1; }
+.voice-tiles { display: flex; gap: 6px; flex-wrap: wrap; }
+.voice-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 64px; }
+.voice-face { width: 64px; height: 48px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: var(--c); color: #fff; font: 700 20px 'PT Sans', Arial, sans-serif; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15); transition: box-shadow 0.12s; }
+.voice-face video { width: 100%; height: 100%; object-fit: cover; }
+.voice-tile.me .voice-face video { transform: scaleX(-1); }
+.voice-tile.talk .voice-face { box-shadow: 0 0 0 3px #ffd24a, 0 0 calc(var(--lv) * 18px) #ffd24a; }
+.voice-tile.muted .voice-face { opacity: 0.6; }
+.voice-name { font-size: 11px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-tile audio { display: none; }

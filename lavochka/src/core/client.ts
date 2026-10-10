@@ -17,6 +17,8 @@ export class RoomClient {
   /** Пока интерфейс игры грузится, сообщения копятся здесь (кроме ping). */
   private held: RoomMsg[] | null = [];
   welcome: Extract<RoomMsg, { t: 'welcome' }> | null = null;
+  /** Свой clientId (для голосового чата). */
+  readonly id: string;
   private welcomeWaiters: { ok: (w: Extract<RoomMsg, { t: 'welcome' }>) => void; fail: (e: Error) => void }[] = [];
 
   constructor(
@@ -25,7 +27,8 @@ export class RoomClient {
   ) {
     link.onMessage = (m: RoomMsg) => this.receive(m);
     link.onClose = () => this.lost();
-    this.send({ t: 'hello', clientId: hello.clientId ?? settings.clientId, name: hello.name, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
+    this.id = hello.clientId ?? settings.clientId;
+    this.send({ t: 'hello', clientId: this.id, name: hello.name, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
     if (!link.local) {
       this.watchdog = setInterval(() => {
         if (Date.now() - this.lastSeen > LOST_MS) this.lost();
@@ -97,6 +100,12 @@ export class RoomClient {
   }
   restart() {
     this.send({ t: 'restart' });
+  }
+  voice(on: boolean, video = false) {
+    this.send({ t: 'voice', on, video });
+  }
+  rtc(to: string, data: unknown) {
+    this.send({ t: 'rtc', to, data });
   }
 
   private shutdown() {

@@ -9,6 +9,7 @@ import type { GameResult } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
 import { esc, h } from './util';
 import type { GameModule, GameView, ViewCtx } from './view';
+import { Voice, type VoiceTile } from './voice';
 
 export type NetMode = 'local' | 'p2p' | 'server';
 
@@ -43,6 +44,8 @@ export class Table {
   private started = false;
   private unsub: () => void;
   private closed = false;
+  private voice: Voice | null = null;
+  private voiceEls = new Map<string, HTMLElement>();
 
   constructor(private o: TableOpts) {
     const def = o.mod.def;
@@ -55,6 +58,7 @@ export class Table {
           <button class="icon-btn" data-act="sound" title="Звук"></button>
         </div>
         <div class="room-badge" hidden></div>
+        <div class="voice" hidden></div>
         <ul class="players"></ul>
         <div class="game-controls"></div>
         <div class="table-status">—</div>
@@ -120,6 +124,112 @@ export class Table {
 
     this.unsub = o.client.on((m) => this.onMsg(m));
     o.client.onLost = () => this.lost();
+    if (o.mode !== 'local' && Voice.supported()) {
+      this.voice = new Voice(o.client);
+      this.voice.onChange = () => this.renderVoice();
+      this.renderVoice();
+    }
+  }
+
+  // ---------------------------------------------------------------- голосовой чат
+
+  private renderVoice() {
+    const v = this.voice;
+    const box = this.el.querySelector('.voice') as HTMLElement;
+    if (!v || this.closed) return;
+    box.hidden = false;
+    const tiles = v.tiles();
+    if (!v.joined) {
+      this.voiceEls.clear();
+      const who = tiles.map((t) => esc(t.name)).join(', ');
+      if (box.dataset.mode !== 'out' || box.dataset.who !== who) {
+        box.dataset.mode = 'out';
+        box.dataset.who = who;
+        box.innerHTML = `<div class="voice-row"><button class="btn small" data-v="join">🎤 Голос</button><button class="btn small" data-v="cam">📷 С камерой</button></div>${who ? `<div class="voice-who">В разговоре: ${who}</div>` : ''}`;
+        const join = (video: boolean) =>
+          v.join(video).catch((e) => toast(e?.name === 'NotAllowedError' ? 'Нет доступа к микрофону или камере' : 'Не удалось включить микрофон', 4000));
+        (box.querySelector('[data-v=join]') as HTMLButtonElement).onclick = () => join(false);
+        (box.querySelector('[data-v=cam]') as HTMLButtonElement).onclick = () => join(true);
+      }
+      return;
+    }
+    if (box.dataset.mode !== 'in') {
+      box.dataset.mode = 'in';
+      box.innerHTML = `<div class="voice-tiles"></div><div class="voice-quiet" hidden></div><div class="voice-row"><button class="btn small" data-v="mic"></button><button class="btn small" data-v="camt"></button><button class="btn small" data-v="leave">Выйти</button></div>`;
+      (box.querySelector('[data-v=mic]') as HTMLButtonElement).onclick = () => v.setMic(!v.micOn);
+      (box.querySelector('[data-v=camt]') as HTMLButtonElement).onclick = () => v.setCam(!v.camOn);
+      (box.querySelector('[data-v=leave]') as HTMLButtonElement).onclick = () => v.leave();
+      this.voiceEls.clear();
+    }
+    (box.querySelector('[data-v=mic]') as HTMLButtonElement).textContent = v.micOn ? '🎤 Вкл' : '🔇 Выкл';
+    const camBtn = box.querySelector('[data-v=camt]') as HTMLButtonElement;
+    camBtn.hidden = !tiles.find((t) => t.me)?.stream?.getVideoTracks().length;
+    camBtn.textContent = v.camOn ? '📷 Вкл' : '📷 Выкл';
+    const q = box.querySelector('.voice-quiet') as HTMLElement;
+    q.hidden = !v.quiet;
+    q.textContent = v.quiet ?? '';
+    const wrap = box.querySelector('.voice-tiles') as HTMLElement;
+    const seen = new Set<string>();
+    for (const t of tiles) {
+      seen.add(t.id);
+      let el = this.voiceEls.get(t.id);
+      if (!el) {
+        el = h(`<div class="voice-tile"><div class="voice-face"></div><span class="voice-name"></span></div>`);
+        this.voiceEls.set(t.id, el);
+        wrap.appendChild(el);
+      }
+      this.voiceTile(el, t);
+    }
+    for (const [id, el] of [...this.voiceEls]) {
+      if (seen.has(id)) continue;
+      el.remove();
+      this.voiceEls.delete(id);
+    }
+  }
+
+  private voiceTile(el: HTMLElement, t: VoiceTile) {
+    const look = t.seat != null ? this.o.mod.def.seats[t.seat] : null;
+    el.style.setProperty('--c', look?.color ?? '#888');
+    el.style.setProperty('--lv', t.level.toFixed(2));
+    el.classList.toggle('talk', t.level > 0.08 && !t.muted);
+    el.classList.toggle('muted', t.muted);
+    el.classList.toggle('me', t.me);
+    (el.querySelector('.voice-name') as HTMLElement).textContent = (t.me ? 'вы' : t.name) + (t.muted ? ' 🔇' : '');
+    const face = el.querySelector('.voice-face') as HTMLElement;
+    // видео — только когда есть картинка; звук чужих — отдельным <audio>
+    let vid = face.querySelector('video');
+    if (t.video && t.stream?.getVideoTracks().length) {
+      if (!vid) {
+        vid = document.createElement('video');
+        vid.autoplay = true;
+        vid.playsInline = true;
+        vid.muted = true;
+        face.innerHTML = '';
+        face.appendChild(vid);
+      }
+      if (vid.srcObject !== t.stream) vid.srcObject = t.stream;
+    } else if (vid || !face.textContent) {
+      face.innerHTML = '';
+      face.textContent = (t.me ? 'Я' : t.name.replace(/<[^>]+>/g, '').trim()[0] ?? '?').toUpperCase();
+    }
+    if (!t.me && t.stream) {
+      let au = el.querySelector('audio');
+      if (!au) {
+        au = document.createElement('audio');
+        au.autoplay = true;
+        el.appendChild(au);
+      }
+      if (au.srcObject !== t.stream) {
+        au.srcObject = t.stream;
+        void au.play().catch(() => {});
+      }
+    }
+  }
+
+  /** Игра может потребовать тишины (ночь в мафии). */
+  private applyQuiet() {
+    if (!this.voice || !this.current) return;
+    this.voice.setQuiet(this.view.quiet ? this.view.quiet(this.current) : null);
   }
 
   // ---------------------------------------------------------------- сообщения комнаты
@@ -166,6 +276,7 @@ export class Table {
     closeAllModals();
     (this.el.querySelector('.log') as HTMLElement).innerHTML = '';
     this.view.setView(m.view);
+    this.applyQuiet();
     this.log(this.started ? '<b>Новая партия.</b>' : '<b>Партия началась.</b>');
     this.started = true;
     this.renderPlayers();
@@ -192,6 +303,7 @@ export class Table {
         this.seq = m.seq;
         this.result = m.result;
         this.renderPlayers();
+        this.applyQuiet();
       })
       .catch((e) => console.error(e))
       .then(() => {
@@ -352,6 +464,8 @@ export class Table {
     this.closed = true;
     this.gen++;
     this.unsub();
+    this.voice?.destroy();
+    this.voice = null;
     this.view.destroy?.();
     closeAllModals();
     removeScreen('table');

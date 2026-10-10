@@ -8,7 +8,7 @@
  * 'bot' — боты. Если игрок отключился, за его место ходит бот, пока он не вернётся (по clientId или имени).
  */
 import { Authority, type Snapshot, type StepResult } from './authority';
-import { PROTOCOL_VERSION, type ClientMsg, type Link, type RoomMsg, type SeatStatus } from './protocol';
+import { PROTOCOL_VERSION, type ClientMsg, type Link, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
 import type { GameDef, Options, SeatSpec } from './types';
 
@@ -25,6 +25,8 @@ interface Conn {
   owner: boolean;
   lastSeen: number;
   idleSeq: number;
+  /** В голосовом чате (и с камерой ли). */
+  voice: { video: boolean } | null;
 }
 
 export interface RoomConfig {
@@ -74,7 +76,7 @@ export class Room {
 
   connect(link: Link) {
     if (this.closed) return link.close();
-    const conn: Conn = { link, clientId: null, name: '', seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0 };
+    const conn: Conn = { link, clientId: null, name: '', seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, voice: null };
     this.conns.add(conn);
     link.onMessage = (m) => this.onMsg(conn, m);
     link.onClose = () => this.drop(conn);
@@ -117,9 +119,34 @@ export class Room {
         return;
       case 'bye':
         return this.drop(conn);
+      case 'voice':
+        if (!conn.clientId) return;
+        conn.voice = m.on ? { video: !!m.video } : null;
+        return this.voiceList();
+      case 'rtc': {
+        // сигналы WebRTC — только между участниками голосового чата, не больше 32 КБ
+        if (!conn.voice || !conn.clientId) return;
+        let size = 0;
+        try {
+          size = JSON.stringify(m.data ?? null).length;
+        } catch {
+          return;
+        }
+        if (size > 32000) return;
+        for (const c of this.conns) if (c.voice && c.clientId === m.to) this.send(c, { t: 'rtc', from: conn.clientId, data: m.data });
+        return;
+      }
       default:
         return;
     }
+  }
+
+  /** Кто в голосовом чате — всем. */
+  private voiceList() {
+    const members: VoiceMember[] = [...this.conns]
+      .filter((c) => c.voice && c.clientId)
+      .map((c) => ({ id: c.clientId!, name: c.seats.length === 1 ? this.seatName(c.seats[0]) : c.name, seat: c.seats.length === 1 ? c.seats[0] : null, video: c.voice!.video }));
+    this.broadcast({ t: 'voice', members });
   }
 
   private hello(conn: Conn, m: Extract<ClientMsg, { t: 'hello' }>) {
@@ -178,6 +205,7 @@ export class Room {
 
   private kick(c: Conn) {
     this.conns.delete(c);
+    if (c.voice) this.voiceList();
     try {
       c.link.onClose = null;
       c.link.close();
@@ -189,6 +217,7 @@ export class Room {
   private drop(conn: Conn) {
     if (!this.conns.has(conn)) return;
     this.conns.delete(conn);
+    if (conn.voice) this.voiceList();
     try {
       conn.link.onClose = null;
       conn.link.close();

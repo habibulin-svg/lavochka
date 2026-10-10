@@ -323,6 +323,10 @@ class MafiaView implements GameView<View, Event> {
     return mine ? 'Ваш голос' : `Голосует ${name(toAct[0])}…`;
   }
 
+  quiet(v: View) {
+    return v.phase === 'night' ? 'Ночь — город спит: микрофоны и камеры выключены' : null;
+  }
+
   playerStats(v: View, seat: number) {
     if (!v.alive.includes(seat)) return v.shown[seat] ? `выбыл · ${ROLE_NAME[v.shown[seat]]}` : 'выбыл';
     return v.nominees.includes(seat) ? 'выставлен' : '';

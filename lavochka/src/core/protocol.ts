@@ -14,6 +14,14 @@ export interface SeatStatus {
   online: boolean;
 }
 
+/** Участник голосового чата (голос и видео идут напрямую между браузерами, комната только пересылает сигналы). */
+export interface VoiceMember {
+  id: string;
+  name: string;
+  seat: number | null;
+  video: boolean;
+}
+
 export type ClientMsg =
   | { t: 'hello'; clientId: string; name: string; ownerKey?: string; v: number }
   | { t: 'act'; seat: number; action: unknown }
@@ -22,7 +30,9 @@ export type ClientMsg =
   | { t: 'start'; fillBots: boolean }
   | { t: 'restart' }
   | { t: 'pong' }
-  | { t: 'bye' };
+  | { t: 'bye' }
+  | { t: 'voice'; on: boolean; video?: boolean }
+  | { t: 'rtc'; to: string; data: unknown };
 
 export type RoomMsg =
   | { t: 'welcome'; code: string; game: string; options: Options; mySeats: number[]; owner: boolean }
@@ -50,7 +60,9 @@ export type RoomMsg =
   | { t: 'chat'; name: string; seat: number | null; text: string }
   | { t: 'error'; text: string }
   | { t: 'closed'; reason?: string }
-  | { t: 'ping' };
+  | { t: 'ping' }
+  | { t: 'voice'; members: VoiceMember[] }
+  | { t: 'rtc'; from: string; data: unknown };
 
 /** Двусторонний канал сообщений. Обработчики назначает тот, кто канал использует. */
 export interface Link {

@@ -28,6 +28,8 @@ export interface GameView<V = any, E = any> {
   status?(view: V, toAct: number[], interactive: number[]): string;
   /** Короткая сводка по игроку для боковой панели (HTML). */
   playerStats?(view: V, seat: number): string;
+  /** Тишина в голосовом чате (ночь в мафии): причина — микрофоны и камеры выключаются; null — можно говорить. */
+  quiet?(view: V): string | null;
   destroy?(): void;
 }
 
