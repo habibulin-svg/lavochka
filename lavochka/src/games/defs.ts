@@ -15,4 +15,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   '101': () => import('./sto/def').then((m) => m.def),
   preferans: () => import('./preferans/def').then((m) => m.def),
   holdem: () => import('./holdem/def').then((m) => m.def),
+  mafia: () => import('./mafia/def').then((m) => m.def),
 };

@@ -1,0 +1,57 @@
+/* Мафия: двор вечером — днём светлее, ночью гаснут окна и выходит луна. */
+.table--mafia {
+  --panel-bg: linear-gradient(180deg, #ece6f4, #d8cfe6);
+  --panel-ink: #1e1430;
+  --table-bg: #120c1c;
+}
+.mf-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 18px; background: linear-gradient(180deg, #5a7aa8, #a8b8c8 60%, #3a3428 60%, #2a241c); transition: background 1s; }
+.mf-wrap.mf-night { background: linear-gradient(180deg, #0a0c22, #1c1a3a 60%, #16120e 60%, #0e0c08); }
+.mf-sky { position: absolute; inset: 0 0 40% 0; pointer-events: none; }
+.mf-moon { position: absolute; right: 8%; top: 8%; width: 60px; height: 60px; border-radius: 50%; background: #f6f0d0; box-shadow: 0 0 40px rgba(246, 240, 208, 0.6); opacity: 0; transition: opacity 1s; }
+.mf-night .mf-moon { opacity: 1; }
+.mf-houses { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; gap: 4px; padding: 0 2%; }
+.mf-house { flex: 0 0 var(--w); height: var(--h); background: #2a3040; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; align-content: start; }
+.mf-house i { height: 10px; background: #f0c860; opacity: 0.85; transition: opacity 1s; }
+.mf-night .mf-house i:nth-child(odd) { opacity: 0.15; }
+.mf-ring { position: absolute; inset: 0; }
+.mf-seat { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; width: 110px; cursor: default; z-index: 2; }
+.mf-face { width: 54px; height: 54px; border-radius: 50%; background: var(--c); color: #fff; font: 700 24px/54px 'PT Sans', Arial, sans-serif; text-align: center;
+  border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); transition: transform 0.2s; }
+.mf-name { background: rgba(250, 246, 236, 0.92); color: #1e1430; padding: 1px 8px; border-radius: 999px; font: 13px 'PT Sans', Arial, sans-serif; white-space: nowrap; display: flex; gap: 4px; align-items: center; }
+.mf-role { font-size: 14px; }
+.mf-nom { background: #b3322a; color: #fff; padding: 0 6px; border-radius: 6px; font: 700 11px 'PT Sans', Arial, sans-serif; }
+.mf-bubble { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -6px); width: 190px; background: #fffef6; color: #1e1430; border-radius: 12px; padding: 6px 8px;
+  font: 12px/1.3 'PT Sans', Arial, sans-serif; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); z-index: 3; }
+.mf-bubble::after { content: ''; position: absolute; left: 50%; top: 100%; border: 6px solid transparent; border-top-color: #fffef6; transform: translateX(-50%); }
+.mf-seat.mf-dead { opacity: 0.45; filter: grayscale(0.8); }
+.mf-seat.mf-dead .mf-bubble { display: none; }
+.mf-seat.mf-me .mf-face { border-color: #ffd24a; }
+.mf-seat.mf-talk .mf-face { transform: scale(1.12); box-shadow: 0 0 0 4px #ffd24a, 0 4px 12px rgba(0, 0, 0, 0.5); }
+.mf-seat.mf-can { cursor: pointer; }
+.mf-seat.mf-can .mf-face { box-shadow: 0 0 0 4px rgba(255, 176, 32, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5); animation: mf-glow 1s ease-in-out infinite alternate; }
+.mf-seat.mf-sel .mf-face { box-shadow: 0 0 0 5px #e0321c, 0 4px 10px rgba(0, 0, 0, 0.5); }
+@keyframes mf-glow { from { filter: brightness(1); } to { filter: brightness(1.25); } }
+.mf-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; text-shadow: 0 2px 6px #000; pointer-events: none; }
+.mf-title { font: 700 30px 'PT Serif', Georgia, serif; }
+.mf-sub { font: 14px 'PT Sans', Arial, sans-serif; opacity: 0.8; }
+.mf-cover { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(8, 6, 18, 0.95); }
+.mf-cover-box { text-align: center; color: #ece6f4; font-size: 20px; display: flex; flex-direction: column; gap: 14px; }
+.mf-panel { display: flex; flex-direction: column; gap: 8px; }
+.mf-card { position: relative; height: 96px; perspective: 600px; cursor: pointer; }
+.mf-card > div { position: absolute; inset: 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px;
+  backface-visibility: hidden; transition: transform 0.5s; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); }
+.mf-card-back { background: repeating-linear-gradient(45deg, #3a2a5a 0 10px, #2a1a4a 10px 20px); color: #ece6f4; font-weight: 700; }
+.mf-card-face { background: #fffef6; color: #1e1430; transform: rotateY(180deg); gap: 4px; }
+.mf-card-face b { font-size: 18px; }
+.mf-card-face small { font-size: 12px; opacity: 0.8; }
+.mf-card.open .mf-card-back { transform: rotateY(180deg); }
+.mf-card.open .mf-card-face { transform: rotateY(360deg); }
+.mf-checks { font-size: 13px; }
+.mf-ask { font-weight: 700; }
+.mf-speak textarea { width: 100%; resize: vertical; font: 14px 'PT Sans', Arial, sans-serif; border-radius: 8px; border: 1px solid #a090c0; padding: 6px; box-sizing: border-box; }
+.mf-row { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.mf-row .btn { width: 100%; }
+.mf-seat.mf-l .mf-bubble { left: 0; transform: translate(-10px, -6px); }
+.mf-seat.mf-l .mf-bubble::after { left: 40px; }
+.mf-seat.mf-r .mf-bubble { left: auto; right: 0; transform: translate(10px, -6px); }
+.mf-seat.mf-r .mf-bubble::after { left: auto; right: 40px; transform: none; }
