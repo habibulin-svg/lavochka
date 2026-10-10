@@ -190,7 +190,12 @@ interface RTCIceServerLike {
 async function iceServers(): Promise<RTCIceServerLike[]> {
   const env = process.env;
   if (env.TURN_URLS && env.TURN_USERNAME && env.TURN_CREDENTIAL) {
-    return [...STUN, { urls: env.TURN_URLS.split(',').map((s) => s.trim()).filter(Boolean), username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
+    // адрес без схемы («free.expressturn.com:3478») браузер не примет — дописываем turn:
+    const urls = env.TURN_URLS.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((u) => (/^(turns?|stun):/i.test(u) ? u : 'turn:' + u));
+    return [...STUN, { urls, username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
   }
   if (env.CF_TURN_KEY_ID && env.CF_TURN_API_TOKEN) {
     // временные логины на сутки, раздаём из кэша полдня

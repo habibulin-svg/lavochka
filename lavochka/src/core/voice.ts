@@ -187,7 +187,16 @@ export class Voice {
   }
 
   private openPeer(id: string) {
-    const pc = new RTCPeerConnection({ iceServers: this.ice });
+    let pc: RTCPeerConnection;
+    try {
+      pc = new RTCPeerConnection({ iceServers: this.ice });
+    } catch (e) {
+      // кривой адрес TURN в настройках сервера — хотя бы напрямую
+      console.warn('voice: ICE-серверы не подошли', e);
+      this.ice = STUN;
+      this.turn = false;
+      pc = new RTCPeerConnection({ iceServers: STUN });
+    }
     const p: Peer = {
       pc,
       polite: this.client.id > id,
