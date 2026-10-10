@@ -14,10 +14,12 @@ export const SEATS = [
   { name: 'Колян', color: '#5a5a5a', light: '#9a9a9a', dark: '#2a2a2a' },
 ];
 
-/** Звания по месту в партии (со званиями): первый вышедший — король, последний — г*вно. */
+/** Звания Короля-говно: Король, Принц, в середине — Палач, Солдат, Вор, Шут; последний — Говно. */
 export function titleOf(place: number, total: number): string {
-  if (place === total - 1) return 'Г*вно';
-  return ['Король', 'Принц', 'Граф', 'Барон', 'Мужик'][place] ?? 'Мужик';
+  if (place === total - 1) return 'Говно';
+  if (place === 0) return 'Король';
+  if (place === 1) return 'Принц';
+  return ['Палач', 'Солдат', 'Вор', 'Шут'][place - 2] ?? 'Шут';
 }
 
 const cards = (list: Card[]) => list.map((c) => `<b class="dk-c${c.s === 'H' || c.s === 'D' ? ' red' : ''}">${c.r > 10 ? 'ВДКТ'[c.r - 11] : c.r}${SUIT_SYM[c.s]}</b>`).join(' ');
@@ -29,7 +31,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       let t = ev.game > 1 ? `<b>Партия ${ev.game}.</b> ` : '';
       if (ev.dealer != null) t += `Сдаёт ${name(ev.dealer)}. `;
       if (ev.chooser != null) return t + `${name(ev.chooser)} выбирает козырь.`;
-      t += `Козырь — <b>${suitWord(ev.trump)}</b>${ev.trumpCard ? ` (${cards([ev.trumpCard])} под колодой)` : ''}. `;
+      if (ev.ptrump) t += `Личные козыри: ${ev.ptrump.map((x, seat) => (x ? `${name(seat)} ${SUIT_SYM[x]}` : '')).filter(Boolean).join(', ')}. `;
+      else t += `Козырь — <b>${suitWord(ev.trump)}</b>${ev.trumpCard ? ` (${cards([ev.trumpCard])} под колодой)` : ''}. `;
       t += ev.low ? `Младший козырь ${cards([ev.low])} у ${name(ev.first)} — ходит первым.` : `Первым ходит ${name(ev.first)}.`;
       return t;
     }
@@ -55,6 +58,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} забирает ${ev.cards.length} ${plural(ev.cards.length, 'карту', 'карты', 'карт')}.`;
     case 'draw':
       return ev.trump ? `${name(ev.seat)} добирает и забирает козырь ${cards([ev.trump])}.` : null;
+    case 'laid':
+      return `${name(ev.seat)} выкладывает ${cards([ev.card])}${ev.card.r === 14 ? ' — <b>длинный дурак!</b>' : ev.hand < 6 ? ` — теперь ему сдают по ${ev.hand}` : ''}.`;
     case 'out':
       return `${name(ev.seat)} вышел${ev.place === 1 ? ' первым' : ''}.`;
     case 'gameEnd': {
@@ -140,10 +145,18 @@ export const def: GameDef<State, Action, Event, View> = {
         { value: 24, label: '24 карты (с девяток)' },
         { value: 32, label: '32 карты (с семёрок)' },
         { value: 36, label: '36 карт (с шестёрок)' },
-        { value: 52, label: '52 карты — длинный' },
+        { value: 52, label: '52 карты (с двоек)' },
       ],
       default: 36,
       hint: 'Если на всех не хватает, колода берётся больше.',
+    },
+    {
+      key: 'long',
+      label: 'Длинный дурак',
+      hint: 'На 2–4 игроков (правильно — на четверых). Шестёрки раздают каждому: масть шестёрки — твой личный козырь, сами шестёрки не играют. Проигравший выкладывает следующую карту своей масти (7, 8 … туз); с десятки ему сдают 5 карт, с валета 4 и т. д. Выложил туза — длинный дурак.',
+      type: 'toggle',
+      default: false,
+      showIf: (o) => o.ranks !== true && o.diamonds !== true,
     },
     { key: 'firstFive', label: 'Первый отбой — не больше 5 карт', type: 'toggle', default: true },
     { key: 'multiLead', label: 'Ходить несколькими картами одного достоинства', type: 'toggle', default: true },
@@ -155,13 +168,13 @@ export const def: GameDef<State, Action, Event, View> = {
       hint: 'На четверых — 2 на 2, на шестерых — 3 на 3. Напарники сидят через одного: ходят и переводят только на соперника, на напарника не подкидывают. Вышла вся команда — она выиграла.',
       type: 'toggle',
       default: false,
-      showIf: (o) => o.ranks !== true,
+      showIf: (o) => o.ranks !== true && o.long !== true,
     },
     { key: 'pogony', label: 'Погоны', hint: 'Если дурака добили шестёркой (или двумя) — ему вешают погоны.', type: 'toggle', default: false },
     {
       key: 'ranks',
-      label: 'Звания (г*вно)',
-      hint: 'Серия партий. Кто вышел первым — король: он назначает козырь следующей партии. Дурак — г*вно: он тасует и сдаёт, на него и ходят.',
+      label: 'Звания (Король-говно)',
+      hint: 'Серия партий. После первой — звания по порядку выхода: Король, Принц, Палач, Солдат, Вор, Шут, Говно. Козырь назначает Король, сдаёт и ходит первым Говно. Проигравший меняется местами с Говном. Зовут друг друга только по званиям.',
       type: 'toggle',
       default: false,
     },
@@ -181,13 +194,13 @@ export const def: GameDef<State, Action, Event, View> = {
     },
   ],
   presets: [
-    { id: 'classic', label: 'Классический', hint: 'Простой дурак: без подкидывания', options: { throwers: 'none', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 } },
-    { id: 'podkidnoy', label: 'Подкидной', hint: 'Подкидывают все', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 } },
-    { id: 'perevodnoy', label: 'Переводной', hint: 'Перевод картой или показом козыря', options: { throwers: 'all', transfer: true, transferShow: true, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 } },
-    { id: 'long', label: 'Длинный', hint: 'Полная колода в 52 карты', options: { throwers: 'all', transfer: false, deck: 52, spades: false, diamonds: false, ranks: false, games: 1 } },
-    { id: 'japan', label: 'Японский', hint: 'Пики пиками, козырь — бубны', options: { throwers: 'all', transfer: false, deck: 36, spades: true, diamonds: true, ranks: false, games: 1 } },
-    { id: 'pairs', label: '2 на 2', hint: 'Подкидной парами: напарники через одного (на шестерых — 3 на 3)', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: true, games: 1 } },
-    { id: 'govno', label: 'Г*вно', hint: 'Со званиями: король выбирает козырь, г*вно сдаёт', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, teams: false, pogony: true, games: 5 } },
+    { id: 'classic', label: 'Классический', hint: 'Простой дурак: без подкидывания', options: { throwers: 'none', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
+    { id: 'podkidnoy', label: 'Подкидной', hint: 'Подкидывают все', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
+    { id: 'perevodnoy', label: 'Переводной', hint: 'Перевод картой или показом козыря', options: { throwers: 'all', transfer: true, transferShow: true, deck: 36, spades: false, diamonds: false, ranks: false, games: 1 , long: false} },
+    { id: 'long', label: 'Длинный', hint: 'Личные козыри из шестёрок, проигравший выкладывает карты до туза', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: false, long: true, games: 1 } },
+    { id: 'japan', label: 'Японский', hint: 'Пики пиками, козырь — бубны', options: { throwers: 'all', transfer: false, deck: 36, spades: true, diamonds: true, ranks: false, games: 1 , long: false} },
+    { id: 'pairs', label: '2 на 2', hint: 'Подкидной парами: напарники через одного (на шестерых — 3 на 3)', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: false, teams: true, games: 1 , long: false} },
+    { id: 'govno', label: 'Король-говно', hint: 'Звания: Король назначает козырь, первым ходит Говно', options: { throwers: 'all', transfer: false, deck: 36, spades: false, diamonds: false, ranks: true, teams: false, long: false, pogony: true, games: 5 } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -200,6 +213,8 @@ export const def: GameDef<State, Action, Event, View> = {
     const w = winners(s);
     const scores: Record<number, number> = {};
     for (const x of s.seats) scores[x] = s.fools[x];
+    if (s.cfg.long && s.seats.length <= 4) return { winners: w, text: 'не дошли до туза — длинный дурак другой', scores };
+    if (s.cfg.ranks) return { winners: w, text: `Король после ${s.game} ${plural(s.game, 'партии', 'партий', 'партий')}`, scores };
     if (s.cfg.games > 1) return { winners: w, text: `реже всех оставались дураком (${s.game} ${plural(s.game, 'партия', 'партии', 'партий')})`, scores };
     if (s.draw) return { winners: w, text: 'ничья — карты кончились у всех разом', scores };
     if (s.losers.length > 1) return { winners: w, text: 'команда вышла первой', scores };
@@ -227,7 +242,7 @@ export const def: GameDef<State, Action, Event, View> = {
     sections: [
       {
         title: 'Раздача и козырь',
-        html: `<p>Играют колодой в 36 карт (с шестёрок; можно 24, 32 или «длинный» — 52). Каждому сдают по <b>6 карт</b>, следующую кладут под колоду лицом вверх — её масть <b>козырь</b>.
+        html: `<p>Играют колодой в 36 карт (с шестёрок; можно 24, 32 или 52). Каждому сдают по <b>6 карт</b>, следующую кладут под колоду лицом вверх — её масть <b>козырь</b>.
           Козырь бьёт любую карту другой масти.</p>
           <p>Первым ходит тот, у кого <b>младший козырь</b>. Ходят по часовой стрелке: ходящий ходит под соседа слева.</p>`,
       },
@@ -344,10 +359,27 @@ export const def: GameDef<State, Action, Event, View> = {
         },
       },
       {
-        title: 'Г*вно: звания',
-        html: `<p>Дворовый вариант со <b>званиями</b> играется серией партий. Кто вышел первым — <b>король</b>, за ним принц, граф, барон… Последний, дурак, — <b>г*вно</b>.</p>
-          <p>Следующую партию тасует и сдаёт г*вно, а король, посмотрев свои карты, <b>сам назначает козырь</b>. Ходят под г*вно.</p>
-          <p>Выигрывает серию тот, кто реже всех оставался дураком.</p>`,
+        title: 'Длинный дурак',
+        html: `<p>Играют вчетвером (можно вдвоём или втроём). Перед первой партией из колоды вынимают <b>шестёрки</b> и раздают по одной: масть шестёрки — <b>личный козырь</b> игрока, сами шестёрки не играют.
+          Козырь отбивающегося бьёт любую карту другой масти, а козырь ходящего для отбивающегося — обычная масть.</p>
+          <p>Первым ходит тот, у кого шестёрка пик, дальше — «из-под дурака». Подкидывают строго по очереди по часовой стрелке.</p>
+          <p>Дурак выкладывает перед собой следующую карту своей масти: семёрку, потом восьмёрку… С десятки ему сдают по 5 карт, с валета — по 4, с дамы — по 3, с короля — по 2. Выложил туза — <b>длинный дурак</b>, игра окончена.</p>`,
+        demo: {
+          seats: demoSeats(2),
+          options: { long: true },
+          setup: () => pos({ long: true }, ['9H 10C 8S JD QH 7C', 'JH 9S 10D 7D KC AS'], 'QS KD 8D 9C', { ptrump: ['C', 'D', null, null, null, null], laid: [[cd('6C')], [cd('6D')], [], [], [], []], trump: 'C', trumpCard: null }),
+          intro: 'Личные козыри: у Вовки — трефы, у Ленки — бубны.',
+          steps: [
+            { ...A(0, '10C'), caption: 'Вовка ходит своим козырем, десяткой треф. Для Ленки трефы — обычная масть…' },
+            { ...B(1, 0, '7D'), caption: '…и она кроет её своим козырем — семёркой бубен.' },
+          ],
+        },
+      },
+      {
+        title: 'Король-говно',
+        html: `<p>Дворовая игра со <b>званиями</b> поверх подкидного. После первой партии звания раздают по порядку выхода: <b>Король</b>, <b>Принц</b>, в середине — Палач, Солдат, Вор, Шут, последний — <b>Говно</b>.</p>
+          <p>Дальше <b>козырь назначает Король</b>, посмотрев свои карты, а сдаёт и <b>первым ходит Говно</b>. Кто остался дураком — меняется местами с Говном (если сам не Говно).</p>
+          <p>Называть друг друга по именам нельзя — только по званиям. Выигрывает тот, кто Король в конце серии.</p>`,
       },
     ],
   },

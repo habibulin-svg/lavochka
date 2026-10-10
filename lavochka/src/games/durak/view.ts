@@ -7,7 +7,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { cardHTML, preloadDeck } from '../../cards/render';
 import { cardId, sameCard, sortHand, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
-import { beats, canTransfer, deckLeft, has, room, throwable, transferTarget, unbeaten, type Action, type Event, type View } from './engine';
+import { beats, canTransfer, deckLeft, has, longOn, room, throwable, transferTarget, trumpOf, unbeaten, type Action, type Event, type View } from './engine';
 import { SEATS, titleOf } from './def';
 import './durak.css';
 
@@ -223,6 +223,20 @@ class DurakView implements GameView<View, Event> {
         items.push(up ? { key: 'c:' + cardId(list[k]), card: list[k], x, y, r, s: 0.6, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, x, y, r, s: 0.6, z: 50 + k });
       }
     }
+    // длинный дурак: шестёрка (личный козырь) и выложенные карты — веером рядом с игроком
+    if (longOn(v)) {
+      for (const seat of v.seats) {
+        const list = v.laid[seat] || [];
+        const me = seat === this.viewer;
+        const a = this.anchorOf(v, seat);
+        const right = !me && a.x > 640;
+        list.forEach((c, i) => {
+          const x = me ? 150 + i * 17 : right ? a.x - 112 - i * 15 : a.x + 112 + i * 15;
+          const y = me ? HAND_Y + 20 : a.y + 6;
+          items.push({ key: 'c:' + cardId(c), card: c, x, y, r: me ? -4 : 0, s: me ? 0.46 : 0.4, z: 30 + i, cls: 'dk-laid' });
+        });
+      }
+    }
     return items;
   }
 
@@ -287,7 +301,8 @@ class DurakView implements GameView<View, Event> {
     let s = '';
     const dl = deckLeft(v);
     if (dl > 0) s += `<div class="dk-count" style="left:${DECK.x - 40}px;top:${DECK.y + 92}px">${dl}</div>`;
-    s += `<div class="dk-trump" style="left:${DECK.x - 60}px;top:${DECK.y - 136}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span>${dl ? '' : '<small>козырь</small>'}</div>`;
+    if (!longOn(v))
+      s += `<div class="dk-trump" style="left:${DECK.x - 60}px;top:${DECK.y - 136}px" title="Козырь"><span class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]}</span>${dl ? '' : '<small>козырь</small>'}</div>`;
     if (v.bito.length) s += `<div class="dk-count" style="left:${BITO.x - 40}px;top:${BITO.y + 96}px">бито ${v.bito.length}</div>`;
     const toAct = v.phase === 'attack' ? v.attacker : v.phase === 'defend' ? v.defender : v.asker;
     for (const seat of v.seats) {
@@ -305,6 +320,8 @@ class DurakView implements GameView<View, Event> {
                 : 'отбивается'
               : '';
       const title = v.cfg.ranks && v.ranking.length === v.seats.length ? titleOf(v.ranking.indexOf(seat), v.seats.length) : '';
+      const pt = longOn(v) && v.ptrump[seat] ? v.ptrump[seat]! : null;
+      const ptChip = pt ? `<span class="dk-pt${pt === 'H' || pt === 'D' ? ' red' : ''}" title="Личный козырь">${SUIT_SYM[pt]}</span>` : '';
       const pog = v.pogony[seat] ? `<span class="dk-pog" title="Погоны">${'★'.repeat(Math.min(4, v.pogony[seat]))}</span>` : '';
       const team = v.team[seat] >= 0 ? `<span class="dk-team t${v.team[seat]}" title="Команда">${v.team[seat] ? 'Б' : 'А'}</span>` : '';
       const fool = v.cfg.games > 1 && v.fools[seat] ? `<span class="dk-fools" title="Сколько раз был дураком">🃏${v.fools[seat]}</span>` : '';
@@ -312,7 +329,7 @@ class DurakView implements GameView<View, Event> {
       const x = me ? 500 : a.x;
       const look = SEATS[seat];
       s += `<div class="dk-plate${toAct === seat && v.phase !== 'over' ? ' on' : ''}${me ? ' me' : ''}" style="left:${x}px;top:${y}px;--c:${look.color}">
-        ${team}<b>${this.ctx.name(seat)}</b>${title ? `<i>${esc(title)}</i>` : ''}${role ? `<em>${role}</em>` : ''}${pog}${fool}</div>`;
+        ${team}${ptChip}${title ? `<i class="dk-title">${esc(title)}</i><small>${this.ctx.name(seat)}</small>` : `<b>${this.ctx.name(seat)}</b>`}${role ? `<em>${role}</em>` : ''}${pog}${fool}</div>`;
     }
     this.plates.innerHTML = s;
   }
@@ -511,8 +528,12 @@ class DurakView implements GameView<View, Event> {
   private renderInfo(v: View) {
     const parts: string[] = [];
     if (v.cfg.games > 1) parts.push(`Партия <b>${v.game}</b> из ${v.cfg.games}`);
-    parts.push(`Козырь: <b class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]} ${SUIT_NAME[v.trump]}</b>`);
-    const variant = [v.team.some((t) => t >= 0) ? (v.seats.length === 6 ? '3 на 3' : '2 на 2') : '', v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
+    if (longOn(v)) {
+      const mine = trumpOf(v, this.viewer);
+      parts.push(`Ваш козырь: <b class="${mine === 'H' || mine === 'D' ? 'red' : ''}">${SUIT_SYM[mine]} ${SUIT_NAME[mine]}</b>`);
+      parts.push(`<small>у каждого свой козырь — масть его шестёрки</small>`);
+    } else parts.push(`Козырь: <b class="${v.trump === 'H' || v.trump === 'D' ? 'red' : ''}">${SUIT_SYM[v.trump]} ${SUIT_NAME[v.trump]}</b>`);
+    const variant = [longOn(v) ? 'длинный' : '', v.cfg.ranks ? 'Король-говно' : '', v.team.some((t) => t >= 0) ? (v.seats.length === 6 ? '3 на 3' : '2 на 2') : '', v.cfg.transfer ? 'переводной' : v.cfg.throwers === 'none' ? 'простой' : 'подкидной', v.cfg.spades ? 'пики пиками' : '', v.cfg.pogony ? 'с погонами' : ''].filter(Boolean).join(', ');
     parts.push(`<small>${variant}</small>`);
     this.info.innerHTML = parts.map((p) => `<div>${p}</div>`).join('');
   }
@@ -563,6 +584,10 @@ class DurakView implements GameView<View, Event> {
       case 'out':
         m.out = [...m.out, ev.seat];
         return { enter: null, exit: null };
+      case 'laid':
+        m.laid = m.laid.map((x, i) => (i === ev.seat ? [...x, ev.card] : x));
+        m.level = m.level.map((x, i) => (i === ev.seat ? ev.card.r : x));
+        return { enter: DECK, exit: null };
       default:
         return { enter: null, exit: null };
     }
@@ -619,6 +644,7 @@ class DurakView implements GameView<View, Event> {
       this.draw(enter, exit);
       await sleep(dur + (ev.type === 'draw' ? Math.min(ev.count, 8) * 45 : 0) + 60);
       if (ev.type === 'out') await this.showBanner(`${this.plain(ev.seat)} вышел`, 700 / speed);
+      if (ev.type === 'laid') await this.showBanner(`${this.plain(ev.seat)} выкладывает ${this.cardPlain(ev.card)}${ev.card.r === 14 ? ' — длинный дурак!' : ''}`, 1300 / speed);
       if (ev.type === 'transfer') {
         const how = ev.shown ? `показывает ${this.cardPlain(ev.shown)} — ` : '';
         await this.showBanner(`${this.plain(ev.seat)}: ${how}перевод на ${this.plain(ev.to)}`, 900 / speed);
@@ -689,7 +715,7 @@ class DurakView implements GameView<View, Event> {
         return mine ? `Ваш ход под ${name(v.defender)}` : `${name(who)} ходит под ${name(v.defender)}…`;
       case 'defend': {
         const n = unbeaten(v.table);
-        return mine ? `Отбивайтесь: ${n} ${n === 1 ? 'карта' : n < 5 ? 'карты' : 'карт'}${v.cfg.transfer && transferTarget(v) != null ? ' — или переводите' : ''}` : `${name(who)} отбивается…`;
+        return mine ? `Отбивайтесь${longOn(v) ? ` (ваш козырь ${SUIT_SYM[trumpOf(v, who)]})` : ''}: ${n} ${n === 1 ? 'карта' : n < 5 ? 'карты' : 'карт'}${v.cfg.transfer && transferTarget(v) != null ? ' — или переводите' : ''}` : `${name(who)} отбивается…`;
       }
       case 'throw':
         return mine ? `Подкинете ${name(v.defender)}? Можно ещё ${room(v)}` : `${name(who)} думает, подкинуть ли…`;

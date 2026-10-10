@@ -206,7 +206,7 @@ describe('партии ботов', () => {
 });
 
 describe('серия со званиями', () => {
-  it('король назначает козырь, г*вно сдаёт, ходят под г*вно', async () => {
+  it('Король назначает козырь, первым ходит Говно, дурак меняется местами с Говном', async () => {
     const opts = { ...defaults(def), ranks: true, games: 3 };
     const seats = botSeats(def, 3, [1]);
     const a = new Authority(def, seats, opts);
@@ -223,7 +223,7 @@ describe('серия со званиями', () => {
         const r = a.act(s.ranking[0], { type: 'trump', suit: 'S' });
         expect(r).not.toBeNull();
         expect(a.state.trump).toBe('S');
-        expect(a.state.defender).toBe(fool);
+        expect(a.state.attacker).toBe(fool);
         continue;
       }
       const seat = a.toAct()[0];
@@ -313,4 +313,58 @@ describe('командами (2 на 2, 3 на 3)', () => {
       }
     }
   });
+});
+
+describe('длинный дурак', () => {
+  it('шестёрки — личные козыри и не играют; первым ходит владелец шестёрки пик', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const s = setup([0, 1, 2, 3], { ...defaults(def), long: true }, new SeededRng(seed));
+      expect(new Set(s.seats.map((x) => s.ptrump[x])).size).toBe(4);
+      expect(s.size).toBe(32);
+      const all = [...s.deck, ...s.seats.flatMap((x) => s.hands[x])];
+      expect(all.some((c) => c.r === 6)).toBe(false);
+      expect(s.ptrump[s.attacker]).toBe('S');
+      expect(s.trumpCard).toBeNull();
+    }
+  });
+  it('бьёт козырь отбивающегося, козырь ходящего ему — простая масть', () => {
+    const s = pos({ long: true }, ['10C', '7D JH'], 'QS', { ptrump: ['C', 'D', null, null, null, null] });
+    expect(beats(s, cd('10C'), cd('7D'))).toBe(true);
+    expect(beats(s, cd('7H'), cd('7D'))).toBe(true);
+    expect(beats(s, cd('7D'), cd('JC'))).toBe(false);
+  });
+  it('дурак выкладывает следующую карту своей масти; с десятки ему сдают меньше; на тузе — конец', async () => {
+    const opts = { ...defaults(def), long: true };
+    for (let g = 0; g < 4; g++) {
+      const seats = botSeats(def, 4, [g % 3]);
+      const a = new Authority(def, seats, opts);
+      a.rng = new SeededRng(900 + g);
+      a.state = def.setup(seats, opts, a.rng);
+      const brng = new SeededRng(g);
+      let games = 1;
+      let steps = 0;
+      while (!a.result && steps < 20000) {
+        const seat = a.toAct()[0];
+        const r = a.act(seat, await def.bot.choose(a.viewFor([seat]), seat, seats[seat].level, brng));
+        expect(r).not.toBeNull();
+        const s = a.state as State;
+        if (s.game !== games) {
+          games = s.game;
+          for (const x of s.seats) {
+            expect(s.laid[x].map((c) => c.r)).toEqual(Array.from({ length: s.level[x] - 5 }, (_, i) => 6 + i));
+            expect(s.laid[x].every((c) => c.s === s.ptrump[x])).toBe(true);
+            const want = s.level[x] < 10 ? 6 : 6 - (s.level[x] - 9);
+            // по мере выкладывания колода тает — на всех может и не хватить
+            if (s.deck.length) expect(s.hands[x].length).toBe(want);
+            else expect(s.hands[x].length).toBeLessThanOrEqual(want);
+          }
+        }
+        steps++;
+      }
+      const s = a.state as State;
+      expect(a.result).not.toBeNull();
+      expect(games).toBeGreaterThan(8);
+      expect(s.level[s.losers[0]]).toBe(14);
+    }
+  }, 60_000);
 });

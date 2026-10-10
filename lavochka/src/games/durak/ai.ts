@@ -5,14 +5,18 @@
  *             под конец колоды избавляется от мелочи, а при пустой колоде старается выйти первым. */
 import type { Rng } from '../../core/types';
 import { sameCard, type Card } from '../../cards/deck';
-import { beats, canTransfer, room, throwable, unbeaten, type Action, type View } from './engine';
+import { beats, canTransfer, room, throwable, trumpOf, unbeaten, type Action, type View } from './engine';
+import type { Suit } from '../../cards/deck';
+
+/** Козырь бота, который сейчас думает (в длинном дураке у каждого свой). */
+let T: Suit = 'S';
 
 /** Цена карты: козыри дороже любых некозырей. */
 function value(v: View, c: Card): number {
   let x = c.r;
-  if (c.s === v.trump) x += 20;
+  if (c.s === T) x += 20;
   // в японском пики почти козыри: бить их можно только старшей пикой
-  if (v.cfg.spades && v.trump !== 'S' && c.s === 'S') x += 6;
+  if (v.cfg.spades && T !== 'S' && c.s === 'S') x += 6;
   return x;
 }
 
@@ -65,9 +69,9 @@ function chooseAttack(v: View, me: number, level: number, rng: Rng): Action {
   let best: Card[] = [hand[0]];
   let bestScore = -Infinity;
   for (const cards of groups.values()) {
-    const plain = cards.filter((c) => c.s !== v.trump);
+    const plain = cards.filter((c) => c.s !== T);
     // козыри в заход — только когда больше нечем или колода пуста
-    const use = plain.length ? plain : deck > 0 && hand.some((c) => c.s !== v.trump) ? [] : cards;
+    const use = plain.length ? plain : deck > 0 && hand.some((c) => c.s !== T) ? [] : cards;
     if (!use.length) continue;
     const take = v.cfg.multiLead ? use.slice(0, maxN) : use.slice(0, 1);
     let score = -take.reduce((a, c) => a + value(v, c), 0) / take.length;
@@ -110,9 +114,9 @@ function chooseDefense(v: View, me: number, level: number, rng: Rng): Action {
   if (v.cfg.transfer && level > 0) {
     const r = v.table[0]?.a.r;
     const same = hand.filter((c) => c.r === r).sort(byValue(v));
-    const show = same.find((c) => c.s === v.trump && canTransfer(v, c, true));
+    const show = same.find((c) => c.s === T && canTransfer(v, c, true));
     if (show) return { type: 'show', card: show };
-    const plain = same.find((c) => c.s !== v.trump && canTransfer(v, c, false));
+    const plain = same.find((c) => c.s !== T && canTransfer(v, c, false));
     if (plain && (value(v, plain) <= 10 || level < 2 || v.deckCount === 0)) return { type: 'transfer', card: plain };
   } else if (v.cfg.transfer && level === 0 && rng.next() < 0.5) {
     const c = hand.find((x) => canTransfer(v, x, false));
@@ -150,8 +154,8 @@ function chooseThrow(v: View, me: number, level: number, rng: Rng): Action {
   const deck = v.deckCount;
   // что не жалко отдать: при взятии — любую мелочь (соперник всё равно забирает); иначе — некозырную мелочь
   const cheap = can.filter((c) => {
-    if (deck === 0) return level >= 2 || c.s !== v.trump;
-    if (c.s === v.trump) return false;
+    if (deck === 0) return level >= 2 || c.s !== T;
+    if (c.s === T) return false;
     return taking ? c.r <= 11 : c.r <= (deck > 10 ? 10 : 12);
   });
   if (!cheap.length) return { type: 'pass' };
@@ -166,6 +170,7 @@ function chooseThrow(v: View, me: number, level: number, rng: Rng): Action {
 }
 
 export function choose(v: View, seat: number, level: number, rng: Rng): Action | null {
+  T = trumpOf(v, seat);
   switch (v.phase) {
     case 'trump': {
       // король назначает козырем масть, которой у него больше всего (и старше)

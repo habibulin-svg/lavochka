@@ -36,8 +36,10 @@ export interface Cfg {
   spades: boolean;
   /** Козырь всегда бубны (японский); иначе — нижняя карта колоды. */
   diamonds: boolean;
-  /** Со званиями: серия партий, лучший выбирает козырь, худший тасует (г*вно). */
+  /** Король-говно: серия партий со званиями; козырь назначает Король, первым ходит Говно. */
   ranks: boolean;
+  /** Длинный дурак (на 2–4): шестёрки — личные козыри, проигравший выкладывает следующую карту своей масти. */
+  long: boolean;
   /** Погоны: кто остался с картами против последних шестёрок — получает погоны. */
   pogony: boolean;
   /** Сколько партий в серии (1 — одна партия). */
@@ -57,6 +59,7 @@ export const DEFAULT_CFG: Cfg = {
   spades: false,
   diamonds: false,
   ranks: false,
+  long: false,
   pogony: false,
   games: 1,
   teams: false,
@@ -77,6 +80,7 @@ export function cfgFrom(o: Options): Cfg {
     spades: bool(o.spades, false),
     diamonds: bool(o.diamonds, false),
     ranks,
+    long: bool(o.long, false),
     pogony: bool(o.pogony, false),
     games: Math.max(1, Math.min(20, Number(o.games) || (ranks ? 5 : 1))),
     teams: bool(o.teams, false),
@@ -135,6 +139,10 @@ export interface State {
   bouts: number;
   /** Последние выложенные на стол карты атаки (для погон). */
   lastPlay: Card[];
+  /** Длинный дурак: личный козырь места (масть его шестёрки), сколько уже выложено (6 — только шестёрка) и сами карты. */
+  ptrump: (Suit | null)[];
+  level: number[];
+  laid: Card[][];
   /** Сколько карт в колоде этой партии. */
   size: number;
 }
@@ -181,7 +189,7 @@ export type Action =
   | { type: 'pass' };
 
 export type Event =
-  | { type: 'deal'; game: number; dealer: number | null; counts: number[]; trumpCard: Card | null; trump: Suit; first: number; low: Card | null; chooser?: number }
+  | { type: 'deal'; game: number; dealer: number | null; counts: number[]; trumpCard: Card | null; trump: Suit; first: number; low: Card | null; chooser?: number; ptrump?: (Suit | null)[] }
   | { type: 'trump'; seat: number; suit: Suit; first: number }
   | { type: 'attack'; seat: number; cards: Card[] }
   | { type: 'beat'; seat: number; i: number; card: Card }
@@ -193,6 +201,7 @@ export type Event =
   | { type: 'pickup'; seat: number; cards: Card[] }
   | { type: 'draw'; seat: number; count: number; cards?: Card[]; trump?: Card }
   | { type: 'out'; seat: number; place: number }
+  | { type: 'laid'; seat: number; card: Card; hand: number }
   | { type: 'gameEnd'; game: number; fool: number | null; draw: boolean; pogony: number; ranking: number[]; fools: number[]; last: boolean; losers: number[] };
 
 // ---------------------------------------------------------------- карты
@@ -201,8 +210,8 @@ export const has = (hand: Card[], c: Card) => hand.some((x) => sameCard(x, c));
 const without = (hand: Card[], cards: Card[]) => hand.filter((x) => !cards.some((c) => sameCard(c, x)));
 
 /** Бьёт ли карта d карту a. */
-export function beats(s: Pick<State, 'trump' | 'cfg'>, a: Card, d: Card): boolean {
-  const t = s.trump;
+export function beats(s: Pick<State, 'trump' | 'cfg' | 'ptrump' | 'defender' | 'seats'>, a: Card, d: Card): boolean {
+  const t = trumpOf(s, s.defender);
   if (s.cfg.spades && t !== 'S' && a.s === 'S') return d.s === 'S' && d.r > a.r;
   if (d.s === a.s) return d.r > a.r;
   return d.s === t;
@@ -244,10 +253,25 @@ export function prevSeat(s: State, seat: number): number {
   return seat;
 }
 
+/** Длинный дурак идёт на 2–4 игроков (шестёрок всего четыре). */
+export const longOn = (s: Pick<State, 'cfg' | 'seats'>) => s.cfg.long && s.seats.length <= 4;
+
+/** Козырь для места: общий, а в длинном дураке — масть его шестёрки. */
+export function trumpOf(s: Pick<State, 'trump' | 'cfg' | 'ptrump' | 'seats'>, seat: number): Suit {
+  return longOn(s) ? (s.ptrump[seat] ?? s.trump) : s.trump;
+}
+
+/** Сколько карт держать месту: в длинном дураке с десятки — на одну меньше за каждую ступень. */
+export function handOf(s: Pick<State, 'cfg' | 'seats' | 'level'>, seat: number): number {
+  if (!longOn(s)) return s.cfg.hand;
+  const lv = s.level[seat];
+  return lv < 10 ? s.cfg.hand : Math.max(1, s.cfg.hand - (lv - 9));
+}
+
 /** Команды через одного — только на четверых и шестерых. */
 export function teamsOf(cfg: Cfg, seats: number[]): number[] {
   const t = [-1, -1, -1, -1, -1, -1];
-  if (cfg.teams && (seats.length === 4 || seats.length === 6)) seats.forEach((x, i) => (t[x] = i % 2));
+  if (cfg.teams && !(cfg.long && seats.length <= 4) && (seats.length === 4 || seats.length === 6)) seats.forEach((x, i) => (t[x] = i % 2));
   return t;
 }
 
@@ -322,7 +346,7 @@ export function canTransfer(s: State, card: Card, show: boolean): boolean {
   const n = s.table.length + (show ? 0 : 1);
   const limit = s.first && s.cfg.firstFive ? 5 : s.cfg.hand;
   if (n > limit || handSize(s, to) < n) return false;
-  if (show) return s.cfg.transferShow && card.s === s.trump && !s.shown.some((x) => sameCard(x, card));
+  if (show) return s.cfg.transferShow && card.s === trumpOf(s, s.defender) && !s.shown.some((x) => sameCard(x, card));
   return true;
 }
 
@@ -360,6 +384,9 @@ export function newState(cfg: Cfg, seats: number[]): State {
     ranking: [],
     bouts: 0,
     lastPlay: [],
+    ptrump: [null, null, null, null, null, null],
+    level: [6, 6, 6, 6, 6, 6],
+    laid: emptyHands(),
     team: teamsOf(cfg, seats),
     losers: [],
     size: 36,
@@ -389,21 +416,38 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
     fools: prev.fools.slice(),
     pogony: prev.pogony.slice(),
     ranking: prev.ranking.slice(),
+    ptrump: prev.ptrump.slice(),
+    level: prev.level.slice(),
+    laid: prev.laid.map((x) => x.slice()),
   };
-  const size = deckSize(cfg, s.seats.length);
-  const deck = shuffle(makeDeck(size), rng);
-  s.size = size;
+  const long = longOn(s);
+  const size = long ? 36 : deckSize(cfg, s.seats.length);
+  let deck = shuffle(makeDeck(size), rng);
+  if (long) {
+    // шестёрки — не в игре; в первой партии их раздают: масть шестёрки — личный козырь
+    if (prev.game === 0) {
+      const sixes = shuffle(SUITS.slice(), rng);
+      s.seats.forEach((x, i) => {
+        s.ptrump[x] = sixes[i];
+        s.laid[x] = [{ s: sixes[i], r: 6 }];
+      });
+    }
+    const out = s.seats.flatMap((x) => s.laid[x]);
+    deck = deck.filter((c) => c.r !== 6 && !out.some((o) => sameCard(o, c)));
+  }
+  s.size = deck.length;
   // раздают по одной по кругу, начиная со следующего за сдающим
   const dealer = prev.game > 0 ? (prev.fool ?? (prev.ranking.length ? prev.ranking[prev.ranking.length - 1] : null)) : null;
   const order = dealer != null ? circleFrom(s, dealer).slice(1).concat(dealer) : s.seats.slice();
   for (let k = 0; k < cfg.hand; k++)
     for (const seat of order) {
+      if (s.hands[seat].length >= handOf(s, seat)) continue;
       const c = deck.shift();
       if (c) s.hands[seat].push(c);
     }
   s.deck = deck;
   // со званиями король (лучший прошлой партии) сам назначает козырь — до этого колода закрыта
-  const chooser = cfg.ranks && !teamsOn(s) && !cfg.diamonds && s.game > 1 && prev.ranking.length ? prev.ranking[0] : null;
+  const chooser = cfg.ranks && !teamsOn(s) && !long && !cfg.diamonds && s.game > 1 && prev.ranking.length ? prev.ranking[0] : null;
   if (chooser != null) {
     s.trumpCard = null;
     s.phase = 'trump';
@@ -411,17 +455,29 @@ export function deal(prev: State, rng: Rng): { state: State; events: Event[] } {
     const ev: Event = { type: 'deal', game: s.game, dealer, counts: s.seats.map((x) => s.hands[x].length), trumpCard: null, trump: s.trump, first: -1, low: null, chooser };
     return { state: s, events: [ev] };
   }
-  const last = deck.length ? deck[deck.length - 1] : s.hands[order[order.length - 1]][cfg.hand - 1];
-  s.trump = cfg.diamonds ? 'D' : last.s;
-  s.trumpCard = deck.length && !cfg.diamonds ? last : null;
+  if (long) {
+    // общего козыря нет — у каждого свой
+    s.trump = s.ptrump[s.seats[0]] ?? 'S';
+    s.trumpCard = null;
+  } else {
+    const last = deck.length ? deck[deck.length - 1] : s.hands[order[order.length - 1]][cfg.hand - 1];
+    s.trump = cfg.diamonds ? 'D' : last.s;
+    s.trumpCard = deck.length && !cfg.diamonds ? last : null;
+  }
   const { first, low } = firstAttacker(s, prev);
   startBout(s, first, nextOpp(s, first));
-  const ev: Event = { type: 'deal', game: s.game, dealer, counts: s.seats.map((x) => s.hands[x].length), trumpCard: s.trumpCard, trump: s.trump, first, low };
+  const ev: Event = { type: 'deal', game: s.game, dealer, counts: s.seats.map((x) => s.hands[x].length), trumpCard: s.trumpCard, trump: s.trump, first, low, ptrump: long ? s.ptrump.slice() : undefined };
   return { state: s, events: [ev] };
 }
 
-/** Кто ходит первым: в первой партии — у кого младший козырь; дальше «под дурака» — сосед справа от дурака ходит на него. */
+/** Кто ходит первым: в первой партии — у кого младший козырь (в длинном — у кого шестёрка пик);
+ * в Короле-говне — Говно; дальше «из-под дурака» — сосед справа от дурака ходит на него. */
 function firstAttacker(s: State, prev: State): { first: number; low: Card | null } {
+  if (longOn(s) && prev.game === 0) {
+    const bySuit = SUITS.map((x) => s.seats.find((seat) => s.ptrump[seat] === x)).find((x) => x != null);
+    return { first: bySuit ?? s.seats[0], low: null };
+  }
+  if (s.cfg.ranks && !teamsOn(s) && prev.game > 0 && s.ranking.length === s.seats.length) return { first: s.ranking[s.ranking.length - 1], low: null };
   if (prev.game > 0 && prev.fool != null && s.seats.includes(prev.fool)) return { first: prevSeat(s, prev.fool), low: null };
   const lt = lowestTrump(s);
   if (lt) return { first: lt.seat, low: lt.card };
@@ -478,6 +534,9 @@ function clone(s: State): State {
     pogony: s.pogony.slice(),
     ranking: s.ranking.slice(),
     lastPlay: s.lastPlay.slice(),
+    ptrump: s.ptrump.slice(),
+    level: s.level.slice(),
+    laid: s.laid.map((x) => x.slice()),
     team: s.team.slice(),
     losers: s.losers.slice(),
   };
@@ -633,7 +692,7 @@ function refill(s: State, ev: Event[], def: number, took = false) {
   const order = circleFrom(s, s.attacker).filter((x) => x !== def);
   if (!took) order.push(def);
   for (const seat of order) {
-    const need = s.cfg.hand - s.hands[seat].length;
+    const need = handOf(s, seat) - s.hands[seat].length;
     if (need <= 0 || !s.deck.length) continue;
     const got = s.deck.splice(0, need);
     s.hands[seat].push(...got);
@@ -684,10 +743,28 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
     }
   }
   // звания: кто раньше вышел — тот выше; дурак — последний
-  s.ranking = fool != null ? [...s.out, ...s.seats.filter((x) => !s.out.includes(x))] : s.out.slice();
+  // звания: в первой партии — по порядку выхода; дальше дурак меняется местами с Говном
+  const full = s.ranking.length === s.seats.length;
+  if (!s.cfg.ranks || !full) s.ranking = fool != null ? [...s.out, ...s.seats.filter((x) => !s.out.includes(x))] : s.out.slice();
+  else if (fool != null) {
+    const i = s.ranking.indexOf(fool);
+    const g = s.ranking.length - 1;
+    [s.ranking[i], s.ranking[g]] = [s.ranking[g], s.ranking[i]];
+  }
   s.table = [];
   s.asker = -1;
-  const last = s.game >= s.cfg.games;
+  let last = s.game >= s.cfg.games;
+  if (longOn(s)) {
+    // длинный: дурак выкладывает следующую карту своей масти; выложил туза — проиграл совсем
+    last = false;
+    if (fool != null) {
+      s.level[fool]++;
+      const card = { s: s.ptrump[fool] ?? s.trump, r: s.level[fool] };
+      s.laid[fool].push(card);
+      ev.push({ type: 'laid', seat: fool, card, hand: handOf(s, fool) });
+      last = s.level[fool] >= 14;
+    }
+  }
   ev.push({ type: 'gameEnd', game: s.game, fool, draw: s.draw, pogony: pog, ranking: s.ranking.slice(), fools: s.fools.slice(), last, losers: s.losers.slice() });
   if (last) {
     s.phase = 'over';
@@ -701,6 +778,8 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
 /** Итог серии: меньше всего раз был дураком — победитель (без дураков в одной партии — все, кроме дурака). */
 export function winners(s: State): number[] {
   if (s.phase !== 'over') return [];
+  if (longOn(s)) return s.seats.filter((x) => !s.losers.includes(x));
+  if (s.cfg.ranks && s.ranking.length) return [s.ranking[0]];
   if (s.cfg.games <= 1) return s.fool == null ? s.seats.slice() : s.seats.filter((x) => !s.losers.includes(x));
   const min = Math.min(...s.seats.map((x) => s.fools[x]));
   return s.seats.filter((x) => s.fools[x] === min);
