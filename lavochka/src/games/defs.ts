@@ -18,4 +18,5 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   holdem: () => import('./holdem/def').then((m) => m.def),
   mafia: () => import('./mafia/def').then((m) => m.def),
   balda: () => Promise.all([import('./balda/def'), loadDict()]).then(([m]) => m.def),
+  erudit: () => Promise.all([import('./erudit/def'), loadDict()]).then(([m]) => m.def),
 };

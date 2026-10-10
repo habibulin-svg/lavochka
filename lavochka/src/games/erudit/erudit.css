@@ -1,0 +1,38 @@
+/* Эрудит: коробка «Эрудит Э-3» — шоколадный пластик, чёрные фишки. */
+.table--erudit {
+  --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 230, 200, 0.1), transparent 60%), linear-gradient(160deg, #6b4a3a, #3a2418 70%);
+}
+.er-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.er-board { width: 100%; height: 100%; max-height: 100%; user-select: none; touch-action: none; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55)); }
+.er-board text { pointer-events: none; }
+.er-board .er-letter { font-family: 'PT Sans', Arial, sans-serif; font-weight: 700; fill: #f1e9d6; text-anchor: middle; }
+.er-board .er-val { font-family: 'PT Sans', Arial, sans-serif; font-weight: 700; fill: #f1e9d6; text-anchor: middle; }
+.er-board .er-flower { fill: #f4eedf; text-anchor: middle; }
+.er-board .er-as { font-family: 'PT Sans', Arial, sans-serif; font-weight: 700; fill: #d9b45a; text-anchor: middle; }
+.er-board .er-star { font-size: 22px; fill: #8a7a5a; text-anchor: middle; }
+.er-board .er-bag { font: 700 15px 'PT Sans', sans-serif; fill: #f1e2c8; }
+.er-board .er-bag.end { text-anchor: end; fill: #ffd27a; }
+.er-board [data-rack], .er-board .takeable { cursor: pointer; }
+.er-tile.sel > rect:nth-child(2), .er-tile.swap > rect:nth-child(2) { stroke: #ffd24a; stroke-width: 2.5; }
+.er-tile.swap > rect:nth-child(2) { stroke: #e05040; }
+.er-tile.draft > rect:nth-child(2) { stroke: #ffd24a; stroke-width: 2; }
+.er-tile.asking > rect:nth-child(2) { stroke: #ff7040; stroke-dasharray: 4 3; }
+.er-tile.last > rect:nth-child(2) { stroke: rgba(255, 210, 90, 0.55); stroke-width: 1.6; }
+.er-tile.fresh { animation: er-drop 0.25s ease-out; transform-box: fill-box; transform-origin: center; }
+.er-tile.takeable > rect:nth-child(2) { stroke: rgba(120, 220, 255, 0.6); stroke-width: 1.4; }
+.er-tile.ghost { opacity: 0.3; }
+.er-tile.dragging { opacity: 0.9; pointer-events: none; }
+@keyframes er-drop { from { transform: scale(1.35); opacity: 0.2; } to { transform: scale(1); opacity: 1; } }
+.er-cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(30, 18, 12, 0.95); border-radius: 6px; z-index: 5; }
+.er-cover-box { text-align: center; color: #f0eadc; font-size: 20px; display: flex; flex-direction: column; gap: 14px; }
+.er-controls { display: flex; flex-direction: column; gap: 8px; }
+.er-say { font-size: 14px; min-height: 20px; }
+.er-say .ok { color: #2a7a3a; }
+.er-say .bad { color: #b3322a; }
+.er-ctl-in { display: flex; flex-direction: column; gap: 6px; }
+.er-ctl-in .btn { width: 100%; }
+.er-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.er-kb { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.er-kb > div { display: flex; gap: 2px; }
+.er-key { width: 22px; height: 30px; padding: 0; border: 1px solid #3a2a20; border-radius: 4px; background: #1a1614; color: #f1e9d6; font: 700 15px 'PT Sans', sans-serif; cursor: pointer; }
+.er-key:hover { background: #3a3230; }

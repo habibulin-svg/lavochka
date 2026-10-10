@@ -61,7 +61,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'dots', title: 'Точки', sub: 'окружи соседа', cat: 'paper', players: '2–4', wave: 2, icon: '⁘', tint: '#3a4f8a', thumb: 'dots.webp', load: () => import('./dots'), variants: ['на листочке', 'быстрая', 'спортивная'] },
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a', thumb: 'balda.webp', load: () => withDict(import('./balda')), variants: ['5×5', '6×6 и 7×7', 'с диагоналями'] },
   // — настолки —
-  { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12' },
+  { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12', thumb: 'erudit.webp', load: () => withDict(import('./erudit')), variants: ['эрудит', 'скрэббл', 'до 200 очков'] },
   { id: 'krugosvet', title: 'Кругосветное путешествие', sub: 'из Москвы и обратно', cat: 'tabletop', players: '2–8', wave: 7, icon: '🌍', tint: '#1d6a7a' },
   { id: 'puteshestvie', title: 'Путешествие', sub: 'журнальная игра-ходилка', cat: 'tabletop', players: '2–8', wave: 7, icon: '🧭', tint: '#4f7a1d' },
   { id: 'kosmos', title: 'Большое космическое путешествие', sub: 'догони комету', cat: 'tabletop', players: '2–10', wave: 7, icon: '☄', tint: '#20307a' },
