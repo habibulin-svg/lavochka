@@ -1,0 +1,36 @@
+/* Домино: стол во дворе, кости слоновой кости. */
+.table--domino {
+  --panel-bg: repeating-linear-gradient(178deg, rgba(120, 60, 20, 0.1) 0 3px, transparent 3px 11px), linear-gradient(180deg, #d9c08c, #bfa064);
+  --panel-ink: #2a1a06;
+  --panel-edge: rgba(60, 40, 5, 0.55);
+  --table-bg: radial-gradient(ellipse at 50% 20%, rgba(255, 220, 160, 0.12), transparent 60%), linear-gradient(160deg, #26302a, #141a16 70%);
+}
+.dm-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.dm-board { width: 100%; height: auto; max-height: 100%; aspect-ratio: 1000 / 720; filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.55)); user-select: none; }
+.dm-board .dm-face { fill: url(#dmIvory); stroke: #8a7a5a; stroke-width: 1.2; }
+.dm-board .dm-shine { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; }
+.dm-board .dm-mid { stroke: #6a5a3a; stroke-width: 1.6; opacity: 0.7; }
+.dm-board .dm-pin { fill: url(#dmBrass); stroke: #5a3a0a; stroke-width: 0.6; }
+.dm-board .dm-pip { fill: #1a1410; }
+.dm-board .dm-back rect { fill: #e8dcc0; stroke: #8a7a5a; stroke-width: 1; }
+.dm-board .dm-hand { cursor: pointer; transition: transform 0.15s; }
+.dm-board .dm-hand.dm-can .dm-face { stroke: #e0a020; stroke-width: 2.5; }
+.dm-board .dm-hand.dm-sel .dm-face { stroke: #ff7a10; stroke-width: 3.5; }
+.dm-board .dm-ghost-bone { cursor: pointer; opacity: 0.55; animation: dm-blink 1s ease-in-out infinite alternate; }
+.dm-board .dm-ghost-bone .dm-face { stroke: #ffb020; stroke-width: 3; stroke-dasharray: 6 4; }
+.dm-board .dm-ghost-bone:hover { opacity: 0.9; }
+@keyframes dm-blink { from { opacity: 0.35; } to { opacity: 0.75; } }
+.dm-board .dm-fresh { animation: dm-drop 0.35s ease-out; }
+@keyframes dm-drop { from { opacity: 0; } to { opacity: 1; } }
+.dm-board .dm-closed circle { fill: #b3322a; stroke: #fff2d8; stroke-width: 2; }
+.dm-board .dm-closed path { stroke: #fff2d8; stroke-width: 3; stroke-linecap: round; }
+.dm-board .dm-label, .dm-board .dm-team, .dm-board .dm-turn { font: 700 15px 'PT Sans', Arial, sans-serif; fill: #f0e6c8; text-anchor: middle; }
+.dm-board .dm-turn { fill: #ffd060; }
+.dm-board .dm-bannerbox rect { fill: rgba(20, 30, 14, 0.88); stroke: #e0c070; stroke-width: 3; }
+.dm-board .dm-bannerbox text { font: 700 36px 'PT Serif', Georgia, serif; fill: #f6e8b8; text-anchor: middle; dominant-baseline: central; }
+.dm-cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(14, 20, 12, 0.92); border-radius: 18px; z-index: 5; }
+.dm-cover-box { text-align: center; color: #f0e6c8; font-size: 20px; display: flex; flex-direction: column; gap: 14px; }
+.dm-controls { display: flex; flex-direction: column; gap: 8px; }
+.dm-btns { display: flex; flex-direction: column; gap: 6px; }
+.dm-btns .btn { width: 100%; }
+.dm-ask { font-weight: 700; }
