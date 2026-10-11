@@ -10,6 +10,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   chess: () => import('./chess/def').then((m) => m.def),
   billiards: () => import('./billiards/def').then((m) => m.def),
   hockey: () => import('./hockey/def').then((m) => m.def),
+  basketball: () => import('./basketball/def').then((m) => m.def),
   checkers: () => import('./checkers/def').then((m) => m.def),
   domino: () => import('./domino/def').then((m) => m.def),
   seabattle: () => import('./seabattle/def').then((m) => m.def),

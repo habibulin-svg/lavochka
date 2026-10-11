@@ -94,6 +94,8 @@ export class Table {
       settings.speed = +sp.value;
       saveSettings();
     };
+    // у игр реального времени анимаций нет — скорость выбирают в настройках партии
+    if (o.mod.def.realtime) q('.speed-row').hidden = true;
     if (o.code && o.mode !== 'local') {
       const badge = q('.room-badge');
       badge.hidden = false;

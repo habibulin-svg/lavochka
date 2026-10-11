@@ -1,7 +1,20 @@
-/* Настольный баскетбол: коробка на канве и кнопки броска. */
-.bb-dev { width: min(100%, 960px, calc((100vh - 230px) * 1.5)); margin: 0 auto; touch-action: none; user-select: none; }
-.bb-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
-.bb-btns { display: flex; justify-content: space-between; margin-top: 10px; gap: 12px; }
-.bb-btns button { flex: 0 0 40%; height: 56px; border: 0; border-radius: 14px; color: #fff; font: 700 18px 'PT Sans', Arial, sans-serif; cursor: pointer;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c)); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45); }
-.bb-btns button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+/* Настольный баскетбол: 3D-стол во всю доску, счёт сверху, надписи поверх. */
+.table--basketball .table-board { padding: 0; }
+.bb-wrap { position: relative; width: 100%; height: min(78vh, 62vw); min-height: 320px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.bb-3d { position: absolute; inset: 0; }
+.bb-3d canvas { display: block; width: 100%; height: 100%; outline: none; }
+.bb-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 4px 14px; border-radius: 10px; background: rgba(20, 16, 12, 0.72); color: #ffe9b8; font: bold 22px 'PT Sans', Arial, sans-serif; pointer-events: none; white-space: nowrap; }
+.bb-hud .r { color: #ff7a64; }
+.bb-hud .b { color: #8ab4ff; }
+.bb-hud .t { font: bold 18px 'Courier New', monospace; color: #ffd24a; }
+.bb-hud .n { min-width: 28px; padding: 0 6px; border-radius: 6px; text-align: center; background: #f4c51c; }
+.bb-hud .n0 { color: #c8241c; }
+.bb-hud .n1 { color: #1f4fb0; }
+.bb-hud .lock { font-size: 14px; color: #ffb0a0; }
+.bb-banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 14px 28px; border-radius: 14px; background: rgba(12, 20, 40, 0.78); color: #ffe9a0; text-align: center; pointer-events: none; }
+.bb-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; }
+.bb-banner span { font: 16px 'PT Sans', Arial, sans-serif; color: #e8f0f8; }
+.bb-pref { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; font-size: 14px; }
+.bb-pref .seg button { padding: 3px 8px; font-size: 13px; }
+.bb-hint { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+@media (max-width: 860px) { .bb-wrap { height: min(70vh, 120vw); } }

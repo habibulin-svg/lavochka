@@ -92,6 +92,8 @@ export interface HkState {
   knockCd: [number, number];
   /** Кто последним коснулся шайбы (номер фигурки, −1 — никто). */
   touch: number;
+  /** Скорость физики (доля от жизни): часы и паузы идут как обычно. */
+  speed: number;
   over: boolean;
 }
 
@@ -217,7 +219,7 @@ export const oppGoal = (team: Team): [number, number] => (team === 0 ? [W - GL, 
 
 // ---------------------------------------------------------------- партия
 
-export function newGame(goals: number, minutes: number, rng: Rng): HkState {
+export function newGame(goals: number, minutes: number, rng: Rng, speed = 1): HkState {
   const figs: Fig[] = [];
   for (const team of [0, 1] as const)
     for (let k = 0; k < 6; k++) {
@@ -241,6 +243,7 @@ export function newGame(goals: number, minutes: number, rng: Rng): HkState {
     knock: [0, 0],
     knockCd: [0, 0],
     touch: -1,
+    speed,
     over: false,
   };
   void rng;
@@ -485,7 +488,8 @@ export function step(st: HkState, inputs: (HkIn | null | undefined)[], rng: Rng)
     const k = i % 6;
     cmds.push(k === 0 ? inp[team].g : k === st.active[team] ? inp[team].f : idleRod());
   }
-  const h = dt / SUB;
+  const sp0 = st.speed > 0 ? st.speed : 1;
+  const h = (dt * sp0) / SUB;
   let hit = 0;
   let wall = 0;
   let post = 0;
@@ -539,6 +543,10 @@ export function step(st: HkState, inputs: (HkIn | null | undefined)[], rng: Rng)
       p.vy *= PUCK_MAX / s2;
     }
   }
+  // сила звука — как если бы шло в жизнь
+  hit /= sp0;
+  wall /= sp0;
+  post /= sp0;
   if (hit > 0.05) ev.push({ k: 'hit', st: Math.round(hit * 100) / 100 });
   if (wall > 0.08) ev.push({ k: 'wall', st: Math.round(wall * 100) / 100 });
   if (post > 0.08) ev.push({ k: 'post', st: Math.round(post * 100) / 100 });
@@ -546,7 +554,7 @@ export function step(st: HkState, inputs: (HkIn | null | undefined)[], rng: Rng)
   // шайба замерла там, где её никто не достанет (или все стоят) — «стучим по борту»
   if (!frozen) {
     const sp = Math.hypot(st.puck.vx, st.puck.vy);
-    st.still = sp < 0.03 ? st.still + dt : 0;
+    st.still = sp < 0.03 * sp0 ? st.still + dt : 0;
     if ((st.still > 1.5 && unreachable(st)) || st.still > 6) {
       knock(st, rng, 0.3);
       ev.push({ k: 'knock', seat: -1 });

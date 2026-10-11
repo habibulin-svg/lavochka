@@ -1,5 +1,6 @@
 /* Настольный хоккей — описание игры: двое (или с ботом), до N шайб и/или на время. Игра реального времени:
  * комната (сервер, хост P2P или этот браузер) крутит шаги физики, игроки шлют ввод штанг. Без DOM. */
+import { gameSpeed, SPEED_OPTION } from '../../core/realtime';
 import type { GameDef } from '../../core/types';
 import { botInput } from './ai';
 import { cleanInput, idleInput, newGame, snapshot, step, TICK_MS, type HkEvent, type HkIn, type HkState } from './engine';
@@ -41,6 +42,7 @@ export const def: GameDef<HkState, never, HkEvent, HkState> = {
       ],
       default: 3,
     },
+    SPEED_OPTION,
   ],
   presets: [
     { id: 'std', label: 'До 5 шайб или 3 минуты', options: { goals: 5, minutes: 3 } },
@@ -51,7 +53,7 @@ export const def: GameDef<HkState, never, HkEvent, HkState> = {
     const goals = Number(opts.goals ?? 5);
     const minutes = Number(opts.minutes ?? 3);
     // без часов и без счёта партия не кончится — тогда хотя бы десять минут
-    return newGame(goals, goals >= 99 && minutes <= 0 ? 10 : minutes, rng);
+    return newGame(goals, goals >= 99 && minutes <= 0 ? 10 : minutes, rng, gameSpeed(opts));
   },
   toAct: (s) => (s.over ? [] : [0, 1]),
   apply: () => null,

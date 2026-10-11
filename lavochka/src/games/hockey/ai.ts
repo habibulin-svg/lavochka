@@ -77,7 +77,8 @@ export function botInput(st: HkState, seat: number, level: number, m: Record<str
   const lv = LEVELS[clamp(level, 0, 2)];
   const team = (seat === 0 ? 0 : 1) as Team;
   const fwd = team === 0 ? 1 : -1;
-  const dt = 1 / 60;
+  // время игры: при замедленной физике бот думает и бьёт в том же темпе, что и мир
+  const dt = (st.speed || 1) / 60;
   mem.t = (mem.t ?? 0) + dt;
   const p = st.puck;
   const lx = p.x + p.vx * lv.look;
