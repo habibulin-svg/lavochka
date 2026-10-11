@@ -11,11 +11,11 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { HDRI, normalOnly, onTextureLoad, pbr } from './pbr';
 import type { Card } from '../../cards/deck';
-import { cardUrl } from '../../cards/render';
+import { cardUrl, deckImage, deckProgress, preloadDeck } from '../../cards/render';
 import type { DeckStyle } from '../../core/settings';
 import { bolsterProfile, cardGeometry, sweepEllipse } from './geo3d';
 import { buildRoom, makeChair, onRoomLoad, FLOOR } from './room3d';
-import { buttonTex, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
+import { buttonTex, cardStandIn, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
 import { LOADING } from './loading';
 import { DEALER, type DealerAct, type People, type Gesture } from './people3d';
 
@@ -198,7 +198,6 @@ export class Table3D {
   private button: Moving;
   private dying: Moving[] = [];
   private tex = new Map<string, THREE.Texture>();
-  private loader = new THREE.TextureLoader();
   private cardGeo = cardGeometry(CARD_W, CARD_H, CARD_T, 0.07);
   /** Карты — в прозрачном проходе после видео-людей: полупрозрачная кайма ролика не ложится на них поверх. */
   private edgeMat = new THREE.MeshStandardMaterial({ color: '#f3eee2', roughness: 0.7, transparent: true });
@@ -545,7 +544,24 @@ export class Table3D {
     const url = cardUrl(c, this.deck);
     let t = this.tex.get(url);
     if (!t) {
-      t = this.loader.load(url, () => this.kick());
+      // картинка из preloadDeck; пока она в пути — нарисованный заместитель (пустая текстура = прозрачная карта)
+      const img = deckImage(url) ?? Object.assign(new Image(), { src: url });
+      const ready = img.complete && img.naturalWidth > 0;
+      const tex = (t = new THREE.Texture(ready ? img : cardStandIn(c)));
+      t.needsUpdate = true;
+      if (!ready)
+        img.addEventListener(
+          'load',
+          () => {
+            if (this.disposed) return;
+            // заново на видеокарту: под заместителя память уже выделена
+            tex.dispose();
+            tex.image = img;
+            tex.needsUpdate = true;
+            this.kick();
+          },
+          { once: true }
+        );
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
       this.tex.set(url, t);
@@ -601,6 +617,12 @@ export class Table3D {
   }
 
   private drawHand() {
+    // картинка ещё в пути (медленная сеть) — на её месте чистая карта, а не пустота
+    for (const im of [...this.hand.querySelectorAll('img'), ...this.board.querySelectorAll('img')]) {
+      if (im.complete) continue;
+      im.classList.add('hd-wait');
+      im.addEventListener('load', () => im.classList.remove('hd-wait'), { once: true });
+    }
     this.hand.hidden = false;
     this.board.hidden = !this.boardKey;
     // общие карты лежат на столе в кадре — в полоске только банк
@@ -1194,7 +1216,9 @@ export class Table3D {
   private updateLoading(): boolean {
     if (this.loading.hidden) return false;
     const p = this.people;
-    let k = p ? (p.ready?.() ?? 1) : 0;
+    // и колода: на медленной сети карты иначе приходят посреди раздачи
+    preloadDeck(this.deck);
+    let k = Math.min(p ? (p.ready?.() ?? 1) : 0, deckProgress(this.deck));
     if (performance.now() - this.loadStart > 25000) k = 1;
     // полоска не прыгает назад и подползает, пока ждём
     this.loadShown = Math.max(this.loadShown + (k - this.loadShown) * 0.15, Math.min(0.3, (performance.now() - this.loadStart) / 10000));

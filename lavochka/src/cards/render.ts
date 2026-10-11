@@ -21,6 +21,8 @@ export function cardHTML(c: Card | null, st: DeckStyle, cls = 'card'): string {
 
 /** Подгруженные картинки: держим ссылки, чтобы браузер не выбросил раскодированное. */
 const loaded = new Map<string, HTMLImageElement[]>();
+/** Те же картинки по адресу — для 3D-текстур (холдем). */
+const byUrl = new Map<string, HTMLImageElement>();
 /** Подгрузить и раскодировать колоду заранее, чтобы при раздаче и перевороте карты не мигали пустотой. */
 export function preloadDeck(st: DeckStyle) {
   if (loaded.has(st)) return;
@@ -30,13 +32,28 @@ export function preloadDeck(st: DeckStyle) {
     st,
     urls.map((u) => {
       const im = new Image();
+      // колода нужна раньше моделей и роликов, которые грузятся рядом
+      im.fetchPriority = 'high';
       im.src = u;
+      byUrl.set(u, im);
       im.decode().catch(() => {
         /* не раскодировалась заранее — раскодируется при показе */
       });
       return im;
     })
   );
+}
+
+/** Сколько колоды уже пришло (0…1); колода не заказана — 0. Для заставки холдема. */
+export function deckProgress(st: DeckStyle): number {
+  const list = loaded.get(st);
+  if (!list) return 0;
+  return list.filter((im) => im.complete).length / list.length;
+}
+
+/** Картинка карты, подгруженная preloadDeck (может быть ещё в пути). */
+export function deckImage(url: string): HTMLImageElement | undefined {
+  return byUrl.get(url);
 }
 
 export const DECK_STYLES: { id: DeckStyle; title: string; hint: string }[] = [

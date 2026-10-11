@@ -117,6 +117,8 @@
 .hd-board-cards { display: flex; gap: calc(var(--hand, 160px) * 0.05); }
 .hd-bcard { width: calc(var(--hand, 160px) * 0.4); height: calc(var(--hand, 160px) * 0.62); border-radius: 6%; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55)); }
 .hd-bcard.deal { animation: hd-bdeal 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 0.12s); }
+/* картинка карты ещё грузится — чистый лист вместо пустоты */
+.hd-hcard.hd-wait, .hd-bcard.hd-wait { background: #f3efe4; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18); }
 @keyframes hd-bdeal { from { transform: translateY(-30vh) rotateY(90deg) scale(0.6); opacity: 0; } }
 .hd-board-pot-only .hd-board-cards { display: none; }
 .hd-board-pot { font: 600 15px/1.2 'PT Sans', system-ui, sans-serif; color: #fff3d0; background: rgba(20, 12, 6, 0.72); border: 1px solid rgba(255, 220, 150, 0.35); border-radius: 12px; padding: 3px 10px; }

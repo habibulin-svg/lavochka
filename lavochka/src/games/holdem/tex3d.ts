@@ -237,3 +237,62 @@ export function buttonTex(): THREE.CanvasTexture {
     g.fillText('ДИЛЕР', c, c + 84);
   });
 }
+
+const SUIT: Record<string, [string, string]> = { S: ['♠', '#1b1b1b'], C: ['♣', '#1b1b1b'], D: ['♦', '#c0161d'], H: ['♥', '#c0161d'] };
+const RANK: Record<number, string> = { 11: 'В', 12: 'Д', 13: 'К', 14: 'Т' };
+
+/** Карта-заместитель, пока картинка колоды не пришла (медленная сеть): тот же размер, что у картинки (320×496),
+ * углы прозрачные. Без неё текстура пустая, и alphaTest выкидывает лицо целиком — карта прозрачная. */
+export function cardStandIn(c: { s: string; r: number } | null): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  const w = (cv.width = 320);
+  const h = (cv.height = 496);
+  const g = cv.getContext('2d')!;
+  g.beginPath();
+  g.roundRect(4, 4, w - 8, h - 8, 22);
+  g.fillStyle = c ? '#f3efe4' : '#8e2a26';
+  g.fill();
+  g.lineWidth = 3;
+  g.strokeStyle = 'rgba(0,0,0,0.25)';
+  g.stroke();
+  if (!c) {
+    // рубашка: рамка и косая сетка
+    g.save();
+    g.beginPath();
+    g.roundRect(24, 24, w - 48, h - 48, 12);
+    g.clip();
+    g.strokeStyle = 'rgba(255,225,190,0.55)';
+    g.lineWidth = 4;
+    for (let x = -h; x < w + h; x += 26) {
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x + h, h);
+      g.moveTo(x + h, 0);
+      g.lineTo(x, h);
+      g.stroke();
+    }
+    g.restore();
+    return cv;
+  }
+  const [sym, col] = SUIT[c.s] ?? ['?', '#1b1b1b'];
+  const rank = RANK[c.r] ?? String(c.r);
+  const rf = `700 ${rank.length > 1 ? 52 : 62}px 'PT Sans', Arial, sans-serif`;
+  g.fillStyle = col;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = rf;
+  g.fillText(rank, 48, 56);
+  g.font = `56px serif`;
+  g.fillText(sym, 48, 112);
+  g.save();
+  g.translate(w, h);
+  g.rotate(Math.PI);
+  g.font = rf;
+  g.fillText(rank, 48, 56);
+  g.font = `56px serif`;
+  g.fillText(sym, 48, 112);
+  g.restore();
+  g.font = `170px serif`;
+  g.fillText(sym, w / 2, h / 2 + 6);
+  return cv;
+}
