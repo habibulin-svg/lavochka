@@ -9,7 +9,11 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { normalOnly } from './pbr';
 
-export type Gesture = 'bet' | 'check' | 'fold' | 'allin' | 'win' | 'lose' | 'think';
+export type Gesture = 'bet' | 'call' | 'raise' | 'check' | 'fold' | 'allin' | 'win' | 'lose' | 'think' | 'look';
+
+/** Место крупье в списке людей (не игрок). */
+export const DEALER = 99;
+export type DealerAct = 'idle' | 'hello' | 'deal' | 'flop' | 'card' | 'point_front' | 'point_left' | 'point_right' | 'push_front' | 'push_left' | 'push_right' | 'collect' | 'gather' | 'allin';
 
 export interface PersonPlace {
   seat: number;
@@ -19,16 +23,24 @@ export interface PersonPlace {
   face: number;
   hidden: boolean;
   out: boolean;
+  /** Кривизна бортика перед местом: 1/(2R) — на сколько края кадра ближе к середине стола (для видео-людей). */
+  curve?: number;
 }
 
 export interface People {
+  kind: 'video' | '3d';
   group: THREE.Group;
   sync(list: PersonPlace[], look: THREE.Vector3): void;
   lookAt(target: THREE.Vector3, focus: number | null): void;
-  gesture(seat: number, kind: Gesture): void;
+  /** Реакция; delay — через сколько секунд (карты ещё летят). */
+  gesture(seat: number, kind: Gesture, delay?: number): void;
+  /** Насколько готовы (0..1): у всех, кого видно, уже играет ролик. Нет метода — готовы сразу. */
+  ready?(): number;
+  /** Действие крупье (есть только у людей-видео). */
+  dealer?(act: DealerAct): void;
   head(seat: number): THREE.Vector3 | null;
   /** Шаг анимации; true — кто-то сидит за столом и шевелится. */
-  update(dt: number): boolean;
+  update(dt: number, cam?: THREE.Vector3): boolean;
   dispose(): void;
 }
 
@@ -156,6 +168,7 @@ const bell = (t: number, hold = 0.3) => {
 };
 
 class PeopleImpl implements People {
+  kind = '3d' as const;
   group = new THREE.Group();
   private list = new Map<number, Person>();
   private loading = new Map<number, Promise<void>>();
@@ -303,7 +316,8 @@ class PeopleImpl implements People {
 
   gesture(seat: number, kind: Gesture) {
     const p = this.list.get(seat);
-    if (!p) return;
+    if (!p || kind === 'look') return;
+    if (kind === 'call' || kind === 'raise') kind = 'bet';
     const dur = kind === 'win' ? 1.8 : kind === 'allin' ? 1.4 : kind === 'check' ? 0.8 : 1.0;
     p.gesture = { kind, t: 0, dur };
   }

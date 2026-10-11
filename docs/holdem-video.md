@@ -79,6 +79,20 @@ dimon, kolyan, svetka, zheka, mihalych.
 > flat chroma-key green background (#00B140) and chroma-key green table surface, evenly lit. Warm soft overhead light,
 > mid-1990s Russia. Camera slightly above eye level. No cards, no chips, no objects. Natural skin, no text.
 
+## Крупье
+
+В утилите — набор «Крупье» (промпты в `prompts_dealer.json` рядом с программой; встроенные — `prompts.py`, `DEALER_*`).
+Крупье стоит посередине дальнего края стола, кадр тот же (от пояса, руки на краю стола). Папка `dealer` (Марина) или
+`dealer_m` (Аркадий, запасной). Действия: idle, hello, deal, flop, card (тёрн/ривер), collect, push_front / push_left /
+push_right (банк к нам / влево / вправо — как видит камера), point_front / point_left / point_right (чей ход), gather, allin.
+В игре сейчас используются: hello, deal, flop, card, collect, push_*, point_front.
+
+## Упаковка
+
+`FFMPEG=путь/к/ffmpeg node tools/videogen/pack.mjs [папка videogen_out]` (из `lavochka/`) — 512×512 H.264 без звука,
+по бокам срезано 3%, верх 9% закрашен зелёным (лампа), в `public/video/holdem/<перс>/<реакция>.mp4`. Пересобирает только
+изменившиеся. ffmpeg удобно взять из npm: `@ffmpeg-installer/ffmpeg`.
+
 ## Что я сделаю с роликами
 
 Сожму в WebM/MP4 (~150–300 КБ на ролик), вырежу зелёный шейдером (с подавлением зелёной каймы), посажу на стул за

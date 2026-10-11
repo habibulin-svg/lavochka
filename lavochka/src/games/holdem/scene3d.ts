@@ -15,7 +15,8 @@ import type { DeckStyle } from '../../core/settings';
 import { bolsterProfile, cardGeometry, sweepEllipse } from './geo3d';
 import { buildRoom, makeChair, onRoomLoad, FLOOR } from './room3d';
 import { buttonTex, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
-import type { People, Gesture } from './people3d';
+import { LOADING } from './loading';
+import { DEALER, type DealerAct, type People, type Gesture } from './people3d';
 
 export interface Item3D {
   key: string;
@@ -57,6 +58,8 @@ export interface Seat3D {
 export type CamMode = 'seat' | 'top';
 type Pt = { x: number; y: number };
 
+/** Угол обзора камеры (вид сверху и вид «за столом» без видео-людей). */
+const FOV = 47;
 const CX = 500;
 const CY = 320;
 const FELT_RX = 4.75;
@@ -95,6 +98,14 @@ function ellipse(rx: number, rz: number, n = 128): THREE.Vector2[] {
 }
 
 /** Точка на эллипсе по параметру и нормаль наружу. */
+/** Кривизна валика (его середины) в точке a эллипса: 1/(2R), R — радиус кривизны. */
+function railCurve(a: number): number {
+  const rx = RIM_RX - RAIL_W / 2;
+  const rz = RIM_RZ - RAIL_W / 2;
+  const R = Math.pow(rx * rx * Math.sin(a) ** 2 + rz * rz * Math.cos(a) ** 2, 1.5) / (rx * rz);
+  return 1 / (2 * R);
+}
+
 function onEllipse(rx: number, rz: number, a: number): { p: THREE.Vector3; n: THREE.Vector3 } {
   const n = new THREE.Vector3(Math.cos(a) * rz, 0, Math.sin(a) * rx).normalize();
   return { p: new THREE.Vector3(Math.cos(a) * rx, 0, Math.sin(a) * rz), n };
@@ -152,9 +163,27 @@ export class Table3D {
   private camLook = new THREE.Vector3();
   private camGoal = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
   private camInit = false;
+  private fovGoal = FOV;
   private people: People | null = null;
   private peopleLoading = false;
+  /** Люди-видео смотрят только в камеру: себя (со спины) в виде сверху не показываем. */
+  private videoPeople = false;
   private handKey = '';
+  private loading: HTMLElement;
+  private loadStart = 0;
+  private loadShown = 0;
+  /** Общие карты и банк — полоской внизу (в виде «за столом» середины стола в кадре обычно нет). */
+  private board: HTMLElement;
+  private boardKey = '';
+  /** Вид «за столом» как в Apple poker: в кадре один соперник, камера плавно перелетает к тому, чей ход. */
+  private shot: number | null = null;
+  /** Крупье в кадре до этого момента (performance.now). */
+  private dealerUntil = 0;
+  /** Крупье стоит посередине дальнего края (там у игроков оставлено место). */
+  private dealerPlace = (() => {
+    const e = onEllipse(RIM_RX + 1.25, RIM_RZ + 1.25, -Math.PI / 2);
+    return { pos: e.p, face: Math.atan2(-e.n.x, -e.n.z) };
+  })();
   /** Абажур: сверху он закрывает стол — в этом виде его нет. */
   private shade: THREE.Object3D | null = null;
 
@@ -175,9 +204,22 @@ export class Table3D {
     this.labels = document.createElement('div');
     this.labels.className = 'hd-gl-labels';
     host.appendChild(this.labels);
+    // заставка, пока грузятся люди (ролики) — иначе первые секунды за столом пусто
+    // (её ставит вид ещё до загрузки сцены — берём ту же, чтобы не мигала)
+    let ld = host.querySelector<HTMLElement>('.hd-loading');
+    if (!ld) {
+      host.insertAdjacentHTML('beforeend', LOADING);
+      ld = host.querySelector<HTMLElement>('.hd-loading')!;
+    }
+    host.appendChild(ld);
+    this.loading = ld;
+    this.loadStart = performance.now();
     this.hand = document.createElement('div');
     this.hand.className = 'hd-hand';
     host.appendChild(this.hand);
+    this.board = document.createElement('div');
+    this.board.className = 'hd-board';
+    host.appendChild(this.board);
     this.build();
     this.button = this.makeButton();
     this.ro = new ResizeObserver(() => this.resize());
@@ -299,11 +341,21 @@ export class Table3D {
   private loadPeople() {
     if (this.peopleLoading) return;
     this.peopleLoading = true;
-    import('./people3d')
-      .then((m) => m.loadPeople())
+    // люди-видео (как в Apple poker); не играет видео — 3D-модели
+    import('./video3d')
+      .then((m) => m.loadVideoPeople())
+      .catch((e) => {
+        console.warn('холдем: видео-персонажи', e);
+        return null;
+      })
+      .then((p) => p ?? import('./people3d').then((m) => m.loadPeople()))
       .then((p) => {
         if (this.disposed || !p) return;
         this.people = p;
+        this.videoPeople = p.kind === 'video';
+        // камера «как в Apple poker» — только с видео-людьми: встаём сразу
+        this.camInit = false;
+        this.aimCamera();
         this.scene.add(p.group);
         this.syncPeople();
         this.kick();
@@ -313,10 +365,18 @@ export class Table3D {
 
   private syncPeople() {
     if (!this.people) return;
-    this.people.sync(
-      [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me && this.mode === 'seat', out: p.out })),
-      this.lookTarget()
-    );
+    const list = [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me && (this.mode === 'seat' || this.videoPeople), out: p.out, curve: railCurve(p.a) }));
+    if (this.videoPeople && this.places.size) list.push({ seat: DEALER, ...this.dealerPlace, hidden: false, out: false, curve: railCurve(-Math.PI / 2) });
+    this.people.sync(list, this.lookTarget());
+  }
+
+  /** Крупье что-то делает — камера на неё на hold секунд. */
+  dealer(act: DealerAct, hold = 2.6) {
+    if (!this.people?.dealer) return;
+    this.people.dealer(act);
+    this.dealerUntil = performance.now() + (hold * 1000) / Math.max(0.5, this.speed);
+    this.aimCamera();
+    this.kick();
   }
 
   /** Куда смотрят сидящие: на того, чей ход, иначе — на середину стола. */
@@ -366,14 +426,17 @@ export class Table3D {
   setFocus(seat: number | null) {
     if (seat === this.focus) return;
     this.focus = seat;
+    // наш ход — крупье приглашает жестом (в кадре — она)
+    if (seat != null && this.places.get(seat)?.me && this.mode === 'seat') this.people?.dealer?.('point_front');
+    else if (seat != null) this.dealerUntil = 0;
     this.people?.lookAt(this.lookTarget(), seat);
     this.aimCamera();
     this.kick();
   }
 
   /** Жест игрока (ставка, пас, чек...). */
-  gesture(seat: number, kind: Gesture) {
-    this.people?.gesture(seat, kind);
+  gesture(seat: number, kind: Gesture, delay = 0) {
+    this.people?.gesture(seat, kind, delay);
     this.kick();
   }
 
@@ -449,6 +512,20 @@ export class Table3D {
 
   private drawHand() {
     this.hand.hidden = this.mode !== 'seat';
+    this.board.hidden = this.mode !== 'seat' || !this.boardKey;
+  }
+
+  /** Общие карты и банк внизу экрана (вид «за столом»). */
+  setBoard(cards: Card[], pot: number) {
+    const key = cards.length || pot ? cards.map((c) => c.s + c.r).join(',') + '|' + pot + '|' + this.deck : '';
+    if (key === this.boardKey) return;
+    const had = this.boardKey.split('|')[0].split(',').filter(Boolean).length;
+    this.boardKey = key;
+    this.board.innerHTML = key
+      ? `<div class="hd-board-cards">${cards.map((c, i) => `<img class="hd-bcard${i >= had ? ' deal' : ''}" style="--i:${i - had}" src="${cardUrl(c, this.deck)}" alt="" draggable="false">`).join('')}</div>` +
+        (pot ? `<div class="hd-board-pot">банк ${pot}</div>` : '')
+      : '';
+    this.drawHand();
   }
 
   // ---------------------------------------------------------------- раскладка
@@ -613,10 +690,23 @@ export class Table3D {
     const h = this.host.clientHeight;
     if (!w || !h) return;
     const a = w / h;
-    const half = Math.tan((this.camera.fov * Math.PI) / 360);
+    const half = Math.tan((FOV * Math.PI) / 360);
     // абажур закрывает стол сверху и на узком экране (камера там выше)
     if (this.shade) this.shade.visible = this.mode === 'seat' && a > 0.9;
-    if (this.mode === 'seat') {
+    this.fovGoal = FOV;
+    const shot = this.mode === 'seat' ? this.pickShot() : null;
+    if (shot) {
+      // соперник крупно: камера на уровне глаз, недалеко за серединой стола (так перелёт не задевает сидящих у борта),
+      // а крупность — зумом; валик закрывает соперникам пояс
+      const fwd = new THREE.Vector3(Math.sin(shot.face), 0, Math.cos(shot.face));
+      const base = shot.pos.clone().addScaledVector(fwd, 1.94).setY(0);
+      const D = Math.max(5.6, base.length() + 2.4);
+      // по высоте — от сукна до макушки с запасом; узкий экран — ещё и по ширине (локти могут чуть выйти за край)
+      const H = Math.max(6.4, 4.6 / Math.max(a, 0.1));
+      this.fovGoal = THREE.MathUtils.clamp((2 * Math.atan(H / 2 / D) * 180) / Math.PI, 30, 75);
+      this.camGoal.look.copy(base).setY(1.45);
+      this.camGoal.pos.copy(base).addScaledVector(fwd, D).setY(2.75);
+    } else if (this.mode === 'seat') {
       // узкий экран — смотрим круче, чтобы стол был виден целиком хотя бы по глубине
       const narrow = Math.min(1, Math.max(0, (1.5 - a) / 0.9));
       const pitch = THREE.MathUtils.degToRad(25 + 18 * narrow);
@@ -642,10 +732,28 @@ export class Table3D {
     }
     if (!this.camInit) {
       this.camInit = true;
+      this.camera.fov = this.fovGoal;
+      this.camera.updateProjectionMatrix();
       this.camPos.copy(this.camGoal.pos);
       this.camLook.copy(this.camGoal.look);
       this.applyCamera();
     }
+  }
+
+  /** Кого снимать: того, чей ход; на своём ходу и между раздачами — кого снимали; сначала — того, кто напротив. */
+  private pickShot(): { pos: THREE.Vector3; face: number } | null {
+    const f = this.focus != null ? this.places.get(this.focus) : null;
+    if (this.videoPeople && (performance.now() < this.dealerUntil || f?.me)) return this.dealerPlace;
+    if (f && !f.me) this.shot = f.seat;
+    let p = this.shot != null ? this.places.get(this.shot) : undefined;
+    if (!p || p.me) {
+      const me = [...this.places.values()].find((x) => x.me);
+      const others = [...this.places.values()].filter((x) => !x.me);
+      if (me) others.sort((x, y) => y.pos.distanceToSquared(me.pos) - x.pos.distanceToSquared(me.pos));
+      p = others[0];
+      this.shot = p?.seat ?? null;
+    }
+    return p ?? null;
   }
 
   private applyCamera() {
@@ -701,6 +809,8 @@ export class Table3D {
       } else v = to3(l.x, l.y, l.h ?? 0.15);
       const pr = v.project(this.camera);
       if (pr.z > 1) continue;
+      // за столом: что не в кадре — не показываем (банк — в полоске внизу)
+      if (this.mode === 'seat' && (Math.abs(pr.x) > 1.02 || Math.abs(pr.y) > 1.02 || cls.includes('hd-pot'))) continue;
       const x = THREE.MathUtils.clamp(((pr.x + 1) / 2) * w, 40, w - 40);
       const y = THREE.MathUtils.clamp(((1 - pr.y) / 2) * h, 14, h - 14);
       s += `<div class="${cls}" style="${l.style ? l.style + ';' : ''}left:${x.toFixed(1)}px;top:${y.toFixed(1)}px">${l.html}</div>`;
@@ -748,21 +858,46 @@ export class Table3D {
       }
     }
     // камера
-    const kc = 1 - Math.exp(-dt * 2.5);
-    if (this.camPos.distanceToSquared(this.camGoal.pos) > 1e-5 || this.camLook.distanceToSquared(this.camGoal.look) > 1e-5) {
+    const kc = 1 - Math.exp(-dt * 3.5);
+    if (this.camPos.distanceToSquared(this.camGoal.pos) > 1e-5 || Math.abs(this.camera.fov - this.fovGoal) > 0.02 || this.camLook.distanceToSquared(this.camGoal.look) > 1e-5) {
       this.camPos.lerp(this.camGoal.pos, kc);
       this.camLook.lerp(this.camGoal.look, kc);
+      this.camera.fov += (this.fovGoal - this.camera.fov) * kc;
+      this.camera.updateProjectionMatrix();
       this.applyCamera();
       moving = true;
     }
-    const alive = this.people?.update(dt) ?? false;
+    // крупье своё отыграла — камера обратно к игроку
+    if (this.dealerUntil && performance.now() >= this.dealerUntil) {
+      this.dealerUntil = 0;
+      this.aimCamera();
+    }
+    const alive = this.people?.update(dt, this.camera.position) ?? false;
+    const waiting = this.updateLoading();
     // живые люди — 30 кадров в секунду, полёт карт — каждый кадр
     if (moving || t - this.lastDraw > 31) {
       this.lastDraw = t;
       this.renderer.render(this.scene, this.camera);
       this.drawLabels();
     }
-    if (moving || alive) this.kick();
+    if (moving || alive || waiting) this.kick();
+  }
+
+  /** Заставка: полоска — готовность людей; ушла — когда все сидят (или через 25 с, что бы ни случилось). true — ещё ждём. */
+  private updateLoading(): boolean {
+    if (this.loading.hidden) return false;
+    const p = this.people;
+    let k = p ? (p.ready?.() ?? 1) : 0;
+    if (performance.now() - this.loadStart > 25000) k = 1;
+    // полоска не прыгает назад и подползает, пока ждём
+    this.loadShown = Math.max(this.loadShown + (k - this.loadShown) * 0.15, Math.min(0.3, (performance.now() - this.loadStart) / 10000));
+    (this.loading.querySelector('i') as HTMLElement).style.width = `${Math.round(this.loadShown * 100)}%`;
+    if (k >= 1) {
+      this.loading.classList.add('done');
+      setTimeout(() => (this.loading.hidden = true), 600);
+      return false;
+    }
+    return true;
   }
 
   destroy() {

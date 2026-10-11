@@ -48,6 +48,14 @@
 /* 3D-стол (three.js): холст под сценой, плоские карты и стол спрятаны, подписи — поверх по проекции. */
 .hd-gl { position: absolute; inset: 0; display: none; }
 .hd-webgl .hd-gl { display: block; }
+.hd-loading { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #3a2416 0%, #140b06 75%); transition: opacity 0.6s; }
+.hd-loading.done { opacity: 0; pointer-events: none; }
+.hd-loading[hidden] { display: none; }
+.hd-loading-in { display: grid; gap: 14px; justify-items: center; color: #f3e2bf; font: 600 18px/1.3 'PT Serif', Georgia, serif; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+.hd-loading-suits { font-size: 30px; letter-spacing: 6px; color: #d9b36a; animation: hd-suits 1.6s ease-in-out infinite; }
+@keyframes hd-suits { 50% { opacity: 0.45; transform: scale(0.94); } }
+.hd-loading-bar { width: min(260px, 60vw); height: 6px; border-radius: 3px; background: rgba(255, 230, 180, 0.15); overflow: hidden; }
+.hd-loading-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #b8862e, #f1cf7a); border-radius: 3px; transition: width 0.3s; }
 .hd-gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* виньетка — как в объективе: края кадра темнее, свет лампы в центре */
 .hd-gl::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 55%, transparent 55%, rgba(8, 4, 2, 0.55) 100%); }
@@ -73,4 +81,12 @@
 @keyframes hd-deal { from { transform: translate(-40vw, -40vh) rotate(-40deg) scale(0.4); opacity: 0; } }
 .hd-blinds { z-index: 2; }
 .hd-gl::after { z-index: 1; }
-.hd-gl-labels, .hd-hand { z-index: 2; }
+.hd-gl-labels, .hd-hand, .hd-board { z-index: 2; }
+/* общие карты и банк — внизу слева (вид «за столом») */
+.hd-board { position: absolute; left: 2%; bottom: 10px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.hd-board[hidden] { display: none; }
+.hd-board-cards { display: flex; gap: calc(var(--hand, 160px) * 0.05); }
+.hd-bcard { width: calc(var(--hand, 160px) * 0.4); height: calc(var(--hand, 160px) * 0.62); border-radius: 6%; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55)); }
+.hd-bcard.deal { animation: hd-bdeal 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 0.12s); }
+@keyframes hd-bdeal { from { transform: translateY(-30vh) rotateY(90deg) scale(0.6); opacity: 0; } }
+.hd-board-pot { font: 600 15px/1.2 'PT Sans', system-ui, sans-serif; color: #fff3d0; background: rgba(20, 12, 6, 0.72); border: 1px solid rgba(255, 220, 150, 0.35); border-radius: 12px; padding: 3px 10px; }

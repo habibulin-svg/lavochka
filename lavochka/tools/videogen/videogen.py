@@ -71,22 +71,27 @@ def here() -> str:
 
 
 CONFIG = os.path.join(here(), "videogen.json")
-PROMPTS_FILE = os.path.join(here(), "prompts.json")
 
 
-def load_prompts() -> dict:
-    """Промпты из prompts.json рядом с программой (если нет — создаём его из встроенных, чтобы было что править)."""
-    data = {"image": P.IMAGE, "video": P.VIDEO, "characters": P.CHARACTERS, "reactions": P.REACTIONS}
-    if os.path.exists(PROMPTS_FILE):
+def prompts_file(set_id: str) -> str:
+    return os.path.join(here(), P.SETS[set_id]["file"])
+
+
+def load_prompts(set_id: str) -> dict:
+    """Промпты набора из json рядом с программой (если нет — создаём его из встроенных, чтобы было что править)."""
+    s = P.SETS[set_id]
+    data = {k: s[k] for k in ("image", "video", "characters", "reactions")}
+    path = prompts_file(set_id)
+    if os.path.exists(path):
         try:
-            with open(PROMPTS_FILE, encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 user = json.load(f)
             data.update({k: v for k, v in user.items() if k in data})
         except Exception as e:  # кривой файл — работаем на встроенных
-            print("prompts.json:", e)
+            print(path, e)
     else:
         try:
-            with open(PROMPTS_FILE, "w", encoding="utf-8") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except OSError:
             pass
@@ -195,9 +200,10 @@ class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         root.title("Видео-персонажи для холдема — routerai.ru")
-        root.geometry("860x760")
-        self.prompts = load_prompts()
+        root.geometry("860x800")
         self.cfg = self.load_cfg()
+        self.set_id = self.cfg.get("set") if self.cfg.get("set") in P.SETS else "players"
+        self.prompts = load_prompts(self.set_id)
         self.q: queue.Queue = queue.Queue()
         self.stop = threading.Event()
         self.busy = False
@@ -216,6 +222,11 @@ class App:
         self.out = tk.StringVar(value=self.cfg.get("out", os.path.join(here(), "videogen_out")))
         ttk.Entry(top, textvariable=self.out, width=60).grid(row=1, column=1, sticky="we")
         ttk.Button(top, text="…", width=3, command=self.pick_dir).grid(row=1, column=2)
+        ttk.Label(top, text="Набор:").grid(row=2, column=0, sticky="w")
+        self.set_combo = ttk.Combobox(top, values=[s["title"] for s in P.SETS.values()], state="readonly", width=20)
+        self.set_combo.current(list(P.SETS).index(self.set_id))
+        self.set_combo.grid(row=2, column=1, sticky="w")
+        self.set_combo.bind("<<ComboboxSelected>>", lambda e: self.on_set())
         top.columnconfigure(1, weight=1)
 
         mod = ttk.LabelFrame(root, text="Модели")
@@ -248,24 +259,11 @@ class App:
         self.img_combo.bind("<<ComboboxSelected>>", lambda e: self.update_cost())
         self.vid_combo.bind("<<ComboboxSelected>>", lambda e: self.on_vid_model())
 
-        sel = ttk.Frame(root)
-        sel.pack(fill="x", **pad)
-        chars = ttk.LabelFrame(sel, text="Персонажи")
-        chars.pack(side="left", fill="both", expand=True, padx=(0, 4))
+        self.sel = ttk.Frame(root)
+        self.sel.pack(fill="x", **pad)
         self.chars: dict[str, tk.BooleanVar] = {}
-        saved_c = self.cfg.get("chars")
-        for i, (cid, (name, _)) in enumerate(self.prompts["characters"].items()):
-            v = tk.BooleanVar(value=(cid in saved_c) if saved_c else True)
-            self.chars[cid] = v
-            ttk.Checkbutton(chars, text=f"{name} ({cid})", variable=v, command=self.update_cost).grid(row=i // 2, column=i % 2, sticky="w")
-        reacts = ttk.LabelFrame(sel, text="Реакции")
-        reacts.pack(side="left", fill="both", expand=True, padx=(4, 0))
         self.reacts: dict[str, tk.BooleanVar] = {}
-        saved_r = self.cfg.get("reacts")
-        for i, (rid, (name, _)) in enumerate(self.prompts["reactions"].items()):
-            v = tk.BooleanVar(value=(rid in saved_r) if saved_r else rid != "bluff")
-            self.reacts[rid] = v
-            ttk.Checkbutton(reacts, text=f"{name} ({rid})", variable=v, command=self.update_cost).grid(row=i // 2, column=i % 2, sticky="w")
+        self.build_sel()
 
         act = ttk.Frame(root)
         act.pack(fill="x", **pad)
@@ -286,11 +284,58 @@ class App:
         self.prog.pack(fill="x", **pad)
         self.logbox = tk.Text(root, height=16, wrap="word", font=("Consolas", 9))
         self.logbox.pack(fill="both", expand=True, **pad)
-        ttk.Label(root, text=f"Промпты можно править в {PROMPTS_FILE}", foreground="#666").pack(anchor="w", padx=8, pady=(0, 6))
+        self.hint = ttk.Label(root, text=f"Промпты можно править в {prompts_file(self.set_id)}", foreground="#666")
+        self.hint.pack(anchor="w", padx=8, pady=(0, 6))
 
         self.on_vid_model(initial=True)
         root.after(150, self.pump)
         root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    # ---------------------------------------------------------------- наборы
+
+    def saved_sel(self) -> dict:
+        """Отмеченные персонажи и действия набора (в старом конфиге — общий список, это набор игроков)."""
+        d = (self.cfg.get("sel") or {}).get(self.set_id)
+        if d is None and self.set_id == "players":
+            d = {"chars": self.cfg.get("chars"), "reacts": self.cfg.get("reacts")}
+        return d or {}
+
+    def build_sel(self):
+        for w in self.sel.winfo_children():
+            w.destroy()
+        saved = self.saved_sel()
+        off = P.SETS[self.set_id]["off"]
+        chars = ttk.LabelFrame(self.sel, text="Персонажи")
+        chars.pack(side="left", fill="both", expand=True, padx=(0, 4))
+        self.chars = {}
+        for i, (cid, (name, _)) in enumerate(self.prompts["characters"].items()):
+            v = tk.BooleanVar(value=(cid in saved["chars"]) if saved.get("chars") else True)
+            self.chars[cid] = v
+            ttk.Checkbutton(chars, text=f"{name} ({cid})", variable=v, command=self.update_cost).grid(row=i // 2, column=i % 2, sticky="w")
+        reacts = ttk.LabelFrame(self.sel, text="Реакции" if self.set_id == "players" else "Действия")
+        reacts.pack(side="left", fill="both", expand=True, padx=(4, 0))
+        self.reacts = {}
+        for i, (rid, (name, _)) in enumerate(self.prompts["reactions"].items()):
+            v = tk.BooleanVar(value=(rid in saved["reacts"]) if saved.get("reacts") else rid not in off)
+            self.reacts[rid] = v
+            ttk.Checkbutton(reacts, text=f"{name} ({rid})", variable=v, command=self.update_cost).grid(row=i // 2, column=i % 2, sticky="w")
+
+    def remember_sel(self):
+        self.cfg.setdefault("sel", {})[self.set_id] = {
+            "chars": [k for k, v in self.chars.items() if v.get()],
+            "reacts": [k for k, v in self.reacts.items() if v.get()],
+        }
+
+    def on_set(self):
+        if self.busy:
+            self.set_combo.current(list(P.SETS).index(self.set_id))
+            return
+        self.remember_sel()
+        self.set_id = list(P.SETS)[max(0, self.set_combo.current())]
+        self.prompts = load_prompts(self.set_id)
+        self.build_sel()
+        self.hint.configure(text=f"Промпты можно править в {prompts_file(self.set_id)}")
+        self.update_cost()
 
     # ---------------------------------------------------------------- настройки
 
@@ -302,6 +347,7 @@ class App:
             return {}
 
     def save_cfg(self):
+        self.remember_sel()
         cfg = {
             "out": self.out.get(),
             "img_model": self.img_id(),
@@ -310,8 +356,8 @@ class App:
             "dur": self.safe_int(self.dur, 5),
             "variants": self.safe_int(self.variants, 1),
             "parallel": self.safe_int(self.parallel, 3),
-            "chars": [k for k, v in self.chars.items() if v.get()],
-            "reacts": [k for k, v in self.reacts.items() if v.get()],
+            "set": self.set_id,
+            "sel": self.cfg.get("sel", {}),
         }
         if self.remember.get():
             cfg["key"] = self.key.get().strip()
