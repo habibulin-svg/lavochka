@@ -12,38 +12,75 @@
  *   Фол (ни одного касания, свояк с руки): удар не засчитан, сопернику — шар со стола на полку, ход сопернику.
  * Классическая пирамида (до 71 очка): 15 номерных шаров (№1 — 11 очков, остальные — по номеру, последний шар — ещё +10), белый биток;
  *   каждый удар — заказ шара и лузы; заказанный упал куда заказан — засчитываются все упавшие, иначе выставляются; фол — −5 очков.
+ * Снукер: 15 красных (по 1 очку) и цветные: жёлтый 2, зелёный 3, коричневый 4, синий 5, розовый 6, чёрный 7. Пока на столе есть красные —
+ *   красный, потом цветной (какой задет первым — тот и заказан), цветные выставляются обратно; потом цветные по порядку от жёлтого до чёрного.
+ *   Фол (не тот шар первым, забит не тот, биток в лузе, мимо всех) — сопернику штраф не меньше 4 очков (или стоимость шара), ход ему; биток — с руки в «D».
+ *   Упрощения: нет «свободного шара», правила «мисс» и перебоя чёрного при ничьей; партия кончается и тогда, когда на столе один чёрный, а отставание больше 7.
  * Одиночная партия — тренировка: тот же стол без соперника. */
 import type { Options, Rng } from '../../core/types';
-import { freeSpot, geometry, simulate, spotNear, TABLES, type Ball, type Geometry, type Shot, type TableSpec } from './physics';
+import { freeSpot, geometry, simulate, spotNear, tableSpec, type Ball, type Geometry, type Hit, type Shot, type TableKind, type TableSize, type TableSpec } from './physics';
 
-export type Variant = 'pool8' | 'american' | 'moscow' | 'nevsky' | 'classic';
+export type Variant = 'pool8' | 'american' | 'moscow' | 'nevsky' | 'classic' | 'snooker';
 
 export interface Cfg {
   variant: Variant;
-  /** Лузы пошире настоящих (×1,3). */
+  /** Размер стола. */
+  size: TableSize;
+  /** Лузы пошире настоящих. */
   wide: boolean;
   /** До скольких шаров (русский) или очков (классика). */
   target: number;
 }
 
+const VARIANTS: Variant[] = ['pool8', 'american', 'moscow', 'nevsky', 'classic', 'snooker'];
+
 export function cfgFrom(o: Options): Cfg {
-  const variant = (['pool8', 'american', 'moscow', 'nevsky', 'classic'] as const).includes(o.variant as Variant) ? (o.variant as Variant) : 'pool8';
-  return { variant, wide: o.pockets == null ? variant !== 'pool8' : o.pockets === 'wide', target: variant === 'classic' ? 71 : variant === 'pool8' ? 0 : 8 };
+  const variant = VARIANTS.includes(o.variant as Variant) ? (o.variant as Variant) : 'pool8';
+  const kind = kindOf(variant);
+  const size: TableSize = o.size === 'small' || o.size === 'mid' || o.size === 'big' ? o.size : kind === 'pool' ? 'small' : kind === 'russian' ? 'mid' : 'big';
+  return { variant, size, wide: o.pockets == null ? kind === 'russian' : o.pockets === 'wide', target: variant === 'classic' ? 71 : variant === 'pool8' || variant === 'snooker' ? 0 : 8 };
 }
 
-export const isRussian = (v: Variant) => v !== 'pool8';
+export const kindOf = (v: Variant): TableKind => (v === 'pool8' ? 'pool' : v === 'snooker' ? 'snooker' : 'russian');
+export const isRussian = (v: Variant) => kindOf(v) === 'russian';
 
 export function tableOf(cfg: Cfg): TableSpec {
-  const t = TABLES[cfg.variant === 'pool8' ? 'pool' : 'russian'];
-  return cfg.wide ? { ...t, corner: t.corner * 1.3, side: t.side * 1.25 } : t;
+  return tableSpec(kindOf(cfg.variant), cfg.size ?? 'mid', cfg.wide);
 }
 
 const geoCache = new Map<string, Geometry>();
 export function geoOf(cfg: Cfg): Geometry {
-  const key = `${cfg.variant === 'pool8' ? 'pool' : 'russian'}:${cfg.wide}`;
+  const key = `${kindOf(cfg.variant)}:${cfg.size}:${cfg.wide}`;
   let g = geoCache.get(key);
   if (!g) geoCache.set(key, (g = geometry(tableOf(cfg))));
   return g;
+}
+
+// ---------------------------------------------------------------- снукер
+
+/** Шары снукера: 0 — биток, 1–15 — красные, 16 жёлтый … 21 чёрный. */
+export const SNK_YELLOW = 16;
+export const SNK_BLACK = 21;
+export const snookerValue = (id: number) => (id >= 1 && id <= 15 ? 1 : id >= SNK_YELLOW ? id - 14 : 0);
+export const SNK_NAMES: Record<number, string> = { 16: 'жёлтый', 17: 'зелёный', 18: 'коричневый', 19: 'синий', 20: 'розовый', 21: 'чёрный' };
+export const ballName = (cfg: Cfg, id: number) => (cfg.variant !== 'snooker' ? String(id) : id === 0 ? 'биток' : id <= 15 ? 'красный' : SNK_NAMES[id]);
+
+/** Разметка снукерного стола: линия «дома» (baulk), радиус «D», точки цветных (по правилам WPBSA, на малом столе — в масштабе). */
+export function snookerMarks(t: TableSpec) {
+  const k = t.w / 3.569;
+  const baulk = 0.737 * k;
+  const dRad = 0.292 * k;
+  const cy = t.h / 2;
+  const spots: Record<number, [number, number]> = {
+    // при взгляде от «дома» жёлтый справа (у нас — ниже), зелёный слева
+    16: [baulk, cy + dRad],
+    17: [baulk, cy - dRad],
+    18: [baulk, cy],
+    19: [t.w / 2, cy],
+    20: [t.w * 0.75, cy],
+    21: [t.w - 0.324 * k, cy],
+  };
+  return { baulk, dRad, spots };
 }
 
 /** Стоимость шара в классической пирамиде. */
@@ -58,8 +95,8 @@ export interface State {
   turn: number;
   balls: Ball[];
   phase: Phase;
-  /** Куда можно поставить биток с руки. */
-  zone: 'kitchen' | 'any';
+  /** Куда можно поставить биток с руки: «дом» (левая четверть), «D» (снукер), куда угодно. */
+  zone: 'kitchen' | 'any' | 'D';
   /** Удар с руки (невская: засчитывается только прицельный). */
   fromHand: boolean;
   /** Первый удар партии. */
@@ -67,6 +104,10 @@ export interface State {
   score: number[];
   /** Пул: группы игроков (null — стол открыт). */
   groups: (Group | null)[];
+  /** Снукер: что сейчас «на очереди» — красный, любой цветной или цветной по порядку (id). */
+  snk?: 'red' | 'colour' | number;
+  /** Снукер: серия очков текущего подхода. */
+  brk?: number;
   shots: number;
   winners: number[] | null;
   /** Чем кончился прошлый удар (для журнала и подсказок). */
@@ -85,8 +126,14 @@ export type Event =
       type: 'shot';
       seat: number;
       cue: number;
+      /** Как ударили — для кия в анимации. */
+      angle: number;
+      power: number;
+      spinX: number;
+      spinY: number;
       frames: { t: number; p: number[] }[];
       ids: number[];
+      hits: Hit[];
       pocketed: { id: number; pocket: number }[];
       foul: string | null;
       points: number;
@@ -102,6 +149,16 @@ export const POCKET_NAMES = ['левая угловая у дома', 'лева�
 
 export function rack(cfg: Cfg, rng: Rng): Ball[] {
   const t = tableOf(cfg);
+  if (cfg.variant === 'snooker') {
+    const { spots, baulk } = snookerMarks(t);
+    const d = t.r * 2.005;
+    const fx = spots[20][0] + t.r * 2 + 0.002;
+    const balls: Ball[] = [{ id: 0, x: baulk - t.r * 4, y: t.h / 2 + t.r * 3, on: true }];
+    let id = 1;
+    for (let row = 0; row < 5; row++) for (let i = 0; i <= row; i++) balls.push({ id: id++, x: fx + row * d * 0.866, y: t.h / 2 + (i - row / 2) * d, on: true });
+    for (let c = SNK_YELLOW; c <= SNK_BLACK; c++) balls.push({ id: c, x: spots[c][0], y: spots[c][1], on: true });
+    return balls;
+  }
   const d = t.r * 2.005;
   const fx = t.w * 0.75;
   const cy = t.h / 2;
@@ -146,7 +203,7 @@ export function setup(seats: number[], opts: Options, rng: Rng): State {
     turn: seats[0],
     balls: rack(cfg, rng),
     phase: 'place',
-    zone: 'kitchen',
+    zone: cfg.variant === 'snooker' ? 'D' : 'kitchen',
     fromHand: true,
     breakShot: true,
     score: [0, 0, 0, 0],
@@ -154,6 +211,7 @@ export function setup(seats: number[], opts: Options, rng: Rng): State {
     shots: 0,
     winners: null,
     last: null,
+    ...(cfg.variant === 'snooker' ? { snk: 'red' as const, brk: 0 } : {}),
   };
 }
 
@@ -173,6 +231,12 @@ export function ownBalls(s: State, seat: number): number[] {
 /** По каким шарам можно бить первым (пул). */
 export function legalTargets(s: State, seat: number): number[] {
   const objs = s.balls.filter((b) => b.on && b.id !== 0).map((b) => b.id);
+  if (s.cfg.variant === 'snooker') {
+    const on = s.snk ?? 'red';
+    if (on === 'red') return objs.filter((id) => id <= 15);
+    if (on === 'colour') return objs.filter((id) => id >= SNK_YELLOW);
+    return objs.filter((id) => id === on);
+  }
   if (s.cfg.variant !== 'pool8') return objs;
   if (!s.groups[seat]) return objs.filter((id) => id !== 8 || objs.length === 1);
   const own = ownBalls(s, seat);
@@ -188,12 +252,17 @@ export function cueBalls(s: State): number[] {
 export function placeOk(s: State, x: number, y: number): boolean {
   const t = tableOf(s.cfg);
   if (s.zone === 'kitchen' && x > t.w / 4 - t.r) return false;
+  if (s.zone === 'D') {
+    const { baulk, dRad } = snookerMarks(t);
+    if (x > baulk || Math.hypot(x - baulk, y - t.h / 2) > dRad) return false;
+  }
   return freeSpot(t, s.balls, x, y, 0);
 }
 
 // ---------------------------------------------------------------- ход
 
-export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
+/** Ход. frames = false — без кадров анимации (для ботов, которые примеряют удары). */
+export function apply(s0: State, seat: number, a: Action, frames = true): { state: State; events: Event[] } | null {
   if (s0.phase === 'over' || seat !== s0.turn || !a || typeof a !== 'object') return null;
   const s: State = { ...s0, balls: s0.balls.map((b) => ({ ...b })), score: s0.score.slice(), groups: s0.groups.slice() };
   const ev: Event[] = [];
@@ -212,12 +281,14 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (!cueBalls(s0).includes(cueId) || !onTable(s0, cueId)) return null;
   const call = a.call && Number.isInteger(a.call.ball) && Number.isInteger(a.call.pocket) && a.call.pocket >= 0 && a.call.pocket < 6 ? a.call : undefined;
   if (s.cfg.variant === 'classic' && (!call || !onTable(s0, call.ball) || call.ball === 0)) return null;
-  const shot: Shot = { cue: cueId, angle: a.angle, power: Math.max(0, Math.min(1, a.power)), spinX: Math.max(-1, Math.min(1, a.spinX ?? 0)), spinY: Math.max(-1, Math.min(1, a.spinY ?? 0)) };
-  const res = simulate(geoOf(s.cfg), s.balls, shot);
+  const num = (x: number | undefined) => (Number.isFinite(x) ? Math.max(-1, Math.min(1, x as number)) : 0);
+  const shot: Shot = { cue: cueId, angle: a.angle, power: Math.max(0, Math.min(1, a.power)), spinX: num(a.spinX), spinY: num(a.spinY) };
+  const res = simulate(geoOf(s.cfg), s.balls, shot, frames);
   s.balls = res.balls;
   s.shots++;
-  const judge = s.cfg.variant === 'pool8' ? judgePool(s0, s, seat, res, call) : s.cfg.variant === 'classic' ? judgeClassic(s0, s, seat, res, call!) : judgeRussian(s0, s, seat, res, cueId);
-  ev.push({ type: 'shot', seat, cue: cueId, frames: res.frames, ids: res.ids, pocketed: res.pocketed, foul: judge.foul, points: judge.points, text: judge.text, call });
+  const v = s.cfg.variant;
+  const judge = v === 'pool8' ? judgePool(s0, s, seat, res, call) : v === 'classic' ? judgeClassic(s0, s, seat, res, call!) : v === 'snooker' ? judgeSnooker(s0, s, seat, res) : judgeRussian(s0, s, seat, res, cueId);
+  ev.push({ type: 'shot', seat, cue: cueId, angle: shot.angle, power: shot.power, spinX: shot.spinX, spinY: shot.spinY, frames: res.frames, ids: res.ids, hits: res.hits, pocketed: res.pocketed, foul: judge.foul, points: judge.points, text: judge.text, call });
   if (judge.spot.length) ev.push({ type: 'spot', ids: judge.spot });
   s.last = { seat, text: judge.text };
   s.breakShot = false;
@@ -237,7 +308,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (!cue.on) {
       // где поставить по умолчанию — в доме
       const t = tableOf(s.cfg);
-      const [x, y] = spotNear(t, s.balls, t.w * 0.2, t.h / 2, 0);
+      const [x, y] = s.zone === 'D' ? spotNear(t, s.balls, snookerMarks(t).baulk - t.r * 3, t.h / 2, 0) : spotNear(t, s.balls, t.w * 0.2, t.h / 2, 0);
       cue.x = x;
       cue.y = y;
     }
@@ -252,7 +323,7 @@ interface Judge {
   foul: string | null;
   points: number;
   again: boolean;
-  hand: 'kitchen' | 'any' | null;
+  hand: 'kitchen' | 'any' | 'D' | null;
   spot: number[];
   text: string;
   end?: { winners: number[]; text: string };
@@ -423,6 +494,97 @@ function judgeClassic(s0: State, s: State, seat: number, res: ReturnType<typeof 
     return { foul, points, again: false, hand, spot, text, end: { winners: s.seats.filter((p) => s.score[p] === best), text: 'шары кончились' } };
   }
   return { foul, points, again: (!foul && hit) || solo, hand, spot, text };
+}
+
+/** Снукер: выставить цветной на свою точку, занята — на старшую свободную, все заняты — рядом со своей. */
+function respotColour(s: State, id: number) {
+  const t = tableOf(s.cfg);
+  const { spots } = snookerMarks(t);
+  const b = s.balls.find((x) => x.id === id)!;
+  b.on = false;
+  for (const c of [id, 21, 20, 19, 18, 17, 16]) {
+    const [x, y] = spots[c];
+    if (freeSpot(t, s.balls, x, y, id)) {
+      Object.assign(b, { x, y, on: true });
+      return;
+    }
+  }
+  const [x, y] = spotNear(t, s.balls, spots[id][0], spots[id][1], id);
+  Object.assign(b, { x, y, on: true });
+}
+
+function judgeSnooker(s0: State, s: State, seat: number, res: ReturnType<typeof simulate>): Judge {
+  const solo = s.seats.length === 1;
+  const opp = other(s, seat);
+  const on0 = s0.snk ?? 'red';
+  const potted = res.pocketed.map((p) => p.id);
+  const cueIn = potted.includes(0);
+  const objs = potted.filter((id) => id !== 0);
+  const first = res.first;
+  // заказ цветного — тот, что задет первым
+  const nominated = on0 === 'colour' ? (first >= SNK_YELLOW ? first : null) : typeof on0 === 'number' ? on0 : null;
+  let foul: string | null = null;
+  if (cueIn) foul = 'биток в лузе';
+  else if (first < 0) foul = 'ни одного касания';
+  else if (on0 === 'red' && first > 15) foul = `первым задет ${SNK_NAMES[first]}, а нужен красный`;
+  else if (on0 === 'colour' && first <= 15) foul = 'первым задет красный, а нужен цветной';
+  else if (typeof on0 === 'number' && first !== on0) foul = `первым задет ${ballName(s.cfg, first)}, а нужен ${SNK_NAMES[on0]}`;
+  else if (on0 === 'red' && objs.some((id) => id > 15)) foul = 'забит цветной вместо красного';
+  else if (on0 !== 'red' && objs.some((id) => id !== nominated)) foul = 'забит не тот шар';
+  const redsLeft = () => s.balls.some((b) => b.on && b.id >= 1 && b.id <= 15);
+  const spot: number[] = [];
+  let points = 0;
+  let again = false;
+  let text: string;
+  if (foul) {
+    const onVal = on0 === 'red' ? 1 : nominated ? snookerValue(nominated) : 0;
+    const pen = Math.max(4, onVal, first > 0 ? snookerValue(first) : 0, ...objs.map(snookerValue));
+    if (solo) s.score[seat] = Math.max(0, s.score[seat] - pen);
+    else s.score[opp] += pen;
+    // забитые цветные возвращаются, красные — нет
+    for (const id of objs)
+      if (id >= SNK_YELLOW) {
+        respotColour(s, id);
+        spot.push(id);
+      }
+    s.snk = redsLeft() ? 'red' : typeof on0 === 'number' ? on0 : SNK_YELLOW;
+    text = solo ? `фол: ${foul} (−${pen})` : `фол: ${foul} (+${pen} сопернику)`;
+  } else if (on0 === 'red') {
+    points = objs.length;
+    again = points > 0;
+    s.snk = again ? 'colour' : redsLeft() ? 'red' : SNK_YELLOW;
+    text = points ? `красных: ${points} (+${points})` : 'мимо';
+  } else if (on0 === 'colour') {
+    if (objs.length && nominated) {
+      points = snookerValue(nominated);
+      respotColour(s, nominated);
+      spot.push(nominated);
+      again = true;
+      text = `${SNK_NAMES[nominated]} (+${points})`;
+    } else text = 'мимо';
+    s.snk = redsLeft() ? 'red' : SNK_YELLOW;
+  } else {
+    if (objs.length) {
+      points = snookerValue(on0);
+      again = true;
+      s.snk = on0 + 1;
+      text = `${SNK_NAMES[on0]} (+${points})`;
+    } else text = 'мимо';
+  }
+  s.score[seat] += points;
+  s.brk = again ? (s0.turn === seat ? (s0.brk ?? 0) : 0) + points : 0;
+  if (again && (s.brk ?? 0) > points) text += ` · серия ${s.brk}`;
+  const hand = cueIn ? 'D' : null;
+  if (cueIn) s.balls.find((b) => b.id === 0)!.on = false;
+  // конец партии: всё забито или на столе один чёрный, а отставание больше 7
+  const left = s.balls.filter((b) => b.on && b.id !== 0);
+  const scores = s.seats.map((p) => s.score[p]);
+  const best = Math.max(...scores);
+  const lead = best - Math.min(...scores);
+  if (!left.length || (typeof s.snk === 'number' && s.snk > SNK_BLACK) || (!solo && s.snk === SNK_BLACK && left.length === 1 && lead > 7)) {
+    return { foul, points, again: false, hand: null, spot, text, end: { winners: s.seats.filter((p) => s.score[p] === best), text: `партия ${scores.join(' : ')}` } };
+  }
+  return { foul, points, again: again || solo, hand, spot, text };
 }
 
 export const makeView = (s: State): View => s;

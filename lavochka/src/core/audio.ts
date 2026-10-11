@@ -30,6 +30,12 @@ function on(): AudioContext | null {
   return c;
 }
 
+/** Выход для своих звуковых цепочек игры (бильярд): контекст, вход общего микшера и буфер шума; null — звук выключен. */
+export function audioOut(): { ctx: AudioContext; out: AudioNode; noise: AudioBuffer } | null {
+  const c = on();
+  return c && master && noiseBuf ? { ctx: c, out: master, noise: noiseBuf } : null;
+}
+
 interface ClickOpts {
   freq?: number;
   q?: number;

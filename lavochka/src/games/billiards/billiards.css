@@ -1,17 +1,23 @@
-/* Бильярд: стол на канве и панель. */
-.table--billiards { --table-bg: radial-gradient(ellipse at 50% 20%, rgba(255, 230, 160, 0.18), transparent 60%), linear-gradient(180deg, #1c1410, #0c0806); }
-.bl-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; }
-.bl-canvas { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; aspect-ratio: auto; touch-action: none; cursor: crosshair;
-  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.6)); }
+/* Бильярд: стол на канве, шкала силы сверху, винт в углу, панель. */
+.table--billiards { --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 225, 160, 0.16), transparent 65%), linear-gradient(180deg, #1a120d, #0a0705); }
+.bl-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.bl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.bl-power { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: min(420px, 70%); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+.bl-power-bar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: rgba(0, 0, 0, 0.55); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.12); overflow: hidden; }
+.bl-power-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #3fae4a 0%, #d8d23a 55%, #e2602a 85%, #d4241c 100%); background-size: min(420px, 70vw) 100%; }
+.bl-power-ticks { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(0, 0, 0, 0.45) calc(10% - 1px) 10%); }
+.bl-power-label { font-size: 11px; color: rgba(255, 245, 220, 0.75); text-shadow: 0 1px 2px #000; }
+.bl-power.on .bl-power-label { color: #fff3c8; }
+.bl-spinbox { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.bl-spin { width: 72px; height: 72px; cursor: pointer; touch-action: none; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6)); }
+.bl-spinbox span { font-size: 11px; color: rgba(255, 245, 220, 0.8); text-shadow: 0 1px 2px #000; }
 .bl-panel { display: flex; flex-direction: column; gap: 8px; }
 .bl-title { font-weight: 700; }
+.bl-title small { display: block; font-weight: 400; opacity: 0.7; }
 .bl-score { padding: 3px 8px; border-left: 5px solid var(--c); border-radius: 6px; background: rgba(60, 40, 10, 0.06); font-size: 14px; }
 .bl-score.on { background: #fff4c2; }
+.bl-on { font-size: 13px; }
 .bl-last { font-size: 13px; opacity: 0.8; }
-.bl-ctl { display: flex; flex-direction: column; gap: 6px; }
-.bl-ctl label { display: flex; align-items: center; gap: 8px; }
-.bl-ctl input[type=range] { flex: 1; }
-.bl-spin-row { display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: 0.85; }
-.bl-spin { width: 64px; height: 64px; cursor: pointer; }
 .bl-call { font-size: 13px; }
-.bl-hint { font-size: 13px; font-style: italic; }
+.bl-hint { font-size: 13px; font-style: italic; opacity: 0.85; }
+
