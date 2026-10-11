@@ -68,8 +68,10 @@ class HodilkiView implements GameView<State, Event> {
   private tween: { from: Cam; to: Cam; t0: number; ms: number; bump: number; done: () => void } | null = null;
   private raf = 0;
   private follow = true;
-  /** Игрок сам двигал камеру — не мешать ему до следующего хода. */
+  /** Игрок сам двигал камеру — не мешать ему до его следующего хода. */
   private manual = false;
+  /** Масштаб, который держит слежение: выбранный игроком или первый кадр (0 — ещё не было). */
+  private pz = 0;
   private ptrs = new Map<number, { x: number; y: number }>();
   private gesture: { kind: 'pan' | 'token'; x0: number; y0: number; moved: boolean; dist?: number } | null = null;
   private eatClick = false;
@@ -145,7 +147,7 @@ class HodilkiView implements GameView<State, Event> {
         } catch {
           /* без сохранения */
         }
-        if (this.follow) void this.frameTurn();
+        if (this.follow) void this.frameTurn(true);
       }
     });
     this.mini.addEventListener('pointerdown', (e) => {
@@ -326,6 +328,7 @@ class HodilkiView implements GameView<State, Event> {
     this.board.style.setProperty('--tk', `${b.token * 100}%`);
     this.mini.style.aspectRatio = `${b.img.w} / ${b.img.h}`;
     this.cam = { z: 1, fx: 0.5, fy: 0.5 };
+    this.pz = 0;
     this.fit();
   }
 
@@ -451,10 +454,12 @@ class HodilkiView implements GameView<State, Event> {
     const r = this.vp();
     this.manual = true;
     this.zoomAt(r.w / 2, r.h / 2, (this.goal?.z ?? this.cam.z) * k);
+    this.pz = this.goal?.z ?? this.cam.z;
   }
 
   private overview() {
     this.manual = true;
+    this.pz = 1;
     void this.fly({ z: 1, fx: 0.5, fy: 0.5 });
   }
 
@@ -489,24 +494,41 @@ class HodilkiView implements GameView<State, Event> {
     if (!b || !this.bw || !cells.length || (!force && (!this.follow || this.manual))) return Promise.resolve();
     const xs = cells.map((i) => b.cells[i].x / b.img.w);
     const ys = cells.map((i) => b.cells[i].y / b.img.h);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
     const r = this.vp();
     const pad = b.token * 3;
-    const w = (Math.max(...xs) - Math.min(...xs) + pad * 2) * this.bw;
-    const hh = (Math.max(...ys) - Math.min(...ys)) * this.bh + pad * 2 * this.bw;
-    // крупно: пуговица на экране — около 46 px, но всё нужное в кадре
-    const want = Math.max(1.6, Math.min(this.maxZ() * 0.7, 46 / (b.token * this.bw)));
-    const z = Math.max(1, Math.min(want, r.w / w, r.h / hh));
-    const fx = (Math.max(...xs) + Math.min(...xs)) / 2;
-    const fy = (Math.max(...ys) + Math.min(...ys)) / 2;
-    if (!force) {
-      // уже видно крупно — не дёргать
-      const c = this.cam;
-      const hw = r.w / (2 * c.z * this.bw);
-      const hv = r.h / (2 * c.z * this.bh);
-      const inside = xs.every((x, i) => Math.abs(x - c.fx) < hw * 0.8 && Math.abs(ys[i] - c.fy) < hv * 0.8);
-      if (inside && c.z >= z * 0.85) return Promise.resolve();
-    }
-    return this.fly({ z, fx, fy });
+    const w = (x1 - x0 + pad * 2) * this.bw;
+    const hh = (y1 - y0) * this.bh + pad * 2 * this.bw;
+    // крупно: пуговица на экране — около 46 px; дальше держим масштаб игрока, отъезжая, только если нужное не влезает
+    const first = !this.pz;
+    if (force || first) this.pz = Math.max(1.6, Math.min(this.maxZ() * 0.7, 46 / (b.token * this.bw)));
+    if (force || first) return this.fly({ z: Math.max(1, Math.min(this.pz, r.w / w, r.h / hh)), fx: (x0 + x1) / 2, fy: (y0 + y1) / 2 });
+    // мёртвая зона: пока нужное в средней части кадра, камера стоит. Масштаб тоже держится: отъезд — только если
+    // нужное не влезает, приближение — только когда влезет заметно крупнее.
+    const c = this.cam;
+    const p = b.token * 1.5;
+    const py = (p * this.bw) / this.bh;
+    const box = (ids: number[]) => {
+      const bx = ids.map((i) => b.cells[i].x / b.img.w);
+      const by = ids.map((i) => b.cells[i].y / b.img.h);
+      const [x0, x1, y0, y1] = [Math.min(...bx), Math.max(...bx), Math.min(...by), Math.max(...by)];
+      return { x0, x1, y0, y1, fit: Math.min((r.w * 0.8) / ((x1 - x0 + 2 * p) * this.bw), (r.h * 0.8) / ((y1 - y0 + 2 * py) * this.bh)) };
+    };
+    // в кадре все пуговицы (и куда идёт ход), а не только того, кто ходит: чужие ходы внутри кадра камеру не двигают.
+    // Разбежались — камера отъезжает, вплоть до всей карты; собрались — снова ближе.
+    const t = box([...cells, ...(this.v?.seats.map((s) => this.shown[s]) ?? [])]);
+    const bz = Math.min(this.pz, t.fit);
+    const z = this.clamp({ ...c, z: c.z > t.fit ? t.fit : c.z < bz * 0.75 ? bz : c.z }).z;
+    // вышло к краю — сдвиг ровно настолько, чтобы нужное оказалось ближе к середине (с запасом на следующий ход)
+    const axis = (f: number, lo: number, hi: number, view: number, size: number, p: number) => {
+      const half = view / (2 * z * size);
+      if (lo - p >= f - half * 0.8 && hi + p <= f + half * 0.8) return f;
+      const aim = Math.min(half * 0.8, Math.max(half * 0.5, (hi - lo) / 2 + p));
+      return Math.max(hi + p - aim, Math.min(lo - p + aim, f));
+    };
+    const to = this.clamp({ z, fx: axis(c.fx, t.x0, t.x1, r.w, this.bw, p), fy: axis(c.fy, t.y0, t.y1, r.h, this.bh, py) });
+    const still = Math.abs(Math.log(to.z / c.z)) < 0.03 && Math.abs(to.fx - c.fx) * this.bw * z < 2 && Math.abs(to.fy - c.fy) * this.bh * z < 2;
+    return still ? Promise.resolve() : this.fly(to);
   }
 
   /** Кадр на ход: пуговица того, кто ходит, и куда она пойдёт. */
@@ -615,6 +637,7 @@ class HodilkiView implements GameView<State, Event> {
     const dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
     const k = Math.exp(-Math.max(-120, Math.min(120, dy)) * 0.0035);
     this.zoomAt(e.clientX - r.left, e.clientY - r.top, (this.goal?.z ?? this.cam.z) * k);
+    this.pz = this.goal?.z ?? this.cam.z;
   }
 
   /** Точка экрана → координаты на картинке поля. */
@@ -716,6 +739,7 @@ class HodilkiView implements GameView<State, Event> {
     const bx = (px - (r.w / 2 - c.fx * this.bw * c.z)) / c.z;
     const by = (py - (r.h / 2 - c.fy * this.bh * c.z)) / c.z;
     this.apply({ z, fx: (r.w / 2 - px + bx * z) / z / this.bw, fy: (r.h / 2 - py + by * z) / z / this.bh });
+    this.pz = this.cam.z;
   }
 
   private onUp(e: PointerEvent, cancel = false) {
@@ -803,7 +827,6 @@ class HodilkiView implements GameView<State, Event> {
     this.busy = true;
     this.picked = false;
     this.showMarks(false);
-    this.manual = false;
     for (const ev of events) {
       if (ev.type === 'roll') {
         this.note.hidden = true;
@@ -866,8 +889,11 @@ class HodilkiView implements GameView<State, Event> {
     this.rollBtn.hidden = this.actSeat == null || this.phase !== 'roll';
     this.showMarks(this.picked);
     this.syncTokens();
-    // свой ход после броска — показать свою пуговицу и куда идти
-    if (this.actSeat != null && this.phase === 'move') void this.frameTurn();
+    // свой ход: камера снова следит (даже если до этого карту двигали) — показать свою пуговицу и куда идти
+    if (this.actSeat != null) {
+      if (this.phase === 'roll') this.manual = false;
+      void this.frameTurn();
+    }
   }
 
   status(v: State, toAct: number[], interactive: number[]) {
