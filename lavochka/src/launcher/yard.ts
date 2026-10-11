@@ -6,7 +6,7 @@ import { onSettings, settings, store } from '../core/settings';
 import { modal, mountScreen, showScreen, toast } from '../core/ui';
 import { esc, h } from '../core/util';
 import { SeededRng } from '../core/rng';
-import { CATALOG, CATEGORIES, type CatalogEntry, type Category } from '../games/catalog';
+import { SHOWN, CATEGORIES, type CatalogEntry, type Category } from '../games/catalog';
 import './yard.css';
 
 const WAVE_NAMES: Record<number, string> = {
@@ -265,7 +265,10 @@ export const yard = {
     };
 
     const cats = el.querySelector('.cats') as HTMLElement;
-    const sel = store.get<Category | 'all'>('cat', 'all');
+    // Раздел, где не осталось карточек (все отложены), не показываем.
+    const cats_ = CATEGORIES.filter((c) => SHOWN.some((g) => g.cat === c.id));
+    const saved = store.get<Category | 'all'>('cat', 'all');
+    const sel = saved === 'all' || cats_.some((c) => c.id === saved) ? saved : 'all';
     const mk = (id: string, title: string) => {
       const b = h<HTMLButtonElement>(`<button data-cat="${id}">${esc(title)}</button>`);
       b.onclick = () => {
@@ -275,7 +278,7 @@ export const yard = {
       cats.appendChild(b);
     };
     mk('all', 'Все игры');
-    for (const c of CATEGORIES) mk(c.id, c.title);
+    for (const c of cats_) mk(c.id, c.title);
     this.renderCards(sel);
   },
 
@@ -284,7 +287,7 @@ export const yard = {
     el.querySelectorAll<HTMLButtonElement>('.cats button').forEach((b) => b.classList.toggle('on', b.dataset.cat === cat));
     const box = el.querySelector('.cards') as HTMLElement;
     box.innerHTML = '';
-    const list = CATALOG.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(!!b.load) - Number(!!a.load));
+    const list = SHOWN.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(!!b.load) - Number(!!a.load));
     for (const g of list) box.appendChild(card(g));
   },
 
