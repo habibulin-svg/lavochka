@@ -190,6 +190,8 @@ export class Room {
         this.broadcast({ t: 'info', text: `${conn.owner ? conn.name : this.seatName(conn.seats[0])}: снова в игре` });
       }
       this.broadcast({ t: 'seats', seats: this.seatStatus() });
+      // партия из сохранения (или ход бота, прерванный перезагрузкой) — без этого бот так и не пойдёт
+      this.pumpBots();
     } else {
       if (!conn.seats.length && !conn.owner) this.send(conn, { t: 'info', text: 'Свободных мест нет — вы зритель.' });
       this.broadcast({ t: 'lobby', seats: this.seatStatus() });

@@ -1,6 +1,7 @@
 /* Комната: лобби, старт, бот вместо отключившегося, возврат на своё место, синхронность у всех. */
 import { afterEach, describe, expect, it } from 'vitest';
 import { localPair } from '../src/core/protocol';
+import type { Snapshot } from '../src/core/authority';
 import { Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
@@ -101,6 +102,40 @@ describe('комната', () => {
     o.link.close();
     await until(() => guest.has('closed'), 5000, 'гостю пришло закрытие');
   });
+
+  it('партия из сохранения на ходу бота: бот ходит, когда хозяин вернулся', async () => {
+    const def = await DEFS.shishbesh();
+    const seats: SeatSpec[] = [
+      { seat: 3, kind: 'human', name: 'Хозяин', level: 1 },
+      { seat: 1, kind: 'bot', name: 'Бот', level: 1 },
+    ];
+    let saved: Snapshot | null = null;
+    const first: Room = new Room({
+      def, options: {}, seats, code: 'TEST', ownerKey: 'key', botDelay: 0,
+      onSnapshot: (s) => {
+        if (s && !saved && first.auth?.toAct().includes(1)) saved = JSON.parse(JSON.stringify(s));
+      },
+    });
+    rooms.push(first);
+    const [a, b] = localPair();
+    first.connect(a);
+    const owner = new AutoClient(def, b, 'Хозяин', 'key', 1);
+    owner.client.start(false);
+    await until(() => !!saved || !!owner.result, 20000, 'ход бота в сохранении');
+    expect(saved).not.toBeNull();
+    first.close();
+
+    // перезагрузка страницы: комната заново из сохранения, хозяин сам не ходит
+    const room = new Room({ def, options: {}, seats, code: 'TEST', ownerKey: 'key', botDelay: 0, snapshot: saved! });
+    rooms.push(room);
+    const [c, d] = localPair();
+    room.connect(c);
+    const back = new AutoClient(def, d, 'Хозяин', 'key', 2);
+    back.playing = false;
+    await until(() => back.has('start'), 5000, 'стол из сохранения');
+    const at = back.seq;
+    await until(() => back.seq > at, 10000, 'бот пошёл');
+  }, 30_000);
 
   it('третий лишний становится зрителем и видит партию', async () => {
     const { join } = await setup();
