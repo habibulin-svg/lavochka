@@ -1,6 +1,16 @@
-/* Настольный хоккей: коробка на канве и кнопки для телефона. */
-.hk-dev { position: relative; width: min(100%, 1000px, calc((100vh - 170px) * 1.55)); margin: 0 auto; touch-action: none; user-select: none; }
-.hk-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
-.hk-touch { display: none; position: absolute; right: 12px; bottom: 12px; gap: 10px; }
-.hk-touch button { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 30px; background: rgba(255, 255, 255, 0.75); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); }
-@media (pointer: coarse) { .hk-touch { display: flex; } }
+/* Настольный хоккей: 3D-стол во всю доску, счёт сверху, надписи «Гол!» поверх. */
+.table--hockey .table-board { padding: 0; }
+.hk-wrap { position: relative; width: 100%; height: min(78vh, 62vw); min-height: 320px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.hk-3d { position: absolute; inset: 0; }
+.hk-3d canvas { display: block; width: 100%; height: 100%; outline: none; }
+.hk-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 4px 14px; border-radius: 10px; background: rgba(20, 16, 12, 0.72); color: #ffe9b8; font: bold 22px 'PT Sans', Arial, sans-serif; pointer-events: none; }
+.hk-hud .r { color: #ff7a64; }
+.hk-hud .b { color: #8ab4ff; }
+.hk-hud .t { font: bold 18px 'Courier New', monospace; color: #ffd24a; }
+.hk-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 14px 28px; border-radius: 14px; background: rgba(12, 20, 40, 0.78); color: #ffe9a0; text-align: center; pointer-events: none; }
+.hk-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; }
+.hk-banner span { font: 16px 'PT Sans', Arial, sans-serif; color: #e8f0f8; }
+.hk-pref { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; font-size: 14px; }
+.hk-pref .seg button { padding: 3px 8px; font-size: 13px; }
+.hk-knock { margin-top: 6px; }
+@media (max-width: 860px) { .hk-wrap { height: min(70vh, 120vw); } }

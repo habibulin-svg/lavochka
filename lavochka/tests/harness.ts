@@ -32,6 +32,7 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   a.rng = new SeededRng(seed);
   a.state = def.setup(seats, options, a.rng);
   const botRng = new SeededRng(seed ^ 0x5bd1e995);
+  if (def.realtime) return simulateRealtime(def, a, seats, botRng);
   let steps = 0;
   while (!a.result && steps < maxSteps) {
     const toAct = a.toAct();
@@ -49,6 +50,31 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   }
   JSON.stringify(a.state);
   return { steps, finished: !!a.result, winners: a.result?.winners ?? [] };
+}
+
+/** Игра реального времени: шаги симуляции с вводом ботов (не дольше часа игрового времени). */
+function simulateRealtime(def: GameDef, a: Authority, seats: SeatSpec[], botRng: SeededRng): SimResult {
+  const rt = def.realtime!;
+  const maxTicks = Math.ceil(3600_000 / rt.tickMs);
+  const mem = new Map<number, Record<string, any>>(seats.map((s) => [s.seat, {}]));
+  const top = Math.max(...seats.map((s) => s.seat)) + 1;
+  let ticks = 0;
+  while (!a.result && ticks < maxTicks) {
+    if (!a.toAct().length) return { steps: ticks, finished: false, winners: [], error: 'никто не играет, а результата нет' };
+    const inputs: unknown[] = new Array(top).fill(null);
+    for (const s of seats) {
+      const view = a.viewFor([s.seat]);
+      if (ticks % 300 === 0) JSON.stringify(view);
+      const inp = rt.bot(view, s.seat, s.level, mem.get(s.seat)!, botRng);
+      // ввод идёт через сеть — проверяем, что он её переживает
+      inputs[s.seat] = rt.input(JSON.parse(JSON.stringify(inp)));
+      if (inputs[s.seat] == null) return { steps: ticks, finished: false, winners: [], error: `ввод бота места ${s.seat} отвергнут: ${JSON.stringify(inp)}` };
+    }
+    JSON.stringify(a.tick(inputs));
+    ticks++;
+  }
+  JSON.stringify(a.state);
+  return { steps: ticks, finished: !!a.result, winners: a.result?.winners ?? [] };
 }
 
 /** Значения опций по умолчанию. */

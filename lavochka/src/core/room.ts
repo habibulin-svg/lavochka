@@ -72,6 +72,14 @@ export class Room {
   /** Место → когда его игрок отключился (пока ждём, бот за него не ходит). */
   private offSince = new Map<number, number>();
   private graceTimer: ReturnType<typeof setTimeout> | undefined;
+  // игра реального времени: таймер шагов, последний ввод мест, память ботов, события до ближайшего снимка
+  private rtTimer: ReturnType<typeof setInterval> | undefined;
+  private rtLast = 0;
+  private rtTicks = 0;
+  private rtInputs = new Map<number, unknown>();
+  private rtBotMem = new Map<number, Record<string, any>>();
+  private rtEvents: unknown[] = [];
+  private rtSaveAt = 0;
 
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
@@ -80,6 +88,7 @@ export class Room {
     this.seats = cfg.seats.map((s) => ({ ...s }));
     if (cfg.snapshot) this.auth = new Authority(this.def, cfg.snapshot.seats, cfg.snapshot.options, cfg.snapshot);
     this.heartbeat = setInterval(() => this.beat(), HEARTBEAT_MS);
+    if (this.auth) this.rtStart();
   }
 
   get started() {
@@ -117,6 +126,13 @@ export class Room {
       case 'act':
         if (this.auth && conn.seats.includes(m.seat)) this.tryAct(m.seat, m.action);
         return;
+      case 'input': {
+        const rt = this.def.realtime;
+        if (!rt || !this.auth || !conn.seats.includes(m.seat)) return;
+        const inp = rt.input(m.input);
+        if (inp != null) this.rtInputs.set(m.seat, inp);
+        return;
+      }
       case 'chat': {
         const text = String(m.text || '').trim().slice(0, 300);
         if (text && conn.clientId) this.broadcast({ t: 'chat', name: conn.name, seat: conn.seats[0] ?? null, text });
@@ -348,6 +364,7 @@ export class Room {
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
+    this.rtStart();
   }
 
   private restart() {
@@ -356,6 +373,95 @@ export class Room {
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
+    this.rtStart();
+  }
+
+  // ---------------------------------------------------------------- реальное время
+
+  private rtStart() {
+    this.rtStop();
+    const rt = this.def.realtime;
+    if (!rt || !this.auth || this.auth.result || this.closed) return;
+    this.rtInputs.clear();
+    this.rtBotMem.clear();
+    this.rtEvents = [];
+    this.rtLast = now();
+    this.rtTimer = setInterval(() => this.rtLoop(), Math.max(4, Math.floor(rt.tickMs / 2)));
+  }
+
+  private rtStop() {
+    clearInterval(this.rtTimer);
+    this.rtTimer = undefined;
+  }
+
+  /** Догоняем часы шагами симуляции; раз в sendEvery шагов — снимок всем. */
+  private rtLoop() {
+    const a = this.auth;
+    const rt = this.def.realtime!;
+    if (!a || a.result || this.closed) return this.rtStop();
+    const t = now();
+    // у кого-то грузится стол или людей нет совсем — стоим на паузе
+    const watchers = [...this.conns].filter((c) => c.clientId && c.seats.length);
+    if (!watchers.length || watchers.some((c) => c.holdUntil > Date.now())) {
+      this.rtLast = t;
+      return;
+    }
+    let n = Math.floor((t - this.rtLast) / rt.tickMs);
+    if (n <= 0) return;
+    // сильно отстали (вкладка хоста спала) — не догоняем рывком
+    if (n > 8) {
+      n = 8;
+      this.rtLast = t - n * rt.tickMs;
+    }
+    this.rtLast += n * rt.tickMs;
+    const top = Math.max(...a.seats.map((s) => s.seat)) + 1;
+    for (let i = 0; i < n && !a.result; i++) {
+      const inputs: unknown[] = new Array(top).fill(null);
+      for (const s of a.seats) inputs[s.seat] = this.rtInput(s.seat);
+      const ev = a.tick(inputs);
+      if (ev.length) this.rtEvents.push(...ev);
+      this.rtTicks++;
+      if (this.rtTicks % rt.sendEvery === 0) this.rtSend();
+    }
+    if (a.result) {
+      this.rtSend();
+      this.rtStop();
+      this.broadcastStep({ seq: a.seq, actor: -1, events: [] });
+      this.save();
+    } else if (t > this.rtSaveAt) {
+      this.rtSaveAt = t + 3000;
+      this.save();
+    }
+  }
+
+  private rtInput(seat: number): unknown {
+    const rt = this.def.realtime!;
+    const a = this.auth!;
+    if (this.isBotSeat(seat)) {
+      const spec = a.seats.find((s) => s.seat === seat)!;
+      const level = spec.kind === 'bot' ? spec.level : Math.floor((this.def.bot.levels.length - 1) / 2);
+      let mem = this.rtBotMem.get(seat);
+      if (!mem) this.rtBotMem.set(seat, (mem = {}));
+      try {
+        return rt.bot(a.viewFor([seat]), seat, level, mem, this.botRng);
+      } catch (e) {
+        console.error('bot failed', e);
+        return rt.idle();
+      }
+    }
+    // пока ждём отключившегося — его фигуры стоят
+    return this.isOnline(seat) ? this.rtInputs.get(seat) ?? rt.idle() : rt.idle();
+  }
+
+  private rtSend() {
+    const a = this.auth!;
+    const events = this.rtEvents;
+    this.rtEvents = [];
+    this.conns.forEach((c) => {
+      if (!c.clientId) return;
+      const seats = this.viewSeats(c);
+      this.send(c, { t: 'rt', view: a.viewFor(seats), events: events.length ? a.redact(events, seats) : [] });
+    });
   }
 
   private viewSeats(conn: Conn): number[] {
@@ -411,6 +517,7 @@ export class Room {
 
   /** Если ход за ботом (или за отключившимся) — ждём, пока все доиграют анимацию, и ходим. */
   private pumpBots() {
+    if (this.def.realtime) return;
     const token = ++this.botToken;
     const a = this.auth;
     if (!a || a.result || this.closed) return;
@@ -465,6 +572,7 @@ export class Room {
     this.botToken++;
     clearInterval(this.heartbeat);
     clearTimeout(this.graceTimer);
+    this.rtStop();
     const conns = [...this.conns];
     this.conns.clear();
     // даём сообщению «closed» уйти
@@ -475,6 +583,8 @@ export class Room {
     return this.closed;
   }
 }
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 function wait(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));

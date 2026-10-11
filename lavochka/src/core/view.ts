@@ -18,6 +18,10 @@ export interface ViewCtx<A = any> {
   hurry?(on: boolean): void;
   /** Стол ещё грузится — боты ждут ms (не дольше 30 с); 0 — готово. */
   hold?(ms: number): void;
+  /** Игра реального времени: отправить текущее управление места. */
+  input?(seat: number, input: unknown): void;
+  /** Игра идёт по сети (не локально): снимки приходят с задержкой. */
+  online?: boolean;
 }
 
 export interface GameView<V = any, E = any> {
@@ -26,6 +30,8 @@ export interface GameView<V = any, E = any> {
   setView(view: V): void;
   /** Проиграть события и прийти к состоянию view. */
   play(events: E[], view: V): Promise<void>;
+  /** Игра реального времени: свежий снимок поля и события с прошлого снимка (идут мимо очереди play). */
+  realtime?(view: V, events: E[]): void;
   /** toAct — кто ходит; interactive — места этого экрана, которые могут действовать прямо сейчас. */
   setTurn(toAct: number[], interactive: number[]): void;
   /** Строка статуса под полем («Красный: бросайте кости»). */

@@ -89,6 +89,9 @@ export class RoomClient {
   act(seat: number, action: unknown) {
     this.send({ t: 'act', seat, action });
   }
+  input(seat: number, input: unknown) {
+    this.send({ t: 'input', seat, input });
+  }
   chat(text: string) {
     this.send({ t: 'chat', text });
   }

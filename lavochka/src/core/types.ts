@@ -106,6 +106,25 @@ export interface RulesDoc {
   sections: RulesSection[];
 }
 
+/**
+ * Игра в реальном времени (настольный хоккей): ходов нет — комната сама крутит шаги симуляции,
+ * игроки шлют ей своё управление (ввод), она рассылает снимки поля. Боты дают ввод на каждом шаге.
+ */
+export interface RealtimeDef<S = any, I = any, E = any, V = any> {
+  /** Длина шага симуляции, мс. */
+  tickMs: number;
+  /** Рассылать снимок раз в столько шагов. */
+  sendEvery: number;
+  /** Ввод «ничего не трогаю» (место без связи, пока его ждут). */
+  idle(): I;
+  /** Проверить ввод, пришедший по сети; null — мусор. */
+  input(raw: unknown): I | null;
+  /** Шаг симуляции. Состояние меняется на месте (ради скорости); inputs[seat] — ввод места. Возвращает события шага. */
+  tick(s: S, inputs: I[], rng: Rng): E[];
+  /** Ввод бота по view его места; mem — его память между шагами. */
+  bot(view: V, seat: number, level: number, mem: Record<string, any>, rng: Rng): I;
+}
+
 export interface GameDef<S = any, A = any, E = any, V = any> {
   id: string;
   title: string;
@@ -132,4 +151,6 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   rules: RulesDoc;
   /** Красивая позиция «посреди партии» — для превью на карточке. */
   showcase?(): S;
+  /** Игра в реальном времени: apply не используется, комната гоняет tick. */
+  realtime?: RealtimeDef<S, any, E, V>;
 }

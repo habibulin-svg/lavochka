@@ -1,7 +1,7 @@
 /* Протокол комнаты. Одинаков для локальной игры, P2P (PeerJS) и сервера (WebSocket). */
 import type { GameResult, Options, SeatKind } from './types';
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export interface SeatStatus {
   seat: number;
@@ -25,6 +25,8 @@ export interface VoiceMember {
 export type ClientMsg =
   | { t: 'hello'; clientId: string; name: string; ownerKey?: string; v: number }
   | { t: 'act'; seat: number; action: unknown }
+  /** Игра реального времени: текущее управление места (шлётся, пока меняется). */
+  | { t: 'input'; seat: number; input: unknown }
   | { t: 'chat'; text: string }
   /** Доиграл анимацию до seq; fast — «пропустить»: боты ходят без пауз. */
   | { t: 'idle'; seq: number; fast?: boolean }
@@ -62,6 +64,8 @@ export type RoomMsg =
       toAct: number[];
       result: GameResult | null;
     }
+  /** Игра реального времени: снимок поля и события с прошлого снимка. */
+  | { t: 'rt'; view: unknown; events: unknown[] }
   | { t: 'seats'; seats: SeatStatus[] }
   | { t: 'info'; text: string }
   | { t: 'chat'; name: string; seat: number | null; text: string }

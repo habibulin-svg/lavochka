@@ -132,6 +132,8 @@ export class Table {
         if (this.pending === 0) o.client.idle(this.seq, on);
       },
       hold: (ms) => o.client.hold(ms),
+      input: (seat, input) => o.client.input(seat, input),
+      online: o.mode !== 'local',
     };
     const self = this;
     this.view.mount(q('.table-board'), ctx);
@@ -293,6 +295,8 @@ export class Table {
         return this.start(m);
       case 'step':
         return this.enqueue(m);
+      case 'rt':
+        return this.realtime(m);
       case 'seats':
         this.seats = m.seats;
         return this.renderPlayers();
@@ -344,6 +348,21 @@ export class Table {
     this.renderPlayers();
     showScreen('table');
     this.afterIdle();
+  }
+
+  /** Снимок игры реального времени: сразу в поле, события — в журнал. */
+  private realtime(m: Extract<RoomMsg, { t: 'rt' }>) {
+    if (!this.started) return;
+    this.current = m.view;
+    this.view.realtime?.(m.view, m.events);
+    if (!m.events.length) return;
+    const d = this.o.mod.def.describe;
+    if (d) for (const ev of m.events) {
+      const line = d(ev, (s) => this.name(s));
+      if (line) this.log(line);
+    }
+    this.renderPlayers();
+    this.setStatus(this.view.status ? this.view.status(this.current, this.toAct, this.toAct.filter((s) => this.mySeats.includes(s))) : '');
   }
 
   private enqueue(m: StepMsg) {

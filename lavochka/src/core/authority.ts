@@ -60,6 +60,14 @@ export class Authority {
     return { seq: this.seq, actor: seat, events: res.events };
   }
 
+  /** Шаг игры реального времени. */
+  tick(inputs: unknown[]): unknown[] {
+    if (this.result || !this.def.realtime) return [];
+    const ev = this.def.realtime.tick(this.state, inputs, this.rng);
+    this.result = this.def.result(this.state);
+    return ev;
+  }
+
   viewFor(seats: number[] | 'all') {
     return this.def.view(this.state, seats);
   }
