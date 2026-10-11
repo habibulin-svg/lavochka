@@ -17,6 +17,8 @@ const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
 /** Сколько ждать, пока клиенты доиграют анимацию, прежде чем ходит бот. */
 const PACE_TIMEOUT_MS = 6000;
+/** Сколько самое большее ждать клиента, у которого грузится стол. */
+const HOLD_MAX_MS = 30000;
 /** Сколько ждать отключившегося, прежде чем за него сядет бот. */
 const DROP_GRACE_MS = 45000;
 
@@ -28,6 +30,10 @@ interface Conn {
   owner: boolean;
   lastSeen: number;
   idleSeq: number;
+  /** Просит «пропустить» — боты ходят без пауз. */
+  fast: boolean;
+  /** До этого момента стол грузится — боты ждут. */
+  holdUntil: number;
   /** В голосовом чате (и с камерой ли). */
   voice: { video: boolean } | null;
 }
@@ -84,7 +90,7 @@ export class Room {
 
   connect(link: Link) {
     if (this.closed) return link.close();
-    const conn: Conn = { link, clientId: null, name: '', seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, voice: null };
+    const conn: Conn = { link, clientId: null, name: '', seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, fast: false, holdUntil: 0, voice: null };
     this.conns.add(conn);
     link.onMessage = (m) => this.onMsg(conn, m);
     link.onClose = () => this.drop(conn);
@@ -118,6 +124,10 @@ export class Room {
       }
       case 'idle':
         conn.idleSeq = Math.max(conn.idleSeq, m.seq | 0);
+        conn.fast = !!m.fast;
+        return;
+      case 'hold':
+        conn.holdUntil = m.ms > 0 ? Date.now() + Math.min(HOLD_MAX_MS, m.ms) : 0;
         return;
       case 'start':
         if (conn.owner && !this.auth) this.startGame(!!m.fillBots, conn);
@@ -418,13 +428,18 @@ export class Room {
     const seq = a.seq;
     void (async () => {
       const deadline = Date.now() + PACE_TIMEOUT_MS;
-      while (Date.now() < deadline) {
-        const watchers = [...this.conns].filter((c) => c.clientId && c.seats.length);
-        if (watchers.every((c) => c.idleSeq >= seq)) break;
+      const watchers = () => [...this.conns].filter((c) => c.clientId && c.seats.length);
+      for (;;) {
+        const now = Date.now();
+        // у кого-то ещё грузится стол — ждём его (не дольше HOLD_MAX_MS)
+        const holding = watchers().some((c) => c.holdUntil > now);
+        if (!holding && (now >= deadline || watchers().every((c) => c.idleSeq >= seq))) break;
         await wait(60);
         if (token !== this.botToken) return;
       }
-      await wait(this.cfg.botDelay ?? 450);
+      // все просят «пропустить» — без пауз
+      const w = watchers();
+      await wait(w.length && w.every((c) => c.fast) ? 0 : (this.cfg.botDelay ?? 450));
       if (token !== this.botToken || this.auth !== a || a.seq !== seq || !this.isBotSeat(seat)) return;
       const spec = a.seats.find((s) => s.seat === seat)!;
       const level = spec.kind === 'bot' ? spec.level : Math.floor((this.def.bot.levels.length - 1) / 2);

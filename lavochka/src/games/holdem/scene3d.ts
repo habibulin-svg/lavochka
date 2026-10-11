@@ -63,8 +63,10 @@ type Pt = { x: number; y: number };
 /** Угол обзора камеры (вид сверху и вид «за столом» без видео-людей). */
 const FOV = 47;
 /** Вид «как в Apple»: общие карты — на столько впереди снимаемого (от его линии стола), камера — на столько от него. */
-const STAGE_BOARD = 2.8;
+const STAGE_BOARD = 3.5;
 const STAGE_CAM = 12.5;
+/** Общие карты в этом виде крупнее — читаются издалека. */
+const STAGE_CARD = 1.18;
 /** Ближе к камере (по полу) — карты и фишки прячем. */
 const STAGE_HIDE = 3.6;
 
@@ -206,9 +208,17 @@ export class Table3D {
   /** Абажур: сверху он закрывает стол — в этом виде его нет. */
   private shade: THREE.Object3D | null = null;
 
+  /** Смена кадра — наплывом: снимок прошлого кадра поверх холста тает (камера не летит через комнату и абажур). */
+  private fade: HTMLCanvasElement;
+  /** «Пропустить» — без наплывов и пауз. */
+  private fast = false;
+  private readyCalled = false;
+
   constructor(
     private readonly host: HTMLElement,
-    private deck: DeckStyle
+    private deck: DeckStyle,
+    /** Заставка ушла — стол готов (боты могут ходить). */
+    private readonly onReady?: () => void
   ) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     const mobile = Math.min(window.innerWidth, window.innerHeight) < 600;
@@ -220,6 +230,9 @@ export class Table3D {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.domElement.className = 'hd-gl-canvas';
     host.appendChild(this.renderer.domElement);
+    this.fade = document.createElement('canvas');
+    this.fade.className = 'hd-fade';
+    host.appendChild(this.fade);
     this.labels = document.createElement('div');
     this.labels.className = 'hd-gl-labels';
     host.appendChild(this.labels);
@@ -245,6 +258,11 @@ export class Table3D {
     this.ro.observe(host);
     this.resize();
     this.loadPeople();
+    if (import.meta.env.DEV) (window as unknown as { __hd: Table3D }).__hd = this;
+  }
+
+  setFast(on: boolean) {
+    this.fast = on;
   }
 
   // ---------------------------------------------------------------- стол
@@ -268,7 +286,9 @@ export class Table3D {
       sc.environmentIntensity = 0.35;
       this.kick();
     });
-    sc.add(new THREE.HemisphereLight('#ffe2b8', '#2a1a10', 0.12));
+    // заполняющий свет — как отражённый от стен и потолка: тени мягче, лица и углы не чёрные
+    // (снизу — отсвет тёплого паркета и сукна: потолок не бурый, а тёплый белый в полутени)
+    sc.add(new THREE.HemisphereLight('#ffe2b8', '#8a6a52', 0.24));
     const room = buildRoom();
     sc.add(room.group);
     this.shade = room.shade;
@@ -495,7 +515,9 @@ export class Table3D {
 
   private paint(mesh: THREE.Mesh, c: Card | null) {
     mesh.userData.card = c;
-    const mk = (t: THREE.Texture) => new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.4, alphaTest: 0.5 });
+    // бумага с лёгким лаком; без тонового сжатия — красные масти не уходят в оранжевый, а белое под лампой не выгорает
+    const mk = (t: THREE.Texture) =>
+      new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, toneMapped: false });
     const old = mesh.material as THREE.Material[];
     if (Array.isArray(old)) for (const m of old) if (m !== this.edgeMat) m.dispose();
     mesh.material = [mk(this.texture(c)), mk(this.texture(null)), this.edgeMat];
@@ -721,6 +743,9 @@ export class Table3D {
     this.fovGoal = FOV;
     const shot = this.mode === 'seat' ? this.pickShot() : null;
     const was = this.stage;
+    // другой человек в кадре — наплыв: снимок нынешнего кадра, камера сразу на новом месте и чуть наезжает
+    const cut = this.camInit && !!shot && !!was && was.seat !== shot.seat;
+    if (cut && !this.fast) this.snapshot();
     this.stage = null;
     if (shot) {
       // как в Apple poker: соперник в верхней трети, под ним сукно с банком и общими картами (они кладутся перед ним),
@@ -729,7 +754,8 @@ export class Table3D {
       const base = shot.pos.clone().addScaledVector(fwd, 1.94).setY(0);
       this.stage = { seat: shot.seat, base, fwd };
       const D = STAGE_CAM;
-      const hCam = 6.2;
+      // выше — карты на сукне видны не так вскользь
+      const hCam = 7.0;
       // по вертикали: от макушки соперника до сукна чуть ближе общих карт
       const aHead = Math.atan2(hCam - 4.3, D);
       // снизу — запас под свои карты в углу экрана
@@ -776,14 +802,34 @@ export class Table3D {
     }
     // и пустых чужих стульев в кадре нет
     for (const p of this.places.values()) p.chair.visible = !(p.me && this.mode === 'seat') && (!this.stage || p.seat === this.stage.seat);
-    if (!this.camInit) {
+    if (!this.camInit || cut) {
       this.camInit = true;
       this.camera.fov = this.fovGoal;
       this.camera.updateProjectionMatrix();
       this.camPos.copy(this.camGoal.pos);
       this.camLook.copy(this.camGoal.look);
+      // наезд: начинаем чуть дальше и выше — за секунду камера мягко подъезжает
+      if (cut && this.stage && !this.fast) this.camPos.addScaledVector(this.stage.fwd, 0.9).add(new THREE.Vector3(0, 0.25, 0));
       this.applyCamera();
     }
+  }
+
+  /** Снимок нынешнего кадра поверх холста — и тает. */
+  private snapshot() {
+    const c = this.renderer.domElement;
+    if (!c.width || !c.height) return;
+    // рисуем кадр заново и сразу копируем (буфер WebGL после показа очищается)
+    this.render();
+    this.fade.width = c.width;
+    this.fade.height = c.height;
+    const g = this.fade.getContext('2d');
+    if (!g) return;
+    g.drawImage(c, 0, 0);
+    this.fade.style.transition = 'none';
+    this.fade.style.opacity = '1';
+    void this.fade.offsetWidth;
+    this.fade.style.transition = `opacity ${Math.round(650 / Math.max(0.5, this.speed))}ms ease-in-out`;
+    this.fade.style.opacity = '0';
   }
 
   /** Кого снимать: того, чей ход; на своём ходу и между раздачами — кого снимали; сначала — того, кто напротив. */
@@ -809,10 +855,11 @@ export class Table3D {
     const i = this.lastItems.filter((x) => x.board).indexOf(it);
     // вправо — как видит камера (она смотрит против fwd)
     const right = new THREE.Vector3(st.fwd.z, 0, -st.fwd.x);
-    const pos = st.base.clone().addScaledVector(st.fwd, STAGE_BOARD).addScaledVector(right, (i - 2) * CARD_W * it.s * 1.08).setY(0.02 + CARD_T / 2);
+    const s = it.s * STAGE_CARD;
+    const pos = st.base.clone().addScaledVector(st.fwd, STAGE_BOARD).addScaledVector(right, (i - 2) * CARD_W * s * 1.07).setY(0.02 + CARD_T / 2);
     // читается с камеры: «верх» карты — от камеры
     const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(st.fwd.x, st.fwd.z), 0, 'YXZ'));
-    return { pos, quat };
+    return { pos, quat, scale: s };
   }
 
   private chipTarget(c: Chips3D): THREE.Vector3 {
@@ -861,6 +908,10 @@ export class Table3D {
     this.drawHand();
   }
 
+  private render() {
+    this.renderer.render(this.scene, this.camera);
+  }
+
   private applyCamera() {
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
@@ -874,7 +925,7 @@ export class Table3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.host.style.setProperty('--hand', `${Math.round(Math.min(h * 0.34, w * 0.2))}px`);
+    this.host.style.setProperty('--hand', `${Math.round(Math.min(h * 0.24, w * 0.15))}px`);
     this.camInit = false;
     this.aimCamera();
     this.drawLabels();
@@ -964,6 +1015,8 @@ export class Table3D {
     for (const m of this.chips.values()) step(m);
     step(this.button);
     for (const m of [...this.dying]) {
+      // сброшенные карты и ставки, ушедшие в банк, летят через стол — в кадре «как в Apple» только у того, кого снимаем
+      if (this.stage) m.obj.visible = !near(m.obj) && this.owner(m.obj.position) === this.stage.seat;
       step(m);
       m.dying! -= dt * this.speed;
       moving = true;
@@ -992,7 +1045,7 @@ export class Table3D {
     // живые люди — 30 кадров в секунду, полёт карт — каждый кадр
     if (moving || t - this.lastDraw > 31) {
       this.lastDraw = t;
-      this.renderer.render(this.scene, this.camera);
+      this.render();
       this.drawLabels();
     }
     if (moving || alive || waiting) this.kick();
@@ -1008,6 +1061,10 @@ export class Table3D {
     this.loadShown = Math.max(this.loadShown + (k - this.loadShown) * 0.15, Math.min(0.3, (performance.now() - this.loadStart) / 10000));
     (this.loading.querySelector('i') as HTMLElement).style.width = `${Math.round(this.loadShown * 100)}%`;
     if (k >= 1) {
+      if (!this.readyCalled) {
+        this.readyCalled = true;
+        this.onReady?.();
+      }
       this.loading.classList.add('done');
       setTimeout(() => (this.loading.hidden = true), 600);
       return false;

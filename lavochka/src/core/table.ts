@@ -38,6 +38,8 @@ export class Table {
   private result: GameResult | null = null;
   private resultShown = false;
   private queue: Promise<void> = Promise.resolve();
+  /** Игра попросила «пропустить» — боты без пауз. */
+  private fast = false;
   private pending = 0;
   private gen = 0;
   private lastTurnKey = '';
@@ -124,6 +126,12 @@ export class Table {
       name: (seat) => this.name(seat),
       speed: () => settings.speed,
       autoSingle: () => settings.autoSingle,
+      hurry: (on) => {
+        if (on === this.fast) return;
+        this.fast = on;
+        if (this.pending === 0) o.client.idle(this.seq, on);
+      },
+      hold: (ms) => o.client.hold(ms),
     };
     const self = this;
     this.view.mount(q('.table-board'), ctx);
@@ -373,7 +381,7 @@ export class Table {
 
   /** Все анимации доиграны: сообщаем комнате и включаем управление. */
   private afterIdle() {
-    this.o.client.idle(this.seq);
+    this.o.client.idle(this.seq, this.fast);
     const interactive = this.toAct.filter((s) => this.mySeats.includes(s) && this.isOnlineMine(s));
     this.view.setTurn(this.toAct, interactive);
     this.setStatus(this.view.status ? this.view.status(this.current, this.toAct, interactive) : '');

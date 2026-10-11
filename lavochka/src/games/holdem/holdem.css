@@ -94,3 +94,6 @@
 @keyframes hd-bdeal { from { transform: translateY(-30vh) rotateY(90deg) scale(0.6); opacity: 0; } }
 .hd-board-pot-only .hd-board-cards { display: none; }
 .hd-board-pot { font: 600 15px/1.2 'PT Sans', system-ui, sans-serif; color: #fff3d0; background: rgba(20, 12, 6, 0.72); border: 1px solid rgba(255, 220, 150, 0.35); border-radius: 12px; padding: 3px 10px; }
+/* смена кадра наплывом: снимок прошлого кадра тает поверх холста */
+.hd-fade { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: 0; }
+.hd-skip { font-weight: 600; }

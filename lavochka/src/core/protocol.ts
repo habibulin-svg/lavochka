@@ -26,7 +26,10 @@ export type ClientMsg =
   | { t: 'hello'; clientId: string; name: string; ownerKey?: string; v: number }
   | { t: 'act'; seat: number; action: unknown }
   | { t: 'chat'; text: string }
-  | { t: 'idle'; seq: number }
+  /** Доиграл анимацию до seq; fast — «пропустить»: боты ходят без пауз. */
+  | { t: 'idle'; seq: number; fast?: boolean }
+  /** Подождите ms (не дольше 30 с), боты не ходят: стол ещё грузится; 0 — готово. */
+  | { t: 'hold'; ms: number }
   | { t: 'start'; fillBots: boolean }
   | { t: 'restart' }
   | { t: 'pong' }

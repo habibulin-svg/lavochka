@@ -92,8 +92,11 @@ export class RoomClient {
   chat(text: string) {
     this.send({ t: 'chat', text });
   }
-  idle(seq: number) {
-    this.send({ t: 'idle', seq });
+  idle(seq: number, fast = false) {
+    this.send(fast ? { t: 'idle', seq, fast } : { t: 'idle', seq });
+  }
+  hold(ms: number) {
+    this.send({ t: 'hold', ms });
   }
   start(fillBots: boolean) {
     this.send({ t: 'start', fillBots });

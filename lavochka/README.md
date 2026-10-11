@@ -77,9 +77,13 @@ npm start            # раздаёт dist/ и держит комнаты на 
 - **Мебель** — `public/models/room/*.glb`: Poly Haven (polyhaven.com, CC0) — television_02, vintage_cabinet_01,
   vintage_wooden_drawer_01, dining_chair_02, Rockingchair_01, wine_bottles_01; текстуры переведены в WebP 1K.
 - **Фактуры** — `public/tex/holdem/`: Poly Haven (CC0) — herringbone_parquet, brown_leather, american_walnut_veneer,
-  cherry_veneer, velour_velvet, plastered_wall_04, fabric_pattern_05 (нормали), HDRI lythwood_room (отражения).
+  velour_velvet, fabric_pattern_05 (нормали), HDRI lythwood_room (отражения).
 - **Ковёр на стене** — `public/tex/holdem/carpet_col.webp`: фото «Tovuz Kazak, Caucasus, late 19th century»,
-  Wikimedia Commons, общественное достояние.
+  Wikimedia Commons, общественное достояние; белый фон вокруг краёв вырезан в прозрачность.
+- **Потолок** — `ceiling_*.webp`: Poly Haven painted_plaster_wall (CC0).
+- **Обои** — `wall_*.webp`: бумага — ambientCG Wallpaper001A (ambientcg.com, CC0: цвет, нормали, шероховатость),
+  узор напечатан поверх своим скриптом (полосы с веточками, стыки полотен по 53 см).
+- **Вид из окна** — `window_night.webp`: кусок ночной панорамы Poly Haven hansaplatz (CC0), перепроецирован в кадр.
 
 Генератор видео-персонажей (картинка → видео через routerai.ru) — `tools/videogen/` (Python + tkinter, сборка в exe —
 `build.bat`), промпты и требования к роликам — `docs/holdem-video.md` в корне репозитория.

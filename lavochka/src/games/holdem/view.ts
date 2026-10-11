@@ -55,6 +55,9 @@ class HoldemView implements GameView<View, Event> {
   private glHost!: HTMLElement;
   private glLoading = false;
   private canGl = false;
+  /** «Пропустить»: раздачу (пока я снова не в игре) или всё до конца (вылетел). */
+  private ff: 'hand' | 'game' | null = null;
+  private skip!: HTMLButtonElement;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -86,9 +89,16 @@ class HoldemView implements GameView<View, Event> {
     if (!this.canGl) this.mode = 'tilt';
     if (ctx.demo) this.mode = 'flat';
     this.applyView();
-    const ctl = h(`<div class="hd-controls"><div class="hd-btns"></div><button class="btn hd-vbtn"></button></div>`);
+    const ctl = h(`<div class="hd-controls"><div class="hd-btns"></div><button class="btn hd-skip" hidden></button><button class="btn hd-vbtn"></button></div>`);
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.hd-btns') as HTMLElement;
+    this.skip = ctl.querySelector('.hd-skip') as HTMLButtonElement;
+    this.skip.onclick = () => {
+      Sound.unlock();
+      const v = this.v;
+      if (!v) return;
+      this.setFF(this.busted(v) ? 'game' : 'hand');
+    };
     const vb = ctl.querySelector('.hd-vbtn') as HTMLButtonElement;
     // без WebGL переключать нечего
     vb.hidden = ctx.demo || !this.canGl;
@@ -122,19 +132,21 @@ class HoldemView implements GameView<View, Event> {
     if (this.gl && this.is3d) this.gl.setMode(this.mode as CamMode);
     if (this.is3d && !this.gl && !this.glLoading) {
       this.glLoading = true;
-      // заставка — сразу, пока грузится сама сцена (дальше её ведёт Table3D)
+      // заставка — сразу, пока грузится сама сцена (дальше её ведёт Table3D); боты пока не ходят
       this.glHost.insertAdjacentHTML('beforeend', LOADING);
+      this.ctx.hold?.(30000);
       import('./scene3d')
         .then((m) => {
           this.glLoading = false;
           if (!this.cs.wrap.isConnected) return;
-          this.gl = new m.Table3D(this.glHost, settings.deck);
+          this.gl = new m.Table3D(this.glHost, settings.deck, () => this.ctx.hold?.(0));
           this.gl.setMode(this.mode as CamMode);
           this.draw();
         })
         .catch((e) => {
           // не вышло (нет WebGL, не загрузилось) — наклонный стол
           console.error(e);
+          this.ctx.hold?.(0);
           this.glLoading = false;
           this.canGl = false;
           this.mode = 'tilt';
@@ -218,7 +230,7 @@ class HoldemView implements GameView<View, Event> {
     const v = this.v;
     if (!v) return;
     const items = this.layout(v);
-    this.cs.render(items, this.ctx.speed(), enter, exit);
+    this.cs.render(items, this.speed, enter, exit);
     const gl = this.is3d && this.gl;
     const labels: Label[] = [];
     const chips: Chips3D[] = [];
@@ -275,7 +287,7 @@ class HoldemView implements GameView<View, Event> {
         chips,
         button,
         labels,
-        this.ctx.speed(),
+        this.speed,
         enter,
         exit
       );
@@ -302,6 +314,32 @@ class HoldemView implements GameView<View, Event> {
     }
     if (!total) out = '<b class="hd-chip r" style="--i:0"></b>';
     return `<div class="hd-stack">${out}</div>`;
+  }
+
+  /** Скорость анимаций: при «пропустить» — почти мгновенно. */
+  private get speed() {
+    return this.ctx.speed() * (this.ff ? 25 : 1);
+  }
+
+  private busted(v: View) {
+    return v.seats.includes(this.viewer) && v.chips[this.viewer] <= 0 && !v.inHand.includes(this.viewer);
+  }
+
+  private setFF(m: 'hand' | 'game' | null) {
+    this.ff = m;
+    this.ctx.hurry?.(!!m);
+    this.gl?.setFast(!!m);
+    this.renderSkip();
+  }
+
+  /** Кнопка «пропустить»: я сбросил карты (или вылетел), а боты доигрывают. */
+  private renderSkip() {
+    const v = this.v;
+    const mine = v && !this.ctx.demo && v.phase !== 'over' && v.seats.includes(this.viewer) && this.ctx.mySeats.length < v.seats.length;
+    const busted = !!mine && this.busted(v!);
+    const folded = !!mine && !busted && (!v!.inHand.includes(this.viewer) || v!.folded[this.viewer]);
+    this.skip.hidden = !(busted || folded) || !!this.ff;
+    this.skip.textContent = busted ? '⏭ Досмотреть быстро до конца' : '⏭ Пропустить раздачу';
   }
 
   private plain(seat: number) {
@@ -409,19 +447,32 @@ class HoldemView implements GameView<View, Event> {
     this.v = v;
     this.banner.hidden = true;
     this.draw();
+    this.renderSkip();
   }
 
-  private async showBanner(text: string, ms: number) {
+  private bannerTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Надпись поверх стола на ms (0 — пока не уберут); noWait — не ждать, пока она уйдёт. */
+  private async showBanner(text: string, ms: number, noWait = false) {
+    clearTimeout(this.bannerTimer);
     this.banner.textContent = text;
     this.banner.hidden = false;
     if (!ms) return;
+    if (noWait) {
+      this.bannerTimer = setTimeout(() => (this.banner.hidden = true), ms);
+      return;
+    }
     await sleep(ms);
     this.banner.hidden = true;
   }
 
   async play(events: Event[], v: View) {
-    const speed = this.ctx.speed();
     this.clearTurn();
+    // «пропустить»: без пауз и без крупье в кадре
+    const pause = (ms: number) => (this.ff ? Promise.resolve() : sleep(ms / this.ctx.speed()));
+    const gl = () => (this.ff ? null : this.gl);
+    const snd = (f: () => void) => {
+      if (!this.ff) f();
+    };
     const lost = new Set<number>();
     let shown = false;
     for (const ev of events) {
@@ -437,50 +488,55 @@ class HoldemView implements GameView<View, Event> {
         if (ev.action === 'fold') folded[ev.seat] = true;
         this.v = { ...cur, bet, chips, total, folded, turn: ev.seat };
         this.draw(null, ev.action === 'fold' ? { x: C.x, y: C.y } : null);
-        this.gl?.gesture(ev.seat, GESTURE[ev.action]);
-        if (ev.action === 'fold') Sound.card();
-        else if (ev.action === 'check') Sound.ui();
-        else Sound.place();
-        await sleep(380 / speed);
+        gl()?.gesture(ev.seat, GESTURE[ev.action]);
+        if (ev.action === 'fold') snd(() => Sound.card());
+        else if (ev.action === 'check') snd(() => Sound.ui());
+        else snd(() => Sound.place());
+        await pause(380);
       } else if (ev.type === 'street') {
-        this.gl?.dealer(ev.street === 'flop' ? 'flop' : 'card');
+        gl()?.dealer(ev.street === 'flop' ? 'flop' : 'card');
         this.v = { ...cur, board: [...cur.board, ...ev.cards], bet: cur.bet.map(() => 0) };
         this.draw({ x: C.x, y: C.y - 200 });
-        Sound.card();
-        await sleep(520 / speed);
+        snd(() => Sound.card());
+        await pause(520);
       } else if (ev.type === 'show') {
-        if (!shown) this.gl?.dealer('collect', 1.6);
+        if (!shown) gl()?.dealer('collect', 1.6);
         shown = true;
         const hole = cur.hole.slice();
         hole[ev.seat] = ev.cards;
         this.v = { ...cur, hole };
         this.draw();
-        await sleep(500 / speed);
+        await pause(500);
       } else if (ev.type === 'win') {
         // вскрылись и не взяли — расстроились (раз за раздачу; взявший побочный банк потом всё равно обрадуется)
         if (!ev.uncontested && !lost.size)
           cur.hole.forEach((h, seat) => {
             if (h.length && !cur.folded[seat] && seat !== ev.seat && !lost.has(seat)) {
               lost.add(seat);
-              this.gl?.gesture(seat, 'lose', 0.3);
+              gl()?.gesture(seat, 'lose', 0.3);
             }
           });
-        this.gl?.gesture(ev.seat, 'win');
+        gl()?.gesture(ev.seat, 'win');
         // крупье двигает банк к победителю: к нам, влево или вправо (как видит камера, глядя на неё)
         const wa = this.anchor(cur, ev.seat);
-        this.gl?.dealer(ev.seat === this.viewer || Math.abs(wa.x - C.x) < 60 ? 'push_front' : wa.x < C.x ? 'push_left' : 'push_right', 1.8);
-        Sound.win();
-        await this.showBanner(`${this.plain(ev.seat)} +${ev.amount}${ev.hand ? ` — ${ev.hand}` : ''}`, 1400 / speed);
+        gl()?.dealer(ev.seat === this.viewer || Math.abs(wa.x - C.x) < 60 ? 'push_front' : wa.x < C.x ? 'push_left' : 'push_right', 1.8);
+        snd(() => Sound.win());
+        await this.showBanner(`${this.plain(ev.seat)} +${ev.amount}${ev.hand ? ` — ${ev.hand}` : ''}`, 1400 / this.ctx.speed(), this.ff === 'game');
       } else if (ev.type === 'blinds') {
-        await this.showBanner(`Блайнды ${ev.big / 2}/${ev.big}`, 900 / speed);
+        await this.showBanner(`Блайнды ${ev.big / 2}/${ev.big}`, 900 / this.ctx.speed(), !!this.ff);
       } else if (ev.type === 'deal') {
-        Sound.shuffle();
+        // пропущенная раздача кончилась — дальше как обычно (вылетел — кнопка предложит досмотреть до конца)
+        if (this.ff === 'hand') this.setFF(null);
+        snd(() => Sound.shuffle());
         this.v = { ...v };
-        this.gl?.dealer(ev.hand === 1 ? 'hello' : 'deal', 2.2);
+        gl()?.dealer(ev.hand === 1 ? 'hello' : 'deal', 2.2);
         // карты долетели — все заглядывают в свои (вразнобой)
-        for (const seat of ev.seats) this.gl?.gesture(seat, 'look', 0.8 + Math.random() * 1.2);
+        for (const seat of ev.seats) gl()?.gesture(seat, 'look', 0.8 + Math.random() * 1.2);
+      } else if (ev.type === 'bust') {
+        if (ev.seat === this.viewer && this.ctx.mySeats.length < v.seats.length) await this.showBanner('Вы вылетели — боты доигрывают без вас', 1600 / this.ctx.speed());
       } else if (ev.type === 'end') {
-        Sound.win();
+        if (this.ff) this.setFF(null);
+        snd(() => Sound.win());
         this.v = v;
         this.draw();
         await this.showBanner(`Все фишки — ${this.plain(ev.winner)}!`, 0);
@@ -488,6 +544,10 @@ class HoldemView implements GameView<View, Event> {
     }
     this.v = v;
     this.draw({ x: C.x, y: C.y - 200 });
+    this.renderSkip();
+    // ходит бот — он «думает» (камера уже на нём): не мгновенно, но и не томительно
+    if (!this.ff && v.phase !== 'over' && v.turn != null && !this.ctx.mySeats.includes(v.turn) && events.some((e) => e.type === 'act' || e.type === 'deal' || e.type === 'street'))
+      await sleep((700 + Math.random() * 900) / this.ctx.speed());
   }
 
   setTurn(toAct: number[], interactive: number[]) {
@@ -522,6 +582,8 @@ class HoldemView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.ctx.hold?.(0);
+    if (this.ff) this.ctx.hurry?.(false);
     this.gl?.destroy();
     this.gl = null;
     this.cs.destroy();

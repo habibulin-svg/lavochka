@@ -1,6 +1,6 @@
 /* Комната: лобби, старт, бот вместо отключившегося, возврат на своё место, синхронность у всех. */
 import { afterEach, describe, expect, it } from 'vitest';
-import { localPair } from '../src/core/protocol';
+import { localPair, type RoomMsg } from '../src/core/protocol';
 import type { Snapshot } from '../src/core/authority';
 import { Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
@@ -133,8 +133,9 @@ describe('комната', () => {
     const back = new AutoClient(def, d, 'Хозяин', 'key', 2);
     back.playing = false;
     await until(() => back.has('start'), 5000, 'стол из сохранения');
-    const at = back.seq;
-    await until(() => back.seq > at, 10000, 'бот пошёл');
+    // seq стола из сохранения (а не текущий: бот мог походить, пока мы ждали start)
+    const st = back.log.find((m) => m.t === 'start') as Extract<RoomMsg, { t: 'start' }>;
+    await until(() => back.seq > st.seq, 10000, 'бот пошёл');
   }, 30_000);
 
   it('третий лишний становится зрителем и видит партию', async () => {

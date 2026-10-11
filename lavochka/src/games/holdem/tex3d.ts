@@ -1,4 +1,4 @@
-/* Холдем 3D — текстуры, нарисованные на canvas: печать на сукне, рисунок обоев, ночной двор за окном, тюль, фишки, баттон.
+/* Холдем 3D — текстуры, нарисованные на canvas: печать на сукне, тюль, шёлк абажура, фишки, баттон.
  * Фактуры материалов (кожа, дерево, паркет, ткань) — фотографии, см. pbr.ts. */
 import * as THREE from 'three';
 
@@ -89,130 +89,57 @@ export function feltTexture(plain = false): THREE.Texture {
 
 // ---------------------------------------------------------------- комната
 
-/** Обои: бежевые с выцветшим узором — полосы и цветочки. */
-export function wallpaperTex(repeat: [number, number]): THREE.CanvasTexture {
-  return canvasTex(
-    512,
-    512,
-    (g, w, h) => {
-      g.fillStyle = '#c9b48a';
-      g.fillRect(0, 0, w, h);
-      for (let x = 0; x < w; x += 128) {
-        g.fillStyle = 'rgba(120, 90, 50, 0.12)';
-        g.fillRect(x + 54, 0, 20, h);
-        g.fillStyle = 'rgba(255, 245, 220, 0.15)';
-        g.fillRect(x + 50, 0, 3, h);
-        g.fillRect(x + 75, 0, 3, h);
-      }
-      const flower = (cx: number, cy: number) => {
-        g.save();
-        g.translate(cx, cy);
-        g.fillStyle = 'rgba(140, 70, 50, 0.32)';
-        for (let i = 0; i < 6; i++) {
-          g.rotate(Math.PI / 3);
-          g.beginPath();
-          g.ellipse(0, 9, 4.5, 9, 0, 0, Math.PI * 2);
-          g.fill();
-        }
-        g.fillStyle = 'rgba(200, 160, 60, 0.5)';
-        g.beginPath();
-        g.arc(0, 0, 4, 0, Math.PI * 2);
-        g.fill();
-        g.strokeStyle = 'rgba(80, 100, 50, 0.35)';
-        g.lineWidth = 2;
-        g.beginPath();
-        g.moveTo(0, 18);
-        g.quadraticCurveTo(10, 34, 0, 50);
-        g.stroke();
-        g.restore();
-      };
-      for (let y = 0; y < h; y += 128)
-        for (let x = 0; x < w; x += 128) {
-          flower(x, y + 20);
-          flower(x + 64, y + 84);
-        }
-      speckle(g, w, h, 0.06, 12000, 13);
-    },
-    repeat
-  );
-}
-
-/** Ночной двор за окном: небо, пятиэтажки с горящими окнами, фонарь, деревья. */
-export function nightTex(): THREE.CanvasTexture {
-  return canvasTex(512, 512, (g, w, h) => {
-    const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#0a1430');
-    sky.addColorStop(0.6, '#1c2a52');
-    sky.addColorStop(1, '#2a2a3a');
-    g.fillStyle = sky;
-    g.fillRect(0, 0, w, h);
-    const r = rnd(29);
-    g.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = 0; i < 60; i++) g.fillRect(r() * w, r() * h * 0.4, 1, 1);
-    // луна
-    g.fillStyle = '#f4ecc8';
-    g.beginPath();
-    g.arc(410, 80, 26, 0, Math.PI * 2);
-    g.fill();
-    const house = (x: number, y: number, ww: number, floors: number, cols: number) => {
-      g.fillStyle = '#141824';
-      g.fillRect(x, y, ww, h - y);
-      const fh = (h - y) / floors;
-      const cw = ww / cols;
-      for (let f = 0; f < floors; f++)
-        for (let c = 0; c < cols; c++) {
-          const lit = r() < 0.38;
-          g.fillStyle = lit ? (r() < 0.3 ? '#9fc4ff' : '#ffd27a') : '#1e2433';
-          g.fillRect(x + c * cw + cw * 0.25, y + f * fh + fh * 0.25, cw * 0.5, fh * 0.45);
-        }
-    };
-    house(-20, 230, 260, 5, 10);
-    house(280, 260, 260, 5, 9);
-    // деревья
-    g.fillStyle = '#0a0e14';
-    for (let i = 0; i < 9; i++) {
-      g.beginPath();
-      g.arc(i * 64 + r() * 20, 440 + r() * 20, 40 + r() * 20, 0, Math.PI * 2);
-      g.fill();
-    }
-    // фонарь
-    g.fillStyle = '#222';
-    g.fillRect(250, 330, 5, 182);
-    const glow = g.createRadialGradient(252, 330, 2, 252, 330, 60);
-    glow.addColorStop(0, 'rgba(255, 220, 140, 0.95)');
-    glow.addColorStop(1, 'rgba(255, 220, 140, 0)');
-    g.fillStyle = glow;
-    g.fillRect(180, 260, 150, 150);
-  });
-}
-
-/** Тюль: полупрозрачный белый с узором. */
+/** Тюль: тонкая белая сетка — почти прозрачная, плотнее в нитях, с лёгкой неровностью плетения (без рисунка). */
 export function tulleTex(): THREE.CanvasTexture {
   return canvasTex(
     256,
     256,
     (g, w, h) => {
       g.clearRect(0, 0, w, h);
-      g.fillStyle = 'rgba(255,255,255,0.35)';
+      g.fillStyle = 'rgba(255,255,255,0.22)';
       g.fillRect(0, 0, w, h);
-      g.strokeStyle = 'rgba(255,255,255,0.7)';
-      g.lineWidth = 2;
-      for (let y = 0; y < h; y += 64)
-        for (let x = 0; x < w; x += 64) {
-          g.beginPath();
-          g.arc(x + 32, y + 32, 18, 0, Math.PI * 2);
-          g.stroke();
-          g.beginPath();
-          g.arc(x + 32, y + 32, 6, 0, Math.PI * 2);
-          g.stroke();
-        }
-      for (let x = 0; x < w; x += 8) {
-        g.fillStyle = 'rgba(255,255,255,0.18)';
-        g.fillRect(x, 0, 2, h);
+      const r = rnd(41);
+      // нити основы и утка
+      for (let x = 0; x < w; x += 4) {
+        g.fillStyle = `rgba(255,255,255,${0.1 + r() * 0.08})`;
+        g.fillRect(x, 0, 1, h);
+      }
+      for (let y = 0; y < h; y += 4) {
+        g.fillStyle = `rgba(255,255,255,${0.08 + r() * 0.06})`;
+        g.fillRect(0, y, w, 1);
+      }
+      // неровная плотность — как у настоящей ткани
+      for (let i = 0; i < 40; i++) {
+        g.fillStyle = `rgba(255,255,255,${r() * 0.05})`;
+        g.fillRect(r() * w, 0, 2 + r() * 10, h);
       }
     },
-    [3, 4]
+    [10, 10]
   );
+}
+
+/** Шёлк абажура: складки сборкой (светлее на гребнях), тонкая фактура ткани; внизу — ярче, там к ткани ближе лампочка. */
+export function silkTex(): THREE.CanvasTexture {
+  return canvasTex(1024, 256, (g, w, h) => {
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#9a4a1c');
+    grad.addColorStop(0.55, '#d67a32');
+    grad.addColorStop(1, '#e89848');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+    const folds = 48;
+    for (let i = 0; i < folds; i++) {
+      const x = (i / folds) * w;
+      const fw = w / folds;
+      const fg = g.createLinearGradient(x, 0, x + fw, 0);
+      fg.addColorStop(0, 'rgba(60,20,0,0.28)');
+      fg.addColorStop(0.45, 'rgba(255,220,160,0.18)');
+      fg.addColorStop(1, 'rgba(60,20,0,0.28)');
+      g.fillStyle = fg;
+      g.fillRect(x, 0, fw, h);
+    }
+    speckle(g, w, h, 0.05, 20000, 77, 1);
+  });
 }
 
 // ---------------------------------------------------------------- фишки

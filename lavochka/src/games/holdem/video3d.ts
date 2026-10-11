@@ -329,7 +329,13 @@ class VideoPeople implements People {
   }
 
   only(seat: number | null) {
+    if (seat === this.solo) return;
     this.solo = seat;
+    // смена кадра — сразу (сцена сама делает наплыв): иначе прежний человек тает поверх нового полупрозрачным
+    for (const p of this.list.values()) {
+      p.solo = seat == null || seat === p.seat ? 1 : 0;
+      p.mat.uniforms.fade.value = p.shown * p.solo;
+    }
   }
 
   dealer(act: DealerAct) {

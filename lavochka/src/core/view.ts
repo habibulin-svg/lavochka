@@ -14,6 +14,10 @@ export interface ViewCtx<A = any> {
   name(seat: number): string;
   speed(): number;
   autoSingle(): boolean;
+  /** «Пропустить»: боты ходят без пауз, пока не выключат. */
+  hurry?(on: boolean): void;
+  /** Стол ещё грузится — боты ждут ms (не дольше 30 с); 0 — готово. */
+  hold?(ms: number): void;
 }
 
 export interface GameView<V = any, E = any> {
