@@ -85,7 +85,7 @@ dimon, kolyan, svetka, zheka, mihalych.
 Крупье стоит посередине дальнего края стола, кадр тот же (от пояса, руки на краю стола). Папка `dealer` (Марина) или
 `dealer_m` (Аркадий, запасной). Действия: idle, hello, deal, flop, card (тёрн/ривер), collect, push_front / push_left /
 push_right (банк к нам / влево / вправо — как видит камера), point_front / point_left / point_right (чей ход), gather, allin.
-В игре сейчас используются: hello, deal, flop, card, collect, push_*, point_front.
+В игре используются все: hello/deal/gather (раздача), collect/flop/card (круг), point_* (чей ход), push_* (банк победителю), allin (кивок на ва-банк).
 
 ## Упаковка
 

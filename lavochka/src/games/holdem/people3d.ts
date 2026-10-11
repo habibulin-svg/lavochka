@@ -40,6 +40,8 @@ export interface People {
   only?(seat: number | null): void;
   /** Действие крупье (есть только у людей-видео). */
   dealer?(act: DealerAct): void;
+  /** Скорость реакций (есть только у людей-видео). */
+  setRate?(r: number): void;
   head(seat: number): THREE.Vector3 | null;
   /** Шаг анимации; true — кто-то сидит за столом и шевелится. */
   update(dt: number, cam?: THREE.Vector3): boolean;

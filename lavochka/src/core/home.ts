@@ -47,6 +47,7 @@ export function openHome(mod: GameModule, onBack: () => void) {
         <h2>Новая партия</h2>
         <div class="row count-row"><span class="lbl">Игроков:</span><div class="seg count-seg"></div></div>
         <div class="seat-rows"></div>
+        <div class="prefs"></div>
         <p class="hint">«Человек» — игра за этим экраном (по очереди). «Сеть» — место для друга: он подключится по коду комнаты.</p>
         <div class="row buttons"><button class="btn primary big" data-a="start">Начать</button></div>
         <p class="err"></p>
@@ -145,6 +146,27 @@ export function openHome(mod: GameModule, onBack: () => void) {
     q('[data-a=start]').textContent = remote ? `Создать комнату (${remote} ${plural(remote, 'место', 'места', 'мест')} по сети)` : 'Начать';
     q('.err').textContent = '';
     persist();
+  }
+
+  // ---------- вид на этом экране (у каждого игрока свой)
+  const prefsBox = q('.prefs');
+  for (const p of mod.prefs || []) {
+    const row = h(`<div class="row pref-row"><span class="lbl">${esc(p.label)}:</span><div class="seg"></div>${p.hint ? `<small class="opt-hint">${esc(p.hint)}</small>` : ''}</div>`);
+    const box = row.querySelector('.seg') as HTMLElement;
+    const mark = () => {
+      const cur = store.get<string>(p.key, p.default);
+      box.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.classList.toggle('on', b.dataset.v === cur));
+    };
+    for (const c of p.choices) {
+      const b = h<HTMLButtonElement>(`<button data-v="${esc(c.value)}">${esc(c.label)}</button>`);
+      b.onclick = () => {
+        store.set(p.key, c.value);
+        mark();
+      };
+      box.appendChild(b);
+    }
+    mark();
+    prefsBox.appendChild(row);
   }
 
   // ---------- варианты правил

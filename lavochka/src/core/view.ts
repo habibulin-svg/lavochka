@@ -37,7 +37,17 @@ export interface GameView<V = any, E = any> {
   destroy?(): void;
 }
 
+/** Настройка вида на этом экране (не правило партии — у каждого игрока своя): выбор на экране игры, хранится в store под key. */
+export interface ViewPref {
+  key: string;
+  label: string;
+  hint?: string;
+  choices: { value: string; label: string }[];
+  default: string;
+}
+
 export interface GameModule {
   def: GameDef;
   createView(): GameView;
+  prefs?: ViewPref[];
 }

@@ -88,6 +88,8 @@
 /* общие карты и банк — внизу слева (вид «за столом») */
 .hd-board { position: absolute; left: 2%; bottom: 10px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .hd-board[hidden] { display: none; }
+/* узкий экран: внизу места мало (своя табличка и карты) — банк наверху слева */
+@media (max-width: 600px) { .hd-board-pot-only { top: 10px; bottom: auto; } }
 .hd-board-cards { display: flex; gap: calc(var(--hand, 160px) * 0.05); }
 .hd-bcard { width: calc(var(--hand, 160px) * 0.4); height: calc(var(--hand, 160px) * 0.62); border-radius: 6%; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55)); }
 .hd-bcard.deal { animation: hd-bdeal 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 0.12s); }

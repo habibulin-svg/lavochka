@@ -38,6 +38,10 @@ const SLOPE_Y = 0.05;
 const COLS = 12;
 /** Переход между роликами, с. */
 const FADE = 0.3;
+/** Начало каждого ролика — та же поза, что и конец «ждёт»: реакцию запускаем отсюда (движение начинается около 1 с). */
+const SKIP = 0.45;
+/** Отложенная реакция, до которой камера не дошла за столько секунд, уже не к месту. */
+const STALE = 3;
 
 // ---------------------------------------------------------------- загрузка
 
@@ -225,6 +229,12 @@ class VideoPeople implements People {
   private time = 0;
   private cam = new THREE.Vector3(0, 10, 12);
   private solo: number | null = null;
+  /** Скорость разовых реакций (ролики сняты неторопливо; «ждёт» — всегда 1). */
+  private rate = 1.25;
+
+  setRate(r: number) {
+    this.rate = THREE.MathUtils.clamp(r, 0.6, 3);
+  }
 
   sync(list: PersonPlace[]) {
     const seen = new Set<number>();
@@ -369,7 +379,10 @@ class VideoPeople implements People {
     next.clip = c;
     next.el.loop = !oneShot;
     if (next.el.src !== url) next.el.src = url;
-    next.el.currentTime = 0;
+    // реакции — побыстрее и без неподвижного начала; «ждёт» и «думает» — как сняты
+    const quick = oneShot && c !== 'think' && c !== 'bluff';
+    next.el.defaultPlaybackRate = next.el.playbackRate = quick ? this.rate : 1;
+    next.el.currentTime = quick ? SKIP : 0;
     const go = () => {
       if (next.clip !== c || p.playing !== c) return;
       if (p.decks[p.cur].clip) p.fading = 0;
@@ -421,9 +434,27 @@ class VideoPeople implements People {
         p.asked = true;
         for (const c of clipsOf(p.who)) want(p.who, c);
       }
-      this.aim(p);
       // первый запуск — как только загрузится «ждёт»
       if (!p.playing) this.play(p, 'idle', false);
+      // не в кадре (снимают другого) — не рисуем и стоим на паузе (когда «ждёт» уже загружен): десять роликов разом телефону тяжело
+      if (this.solo != null && this.solo !== p.seat) {
+        p.mesh.visible = false;
+        const d = p.decks[p.cur];
+        if (d.clip && d.el.readyState >= 2) {
+          for (const x of p.decks) if (!x.el.paused) x.el.pause();
+          // загружен — в кадр войдёт сразу, без проявления
+          p.shown = 1;
+        }
+        if (p.pending && this.time - p.pending.at > STALE) p.pending = null;
+        continue;
+      }
+      this.aim(p);
+      if (p.playing) {
+        // снова в кадре — продолжаем, что играло
+        const d = p.decks[p.cur];
+        if (d.clip && d.el.paused && !(p.oneShot && d.el.ended)) void d.el.play().catch(() => {});
+      }
+      if (p.pending && this.time - p.pending.at > STALE) p.pending = null;
       if (p.pending && this.time >= p.pending.at) {
         const c = p.pending.clip;
         p.pending = null;
@@ -481,6 +512,16 @@ export async function loadVideoPeople(): Promise<People | null> {
   const url = await clip('dealer', 'idle');
   if (!url) return null;
   ready.set('dealer/idle', url);
+  // вкладка в фоне — браузер не даёт играть видео; ждём, пока её откроют (иначе навсегда остались бы 3D-люди)
+  if (document.hidden)
+    await new Promise<void>((done) => {
+      const f = () => {
+        if (document.hidden) return;
+        document.removeEventListener('visibilitychange', f);
+        done();
+      };
+      document.addEventListener('visibilitychange', f);
+    });
   const el = document.createElement('video');
   el.muted = true;
   el.playsInline = true;
