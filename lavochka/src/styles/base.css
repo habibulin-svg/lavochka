@@ -286,3 +286,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 @keyframes voice-wait { 50% { opacity: 0.3; } }
 .voice-name { font-size: 11px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voice-tile audio { display: none; }
+
+/* игры реального времени: переключатели в панели под столом */
+.rt-pref { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; font-size: 14px; }
+.rt-pref > span { min-width: 64px; }
+.rt-pref .seg button { padding: 3px 8px; font-size: 13px; }

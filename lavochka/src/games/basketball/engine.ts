@@ -4,6 +4,7 @@
  * с номером лунки, где лежит мяч, — того катапульта и бросает: в кольцо на дальнем конце. Нажал не ту — рука «залипает».
  * Сверху поле накрыто прозрачным колпаком: мяч от него отскакивает и вылететь не может.
  * Координаты (метры): x — вдоль поля (красные сидят у −x и бросают в кольцо у +x), z — поперёк, y — вверх (0 — гребни ямок). */
+import { applySpeed, cleanSpeed } from '../../core/realtime';
 import type { Rng } from '../../core/types';
 
 export const L = 0.3;
@@ -101,6 +102,8 @@ export interface BbState {
   shakes: number;
   /** Скорость физики (доля от жизни): часы, паузы и «залипание» руки идут как обычно. */
   speed: number;
+  /** Последняя скорость, присланная каждым местом (смена скорости за столом). */
+  spSeen?: number[];
   over: boolean;
 }
 
@@ -108,6 +111,8 @@ export interface BbState {
 export interface BbIn {
   k: number;
   n: number;
+  /** Смена скорости игры за столом. */
+  sp?: number;
 }
 
 export type BbEvent =
@@ -246,7 +251,10 @@ export function cleanInput(raw: unknown): BbIn | null {
   const o = raw as Record<string, unknown>;
   const k = typeof o.k === 'number' && Number.isFinite(o.k) ? Math.round(clamp(o.k, -1, 9)) : -1;
   const n = typeof o.n === 'number' && Number.isFinite(o.n) ? Math.round(clamp(o.n, 0, 1e9)) : 0;
-  return { k, n };
+  const out: BbIn = { k, n };
+  const sp = cleanSpeed(o.sp);
+  if (sp != null) out.sp = sp;
+  return out;
 }
 
 /** Точка прицела: чуть выше середины кольца команды. */
@@ -309,6 +317,7 @@ export function step(st: BbState, inputs: (BbIn | null | undefined)[], rng: Rng)
   for (const team of [0, 1] as const) {
     st.lock[team] = Math.max(0, st.lock[team] - dt);
     const inp = inputs[team];
+    if (inp) applySpeed(st, team, inp.sp);
     if (!inp || inp.n === st.press[team]) continue;
     st.press[team] = inp.n;
     if (inp.k < 0 || st.lock[team] > 0) continue;

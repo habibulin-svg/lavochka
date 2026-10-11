@@ -2,6 +2,7 @@
  * Один игрок на экране: нижний ряд Z…/ (или цифры 1…0, или верхний ряд Q…P) — клавиши 1…0 на корпусе; мышь/палец — по лунке или клавише.
  * Двое за одним экраном: красные — верхний ряд Q…P (и цифры), синие — нижний Z…/. */
 import { audioOut, click, Sound, tone } from '../../core/audio';
+import { segRow, speedRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -48,10 +49,14 @@ export function createView(): GameView<BbState, BbEvent> {
   const held: boolean[][] = [Array(10).fill(false), Array(10).fill(false)];
   const sent: Record<number, { json: string; at: number }> = {};
   const cleanup: (() => void)[] = [];
+  /** Скорость, выбранная за столом (уходит в ввод); панель скорости; для каких мест построена панель. */
+  let spReq: number | undefined;
+  let speedEl: (HTMLElement & { sync?: () => void }) | null = null;
+  let seatsKey: string | null = null;
 
   const mine = () => ctx.mySeats.filter((s) => s === 0 || s === 1);
   const hotseat = () => mine().length > 1;
-  const camMode = (): Cam => (!mine().length ? 'corner' : hotseat() ? 'side' : store.get<string>(PREF_CAM, 'side') === 'end' ? 'end' : 'side');
+  const camMode = (): Cam => (!mine().length ? 'corner' : store.get<string>(PREF_CAM, 'side') === 'top' ? 'top' : 'side');
   const myTeam = (): 0 | 1 => (mine()[0] === 1 ? 1 : 0);
 
   function current(): BbState | null {
@@ -78,6 +83,7 @@ export function createView(): GameView<BbState, BbEvent> {
   function send(seat: number, force = false) {
     const cur = inp[seat];
     if (!cur || !ctx.input) return;
+    if (spReq != null) cur.sp = spReq;
     const json = JSON.stringify(cur);
     const now = performance.now();
     const last = sent[seat];
@@ -224,23 +230,19 @@ export function createView(): GameView<BbState, BbEvent> {
     const box = ctx.controls;
     if (!box || ctx.demo) return;
     box.innerHTML = '';
-    if (!hotseat() && mine().length) {
-      const row = h(`<div class="bb-pref"><span>Вид</span><div class="seg"></div></div>`);
-      const s = row.querySelector('.seg') as HTMLElement;
-      for (const [v, label] of [
-        ['side', 'спереди'],
-        ['end', 'со своего торца'],
-      ]) {
-        const b = h<HTMLButtonElement>(`<button>${label}</button>`);
-        b.onclick = () => {
-          store.set(PREF_CAM, v);
-          s.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-          b.blur();
-        };
-        if (store.get<string>(PREF_CAM, 'side') === v) b.classList.add('on');
-        s.appendChild(b);
-      }
-      box.appendChild(row);
+    box.appendChild(segRow('Вид', [['side', 'спереди'], ['top', 'сверху']], () => (store.get<string>(PREF_CAM, 'side') === 'top' ? 'top' : 'side'), (v) => store.set(PREF_CAM, v)));
+    if (mine().length) {
+      speedEl = speedRow(
+        () => latest?.speed ?? 0.5,
+        (v) => {
+          spReq = v;
+          mine().forEach((s) => {
+            inp[s] ??= { k: -1, n: latest?.press[s as 0 | 1] ?? 0 };
+            send(s, true);
+          });
+        }
+      );
+      box.appendChild(speedEl);
     }
     box.appendChild(h(`<div class="bb-hint">${hotseat() ? 'Красные — <kbd>Q</kbd>…<kbd>P</kbd>, синие — <kbd>Z</kbd>…<kbd>/</kbd>' : 'Клавиши <kbd>Z</kbd>…<kbd>/</kbd> = 1…0, или нажмите на лунку с мячом'}</div>`));
   }
@@ -267,8 +269,6 @@ export function createView(): GameView<BbState, BbEvent> {
         window.removeEventListener('keyup', ku);
         window.removeEventListener('blur', blur);
       });
-      controls();
-      letters();
       raf = requestAnimationFrame(frame);
       // ввод повторяем своим таймером (на случай потерянного сообщения)
       const iv = setInterval(() => mine().forEach((s) => send(s)), 100);
@@ -276,6 +276,12 @@ export function createView(): GameView<BbState, BbEvent> {
     },
     setView(v) {
       latest = v;
+      // места этого экрана известны только к первому снимку — тогда и строим панель и подписи клавиш
+      if (mine().join() !== seatsKey) {
+        seatsKey = mine().join();
+        controls();
+        letters();
+      }
       snaps = [{ t: performance.now(), v }];
       // счётчик нажатий — с комнаты (после возврата в партию не начинать с нуля)
       for (const s of mine()) inp[s] = { k: inp[s]?.k ?? -1, n: Math.max(inp[s]?.n ?? 0, v.press[s as 0 | 1]) };
@@ -286,6 +292,7 @@ export function createView(): GameView<BbState, BbEvent> {
       this.setView(v);
     },
     realtime(v, events) {
+      if (latest && v.speed !== latest.speed) setTimeout(() => speedEl?.sync?.());
       latest = v;
       if (import.meta.env.DEV) (window as unknown as { __bbv: BbState }).__bbv = v;
       snaps.push({ t: performance.now(), v });

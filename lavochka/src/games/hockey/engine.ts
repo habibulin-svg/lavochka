@@ -4,6 +4,7 @@
  * в своей половине и три нападающих — в чужой. Каждой фигуркой правит своя штанга из торца: вперёд-назад — фигурка едет
  * по прорези, поворот штанги — фигурка крутится вокруг оси. Клюшка — часть жестянки: удар — это крутящаяся клюшка, встретившая шайбу.
  * Единицы — метры, секунды, радианы. Состояние меняется на месте (шаг комнаты — 60 раз в секунду). */
+import { applySpeed, cleanSpeed } from '../../core/realtime';
 import type { Rng } from '../../core/types';
 
 export const W = 0.66;
@@ -94,6 +95,8 @@ export interface HkState {
   touch: number;
   /** Скорость физики (доля от жизни): часы и паузы идут как обычно. */
   speed: number;
+  /** Последняя скорость, присланная каждым местом (смена скорости за столом). */
+  spSeen?: number[];
   over: boolean;
 }
 
@@ -111,6 +114,8 @@ export interface HkIn {
   g: RodIn;
   pick: number;
   knock: number;
+  /** Смена скорости игры за столом. */
+  sp?: number;
 }
 
 export type HkEvent =
@@ -268,7 +273,10 @@ export function cleanInput(raw: unknown): HkIn | null {
     return out;
   };
   const pick = Math.round(num(o.pick, -1, 5, -1));
-  return { f: rod(o.f), g: rod(o.g), pick: pick >= 1 ? pick : -1, knock: Math.round(num(o.knock, 0, 1e9)) };
+  const out: HkIn = { f: rod(o.f), g: rod(o.g), pick: pick >= 1 ? pick : -1, knock: Math.round(num(o.knock, 0, 1e9)) };
+  const sp = cleanSpeed(o.sp);
+  if (sp != null) out.sp = sp;
+  return out;
 }
 
 /** Какая полевая фигурка команды ближе всех дотянется до шайбы (с запасом, чтобы выбор не дёргался). */
@@ -455,6 +463,7 @@ export function step(st: HkState, inputs: (HkIn | null | undefined)[], rng: Rng)
 
   // кто ведёт: автомат или выбор игрока
   for (const team of [0, 1] as const) {
+    applySpeed(st, team, inp[team].sp);
     st.auto[team] = autoPick(st, team);
     const p = inp[team].pick;
     st.active[team] = p >= 1 && p <= 5 ? p : st.auto[team];

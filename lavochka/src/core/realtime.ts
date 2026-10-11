@@ -20,3 +20,17 @@ export const gameSpeed = (opts: Options) => {
   const v = Number(opts.speed ?? SPEED_OPTION.default);
   return Number.isFinite(v) ? Math.max(0.2, Math.min(1, v)) : 0.5;
 };
+
+/** Скорость, присланная игроком за столом (поле sp ввода), или undefined. */
+export function cleanSpeed(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0.2, Math.min(1, v)) : undefined;
+}
+
+/** Применить смену скорости из ввода места: каждое новое значение места — один раз (ввод повторяется, пока шлётся). */
+export function applySpeed(st: { speed: number; spSeen?: number[] }, seat: number, sp: number | undefined) {
+  if (sp == null) return;
+  st.spSeen ??= [];
+  if (st.spSeen[seat] === sp) return;
+  st.spSeen[seat] = sp;
+  st.speed = sp;
+}

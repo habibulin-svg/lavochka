@@ -5,6 +5,6 @@ import { createView, PREF_CAM } from './view';
 const mod: GameModule = {
   def,
   createView,
-  prefs: [{ key: PREF_CAM, label: 'Вид', hint: 'спереди — как на фото коробки', choices: [{ value: 'side', label: 'спереди' }, { value: 'end', label: 'со своего торца' }], default: 'side' }],
+  prefs: [{ key: PREF_CAM, label: 'Вид', hint: 'спереди — как на фото коробки', choices: [{ value: 'side', label: 'спереди' }, { value: 'top', label: 'сверху' }], default: 'side' }],
 };
 export default mod;

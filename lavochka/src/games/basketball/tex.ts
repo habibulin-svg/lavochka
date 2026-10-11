@@ -134,13 +134,13 @@ export function panelCanvas(order: number[], col: string): HTMLCanvasElement {
 export function capCanvas(letter: string): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = 128;
-  cv.height = 64;
+  cv.height = 96;
   const c = cv.getContext('2d')!;
-  c.font = 'bold 40px "PT Mono", "Courier New", monospace';
+  c.font = 'bold 64px "PT Mono", "Courier New", monospace';
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.fillStyle = 'rgba(255,225,210,0.8)';
-  c.fillText(letter, 64, 34);
+  c.fillStyle = 'rgba(255,236,226,0.92)';
+  c.fillText(letter, 64, 52);
   return cv;
 }
 

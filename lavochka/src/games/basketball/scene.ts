@@ -23,7 +23,7 @@ const PANEL_W = PANEL_X1 - PANEL_X0;
 const KEY_SPAN = 0.19;
 const KEY_L = 0.021;
 
-export type Cam = 'end' | 'side' | 'corner';
+export type Cam = 'top' | 'side' | 'corner';
 
 function rrect(w: number, h: number, r: number): THREE.Shape {
   const s = new THREE.Shape();
@@ -280,13 +280,14 @@ export class Court3D {
         m.receiveShadow = true;
         if (s < 0) m.rotation.y = Math.PI;
         g.add(m);
-        // буква клавиатуры на скосе клавиши
-        const let_ = new THREE.Mesh(new THREE.PlaneGeometry(keyW * 0.9, keyW * 0.45), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, visible: false }));
-        let_.rotation.order = 'YXZ';
-        let_.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2;
-        let_.rotation.x = -Math.PI / 2 + slope;
-        let_.position.set(-s * 0.002, 0.0084, 0);
-        g.add(let_);
+        // буква клавиатуры на скосе клавиши — читается спереди, как цифры на планке
+        const tilt = new THREE.Group();
+        tilt.rotation.z = s * slope;
+        tilt.position.y = 0.0087;
+        const let_ = new THREE.Mesh(new THREE.PlaneGeometry(KEY_L * 0.7, keyW * 0.9), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, visible: false }));
+        let_.rotation.x = -Math.PI / 2;
+        tilt.add(let_);
+        g.add(tilt);
         g.position.set(keyX(team), BT + 0.006, keyZ(team, k));
         g.userData = { team, k };
         sc.add(g);
@@ -493,12 +494,13 @@ export class Court3D {
   private placeCamera() {
     const asp = Math.max(0.5, this.camera.aspect);
     const t = this.camTeam === 0 ? 1 : -1;
-    if (this.camMode === 'end') {
-      // из-за своих клавиш: поле уходит вдаль
-      const k = Math.max(1, 1.25 / asp);
-      this.camGoal.set(-t * (0.42 + 0.1 * (k - 1)), 0.3 + 0.08 * (k - 1), 0);
-      this.camLook.set(t * 0.02, FY + 0.04, 0);
-      this.camera.fov = 42;
+    void t;
+    if (this.camMode === 'top') {
+      // сверху, чуть со стороны сидящих: видно все лунки, номера и обе планки клавиш
+      const k = Math.max(1, 1.2 / asp);
+      this.camGoal.set(0, 0.56 * k, 0.15 * k);
+      this.camLook.set(0, FY, 0.012);
+      this.camera.fov = 36;
     } else if (this.camMode === 'corner') {
       const k = Math.max(1, 1.45 / asp);
       this.camGoal.set(-0.2 * k, 0.33 * k, 0.43 * k);
@@ -506,7 +508,7 @@ export class Court3D {
       this.camera.fov = 34;
     } else {
       // спереди и сверху, как на фото коробки
-      const k = Math.max(1, 1.55 / asp);
+      const k = Math.max(1, 1.65 / asp);
       this.camGoal.set(0, 0.27 * k, 0.41 * k);
       this.camLook.set(0, FY + 0.035, 0.005);
       this.camera.fov = 36;

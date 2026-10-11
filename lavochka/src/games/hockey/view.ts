@@ -2,6 +2,7 @@
  * Клавиши «по экрану»: та пара стрелок, что идёт вдоль прорези на экране, — двигает фигурку, другая — крутит.
  * Один игрок на экране: полевой — стрелки или мышь, вратарь — WASD (или сам). Двое за одним экраном: красные — WASD, синие — стрелки, вратари сами. */
 import { audioOut, click, Sound, tone } from '../../core/audio';
+import { speedRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -49,7 +50,11 @@ export function createView(): GameView<HkState, HkEvent> {
   let goalieTouched = false;
   const mouse = { on: false, x: 0, y: 0, p: null as [number, number] | null, aT: 0, fig: -1 };
   const sent: Record<number, { json: string; at: number }> = {};
+  /** Скорость, выбранная за столом (уходит в ввод, пока не выберут другую). */
+  let spReq: number | undefined;
   const cleanup: (() => void)[] = [];
+  let speedEl: (HTMLElement & { sync?: () => void }) | null = null;
+  let seatsKey = '';
 
   const mine = () => ctx.mySeats.filter((s) => s === 0 || s === 1);
   const hotseat = () => mine().length > 1;
@@ -110,7 +115,9 @@ export function createView(): GameView<HkState, HkEvent> {
     const auto = hs || store.get<string>(PREF_GOALIE, 'wasd') === 'auto' || !goalieTouched;
     if (auto) g = botInput(st, seat, 1, (goalieMem[seat] ??= {}), { next: Math.random, int: (n) => Math.floor(Math.random() * n), getState: () => 0 }).g;
     else g = rodFromKeys(st, team * 6, axis('KeyA', 'KeyD'), axis('KeyS', 'KeyW'));
-    return { f, g, pick: pk.idx, knock: knockN[seat] ?? 0 };
+    const out: HkIn = { f, g, pick: pk.idx, knock: knockN[seat] ?? 0 };
+    if (spReq != null) out.sp = spReq;
+    return out;
   }
 
   function sendInputs(st: HkState) {
@@ -300,6 +307,13 @@ export function createView(): GameView<HkState, HkEvent> {
     if (!hotseat()) box.appendChild(seg(PREF_CAM, 'end', [['end', 'из-за ворот'], ['side', 'сбоку']], 'Вид'));
     box.appendChild(seg(PREF_MOUSE, 'drag', [['drag', 'поперёк'], ['wheel', 'колёсиком']], 'Крутить мышью'));
     if (!hotseat()) box.appendChild(seg(PREF_GOALIE, 'wasd', [['wasd', 'WASD'], ['auto', 'сам']], 'Вратарь'));
+    if (mine().length) {
+      speedEl = speedRow(
+        () => latest?.speed ?? 0.5,
+        (v) => (spReq = v)
+      );
+      box.appendChild(speedEl);
+    }
     const knock = h<HTMLButtonElement>(`<button class="btn small hk-knock" title="Пробел">Стук по борту</button>`);
     knock.onclick = () => {
       for (const s of mine()) knockN[s] = (knockN[s] ?? 0) + 1;
@@ -348,6 +362,11 @@ export function createView(): GameView<HkState, HkEvent> {
     },
     setView(v) {
       latest = v;
+      // места этого экрана известны только к первому снимку — тогда и строим панель
+      if (mine().join() !== seatsKey) {
+        seatsKey = mine().join();
+        controls();
+      }
       snaps = [{ t: performance.now(), v }];
       if (!v.over) banner.hidden = true;
       if (v.over) showBanner(v.score[0] === v.score[1] ? 'Ничья' : `Победили ${TEAM[v.score[0] > v.score[1] ? 0 : 1].toLowerCase()}`, `${v.score[0]} : ${v.score[1]}`, 0);
@@ -356,6 +375,7 @@ export function createView(): GameView<HkState, HkEvent> {
       this.setView(v);
     },
     realtime(v, events) {
+      if (latest && v.speed !== latest.speed) setTimeout(() => speedEl?.sync?.());
       latest = v;
       if (import.meta.env.DEV) (window as unknown as { __hkv: HkState }).__hkv = v;
       snaps.push({ t: performance.now(), v });
