@@ -78,7 +78,7 @@ class HoldemView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
-    this.cs = new CardStage(root, W, H, 'hd-wrap', '<div class="hd-floor"></div><div class="hd-table"><div class="hd-felt"></div></div>');
+    this.cs = new CardStage(root, W, H, 'hd-wrap', '<div class="hd-floor"></div><div class="hd-table"><div class="hd-felt"><div class="hd-print">Вечером на лавочке<small>♠ ♥ ♣ ♦</small></div></div></div>');
     this.cs.over.innerHTML = '<div class="hd-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.hd-plates') as HTMLElement;
     this.banner = this.cs.over.querySelector('.cs-banner') as HTMLElement;

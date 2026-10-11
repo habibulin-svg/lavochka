@@ -4,27 +4,51 @@
   --panel-ink: #2a1a0a;
   --table-bg: radial-gradient(ellipse at 50% 30%, rgba(255, 230, 160, 0.16), transparent 60%), linear-gradient(180deg, #1a1210, #0e0a08);
 }
-.hd-floor { position: absolute; inset: 0; }
-.hd-table { position: absolute; left: 40px; top: 40px; width: 920px; height: 560px; border-radius: 280px / 280px;
-  background: linear-gradient(160deg, #6a3a1a, #3a1c0a); box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 220, 160, 0.25); }
-.hd-felt { position: absolute; inset: 26px; border-radius: 260px / 260px;
-  background: radial-gradient(ellipse at 50% 40%, #2f7a4a, #1f5a34 65%, #174a2a);
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55), inset 0 0 0 3px rgba(255, 230, 160, 0.25); }
-.hd-felt::after { content: ''; position: absolute; left: 50%; top: 50%; width: 420px; height: 150px; transform: translate(-50%, -62%); border-radius: 80px; border: 2px solid rgba(255, 230, 160, 0.18); }
+/* Плоский стол — те же материалы, что в 3D: сукно с ворсом, кожаный валик, лакированный ореховый кант.
+ * Тени — как в Material: стол «приподнят» над полом (ближняя резкая + дальняя мягкая), лампа сверху. */
+.hd-floor { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 45%, rgba(255, 214, 150, 0.1), transparent 70%); }
+.hd-table { position: absolute; left: 40px; top: 40px; width: 920px; height: 560px; border-radius: 280px;
+  background: radial-gradient(ellipse 70% 60% at 50% 35%, rgba(255, 220, 170, 0.16), transparent 70%), url(/tex/holdem/leather2d.webp) center / 300px, #4a2814;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.45), 0 24px 48px rgba(0, 0, 0, 0.55),
+    inset 0 3px 2px rgba(255, 228, 190, 0.28), inset 0 -4px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.6); }
+/* кант: орех по краю (border-box), внутри — сукно (padding-box) */
+.hd-felt { position: absolute; inset: 30px; border-radius: 250px; border: 10px solid transparent;
+  background:
+    radial-gradient(ellipse 62% 58% at 50% 42%, rgba(255, 236, 190, 0.14), transparent 75%) padding-box,
+    url(/tex/holdem/felt2d.webp) center / 260px padding-box,
+    radial-gradient(ellipse at 50% 42%, #2c8a52, #1d6a3c 60%, #114628) padding-box,
+    linear-gradient(180deg, rgba(255, 220, 170, 0.35), rgba(0, 0, 0, 0.35)) border-box,
+    url(/tex/holdem/walnut2d.webp) center / 220px border-box;
+  background-blend-mode: normal, overlay, normal, overlay, normal;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 1px 0 1px rgba(255, 228, 190, 0.18),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 6px 14px rgba(0, 0, 0, 0.45), inset 0 0 50px rgba(0, 0, 0, 0.4); }
+/* печать на сукне: линия ставок, рамка общих карт, надпись */
+.hd-felt::before { content: ''; position: absolute; inset: 52px 70px; border-radius: 200px;
+  border: 3px double rgba(255, 226, 150, 0.22); pointer-events: none; }
+.hd-felt::after { content: ''; position: absolute; left: 50%; top: 50%; width: 420px; height: 150px; transform: translate(-50%, -62%);
+  border-radius: 24px; border: 2px solid rgba(255, 226, 150, 0.2); box-sizing: border-box; pointer-events: none; }
+.hd-print { position: absolute; left: 0; right: 0; top: 78px; text-align: center; pointer-events: none;
+  font: italic 26px/1 'PT Serif', Georgia, serif; color: rgba(255, 226, 150, 0.2); letter-spacing: 0.02em; }
+.hd-print small { display: block; margin-top: 6px; font: 16px/1 Georgia, serif; letter-spacing: 0.5em; }
+/* валик кожаный и круглый: блик по верху, тень по низу */
+.hd-table::before { content: ''; position: absolute; inset: 4px; border-radius: 276px; pointer-events: none;
+  box-shadow: inset 0 10px 12px -8px rgba(255, 232, 200, 0.3), inset 0 -10px 14px -8px rgba(0, 0, 0, 0.55); }
 .hd-plates { position: absolute; inset: 0; }
 .hd-plate { transform: translate(-50%, 0); }
 .hd-plate.hd-dim { opacity: 0.55; }
 .hd-bet, .hd-pot { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; }
-.hd-bet span, .hd-pot span { font: 700 14px 'PT Sans', Arial, sans-serif; color: #fff4c2; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.hd-bet span, .hd-pot span { font: 700 14px 'PT Sans', Arial, sans-serif; color: #fff4c2; white-space: nowrap;
+  padding: 1px 8px; border-radius: 10px; background: rgba(10, 6, 2, 0.5); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
 .hd-stack { position: relative; width: 26px; height: 30px; }
 .hd-chip { position: absolute; left: 0; bottom: calc(var(--i) * 3px); width: 26px; height: 9px; border-radius: 50%;
-  border: 2px dashed rgba(255, 255, 255, 0.85); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
-.hd-chip.r { background: #c0281e; }
-.hd-chip.g { background: #2a8a3e; }
-.hd-chip.k { background: #1a1a1a; }
-.hd-chip.p { background: #6a2a9a; }
-.hd-button { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 50%; background: #f8f4e8; color: #2a1a0a;
-  font: 700 14px/26px 'PT Sans', Arial, sans-serif; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
+  background: radial-gradient(ellipse 50% 45% at 50% 40%, rgba(255, 255, 255, 0.28), transparent 70%), repeating-linear-gradient(90deg, var(--c) 0 4px, #f4efe4 4px 6.5px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.55); }
+.hd-chip.r { --c: #c0281e; }
+.hd-chip.g { --c: #2a8a3e; }
+.hd-chip.k { --c: #1a1a1a; }
+.hd-chip.p { --c: #6a2a9a; }
+.hd-button { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fffdf6, #e6dfcc); color: #2a1a0a;
+  font: 700 14px/26px 'PT Sans', Arial, sans-serif; text-align: center; box-shadow: inset 0 0 0 2px #c9b98f, 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35); }
 .hd-blinds { position: absolute; left: 50%; top: 6px; transform: translate(-50%, 0); color: #e8d6b0; font: 13px 'PT Sans', Arial, sans-serif; opacity: 0.8; }
 .hd-controls { display: flex; flex-direction: column; gap: 8px; }
 .hd-btns { display: flex; flex-direction: column; gap: 6px; }
