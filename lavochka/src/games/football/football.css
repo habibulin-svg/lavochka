@@ -1,8 +1,15 @@
-/* Настольный футбол: коробка на канве и рычаги под полем. */
-.fb-dev { width: min(100%, 1000px, calc((100vh - 230px) * 1.45)); margin: 0 auto; touch-action: none; user-select: none; }
-.fb-dev canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
-.fb-levers { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
-.fb-levers > div { display: flex; gap: 6px; }
-.fb-levers button { min-width: 48px; height: 44px; border-radius: 10px; border: 0; color: #fff; font: 700 14px 'PT Sans', Arial, sans-serif; cursor: pointer;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45); }
-.fb-levers button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+/* Настольный футбол: 3D-поднос во всю доску, счёт сверху, надписи поверх. */
+.table--football .table-board { padding: 0; }
+.fb-wrap { position: relative; width: 100%; height: min(78vh, 62vw); min-height: 320px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.fb-3d { position: absolute; inset: 0; }
+.fb-3d canvas { display: block; width: 100%; height: 100%; outline: none; }
+.fb-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 4px 14px; border-radius: 10px; background: rgba(20, 16, 12, 0.72); color: #ffe9b8; font: bold 22px 'PT Sans', Arial, sans-serif; pointer-events: none; }
+.fb-hud .r { color: #ff9a64; }
+.fb-hud .w { color: #f4f2ea; }
+.fb-hud .t { font: bold 18px 'Courier New', monospace; color: #ffd24a; }
+.fb-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 14px 28px; border-radius: 14px; background: rgba(12, 40, 20, 0.8); color: #ffe9a0; text-align: center; pointer-events: none; }
+.fb-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; }
+.fb-banner span { font: 16px 'PT Sans', Arial, sans-serif; color: #e8f0f8; }
+.fb-knock { margin-top: 6px; }
+.fb-hint { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+@media (max-width: 860px) { .fb-wrap { height: min(70vh, 120vw); } }
