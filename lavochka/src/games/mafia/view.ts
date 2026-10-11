@@ -1,4 +1,4 @@
-/* Мафия — отрисовка: двор ночью (луна, окна гаснут) или днём; игроки сидят кругом — карточки с именами, пузыри с речами,
+/* Мафия — отрисовка: двор с панельками днём или ночью (два рисованных фона, переход плавный); игроки сидят кругом — карточки с именами, пузыри с речами,
  * отметки «выставлен» и голоса. Своя роль — карточкой (нажать — показать/спрятать). Ночью — выбор цели, днём — речь, выставление, голос.
  * Хот-сит: ночью каждый ходит за занавеской. */
 import { Sound } from '../../core/audio';
@@ -36,7 +36,7 @@ class MafiaView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    this.root = h(`<div class="mf-wrap"><div class="mf-sky"><div class="mf-moon"></div><div class="mf-houses"></div></div><div class="mf-ring"></div><div class="mf-center"></div>
+    this.root = h(`<div class="mf-wrap"><div class="mf-bg mf-bg-day"></div><div class="mf-bg mf-bg-night"></div><div class="mf-ring"></div><div class="mf-center"></div>
       <div class="mf-cover" hidden><div class="mf-cover-box"><div class="mf-cover-t"></div><button class="btn primary">Я готов</button></div></div></div>`);
     root.appendChild(this.root);
     this.ring = this.root.querySelector('.mf-ring') as HTMLElement;
@@ -49,9 +49,6 @@ class MafiaView implements GameView<View, Event> {
       this.draw();
       this.renderPanel();
     };
-    let houses = '';
-    for (let i = 0; i < 14; i++) houses += `<div class="mf-house" style="--h:${60 + ((i * 37) % 70)}px;--w:${50 + ((i * 23) % 40)}px"><i></i><i></i><i></i><i></i></div>`;
-    (this.root.querySelector('.mf-houses') as HTMLElement).innerHTML = houses;
     this.panel = h('<div class="mf-panel"></div>');
     ctx.controls.appendChild(this.panel);
     this.ring.addEventListener('click', (e) => {
