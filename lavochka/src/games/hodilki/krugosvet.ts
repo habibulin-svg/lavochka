@@ -39,7 +39,7 @@ const CELLS: Cell[] = XY.map(([x, y], i) => ({ x, y, sign: sign(i), label: i ===
 export const board: Board = {
   id: 'krugosvet',
   title: 'Кругосветное путешествие',
-  img: { w: 2000, h: 1291, url: '/hodilki/krugosvet.webp' },
+  img: { w: 2000, h: 1291, dir: '/hodilki/krugosvet', src: [9928, 6408], levels: 3 },
   cells: CELLS,
   token: 0.022,
   goal: 'Объехать вокруг света и первым вернуться в Москву.',

@@ -15,7 +15,9 @@ export interface Cell {
 export interface Board {
   id: string;
   title: string;
-  img: { w: number; h: number; url: string };
+  /** Картинка поля: w×h — система координат клеток; tiles — пирамида тайлов из исходного скана (tools/hodilki/tiles.py):
+   * dir/tiny.webp, dir/view.webp — общая карта, dir/<уровень>/<c>_<r>.webp — тайлы 512 px; уровень 0 — скан src целиком. */
+  img: { w: number; h: number; dir: string; src: [number, number]; levels: number };
   cells: Cell[];
   /** Размер пуговицы — доля ширины картинки. */
   token: number;
@@ -33,11 +35,13 @@ export interface State {
   pos: number[];
   skip: boolean[];
   turn: number;
+  /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу. Нет поля — старая партия, значит 'roll'. */
+  phase?: 'roll' | 'move';
   last: number | null;
   winner: number | null;
 }
 
-export type Action = { type: 'roll' };
+export type Action = { type: 'roll' } | { type: 'move' };
 
 export type Event =
   | { type: 'roll'; seat: number; die: number }
@@ -58,6 +62,9 @@ export const SEATS = [
   { name: 'Маринка', color: '#f07a1a', light: '#ffb070', dark: '#8a400a' },
   { name: 'Петька', color: '#6a4a2a', light: '#a07a50', dark: '#3a2410' },
 ];
+
+/** Куда встанет пуговица после броска (до знака). До финиша считать точно не нужно. */
+export const target = (s: State, b: Board, seat: number) => (s.last ? Math.min(b.cells.length - 1, s.pos[seat] + s.last) : s.pos[seat]);
 
 export const signText = (g: Sign) => (g.k === 'skip' ? 'пропускает ход' : g.k === 'again' ? 'ходит ещё раз' : g.k === 'start' ? 'начинает сначала' : g.text);
 

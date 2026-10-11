@@ -1,13 +1,92 @@
-/* Кинь-двинь: поле картинкой, пуговицы, кубик. */
+/* Кинь-двинь: карта из тайлов с плавной камерой, пуговицы, кубик. */
 .table--hodilki { --table-bg: radial-gradient(ellipse at 50% 30%, #2a5a7a, #08182a); }
-.ks-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; }
-.ks-board { position: relative; flex: none; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6); border-radius: 6px; overflow: hidden; cursor: pointer; }
-.ks-board img { display: block; width: 100%; height: 100%; user-select: none; }
-.ks-token { position: absolute; width: var(--tk, 3.2%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; transition: left 0.16s ease, top 0.16s ease;
-  background: radial-gradient(circle at 35% 30%, #fff 0 8%, var(--c) 30%, var(--d)); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.35); }
-.ks-token::after { content: ''; position: absolute; inset: 30%; border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,.45) 0 18%, transparent 20%) 30% 30% / 50% 50%, radial-gradient(circle, rgba(0,0,0,.45) 0 18%, transparent 20%) 70% 70% / 50% 50%; }
-.ks-token.on { box-shadow: 0 0 0 3px #ffd24a, 0 3px 6px rgba(0, 0, 0, 0.55); z-index: 2; }
-.ks-panel { display: flex; align-items: center; gap: 12px; }
-.ks-die { width: 56px; height: 56px; }
-.ks-cube { position: relative; width: 56px; height: 56px; border-radius: 10px; background: linear-gradient(145deg, #fff, #ddd); box-shadow: 0 3px 6px rgba(0,0,0,.4); }
-.ks-cube i { position: absolute; width: 18%; height: 18%; border-radius: 50%; background: #222; transform: translate(-50%, -50%); margin: 9% 0 0 9%; }
+.ks-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ks-wrap.zoomed { cursor: grab; }
+.ks-wrap.zoomed:active { cursor: grabbing; }
+
+/* поле: размытая миниатюра → общая карта → тайлы; пуговицы — когда видна карта */
+.ks-board { position: absolute; left: 0; top: 0; transform-origin: 0 0; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.6s ease; }
+.ks-board.moving { will-change: transform; }
+.ks-board.seen { opacity: 1; }
+.ks-board > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.ks-tiny { filter: blur(10px); transform: scale(1.04); }
+.ks-base { opacity: 0; transition: opacity 0.7s ease; }
+.ks-board.ready .ks-base { opacity: 1; }
+.ks-lv { position: absolute; inset: 0; pointer-events: none; }
+.ks-tile { position: absolute; display: block; opacity: 0; transition: opacity 0.35s ease; }
+.ks-tile.ok { opacity: 1; }
+.ks-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+
+/* пуговица: картинка с рельефом и светом (tools/hodilki/buttons.py), тень — здесь: растёт, когда пуговицу берут */
+.ks-token { position: absolute; z-index: 30; width: var(--tk, 3.2%); aspect-ratio: 1; transform: translate(-50%, -50%);
+  transition: left 0.18s ease, top 0.18s ease; }
+.ks-board:not(.ready) .ks-token { opacity: 0; }
+.ks-btn { position: absolute; inset: 0; background: center / 100% 100% no-repeat; border-radius: 50%;
+  filter: drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  transition: transform 0.18s ease, filter 0.18s ease; }
+.ks-token.lifted { z-index: 40; }
+.ks-token.lifted .ks-btn { transform: translate(-6%, -10%) scale(1.22);
+  filter: drop-shadow(4px 10px 6px rgba(0, 0, 0, 0.45)) drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.3)); }
+.ks-token.drag { transition: none; z-index: 45; }
+.ks-token.fly { transition: left 0.8s cubic-bezier(0.45, 0, 0.25, 1), top 0.8s cubic-bezier(0.45, 0, 0.25, 1); z-index: 45; }
+.ks-token.fly .ks-btn { transform: translate(-10%, -18%) scale(1.45); filter: drop-shadow(8px 16px 9px rgba(0, 0, 0, 0.4)); }
+/* чей ход — мягкое кольцо под пуговицей; своя (можно взять) — пульсирует */
+.ks-token::before { content: ''; position: absolute; inset: -22%; border-radius: 50%; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(circle, rgba(255, 220, 90, 0) 50%, rgba(255, 220, 90, 0.85) 58%, rgba(255, 220, 90, 0) 72%); }
+.ks-token.on::before { opacity: 1; }
+.ks-token.mine { cursor: grab; }
+.ks-token.mine::before { animation: ks-pulse 1.1s ease-in-out infinite; }
+@keyframes ks-pulse { 0%, 100% { transform: scale(0.92); opacity: 0.55; } 50% { transform: scale(1.12); opacity: 1; } }
+
+/* шаги и клетка назначения */
+.ks-trail { fill: none; stroke: rgba(255, 250, 225, 0.85); stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+.ks-stepdot { fill: rgba(255, 252, 235, 0.92); stroke: rgba(60, 40, 10, 0.6); stroke-width: 2; }
+.ks-stepnum { fill: #3a2808; font-weight: 700; font-family: system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+.ks-goal { fill: rgba(255, 215, 70, 0.25); stroke: #ffd24a; animation: ks-goal 1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ks-goalnum { fill: #fff; stroke: #3a2808; stroke-width: 6; paint-order: stroke; font-weight: 800; font-family: system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+@keyframes ks-goal { 0%, 100% { transform: scale(0.94); } 50% { transform: scale(1.06); } }
+
+/* надпись знака */
+.ks-note { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 50; padding: 6px 14px; border-radius: 18px;
+  font-weight: 700; color: #fff; background: rgba(20, 30, 50, 0.85); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); white-space: nowrap; pointer-events: none;
+  max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
+.ks-note.good { background: rgba(30, 110, 50, 0.9); }
+.ks-note.bad { background: rgba(140, 35, 25, 0.9); }
+
+/* кнопки вида — внизу справа, с подписями */
+.ks-cam { position: absolute; right: 10px; bottom: 8px; z-index: 50; display: flex; gap: 6px; align-items: center; }
+.ks-cb { height: 36px; min-width: 36px; padding: 0 12px 0 10px; border-radius: 18px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font: 600 14px/1 'PT Sans', system-ui, sans-serif; color: #2a2010; background: rgba(255, 250, 235, 0.94); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); white-space: nowrap; }
+.ks-cb b { font-size: 17px; line-height: 1; }
+.ks-cb:hover { background: #fff; }
+.ks-zoom { display: inline-flex; border-radius: 18px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.ks-zoom .ks-cb { box-shadow: none; padding: 0; justify-content: center; width: 40px; }
+.ks-zoom .ks-cb:first-child { border-radius: 18px 0 0 18px; border-right: 1px solid rgba(60, 40, 10, 0.2); }
+.ks-zoom .ks-cb:last-child { border-radius: 0 18px 18px 0; }
+.ks-follow b { color: #9a8a70; font-size: 12px; }
+.ks-follow.on { box-shadow: 0 0 0 2px #ffd24a, 0 2px 8px rgba(0, 0, 0, 0.45); }
+.ks-follow.on b { color: #d8241c; }
+
+/* миникарта при зуме */
+.ks-mini { position: absolute; left: 10px; bottom: 10px; z-index: 50; width: min(200px, 28%); border-radius: 4px; overflow: hidden; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(255, 250, 235, 0.85); }
+.ks-mini > img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.ks-mini-vp { position: absolute; border: 2px solid #ffd24a; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.28); border-radius: 2px; pointer-events: none; transition: none; }
+.ks-mini-dot { position: absolute; width: 9px; height: 9px; transform: translate(-50%, -50%); background: center / 100% 100%; border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); pointer-events: none; }
+.ks-mini-dot.on { width: 12px; height: 12px; box-shadow: 0 0 0 2px #ffd24a, 0 1px 2px rgba(0, 0, 0, 0.7); }
+
+.ks-panel { display: flex; flex-direction: column; gap: 8px; }
+.ks-tray { height: 104px; }
+.ks-roll { width: 100%; font-size: 17px; }
+@media (max-width: 700px) {
+  .ks-cam { gap: 4px; }
+  .ks-cb { height: 34px; padding: 0; width: 38px; justify-content: center; }
+  .ks-cb span { display: none; }
+  .ks-hint { display: none; }
+}
+/* телефон: стол по высоте карты (плюс панель вида), без пустого места */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .table--hodilki .table-main { height: min(calc(64vw + 64px), 75vh); }
+}

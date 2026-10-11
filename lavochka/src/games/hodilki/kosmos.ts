@@ -23,7 +23,7 @@ const SIGNS: Record<string, string> = {
 const K = 3131 / 2000;
 const YS = [22, 145, 268, 390, 512, 635, 757, 880, 1002, 1125, 1250];
 const XS = [22, 225, 415, 610, 805, 1000, 1200, 1395, 1590, 1790, 1985];
-const IMG = { w: 3131, h: 2000, url: '/hodilki/kosmos.webp' };
+const IMG = { w: 3131, h: 2000, dir: '/hodilki/kosmos', src: [3131, 2000] as [number, number], levels: 1 };
 
 const CELLS = snake({ signs: SIGNS, xs: XS, ys: YS, k: K, cols: (row) => [1, row >= 9 ? 7 : 10] });
 

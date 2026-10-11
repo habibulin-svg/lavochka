@@ -28,7 +28,7 @@ const CELLS = snake({ signs: SIGNS, xs: XS, ys: YS, cols: (row) => (row === 1 ? 
 export const board: Board = {
   id: 'put',
   title: 'Путешествие',
-  img: { w: 3131, h: 2002, url: '/hodilki/put.webp' },
+  img: { w: 3131, h: 2002, dir: '/hodilki/put', src: [3131, 2002], levels: 1 },
   cells: CELLS,
   token: 0.034,
   goal: 'Первым оказаться на борту космического корабля — он в верхнем ряду, рядом с заголовком.',
