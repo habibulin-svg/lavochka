@@ -117,6 +117,7 @@ class HoldemView implements GameView<View, Event> {
   private applyView() {
     this.cs.wrap.classList.toggle('hd-3d', this.mode === 'tilt');
     this.cs.wrap.classList.toggle('hd-webgl', this.is3d);
+    this.cs.wrap.classList.toggle('hd-seatview', this.mode === 'seat');
     this.cs.setTilt(this.mode === 'tilt' ? 'translate(70px, 40px) scale(0.86) rotateX(24deg)' : '');
     if (this.gl && this.is3d) this.gl.setMode(this.mode as CamMode);
     if (this.is3d && !this.gl && !this.glLoading) {
@@ -202,8 +203,9 @@ class HoldemView implements GameView<View, Event> {
       // в 3D карты чуть развёрнуты к центру, но читаются со своего места
       const face = g ? (Math.atan2(C.x - a.x, Math.abs(C.y - a.y) + 120) * 90) / Math.PI : 0;
       cards.forEach((c, i) => {
-        const s = me ? (g ? 0.8 : 0.86) : g ? 0.56 : 0.5;
-        const x = a.x + toward.x + (i - 0.5) * (me ? 64 : g ? 34 : 30);
+        // в 3D у всех карты одного размера с общими
+        const s = me ? (g ? 0.96 : 0.86) : g ? 0.96 : 0.5;
+        const x = a.x + toward.x + (i - 0.5) * (me ? 64 : g ? 48 : 30);
         const y = a.y + toward.y - (me && !g ? 40 : 0);
         const r = face + (i - 0.5) * (me ? 8 : 12);
         items.push(c ? { key: cardKey(c), card: c, x, y, r, s, z: (me ? 100 : 50) + i } : { key: `b:${seat}:${i}`, card: null, x, y, r, s, z: 50 + i });
@@ -267,9 +269,9 @@ class HoldemView implements GameView<View, Event> {
       g3.setSeats(v.seats.map((seat) => ({ seat, ...this.anchor(v, seat), me: seat === this.viewer, out: v.chips[seat] <= 0 && !v.inHand.includes(seat) })));
       g3.setFocus(v.phase !== 'over' ? v.turn : null);
       g3.setHand(this.mode === 'seat' ? this.myCards(v) : null);
-      g3.setBoard(v.board, potAll);
+      g3.setBoard(v.board, potAll, `блайнды ${v.big / 2}/${v.big}`);
       g3.set(
-        items.map((it) => ({ key: it.key, card: it.card, x: it.x, y: it.y, r: it.r, s: it.s })),
+        items.map((it, i) => ({ key: it.key, card: it.card, x: it.x, y: it.y, r: it.r, s: it.s, board: i < v.board.length })),
         chips,
         button,
         labels,

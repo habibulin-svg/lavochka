@@ -26,6 +26,8 @@ export interface Item3D {
   /** Поворот в плоскости стола, градусы. */
   r: number;
   s: number;
+  /** Общая карта: в виде «за столом» с видео-людьми ложится перед тем, кого снимают. */
+  board?: boolean;
 }
 export interface Chips3D {
   key: string;
@@ -60,10 +62,18 @@ type Pt = { x: number; y: number };
 
 /** Угол обзора камеры (вид сверху и вид «за столом» без видео-людей). */
 const FOV = 47;
+/** Вид «как в Apple»: общие карты — на столько впереди снимаемого (от его линии стола), камера — на столько от него. */
+const STAGE_BOARD = 2.8;
+const STAGE_CAM = 12.5;
+/** Ближе к камере (по полу) — карты и фишки прячем. */
+const STAGE_HIDE = 3.6;
+
 const CX = 500;
 const CY = 320;
-const FELT_RX = 4.75;
-const FELT_RZ = 2.95;
+/** Стол крупнее раскладки (карты и фишки — прежнего размера): просторнее, как у Apple. */
+const K = 1.5;
+const FELT_RX = 4.75 * K;
+const FELT_RZ = 2.95 * K;
 /** Ширина деревянного канта между сукном и кожей. */
 const RACE = 0.32;
 const RAIL_W = 0.78;
@@ -76,7 +86,7 @@ const CARD_T = 0.014;
 const CHIP_R = 0.2;
 const CHIP_H = 0.055;
 
-const to3 = (x: number, y: number, h = 0) => new THREE.Vector3((x - CX) / 100, h, (y - CY) / 100);
+const to3 = (x: number, y: number, h = 0) => new THREE.Vector3(((x - CX) / 100) * K, h, ((y - CY) / 100) * K);
 
 /** Есть ли WebGL на этом устройстве. */
 export function webglOk(): boolean {
@@ -177,12 +187,21 @@ export class Table3D {
   private boardKey = '';
   /** Вид «за столом» как в Apple poker: в кадре один соперник, камера плавно перелетает к тому, чей ход. */
   private shot: number | null = null;
+  /** Вид «как в Apple poker»: кого снимаем (основание кадра у борта и направление к камере) — общие карты и банк
+   * кладём перед ним, как будто он напротив нас. null — обычная раскладка. */
+  private stage: { seat: number; base: THREE.Vector3; fwd: THREE.Vector3 } | null = null;
+  private lastItems: Item3D[] = [];
+  private lastPot: Chips3D | null = null;
+  /** Сукно с разметкой (рамка для общих карт, надписи) и без — для вида «как в Apple», где карты кладутся перед соперником. */
+  private feltMarked = feltTexture();
+  private feltPlain = feltTexture(true);
+  private feltMat!: THREE.MeshStandardMaterial;
   /** Крупье в кадре до этого момента (performance.now). */
   private dealerUntil = 0;
   /** Крупье стоит посередине дальнего края (там у игроков оставлено место). */
   private dealerPlace = (() => {
     const e = onEllipse(RIM_RX + 1.25, RIM_RZ + 1.25, -Math.PI / 2);
-    return { pos: e.p, face: Math.atan2(-e.n.x, -e.n.z) };
+    return { seat: DEALER, pos: e.p, face: Math.atan2(-e.n.x, -e.n.z) };
   })();
   /** Абажур: сверху он закрывает стол — в этом виде его нет. */
   private shade: THREE.Object3D | null = null;
@@ -260,7 +279,8 @@ export class Table3D {
     const uv = feltGeo.attributes.uv as THREE.BufferAttribute;
     const pos = feltGeo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) + FELT_RX) / (2 * FELT_RX), (pos.getY(i) + FELT_RZ) / (2 * FELT_RZ));
-    const felt = new THREE.Mesh(feltGeo, new THREE.MeshStandardMaterial({ map: feltTexture(), normalMap: normalOnly('fabric', [18, 11]), normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.97, metalness: 0 }));
+    this.feltMat = new THREE.MeshStandardMaterial({ map: this.feltMarked, normalMap: normalOnly('fabric', [18, 11]), normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.97, metalness: 0 });
+    const felt = new THREE.Mesh(feltGeo, this.feltMat);
     felt.rotation.x = -Math.PI / 2; // верх текстуры — дальний край стола
     felt.receiveShadow = true;
     // стол отбрасывает тень целиком — иначе тени фишек «проходят» сквозь сукно на пол
@@ -313,7 +333,7 @@ export class Table3D {
     sc.add(skirt);
     // ножки-тумбы
     const legM = new THREE.MeshPhysicalMaterial({ ...pbr('walnut', [2, 1]), color: '#7a4a38', roughness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.15 });
-    for (const x of [-2.6, 2.6]) {
+    for (const x of [-2.6 * K, 2.6 * K]) {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.9, -FLOOR - 1, 24), legM);
       leg.position.set(x, (FLOOR - 1) / 2, 0);
       leg.castShadow = true;
@@ -366,7 +386,7 @@ export class Table3D {
   private syncPeople() {
     if (!this.people) return;
     const list = [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me && (this.mode === 'seat' || this.videoPeople), out: p.out, curve: railCurve(p.a) }));
-    if (this.videoPeople && this.places.size) list.push({ seat: DEALER, ...this.dealerPlace, hidden: false, out: false, curve: railCurve(-Math.PI / 2) });
+    if (this.videoPeople && this.places.size) list.push({ ...this.dealerPlace, hidden: false, out: false, curve: railCurve(-Math.PI / 2) });
     this.people.sync(list, this.lookTarget());
   }
 
@@ -513,17 +533,19 @@ export class Table3D {
   private drawHand() {
     this.hand.hidden = this.mode !== 'seat';
     this.board.hidden = this.mode !== 'seat' || !this.boardKey;
+    // общие карты лежат на столе в кадре — в полоске только банк
+    this.board.classList.toggle('hd-board-pot-only', !!this.stage);
   }
 
   /** Общие карты и банк внизу экрана (вид «за столом»). */
-  setBoard(cards: Card[], pot: number) {
-    const key = cards.length || pot ? cards.map((c) => c.s + c.r).join(',') + '|' + pot + '|' + this.deck : '';
+  setBoard(cards: Card[], pot: number, note = '') {
+    const key = cards.length || pot ? cards.map((c) => c.s + c.r).join(',') + '|' + pot + '|' + this.deck + '|' + note : '';
     if (key === this.boardKey) return;
     const had = this.boardKey.split('|')[0].split(',').filter(Boolean).length;
     this.boardKey = key;
     this.board.innerHTML = key
       ? `<div class="hd-board-cards">${cards.map((c, i) => `<img class="hd-bcard${i >= had ? ' deal' : ''}" style="--i:${i - had}" src="${cardUrl(c, this.deck)}" alt="" draggable="false">`).join('')}</div>` +
-        (pot ? `<div class="hd-board-pot">банк ${pot}</div>` : '')
+        `<div class="hd-board-pot">${pot ? `банк ${pot}` : ''}${pot && note ? ' · ' : ''}${note ? `<small>${note}</small>` : ''}</div>`
       : '';
     this.drawHand();
   }
@@ -539,9 +561,10 @@ export class Table3D {
   set(items: Item3D[], chips: Chips3D[], button: Pt | null, labels: Label3D[], speed: number, enter: Pt | null = null, exit: Pt | null = null) {
     this.speed = speed;
     const seen = new Set<string>();
+    this.lastItems = items;
     items.forEach((it, i) => {
       seen.add(it.key);
-      const tg = this.cardTarget(it);
+      const tg = this.target(it);
       let m = this.cards.get(it.key);
       if (!m) {
         const mesh = new THREE.Mesh(this.cardGeo, []);
@@ -553,13 +576,13 @@ export class Table3D {
         // влетает рубашкой вверх и переворачивается на лету
         mesh.quaternion.copy(enter && it.card ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI)) : tg.quat);
         this.scene.add(mesh);
-        m = { obj: mesh, pos: tg.pos, quat: tg.quat, scale: it.s };
+        m = { obj: mesh, pos: tg.pos, quat: tg.quat, scale: tg.scale ?? it.s };
         mesh.scale.setScalar(it.s * (enter ? 0.85 : 1));
         this.cards.set(it.key, m);
       } else {
         m.pos = tg.pos;
         m.quat = tg.quat;
-        m.scale = it.s;
+        m.scale = tg.scale ?? it.s;
         const now = (m.obj.userData.card as Card | null) ?? null;
         if (JSON.stringify(now) !== JSON.stringify(it.card)) {
           // вскрытие: переворот через ребро
@@ -580,10 +603,11 @@ export class Table3D {
     }
     // фишки
     const cseen = new Set<string>();
+    this.lastPot = chips.find((c) => c.key === 'pot') ?? null;
     for (const c of chips) {
       cseen.add(c.key);
       let m = this.chips.get(c.key);
-      const target = to3(c.x, c.y, 0.02);
+      const target = this.chipTarget(c);
       if (!m) {
         const g = new THREE.Group();
         g.position.copy(target);
@@ -600,13 +624,14 @@ export class Table3D {
     for (const [k, m] of [...this.chips]) {
       if (cseen.has(k)) continue;
       this.chips.delete(k);
-      // ставки уходят в банк
-      m.pos = to3(CX, CY + 125, 0.02);
+      // ставки уходят в банк (в виде «как в Apple» — к банку в кадре)
+      m.pos = this.chipTarget({ key: 'pot', x: CX, y: CY + 125, amount: 0 });
       m.dying = 0.45;
       this.dying.push(m);
     }
     // баттон
     this.button.obj.visible = !!button;
+    this.button.obj.userData.on = !!button;
     if (button) {
       this.button.pos = to3(button.x, button.y, 0.065);
       if (!this.button.obj.userData.placed) {
@@ -695,23 +720,34 @@ export class Table3D {
     if (this.shade) this.shade.visible = this.mode === 'seat' && a > 0.9;
     this.fovGoal = FOV;
     const shot = this.mode === 'seat' ? this.pickShot() : null;
+    const was = this.stage;
+    this.stage = null;
     if (shot) {
-      // соперник крупно: камера на уровне глаз, недалеко за серединой стола (так перелёт не задевает сидящих у борта),
-      // а крупность — зумом; валик закрывает соперникам пояс
+      // как в Apple poker: соперник в верхней трети, под ним сукно с банком и общими картами (они кладутся перед ним),
+      // камера — там, где сидели бы мы напротив него
       const fwd = new THREE.Vector3(Math.sin(shot.face), 0, Math.cos(shot.face));
       const base = shot.pos.clone().addScaledVector(fwd, 1.94).setY(0);
-      const D = Math.max(5.6, base.length() + 2.4);
-      // по высоте — от сукна до макушки с запасом; узкий экран — ещё и по ширине (локти могут чуть выйти за край)
-      const H = Math.max(6.4, 4.6 / Math.max(a, 0.1));
-      this.fovGoal = THREE.MathUtils.clamp((2 * Math.atan(H / 2 / D) * 180) / Math.PI, 30, 75);
-      this.camGoal.look.copy(base).setY(1.45);
-      this.camGoal.pos.copy(base).addScaledVector(fwd, D).setY(2.75);
+      this.stage = { seat: shot.seat, base, fwd };
+      const D = STAGE_CAM;
+      const hCam = 6.2;
+      // по вертикали: от макушки соперника до сукна чуть ближе общих карт
+      const aHead = Math.atan2(hCam - 4.3, D);
+      // снизу — запас под свои карты в углу экрана
+      const aLow = Math.atan2(hCam, D - STAGE_BOARD - 2.6);
+      const pitch = (aHead + aLow) / 2;
+      let vfov = (aLow - aHead) * 1.08;
+      // узкий экран: по ширине должен влезть соперник (локти могут чуть выйти за край)
+      const hfov = 2 * Math.atan(5.0 / 2 / D);
+      vfov = Math.max(vfov, 2 * Math.atan(Math.tan(hfov / 2) / Math.max(a, 0.1)));
+      this.fovGoal = THREE.MathUtils.clamp((vfov * 180) / Math.PI, 30, 80);
+      this.camGoal.pos.copy(base).addScaledVector(fwd, D).setY(hCam);
+      this.camGoal.look.copy(this.camGoal.pos).addScaledVector(fwd, -Math.cos(pitch) * 6).add(new THREE.Vector3(0, -Math.sin(pitch) * 6, 0));
     } else if (this.mode === 'seat') {
       // узкий экран — смотрим круче, чтобы стол был виден целиком хотя бы по глубине
       const narrow = Math.min(1, Math.max(0, (1.5 - a) / 0.9));
       const pitch = THREE.MathUtils.degToRad(25 + 18 * narrow);
       // по ширине должен влезть стол с соперниками (±W), но не дальше разумного
-      const W = 7.2;
+      const W = 7.2 * K;
       const dist = THREE.MathUtils.clamp(W / (half * a), 8.4, 15.5);
       // чуть поворачиваемся к тому, чей ход
       let yaw = 0;
@@ -723,13 +759,23 @@ export class Table3D {
       this.camGoal.pos.copy(look).addScaledVector(dir, dist);
     } else {
       const pitch = THREE.MathUtils.degToRad(68);
-      const W = 7.6;
-      const D = 6.4;
+      const W = 7.6 * K;
+      const D = 6.4 * K;
       const dist = Math.max(W / (half * a), D / half) + 2;
       const look = new THREE.Vector3(0, 0, 0.3);
       this.camGoal.look.copy(look);
       this.camGoal.pos.copy(look).add(new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(dist));
     }
+    if (!!was !== !!this.stage || (was && this.stage && !was.base.equals(this.stage.base))) this.restage();
+    // «как в Apple»: в кадре только тот, кого снимаем
+    this.people?.only?.(this.stage && this.videoPeople ? this.stage.seat : null);
+    const plain = !!this.stage;
+    if ((this.feltMat.map === this.feltPlain) !== plain) {
+      this.feltMat.map = plain ? this.feltPlain : this.feltMarked;
+      this.feltMat.needsUpdate = true;
+    }
+    // и пустых чужих стульев в кадре нет
+    for (const p of this.places.values()) p.chair.visible = !(p.me && this.mode === 'seat') && (!this.stage || p.seat === this.stage.seat);
     if (!this.camInit) {
       this.camInit = true;
       this.camera.fov = this.fovGoal;
@@ -741,7 +787,7 @@ export class Table3D {
   }
 
   /** Кого снимать: того, чей ход; на своём ходу и между раздачами — кого снимали; сначала — того, кто напротив. */
-  private pickShot(): { pos: THREE.Vector3; face: number } | null {
+  private pickShot(): { seat: number; pos: THREE.Vector3; face: number } | null {
     const f = this.focus != null ? this.places.get(this.focus) : null;
     if (this.videoPeople && (performance.now() < this.dealerUntil || f?.me)) return this.dealerPlace;
     if (f && !f.me) this.shot = f.seat;
@@ -754,6 +800,65 @@ export class Table3D {
       this.shot = p?.seat ?? null;
     }
     return p ?? null;
+  }
+
+  /** Куда лечь карте: общие — перед тем, кого снимаем (в виде «как в Apple»), остальные — по раскладке. */
+  private target(it: Item3D): { pos: THREE.Vector3; quat: THREE.Quaternion; scale?: number } {
+    const st = this.stage;
+    if (!st || !it.board) return this.cardTarget(it);
+    const i = this.lastItems.filter((x) => x.board).indexOf(it);
+    // вправо — как видит камера (она смотрит против fwd)
+    const right = new THREE.Vector3(st.fwd.z, 0, -st.fwd.x);
+    const pos = st.base.clone().addScaledVector(st.fwd, STAGE_BOARD).addScaledVector(right, (i - 2) * CARD_W * it.s * 1.08).setY(0.02 + CARD_T / 2);
+    // читается с камеры: «верх» карты — от камеры
+    const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(st.fwd.x, st.fwd.z), 0, 'YXZ'));
+    return { pos, quat };
+  }
+
+  private chipTarget(c: Chips3D): THREE.Vector3 {
+    const st = this.stage;
+    if (st && c.key === 'pot') {
+      // вправо — как видит камера (она смотрит против fwd)
+    const right = new THREE.Vector3(st.fwd.z, 0, -st.fwd.x);
+      return st.base.clone().addScaledVector(st.fwd, 1.0).addScaledVector(right, 1.6).setY(0.02);
+    }
+    return to3(c.x, c.y, 0.02);
+  }
+
+  /** Чьё место ближе всего к точке на столе (крупье — тоже место). */
+  private owner(p: THREE.Vector3): number | null {
+    let best: number | null = null;
+    let bd = Infinity;
+    for (const pl of [...this.places.values(), this.dealerPlace]) {
+      const d = (pl.pos.x - p.x) ** 2 + (pl.pos.z - p.z) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = pl.seat;
+      }
+    }
+    return best;
+  }
+
+  /** Сменился кадр — общие карты и банк переезжают. */
+  private restage() {
+    for (const it of this.lastItems) {
+      if (!it.board) continue;
+      const m = this.cards.get(it.key);
+      if (!m) continue;
+      const tg = this.target(it);
+      m.pos = tg.pos;
+      m.quat = tg.quat;
+      m.scale = tg.scale ?? it.s;
+      // сразу на место: иначе карты пролетают через камеру, пока она перелетает
+      m.obj.position.copy(tg.pos);
+      m.obj.quaternion.copy(tg.quat);
+    }
+    const pot = this.chips.get('pot');
+    if (pot && this.lastPot) {
+      pot.pos = this.chipTarget(this.lastPot);
+      pot.obj.position.copy(pot.pos);
+    }
+    this.drawHand();
   }
 
   private applyCamera() {
@@ -807,6 +912,8 @@ export class Table3D {
           v = e.p.setY(RAIL_H + 0.1);
         } else v = to3(l.x, l.y, 0.4);
       } else v = to3(l.x, l.y, l.h ?? 0.15);
+      // «как в Apple»: подписи — только того, кого снимаем (табличка и его ставка)
+      if (this.stage && (Math.hypot(v.x - this.camPos.x, v.z - this.camPos.z) < STAGE_HIDE || (l.seat != null ? l.seat : this.owner(v)) !== this.stage.seat)) continue;
       const pr = v.project(this.camera);
       if (pr.z > 1) continue;
       // за столом: что не в кадре — не показываем (банк — в полоске внизу)
@@ -845,6 +952,14 @@ export class Table3D {
         moving = true;
       }
     };
+    // «как в Apple»: чужие карты и фишки у самой камеры не мельтешат в кадре
+    // и вообще на столе — только вещи снимаемого, общие карты и банк
+    const boardKeys = new Set(this.lastItems.filter((x) => x.board).map((x) => x.key));
+    const near = (o: THREE.Object3D) => !!this.stage && Math.hypot(o.position.x - this.camPos.x, o.position.z - this.camPos.z) < STAGE_HIDE;
+    const show = (o: THREE.Object3D, key: string) => !this.stage || boardKeys.has(key) || key === 'pot' || (!near(o) && this.owner(o.position) === this.stage.seat);
+    for (const [k, m] of this.cards) m.obj.visible = show(m.obj, k);
+    for (const [k, m] of this.chips) m.obj.visible = show(m.obj, k);
+    this.button.obj.visible = !!this.button.obj.userData.on && show(this.button.obj, 'button');
     for (const m of this.cards.values()) step(m);
     for (const m of this.chips.values()) step(m);
     step(this.button);

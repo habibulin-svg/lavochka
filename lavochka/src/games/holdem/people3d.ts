@@ -36,6 +36,8 @@ export interface People {
   gesture(seat: number, kind: Gesture, delay?: number): void;
   /** Насколько готовы (0..1): у всех, кого видно, уже играет ролик. Нет метода — готовы сразу. */
   ready?(): number;
+  /** Показывать только этого (вид «как в Apple»); null — всех. */
+  only?(seat: number | null): void;
   /** Действие крупье (есть только у людей-видео). */
   dealer?(act: DealerAct): void;
   head(seat: number): THREE.Vector3 | null;

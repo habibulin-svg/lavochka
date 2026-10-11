@@ -191,6 +191,8 @@ interface Person {
   /** Разовая реакция: играет, пока не кончится. */
   oneShot: boolean;
   pending: { clip: Clip; at: number } | null;
+  /** Виден в кадре «один на один» (0..1, плавно). */
+  solo: number;
   /** Ролики заказаны (только когда человека видно: себя не грузим). */
   asked: boolean;
   place: PersonPlace;
@@ -222,6 +224,7 @@ class VideoPeople implements People {
   private focus: number | null = null;
   private time = 0;
   private cam = new THREE.Vector3(0, 10, 12);
+  private solo: number | null = null;
 
   sync(list: PersonPlace[]) {
     const seen = new Set<number>();
@@ -265,7 +268,7 @@ class VideoPeople implements People {
     const mesh = new THREE.Mesh(frameGeometry(edge), mat);
     mesh.frustumCulled = false;
     this.group.add(mesh);
-    const p: Person = { seat: pl.seat, who, edge, mesh, mat, decks, cur: 0, fading: null, playing: null, oneShot: false, pending: null, asked: false, place: pl, shown: 0 };
+    const p: Person = { seat: pl.seat, who, edge, mesh, mat, decks, cur: 0, fading: null, playing: null, oneShot: false, pending: null, solo: 1, asked: false, place: pl, shown: 0 };
     this.list.set(pl.seat, p);
     return p;
   }
@@ -321,7 +324,12 @@ class VideoPeople implements People {
   ready(): number {
     const vis = [...this.list.values()].filter((p) => !p.place.hidden);
     if (!vis.length) return 0;
-    return vis.reduce((a, p) => a + (p.shown >= 1 ? 1 : ready.has(`${p.who}/idle`) ? 0.6 : 0.1), 0) / vis.length;
+    const live = (p: Person) => p.decks.some((d) => d.clip && d.el.readyState >= 2);
+    return vis.reduce((a, p) => a + (live(p) ? 1 : ready.has(`${p.who}/idle`) ? 0.6 : 0.1), 0) / vis.length;
+  }
+
+  only(seat: number | null) {
+    this.solo = seat;
   }
 
   dealer(act: DealerAct) {
@@ -442,7 +450,9 @@ class VideoPeople implements People {
       p.shown = Math.min(1, p.shown + (live ? dt * 2 : 0));
       // слишком близко к камере (она снимает кого-то через стол) — растворяется, чтобы не заслонять
       const near = THREE.MathUtils.smoothstep(this.cam.distanceTo(p.mesh.position), 2.6, 3.8);
-      p.mat.uniforms.fade.value = p.shown * near;
+      const solo = this.solo == null || this.solo === p.seat ? 1 : 0;
+      p.solo += (solo - p.solo) * Math.min(1, dt * 5);
+      p.mat.uniforms.fade.value = p.shown * near * p.solo;
       const dim = p.place.out ? 0.45 : 1;
       const br = p.mat.uniforms.bright as { value: number };
       br.value += (dim - br.value) * Math.min(1, dt * 3);

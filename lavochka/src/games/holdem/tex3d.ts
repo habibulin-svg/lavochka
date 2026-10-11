@@ -44,7 +44,8 @@ function speckle(g: CanvasRenderingContext2D, w: number, h: number, amount: numb
 // ---------------------------------------------------------------- сукно
 
 /** Сукно: ровный зелёный с ворсом, напечатанная линия ставок, рамка для общих карт и надпись. UV — эллипс стола в квадрат. */
-export function feltTexture(): THREE.Texture {
+/** plain — без разметки (только сукно). */
+export function feltTexture(plain = false): THREE.Texture {
   const W = 2048;
   const H = 1272;
   const map = canvasTex(W, H, (g) => {
@@ -55,6 +56,7 @@ export function feltTexture(): THREE.Texture {
     g.fillStyle = gr;
     g.fillRect(0, 0, W, H);
     speckle(g, W, H, 0.07, 160000, 7, 1.2);
+    if (plain) return;
     // линия ставок — овал внутри стола
     g.strokeStyle = 'rgba(255, 226, 150, 0.28)';
     g.lineWidth = 6;
