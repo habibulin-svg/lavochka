@@ -1,12 +1,21 @@
 /* Холдем — настоящий 3D-стол на three.js (грузится лениво, только в этом виде).
- * Координаты те же, что у плоской сцены (1000×720, центр 500×320): 100 точек = 1 единица, стол лежит в плоскости XZ.
- * Стол, карты и фишки — геометрия three.js: овальное сукно, кожаный борт, деревянная юбка, паркет; карты — тонкие пластинки
- * с картинками наших колод; фишки — стопки по номиналам. Подписи (имена, ставки, банк) — HTML поверх холста по проекции.
- * Перерисовка — только пока что-то движется. */
+ * Координаты раскладки те же, что у плоской сцены (1000×720, центр 500×320): 100 точек = 1 единица (≈25 см), стол — плоскость y = 0.
+ * Стол: сукно с печатью, лакированный деревянный кант, кожаный валик со строчкой, юбка; вокруг — комната 90-х (room3d.ts)
+ * и стулья с соперниками (people3d.ts). Карты — пластинки со скруглёнными углами и картинками наших колод; фишки — стопки
+ * по номиналам; баттон дилера. Подписи — HTML поверх холста по проекции.
+ * Камера: «за столом» (как сидишь на своём месте: соперники напротив, свои карты крупно в углу) или «сверху».
+ * Пока кто-то дышит за столом — рисуем ~30 кадров в секунду, пока что-то летит — каждый кадр. */
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { HDRI, normalOnly, onTextureLoad, pbr } from './pbr';
 import type { Card } from '../../cards/deck';
 import { cardUrl } from '../../cards/render';
 import type { DeckStyle } from '../../core/settings';
+import { bolsterProfile, cardGeometry, sweepEllipse } from './geo3d';
+import { buildRoom, makeChair, onRoomLoad, FLOOR } from './room3d';
+import { buttonTex, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
+import type { People, Gesture } from './people3d';
 
 export interface Item3D {
   key: string;
@@ -16,14 +25,14 @@ export interface Item3D {
   /** Поворот в плоскости стола, градусы. */
   r: number;
   s: number;
-  /** Своя карта: приподнять и наклонить к зрителю. */
-  lift?: boolean;
 }
 export interface Chips3D {
   key: string;
   x: number;
   y: number;
   amount: number;
+  /** Стопка игрока (его фишки) — столбиками в ряд; иначе ставка/банк — кучкой. */
+  bank?: boolean;
 }
 export interface Label3D {
   html: string;
@@ -34,20 +43,35 @@ export interface Label3D {
   h?: number;
   /** Свои CSS-переменные (цвет игрока). */
   style?: string;
+  /** Табличка игрока: в виде «за столом» висит над его головой, своя — внизу экрана. */
+  seat?: number;
 }
+export interface Seat3D {
+  seat: number;
+  /** Место игрока на раскладке (точки сцены 1000×720). */
+  x: number;
+  y: number;
+  me: boolean;
+  out: boolean;
+}
+export type CamMode = 'seat' | 'top';
 type Pt = { x: number; y: number };
 
 const CX = 500;
 const CY = 320;
 const FELT_RX = 4.75;
 const FELT_RZ = 2.95;
-const RIM_RX = 5.2;
-const RIM_RZ = 3.4;
+/** Ширина деревянного канта между сукном и кожей. */
+const RACE = 0.32;
+const RAIL_W = 0.78;
+const RAIL_H = 0.34;
+export const RIM_RX = FELT_RX + RACE + RAIL_W;
+export const RIM_RZ = FELT_RZ + RACE + RAIL_W;
 const CARD_W = 1;
 const CARD_H = 1.55;
-const CARD_T = 0.012;
-const CHIP_R = 0.15;
-const CHIP_H = 0.045;
+const CARD_T = 0.014;
+const CHIP_R = 0.2;
+const CHIP_H = 0.055;
 
 const to3 = (x: number, y: number, h = 0) => new THREE.Vector3((x - CX) / 100, h, (y - CY) / 100);
 
@@ -61,7 +85,7 @@ export function webglOk(): boolean {
   }
 }
 
-function ellipse(rx: number, rz: number, n = 96): THREE.Vector2[] {
+function ellipse(rx: number, rz: number, n = 128): THREE.Vector2[] {
   const pts: THREE.Vector2[] = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
@@ -70,150 +94,10 @@ function ellipse(rx: number, rz: number, n = 96): THREE.Vector2[] {
   return pts;
 }
 
-function canvasTex(w: number, h: number, paint: (g: CanvasRenderingContext2D) => void, repeat = 1): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  paint(c.getContext('2d')!);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  if (repeat !== 1) {
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(repeat, repeat);
-  }
-  return t;
-}
-
-/** Шум поверх заливки — ворс сукна, фактура кожи и дерева. */
-function noise(g: CanvasRenderingContext2D, w: number, h: number, amount: number, n = 9000) {
-  for (let i = 0; i < n; i++) {
-    const v = Math.random() < 0.5 ? 0 : 255;
-    g.fillStyle = `rgba(${v},${v},${v},${Math.random() * amount})`;
-    g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 1.5, 1 + Math.random() * 1.5);
-  }
-}
-
-const feltTex = () =>
-  canvasTex(1024, 640, (g) => {
-    const gr = g.createRadialGradient(512, 280, 40, 512, 320, 620);
-    gr.addColorStop(0, '#2f8650');
-    gr.addColorStop(0.6, '#1f6238');
-    gr.addColorStop(1, '#154a29');
-    g.fillStyle = gr;
-    g.fillRect(0, 0, 1024, 640);
-    noise(g, 1024, 640, 0.08, 40000);
-    // линия для общих карт
-    g.strokeStyle = 'rgba(255,230,160,0.22)';
-    g.lineWidth = 4;
-    g.beginPath();
-    g.roundRect(512 - 250, 320 - 120, 500, 150, 60);
-    g.stroke();
-    g.fillStyle = 'rgba(255,230,160,0.13)';
-    g.font = 'italic 34px Georgia, serif';
-    g.textAlign = 'center';
-    g.fillText('Вечером на лавочке', 512, 470);
-  });
-
-const leatherTex = () =>
-  canvasTex(512, 512, (g) => {
-    g.fillStyle = '#3a1a10';
-    g.fillRect(0, 0, 512, 512);
-    noise(g, 512, 512, 0.12, 20000);
-  });
-
-const woodTex = (base: string, line: string, rep = 1) =>
-  canvasTex(
-    512,
-    512,
-    (g) => {
-      g.fillStyle = base;
-      g.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 70; i++) {
-        g.strokeStyle = line;
-        g.globalAlpha = 0.15 + Math.random() * 0.25;
-        g.lineWidth = 1 + Math.random() * 3;
-        g.beginPath();
-        const y = Math.random() * 512;
-        g.moveTo(0, y);
-        for (let x = 0; x <= 512; x += 32) g.lineTo(x, y + Math.sin(x / 60 + i) * 6);
-        g.stroke();
-      }
-      g.globalAlpha = 1;
-      noise(g, 512, 512, 0.06, 8000);
-    },
-    rep
-  );
-
-const parquetTex = () =>
-  canvasTex(
-    512,
-    512,
-    (g) => {
-      const tones = ['#5a3a22', '#4e321c', '#634127', '#553620'];
-      for (let r = 0; r < 8; r++)
-        for (let c = 0; c < 4; c++) {
-          const horiz = (r + c) % 2 === 0;
-          g.fillStyle = tones[(r * 3 + c) % tones.length];
-          g.fillRect(c * 128, r * 64, 128, 64);
-          g.strokeStyle = 'rgba(0,0,0,0.35)';
-          g.strokeRect(c * 128 + 0.5, r * 64 + 0.5, 127, 63);
-          g.strokeStyle = 'rgba(255,220,170,0.06)';
-          for (let k = 0; k < 6; k++) {
-            g.beginPath();
-            if (horiz) {
-              g.moveTo(c * 128, r * 64 + 8 + k * 9);
-              g.lineTo(c * 128 + 128, r * 64 + 10 + k * 9);
-            } else {
-              g.moveTo(c * 128 + 10 + k * 20, r * 64);
-              g.lineTo(c * 128 + 12 + k * 20, r * 64 + 64);
-            }
-            g.stroke();
-          }
-        }
-      noise(g, 512, 512, 0.05, 6000);
-    },
-    6
-  );
-
-/** Номиналы фишек: цвет и кант. */
-const CHIP_KINDS = [
-  { v: 500, color: '#6a2a9a', edge: '#f3e6ff' },
-  { v: 100, color: '#1b1b1b', edge: '#f1f1f1' },
-  { v: 25, color: '#2a8a3e', edge: '#f4fff0' },
-  { v: 5, color: '#c0281e', edge: '#fff2ee' },
-];
-
-function chipMats(kind: (typeof CHIP_KINDS)[number]): THREE.Material[] {
-  const side = canvasTex(256, 32, (g) => {
-    g.fillStyle = kind.color;
-    g.fillRect(0, 0, 256, 32);
-    g.fillStyle = kind.edge;
-    for (let i = 0; i < 8; i++) g.fillRect(i * 32 + 6, 0, 14, 32);
-  });
-  const top = canvasTex(128, 128, (g) => {
-    g.fillStyle = kind.color;
-    g.beginPath();
-    g.arc(64, 64, 64, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = kind.edge;
-    g.lineWidth = 10;
-    g.setLineDash([16, 12]);
-    g.beginPath();
-    g.arc(64, 64, 56, 0, Math.PI * 2);
-    g.stroke();
-    g.setLineDash([]);
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(64, 64, 34, 0, Math.PI * 2);
-    g.stroke();
-    g.fillStyle = kind.edge;
-    g.font = 'bold 30px Arial';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(String(kind.v), 64, 66);
-  });
-  const m = (t: THREE.Texture) => new THREE.MeshStandardMaterial({ map: t, roughness: 0.45, metalness: 0.05 });
-  return [m(side), m(top), m(top)];
+/** Точка на эллипсе по параметру и нормаль наружу. */
+function onEllipse(rx: number, rz: number, a: number): { p: THREE.Vector3; n: THREE.Vector3 } {
+  const n = new THREE.Vector3(Math.cos(a) * rz, 0, Math.sin(a) * rx).normalize();
+  return { p: new THREE.Vector3(Math.cos(a) * rx, 0, Math.sin(a) * rz), n };
 }
 
 interface Moving {
@@ -225,136 +109,283 @@ interface Moving {
   dying?: number;
 }
 
+interface SeatPlace {
+  seat: number;
+  /** Параметр на эллипсе стола. */
+  a: number;
+  me: boolean;
+  out: boolean;
+  chair: THREE.Group;
+  /** Где сидит (на полу под стулом), куда смотрит. */
+  pos: THREE.Vector3;
+  face: number;
+}
+
 export class Table3D {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(40, 1.4, 0.1, 100);
+  private camera = new THREE.PerspectiveCamera(47, 1.4, 0.1, 80);
   private labels: HTMLElement;
+  private hand: HTMLElement;
   private cards = new Map<string, Moving>();
-  private chips = new Map<string, Moving & { amount: number }>();
+  private chips = new Map<string, Moving & { amount: number; bank: boolean }>();
   private button: Moving;
   private dying: Moving[] = [];
   private tex = new Map<string, THREE.Texture>();
   private loader = new THREE.TextureLoader();
-  private cardGeo = new THREE.BoxGeometry(CARD_W, CARD_T, CARD_H);
-  private edgeMat = new THREE.MeshStandardMaterial({ color: '#efe8d8', roughness: 0.8 });
-  private chipGeo = new THREE.CylinderGeometry(CHIP_R, CHIP_R, CHIP_H, 40);
+  private cardGeo = cardGeometry(CARD_W, CARD_H, CARD_T, 0.07);
+  private edgeMat = new THREE.MeshStandardMaterial({ color: '#f3eee2', roughness: 0.7 });
+  private chipGeo = new THREE.CylinderGeometry(CHIP_R, CHIP_R, CHIP_H, 48);
   private chipMat = new Map<number, THREE.Material[]>();
   private ro: ResizeObserver;
   private raf = 0;
   private last = 0;
+  private lastDraw = 0;
   private speed = 1;
   private labelData: Label3D[] = [];
   private disposed = false;
+  private mode: CamMode = 'seat';
+  private places = new Map<number, SeatPlace>();
+  private focus: number | null = null;
+  /** Камера плавно едет к цели. */
+  private camPos = new THREE.Vector3();
+  private camLook = new THREE.Vector3();
+  private camGoal = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
+  private camInit = false;
+  private people: People | null = null;
+  private peopleLoading = false;
+  private handKey = '';
+  /** Абажур: сверху он закрывает стол — в этом виде его нет. */
+  private shade: THREE.Object3D | null = null;
 
   constructor(
     private readonly host: HTMLElement,
     private deck: DeckStyle
   ) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const mobile = Math.min(window.innerWidth, window.innerHeight) < 600;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.domElement.className = 'hd-gl-canvas';
     host.appendChild(this.renderer.domElement);
     this.labels = document.createElement('div');
     this.labels.className = 'hd-gl-labels';
     host.appendChild(this.labels);
+    this.hand = document.createElement('div');
+    this.hand.className = 'hd-hand';
+    host.appendChild(this.hand);
     this.build();
     this.button = this.makeButton();
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(host);
     this.resize();
+    this.loadPeople();
   }
 
   // ---------------------------------------------------------------- стол
 
   private build() {
     const sc = this.scene;
-    sc.background = new THREE.Color('#120c08');
-    sc.fog = new THREE.Fog('#120c08', 14, 30);
-    sc.add(new THREE.HemisphereLight('#ffe9c8', '#2a1a10', 0.55));
-    // лампа над столом
-    const lamp = new THREE.SpotLight('#ffe2b0', 60, 20, 0.85, 0.55, 1.6);
-    lamp.position.set(0, 7.5, 0.6);
-    lamp.target.position.set(0, 0, 0.3);
-    lamp.castShadow = true;
-    lamp.shadow.mapSize.set(2048, 2048);
-    lamp.shadow.bias = -0.0004;
-    lamp.shadow.radius = 4;
-    sc.add(lamp, lamp.target);
-    const fill = new THREE.DirectionalLight('#9fb4ff', 0.25);
-    fill.position.set(-6, 5, 8);
-    sc.add(fill);
+    sc.background = new THREE.Color('#1a120c');
+    onTextureLoad(() => this.kick());
+    onRoomLoad(() => this.kick());
+    // отражения на лаке, фишках и картах: сначала простая комната, потом — снимок настоящего интерьера (HDRI)
+    const pm = new THREE.PMREMGenerator(this.renderer);
+    sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    sc.environmentIntensity = 0.25;
+    new RGBELoader().load(HDRI, (hdr) => {
+      if (this.disposed) return;
+      hdr.mapping = THREE.EquirectangularReflectionMapping;
+      const env = pm.fromEquirectangular(hdr).texture;
+      hdr.dispose();
+      pm.dispose();
+      sc.environment = env;
+      sc.environmentIntensity = 0.35;
+      this.kick();
+    });
+    sc.add(new THREE.HemisphereLight('#ffe2b8', '#2a1a10', 0.12));
+    const room = buildRoom();
+    sc.add(room.group);
+    this.shade = room.shade;
 
-    const flat = (pts: THREE.Vector2[], holes: THREE.Vector2[][] = []) => {
-      const shape = new THREE.Shape(pts);
-      for (const h of holes) shape.holes.push(new THREE.Path(h));
-      return shape;
-    };
     // сукно
-    const feltGeo = new THREE.ShapeGeometry(flat(ellipse(FELT_RX, FELT_RZ)), 64);
-    // UV под текстуру сукна: от -RX..RX, -RZ..RZ
+    const flat = (pts: THREE.Vector2[]) => new THREE.Shape(pts);
+    const feltGeo = new THREE.ShapeGeometry(flat(ellipse(FELT_RX + 0.02, FELT_RZ + 0.02)), 64);
     const uv = feltGeo.attributes.uv as THREE.BufferAttribute;
     const pos = feltGeo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) + FELT_RX) / (2 * FELT_RX), (pos.getY(i) + FELT_RZ) / (2 * FELT_RZ));
-    const felt = new THREE.Mesh(feltGeo, new THREE.MeshStandardMaterial({ map: feltTex(), roughness: 0.95 }));
+    const felt = new THREE.Mesh(feltGeo, new THREE.MeshStandardMaterial({ map: feltTexture(), normalMap: normalOnly('fabric', [18, 11]), normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.97, metalness: 0 }));
     felt.rotation.x = -Math.PI / 2; // верх текстуры — дальний край стола
     felt.receiveShadow = true;
+    // стол отбрасывает тень целиком — иначе тени фишек «проходят» сквозь сукно на пол
+    felt.castShadow = true;
     sc.add(felt);
-    // кожаный борт
-    const rimGeo = new THREE.ExtrudeGeometry(flat(ellipse(RIM_RX, RIM_RZ), [ellipse(FELT_RX, FELT_RZ).reverse()]), {
-      depth: 0.16,
-      bevelEnabled: true,
-      bevelThickness: 0.1,
-      bevelSize: 0.12,
-      bevelSegments: 6,
-      curveSegments: 96,
-    });
-    const rim = new THREE.Mesh(rimGeo, new THREE.MeshStandardMaterial({ map: leatherTex(), roughness: 0.55, color: '#8a4a30' }));
-    rim.rotation.x = -Math.PI / 2;
-    rim.position.y = -0.06;
-    rim.castShadow = true;
-    rim.receiveShadow = true;
-    sc.add(rim);
-    // деревянная юбка
-    const skirtGeo = new THREE.ExtrudeGeometry(flat(ellipse(RIM_RX + 0.05, RIM_RZ + 0.05)), { depth: 0.55, bevelEnabled: false, curveSegments: 96 });
-    const skirt = new THREE.Mesh(skirtGeo, new THREE.MeshStandardMaterial({ map: woodTex('#5a2e14', '#2a1206'), roughness: 0.5 }));
-    skirt.rotation.x = -Math.PI / 2;
-    skirt.position.y = -0.62;
+    // деревянный лакированный кант
+    const race = new THREE.Mesh(
+      sweepEllipse(
+        FELT_RX,
+        FELT_RZ,
+        [
+          [0, -0.01],
+          [0.02, 0.025],
+          [RACE * 0.5, 0.04],
+          [RACE, 0.03],
+        ],
+        14
+      ),
+      new THREE.MeshPhysicalMaterial({ ...pbr('walnut', [16, 0.25]), color: '#c08060', roughness: 0.6, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide })
+    );
+    race.receiveShadow = true;
+    race.castShadow = true;
+    sc.add(race);
+    // кожаный валик
+    const rail = new THREE.Mesh(
+      sweepEllipse(FELT_RX, FELT_RZ, bolsterProfile(RACE - 0.01, RAIL_W, RAIL_H, 0.02), 24),
+      new THREE.MeshPhysicalMaterial({ ...pbr('leather', [30, 1]), color: '#7a5048', roughness: 0.85, clearcoat: 0.3, clearcoatRoughness: 0.4, sheen: 0.25, sheenColor: new THREE.Color('#8a5a40'), side: THREE.DoubleSide })
+    );
+    rail.castShadow = true;
+    rail.receiveShadow = true;
+    sc.add(rail);
+    // юбка стола
+    const skirt = new THREE.Mesh(
+      sweepEllipse(
+        RIM_RX - 0.02,
+        RIM_RZ - 0.02,
+        [
+          [-0.05, -0.22],
+          [0, -0.28],
+          [0, -0.8],
+          [-0.15, -0.95],
+          [-1.2, -0.98],
+        ],
+        30
+      ),
+      new THREE.MeshPhysicalMaterial({ ...pbr('walnut', [14, 0.6]), color: '#9a6048', roughness: 0.7, clearcoat: 0.7, clearcoatRoughness: 0.12, side: THREE.DoubleSide })
+    );
     skirt.receiveShadow = true;
+    skirt.castShadow = true;
     sc.add(skirt);
-    // ножка и пол
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.2, 2.2, 32), new THREE.MeshStandardMaterial({ map: woodTex('#3e1e0c', '#1a0a04'), roughness: 0.6 }));
-    leg.position.y = -1.7;
-    sc.add(leg);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ map: parquetTex(), roughness: 0.8 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -2.8;
-    floor.receiveShadow = true;
-    sc.add(floor);
+    // ножки-тумбы
+    const legM = new THREE.MeshPhysicalMaterial({ ...pbr('walnut', [2, 1]), color: '#7a4a38', roughness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.15 });
+    for (const x of [-2.6, 2.6]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.9, -FLOOR - 1, 24), legM);
+      leg.position.set(x, (FLOOR - 1) / 2, 0);
+      leg.castShadow = true;
+      sc.add(leg);
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.25, 32), legM);
+      foot.position.set(x, FLOOR + 0.12, 0);
+      foot.receiveShadow = true;
+      sc.add(foot);
+    }
   }
 
   private makeButton(): Moving {
-    const t = canvasTex(128, 128, (g) => {
-      g.fillStyle = '#f8f4e8';
-      g.fillRect(0, 0, 128, 128);
-      g.fillStyle = '#2a1a0a';
-      g.font = 'bold 72px Georgia, serif';
-      g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.fillText('D', 64, 70);
-    });
-    const side = new THREE.MeshStandardMaterial({ color: '#e8e0cc', roughness: 0.5 });
-    const top = new THREE.MeshStandardMaterial({ map: t, roughness: 0.4 });
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.07, 40), [side, top, top]);
+    const t = buttonTex();
+    const side = new THREE.MeshPhysicalMaterial({ color: '#efe8d4', roughness: 0.35, clearcoat: 0.6 });
+    const top = new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.35, clearcoat: 0.6 });
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.09, 48), [side, top, top]);
     m.castShadow = true;
     m.visible = false;
     this.scene.add(m);
     return { obj: m, pos: m.position.clone(), quat: m.quaternion.clone(), scale: 1 };
+  }
+
+  // ---------------------------------------------------------------- люди
+
+  private loadPeople() {
+    if (this.peopleLoading) return;
+    this.peopleLoading = true;
+    import('./people3d')
+      .then((m) => m.loadPeople())
+      .then((p) => {
+        if (this.disposed || !p) return;
+        this.people = p;
+        this.scene.add(p.group);
+        this.syncPeople();
+        this.kick();
+      })
+      .catch((e) => console.warn('холдем: персонажи не загрузились', e));
+  }
+
+  private syncPeople() {
+    if (!this.people) return;
+    this.people.sync(
+      [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me && this.mode === 'seat', out: p.out })),
+      this.lookTarget()
+    );
+  }
+
+  /** Куда смотрят сидящие: на того, чей ход, иначе — на середину стола. */
+  private lookTarget(): THREE.Vector3 {
+    const p = this.focus != null ? this.places.get(this.focus) : null;
+    return p ? p.pos.clone().setY(2.2) : new THREE.Vector3(0, 0, 0);
+  }
+
+  // ---------------------------------------------------------------- места
+
+  /** Расставить стулья по местам игроков. */
+  setSeats(list: Seat3D[]) {
+    const seen = new Set<number>();
+    for (const s of list) {
+      seen.add(s.seat);
+      // параметр на эллипсе раскладки (410×250 вокруг центра)
+      const a = Math.atan2((s.y - CY) / 250, (s.x - CX) / 410);
+      let p = this.places.get(s.seat);
+      if (!p) {
+        const chair = makeChair();
+        this.scene.add(chair);
+        p = { seat: s.seat, a, me: s.me, out: s.out, chair, pos: new THREE.Vector3(), face: 0 };
+        this.places.set(s.seat, p);
+      }
+      p.a = a;
+      p.me = s.me;
+      p.out = s.out;
+      const e = onEllipse(RIM_RX + 1.25, RIM_RZ + 1.25, a);
+      p.pos.copy(e.p);
+      p.face = Math.atan2(-e.n.x, -e.n.z);
+      p.chair.position.copy(e.p).setY(0);
+      // спинка стула (+z стула) — от стола
+      p.chair.rotation.y = p.face + Math.PI;
+      // своего стула в виде «за столом» не видно — камера на нём
+      p.chair.visible = !(p.me && this.mode === 'seat');
+    }
+    for (const [k, p] of [...this.places])
+      if (!seen.has(k)) {
+        this.scene.remove(p.chair);
+        this.places.delete(k);
+      }
+    this.syncPeople();
+    this.aimCamera();
+    this.kick();
+  }
+
+  setFocus(seat: number | null) {
+    if (seat === this.focus) return;
+    this.focus = seat;
+    this.people?.lookAt(this.lookTarget(), seat);
+    this.aimCamera();
+    this.kick();
+  }
+
+  /** Жест игрока (ставка, пас, чек...). */
+  gesture(seat: number, kind: Gesture) {
+    this.people?.gesture(seat, kind);
+    this.kick();
+  }
+
+  setMode(m: CamMode) {
+    if (m === this.mode) return;
+    this.mode = m;
+    for (const p of this.places.values()) p.chair.visible = !(p.me && m === 'seat');
+    this.syncPeople();
+    this.camInit = false;
+    this.aimCamera();
+    this.drawHand();
+    this.kick();
   }
 
   // ---------------------------------------------------------------- текстуры
@@ -375,39 +406,56 @@ export class Table3D {
     if (deck === this.deck) return;
     this.deck = deck;
     for (const [, m] of this.cards) this.paint(m.obj as THREE.Mesh, (m.obj.userData.card as Card | null) ?? null);
+    this.handKey = '';
     this.kick();
   }
 
   private paint(mesh: THREE.Mesh, c: Card | null) {
     mesh.userData.card = c;
-    const face = new THREE.MeshStandardMaterial({ map: this.texture(c), roughness: 0.55 });
-    const back = new THREE.MeshStandardMaterial({ map: this.texture(null), roughness: 0.55 });
+    const mk = (t: THREE.Texture) => new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.4, alphaTest: 0.5 });
     const old = mesh.material as THREE.Material[];
     if (Array.isArray(old)) for (const m of old) if (m !== this.edgeMat) m.dispose();
-    // грани коробки: +x, −x, +y (лицо), −y (рубашка), +z, −z
-    mesh.material = [this.edgeMat, this.edgeMat, face, back, this.edgeMat, this.edgeMat];
+    mesh.material = [mk(this.texture(c)), mk(this.texture(null)), this.edgeMat];
   }
 
   private chipMaterial(v: number) {
     let m = this.chipMat.get(v);
     if (!m) {
-      m = chipMats(CHIP_KINDS.find((k) => k.v === v)!);
+      const k = CHIP_KINDS.find((x) => x.v === v)!;
+      const mat = (t: THREE.Texture) => new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 });
+      const top = mat(chipTopTex(k));
+      m = [mat(chipSideTex(k)), top, top];
       this.chipMat.set(v, m);
     }
     return m;
+  }
+
+  // ---------------------------------------------------------------- свои карты в углу
+
+  /** Свои карты крупно в правом нижнем углу (вид «за столом»). null — нет карт. */
+  setHand(cards: (Card | null)[] | null) {
+    const key = cards ? cards.map((c) => (c ? c.s + c.r : 'x')).join(',') + '|' + this.deck : '';
+    if (key === this.handKey) return;
+    const fresh = !this.handKey || !cards;
+    this.handKey = key;
+    if (!cards) {
+      this.hand.innerHTML = '';
+      return;
+    }
+    const imgs = cards.map((c, i) => `<img class="hd-hcard${fresh ? ' deal' : ''}" style="--i:${i}" src="${cardUrl(c, this.deck)}" alt="" draggable="false">`).join('');
+    this.hand.innerHTML = `<div class="hd-hand-in">${imgs}</div>`;
+    this.drawHand();
+  }
+
+  private drawHand() {
+    this.hand.hidden = this.mode !== 'seat';
   }
 
   // ---------------------------------------------------------------- раскладка
 
   private cardTarget(it: Item3D): { pos: THREE.Vector3; quat: THREE.Quaternion } {
     const e = new THREE.Euler(0, (-it.r * Math.PI) / 180, 0, 'YXZ');
-    let h = 0.02 + CARD_T / 2;
-    if (it.lift) {
-      // своя карта: приподнята и наклонена к зрителю
-      e.x = 0.95;
-      h = 0.55;
-    }
-    return { pos: to3(it.x, it.y, h), quat: new THREE.Quaternion().setFromEuler(e) };
+    return { pos: to3(it.x, it.y, 0.02 + CARD_T / 2), quat: new THREE.Quaternion().setFromEuler(e) };
   }
 
   /** Разложить карты, фишки, баттон и подписи. enter — откуда влетают новые карты, exit — куда улетают исчезнувшие. */
@@ -425,17 +473,22 @@ export class Table3D {
         this.paint(mesh, it.card);
         const from = enter ? to3(enter.x, enter.y, 0.6 + i * 0.01) : tg.pos.clone().add(new THREE.Vector3(0, 0.4, 0));
         mesh.position.copy(from);
-        mesh.quaternion.copy(enter ? new THREE.Quaternion() : tg.quat);
+        // влетает рубашкой вверх и переворачивается на лету
+        mesh.quaternion.copy(enter && it.card ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI)) : tg.quat);
         this.scene.add(mesh);
         m = { obj: mesh, pos: tg.pos, quat: tg.quat, scale: it.s };
-        mesh.scale.setScalar(it.s * (enter ? 0.8 : 1));
+        mesh.scale.setScalar(it.s * (enter ? 0.85 : 1));
         this.cards.set(it.key, m);
       } else {
         m.pos = tg.pos;
         m.quat = tg.quat;
         m.scale = it.s;
         const now = (m.obj.userData.card as Card | null) ?? null;
-        if (JSON.stringify(now) !== JSON.stringify(it.card)) this.paint(m.obj as THREE.Mesh, it.card);
+        if (JSON.stringify(now) !== JSON.stringify(it.card)) {
+          // вскрытие: переворот через ребро
+          if (!now && it.card) m.obj.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI * 0.999)));
+          this.paint(m.obj as THREE.Mesh, it.card);
+        }
       }
     });
     for (const [k, m] of [...this.cards]) {
@@ -443,6 +496,7 @@ export class Table3D {
       this.cards.delete(k);
       if (exit) {
         m.pos = to3(exit.x, exit.y, 0.3);
+        m.quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI));
         m.dying = 0.5;
         this.dying.push(m);
       } else this.drop(m.obj);
@@ -452,32 +506,32 @@ export class Table3D {
     for (const c of chips) {
       cseen.add(c.key);
       let m = this.chips.get(c.key);
-      const target = to3(c.x, c.y, 0);
+      const target = to3(c.x, c.y, 0.02);
       if (!m) {
         const g = new THREE.Group();
         g.position.copy(target);
         this.scene.add(g);
-        m = { obj: g, pos: target, quat: new THREE.Quaternion(), scale: 1, amount: -1 };
+        m = { obj: g, pos: target, quat: new THREE.Quaternion(), scale: 1, amount: -1, bank: !!c.bank };
         this.chips.set(c.key, m);
       }
       m.pos = target;
       if (m.amount !== c.amount) {
         m.amount = c.amount;
-        this.stack(m.obj as THREE.Group, c.amount);
+        this.stack(m.obj as THREE.Group, c.amount, !!c.bank, c.key);
       }
     }
     for (const [k, m] of [...this.chips]) {
       if (cseen.has(k)) continue;
       this.chips.delete(k);
       // ставки уходят в банк
-      m.pos = to3(CX, CY + 70, 0);
+      m.pos = to3(CX, CY + 125, 0.02);
       m.dying = 0.45;
       this.dying.push(m);
     }
     // баттон
     this.button.obj.visible = !!button;
     if (button) {
-      this.button.pos = to3(button.x, button.y, 0.035);
+      this.button.pos = to3(button.x, button.y, 0.065);
       if (!this.button.obj.userData.placed) {
         this.button.obj.position.copy(this.button.pos);
         this.button.obj.userData.placed = true;
@@ -488,31 +542,52 @@ export class Table3D {
     this.kick();
   }
 
-  /** Стопка фишек по номиналам (не больше 12 штук). */
-  private stack(g: THREE.Group, amount: number) {
+  /** Фишки по номиналам. Стопка игрока — ровные столбики в ряд; ставка и банк — кучкой из столбиков. */
+  private stack(g: THREE.Group, amount: number, bank: boolean, key: string) {
     for (const ch of [...g.children]) g.remove(ch);
     let left = amount;
-    let n = 0;
-    const cols: THREE.Mesh[][] = [];
+    const cols: number[][] = [];
+    const per = bank ? 10 : 8;
+    const maxCols = bank ? 6 : 7;
     for (const k of CHIP_KINDS) {
-      const cnt = Math.min(5, Math.floor(left / k.v));
+      let cnt = Math.floor(left / k.v);
+      // слишком много мелких — пусть лучше будет меньше фишек
+      cnt = Math.min(cnt, per * 2);
       left -= cnt * k.v;
-      if (!cnt) continue;
-      const col: THREE.Mesh[] = [];
-      for (let i = 0; i < cnt && n < 12; i++, n++) {
-        const m = new THREE.Mesh(this.chipGeo, this.chipMaterial(k.v));
+      while (cnt > 0 && cols.length < maxCols) {
+        const n = Math.min(per, cnt);
+        cols.push(Array(n).fill(k.v));
+        cnt -= n;
+      }
+    }
+    if (!cols.length && amount > 0) cols.push([1]);
+    // детерминированный разброс по ключу — чтобы стопка не прыгала при каждой перерисовке
+    let seed = 0;
+    for (const ch of key) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      return seed / 4294967296;
+    };
+    const spots: [number, number][] = bank
+      ? cols.map((_, i) => [(i - (cols.length - 1) / 2) * CHIP_R * 2.1, 0])
+      : [
+          [0, 0],
+          [CHIP_R * 2.05, 0],
+          [-CHIP_R * 2.05, 0],
+          [CHIP_R * 1.02, -CHIP_R * 1.8],
+          [-CHIP_R * 1.02, -CHIP_R * 1.8],
+          [CHIP_R * 1.02, CHIP_R * 1.8],
+          [-CHIP_R * 1.02, CHIP_R * 1.8],
+        ];
+    cols.forEach((col, ci) => {
+      const [ox, oz] = spots[ci % spots.length];
+      col.forEach((v, i) => {
+        const m = new THREE.Mesh(this.chipGeo, this.chipMaterial(v));
         m.castShadow = true;
         m.receiveShadow = true;
-        col.push(m);
-      }
-      cols.push(col);
-    }
-    if (!cols.length) cols.push([new THREE.Mesh(this.chipGeo, this.chipMaterial(5))]);
-    cols.forEach((col, ci) => {
-      const ox = (ci - (cols.length - 1) / 2) * CHIP_R * 2.15;
-      col.forEach((m, i) => {
-        m.position.set(ox + (Math.random() - 0.5) * 0.015, CHIP_H / 2 + i * CHIP_H, (Math.random() - 0.5) * 0.015);
-        m.rotation.y = Math.random() * Math.PI;
+        const j = bank ? 0.006 : 0.02;
+        m.position.set(ox + (rnd() - 0.5) * j, CHIP_H / 2 + i * CHIP_H, oz + (rnd() - 0.5) * j);
+        m.rotation.y = rnd() * Math.PI * 2;
         g.add(m);
       });
     });
@@ -531,25 +606,75 @@ export class Table3D {
     return false;
   }
 
-  // ---------------------------------------------------------------- кадр
+  // ---------------------------------------------------------------- камера
+
+  private aimCamera() {
+    const w = this.host.clientWidth;
+    const h = this.host.clientHeight;
+    if (!w || !h) return;
+    const a = w / h;
+    const half = Math.tan((this.camera.fov * Math.PI) / 360);
+    // абажур закрывает стол сверху и на узком экране (камера там выше)
+    if (this.shade) this.shade.visible = this.mode === 'seat' && a > 0.9;
+    if (this.mode === 'seat') {
+      // узкий экран — смотрим круче, чтобы стол был виден целиком хотя бы по глубине
+      const narrow = Math.min(1, Math.max(0, (1.5 - a) / 0.9));
+      const pitch = THREE.MathUtils.degToRad(25 + 18 * narrow);
+      // по ширине должен влезть стол с соперниками (±W), но не дальше разумного
+      const W = 7.2;
+      const dist = THREE.MathUtils.clamp(W / (half * a), 8.4, 15.5);
+      // чуть поворачиваемся к тому, чей ход
+      let yaw = 0;
+      const f = this.focus != null ? this.places.get(this.focus) : null;
+      if (f && !f.me) yaw = THREE.MathUtils.clamp(-f.pos.x * 0.018, -0.12, 0.12);
+      const look = new THREE.Vector3(0, 0.6, -1.3 + narrow * 0.9);
+      const dir = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+      this.camGoal.look.copy(look);
+      this.camGoal.pos.copy(look).addScaledVector(dir, dist);
+    } else {
+      const pitch = THREE.MathUtils.degToRad(68);
+      const W = 7.6;
+      const D = 6.4;
+      const dist = Math.max(W / (half * a), D / half) + 2;
+      const look = new THREE.Vector3(0, 0, 0.3);
+      this.camGoal.look.copy(look);
+      this.camGoal.pos.copy(look).add(new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(dist));
+    }
+    if (!this.camInit) {
+      this.camInit = true;
+      this.camPos.copy(this.camGoal.pos);
+      this.camLook.copy(this.camGoal.look);
+      this.applyCamera();
+    }
+  }
+
+  private applyCamera() {
+    this.camera.position.copy(this.camPos);
+    this.camera.lookAt(this.camLook);
+    this.camera.updateMatrixWorld();
+  }
 
   private resize() {
     const w = this.host.clientWidth;
     const h = this.host.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
-    const a = w / h;
-    this.camera.aspect = a;
-    // стол целиком (с табличками за бортом): камера отъезжает, пока ширина не влезет в горизонтальный угол обзора
-    const half = Math.tan((this.camera.fov * Math.PI) / 360);
-    const dist = Math.max(10.6, 5.9 / (half * a) + 1.5);
-    // на узком экране смотрим круче сверху — стол выше и меньше пустоты над и под ним
-    const steep = Math.min(1, Math.max(0, (1.4 - a) / 0.6));
-    this.camera.position.set(0, 7.4 + 5 * steep, 7.6 - 2.5 * steep).normalize().multiplyScalar(dist);
-    this.camera.lookAt(0, -0.3, 0.55);
+    this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.host.style.setProperty('--hand', `${Math.round(Math.min(h * 0.34, w * 0.2))}px`);
+    this.camInit = false;
+    this.aimCamera();
     this.drawLabels();
     this.kick();
+  }
+
+  // ---------------------------------------------------------------- подписи
+
+  private headPos(seat: number): THREE.Vector3 | null {
+    const p = this.places.get(seat);
+    if (!p) return null;
+    const hp = this.people?.head(seat);
+    return hp ? hp.clone().setY(hp.y + 1.25) : p.pos.clone().setY(4.6);
   }
 
   private drawLabels() {
@@ -558,13 +683,32 @@ export class Table3D {
     this.camera.updateMatrixWorld();
     let s = '';
     for (const l of this.labelData) {
-      const p = to3(l.x, l.y, l.h ?? 0.15).project(this.camera);
-      const x = ((p.x + 1) / 2) * w;
-      const y = ((1 - p.y) / 2) * h;
-      s += `<div class="${l.cls}" style="${l.style ? l.style + ';' : ''}left:${x.toFixed(1)}px;top:${y.toFixed(1)}px">${l.html}</div>`;
+      let v: THREE.Vector3;
+      let cls = l.cls;
+      if (l.seat != null) {
+        const p = this.places.get(l.seat);
+        if (this.mode === 'seat' && p?.me) {
+          s += `<div class="${cls} hd-me" style="${l.style ?? ''}">${l.html}</div>`;
+          continue;
+        }
+        if (this.mode === 'seat') {
+          v = this.headPos(l.seat) ?? to3(l.x, l.y, 0.4);
+          cls += ' hd-over';
+        } else if (p) {
+          const e = onEllipse(RIM_RX - RAIL_W / 2, RIM_RZ - RAIL_W / 2, p.a);
+          v = e.p.setY(RAIL_H + 0.1);
+        } else v = to3(l.x, l.y, 0.4);
+      } else v = to3(l.x, l.y, l.h ?? 0.15);
+      const pr = v.project(this.camera);
+      if (pr.z > 1) continue;
+      const x = THREE.MathUtils.clamp(((pr.x + 1) / 2) * w, 40, w - 40);
+      const y = THREE.MathUtils.clamp(((1 - pr.y) / 2) * h, 14, h - 14);
+      s += `<div class="${cls}" style="${l.style ? l.style + ';' : ''}left:${x.toFixed(1)}px;top:${y.toFixed(1)}px">${l.html}</div>`;
     }
     this.labels.innerHTML = s;
   }
+
+  // ---------------------------------------------------------------- кадр
 
   private kick() {
     if (this.raf || this.disposed) return;
@@ -582,10 +726,10 @@ export class Table3D {
     const step = (m: Moving) => {
       const o = m.obj;
       if (o.position.distanceToSquared(m.pos) > 1e-6 || o.quaternion.angleTo(m.quat) > 1e-3 || Math.abs(o.scale.x - m.scale) > 1e-3) {
-        // по пути карта чуть подлетает над столом
+        // по пути карта и фишки чуть подлетают над столом
         const d = o.position.distanceTo(m.pos);
         o.position.lerp(m.pos, k);
-        if (d > 0.3) o.position.y = Math.max(o.position.y, m.pos.y + Math.min(0.5, d * 0.15));
+        if (d > 0.3) o.position.y = Math.max(o.position.y, m.pos.y + Math.min(0.6, d * 0.18));
         o.quaternion.slerp(m.quat, k);
         o.scale.setScalar(o.scale.x + (m.scale - o.scale.x) * k);
         moving = true;
@@ -603,14 +747,29 @@ export class Table3D {
         this.drop(m.obj);
       }
     }
-    this.renderer.render(this.scene, this.camera);
-    if (moving) this.kick();
+    // камера
+    const kc = 1 - Math.exp(-dt * 2.5);
+    if (this.camPos.distanceToSquared(this.camGoal.pos) > 1e-5 || this.camLook.distanceToSquared(this.camGoal.look) > 1e-5) {
+      this.camPos.lerp(this.camGoal.pos, kc);
+      this.camLook.lerp(this.camGoal.look, kc);
+      this.applyCamera();
+      moving = true;
+    }
+    const alive = this.people?.update(dt) ?? false;
+    // живые люди — 30 кадров в секунду, полёт карт — каждый кадр
+    if (moving || t - this.lastDraw > 31) {
+      this.lastDraw = t;
+      this.renderer.render(this.scene, this.camera);
+      this.drawLabels();
+    }
+    if (moving || alive) this.kick();
   }
 
   destroy() {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     this.ro.disconnect();
+    this.people?.dispose();
     this.renderer.dispose();
     for (const t of this.tex.values()) t.dispose();
     this.host.innerHTML = '';

@@ -67,3 +67,19 @@ npm start            # раздаёт dist/ и держит комнаты на 
 боты вместо отключившихся, журнал, чат и автосохранение достаются игре даром.
 
 Превью карточки снимается со страницы `/?thumb=<id>` (позиция из `def.showcase()`) и кладётся в `public/thumbs/`.
+
+## Чужие материалы (все — CC0 или общественное достояние)
+
+3D-холдем (`src/games/holdem/*3d.ts`, грузится только в 3D-виде):
+
+- **Люди за столом** — `public/models/holdem/*.glb`: Quaternius, «Ultimate Modular Men Pack» и «Ultimate Modular Women Pack»
+  (quaternius.com, CC0). Ужаты: оставлены анимации Idle/Wave/Interact/HitRecieve, сжатие meshopt.
+- **Мебель** — `public/models/room/*.glb`: Poly Haven (polyhaven.com, CC0) — television_02, vintage_cabinet_01,
+  vintage_wooden_drawer_01, dining_chair_02, Rockingchair_01, wine_bottles_01; текстуры переведены в WebP 1K.
+- **Фактуры** — `public/tex/holdem/`: Poly Haven (CC0) — herringbone_parquet, brown_leather, american_walnut_veneer,
+  cherry_veneer, velour_velvet, plastered_wall_04, fabric_pattern_05 (нормали), HDRI lythwood_room (отражения).
+- **Ковёр на стене** — `public/tex/holdem/carpet_col.webp`: фото «Tovuz Kazak, Caucasus, late 19th century»,
+  Wikimedia Commons, общественное достояние.
+
+Генератор видео-персонажей (картинка → видео через routerai.ru) — `tools/videogen/` (Python + tkinter, сборка в exe —
+`build.bat`), промпты и требования к роликам — `docs/holdem-video.md` в корне репозитория.

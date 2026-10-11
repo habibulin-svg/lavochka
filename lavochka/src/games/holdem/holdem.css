@@ -29,14 +29,28 @@
 .hd-controls { display: flex; flex-direction: column; gap: 8px; }
 .hd-btns { display: flex; flex-direction: column; gap: 6px; }
 .hd-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.hd-quick { grid-template-columns: repeat(3, 1fr); }
-.hd-raise { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: rgba(60, 40, 10, 0.08); }
-.hd-raise input { width: 100%; }
+.hd-quick { grid-template-columns: repeat(4, 1fr); }
+.hd-quick .btn { padding-left: 4px; padding-right: 4px; font-size: 13px; }
+.hd-raise { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(60, 40, 10, 0.08); }
+/* окошко ставки: поле с числом и −/+ */
+.hd-amt { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; align-items: stretch; }
+.hd-step { font-size: 22px; font-weight: 700; padding: 0; }
+.hd-field { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; background: #fffaf0;
+  border: 2px solid rgba(90, 60, 20, 0.35); padding: 2px 6px; cursor: text; }
+.hd-field:focus-within { border-color: #c9892a; box-shadow: 0 0 0 3px rgba(201, 137, 42, 0.25); }
+.hd-field span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; }
+.hd-field input { width: 100%; border: 0; background: transparent; text-align: center; font: 700 24px/1.1 'PT Sans', Arial, sans-serif; color: #2a1a0a; outline: none;
+  -moz-appearance: textfield; appearance: textfield; }
+.hd-field input::-webkit-inner-spin-button, .hd-field input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.hd-range { width: 100%; accent-color: #c9892a; }
+.hd-go:disabled { opacity: 0.5; }
 .hd-rlabel { font-weight: 700; }
 /* 3D-стол (three.js): холст под сценой, плоские карты и стол спрятаны, подписи — поверх по проекции. */
 .hd-gl { position: absolute; inset: 0; display: none; }
 .hd-webgl .hd-gl { display: block; }
 .hd-gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* виньетка — как в объективе: края кадра темнее, свет лампы в центре */
+.hd-gl::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 55%, transparent 55%, rgba(8, 4, 2, 0.55) 100%); }
 .hd-gl-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .hd-gl-labels > div { position: absolute; }
 .hd-gl-labels .cs-plate { transform: translate(-50%, -50%); }
@@ -44,3 +58,19 @@
 .hd-webgl .cs-stage { pointer-events: none; }
 .hd-webgl .cs-cover { pointer-events: auto; }
 .hd-bet-gl span { padding: 1px 7px; border-radius: 8px; background: rgba(10, 6, 2, 0.55); }
+/* 3D: табличка над головой соперника, своя — внизу по центру; свои карты — крупно в правом нижнем углу */
+.hd-gl-labels .hd-over { transform: translate(-50%, -100%); white-space: nowrap; }
+.hd-gl-labels .hd-me { left: 50% !important; top: auto !important; bottom: 10px; transform: translate(-50%, 0); }
+.hd-gl-labels .hd-plate.on { box-shadow: 0 0 0 2px #ffd36a, 0 0 18px rgba(255, 211, 106, 0.6); }
+.hd-hand { position: absolute; right: 2%; bottom: 8px; pointer-events: none; perspective: 900px; }
+.hd-hand[hidden] { display: none; }
+.hd-hand-in { position: relative; width: calc(var(--hand, 160px) * 1.5); height: calc(var(--hand, 160px) * 1.08); transform: rotateX(14deg); transform-origin: 50% 100%; }
+.hd-hcard { position: absolute; bottom: 0; width: calc(var(--hand, 160px) * 0.645); height: var(--hand, 160px);
+  left: calc(var(--i) * var(--hand, 160px) * 0.52 + var(--hand, 160px) * 0.12);
+  transform: rotate(calc(-7deg + var(--i) * 12deg)); transform-origin: 50% 100%;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55)); border-radius: 6%; }
+.hd-hcard.deal { animation: hd-deal 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 0.12s); }
+@keyframes hd-deal { from { transform: translate(-40vw, -40vh) rotate(-40deg) scale(0.4); opacity: 0; } }
+.hd-blinds { z-index: 2; }
+.hd-gl::after { z-index: 1; }
+.hd-gl-labels, .hd-hand { z-index: 2; }

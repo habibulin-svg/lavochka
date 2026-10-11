@@ -10,4 +10,15 @@ export default defineConfig({
     },
   },
   build: { target: 'es2022', chunkSizeWarningLimit: 1500 },
+  // модули three.js, которые грузятся лениво (3D-холдем): заранее, иначе Vite перезагружает страницу посреди партии
+  optimizeDeps: {
+    include: [
+      'three',
+      'three/examples/jsm/loaders/GLTFLoader.js',
+      'three/examples/jsm/loaders/RGBELoader.js',
+      'three/examples/jsm/libs/meshopt_decoder.module.js',
+      'three/examples/jsm/utils/SkeletonUtils.js',
+      'three/examples/jsm/environments/RoomEnvironment.js',
+    ],
+  },
 });

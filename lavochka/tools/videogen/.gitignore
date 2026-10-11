@@ -1,0 +1,7 @@
+dist/
+build/
+*.spec
+videogen.json
+prompts.json
+videogen_out/
+__pycache__/

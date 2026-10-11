@@ -9,7 +9,8 @@ import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import type { Card } from '../../cards/deck';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
-import type { Chips3D, Label3D, Table3D } from './scene3d';
+import type { CamMode, Chips3D, Label3D, Table3D } from './scene3d';
+import type { Gesture } from './people3d';
 import { holding, minRaiseTo, toCall, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './holdem.css';
@@ -18,9 +19,10 @@ const W = 1000;
 const H = 720;
 const C = { x: 500, y: 320 };
 const KEY = 'lavochka.holdem.view';
-type Mode = 'gl' | 'tilt' | 'top';
-const MODES: Mode[] = ['gl', 'tilt', 'top'];
-const MODE_NAME: Record<Mode, string> = { gl: '3D', tilt: 'наклон', top: 'сверху' };
+const GESTURE: Record<string, Gesture> = { fold: 'fold', check: 'check', call: 'bet', raise: 'bet', allin: 'allin' };
+/** seat — 3D «за столом», top — 3D сверху; tilt — плоский стол в CSS-перспективе (без WebGL), flat — плоский сверху (показ правил). */
+type Mode = 'seat' | 'top' | 'tilt' | 'flat';
+const MODE_NAME: Record<Mode, string> = { seat: 'за столом', top: 'сверху', tilt: 'наклон', flat: 'плоский' };
 
 function webglOk(): boolean {
   try {
@@ -47,7 +49,7 @@ class HoldemView implements GameView<View, Event> {
   private viewer = 0;
   private hidden = false;
   private actSeat: number | null = null;
-  private mode: Mode = 'gl';
+  private mode: Mode = 'seat';
   private gl: Table3D | null = null;
   private glHost!: HTMLElement;
   private glLoading = false;
@@ -78,25 +80,24 @@ class HoldemView implements GameView<View, Event> {
     } catch {
       /* без хранилища — по умолчанию */
     }
-    // старое значение «3d» («3D-стол» на CSS) — теперь настоящий 3D
-    this.mode = saved === 'top' ? 'top' : saved === 'tilt' ? 'tilt' : 'gl';
-    if (this.mode === 'gl' && !this.canGl) this.mode = 'tilt';
-    if (ctx.demo) this.mode = 'top';
+    // старые значения «gl», «3d», «tilt» — теперь «за столом»
+    this.mode = saved === 'top' ? 'top' : 'seat';
+    if (!this.canGl) this.mode = 'tilt';
+    if (ctx.demo) this.mode = 'flat';
     this.applyView();
     const ctl = h(`<div class="hd-controls"><div class="hd-btns"></div><button class="btn hd-vbtn"></button></div>`);
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.hd-btns') as HTMLElement;
     const vb = ctl.querySelector('.hd-vbtn') as HTMLButtonElement;
-    vb.hidden = ctx.demo;
-    const modes = () => MODES.filter((m) => m !== 'gl' || this.canGl);
+    // без WebGL переключать нечего
+    vb.hidden = ctx.demo || !this.canGl;
     const label = () => {
-      const list = modes();
-      vb.textContent = `Вид: ${MODE_NAME[this.mode]} → ${MODE_NAME[list[(list.indexOf(this.mode) + 1) % list.length]]}`;
+      const next: Mode = this.mode === 'seat' ? 'top' : 'seat';
+      vb.textContent = `Вид: ${MODE_NAME[this.mode]} → ${MODE_NAME[next]}`;
     };
     label();
     vb.onclick = () => {
-      const list = modes();
-      this.mode = list[(list.indexOf(this.mode) + 1) % list.length];
+      this.mode = this.mode === 'seat' ? 'top' : 'seat';
       try {
         localStorage.setItem(KEY, this.mode);
       } catch {
@@ -108,17 +109,23 @@ class HoldemView implements GameView<View, Event> {
     };
   }
 
+  private get is3d() {
+    return this.mode === 'seat' || this.mode === 'top';
+  }
+
   private applyView() {
     this.cs.wrap.classList.toggle('hd-3d', this.mode === 'tilt');
-    this.cs.wrap.classList.toggle('hd-webgl', this.mode === 'gl');
+    this.cs.wrap.classList.toggle('hd-webgl', this.is3d);
     this.cs.setTilt(this.mode === 'tilt' ? 'translate(70px, 40px) scale(0.86) rotateX(24deg)' : '');
-    if (this.mode === 'gl' && !this.gl && !this.glLoading) {
+    if (this.gl && this.is3d) this.gl.setMode(this.mode as CamMode);
+    if (this.is3d && !this.gl && !this.glLoading) {
       this.glLoading = true;
       import('./scene3d')
         .then((m) => {
           this.glLoading = false;
           if (!this.cs.wrap.isConnected) return;
           this.gl = new m.Table3D(this.glHost, settings.deck);
+          this.gl.setMode(this.mode as CamMode);
           this.draw();
         })
         .catch((e) => {
@@ -146,7 +153,7 @@ class HoldemView implements GameView<View, Event> {
     const k = ord.indexOf(seat);
     const n = ord.length;
     const a = Math.PI / 2 + (k / n) * Math.PI * 2;
-    return { x: C.x + Math.cos(a) * 410, y: C.y + Math.sin(a) * 250 + (k === 0 ? 20 : 0) };
+    return { x: C.x + Math.cos(a) * 410, y: C.y + Math.sin(a) * 250 + (k === 0 && !this.is3d ? 20 : 0) };
   }
 
   private chooseViewer(v: View, toAct: number[]) {
@@ -164,20 +171,32 @@ class HoldemView implements GameView<View, Event> {
     }
   }
 
+  /** Свои карты: открытые, рубашкой (за одним экраном — пока не нажали «Показать карты») или null — карт нет. */
+  private myCards(v: View): (Card | null)[] | null {
+    if (!v.seats.includes(this.viewer) || !holding(v, this.viewer)) return null;
+    return v.hole[this.viewer].length && (!this.hidden || this.ctx.demo) ? v.hole[this.viewer] : [null, null];
+  }
+
   private layout(v: View): StageItem[] {
     const items: StageItem[] = [];
-    v.board.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: C.x - 184 + i * 92, y: C.y - 10, r: 0, s: 0.86, z: 10 + i }));
+    const g = this.is3d;
+    // в 3D общие карты мельче и теснее — стол виден в перспективе
+    v.board.forEach((c, i) => items.push({ key: cardKey(c), card: c, x: C.x + (g ? (i - 2) * 104 : -184 + i * 92), y: C.y - (g ? 30 : 10), r: 0, s: g ? 0.96 : 0.86, z: 10 + i }));
     for (const seat of v.seats) {
       if (!holding(v, seat)) continue;
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
-      const cards: (Card | null)[] = v.hole[seat].length && (me ? !this.hidden || this.ctx.demo : true) ? v.hole[seat] : [null, null];
-      const toward = { x: (C.x - a.x) * 0.12, y: (C.y - a.y) * 0.12 };
+      // «за столом» свои карты — крупно в углу экрана, на столе их нет
+      if (me && this.mode === 'seat') continue;
+      const cards: (Card | null)[] = me ? this.myCards(v)! : v.hole[seat].length ? v.hole[seat] : [null, null];
+      const toward = { x: (C.x - a.x) * (g ? 0.16 : 0.12), y: (C.y - a.y) * (g ? 0.16 : 0.12) };
+      // в 3D карты чуть развёрнуты к центру, но читаются со своего места
+      const face = g ? (Math.atan2(C.x - a.x, Math.abs(C.y - a.y) + 120) * 90) / Math.PI : 0;
       cards.forEach((c, i) => {
-        const s = me ? 0.86 : 0.5;
-        const x = a.x + toward.x + (i - 0.5) * (me ? 64 : 30);
-        const y = a.y + toward.y - (me ? 40 : 0);
-        const r = (i - 0.5) * (me ? 8 : 12);
+        const s = me ? (g ? 0.8 : 0.86) : g ? 0.56 : 0.5;
+        const x = a.x + toward.x + (i - 0.5) * (me ? 64 : g ? 34 : 30);
+        const y = a.y + toward.y - (me && !g ? 40 : 0);
+        const r = face + (i - 0.5) * (me ? 8 : 12);
         items.push(c ? { key: cardKey(c), card: c, x, y, r, s, z: (me ? 100 : 50) + i } : { key: `b:${seat}:${i}`, card: null, x, y, r, s, z: 50 + i });
       });
     }
@@ -189,11 +208,13 @@ class HoldemView implements GameView<View, Event> {
     if (!v) return;
     const items = this.layout(v);
     this.cs.render(items, this.ctx.speed(), enter, exit);
-    const gl = this.mode === 'gl' && this.gl;
+    const gl = this.is3d && this.gl;
     const labels: Label[] = [];
     const chips: Chips3D[] = [];
     let button: Point | null = null;
-    const pot = v.inHand.reduce((a, x) => a + v.total[x], 0);
+    const potAll = v.inHand.reduce((a, x) => a + v.total[x], 0);
+    // в 3D банк — фишки прошлых кругов; ставки этого круга лежат перед игроками
+    const pot = potAll - v.seats.reduce((a, x) => a + v.bet[x], 0);
     for (const seat of v.seats) {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
@@ -201,40 +222,47 @@ class HoldemView implements GameView<View, Event> {
       const out = v.folded[seat];
       const on = v.turn === seat && v.phase !== 'over';
       const tag = v.allin[seat] ? ' <em>ва-банк</em>' : out ? ' <em>пас</em>' : busted ? ' <em>вылетел</em>' : '';
-      // в 3D табличка — за бортом, у места игрока
-      const px = gl ? a.x + (a.x - C.x) * 0.2 : a.x;
-      const py = gl ? a.y + (a.y - C.y) * 0.26 + (me ? 30 : 0) : me ? a.y + 62 : a.y + 46;
-      labels.push({ cls: `cs-plate hd-plate${on ? ' on' : ''}${out || busted ? ' hd-dim' : ''}`, style: `--c:${SEATS[seat].color}`, x: px, y: py, html: `${esc(this.plain(seat))} <i>${v.chips[seat]}</i>${tag}` });
+      const py = me ? a.y + 62 : a.y + 46;
+      labels.push({ cls: `cs-plate hd-plate${on ? ' on' : ''}${out || busted ? ' hd-dim' : ''}`, style: `--c:${SEATS[seat].color}`, x: a.x, y: py, seat, html: `${esc(this.plain(seat))} <i>${v.chips[seat]}</i>${tag}` });
       // ставка этого круга — фишками к центру; своя — справа от карт, чужие — по пути к центру
       if (v.bet[seat] > 0) {
-        const bx = me ? a.x + 130 : a.x + (C.x - a.x) * 0.36;
-        const by = me ? a.y - 70 : a.y + (C.y - a.y) * 0.36;
+        const k = gl ? 0.42 : 0.36;
+        const bx = me && !gl ? a.x + 130 : a.x + (C.x - a.x) * k;
+        const by = me && !gl ? a.y - 70 : a.y + (C.y - a.y) * k;
         if (gl) {
           chips.push({ key: `bet:${seat}`, x: bx, y: by, amount: v.bet[seat] });
-          labels.push({ cls: 'hd-bet hd-bet-gl', x: bx, y: by, h: 0.5, html: `<span>${v.bet[seat]}</span>` });
+          labels.push({ cls: 'hd-bet hd-bet-gl', x: bx, y: by, h: 0.6, html: `<span>${v.bet[seat]}</span>` });
         } else labels.push({ cls: 'hd-bet', x: bx, y: by, html: `${this.chipStack(v.bet[seat])}<span>${v.bet[seat]}</span>` });
       }
+      // фишки игрока — у борта, сбоку от карт
+      if (gl && v.chips[seat] > 0) {
+        const t = { x: -(a.y - C.y) * (410 / 250), y: (a.x - C.x) * (250 / 410) };
+        const tl = Math.hypot(t.x, t.y) || 1;
+        const side = me && this.mode === 'seat' ? 150 : 95;
+        chips.push({ key: `stk:${seat}`, x: a.x + (t.x / tl) * side + (C.x - a.x) * 0.05, y: a.y + (t.y / tl) * side * 0.8 + (C.y - a.y) * 0.05, amount: v.chips[seat], bank: true });
+      }
       if (seat === v.button && v.phase !== 'over') {
-        button = { x: a.x + (C.x - a.x) * 0.2 + 46, y: a.y + (C.y - a.y) * 0.2 - 10 };
+        button = { x: a.x + (C.x - a.x) * 0.24 + 46, y: a.y + (C.y - a.y) * 0.24 - 10 };
         if (!gl) labels.push({ cls: 'hd-button', x: button.x, y: button.y, html: 'D' });
       }
     }
-    if (pot) {
-      if (gl) {
-        chips.push({ key: 'pot', x: C.x, y: C.y + 70, amount: pot });
-        labels.push({ cls: 'hd-pot hd-bet-gl', x: C.x, y: C.y + 70, h: 0.7, html: `<span>банк ${pot}</span>` });
-      } else labels.push({ cls: 'hd-pot', x: C.x, y: C.y + 70, html: `${this.chipStack(pot)}<span>банк ${pot}</span>` });
-    }
+    if (gl) {
+      if (pot > 0) chips.push({ key: 'pot', x: C.x, y: C.y + 125, amount: pot });
+      if (potAll) labels.push({ cls: 'hd-pot hd-bet-gl', x: C.x + 95, y: C.y + 125, h: 0.1, html: `<span>банк ${potAll}</span>` });
+    } else if (potAll) labels.push({ cls: 'hd-pot', x: C.x, y: C.y + 70, html: `${this.chipStack(potAll)}<span>банк ${potAll}</span>` });
     const blinds = `<div class="hd-blinds">блайнды ${v.big / 2}/${v.big} · раздача ${v.hand}</div>`;
     if (gl) {
       this.plates.innerHTML = blinds;
-      this.gl!.setDeck(settings.deck);
-      const mine = (key: string) => items.some((it) => it.key === key && it.card && it.z >= 100);
-      this.gl!.set(
-        items.map((it) => ({ key: it.key, card: it.card, x: it.x, y: it.y, r: it.r, s: mine(it.key) ? it.s * 1.3 : it.s, lift: mine(it.key) })),
+      const g3 = this.gl!;
+      g3.setDeck(settings.deck);
+      g3.setSeats(v.seats.map((seat) => ({ seat, ...this.anchor(v, seat), me: seat === this.viewer, out: v.chips[seat] <= 0 && !v.inHand.includes(seat) })));
+      g3.setFocus(v.phase !== 'over' ? v.turn : null);
+      g3.setHand(this.mode === 'seat' ? this.myCards(v) : null);
+      g3.set(
+        items.map((it) => ({ key: it.key, card: it.card, x: it.x, y: it.y, r: it.r, s: it.s })),
         chips,
         button,
-        labels.map((l) => ({ ...l, cls: l.cls, html: l.html, style: l.style })),
+        labels,
         this.ctx.speed(),
         enter,
         exit
@@ -307,29 +335,58 @@ class HoldemView implements GameView<View, Event> {
     else add(call >= stack ? `Колл ва-банк ${stack}` : `Колл ${call}`, 'primary', () => this.send({ type: 'call' }));
     this.btns.appendChild(row);
     if (stack > call) {
-      const box = h(`<div class="hd-raise"><div class="hd-rlabel">Рейз до <b>${min}</b></div><input type="range" min="${min}" max="${max}" step="${Math.max(1, Math.round(v.big / 2))}" value="${min}"><div class="hd-row hd-quick"></div></div>`);
-      const input = box.querySelector('input') as HTMLInputElement;
-      const label = box.querySelector('b') as HTMLElement;
-      input.oninput = () => (label.textContent = input.value);
+      // окошко ставки: число вводится с клавиатуры, −/+ по малому блайнду, ползунок и быстрые суммы
+      const step = Math.max(1, Math.round(v.big / 2));
+      const word = v.current > 0 ? 'Рейз до' : 'Ставка';
+      const box = h(`<div class="hd-raise">
+        <div class="hd-amt">
+          <button class="btn hd-step" data-d="-1" aria-label="меньше">−</button>
+          <label class="hd-field"><span>${word}</span><input type="number" inputmode="numeric" min="${min}" max="${max}" step="1" value="${min}"></label>
+          <button class="btn hd-step" data-d="1" aria-label="больше">+</button>
+        </div>
+        <input class="hd-range" type="range" min="${min}" max="${max}" step="${step}" value="${min}">
+        <div class="hd-row hd-quick"></div>
+        <button class="btn primary hd-go"></button>
+      </div>`);
+      const field = box.querySelector('.hd-field input') as HTMLInputElement;
+      const range = box.querySelector('.hd-range') as HTMLInputElement;
+      const go = box.querySelector('.hd-go') as HTMLButtonElement;
+      const clamp = (n: number) => Math.max(min, Math.min(max, Math.round(n)));
+      const show = (n: number, fromField = false) => {
+        if (!fromField) field.value = String(n);
+        range.value = String(n);
+        const ok = Number.isFinite(n) && n >= min && n <= max;
+        go.disabled = !ok;
+        go.textContent = !ok ? `от ${min} до ${max}` : n >= max ? `Ва-банк ${max}` : `${word} ${n}`;
+      };
+      field.oninput = () => show(Number(field.value), true);
+      field.onchange = () => show(clamp(Number(field.value) || min));
+      field.onfocus = () => field.select();
+      field.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          show(clamp(Number(field.value) || min));
+          go.click();
+        }
+      };
+      range.oninput = () => show(Number(range.value));
+      for (const b of box.querySelectorAll<HTMLButtonElement>('.hd-step'))
+        b.onclick = () => show(clamp((Number(field.value) || min) + Number(b.dataset.d) * step));
       const quick = box.querySelector('.hd-quick') as HTMLElement;
       const q = (text: string, to: number) => {
         const b = h<HTMLButtonElement>(`<button class="btn">${text}</button>`);
-        b.onclick = () => {
-          const t = Math.max(min, Math.min(max, Math.round(to)));
-          input.value = String(t);
-          label.textContent = String(t);
-        };
+        b.onclick = () => show(clamp(to));
         quick.appendChild(b);
       };
+      q('мин', min);
       q('½ банка', v.current + pot / 2);
       q('банк', v.current + pot);
       q('ва-банк', max);
-      const go = h<HTMLButtonElement>('<button class="btn primary">Поставить</button>');
       go.onclick = () => {
-        const to = Number(input.value);
+        Sound.unlock();
+        const to = clamp(Number(field.value) || min);
         this.send(to >= max ? { type: 'allin' } : { type: 'raise', to });
       };
-      box.appendChild(go);
+      show(min);
       this.btns.appendChild(box);
     }
   }
@@ -366,6 +423,7 @@ class HoldemView implements GameView<View, Event> {
         if (ev.action === 'fold') folded[ev.seat] = true;
         this.v = { ...cur, bet, chips, total, folded, turn: ev.seat };
         this.draw(null, ev.action === 'fold' ? { x: C.x, y: C.y } : null);
+        this.gl?.gesture(ev.seat, GESTURE[ev.action]);
         if (ev.action === 'fold') Sound.card();
         else if (ev.action === 'check') Sound.ui();
         else Sound.place();
@@ -382,6 +440,7 @@ class HoldemView implements GameView<View, Event> {
         this.draw();
         await sleep(500 / speed);
       } else if (ev.type === 'win') {
+        this.gl?.gesture(ev.seat, 'win');
         Sound.win();
         await this.showBanner(`${this.plain(ev.seat)} +${ev.amount}${ev.hand ? ` — ${ev.hand}` : ''}`, 1400 / speed);
       } else if (ev.type === 'blinds') {
