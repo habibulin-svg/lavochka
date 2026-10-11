@@ -113,6 +113,15 @@ describe('запись', () => {
     expect(sc.type === 'score' && sc.pulya.slice(0, 3)).toEqual([10, 5, 0]);
     expect(sc.type === 'score' && sc.whists[0][1]).toBe(10);
   });
+  it('лист пульки: записи нарастающим итогом, последняя — текущая сумма', () => {
+    const sheet = { pulya: [[2, 4], [4], [], []], gora: [[], [], [], []], whists: [0, 1, 2, 3].map(() => [[], [], [], []]) };
+    const r = finish(lastTrick({ tricks: [5, 3, 1, 0], pulya: [4, 4, 0, 0], sheet }));
+    const sh = r.state.sheet;
+    expect(sh.pulya[0]).toEqual([2, 4, 6]);
+    expect(sh.pulya[1]).toEqual([4]);
+    expect([sh.whists[1][0], sh.whists[2][0]]).toEqual([[6], [2]]);
+    expect(sh.gora[0]).toEqual([]);
+  });
   it('итог — сумма ноль', () => {
     const f = finalScores({ seats: [0, 1, 2], gora: [4, 0, 10, 0], whists: [[0, 30, 12, 0], [8, 0, 0, 0], [2, 40, 0, 0], [0, 0, 0, 0]] });
     expect(f[0] + f[1] + f[2]).toBe(0);

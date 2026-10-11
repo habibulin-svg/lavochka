@@ -73,6 +73,8 @@ export class CardStage {
   onMode: (() => void) | null = null;
   private els = new Map<string, HTMLElement>();
   private pos = new WeakMap<HTMLElement, Pos>();
+  /** Таймер, который возвращает летевшей карте её слой. */
+  private landing = new WeakMap<HTMLElement, number>();
   private ro: ResizeObserver;
   /** Наклон сцены «в 3D» (например, rotateX(24deg)); перспектива — на обёртке. */
   private tilt = '';
@@ -220,8 +222,9 @@ export class CardStage {
       }
       if (el.dataset.face !== face) this.flip(el, it.card, dur, el.style.transitionDelay);
       el.dataset.id = identOf(it);
+      const was = this.pos.get(el);
       this.place(el, it);
-      el.style.zIndex = String(it.z);
+      this.layer(el, it.z, was, it, dur + (parseInt(el.style.transitionDelay) || 0));
       el.className = `cs-card${it.cls ? ' ' + it.cls : ''}`;
       for (const k of Object.keys(el.dataset)) if (k !== 'face' && k !== 'id') delete el.dataset[k];
       if (it.data) for (const [k, v] of Object.entries(it.data)) el.dataset[k] = v;
@@ -245,39 +248,70 @@ export class CardStage {
     }
   }
 
-  /** Нарисовать лицо (или рубашку) сразу. */
-  private paint(el: HTMLElement, c: Card | null) {
-    const face = el.firstElementChild as HTMLElement;
-    el.dataset.face = c ? cardId(c) : 'back';
-    if (c && c.r === 15) {
-      face.innerHTML = `<span class="card card-joker" data-red="${c.s === 'H' || c.s === 'D' ? 1 : 0}"><b>★</b><small>ДЖОКЕР</small></span>`;
+  /** Слой карты. Летящая карта до посадки идёт поверх всех (иначе она сразу получает слой места назначения
+   * и пролетает под соседними картами — видна кусками); сдвиг на месте (веер руки) — не ниже прежнего слоя. */
+  private layer(el: HTMLElement, z: number, was: Pos | undefined, to: Pos, ms: number) {
+    clearTimeout(this.landing.get(el));
+    const old = parseInt(el.style.zIndex) || 0;
+    const d = was ? Math.hypot(was.x - to.x, was.y - to.y) : 0;
+    if (this.stage.classList.contains('cs-snap') || d < 2) {
+      el.style.zIndex = String(z);
       return;
     }
-    let img = face.firstElementChild as HTMLImageElement | null;
-    if (!img || img.tagName !== 'IMG') {
-      face.innerHTML = '<img class="card" draggable="false" alt="">';
-      img = face.firstElementChild as HTMLImageElement;
-    }
-    // картинки уже подгружены и раскодированы (preloadDeck) — смена src без пустого кадра
-    img.src = cardUrl(c, settings.deck);
-    img.alt = c ? cardName(c) : 'рубашка';
+    el.style.zIndex = String(d > CW * 0.6 ? 1000 + z : Math.max(old, z));
+    this.landing.set(el, window.setTimeout(() => (el.style.zIndex = String(z)), ms + 30));
   }
 
-  /** Перевернуть карту: сжать по ширине, сменить лицо, развернуть обратно. */
+  /** Нарисовать лицо (или рубашку). Новая картинка подменяет старую, только когда раскодирована: смена src
+   * у видимого img даёт кадр-другой пустоты (картон без рисунка), даже если колода подгружена заранее. */
+  private paint(el: HTMLElement, c: Card | null): Promise<void> {
+    const face = el.firstElementChild as HTMLElement;
+    const want = c ? cardId(c) : 'back';
+    el.dataset.face = want;
+    if (c && c.r === 15) {
+      face.innerHTML = `<span class="card card-joker" data-red="${c.s === 'H' || c.s === 'D' ? 1 : 0}"><b>★</b><small>ДЖОКЕР</small></span>`;
+      return Promise.resolve();
+    }
+    const old = face.firstElementChild as HTMLElement | null;
+    const src = cardUrl(c, settings.deck);
+    if (old instanceof HTMLImageElement && old.getAttribute('src') === src) return Promise.resolve();
+    const img = new Image();
+    img.className = 'card';
+    img.draggable = false;
+    img.alt = c ? cardName(c) : 'рубашка';
+    img.src = src;
+    const put = () => {
+      if (el.dataset.face === want) face.replaceChildren(img);
+    };
+    if (!old || (img.complete && img.naturalWidth)) {
+      put();
+      return Promise.resolve();
+    }
+    return img.decode().then(put, put);
+  }
+
+  /** Перевернуть карту: сжать по ширине, сменить лицо, развернуть обратно (когда новая картинка готова). */
   private flip(el: HTMLElement, c: Card | null, dur: number, delay: string) {
     const face = el.firstElementChild as HTMLElement;
     const target = c ? cardId(c) : 'back';
     el.dataset.face = target;
-    if (typeof face.animate !== 'function' || this.stage.classList.contains('cs-snap')) return this.paint(el, c);
+    if (typeof face.animate !== 'function' || this.stage.classList.contains('cs-snap')) return void this.paint(el, c);
     for (const a of face.getAnimations()) a.cancel();
     const half = Math.max(60, Math.min(200, dur * 0.4));
     const wait = parseInt(delay) || 0;
+    // картинку готовим заранее, пока карта ещё сжимается
+    const pre = new Image();
+    pre.src = cardUrl(c, settings.deck);
+    void pre.decode().catch(() => {});
     const a = face.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: half, delay: wait + dur * 0.15, easing: 'ease-in', fill: 'forwards' });
     a.onfinish = () => {
       if (el.dataset.face !== target) return;
-      this.paint(el, c);
-      a.cancel();
-      face.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: half, easing: 'ease-out' });
+      void this.paint(el, c).then(() => {
+        // за время раскодирования карту могли перевернуть заново
+        if (el.dataset.face !== target || !face.getAnimations().includes(a)) return;
+        a.cancel();
+        face.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: half, easing: 'ease-out' });
+      });
     };
   }
 

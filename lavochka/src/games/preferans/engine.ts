@@ -212,6 +212,28 @@ export interface State {
   round: number;
   /** Итоговые очки в вистах (после закрытия пули). */
   final: number[] | null;
+  /** Лист пульки: записи по порядку. */
+  sheet: Sheet;
+}
+
+/** Лист пульки: каждая запись — нарастающий итог, как пишут на бумаге через точку («2.4.6.10»).
+ * whists[a][b] — висты игрока a на игрока b. В «Скачках» пуля и гора — текущего скака. */
+export interface Sheet {
+  pulya: number[][];
+  gora: number[][];
+  whists: number[][][];
+}
+
+const emptySheet = (): Sheet => ({ pulya: [[], [], [], []], gora: [[], [], [], []], whists: [0, 1, 2, 3].map(() => [[], [], [], []]) });
+
+/** Дописать на лист то, что изменилось (onlyWhists — пуля и гора уже сняты с листа: конец «Скачек»). */
+function writeSheet(s: State, onlyWhists = false) {
+  const add = (l: number[], v: number) => ((l.length ? l[l.length - 1] : 0) !== v ? [...l, v] : l);
+  s.sheet = {
+    pulya: onlyWhists ? s.sheet.pulya : s.sheet.pulya.map((l, p) => add(l, s.pulya[p])),
+    gora: onlyWhists ? s.sheet.gora : s.sheet.gora.map((l, p) => add(l, s.gora[p])),
+    whists: s.sheet.whists.map((r, a) => r.map((l, b) => add(l, s.whists[a][b]))),
+  };
 }
 
 export interface View extends State {
@@ -388,14 +410,15 @@ export function newState(cfg: Cfg, seats: number[]): State {
     totGora: [0, 0, 0, 0],
     round: 0,
     final: null,
+    sheet: emptySheet(),
   };
 }
 
 /** Сохранённая партия старой версии: настройки и новые поля — по умолчанию. */
 function migrate(s: State): State {
-  if (s.cfg.exit && s.bombs && s.totPulya) return s;
+  if (s.cfg.exit && s.bombs && s.totPulya && s.sheet) return s;
   const cfg = cfgFrom(s.cfg as unknown as Options);
-  return {
+  const out: State = {
     ...newState(cfg, s.seats),
     ...s,
     cfg,
@@ -413,7 +436,11 @@ function migrate(s: State): State {
     skFirst: s.skFirst ?? null,
     totPulya: s.totPulya ?? [0, 0, 0, 0],
     totGora: s.totGora ?? [0, 0, 0, 0],
+    sheet: s.sheet ?? emptySheet(),
   };
+  // старая партия без листа: на лист — то, что уже набрано
+  if (!s.sheet) writeSheet(out);
+  return out;
 }
 
 function shuffle<T>(a: T[], rng: Rng): T[] {
@@ -930,6 +957,7 @@ function scoreRound(s0: State, ev: Event[], rng: Rng, how: 'play' | 'free' | 'ha
     if (exit) s.raspasyRun = 0;
     s.darkRun = 0;
   }
+  writeSheet(s);
   ev.push({ type: 'score', kind, players: s.players.slice(), declarer: s.declarer, contract: s.contract, tricks: s.tricks.slice(), made, pulya: s.pulya.slice(), gora: s.gora.slice(), whists: s.whists.map((r) => r.slice()), notes, mult: mult !== 1 ? mult : undefined });
   if (cfg.variant === 'skachki') return skachkiAfter(s, ev, rng, kind === 'raspasy');
   const done = cfg.variant === 'leningrad' ? s.seats.reduce((a, p) => a + s.pulya[p], 0) >= cfg.pulya * s.seats.length : s.seats.every((p) => s.pulya[p] >= cfg.pulya);
@@ -960,6 +988,7 @@ function skachkiAfter(s: State, ev: Event[], rng: Rng, rasp: boolean): { state: 
     const low = s.seats.filter((p) => s.gora[p] === lowG);
     prize(low, 200);
     ev.push({ type: 'skak', skak: s.skak, first: first.slice(), lowGora: low });
+    writeSheet(s);
     s.totPulya = s.totPulya.map((x, i) => x + s.pulya[i]);
     s.totGora = s.totGora.map((x, i) => x + s.gora[i]);
     s.pulya = [0, 0, 0, 0];
@@ -971,8 +1000,11 @@ function skachkiAfter(s: State, ev: Event[], rng: Rng, rasp: boolean): { state: 
       prize(s.seats.filter((p) => s.totPulya[p] === maxP), 300);
       const minG = Math.min(...s.seats.map((p) => s.totGora[p]));
       prize(s.seats.filter((p) => s.totGora[p] === minG), 200);
+      writeSheet(s, true);
       return finish(s, ev);
     }
+    // новый скак — пуля и гора на листе с чистого места, висты копятся дальше
+    s.sheet = { ...s.sheet, pulya: [[], [], [], []], gora: [[], [], [], []] };
     s.skak++;
   }
   const d = deal(s, rng);

@@ -1,5 +1,5 @@
 /* Преферанс — отрисовка: стол под сукном, свой веер снизу, соперники слева и справа (открытые руки — лицом), прикуп и взятка в центре.
- * Торговля — сеткой ставок в панели; снос — выбрать две карты; вист — кнопками; «пулька» (пуля, гора, висты) — там же.
+ * Торговля — сеткой ставок в панели; снос — выбрать две карты; вист — кнопками; там же — пулька (лист, как на бумаге) или таблица очков.
  * Игра в светлую: за открытого пасующего ходит вистующий — его карты тоже нажимаются. */
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
@@ -10,6 +10,7 @@ import { sameCard, sortHand, SUIT_SYM, type Card, type Suit } from '../../cards/
 import { CardStage, cardKey, fan, portraitHand, type Point, type StageItem } from '../../cards/stage';
 import { allBids, bidName, bidRank, DUTY, finalScores, goraForFinal, handCount, isMisere, legalCards, levelOk, minLevel, SKAKS, type Bid, type Event, type View } from './engine';
 import { SEATS } from './def';
+import { pulkaSVG } from './pulka';
 import './preferans.css';
 
 /** Геометрия стола: альбомная 1000×720 и вертикальная для телефона 540×900.
@@ -33,6 +34,8 @@ class PrefView implements GameView<View, Event> {
   private selected: Card[] = [];
   /** Идёт анимация play(): setTurn в это время только снимает управление. */
   private busy = false;
+  /** Что в панели: лист пульки или таблица очков (запоминается на устройстве). */
+  private sheetMode: 'pulka' | 'table' = 'pulka';
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -55,6 +58,23 @@ class PrefView implements GameView<View, Event> {
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.pf-btns') as HTMLElement;
     this.sheet = ctl.querySelector('.pf-sheet') as HTMLElement;
+    try {
+      if (localStorage.getItem('pf-sheet') === 'table') this.sheetMode = 'table';
+    } catch {
+      /* нет хранилища — по умолчанию пулька */
+    }
+    this.sheet.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest('[data-sheet]') as HTMLElement | null;
+      if (!b || !this.v) return;
+      this.sheetMode = b.dataset.sheet === 'table' ? 'table' : 'pulka';
+      try {
+        localStorage.setItem('pf-sheet', this.sheetMode);
+      } catch {
+        /* не запомнится — не страшно */
+      }
+      Sound.ui();
+      this.drawSheet(this.v);
+    });
     this.cs.stage.addEventListener('click', (e) => this.onClick(e));
   }
 
@@ -184,7 +204,14 @@ class PrefView implements GameView<View, Event> {
     const num = (n: number) => String(Math.round(n * 10) / 10);
     const sk = v.cfg.variant === 'skachki';
     const g = goraForFinal(v);
-    this.sheet.innerHTML = `<table><tr><th></th>${head}</tr>
+    const tabs = `<div class="pf-tabs">${(['pulka', 'table'] as const).map((m) => `<button class="${m === this.sheetMode ? 'on' : ''}" data-sheet="${m}">${m === 'pulka' ? 'Пулька' : 'Очки'}</button>`).join('')}</div>`;
+    if (this.sheetMode === 'pulka') {
+      const order = this.order(v).map((x) => ({ seat: x, name: this.plain(x).replace(/\s*\(.*\)\s*$/, '').slice(0, 12), color: SEATS[x].ink ?? SEATS[x].color }));
+      const tot = v.phase === 'over' ? `<div class="pf-tot">итог: ${seats.map((x) => `<b style="color:${SEATS[x].ink ?? SEATS[x].color}">${fin[x] > 0 ? '+' : ''}${fin[x]}</b>`).join(' · ')}</div>` : '';
+      this.sheet.innerHTML = tabs + pulkaSVG(v, order) + tot;
+      return;
+    }
+    this.sheet.innerHTML = tabs + `<table><tr><th></th>${head}</tr>
       ${sk ? `<tr><td colspan="${seats.length + 1}" class="pf-sk">скак ${Math.min(v.skak, SKAKS)} из ${SKAKS} · до ${v.cfg.pulya}</td></tr>` : ''}
       ${row(sk ? 'пуля скака' : `пуля /${v.cfg.pulya}`, (x) => v.pulya[x])}
       ${row(sk ? 'гора скака' : 'гора', (x) => num(v.gora[x]))}
