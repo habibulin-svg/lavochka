@@ -96,7 +96,7 @@ function want(who: string, c: Clip) {
 
 const VERT = /* glsl */ `
 uniform float tilt;
-uniform float curve;
+uniform vec2 curve;
 varying vec2 vUv;
 void main() {
   vUv = uv;
@@ -104,7 +104,7 @@ void main() {
   // верх кадра откидывается назад, когда камера смотрит сверху
   if (p.y > 0.0) { float c = cos(tilt), s = sin(tilt); p = vec3(p.x, p.y * c, -p.y * s); }
   // бортик — эллипс: края кадра выгибаем к середине стола по его кривизне, чтобы валик не срезал локти
-  p.z += curve * p.x * p.x;
+  p.z += (p.x < 0.0 ? curve.x : curve.y) * p.x * p.x;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 
@@ -264,11 +264,13 @@ class VideoPeople implements People {
         bright: { value: 1 },
         fade: { value: 0 },
         tilt: { value: 0 },
-        curve: { value: pl.curve ?? 0 },
+        curve: { value: new THREE.Vector2(...(pl.curve ?? [0, 0])) },
       },
       vertexShader: VERT,
       fragmentShader: FRAG,
       transparent: true,
+      // глубину не пишет: карты и фишки на сукне рисуются после и не просвечивают сквозь кайму ролика
+      depthWrite: false,
       side: THREE.DoubleSide,
       // руки лежат на валике вплотную — чуть ближе к камере, чтобы валик их не резал
       polygonOffset: true,
@@ -313,7 +315,8 @@ class VideoPeople implements People {
     let d = Math.atan2(dx, dz) - face;
     d = Math.atan2(Math.sin(d), Math.cos(d));
     m.rotation.y = face + THREE.MathUtils.clamp(d * 0.5, -0.5, 0.5);
-    p.mat.uniforms.curve.value = (p.place.curve ?? 0) + 0.02;
+    const [cl, cr] = p.place.curve ?? [0, 0];
+    (p.mat.uniforms.curve.value as THREE.Vector2).set(cl + 0.02, cr + 0.02);
     // камера сверху — верх кадра откидываем назад, чтобы человек не сплющивался
     const pitch = Math.atan2(this.cam.y - m.position.y - SIZE * 0.5, Math.hypot(dx, dz));
     p.mat.uniforms.tilt.value = THREE.MathUtils.clamp((pitch - 0.45) * 0.7, 0, 0.55);

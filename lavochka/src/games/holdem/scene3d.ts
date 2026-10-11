@@ -72,13 +72,15 @@ const FOV = 47;
 /** Вид «как в Apple»: общие карты — на столько впереди снимаемого (от его линии стола), камера — на столько от него. */
 const STAGE_BOARD = 3.5;
 const STAGE_CAM = 12.5;
-/** Общие карты в этом виде крупнее — читаются издалека. */
-const STAGE_CARD = 1.18;
+/** Общие карты в этом виде: карта ≈ 19 см (втрое больше настоящей) — читается издалека, но не заслоняет стол. */
+const STAGE_CARD = 0.78;
+/** Карты соперника — меньше общих (как настоящие у его рук). */
+const STAGE_HOLE = 0.62;
 /** Ближе к камере (по полу) — подписи прячем. */
 const STAGE_HIDE = 3.6;
 /** Вещи на сукне в кадре «как в Apple»: f — от линии стола снимаемого вперёд (к камере), r — вправо (как видит камера). */
 const SLOT = {
-  hole: { f: 1.3, r: -1.75 },
+  hole: { f: 1.25, r: -1.55 },
   stack: { f: 1.0, r: 2.15 },
   bet: { f: 2.2, r: 1.0 },
   button: { f: 1.05, r: -2.75 },
@@ -126,14 +128,33 @@ function ellipse(rx: number, rz: number, n = 128): THREE.Vector2[] {
   return pts;
 }
 
-/** Точка на эллипсе по параметру и нормаль наружу. */
-/** Кривизна валика (его середины) в точке a эллипса: 1/(2R), R — радиус кривизны. */
-function railCurve(a: number): number {
-  const rx = RIM_RX - RAIL_W / 2;
-  const rz = RIM_RZ - RAIL_W / 2;
-  const R = Math.pow(rx * rx * Math.sin(a) ** 2 + rz * rz * Math.cos(a) ** 2, 1.5) / (rx * rz);
-  return 1 / (2 * R);
+/** Изгиб кадра видео-человека по валику: [слева, справа] (как видит камера) — z = c·x², чтобы кисти лежали на валике.
+ * Порознь: место стоит не на оси стола — с одной стороны валик загибается к камере сильнее, и симметричный изгиб
+ * прятал под валик пальцы на той стороне. Кадр — от стула на TO_RAIL вперёд, по его линии и ведём эллипс. */
+function railCurve(pos: THREE.Vector3, face: number): [number, number] {
+  const rx = RIM_RX - 0.69;
+  const rz = RIM_RZ - 0.69;
+  const fx = Math.sin(face);
+  const fz = Math.cos(face);
+  // насколько вперёд (к середине стола) от точки сбоку на x до валика
+  const ahead = (x: number) => {
+    const qx = pos.x + fx * 1.94 + fz * x;
+    const qz = pos.z + fz * 1.94 - fx * x;
+    const A = (fx / rx) ** 2 + (fz / rz) ** 2;
+    const B = 2 * ((qx * fx) / rx ** 2 + (qz * fz) / rz ** 2);
+    const C = (qx / rx) ** 2 + (qz / rz) ** 2 - 1;
+    const d = Math.sqrt(Math.max(0, B * B - 4 * A * C));
+    const t1 = (-B - d) / (2 * A);
+    const t2 = (-B + d) / (2 * A);
+    return Math.abs(t1) < Math.abs(t2) ? t1 : t2;
+  };
+  // по месту кистей
+  const X = 1.5;
+  const t0 = ahead(0);
+  return [Math.max(0, (ahead(-X) - t0) / (X * X)), Math.max(0, (ahead(X) - t0) / (X * X))];
 }
+
+/** Точка на эллипсе по параметру и нормаль наружу. */
 
 function onEllipse(rx: number, rz: number, a: number): { p: THREE.Vector3; n: THREE.Vector3 } {
   const n = new THREE.Vector3(Math.cos(a) * rz, 0, Math.sin(a) * rx).normalize();
@@ -179,7 +200,8 @@ export class Table3D {
   private tex = new Map<string, THREE.Texture>();
   private loader = new THREE.TextureLoader();
   private cardGeo = cardGeometry(CARD_W, CARD_H, CARD_T, 0.07);
-  private edgeMat = new THREE.MeshStandardMaterial({ color: '#f3eee2', roughness: 0.7 });
+  /** Карты — в прозрачном проходе после видео-людей: полупрозрачная кайма ролика не ложится на них поверх. */
+  private edgeMat = new THREE.MeshStandardMaterial({ color: '#f3eee2', roughness: 0.7, transparent: true });
   private chipGeo = new THREE.CylinderGeometry(CHIP_R, CHIP_R, CHIP_H, 48);
   private chipMat = new Map<number, THREE.Material[]>();
   private ro: ResizeObserver;
@@ -220,8 +242,6 @@ export class Table3D {
   private feltMat!: THREE.MeshStandardMaterial;
   /** Кого снимает вид, пока проигрывает события (DEALER — крупье); null — того, чей ход. */
   private cue: number | null = null;
-  /** Размер общих карт в кадре «как в Apple» (на узком экране мельче). */
-  private stageCard = STAGE_CARD;
   private lastSet: { items: Item3D[]; chips: Chips3D[]; button: (Pt & { seat: number }) | null; labels: Label3D[] } | null = null;
   /** Крупье стоит посередине дальнего края (там у игроков оставлено место). */
   private dealerPlace = (() => {
@@ -428,8 +448,8 @@ export class Table3D {
 
   private syncPeople() {
     if (!this.people) return;
-    const list = [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me, out: p.out, curve: railCurve(p.a) }));
-    if (this.videoPeople && this.places.size) list.push({ ...this.dealerPlace, hidden: false, out: false, curve: railCurve(-Math.PI / 2) });
+    const list = [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me, out: p.out, curve: railCurve(p.pos, p.face) }));
+    if (this.videoPeople && this.places.size) list.push({ ...this.dealerPlace, hidden: false, out: false, curve: railCurve(this.dealerPlace.pos, this.dealerPlace.face) });
     this.people.sync(list, this.lookTarget());
   }
 
@@ -545,7 +565,7 @@ export class Table3D {
     mesh.userData.card = c;
     // бумага с лёгким лаком; без тонового сжатия — красные масти не уходят в оранжевый, а белое под лампой не выгорает
     const mk = (t: THREE.Texture) =>
-      new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, toneMapped: false });
+      new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, transparent: true, toneMapped: false });
     const old = mesh.material as THREE.Material[];
     if (Array.isArray(old)) for (const m of old) if (m !== this.edgeMat) m.dispose();
     mesh.material = [mk(this.texture(c)), mk(this.texture(null)), this.edgeMat];
@@ -630,6 +650,7 @@ export class Table3D {
       let m = this.cards.get(it.key);
       if (!m) {
         const mesh = new THREE.Mesh(this.cardGeo, []);
+        mesh.renderOrder = 2;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         this.paint(mesh, it.card);
@@ -640,7 +661,8 @@ export class Table3D {
         mesh.quaternion.copy(enter && it.card ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI)) : tg.quat);
         this.scene.add(mesh);
         m = { obj: mesh, pos: tg.pos, quat: tg.quat, scale: tg.scale ?? it.s, seat: it.seat, key: it.key };
-        mesh.scale.setScalar(it.s * (enter ? 0.85 : 1));
+        // сразу своего размера (в кадре «как в Apple» карты мельче) — не сдувается на лету
+        mesh.scale.setScalar((tg.scale ?? it.s) * (enter ? 0.85 : 1));
         this.cards.set(it.key, m);
       } else {
         m.pos = tg.pos;
@@ -862,9 +884,7 @@ export class Table3D {
       const pitch = (aHead + aLow) / 2;
       let vfov = (aLow - aHead) * 1.08;
       // узкий экран: по ширине должны влезть соперник (локти могут чуть выйти за край) и все пять общих карт
-      // (на узком экране карты мельче — иначе человек в кадре совсем маленький)
-      this.stageCard = a < 0.9 ? STAGE_CARD * 0.78 : STAGE_CARD;
-      const hfov = 2 * Math.atan(Math.max(5.0 / 2 / D, (2.4 * CARD_W * this.stageCard + 0.25) / (D - STAGE_BOARD)));
+      const hfov = 2 * Math.atan(Math.max(5.0 / 2 / D, (2.4 * CARD_W * STAGE_CARD + 0.25) / (D - STAGE_BOARD)));
       vfov = Math.max(vfov, 2 * Math.atan(Math.tan(hfov / 2) / Math.max(a, 0.1)));
       this.fovGoal = THREE.MathUtils.clamp((vfov * 180) / Math.PI, 30, 80);
       this.camGoal.pos.copy(base).addScaledVector(fwd, D).setY(hCam);
@@ -954,10 +974,16 @@ export class Table3D {
     return new THREE.Vector3(st.fwd.z, 0, -st.fwd.x);
   }
 
-  /** Точка на сукне перед снимаемым (SLOT), на высоте h. */
-  private slot(name: keyof typeof SLOT, h = 0.02): THREE.Vector3 {
+  /** Точка на сукне перед снимаемым (SLOT), на высоте h, не ближе margin к краю сукна
+   * (по умолчанию — разлёт столбиков стопки, 0,6, и ещё запас до валика). */
+  private slot(name: keyof typeof SLOT, h = 0.02, margin = 0.95): THREE.Vector3 {
     const st = this.stage!;
-    return st.base.clone().addScaledVector(st.fwd, SLOT[name].f).addScaledVector(this.right(st), SLOT[name].r).setY(h);
+    const p = st.base.clone().addScaledVector(st.fwd, SLOT[name].f).addScaledVector(this.right(st), SLOT[name].r).setY(h);
+    // на закруглении стола место сбоку от соперника заезжает на валик (стол «съедает» карты и фишки) — сдвигаем к середине
+    const rx = FELT_RX - margin;
+    const rz = FELT_RZ - margin;
+    for (let k = 0; k < 60 && (p.x / rx) ** 2 + (p.z / rz) ** 2 > 1; k++) p.addScaledVector(st.fwd, 0.06);
+    return p;
   }
 
   /** Куда лечь карте: общие — перед тем, кого снимаем (в виде «как в Apple»), его карты — перед ним, остальные — по раскладке. */
@@ -968,15 +994,16 @@ export class Table3D {
     const yaw = Math.atan2(st.fwd.x, st.fwd.z);
     if (it.board) {
       const i = this.lastItems.filter((x) => x.board).indexOf(it);
-      const s = it.s * this.stageCard;
+      const s = it.s * STAGE_CARD;
       const pos = st.base.clone().addScaledVector(st.fwd, STAGE_BOARD).addScaledVector(this.right(st), (i - 2) * CARD_W * s * 1.07).setY(0.02 + CARD_T / 2);
       return { pos, quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0, 'YXZ')), scale: s };
     }
     if (it.seat === st.seat) {
       // две карты веером перед руками
       const i = it.i ?? 0;
-      const s = it.s * this.stageCard * 0.85;
-      const pos = this.slot('hole', 0.02 + CARD_T / 2 + i * 0.006).addScaledVector(this.right(st), (i - 0.5) * CARD_W * s * 1.02);
+      const s = it.s * STAGE_CARD * STAGE_HOLE;
+      // запас от края сукна — пол-веера из двух карт
+      const pos = this.slot('hole', 0.02 + CARD_T / 2 + i * 0.006, (CARD_W + CARD_H) * s * 0.5 + 0.35).addScaledVector(this.right(st), (i - 0.5) * CARD_W * s * 1.02);
       return { pos, quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw - (i - 0.5) * 0.12, 0, 'YXZ')), scale: s };
     }
     return this.cardTarget(it);

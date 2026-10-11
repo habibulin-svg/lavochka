@@ -23,8 +23,8 @@ export interface PersonPlace {
   face: number;
   hidden: boolean;
   out: boolean;
-  /** Кривизна бортика перед местом: 1/(2R) — на сколько края кадра ближе к середине стола (для видео-людей). */
-  curve?: number;
+  /** Изгиб бортика перед местом [слева, справа]: z = c·x² — на сколько края кадра ближе к середине стола (для видео-людей). */
+  curve?: [number, number];
 }
 
 export interface People {
