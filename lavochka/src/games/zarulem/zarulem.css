@@ -1,4 +1,25 @@
-/* «За рулём»: голубая пластмассовая панель с окном, рулём, ключом и рычагом. */
-.zr-dev { width: min(100%, 540px, calc((100vh - 150px) * 0.84)); margin: 0 auto; border-radius: 26px 26px 40px 40px; overflow: hidden;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 14px 30px rgba(0, 0, 0, 0.45); touch-action: none; user-select: none; }
-.zr-dev canvas { display: block; width: 100%; height: auto; }
+/* «За рулём»: 3D-игрушка во всю доску, табло сверху, таблица мест слева, надписи поверх. */
+.table--zarulem .table-board { padding: 0; }
+.zr-wrap { position: relative; width: 100%; height: min(78vh, 62vw); min-height: 320px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.zr-3d { position: absolute; inset: 0; }
+.zr-3d canvas { display: block; width: 100%; height: 100%; outline: none; }
+.zr-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 4px 14px; border-radius: 10px; background: rgba(12, 30, 36, 0.74); color: #e8f6f8; font: 18px 'PT Sans', Arial, sans-serif; pointer-events: none; white-space: nowrap; }
+.zr-hud b { color: #ffe27a; font-size: 22px; }
+.zr-hud .t { font: bold 18px 'Courier New', monospace; color: #ffd24a; }
+.zr-hud .gear { min-width: 26px; padding: 0 6px; border-radius: 13px; text-align: center; background: #efe6c8; color: #1f3a40; font-weight: bold; }
+.zr-board { position: absolute; top: 10px; left: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(12, 30, 36, 0.7); color: #e8f6f8; font: 14px 'PT Sans', Arial, sans-serif; pointer-events: none; }
+.zr-board div { display: flex; align-items: center; gap: 6px; line-height: 1.5; }
+.zr-board div.me { font-weight: bold; }
+.zr-board div.out { opacity: 0.5; text-decoration: line-through; }
+.zr-board i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.zr-board b { margin-left: auto; padding-left: 10px; color: #ffe27a; }
+.zr-banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 14px 28px; border-radius: 14px; background: rgba(12, 30, 40, 0.78); color: #ffe9a0; text-align: center; pointer-events: none; }
+.zr-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; }
+.zr-banner span { font: 16px 'PT Sans', Arial, sans-serif; color: #e8f0f8; }
+.zr-hint { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+@media (max-width: 860px) {
+  .zr-wrap { height: min(70vh, 120vw); }
+  .zr-hud { font-size: 15px; gap: 10px; }
+  .zr-hud b { font-size: 18px; }
+  .zr-board { top: 48px; font-size: 12px; }
+}
