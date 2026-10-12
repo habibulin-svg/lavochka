@@ -14,6 +14,8 @@ import './puzzles.css';
 
 /** Подсветка в судоку: одинаковые цифры, строка/столбец/квадрат выбранной клетки. */
 export const PREF_SAME = 'puzzles.highlight';
+/** Служебный символ в скрытом поле ввода (см. обработчик input). */
+const IME_PAD = ' ';
 
 class PuzzlesView implements GameView<State, Event> {
   private ctx!: ViewCtx;
@@ -62,11 +64,14 @@ class PuzzlesView implements GameView<State, Event> {
     this.ime = this.root.querySelector('.pz-ime') as HTMLInputElement;
     this.credits = this.root.querySelector('.pz-credits') as HTMLElement;
     // телефон: буквы приходят в скрытое поле (keydown там без буквы)
+    // в поле всегда лежит служебный пробел: экранная клавиатура стирает его — это Backspace (в пустом поле он не приходит)
     this.ime.addEventListener('input', () => {
       const t = this.ime.value;
-      this.ime.value = '';
-      for (const ch of t) this.letter(ch);
+      this.resetIme();
+      if (!t) this.backspace();
+      for (const ch of t.startsWith(IME_PAD) ? t.slice(IME_PAD.length) : t) this.letter(ch);
     });
+    this.ime.addEventListener('focus', () => this.resetIme());
     this.info = this.root.querySelector('.pz-info') as HTMLElement;
     this.clock = this.root.querySelector('.pz-clock') as HTMLElement;
     this.ctl = h(`<div class="pz-ctl"></div>`);
@@ -294,8 +299,18 @@ class PuzzlesView implements GameView<State, Event> {
     this.focusIme();
   }
 
+  private resetIme() {
+    this.ime.value = IME_PAD;
+    try {
+      this.ime.setSelectionRange(IME_PAD.length, IME_PAD.length);
+    } catch {
+      /* поле не в фокусе */
+    }
+  }
+
   private focusIme() {
     if (this.ctx.demo || this.seat == null) return;
+    this.resetIme();
     try {
       this.ime.focus({ preventScroll: true });
     } catch {
@@ -341,6 +356,15 @@ class PuzzlesView implements GameView<State, Event> {
     }
   }
 
+  /** Стереть всё слово, на котором курсор (кроме открытых подсказкой). */
+  private eraseWord() {
+    const v = this.s;
+    const k = this.activeWord();
+    if (!v || v.done || k < 0) return;
+    const is = (v.data as WordData).words[k].cells.filter((c) => v.cells[c] && !v.fixed[c]);
+    if (is.length) this.act({ type: 'set', is, v: '' });
+  }
+
   private buildControls(v: State) {
     if (this.ctx.demo) {
       this.ctl.innerHTML = '';
@@ -348,7 +372,8 @@ class PuzzlesView implements GameView<State, Event> {
     }
     const tools = `<div class="pz-tools"><button class="btn" data-a="hint">Подсказка</button><button class="btn" data-a="check">Проверить</button></div>`;
     if (isWords(v.kind)) {
-      this.ctl.innerHTML = `${tools}<p class="hint small-hint">Нажмите клетку и печатайте. Повторное нажатие — сменить направление; Tab — следующее слово.
+      this.ctl.innerHTML = `<div class="pz-tools"><button class="btn" data-a="bs" title="Backspace">⌫ Стереть букву</button><button class="btn" data-a="word">Стереть слово</button></div>${tools}
+        <p class="hint small-hint">Нажмите клетку и печатайте; Backspace — стереть. Повторное нажатие — сменить направление; Tab — следующее слово.
         ${v.kind === 'crossword' ? 'Вопрос из списка — сразу к слову.' : 'Нажатие на вопрос — к его слову.'}</p>`;
     } else if (v.kind === 'sudoku') {
       this.ctl.innerHTML = `<div class="pz-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<button class="pz-key" data-d="${d}">${d}</button>`).join('')}
@@ -363,7 +388,7 @@ class PuzzlesView implements GameView<State, Event> {
       };
     } else {
       this.ctl.innerHTML = `<div class="seg pz-mode"><button data-m="fill" class="on">■ Закрасить</button><button data-m="cross">✕ Пусто</button></div>${tools}
-        <p class="hint small-hint">Нажатие — закрасить, правая кнопка — крестик. Ведите, не отпуская, — вдоль строки или столбца.</p>`;
+        <p class="hint small-hint">Нажатие — закрасить, правая кнопка — крестик, нажатие по закрашенному — стереть. Ведите, не отпуская, — вдоль строки или столбца.</p>`;
     }
     this.ctl.querySelectorAll<HTMLButtonElement>('[data-d]').forEach((b) => (b.onclick = () => this.digit(+b.dataset.d!)));
     this.ctl.querySelectorAll<HTMLButtonElement>('[data-m]').forEach(
@@ -379,6 +404,14 @@ class PuzzlesView implements GameView<State, Event> {
     };
     on('pencil', () => this.togglePencil());
     on('erase', () => this.erase());
+    on('bs', () => {
+      this.backspace();
+      this.focusIme();
+    });
+    on('word', () => {
+      this.eraseWord();
+      this.focusIme();
+    });
     on('hint', () => this.act({ type: 'hint', i: this.sel >= 0 ? this.sel : undefined }));
     on('check', () => this.act({ type: 'check' }));
   }

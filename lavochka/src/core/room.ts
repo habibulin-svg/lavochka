@@ -369,6 +369,7 @@ export class Room {
 
   private restart() {
     this.botToken++;
+    if (this.def.again) this.options = this.def.again(this.options);
     this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.options);
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();

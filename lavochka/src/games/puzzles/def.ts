@@ -120,6 +120,8 @@ export const def: GameDef<State, Action, Event, State> = {
       opts,
       rng,
     ),
+  // продолженная головоломка (сид и введённое из сохранения) не повторяется: «Сыграть ещё» — новая с теми же настройками
+  again: ({ seed, fill, ...rest }) => rest,
   toAct,
   apply,
   view: (s) => view(s),

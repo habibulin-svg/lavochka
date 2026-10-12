@@ -136,6 +136,8 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   options?: OptionDef[];
   presets?: Preset[];
   setup(seats: SeatSpec[], opts: Options, rng: Rng): S;
+  /** Настройки для «Сыграть ещё» — убрать одноразовое (сид, восстановленный ход). По умолчанию — те же. */
+  again?(opts: Options): Options;
   /** Кто сейчас должен действовать (обычно один игрок). Пусто — партия окончена. */
   toAct(s: S): number[];
   /** Применить действие. null — действие недопустимо. Состояние s не мутировать. */
