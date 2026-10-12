@@ -164,7 +164,15 @@ const GB = {
 
 // РФ: Крым и Севастополь в NE де-факто у RUS под украинскими кодами; Алтайский край подписан как Республика Алтай
 const ru = direct('RUS', { 'UA-43': { id: 'RU-CR', qid: 'Q15966495' }, 'UA-40': { id: 'RU-SEV', qid: 'Q7525' }, 'RU-ALT': { id: 'RU-ALT', qid: 'Q5942' } });
-for (const r of raw) if (r.id === 'RU-CR' || r.id === 'RU-SEV') r.disputed = true;
+// субъекты РФ по Конституции (2022): области целиком — из украинского admin-1 Natural Earth
+const NEW_RU = { 'UA-14': ['RU-DPR', 'Q16150196'], 'UA-09': ['RU-LPR', 'Q16746854'], 'UA-23': ['RU-ZAP', 'Q111710700'], 'UA-65': ['RU-KHE', 'Q111686059'] };
+for (const f of A1.UKR) {
+  const n = NEW_RU[f.properties.iso_3166_2];
+  if (!n) continue;
+  ru.push(feat(n[0], f.geometry));
+  raw.push({ id: n[0], qid: n[1], layer: 'RUS', ne: f.properties.name_ru, en: f.properties.name_en, cont: '', sov: 'RUS', type: 'region' });
+}
+for (const r of raw) if (['RU-CR', 'RU-SEV', ...Object.values(NEW_RU).map((x) => x[0])].includes(r.id)) r.disputed = true;
 const us = direct('USA');
 const regions = {
   de: direct('DEU'),

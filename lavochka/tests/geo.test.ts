@@ -10,10 +10,10 @@ describe('география', () => {
     for (const e of ENTITIES) expect(e.n && e.l).toBeTruthy();
   });
 
-  it('наборы не пустые: 193+ страны, 85 регионов РФ, 51 штат с округом', () => {
+  it('наборы не пустые: 193+ страны, 89 регионов РФ, 51 штат с округом', () => {
     expect(members({ set: 'world' }).length).toBeGreaterThanOrEqual(195);
     expect(members({ set: 'world', hard: true }).length).toBeGreaterThan(members({ set: 'world' }).length);
-    expect(members({ set: 'ru' }).length).toBe(85);
+    expect(members({ set: 'ru' }).length).toBe(89);
     expect(members({ set: 'us' }).length).toBe(51);
     for (const c of REGION_COUNTRIES) expect(members({ set: 'reg', country: c.id }).length, c.id).toBeGreaterThan(3);
   });
