@@ -3,12 +3,28 @@
  * хватает настроек и строки введённого (`fill`). Ходят все одновременно; боты — помощники, изредка вписывают верную клетку. */
 import { SeededRng } from '../../core/rng';
 import type { Options, Rng } from '../../core/types';
+import { allClues, allPics } from '../../words/clues';
 import * as sudoku from './sudoku';
 import * as picross from './picross';
+import * as crossword from './crossword';
+import * as scanword from './scanword';
 
-export type Kind = 'sudoku' | 'picross';
+export type Kind = 'sudoku' | 'picross' | 'crossword' | 'scanword';
 
-export const KIND_LABEL: Record<Kind, string> = { sudoku: 'Судоку', picross: 'Пикросс' };
+export const KIND_LABEL: Record<Kind, string> = { sudoku: 'Судоку', picross: 'Пикросс', crossword: 'Кроссворд', scanword: 'Сканворд' };
+export const WORD_LEVELS = ['Лёгкий', 'Средний', 'Сложный'];
+/** Кроссворд: поле, из которого вырастает раскладка, и сколько слов хотим. */
+export const CROSS_SIZES: Record<string, { label: string; w: number; h: number; target: number }> = {
+  small: { label: 'маленький', w: 11, h: 11, target: 22 },
+  medium: { label: 'средний', w: 15, h: 15, target: 40 },
+  large: { label: 'большой', w: 19, h: 19, target: 64 },
+};
+export const SCAN_SIZES: Record<string, { label: string; w: number; h: number; pics: number }> = {
+  small: { label: 'маленький', w: 8, h: 10, pics: 1 },
+  medium: { label: 'средний', w: 10, h: 12, pics: 2 },
+  large: { label: 'большой', w: 12, h: 15, pics: 3 },
+};
+export const isWords = (k: Kind) => k === 'crossword' || k === 'scanword';
 export const SUDOKU_LEVELS = ['Лёгкий', 'Средний', 'Сложный', 'Эксперт'];
 export const PICROSS_LEVELS = ['Лёгкий', 'Средний', 'Сложный'];
 export const PICROSS_SIZES = ['5x5', '10x10', '15x15', '20x20', '25x25'];
@@ -16,6 +32,36 @@ export const PICROSS_SIZES = ['5x5', '10x10', '15x15', '20x20', '25x25'];
 export interface PicrossData {
   rows: number[][];
   cols: number[][];
+}
+
+/** Слово кроссворда или сканворда (без ответа — он только в sol). */
+export interface WordSlot {
+  cells: number[];
+  dir: 0 | 1;
+  /** Номер в кроссворде (в сканворде 0). */
+  num: number;
+  clue: string;
+  /** Сканворд: клетка с вопросом; кроссворд: -1. */
+  at: number;
+}
+
+/** Картинка сканворда: блок клеток, файл public/scan/<file>.webp, подпись автора. */
+export interface PicData {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  num: number;
+  file: string;
+  credit: string;
+  src: string;
+}
+
+export interface WordData {
+  words: WordSlot[];
+  pics?: PicData[];
+  /** Клетки, где букв нет (в сканворде — клетки-вопросы и пустые). */
+  block: boolean[];
 }
 
 export interface State {
@@ -37,7 +83,7 @@ export interface State {
   who: number[];
   /** Пометки карандашом в судоку: биты цифр. */
   notes: number[];
-  data: PicrossData | null;
+  data: PicrossData | WordData | null;
   /** Курсор каждого места (-1 — нет). */
   cur: number[];
   /** Ошибки, найденные последней проверкой (пропадают, когда клетку исправят). */
@@ -71,7 +117,9 @@ export const sizeOf = (size: string) => {
 
 /** Игровые настройки → параметры головоломки (без сида). */
 export function paramsOf(o: Options): { kind: Kind; level: number; size: string } {
-  const kind: Kind = o.kind === 'picross' ? 'picross' : 'sudoku';
+  const kind: Kind = o.kind === 'picross' || o.kind === 'crossword' || o.kind === 'scanword' ? o.kind : 'sudoku';
+  if (kind === 'crossword') return { kind, level: clamp(Number(o.cLevel) || 2, 1, 3), size: String(o.cSize) in CROSS_SIZES ? String(o.cSize) : 'medium' };
+  if (kind === 'scanword') return { kind, level: clamp(Number(o.scLevel) || 2, 1, 3), size: String(o.scSize) in SCAN_SIZES ? String(o.scSize) : 'medium' };
   if (kind === 'sudoku') return { kind, level: clamp(Number(o.sLevel) || 2, 1, 4), size: '9x9' };
   const size = PICROSS_SIZES.includes(String(o.pSize)) ? String(o.pSize) : '10x10';
   return { kind, level: clamp(Number(o.pLevel) || 2, 1, 3), size };
@@ -85,8 +133,13 @@ export function newState(kind: Kind, level: number, size: string, seed: number, 
   let sol: string[];
   let fixed: boolean[];
   let cells: string[];
-  let data: PicrossData | null = null;
-  if (kind === 'sudoku') {
+  let data: PicrossData | WordData | null = null;
+  if (isWords(kind)) {
+    const r = makeWords(kind, level, size, rng);
+    ({ w, h, sol, data } = r);
+    fixed = r.data.block.slice();
+    cells = sol.map(() => '');
+  } else if (kind === 'sudoku') {
     const p = sudoku.generate(rng, level);
     sol = p.solution.map(String);
     fixed = p.puzzle.map((d) => d > 0);
@@ -127,6 +180,68 @@ export function newState(kind: Kind, level: number, size: string, seed: number, 
   return s;
 }
 
+/** Вопросы из базы для уровня: в сканворде знакомые слова — охотнее (rank — сложность). */
+function wordPool(kind: Kind, level: number, wide: boolean) {
+  const base = allClues();
+  const maxDiff = wide ? 3 : kind === 'crossword' ? level : Math.min(3, level + 1);
+  const out: { word: string; ref: number; rank: number }[] = [];
+  base.forEach((c, ref) => {
+    if (c.diff <= maxDiff && c.word.length >= 3 && c.word.length <= 13) out.push({ word: c.word, ref, rank: c.diff });
+  });
+  return out;
+}
+
+function makeWords(kind: Kind, level: number, size: string, rng: Rng): { w: number; h: number; sol: string[]; data: WordData } {
+  const base = allClues();
+  if (!base.length) throw new Error('База вопросов не загружена');
+  const text = (ref: number) => (kind === 'crossword' ? base[ref].long : base[ref].short);
+  if (kind === 'crossword') {
+    const sz = CROSS_SIZES[size] ?? CROSS_SIZES.medium;
+    let pool = wordPool(kind, level, false);
+    if (pool.length < 500) pool = wordPool(kind, level, true);
+    const L = crossword.generate(rng, pool, { w: sz.w, h: sz.h, target: sz.target });
+    const n = L.w * L.h;
+    const sol: string[] = new Array(n).fill('');
+    const words: WordSlot[] = L.words.map((p) => {
+      const cells = crossword.cellsOf(p, p.word.length, L.w);
+      cells.forEach((c, k) => (sol[c] = p.word[k]));
+      return { cells, dir: p.dir, num: p.num, clue: text(p.ref), at: -1 };
+    });
+    return { w: L.w, h: L.h, sol, data: { words, block: sol.map((c) => !c) } };
+  }
+  const sz = SCAN_SIZES[size] ?? SCAN_SIZES.medium;
+  // картинки: слова базы, к которым есть фото
+  const picOf = new Map(allPics().map((p) => [p.word, p]));
+  const pool0 = wordPool(kind, level, false);
+  const picPool = wordPool(kind, level, true).filter((e) => picOf.has(e.word));
+  const pics = { pics: sz.pics, picPool };
+  let L = scanword.generate(rng, pool0, { w: sz.w, h: sz.h, maxLen: 7, nodes: 3000, ...pics });
+  if (!L) L = scanword.generate(rng, wordPool(kind, level, true), { w: sz.w, h: sz.h, maxLen: 7, nodes: 6000, patterns: 80, ...pics });
+  if (!L) {
+    // база мала для сплошного поля — разреженный сканворд: вопрос в клетке перед словом
+    const C = crossword.generate(rng, wordPool(kind, level, true), { w: sz.w, h: sz.h, target: 60, scan: true });
+    const sol: string[] = new Array(C.w * C.h).fill('');
+    const words: WordSlot[] = C.words.map((p) => {
+      const cells = crossword.cellsOf(p, p.word.length, C.w);
+      cells.forEach((c, k) => (sol[c] = p.word[k]));
+      return { cells, dir: p.dir, num: 0, clue: text(p.ref), at: p.dir === 0 ? cells[0] - 1 : cells[0] - C.w };
+    });
+    return { w: C.w, h: C.h, sol, data: { words, block: sol.map((c) => !c) } };
+  }
+  const lay = L;
+  const sol: string[] = new Array(lay.w * lay.h).fill('');
+  const picNum = new Map(lay.pics.map((p, k) => [p.slot, k + 1]));
+  const words: WordSlot[] = lay.slots.map((sl, k) => {
+    sl.cells.forEach((c, j) => (sol[c] = sl.word[j]));
+    return { cells: sl.cells, dir: sl.dir, num: 0, clue: picNum.has(k) ? `Фото ${picNum.get(k)}` : text(sl.ref), at: sl.cy * lay.w + sl.cx };
+  });
+  const picData = lay.pics.map((p, k) => {
+    const meta = picOf.get(lay.slots[p.slot].word)!;
+    return { x: p.x, y: p.y, w: p.w, h: p.h, num: k + 1, file: meta.file, credit: `${meta.author || 'автор не указан'}, ${meta.license}`, src: meta.src };
+  });
+  return { w: lay.w, h: lay.h, sol, data: { words, block: sol.map((c) => !c), pics: picData } };
+}
+
 /** Строка введённого для сохранения: по символу на клетку ('.' — пусто). */
 export function fillOf(s: State): string {
   return s.cells.map((c) => c || '.').join('');
@@ -141,13 +256,13 @@ function restoreFill(s: State, fill: string) {
   }
 }
 
-const valid = (s: State, v: string) => (s.kind === 'sudoku' ? /^[1-9]$/.test(v) : v === '#' || v === 'x');
+const valid = (s: State, v: string) => (s.kind === 'sudoku' ? /^[1-9]$/.test(v) : isWords(s.kind) ? /^[а-я]$/.test(v) : v === '#' || v === 'x');
 
 /** Клетка вписана верно (в пикроссе крестик на пустой — тоже верно, пустая на пустой — не в счёт). */
-const right = (s: State, i: number) => (s.kind === 'sudoku' ? s.cells[i] === s.sol[i] : s.sol[i] === '#' ? s.cells[i] === '#' : s.cells[i] !== '#');
+const right = (s: State, i: number) => (s.kind !== 'picross' ? s.cells[i] === s.sol[i] : s.sol[i] === '#' ? s.cells[i] === '#' : s.cells[i] !== '#');
 
 export function solved(s: State): boolean {
-  if (s.kind === 'sudoku') return s.cells.every((c, i) => c === s.sol[i]);
+  if (s.kind !== 'picross') return s.cells.every((c, i) => c === s.sol[i]);
   return s.sol.every((v, i) => (v === '#') === (s.cells[i] === '#'));
 }
 
@@ -155,7 +270,7 @@ export function solved(s: State): boolean {
 export function progress(s: State): number {
   if (s.done) return 1;
   if (s.kind === 'picross') {
-    const need = s.data ? s.data.rows.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) : 0;
+    const need = s.data && 'rows' in s.data ? s.data.rows.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) : 0;
     const have = s.cells.filter((c) => c === '#').length;
     return need ? Math.min(1, have / need) : 1;
   }
@@ -245,9 +360,9 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     case 'hint': {
       // своя клетка под курсором, если она не решена; иначе — следующая по логике (судоку) или любая нерешённая
       let i = Number.isInteger(a.i) && a.i! >= 0 && a.i! < n && !s.fixed[a.i!] && !right(s, a.i!) ? a.i! : -1;
-      if (i < 0 || (s.kind === 'sudoku' && s.cells[i] === s.sol[i])) i = hintCell(s, rng);
+      if (i < 0 || (s.kind !== 'picross' && s.cells[i] === s.sol[i])) i = hintCell(s, rng);
       if (i < 0) return null;
-      s.cells[i] = s.kind === 'sudoku' ? s.sol[i] : s.sol[i] === '#' ? '#' : 'x';
+      s.cells[i] = s.kind !== 'picross' ? s.sol[i] : s.sol[i] === '#' ? '#' : 'x';
       s.who[i] = -1;
       s.fixed[i] = true;
       if (s.kind === 'sudoku') clearNotes(s, i);
@@ -273,7 +388,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
 /** Клетка для подсказки: в судоку — та, что решается следующей по логике; в пикроссе — неверная или незакрашенная. */
 function hintCell(s: State, rng: Rng): number {
   const open: number[] = [];
-  for (let i = 0; i < s.cells.length; i++) if (!s.fixed[i] && !right(s, i) && (s.kind === 'sudoku' || s.sol[i] === '#' || s.cells[i] === '#')) open.push(i);
+  for (let i = 0; i < s.cells.length; i++) if (!s.fixed[i] && !right(s, i) && (s.kind !== 'picross' || s.sol[i] === '#' || s.cells[i] === '#')) open.push(i);
   if (!open.length) return -1;
   if (s.kind === 'sudoku') {
     const wrong = open.find((i) => s.cells[i]);

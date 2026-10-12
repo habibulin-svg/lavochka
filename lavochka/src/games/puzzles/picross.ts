@@ -145,12 +145,12 @@ export interface Picross {
 }
 
 /** Плотность и сглаживание по уровню: на лёгком больше закрашенного — длинные блоки, проще считать. */
-const DENSITY = [0, 0.62, 0.55, 0.5];
+const DENSITY = [0, 0.56, 0.52, 0.5];
 
 function randomPicture(rng: Rng, w: number, h: number, level: number): number[] {
   let g = Array.from({ length: w * h }, () => (rng.next() < DENSITY[level] ? 1 : 0));
   // сглаживание: клетка берёт большинство соседей — выходят пятна, а не шум
-  const passes = level === 3 ? 1 : 2;
+  const passes = 1;
   for (let p = 0; p < passes; p++) {
     const n = g.slice();
     for (let y = 0; y < h; y++)
@@ -185,14 +185,58 @@ export function cluesFor(sol: number[], w: number, h: number) {
   return { rows, cols };
 }
 
+/**
+ * Насколько головоломка лёгкая: доля клеток, которые определяются одним проходом по строкам и столбцам с пустого поля
+ * (каждая линия сама по себе). На лёгком — много, на сложном — почти ничего: дальше только цепочкой рассуждений.
+ */
+function firstSweep(w: number, h: number, rows: Clues, cols: Clues): number {
+  let known = 0;
+  for (let y = 0; y < h; y++) known += solveLine(rows[y], new Array(w).fill(-1))!.filter((v) => v !== -1).length;
+  const g = new Array(w * h).fill(false);
+  for (let y = 0; y < h; y++) solveLine(rows[y], new Array(w).fill(-1))!.forEach((v, x) => (g[y * w + x] = v !== -1));
+  for (let x = 0; x < w; x++)
+    solveLine(cols[x], new Array(h).fill(-1))!.forEach((v, y) => {
+      if (v !== -1 && !g[y * w + x]) known++;
+    });
+  return known / (w * h);
+}
+
+/** Потолок доли «с первого прохода» по уровню (для маленьких полей мягче). */
+const SWEEP_MAX = [0, 0.55, 0.35, 0.2];
+
+/** Картинка без «сплошных» линий и с разнообразными блоками. */
+function looksGood(w: number, h: number, rows: Clues, cols: Clues): boolean {
+  const lines = [...rows.map((r) => ({ r, n: w })), ...cols.map((r) => ({ r, n: h }))];
+  const full = lines.filter(({ r, n }) => r.length === 1 && r[0] === n).length;
+  const blocks = lines.reduce((a, { r }) => a + r.length, 0) / lines.length;
+  return full <= (w >= 10 ? 1 : 2) && blocks >= (w >= 10 ? 1.7 : 1.2);
+}
+
 export function generate(rng: Rng, w: number, h: number, level: number): Picross {
   let last: Picross | null = null;
+  let lastScore = Infinity;
+  const cap = SWEEP_MAX[level] + (w <= 5 ? 0.3 : 0);
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const solution = randomPicture(rng, w, h, level);
+    const { rows, cols } = cluesFor(solution, w, h);
+    if (!looksGood(w, h, rows, cols)) continue;
+    const g = lineSolve(w, h, rows, cols);
+    if (!g || g.some((v) => v === -1)) continue;
+    const sweep = firstSweep(w, h, rows, cols);
+    const p = { w, h, solution, rows, cols, given: [] as number[] };
+    if (sweep <= cap) return p;
+    if (sweep < lastScore) {
+      last = p;
+      lastScore = sweep;
+    }
+  }
+  if (last) return last;
   for (let attempt = 0; attempt < 60; attempt++) {
     const solution = randomPicture(rng, w, h, level);
     const { rows, cols } = cluesFor(solution, w, h);
-    const g = lineSolve(w, h, rows, cols);
-    if (g && g.every((v) => v !== -1)) return { w, h, solution, rows, cols, given: [] };
     last = { w, h, solution, rows, cols, given: [] };
+    const g = lineSolve(w, h, rows, cols);
+    if (g && g.every((v) => v !== -1)) return last;
   }
   // не вышло — открываем неопределившиеся клетки по одной, пока логика не дорешает
   const p = last!;

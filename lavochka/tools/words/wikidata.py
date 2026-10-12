@@ -52,11 +52,18 @@ QUERIES = {
     'currency': ('?item wdt:P31 wd:Q8142 .', 30, 'валюта'),
 }
 
-# люди: фамилия; известность — порог по стране
-PEOPLE = {
-    'person_world': ('?item wdt:P31 wd:Q5 .', 110),
-    'person_ru': ('?item wdt:P31 wd:Q5 ; wdt:P27 ?c . VALUES ?c { wd:Q159 wd:Q15180 wd:Q34266 }', 35),
+# люди: фамилия; по профессиям (вся выборка людей разом не укладывается в лимит времени сервера)
+OCCUPATIONS = {
+    'writer': ('Q36180', 60), 'poet': ('Q49757', 50), 'composer': ('Q36834', 50), 'painter': ('Q1028181', 60),
+    'actor': ('Q33999', 70), 'director': ('Q2526255', 60), 'physicist': ('Q169470', 60), 'chemist': ('Q593644', 60),
+    'mathematician': ('Q170790', 60), 'philosopher': ('Q4964182', 70), 'singer': ('Q177220', 70), 'astronaut': ('Q11631', 40),
+    'explorer': ('Q11900058', 50), 'chess': ('Q10873124', 40), 'inventor': ('Q205375', 50), 'sculptor': ('Q1281618', 50),
+    'military': ('Q189290', 60), 'monarch': ('Q116', 60), 'footballer': ('Q937857', 90), 'hockey': ('Q11774891', 50),
 }
+PEOPLE = {f'person_{k}': (f'?item wdt:P106 wd:{q} .', sl) for k, (q, sl) in OCCUPATIONS.items()}
+# свои — с порогом ниже
+PEOPLE.update({f'person_ru_{k}': (f'?item wdt:P106 wd:{q} ; wdt:P27 ?c . VALUES ?c {{ wd:Q159 wd:Q15180 wd:Q34266 }}', max(15, sl // 3)) for k, (q, sl) in OCCUPATIONS.items()})
+
 
 LETTERS = re.compile(r'^[а-я]{3,15}$')
 

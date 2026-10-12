@@ -1,8 +1,9 @@
-/* «Головоломки» — одна карточка: судоку и пикросс (дальше — кроссворд и сканворд). Решают вместе: все вписывают в одну сетку.
- * Без DOM. Движок — engine.ts, генераторы — sudoku.ts / picross.ts, боты-помощники — bot.ts. */
+/* «Головоломки» — одна карточка: судоку, пикросс, кроссворд, сканворд. Решают вместе: все вписывают в одну сетку.
+ * Без DOM. Движок — engine.ts, генераторы — sudoku.ts / picross.ts / crossword.ts / scanword.ts, боты-помощники — bot.ts.
+ * Кроссворду и сканворду нужна база вопросов (words/clues.ts) — её грузит defs.ts / каталог до начала партии. */
 import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { choose } from './bot';
-import { apply, KIND_LABEL, newState, PICROSS_LEVELS, PICROSS_SIZES, setup, SUDOKU_LEVELS, toAct, view, type Action, type Event, type State } from './engine';
+import { apply, CROSS_SIZES, type Kind, type WordData, KIND_LABEL, newState, PICROSS_LEVELS, PICROSS_SIZES, SCAN_SIZES, setup, SUDOKU_LEVELS, toAct, view, WORD_LEVELS, type Action, type Event, type State } from './engine';
 
 export const SEATS = [
   { name: 'Вовка', color: '#c0281e', light: '#e86a5a', dark: '#7a140e' },
@@ -32,12 +33,12 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
 /** Показ: настоящая головоломка с известным сидом; ходы — верные клетки из решения. */
-function demo(kind: 'sudoku' | 'picross', level: number, size: string, seed: number, pick: (s: State) => { seat: number; action: Action; caption?: string }[], intro: string): DemoScript<State, Action> {
+function demo(kind: Kind, level: number, size: string, seed: number, pick: (s: State) => { seat: number; action: Action; caption?: string }[], intro: string): DemoScript<State, Action> {
   let base: State | null = null;
   const get = () => (base ??= newState(kind, level, size, seed, [0, 1]));
   return {
     seats: demoSeats,
-    options: kind === 'sudoku' ? { kind, sLevel: level } : { kind, pLevel: level, pSize: size },
+    options: kind === 'sudoku' ? { kind, sLevel: level } : kind === 'picross' ? { kind, pLevel: level, pSize: size } : kind === 'crossword' ? { kind, cLevel: level, cSize: size } : { kind, scLevel: level, scSize: size },
     setup: () => get(),
     intro,
     get steps() {
@@ -55,6 +56,16 @@ function sudokuSteps(s: State, captions: string[]) {
     steps.push({ seat: k % 2, action: { type: 'set', is: [i], v: s.sol[i] }, caption: captions[k] });
   }
   return steps;
+}
+
+/** Кроссворд/сканворд: первое слово по буквам, Вовка и Ленка по очереди. */
+function wordSteps(s: State, caption: string) {
+  const wd = (s.data as WordData).words[0];
+  return wd.cells.map((c, k) => ({
+    seat: k % 2,
+    action: { type: 'set', is: [c], v: s.sol[c] } as Action,
+    caption: k === 0 ? `${caption} «${wd.clue}» — ${wd.cells.length} букв.` : k === wd.cells.length - 1 ? 'Слово вписано. Буквы в пересечениях подсказывают соседние слова.' : undefined,
+  }));
 }
 
 function picrossSteps(s: State) {
@@ -78,10 +89,14 @@ export const def: GameDef<State, Action, Event, State> = {
       key: 'kind',
       label: 'Головоломка',
       type: 'select',
-      choices: (['sudoku', 'picross'] as const).map((k) => ({ value: k, label: KIND_LABEL[k] })),
-      default: 'sudoku',
+      choices: (['crossword', 'scanword', 'sudoku', 'picross'] as const).map((k) => ({ value: k, label: KIND_LABEL[k] })),
+      default: 'crossword',
     },
-    { key: 'sLevel', label: 'Сложность', type: 'select', choices: SUDOKU_LEVELS.map((l, i) => ({ value: i + 1, label: l })), default: 2, showIf: (o) => o.kind !== 'picross' },
+    { key: 'cSize', label: 'Размер', type: 'select', choices: Object.entries(CROSS_SIZES).map(([v, x]) => ({ value: v, label: `${x.label} (~${x.target} слов)` })), default: 'medium', showIf: (o) => o.kind === 'crossword' },
+    { key: 'cLevel', label: 'Сложность', type: 'select', choices: WORD_LEVELS.map((l, i) => ({ value: i + 1, label: l })), default: 2, showIf: (o) => o.kind === 'crossword' },
+    { key: 'scSize', label: 'Размер', type: 'select', choices: Object.entries(SCAN_SIZES).map(([v, x]) => ({ value: v, label: `${x.label} (${x.w} × ${x.h})` })), default: 'medium', showIf: (o) => o.kind === 'scanword' },
+    { key: 'scLevel', label: 'Сложность', type: 'select', choices: WORD_LEVELS.map((l, i) => ({ value: i + 1, label: l })), default: 2, showIf: (o) => o.kind === 'scanword' },
+    { key: 'sLevel', label: 'Сложность', type: 'select', choices: SUDOKU_LEVELS.map((l, i) => ({ value: i + 1, label: l })), default: 2, showIf: (o) => o.kind === 'sudoku' },
     {
       key: 'pSize',
       label: 'Размер',
@@ -93,6 +108,8 @@ export const def: GameDef<State, Action, Event, State> = {
     { key: 'pLevel', label: 'Сложность', type: 'select', choices: PICROSS_LEVELS.map((l, i) => ({ value: i + 1, label: l })), default: 2, showIf: (o) => o.kind === 'picross' },
   ],
   presets: [
+    { id: 'crossword', label: 'Кроссворд', hint: 'Слова по номерам: по горизонтали и по вертикали', options: { kind: 'crossword' } },
+    { id: 'scanword', label: 'Сканворд', hint: 'Вопросы прямо в клетках, стрелка показывает, куда писать', options: { kind: 'scanword' } },
     { id: 'sudoku', label: 'Судоку', hint: 'Цифры 1–9 в каждой строке, столбце и квадрате', options: { kind: 'sudoku' } },
     { id: 'picross', label: 'Пикросс', hint: 'Японский кроссворд: закрась клетки по числам — выйдет картинка', options: { kind: 'picross' } },
   ],
@@ -130,6 +147,20 @@ export const def: GameDef<State, Action, Event, State> = {
   rules: {
     goal: 'Решить головоломку — одному или всем двором в одну сетку.',
     sections: [
+      {
+        title: 'Кроссворд',
+        html: `<p>Слова пересекаются в общих буквах. Вопросы — в списках «По горизонтали» и «По вертикали», номер вопроса стоит в первой клетке слова.</p>
+          <p>Нажмите клетку и печатайте — буквы идут по слову; повторное нажатие на клетку меняет направление. Вопрос из списка сразу ведёт к своему слову.
+          Сложность — какие слова попадаются: на лёгком только всем известные.</p>`,
+        demo: demo('crossword', 1, 'small', 31, (s) => wordSteps(s, 'Первый вопрос:'), 'Маленький кроссворд.'),
+      },
+      {
+        title: 'Сканворд',
+        html: `<p>Вопросы стоят прямо в клетках поля, коротко — в два-три слова. Стрелка показывает, куда писать ответ: вправо или вниз от вопроса.
+          В одной клетке бывает два вопроса. Почти каждая буква — в двух словах сразу.</p>
+          <p>Нажатие на вопрос — к его слову (второе нажатие — ко второму вопросу клетки). «Фото 1» — ответ к картинке с номером 1.</p>`,
+        demo: demo('scanword', 1, 'small', 17, (s) => wordSteps(s, 'Вопрос в голубой клетке:'), 'Маленький сканворд.'),
+      },
       {
         title: 'Судоку',
         html: `<p>Поле 9 × 9 разбито на квадраты 3 × 3. Впишите цифры от 1 до 9 так, чтобы в каждой <b>строке</b>, каждом <b>столбце</b>

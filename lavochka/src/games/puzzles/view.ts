@@ -1,14 +1,19 @@
 /* «Головоломки» — отрисовка: газетная страница с сеткой. Судоку — цифры, карандашные пометки, подсветка строки/столбца/квадрата;
- * пикросс — числа над столбцами и слева от строк, закраска протягиванием. Чужие курсоры — рамкой цвета игрока.
+ * пикросс — числа над столбцами и слева от строк, закраска протягиванием; кроссворд — номера и списки вопросов;
+ * сканворд — вопросы в клетках со стрелками. Чужие курсоры — рамкой цвета игрока.
  * Недорешённое сохраняется на каждом ходу (saves.ts). */
 import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
-import { fillOf, progress, type Event, type State } from './engine';
+import { fillOf, isWords, progress, type Event, type PicrossData, type State, type WordData } from './engine';
 import { addSolved, dropSave, fmtTime, getSave, keyOf, optsOf, putSave, titleOf } from './saves';
 import { cluesOf } from './picross';
+import { store } from '../../core/settings';
 import './puzzles.css';
+
+/** Подсветка в судоку: одинаковые цифры, строка/столбец/квадрат выбранной клетки. */
+export const PREF_SAME = 'puzzles.highlight';
 
 class PuzzlesView implements GameView<State, Event> {
   private ctx!: ViewCtx;
@@ -33,15 +38,35 @@ class PuzzlesView implements GameView<State, Event> {
   private tick: ReturnType<typeof setInterval> | undefined;
   private saveKey = '';
   private onKey = (e: KeyboardEvent) => this.key(e);
+  /** Кроссворд/сканворд: направление ввода, строка текущего вопроса, список вопросов, поле для клавиатуры телефона. */
+  private dir: 0 | 1 = 0;
+  private q!: HTMLElement;
+  private list!: HTMLElement;
+  private ime!: HTMLInputElement;
+  private listItems: HTMLElement[] = [];
+  private credits!: HTMLElement;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     this.root = h(`<div class="pz-wrap"><div class="pz-paper">
       <header class="pz-head"><span class="pz-mast">Головоломки</span><span class="pz-info"></span><span class="pz-clock"></span></header>
-      <div class="pz-board"></div>
+      <div class="pz-q" hidden></div>
+      <div class="pz-body"><div class="pz-board" lang="ru"></div><div class="pz-list" hidden></div></div>
+      <div class="pz-credits"></div>
+      <input class="pz-ime" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" aria-label="ввод букв">
     </div></div>`);
     root.appendChild(this.root);
     this.board = this.root.querySelector('.pz-board') as HTMLElement;
+    this.q = this.root.querySelector('.pz-q') as HTMLElement;
+    this.list = this.root.querySelector('.pz-list') as HTMLElement;
+    this.ime = this.root.querySelector('.pz-ime') as HTMLInputElement;
+    this.credits = this.root.querySelector('.pz-credits') as HTMLElement;
+    // телефон: буквы приходят в скрытое поле (keydown там без буквы)
+    this.ime.addEventListener('input', () => {
+      const t = this.ime.value;
+      this.ime.value = '';
+      for (const ch of t) this.letter(ch);
+    });
     this.info = this.root.querySelector('.pz-info') as HTMLElement;
     this.clock = this.root.querySelector('.pz-clock') as HTMLElement;
     this.ctl = h(`<div class="pz-ctl"></div>`);
@@ -133,7 +158,12 @@ class PuzzlesView implements GameView<State, Event> {
     this.rowClues = [];
     this.colClues = [];
     this.board.className = `pz-board pz-${v.kind}`;
-    if (v.kind === 'sudoku') {
+    this.list.hidden = true;
+    this.q.hidden = !isWords(v.kind);
+    this.listItems = [];
+    this.credits.innerHTML = '';
+    if (isWords(v.kind)) this.buildWords(v);
+    else if (v.kind === 'sudoku') {
       this.board.style.setProperty('--cols', '9');
       this.board.style.setProperty('--rows', '9');
       for (let i = 0; i < 81; i++) {
@@ -144,7 +174,7 @@ class PuzzlesView implements GameView<State, Event> {
         this.cellsEl.push(el);
       }
     } else {
-      const d = v.data!;
+      const d = v.data as PicrossData;
       const rc = Math.max(1, ...d.rows.map((r) => r.length));
       const cc = Math.max(1, ...d.cols.map((r) => r.length));
       this.board.style.setProperty('--cols', String(rc + v.w));
@@ -173,16 +203,164 @@ class PuzzlesView implements GameView<State, Event> {
     this.buildControls(v);
   }
 
+  private buildWords(v: State) {
+    const d = v.data as WordData;
+    this.board.style.setProperty('--cols', String(v.w));
+    this.board.style.setProperty('--rows', String(v.h));
+    const nums = new Map<number, number>();
+    for (const wd of d.words) if (wd.num) nums.set(wd.cells[0], wd.num);
+    const inPic = new Set<number>();
+    for (const p of d.pics ?? []) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) inPic.add(y * v.w + x);
+    for (let i = 0; i < v.w * v.h; i++) {
+      let el: HTMLElement;
+      if (inPic.has(i)) {
+        // клетки под картинкой — пустышки (индексы клеток должны совпадать), саму картинку кладём поверх
+        el = h(`<div class="pz-c pz-pc" data-i="${i}" hidden></div>`);
+        this.board.appendChild(el);
+        this.cellsEl.push(el);
+        continue;
+      }
+      if (!d.block[i]) {
+        // сканворд: стрелки — в первой клетке ответа, у края со стороны вопроса (как в газете)
+        const arrows = v.kind === 'scanword' ? d.words.filter((wd) => wd.cells[0] === i && wd.at >= 0).map((wd) => ARROW[arrow(wd.at, i, wd.dir, v.w)]) : [];
+        el = h(
+          `<div class="pz-c" data-i="${i}">${nums.has(i) ? `<span class="n">${nums.get(i)}</span>` : ''}${
+            arrows.length ? `<svg class="pz-ar" viewBox="0 0 20 20">${arrows.join('')}</svg>` : ''
+          }<b></b></div>`,
+        );
+      }
+      else if (v.kind === 'scanword') {
+        const qs = d.words.map((wd, k) => ({ wd, k })).filter(({ wd }) => wd.at === i);
+        el = h(`<div class="pz-c pz-qc${qs.length ? '' : ' dead'}" data-i="${i}">${qs
+          .map(({ wd, k }) => `<div class="qt" data-w="${k}" title="${esc(wd.clue)}"><span>${hyph(esc(wd.clue))}</span></div>`)
+          .join('')}</div>`);
+      } else el = h(`<div class="pz-c blk" data-i="${i}"></div>`);
+      el.style.gridColumn = String((i % v.w) + 1);
+      el.style.gridRow = String(Math.floor(i / v.w) + 1);
+      this.board.appendChild(el);
+      this.cellsEl.push(el);
+    }
+    const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+    for (const p of d.pics ?? [])
+      this.board.appendChild(
+        h(`<figure class="pz-pic" style="grid-column:${p.x + 1} / span ${p.w};grid-row:${p.y + 1} / span ${p.h}">
+          <img src="${base}scan/${p.file}.webp" alt="" draggable="false"><b>${p.num}</b></figure>`),
+      );
+    this.credits.innerHTML = (d.pics ?? []).length
+      ? `Фото: ${(d.pics ?? []).map((p) => `${p.num} — <a href="${esc(p.src)}" target="_blank" rel="noopener">${esc(p.credit)}</a>`).join('; ')} (Викисклад).`
+      : '';
+    if (v.kind === 'crossword') {
+      this.list.hidden = false;
+      this.list.innerHTML = '';
+      for (const dir of [0, 1] as const) {
+        const col = h(`<div class="pz-col"><h4>${dir === 0 ? 'По горизонтали' : 'По вертикали'}</h4></div>`);
+        d.words.forEach((wd, k) => {
+          if (wd.dir !== dir) return;
+          const li = h(`<div class="pz-li" data-w="${k}"><b>${wd.num}.</b> ${esc(wd.clue)} <small>(${wd.cells.length})</small></div>`);
+          li.onclick = () => this.pickWord(k);
+          col.appendChild(li);
+          this.listItems[k] = li;
+        });
+        this.list.appendChild(col);
+      }
+    }
+    // начать с первого слова
+    if (this.sel < 0 && d.words.length) {
+      this.sel = d.words[0].cells[0];
+      this.dir = d.words[0].dir;
+    }
+  }
+
+  /** Слово (индекс), в которое входит клетка в направлении dir; -1 — нет. */
+  private wordAt(i: number, dir: 0 | 1): number {
+    const d = this.s?.data as WordData | null;
+    if (!d || !('words' in d)) return -1;
+    return d.words.findIndex((wd) => wd.dir === dir && wd.cells.includes(i));
+  }
+
+  private activeWord(): number {
+    if (this.sel < 0) return -1;
+    const k = this.wordAt(this.sel, this.dir);
+    return k >= 0 ? k : this.wordAt(this.sel, this.dir === 0 ? 1 : 0);
+  }
+
+  private pickWord(k: number) {
+    const v = this.s;
+    if (!v) return;
+    const wd = (v.data as WordData).words[k];
+    this.dir = wd.dir;
+    const empty = wd.cells.find((c) => !v.cells[c] && !v.fixed[c]);
+    this.select(empty ?? wd.cells[0]);
+    this.focusIme();
+  }
+
+  private focusIme() {
+    if (this.ctx.demo || this.seat == null) return;
+    try {
+      this.ime.focus({ preventScroll: true });
+    } catch {
+      /* старые браузеры */
+    }
+  }
+
+  /** Вписать букву и шагнуть дальше по слову. */
+  private letter(raw: string) {
+    const v = this.s;
+    if (!v || v.done || this.sel < 0 || !isWords(v.kind)) return;
+    const ch = raw.toLowerCase().replace('ё', 'е');
+    if (!/^[а-я]$/.test(ch)) return;
+    if (!v.fixed[this.sel] && v.cells[this.sel] !== ch) {
+      Sound.place();
+      this.act({ type: 'set', is: [this.sel], v: ch });
+    }
+    const k = this.activeWord();
+    if (k < 0) return;
+    const cells = (v.data as WordData).words[k].cells;
+    const at = cells.indexOf(this.sel);
+    if (at >= 0 && at < cells.length - 1) {
+      this.dir = (v.data as WordData).words[k].dir;
+      this.select(cells[at + 1]);
+    }
+  }
+
+  private backspace() {
+    const v = this.s;
+    if (!v || this.sel < 0) return;
+    if (v.cells[this.sel] && !v.fixed[this.sel]) {
+      this.act({ type: 'set', is: [this.sel], v: '' });
+      return;
+    }
+    const k = this.activeWord();
+    if (k < 0) return;
+    const cells = (v.data as WordData).words[k].cells;
+    const at = cells.indexOf(this.sel);
+    if (at > 0) {
+      this.select(cells[at - 1]);
+      const p = cells[at - 1];
+      if (v.cells[p] && !v.fixed[p]) this.act({ type: 'set', is: [p], v: '' });
+    }
+  }
+
   private buildControls(v: State) {
     if (this.ctx.demo) {
       this.ctl.innerHTML = '';
       return;
     }
     const tools = `<div class="pz-tools"><button class="btn" data-a="hint">Подсказка</button><button class="btn" data-a="check">Проверить</button></div>`;
-    if (v.kind === 'sudoku') {
+    if (isWords(v.kind)) {
+      this.ctl.innerHTML = `${tools}<p class="hint small-hint">Нажмите клетку и печатайте. Повторное нажатие — сменить направление; Tab — следующее слово.
+        ${v.kind === 'crossword' ? 'Вопрос из списка — сразу к слову.' : 'Нажатие на вопрос — к его слову.'}</p>`;
+    } else if (v.kind === 'sudoku') {
       this.ctl.innerHTML = `<div class="pz-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<button class="pz-key" data-d="${d}">${d}</button>`).join('')}
         <button class="pz-key pz-pencil" data-a="pencil" title="Карандаш: пометки (клавиша N)">✎</button><button class="pz-key" data-a="erase" title="Стереть (Backspace)">⌫</button></div>${tools}
+        <label class="opt opt-toggle"><input type="checkbox" data-a="hl"> <span>Подсвечивать одинаковые цифры</span></label>
         <p class="hint small-hint">Клавиши: цифры, стрелки, N — карандаш, Backspace — стереть.</p>`;
+      const hl = this.ctl.querySelector<HTMLInputElement>('[data-a=hl]')!;
+      hl.checked = store.get<string>(PREF_SAME, 'off') === 'on';
+      hl.onchange = () => {
+        store.set(PREF_SAME, hl.checked ? 'on' : 'off');
+        this.draw();
+      };
     } else {
       this.ctl.innerHTML = `<div class="seg pz-mode"><button data-m="fill" class="on">■ Закрасить</button><button data-m="cross">✕ Пусто</button></div>${tools}
         <p class="hint small-hint">Нажатие — закрасить, правая кнопка — крестик. Ведите, не отпуская, — вдоль строки или столбца.</p>`;
@@ -214,8 +392,10 @@ class PuzzlesView implements GameView<State, Event> {
 
   private draw() {
     const v = this.s!;
+    if (isWords(v.kind)) return this.drawWords(v);
     const me = this.seat;
-    const selD = this.sel >= 0 && v.kind === 'sudoku' ? v.cells[this.sel] : '';
+    const hl = store.get<string>(PREF_SAME, 'off') === 'on';
+    const selD = hl && this.sel >= 0 && v.kind === 'sudoku' ? v.cells[this.sel] : '';
     const others = new Map<number, number>();
     v.seats.forEach((st) => {
       if (st !== me && v.cur[st] >= 0) others.set(v.cur[st], st);
@@ -232,7 +412,7 @@ class PuzzlesView implements GameView<State, Event> {
       if (i === this.sel && !v.done) cls += ' on';
       if (others.has(i)) cls += ' oc';
       if (v.kind === 'sudoku') {
-        if (this.sel >= 0 && !v.done && i !== this.sel && peers(this.sel, i)) cls += ' peer';
+        if (hl && this.sel >= 0 && !v.done && i !== this.sel && peers(this.sel, i)) cls += ' peer';
         if (selD && c === selD) cls += ' same';
         if (c) el.textContent = c;
         else if (v.notes[i]) el.innerHTML = `<div class="pz-notes">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<i>${v.notes[i] & (1 << (d - 1)) ? d : ''}</i>`).join('')}</div>`;
@@ -252,9 +432,52 @@ class PuzzlesView implements GameView<State, Event> {
     if (v.kind === 'picross') this.drawClues(v);
   }
 
+  private drawWords(v: State) {
+    const d = v.data as WordData;
+    const me = this.seat;
+    const others = new Map<number, number>();
+    v.seats.forEach((st) => {
+      if (st !== me && v.cur[st] >= 0) others.set(v.cur[st], st);
+    });
+    const k = this.activeWord();
+    const act = new Set(k >= 0 && !v.done ? d.words[k].cells : []);
+    const wrong = new Set(v.wrong);
+    for (let i = 0; i < this.cellsEl.length; i++) {
+      const el = this.cellsEl[i];
+      if (d.block[i]) {
+        if (v.kind === 'scanword' && !el.hidden) el.classList.toggle('peer', k >= 0 && d.words[k].at === i && !v.done);
+        continue;
+      }
+      const c = v.cells[i];
+      let cls = 'pz-c';
+      if (v.fixed[i]) cls += ' fx';
+      if (act.has(i)) cls += ' peer';
+      if (i === this.sel && !v.done) cls += ' on';
+      if (wrong.has(i)) cls += ' bad';
+      if (others.has(i)) cls += ' oc';
+      if (v.done) cls += ' done';
+      el.className = cls;
+      (el.querySelector('b') as HTMLElement).textContent = c ? c.toUpperCase() : '';
+      el.style.color = !v.fixed[i] && v.who[i] >= 0 ? SEATS[v.who[i]].dark : '';
+      el.style.setProperty('--oc', others.has(i) ? SEATS[others.get(i)!].color : 'transparent');
+    }
+    this.listItems.forEach((li, j) => {
+      if (!li) return;
+      li.classList.toggle('on', j === k);
+      const full = d.words[j].cells.every((c) => v.cells[c]);
+      li.classList.toggle('full', full);
+    });
+    if (k >= 0) {
+      const wd = d.words[k];
+      const where = v.kind === 'crossword' ? `${wd.num} ${wd.dir === 0 ? 'по горизонтали' : 'по вертикали'}` : wd.dir === 0 ? '→' : '↓';
+      this.q.innerHTML = `<b>${where}:</b> ${esc(wd.clue)} <small>(${wd.cells.length})</small>`;
+      this.listItems[k]?.scrollIntoView({ block: 'nearest' });
+    } else this.q.textContent = '';
+  }
+
   /** Пикросс: линия, где закрашенное совпало с числами, — числа бледнеют. */
   private drawClues(v: State) {
-    const d = v.data!;
+    const d = v.data as PicrossData;
     for (let y = 0; y < v.h; y++) {
       const line = v.cells.slice(y * v.w, y * v.w + v.w).map((c) => (c === '#' ? 1 : 0));
       this.rowClues[y].classList.toggle('ok', same(cluesOf(line), d.rows[y]));
@@ -294,6 +517,24 @@ class PuzzlesView implements GameView<State, Event> {
     if (!v || v.done || this.seat == null || this.ctx.demo) return;
     const i = this.cellAt(e);
     if (i < 0) return;
+    if (isWords(v.kind)) {
+      e.preventDefault();
+      const d = v.data as WordData;
+      if (d.block[i]) {
+        // сканворд: вопрос — к его слову (второе нажатие — ко второму вопросу клетки)
+        const qs = d.words.map((wd, k) => ({ wd, k })).filter(({ wd }) => wd.at === i);
+        if (!qs.length) return;
+        const cur = this.activeWord();
+        const n = qs.findIndex(({ k }) => k === cur);
+        this.pickWord(qs[(n + 1) % qs.length].k);
+        return;
+      }
+      if (i === this.sel && this.wordAt(i, this.dir === 0 ? 1 : 0) >= 0) this.dir = this.dir === 0 ? 1 : 0;
+      else if (this.wordAt(i, this.dir) < 0) this.dir = this.dir === 0 ? 1 : 0;
+      this.select(i);
+      this.focusIme();
+      return;
+    }
     if (v.kind === 'sudoku') {
       this.select(i);
       return;
@@ -358,12 +599,58 @@ class PuzzlesView implements GameView<State, Event> {
     this.act({ type: 'set', is: [this.sel], v: '' });
   }
 
+  private keyWords(e: KeyboardEvent, v: State, arrows: Record<string, [number, number]>) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const d = v.data as WordData;
+    if (arrows[e.key]) {
+      e.preventDefault();
+      const [dx, dy] = arrows[e.key];
+      const nd: 0 | 1 = dx ? 0 : 1;
+      if (this.sel >= 0 && nd !== this.dir && this.wordAt(this.sel, nd) >= 0) {
+        this.dir = nd;
+        this.draw();
+        return;
+      }
+      let x = this.sel >= 0 ? this.sel % v.w : 0;
+      let y = this.sel >= 0 ? Math.floor(this.sel / v.w) : 0;
+      for (let t = 0; t < Math.max(v.w, v.h); t++) {
+        x += dx;
+        y += dy;
+        if (x < 0 || y < 0 || x >= v.w || y >= v.h) return;
+        if (!d.block[y * v.w + x]) {
+          if (this.wordAt(y * v.w + x, nd) >= 0) this.dir = nd;
+          this.select(y * v.w + x);
+          return;
+        }
+      }
+      return;
+    }
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      this.backspace();
+      return;
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const n = d.words.length;
+      const k = this.activeWord();
+      this.pickWord((((k < 0 ? -1 : k) + (e.shiftKey ? -1 : 1)) % n + n) % n);
+      return;
+    }
+    const ch = /^[а-яёА-ЯЁ]$/.test(e.key) ? e.key : LAYOUT[e.code];
+    if (ch) {
+      e.preventDefault();
+      this.letter(ch);
+    }
+  }
+
   private key(e: KeyboardEvent) {
     const v = this.s;
     if (!v || v.done || this.seat == null) return;
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const arrows: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (isWords(v.kind)) return this.keyWords(e, v, arrows);
     if (arrows[e.key]) {
       e.preventDefault();
       const [dx, dy] = arrows[e.key];
@@ -390,6 +677,52 @@ class PuzzlesView implements GameView<State, Event> {
     }
   }
 }
+
+/** Буква по клавише: русская раскладка или латинская (по положению клавиши — ЙЦУКЕН). */
+const LAYOUT: Record<string, string> = {
+  KeyQ: 'й', KeyW: 'ц', KeyE: 'у', KeyR: 'к', KeyT: 'е', KeyY: 'н', KeyU: 'г', KeyI: 'ш', KeyO: 'щ', KeyP: 'з', BracketLeft: 'х', BracketRight: 'ъ',
+  KeyA: 'ф', KeyS: 'ы', KeyD: 'в', KeyF: 'а', KeyG: 'п', KeyH: 'р', KeyJ: 'о', KeyK: 'л', KeyL: 'д', Semicolon: 'ж', Quote: 'э',
+  KeyZ: 'я', KeyX: 'ч', KeyC: 'с', KeyV: 'м', KeyB: 'и', KeyN: 'т', KeyM: 'ь', Comma: 'б', Period: 'ю', Backquote: 'е',
+};
+
+/** Какая стрелка: r — вопрос слева, слово вправо; d — вопрос сверху, слово вниз; rd — вопрос слева, слово вниз; dr — вопрос сверху, слово вправо. */
+function arrow(at: number, start: number, dir: 0 | 1, _w: number): 'r' | 'd' | 'rd' | 'dr' {
+  const fromLeft = start === at + 1;
+  if (dir === 0) return fromLeft ? 'r' : 'dr';
+  return fromLeft ? 'rd' : 'd';
+}
+
+/** Газетные стрелки в первой клетке ответа (клетка — 20×20). */
+const ARROW: Record<'r' | 'd' | 'rd' | 'dr', string> = {
+  r: '<path d="M0 10H5"/><path class="hd" d="M4.5 7.6L7.6 10L4.5 12.4Z"/>',
+  d: '<path d="M10 0V5"/><path class="hd" d="M7.6 4.5L10 7.6L12.4 4.5Z"/>',
+  rd: '<path d="M0 4H5V8"/><path class="hd" d="M2.6 7.5L5 10.6L7.4 7.5Z"/>',
+  dr: '<path d="M4 0V5H8"/><path class="hd" d="M7.5 2.6L10.6 5L7.5 7.4Z"/>',
+};
+
+/** Мягкие переносы по слогам (браузеры русские переносы ставят не везде): гласная-согласная+гласная, между согласными;
+ * й, ь, ъ остаются с предыдущей буквой; с краю слова — не меньше двух букв. */
+const VOW = 'аеёиоуыэюяАЕЁИОУЫЭЮЯ';
+function hyph(text: string): string {
+  return text.replace(/[а-яёА-ЯЁ]{6,}/g, (w) => {
+    let out = '';
+    let last = 0;
+    for (let i = 2; i <= w.length - 2; i++) {
+      const a = w[i - 1];
+      const b = w[i];
+      const c = w[i + 1] ?? '';
+      if ('йьъЙЬЪ'.includes(b)) continue;
+      const cut = (VOW.includes(a) && !VOW.includes(b) && VOW.includes(c)) || (!VOW.includes(a) && !'йьъЙЬЪ'.includes(a) && !VOW.includes(b) && w.slice(0, i).split('').some((x) => VOW.includes(x)) && w.slice(i).split('').some((x) => VOW.includes(x))) || (VOW.includes(a) && VOW.includes(b)) || ('йьъЙЬЪ'.includes(a) && w.slice(i).split('').some((x) => VOW.includes(x)));
+      if (cut && w.slice(0, i).split('').some((x) => VOW.includes(x))) {
+        out += w.slice(last, i) + '­';
+        last = i;
+      }
+    }
+    return out + w.slice(last);
+  });
+}
+
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function peers(a: number, b: number) {
   const ra = Math.floor(a / 9);

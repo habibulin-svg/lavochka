@@ -1,6 +1,7 @@
 /* Описания игр без DOM — для сервера (он ведёт партии сам). */
 import type { GameDef } from '../core/types';
 import { loadDict } from '../words/dict';
+import { loadClues } from '../words/clues';
 
 export const DEFS: Record<string, () => Promise<GameDef>> = {
   shishbesh: () => import('./shishbesh/def').then((m) => m.def),
@@ -18,7 +19,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   domino: () => import('./domino/def').then((m) => m.def),
   seabattle: () => import('./seabattle/def').then((m) => m.def),
   dots: () => import('./dots/def').then((m) => m.def),
-  puzzles: () => import('./puzzles/def').then((m) => m.def),
+  puzzles: () => Promise.all([import('./puzzles/def'), loadClues()]).then(([m]) => m.def),
   thousand: () => import('./thousand/def').then((m) => m.def),
   bura: () => import('./bura/def').then((m) => m.def),
   '101': () => import('./sto/def').then((m) => m.def),

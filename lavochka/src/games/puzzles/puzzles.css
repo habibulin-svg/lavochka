@@ -49,8 +49,8 @@
 .pz-sudoku .pz-c:nth-child(9n) { border-right: 0; }
 .pz-sudoku .pz-c:nth-child(n + 73) { border-bottom: 0; }
 .pz-sudoku .pz-c.fx { color: var(--ink); font-weight: 700; }
-.pz-sudoku .pz-c.peer { background: rgba(120, 100, 40, 0.1); }
-.pz-sudoku .pz-c.same { background: rgba(200, 150, 40, 0.28); }
+.pz-sudoku .pz-c.peer { background: rgba(120, 100, 40, 0.07); }
+.pz-sudoku .pz-c.same { background: rgba(200, 150, 40, 0.2); }
 .pz-sudoku .pz-c.on { background: rgba(230, 180, 50, 0.55); }
 .pz-sudoku .pz-c.bad { color: #c0281e !important; background: rgba(192, 40, 30, 0.14); }
 .pz-sudoku .pz-c.done { background: rgba(60, 140, 60, 0.08); }
@@ -101,3 +101,61 @@
   .pz-info { font-size: 12px; }
   .pz-board { --u: min(calc((100cqw - 16px) / var(--cols)), calc((100cqh - 56px) / var(--rows))); }
 }
+
+/* кроссворд и сканворд */
+.pz-q { font: 15px 'Times New Roman', Times, serif; min-height: 1.4em; padding: 2px 4px; border-left: 4px solid #c0281e; background: rgba(192, 40, 30, 0.06); }
+.pz-q b { font-family: 'PT Sans', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+.pz-body { display: flex; gap: 14px; align-items: flex-start; min-height: 0; }
+.pz-ime { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }
+.pz-crossword, .pz-scanword { --u: min(calc((100cqw - 44px) / var(--cols)), calc((100cqh - 124px) / var(--rows))); }
+.pz-crossword:has(+ .pz-list:not([hidden])) { --u: min(calc((100cqw - 360px) / var(--cols)), calc((100cqh - 124px) / var(--rows))); }
+.pz-crossword .pz-c, .pz-scanword .pz-c { font-family: 'PT Sans', sans-serif; font-variant-numeric: normal; }
+.pz-crossword .pz-c:not(.blk), .pz-scanword .pz-c:not(.pz-qc) { background: #fffdf5; border: 1px solid var(--ink); margin: 0 -1px -1px 0; color: #2a3f7a; }
+.pz-crossword .pz-c b, .pz-scanword .pz-c b { font-size: calc(var(--u) * 0.58); font-weight: 700; line-height: 1; }
+.pz-crossword .pz-c .n { position: absolute; left: 2px; top: 1px; font-size: calc(var(--u) * 0.26); font-weight: 700; color: var(--ink); line-height: 1; }
+.pz-crossword { border: 2px solid var(--ink); background: var(--ink); gap: 0; }
+.pz-crossword .pz-c.blk { background: #1d1a14; border: 1px solid #1d1a14; margin: 0 -1px -1px 0; cursor: default; }
+.pz-crossword .pz-c.peer, .pz-scanword .pz-c.peer:not(.pz-qc) { background: #fbeec2; }
+.pz-crossword .pz-c.on, .pz-scanword .pz-c.on { background: #f0c850; }
+.pz-crossword .pz-c.bad, .pz-scanword .pz-c.bad { background: #f3c3bc; color: #c0281e !important; }
+.pz-crossword .pz-c.fx, .pz-scanword .pz-c.fx:not(.pz-qc) { color: var(--ink); }
+.pz-crossword .pz-c.done, .pz-scanword .pz-c.done { background: #eef3e2; }
+.pz-scanword { border: 2px solid var(--ink); }
+.pz-scanword .pz-qc { background: #cfe6f3; border: 1px solid var(--ink); margin: 0 -1px -1px 0; flex-direction: column; align-items: stretch; justify-content: stretch; padding: 1px; cursor: pointer; overflow: hidden; }
+.pz-scanword .pz-qc.dead { cursor: default; }
+.pz-scanword .pz-qc.peer { background: #f0c850; }
+.pz-pic { margin: 0; position: relative; border: 1px solid var(--ink); margin: 0 -1px -1px 0; overflow: hidden; background: #fff; }
+.pz-pic img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.15) contrast(1.05); }
+.pz-pic b { position: absolute; right: 4px; bottom: 4px; width: calc(var(--u) * 0.5); height: calc(var(--u) * 0.5); border-radius: 50%; background: #d02090; color: #fff; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--u) * 0.32) 'PT Sans', sans-serif; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.pz-credits { font: 10px/1.25 'PT Sans', sans-serif; opacity: 0.6; max-width: 100%; }
+.pz-credits a { color: inherit; }
+.pz-credits:empty { display: none; }
+.pz-scanword .qt { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; position: relative; font: 600 calc(var(--u) * 0.19) / 1.02 'PT Sans Narrow', 'PT Sans', 'Arial Narrow', sans-serif; color: var(--ink); hyphens: auto; overflow: hidden; padding: 0 1px; }
+.pz-scanword .qt + .qt { border-top: 1px solid rgba(29, 26, 20, 0.5); }
+.pz-scanword .qt:not(:only-child) span { -webkit-line-clamp: 2; }
+.pz-scanword .qt span { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; hyphens: auto; overflow-wrap: break-word; }
+.pz-scanword .qt { padding: 0 calc(var(--u) * 0.08) 0 1px; }
+.pz-list { flex: 1; min-width: 220px; max-width: 340px; max-height: calc(100cqh - 120px); overflow-y: auto; font: 14px/1.3 'Times New Roman', Times, serif; padding-right: 4px; }
+.pz-list h4 { margin: 6px 0 3px; font: 700 13px 'PT Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--ink); }
+.pz-li { padding: 2px 4px; border-radius: 3px; cursor: pointer; }
+.pz-li:hover { background: rgba(240, 200, 80, 0.3); }
+.pz-li.on { background: #f0c850; }
+.pz-li.full { color: rgba(29, 26, 20, 0.45); }
+.pz-li small { opacity: 0.7; }
+@media (max-width: 760px) {
+  .pz-body { flex-direction: column; }
+  .pz-crossword:has(+ .pz-list:not([hidden])) { --u: min(calc((100cqw - 16px) / var(--cols)), calc((100cqh - 220px) / var(--rows))); }
+  .pz-list { max-width: none; max-height: 160px; width: 100%; }
+}
+/* узкий стол (боковая панель рядом): список вопросов — под полем */
+@container (max-width: 820px) {
+  .pz-body { flex-direction: column; align-items: center; }
+  .pz-crossword:has(+ .pz-list:not([hidden])) { --u: min(calc((100cqw - 44px) / var(--cols)), calc((100cqh - 300px) / var(--rows))); }
+  .pz-list { max-width: none; width: 100%; max-height: none; overflow: visible; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pz-col { max-height: 180px; overflow-y: auto; padding-right: 4px; }
+  .pz-col h4 { position: sticky; top: 0; background: var(--paper); margin-top: 0; }
+}
+
+/* газетные стрелки сканворда — в первой клетке ответа */
+.pz-ar { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; fill: none; stroke: var(--ink); stroke-width: 1.4; }
+.pz-ar .hd { fill: var(--ink); stroke: none; }

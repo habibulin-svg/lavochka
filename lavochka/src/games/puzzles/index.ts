@@ -1,8 +1,8 @@
 import { esc, h } from '../../core/util';
 import type { GameModule } from '../../core/view';
 import { def } from './def';
-import { dropSave, fmtTime, listSaves, listSolved } from './saves';
-import { createView } from './view';
+import { dropSave, fmtTime, listSaves, listSolved, resumable } from './saves';
+import { createView, PREF_SAME } from './view';
 import './puzzles.css';
 
 /** Список недорешённого на экране игры: продолжить — с теми же местами, что выбраны ниже (можно и по сети). */
@@ -20,7 +20,13 @@ function home(box: HTMLElement, launch: (o: Record<string, string | number | boo
         <div class="t"><b>${esc(e.title)}</b><small>${Math.round(e.progress * 100)}% · ${fmtTime(e.elapsed)} · ${new Date(e.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small><div class="pz-bar"><i style="width:${Math.round(e.progress * 100)}%"></i></div></div>
         <button class="btn small" data-a="drop" title="Забыть">✕</button><button class="btn primary small" data-a="go">Продолжить</button>
       </div>`);
-      (row.querySelector('[data-a=go]') as HTMLButtonElement).onclick = () => launch({ ...e.opts, fill: e.fill });
+      const go = row.querySelector('[data-a=go]') as HTMLButtonElement;
+      if (resumable(e)) go.onclick = () => launch({ ...e.opts, fill: e.fill });
+      else {
+        go.disabled = true;
+        go.title = 'База вопросов обновилась — этот кроссворд уже не восстановить';
+        go.textContent = 'Устарел';
+      }
       (row.querySelector('[data-a=drop]') as HTMLButtonElement).onclick = () => {
         dropSave(e.key);
         render();
@@ -33,5 +39,13 @@ function home(box: HTMLElement, launch: (o: Record<string, string | number | boo
   render();
 }
 
-const mod: GameModule = { def, createView, ownSaves: true, home };
+const mod: GameModule = {
+  def,
+  createView,
+  ownSaves: true,
+  home,
+  prefs: [
+    { key: PREF_SAME, label: 'Судоку: подсветка', hint: 'одинаковые цифры и строка/столбец/квадрат выбранной клетки', choices: [{ value: 'off', label: 'нет' }, { value: 'on', label: 'да' }], default: 'off' },
+  ],
+};
 export default mod;
