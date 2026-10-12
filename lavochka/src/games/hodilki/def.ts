@@ -1,11 +1,12 @@
 /* Кинь-двинь — одна игра на нескольких оригинальных советских полях; поле выбирается настройкой и лежит в состоянии партии. */
 import type { GameDef, SeatSpec } from '../../core/types';
-import { SEATS, signText, target, type Action, type Board, type Event, type State } from './core';
+import { finishOf, pathFor, SEATS, signText, skipsOf, type Action, type Board, type Event, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
+import { NASTOLKI } from './nastolki';
 
-export const BOARDS: Board[] = [krugosvet, kosmos, put];
+export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -21,13 +22,16 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   }
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
   const board = boardOf(s0.map);
-  const finish = board.cells.length - 1;
-  const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), phase: 'roll' };
+  const finish = finishOf(board);
+  const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), route: (s0.route ?? s0.pos.map(() => null)).slice(), phase: 'roll' };
   const ev: Event[] = [];
-  const from = s.pos[seat];
-  const to = target(s0, board, seat);
-  const path: number[] = [];
-  for (let i = from + 1; i <= to; i++) path.push(i);
+  const path = pathFor(s0, board, seat);
+  const onRoute = !!s.route![seat]?.length;
+  const to = path.length ? path[path.length - 1] : s.pos[seat];
+  if (onRoute) {
+    const rest = s.route![seat]!.slice(path.length);
+    s.route![seat] = rest.length ? rest : null;
+  }
   s.pos[seat] = to;
   ev.push({ type: 'move', seat, path });
   const win = () => {
@@ -37,13 +41,18 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   };
   if (to === finish) return win();
   let again = false;
-  const sign = board.cells[to].sign;
+  // по ветке знаки не срабатывают (и на клетке входа, куда вернулись, — тоже)
+  const sign = onRoute ? null : board.cells[to].sign;
   if (sign) {
     let dest = to;
-    if (sign.k === 'skip') s.skip[seat] = true;
+    if (sign.k === 'skip') s.skip[seat] = sign.n ?? 1;
     else if (sign.k === 'again') again = true;
     else if (sign.k === 'start') dest = 0;
-    else dest = Math.max(0, Math.min(finish, sign.to));
+    else if (sign.k === 'route') s.route![seat] = sign.cells.slice();
+    else {
+      dest = Math.max(0, Math.min(finish, sign.to));
+      if (sign.skip) s.skip[seat] = sign.skip;
+    }
     ev.push({ type: 'sign', seat, sign, to: dest });
     s.pos[seat] = dest;
     if (dest === finish) return win();
@@ -51,8 +60,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   if (!again) {
     // следующий, кто не пропускает
     let t = next(s, seat);
-    for (let i = 0; i < s.seats.length && s.skip[t]; i++) {
-      s.skip[t] = false;
+    for (let i = 0; i < 4 * s.seats.length && skipsOf(s, t) > 0; i++) {
+      s.skip[t] = skipsOf(s, t) - 1;
       ev.push({ type: 'skip', seat: t });
       t = next(s, t);
     }
@@ -72,7 +81,7 @@ export const def: GameDef<State, Action, Event, State> = {
   presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
   setup: (seats, opts) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    return { map: boardOf(String(opts.map ?? BOARDS[0].id)).id, seats: ids, pos: Array(10).fill(0), skip: Array(10).fill(false), turn: ids[0], phase: 'roll', last: null, winner: null };
+    return { map: boardOf(String(opts.map ?? BOARDS[0].id)).id, seats: ids, pos: Array(10).fill(0), skip: Array(10).fill(0), route: Array(10).fill(null), turn: ids[0], phase: 'roll', last: null, winner: null };
   },
   showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, phase: 'roll', last: 4, winner: null }),
   toAct: (s) => (s.winner != null ? [] : [s.turn]),
@@ -97,7 +106,7 @@ export const def: GameDef<State, Action, Event, State> = {
     goal: 'Бросать кубик, шагать пуговицей по полю и первым дойти до финиша. Знаки на поле ускоряют или откидывают назад.',
     sections: BOARDS.map((b) => ({
       title: b.title,
-      html: `<p><i>${b.goal}</i></p>${b.rules}`,
+      html: `<p><i>${b.goal}</i></p>${b.rules}${b.credit ? `<p><small>${b.credit}</small></p>` : ''}`,
       demo: b.demo ? { seats: demoSeats, options: { map: b.id }, steps: b.demo.flatMap((d, i) => {
             const seat = d.seat ?? i % 2;
             return [

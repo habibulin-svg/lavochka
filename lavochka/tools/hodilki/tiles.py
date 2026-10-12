@@ -22,6 +22,13 @@ SRC = {
     'kosmos': 'materials/kosmos/kosmosput.jpg',
     'krugosvet': 'materials/krug/krugput.jpg',
     'put': 'materials/put/put.jpg',
+    # советские настолки из materials/nastolki (разметка — tools/hodilki/import.py)
+    'zatmir': 'materials/nastolki/zateryanniy-mir/field.webp',
+    'planeta': 'materials/nastolki/neukrotimaya-planeta/field.webp',
+    'varvary': 'materials/nastolki/konnye-varvary/field.webp',
+    'podveski': 'materials/nastolki/podveski-korolevy/field.webp',
+    'mepl': 'materials/nastolki/mepl-white/field.webp',
+    'sutra': 'materials/nastolki/s-utra-do-vechera/field-1.webp',
 }
 TILE = 512
 PREVIEW = 1600

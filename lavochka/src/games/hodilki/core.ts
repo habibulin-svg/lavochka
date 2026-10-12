@@ -2,7 +2,14 @@
  * Поле — список клеток по ходу (координаты на картинке) со знаками: пропуск хода, ещё ход, «начать сначала», переход на другую клетку
  * (вверх/вниз, вперёд/назад — заранее посчитанный номер клетки). Кубик d6; знак срабатывает один раз (на клетке, куда перенесло, — уже нет).
  * До финиша считать точно не нужно: дошёл или перешёл — победил. */
-export type Sign = { k: 'skip' } | { k: 'again' } | { k: 'start' } | { k: 'jump'; to: number; text: string; good: boolean };
+export type Sign =
+  | { k: 'skip'; n?: number }
+  | { k: 'again' }
+  | { k: 'start' }
+  /** Переход на клетку to; skip — и ещё пропустить столько ходов (Шегерян: «после пропуска хода — до 24»). */
+  | { k: 'jump'; to: number; text: string; good: boolean; skip?: number }
+  /** Ветка «туда и обратно» (Шегерян: «до г. Крей и обратно», тупик): следующими бросками фишка идёт по cells (до конца ветки и назад), потом — дальше по пути. */
+  | { k: 'route'; cells: number[]; text: string };
 
 export interface Cell {
   x: number;
@@ -10,6 +17,10 @@ export interface Cell {
   sign: Sign | null;
   /** Подпись (номер на поле), если есть. */
   label?: string;
+  /** Текст клетки с поля или из правил («Забыли взять ружья. Возвратиться в лагерь»). */
+  text?: string;
+  /** Клетка ветки, а не основного пути: на неё попадают только по знаку route. */
+  off?: boolean;
 }
 
 export interface Board {
@@ -24,6 +35,10 @@ export interface Board {
   goal: string;
   rules: string;
   winText: string;
+  /** Финиш — номер клетки; по умолчанию последняя (после неё в списке могут идти клетки веток). */
+  end?: number;
+  /** Кто издал, откуда поле — строка под правилами. */
+  credit?: string;
   /** Показ правил: шаги с подкрученным кубиком. */
   demo?: { rig: number; caption: string; seat?: number }[];
 }
@@ -33,7 +48,10 @@ export interface State {
   map: string;
   seats: number[];
   pos: number[];
-  skip: boolean[];
+  /** Сколько ходов пропустить (старые сохранения — true/false). */
+  skip: (boolean | number)[];
+  /** Ветка, по которой фишка идёт сейчас (остаток пути); нет — по основному пути. */
+  route?: (number[] | null)[];
   turn: number;
   /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу. Нет поля — старая партия, значит 'roll'. */
   phase?: 'roll' | 'move';
@@ -63,10 +81,34 @@ export const SEATS = [
   { name: 'Петька', color: '#6a4a2a', light: '#a07a50', dark: '#3a2410' },
 ];
 
-/** Куда встанет пуговица после броска (до знака). До финиша считать точно не нужно. */
-export const target = (s: State, b: Board, seat: number) => (s.last ? Math.min(b.cells.length - 1, s.pos[seat] + s.last) : s.pos[seat]);
+export const finishOf = (b: Board) => b.end ?? b.cells.length - 1;
 
-export const signText = (g: Sign) => (g.k === 'skip' ? 'пропускает ход' : g.k === 'again' ? 'ходит ещё раз' : g.k === 'start' ? 'начинает сначала' : g.text);
+/** Клетки, по которым пройдёт пуговица за бросок: сначала остаток ветки, потом основной путь. До финиша считать точно не нужно. */
+export function pathFor(s: State, b: Board, seat: number): number[] {
+  const out: number[] = [];
+  let n = s.last ?? 0;
+  const route = s.route?.[seat] ?? [];
+  for (let i = 0; i < route.length && n > 0; i++, n--) out.push(route[i]);
+  // ветка кончается на клетке входа — лишние очки пропадают (дошёл «и обратно» — стоп)
+  if (route.length) return out;
+  let at = s.pos[seat];
+  const end = finishOf(b);
+  for (; n > 0 && at < end; n--) out.push(++at);
+  return out;
+}
+
+/** Куда встанет пуговица после броска (до знака). */
+export const target = (s: State, b: Board, seat: number) => {
+  const p = pathFor(s, b, seat);
+  return p.length ? p[p.length - 1] : s.pos[seat];
+};
+
+export const skipsOf = (s: State, seat: number) => Number(s.skip[seat] || 0);
+
+export const signText = (g: Sign) =>
+  g.k === 'skip' ? (g.n && g.n > 1 ? `пропускает ${g.n} хода` : 'пропускает ход') : g.k === 'again' ? 'ходит ещё раз' : g.k === 'start' ? 'начинает сначала' : g.text;
+
+export const signGood = (g: Sign) => g.k === 'again' || (g.k === 'jump' && g.good);
 
 const rowWord = (n: number) => (n === 1 ? 'ряд' : n < 5 ? 'ряда' : 'рядов');
 

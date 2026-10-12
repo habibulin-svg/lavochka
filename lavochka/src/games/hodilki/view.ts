@@ -8,7 +8,7 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { signText, target, type Board, type Event, type State } from './core';
+import { finishOf, signGood, signText, skipsOf, target, type Board, type Event, type State } from './core';
 import { boardOf } from './def';
 import './hodilki.css';
 
@@ -849,8 +849,9 @@ class HodilkiView implements GameView<State, Event> {
         Sound.place();
         await sleep(120 / speed);
       } else if (ev.type === 'sign') {
-        const good = ev.sign.k === 'again' || (ev.sign.k === 'jump' && ev.sign.good);
-        this.say(`${strip(this.ctx.name(ev.seat))} ${signText(ev.sign)}${good ? '!' : '.'}`, good);
+        const good = signGood(ev.sign);
+        const story = this.b?.cells[this.shown[ev.seat]]?.text;
+        this.say(`${story ? story + ' ' : ''}${strip(this.ctx.name(ev.seat))} ${signText(ev.sign)}${good ? '!' : '.'}`, good);
         await sleep(500 / speed);
         if (ev.to !== this.shown[ev.seat]) {
           // перелёт: камера показывает и откуда, и куда; место назначения подгружается заранее
@@ -904,7 +905,9 @@ class HodilkiView implements GameView<State, Event> {
   }
 
   playerStats(v: State, seat: number) {
-    return `${v.pos[seat]} / ${boardOf(v.map).cells.length - 1}${v.skip[seat] ? ' · пропуск' : ''}`;
+    const n = skipsOf(v, seat);
+    const b = boardOf(v.map);
+    return `${b.cells[v.pos[seat]]?.off ? '↪' : v.pos[seat]} / ${finishOf(b)}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
   }
 
   destroy() {
