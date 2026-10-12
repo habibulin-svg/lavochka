@@ -1,0 +1,103 @@
+/* «Головоломки»: газетная страница — желтоватая бумага, типографская краска, рубленая шапка. */
+.table--puzzles {
+  --panel-bg: #f3eedf;
+  --panel-ink: #1d1a14;
+  --panel-edge: rgba(40, 30, 10, 0.35);
+  --table-bg: radial-gradient(ellipse at 50% 20%, rgba(255, 240, 200, 0.1), transparent 60%), linear-gradient(160deg, #4a4032, #221d15 70%);
+}
+.pz-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+.pz-paper {
+  --ink: #1d1a14;
+  --paper: #f4efe0;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.45), transparent 60%), var(--paper);
+  color: var(--ink);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(120, 90, 30, 0.12);
+  padding: 10px 14px 14px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  max-height: 100%;
+}
+.pz-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 3px double var(--ink); padding-bottom: 4px; }
+.pz-mast { font-family: 'Russo One', sans-serif; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; }
+.pz-info { flex: 1; font: italic 14px 'Times New Roman', Times, serif; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-clock { font: 700 16px 'Times New Roman', Times, serif; font-variant-numeric: tabular-nums; }
+
+/* сетка: размер клетки от места на столе (контейнер — .pz-wrap) */
+.pz-board {
+  --u: min(calc((100cqw - 44px) / var(--cols)), calc((100cqh - 96px) / var(--rows)));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--u));
+  grid-template-rows: repeat(var(--rows), var(--u));
+  user-select: none;
+  touch-action: none;
+  font-family: 'Times New Roman', Times, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  align-self: center;
+}
+.pz-c { position: relative; display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(29, 26, 20, 0.45); border-bottom: 1px solid rgba(29, 26, 20, 0.45); cursor: pointer; box-sizing: border-box; }
+.pz-c.br { border-right: 2.5px solid var(--ink); }
+.pz-c.bb { border-bottom: 2.5px solid var(--ink); }
+.pz-c.oc::after { content: ''; position: absolute; inset: 1px; border: 3px solid var(--oc); border-radius: 2px; pointer-events: none; }
+.pz-locked .pz-c { cursor: default; }
+
+/* судоку */
+.pz-sudoku { border: 3px solid var(--ink); }
+.pz-sudoku .pz-c { font-size: calc(var(--u) * 0.62); color: #2a3f7a; }
+.pz-sudoku .pz-c:nth-child(9n) { border-right: 0; }
+.pz-sudoku .pz-c:nth-child(n + 73) { border-bottom: 0; }
+.pz-sudoku .pz-c.fx { color: var(--ink); font-weight: 700; }
+.pz-sudoku .pz-c.peer { background: rgba(120, 100, 40, 0.1); }
+.pz-sudoku .pz-c.same { background: rgba(200, 150, 40, 0.28); }
+.pz-sudoku .pz-c.on { background: rgba(230, 180, 50, 0.55); }
+.pz-sudoku .pz-c.bad { color: #c0281e !important; background: rgba(192, 40, 30, 0.14); }
+.pz-sudoku .pz-c.done { background: rgba(60, 140, 60, 0.08); }
+.pz-notes { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 100%; font-size: calc(var(--u) * 0.24); color: #6a5a3a; }
+.pz-notes i { font-style: normal; display: flex; align-items: center; justify-content: center; }
+
+/* пикросс */
+.pz-picross .pz-c { background: #fbf8ee; }
+.pz-picross .pz-c.fill { background: var(--ink); }
+.pz-picross .pz-c.cross::before { content: '✕'; font-size: calc(var(--u) * 0.6); color: #8a7a5a; }
+.pz-picross .pz-c.fx.fill { background: #3a3a5a; }
+.pz-picross .pz-c.on { box-shadow: inset 0 0 0 2px rgba(230, 160, 30, 0.9); }
+.pz-picross .pz-c.bad { background: #c0281e; }
+.pz-picross .pz-c.bad.cross::before { color: #fff; }
+.pz-picross .pz-c.done.cross::before { content: ''; }
+.pz-picross .pz-c.done { border-color: transparent; }
+.pz-cc, .pz-rc { display: flex; font-size: calc(var(--u) * 0.5); font-weight: 700; color: var(--ink); box-sizing: border-box; }
+.pz-cc { flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 3px; border-right: 1px solid rgba(29, 26, 20, 0.2); border-bottom: 2.5px solid var(--ink); background: rgba(120, 100, 40, 0.06); }
+.pz-rc { justify-content: flex-end; align-items: center; gap: calc(var(--u) * 0.28); padding-right: 5px; border-bottom: 1px solid rgba(29, 26, 20, 0.2); border-right: 2.5px solid var(--ink); background: rgba(120, 100, 40, 0.06); }
+.pz-cc span { line-height: var(--u); }
+.pz-cc.br { border-right: 2.5px solid var(--ink); }
+.pz-rc.bb { border-bottom: 2.5px solid var(--ink); }
+.pz-cc.ok, .pz-rc.ok { color: rgba(29, 26, 20, 0.3); }
+
+/* панель */
+.pz-ctl { display: flex; flex-direction: column; gap: 8px; }
+.pz-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.pz-key { font: 700 20px 'Times New Roman', Times, serif; font-variant-numeric: lining-nums; padding: 7px 0; border-radius: 6px; border: 1px solid var(--panel-edge); background: rgba(255, 255, 255, 0.6); color: var(--panel-ink); cursor: pointer; }
+.pz-key:hover { background: #fff; }
+.pz-key.on { background: #e6b432; }
+.pz-tools { display: flex; gap: 6px; }
+.pz-tools .btn { flex: 1; }
+.pz-mode button { flex: 1; }
+
+/* недорешённые на экране игры */
+.pz-saves { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.pz-saves h3 { margin: 0; font-size: 15px; }
+.pz-save { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.05); }
+.pz-save .t { flex: 1; min-width: 0; }
+.pz-save .t b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-save .t small { opacity: 0.7; }
+.pz-bar { height: 4px; background: rgba(0, 0, 0, 0.12); border-radius: 2px; margin-top: 3px; }
+.pz-bar i { display: block; height: 100%; background: #2a7a3a; border-radius: 2px; }
+
+@media (max-width: 760px) {
+  .pz-paper { padding: 6px 6px 8px; }
+  .pz-mast { font-size: 16px; }
+  .pz-info { font-size: 12px; }
+  .pz-board { --u: min(calc((100cqw - 16px) / var(--cols)), calc((100cqh - 56px) / var(--rows))); }
+}

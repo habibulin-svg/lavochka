@@ -44,6 +44,7 @@ export function openHome(mod: GameModule, onBack: () => void) {
     <div class="home-cols">
       <div class="sheet home-card">
         <div class="resume" hidden></div>
+        <div class="home-extra" hidden></div>
         <h2>Новая партия</h2>
         <div class="row count-row"><span class="lbl">Игроков:</span><div class="seg count-seg"></div></div>
         <div class="seat-rows"></div>
@@ -69,7 +70,7 @@ export function openHome(mod: GameModule, onBack: () => void) {
 
   // ---------- продолжение сохранённой партии
   const resume = q('.resume');
-  const snap = loadSave(def.id);
+  const snap = mod.ownSaves ? null : loadSave(def.id);
   if (snap) {
     resume.hidden = false;
     resume.innerHTML = `<div>Есть незаконченная партия (ход ${snap.seq}).</div><div class="row"><button class="btn small" data-a="drop">Забыть</button><button class="btn primary" data-a="cont">Продолжить</button></div>`;
@@ -233,7 +234,8 @@ export function openHome(mod: GameModule, onBack: () => void) {
   }
 
   // ---------- запуск
-  q('[data-a=start]').onclick = () => {
+  q('[data-a=start]').onclick = () => launch({ ...draft.options });
+  function launch(options: Options) {
     Sound.unlock();
     const seats: SeatSpec[] = seatsFor(draft.count).map((s) => {
       const st = draft.seats[s];
@@ -242,12 +244,17 @@ export function openHome(mod: GameModule, onBack: () => void) {
       const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? st.name || (onlyHuman() ? settings.name : '') || look.name : '';
       return { seat: s, kind, level: st.level, name };
     });
-    if (seats.some((s) => s.kind === 'remote')) void hostGame(mod, seats, { ...draft.options });
+    if (seats.some((s) => s.kind === 'remote')) void hostGame(mod, seats, options);
     else {
-      dropSave(def.id);
-      startLocal(mod, seats, { ...draft.options });
+      if (!mod.ownSaves) dropSave(def.id);
+      startLocal(mod, seats, options);
     }
-  };
+  }
+  if (mod.home) {
+    const box = q('.home-extra');
+    box.hidden = false;
+    mod.home(box, launch);
+  }
   const onlyHuman = () => seatsFor(draft.count).filter((s) => draft.seats[s].kind === 'human').length === 1;
 
   if (!saved) applyCount(draft.count);

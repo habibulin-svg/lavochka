@@ -1,5 +1,5 @@
 /* Интерфейс отрисовки игры (DOM). Стол сборника — общий, а поле и анимации у каждой игры свои. */
-import type { GameDef } from './types';
+import type { GameDef, Options } from './types';
 
 export interface ViewCtx<A = any> {
   /** Отправить действие от имени места. */
@@ -56,4 +56,8 @@ export interface GameModule {
   def: GameDef;
   createView(): GameView;
   prefs?: ViewPref[];
+  /** Игра сама хранит свои незаконченные партии (головоломки — по штуке на каждую): общий «Продолжить» не нужен. */
+  ownSaves?: boolean;
+  /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */
+  home?(box: HTMLElement, launch: (options: Options) => void): void;
 }

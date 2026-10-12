@@ -114,7 +114,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
     code: 'LOCAL',
     ownerKey,
     snapshot,
-    onSnapshot: (snap) => (snap ? store.set(saveKey(def.id), snap) : dropSave(def.id)),
+    onSnapshot: (snap) => (mod.ownSaves ? undefined : snap ? store.set(saveKey(def.id), snap) : dropSave(def.id)),
   });
   const [a, b] = localPair();
   room.connect(a);
