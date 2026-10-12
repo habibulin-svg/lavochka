@@ -1,8 +1,10 @@
 /* «Менеджер» / «Космос 2000» — боты. Видят то же, что игрок (view без порядка колод).
  * Лёгкий — покупает почти всё, строит изредка, торгуется скромно; средний — держит запас на ренту, строит на полных группах;
  * сложный — запас по самой дорогой чужой ренте, перебивает на торгах участки, которые замыкают его группу или чужую,
- * сам предлагает выкупить третий участок группы, сидит на бирже, когда поле застроено. */
+ * сам предлагает выкупить третий участок группы, сидит на бирже, когда поле застроено.
+ * «Бизнес»: средний и сложный покупают на валютной бирже доллары под предприятие на своей монополии, в долгах сначала продают доллары. */
 import type { Rng } from '../../core/types';
+import { INSURE, RATE } from './boards';
 import {
   B,
   alive,
@@ -10,6 +12,7 @@ import {
   canMortgage,
   canRedeem,
   canSell,
+  fullGroup,
   groupCells,
   owned,
   redeemCost,
@@ -22,20 +25,21 @@ import {
 /** Сколько держать в кармане. */
 function reserve(s: State, seat: number, level: number): number {
   if (s.map === 'kosmos') return [80, 200, 350][level];
-  if (level === 0) return 2000;
+  const k = s.map === 'biznes' ? 5 : 1;
+  if (level === 0) return 2000 * k;
   let worst = 0;
   for (let c = 0; c < s.owner.length; c++) {
     const o = s.owner[c];
     if (o != null && o >= 0 && o !== seat) worst = Math.max(worst, rent(s, c));
   }
-  return level === 1 ? Math.max(4000, worst * 0.4) : Math.max(6000, worst * 0.7);
+  return level === 1 ? Math.max(4000 * k, worst * 0.4) : Math.max(6000 * k, worst * 0.7);
 }
 
 /** Чего стоит участок для бота: цена плюс польза для групп. */
 function value(s: State, seat: number, c: number, level: number): number {
   const cell = B(s).cells[c];
   let v = cell.price!;
-  if (s.map !== 'manager' || cell.group == null) return v * (level === 2 ? 1.1 : 1);
+  if (s.map === 'kosmos' || cell.group == null) return v * (level === 2 ? 1.1 : 1);
   const g = groupCells(s, cell.group).filter((i) => i !== c);
   const mine = g.filter((i) => s.owner[i] === seat).length;
   if (mine === g.length) v *= level === 0 ? 1.3 : 2.2;
@@ -57,7 +61,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const cash = s.cash[seat];
   switch (s.phase) {
     case 'roll': {
-      if (s.map === 'manager') {
+      if (s.map !== 'kosmos') {
         if (s.jail[seat]) {
           const built = s.houses.some((h, c) => h > 0 && s.owner[c] !== seat);
           const stay = level === 2 && built;
@@ -72,6 +76,8 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
         // стройка: сначала дорогие группы, равномерно
         const can = owned(s, seat).filter((c) => canBuild(s, seat, c)).sort((a, c) => b.cells[c].price! - b.cells[a].price!);
         for (const c of can) {
+          // валютное предприятие «Бизнеса» — за доллары, их и копили
+          if (s.map === 'biznes' && s.houses[c] === 3) return { type: 'build', cell: c };
           const cost = b.cells[c].build!;
           if (level === 0 ? cash - cost >= res * 2 && rng.next() < 0.6 : cash - cost >= res) return { type: 'build', cell: c };
         }
@@ -114,6 +120,10 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       return gain > (level === 2 ? 1000 : 0) ? { type: 'accept' } : { type: 'reject' };
     }
     case 'debt': {
+      if (s.usd[seat] >= 50) {
+        const need = Math.ceil((s.debt!.amount - cash) / RATE / 50) * 50;
+        return { type: 'exchange', usd: -Math.min(s.usd[seat] - (s.usd[seat] % 50), Math.max(50, need)) };
+      }
       const mine = owned(s, seat);
       const sell = mine.filter((c) => canSell(s, seat, c)).sort((a, c) => b.cells[a].build! - b.cells[c].build!);
       if (sell.length) return { type: 'sell', cell: sell[0] };
@@ -122,6 +132,11 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       return { type: 'bankrupt' };
     }
     case 'insure': {
+      if (s.map === 'biznes') {
+        if (cash < INSURE) return { type: 'insure', level: 0 };
+        if (level === 0) return { type: 'insure', level: rng.next() < 0.5 ? 1 : 0 };
+        return { type: 'insure', level: cash >= INSURE + res ? 1 : 0 };
+      }
       if (level === 0) {
         const lv = rng.int(3);
         return { type: 'insure', level: cash >= [0, 100, 250][lv] ? lv : 0 };
@@ -133,6 +148,12 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     case 'casino':
     case 'casino2':
       return { type: 'spin' };
+    case 'exchange': {
+      const want = usdWanted(s, seat, level);
+      const buy = Math.ceil((want - s.usd[seat]) / 100) * 100;
+      if (buy > 0 && cash - buy * RATE >= res * (level === 2 ? 0.6 : 1)) return { type: 'exchange', usd: buy };
+      return { type: 'pass' };
+    }
     case 'bankBuy': {
       const price = b.cells[s.pos[seat]].price! + 100;
       if (cash >= price && cash - price >= res * (level === 0 ? 1 : 2) && rng.next() < [0.5, 0.8, 1][level]) return { type: 'buy' };
@@ -140,6 +161,15 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     }
   }
   return null;
+}
+
+/** «Бизнес»: сколько долларов держать — на предприятие на своей монополии (лёгкий доллары не копит). */
+function usdWanted(s: State, seat: number, level: number): number {
+  if (level === 0) return 0;
+  const b = B(s);
+  const mono = owned(s, seat).filter((c) => fullGroup(s, c) && s.houses[c] < 4 && s.houses[c] >= (level === 2 ? 1 : 2));
+  if (!mono.length) return 0;
+  return Math.max(...mono.map((c) => b.cells[c].buildUsd!));
 }
 
 /** Сложный бот: у кого-то один участок из моей почти полной группы — предложить за него деньги. */

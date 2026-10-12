@@ -5,9 +5,9 @@
  * Ход: фаза 'roll' — игрок до броска делает операции (строит, закладывает, предлагает сделку) и бросает. После хода клетка
  * разбирается (resolve): может открыть фазу решения (купить, торги, долг, страховка, казино), по её окончании ход заканчивается (finish). */
 import type { Rng } from '../../core/types';
-import { boardOf, CASINO, CASINO_STAR, type Board, type Card } from './boards';
+import { boardOf, CASINO, CASINO_STAR, INSURE, RATE, TAX_RATE, type Board, type Card, type MapId } from './boards';
 
-export type Phase = 'roll' | 'resolve' | 'buy' | 'auction' | 'debt' | 'offer' | 'insure' | 'casino' | 'casino2' | 'bankBuy' | 'over';
+export type Phase = 'roll' | 'resolve' | 'buy' | 'auction' | 'debt' | 'offer' | 'insure' | 'casino' | 'casino2' | 'bankBuy' | 'exchange' | 'over';
 
 export interface Auction {
   cell: number;
@@ -39,9 +39,17 @@ export interface Debt {
 }
 
 export interface State {
-  map: 'manager' | 'kosmos';
+  map: MapId;
   seats: number[];
   cash: number[];
+  /** «Бизнес»: доллары. */
+  usd: number[];
+  /** «Бизнес»: льготы до конца круга (биты, см. Fx 'perk'). */
+  perk: number[];
+  /** «Бизнес»: фишка прошла «Страховое общество» — после хода можно застраховаться. */
+  insPass: boolean;
+  /** «Бизнес»: премия 15 000 за круг (домашнее правило). */
+  premium: boolean;
   pos: number[];
   out: boolean[];
   /** Владелец клетки: место; -1 — банк (жетон «Б» в «Космосе»); null — ничья. */
@@ -65,7 +73,7 @@ export interface State {
   /** Последняя вытянутая карточка. */
   card: { deck: number; id: number; seat: number } | null;
   skip: boolean[];
-  /** Страховка: 0 — нет, 1 — наполовину, 2 — полностью. */
+  /** Страховка: 0 — нет, 1 — наполовину, 2 — полностью («Бизнес»: 1 — застрахован от одного убытка по «Шансу»). */
   ins: number[];
   freeCasino: boolean;
   freeIns: boolean;
@@ -105,6 +113,7 @@ export type Action =
   | { type: 'reject' }
   | { type: 'insure'; level: number }
   | { type: 'spin' }
+  | { type: 'exchange'; usd: number }
   | { type: 'bankrupt' };
 
 type Who = number | null | 'pot';
@@ -113,7 +122,7 @@ export type Event =
   | { type: 'roll'; seat: number; dice: number[] }
   | { type: 'move'; seat: number; path: number[] }
   | { type: 'jump'; seat: number; to: number }
-  | { type: 'pay'; from: Who; to: Who; amount: number; why: string }
+  | { type: 'pay'; from: Who; to: Who; amount: number; why: string; usd?: boolean }
   | { type: 'buy'; seat: number; cell: number; price: number }
   | { type: 'decline'; seat: number; cell: number }
   | { type: 'bid'; seat: number; amount: number }
@@ -138,6 +147,11 @@ export type Event =
   | { type: 'skip'; seat: number }
   | { type: 'again'; seat: number }
   | { type: 'visit'; seat: number; cell: number }
+  | { type: 'saved'; seat: number }
+  | { type: 'audit'; seat: number; die: number }
+  | { type: 'lost'; seat: number }
+  | { type: 'perk'; seat: number; bit: number }
+  | { type: 'exchange'; seat: number; usd: number }
   | { type: 'end'; winners: number[]; text: string };
 
 /** Партия, затянувшаяся на столько кругов, заканчивается подсчётом капитала. */
@@ -145,6 +159,9 @@ export const HARD_LIMIT = 150;
 export const MAX_OFFERS = 3;
 
 export const B = (s: State): Board => boardOf(s.map);
+/** Постройки, залог и долги — в «Менеджере» и «Бизнесе»; «Космос» — планеты без построек. */
+export const estate = (s: State) => s.map !== 'kosmos';
+export const isBiz = (s: State) => s.map === 'biznes';
 export const N = (s: State) => B(s).cells.length;
 
 export const fmt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -153,6 +170,7 @@ export const money = (s: State | Board, n: number) => {
   return `${fmt(n)} ${b.cur}`;
 };
 
+export const dollars = (n: number) => `${fmt(n)} $`;
 export const alive = (s: State) => s.seats.filter((x) => !s.out[x]);
 
 export function clone(s: State): State {
@@ -160,6 +178,8 @@ export function clone(s: State): State {
     ...s,
     seats: s.seats.slice(),
     cash: s.cash.slice(),
+    usd: s.usd.slice(),
+    perk: s.perk.slice(),
     pos: s.pos.slice(),
     out: s.out.slice(),
     owner: s.owner.slice(),
@@ -190,7 +210,7 @@ function shuffle(a: number[], rng: Rng) {
   return a;
 }
 
-export function newState(map: 'manager' | 'kosmos', seats: number[], o: { limit?: number; startPass?: boolean; loan?: boolean }, rng: Rng): State {
+export function newState(map: MapId, seats: number[], o: { limit?: number; startPass?: boolean; loan?: boolean; premium?: boolean }, rng: Rng): State {
   const b = boardOf(map);
   const n = b.cells.length;
   const start = b.money(seats.length);
@@ -198,6 +218,10 @@ export function newState(map: 'manager' | 'kosmos', seats: number[], o: { limit?
     map,
     seats,
     cash: Array.from({ length: 6 }, (_, i) => (seats.includes(i) ? start : 0)),
+    usd: Array(6).fill(0),
+    perk: Array(6).fill(0),
+    insPass: false,
+    premium: !!o.premium,
     pos: Array(6).fill(0),
     out: Array(6).fill(false),
     owner: Array(n).fill(null),
@@ -224,7 +248,7 @@ export function newState(map: 'manager' | 'kosmos', seats: number[], o: { limit?
     offer: null,
     debt: null,
     offers: 0,
-    stock: [26, 12],
+    stock: map === 'biznes' ? [18, 12] : [26, 12],
     round: 1,
     limit: o.limit ?? 0,
     startPass: !!o.startPass,
@@ -242,7 +266,7 @@ export const owned = (s: State, seat: number) => s.owner.flatMap((o, i) => (o ==
 /** Вся группа у одного хозяина и ничего не заложено. */
 export function fullGroup(s: State, c: number): boolean {
   const cell = B(s).cells[c];
-  if (s.map !== 'manager' || cell.group == null) return false;
+  if (!estate(s) || cell.group == null) return false;
   const own = s.owner[c];
   return own != null && own >= 0 && groupCells(s, cell.group).every((i) => s.owner[i] === own && !s.mort[i]);
 }
@@ -252,6 +276,7 @@ export function rent(s: State, c: number): number {
   if (!cell.rents || s.mort[c]) return 0;
   if (s.map === 'kosmos') return cell.rents[0];
   const h = s.houses[c];
+  if (isBiz(s)) return h === 0 ? cell.rents[fullGroup(s, c) ? 1 : 0] : cell.rents[h + 1];
   return h === 0 && fullGroup(s, c) ? cell.rents[0] * 2 : cell.rents[h];
 }
 
@@ -260,32 +285,49 @@ const groupBuilt = (s: State, c: number) => B(s).cells[c].group != null && group
 
 export function canBuild(s: State, seat: number, c: number): boolean {
   const cell = B(s).cells[c];
-  if (s.map !== 'manager' || s.owner[c] !== seat || !fullGroup(s, c)) return false;
+  if (!estate(s) || s.owner[c] !== seat || !fullGroup(s, c)) return false;
   const h = s.houses[c];
+  // «Бизнес»: строят неравномерно; после трёх филиалов — валютное предприятие за доллары; льгота «запрещено строить»
+  if (isBiz(s)) {
+    if (s.perk[seat] & 4 || h >= 4) return false;
+    if (h < 3) return s.stock[0] >= 1 && s.cash[seat] >= cell.build!;
+    return s.stock[1] >= 1 && s.usd[seat] >= cell.buildUsd!;
+  }
   if (h >= 4 || h !== Math.min(...groupHouses(s, c))) return false;
   if (h < 3 ? s.stock[0] < 1 : s.stock[1] < 1) return false;
   return s.cash[seat] >= cell.build!;
 }
 
 export function canSell(s: State, seat: number, c: number): boolean {
+  if (isBiz(s)) return s.owner[c] === seat && s.houses[c] > 0;
   return s.map === 'manager' && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
 }
 
-export const canMortgage = (s: State, seat: number, c: number) => s.map === 'manager' && s.owner[c] === seat && !s.mort[c] && !groupBuilt(s, c);
+export const canMortgage = (s: State, seat: number, c: number) =>
+  estate(s) && s.owner[c] === seat && !s.mort[c] && (isBiz(s) ? s.houses[c] === 0 : !groupBuilt(s, c));
 export const redeemCost = (s: State, c: number) => B(s).cells[c].price! / 2;
 export const canRedeem = (s: State, seat: number, c: number) => s.owner[c] === seat && s.mort[c] && s.cash[seat] >= redeemCost(s, c);
 /** Участок можно продать или обменять: без построек в группе и не заложен. */
-export const tradeable = (s: State, seat: number, c: number) => s.owner[c] === seat && !s.mort[c] && !(s.map === 'manager' && groupBuilt(s, c));
+export const tradeable = (s: State, seat: number, c: number) =>
+  s.owner[c] === seat && !s.mort[c] && !(isBiz(s) ? s.houses[c] > 0 : s.map === 'manager' && groupBuilt(s, c));
+
+/** Сколько стоит постройка на участке (рубли; валютное предприятие «Бизнеса» — по курсу биржи). */
+export function buildValue(s: State, c: number): number {
+  const cell = B(s).cells[c];
+  const h = s.houses[c];
+  if (isBiz(s)) return h === 4 ? cell.buildUsd! * RATE : h * cell.build!;
+  return h * (cell.build ?? 0);
+}
 
 /** Сколько игрок может собрать, продав постройки и заложив всё («Менеджер») или продав планеты банку («Космос»). */
 export function worth(s: State, seat: number): number {
   const b = B(s);
-  let w = s.cash[seat];
+  let w = s.cash[seat] + s.usd[seat] * RATE;
   for (const c of owned(s, seat)) {
     const cell = b.cells[c];
     if (s.map === 'kosmos') w += cell.price!;
     else {
-      w += s.houses[c] * (cell.build! / 2);
+      w += buildValue(s, c) / 2;
       if (!s.mort[c]) w += cell.price! / 2;
     }
   }
@@ -295,11 +337,11 @@ export function worth(s: State, seat: number): number {
 /** Капитал для подсчёта в конце: деньги + цены участков (заложенные — половина) + постройки по цене, минус ссуда. */
 export function capital(s: State, seat: number): number {
   const b = B(s);
-  let w = s.cash[seat] - s.loan[seat];
+  let w = s.cash[seat] + s.usd[seat] * RATE - s.loan[seat];
   for (const c of owned(s, seat)) {
     const cell = b.cells[c];
     w += s.mort[c] ? cell.price! / 2 : cell.price!;
-    w += s.houses[c] * (cell.build ?? 0);
+    w += buildValue(s, c);
   }
   return w;
 }
@@ -317,6 +359,15 @@ export const housesOf = (s: State, seat: number) => {
 // ---------------- деньги ----------------
 
 type Ctx = { s: State; ev: Event[]; rng: Rng; depth: number };
+
+/** Доллары «Бизнеса»: между игроками и банком. */
+function giveUsd(x: Ctx, from: number | null, to: number | null, amount: number, why: string) {
+  if (amount <= 0) return;
+  const { s } = x;
+  if (from != null) s.usd[from] -= amount;
+  if (to != null) s.usd[to] += amount;
+  x.ev.push({ type: 'pay', from, to, amount, why, usd: true });
+}
 
 function give(x: Ctx, from: Who, to: Who, amount: number, why: string) {
   if (amount <= 0) return;
@@ -336,7 +387,7 @@ function charge(x: Ctx, seat: number, amount: number, to: number | null | 'pot',
     give(x, seat, to, amount, why);
     return 'ok';
   }
-  if (s.map === 'manager') {
+  if (estate(s)) {
     s.debt = { amount, to: typeof to === 'number' ? to : null, then };
     x.ev.push({ type: 'debt', seat, amount });
     if (worth(s, seat) < amount) {
@@ -403,6 +454,7 @@ function eliminate(x: Ctx, seat: number) {
   for (const code of s.freeCards[seat]) s.decks[Math.floor(code / 100)].push(code % 100);
   s.freeCards[seat] = [];
   s.cash[seat] = 0;
+  s.usd[seat] = 0;
   s.loan[seat] = 0;
   s.jail[seat] = 0;
   x.ev.push({ type: 'bankrupt', seat });
@@ -414,6 +466,18 @@ function bankruptManager(x: Ctx, seat: number) {
   const { s } = x;
   const d = s.debt;
   s.debt = null;
+  // «Бизнес»: должнику-игроку отдают всё — постройки сданы банку за полцены, патенты (и заложенные), рубли и доллары
+  if (isBiz(s) && d && d.to != null && !s.out[d.to]) {
+    const to = d.to;
+    for (const c of owned(s, seat)) {
+      if (s.houses[c]) unbuildAll(x, seat, c);
+      s.owner[c] = to;
+    }
+    if (s.cash[seat] > 0) give(x, seat, to, s.cash[seat], 'всё имущество — кредитору');
+    if (s.usd[seat] > 0) giveUsd(x, seat, to, s.usd[seat], 'всё имущество — кредитору');
+    eliminate(x, seat);
+    return;
+  }
   if (d && d.to != null && !s.out[d.to]) give(x, null, d.to, d.amount, 'банк гасит долг банкрота');
   if (s.cash[seat] > 0) give(x, seat, null, s.cash[seat], 'всё имущество — банку');
   eliminate(x, seat);
@@ -423,7 +487,10 @@ function checkWin(x: Ctx) {
   const { s } = x;
   const left = alive(s);
   if (left.length <= 1 && !s.result) {
-    s.result = { winners: left, text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : 'единственный не разорился — монополист' };
+    s.result = {
+      winners: left,
+      text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : isBiz(s) ? 'единственный не обанкротился — самое развитое производство' : 'единственный не разорился — монополист',
+    };
     s.phase = 'over';
     x.ev.push({ type: 'end', winners: left, text: s.result.text });
   }
@@ -449,6 +516,7 @@ function nextTurn(x: Ctx) {
   s.offers = 0;
   s.freeCasino = false;
   s.freeIns = false;
+  s.insPass = false;
   if (s.result) return;
   let i = s.seats.indexOf(s.turn);
   for (let k = 0; k < s.seats.length * 2; k++) {
@@ -486,6 +554,14 @@ function finish(x: Ctx) {
     return;
   }
   const seat = s.turn;
+  // «Бизнес»: прошёл «Страховое общество» — можно застраховаться
+  if (s.insPass) {
+    s.insPass = false;
+    if (!s.out[seat] && !s.ins[seat] && s.cash[seat] >= INSURE) {
+      s.phase = 'insure';
+      return;
+    }
+  }
   if (!s.out[seat] && s.again && s.jail[seat] === 0) {
     s.again = false;
     s.phase = 'roll';
@@ -498,7 +574,10 @@ function finish(x: Ctx) {
 function passStart(x: Ctx, seat: number, landed: boolean) {
   const { s } = x;
   const b = B(s);
-  if (s.map === 'manager' || landed || s.startPass) give(x, null, seat, b.startPay, landed ? 'остановка на «Старте»' : 'проход через «Старт»');
+  if (isBiz(s)) {
+    s.perk[seat] = 0; // льготы — до конца круга
+    if (s.premium) give(x, null, seat, b.startPay, 'премия за круг');
+  } else if (s.map === 'manager' || landed || s.startPass) give(x, null, seat, b.startPay, landed ? 'остановка на «Старте»' : 'проход через «Старт»');
   if (s.loan[seat] > 0) {
     s.loanLaps[seat]++;
     if (s.cash[seat] >= s.loan[seat]) {
@@ -530,6 +609,7 @@ function step(x: Ctx, seat: number, n: number) {
   if (dir > 0) {
     const crossed = path.indexOf(0);
     if (crossed >= 0) passStart(x, seat, crossed === path.length - 1);
+    if (isBiz(s) && path.slice(0, -1).some((c) => B(s).cells[c].kind === 'insure') && !s.ins[seat]) s.insPass = true;
   }
   if (s.out[seat]) return;
   land(x, seat);
@@ -579,6 +659,15 @@ function land(x: Ctx, seat: number) {
     case 'card':
       draw(x, seat, cell.deck!);
       return;
+    case 'lottery':
+      if (charge(x, seat, cell.amount!, null, 'лотерейный билет') === 'ok') draw(x, seat, cell.deck!);
+      return;
+    case 'exchange':
+      s.phase = 'exchange';
+      return;
+    case 'tax':
+      payTax(x, seat);
+      return;
     case 'money':
       if (cell.amount! > 0) give(x, null, seat, cell.amount!, cell.name);
       else charge(x, seat, -cell.amount!, null, cell.name);
@@ -612,6 +701,16 @@ function land(x: Ctx, seat: number) {
       return;
     }
     case 'insure':
+      if (isBiz(s)) {
+        // «Страховое общество»: остановился — обязан застраховаться (уже застрахован — ничего)
+        s.insPass = false;
+        if (s.ins[seat]) x.ev.push({ type: 'visit', seat, cell: c });
+        else if (charge(x, seat, INSURE, null, 'страховка') !== 'broke') {
+          s.ins[seat] = 1;
+          x.ev.push({ type: 'insure', seat, level: 1 });
+        }
+        return;
+      }
       s.ins[seat] = 0;
       if (s.freeIns) {
         s.freeIns = false;
@@ -637,14 +736,23 @@ function draw(x: Ctx, seat: number, deck: number) {
     s.freeCards[seat].push(deck * 100 + id);
     return;
   }
-  d.push(id);
+  if (B(s).decks[deck].shuffle) d.splice(x.rng.int(d.length + 1), 0, id);
+  else d.push(id);
   applyFx(x, seat, card);
 }
+
+/** «Бизнес»: убыток по «Шансу» — страховка отменяет один. */
+const LOSS = new Set(['audit', 'repair', 'disaster']);
 
 function applyFx(x: Ctx, seat: number, card: Card) {
   const { s } = x;
   const b = B(s);
   const fx = card.fx;
+  if (isBiz(s) && s.ins[seat] && (LOSS.has(fx.k) || (fx.k === 'cash' && fx.n < 0))) {
+    s.ins[seat] = 0;
+    x.ev.push({ type: 'saved', seat });
+    return;
+  }
   switch (fx.k) {
     case 'cash':
       if (fx.n > 0) give(x, null, seat, fx.n, 'карточка');
@@ -701,7 +809,152 @@ function applyFx(x: Ctx, seat: number, card: Card) {
     case 'police':
       charge(x, seat, insured(s, seat, fx.n), null, 'нелады с полицией');
       return;
+    case 'usd':
+      giveUsd(x, null, seat, fx.n, 'карточка');
+      return;
+    case 'perk':
+      s.perk[seat] |= fx.bit;
+      x.ev.push({ type: 'perk', seat, bit: fx.bit });
+      return;
+    case 'audit': {
+      const die = x.rng.int(6) + 1;
+      x.ev.push({ type: 'audit', seat, die });
+      if (die % 2) charge(x, seat, fx.n, null, 'штраф налоговой проверки');
+      return;
+    }
+    case 'income': {
+      const { h, e } = housesOf(s, seat);
+      give(x, null, seat, h * fx.h + e * fx.e, 'прибыль филиалов и предприятий');
+      return;
+    }
+    case 'disaster': {
+      const c = owned(s, seat)
+        .filter((i) => s.houses[i] > 0 && s.houses[i] < 4)
+        .sort((p, q) => b.cells[p].build! - b.cells[q].build!)[0];
+      if (c == null) return;
+      s.houses[c]--;
+      s.stock[0]++;
+      x.ev.push({ type: 'unbuild', seat, cell: c, level: s.houses[c] });
+      return;
+    }
+    case 'freeBuild':
+      freeBuild(x, seat, fx.n);
+      return;
+    case 'freePatent':
+    case 'advance': {
+      const c = nextFree(s, s.pos[seat]);
+      if (c < 0) {
+        if (fx.k === 'advance') give(x, null, seat, fx.n, 'карточка');
+        return;
+      }
+      s.owner[c] = seat;
+      x.ev.push({ type: 'buy', seat, cell: c, price: 0 });
+      if (fx.k === 'advance') moveTo(x, seat, c);
+      return;
+    }
+    case 'none':
+      return;
   }
+}
+
+/** Первый ничей участок по ходу от клетки from (не считая её); -1 — нет. */
+function nextFree(s: State, from: number): number {
+  const len = N(s);
+  for (let i = 1; i < len; i++) {
+    const c = (from + i) % len;
+    if (isProp(s, c) && s.owner[c] == null) return c;
+  }
+  return -1;
+}
+
+/** «Бизнес»: выигрыш филиалов (n) или предприятия (n = 4) — на свою монополию, самые дорогие участки; монополии нет — пропадает. */
+function freeBuild(x: Ctx, seat: number, n: number) {
+  const { s } = x;
+  const b = B(s);
+  const mono = owned(s, seat)
+    .filter((c) => fullGroup(s, c))
+    .sort((p, q) => b.cells[q].price! - b.cells[p].price!);
+  if (n === 4) {
+    const c = [...mono].sort((p, q) => s.houses[q] - s.houses[p]).find((i) => s.houses[i] < 4);
+    if (c == null || s.stock[1] < 1) {
+      x.ev.push({ type: 'lost', seat });
+      return;
+    }
+    placeEnterprise(x, seat, c);
+    return;
+  }
+  let got = 0;
+  for (let k = 0; k < n; k++) {
+    const c = mono.find((i) => s.houses[i] < 3);
+    if (c == null || s.stock[0] < 1) break;
+    s.houses[c]++;
+    s.stock[0]--;
+    got++;
+    x.ev.push({ type: 'build', seat, cell: c, level: s.houses[c] });
+  }
+  if (!got) x.ev.push({ type: 'lost', seat });
+}
+
+/** «Бизнес»: валютное предприятие на участок; его филиалы переходят на другие участки монополии, лишние — банку за полцены. */
+function placeEnterprise(x: Ctx, seat: number, c: number) {
+  const { s } = x;
+  const cell = B(s).cells[c];
+  let free = s.houses[c];
+  s.houses[c] = 4;
+  s.stock[1]--;
+  for (const i of groupCells(s, cell.group!)) {
+    while (free > 0 && i !== c && s.houses[i] < 3) {
+      s.houses[i]++;
+      free--;
+      x.ev.push({ type: 'build', seat, cell: i, level: s.houses[i] });
+    }
+  }
+  if (free > 0) {
+    s.stock[0] += free;
+    give(x, null, seat, (free * cell.build!) / 2, 'филиалы проданы банку');
+  }
+  x.ev.push({ type: 'build', seat, cell: c, level: 4 });
+}
+
+/** Сдать банку все постройки участка за полцены (филиалы — за рубли, предприятие — за доллары). */
+function unbuildAll(x: Ctx, seat: number, c: number) {
+  const { s } = x;
+  const cell = B(s).cells[c];
+  const h = s.houses[c];
+  if (h === 4) {
+    s.stock[1]++;
+    giveUsd(x, null, seat, cell.buildUsd! / 2, 'предприятие продано банку');
+  } else {
+    s.stock[0] += h;
+    give(x, null, seat, (h * cell.build!) / 2, 'филиал продан банку');
+  }
+  s.houses[c] = 0;
+  x.ev.push({ type: 'unbuild', seat, cell: c, level: 0 });
+}
+
+/** «Бизнес»: налог — 10 % недвижимости (незаложенные патенты и филиалы — в рублях, предприятия — в долларах; не хватает долларов — рублями по курсу). */
+export function taxOf(s: State, seat: number): { rub: number; usd: number } {
+  const b = B(s);
+  let rub = 0;
+  let usd = 0;
+  for (const c of owned(s, seat)) {
+    const cell = b.cells[c];
+    if (!s.mort[c]) rub += cell.price!;
+    if (s.houses[c] === 4) usd += cell.buildUsd!;
+    else rub += s.houses[c] * cell.build!;
+  }
+  const k = s.perk[seat] & 1 ? 0 : s.perk[seat] & 2 ? TAX_RATE / 2 : TAX_RATE;
+  const r = (n: number) => Math.round((n * k) / 100) * 100;
+  return { rub: r(rub), usd: r(usd) };
+}
+
+function payTax(x: Ctx, seat: number) {
+  const { s } = x;
+  const t = taxOf(s, seat);
+  if (s.perk[seat] & 1) x.ev.push({ type: 'perk', seat, bit: 1 });
+  const fromUsd = Math.min(t.usd, s.usd[seat]);
+  giveUsd(x, seat, null, fromUsd, 'налог');
+  charge(x, seat, t.rub + (t.usd - fromUsd) * RATE, null, 'налог');
 }
 
 /** Разобрать клетку и, если решать нечего, закончить ход. */
@@ -779,6 +1032,24 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   const cell = (c: unknown) => (typeof c === 'number' && Number.isInteger(c) && c >= 0 && c < b.cells.length ? c : -1);
   const ok = () => ({ state: s, events: x.ev });
 
+  // «Бизнес»: валютная биржа — купить (usd > 0) или продать доллары по курсу; при долге — только продать
+  if (a.type === 'exchange') {
+    const n = Math.round(Number(a.usd));
+    if (!isBiz(s) || seat !== s.turn || !n || n % 50) return null;
+    if (s.phase !== 'exchange' && !(s.phase === 'debt' && n < 0)) return null;
+    if (n > 0 ? s.cash[seat] < n * RATE : s.usd[seat] < -n) return null;
+    if (n > 0) {
+      give(x, seat, null, n * RATE, 'покупка долларов');
+      giveUsd(x, null, seat, n, 'покупка долларов');
+    } else {
+      giveUsd(x, seat, null, -n, 'продажа долларов');
+      give(x, null, seat, -n * RATE, 'продажа долларов');
+    }
+    x.ev.push({ type: 'exchange', seat, usd: n });
+    if (s.phase === 'debt' && s.debt && s.cash[seat] >= s.debt.amount) debtPaid(x);
+    return ok();
+  }
+
   // операции с имуществом: свой ход до броска, при покупке и при долге
   if (OPS.has(a.type)) {
     const can = s.phase === 'roll' || s.phase === 'buy' || (s.phase === 'debt' && (a.type === 'sell' || a.type === 'mortgage'));
@@ -788,6 +1059,18 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const c = cell(a.cell);
         if (c < 0 || s.phase === 'debt' || !canBuild(s, seat, c)) return null;
         const cost = b.cells[c].build!;
+        if (isBiz(s)) {
+          if (s.houses[c] === 3) {
+            giveUsd(x, seat, null, b.cells[c].buildUsd!, 'предприятие');
+            placeEnterprise(x, seat, c);
+          } else {
+            s.stock[0]--;
+            s.houses[c]++;
+            give(x, seat, null, cost, 'филиал');
+            x.ev.push({ type: 'build', seat, cell: c, level: s.houses[c] });
+          }
+          return ok();
+        }
         if (s.houses[c] === 3) {
           s.stock[1]--;
           s.stock[0] += 3;
@@ -801,7 +1084,17 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const c = cell(a.cell);
         if (c < 0 || !canSell(s, seat, c)) return null;
         const half = b.cells[c].build! / 2;
-        if (s.houses[c] === 4) {
+        if (isBiz(s)) {
+          if (s.houses[c] === 4) {
+            s.houses[c] = 0;
+            s.stock[1]++;
+            giveUsd(x, null, seat, b.cells[c].buildUsd! / 2, 'предприятие продано банку');
+          } else {
+            s.houses[c]--;
+            s.stock[0]++;
+            give(x, null, seat, half, 'филиал продан банку');
+          }
+        } else if (s.houses[c] === 4) {
           const k = Math.min(3, s.stock[0]);
           s.stock[1]++;
           s.stock[0] -= k;
@@ -873,6 +1166,16 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       if (a.type !== 'roll') return null;
       s.card = null;
       s.phase = 'resolve';
+      if (isBiz(s)) {
+        // «Бизнес»: два кубика, дублей и биржи-тюрьмы нет
+        const d1 = rng.int(6) + 1;
+        const d2 = rng.int(6) + 1;
+        s.dice = [d1, d2];
+        x.ev.push({ type: 'roll', seat, dice: [d1, d2] });
+        step(x, seat, d1 + d2);
+        settle(x);
+        return ok();
+      }
       if (s.map === 'kosmos') {
         const d = rng.int(6) + 1;
         s.dice = [d];
@@ -986,7 +1289,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     case 'insure': {
       const lv = a.type === 'insure' ? a.level : -1;
       if (lv !== 0 && lv !== 1 && lv !== 2) return null;
-      const cost = [0, 100, 250][lv];
+      if (isBiz(s) && lv === 2) return null;
+      const cost = isBiz(s) ? [0, INSURE][lv] : [0, 100, 250][lv];
       if (s.cash[seat] < cost) return null;
       give(x, seat, null, cost, 'страховка');
       s.ins[seat] = lv;
@@ -1014,6 +1318,12 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       else r = charge(x, seat, -amount, null, 'проигрыш в казино');
       if (s.phase === 'resolve' && r === 'ok' && star) s.phase = 'casino2';
       settle(x);
+      return ok();
+    }
+    case 'exchange': {
+      if (a.type !== 'pass') return null;
+      s.phase = 'resolve';
+      finish(x);
       return ok();
     }
     case 'bankBuy': {

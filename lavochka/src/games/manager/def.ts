@@ -1,19 +1,19 @@
-/* «Менеджер» и «Космос 2000» — одна карточка, поле (и с ним правила) выбирается настройкой. Движок — engine.ts, боты — bot.ts. */
+/* «Менеджер», «Космос 2000» и «Бизнес» — одна карточка, поле (и с ним правила) выбирается настройкой. Движок — engine.ts, боты — bot.ts. */
 import type { DemoScript, GameDef, Rng, SeatSpec } from '../../core/types';
 import { SEATS as HSEATS } from '../hodilki/core';
-import { BOARDS, boardOf } from './boards';
+import { BOARDS, boardOf, INSURE, RATE, type MapId } from './boards';
 import { choose } from './bot';
-import { apply, fmt, newState, toAct, view, type Action, type Event, type State } from './engine';
+import { apply, dollars, fmt, newState, toAct, view, type Action, type Event, type State } from './engine';
 
 export const SEATS = HSEATS.slice(0, 6);
 
 /** У события — поле партии: журнал на клиенте должен знать валюту и названия клеток. */
-export type Ev = Event & { m?: 'manager' | 'kosmos' };
+export type Ev = Event & { m?: MapId };
 
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
 /** Показ правил: обычная расстановка на двоих и правка позиции. */
-function demo(map: 'manager' | 'kosmos', patch: (s: State) => void, steps: DemoScript<State, Action>['steps']): DemoScript<State, Action> {
+function demo(map: MapId, patch: (s: State) => void, steps: DemoScript<State, Action>['steps']): DemoScript<State, Action> {
   return {
     seats: demoSeats,
     options: { map },
@@ -26,7 +26,7 @@ function demo(map: 'manager' | 'kosmos', patch: (s: State) => void, steps: DemoS
   };
 }
 
-const cardIndex = (map: 'manager' | 'kosmos', deck: number, start: string) => boardOf(map).decks[deck].cards.findIndex((c) => c.text.startsWith(start));
+const cardIndex = (map: MapId, deck: number, start: string) => boardOf(map).decks[deck].cards.findIndex((c) => c.text.startsWith(start));
 const top = (s: State, deck: number, start: string) => {
   const id = cardIndex(s.map, deck, start);
   s.decks[deck] = [id, ...s.decks[deck].filter((i) => i !== id)];
@@ -253,6 +253,132 @@ const KOSMOS_RULES = [
   },
 ];
 
+const Z = 'biznes' as const;
+
+const BIZNES_RULES = [
+  {
+    title: 'Бизнес: ход и патенты',
+    html: `<p>От 2 до 6 игроков, у каждого на старте <b>100 000 р.</b>, долларов нет ни у кого. Два кубика, фишки идут от «Старта» по кругу;
+      дублей и тюрьмы нет. За круг банк ничего не платит (премию <b>15 000</b> за круг можно включить в настройках — так играли во дворах).</p>
+      <p>Встал на свободный участок — можно купить патент по цене на поле. Отказался — банкир сразу выставляет его <b>на аукцион</b>,
+      торг начинается с любой цены. На чужом участке платят владельцу по карточке патента; заложенный участок платы не приносит.</p>
+      <p>На <b>«Страховом обществе»</b> обязательно страхуются — 1 000; кто его прошёл, может застраховаться по желанию. Страховка спасает
+      от одного убытка по карточке «Шанс».</p>`,
+    demo: demo(Z, () => {}, [
+      { seat: 0, action: { type: 'roll' }, rig: [2, 3], caption: 'Вовка бросает 3 и 4 — «Гостиный двор» свободен, патент стоит 2 600.' },
+      { seat: 0, action: { type: 'buy' }, caption: 'Покупает: карточка патента теперь у него.' },
+      { seat: 1, action: { type: 'roll' }, rig: [3, 5], caption: 'Ленка встаёт на «Страховое общество» — обязана застраховаться за 1 000.' },
+    ]),
+  },
+  {
+    title: 'Бизнес: монополия, филиалы и валютные предприятия',
+    html: `<p>Все три патента одного цвета — <b>монополия</b>: плата за пустой участок вдвое больше, и можно строить <b>филиалы</b> — до трёх на участке,
+      как угодно неравномерно (на одном три, на другом ни одного). Строят до броска, по цене на карточке.</p>
+      <p>После трёх филиалов на участок ставят <b>валютное предприятие</b> — оно покупается только <b>за доллары</b>. Филиалы с этого участка
+      переходят на другие участки монополии, а лишние банк выкупает за полцены. Постройки продают только банку за полцены
+      (предприятие — за доллары). В банке 18 филиалов и 12 предприятий.</p>`,
+    demo: demo(
+      Z,
+      (s) => {
+        for (const c of [1, 2, 4]) s.owner[c] = 0;
+        s.houses[1] = 3;
+        s.stock[0] -= 3;
+        s.usd[0] = 2000;
+        s.pos[0] = 36;
+      },
+      [
+        { seat: 0, action: { type: 'build', cell: 2 }, caption: 'Все рестораны у Вовки. Филиал на «Арбате» — 4 000.' },
+        { seat: 0, action: { type: 'build', cell: 1 }, caption: 'На «Славянском базаре» три филиала — Вовка ставит валютное предприятие за 1 600 $. Филиалы переезжают на «Арбат» и «Макдоналдс».' },
+        { seat: 0, action: { type: 'roll' }, rig: [1, 2], caption: 'Вовка проходит «Старт» и встаёт на свой «Славянский базар».' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 1], caption: 'Ленка — на лотерее (билет 150).' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнес: «Шанс» и «Лотерея»',
+    html: `<p>На «Шансе» берут верхнюю карточку и выполняют: доходы и убытки, доллары, налоговые льготы на круг, налоговая проверка (нечет на кубике —
+      штраф 15 000), стихийное бедствие, переходы. Карточку кладут вниз колоды.</p>
+      <p>На «Лотерее» платят в банк цену билета с поля (150–500) и тянут карточку: доллары, рубли, бесплатный патент, филиалы, предприятие —
+      или «без выигрыша» (их 20 из 30). Филиал или предприятие без монополии пропадает.</p>`,
+    demo: demo(
+      Z,
+      (s) => {
+        top(s, 0, 'Удачная коммерческая');
+        top(s, 1, 'Ваш выигрыш 6 000');
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 2], caption: 'Вовка на «Шансе»: удачная коммерческая операция, +10 000.' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 1], caption: 'Ленка покупает лотерейный билет за 150 — и выигрывает 6 000 долларов!' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнес: валютная биржа',
+    html: `<p>Доллары нужны на валютные предприятия. Их выигрывают по карточкам или покупают на <b>«Валютной бирже»</b>: остановился на ней —
+      меняй сколько хочешь рублей на доллары и обратно по курсу <b>${RATE} : 1</b>. Когда нечем платить, доллары можно продать банку и не стоя на бирже.</p>`,
+    demo: demo(
+      Z,
+      (s) => {
+        s.pos[0] = 15;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [2, 1], caption: 'Вовка на валютной бирже.' },
+        { seat: 0, action: { type: 'exchange', usd: 2000 }, caption: 'Покупает 2 000 $ за 10 000 р.' },
+        { seat: 0, action: { type: 'pass' }, caption: 'Хватит — ход Ленки.' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнес: налог и страховка',
+    html: `<p>На <b>«Налоговом управлении»</b> платят <b>10 %</b> стоимости недвижимости: патенты и филиалы — рублями, валютные предприятия — долларами
+      (нет долларов — рублями по курсу). Заложенные участки и наличные налогом не облагаются. По «Шансу» бывают льготы до конца круга:
+      без налога или налог вдвое меньше.</p>
+      <p>Страховка (${fmt(INSURE)} р.) отменяет один убыток по «Шансу», после этого её надо брать снова.</p>`,
+    demo: demo(
+      Z,
+      (s) => {
+        for (const c of [1, 2, 4, 6]) s.owner[c] = 0;
+        s.pos[0] = 25;
+        s.pos[1] = 5;
+        top(s, 0, 'Рост цен');
+        top(s, 1, 'Без выигрыша');
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [2, 1], caption: 'Вовка в налоговом управлении: патентов на 6 400 — налог 600.' },
+        { seat: 1, action: { type: 'roll' }, rig: [2, 1], caption: 'Ленка в страховом обществе — 1 000 за страховку.' },
+        { seat: 0, action: { type: 'roll' }, rig: [0, 1], caption: 'Вовка на лотерее: билет 450 — без выигрыша.' },
+        { seat: 1, action: { type: 'roll' }, rig: [2, 1], caption: 'Ленке выпал «Шанс»: рост цен на сырьё, −15 000. Но она застрахована — убыток отменён.' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнес: залог и банкротство',
+    html: `<p>Не хватает денег — продайте постройки банку за полцены, заложите патенты (банк даёт половину цены; на участке не должно быть построек),
+      продайте доллары. Выкуп из залога — та же половина. Заложенный патент рушит монополию.</p>
+      <p>Не набрать и так — банкротство: если должны игроку, ему уходят все патенты и деньги (постройки сначала сдаются банку за полцены);
+      если банку — всё забирает банк. Побеждает последний; на время — у кого больше собственность (доллары по курсу ${RATE} : 1).</p>`,
+    demo: demo(
+      Z,
+      (s) => {
+        for (const c of [1, 2]) s.owner[c] = 0;
+        for (const c of [6, 7, 9]) {
+          s.owner[c] = 1;
+          s.houses[c] = 3;
+        }
+        s.stock[0] -= 9;
+        s.cash[0] = 3000;
+        s.usd[0] = 1000;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [2, 3], caption: 'Вовка на «Гостином дворе» с тремя филиалами: 8 800 за наём, а у него 3 000.' },
+        { seat: 0, action: { type: 'mortgage', cell: 1 }, caption: 'Закладывает «Славянский базар» — +500.' },
+        { seat: 0, action: { type: 'mortgage', cell: 2 }, caption: '«Арбат» — +700.' },
+        { seat: 0, action: { type: 'exchange', usd: -1000 }, caption: 'И продаёт банку 1 000 $ за 5 000 р. — долг уплачен.' },
+      ]
+    ),
+  },
+];
+
 function showcase(): State {
   const rng = { next: () => 0.5, int: (n: number) => n - 1, getState: () => 0 };
   const s = newState('manager', [0, 1, 2, 3], {}, rng);
@@ -301,16 +427,18 @@ export const def: GameDef<State, Action, Ev, State> = {
     },
     { key: 'startPass', label: '250 и за проход через «Старт»', hint: 'по правилам — только за остановку', type: 'toggle', default: false, showIf: (o) => o.map === 'kosmos' },
     { key: 'loan', label: 'Ссуда банкроту', hint: '1 000, вернуть 1 200 за два круга', type: 'toggle', default: true, showIf: (o) => o.map === 'kosmos' },
+    { key: 'premium', label: 'Премия 15 000 за круг', hint: 'дворовое правило, в инструкции её нет', type: 'toggle', default: false, showIf: (o) => o.map === 'biznes' },
   ],
   presets: [
     { id: 'manager', label: 'Менеджер', hint: 'Ленинград 90-х: филиалы, предприятия, биржа', options: { map: 'manager', limit: 0 } },
     { id: 'manager20', label: 'Менеджер на 20 кругов', hint: 'побеждает самый богатый', options: { map: 'manager', limit: 20 } },
     { id: 'kosmos', label: 'Космос 2000', hint: 'планеты, казино, пираты и Астролог', options: { map: 'kosmos', limit: 0 } },
+    { id: 'biznes', label: 'Бизнес', hint: 'патенты, филиалы, валютные предприятия, биржа и лотерея', options: { map: 'biznes', limit: 0 } },
   ],
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    const map = opts.map === 'kosmos' ? 'kosmos' : 'manager';
-    return newState(map, ids, { limit: Number(opts.limit) || 0, startPass: !!opts.startPass, loan: opts.loan !== false }, rng);
+    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' ? opts.map : 'manager';
+    return newState(map, ids, { limit: Number(opts.limit) || 0, startPass: !!opts.startPass, loan: opts.loan !== false, premium: !!opts.premium }, rng);
   },
   toAct,
   apply: (s, seat, a, rng) => {
@@ -324,11 +452,25 @@ export const def: GameDef<State, Action, Ev, State> = {
   describe: (ev, name) => describe(ev, name),
   rules: {
     goal: 'Покупать участки (или планеты), собирать с соперников плату за наём и разорить всех — остаться единственным, у кого есть капитал.',
-    sections: [...MANAGER_RULES, ...KOSMOS_RULES],
+    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES],
   },
 };
 
-const QUIET = new Set(['покупка', 'торги', 'филиал', 'предприятие', 'залог', 'выкуп из залога', 'выкуп планеты у банка', 'филиал продан банку', 'предприятие продано банку', 'сделка', 'страховка']);
+const QUIET = new Set([
+  'покупка',
+  'торги',
+  'филиал',
+  'предприятие',
+  'залог',
+  'выкуп из залога',
+  'выкуп планеты у банка',
+  'филиал продан банку',
+  'предприятие продано банку',
+  'сделка',
+  'страховка',
+  'покупка долларов',
+  'продажа долларов',
+]);
 
 function describe(ev: Ev, name: (seat: number) => string): string | null {
   const b = boardOf(ev.m ?? 'manager');
@@ -340,9 +482,12 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} бросает: <b>${ev.dice.join(' + ')}</b>`;
     case 'pay':
       if (QUIET.has(ev.why)) return null; // покупку, постройку, залог описывает своё событие
-      if (ev.from == null) return `${name(ev.to as number)} получает ${m(ev.amount)} — ${ev.why}`;
-      if (ev.from === 'pot') return `${name(ev.to as number)} получает ${m(ev.amount)} из золота Амазонок`;
-      return `${name(ev.from)} платит ${m(ev.amount)} ${who(ev.to)} — ${ev.why}`;
+      {
+        const sum = ev.usd ? dollars(ev.amount) : m(ev.amount);
+        if (ev.from == null) return `${name(ev.to as number)} получает ${sum} — ${ev.why}`;
+        if (ev.from === 'pot') return `${name(ev.to as number)} получает ${sum} из золота Амазонок`;
+        return `${name(ev.from)} платит ${sum} ${who(ev.to)} — ${ev.why}`;
+      }
     case 'buy':
       return `${name(ev.seat)} покупает: ${cn(ev.cell)} за ${m(ev.price)}`;
     case 'decline':
@@ -387,6 +532,16 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
       return `${name(ev.seat)}: ${ev.level === 2 ? 'страховка на всю сумму' : ev.level === 1 ? 'страховка наполовину' : 'без страховки'}${ev.free ? ' — бесплатно' : ''}`;
     case 'casino':
       return `${name(ev.seat)} в казино: сектор ${ev.sector}, ${ev.amount > 0 ? '+' : '−'}${m(Math.abs(ev.amount))}${ev.star ? ' ★ — ещё бросок' : ''}`;
+    case 'saved':
+      return `${name(ev.seat)} застрахован — убыток отменён, страховка израсходована`;
+    case 'audit':
+      return `Налоговая проверка: на кубике ${ev.die}${ev.die % 2 ? ' — нечет, штраф' : ' — чёт, обошлось'}`;
+    case 'lost':
+      return `${name(ev.seat)}: монополии нет — выигрыш пропадает`;
+    case 'perk':
+      return ev.bit === 1 ? `${name(ev.seat)} освобождён от налогов до конца круга` : ev.bit === 2 ? `${name(ev.seat)}: налог вдвое меньше до конца круга` : `${name(ev.seat)}: до конца круга строить нельзя`;
+    case 'exchange':
+      return ev.usd > 0 ? `${name(ev.seat)} покупает ${dollars(ev.usd)} за ${m(ev.usd * RATE)}` : `${name(ev.seat)} продаёт ${dollars(-ev.usd)} за ${m(-ev.usd * RATE)}`;
     case 'visit': {
       const k = b.cells[ev.cell]?.kind;
       return k === 'hole' || k === 'police' || k === 'pirates' ? `${name(ev.seat)} застрахован: «${b.cells[ev.cell].name}» — без потерь` : null;
