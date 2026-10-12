@@ -3,3 +3,4 @@ dist
 dist-server
 /data
 tools/solitaire/raw/
+tools/geo/data/
