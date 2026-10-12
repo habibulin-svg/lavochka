@@ -1,0 +1,146 @@
+/* «Менеджер» / «Космос 2000»: поле-скан, отметки на клетках, фишки, решения в центре поля. Размеры — в --u (сотая доля поля). */
+.table--manager { --table-bg: radial-gradient(ellipse at 50% 30%, #3a4a6a, #10162a); }
+.mg-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
+.mg-board { position: relative; flex: none; --u: 6px; border-radius: calc(var(--u) * 0.6); overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+  opacity: 0; transition: opacity 0.5s ease; background: #22305a; }
+.mg-board.ready { opacity: 1; }
+.mg-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+/* клетки */
+.mg-cells { position: absolute; inset: 0; }
+.mg-cell { position: absolute; }
+.mg-cell.prop { cursor: pointer; }
+.mg-cell.prop:hover { box-shadow: inset 0 0 0 calc(var(--u) * 0.3) rgba(255, 230, 120, 0.85); }
+/* «Менеджер»: полоса цвета владельца у внутреннего края, на ней филиалы и предприятие */
+.mg-band { position: absolute; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 0.25); background: var(--own);
+  box-shadow: 0 0 0 calc(var(--u) * 0.12) rgba(0, 0, 0, 0.55), 0 calc(var(--u) * 0.2) calc(var(--u) * 0.4) rgba(0, 0, 0, 0.4); }
+.side-b .mg-band { left: 4%; right: 4%; top: -12%; height: 16%; }
+.side-t .mg-band { left: 4%; right: 4%; bottom: -12%; height: 16%; }
+.side-l .mg-band { top: 4%; bottom: 4%; right: -12%; width: 16%; flex-direction: column; }
+.side-r .mg-band { top: 4%; bottom: 4%; left: -12%; width: 16%; flex-direction: column; }
+.mg-house, .mg-ent { display: block; width: calc(var(--u) * 1.3); height: calc(var(--u) * 1.3); background: #2f9a3a; border-radius: calc(var(--u) * 0.2);
+  box-shadow: inset 0 calc(var(--u) * -0.2) 0 rgba(0, 0, 0, 0.35), 0 0 0 calc(var(--u) * 0.1) #0d3a12; }
+.mg-ent { width: calc(var(--u) * 2.4); background: #d0281c; box-shadow: inset 0 calc(var(--u) * -0.25) 0 rgba(0, 0, 0, 0.35), 0 0 0 calc(var(--u) * 0.1) #5a0a06; }
+.mg-cell.mort::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(40, 40, 40, 0.42) 0 calc(var(--u) * 0.5), rgba(40, 40, 40, 0.12) calc(var(--u) * 0.5) calc(var(--u) * 1)); }
+.mg-mort { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-30deg); z-index: 1; padding: 0 calc(var(--u) * 0.4);
+  background: #b01818; color: #fff; font: 700 calc(var(--u) * 1.2) / 1.4 system-ui, sans-serif; text-transform: uppercase; border-radius: calc(var(--u) * 0.2); }
+/* «Космос»: жетон владельца на планете */
+.mg-chip { position: absolute; width: calc(var(--u) * 4.4); aspect-ratio: 1; background: center / 100% 100% no-repeat; border-radius: 50%;
+  filter: drop-shadow(0 calc(var(--u) * 0.15) calc(var(--u) * 0.25) rgba(0, 0, 0, 0.7)); }
+.mg-chip.ring { background: radial-gradient(circle, #fff 52%, var(--c) 54%, var(--c) 80%, #222 82%); }
+.mg-cell .mg-chip { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+/* метка — мельче фишки и у внешнего края клетки, фишки ходят по центру */
+.mg-cell .mg-chip { width: calc(var(--u) * 3.2); }
+.side-l .mg-chip { left: 22%; top: 18%; }
+.side-r .mg-chip { left: 78%; top: 82%; }
+.side-t .mg-chip { top: 22%; left: 82%; }
+.side-b .mg-chip { top: 78%; left: 18%; }
+
+/* фишки */
+.mg-tokens { position: absolute; inset: 0; pointer-events: none; }
+.mg-token { position: absolute; z-index: 30; width: 4.4%; aspect-ratio: 1; transform: translate(-50%, -50%); transition: left 0.16s ease, top 0.16s ease; }
+.mg-board[data-map='kosmos'] .mg-token { width: 6.2%; }
+.mg-btn { position: absolute; inset: 0; background: center / 100% 100% no-repeat; border-radius: 50%;
+  filter: drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3)); transition: transform 0.16s ease; }
+.mg-btn.chip { width: auto; }
+.mg-token.lifted .mg-btn { transform: translate(-6%, -10%) scale(1.2); }
+.mg-token.fly { transition: left 0.75s cubic-bezier(0.45, 0, 0.25, 1), top 0.75s cubic-bezier(0.45, 0, 0.25, 1); z-index: 45; }
+.mg-token.fly .mg-btn { transform: translate(-10%, -18%) scale(1.4); }
+.mg-token::before { content: ''; position: absolute; inset: -24%; border-radius: 50%; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(circle, rgba(255, 220, 90, 0) 50%, rgba(255, 220, 90, 0.9) 58%, rgba(255, 220, 90, 0) 72%); }
+.mg-token.on::before { opacity: 1; animation: mg-pulse 1.2s ease-in-out infinite; }
+@keyframes mg-pulse { 0%, 100% { transform: scale(0.92); } 50% { transform: scale(1.1); } }
+
+/* центр поля */
+.mg-center { position: absolute; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 1.5); box-sizing: border-box; pointer-events: none; font: calc(var(--u) * 1.75) / 1.3 system-ui, sans-serif; color: #fff; }
+.mg-center > * { pointer-events: auto; }
+.mg-tray.dice-tray { flex: none; height: auto; min-height: calc(var(--u) * 9); width: 60%; background: none; box-shadow: none; overflow: visible; }
+.mg-prompt { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 0.9); max-width: 100%; text-align: center; }
+.mg-prompt:empty { display: none; }
+.mg-q { background: rgba(10, 16, 40, 0.82); padding: calc(var(--u) * 0.6) calc(var(--u) * 1.2); border-radius: calc(var(--u) * 0.8); text-shadow: 0 1px 2px #000; }
+.mg-q.big { font-size: calc(var(--u) * 3); }
+.mg-q.small { font-size: calc(var(--u) * 1.4); opacity: 0.85; }
+.mg-hint { font-size: calc(var(--u) * 1.4); background: rgba(80, 20, 10, 0.85); padding: calc(var(--u) * 0.4) calc(var(--u) * 0.9); border-radius: calc(var(--u) * 0.6); }
+.mg-btns { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 0.7); justify-content: center; }
+.mg-btns.col { flex-direction: column; align-items: stretch; max-height: calc(var(--u) * 26); overflow: auto; }
+.mg-center .btn, .mg-pop .btn { font-size: calc(var(--u) * 1.7); padding: calc(var(--u) * 0.7) calc(var(--u) * 1.4); }
+.btn.ghost { background: rgba(255, 255, 255, 0.12); }
+.btn.danger { background: linear-gradient(180deg, #5a5a5a, #2a2a2a); }
+
+/* вытянутая карточка */
+.mg-card { width: calc(var(--u) * 24); animation: mg-flip 0.5s ease; }
+@keyframes mg-flip { from { transform: perspective(600px) rotateY(90deg) scale(0.8); } to { transform: none; } }
+.mg-cardin { background: #fbf8ee center / cover no-repeat; color: #1a1a1a; border: calc(var(--u) * 0.25) solid #1a1a1a; border-radius: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 1.2); text-align: center; box-shadow: 0 calc(var(--u) * 0.6) calc(var(--u) * 1.5) rgba(0, 0, 0, 0.6); }
+.mg-cardt { font: 800 calc(var(--u) * 1.6) / 1.2 system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: calc(var(--u) * 0.8); }
+.mg-cardx { font: calc(var(--u) * 1.7) / 1.35 'Courier New', 'Courier', monospace; font-weight: 700; }
+.mg-card[data-map='kosmos'] .mg-cardin { border: none; color: #fff; min-height: calc(var(--u) * 14); display: flex; flex-direction: column; justify-content: center; }
+.mg-card[data-map='kosmos'] .mg-cardt { color: #6a3a1a; text-shadow: 0 0 calc(var(--u) * 0.4) #fff; font-size: calc(var(--u) * 2.2); }
+.mg-card[data-map='kosmos'] .mg-cardx { font-family: system-ui, sans-serif; text-transform: uppercase; text-shadow: 0 0 calc(var(--u) * 0.3) #000, 0 0 calc(var(--u) * 0.6) #000; }
+
+/* карточка «Право на собственность» */
+.mg-deed { width: calc(var(--u) * 25); background: #f6f1e6; color: #1a1a1a; border: calc(var(--u) * 0.2) solid #1a1a1a; border-radius: calc(var(--u) * 0.4);
+  box-shadow: 0 calc(var(--u) * 0.5) calc(var(--u) * 1.2) rgba(0, 0, 0, 0.55); text-align: left; overflow: hidden; }
+.mg-dh { background: var(--g, #2a3a6a); color: #111; text-align: center; font: 700 calc(var(--u) * 1.8) / 1.2 system-ui, sans-serif; padding: calc(var(--u) * 0.8);
+  border-bottom: calc(var(--u) * 0.2) solid #1a1a1a; text-transform: uppercase; }
+.mg-dh b { display: block; font-size: calc(var(--u) * 2); }
+.mg-deed.kos .mg-dh { background: linear-gradient(180deg, #2a1a5a, #0a0a2a); color: #ffd36a; }
+.mg-db { padding: calc(var(--u) * 0.8) calc(var(--u) * 1.2); font-size: calc(var(--u) * 1.5); }
+.mg-dt { text-align: center; margin-bottom: calc(var(--u) * 0.4); }
+.mg-dr { display: flex; justify-content: space-between; gap: calc(var(--u) * 1); padding: 0 calc(var(--u) * 0.3); border-radius: calc(var(--u) * 0.3); }
+.mg-dr.on { background: #ffe57a; }
+.mg-dn { font-size: calc(var(--u) * 1.2); text-align: center; margin: calc(var(--u) * 0.5) 0; padding: calc(var(--u) * 0.4) 0; border-top: 1px solid #888; border-bottom: 1px solid #888; }
+.mg-own { margin-top: calc(var(--u) * 0.5); font-size: calc(var(--u) * 1.3); color: #444; text-align: center; }
+
+/* всплывающая карточка участка и сделка */
+.mg-pop { position: absolute; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(5, 10, 25, 0.55); }
+.mg-popin { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1); max-height: 96%; overflow: auto; padding: calc(var(--u) * 1);
+  font: calc(var(--u) * 1.7) / 1.3 system-ui, sans-serif; color: #fff; }
+.mg-popin.deal { background: rgba(14, 22, 48, 0.95); border-radius: calc(var(--u) * 1); width: 94%; box-sizing: border-box; }
+.mg-offer { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1); width: 100%; }
+.mg-offer > div { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 0.4); align-content: flex-start; background: rgba(255, 255, 255, 0.07);
+  border-radius: calc(var(--u) * 0.6); padding: calc(var(--u) * 0.6); min-height: calc(var(--u) * 6); }
+.mg-offer small { flex-basis: 100%; opacity: 0.75; }
+.mg-who { font: inherit; color: #fff; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: calc(var(--u) * 0.5);
+  padding: calc(var(--u) * 0.2) calc(var(--u) * 0.8); margin: 0 calc(var(--u) * 0.2); cursor: pointer; }
+.mg-who.sel { background: #c23a30; border-color: #ffb0a0; }
+.mg-step { display: inline-flex; gap: calc(var(--u) * 0.3); margin-left: calc(var(--u) * 0.6); }
+.mg-step .btn { padding: calc(var(--u) * 0.3) calc(var(--u) * 0.6); font-size: calc(var(--u) * 1.3); }
+
+/* участки чипами (панель, сделка) */
+.mg-pchip { font: 12px/1.2 system-ui, sans-serif; color: #111; background: #f6f1e6; border: 0; border-left: 6px solid var(--g); border-radius: 4px;
+  padding: 3px 6px; cursor: pointer; text-align: left; }
+.mg-popin .mg-pchip, .mg-prompt .mg-pchip { font-size: calc(var(--u) * 1.35); border-left-width: calc(var(--u) * 0.7); }
+.mg-pchip small { margin-left: 4px; color: #2f7a2a; }
+.mg-pchip.mort { opacity: 0.55; text-decoration: line-through; }
+.mg-pchip.sel { outline: 3px solid #ffd34a; }
+.mg-empty { opacity: 0.6; font-size: 0.9em; }
+
+/* казино */
+.mg-casino { display: grid; grid-template-columns: repeat(3, auto); gap: calc(var(--u) * 0.4) calc(var(--u) * 1); background: rgba(150, 200, 240, 0.9); color: #1a2a5a;
+  padding: calc(var(--u) * 0.8) calc(var(--u) * 1.4); border-radius: calc(var(--u) * 1); font-weight: 700; }
+.mg-casino .minus { color: #a01a1a; }
+
+/* всплывающие суммы и надписи */
+.mg-float { position: absolute; inset: 0; pointer-events: none; z-index: 60; }
+.mg-delta { position: absolute; transform: translate(-50%, -120%); font: 800 calc(var(--u) * 2) / 1 system-ui, sans-serif; text-shadow: 0 0 3px #000, 0 1px 2px #000;
+  animation: mg-up 1.6s ease-out forwards; white-space: nowrap; }
+.mg-delta.plus { color: #8aff7a; }
+.mg-delta.minus { color: #ff7a6a; }
+@keyframes mg-up { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: calc(var(--u) * -5); } }
+.mg-say { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); background: rgba(10, 16, 40, 0.9); color: #ffe27a; white-space: nowrap;
+  font: 700 calc(var(--u) * 2.2) / 1.3 system-ui, sans-serif; padding: calc(var(--u) * 0.6) calc(var(--u) * 1.6); border-radius: calc(var(--u) * 0.8);
+  animation: mg-say 2.2s ease forwards; }
+@keyframes mg-say { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* панель стола */
+.mg-panel { display: flex; flex-direction: column; gap: 8px; }
+.mg-cash { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mg-sum { font: 800 20px/1.2 system-ui, sans-serif; }
+.mg-notes { display: inline-flex; gap: 3px; }
+.mg-note { position: relative; display: block; width: 20px; height: 36px; background: center / cover no-repeat; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+.mg-note.h { width: 40px; height: 19px; }
+.mg-notes .mg-note em { position: absolute; right: -2px; bottom: -4px; font: 700 10px/1 system-ui, sans-serif; color: #fff; text-shadow: 0 0 2px #000; font-style: normal; }
+.mg-props { display: flex; flex-wrap: wrap; gap: 4px; }
+.mg-free { font-size: 13px; }
