@@ -94,11 +94,28 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- аркады: устройство + рекорды ---------- */
-.arcade-screen.active { background: radial-gradient(ellipse at 50% 0%, #3a3a5a, #121018 70%); padding: 18px 16px 40px; min-height: 100vh; box-sizing: border-box; }
-.arcade-cols { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
-.arcade-stage { display: flex; justify-content: center; align-items: flex-start; min-height: 60vh; }
-.arcade-side { padding: 16px 18px; }
-.arcade-side h3 { margin: 12px 0 6px; font-size: 18px; }
+.arcade-screen.active { display: grid; grid-template-columns: 1fr 330px; gap: 12px; height: 100vh; padding: 10px; box-sizing: border-box;
+  background: radial-gradient(ellipse at 40% 0%, #3a3a5a, #121018 70%); }
+.arcade-main { min-width: 0; min-height: 0; container-type: size; }
+.arcade-stage { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.arcade-side h3 { margin: 10px 0 6px; font-size: 17px; }
+.arcade-run { display: flex; flex-wrap: wrap; gap: 6px; }
+.arcade-run .btn { flex: 1 1 0; white-space: nowrap; }
+.arcade-panel:empty { display: none; }
+.arcade-panel { font-size: 14px; line-height: 1.4; }
+.arcade-panel p { margin: 0 0 6px; }
+.arcade-scroll { flex: 1; min-height: 0; overflow: auto; margin-right: -6px; padding-right: 6px; }
+.arcade-scroll > h3:first-child { margin-top: 2px; }
+.arcade-veil { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border: 0; background: rgba(10, 8, 16, 0.45); color: #fff3d6; cursor: pointer; font: 16px 'PT Sans', sans-serif; }
+.arcade-veil b { font: 44px 'Russo One', sans-serif; letter-spacing: 0.06em; text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6); }
+.arcade-veil[hidden] { display: none; }
+/* список игр серии (Электроника, Brick Game): плитки в две колонки, у коротких списков — в одну */
+.arcade-modes.list { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--ink); width: 100%; }
+.arcade-modes.list button { border: 0; text-align: left; padding: 6px 9px; font-size: 13px; line-height: 1.15; background: #f6ecd4; }
+.arcade-modes.list button.on { background: var(--brown); }
+.arcade-modes.list button small { display: block; font-weight: 400; opacity: 0.75; }
+.arcade-modes.list.short { grid-template-columns: 1fr; }
 .arcade-controls { font-size: 14px; line-height: 1.45; }
 .arcade-controls kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 4px; border: 1px solid rgba(42, 18, 6, 0.4); background: rgba(255, 250, 235, 0.7); font: 700 12px 'PT Sans', sans-serif; text-align: center; }
 .arcade-recs ol { margin: 0 0 8px; padding: 0; list-style: none; font-size: 14px; }
@@ -108,13 +125,6 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .arcade-recs li.empty { opacity: 0.6; font-style: italic; }
 .arcade-rec-t { font-weight: 700; font-size: 13px; opacity: 0.75; margin-top: 6px; }
 .arcade-name { width: 100%; font: 16px 'PT Sans', sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid #a08a60; box-sizing: border-box; }
-@media (max-width: 860px) { .arcade-cols { grid-template-columns: 1fr; } }
-/* прибор во всю ширину (эмуляторы): заголовок короче, панель — под прибором в колонки */
-.arcade-wide .home-top p { display: none; }
-.arcade-wide .arcade-cols { max-width: 1600px; grid-template-columns: 1fr; }
-.arcade-wide .arcade-stage { min-height: 0; }
-.arcade-wide .arcade-side { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0 24px; }
-@media (max-width: 860px) { .arcade-wide .arcade-side { grid-template-columns: 1fr; } }
 
 /* ---------- экран игры (настройка) ---------- */
 .home-screen.active, .lobby-screen.active { background: radial-gradient(ellipse at 50% 0%, #4a3a5a, #17141f 70%); padding: 18px 16px 40px; }
@@ -244,6 +254,10 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
   .table.active { display: block; height: auto; min-height: 100vh; }
   .table-main { height: min(100vw, 75vh); }
   .table-panel { overflow: visible; margin-top: 10px; }
+  .arcade-screen.active { display: block; height: auto; min-height: 100vh; }
+  .arcade-main { height: min(100vw * 0.62, 75vh); }
+  .arcade--brick .arcade-main { height: calc(100svh - 70px); }
+  .arcade-scroll { overflow: visible; }
   /* кнопки хода и статус — сразу под столом, чтобы не мотать вниз; карточным играм стол выше (вертикальная раскладка) */
   .table-panel > .game-controls { order: -2; }
   .table-panel > .table-status { order: -1; }

@@ -3,7 +3,7 @@
  * на приборе живут, пока «батарейки» (localStorage) не вынули. */
 import { Beeper } from '../../arcade/beeper';
 import { CLOCK_HZ, GwMachine, segIndex, type GwSave } from '../../arcade/gw';
-import type { ArcadeInstance } from '../../core/arcade';
+import type { ArcadeInstance, ArcadeOpts } from '../../core/arcade';
 import { store } from '../../core/settings';
 import { esc } from '../../core/util';
 import type { GwButton, GwGame } from './games';
@@ -24,16 +24,20 @@ const saveKey = (id: string) => `elektronika.${id}`;
 const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
 const keyOf = (e: KeyboardEvent) => (e.code.startsWith('Numpad') && e.code.length > 6 && /\d$/.test(e.code) ? e.code : e.key.toLowerCase());
 
-export function mountGw(game: GwGame, root: HTMLElement): ArcadeInstance {
+export function mountGw(game: GwGame, root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const wrap = document.createElement('div');
   wrap.className = 'gw';
-  wrap.innerHTML = `<div class="gw-unit"><div class="gw-loading">Вставляем батарейки…</div></div>
-    <p class="gw-about"><b>${esc(game.model)} «${esc(game.title)}».</b> ${esc(game.about)}</p>
-    <div class="gw-tools"><button class="btn small" data-a="acl" title="Кнопка ACL на обороте: сброс, как при замене батареек">Сброс</button></div>`;
+  wrap.innerHTML = `<div class="gw-unit"><div class="gw-loading">Вставляем батарейки…</div></div>`;
   root.appendChild(wrap);
   const unit = wrap.querySelector('.gw-unit') as HTMLElement;
+  const info = document.createElement('div');
+  info.className = 'gw-info';
+  info.innerHTML = `<p><b>${esc(game.model)} «${esc(game.title)}».</b> ${esc(game.about)}</p>
+    <button class="btn small" data-a="acl" title="Кнопка ACL на обороте: сброс, как при замене батареек">Сброс</button>`;
+  opts?.panel?.appendChild(info);
 
   let dead = false;
+  let paused = false;
   let raf = 0;
   let machine: GwMachine | null = null;
   let beeper: Beeper | null = null;
@@ -109,7 +113,7 @@ export function mountGw(game: GwGame, root: HTMLElement): ArcadeInstance {
   document.addEventListener('visibilitychange', onHide);
   window.addEventListener('pagehide', save);
 
-  (wrap.querySelector('[data-a=acl]') as HTMLButtonElement).onclick = () => {
+  (info.querySelector('[data-a=acl]') as HTMLButtonElement).onclick = () => {
     machine?.reset();
     save();
   };
@@ -128,6 +132,7 @@ export function mountGw(game: GwGame, root: HTMLElement): ArcadeInstance {
 
     const { w, h } = lay;
     unit.style.aspectRatio = `${w} / ${h}`;
+    unit.style.setProperty('--ar', String(w / h));
     const box = (b: [number, number, number, number]) => `left:${pct(b[0], w)};top:${pct(b[1], h)};width:${pct(b[2], w)};height:${pct(b[3], h)}`;
     const sh = lay.shadow;
     unit.innerHTML = `<img class="gw-under" alt="" src="${base(game.id)}under.webp" style="${box(lay.under)}">
@@ -190,7 +195,7 @@ export function mountGw(game: GwGame, root: HTMLElement): ArcadeInstance {
     let saveAt = last + 5000;
     const frame = (t: number) => {
       if (dead || !machine) return;
-      const dt = Math.min(100, t - last);
+      const dt = paused ? 0 : Math.min(100, t - last);
       last = t;
       const want = (dt * CLOCK_HZ) / 1000 + carry;
       const n = Math.floor(want);
@@ -217,8 +222,23 @@ export function mountGw(game: GwGame, root: HTMLElement): ArcadeInstance {
   })();
 
   return {
+    pause(on) {
+      paused = on;
+      if (on) {
+        releaseAll();
+        save();
+      }
+    },
+    /** «Игра А» / «Игра Б» — короткое нажатие кнопки на корпусе. */
+    launch(id) {
+      const b = game.buttons.find((x) => x.id === id);
+      if (!b) return;
+      press(b, true);
+      press(b, false);
+    },
     destroy() {
       save();
+      info.remove();
       dead = true;
       cancelAnimationFrame(raf);
       beeper?.close();

@@ -14,9 +14,12 @@ const mod: ArcadeModule = {
     <p><kbd>1</kbd> — игра А, <kbd>2</kbd> — игра Б, <kbd>3</kbd> — время. Прибор не выключается: часы и счёт сохраняются.</p>`,
   modes: GAMES.map((g) => ({ id: g.id, label: g.title, hint: g.model })),
   list: true,
+  starts: [
+    { id: 'a', label: 'Игра А' },
+    { id: 'b', label: 'Игра Б' },
+  ],
   noRecords: true,
-  wide: true,
-  mount: (root, opts) => mountGw(GAMES.find((g) => g.id === opts.mode) ?? GAMES[0], root),
+  mount: (root, opts) => mountGw(GAMES.find((g) => g.id === opts.mode) ?? GAMES[0], root, opts),
 };
 
 export default mod;

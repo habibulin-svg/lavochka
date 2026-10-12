@@ -113,4 +113,38 @@ describe('Brick Game E-23 (HT1190)', () => {
     for (const buf of [audio, audio2]) for (let i = 1; i < buf.length; i++) if (buf[i] !== buf[i - 1]) edges++;
     expect(edges, 'пищит').toBeGreaterThan(10);
   });
+
+  it('темп как у настоящей: тетрис на скорости 1 — строка в ~0,75 с, пауза после старта проматывается', () => {
+    const m = brick();
+    const sec = (s: number) => Math.round(s * HT_CLOCK);
+    m.run(sec(8));
+    m.set('start', true);
+    m.run(sec(0.15));
+    m.set('start', false);
+    // пауза после стартовой мелодии: как в index.ts — пока прибор молча выжидает, гоним его
+    let skipped = 0;
+    for (let t = 0; t < 4; t += 0.02) {
+      m.run(sec(0.02));
+      while (m.idleWait) {
+        m.run(sec(0.02));
+        skipped++;
+      }
+    }
+    expect(skipped, 'пауза была и промотана').toBeGreaterThan(100);
+    let prev = [...m.lit].join('');
+    let last = -1;
+    const gaps: number[] = [];
+    for (let t = 0; t < 8; t += 0.01) {
+      m.run(sec(0.01));
+      const cur = [...m.lit].join('');
+      if (cur === prev) continue;
+      prev = cur;
+      if (last >= 0 && t - last > 0.1) gaps.push(t - last);
+      last = t;
+    }
+    gaps.sort((a, b) => a - b);
+    const mid = gaps[gaps.length >> 1];
+    expect(mid).toBeGreaterThan(0.6);
+    expect(mid).toBeLessThan(0.9);
+  });
 });

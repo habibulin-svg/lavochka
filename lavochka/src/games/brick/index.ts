@@ -2,18 +2,32 @@
  * в сером пластике, низ с логотипом срезан (экран крупнее); кнопки — колпачки, которые уходят в корпус при нажатии.
  * Экран — SVG из MAME поверх серо-зелёного ЖК. У E-23 нет «вверх»: верхняя кнопка крестовины — тоже поворот.
  * Клавиатура: ← → ↓, ↑/W или X — поворот, Пробел — уронить фигуру, Enter/P — старт/пауза, M — звук, O — вкл/выкл.
+ * «Пауза» в карточке замораживает сам эмулятор, «Старт» — нажимает START на корпусе.
  * «Уронить» у E-23 нет: держим «вниз» и гоним прибор в 10 раз быстрее, пока фигура не ляжет — это видно по экрану
  * (сменилась фигура в NEXT или наверху стакана появилась новая). */
 import { Beeper } from '../../arcade/beeper';
 import { HT_CLOCK } from '../../arcade/ht1190';
-import type { ArcadeInstance, ArcadeModule } from '../../core/arcade';
+import type { ArcadeInstance, ArcadeModule, ArcadeOpts } from '../../core/arcade';
 import { store } from '../../core/settings';
-import { BrickMachine, segIndex, type BrickKey } from './machine';
+import { BrickMachine, KEYS, segIndex, type BrickKey } from './machine';
 import type { HtState } from '../../arcade/ht1190';
 import './brick.css';
 
 const BASE = `${import.meta.env.BASE_URL}brick/`;
 const SAVE = 'brick.e23';
+/** Какая игра из списка выставлена на приборе (выбор в карточке листает меню, только если игра сменилась). */
+const PICKED = 'brick.e23.game';
+
+/** Основные игры и их номер в меню прибора. Номера идут восьмёрками: четыре тетриса (1 и 3 — обычные фигуры,
+ *  2 и 4 — ещё и из 2, 3, 5 клеток), «мяч и ракетка», «сбей стену», два варианта «рядов сверху»; «96 in 1» —
+ *  двенадцать таких восьмёрок. */
+const GAMES: { id: string; label: string; hint: string; num: number }[] = [
+  { id: 'e23', label: 'Тетрис', hint: '№ 01', num: 1 },
+  { id: 'odd', label: 'Тетрис: чудные фигуры', hint: '№ 02, из 2–5 клеток', num: 2 },
+  { id: 'ball', label: 'Мяч и ракетка', hint: '№ 05', num: 5 },
+  { id: 'wall', label: 'Сбей стену', hint: '№ 06, пушка снизу', num: 6 },
+  { id: 'rows', label: 'Ряды сверху', hint: '№ 07, пушка снизу', num: 7 },
+];
 
 /** Клавиша → кнопка на корпусе (номер в BUTTONS). */
 const KEYMAP: Record<string, number> = {
@@ -72,15 +86,33 @@ function buttonHtml(b: Btn, i: number): string {
   return `<div class="brk-b${b.r > 40 ? ' big' : b.r < 20 ? ' small' : ''}" data-i="${i}" style="left:${pct(x0, W)};top:${pct(y0, H)};width:${pct(d, W)};height:${pct(d, H)}"><div class="brk-cap" style="${cap}"></div></div>`;
 }
 
-function mount(root: HTMLElement): ArcadeInstance {
+/** Выставить в меню игру № num, как руками: сброс, дождаться меню, num−1 раз «DOWN» (с паузой: пока прибор рисует
+ *  номер, нажатия теряются). Прибор гоняем без звука — это доли секунды. */
+function pick(m: BrickMachine, num: number) {
+  const run = (sec: number) => m.run(Math.round(sec * HT_CLOCK));
+  (Object.keys(KEYS) as BrickKey[]).forEach((k) => m.set(k, false));
+  m.cpu.reset();
+  run(8);
+  for (let i = 1; i < num; i++) {
+    m.set('down', true);
+    run(0.15);
+    m.set('down', false);
+    run(2);
+  }
+}
+
+function mount(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const wrap = document.createElement('div');
   wrap.className = 'brk';
-  wrap.innerHTML = `<div class="brk-unit"><img class="brk-case" alt="" src="${BASE}case.webp"><div class="brk-lcd" style="left:${pct(LCD.x, W)};top:${pct(LCD.y, H)};width:${pct(LCD.w, W)};height:${pct(LCD.h, H)}"></div>${LABELS}${BUTTONS.map(buttonHtml).join('')}</div>
-    <p class="brk-about">Нажмите <b>START</b>. До старта: <b>LEFT/RIGHT</b> — уровень и скорость, <b>DOWN</b> — выбор игры (буква и номер на табло), <b>ROTATE</b> — направление.</p>`;
+  wrap.innerHTML = `<div class="brk-unit"><img class="brk-case" alt="" src="${BASE}case.webp"><div class="brk-lcd" style="left:${pct(LCD.x, W)};top:${pct(LCD.y, H)};width:${pct(LCD.w, W)};height:${pct(LCD.h, H)}"></div>${LABELS}${BUTTONS.map(buttonHtml).join('')}</div>`;
   root.appendChild(wrap);
   const lcd = wrap.querySelector('.brk-lcd') as HTMLElement;
+  const info = document.createElement('p');
+  info.innerHTML = `Игра выбирается в списке ниже — прибор сам выставит её номер. До старта: <b>LEFT/RIGHT</b> — уровень и скорость, <b>ROTATE</b> — направление. «Старт» — кнопка START на корпусе (в игре она же — пауза прибора).`;
+  opts?.panel?.appendChild(info);
 
   let dead = false;
+  let paused = false;
   let raf = 0;
   let machine: BrickMachine | null = null;
   let beeper: Beeper | null = null;
@@ -104,6 +136,7 @@ function mount(root: HTMLElement): ArcadeInstance {
     if (k === 'reset') {
       if (down) {
         machine?.cpu.reset();
+        store.set(PICKED, null);
         save();
       }
       return;
@@ -127,8 +160,8 @@ function mount(root: HTMLElement): ArcadeInstance {
   let topCells: number[] = []; // две верхние строки стакана
   let drop: { t0: number; next: string; left: boolean } | null = null;
   const sig = (cells: number[]) => cells.map((i) => machine?.lit[i] ?? 0).join('');
-  // «вниз» у E-23 роняет не быстрее ~6 строк в секунду (и стук не помогает): держим «вниз» и крутим прибор в TURBO раз быстрее
-  const TURBO = 10;
+  // «вниз» у E-23 роняет не быстрее ~8 строк в секунду (и стук не помогает): держим «вниз» и крутим прибор в TURBO раз быстрее
+  const TURBO = 25;
   const startDrop = () => {
     if (drop || !machine) return;
     if (!topCells.length) findCells();
@@ -256,6 +289,12 @@ function mount(root: HTMLElement): ArcadeInstance {
         console.warn('brick: сохранение не подошло', e);
       }
     }
+    const game = GAMES.find((g) => g.id === opts?.mode);
+    if (game && store.get<string | null>(PICKED, null) !== game.id) {
+      pick(machine, game.num);
+      store.set(PICKED, game.id);
+      save();
+    }
     beeper = new Beeper(HT_CLOCK, 0.16);
 
     let last = performance.now();
@@ -263,7 +302,7 @@ function mount(root: HTMLElement): ArcadeInstance {
     let saveAt = last + 5000;
     const frame = (t: number) => {
       if (dead || !machine) return;
-      const dt = Math.min(100, t - last);
+      const dt = paused ? 0 : Math.min(100, t - last);
       last = t;
       const want = (dt * HT_CLOCK) / 1000 + carry;
       const n = Math.floor(want);
@@ -277,6 +316,8 @@ function mount(root: HTMLElement): ArcadeInstance {
           machine.run(n);
           watchDrop(t);
         }
+        // пауза после стартовой мелодии — тишина и замершая фигура на 11 с: проматываем
+        for (let j = 1; j < TURBO && machine.idleWait; j++) machine.run(n);
         watchDrop(t);
         for (const k of pending)
           if (machine.clocks - (downAt.get(k) ?? 0) >= MIN_HOLD) {
@@ -300,8 +341,21 @@ function mount(root: HTMLElement): ArcadeInstance {
   })();
 
   return {
+    pause(on) {
+      paused = on;
+      if (on) {
+        releaseAll();
+        save();
+      }
+    },
+    /** «Старт» — короткое нажатие START на корпусе. */
+    launch() {
+      pressBtn(0, true);
+      pressBtn(0, false);
+    },
     destroy() {
       save();
+      info.remove();
       dead = true;
       cancelAnimationFrame(raf);
       beeper?.close();
@@ -319,16 +373,17 @@ const mod: ArcadeModule = {
   kind: 'arcade',
   id: 'brick',
   title: 'Brick Game',
-  about: 'Тот самый «тетрис» E-23 Plus Mark II «96 in 1» — настоящая прошивка: тетрис, танки, гонки, змейка, арканоид и ещё десятки вариантов.',
+  about: 'Тот самый «тетрис» E-23 Plus Mark II «96 in 1» — настоящая прошивка: тетрис, мяч и ракетка, стрелялки по стене и рядам.',
   controls: `<p>Мышью или пальцем — по кнопкам на корпусе.</p>
     <p><kbd>←</kbd> <kbd>→</kbd> <kbd>↓</kbd> — влево, вправо, вниз; <kbd>↑</kbd> или <kbd>X</kbd> — поворот; <kbd>Пробел</kbd> — уронить фигуру.</p>
     <p><kbd>Enter</kbd> — старт/пауза, <kbd>M</kbd> — звук, <kbd>O</kbd> — вкл/выкл.</p>
-    <p>До старта: ← → — уровень и скорость, ↓ — выбор игры (буква и номер на табло).</p>
+    <p>До старта: ← → — уровень и скорость, ↓ — номер игры (основные — в списке выше).</p>
     <p>Игрушка не выключается: рекорд и выбранная игра сохраняются.</p>`,
-  modes: [{ id: 'e23', label: 'E-23' }],
+  modes: GAMES.map((g) => ({ id: g.id, label: g.label, hint: g.hint })),
+  list: true,
+  starts: [{ id: 'start', label: 'Старт' }],
   noRecords: true,
-  wide: true,
-  mount: (root) => mount(root),
+  mount: (root, opts) => mount(root, opts),
 };
 
 export default mod;

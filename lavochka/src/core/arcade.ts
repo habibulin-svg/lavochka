@@ -1,9 +1,10 @@
-/* Аркады — игры в реальном времени для одного (электроника, Brick Game, «За рулём», аркады волны 6).
- * У них нет пошагового стола: модуль сам рисует устройство и крутит игру, а этот экран даёт рамку —
- * «назад», режимы, управление, таблицу рекордов (на этом устройстве и общую на сервере). */
+/* Аркады — игры в реальном времени для одного (электроника, Brick Game, аркады волны 6).
+ * У них нет пошагового стола: модуль сам рисует устройство и крутит игру, а этот экран даёт рамку как у стола —
+ * игра слева, карточка справа: меню, звук, «Старт»/«Пауза», режимы, управление, рекорды (свои и общие на сервере). */
 import { Sound } from './audio';
 import { fetchRecords, postRecord } from './net/ws';
-import { settings, store } from './settings';
+import { saveSettings, settings, store } from './settings';
+import { openSettings } from './settings-ui';
 import { mountScreen, modal, showScreen } from './ui';
 import { esc, h } from './util';
 
@@ -16,12 +17,20 @@ export interface ArcadeMode {
 /** Запущенная игра: модуль сам рисует и слушает клавиши, экран только убирает её. */
 export interface ArcadeInstance {
   destroy(): void;
+  /** Заморозить игру (кнопка «Пауза», меню, вкладка в фоне). */
+  pause?(on: boolean): void;
+  /** Кнопка «Старт» из карточки (id — из ArcadeModule.starts). */
+  launch?(id: string): void;
+  /** Игра открылась с сохранения посреди партии — рамка сразу ставит паузу. */
+  resumed?: boolean;
 }
 
 export interface ArcadeOpts {
   mode: string;
   /** Конец игры: счёт уходит в рекорды. */
   onScore(score: number): void;
+  /** Место в карточке справа под кнопками: подпись прибора, «Сброс» и т. п. (нет в режиме превью). */
+  panel?: HTMLElement;
 }
 
 export interface ArcadeModule {
@@ -35,8 +44,8 @@ export interface ArcadeModule {
   modes: ArcadeMode[];
   /** Режимы — длинный список (игры серии), а не переключатель. */
   list?: boolean;
-  /** Прибор во всю ширину, панель — под ним (экран побольше). */
-  wide?: boolean;
+  /** Кнопки «Старт» в карточке (у «Электроники» — «Игра А» и «Игра Б»); без них — только «Пауза», если игра её умеет. */
+  starts?: { id: string; label: string }[];
   /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
   noRecords?: boolean;
   mount(root: HTMLElement, opts: ArcadeOpts): ArcadeInstance;
@@ -68,25 +77,33 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   let mode = store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
+  let paused = false;
 
-  const el = h(`<section class="arcade-screen${mod.wide ? ' arcade-wide' : ''}">
-    <header class="home-top">
-      <button class="btn back" data-a="back">← Во двор</button>
-      <div class="home-title"><h1>${esc(mod.title)}</h1><p>${mod.about}</p></div>
-    </header>
-    <div class="arcade-cols">
-      <div class="arcade-stage"></div>
-      <aside class="sheet arcade-side">
-        <div>${mod.list ? '<h3>Игры</h3>' : ''}<div class="seg arcade-modes${mod.list ? ' list' : ''}"></div></div>
-        <div><h3>Управление</h3><div class="arcade-controls">${mod.controls}</div>
-        ${mod.noRecords ? '' : '<h3>Рекорды</h3><div class="arcade-recs"></div>'}</div>
-      </aside>
-    </div>
+  const el = h(`<section class="arcade-screen arcade--${mod.id}">
+    <div class="arcade-main"><div class="arcade-stage"></div></div>
+    <aside class="table-panel sheet arcade-side">
+      <div class="panel-top">
+        <button class="icon-btn" data-a="menu" title="Меню">☰</button>
+        <div class="panel-title">${esc(mod.title)}</div>
+        <button class="icon-btn" data-a="sound" title="Звук"></button>
+      </div>
+      <div class="arcade-run"></div>
+      <div class="arcade-panel"></div>
+      <div class="arcade-scroll">
+        ${mod.list ? '<h3>Игры</h3>' : ''}<div class="seg arcade-modes${mod.list ? ' list' : ''}${mod.modes.length < 8 ? ' short' : ''}"></div>
+        <h3>Управление</h3><div class="arcade-controls">${mod.controls}</div>
+        ${mod.noRecords ? '' : '<h3>Рекорды</h3><div class="arcade-recs"></div>'}
+      </div>
+    </aside>
   </section>`);
   mountScreen('arcade', el);
-  const stage = el.querySelector('.arcade-stage') as HTMLElement;
+  const q = <T extends HTMLElement>(s: string) => el.querySelector(s) as T;
+  const stage = q('.arcade-stage');
+  const panel = q('.arcade-panel');
+  const run = q('.arcade-run');
   const recs = el.querySelector('.arcade-recs') as HTMLElement | null;
-  const modes = el.querySelector('.arcade-modes') as HTMLElement;
+  const modes = q('.arcade-modes');
+  const veil = h(`<button class="arcade-veil" hidden><b>Пауза</b><span>нажмите, чтобы продолжить</span></button>`);
 
   const drawRecords = async () => {
     if (!recs) return;
@@ -98,15 +115,51 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
     if (ol) ol.innerHTML = srv.map(row).join('') || '<li class="empty">нет связи или рекордов</li>';
   };
 
+  // ---- «Старт» / «Пауза»
+  const pauseBtn = h<HTMLButtonElement>(`<button class="btn arcade-pause"></button>`);
+  const setPaused = (on: boolean) => {
+    if (!inst?.pause) on = false;
+    paused = on;
+    inst?.pause?.(on);
+    veil.hidden = !on;
+    pauseBtn.textContent = on ? '▶ Продолжить' : '⏸ Пауза';
+    pauseBtn.classList.toggle('primary', on);
+  };
+  pauseBtn.onclick = () => {
+    Sound.ui();
+    setPaused(!paused);
+  };
+  veil.onclick = () => setPaused(false);
+  for (const s of mod.starts ?? []) {
+    const b = h<HTMLButtonElement>(`<button class="btn primary">▶ ${esc(s.label)}</button>`);
+    b.onclick = () => {
+      Sound.ui();
+      setPaused(false);
+      inst?.launch?.(s.id);
+    };
+    run.appendChild(b);
+  }
+  run.appendChild(pauseBtn);
+  // вкладку убрали — замираем; вернулись — ждём «Продолжить»
+  const onHide = () => {
+    if (document.hidden && inst && !paused) setPaused(true);
+  };
+  document.addEventListener('visibilitychange', onHide);
+
   const start = () => {
     inst?.destroy();
     stage.innerHTML = '';
+    panel.innerHTML = '';
+    stage.appendChild(veil);
     inst = mod.mount(stage, {
       mode,
       onScore: (score) => void finished(score),
+      panel,
     });
+    run.hidden = !inst.pause && !mod.starts?.length;
+    pauseBtn.hidden = !inst.pause;
+    setPaused(!!inst.resumed);
   };
-
   const finished = async (score: number) => {
     if (score <= 0) return;
     const mine = localRecords(mod.id, mode);
@@ -146,11 +199,29 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   }
   modes.hidden = mod.modes.length < 2;
 
-  (el.querySelector('[data-a=back]') as HTMLButtonElement).onclick = () => {
-    Sound.ui();
+  const leave = () => {
+    document.removeEventListener('visibilitychange', onHide);
     inst?.destroy();
     inst = null;
     onBack();
+  };
+  q('[data-a=menu]').onclick = () => {
+    Sound.ui();
+    const was = paused;
+    setPaused(true);
+    modal(`<h2>Пауза</h2><p>${esc(mod.title)}: игра замерла, пока открыто меню.</p>`, [
+      { text: 'Настройки', action: () => openSettings() },
+      { text: 'Во двор', action: leave },
+      { text: 'Продолжить', primary: true, action: () => setPaused(was) },
+    ]);
+  };
+  const sb = q<HTMLButtonElement>('[data-a=sound]');
+  const upd = () => (sb.textContent = settings.sound ? '🔊' : '🔇');
+  upd();
+  sb.onclick = () => {
+    settings.sound = !settings.sound;
+    saveSettings();
+    upd();
   };
   showScreen('arcade');
   start();

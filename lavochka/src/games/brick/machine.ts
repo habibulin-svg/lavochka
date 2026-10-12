@@ -28,6 +28,7 @@ export class BrickMachine {
   private acc = new Uint8Array(COMS * SEGS);
   readonly lit = new Uint8Array(COMS * SEGS);
   clocks = 0;
+  private waitAt = -Infinity;
 
   constructor(rom: Uint8Array, melody: Uint8Array) {
     this.cpu = new Ht1190(rom, melody, { ps: () => ~this.ps & 0xf, pp: () => ~this.pp & 0xf });
@@ -45,6 +46,7 @@ export class BrickMachine {
     while (done < clocks) {
       const n = this.cpu.step(audio, done);
       done += n;
+      if ((this.cpu.pc & 0xff0) === 0x230) this.waitAt = this.clocks + done;
       this.lcdTick += n;
       if (this.lcdTick >= LCD_EVERY) {
         this.lcdTick -= LCD_EVERY;
@@ -64,6 +66,12 @@ export class BrickMachine {
         } else if (this.acc[i] > 0) this.acc[i]--;
         this.lit[i] = this.acc[i] >= 2 ? 1 : 0;
       }
+  }
+
+  /** Прибор молча выжидает после стартовой мелодии (подпрограмма 0x230–0x23f, ~1340 тиков таймера — 11 с,
+   *  и кнопки не слушает): эту паузу можно проматывать. */
+  get idleWait(): boolean {
+    return this.clocks - this.waitAt < HT_CLOCK / 20 && !this.cpu.sounding;
   }
 
   save(): HtState {
