@@ -43,7 +43,8 @@ for (const f of countries.features) {
     world.push(feat('_' + id, f.geometry));
     continue;
   }
-  world.push(feat(id, f.geometry));
+  // Россия и Украина на карте мира собираются из регионов (ниже) — по Конституции РФ
+  if (id !== 'RUS' && id !== 'UKR') world.push(feat(id, f.geometry));
   raw.push({ id, qid: p.WIKIDATAID, layer: 'world', ne: p.NAME_RU, en: p.NAME_EN, cont: p.CONTINENT, sub: p.SUBREGION, sov: SOV[p.SOV_A3] ?? p.SOV_A3, type: p.TYPE });
 }
 // непризнанные внутри других стран — отдельными накладками поверх
@@ -162,7 +163,7 @@ const GB = {
   'Northern Ireland': ['GB-NIR', 'Northern Ireland'],
 };
 
-// РФ: Крым и Севастополь в NE де-факто у RUS под украинскими кодами; Алтайский край подписан как Республика Алтай
+// РФ: Крым и Севастополь в NE у RUS под украинскими кодами; Алтайский край подписан как Республика Алтай
 const ru = direct('RUS', { 'UA-43': { id: 'RU-CR', qid: 'Q15966495' }, 'UA-40': { id: 'RU-SEV', qid: 'Q7525' }, 'RU-ALT': { id: 'RU-ALT', qid: 'Q5942' } });
 // субъекты РФ по Конституции (2022): области целиком — из украинского admin-1 Natural Earth
 const NEW_RU = { 'UA-14': ['RU-DPR', 'Q16150196'], 'UA-09': ['RU-LPR', 'Q16746854'], 'UA-23': ['RU-ZAP', 'Q111710700'], 'UA-65': ['RU-KHE', 'Q111686059'] };
@@ -172,7 +173,9 @@ for (const f of A1.UKR) {
   ru.push(feat(n[0], f.geometry));
   raw.push({ id: n[0], qid: n[1], layer: 'RUS', ne: f.properties.name_ru, en: f.properties.name_en, cont: '', sov: 'RUS', type: 'region' });
 }
-for (const r of raw) if (['RU-CR', 'RU-SEV', ...Object.values(NEW_RU).map((x) => x[0])].includes(r.id)) r.disputed = true;
+// мир: Россия — все её субъекты, Украина — остальные области (одинаковые id сливает dissolve2)
+for (const f of A1.RUS) world.push(feat('RUS', f.geometry));
+for (const f of A1.UKR) world.push(feat(NEW_RU[f.properties.iso_3166_2] ? 'RUS' : 'UKR', f.geometry));
 const us = direct('USA');
 const regions = {
   de: direct('DEU'),

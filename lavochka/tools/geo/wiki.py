@@ -203,8 +203,6 @@ for r in raw:
         ent['k'] = 'region'
         ent['p'] = LAYER_PARENT[r['layer']]
         ent['l'] = 'ru' if r['layer'] == 'RUS' else 'us' if r['layer'] == 'USA' else 'regions'
-    if r.get('disputed'):
-        ent['disp'] = 1
     if capname:
         ent['cap'] = capname
     if pop and amount(pop):

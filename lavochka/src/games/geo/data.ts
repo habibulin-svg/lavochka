@@ -19,8 +19,6 @@ export interface Entity {
   l: Layer;
   /** Непризнанная республика внутри другой страны: контур — накладка поверх. */
   ovl?: 1;
-  /** Статус оспаривается. */
-  disp?: 1;
   cap?: string;
   pop?: number;
   area?: number;

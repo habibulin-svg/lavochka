@@ -65,7 +65,7 @@ export function openRef(startId?: string) {
     list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
     const parent = e.p ? ent(e.p) : null;
     const facts = [
-      `<dt>Что это</dt><dd>${KIND_LABEL[e.k]}${e.disp ? ' (статус оспаривается)' : ''}${parent ? ` · ${esc(parent.n)}` : ''}</dd>`,
+      `<dt>Что это</dt><dd>${KIND_LABEL[e.k]}${parent ? ` · ${esc(parent.n)}` : ''}</dd>`,
       e.cap ? `<dt>${e.k === 'region' ? 'Центр' : 'Столица'}</dt><dd>${esc(e.cap)}</dd>` : '',
       e.c?.length ? `<dt>Часть света</dt><dd>${e.c.map((c) => CONTINENTS.find((x) => x.id === c)?.title).join(', ')}</dd>` : '',
       e.pop ? `<dt>Население</dt><dd>${fmt(e.pop)}</dd>` : '',
