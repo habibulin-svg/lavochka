@@ -529,6 +529,7 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
     case 'repay':
       return `${name(ev.seat)} вернул ссуду`;
     case 'insure':
+      if (b.id === 'biznes') return ev.level ? `${name(ev.seat)} страхуется — ${m(INSURE)}` : `${name(ev.seat)} не страхуется`;
       return `${name(ev.seat)}: ${ev.level === 2 ? 'страховка на всю сумму' : ev.level === 1 ? 'страховка наполовину' : 'без страховки'}${ev.free ? ' — бесплатно' : ''}`;
     case 'casino':
       return `${name(ev.seat)} в казино: сектор ${ev.sector}, ${ev.amount > 0 ? '+' : '−'}${m(Math.abs(ev.amount))}${ev.star ? ' ★ — ещё бросок' : ''}`;
