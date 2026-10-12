@@ -132,15 +132,18 @@ export const def: GameDef<State, Action, Event, State> = {
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
   describe,
 
+  // превью: сканворд с картинкой, наполовину решённый двумя игроками
   showcase: () => {
-    const s = newState('sudoku', 2, '9x9', 4242, [0, 1]);
-    const open = s.cells.map((c, i) => i).filter((i) => !s.fixed[i]);
-    open.slice(0, 18).forEach((i, k) => {
-      s.cells[i] = s.sol[i];
-      s.who[i] = k % 2;
+    const s = newState('scanword', 1, 'medium', 2024, [0, 1]);
+    const words = (s.data as WordData).words;
+    words.forEach((wd, k) => {
+      if (k % 2) return;
+      for (const c of wd.cells) {
+        s.cells[c] = s.sol[c];
+        s.who[c] = k % 4 ? 1 : 0;
+      }
     });
-    s.cur[0] = open[20];
-    s.cur[1] = open[30];
+    s.cur[1] = words[1]?.cells[0] ?? -1;
     return s;
   },
 

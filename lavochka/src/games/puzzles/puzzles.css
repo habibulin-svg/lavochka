@@ -132,7 +132,8 @@
 .pz-credits:empty { display: none; }
 .pz-scanword .qt { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; position: relative; font: 600 calc(var(--u) * 0.19) / 1.02 'PT Sans Narrow', 'PT Sans', 'Arial Narrow', sans-serif; color: var(--ink); hyphens: auto; overflow: hidden; padding: 0 1px; }
 .pz-scanword .qt + .qt { border-top: 1px solid rgba(29, 26, 20, 0.5); }
-.pz-scanword .qt:not(:only-child) span { -webkit-line-clamp: 2; }
+.pz-scanword .qt:not(:only-child) { font-size: calc(var(--u) * 0.155); line-height: 1; }
+.pz-scanword .qt:not(:only-child) span { -webkit-line-clamp: 3; }
 .pz-scanword .qt span { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; hyphens: auto; overflow-wrap: break-word; }
 .pz-scanword .qt { padding: 0 calc(var(--u) * 0.08) 0 1px; }
 .pz-list { flex: 1; min-width: 220px; max-width: 340px; max-height: calc(100cqh - 120px); overflow-y: auto; font: 14px/1.3 'Times New Roman', Times, serif; padding-right: 4px; }

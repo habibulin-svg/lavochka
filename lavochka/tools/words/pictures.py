@@ -27,7 +27,9 @@ UA = 'lavochka-crossword-builder/1.0 (https://github.com/habibulin-svg/lavochka)
 
 # класс → вид для подписи; P279+ (подклассы) или P31 (экземпляры)
 CLASSES = [
-    ('?item wdt:P31 wd:Q16521 ; wdt:P105 wd:Q7432 .', 'вид', 25),  # таксон ранга «вид»
+    ('?item wdt:P31 wd:Q16521 ; wdt:P105 wd:Q7432 .', 'вид', 70),  # таксон ранга «вид» (ниже порог — запрос не укладывается в лимит)
+    ('?item wdt:P31 wd:Q16521 ; wdt:P105 wd:Q7432 ; wdt:P171* wd:Q5113 .', 'вид', 25),  # птицы
+    ('?item wdt:P31 wd:Q16521 ; wdt:P105 wd:Q7432 ; wdt:P171* wd:Q7377 .', 'вид', 25),  # млекопитающие
     ('?item wdt:P31 wd:Q16521 ; wdt:P105 wd:Q34740 .', 'род', 25),  # таксон ранга «род»
     ('?item wdt:P279+ wd:Q34379 .', 'инструмент', 5),  # музыкальный инструмент
     ('?item wdt:P279+ wd:Q39546 .', 'инструмент', 5),  # инструмент
@@ -132,7 +134,16 @@ def main():
         time.sleep(1)
     print('кандидатов', len(cand))
 
-    chosen = sorted(cand.items(), key=lambda x: -x[1][0])[: limit * 2]
+    # квоты по видам, чтобы не вышло одних инструментов
+    QUOTA = {'вид': 260, 'род': 160, 'инструмент': 110, 'еда': 90, 'человек': 120}
+    per = {}
+    chosen = []
+    for item in sorted(cand.items(), key=lambda x: -x[1][0]):
+        k = item[1][2]
+        if per.get(k, 0) >= QUOTA.get(k, 40) * 1.6:
+            continue
+        per[k] = per.get(k, 0) + 1
+        chosen.append(item)
     # сведения о файлах с Викисклада (по 50)
     meta = {}
     files = [c[1][1] for c in chosen]
@@ -153,6 +164,9 @@ def main():
             em = ii.get('extmetadata', {})
             lic = em.get('LicenseShortName', {}).get('value', '')
             artist = re.sub(r'<[^>]+>', '', em.get('Artist', {}).get('value', '')).strip()
+            # подписи с Викисклада бывают с датой правки — убираем
+            artist = re.sub(r'\d{1,2}:\d{2},?\s*\d{1,2}\s+\w+\s+\d{4}\s*\(UTC\)', '', artist)
+            artist = re.sub(r'\s+', ' ', artist).strip(' ,;-—')
             meta[title.replace('File:', '').replace(' ', '_')] = {'thumb': ii.get('thumburl'), 'page': ii.get('descriptionurl'), 'license': lic, 'author': artist[:120]}
         time.sleep(1)
 
@@ -160,9 +174,12 @@ def main():
     cache = os.path.join(W, 'pics')
     os.makedirs(cache, exist_ok=True)
     out = []
+    taken = {}
     for word, (sl, file, kind, person) in chosen:
         if len(out) >= limit:
             break
+        if taken.get(kind, 0) >= QUOTA.get(kind, 40):
+            continue
         m = meta.get(file.replace(' ', '_'))
         if not m or not m['thumb'] or not FREE.search(m['license'] or ''):
             continue
@@ -187,6 +204,7 @@ def main():
         # имя файла — не само слово (иначе ответ виден в адресе картинки)
         name = hashlib.md5(('lavochka:' + word).encode()).hexdigest()[:10]
         im.save(os.path.join(PUB, 'scan', name + '.webp'), 'WEBP', quality=68, method=6)
+        taken[kind] = taken.get(kind, 0) + 1
         out.append({'word': word, 'file': name, 'kind': kind, 'author': m['author'], 'license': m['license'], 'src': m['page']})
     out.sort(key=lambda x: x['word'])
     with open(os.path.join(PUB, 'dict', 'pics.json'), 'w', encoding='utf-8') as f:

@@ -1,8 +1,8 @@
 /* Сканворд — генератор без DOM. Поле сплошное, как в газете: каждая клетка — буква, вопрос или часть картинки.
- * Вопрос стоит в клетке перед словом: «→» — слово идёт вправо из соседней справа, «↓» — вниз из соседней снизу;
+ * Вопрос стоит в клетке перед словом (→, ↓) или уголком: над словом, которое идёт вправо, или слева от слова, которое идёт вниз;
  * в клетке-вопросе их до двух. Картинки (1–3 блока 3×3 или 4×3) — тоже не буквы, но вопросов не несут: слово за картинкой
  * начинается с клетки-вопроса. Слово к каждой картинке («Фото 1») ставится в слот заранее, остальное заполняется вокруг.
- * Шаблон: верхний ряд и левый столбец — вопросы, внутри — случайные клетки-вопросы, слова 3–maxLen букв.
+ * Шаблон: строки режутся на слова 3–maxLen букв, длинные столбцы тоже; каждому слову подбирается клетка-вопрос, нет — первая буква в вопрос.
  * Заполнение — перебором: слот с наименьшим числом вариантов первым, кандидаты — пересечением битовых масок букв. */
 import type { Rng } from '../../core/types';
 
@@ -48,14 +48,114 @@ interface Pattern {
   clue: boolean[];
   pic: number[];
   blocks: { x: number; y: number; w: number; h: number }[];
+  slots: Slot[];
+}
+
+/** Куски линий из букв (длина ≥ 2): dir 0 — строки, 1 — столбцы. */
+function runsOf(clue: boolean[], w: number, h: number): { dir: 0 | 1; cells: number[] }[] {
+  const out: { dir: 0 | 1; cells: number[] }[] = [];
+  for (const dir of [0, 1] as const) {
+    const lines = dir === 0 ? h : w;
+    const len = dir === 0 ? w : h;
+    for (let l = 0; l < lines; l++) {
+      let cur: number[] = [];
+      for (let p = 0; p <= len; p++) {
+        const i = p < len ? (dir === 0 ? l * w + p : p * w + l) : -1;
+        if (i >= 0 && !clue[i]) cur.push(i);
+        else {
+          if (cur.length >= 2) out.push({ dir, cells: cur });
+          cur = [];
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Клетки-вопросы для слов. Слову подходит клетка перед ним по линии (→ или ↓), над его первой буквой, если слово идёт вправо
+ * (уголок ↳), или слева от первой буквы, если слово идёт вниз. В клетке — не больше двух вопросов. Слова с меньшим выбором — первыми.
+ * Возвращает слоты или слово, которому места не нашлось.
+ */
+function assign(rng: Rng, clue: boolean[], pic: number[], w: number, h: number): { slots: Slot[] } | { bad: number[] } {
+  const runs = runsOf(clue, w, h).filter((r) => r.cells.length >= 3);
+  const isQ = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && clue[y * w + x] && pic[y * w + x] < 0;
+  const cand = runs.map((r) => {
+    const s = r.cells[0];
+    const x = s % w;
+    const y = Math.floor(s / w);
+    const c: number[] = [];
+    if (r.dir === 0) {
+      if (isQ(x - 1, y)) c.push(s - 1);
+      if (isQ(x, y - 1)) c.push(s - w);
+    } else {
+      if (isQ(x, y - 1)) c.push(s - w);
+      if (isQ(x - 1, y)) c.push(s - 1);
+    }
+    return c;
+  });
+  const load = new Map<number, number>();
+  // случайные ключи — заранее: сортировка со случайным сравнением зависит от движка (а сид должен давать одно и то же везде)
+  const key = runs.map(() => rng.next());
+  const order = runs.map((_, k) => k).sort((a, b) => cand[a].length - cand[b].length || key[a] - key[b]);
+  const slots: Slot[] = [];
+  for (const k of order) {
+    // своя линия — охотнее (так привычнее), потом уголок
+    const q = cand[k].find((c) => (load.get(c) ?? 0) < 2);
+    if (q == null) return { bad: runs[k].cells };
+    load.set(q, (load.get(q) ?? 0) + 1);
+    slots.push({ cx: q % w, cy: Math.floor(q / w), dir: runs[k].dir, cells: runs[k].cells });
+  }
+  return { slots };
+}
+
+/**
+ * Довести шаблон до правил: слов из двух букв нет; буквы вне слов — в вопрос; каждому слову — клетка-вопрос
+ * (не нашлось — первая буква слова становится вопросом). Повторяем, пока всё не сойдётся.
+ */
+function settle(rng: Rng, clue: boolean[], pic: number[], w: number, h: number, maxLen = 8): Slot[] | null {
+  for (let pass = 0; pass < 40; pass++) {
+    let bad = false;
+    for (const r of runsOf(clue, w, h))
+      if (r.cells.length > maxLen) {
+        clue[r.cells[3 + rng.int(r.cells.length - 6)]] = true;
+        bad = true;
+      }
+    for (const r of runsOf(clue, w, h))
+      if (r.cells.length === 2) {
+        clue[r.cells[rng.int(2)]] = true;
+        bad = true;
+      }
+    for (let i = 0; i < w * h; i++) {
+      if (clue[i]) continue;
+      const x = i % w;
+      const y = Math.floor(i / w);
+      const hl = (x > 0 && !clue[i - 1]) || (x + 1 < w && !clue[i + 1]);
+      const vl = (y > 0 && !clue[i - w]) || (y + 1 < h && !clue[i + w]);
+      if (!hl && !vl) {
+        clue[i] = true;
+        bad = true;
+      }
+    }
+    if (bad) continue;
+    const a = assign(rng, clue, pic, w, h);
+    if ('slots' in a) return a.slots;
+    clue[a.bad[0]] = true;
+  }
+  return null;
+}
+
+/** Клетки-вопросы, в которых не оказалось ни одного вопроса. */
+function deadOf(clue: boolean[], pic: number[], slots: Slot[], w: number): number[] {
+  const has = new Set(slots.map((s) => s.cy * w + s.cx));
+  return clue.map((c, i) => (c && pic[i] < 0 && !has.has(i) ? i : -1)).filter((i) => i >= 0);
 }
 
 function makePattern(rng: Rng, w: number, h: number, maxLen: number, pics: number): Pattern | null {
   const clue = new Array(w * h).fill(false);
   const pic = new Array(w * h).fill(-1);
-  for (let x = 0; x < w; x++) clue[x] = true;
-  for (let y = 0; y < h; y++) clue[y * w] = true;
-  // картинки: блоки внутри поля, не впритык друг к другу
+  clue[0] = true;
+  // картинки: блоки внутри поля, не впритык друг к другу и не у верхнего/левого края
   const blocks: Pattern['blocks'] = [];
   for (let b = 0, tries = 0; b < pics && tries < 60; tries++) {
     const bw = w >= 12 && rng.next() < 0.5 ? 4 : 3;
@@ -72,128 +172,72 @@ function makePattern(rng: Rng, w: number, h: number, maxLen: number, pics: numbe
     b++;
   }
   if (blocks.length < pics) return null;
-  // строки: режем на куски 3..maxLen; после картинки — клетка-вопрос
-  for (let y = 1; y < h; y++) {
-    let x = 1;
+  // строки: куски 3..maxLen через клетку-вопрос; в начале куска вопрос ставим не всегда — бывает уголок сверху
+  for (let y = 0; y < h; y++) {
+    let x = 0;
     while (x < w) {
-      if (pic[y * w + x] >= 0) {
+      if (clue[y * w + x]) {
         x++;
-        if (x < w && pic[y * w + x] < 0) {
-          clue[y * w + x] = true;
-          x++;
-        }
         continue;
       }
       let end = x;
-      while (end < w && pic[y * w + end] < 0) end++;
-      const left = end - x;
-      let len = 3 + rng.int(Math.max(1, maxLen - 2));
-      if (left - len < 4) len = left;
-      if (len > maxLen) len = Math.min(maxLen, left - 4);
-      x += len;
-      if (x < end) {
+      while (end < w && !clue[y * w + end]) end++;
+      if (x === 0 || rng.next() < 0.6) {
         clue[y * w + x] = true;
         x++;
       }
+      while (x < end) {
+        const left = end - x;
+        let len = 3 + rng.int(Math.max(1, maxLen - 2));
+        if (left - len < 4) len = left;
+        if (len > maxLen) len = Math.min(maxLen, left - 4);
+        x += len;
+        if (x < end) {
+          clue[y * w + x] = true;
+          x++;
+        }
+      }
+      x = end;
     }
   }
-  // столбцы: длинные вертикали режем; под картинкой — клетка-вопрос
-  for (let x = 1; x < w; x++)
-    for (let y = 1; y < h - 1; y++) if (pic[y * w + x] >= 0 && pic[(y + 1) * w + x] < 0) clue[(y + 1) * w + x] = true;
-  for (let pass = 0; pass < 4; pass++) {
-    let changed = false;
-    for (let x = 1; x < w; x++) {
-      let y = 1;
-      while (y < h) {
-        if (clue[y * w + x]) {
-          y++;
-          continue;
-        }
-        let e = y;
-        while (e < h && !clue[e * w + x]) e++;
-        const len = e - y;
-        if (len > maxLen) {
-          const cut = y + 3 + rng.int(len - 6 > 0 ? Math.min(maxLen - 3, len - 6) + 1 : 1);
-          if (cut < e - 3 && cut < h) {
-            clue[cut * w + x] = true;
-            changed = true;
-          }
-        }
-        y = e;
+  // столбцы: длинные вертикали режем
+  for (let x = 0; x < w; x++) {
+    let y = 0;
+    while (y < h) {
+      if (clue[y * w + x]) {
+        y++;
+        continue;
       }
+      let e = y;
+      while (e < h && !clue[e * w + x]) e++;
+      if (e - y > maxLen) {
+        const cut = y + 3 + rng.int(Math.max(1, Math.min(maxLen - 3, e - y - 6) + 1));
+        if (cut < e - 2) clue[cut * w + x] = true;
+        continue;
+      }
+      y = e;
     }
-    if (!changed) break;
   }
-  return fix(clue, pic, w, h) ? { clue, pic, blocks } : null;
-}
-
-/**
- * Довести шаблон до правил: слов из двух букв нет (вторую букву — в вопрос); у каждого слова перед ним клетка-вопрос
- * (не картинка — иначе первую букву в вопрос); буква вне слов — в вопрос. Повторяем, пока всё не сойдётся.
- */
-function fix(clue: boolean[], pic: number[], w: number, h: number): boolean {
-  for (let pass = 0; pass < 20; pass++) {
-    let bad = false;
-    for (const dir of [0, 1] as const) {
-      const lines = dir === 0 ? h : w;
-      const len = dir === 0 ? w : h;
-      for (let l = 0; l < lines; l++) {
-        const idx = (k: number) => (dir === 0 ? l * w + k : k * w + l);
-        let p = 0;
-        while (p < len) {
-          if (clue[idx(p)]) {
-            p++;
-            continue;
-          }
-          let e = p;
-          while (e < len && !clue[idx(e)]) e++;
-          const run = e - p;
-          if (run >= 2 && (p === 0 || pic[idx(p - 1)] >= 0)) {
-            // перед словом нет места для вопроса
-            clue[idx(p)] = true;
-            bad = true;
-          } else if (run === 2) {
-            clue[idx(p + 1)] = true;
-            bad = true;
-          }
-          p = e;
-        }
-      }
+  let slots = settle(rng, clue, pic, w, h, maxLen);
+  if (!slots) return null;
+  // улучшение: переключаем случайную клетку (вопрос ↔ буква); берём, если шаблон сходится, а пустых вопросов и вопросов вообще не больше
+  const score = (c: boolean[], sl: Slot[]) => deadOf(c, pic, sl, w).length * 4 + c.filter((v, i) => v && pic[i] < 0).length;
+  let best = score(clue, slots);
+  for (let it = 0; it < w * h * 6; it++) {
+    const j = 1 + rng.int(w * h - 1);
+    if (pic[j] >= 0) continue;
+    const c = clue.slice();
+    c[j] = !c[j];
+    const s2 = settle(rng, c, pic, w, h, maxLen);
+    if (!s2) continue;
+    const sc = score(c, s2);
+    if (sc <= best) {
+      for (let k = 0; k < c.length; k++) clue[k] = c[k];
+      slots = s2;
+      best = sc;
     }
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (clue[i]) continue;
-        const hl = (x > 0 && !clue[i - 1]) || (x + 1 < w && !clue[i + 1]);
-        const vl = (y > 0 && !clue[i - w]) || (y + 1 < h && !clue[i + w]);
-        if (!hl && !vl) {
-          clue[i] = true;
-          bad = true;
-        }
-      }
-    if (!bad) return true;
   }
-  return false;
-}
-
-export function slotsOf(clue: boolean[], pic: number[], w: number, h: number): Slot[] {
-  const slots: Slot[] = [];
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (!clue[i] || pic[i] >= 0) continue;
-      if (x + 1 < w && !clue[i + 1]) {
-        const cells: number[] = [];
-        for (let k = x + 1; k < w && !clue[y * w + k]; k++) cells.push(y * w + k);
-        if (cells.length >= 2) slots.push({ cx: x, cy: y, dir: 0, cells });
-      }
-      if (y + 1 < h && !clue[i + w]) {
-        const cells: number[] = [];
-        for (let k = y + 1; k < h && !clue[k * w + x]; k++) cells.push(k * w + x);
-        if (cells.length >= 2) slots.push({ cx: x, cy: y, dir: 1, cells });
-      }
-    }
-  return slots;
+  return { clue, pic, blocks, slots };
 }
 
 // ---------------------------------------------------------------- словарь с масками
@@ -279,7 +323,8 @@ export function generate(rng: Rng, pool: ScanEntry[], o: ScanOpts): ScanLayout |
     const want = attempt < 30 ? nPics : Math.max(0, nPics - 1);
     const pat = makePattern(rng, w, h, maxLen, want);
     if (!pat) continue;
-    const slots = slotsOf(pat.clue, pat.pic, w, h);
+    if (attempt < 30 && deadOf(pat.clue, pat.pic, pat.slots, w).length > Math.max(1, Math.round(w * h * 0.02))) continue;
+    const slots = pat.slots;
     if (slots.some((s) => s.cells.length < 3 || !index.byLen.has(s.cells.length))) continue;
     // ответы к картинкам — в случайные слоты подходящей длины
     const pre = new Map<number, ScanEntry>();
@@ -367,7 +412,8 @@ function fill(rng: Rng, index: Index, slots: Slot[], n: number, budget: number, 
       [cand[t], cand[j]] = [cand[j], cand[t]];
       pick.push(words[cand[t]]);
     }
-    pick.sort((a, b) => a.rank - b.rank + (rng.next() - 0.5) * 2);
+    const pk = new Map(pick.map((e) => [e, e.rank + (rng.next() - 0.5) * 2]));
+    pick.sort((a, b) => pk.get(a)! - pk.get(b)!);
     for (const e of pick) {
       if (used.has(e.word)) continue;
       const before = s.cells.map((c) => ch[c]);
