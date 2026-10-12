@@ -109,6 +109,12 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .arcade-rec-t { font-weight: 700; font-size: 13px; opacity: 0.75; margin-top: 6px; }
 .arcade-name { width: 100%; font: 16px 'PT Sans', sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid #a08a60; box-sizing: border-box; }
 @media (max-width: 860px) { .arcade-cols { grid-template-columns: 1fr; } }
+/* прибор во всю ширину (эмуляторы): заголовок короче, панель — под прибором в колонки */
+.arcade-wide .home-top p { display: none; }
+.arcade-wide .arcade-cols { max-width: 1600px; grid-template-columns: 1fr; }
+.arcade-wide .arcade-stage { min-height: 0; }
+.arcade-wide .arcade-side { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0 24px; }
+@media (max-width: 860px) { .arcade-wide .arcade-side { grid-template-columns: 1fr; } }
 
 /* ---------- экран игры (настройка) ---------- */
 .home-screen.active, .lobby-screen.active { background: radial-gradient(ellipse at 50% 0%, #4a3a5a, #17141f 70%); padding: 18px 16px 40px; }

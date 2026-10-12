@@ -1,50 +1,23 @@
-/* Brick Game: жёлтый пластиковый корпус, стекло с ЖК-экраном, крестовина и большая красная кнопка. */
-.bk-dev {
-  --body: #f2c21b;
-  --dark: #b88a06;
-  width: min(100%, 380px, calc((100vh - 150px) * 0.56));
-  margin: 0 auto;
-  padding: 16px 18px 22px;
-  border-radius: 28px 28px 70px 70px;
-  background: linear-gradient(160deg, #ffd84a, var(--body) 40%, var(--dark));
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.5), inset 0 -6px 12px rgba(0, 0, 0, 0.25), 0 14px 30px rgba(0, 0, 0, 0.45);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  user-select: none;
-  touch-action: none;
-  container-type: inline-size;
-}
-.bk-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px; }
-.bk-logo { font: italic 900 20px 'Arial Black', Arial, sans-serif; color: #c4161c; letter-spacing: 1px; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
-.bk-sub { font: 700 12px 'PT Sans', Arial, sans-serif; color: #5a3a00; }
-.bk-glass {
-  padding: 12px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #3a3a42, #1e1e24);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-.bk-glass canvas { display: block; width: 100%; height: auto; border-radius: 4px; box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35); }
-.bk-brand { text-align: center; font: italic 700 13px Georgia, serif; color: #5a3a00; letter-spacing: 2px; margin-top: -4px; }
-.bk-smalls { display: flex; justify-content: center; gap: 22px; }
-.bk-smalls button { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; cursor: pointer; }
-.bk-smalls i { width: 26px; height: 12px; border-radius: 6px; background: linear-gradient(180deg, #5a5a62, #2a2a30); box-shadow: 0 2px 0 #1a1a1e, inset 0 1px 0 rgba(255, 255, 255, 0.3); }
-.bk-smalls button:active i { transform: translateY(2px); box-shadow: 0 0 0 #1a1a1e; }
-.bk-smalls span { font: 700 10px 'PT Sans', Arial, sans-serif; color: #5a3a00; }
-.bk-controls { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 0; }
-.bk-pad { position: relative; width: 44cqw; height: 44cqw; }
-.bk-pad button, .bk-rot {
-  position: absolute; width: 16cqw; height: 16cqw; border-radius: 50%; border: 0; cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, #ffe680, #f0b800 60%, #b07c00);
-  box-shadow: 0 4px 0 #7a5400, 0 6px 10px rgba(0, 0, 0, 0.35); color: #6a4400; font-size: 16px;
-}
-.bk-pad button:active, .bk-rot:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a5400, 0 2px 4px rgba(0, 0, 0, 0.35); }
-.bk-pad .u { left: 14cqw; top: 0; }
-.bk-pad .d { left: 14cqw; bottom: 0; }
-.bk-pad .l { left: 0; top: 14cqw; }
-.bk-pad .r { right: 0; top: 14cqw; }
-.bk-rot {
-  position: relative; width: 25cqw; height: 25cqw;
-  background: radial-gradient(circle at 35% 30%, #ff8a7a, #d8241c 60%, #8a0c08); box-shadow: 0 5px 0 #5a0604, 0 8px 12px rgba(0, 0, 0, 0.4);
-}
-.bk-rot span { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%); font: 700 11px 'PT Sans', Arial, sans-serif; color: #5a3a00; white-space: nowrap; }
+/* Brick Game E-23: корпус-картинка, поверх — ЖК из MAME (multiply по серо-зелёному стеклу), подписи и колпачки кнопок. */
+.brk { --brk-body: #e0ddd5; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.brk-unit { position: relative; width: min(100%, 620px, calc((100vh - 96px) * 488 / 940)); aspect-ratio: 488 / 940; filter: drop-shadow(0 10px 18px rgba(30, 20, 10, 0.45)); user-select: none; -webkit-user-select: none; touch-action: none; }
+.brk-case { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; border-radius: 7% 7% 0 0 / 3.6% 3.6% 0 0; }
+.brk-lcd { position: absolute; mix-blend-mode: multiply; pointer-events: none; }
+.brk-lcd svg { width: 100%; height: 100%; display: block; }
+.brk-lcd [data-s] { opacity: 0.05; }
+.brk-lcd [data-s].on { opacity: 0.92; }
+.brk-labels { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.brk-labels text { font-family: Arial, Helvetica, sans-serif; fill: #3a3833; text-anchor: middle; }
+.brk-l-s text { font-size: 10.5px; }
+.brk-l text { font-size: 14px; }
+.brk-l text.sm { font-size: 11px; }
+/* кнопка: гнездо (тень в корпусе) + колпачок — кусок той же картинки; нажали — колпачок проседает и темнеет */
+.brk-b { position: absolute; border-radius: 50%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.brk-b::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #3d372c 0, #5a5244 70%, #8c8576 82%, var(--brk-body) 92%); }
+.brk-cap { position: absolute; inset: 0; border-radius: 50%; background-repeat: no-repeat;
+  transition: transform 0.05s ease-out, filter 0.05s; will-change: transform; }
+.brk-b.down .brk-cap { transform: translateY(4%) scale(0.93); filter: brightness(0.86) saturate(1.1); transition-duration: 0.025s; }
+.brk-b.small.down .brk-cap { transform: translateY(6%) scale(0.9); }
+.brk-about { margin: 0; max-width: 520px; text-align: center; color: #efe3c6; }
+.brk-labels text.st { text-anchor: start; }

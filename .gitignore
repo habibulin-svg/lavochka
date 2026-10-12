@@ -10,3 +10,8 @@ materials/**/*.pdf
 .claude/settings.local.json
 .claude/.cache/
 __pycache__/
+
+# Электроника и Brick Game: прошивки, экраны и артворк MAME — в git не кладём
+materials/elektronika/
+materials/brick/
+materials/mame-src/

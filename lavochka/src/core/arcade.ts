@@ -33,6 +33,12 @@ export interface ArcadeModule {
   /** Как управлять (HTML). */
   controls: string;
   modes: ArcadeMode[];
+  /** Режимы — длинный список (игры серии), а не переключатель. */
+  list?: boolean;
+  /** Прибор во всю ширину, панель — под ним (экран побольше). */
+  wide?: boolean;
+  /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
+  noRecords?: boolean;
   mount(root: HTMLElement, opts: ArcadeOpts): ArcadeInstance;
 }
 
@@ -63,7 +69,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
 
-  const el = h(`<section class="arcade-screen">
+  const el = h(`<section class="arcade-screen${mod.wide ? ' arcade-wide' : ''}">
     <header class="home-top">
       <button class="btn back" data-a="back">← Во двор</button>
       <div class="home-title"><h1>${esc(mod.title)}</h1><p>${mod.about}</p></div>
@@ -71,18 +77,19 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
     <div class="arcade-cols">
       <div class="arcade-stage"></div>
       <aside class="sheet arcade-side">
-        <div class="seg arcade-modes"></div>
-        <h3>Управление</h3><div class="arcade-controls">${mod.controls}</div>
-        <h3>Рекорды</h3><div class="arcade-recs"></div>
+        <div>${mod.list ? '<h3>Игры</h3>' : ''}<div class="seg arcade-modes${mod.list ? ' list' : ''}"></div></div>
+        <div><h3>Управление</h3><div class="arcade-controls">${mod.controls}</div>
+        ${mod.noRecords ? '' : '<h3>Рекорды</h3><div class="arcade-recs"></div>'}</div>
       </aside>
     </div>
   </section>`);
   mountScreen('arcade', el);
   const stage = el.querySelector('.arcade-stage') as HTMLElement;
-  const recs = el.querySelector('.arcade-recs') as HTMLElement;
+  const recs = el.querySelector('.arcade-recs') as HTMLElement | null;
   const modes = el.querySelector('.arcade-modes') as HTMLElement;
 
   const drawRecords = async () => {
+    if (!recs) return;
     const mine = localRecords(mod.id, mode);
     const row = (r: Rec, i: number) => `<li><span>${i + 1}.</span> ${esc(r.name)} <b>${r.score}</b></li>`;
     recs.innerHTML = `<div class="arcade-rec-t">На этом устройстве</div><ol>${mine.map(row).join('') || '<li class="empty">пока пусто</li>'}</ol><div class="arcade-rec-t">Во дворе (на сервере)</div><ol class="srv"><li class="empty">…</li></ol>`;
@@ -125,7 +132,8 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   };
 
   for (const m of mod.modes) {
-    const b = h<HTMLButtonElement>(`<button class="${m.id === mode ? 'on' : ''}" title="${esc(m.hint ?? '')}">${esc(m.label)}</button>`);
+    const label = mod.list && m.hint ? `${esc(m.label)}<small>${esc(m.hint)}</small>` : esc(m.label);
+    const b = h<HTMLButtonElement>(`<button class="${m.id === mode ? 'on' : ''}" title="${esc(m.hint ?? '')}">${label}</button>`);
     b.onclick = () => {
       Sound.ui();
       mode = m.id;

@@ -78,6 +78,16 @@ npm start            # раздаёт dist/ и держит комнаты на 
 
 ## Чужие материалы (все — CC0 или общественное достояние)
 
+«Электроника ИМ» и Brick Game — эмуляция настоящих прошивок (решение пользователя: советское наследие, игры публичные):
+
+- **Процессоры** — `src/arcade/sm5a.ts` (Sharp SM5A = КБ1013ВК1-2) и `src/arcade/ht1190.ts` (Holtek HT1190) — перенос ядер
+  MAME (`src/devices/cpu/sm510`, автор hap; `src/devices/cpu/ht1130`, автор David Haywood), лицензия BSD-3-Clause.
+- **Прошивки и экраны** — `public/elektronika/<игра>/{rom.bin,screen.svg}`, `public/brick/{rom.bin,melody.bin,screen.svg}`:
+  наборы MAME (hh_sm510, hh_ht11xx), экраны SVG очищены `tools/elektronika/build.py`, `tools/brick/build.py`.
+- **Корпуса «Электроники»** — `public/elektronika/<игра>/{under,over,btn-*}.webp`: артворк MAME Lee Robson (hydef),
+  сканы Henrik Algestam и MilanSK, раскладки DarthMarino («для личного пользования, не на продажу» — сайт бесплатный).
+- **Корпус Brick Game** — `public/brick/case.webp`: картинка пользователя, перекрашена в серый `tools/brick/case.py`.
+
 Настольный хоккей: фигурки `public/hockey/{red,blue}.webp` — сгенерированы пользователем по мотивам советской игрушки
 (фон вырезан, ужаты в WebP); поле, борт, табло, надписи — процедурные, `src/games/hockey/tex.ts`.
 Настольные баскетбол и футбол — всё процедурное (`src/games/{basketball,football}/tex.ts`, фигурки футбола — из простых тел three.js),

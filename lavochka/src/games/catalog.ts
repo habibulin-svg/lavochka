@@ -75,12 +75,8 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'basketball', title: 'Настольный баскетбол', sub: 'кто первым нажал — тот бросает', cat: 'sport', players: '2', wave: 6, icon: '🏀', tint: '#a0521a', thumb: 'basketball.webp', load: () => import('./basketball'), variants: ['с ботом', 'вдвоём за экраном', 'по сети', 'до 21 очка или 3 минуты', 'матч 5 минут'] },
   { id: 'zarulem', title: 'За рулём', sub: 'дорога крутится, руль в руках', cat: 'sport', players: '1–4', wave: 5, icon: '🚗', tint: '#1f8fa2', thumb: 'zarulem.webp', load: () => import('./zarulem'), variants: ['гонка на круги', 'на дальность', 'как в игрушке', 'с ботами', 'по сети'] },
   // — электроника —
-  { id: 'nupogodi', title: 'Ну, погоди!', sub: 'ИМ-02: волк ловит яйца', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', arcade: true, load: () => import('./nupogodi'), variants: ['игра А', 'игра Б'] },
-  { id: 'brick', title: 'Brick Game', sub: '9999 игр в одном', cat: 'electronics', players: '1', wave: 5, icon: '▦', tint: '#5d6b4f', arcade: true, load: () => import('./brick'), variants: ['тетрис', 'танки', 'гонки', 'змейка', 'арканоид', 'стрелялка'] },
-  { id: 'tainy', title: 'Тайны океана', sub: 'ИМ-03: водолазы и сокровища', cat: 'electronics', players: '1', wave: 5, icon: '🐙', tint: '#0f6a8a' },
-  { id: 'povar', title: 'Весёлый повар', sub: 'ИМ: жонглируй сковородкой', cat: 'electronics', players: '1', wave: 5, icon: '🍳', tint: '#c25a10' },
-  { id: 'razvedchiki', title: 'Разведчики космоса', sub: 'ИМ: межпланетный десант', cat: 'electronics', players: '1', wave: 5, icon: '🚀', tint: '#3a2a8a' },
-  { id: 'avtoslalom', title: 'Автослалом', sub: 'ИМ: между флажками', cat: 'electronics', players: '1', wave: 5, icon: '🏁', tint: '#1a7a3a' },
+  { id: 'elektronika', title: 'Электроника ИМ', sub: 'настоящие советские ЖК-игры', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', arcade: true, load: () => import('./elektronika'), variants: ['Ну, погоди!', 'Тайны океана', 'Весёлый повар', 'Космический мост', 'Хоккей', 'Автослалом', 'Кот-рыболов', 'и ещё 7'] },
+  { id: 'brick', title: 'Brick Game', sub: 'E-23 «96 in 1», настоящая прошивка', cat: 'electronics', players: '1', wave: 5, icon: '▦', tint: '#5d6b4f', arcade: true, load: () => import('./brick'), variants: ['тетрис', 'танки', 'гонки', 'змейка', 'арканоид', 'и ещё десятки'] },
   // — аркады —
   { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, shelved: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'лопата, динамит, самородок'] },
   { id: 'shariki', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '🐸', tint: '#4a7a10', arcade: true, shelved: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'спираль, петля'] },

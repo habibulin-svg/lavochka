@@ -1,0 +1,25 @@
+/* «Электроника ИМ»: корпус из артворка, ЖК — SVG поверх плёнки (multiply, как сегменты на стекле). */
+.gw { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.gw-unit { position: relative; width: min(100%, calc((100vh - 110px) * 2782 / 1654)); aspect-ratio: 2782 / 1654; user-select: none; -webkit-user-select: none; touch-action: none;
+  filter: drop-shadow(0 10px 18px rgba(40, 25, 10, 0.35)); }
+.gw-unit > img, .gw-screen { position: absolute; display: block; pointer-events: none; }
+.gw-over { left: 0; top: 0; width: 100%; height: 100%; }
+.gw-screen svg { width: 100%; height: 100%; display: block; }
+.gw-lcd { mix-blend-mode: multiply; }
+.gw-shadow { filter: blur(1px); }
+.gw-screen [data-s] { opacity: 0; }
+.gw-screen [data-s].on { opacity: 1; }
+.gw-loading { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; color: var(--ink); }
+.gw-btn { position: absolute; border-radius: 50%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.gw-btn.art img { width: 100%; height: 100%; display: block; opacity: 0; pointer-events: none; }
+.gw-btn.art.down img { opacity: 1; }
+.gw-btn:not(.art).down { background: radial-gradient(circle, rgba(0, 0, 0, 0.28) 0 34%, rgba(0, 0, 0, 0.12) 46%, transparent 60%); }
+.gw-about { margin: 0; max-width: 720px; text-align: center; color: #efe3c6; }
+.gw-tools { display: flex; gap: 8px; }
+.arcade-modes.list { display: grid; grid-template-columns: 1fr 1fr; border-radius: 9px; }
+.arcade-wide .arcade-modes.list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); width: 100%; }
+.arcade-wide .arcade-modes.list button { border: 0; border-top: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+.arcade-modes.list button { text-align: left; padding: 6px 9px; font-size: 13px; line-height: 1.15; border-left: 0; border-top: 1px solid var(--ink); }
+.arcade-modes.list button:nth-child(odd) { border-right: 1px solid var(--ink); }
+.arcade-modes.list button:nth-child(-n + 2) { border-top: 0; }
+.arcade-modes.list button small { display: block; font-weight: 400; opacity: 0.75; }
