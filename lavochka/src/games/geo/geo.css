@@ -52,7 +52,7 @@
 .geo-quiz .geo-face .geo-txt { font-size: clamp(30px, 9cqh, 56px); }
 .geo-quiz .geo-prompt .geo-outline { height: 100%; width: 100%; max-height: 100%; }
 .geo-quiz .geo-prompt .geo-flag.big { height: clamp(90px, 46cqh, 300px); width: auto; max-width: 92%; object-fit: contain; }
-.geo-quiz .geo-prompt .geo-arms.big { height: clamp(100px, 50cqh, 230px); width: auto; object-fit: contain; }
+.geo-quiz .geo-prompt .geo-arms.big { height: 100%; max-height: 100%; width: auto; max-width: 100%; object-fit: contain; }
 .geo-quiz .geo-stage { flex: 0 0 auto; }
 .geo-quiz .geo-opts { padding: 2px 0; }
 
