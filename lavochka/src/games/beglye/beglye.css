@@ -1,0 +1,24 @@
+﻿/* «Беглые»: карта под камерой, поверх — точки со знаками, пуговицы-фишки и подсказки шагов. */
+.bg-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.bg-board { position: relative; transform-origin: 0 0; }
+.bg-board.ready .bg-map { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+.bg-map { display: block; width: 100%; height: 100%; border-radius: 8px; user-select: none; }
+.bg-over { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bg-dot { fill: rgba(255, 255, 255, 0.06); stroke-width: 6; }
+.bg-move { fill: rgba(40, 200, 90, 0.25); stroke: #4ee08a; stroke-width: 4; cursor: pointer; }
+.bg-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3)); }
+.bg-mark { font: 34px serif; }
+.bg-panel { display: flex; flex-direction: column; gap: 8px; }
+.bg-panel.bg-hidden .bg-btns { display: none; }
+.bg-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }
+.bg-btns { display: flex; flex-direction: column; gap: 6px; }
+.bg-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(22, 30, 46, 0.88); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
+.bg-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(300px, 84%);
+  padding: 14px 16px 10px; border-radius: 14px; text-align: center; cursor: pointer;
+  background: linear-gradient(#fdf6e3, #f0e2c2); border: 3px solid #b99a63; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); }
+.bg-card-f { font: 56px/1 serif; }
+.bg-card-t { margin-top: 6px; font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
+.bg-card-s { margin-top: 6px; font: 15px/1.4 'PT Serif', serif; color: #33240f; }
+.bg-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #8a7550; }
