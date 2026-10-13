@@ -15,8 +15,8 @@
 .st-gem { font: 44px serif; }
 .st-start-city { fill: rgba(255, 220, 120, 0.18); stroke: #ffd764; stroke-width: 6; cursor: pointer; animation: st-pulse 1.6s ease-in-out infinite; }
 @keyframes st-pulse { 0%, 100% { stroke-opacity: 0.5; } 50% { stroke-opacity: 1; } }
-.st-move { fill: rgba(40, 200, 90, 0.28); stroke: #4ee08a; stroke-width: 4; cursor: pointer; }
-.st-fly { fill: rgba(230, 60, 60, 0.25); stroke: #ff7a6a; stroke-width: 4; cursor: pointer; }
+.st-move { fill: rgba(255, 214, 96, 0.30); stroke: #ffd764; stroke-width: 6; cursor: pointer; }
+.st-fly { fill: rgba(120, 180, 255, 0.28); stroke: #7fb2ff; stroke-width: 6; stroke-dasharray: 10 6; cursor: pointer; }
 .st-pass { fill: rgba(70, 150, 255, 0.22); stroke: #6cb2ff; stroke-width: 4; stroke-dasharray: 8 5; cursor: pointer; }
 .st-bandit { fill: #ffd2d2; font: 34px serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
 .st-panel { display: flex; flex-direction: column; gap: 8px; }

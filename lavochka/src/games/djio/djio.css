@@ -11,7 +11,7 @@
 .dj-dot.dj-danger { stroke: rgba(220, 60, 50, 0.8); }
 .dj-dot.dj-cross { stroke: rgba(80, 140, 230, 0.85); }
 .dj-danger { fill: none; stroke: rgba(255, 90, 70, 0.35); stroke-width: 8; stroke-dasharray: 14 10; }
-.dj-move { fill: rgba(40, 200, 90, 0.25); stroke: #4ee08a; stroke-width: 4; cursor: pointer; }
+.dj-move { fill: rgba(255, 214, 96, 0.30); stroke: #ffd764; stroke-width: 6; cursor: pointer; }
 .dj-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3)); }
 .dj-mark { font: 40px serif; }
 .dj-panel { display: flex; flex-direction: column; gap: 8px; }
