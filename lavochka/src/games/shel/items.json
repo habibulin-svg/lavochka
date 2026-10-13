@@ -1,0 +1,85 @@
+{
+ "note": "Шёл солдат со службы: 16 карточек предметов (тексты из materials/nastolki/shumov/cards.json, исходник в cp1251). Картинки — public/shel/cards/item-01..16.webp.",
+ "items": [
+  {
+   "file": "cards/item-01.webp",
+   "kind": "item",
+   "text": "Меч-саморуб"
+  },
+  {
+   "file": "cards/item-02.webp",
+   "kind": "item",
+   "text": "Хлеб"
+  },
+  {
+   "file": "cards/item-03.webp",
+   "kind": "item",
+   "text": "Гребень"
+  },
+  {
+   "file": "cards/item-04.webp",
+   "kind": "item",
+   "text": "Гусли-самогуды"
+  },
+  {
+   "file": "cards/item-05.webp",
+   "kind": "item",
+   "text": "Цвет папоротника"
+  },
+  {
+   "file": "cards/item-06.webp",
+   "kind": "item",
+   "text": "Конь-огонь"
+  },
+  {
+   "file": "cards/item-07.webp",
+   "kind": "item",
+   "text": "Неразменный рубль"
+  },
+  {
+   "file": "cards/item-08.webp",
+   "kind": "item",
+   "text": "Скатерть-самобранка"
+  },
+  {
+   "file": "cards/item-09.webp",
+   "kind": "item",
+   "text": "Волшебный клубок"
+  },
+  {
+   "file": "cards/item-10.webp",
+   "kind": "item",
+   "text": "Сон-трава"
+  },
+  {
+   "file": "cards/item-11.webp",
+   "kind": "item",
+   "text": "Золотые монеты"
+  },
+  {
+   "file": "cards/item-12.webp",
+   "kind": "item",
+   "text": "Волшебная торба"
+  },
+  {
+   "file": "cards/item-13.webp",
+   "kind": "item",
+   "text": "Шапка-невидимка"
+  },
+  {
+   "file": "cards/item-14.webp",
+   "kind": "item",
+   "text": "Крест серебряный"
+  },
+  {
+   "file": "cards/item-15.webp",
+   "kind": "item",
+   "text": "Полотенце"
+  },
+  {
+   "file": "cards/item-16.webp",
+   "kind": "item",
+   "text": "Огниво"
+  }
+ ]
+}
