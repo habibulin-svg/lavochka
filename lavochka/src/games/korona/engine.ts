@@ -82,27 +82,51 @@ export interface X {
 /** Соседи по сетке + знаки между мирами. */
 const NEIGH: Record<number, number[]> = {};
 {
-  const grid: Record<string, number> = {};
-  for (const c of PLAY_CELLS) {
-    if (typeof c.col !== 'number' || typeof c.row !== 'number') continue;
-    const span = c.subfield ? 2 : 1;
-    for (let dx = 0; dx < span; dx++) for (let dy = 0; dy < span; dy++) grid[`${c.col + dx},${c.row + dy}`] = c.n;
-  }
-  for (const key of Object.keys(grid)) {
+  // Сетку строим по настоящим координатам клеток, а не по столбцу/ряду из отчёта:
+  // там встречаются коллизии (две клетки в одной позиции), из-за которых клетка
+  // оставалась без соседей. Центры клеток clustering-ом разбиваем на столбцы и ряды.
+  const list = PLAY_CELLS.filter((c) => c.w >= 100);
+  const cx = list.map((c) => c.x + c.w / 2);
+  const cy = list.map((c) => c.y + c.h / 2);
+  const cluster = (vals: number[], tol: number): number[] => {
+    const sorted = [...vals].sort((a, b) => a - b);
+    const idx: number[] = [];
+    let last = -1e9;
+    let k = -1;
+    for (const v of sorted) {
+      if (v - last > tol) {
+        k += 1;
+        last = v;
+      }
+      idx.push(k);
+    }
+    const map = new Map<number, number>();
+    sorted.forEach((v, i) => map.set(v, idx[i]));
+    return vals.map((v) => map.get(v) ?? 0);
+  };
+  const sizes = list.map((c) => Math.min(c.w, c.h));
+  const step = sizes.sort((a, b) => a - b)[Math.floor(sizes.length / 2)] || 220;
+  const cols = cluster(cx, step * 0.6);
+  const rows = cluster(cy, step * 0.6);
+  const grid = new Map<string, number>();
+  list.forEach((c, i) => grid.set(`${cols[i]},${rows[i]}`, c.n));
+  for (const [key, n] of grid) {
     const [col, row] = key.split(',').map(Number);
-    const n = grid[key];
-    NEIGH[n] = NEIGH[n] ?? [];
     for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-      const m = grid[`${col + dc},${row + dr}`];
-      if (m && m !== n && !NEIGH[n].includes(m)) NEIGH[n].push(m);
+      const m = grid.get(`${col + dc},${row + dr}`);
+      if (m && m !== n) {
+        NEIGH[n] = NEIGH[n] ?? [];
+        if (!NEIGH[n].includes(m)) NEIGH[n].push(m);
+      }
     }
   }
+  // знаки «⇄» и стрелки «↕» связывают клетки разных миров (в том числе межмировые)
   for (const l of LINKS) {
-    if (l.from == null || l.to == null) continue;
-    NEIGH[l.from] = NEIGH[l.from] ?? [];
-    NEIGH[l.to] = NEIGH[l.to] ?? [];
-    if (!NEIGH[l.from].includes(l.to)) NEIGH[l.from].push(l.to);
-    if (!NEIGH[l.to].includes(l.from)) NEIGH[l.to].push(l.from);
+    if (l.from == null || l.to == null || l.from === l.to) continue;
+    for (const [a, b] of [[l.from, l.to], [l.to, l.from]] as const) {
+      NEIGH[a] = NEIGH[a] ?? [];
+      if (!NEIGH[a].includes(b)) NEIGH[a].push(b);
+    }
   }
   for (const n of Object.keys(NEIGH)) NEIGH[Number(n)].sort((a, b) => a - b);
 }
