@@ -35,6 +35,22 @@ const SEAT_LOOK = [
   { name: 'Граф', color: '#e07b39', light: '#f6cfae', dark: '#8c4517' },
 ];
 
+/** Память бота: сколько ходов подряд состояние не меняется (по виду этого не видно). */
+const botMemory = new Map<number, { sig: string; n: number }>();
+/** Сбросить память бота (при новой партии). */
+export function resetBotMemory() {
+  botMemory.clear();
+}
+function barren(seat: number, sig: string): number {
+  const m = botMemory.get(seat);
+  if (!m || m.sig !== sig) {
+    botMemory.set(seat, { sig, n: 0 });
+    return 0;
+  }
+  m.n += 1;
+  return m.n;
+}
+
 /** Сосед, ведущий по кратчайшему пути к ближайшей клетке нужного вида (BFS с возвратом по родителям). */
 function nextToward(s: State, seat: number, want: (n: number) => boolean): number | null {
   const from = s.heroes[seat].cell;
@@ -99,7 +115,19 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
     const to = nextToward(s, seat, (n) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum');
     return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
   }
-  const to = nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange');
+  // если состояние не меняется десятки ходов — меняем цель по кругу, чтобы выйти из цикла
+  const sig = `${h.cell}|${h.life}|${h.thalers}|${STATS.map((k) => h.st[k]).join(',')}`;
+  const idle = barren(seat, sig);
+  const cycle = Math.floor(idle / 40) % 3;
+  const want =
+    idle > 40
+      ? cycle === 0
+        ? (n: number) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum'
+        : cycle === 1
+          ? (n: number) => kindOf(n) === 'exchange'
+          : (n: number) => kindOf(n) === 'meadow' || kindOf(n) === 'lyceum'
+      : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange';
+  const to = nextToward(s, seat, want);
   return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
 }
 
@@ -115,12 +143,14 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
     { id: 'short', label: 'Корона Эмбера. Короткая партия', hint: 'меньше карточек, быстрее к Эмберу', options: { deck: '60' } },
   ],
 
-  setup: (seats: SeatSpec[], opts: Options, rng: Rng): State =>
-    newState(
+  setup: (seats: SeatSpec[], opts: Options, rng: Rng): State => {
+    resetBotMemory();
+    return newState(
       seats.map((s) => ({ seat: s.seat, kind: s.kind === 'human' ? ('human' as const) : ('bot' as const), name: s.name, level: s.level })),
       { deck: Number(opts.deck) || DECK_SIZE },
       rng,
-    ),
+    );
+  },
 
   toAct: (s) => (s.winner == null ? [s.turn] : []),
 
