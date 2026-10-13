@@ -5,6 +5,7 @@
  * Образец — вид «Джио-Джанги» (`src/games/djio/view.ts`): та же схема монтирования
  * (доска с крошечной и полной картинкой, SVG-слой поверх, BoardCam), те же события.
  */
+import './korona.css';
 import { BoardCam } from '../../core/boardcam';
 import { sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -310,8 +311,9 @@ class View implements GameView<KV, Event> {
   }
 }
 
-export const view = new View();
-export default view;
+/** Фабрика вида: каждому экрану — свой экземпляр. */
+export const createView = () => new View();
+export default createView;
 
 /** Для отладки: размеры полей. */
 export const fieldSizes = { field1: [W, H], field2: [W2, H2] } as const;

@@ -1,0 +1,25 @@
+/* «Корона Эмбер»: доска с камерой, пуговицы, кружки шага, панель и карточка приключений */
+.kn-wrap { display: flex; gap: 10px; height: 100%; }
+.kn-board { position: relative; flex: 1 1 auto; min-width: 0; }
+.kn-map { display: block; width: 100%; height: auto; }
+.kn-map-mini { position: absolute; inset: 0; width: 100%; height: 100%; filter: blur(7px) saturate(1.1); transform: scale(1.05); transition: opacity .45s ease; }
+.kn-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
+.kn-board.ready .kn-map-full { opacity: 1; }
+.kn-board.ready .kn-map-mini { opacity: 0; }
+.kn-over { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.kn-over image.kn-take { cursor: grab; touch-action: none; pointer-events: auto; }
+.kn-over image.kn-take:active { cursor: grabbing; }
+.kn-move { fill: rgba(255, 214, 96, 0.30); stroke: #ffd764; stroke-width: 6; cursor: pointer; pointer-events: auto; }
+.kn-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .55)); }
+.kn-side { flex: 0 0 260px; display: flex; flex-direction: column; gap: 8px; }
+.kn-stats { display: flex; flex-direction: column; gap: 4px; }
+.kn-p { background: #f6efdd; border-radius: 8px; padding: 6px 8px; font-size: 14px; }
+.kn-btns { display: flex; flex-direction: column; gap: 6px; }
+.kn-btn { width: 100%; }
+.kn-note { font-size: 13px; color: #4a3b2a; }
+.kn-card { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); max-width: 420px; background: #f6efdd; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.45); padding: 12px; text-align: center; z-index: 20; }
+.kn-card img { max-width: 240px; border-radius: 8px; display: block; margin: 0 auto 6px; }
+.kn-card-t { font-weight: 700; margin-bottom: 4px; }
+.kn-card-s { font-size: 14px; }
+.kn-card-h { margin-top: 8px; font-size: 12px; opacity: .7; }
+@media (max-width: 800px) { .kn-wrap { flex-direction: column; } .kn-side { flex: 0 0 auto; } }
