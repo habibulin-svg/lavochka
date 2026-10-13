@@ -113,6 +113,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     phase: 'roll',
   };
   const ev: Event[] = [];
+  // «выход только нужной гранью»: пока не выпадет нужное, пуговица стоит на месте
+  const stand = board.cells[s.pos[seat]]?.sign;
+  if (stand?.k === 'wait' && (s0.last ?? 0) !== stand.die) {
+    ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat] });
+    s.turn = next(s, seat);
+    return { state: s, events: ev };
+  }
   const walk = walkFor(s0, board, seat);
   const path = walk.path;
   // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
@@ -175,6 +182,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.items = many(s.items, null);
       s.items[seat] = [...(s.items[seat] ?? []), sign.item];
       ev.push({ type: 'item', seat, item: sign.item });
+    } else if (sign.k === 'takeItem') {
+      s.items = many(s.items, null);
+      s.items[seat] = (s.items[seat] ?? []).filter((x) => x !== sign.item);
+      ev.push({ type: 'item', seat, item: sign.item, lost: true });
+    } else if (sign.k === 'wait') {
+      // на эту клетку пуговица встала — дальше её держит бросок (проверяется в начале хода)
+      dest = to;
     } else if (sign.k === 'extra') {
       const n = sign.n ?? diceSum(sign.dice ?? 1);
       s.extra = many(s.extra, 0);
@@ -316,7 +330,9 @@ export const def: GameDef<State, Action, Event, State> = {
           ? `💰 ${name(ev.seat)} берёт <b>${ev.delta}</b> бон (всего ${ev.total}).`
           : `💸 ${name(ev.seat)} отдаёт <b>${-ev.delta}</b> бон (осталось ${ev.total}).`;
       case 'item':
-        return `🎁 ${name(ev.seat)} берёт <b>${itemName(ev.item)}</b>.`;
+        return ev.lost
+          ? `😱 ${name(ev.seat)} теряет <b>${itemName(ev.item)}</b>.`
+          : `🎁 ${name(ev.seat)} берёт <b>${itemName(ev.item)}</b>.`;
       case 'extra':
         return `⏩ ${name(ev.seat)} получает <b>${ev.n}</b> дополнительных хода.`;
       case 'goal':

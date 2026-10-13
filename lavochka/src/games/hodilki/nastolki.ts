@@ -71,6 +71,8 @@ export function signOf(code: string | undefined, i: number, label: string | unde
     const [question, options, to] = code.slice(5).split('|');
     return { k: 'pick', question, options: options.split(','), to: to.split(',').map(Number), text: routeText ?? 'загадка' };
   }
+  if (code.startsWith('wait:')) return { k: 'wait', die: +code.slice(5), text: routeText ?? 'ждёт нужной грани' };
+  if (code.startsWith('takeItem:')) return { k: 'takeItem', item: code.slice(9) as ItemId, text: routeText ?? 'теряет предмет' };
   console.warn('кинь-двинь: неизвестный знак', code, label);
   return null;
 }

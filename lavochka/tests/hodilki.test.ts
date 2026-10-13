@@ -502,6 +502,44 @@ describe('кинь-двинь: боны, предметы и развилки', 
     }
   });
 
+  it('«выход только нужной гранью» и отбор предмета', () => {
+    const rng = new RiggedRng(new SeededRng(28));
+    const gate: Board = {
+      ...testBoard,
+      id: 'tests5',
+      title: 'Поле с задержкой',
+      end: 6,
+      cells: [
+        { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+        { x: 10, y: 0, sign: { k: 'wait', die: 6, text: 'выход только шестёркой' }, label: '2' },
+        { x: 20, y: 0, sign: null, label: '3' },
+        { x: 30, y: 0, sign: { k: 'takeItem', item: 'flower', text: 'кикиморы отбирают цветочек' }, label: '4' },
+        { x: 40, y: 0, sign: null, label: '5' },
+        { x: 50, y: 0, sign: null, label: '6' },
+        { x: 60, y: 0, sign: null, label: '7' },
+      ],
+    };
+    BOARDS.push(gate);
+    try {
+      // пуговица стоит на 2: с любым броском, кроме шестёрки, ход пропадает
+      const s = { ...(def.setup(seats2, { map: 'tests5' }, rng) as State), pos: [1, 0], turn: 0 };
+      const stay = turn(s, 0, 3, rng);
+      expect(signKind(stay.events)).toBe('wait');
+      expect(stay.state.pos[0]).toBe(1);
+      expect(stay.state.turn).toBe(1); // ход перешёл
+      // шестёрка выпускает дальше — и пуговица доходит до конца поля
+      const go = turn({ ...s, turn: 0 }, 0, 6, rng);
+      expect(go.state.winner).toBe(0);
+      // на 4 отбирают аленький цветочек, если он есть
+      const withFlower = { ...s, pos: [2, 0], turn: 0, items: [['flower'], null] as State['items'] };
+      const r2 = turn(withFlower, 0, 1, rng);
+      expect(r2.state.items![0]).toEqual([]);
+      expect(r2.events.some((e) => e.type === 'item' && e.lost)).toBe(true);
+    } finally {
+      BOARDS.splice(BOARDS.indexOf(gate), 1);
+    }
+  });
+
   it('переход на другое поле (серия «Лукоморья») переносит пуговицу в его клетку', () => {
     const rng = new RiggedRng(new SeededRng(26));
     const other: Board = {

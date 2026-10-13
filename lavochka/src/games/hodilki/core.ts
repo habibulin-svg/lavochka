@@ -24,7 +24,11 @@ export type Sign =
   /** Дополнительные ходы: `n` или сумма `dice` бросков. */
   | { k: 'extra'; n?: number; dice?: number; text: string }
   /** Загадка с ответами: игрок выбирает ответ, и пуговица идёт на клетку `to[выбор]` (Лукоморье: «угаданное число — номер пункта»). */
-  | { k: 'pick'; question: string; options: string[]; to: number[]; text: string };
+  | { k: 'pick'; question: string; options: string[]; to: number[]; text: string }
+  /** Ждать нужной грани: пока на кубике не выпадет `die`, пуговица стоит (Лукоморье: «выход только шестёркой»). */
+  | { k: 'wait'; die: number; text: string }
+  /** Забрать предмет у места (кикиморы отбирают аленький цветочек, разбойники — деньги и цветочек). */
+  | { k: 'takeItem'; item: ItemId; text: string };
 
 /** Предметы «Лукоморья»: их берут на клетках, по ним открываются переходы. */
 export type ItemId = 'flower' | 'cap' | 'key' | 'needle' | 'sword';
@@ -134,8 +138,8 @@ export type Event =
   | { type: 'skip'; seat: number }
   /** Боны: delta — сколько взял (или отдал, если отрицательно), total — сколько стало. */
   | { type: 'coins'; seat: number; delta: number; total: number }
-  /** Предмет взят в инвентарь. */
-  | { type: 'item'; seat: number; item: ItemId }
+  /** Предмет взят в инвентарь; lost — наоборот, отобран. */
+  | { type: 'item'; seat: number; item: ItemId; lost?: boolean }
   /** Дополнительные ходы: сколько добавилось. */
   | { type: 'extra'; seat: number; n: number }
   /** Гонка с голами: шайба в воротах, возвращается в центр. */
