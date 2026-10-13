@@ -44,6 +44,7 @@ class HodilkiView implements GameView<State, Event> {
   private miniDots = new Map<number, HTMLElement>();
   private tokens = new Map<number, HTMLElement>();
   private panel!: HTMLElement;
+  private hint!: HTMLElement;
   private rollBtn!: HTMLButtonElement;
   private followBtn!: HTMLButtonElement;
   private tray!: DiceTray;
@@ -52,6 +53,9 @@ class HodilkiView implements GameView<State, Event> {
   private cubeHint!: HTMLElement;
   private face!: HTMLImageElement;
   private cardImg!: HTMLImageElement;
+  /** «Шайба»: заранее загруженные грани кубика и квадратики. */
+  private artFaces: HTMLImageElement[] = [];
+  private artCards: HTMLImageElement[] = [];
   private v: State | null = null;
   /** Где пуговица сейчас нарисована (во время анимации — не там, где в состоянии). */
   private shown: number[] = [];
@@ -175,15 +179,16 @@ class HodilkiView implements GameView<State, Event> {
 
     this.panel = h(`<div class="ks-panel">
         <div class="ks-tray"></div>
-        <div class="ks-cube" hidden>
+        <div class="ks-cube dice-tray" hidden>
           <span class="ks-cube-hint">Кубик «Шайбы»: 1–4 — очки, красная клюшка — назад, зелёная — вперёд (тянут квадратик)</span>
           <img class="ks-face" alt="кубик" draggable="false" hidden>
           <img class="ks-card" alt="квадратик" draggable="false" hidden>
         </div>
         <button class="btn primary ks-roll" data-tap hidden>Бросить кубик</button>
-        ${ctx.demo ? '' : `<div class="hint small-hint ks-hint">${touchScreen() ? 'Бросок — кнопкой или тапом по полю.' : 'Пробел — бросок.'} Потом возьмите свою пуговицу и поставьте на подсвеченную клетку. Карту можно приближать ${touchScreen() ? 'двумя пальцами' : 'колесом'} и двигать.</div>`}
+        ${ctx.demo ? '' : `<div class="hint small-hint ks-hint"><span class="ks-hint-text">Потом возьмите свою пуговицу и поставьте на подсвеченную клетку.</span> ${touchScreen() ? 'Бросок — кнопкой или тапом по полю.' : 'Пробел — бросок.'} Карту можно приближать ${touchScreen() ? 'двумя пальцами' : 'колесом'} и двигать.</div>`}
       </div>`);
     ctx.controls.appendChild(this.panel);
+    this.hint = this.panel.querySelector('.ks-hint') as HTMLElement;
     this.tray = new DiceTray(this.panel.querySelector('.ks-tray') as HTMLElement, 1);
     this.cubeBox = this.panel.querySelector('.ks-cube') as HTMLElement;
     this.cubeHint = this.panel.querySelector('.ks-cube-hint') as HTMLElement;
@@ -360,6 +365,7 @@ class HodilkiView implements GameView<State, Event> {
     this.base.src = `${b.img.dir}/view.webp`;
     this.base.alt = b.title;
     (this.mini.querySelector('img') as HTMLImageElement).src = `${b.img.dir}/view.webp`;
+    if (b.race) this.preloadRace();
     // слои тайлов: более подробный — выше
     this.layers = Array.from({ length: b.img.levels }, (_, lv) => {
       const l = document.createElement('div');
@@ -374,6 +380,9 @@ class HodilkiView implements GameView<State, Event> {
     // «Шайба»: вместо лотка с кубиком — грань кубика и квадратик
     (this.tray.el as HTMLElement).hidden = !!b.race;
     this.cubeBox.hidden = !b.race;
+    // у «Шайбы» ходят шайбой, а не пуговицей
+    const hintText = this.hint.querySelector('.ks-hint-text');
+    if (hintText) hintText.textContent = b.race ? 'Потом возьмите свою шайбу и поставьте на подсвеченную клетку.' : 'Потом возьмите свою пуговицу и поставьте на подсвеченную клетку.';
     if (!b.race) {
       this.cardImg.hidden = true;
       this.face.removeAttribute('src');
@@ -936,6 +945,24 @@ class HodilkiView implements GameView<State, Event> {
     const stick = (face === 5 || face === 6) && card != null;
     this.cardImg.hidden = !stick;
     if (stick) this.cardImg.src = `${dir}/cards/ochko${card}-0${((slot ?? 0) % 5) + 1}.webp`;
+  }
+
+  /** Заранее загрузить и раскодировать картинки «Шайбы» (грани кубика, квадратики, шайбы) —
+   * тогда после броска они показываются сразу, вместе с полем. */
+  private preloadRace() {
+    if (this.artFaces.length) return;
+    const dir = '/hodilki/shayba';
+    const load = (url: string) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      img.decode?.().catch(() => {});
+      return img;
+    };
+    this.artFaces = [1, 2, 3, 4].map((n) => load(`${dir}/cube-pips-${n}.webp`));
+    this.artFaces.push(load(`${dir}/cube-stick-red.webp`), load(`${dir}/cube-stick-green.webp`));
+    for (let pips = 1; pips <= 3; pips++) for (let v = 1; v <= 5; v++) this.artCards.push(load(`${dir}/cards/ochko${pips}-0${v}.webp`));
+    for (const p of this.b?.race?.pucks ?? []) load(p);
   }
 
   private say(text: string, good: boolean) {

@@ -131,21 +131,8 @@ export const def: GameDef<State, Action, Event, State> = {
   title: 'Кинь-двинь',
   players: { min: 2, max: 10, default: 3 },
   seats: SEATS,
-  options: [
-    { key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id },
-    {
-      key: 'goals',
-      label: 'Голов до победы («Шайба»)',
-      type: 'select',
-      choices: [1, 3, 5, 7].map((n) => ({ value: String(n), label: n === 1 ? 'один гол' : `до ${n} голов` })),
-      default: '3',
-    },
-  ],
-  presets: [
-    ...BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
-    { id: 'shayba5', label: 'Шайба — до 5 голов', options: { map: 'shayba', goals: '5' } },
-    { id: 'shayba7', label: 'Шайба — до 7 голов', options: { map: 'shayba', goals: '7' } },
-  ],
+  options: [{ key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id }],
+  presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
   setup: (seats, opts) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     const board = boardOf(String(opts.map ?? BOARDS[0].id));
