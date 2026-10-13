@@ -13,7 +13,7 @@
  */
 import type { Rng } from '../../core/types';
 import { CELLS, LINKS, PLAY_CELLS, ZONES, cardByNumber, cell, cellsOfWorld, linksOf, worldOf } from './data';
-import { CELL_RULES, DECK_SIZE, LIFE_MAX, PACK_LIMIT, START, START_LIFE, START_THALERS, STATS, type Stat } from './rules';
+import { CELL_RULES, DECK_SIZE, FALL_NEED_DEFAULT, LIFE_MAX, PACK_LIMIT, START, START_LIFE, START_THALERS, STATS, type Stat } from './rules';
 
 export interface Seat {
   seat: number;
@@ -60,6 +60,8 @@ export interface State {
   deck: number[];
   /** показанная карточка (её номер в колоде) */
   card: number | null;
+  /** порог характеристик для выхода через ПРОВАЛ (13 в полной игре, 8 в упрощённой) */
+  need: number;
   log: string[];
   winner: number | null;
 }
@@ -172,7 +174,7 @@ export function kindOf(n: number): 'exchange' | 'hospital' | 'fall' | 'lyceum' |
 
 const START_CELL = PLAY_CELLS.reduce((best, c) => (c.y > best.y || (c.y === best.y && c.x < best.x) ? c : best), PLAY_CELLS[0]).n;
 
-export function newState(seats: Seat[], opts: { deck?: number } = {}, rng?: Rng): State {
+export function newState(seats: Seat[], opts: { deck?: number; need?: number } = {}, rng?: Rng): State {
   const ids = seats.map((s) => s.seat).sort((a, b) => a - b);
   const heroes: Record<number, Hero> = {};
   const kinds: Record<number, 'human' | 'bot'> = {};
@@ -203,6 +205,7 @@ export function newState(seats: Seat[], opts: { deck?: number } = {}, rng?: Rng)
     left: 0,
     deck,
     card: null,
+    need: opts.need ?? FALL_NEED_DEFAULT,
     log: ['Караван вышел из ворот.'],
     winner: null,
   };
@@ -262,7 +265,7 @@ function arrive(s: State, x: X, seat: number, rng: Rng): State {
     return st;
   }
   if (kind === 'fall') {
-    const need = CELL_RULES.fall.need;
+    const need = s.need;
     const ready = STATS.every((k) => h.st[k] >= need) && h.items.length === 0;
     x.ev.push({ type: 'fall', seat, ok: ready });
     if (ready) {

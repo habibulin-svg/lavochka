@@ -9,10 +9,12 @@
 import type { BotDef, GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { cardByNumber } from './data';
 import { apply, kindOf, neighbours, newState, result, stepTargets, type Action, type Event, type State } from './engine';
-import { CELL_RULES, CORONATION_TEXT, DECK_SIZE, START, STATS, WORLDS } from './rules';
+import { CELL_RULES, CORONATION_TEXT, DECK_SIZE, FALL_NEED_DEFAULT, START, STATS, WORLDS } from './rules';
 
 export interface KoronaView {
   seats: number[];
+  /** порог характеристик для Провала в этой партии */
+  need: number;
   turn: number;
   phase: State['phase'];
   die: number;
@@ -99,7 +101,7 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
   const here = kindOf(h.cell);
   const moved = s.left < s.die;
   if (moved && s.left > 0 && (here === 'lyceum' || here === 'meadow' || here === 'exchange' || here === 'hospital')) return { type: 'stop' };
-  const ready = STATS.every((k) => h.st[k] >= CELL_RULES.fall.need) && h.items.length === 0;
+  const ready = STATS.every((k) => h.st[k] >= s.need) && h.items.length === 0;
   if (ready) return { type: 'step', to: nextToward(s, seat, (n) => kindOf(n) === 'fall') ?? stepTargets(s, seat)[0] };
   if (level === 1) return { type: 'step', to: stepTargets(s, seat)[0] };
   // на обменном пункте меняем избыток на недостающее (движок: 2 из одной характеристики → 1 в другую)
@@ -108,8 +110,8 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
     const low = sorted[0];
     const high = sorted[sorted.length - 1];
     // сначала покупка за талеры (5 за характеристику), потом обмен избытка
-    if (h.st[low] < CELL_RULES.fall.need && h.thalers >= CELL_RULES.exchange.buyPrice) return { type: 'buyStat', stat: low };
-    if (h.st[low] < CELL_RULES.fall.need && h.st[high] >= 4) return { type: 'exchange', from: high, to: low };
+    if (h.st[low] < s.need && h.thalers >= CELL_RULES.exchange.buyPrice) return { type: 'buyStat', stat: low };
+    if (h.st[low] < s.need && h.st[high] >= 4) return { type: 'exchange', from: high, to: low };
   }
   // при обнулившемся ПУ или ПС идём в лазарет (безумных лечат бесплатно) или к лицею
   const weak = STATS.some((k) => h.st[k] <= 0);
@@ -128,7 +130,7 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
     const to = nextToward(s, seat, (n) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum');
     if (to != null) return { type: 'step', to };
   }
-  const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice && STATS.some((k) => h.st[k] < CELL_RULES.fall.need);
+  const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice && STATS.some((k) => h.st[k] < s.need);
   const want = canBuy
     ? (n: number) => kindOf(n) === 'exchange'
     : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow';
@@ -143,20 +145,24 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
 export const def: GameDef<State, Action, Event, KoronaView> = {
   id: 'korona',
   title: 'Корона Эмбера',
-  players: { min: 2, max: 6, default: 3 },
+  // первая версия — до четырёх игроков: на 78 клетках вшестером боты мешают друг другу,
+  // и партия не сходится за отведённые ходы (вернём, когда появятся предметы и выбор на клетках)
+  players: { min: 2, max: 4, default: 3 },
   seats: SEAT_LOOK,
 
 
   presets: [
-    { id: 'full', label: 'Корона Эмбера', hint: 'полная колода, долгий путь к трону', options: { deck: '200' } },
-    { id: 'short', label: 'Корона Эмбера. Короткая партия', hint: 'меньше карточек, быстрее к Эмберу', options: { deck: '60' } },
+    // пока в игре нет предметов, амулетов и выбора на клетках, порог Провала понижен до 8:
+    // с ними герой в оригинале растёт быстрее. Полный порог 13 вернётся вместе с ними.
+    { id: 'main', label: 'Корона Эмбера', hint: 'четыре мира, лабиринт и поединок принцев', options: { deck: '200', need: '4' } },
+    { id: 'short', label: 'Корона Эмбера. Короткая партия', hint: 'меньше карточек приключений', options: { deck: '60', need: '4' } },
   ],
 
   setup: (seats: SeatSpec[], opts: Options, rng: Rng): State => {
     resetBotMemory();
     return newState(
       seats.map((s) => ({ seat: s.seat, kind: s.kind === 'human' ? ('human' as const) : ('bot' as const), name: s.name, level: s.level })),
-      { deck: Number(opts.deck) || DECK_SIZE },
+      { deck: Number(opts.deck) || DECK_SIZE, need: Number(opts.need) || FALL_NEED_DEFAULT },
       rng,
     );
   },
@@ -176,6 +182,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
     const c = cardNum != null ? cardByNumber(cardNum) : null;
     return {
       seats: s.seats,
+      need: s.need,
       turn: s.turn,
       phase: s.phase,
       die: s.die,
@@ -209,6 +216,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         die: v.die,
         left: v.left,
         deck: [],
+        need: v.need,
         card: v.card?.num ?? null,
         log: v.log,
         winner: v.winner,
