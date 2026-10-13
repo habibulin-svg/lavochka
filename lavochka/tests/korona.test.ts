@@ -13,19 +13,6 @@ function act(s: State, a: Action): State | null {
   return r ? r.state : null;
 }
 
-/** Прокрутить партию до конца или до предела шагов. */
-function play(s: State, limit = 400, pick?: (s: State) => Action | null): State {
-  let cur = s;
-  for (let i = 0; i < limit && cur.winner == null; i++) {
-    const a = pick ? pick(cur) : auto(cur);
-    if (!a) break;
-    const next = act(cur, a);
-    if (!next) break;
-    cur = next;
-  }
-  return cur;
-}
-
 /** Простой бот: бросает, идёт к ближайшей клетке с ПРОВАЛОМ, иначе к соседу с меньшим номером. */
 function auto(s: State): Action | null {
   if (s.phase === 'roll') return { type: 'roll' };
