@@ -2,7 +2,8 @@
  * «Шайба» — то же поле-карточка, но с гонкой: у каждой дорожки свои ворота, финиш = гол (см. Race в core.ts). */
 import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
-import { finishOf, itemName, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type Sign, type State } from './core';
+import { answerMatches, diffForLevel, randomRiddle, ANSWER_CHANCE } from '../../words/riddles';
+import { finishOf, itemName, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type RiddleState, type Sign, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
@@ -16,12 +17,36 @@ export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOAR
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
 
+export const ANSWER_CHANCES = ANSWER_CHANCE;
+
+/** Копия «мешочков» состояния (боны, предметы, лишние ходы) нужной длины. */
+const bags = (s0: State, n: number) => ({
+  coins: (s0.coins ?? Array(n).fill(0)).slice(),
+  extra: (s0.extra ?? Array(n).fill(0)).slice(),
+});
+
 /** Победа места: и состояние, и событие. */
 const winNow = (s: State, ev: Event[], seat: number) => {
   s.winner = seat;
   ev.push({ type: 'win', seat });
   return { state: s, events: ev };
 };
+
+/** Конец хода: лишние ходы тратятся сразу, иначе ход переходит дальше (кто не пропускает). */
+function endTurn(s: State, seat: number, ev: Event[]) {
+  if (s.extra?.[seat]) {
+    s.extra[seat] = (s.extra[seat] ?? 0) - 1;
+    return { state: s, events: ev };
+  }
+  let t = next(s, seat);
+  for (let i = 0; i < 4 * s.seats.length && skipsOf(s, t) > 0; i++) {
+    s.skip[t] = skipsOf(s, t) - 1;
+    ev.push({ type: 'skip', seat: t });
+    t = next(s, t);
+  }
+  s.turn = t;
+  return { state: s, events: ev };
+}
 
 /** Счёт гонки с голами: «2 : 1» по дорожкам. */
 export const scoreText = (s: State, b: Board) => (s.goals ?? b.race?.tracks.map(() => 0) ?? []).join(' : ');
@@ -97,6 +122,59 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
     s.turn = next(s, seat);
     return { state: s, events: ev };
+  }
+  // «Лукоморье», поле 4: загадка остальным. Загадавший выбирает загадку (свою или из базы вопросов),
+  // остальные по очереди отвечают, потом он решает, отгадали ли. Никто не отгадал — награда.
+  if (a?.type === 'ask') {
+    if (phase !== 'ask' || !s0.riddle || s0.riddle.by !== seat) return null;
+    const text = String(a.text ?? '').trim().slice(0, 300);
+    if (!text) return null;
+    const answer = String(a.answer ?? '').trim().slice(0, 120);
+    const r: RiddleState = {
+      ...s0.riddle,
+      text,
+      answer: answer || null,
+      solved: [],
+      replies: [],
+      waiting: s0.seats.filter((x) => x !== seat),
+    };
+    const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), riddle: r, phase: r.waiting.length ? 'answer' : 'judge' };
+    s.turn = r.waiting[0] ?? seat;
+    return { state: s, events: [{ type: 'ask', seat, text }] };
+  }
+  if (a?.type === 'answer') {
+    if (phase !== 'answer' || !s0.riddle || !s0.riddle.waiting.includes(seat)) return null;
+    const text = String(a.text ?? '').trim().slice(0, 120);
+    // бот называет свою удачу, человек печатает ответ — сверяем с ответом загадки, если он известен
+    const solved = a.correct === true || (!!text && !!s0.riddle.answer && answerMatches(text, s0.riddle.answer));
+    const r: RiddleState = {
+      ...s0.riddle,
+      solved: solved ? [...s0.riddle.solved, seat] : s0.riddle.solved.slice(),
+      replies: !solved && text ? [...s0.riddle.replies, { seat, text }] : s0.riddle.replies.slice(),
+      waiting: s0.riddle.waiting.filter((x) => x !== seat),
+    };
+    const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), riddle: r, phase: r.waiting.length ? 'answer' : 'judge' };
+    const i = s0.seats.indexOf(seat);
+    const after = s0.seats.slice(i + 1).concat(s0.seats.slice(0, i));
+    s.turn = after.find((x) => r.waiting.includes(x)) ?? r.by;
+    return { state: s, events: [{ type: 'answer', seat, solved, ...(text ? { text } : {}) }] };
+  }
+  if (a?.type === 'judge') {
+    if (phase !== 'judge' || !s0.riddle || s0.riddle.by !== seat) return null;
+    const r = s0.riddle;
+    const solved = !!a.ok || r.solved.length > 0;
+    const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), riddle: null, phase: 'roll', ...bags(s0, s0.pos.length) };
+    const ev: Event[] = [{ type: 'riddle', seat, solved, ...(solved ? {} : { extra: r.extra, coins: r.coins }) }];
+    if (!solved && r.extra) {
+      s.extra![seat] = (s.extra![seat] ?? 0) + r.extra;
+      ev.push({ type: 'reward', seat, extra: r.extra });
+    }
+    if (!solved && r.coins) {
+      s.coins = (s.coins ?? s0.pos.map(() => 0)).slice();
+      s.coins[seat] = (s.coins[seat] ?? 0) + r.coins;
+      ev.push({ type: 'coins', seat, delta: r.coins, total: s.coins[seat] });
+    }
+    return endTurn(s, seat, ev);
   }
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
   if (board.race) return moveRace(s0, board, seat);
@@ -195,6 +273,22 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     } else if (sign.k === 'wait') {
       // на эту клетку пуговица встала — дальше её держит бросок (проверяется в начале хода)
       dest = to;
+    } else if (sign.k === 'riddle') {
+      // загадка остальным: игрок загадывает, остальные отвечают, он судит; никто не отгадал — награда
+      s.riddle = {
+        by: seat,
+        text: '',
+        answer: null,
+        solved: [],
+        replies: [],
+        waiting: s.seats.filter((x) => x !== seat),
+        extra: sign.extra,
+        coins: sign.coins,
+      };
+      ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+      s.pos[seat] = to;
+      s.phase = 'ask';
+      return { state: s, events: ev };
     } else if (sign.k === 'extra') {
       const n = sign.n ?? diceSum(sign.dice ?? 1);
       s.extra = many(s.extra, 0);
@@ -304,7 +398,14 @@ export const def: GameDef<State, Action, Event, State> = {
   showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, phase: 'roll', last: 4, winner: null }),
   toAct: (s) => (s.winner != null ? [] : [s.turn]),
   apply,
-  view: (s) => s,
+  // ответ на загадку видит только загадавший: остальным он не нужен и не должен попадаться на глаза
+  view: (s, seats) => {
+    const r = s.riddle;
+    if (!r?.answer) return s;
+    const mine = seats === 'all' ? null : seats;
+    if (!mine || mine.includes(r.by)) return s;
+    return { ...s, riddle: { ...r, answer: null } };
+  },
   result: (s) => {
     if (s.winner == null) return null;
     const b = boardOf(s.map);
@@ -320,8 +421,20 @@ export const def: GameDef<State, Action, Event, State> = {
   },
   bot: {
     levels: ['Лёгкий', 'Средний', 'Сложный'],
-    choose: (v) => {
+    choose: (v, seat, level, rng) => {
       const phase = v.phase ?? 'roll';
+      // загадка остальным: загадываем по своей сложности — лёгкий спрашивает простое, сложный трудное
+      if (phase === 'ask') {
+        const r = randomRiddle(diffForLevel(level), rng);
+        return { type: 'ask', text: r.q, answer: r.a };
+      }
+      // отвечаем со своей удачей: лёгкий 30 %, средний 60 %, сложный 80 %
+      if (phase === 'answer') {
+        const chance = ANSWER_CHANCE[Math.max(0, Math.min(2, Math.round(level) || 0))];
+        return { type: 'answer', correct: rng.int(100) < chance };
+      }
+      // загадавший-бот: отгадали — значит, награды нет
+      if (phase === 'judge') return { type: 'judge', ok: (v.riddle?.solved.length ?? 0) > 0 };
       // загадка: бот называет ответ по кругу (правильного варианта в правилах нет — выбирает игрок)
       if (phase === 'pick') {
         const g = boardOf(v.map).cells[v.pos[v.turn]]?.sign;
@@ -353,6 +466,19 @@ export const def: GameDef<State, Action, Event, State> = {
         return `⏩ ${name(ev.seat)} получает <b>${ev.n}</b> дополнительных хода.`;
       case 'goal':
         return `🥅 ${name(ev.seat)} забивает ${ev.goals}-ю шайбу (до ${ev.target}).`;
+      case 'ask':
+        return `🧩 ${name(ev.seat)} загадывает загадку: «${esc(ev.text)}»`;
+      case 'answer':
+        return ev.solved
+          ? `✅ ${name(ev.seat)} отгадывает загадку!`
+          : ev.text
+            ? `❔ ${name(ev.seat)} отвечает «${esc(ev.text)}» — не то.`
+            : `🤔 ${name(ev.seat)} не знает ответа.`;
+      case 'riddle':
+        if (ev.solved) return `🧩 Загадку отгадали — ${name(ev.seat)} остаётся ни с чем.`;
+        return `🧩 Загадку никто не отгадал: ${name(ev.seat)} получает${ev.extra ? ` ${ev.extra} лишних хода` : ''}${ev.extra && ev.coins ? ' и' : ''}${ev.coins ? ` ${ev.coins} бон` : ''}!`;
+      case 'reward':
+        return `⏩ ${name(ev.seat)} получает ${ev.extra} лишних хода за неотгаданную загадку.`;
       case 'win':
         return `🏁 ${name(ev.seat)} — победа!`;
     }

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, def } from '../src/games/hodilki/def';
 import { finishOf, type Board, type Event, type ItemId, type Sign, type State } from '../src/games/hodilki/core';
+import { riddlesOf } from '../src/words/riddles';
 
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
 
@@ -815,11 +816,69 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(b.state.winner).toBe(0);
   });
 
-  it('поле 4: кружок «?» даёт три лишних хода', () => {
+  it('поле 4: кружок «?» — загадка остальным, лишние ходы только за неотгаданную', () => {
     const rng = new RiggedRng(new SeededRng(19));
-    const q = bySign('luk4', (c) => c.sign?.k === 'extra');
-    const a = turn(stand('luk4', q - 1), 0, 1, rng);
-    expect(a.state.extra?.[0]).toBe(2); // один лишний ход уже потрачен на этот бросок
+    const q = bySign('luk4', (c) => c.sign?.k === 'riddle');
+    // встали на «?» — игрок должен загадать загадку
+    let a = turn(stand('luk4', q - 1), 0, 1, rng);
+    expect(a.state.phase).toBe('ask');
+    expect(a.state.riddle?.by).toBe(0);
+    expect(a.state.riddle?.extra).toBe(3);
+    // загадываем свою загадку с ответом
+    a = def.apply(a.state, 0, { type: 'ask', text: 'Без рук, без ног, а деревья гнёт', answer: 'ветер' }, rng)!;
+    expect(a.state.phase).toBe('answer');
+    expect(a.state.turn).toBe(1);
+    // Ленка отвечает мимо — ответ уходит загадавшему на суд
+    a = def.apply(a.state, 1, { type: 'answer', text: 'дождь' }, rng)!;
+    expect(a.state.riddle?.replies).toEqual([{ seat: 1, text: 'дождь' }]);
+    expect(a.state.phase).toBe('judge');
     expect(a.state.turn).toBe(0);
+    let b = def.apply(a.state, 0, { type: 'judge', ok: false }, rng)!;
+    expect(b.events.some((e) => e.type === 'reward')).toBe(true);
+    expect(b.state.extra?.[0]).toBe(2); // три лишних хода, один уже пошёл в дело
+    expect(b.state.turn).toBe(0);
+    expect(b.state.riddle).toBeNull();
+    // теперь Ленка называет верный ответ — движок сверяет сам, награды нет
+    let c = turn(stand('luk4', q - 1), 0, 1, rng);
+    c = def.apply(c.state, 0, { type: 'ask', text: 'Без рук, без ног, а деревья гнёт', answer: 'ветер' }, rng)!;
+    c = def.apply(c.state, 1, { type: 'answer', text: 'ВЕТЕР' }, rng)!;
+    expect(c.state.riddle?.solved).toEqual([1]);
+    c = def.apply(c.state, 0, { type: 'judge', ok: false }, rng)!;
+    expect(c.state.extra?.[0] ?? 0).toBe(0);
+    expect(c.state.turn).toBe(1);
+    // бот называет свою удачу сам
+    let d = turn(stand('luk4', q - 1), 0, 1, rng);
+    d = def.apply(d.state, 0, { type: 'ask', text: 'загадка', answer: 'ветер' }, rng)!;
+    d = def.apply(d.state, 1, { type: 'answer', correct: true }, rng)!;
+    expect(d.state.riddle?.solved).toEqual([1]);
+  });
+
+  it('поле 4: ответ на загадку виден только загадавшему', () => {
+    const rng = new RiggedRng(new SeededRng(23));
+    const q = bySign('luk4', (c) => c.sign?.k === 'riddle');
+    let s = turn(stand('luk4', q - 1), 0, 1, rng).state;
+    s = def.apply(s, 0, { type: 'ask', text: 'загадка', answer: 'ветер' }, rng)!.state;
+    expect((def.view(s, [1]) as State).riddle?.answer).toBeNull();
+    expect((def.view(s, [0]) as State).riddle?.answer).toBe('ветер');
+  });
+
+  it('поле 4: бот загадывает по своей сложности и отвечает со своей удачей', () => {
+    const rng = new RiggedRng(new SeededRng(29));
+    const q = bySign('luk4', (c) => c.sign?.k === 'riddle');
+    let s = turn(stand('luk4', q - 1), 0, 1, rng).state;
+    // лёгкий бот спрашивает простую загадку, сложный — трудную
+    const easy = def.bot.choose(s, 0, 0, rng) as { type: string; text?: string };
+    expect(easy.type).toBe('ask');
+    expect(riddlesOf(1).map((r) => r.q)).toContain(easy.text);
+    const hard = def.bot.choose(s, 0, 2, rng) as { type: string; text?: string };
+    expect(riddlesOf(3).map((r) => r.q)).toContain(hard.text);
+    // удача: лёгкий отвечает в 30 % случаев, сложный — в 80 %
+    s = def.apply(s, 0, { type: 'ask', text: 'загадка', answer: 'ветер' }, rng)!.state;
+    rng.rig([29]);
+    expect((def.bot.choose(s, 1, 0, rng) as { correct?: boolean }).correct).toBe(true);
+    rng.rig([30]);
+    expect((def.bot.choose(s, 1, 0, rng) as { correct?: boolean }).correct).toBe(false);
+    rng.rig([79]);
+    expect((def.bot.choose(s, 1, 2, rng) as { correct?: boolean }).correct).toBe(true);
   });
 });

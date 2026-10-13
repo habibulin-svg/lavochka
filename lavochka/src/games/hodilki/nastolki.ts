@@ -88,6 +88,16 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   }
   if (code.startsWith('wait:')) return { k: 'wait', die: +code.slice(5), text: routeText ?? 'ждёт нужной грани' };
   if (code.startsWith('takeItem:')) return { k: 'takeItem', item: code.slice(9) as ItemId, text: routeText ?? 'теряет предмет' };
+  if (code === 'riddle' || code.startsWith('riddle:')) {
+    // «загадка остальным»: riddle:<лишних ходов>+<бон>, что дать, если никто не отгадал
+    const [extra, coins] = code.slice(7).split('+');
+    return {
+      k: 'riddle',
+      ...(+extra ? { extra: +extra } : {}),
+      ...(+coins ? { coins: +coins } : {}),
+      text: routeText ?? 'загадывает загадку остальным',
+    };
+  }
   console.warn('кинь-двинь: неизвестный знак', code, label);
   return null;
 }

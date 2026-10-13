@@ -94,6 +94,15 @@
 .ks-q { font: 15px/1.35 'PT Serif', serif; }
 .ks-answers { display: flex; flex-wrap: wrap; gap: 6px; }
 .ks-answer { min-width: 44px; justify-content: center; }
+/* Загадка остальным («Лукоморье», поле 4): загадать, ответить, судить. */
+.ks-riddle { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); }
+.ks-riddle[hidden] { display: none; }
+.ks-rq { font: 15px/1.4 'PT Serif', serif; }
+.ks-rreplies { font: 13px/1.35 'PT Serif', serif; opacity: 0.85; }
+.ks-ranswer, .ks-rasker, .ks-rjudge { display: flex; flex-direction: column; gap: 6px; }
+.ks-ranswer[hidden], .ks-rasker[hidden], .ks-rjudge[hidden] { display: none; }
+.ks-rin, .ks-rown, .ks-rkey { padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.28); color: inherit; font: 14px 'PT Serif', serif; }
+.ks-rbtns { display: flex; flex-wrap: wrap; gap: 6px; }
 .ks-cube-hint { font-size: 13px; line-height: 1.35; opacity: 0.85; text-align: center; padding: 0 6px; }
 .ks-cube-hint[hidden] { display: none; }
 /* шайба команды — картинка с поля, а не пуговица */

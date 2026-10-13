@@ -28,6 +28,9 @@ export type Sign =
   | { k: 'pick'; question: string; options: string[]; to: number[]; text: string }
   /** Ждать нужной грани: пока на кубике не выпадет `die`, пуговица стоит (Лукоморье: «выход только шестёркой»). */
   | { k: 'wait'; die: number; text: string }
+  /** Загадка остальным («Лукоморье», поле 4, клетка «?»): игрок загадывает загадку, остальные отвечают.
+   * Никто не отгадал — загадавший получает `extra` лишних ходов и/или `coins` бон. */
+  | { k: 'riddle'; extra?: number; coins?: number; text: string }
   /** Забрать предмет у места (кикиморы отбирают аленький цветочек, разбойники — деньги и цветочек). */
   | { k: 'takeItem'; item: ItemId; text: string };
 
@@ -111,11 +114,14 @@ export interface State {
   /** Ветка пришла от развилки: на её конце ход не кончается, лишние очки идут дальше по пути. */
   routeFor?: (boolean | null)[];
   turn: number;
-  /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу, 'pick' — ждём ответа на загадку. Нет поля — старая партия, значит 'roll'. */
-  phase?: 'roll' | 'move' | 'pick';
+  /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу, 'pick' — ждём ответа на загадку,
+   * 'ask' — загадываем загадку остальным, 'answer' — остальные отвечают, 'judge' — загадавший решает, отгадали ли. */
+  phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge';
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;
+  /** Идёт загадка («Лукоморье», поле 4): кто загадал, что, кто уже ответил. */
+  riddle?: RiddleState | null;
   /** Гонка с голами: забитые шайбы по дорожкам. */
   goals?: number[];
   /** Гонка с голами: сколько голов до победы (настройка партии). */
@@ -134,7 +140,35 @@ export interface State {
   extra?: number[];
 }
 
-export type Action = { type: 'roll' } | { type: 'move' } | { type: 'pick'; pick: number };
+export type Action =
+  | { type: 'roll' }
+  | { type: 'move' }
+  | { type: 'pick'; pick: number }
+  /** Загадать загадку остальным: своя (текст и, если хотите, ответ) или из базы. */
+  | { type: 'ask'; text: string; answer?: string }
+  /** Ответ на загадку: человек печатает `text`, бот называет свою удачу (`correct`). */
+  | { type: 'answer'; text?: string; correct?: boolean }
+  /** Загадавший решил: кто-то отгадал (ok) или никто. */
+  | { type: 'judge'; ok: boolean };
+
+/** Загадка, которую загадывают остальным («Лукоморье», поле 4). */
+export interface RiddleState {
+  /** Кто загадал. */
+  by: number;
+  /** Текст загадки. */
+  text: string;
+  /** Правильный ответ: у загадки из базы он есть, у своей может не быть — тогда судит загадавший. Остальным не виден. */
+  answer?: string | null;
+  /** Кто уже отгадал. */
+  solved: number[];
+  /** Названные ответы (человек печатает, загадавший судит). */
+  replies: { seat: number; text: string }[];
+  /** Кого ещё ждём с ответом. */
+  waiting: number[];
+  /** Награда, если никто не отгадал. */
+  extra?: number;
+  coins?: number;
+}
 
 export type Event =
   | { type: 'roll'; seat: number; die: number; /** Что выпало: очки или клюшка (гонка с голами). */ kind?: 'pips' | 'red' | 'green'; card?: number; slot?: number }
@@ -149,6 +183,14 @@ export type Event =
   | { type: 'extra'; seat: number; n: number }
   /** Гонка с голами: шайба в воротах, возвращается в центр. */
   | { type: 'goal'; seat: number; track: number; goals: number; target: number }
+  /** Загадка: кто загадал и что. */
+  | { type: 'ask'; seat: number; text: string }
+  /** Ответ на загадку: отгадал или нет (text — что назвал). */
+  | { type: 'answer'; seat: number; solved: boolean; text?: string }
+  /** Итог загадки: отгадали (true) или нет; загадавший получает награду при solved = false. */
+  | { type: 'riddle'; seat: number; solved: boolean; extra?: number; coins?: number }
+  /** Награда за неотгаданную загадку (лишние ходы). */
+  | { type: 'reward'; seat: number; extra: number }
   | { type: 'win'; seat: number };
 
 export const SEATS = [
@@ -261,7 +303,17 @@ export const target = (s: State, b: Board, seat: number) => {
 export const skipsOf = (s: State, seat: number) => Number(s.skip[seat] || 0);
 
 export const signText = (g: Sign) =>
-  g.k === 'skip' ? (g.n && g.n > 1 ? `пропускает ${g.n} хода` : 'пропускает ход') : g.k === 'again' ? 'ходит ещё раз' : g.k === 'start' ? 'начинает сначала' : g.text;
+  g.k === 'skip'
+    ? g.n && g.n > 1
+      ? `пропускает ${g.n} хода`
+      : 'пропускает ход'
+    : g.k === 'again'
+      ? 'ходит ещё раз'
+      : g.k === 'start'
+        ? 'начинает сначала'
+        : g.k === 'riddle'
+          ? 'загадывает загадку остальным'
+          : g.text;
 
 export const signGood = (g: Sign) =>
   g.k === 'again' ||
