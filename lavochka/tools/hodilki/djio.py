@@ -149,6 +149,19 @@ def main():
         'cells': cells,
     }
     json.dump(out, open(os.path.join(SRC, 'graph.json'), 'w', encoding='utf8'), ensure_ascii=False, indent=1)
+    # данные для игры: клетки с типом и связями (карточки, снаряжение и звери лежат рядом, в rules.json)
+    game = {
+        'w': W,
+        'h': H,
+        'cells': [
+            {'n': c['n'], 'x': c['x'], 'y': c['y'], 'kind': c['type'], 'next': c['next']}
+            for c in cells
+        ],
+    }
+    dst = os.path.join(ROOT, 'lavochka', 'src', 'games', 'djio')
+    os.makedirs(dst, exist_ok=True)
+    json.dump(game, open(os.path.join(dst, 'data.json'), 'w', encoding='utf8'), ensure_ascii=False)
+    print('данные игры: %s' % os.path.join(dst, 'data.json'))
     # проверка глазами: линии связей поверх уменьшенного поля
     chk = im.copy()
     dr = ImageDraw.Draw(chk)
