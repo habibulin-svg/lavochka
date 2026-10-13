@@ -212,6 +212,12 @@ export function createView(): GameView<State, Event> {
       card!.hidden = true;
       note!.hidden = true;
       for (const ev of events) {
+        // звуки событий: шаг, заточение, гибель, победа
+        if (ev.type === 'step') Sound.step();
+        if (ev.type === 'hold' || ev.type === 'jail') Sound.nomove();
+        if (ev.type === 'free') Sound.jump();
+        if (ev.type === 'death') Sound.nomove();
+        if (ev.type === 'win') Sound.win();
         if (ev.type === 'step') shown[ev.seat] = ev.to;
         const text = describe(ev, (s) => nameOf(s));
         if (!text) continue;

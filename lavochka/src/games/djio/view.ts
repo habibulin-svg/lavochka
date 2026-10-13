@@ -3,6 +3,7 @@
 import { BoardCam, type CamPoint } from '../../core/boardcam';
 import { DiceTray } from '../../core/dice';
 import { sleep } from '../../core/util';
+import { Sound } from '../../core/audio';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import {
@@ -265,6 +266,13 @@ export function createView(): GameView<State, Event> {
           if (tray) await tray.roll([ev.die], speed);
           continue;
         }
+        // звуки событий: шаг, находка, съёмка, выстрел, беда, победа
+        if (ev.type === 'step') Sound.step();
+        if (ev.type === 'card' || ev.type === 'buy' || ev.type === 'item') Sound.place();
+        if (ev.type === 'film') Sound.jump();
+        if (ev.type === 'shoot' || ev.type === 'attack') Sound.diceRoll(0.35);
+        if (ev.type === 'die' || ev.type === 'cross' || ev.type === 'swamp') Sound.nomove();
+        if (ev.type === 'win' || ev.type === 'home') Sound.win();
         if (ev.type === 'step') shown[ev.seat] = ev.to;
         const text = describe(ev, (s) => nameOf(s));
         if (!text) continue;
