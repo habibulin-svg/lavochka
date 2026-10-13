@@ -1,0 +1,30 @@
+﻿/* «Чудовище Джио-Джанги»: поле под камерой, поверх — точки ленты, пуговицы и подсказки шагов. */
+.dj-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.dj-board { position: relative; transform-origin: 0 0; }
+.dj-board.ready .dj-map { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+.dj-map { display: block; width: 100%; height: 100%; border-radius: 8px; user-select: none; }
+.dj-over { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dj-dot { fill: rgba(255, 255, 255, 0.06); stroke: rgba(0, 0, 0, 0.35); stroke-width: 3; }
+.dj-card-kind { stroke: rgba(240, 200, 60, 0.9); }
+.dj-dot.dj-card { stroke: rgba(250, 205, 60, 0.75); }
+.dj-dot.dj-swamp { stroke: rgba(70, 190, 90, 0.8); }
+.dj-dot.dj-danger { stroke: rgba(220, 60, 50, 0.8); }
+.dj-dot.dj-cross { stroke: rgba(80, 140, 230, 0.85); }
+.dj-danger { fill: none; stroke: rgba(255, 90, 70, 0.35); stroke-width: 8; stroke-dasharray: 14 10; }
+.dj-move { fill: rgba(40, 200, 90, 0.25); stroke: #4ee08a; stroke-width: 4; cursor: pointer; }
+.dj-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3)); }
+.dj-mark { font: 40px serif; }
+.dj-panel { display: flex; flex-direction: column; gap: 8px; }
+.dj-panel.dj-hidden .dj-btns { display: none; }
+.dj-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }
+.dj-tray { height: 96px; }
+.dj-btns { display: flex; flex-direction: column; gap: 6px; max-height: 44vh; overflow: auto; }
+.dj-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(22, 30, 46, 0.88); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
+.dj-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(360px, 86%);
+  padding: 14px 16px 10px; border-radius: 14px; text-align: center; cursor: pointer;
+  background: linear-gradient(#fdf6e3, #f3e6c8); border: 3px solid #caa96a; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); }
+.dj-card-t { font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
+.dj-card-s { margin-top: 6px; font: 15px/1.4 'PT Serif', serif; color: #33240f; }
+.dj-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #8a7550; }

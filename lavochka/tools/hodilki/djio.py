@@ -32,7 +32,7 @@ def ribbon_mask(im):
     grow = white.copy()
     # лента нарисована отдельными белыми квадратиками с чёрной обводкой: расширяем маску,
     # чтобы волна перешагивала обводку между квадратиками (пути друг от друга далеко — не склеятся)
-    for _ in range(4):
+    for _ in range(6):
         g = grow.copy()
         g[1:, :] |= grow[:-1, :]
         g[:-1, :] |= grow[1:, :]
@@ -133,6 +133,48 @@ def main():
                     break
             if not between:
                 edges.add(frozenset((i, j)))
+    # сшивка разорванных кусков: лента рвётся у кружков, домиков и обводок — соединяем куски
+    # по ближайшим клеткам разных кусков (каждый мост печатаем, чтобы можно было проверить глазами)
+    def components(edges):
+        par = list(range(len(pts)))
+
+        def find(x):
+            while par[x] != x:
+                par[x] = par[par[x]]
+                x = par[x]
+            return x
+
+        for e in edges:
+            a, b = sorted(e)
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                par[ra] = rb
+        return {i: find(i) for i in range(len(pts))}
+
+    bridges = []
+    while True:
+        comp = components(edges)
+        groups = {}
+        for i, r in comp.items():
+            groups.setdefault(r, []).append(i)
+        if len(groups) <= 1:
+            break
+        # самый большой кусок — главный; к нему и подшиваем остальные
+        main = max(groups.values(), key=len)
+        best = None
+        for r, cells in groups.items():
+            if cells is main:
+                continue
+            for i in cells:
+                for j in main:
+                    d = (pts[i]['x'] - pts[j]['x']) ** 2 + (pts[i]['y'] - pts[j]['y']) ** 2
+                    if best is None or d < best[0]:
+                        best = (d, i, j)
+        if not best:
+            break
+        _, i, j = best
+        edges.add(frozenset((i, j)))
+        bridges.append((pts[i]['n'], pts[j]['n'], round(best[0] ** 0.5)))
     # клетки и соседи
     adj = {i: [] for i in range(len(pts))}
     for e in edges:
@@ -175,6 +217,7 @@ def main():
     deg = {}
     for i in range(len(pts)):
         deg[len(adj[i])] = deg.get(len(adj[i]), 0) + 1
+    print('мостов добавлено %d: %s' % (len(bridges), bridges[:12]))
     print('точек %d, связей %d, без связей %d (номера: %s)' % (len(pts), len(edges), len(lone), lone[:20]))
     print('сколько точек с какой степенью:', dict(sorted(deg.items())))
 

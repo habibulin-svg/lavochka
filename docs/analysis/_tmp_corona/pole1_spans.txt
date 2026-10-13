@@ -1,0 +1,1280 @@
+IMAGE block bbox=(398.0, 1923.0, -775.0, -586.5)
+IMAGE block bbox=(3900.9, 1923.0, 240.7, 969.1)
+IMAGE block bbox=(1101.0, 1946.1, -775.0, -938.0)
+IMAGE block bbox=(2203.7, 1452.2, 577.9, 341.6)
+IMAGE block bbox=(2467.3, 1663.3, 794.0, 130.2)
+IMAGE block bbox=(639.0, 1452.2, 577.9, 141.2)
+IMAGE block bbox=(398.0, 1663.3, 658.8, 141.7)
+IMAGE block bbox=(1543.2, 820.8, 1582.9, 1484.1)
+IMAGE block bbox=(1543.2, 1725.0, 1582.9, 1946.1)
+IMAGE block bbox=(157.1, 1200.6, 658.8, 2018.3)
+IMAGE block bbox=(157.1, 1243.8, 2120.1, 2206.9)
+IMAGE block bbox=(157.1, 1515.8, 1830.8, 2206.9)
+IMAGE block bbox=(1543.2, 1200.6, 2969.1, 2016.4)
+IMAGE block bbox=(1552.1, 1275.6, 2969.1, 2206.9)
+IMAGE block bbox=(1536.0, 1734.5, 2969.1, 2206.9)
+IMAGE block bbox=(423.4, 1958.8, 2715.4, 2206.9)
+IMAGE block bbox=(157.1, 1804.6, 2067.6, 2206.9)
+IMAGE block bbox=(157.1, 1814.3, 1132.4, 2206.9)
+IMAGE block bbox=(157.1, 1804.6, 1397.8, 2206.9)
+IMAGE block bbox=(1322.1, 1484.1, 1804.0, 1725.0)
+IMAGE block bbox=(1582.9, 358.7, 1804.0, 579.8)
+IMAGE block bbox=(2025.1, 1946.1, 2246.2, 2187.1)
+IMAGE block bbox=(1804.0, 358.7, 2025.1, 579.8)
+IMAGE block bbox=(2025.1, 358.7, 2246.2, 579.8)
+IMAGE block bbox=(2246.2, 358.7, 2467.3, 579.8)
+IMAGE block bbox=(2487.2, 358.7, 2708.3, 579.8)
+IMAGE block bbox=(2487.2, 820.8, 2708.3, 1041.9)
+IMAGE block bbox=(2487.2, 1041.9, 2708.3, 1263.0)
+IMAGE block bbox=(2487.2, 1263.0, 2708.3, 1484.1)
+IMAGE block bbox=(2487.2, 1484.1, 2708.3, 1705.2)
+IMAGE block bbox=(2487.2, 1725.0, 2708.3, 1946.1)
+IMAGE block bbox=(2246.2, 1725.0, 2467.3, 1946.1)
+IMAGE block bbox=(1804.0, 1725.0, 2025.1, 1946.1)
+IMAGE block bbox=(1582.9, 1725.0, 1804.0, 1946.1)
+IMAGE block bbox=(1804.0, 1484.1, 2025.1, 1705.2)
+IMAGE block bbox=(2246.2, 1484.1, 2467.3, 1705.2)
+IMAGE block bbox=(2246.2, 1263.0, 2467.3, 1484.1)
+IMAGE block bbox=(2246.2, 1041.9, 2467.3, 1263.0)
+IMAGE block bbox=(2246.2, 820.8, 2467.3, 1041.9)
+IMAGE block bbox=(2246.2, 599.7, 2467.3, 820.8)
+IMAGE block bbox=(2025.1, 599.7, 2246.2, 820.8)
+IMAGE block bbox=(1804.0, 599.7, 2025.1, 820.8)
+IMAGE block bbox=(1582.9, 1041.9, 1804.0, 1263.0)
+IMAGE block bbox=(1582.9, 1263.0, 1804.0, 1484.1)
+IMAGE block bbox=(1582.9, 820.8, 1804.0, 1041.9)
+IMAGE block bbox=(2025.1, 1484.1, 2246.2, 1705.2)
+IMAGE block bbox=(879.9, 820.8, 1322.1, 1263.0)
+IMAGE block bbox=(417.9, 358.7, 639.0, 579.8)
+IMAGE block bbox=(417.9, 1041.9, 639.0, 1263.0)
+IMAGE block bbox=(658.8, 1725.0, 879.9, 1946.1)
+IMAGE block bbox=(1101.0, 1725.0, 1322.1, 1946.1)
+IMAGE block bbox=(1322.1, 1725.0, 1543.2, 1946.1)
+IMAGE block bbox=(1322.1, 820.8, 1543.2, 1041.9)
+IMAGE block bbox=(1322.1, 1263.0, 1543.2, 1484.1)
+IMAGE block bbox=(1322.1, 1041.9, 1543.2, 1263.0)
+IMAGE block bbox=(1804.0, 1263.0, 2246.2, 1484.1)
+IMAGE block bbox=(658.8, 599.7, 879.9, 820.8)
+IMAGE block bbox=(879.9, 599.7, 1101.0, 820.8)
+IMAGE block bbox=(1101.0, 599.7, 1322.1, 820.8)
+IMAGE block bbox=(658.8, 820.8, 879.9, 1041.9)
+IMAGE block bbox=(658.8, 1041.9, 879.9, 1263.0)
+IMAGE block bbox=(658.8, 1263.0, 879.9, 1484.1)
+IMAGE block bbox=(658.8, 1484.1, 879.9, 1705.2)
+IMAGE block bbox=(879.9, 1484.1, 1101.0, 1705.2)
+IMAGE block bbox=(1101.0, 1484.1, 1322.1, 1705.2)
+IMAGE block bbox=(879.9, 1263.0, 1322.1, 1484.1)
+IMAGE block bbox=(417.9, 1725.0, 639.0, 1946.1)
+IMAGE block bbox=(417.9, 1484.1, 639.0, 1705.2)
+IMAGE block bbox=(417.9, 1263.0, 639.0, 1484.1)
+IMAGE block bbox=(417.9, 820.8, 639.0, 1041.9)
+IMAGE block bbox=(417.9, 599.7, 639.0, 820.8)
+IMAGE block bbox=(658.8, 358.7, 879.9, 579.8)
+IMAGE block bbox=(1322.1, 358.7, 1543.2, 579.8)
+IMAGE block bbox=(1101.0, 358.7, 1322.1, 579.8)
+IMAGE block bbox=(879.9, 358.7, 1101.0, 579.8)
+IMAGE block bbox=(417.9, 137.6, 639.0, 358.7)
+IMAGE block bbox=(1804.0, 820.8, 2246.2, 1263.0)
+IMAGE block bbox=(2487.2, 137.6, 2708.3, 358.7)
+IMAGE block bbox=(2487.2, 599.7, 2708.3, 820.8)
+IMAGE block bbox=(1322.1, 579.8, 1804.0, 820.8)
+IMAGE block bbox=(2728.1, 1263.0, 2949.2, 1484.1)
+IMAGE block bbox=(2728.1, 1484.1, 2949.2, 1705.2)
+IMAGE block bbox=(2728.1, 1725.0, 2949.2, 1946.1)
+IMAGE block bbox=(2728.1, 1966.0, 2949.2, 2187.1)
+IMAGE block bbox=(2487.2, 1966.0, 2708.3, 2187.1)
+IMAGE block bbox=(2246.2, 1966.0, 2467.3, 2187.1)
+IMAGE block bbox=(1804.0, 1966.0, 2025.1, 2187.1)
+IMAGE block bbox=(1582.9, 1966.0, 1804.0, 2187.1)
+IMAGE block bbox=(1322.1, 1966.0, 1543.2, 2187.1)
+IMAGE block bbox=(1101.0, 1966.0, 1322.1, 2187.1)
+IMAGE block bbox=(879.9, 1946.1, 1101.0, 2187.1)
+IMAGE block bbox=(658.8, 1966.0, 879.9, 2187.1)
+IMAGE block bbox=(417.9, 1966.0, 639.0, 2187.1)
+IMAGE block bbox=(176.9, 1966.0, 398.0, 2187.1)
+IMAGE block bbox=(176.9, 1725.0, 398.0, 1946.1)
+IMAGE block bbox=(176.9, 1484.1, 398.0, 1705.2)
+IMAGE block bbox=(176.9, 1263.0, 398.0, 1484.1)
+IMAGE block bbox=(879.9, 1725.0, 1101.0, 1965.3)
+IMAGE block bbox=(2025.1, 1725.0, 2246.2, 1966.0)
+IMAGE block bbox=(1543.2, 358.7, 1582.9, 579.8)
+IMAGE block bbox=(765.9, 274.9, 924.2, 312.7)
+IMAGE block bbox=(756.7, 265.0, 933.5, 317.9)
+IMAGE block bbox=(697.2, 113.9, 992.9, 260.3)
+IMAGE block bbox=(892.0, 154.2, 897.2, 157.6)
+IMAGE block bbox=(883.3, 151.0, 890.0, 157.6)
+IMAGE block bbox=(874.6, 150.9, 881.3, 157.6)
+IMAGE block bbox=(866.0, 150.9, 872.7, 157.6)
+IMAGE block bbox=(857.3, 152.0, 864.0, 157.6)
+IMAGE block bbox=(852.1, 155.7, 855.3, 157.6)
+IMAGE block bbox=(831.3, 154.2, 837.2, 157.6)
+IMAGE block bbox=(822.6, 151.2, 829.3, 157.6)
+IMAGE block bbox=(813.9, 150.9, 820.6, 157.6)
+IMAGE block bbox=(805.3, 150.9, 812.0, 157.6)
+IMAGE block bbox=(796.6, 151.7, 803.3, 157.6)
+IMAGE block bbox=(792.3, 156.0, 794.6, 157.6)
+IMAGE block bbox=(900.6, 160.4, 906.3, 166.2)
+IMAGE block bbox=(892.0, 159.4, 898.7, 166.2)
+IMAGE block bbox=(883.3, 159.4, 890.0, 166.2)
+IMAGE block bbox=(874.6, 159.4, 881.3, 166.2)
+IMAGE block bbox=(866.0, 159.4, 872.7, 166.2)
+IMAGE block bbox=(857.3, 159.4, 864.0, 166.2)
+IMAGE block bbox=(848.6, 159.4, 855.3, 166.2)
+IMAGE block bbox=(839.9, 159.5, 846.6, 166.2)
+IMAGE block bbox=(831.3, 159.4, 838.0, 166.2)
+IMAGE block bbox=(822.6, 159.4, 829.3, 166.2)
+IMAGE block bbox=(813.9, 159.4, 820.6, 166.2)
+IMAGE block bbox=(805.3, 159.4, 812.0, 166.2)
+IMAGE block bbox=(796.6, 159.4, 803.3, 166.2)
+IMAGE block bbox=(787.9, 159.4, 794.6, 166.2)
+IMAGE block bbox=(783.3, 163.2, 785.9, 166.1)
+IMAGE block bbox=(952.7, 171.8, 956.0, 174.7)
+IMAGE block bbox=(944.0, 167.9, 950.7, 174.7)
+IMAGE block bbox=(935.3, 167.9, 942.0, 174.7)
+IMAGE block bbox=(926.6, 167.9, 933.4, 174.7)
+IMAGE block bbox=(918.0, 167.9, 924.7, 174.7)
+IMAGE block bbox=(909.3, 169.4, 916.0, 174.7)
+IMAGE block bbox=(900.6, 167.9, 907.3, 174.7)
+IMAGE block bbox=(892.0, 167.9, 898.7, 174.7)
+IMAGE block bbox=(883.3, 167.9, 890.0, 174.7)
+IMAGE block bbox=(874.6, 167.9, 881.3, 174.7)
+IMAGE block bbox=(866.0, 167.9, 872.7, 174.7)
+IMAGE block bbox=(857.3, 167.9, 864.0, 174.7)
+IMAGE block bbox=(848.6, 167.9, 855.3, 174.7)
+IMAGE block bbox=(839.9, 167.9, 846.6, 174.7)
+IMAGE block bbox=(831.3, 167.9, 838.0, 174.7)
+IMAGE block bbox=(822.6, 167.9, 829.3, 174.7)
+IMAGE block bbox=(813.9, 167.9, 820.6, 174.7)
+IMAGE block bbox=(805.3, 167.9, 812.0, 174.7)
+IMAGE block bbox=(796.6, 167.9, 803.3, 174.7)
+IMAGE block bbox=(787.9, 167.9, 794.6, 174.7)
+IMAGE block bbox=(779.3, 167.9, 785.9, 174.7)
+IMAGE block bbox=(770.6, 168.6, 777.3, 174.7)
+IMAGE block bbox=(761.9, 167.9, 768.6, 174.7)
+IMAGE block bbox=(753.2, 167.9, 759.9, 174.7)
+IMAGE block bbox=(744.6, 167.9, 751.3, 174.7)
+IMAGE block bbox=(735.9, 168.6, 742.6, 174.7)
+IMAGE block bbox=(961.3, 181.0, 962.7, 183.2)
+IMAGE block bbox=(952.7, 176.4, 959.4, 183.2)
+IMAGE block bbox=(944.0, 176.4, 950.7, 183.2)
+IMAGE block bbox=(935.3, 176.4, 942.0, 183.2)
+IMAGE block bbox=(926.6, 176.4, 933.4, 183.2)
+IMAGE block bbox=(918.0, 176.4, 924.7, 183.2)
+IMAGE block bbox=(909.3, 176.4, 916.0, 183.2)
+IMAGE block bbox=(900.6, 176.4, 907.3, 183.2)
+IMAGE block bbox=(892.0, 176.4, 898.7, 183.2)
+IMAGE block bbox=(883.3, 176.4, 890.0, 183.2)
+IMAGE block bbox=(874.6, 176.4, 881.3, 183.2)
+IMAGE block bbox=(866.0, 176.4, 872.7, 183.2)
+IMAGE block bbox=(857.3, 176.4, 864.0, 183.2)
+IMAGE block bbox=(848.6, 176.4, 855.3, 183.2)
+IMAGE block bbox=(839.9, 176.4, 846.6, 183.2)
+IMAGE block bbox=(831.3, 176.4, 838.0, 183.2)
+IMAGE block bbox=(822.6, 176.4, 829.3, 183.2)
+IMAGE block bbox=(813.9, 176.4, 820.6, 183.2)
+IMAGE block bbox=(805.3, 176.4, 812.0, 183.2)
+IMAGE block bbox=(796.6, 176.4, 803.3, 183.2)
+IMAGE block bbox=(787.9, 176.4, 794.6, 183.2)
+IMAGE block bbox=(779.2, 176.4, 785.9, 183.2)
+IMAGE block bbox=(770.6, 176.4, 777.3, 183.2)
+IMAGE block bbox=(761.9, 176.4, 768.6, 183.2)
+IMAGE block bbox=(753.2, 176.4, 759.9, 183.2)
+IMAGE block bbox=(744.6, 176.4, 751.3, 183.2)
+IMAGE block bbox=(735.9, 176.4, 742.6, 183.2)
+IMAGE block bbox=(727.2, 176.4, 733.9, 183.2)
+IMAGE block bbox=(961.3, 184.9, 966.8, 191.7)
+IMAGE block bbox=(952.7, 184.9, 959.4, 191.7)
+IMAGE block bbox=(944.0, 184.9, 950.7, 191.7)
+IMAGE block bbox=(935.3, 184.9, 942.0, 191.7)
+IMAGE block bbox=(926.6, 184.9, 933.4, 191.7)
+IMAGE block bbox=(918.0, 184.9, 924.7, 191.7)
+IMAGE block bbox=(909.3, 184.9, 916.0, 191.7)
+IMAGE block bbox=(900.6, 184.9, 907.3, 191.7)
+IMAGE block bbox=(892.0, 184.9, 898.7, 191.7)
+IMAGE block bbox=(883.3, 184.9, 890.0, 191.7)
+IMAGE block bbox=(874.6, 184.9, 881.3, 191.7)
+IMAGE block bbox=(866.0, 184.9, 872.7, 191.7)
+IMAGE block bbox=(857.3, 184.9, 864.0, 191.7)
+IMAGE block bbox=(848.6, 184.9, 855.3, 191.7)
+IMAGE block bbox=(839.9, 184.9, 846.6, 191.7)
+IMAGE block bbox=(831.3, 184.9, 838.0, 191.7)
+IMAGE block bbox=(822.6, 184.9, 829.3, 191.7)
+IMAGE block bbox=(813.9, 184.9, 820.6, 191.7)
+IMAGE block bbox=(805.3, 184.9, 812.0, 191.7)
+IMAGE block bbox=(796.6, 184.9, 803.3, 191.7)
+IMAGE block bbox=(787.9, 184.9, 794.6, 191.7)
+IMAGE block bbox=(779.2, 184.9, 785.9, 191.7)
+IMAGE block bbox=(770.6, 184.9, 777.3, 191.7)
+IMAGE block bbox=(761.9, 184.9, 768.6, 191.7)
+IMAGE block bbox=(753.2, 184.9, 759.9, 191.7)
+IMAGE block bbox=(744.6, 184.9, 751.3, 191.7)
+IMAGE block bbox=(735.9, 184.9, 742.6, 191.7)
+IMAGE block bbox=(727.2, 184.9, 733.9, 191.7)
+IMAGE block bbox=(722.7, 186.0, 725.3, 191.6)
+IMAGE block bbox=(961.3, 193.4, 968.0, 200.2)
+IMAGE block bbox=(952.7, 193.4, 959.4, 200.2)
+IMAGE block bbox=(944.0, 193.4, 950.7, 200.2)
+IMAGE block bbox=(935.3, 193.4, 942.0, 200.2)
+IMAGE block bbox=(926.6, 193.4, 933.4, 200.2)
+IMAGE block bbox=(918.0, 193.4, 924.7, 200.2)
+IMAGE block bbox=(909.3, 193.4, 916.0, 200.2)
+IMAGE block bbox=(900.6, 193.4, 907.3, 200.2)
+IMAGE block bbox=(892.0, 193.4, 898.7, 200.2)
+IMAGE block bbox=(883.3, 193.4, 890.0, 200.2)
+IMAGE block bbox=(874.6, 193.4, 881.3, 200.2)
+IMAGE block bbox=(866.0, 193.4, 872.7, 200.2)
+IMAGE block bbox=(857.3, 193.4, 864.0, 200.2)
+IMAGE block bbox=(848.6, 193.4, 855.3, 200.2)
+IMAGE block bbox=(839.9, 193.4, 846.6, 200.2)
+IMAGE block bbox=(831.3, 193.4, 838.0, 200.2)
+IMAGE block bbox=(822.6, 193.4, 829.3, 200.2)
+IMAGE block bbox=(813.9, 193.4, 820.6, 200.2)
+IMAGE block bbox=(805.3, 193.4, 812.0, 200.2)
+IMAGE block bbox=(796.6, 193.4, 803.3, 200.2)
+IMAGE block bbox=(787.9, 193.4, 794.6, 200.2)
+IMAGE block bbox=(779.2, 193.4, 785.9, 200.2)
+IMAGE block bbox=(770.6, 193.4, 777.3, 200.2)
+IMAGE block bbox=(761.9, 193.4, 768.6, 200.2)
+IMAGE block bbox=(753.2, 193.4, 759.9, 200.2)
+IMAGE block bbox=(744.6, 193.4, 751.3, 200.2)
+IMAGE block bbox=(735.9, 193.4, 742.6, 200.2)
+IMAGE block bbox=(727.2, 193.4, 733.9, 200.2)
+IMAGE block bbox=(721.5, 193.4, 725.3, 200.2)
+IMAGE block bbox=(961.3, 202.0, 967.2, 208.7)
+IMAGE block bbox=(952.7, 202.0, 959.4, 208.7)
+IMAGE block bbox=(944.0, 202.0, 950.7, 208.7)
+IMAGE block bbox=(935.3, 202.0, 942.0, 208.7)
+IMAGE block bbox=(926.6, 202.0, 933.4, 208.7)
+IMAGE block bbox=(918.0, 202.0, 924.7, 208.7)
+IMAGE block bbox=(909.3, 202.0, 916.0, 208.7)
+IMAGE block bbox=(900.6, 202.0, 907.3, 208.7)
+IMAGE block bbox=(892.0, 202.0, 898.7, 208.7)
+IMAGE block bbox=(883.3, 202.0, 890.0, 208.7)
+IMAGE block bbox=(874.6, 202.0, 881.3, 208.7)
+IMAGE block bbox=(866.0, 202.0, 872.7, 208.7)
+IMAGE block bbox=(857.3, 202.0, 864.0, 208.7)
+IMAGE block bbox=(848.6, 202.0, 855.3, 208.7)
+IMAGE block bbox=(839.9, 202.0, 846.6, 208.7)
+IMAGE block bbox=(831.3, 202.0, 838.0, 208.7)
+IMAGE block bbox=(822.6, 202.0, 829.3, 208.7)
+IMAGE block bbox=(813.9, 202.0, 820.6, 208.7)
+IMAGE block bbox=(805.3, 202.0, 812.0, 208.7)
+IMAGE block bbox=(796.6, 202.0, 803.3, 208.7)
+IMAGE block bbox=(787.9, 202.0, 794.6, 208.7)
+IMAGE block bbox=(779.2, 202.0, 785.9, 208.7)
+IMAGE block bbox=(770.6, 202.0, 777.3, 208.7)
+IMAGE block bbox=(761.9, 202.0, 768.6, 208.7)
+IMAGE block bbox=(753.2, 202.0, 759.9, 208.7)
+IMAGE block bbox=(744.6, 202.0, 751.3, 208.7)
+IMAGE block bbox=(735.9, 202.0, 742.6, 208.7)
+IMAGE block bbox=(727.2, 202.0, 733.9, 208.7)
+IMAGE block bbox=(722.4, 202.0, 725.3, 208.7)
+IMAGE block bbox=(961.3, 210.5, 965.6, 217.3)
+IMAGE block bbox=(952.7, 210.5, 959.4, 217.3)
+IMAGE block bbox=(944.0, 210.5, 950.7, 217.3)
+IMAGE block bbox=(935.3, 210.5, 942.0, 217.3)
+IMAGE block bbox=(926.6, 210.5, 933.4, 217.3)
+IMAGE block bbox=(918.0, 210.5, 924.7, 217.3)
+IMAGE block bbox=(909.3, 210.5, 916.0, 217.3)
+IMAGE block bbox=(900.6, 210.5, 907.3, 217.3)
+IMAGE block bbox=(892.0, 210.5, 898.7, 217.3)
+IMAGE block bbox=(883.3, 210.5, 890.0, 217.3)
+IMAGE block bbox=(874.6, 210.5, 881.3, 217.3)
+IMAGE block bbox=(866.0, 210.5, 872.7, 217.3)
+IMAGE block bbox=(857.3, 210.5, 864.0, 217.3)
+IMAGE block bbox=(848.6, 210.5, 855.3, 217.3)
+IMAGE block bbox=(839.9, 210.5, 846.6, 217.3)
+IMAGE block bbox=(831.3, 210.5, 838.0, 217.3)
+IMAGE block bbox=(822.6, 210.5, 829.3, 217.3)
+IMAGE block bbox=(813.9, 210.5, 820.6, 217.3)
+IMAGE block bbox=(805.3, 210.5, 812.0, 217.3)
+IMAGE block bbox=(796.6, 210.5, 803.3, 217.3)
+IMAGE block bbox=(787.9, 210.5, 794.6, 217.3)
+IMAGE block bbox=(779.2, 210.5, 785.9, 217.3)
+IMAGE block bbox=(770.6, 210.5, 777.3, 217.3)
+IMAGE block bbox=(761.9, 210.5, 768.6, 217.3)
+IMAGE block bbox=(753.2, 210.5, 759.9, 217.3)
+IMAGE block bbox=(744.6, 210.5, 751.3, 217.3)
+IMAGE block bbox=(735.9, 210.5, 742.6, 217.3)
+IMAGE block bbox=(727.2, 210.5, 733.9, 217.3)
+IMAGE block bbox=(723.9, 210.5, 725.3, 216.2)
+IMAGE block bbox=(961.3, 219.0, 963.6, 225.8)
+IMAGE block bbox=(952.7, 219.0, 959.4, 225.8)
+IMAGE block bbox=(944.0, 219.0, 950.7, 225.8)
+IMAGE block bbox=(935.3, 219.0, 942.0, 225.8)
+IMAGE block bbox=(926.6, 219.0, 933.4, 225.8)
+IMAGE block bbox=(918.0, 219.0, 924.7, 225.8)
+IMAGE block bbox=(909.3, 219.0, 916.0, 225.8)
+IMAGE block bbox=(900.6, 219.0, 907.3, 225.8)
+IMAGE block bbox=(892.0, 219.0, 898.7, 225.8)
+IMAGE block bbox=(883.3, 219.0, 890.0, 225.8)
+IMAGE block bbox=(874.6, 219.0, 881.3, 225.8)
+IMAGE block bbox=(866.0, 219.0, 872.7, 225.8)
+IMAGE block bbox=(857.3, 219.0, 864.0, 225.8)
+IMAGE block bbox=(848.6, 219.0, 855.3, 225.8)
+IMAGE block bbox=(839.9, 219.0, 846.6, 225.8)
+IMAGE block bbox=(831.3, 219.0, 838.0, 225.8)
+IMAGE block bbox=(822.6, 219.0, 829.3, 225.8)
+IMAGE block bbox=(813.9, 219.0, 820.6, 225.8)
+IMAGE block bbox=(805.3, 219.0, 812.0, 225.8)
+IMAGE block bbox=(796.6, 219.0, 803.3, 225.8)
+IMAGE block bbox=(787.9, 219.0, 794.6, 225.8)
+IMAGE block bbox=(779.2, 219.0, 785.9, 225.8)
+IMAGE block bbox=(770.6, 219.0, 777.3, 225.8)
+IMAGE block bbox=(761.9, 219.0, 768.6, 225.8)
+IMAGE block bbox=(753.2, 219.0, 759.9, 225.8)
+IMAGE block bbox=(744.6, 219.0, 751.3, 225.8)
+IMAGE block bbox=(735.9, 219.0, 742.6, 225.8)
+IMAGE block bbox=(727.2, 219.0, 733.9, 225.7)
+IMAGE block bbox=(952.7, 227.5, 959.4, 234.3)
+IMAGE block bbox=(944.0, 227.5, 950.7, 234.3)
+IMAGE block bbox=(935.3, 227.5, 942.0, 234.3)
+IMAGE block bbox=(926.6, 227.5, 933.4, 234.3)
+IMAGE block bbox=(918.0, 227.5, 924.7, 234.3)
+IMAGE block bbox=(909.3, 227.5, 916.0, 234.3)
+IMAGE block bbox=(900.6, 227.5, 907.3, 234.3)
+IMAGE block bbox=(892.0, 227.5, 898.7, 234.3)
+IMAGE block bbox=(883.3, 227.5, 890.0, 234.3)
+IMAGE block bbox=(874.6, 227.5, 881.3, 234.3)
+IMAGE block bbox=(866.0, 227.5, 872.7, 234.3)
+IMAGE block bbox=(857.3, 227.5, 864.0, 234.3)
+IMAGE block bbox=(848.6, 227.5, 855.3, 234.3)
+IMAGE block bbox=(839.9, 227.5, 846.6, 234.3)
+IMAGE block bbox=(831.3, 227.5, 838.0, 234.3)
+IMAGE block bbox=(822.6, 227.5, 829.3, 234.3)
+IMAGE block bbox=(813.9, 227.5, 820.6, 234.3)
+IMAGE block bbox=(805.3, 227.5, 812.0, 234.3)
+IMAGE block bbox=(796.6, 227.5, 803.3, 234.3)
+IMAGE block bbox=(787.9, 227.5, 794.6, 234.3)
+IMAGE block bbox=(779.2, 227.5, 785.9, 234.3)
+IMAGE block bbox=(770.6, 227.5, 777.3, 234.3)
+IMAGE block bbox=(761.9, 227.5, 768.6, 234.3)
+IMAGE block bbox=(753.2, 227.5, 759.9, 234.3)
+IMAGE block bbox=(744.6, 227.5, 751.3, 234.3)
+IMAGE block bbox=(735.9, 227.5, 742.6, 234.3)
+IMAGE block bbox=(728.4, 227.5, 733.9, 234.2)
+IMAGE block bbox=(952.7, 236.0, 958.3, 242.8)
+IMAGE block bbox=(944.0, 236.0, 950.7, 242.8)
+IMAGE block bbox=(935.3, 236.0, 942.0, 242.8)
+IMAGE block bbox=(926.6, 236.0, 933.4, 242.8)
+IMAGE block bbox=(918.0, 236.0, 924.7, 242.8)
+IMAGE block bbox=(909.3, 236.0, 916.0, 242.8)
+IMAGE block bbox=(900.6, 236.0, 907.3, 242.8)
+IMAGE block bbox=(892.0, 236.0, 898.7, 242.8)
+IMAGE block bbox=(883.3, 236.0, 890.0, 242.8)
+IMAGE block bbox=(874.6, 236.0, 881.3, 242.8)
+IMAGE block bbox=(866.0, 236.0, 872.7, 242.8)
+IMAGE block bbox=(857.3, 236.0, 864.0, 242.8)
+IMAGE block bbox=(848.6, 236.0, 855.3, 242.8)
+IMAGE block bbox=(839.9, 236.0, 846.6, 242.8)
+IMAGE block bbox=(831.3, 236.0, 838.0, 242.8)
+IMAGE block bbox=(822.6, 236.0, 829.3, 242.8)
+IMAGE block bbox=(813.9, 236.0, 820.6, 242.8)
+IMAGE block bbox=(805.3, 236.0, 812.0, 242.8)
+IMAGE block bbox=(796.6, 236.0, 803.3, 242.8)
+IMAGE block bbox=(787.9, 236.0, 794.6, 242.8)
+IMAGE block bbox=(779.2, 236.0, 785.9, 242.8)
+IMAGE block bbox=(770.6, 236.0, 777.3, 242.8)
+IMAGE block bbox=(761.9, 236.0, 768.6, 242.8)
+IMAGE block bbox=(753.2, 236.0, 759.9, 242.8)
+IMAGE block bbox=(744.6, 236.0, 751.3, 242.8)
+IMAGE block bbox=(735.9, 236.0, 742.6, 242.8)
+IMAGE block bbox=(731.2, 236.0, 733.9, 242.2)
+IMAGE block bbox=(952.7, 244.5, 955.0, 249.9)
+IMAGE block bbox=(944.0, 244.5, 950.7, 251.3)
+IMAGE block bbox=(935.3, 244.5, 942.0, 251.3)
+IMAGE block bbox=(926.6, 244.5, 933.4, 251.3)
+IMAGE block bbox=(918.0, 244.5, 924.7, 251.3)
+IMAGE block bbox=(909.3, 244.5, 916.0, 251.3)
+IMAGE block bbox=(900.6, 244.5, 907.3, 251.3)
+IMAGE block bbox=(892.0, 244.5, 898.7, 251.3)
+IMAGE block bbox=(883.3, 244.5, 890.0, 251.3)
+IMAGE block bbox=(874.6, 244.5, 881.3, 251.3)
+IMAGE block bbox=(866.0, 244.5, 872.7, 251.3)
+IMAGE block bbox=(857.3, 244.5, 864.0, 251.3)
+IMAGE block bbox=(848.6, 244.5, 855.3, 251.3)
+IMAGE block bbox=(839.9, 244.5, 846.6, 251.3)
+IMAGE block bbox=(831.3, 244.5, 838.0, 251.3)
+IMAGE block bbox=(822.6, 244.5, 829.3, 251.3)
+IMAGE block bbox=(813.9, 244.5, 820.6, 251.3)
+IMAGE block bbox=(805.3, 244.5, 812.0, 251.3)
+IMAGE block bbox=(796.6, 244.5, 803.3, 251.3)
+IMAGE block bbox=(787.9, 244.5, 794.6, 251.3)
+IMAGE block bbox=(779.2, 244.5, 785.9, 251.3)
+IMAGE block bbox=(770.6, 244.5, 777.3, 251.3)
+IMAGE block bbox=(761.9, 244.5, 768.6, 251.3)
+IMAGE block bbox=(753.2, 244.5, 759.9, 251.3)
+IMAGE block bbox=(744.6, 244.5, 751.3, 251.3)
+IMAGE block bbox=(735.9, 244.5, 742.6, 251.2)
+IMAGE block bbox=(944.0, 253.1, 950.7, 259.8)
+IMAGE block bbox=(935.3, 253.1, 942.0, 259.8)
+IMAGE block bbox=(926.6, 253.1, 933.4, 259.8)
+IMAGE block bbox=(918.0, 253.1, 924.7, 259.8)
+IMAGE block bbox=(909.3, 253.1, 916.0, 258.9)
+IMAGE block bbox=(900.6, 253.1, 907.3, 257.7)
+IMAGE block bbox=(892.0, 253.1, 898.7, 256.4)
+IMAGE block bbox=(883.3, 253.1, 890.0, 255.2)
+IMAGE block bbox=(874.8, 253.1, 881.3, 254.3)
+IMAGE block bbox=(866.5, 253.1, 872.7, 253.6)
+IMAGE block bbox=(862.0, 253.1, 864.0, 253.1)
+IMAGE block bbox=(823.2, 253.1, 827.5, 253.3)
+IMAGE block bbox=(814.1, 253.1, 820.6, 253.8)
+IMAGE block bbox=(805.3, 253.1, 812.0, 254.5)
+IMAGE block bbox=(796.6, 253.1, 803.3, 255.6)
+IMAGE block bbox=(787.9, 253.1, 794.6, 256.8)
+IMAGE block bbox=(779.2, 253.1, 785.9, 258.1)
+IMAGE block bbox=(770.6, 253.1, 777.3, 259.3)
+IMAGE block bbox=(761.9, 253.1, 768.6, 259.8)
+IMAGE block bbox=(753.2, 253.1, 759.9, 259.8)
+IMAGE block bbox=(744.6, 253.1, 751.3, 259.8)
+IMAGE block bbox=(738.3, 253.1, 742.6, 259.5)
+IMAGE block bbox=(754.3, 259.4, 935.9, 294.0)
+IMAGE block bbox=(757.1, 193.4, 804.6, 235.0)
+IMAGE block bbox=(885.5, 193.4, 933.0, 235.0)
+IMAGE block bbox=(780.6, 251.6, 909.5, 258.0)
+IMAGE block bbox=(746.8, 226.7, 943.7, 255.0)
+IMAGE block bbox=(828.2, 134.2, 861.9, 173.9)
+IMAGE block bbox=(775.0, 119.0, 828.5, 165.5)
+IMAGE block bbox=(707.4, 142.2, 763.7, 185.1)
+IMAGE block bbox=(830.5, 91.8, 859.7, 120.6)
+IMAGE block bbox=(839.6, 210.0, 850.6, 221.0)
+IMAGE block bbox=(861.6, 119.0, 915.1, 165.5)
+IMAGE block bbox=(926.5, 142.2, 982.7, 185.1)
+IMAGE block bbox=(841.6, 144.3, 848.5, 148.6)
+IMAGE block bbox=(842.5, 135.2, 847.6, 138.4)
+IMAGE block bbox=(840.8, 155.2, 849.4, 160.7)
+IMAGE block bbox=(839.9, 168.1, 850.2, 174.6)
+IMAGE block bbox=(977.4, 204.9, 989.4, 212.5)
+IMAGE block bbox=(981.6, 186.2, 993.6, 193.9)
+IMAGE block bbox=(983.6, 169.3, 995.6, 176.9)
+IMAGE block bbox=(979.9, 153.8, 991.9, 161.4)
+IMAGE block bbox=(968.2, 142.3, 980.2, 149.9)
+IMAGE block bbox=(954.4, 136.0, 966.4, 143.6)
+IMAGE block bbox=(940.8, 132.4, 952.8, 140.0)
+IMAGE block bbox=(926.9, 130.7, 938.8, 138.3)
+IMAGE block bbox=(912.9, 136.3, 924.9, 143.9)
+IMAGE block bbox=(901.7, 123.9, 913.7, 131.5)
+IMAGE block bbox=(887.4, 116.1, 899.4, 123.7)
+IMAGE block bbox=(873.0, 113.1, 885.0, 120.7)
+IMAGE block bbox=(858.2, 115.2, 870.2, 122.8)
+IMAGE block bbox=(916.2, 154.2, 926.4, 160.7)
+IMAGE block bbox=(913.0, 168.5, 921.6, 173.9)
+IMAGE block bbox=(911.3, 180.3, 918.1, 184.6)
+IMAGE block bbox=(875.0, 219.4, 883.9, 228.4)
+IMAGE block bbox=(806.2, 219.4, 815.2, 228.4)
+IMAGE block bbox=(700.7, 204.9, 712.7, 212.5)
+IMAGE block bbox=(696.6, 186.2, 708.6, 193.9)
+IMAGE block bbox=(694.6, 169.3, 706.6, 176.9)
+IMAGE block bbox=(698.3, 153.8, 710.3, 161.4)
+IMAGE block bbox=(710.0, 142.3, 722.0, 149.9)
+IMAGE block bbox=(723.7, 136.0, 735.7, 143.6)
+IMAGE block bbox=(737.3, 132.4, 749.3, 140.0)
+IMAGE block bbox=(751.3, 130.7, 763.3, 138.3)
+IMAGE block bbox=(765.3, 136.3, 777.3, 143.9)
+IMAGE block bbox=(776.4, 123.9, 788.4, 131.5)
+IMAGE block bbox=(790.8, 116.1, 802.8, 123.7)
+IMAGE block bbox=(805.1, 113.1, 817.1, 120.7)
+IMAGE block bbox=(820.0, 115.2, 832.0, 122.8)
+IMAGE block bbox=(763.7, 154.2, 774.0, 160.7)
+IMAGE block bbox=(768.6, 168.5, 777.1, 173.9)
+IMAGE block bbox=(772.0, 180.3, 778.9, 184.6)
+IMAGE block bbox=(2320.1, 197.2, 2413.6, 248.6)
+IMAGE block bbox=(2395.3, 221.3, 2409.9, 232.9)
+IMAGE block bbox=(2392.4, 182.0, 2425.1, 247.9)
+IMAGE block bbox=(2340.9, 149.7, 2393.2, 185.7)
+IMAGE block bbox=(2180.9, 150.0, 2286.5, 193.6)
+IMAGE block bbox=(2173.1, 172.2, 2289.7, 248.7)
+IMAGE block bbox=(2042.0, 148.6, 2132.3, 205.4)
+IMAGE block bbox=(2040.7, 197.3, 2093.6, 247.7)
+IMAGE block bbox=(2076.6, 191.4, 2135.1, 247.4)
+IMAGE block bbox=(1888.9, 198.0, 2006.3, 246.3)
+IMAGE block bbox=(1904.0, 145.5, 2006.7, 222.9)
+IMAGE block bbox=(1744.6, 150.2, 1846.2, 181.8)
+IMAGE block bbox=(1794.5, 186.8, 1843.2, 246.1)
+IMAGE block bbox=(1767.7, 204.9, 1821.6, 248.0)
+IMAGE block bbox=(1731.0, 193.7, 1765.8, 239.4)
+IMAGE block bbox=(1721.5, 221.1, 1837.1, 248.0)
+IMAGE block bbox=(1561.4, 147.2, 1677.8, 254.5)
+IMAGE block bbox=(1611.8, 198.7, 1677.8, 247.3)
+  271.5   655.6 sz= 43.3 f=TimesNewRomanPS-BoldMT | КАК
+   96.5   698.1 sz= 43.3 f=TimesNewRomanPS-BoldMT | СОВЕРШИТЬ
+   87.0   740.6 sz= 43.3 f=TimesNewRomanPS-BoldMT | ОГРАБЛЕНИЕ
+   77.7   876.9 sz= 10.0 f=NotoSans-Bold | Несколько путников, оказавшихся на одном поле, 
+   77.7   888.5 sz= 10.0 f=NotoSans-Bold | могут объединиться между собой и ограбить банк 
+   77.7   900.0 sz= 10.0 f=NotoSans-Bold | или черную кассу мафии.
+   77.7   911.5 sz= 10.0 f=NotoSans-Bold | Следующим ходом путники оказываются в Мире 
+   77.7   923.1 sz= 10.0 f=NotoSans-Bold | Золота на поле «Банк» или «Черная касса мафии» и 
+   77.7   934.6 sz= 10.0 f=NotoSans-Bold | вступают в битву с охраной. Перед битвой сила 
+   77.7   946.2 sz= 10.0 f=NotoSans-Bold | путников возрастает соответственно их числу:
+   77.7   957.7 sz= 10.0 f=NotoSans-Bold | если путников двое, сила каждого увеличивается на 
+   77.7   969.3 sz= 10.0 f=NotoSans-Bold | 2 пункта, если трое - на 3 и т. д. Путники бьются со 
+   77.7   980.8 sz= 10.0 f=NotoSans-Bold | всеми тремя охранниками поочередно. 
+   77.7   992.4 sz= 10.0 f=NotoSans-Bold | Проигравший битву путник теряет 1ПЖ и дерется со 
+   77.7  1003.9 sz= 10.0 f=NotoSans-Bold | следующим охранником. Проигравший битву 
+   77.7  1015.4 sz= 10.0 f=NotoSans-Bold | охранник выбывает насовсем.
+   77.7  1027.0 sz= 10.0 f=NotoSans-Bold | Если после битвы кто-то из охранников остается в 
+   77.7  1038.5 sz= 10.0 f=NotoSans-Bold | живых, то ограбление не удалось, и путники уходят 
+   77.7  1050.1 sz= 10.0 f=NotoSans-Bold | ни с чем.
+   77.7  1061.6 sz= 10.0 f=NotoSans-Bold | Если все охранники падут смертью храбрых, 
+   77.7  1073.2 sz= 10.0 f=NotoSans-Bold | путники пытаются вскрыть сейф с деньгами и 
+   77.7  1084.7 sz= 10.0 f=NotoSans-Bold | трижды бросают кубик:
+   77.7  1096.3 sz= 10.0 f=NotoSans-Bold | 13-18 сейф вскрыт, ПС путников становятся такими 
+   77.7  1107.8 sz= 10.0 f=NotoSans-Bold | же, как и до ограбления, а добыча делится поровну.
+   77.7  1119.3 sz= 10.0 f=NotoSans-Bold | Ограбление можно совершить и в одиночку.
+   77.7  1130.9 sz= 10.0 f=NotoSans-Bold | В этом случае ПС путников не увеличиваются.
+  255.7   820.9 sz= 13.4 f=NotoSans-Bold | (ИНСТРУКЦИЯ)
+IMAGE block bbox=(2770.6, 472.1, 3040.2, 850.4)
+IMAGE block bbox=(2839.2, 648.2, 2971.4, 679.8)
+IMAGE block bbox=(2831.4, 640.0, 2979.2, 684.1)
+IMAGE block bbox=(2781.7, 513.7, 3028.8, 636.1)
+IMAGE block bbox=(2802.0, 543.7, 3008.2, 636.6)
+IMAGE block bbox=(2829.4, 635.3, 2981.1, 664.2)
+IMAGE block bbox=(2831.8, 580.2, 2871.5, 614.9)
+IMAGE block bbox=(2939.1, 580.2, 2978.8, 614.9)
+IMAGE block bbox=(2851.4, 628.8, 2959.2, 634.1)
+IMAGE block bbox=(2823.2, 608.0, 2987.7, 631.6)
+IMAGE block bbox=(2891.2, 530.7, 2919.4, 563.9)
+IMAGE block bbox=(2846.7, 518.0, 2891.4, 556.8)
+IMAGE block bbox=(2790.3, 537.3, 2837.3, 573.2)
+IMAGE block bbox=(2893.1, 495.3, 2917.5, 519.3)
+IMAGE block bbox=(2900.7, 594.0, 2909.9, 603.2)
+IMAGE block bbox=(2919.1, 518.0, 2963.8, 556.8)
+IMAGE block bbox=(2973.3, 537.3, 3020.3, 573.2)
+IMAGE block bbox=(2902.4, 539.1, 2908.1, 542.7)
+IMAGE block bbox=(2903.1, 531.5, 2907.4, 534.2)
+IMAGE block bbox=(2901.7, 548.3, 2908.9, 552.8)
+IMAGE block bbox=(2901.0, 559.0, 2909.6, 564.4)
+IMAGE block bbox=(3015.9, 589.7, 3025.9, 596.1)
+IMAGE block bbox=(3019.3, 574.2, 3029.4, 580.5)
+IMAGE block bbox=(3021.0, 560.0, 3031.0, 566.4)
+IMAGE block bbox=(3017.9, 547.0, 3028.0, 553.4)
+IMAGE block bbox=(3008.2, 537.4, 3018.2, 543.8)
+IMAGE block bbox=(2996.7, 532.2, 3006.7, 538.5)
+IMAGE block bbox=(2985.3, 529.2, 2995.3, 535.5)
+IMAGE block bbox=(2973.6, 527.8, 2983.6, 534.1)
+IMAGE block bbox=(2961.9, 532.4, 2972.0, 538.8)
+IMAGE block bbox=(2952.6, 522.0, 2962.6, 528.4)
+IMAGE block bbox=(2940.6, 515.6, 2950.7, 521.9)
+IMAGE block bbox=(2928.6, 513.1, 2938.7, 519.4)
+IMAGE block bbox=(2916.2, 514.8, 2926.3, 521.2)
+IMAGE block bbox=(2964.7, 547.4, 2973.3, 552.9)
+IMAGE block bbox=(2962.1, 559.3, 2969.2, 563.9)
+IMAGE block bbox=(2960.6, 569.2, 2966.3, 572.8)
+IMAGE block bbox=(2930.3, 601.9, 2937.7, 609.4)
+IMAGE block bbox=(2872.8, 601.9, 2880.3, 609.4)
+IMAGE block bbox=(2784.7, 589.7, 2794.7, 596.1)
+IMAGE block bbox=(2781.2, 574.2, 2791.2, 580.5)
+IMAGE block bbox=(2779.5, 560.0, 2789.5, 566.4)
+IMAGE block bbox=(2782.6, 547.0, 2792.6, 553.4)
+IMAGE block bbox=(2792.4, 537.4, 2802.4, 543.8)
+IMAGE block bbox=(2803.9, 532.2, 2813.9, 538.5)
+IMAGE block bbox=(2815.3, 529.2, 2825.3, 535.5)
+IMAGE block bbox=(2826.9, 527.8, 2837.0, 534.1)
+IMAGE block bbox=(2838.6, 532.4, 2848.6, 538.8)
+IMAGE block bbox=(2847.9, 522.0, 2857.9, 528.4)
+IMAGE block bbox=(2859.9, 515.6, 2869.9, 521.9)
+IMAGE block bbox=(2871.9, 513.1, 2881.9, 519.4)
+IMAGE block bbox=(2884.3, 514.8, 2894.3, 521.2)
+IMAGE block bbox=(2837.3, 547.4, 2845.9, 552.9)
+IMAGE block bbox=(2841.4, 559.3, 2848.5, 563.9)
+IMAGE block bbox=(2844.3, 569.2, 2850.0, 572.8)
+ 2781.0   851.1 sz= 10.0 f=NotoSans-Bold | Не выполняешь условия поля, на котором уже 
+ 2825.2   862.3 sz= 10.0 f=NotoSans-Bold | находится карта приключений
+ 2837.7   873.5 sz= 10.0 f=NotoSans-Bold | (выполни условия карты).
+ 2778.4   892.5 sz= 10.0 f=NotoSans-Bold | Когда берешь две или три карты приключений, 
+ 2808.0   903.8 sz= 10.0 f=NotoSans-Bold | выполни для начала условия карты с 
+ 2808.8   915.0 sz= 10.0 f=NotoSans-Bold | наименьшим порядковым номером.
+ 2777.1   926.2 sz= 10.0 f=NotoSans-Bold | Если, выполняя эти условия, ты покидаешь поле, 
+ 2810.0   937.5 sz= 10.0 f=NotoSans-Bold | не выполняешь условия других карт
+ 2805.0   948.7 sz= 10.0 f=NotoSans-Bold | (они остаются на поле, где ты их взял).
+ 2777.6   967.7 sz= 10.0 f=NotoSans-Bold | Путник не может иметь больше 14 собственных 
+ 2776.9   979.0 sz= 10.0 f=NotoSans-Bold | (без друзей, предметов и магических предметов) 
+ 2866.0   990.2 sz= 10.0 f=NotoSans-Bold | ПС, ПУ, ПМ, ПО.
+ 2843.2  1001.4 sz= 10.0 f=NotoSans-Bold | ПЖ не ограничиваются.
+ 2799.3  1020.4 sz= 10.0 f=NotoSans-Bold | Когда твой друг или телохранитель или 
+ 2793.7  1031.7 sz= 10.0 f=NotoSans-Bold | заговоренный недруг бьется вместо тебя и 
+ 2818.7  1042.9 sz= 10.0 f=NotoSans-Bold | гибнет в битве, отложи его карту.
+ 2813.0  1054.1 sz= 10.0 f=NotoSans-Bold | Сам не выполняешь условия карты 
+ 2791.2  1065.4 sz= 10.0 f=NotoSans-Bold | приключений (она остается на поле битвы).
+ 2817.6  1084.4 sz= 10.0 f=NotoSans-Bold | Карты предметов возвращаются
+ 2855.9  1095.6 sz= 10.0 f=NotoSans-Bold | на поле предметов
+ 2808.4  1106.8 sz= 10.0 f=NotoSans-Bold | (можешь использовать их повторно).
+ 2825.4  1125.8 sz= 10.0 f=NotoSans-Bold | Путник может нести не более
+ 2833.3  1137.1 sz= 10.0 f=NotoSans-Bold | 4 предметов одновременно
+ 2789.5  1148.3 sz= 10.0 f=NotoSans-Bold | (включая магические предметы и амулеты).
+IMAGE block bbox=(2003.2, 947.4, 2046.1, 970.5)
+IMAGE block bbox=(1961.9, 955.3, 2001.3, 983.7)
+IMAGE block bbox=(1938.6, 985.2, 1963.9, 1026.8)
+IMAGE block bbox=(1931.5, 1031.3, 1954.3, 1074.6)
+IMAGE block bbox=(1943.5, 1075.6, 1976.2, 1112.0)
+IMAGE block bbox=(1979.1, 1109.1, 2021.9, 1132.3)
+IMAGE block bbox=(2025.7, 1109.7, 2068.5, 1132.9)
+IMAGE block bbox=(2068.5, 1079.6, 2101.2, 1116.0)
+IMAGE block bbox=(2095.2, 1032.2, 2118.0, 1075.5)
+IMAGE block bbox=(2089.0, 987.8, 2114.4, 1029.3)
+IMAGE block bbox=(2051.3, 960.5, 2090.7, 988.8)
+IMAGE block bbox=(1079.2, 947.8, 1122.1, 970.9)
+IMAGE block bbox=(1037.9, 955.7, 1077.3, 984.1)
+IMAGE block bbox=(1014.6, 985.6, 1039.9, 1027.2)
+IMAGE block bbox=(1007.5, 1031.7, 1030.3, 1075.0)
+IMAGE block bbox=(1019.5, 1076.0, 1052.2, 1112.4)
+IMAGE block bbox=(1055.1, 1109.5, 1097.9, 1132.7)
+IMAGE block bbox=(1101.7, 1110.1, 1144.5, 1133.3)
+IMAGE block bbox=(1144.5, 1080.0, 1177.2, 1116.4)
+IMAGE block bbox=(1171.2, 1032.6, 1194.0, 1075.9)
+IMAGE block bbox=(1165.0, 988.2, 1190.4, 1029.7)
+IMAGE block bbox=(1127.3, 960.9, 1166.7, 989.2)
+IMAGE block bbox=(2575.1, 1682.5, 2620.4, 1747.7)
+IMAGE block bbox=(2575.1, 557.1, 2620.4, 622.3)
+IMAGE block bbox=(505.8, 557.1, 551.1, 622.3)
+IMAGE block bbox=(505.8, 1682.5, 551.1, 1747.7)
+IMAGE block bbox=(375.4, 1350.9, 440.6, 1396.2)
+IMAGE block bbox=(616.3, 1812.9, 681.5, 1858.3)
+IMAGE block bbox=(2444.7, 1812.9, 2509.9, 1858.3)
+IMAGE block bbox=(2685.6, 1350.9, 2750.8, 1396.2)
+IMAGE block bbox=(2444.7, 446.6, 2509.9, 492.0)
+IMAGE block bbox=(616.3, 446.6, 681.5, 492.0)
+IMAGE block bbox=(2816.0, 1923.4, 2861.4, 1988.6)
+IMAGE block bbox=(2685.6, 2053.8, 2750.8, 2099.2)
+IMAGE block bbox=(1520.6, 2053.8, 1563.1, 2099.2)
+IMAGE block bbox=(1563.1, 2053.8, 1605.6, 2099.2)
+IMAGE block bbox=(2444.7, 2053.8, 2509.9, 2099.2)
+IMAGE block bbox=(616.3, 2053.8, 681.5, 2099.2)
+IMAGE block bbox=(375.4, 2053.8, 440.6, 2099.2)
+IMAGE block bbox=(1410.0, 551.2, 1455.4, 608.4)
+IMAGE block bbox=(1670.8, 551.2, 1716.2, 608.4)
+IMAGE block bbox=(1670.8, 792.2, 1716.2, 849.4)
+IMAGE block bbox=(1410.0, 792.2, 1455.4, 849.4)
+IMAGE block bbox=(1293.5, 687.5, 1350.7, 732.9)
+IMAGE block bbox=(1774.7, 687.5, 1831.9, 732.9)
+IMAGE block bbox=(1410.0, 1455.5, 1455.4, 1512.7)
+IMAGE block bbox=(1670.8, 1455.5, 1716.2, 1512.7)
+IMAGE block bbox=(1670.8, 1696.4, 1716.2, 1753.6)
+IMAGE block bbox=(1410.0, 1696.4, 1455.4, 1753.6)
+IMAGE block bbox=(1293.5, 1572.0, 1350.7, 1617.3)
+IMAGE block bbox=(1775.4, 1572.0, 1832.6, 1617.3)
+IMAGE block bbox=(967.8, 1927.4, 1013.2, 1984.6)
+IMAGE block bbox=(2113.0, 1927.4, 2158.4, 1984.6)
+IMAGE block bbox=(2216.1, 907.3, 2276.4, 952.6)
+IMAGE block bbox=(2216.1, 1131.1, 2276.4, 1176.4)
+IMAGE block bbox=(1292.0, 907.3, 1352.3, 952.6)
+IMAGE block bbox=(1292.0, 1131.1, 1352.3, 1176.4)
+IMAGE block bbox=(2816.0, 1682.5, 2861.4, 1747.7)
+IMAGE block bbox=(264.8, 1923.4, 310.2, 1988.6)
+IMAGE block bbox=(264.8, 1682.5, 310.2, 1747.7)
+  707.4   363.2 sz= 17.0 f=NotoSans-Bold | ВЕДЬМИН ЛУГ
+  735.9   384.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  718.9   397.2 sz= 10.0 f=NotoSans-Bold | 1-3: возьми 1 карту.
+  717.3   409.5 sz= 10.0 f=NotoSans-Bold | 4-6: возьми 2 карты.
+  672.2   421.8 sz= 10.0 f=NotoSans-Bold | Нечисть имеет здесь на 1ПМ больше.
+  906.6   363.0 sz= 17.0 f=NotoSans-Bold | СВЯЩЕННАЯ РОЩА
+  930.5   384.9 sz= 10.0 f=NotoSans-Bold | Добрые получают 1ПЖ
+  920.5   396.3 sz= 10.0 f=NotoSans-Bold | Нейтральные могут отдать
+  909.0   407.7 sz= 10.0 f=NotoSans-Bold | 1ПС, 1ПУ, 1ПМ и стать добрыми
+  907.4   419.1 sz= 10.0 f=NotoSans-Bold | (внеси изменения в свою карту)
+  943.5   430.5 sz= 10.0 f=NotoSans-Bold | Злые теряют 1ПМ.
+  949.9   441.8 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1181.0   363.0 sz= 17.0 f=NotoSans-Bold | СКАЛЫ
+ 1364.1   363.0 sz= 17.0 f=NotoSans-Bold | ЗЛОВЕЩИЙ ЛЕС
+ 1663.7   363.2 sz= 17.0 f=NotoSans-Bold | ЛИЦЕЙ
+ 1872.4   363.4 sz= 17.0 f=NotoSans-Bold | РАВНИНА
+ 2111.4   363.2 sz= 17.0 f=NotoSans-Bold | БРОД
+ 2330.1   363.2 sz= 17.0 f=NotoSans-Bold | СТЕПЬ
+ 2561.3   363.2 sz= 17.0 f=NotoSans-Bold | КАНЬОН
+ 1884.7   604.0 sz= 17.0 f=NotoSans-Bold | РАНЧО
+ 2101.9   604.2 sz= 17.0 f=NotoSans-Bold | ПРЕРИЯ
+ 2269.5   604.0 sz= 17.0 f=NotoSans-Bold | ЗАРОСЛИ КАКТУСОВ
+ 2318.3   825.3 sz= 17.0 f=NotoSans-Bold | ПЕРЕВАЛ
+ 2512.7   624.8 sz= 17.0 f=NotoSans-Bold | ПРОВАЛ МИРА УМА
+ 2532.5   825.1 sz= 17.0 f=NotoSans-Bold | ПИК «ОЛИМП»
+  445.3   142.1 sz= 17.0 f=NotoSans-Bold | ОБМЕННЫЙ ПУНКТ
+ 1182.7   604.0 sz= 17.0 f=NotoSans-Bold | САЛУН
+  956.7   604.2 sz= 17.0 f=NotoSans-Bold | ПРЕРИЯ
+  698.6   604.0 sz= 17.0 f=NotoSans-Bold | КАРАВАН-САРАЙ
+  727.9   825.3 sz= 17.0 f=NotoSans-Bold | ПУСТЫНЯ
+  740.1  1046.4 sz= 17.0 f=NotoSans-Bold | ОАЗИС
+ 1378.3   851.8 sz= 17.0 f=NotoSans-Bold | ХРАМ БААЛЯ
+ 1378.1  1046.4 sz= 17.0 f=NotoSans-Bold | ЛЫСАЯ ГОРА
+ 1624.9   851.8 sz= 17.0 f=NotoSans-Bold | ЗОНА МУТАЦИЙ
+ 1647.4  1046.4 sz= 17.0 f=NotoSans-Bold | ЭПИЦЕНТР
+  446.5   363.2 sz= 17.0 f=NotoSans-Bold | ПОСТОЯЛЫЙ ДВОР
+  458.7   624.8 sz= 17.0 f=NotoSans-Bold | ДРЕВНИЙ ТРАКТ
+  488.2   825.3 sz= 17.0 f=NotoSans-Bold | МАГШОП
+  431.6  1046.4 sz= 17.0 f=NotoSans-Bold | ПРОВАЛ МИРА МАГИИ
+  449.8  1267.5 sz= 17.0 f=NotoSans-Bold | БАШНЯ ВЛАДЫКИ
+  469.4  1288.1 sz= 17.0 f=NotoSans-Bold | МИРА МАГИИ
+ 2514.6   142.1 sz= 17.0 f=NotoSans-Bold | ОБМЕННЫЙ ПУНКТ
+  727.9  1267.5 sz= 17.0 f=NotoSans-Bold | ПУСТЫНЯ
+  692.5  1488.6 sz= 17.0 f=NotoSans-Bold | ЗАМОК ВЛАДЫКИ
+  716.5  1509.2 sz= 17.0 f=NotoSans-Bold | МИРА СИЛЫ
+  947.2  1488.6 sz= 17.0 f=NotoSans-Bold | ДЖУНГЛИ
+ 1132.2  1488.6 sz= 17.0 f=NotoSans-Bold | КАМЕННАЯ ГРЯДА
+  249.9  1267.5 sz= 17.0 f=NotoSans-Bold | ЗАСТАВА
+  204.9  1488.6 sz= 17.0 f=NotoSans-Bold | КОНТРАБАНДИСТЫ
+  182.6  1750.2 sz= 17.0 f=NotoSans-Bold | ИНОСТРАННЫЙ ЛЕГИОН
+  459.5  1750.2 sz= 17.0 f=NotoSans-Bold | ЗАЧАРОВАННАЯ
+  490.1  1770.8 sz= 17.0 f=NotoSans-Bold | ДЕРЕВНЯ
+  746.6  1729.5 sz= 17.0 f=NotoSans-Bold | ТОПЬ
+  478.2  1488.6 sz= 17.0 f=NotoSans-Bold | КЛАДБИЩЕ
+ 1365.5  1267.3 sz= 17.0 f=NotoSans-Bold | ПОЛЫЕ ХОЛМЫ
+  947.8  1729.5 sz= 17.0 f=NotoSans-Bold | ПУСТОШЬ
+ 1190.7  1729.5 sz= 17.0 f=NotoSans-Bold | ГАРЬ
+ 1353.2  1756.1 sz= 17.0 f=NotoSans-Bold | ПОКИНУТЫЙ ДОМ
+  215.0  1991.1 sz= 17.0 f=NotoSans-Bold | ЗОЛОТАЯ ШАХТА
+  428.3  1970.5 sz= 17.0 f=NotoSans-Bold | ЧЕРНАЯ КАССА МАФИИ
+  680.8  1970.5 sz= 17.0 f=NotoSans-Bold | ДЕТЕКТИВНОЕ БЮРО
+ 1614.8  1756.1 sz= 17.0 f=NotoSans-Bold | ДРЕВО ПОЗНАНИЯ
+  944.8  1991.1 sz= 17.0 f=NotoSans-Bold | АЭРОПОРТ
+ 1175.1  1970.5 sz= 17.0 f=NotoSans-Bold | КАЗИНО
+ 1405.3  1970.5 sz= 17.0 f=NotoSans-Bold | ОТЕЛЬ
+ 1834.0  1729.5 sz= 17.0 f=NotoSans-Bold | ДВОРЕЦ ВЛАДЫКИ
+ 1868.8  1750.2 sz= 17.0 f=NotoSans-Bold | МИРА УМА
+ 1873.0  1488.6 sz= 17.0 f=NotoSans-Bold | САВАННА
+ 2044.6  1488.6 sz= 17.0 f=NotoSans-Bold | ПРОВАЛ МИРА СИЛЫ
+ 2276.4  1488.6 sz= 17.0 f=NotoSans-Bold | КОННЫЕ ВАРВАРЫ
+ 2277.2  1267.5 sz= 17.0 f=NotoSans-Bold | ОРУЖЕНАЯ ЛАВКА
+ 2037.3  1729.5 sz= 17.0 f=NotoSans-Bold | ЗАБРОШЕННОЕ ШОССЕ
+ 2328.6  1729.5 sz= 17.0 f=NotoSans-Bold | РЕЧКА
+ 2518.3  1750.2 sz= 17.0 f=NotoSans-Bold | ПЕЩЕРА МУДРЕЦА
+ 2511.2  1488.4 sz= 17.0 f=NotoSans-Bold | МАКОВЫЕ ЗАРОСЛИ
+ 2505.8  1267.3 sz= 17.0 f=NotoSans-Bold | КНИЖНЫЙ МАГАЗИН
+ 2809.3  1267.5 sz= 17.0 f=NotoSans-Bold | КАБАК
+ 1609.3  1267.5 sz= 17.0 f=NotoSans-Bold | ВЫЖЖЕНАЯ ЗЕМЛЯ
+ 2765.7  1488.6 sz= 17.0 f=NotoSans-Bold | ТАРАКАНЬИ БЕГА
+ 2778.6  1750.2 sz= 17.0 f=NotoSans-Bold | КАРТЕЖНИКИ
+ 2750.0  1991.1 sz= 17.0 f=NotoSans-Bold | ПЕЩЕРА СОКРОВИЩ
+ 2506.5  1970.3 sz= 17.0 f=NotoSans-Bold | ИГРОВЫЕ АВТОМАТЫ
+ 2324.7  1970.5 sz= 17.0 f=NotoSans-Bold | БИРЖА
+ 2079.8  1991.1 sz= 17.0 f=NotoSans-Bold | РОСТОВЩИК
+ 1890.4  1970.5 sz= 17.0 f=NotoSans-Bold | БАНК
+ 1625.8  1970.5 sz= 17.0 f=NotoSans-Bold | ПОЛИЦЕЙСКИЙ
+ 1654.2  1991.1 sz= 17.0 f=NotoSans-Bold | УЧАСТОК
+ 2312.3  1046.4 sz= 17.0 f=NotoSans-Bold | КРЕПОСТЬ
+ 2531.5  1046.2 sz= 17.0 f=NotoSans-Bold | ОБСЕРВАТОРИЯ
+ 1171.2   384.9 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1140.9   397.2 sz= 10.0 f=NotoSans-Bold | Уходя с этого поля, вычти 1
+ 1138.0   409.5 sz= 10.0 f=NotoSans-Bold | из результата броска на ход.
+ 1392.1   384.9 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1331.6   397.2 sz= 10.0 f=NotoSans-Bold | Злые здесь беспечны и могут отразить
+ 1327.3   409.5 sz= 10.0 f=NotoSans-Bold | любую карту приключений. Брось кубик
+ 1337.1   421.8 sz= 10.0 f=NotoSans-Bold | и отправь карту на соответствующее
+ 1366.5   434.1 sz= 10.0 f=NotoSans-Bold | броску количество полей
+ 1372.3   446.4 sz= 10.0 f=NotoSans-Bold | (только в Мире Магии).
+ 1873.8   384.9 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1640.4   385.4 sz=  9.5 f=NotoSans-Bold | Дважды брось кубик:
+ 1609.1   394.1 sz=  9.5 f=NotoSans-Bold | 2: был бит розгами (теряешь 2ПС).
+ 1614.1   402.7 sz=  9.5 f=NotoSans-Bold | 3: сошел с ума (теряешь все ПУ).
+ 1593.5   411.4 sz=  9.5 f=NotoSans-Bold | 4: остался на второй год (пропусти 1 ход,
+ 1608.4   420.1 sz=  9.5 f=NotoSans-Bold | затем снова дважды брось кубик).
+ 1619.3   428.7 sz=  9.5 f=NotoSans-Bold | 5: взял академический отпуск
+ 1657.3   437.4 sz=  9.5 f=NotoSans-Bold | (теряешь 2ПУ).
+ 1611.5   446.0 sz=  9.5 f=NotoSans-Bold | 6: отчислен (теряешь 2ПУ и 2ПМ).
+ 1587.1   454.7 sz=  9.5 f=NotoSans-Bold | 7: завалил сессию (теряешь 1ПС, 1ПУ, 1ПМ).
+ 1605.9   463.3 sz=  9.5 f=NotoSans-Bold | 8: прослушал курс «История Мира»
+ 1659.0   472.0 sz=  9.5 f=NotoSans-Bold | (возьми 2 ПУ).
+ 1600.2   480.7 sz=  9.5 f=NotoSans-Bold | 9: прослушал курс прикладной магии
+ 1642.5   489.3 sz=  9.5 f=NotoSans-Bold | (возьми 2 ПУ и 1ПМ).
+ 1598.4   498.0 sz=  9.5 f=NotoSans-Bold | 10: сдал курсовую (возьми 2ПУ и 2ПМ).
+ 1621.3   506.6 sz=  9.5 f=NotoSans-Bold | 11: преддипломная практика
+ 1633.9   515.3 sz=  9.5 f=NotoSans-Bold | (возьми 2 ПС, 2ПУ, 2ПМ).
+ 1589.0   523.9 sz=  9.5 f=NotoSans-Bold | 12: закончил лицей (возьми 2ПС, 2ПУ, 2ПМ
+ 1605.6   532.6 sz=  9.5 f=NotoSans-Bold | и золотую сову на поле предметов).
+ 2102.4   384.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2070.0   397.2 sz= 10.0 f=NotoSans-Bold | 1: не можешь найти брод
+ 2032.8   409.5 sz= 10.0 f=NotoSans-Bold | (пропусти 1 ход, затем возьми 3 карты).
+ 2083.8   421.8 sz= 10.0 f=NotoSans-Bold | 2-3: возьми 2 карты.
+ 2085.4   434.1 sz= 10.0 f=NotoSans-Bold | 4-6: возьми 1 карту.
+ 2514.1   646.5 sz= 10.0 f=NotoSans-Bold | (ВЫХОД В КОРОЛЕВСТВО ЭМБЕР)
+ 2504.0   657.1 sz= 10.0 f=NotoSans-Bold | Останавливаешься здесь проходом.
+ 2526.2   667.8 sz= 10.0 f=NotoSans-Bold | Если не выходишь в Эмбер,
+ 2498.2   678.4 sz= 10.0 f=NotoSans-Bold | теряешь 1ПУ. Можешь выйти в Эмбер, 
+ 2522.2   689.0 sz= 10.0 f=NotoSans-Bold | имея 13ПС, 13ПУ, 13ПМ, 13ПО
+ 2537.6   699.7 sz= 10.0 f=NotoSans-Bold | (без друзей, предметов
+ 2529.9   710.3 sz= 10.0 f=NotoSans-Bold | и магических предметов).
+ 2564.7   720.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2532.6   731.6 sz= 10.0 f=NotoSans-Bold | 1-2 провал отбросил тебя
+ 2551.0   742.2 sz= 10.0 f=NotoSans-Bold | (покинь это поле).
+ 2509.8   752.8 sz= 10.0 f=NotoSans-Bold | 3: оказался в провале Мира Силы.
+ 2506.9   763.5 sz= 10.0 f=NotoSans-Bold | 4: оказался в провале Мира Магии.
+ 2511.9   774.1 sz= 10.0 f=NotoSans-Bold | 5-6: вышел в Королевство Эмбер.
+ 2534.1   784.7 sz= 10.0 f=NotoSans-Bold | За 1 ход можешь пройти
+ 2554.8   795.3 sz= 10.0 f=NotoSans-Bold | только 1 провал.
+ 2316.0   384.9 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 2555.3   384.9 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+ 2314.4  1068.0 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+ 1391.9  1068.0 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 2052.0  1510.2 sz= 10.0 f=NotoSans-Bold | (ВЫХОД В КОРОЛЕВСТВО ЭМБЕР)
+ 2042.0  1521.6 sz= 10.0 f=NotoSans-Bold | Останавливаешься здесь проходом.
+ 2064.2  1533.0 sz= 10.0 f=NotoSans-Bold | Если не выходишь в Эмбер,
+ 2035.8  1544.4 sz= 10.0 f=NotoSans-Bold | теряешь 1ПС. Можешь выйти в Эмбер, 
+ 2060.2  1555.8 sz= 10.0 f=NotoSans-Bold | имея 12ПС, 12ПУ, 12ПМ, 12ПО
+ 2075.6  1567.2 sz= 10.0 f=NotoSans-Bold | (без друзей, предметов
+ 2067.8  1578.6 sz= 10.0 f=NotoSans-Bold | и магических предметов).
+ 2102.6  1590.0 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2075.0  1601.4 sz= 10.0 f=NotoSans-Bold | 1 провал отбросил тебя
+ 2089.0  1612.8 sz= 10.0 f=NotoSans-Bold | (покинь это поле).
+ 2044.9  1624.2 sz= 10.0 f=NotoSans-Bold | 2: оказался в провале Мира Магии.
+ 2051.3  1635.6 sz= 10.0 f=NotoSans-Bold | 3: оказался в провале Мира Ума.
+ 2049.9  1646.9 sz= 10.0 f=NotoSans-Bold | 4-6: вышел в Королевство Эмбер.
+ 2072.0  1658.3 sz= 10.0 f=NotoSans-Bold | За 1 ход можешь пройти
+ 2092.7  1669.7 sz= 10.0 f=NotoSans-Bold | только 1 провал.
+ 1873.8  1510.2 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  948.1  1510.2 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+  727.0  1068.0 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+  486.0   646.5 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+  444.8  1068.0 sz= 10.0 f=NotoSans-Bold | (ВЫХОД В КОРОЛЕВСТВО ЭМБЕР)
+  434.8  1079.4 sz= 10.0 f=NotoSans-Bold | Останавливаешься здесь проходом.
+  456.9  1090.8 sz= 10.0 f=NotoSans-Bold | Если не выходишь в Эмбер,
+  427.0  1102.2 sz= 10.0 f=NotoSans-Bold | теряешь 1ПМ. Можешь выйти в Эмбер, 
+  452.9  1113.6 sz= 10.0 f=NotoSans-Bold | имея 11ПС, 11ПУ, 11ПМ, 11ПО
+  468.3  1125.0 sz= 10.0 f=NotoSans-Bold | (без друзей, предметов
+  460.6  1136.4 sz= 10.0 f=NotoSans-Bold | и магических предметов).
+  495.4  1147.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  467.7  1159.2 sz= 10.0 f=NotoSans-Bold | 1 провал отбросил тебя
+  481.7  1170.6 sz= 10.0 f=NotoSans-Bold | (покинь это поле).
+  444.1  1182.0 sz= 10.0 f=NotoSans-Bold | 2: оказался в провале Мира Ума.
+  440.5  1193.4 sz= 10.0 f=NotoSans-Bold | 3: оказался в провале Мира Силы.
+  442.7  1204.7 sz= 10.0 f=NotoSans-Bold | 4-6: вышел в Королевство Эмбер.
+  464.8  1216.1 sz= 10.0 f=NotoSans-Bold | За 1 ход можешь пройти
+  485.5  1227.5 sz= 10.0 f=NotoSans-Bold | только 1 провал.
+  435.8   163.8 sz= 10.0 f=NotoSans-Bold | Останавливаешься здесь проходом
+  477.9   176.1 sz= 10.0 f=NotoSans-Bold | Можешь обменять:
+  439.3   188.4 sz= 10.0 f=NotoSans-Bold | 3ПМ или 3ПУ на 1ПС, 2 ПМ на 1 ПУ.
+  453.3   200.7 sz= 10.0 f=NotoSans-Bold | Можешь купить за 5 талеров
+  495.0   213.0 sz= 10.0 f=NotoSans-Bold | 1ПС или 1ПУ.
+  443.8   225.3 sz= 10.0 f=NotoSans-Bold | Если ты ничего не меняешь и не
+  427.9   237.6 sz= 10.0 f=NotoSans-Bold | покупаешь, заплати 5 талеров за вход.
+  438.5   249.9 sz= 10.0 f=NotoSans-Bold | Нет денег - теряешь 1ПЖ или 1ПМ.
+ 2505.1   163.8 sz= 10.0 f=NotoSans-Bold | Останавливаешься здесь проходом
+ 2547.2   176.1 sz= 10.0 f=NotoSans-Bold | Можешь обменять:
+ 2508.2   188.4 sz= 10.0 f=NotoSans-Bold | 3ПУ на 1ПМ или 1ПС, 2 ПМ на 1 ПС.
+ 2522.6   200.7 sz= 10.0 f=NotoSans-Bold | Можешь купить за 5 талеров
+ 2562.5   213.0 sz= 10.0 f=NotoSans-Bold | 1ПС или 1ПМ.
+ 2513.1   225.3 sz= 10.0 f=NotoSans-Bold | Если ты ничего не меняешь и не
+ 2497.1   237.6 sz= 10.0 f=NotoSans-Bold | покупаешь, заплати 5 талеров за вход.
+ 2509.6   249.9 sz= 10.0 f=NotoSans-Bold | Нет денег - теряешь 1ПЖ или 1ПУ.
+  495.1   384.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  444.5   395.5 sz= 10.0 f=NotoSans-Bold | 1: нашел запечатанную бутылку
+  446.7   406.2 sz= 10.0 f=NotoSans-Bold | (возьми ее на поле предметов).
+  423.9   416.8 sz= 10.0 f=NotoSans-Bold | 2: можешь обменять 1ПС и 1ПМ на 1ПЖ.
+  433.6   427.4 sz= 10.0 f=NotoSans-Bold | 3: ты превратился в другого путника
+  433.1   438.0 sz= 10.0 f=NotoSans-Bold | (отложи свою карту и возьми новую,
+  434.9   448.7 sz= 10.0 f=NotoSans-Bold | пункты, друзья, предметы и талеры
+  472.7   459.3 sz= 10.0 f=NotoSans-Bold | остаются прежними).
+  446.8   469.9 sz= 10.0 f=NotoSans-Bold | 4: оказываешься в Мире Магии
+  440.6   480.6 sz= 10.0 f=NotoSans-Bold | на поле «Зачарованная Деревня»
+  453.2   491.2 sz= 10.0 f=NotoSans-Bold | (выполни там условия поля).
+  421.1   501.8 sz= 10.0 f=NotoSans-Bold | 5: встретил колдунью и оказался в Храме
+  436.6   512.5 sz= 10.0 f=NotoSans-Bold | Бааля (выполни там условия поля).
+  473.7   523.1 sz= 10.0 f=NotoSans-Bold | 6: получи 1ПС и 1ПЖ.
+  684.1   625.8 sz= 10.0 f=NotoSans-Bold | Можешь купить здесь предметы
+  673.6   637.2 sz= 10.0 f=NotoSans-Bold | или амулеты (см. Торговый каталог).
+  728.6   648.6 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  957.3   625.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  940.3   637.2 sz= 10.0 f=NotoSans-Bold | 1-2: возьми 1 карту.
+  938.6   648.6 sz= 10.0 f=NotoSans-Bold | 3-4: возьми 2 карты.
+  943.1   660.0 sz= 10.0 f=NotoSans-Bold | 5: возьми 3 карты.
+  891.8   671.4 sz= 10.0 f=NotoSans-Bold | 6: ты нашел клад (возьми 10 талеров).
+ 1525.9   591.2 sz= 17.0 f=NotoSans-Bold | ЛАЗАРЕТ
+ 1452.4   613.0 sz= 10.0 f=NotoSans-Bold | Можешь останавливаться здесь проходом
+ 1427.4   625.3 sz= 10.0 f=NotoSans-Bold | или, не останавливаясь, переходить из Мира в Мир.
+ 1413.4   637.6 sz= 10.0 f=NotoSans-Bold | Здесь лечат ПЖ до 4, стоимость лечения 2 талера за 1 ПЖ
+ 1462.1   649.9 sz= 10.0 f=NotoSans-Bold | (отложи деньги и восстанови ПЖ до 4).
+ 1420.3   662.2 sz= 10.0 f=NotoSans-Bold | Если не лечишься, можешь пройти профилактическое
+ 1467.8   674.5 sz= 10.0 f=NotoSans-Bold | обследование стоимостью в 1 талер.
+ 1469.7   686.8 sz= 10.0 f=NotoSans-Bold | Нет денег - лазарет закрыт для тебя
+ 1448.3   699.1 sz= 10.0 f=NotoSans-Bold | (не можешь останавливаться на этом поле).
+ 1368.4   711.4 sz= 10.0 f=NotoSans-Bold | Бесплатно лечат только безумных (ПУ равны 0) и восстанавливают ПУ до 3
+ 1178.3   625.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1147.5   637.2 sz= 10.0 f=NotoSans-Bold | 1: получи бутылку виски
+ 1165.1   648.6 sz= 10.0 f=NotoSans-Bold | за счёт заведения
+ 1129.9   660.0 sz= 10.0 f=NotoSans-Bold | (возьми ее на поле предметов).
+ 1120.1   671.4 sz= 10.0 f=NotoSans-Bold | 2: подрался с местным вышибалой
+ 1173.4   682.8 sz= 10.0 f=NotoSans-Bold | (теряешь 1ПС).
+ 1169.4   694.2 sz= 10.0 f=NotoSans-Bold | 3: нашел патрон
+ 1160.5   705.6 sz= 10.0 f=NotoSans-Bold | с серебряной пулей
+ 1127.4   717.0 sz= 10.0 f=NotoSans-Bold | (возьми его на поле предметов).
+ 1120.2   728.4 sz= 10.0 f=NotoSans-Bold | 4: вакеро становится твоим другом
+ 1127.4   739.8 sz= 10.0 f=NotoSans-Bold | (возьми его на поле предметов).
+ 1112.1   751.1 sz= 10.0 f=NotoSans-Bold | 5: отравился котлетой (теряешь 1 ПЖ).
+ 1127.3   762.5 sz= 10.0 f=NotoSans-Bold | 6: много пьешь (пропусти 1 ход).
+ 1496.1  1521.2 sz= 17.0 f=NotoSans-Bold | ЗАГОТКОНТОРА
+ 1452.5  1542.8 sz= 10.0 f=NotoSans-Bold | Можешь останавливаться здесь проходом
+ 1427.6  1555.2 sz= 10.0 f=NotoSans-Bold | или, не останавливаясь, переходить из Мира в Мир.
+ 1470.8  1567.5 sz= 10.0 f=NotoSans-Bold | Здесь сдают шкуры и други трофеи
+ 1469.6  1579.8 sz= 10.0 f=NotoSans-Bold | (отложи их карты и возьми деньги).
+ 1435.1  1592.1 sz= 10.0 f=NotoSans-Bold | Если ничего не сдаешь, заплати 2 талера за вход.
+ 1474.6  1604.4 sz= 10.0 f=NotoSans-Bold | Нет денег - теряешь 1ПС или 1ПЖ.
+ 1341.9   873.4 sz= 10.0 f=NotoSans-Bold | Ты должен бродить по храму, пока
+ 1341.1   884.0 sz= 10.0 f=NotoSans-Bold | не выйдешь на поле «Лысая гора».
+ 2261.5   846.9 sz= 10.0 f=NotoSans-Bold | Ты должен идти через перевал, пока
+ 2271.0   859.2 sz= 10.0 f=NotoSans-Bold | не выйдешь на поле «Крепость».
+ 1829.3   625.8 sz= 10.0 f=NotoSans-Bold | Можешь купить здесь предметы
+ 1818.8   638.1 sz= 10.0 f=NotoSans-Bold | или амулеты (см. Торговый каталог).
+ 1873.8   650.4 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 2512.5  1289.1 sz= 10.0 f=NotoSans-Bold | Можешь купить здесь предметы
+ 2502.0  1301.4 sz= 10.0 f=NotoSans-Bold | или амулеты (см. Торговый каталог).
+ 2557.0  1313.7 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  443.2   846.9 sz= 10.0 f=NotoSans-Bold | Можешь купить здесь предметы
+  432.7   859.2 sz= 10.0 f=NotoSans-Bold | или амулеты (см. Торговый каталог).
+  487.7   871.5 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  487.8  1309.8 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  430.9  1322.1 sz= 10.0 f=NotoSans-Bold | Владыка Мира Магии здесь беспечен
+  428.6  1334.4 sz= 10.0 f=NotoSans-Bold | и может не выполнять условия взятой
+  440.1  1346.7 sz= 10.0 f=NotoSans-Bold | на этом поле карты приключений
+  479.4  1359.0 sz= 10.0 f=NotoSans-Bold | (отложи эту карту).
+  728.7  1530.9 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  674.7  1543.2 sz= 10.0 f=NotoSans-Bold | Владыка Мира Силы здесь беспечен
+  681.6  1555.5 sz= 10.0 f=NotoSans-Bold | и может передать любому игроку
+  696.3  1567.8 sz= 10.0 f=NotoSans-Bold | карту приключений, взятую
+  733.0  1580.1 sz= 10.0 f=NotoSans-Bold | на этом поле..
+ 1873.9  1771.8 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1823.6  1783.2 sz= 10.0 f=NotoSans-Bold | Владыка Мира Ума здесь беспечен
+ 1814.7  1794.6 sz= 10.0 f=NotoSans-Bold | и может не выполнять условия взятой
+ 1826.2  1806.0 sz= 10.0 f=NotoSans-Bold | на этом поле карты приключений
+ 1860.2  1817.4 sz= 10.0 f=NotoSans-Bold | (верни ее в середину
+ 1859.6  1828.8 sz= 10.0 f=NotoSans-Bold | оставшейся колоды).
+ 2316.4  1751.2 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 2286.1  1763.5 sz= 10.0 f=NotoSans-Bold | Уходя с этого поля, вычти 1
+ 2283.2  1775.8 sz= 10.0 f=NotoSans-Bold | из результата броска на ход.
+ 2102.5   625.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2083.8   637.2 sz= 10.0 f=NotoSans-Bold | 1-5: возьми 2 карты.
+ 2037.0   648.6 sz= 10.0 f=NotoSans-Bold | 6: ты нашел клад (возьми 15 талеров).
+ 2271.5  1289.1 sz= 10.0 f=NotoSans-Bold | Можешь купить здесь предметы
+ 2261.0  1301.4 sz= 10.0 f=NotoSans-Bold | или амулеты (см. Торговый каталог).
+ 2316.0  1313.7 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+  736.1   846.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  719.1   858.3 sz= 10.0 f=NotoSans-Bold | 1-4: возьми 1 карту.
+  701.4   869.7 sz= 10.0 f=NotoSans-Bold | 5-6: у тебя кончилась вода
+  695.9   881.1 sz= 10.0 f=NotoSans-Bold | (твой 1ПЖ переходит в 1ПУ).
+  708.6   892.5 sz= 10.0 f=NotoSans-Bold | Змеи и драконы имеют
+  713.8   903.9 sz= 10.0 f=NotoSans-Bold | здесь на 1ПС больше.
+ 2323.6  1510.2 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2306.7  1522.5 sz= 10.0 f=NotoSans-Bold | 1: ты теряешь 1ПЖ.
+ 2308.4  1534.8 sz= 10.0 f=NotoSans-Bold | 2: ты теряешь 1ПС.
+ 2267.6  1547.1 sz= 10.0 f=NotoSans-Bold | 3: теряешь 1 предмет или лошадь.
+ 2319.5  1559.5 sz= 10.0 f=NotoSans-Bold | 4: возьми 2ПС.
+ 2317.8  1571.8 sz= 10.0 f=NotoSans-Bold | 5: возьми 2ПЖ.
+ 2319.5  1584.1 sz= 10.0 f=NotoSans-Bold | 6: возьми 1ПС.
+ 2564.4  1510.2 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2525.1  1522.5 sz= 10.0 f=NotoSans-Bold | 1: ты уснул (пропусти 1 ход).
+ 2526.9  1534.8 sz= 10.0 f=NotoSans-Bold | 2: ты пристрастился к маку
+ 2559.5  1547.1 sz= 10.0 f=NotoSans-Bold | (теряешь 2ПУ).
+ 2547.4  1559.5 sz= 10.0 f=NotoSans-Bold | 3-4: возьми 1 карту.
+ 2545.8  1571.8 sz= 10.0 f=NotoSans-Bold | 5-6: возьми 2 карты.
+ 1660.0  1777.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1643.0  1788.4 sz= 10.0 f=NotoSans-Bold | 1-5: возьми 1 карту.
+ 1628.6  1799.0 sz= 10.0 f=NotoSans-Bold | 6: можешь сорвать здесь
+ 1618.2  1809.7 sz= 10.0 f=NotoSans-Bold | плод мудрости (возьми 1ПУ).
+ 2564.4  1771.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2560.8  1783.7 sz= 10.0 f=NotoSans-Bold | 1: возьми 1ПУ.
+ 2560.8  1795.5 sz= 10.0 f=NotoSans-Bold | 2: возьми 2ПУ.
+ 2543.1  1807.4 sz= 10.0 f=NotoSans-Bold | 3: возьми 1ПУ и 1ПМ.
+ 2526.2  1819.2 sz= 10.0 f=NotoSans-Bold | Ты не понравился мудрецу:
+ 2557.8  1831.1 sz= 10.0 f=NotoSans-Bold | 4: теряешь 1ПУ.
+ 2502.1  1842.9 sz= 10.0 f=NotoSans-Bold | 5: теряешь 1ПУ и пропускаешь 1 ход.
+ 2524.1  1854.8 sz= 10.0 f=NotoSans-Bold | 6: твои 2ПУ переходят в 1ПС.
+ 1178.3  1510.2 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1161.3  1522.5 sz= 10.0 f=NotoSans-Bold | 1-5: возьми 1 карту.
+ 1130.9  1534.8 sz= 10.0 f=NotoSans-Bold | 6: ты не смог преодолеть гряду
+ 1108.7  1547.1 sz= 10.0 f=NotoSans-Bold | (пропусти 1 ход, затем возьми 2 карты).
+ 2093.3  1751.2 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+ 2052.8  1763.5 sz= 10.0 f=NotoSans-Bold | Можешь перейти в Мир Золота,
+ 2050.2  1775.8 sz= 10.0 f=NotoSans-Bold | не останавливаясь на этом поле.
+  948.1  1751.2 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+  907.6  1763.5 sz= 10.0 f=NotoSans-Bold | Можешь перейти в Мир Золота,
+  905.0  1775.8 sz= 10.0 f=NotoSans-Bold | не останавливаясь на этом поле.
+ 1399.2  1777.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1382.2  1790.1 sz= 10.0 f=NotoSans-Bold | 1-2: возьми 1 карту.
+ 1380.6  1802.4 sz= 10.0 f=NotoSans-Bold | 3-4: возьми 2 карты.
+ 1380.6  1814.7 sz= 10.0 f=NotoSans-Bold | 5-6: возьми 3 карты.
+ 1372.6  1827.0 sz= 10.0 f=NotoSans-Bold | Нечисть, враги и звери
+ 1356.9  1839.3 sz= 10.0 f=NotoSans-Bold | имеют здесь на 3ПМ больше.
+ 1171.1  1751.2 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1131.7  1763.5 sz= 10.0 f=NotoSans-Bold | Уходя с этого поля, не можешь
+ 1149.6  1775.8 sz= 10.0 f=NotoSans-Bold | пользоваться лошадью.
+  736.1  1751.2 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  723.6  1763.5 sz= 10.0 f=NotoSans-Bold | 1: возьми 1 карту.
+  717.5  1775.8 sz= 10.0 f=NotoSans-Bold | 2-4: возьми 2 карты.
+  709.2  1788.1 sz= 10.0 f=NotoSans-Bold | 5: утонула твоя лошадь
+  707.8  1800.4 sz= 10.0 f=NotoSans-Bold | (отложи карту лошади).
+  714.2  1812.7 sz= 10.0 f=NotoSans-Bold | 6: теряешь 1 предмет
+  703.3  1825.0 sz= 10.0 f=NotoSans-Bold | (отложи карту предмета).
+  495.2  1792.5 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  478.3  1803.4 sz= 10.0 f=NotoSans-Bold | 1: ты теряешь 3ПЖ.
+  451.7  1814.4 sz= 10.0 f=NotoSans-Bold | 2: все твои амулеты исчезают
+  461.7  1825.3 sz= 10.0 f=NotoSans-Bold | (отложи карты амулетов).
+  486.7  1836.2 sz= 10.0 f=NotoSans-Bold | 3: теряешь 3ПМ.
+  489.7  1847.2 sz= 10.0 f=NotoSans-Bold | 4: возьми 1ПМ.
+  489.4  1858.1 sz= 10.0 f=NotoSans-Bold | 5: возьми 1ПЖ.
+  475.2  1869.1 sz= 10.0 f=NotoSans-Bold | 6: получи амулет №1
+  444.3  1880.0 sz= 10.0 f=NotoSans-Bold | (возьми его на поле предметов).
+  495.3  1510.2 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  478.3  1521.6 sz= 10.0 f=NotoSans-Bold | 1-2: возьми 1 карту.
+  476.7  1533.0 sz= 10.0 f=NotoSans-Bold | 3-4: возьми 2 карты.
+  449.0  1544.4 sz= 10.0 f=NotoSans-Bold | 5-6: твои 2ПУ переходят в 1ПМ.
+  438.8  1555.8 sz= 10.0 f=NotoSans-Bold | Злые здесь имеют во время битвы
+  487.0  1567.2 sz= 10.0 f=NotoSans-Bold | на 2ПМ больше.
+  446.4  1578.6 sz= 10.0 f=NotoSans-Bold | Нейтральные - на 1ПМ меньше.
+  461.3  1590.0 sz= 10.0 f=NotoSans-Bold | Добрые - на 2ПМ меньше.
+  456.4  1601.4 sz= 10.0 f=NotoSans-Bold | После битвы возвращаются
+  473.5  1612.8 sz= 10.0 f=NotoSans-Bold | на прежний уровень.
+  736.3  1289.1 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+  719.3  1300.5 sz= 10.0 f=NotoSans-Bold | 1-4: возьми 1 карту.
+  690.5  1311.9 sz= 10.0 f=NotoSans-Bold | 5-6: у тебя кончились припасы
+  686.9  1323.3 sz= 10.0 f=NotoSans-Bold | (твои 2ПС переходят в 1ПУ, если
+  683.8  1334.7 sz= 10.0 f=NotoSans-Bold | у тебя нет 2ПС, ты теряешь 1ПЖ).
+ 2323.6   625.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2306.6   637.2 sz= 10.0 f=NotoSans-Bold | 1-4: возьми 1 карту.
+ 2254.0   648.6 sz= 10.0 f=NotoSans-Bold | 5: поломал 1 предмет (заплати 2 талера
+ 2253.9   660.0 sz= 10.0 f=NotoSans-Bold | за ремонт или отложи карту предмета).
+ 2286.2   671.4 sz= 10.0 f=NotoSans-Bold | 6: твоя лошадь поранилась
+ 2260.9   682.8 sz= 10.0 f=NotoSans-Bold | (заплати 3 талера за целебный отвар
+ 2285.8   694.2 sz= 10.0 f=NotoSans-Bold | или отложи карту лошади).
+ 2556.9  1068.0 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 2519.7  1079.4 sz= 10.0 f=NotoSans-Bold | Можешь заплатить 5 талеров,
+ 2514.2  1090.8 sz= 10.0 f=NotoSans-Bold | взять 3 карты и выбрать 1 из 3-х
+ 2514.1  1102.2 sz= 10.0 f=NotoSans-Bold | (другие карты верни в середину
+ 2542.6  1113.6 sz= 10.0 f=NotoSans-Bold | оставшейся колоды).
+ 2564.3   846.9 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2547.3   858.3 sz= 10.0 f=NotoSans-Bold | 1-3: возьми 1 карту.
+ 2495.7   869.7 sz= 10.0 f=NotoSans-Bold | 4-6: можешь попытаться покорить пик,
+ 2499.8   881.1 sz= 10.0 f=NotoSans-Bold | купив за 3 талера горное снаряжение
+ 2559.8   892.5 sz= 10.0 f=NotoSans-Bold | и брось кубик:
+ 2514.3   903.9 sz= 10.0 f=NotoSans-Bold | 1-4: ты разбился (теряешь 1ПЖ).
+ 2511.4   915.3 sz= 10.0 f=NotoSans-Bold | 5-6: пик покорен, на его вершине
+ 2489.6   926.7 sz= 10.0 f=NotoSans-Bold | находится база пришельцев-гуманоидов,
+ 2523.5   938.1 sz= 10.0 f=NotoSans-Bold | можешь взять у них бластер
+ 2526.5   949.5 sz= 10.0 f=NotoSans-Bold | или телепатическое ружье.
+ 2203.1   996.2 sz= 10.0 f=NotoSans-Bold | ОСЫПЬ
+ 2194.2  1008.5 sz= 10.0 f=NotoSans-Bold | твой 1ПС
+ 2155.4  1020.8 sz= 10.0 f=NotoSans-Bold | переходит в 1ПУ
+ 2030.8   820.5 sz= 10.0 f=NotoSans-Bold | РОДНИК
+ 2030.8   832.8 sz= 10.0 f=NotoSans-Bold | возьми 1ПЖ
+ 1809.7   947.0 sz= 10.0 f=NotoSans-Bold | СНЕЖНЫЙ
+ 1809.7   959.3 sz= 10.0 f=NotoSans-Bold | ЧЕЛОВЕК
+ 1809.7   971.6 sz= 10.0 f=NotoSans-Bold | теряешь 1
+ 1809.7   983.9 sz= 10.0 f=NotoSans-Bold | амулет, если
+ 1809.7   996.2 sz= 10.0 f=NotoSans-Bold | у тебя нет
+ 1809.7  1008.5 sz= 10.0 f=NotoSans-Bold | амулета,
+ 1809.7  1020.8 sz= 10.0 f=NotoSans-Bold | ты теряешь 1ПС
+ 1809.7  1041.6 sz= 10.0 f=NotoSans-Bold | ЛАВИНА
+ 1809.7  1053.9 sz= 10.0 f=NotoSans-Bold | теряешь 1ПЖ
+ 1976.8  1217.3 sz= 10.0 f=NotoSans-Bold | ПРИВАЛ
+ 1847.9  1229.6 sz= 10.0 f=NotoSans-Bold | если у тебя есть тюк с провизией
+ 1853.0  1241.9 sz= 10.0 f=NotoSans-Bold | или бурдюк с водой возьми 1ПС
+ 2029.8  1217.3 sz= 10.0 f=NotoSans-Bold | ОТШЕЛЬНИК
+ 2029.8  1229.6 sz= 10.0 f=NotoSans-Bold | возьми 1ПУ
+ 2143.3  1053.9 sz= 10.0 f=NotoSans-Bold | выходишь на поле
+ 2180.3  1066.2 sz= 10.0 f=NotoSans-Bold | «Крепость»
+ 1960.6   820.5 sz= 10.0 f=NotoSans-Bold | КАМНЕПАД
+ 1857.1   832.8 sz= 10.0 f=NotoSans-Bold | теряешь 1 предмет, если у тебя
+ 1861.0   845.1 sz= 10.0 f=NotoSans-Bold | нет предмета, ты теряешь 1ПС
+ 1391.9  1289.1 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1352.9  1301.4 sz= 10.0 f=NotoSans-Bold | Здесь не действуют предметы,
+ 1344.0  1313.7 sz= 10.0 f=NotoSans-Bold | магические предметы и амулеты.
+ 1660.1  1068.0 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1664.6  1080.3 sz= 10.0 f=NotoSans-Bold | РАДИАЦИЯ
+ 1619.8  1092.6 sz= 10.0 f=NotoSans-Bold | 1: твои 2ПУ переходят в 1ПС.
+ 1633.4  1104.9 sz= 10.0 f=NotoSans-Bold | 2: 2ПС переходят в 1ПУ.
+ 1631.9  1117.2 sz= 10.0 f=NotoSans-Bold | 3: 2ПМ переходят в 1ПУ.
+ 1637.4  1129.6 sz= 10.0 f=NotoSans-Bold | ЖЕСТКОЕ ИЗЛУЧЕНИЕ
+ 1653.4  1141.9 sz= 10.0 f=NotoSans-Bold | 4: теряешь 2ПУ.
+ 1651.6  1154.2 sz= 10.0 f=NotoSans-Bold | 5: теряешь 2ПМ.
+ 1653.1  1166.5 sz= 10.0 f=NotoSans-Bold | 6: теряешь 2ПС.
+ 1651.2   873.4 sz= 10.0 f=NotoSans-Bold | Возьми 2 карты.
+ 1623.2   884.0 sz= 10.0 f=NotoSans-Bold | Звери и враги имеют здесь
+ 1649.4   894.7 sz= 10.0 f=NotoSans-Bold | на    2ПУ больше.
+ 1106.7   832.8 sz= 10.0 f=NotoSans-Bold | теряешь 2ПМ
+ 1219.5  1008.5 sz= 10.0 f=NotoSans-Bold | можешь обменять
+ 1267.6  1020.8 sz= 10.0 f=NotoSans-Bold | ПС на ПМ
+  920.0   832.8 sz= 10.0 f=NotoSans-Bold | теряешь 3ПС, если у тебя нет 3ПС,
+ 1008.9   845.1 sz= 10.0 f=NotoSans-Bold | ты теряешь 1ПЖ
+  885.6   996.2 sz= 10.0 f=NotoSans-Bold | получи амулет №7
+  885.6  1008.5 sz= 10.0 f=NotoSans-Bold | (возьми его на поле
+  885.6  1020.8 sz= 10.0 f=NotoSans-Bold | предметов)
+  885.6  1053.9 sz= 10.0 f=NotoSans-Bold | нашел 10 талеров
+  952.8  1229.6 sz= 10.0 f=NotoSans-Bold | все твои амулеты исчезают
+  964.5  1241.9 sz= 10.0 f=NotoSans-Bold | (отложи карты амулетов)
+ 1219.2  1053.9 sz= 10.0 f=NotoSans-Bold | выходишь на поле
+ 1245.3  1066.2 sz= 10.0 f=NotoSans-Bold | «Лысая гора»
+ 1106.7  1229.6 sz= 10.0 f=NotoSans-Bold | получи 3ПС
+ 1652.8  1289.1 sz= 10.0 f=NotoSans-Bold | Возьми 1 карту.
+ 1597.9  1301.4 sz= 10.0 f=NotoSans-Bold | Нечисть имеет здесь на 1ПУ больше.
+ 1609.8  1313.7 sz= 10.0 f=NotoSans-Bold | Уходя с этого поля, брось кубик:
+ 1595.1  1326.0 sz= 10.0 f=NotoSans-Bold | 5-6: ты заблудился и оказался на поле
+ 1608.0  1338.4 sz= 10.0 f=NotoSans-Bold | «Покинутый дом» в Мире Магии
+ 1618.2  1350.7 sz= 10.0 f=NotoSans-Bold | (выполни там условия поля).
+ 2740.3  1289.1 sz= 10.0 f=NotoSans-Bold | Можешь здесь перекинуться в карты.
+ 2742.3  1301.4 sz= 10.0 f=NotoSans-Bold | Поставь на кон 5 талеров (положи их
+ 2755.7  1313.7 sz= 10.0 f=NotoSans-Bold | на поле «Черная касса мафии»)
+ 2778.5  1326.0 sz= 10.0 f=NotoSans-Bold | и трижды брось кубик:
+ 2761.9  1338.4 sz= 10.0 f=NotoSans-Bold | 14-18: ты выиграл 20 талеров.
+ 2750.3  1350.7 sz= 10.0 f=NotoSans-Bold | 3-7: ты жульничал (оказываешься
+ 2752.7  1363.0 sz= 10.0 f=NotoSans-Bold | на поле «Полицейский участок»,
+ 2766.4  1375.3 sz= 10.0 f=NotoSans-Bold | выполни там условия поля)
+ 2739.0  1510.2 sz= 10.0 f=NotoSans-Bold | Можешь поставить 5 талеров (положи
+ 2748.3  1522.5 sz= 10.0 f=NotoSans-Bold | их на поле «Черная касса мафии»)
+ 2783.6  1534.8 sz= 10.0 f=NotoSans-Bold | и брось кубик 4 раза.
+ 2742.8  1547.1 sz= 10.0 f=NotoSans-Bold | Каждый раз, когда выпадает 5 или 6,
+ 2776.8  1559.5 sz= 10.0 f=NotoSans-Bold | ты получаешь 4 талера.
+ 2758.5  1771.8 sz= 10.0 f=NotoSans-Bold | Можешь поиграть с местными
+ 2739.0  1782.5 sz= 10.0 f=NotoSans-Bold | шулерами: поставь 5 талеров (положи
+ 2748.4  1793.1 sz= 10.0 f=NotoSans-Bold | их на поле «Черная касса мафии»)
+ 2800.8  1803.7 sz= 10.0 f=NotoSans-Bold | и брось кубик:
+ 2735.1  1819.4 sz= 10.0 f=NotoSans-Bold | для честного
+ 2735.1  1831.7 sz= 10.0 f=NotoSans-Bold | 1: 10 талеров.
+ 2735.1  1844.0 sz= 10.0 f=NotoSans-Bold | 2: 0.
+ 2735.1  1856.3 sz= 10.0 f=NotoSans-Bold | 3: 10 талеров.
+ 2735.1  1868.6 sz= 10.0 f=NotoSans-Bold | 4: 0.
+ 2735.1  1880.9 sz= 10.0 f=NotoSans-Bold | 5: 15 талеров.
+ 2735.1  1893.2 sz= 10.0 f=NotoSans-Bold | 6: 0.
+ 2859.9  1819.4 sz= 10.0 f=NotoSans-Bold | для нечестного
+ 2859.9  1831.7 sz= 10.0 f=NotoSans-Bold | 1: 15 талеров.
+ 2859.9  1844.0 sz= 10.0 f=NotoSans-Bold | 2: 0.
+ 2859.9  1856.3 sz= 10.0 f=NotoSans-Bold | 3: 20 талеров.
+ 2859.9  1868.6 sz= 10.0 f=NotoSans-Bold | 4: туз в рукаве
+ 2859.9  1880.9 sz= 10.0 f=NotoSans-Bold | (теряешь 1ПС).
+ 2859.9  1893.2 sz= 10.0 f=NotoSans-Bold | 5: 20 талеров.
+ 2859.9  1905.5 sz= 10.0 f=NotoSans-Bold | 6: 10 талеров.
+ 2738.5  2012.8 sz= 10.0 f=NotoSans-Bold | Вход в пещеру охраняет Вечный Воин.
+ 2747.8  2025.1 sz= 10.0 f=NotoSans-Bold | Может войти только тот, кто имеет
+ 2748.8  2037.4 sz= 10.0 f=NotoSans-Bold | пропуск (отложи трофей-пропуск).
+ 2805.2  2049.7 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2783.3  2062.0 sz= 10.0 f=NotoSans-Bold | 1: возьми 10 талеров.
+ 2783.3  2074.3 sz= 10.0 f=NotoSans-Bold | 2: возьми 15 талеров.
+ 2783.3  2086.6 sz= 10.0 f=NotoSans-Bold | 3: возьми 20 талеров.
+ 2783.3  2098.9 sz= 10.0 f=NotoSans-Bold | 4: возьми 25 талеров.
+ 2783.3  2111.2 sz= 10.0 f=NotoSans-Bold | 5: возьми 30 талеров.
+ 2783.3  2123.5 sz= 10.0 f=NotoSans-Bold | 6: возьми 35 талеров.
+ 2501.0  1992.1 sz= 10.0 f=NotoSans-Bold | Можешь купить 1 жетон за 5 талеров
+ 2508.0  2004.4 sz= 10.0 f=NotoSans-Bold | (положи их на поле «Черная касса
+ 2529.7  2016.7 sz= 10.0 f=NotoSans-Bold | мафии») и бросить кубик:
+ 2524.4  2030.3 sz= 10.0 f=NotoSans-Bold | 1: 0.
+ 2524.4  2041.7 sz= 10.0 f=NotoSans-Bold | 2: 15 талеров.
+ 2524.4  2053.0 sz= 10.0 f=NotoSans-Bold | 3: ломал игровые автоматы
+ 2524.4  2064.4 sz= 10.0 f=NotoSans-Bold | (оказываешься на поле 
+ 2524.4  2075.8 sz= 10.0 f=NotoSans-Bold | «Полицейский участок»,
+ 2524.4  2087.2 sz= 10.0 f=NotoSans-Bold | выполни там условия поля).
+ 2524.4  2098.6 sz= 10.0 f=NotoSans-Bold | 4: 15 талеров.
+ 2524.4  2110.0 sz= 10.0 f=NotoSans-Bold | 5: 0.
+ 2524.4  2121.4 sz= 10.0 f=NotoSans-Bold | 6: 15 талеров.
+ 2263.9  1992.1 sz= 10.0 f=NotoSans-Bold | Можешь выставить на торги любой
+ 2303.6  2002.8 sz= 10.0 f=NotoSans-Bold | из своих предметов,
+ 2296.8  2013.4 sz= 10.0 f=NotoSans-Bold | амулетов или трофеев.
+ 2287.0  2024.0 sz= 10.0 f=NotoSans-Bold | С каждой проданной вещи
+ 2270.6  2034.7 sz= 10.0 f=NotoSans-Bold | положи 2 талера на поле «Банк».
+ 2323.3  2045.3 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 2283.7  2055.9 sz= 10.0 f=NotoSans-Bold | 1 или 5: товар не пользуется
+ 2278.2  2066.6 sz= 10.0 f=NotoSans-Bold | спросом (забери его обратно).
+ 2277.1  2077.2 sz= 10.0 f=NotoSans-Bold | 2: получи на 5 талеров больше
+ 2296.5  2087.8 sz= 10.0 f=NotoSans-Bold | первоначальной цены.
+ 2272.8  2098.5 sz= 10.0 f=NotoSans-Bold | 3: получи на 10 талеров больше.
+ 2272.8  2109.1 sz= 10.0 f=NotoSans-Bold | 4: получи на 15 талеров больше.
+ 2255.1  2119.7 sz= 10.0 f=NotoSans-Bold | 6: товар находится в «черных списках»
+ 2275.2  2130.4 sz= 10.0 f=NotoSans-Bold | и его конфискуют (отложи его),
+ 2284.9  2141.0 sz= 10.0 f=NotoSans-Bold | а ты оказываешься на поле
+ 2293.5  2151.6 sz= 10.0 f=NotoSans-Bold | «Полицейский участок»
+ 2281.5  2162.3 sz= 10.0 f=NotoSans-Bold | (выполни там условия поля).
+ 2060.3  2012.8 sz= 10.0 f=NotoSans-Bold | Можешь перейти в Мир Ума,
+ 2050.3  2023.9 sz= 10.0 f=NotoSans-Bold | не останавливаясь на этом поле.
+ 2041.0  2035.0 sz= 10.0 f=NotoSans-Bold | Можешь занять здесь под проценты
+ 2083.9  2046.1 sz= 10.0 f=NotoSans-Bold | 5, 10, 15, 20 талеров.
+ 2075.7  2057.1 sz= 10.0 f=NotoSans-Bold | Когда вернешь деньги,
+ 2045.7  2068.2 sz= 10.0 f=NotoSans-Bold | проценты положи на поле «Банк».
+ 1812.5  1992.1 sz= 10.0 f=NotoSans-Bold | Здесь хранятся деньги, полученные от:
+ 1830.1  2004.4 sz= 10.0 f=NotoSans-Bold | золотой шахты, ростовщика (%),
+ 1815.9  2016.7 sz= 10.0 f=NotoSans-Bold | детективного бюро, отеля, аэропорта,
+ 1811.5  2029.0 sz= 10.0 f=NotoSans-Bold | полицейского участка, заставы, биржи.
+ 1822.8  2041.3 sz= 10.0 f=NotoSans-Bold | Охрана - 3 полицейских с Силой 14.
+  434.7  1992.1 sz= 10.0 f=NotoSans-Bold | Здесь хранятся деньги, полученные
+  431.7  2004.0 sz= 10.0 f=NotoSans-Bold | от: контрабандистов, казино, кабака,
+  427.7  2015.8 sz= 10.0 f=NotoSans-Bold | игровых автоматов, тараканьих бегов,
+  492.5  2027.7 sz= 10.0 f=NotoSans-Bold | картежников.
+  449.6  2039.5 sz= 10.0 f=NotoSans-Bold | Охрана - 3 боевика с Силой 14.
+ 1660.0  2012.8 sz= 10.0 f=NotoSans-Bold | Брось кубик:
+ 1619.1  2024.3 sz= 10.0 f=NotoSans-Bold | 1: заплати штраф 10 талеров
+ 1619.5  2035.9 sz= 10.0 f=NotoSans-Bold | (положи их на поле «Банк»).
+ 1610.4  2047.4 sz= 10.0 f=NotoSans-Bold | Если нет денег, ты теряешь 1ПУ.
+ 1619.1  2059.0 sz= 10.0 f=NotoSans-Bold | 2: заплати штраф 15 талеров
+ 1619.5  2070.5 sz= 10.0 f=NotoSans-Bold | (положи их на поле «Банк»).
+ 1615.7  2082.1 sz= 10.0 f=NotoSans-Bold | Если нет денег, сидишь здесь,
+ 1613.9  2093.6 sz= 10.0 f=NotoSans-Bold | пока не выбросишь на ход 4-6.
+ 1629.8  2105.1 sz= 10.0 f=NotoSans-Bold | 3: буянил (теряешь 1ПС).
+ 1617.2  2116.7 sz= 10.0 f=NotoSans-Bold | 4: дали срок (пропусти 1 ход).
+ 1614.4  2128.2 sz= 10.0 f=NotoSans-Bold | 5: получи в детективном бюро
+ 1618.4  2139.8 sz= 10.0 f=NotoSans-Bold | жетон детектива 2-го класса.
+ 1614.4  2151.3 sz= 10.0 f=NotoSans-Bold | 6: получи в детективном бюро
+ 1618.4  2162.9 sz= 10.0 f=NotoSans-Bold | жетон детектива 1-го класса.
+ 1329.9  1992.1 sz= 10.0 f=NotoSans-Bold | Можешь зайти, заплати 1 талер за вход
+ 1357.8  2003.5 sz= 10.0 f=NotoSans-Bold | (положи его на поле «Банк»)
+ 1394.4  2014.9 sz= 10.0 f=NotoSans-Bold | и брось кубик:
+ 1331.5  2026.3 sz= 10.0 f=NotoSans-Bold | 1: тебя обокрали (теряешь 10 талеров).
+ 1346.4  2037.7 sz= 10.0 f=NotoSans-Bold | 2: выиграл в лотерею 20 талеров.
+ 1340.1  2049.1 sz= 10.0 f=NotoSans-Bold | 3: устроил дебош (оказался на поле
+ 1366.1  2060.5 sz= 10.0 f=NotoSans-Bold | «Полицейский участок»).
+ 1370.2  2071.9 sz= 10.0 f=NotoSans-Bold | 4: оказался юбилейным
+ 1344.6  2083.3 sz= 10.0 f=NotoSans-Bold | посетителем (возьми 15 талеров).
+ 1349.0  2094.7 sz= 10.0 f=NotoSans-Bold | 5: тебя зарезали (теряешь 1ПЖ).
+ 1374.6  2106.1 sz= 10.0 f=NotoSans-Bold | 6: женился на хозяйке
+ 1349.8  2117.4 sz= 10.0 f=NotoSans-Bold | (возьми приданое - 10 талеров).
+ 1105.8  1992.1 sz= 10.0 f=NotoSans-Bold | Можешь зайти, заплати 2 талера за вход
+ 1132.4  2003.5 sz= 10.0 f=NotoSans-Bold | и 5 талеров за игру(положи их
+ 1127.0  2014.9 sz= 10.0 f=NotoSans-Bold | на поле «Черная касса мафии»).
+ 1141.5  2026.3 sz= 10.0 f=NotoSans-Bold | Сыграй в рулетку - загадай
+ 1134.4  2037.7 sz= 10.0 f=NotoSans-Bold | 1 или 2 цифры и брось кубик:
+ 1144.2  2049.1 sz= 10.0 f=NotoSans-Bold | Если угадал 1 цифру из 1 -
+ 1161.8  2060.5 sz= 10.0 f=NotoSans-Bold | получи 25 талеров.
+ 1144.2  2071.9 sz= 10.0 f=NotoSans-Bold | Если угадал 1 цифру из 2 -
+ 1161.8  2083.3 sz= 10.0 f=NotoSans-Bold | получи 15 талеров.
+  908.5  2012.8 sz= 10.0 f=NotoSans-Bold | Можешь перейти в Мир Магии,
+  905.0  2024.2 sz= 10.0 f=NotoSans-Bold | не останавливаясь на этом поле.
+  897.0  2035.6 sz= 10.0 f=NotoSans-Bold | Можешь купить авиабилет на поля:
+  931.2  2047.0 sz= 10.0 f=NotoSans-Bold | «Ранчо» - за 7 талеров;
+  926.0  2058.4 sz= 10.0 f=NotoSans-Bold | «Лазарет» - за 5 талеров;
+  925.5  2069.7 sz= 10.0 f=NotoSans-Bold | «Магшоп» - за 8 талеров;
+  900.8  2081.1 sz= 10.0 f=NotoSans-Bold | «Оружейная лавка» - за 8 талеров;
+  907.8  2092.5 sz= 10.0 f=NotoSans-Bold | (положи деньги на поле «Банк»
+  897.4  2103.9 sz= 10.0 f=NotoSans-Bold | и следующим ходом оказываешься
+  937.0  2115.3 sz= 10.0 f=NotoSans-Bold | на выбранном поле)
+  671.8  1992.1 sz= 10.0 f=NotoSans-Bold | Можешь нанять здесь телохранителя
+  674.3  2005.2 sz= 10.0 f=NotoSans-Bold | за 5 талеров или купить карманного
+  689.4  2018.3 sz= 10.0 f=NotoSans-Bold | шпиона за 12 талеров (положи
+  706.8  2031.3 sz= 10.0 f=NotoSans-Bold | деньги на поле «Банк»).
+  676.1  2044.4 sz= 10.0 f=NotoSans-Bold | Можешь получить жетон детектива
+  717.0  2057.4 sz= 10.0 f=NotoSans-Bold | 1-го или 2-го класса,
+  701.1  2070.5 sz= 10.0 f=NotoSans-Bold | если имеешь на это право
+  677.4  2083.6 sz= 10.0 f=NotoSans-Bold | (возьми жетон на поле предметов).
+  212.5  2012.8 sz= 10.0 f=NotoSans-Bold | Можешь купить снаряжение
+  182.0  2023.9 sz= 10.0 f=NotoSans-Bold | за 5 талеров (положи их на поле «Банк»)
+  249.7  2035.0 sz= 10.0 f=NotoSans-Bold | и брось кубик:
+  236.5  2046.1 sz= 10.0 f=NotoSans-Bold | 1: ничего не нашел.
+  235.4  2057.1 sz= 10.0 f=NotoSans-Bold | 2: получи 5 талеров.
+  235.4  2068.2 sz= 10.0 f=NotoSans-Bold | 3: получи 8 талеров.
+  232.6  2079.3 sz= 10.0 f=NotoSans-Bold | 4: получи 10 талеров.
+  232.6  2090.4 sz= 10.0 f=NotoSans-Bold | 5: получи 12 талеров.
+  200.5  2101.5 sz= 10.0 f=NotoSans-Bold | 6: не имеешь лицензии (оказался
+  201.7  2112.6 sz= 10.0 f=NotoSans-Bold | на поле «Полицейский участок»,
+  214.0  2123.7 sz= 10.0 f=NotoSans-Bold | выполни там условия поля).
+  225.7  1771.8 sz= 10.0 f=NotoSans-Bold | Можешь завербоваться
+  186.9  1782.9 sz= 10.0 f=NotoSans-Bold | (остаешься на этом поле и выбираешь
+  227.0  1794.0 sz= 10.0 f=NotoSans-Bold | срок службы и оплату):
+  243.7  1805.1 sz= 10.0 f=NotoSans-Bold | 1 ход - 5 талеров;
+  237.8  1816.2 sz= 10.0 f=NotoSans-Bold | 2 хода - 10 талеров;
+  237.8  1827.3 sz= 10.0 f=NotoSans-Bold | 3 хода - 15 талеров;
+  212.8  1838.4 sz= 10.0 f=NotoSans-Bold | По окончании срока службы
+  254.3  1849.5 sz= 10.0 f=NotoSans-Bold | брось кубик:
+  239.2  1860.6 sz= 10.0 f=NotoSans-Bold | 1-4 получи деньги.
+  181.8  1871.6 sz= 10.0 f=NotoSans-Bold | 5-6: тебя объявили дезертиром (теряешь
+  187.7  1882.7 sz= 10.0 f=NotoSans-Bold | 1ПЖ и половину выслуженных денег).
+  180.8  1510.2 sz= 10.0 f=NotoSans-Bold | Можешь доставить контрабандный груз.
+  181.2  1522.5 sz= 10.0 f=NotoSans-Bold | Если ты согласен, заплати залог (положи
+  188.3  1534.8 sz= 10.0 f=NotoSans-Bold | деньги на поле «Черная касса мафии)
+  189.4  1547.1 sz= 10.0 f=NotoSans-Bold | и выбери пункт назначения и оплату.
+  207.2  1559.5 sz= 10.0 f=NotoSans-Bold | Карты контрабанды находятся
+  236.6  1571.8 sz= 10.0 f=NotoSans-Bold | на поле предметов.
+  182.4  1289.1 sz= 10.0 f=NotoSans-Bold | Стражники предлагают сыграть в кости.
+  194.0  1301.4 sz= 10.0 f=NotoSans-Bold | Если ты согласен, поставь 5 талеров
+  215.1  1313.7 sz= 10.0 f=NotoSans-Bold | (положи их на поле «Банк»)
+  227.5  1326.0 sz= 10.0 f=NotoSans-Bold | и дважды брось кубик:
+  213.7  1338.4 sz= 10.0 f=NotoSans-Bold | 9-12: ты выиграл 15 талеров.

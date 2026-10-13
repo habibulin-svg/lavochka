@@ -1,0 +1,5 @@
+board2 raster zoom=1.0 -> 837x1713 px  (1 px = 1 pt)
+page rect = 836.22 x 1712.13 pt
+yellow px: 134435
+
+=== road cells (yellow), 0 ===
