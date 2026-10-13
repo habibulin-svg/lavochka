@@ -1,5 +1,8 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import board from '../src/games/hodilki/data/shel.json';
+import items from '../src/games/shel/items.json';
 
 describe('Шёл солдат: поле', () => {
   it('сто сорок клеток по порядку, движение по возрастанию', () => {
@@ -34,5 +37,28 @@ describe('Шёл солдат: поле', () => {
     expect(beggars).toEqual([15, 17, 19]);
     const witch = board.cells.map((c, i) => ({ i: i + 1, q: (c as { q?: string }).q })).filter((c) => c.q === 'witch').map((c) => c.i);
     expect(witch).toEqual([21]);
+  });
+});
+
+describe('Шёл солдат: предметы', () => {
+  it('шестнадцать предметов с названиями и текстами', () => {
+    const list = items.items as { file: string; kind: string; text: string }[];
+    expect(list.length).toBe(16);
+    for (const it of list) {
+      expect(it.file, 'файл картинки').toMatch(/^cards\/item-\d\d\.webp$/);
+      expect(it.text.length, 'текст предмета ' + it.file).toBeGreaterThan(2);
+    }
+    // названия, которые точно есть в игре
+    const names = list.map((i) => i.text).join(' | ');
+    for (const must of ['Хлеб', 'Огниво', 'Полотенце', 'Конь-огонь', 'Шапка-невидимка']) {
+      expect(names, 'предмет ' + must).toContain(must);
+    }
+  });
+
+  it('картинки всех предметов лежат в public/shel', () => {
+    const list = items.items as { file: string }[];
+    for (const it of list) {
+      expect(existsSync(join(process.cwd(), 'public', 'shel', it.file)), it.file).toBe(true);
+    }
   });
 });
