@@ -85,9 +85,21 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
   if (moved && s.left > 0 && (here === 'lyceum' || here === 'meadow' || here === 'exchange' || here === 'hospital')) return { type: 'stop' };
   const ready = STATS.every((k) => h.st[k] >= CELL_RULES.fall.need) && h.items.length === 0;
   if (ready) return { type: 'step', to: nextToward(s, seat, (n) => kindOf(n) === 'fall') ?? stepTargets(s, seat)[0] };
-  // уровень 1 — просто первый сосед; уровни 2-3 идут к лицею (там растут характеристики)
   if (level === 1) return { type: 'step', to: stepTargets(s, seat)[0] };
-  const to = nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow');
+  // на обменном пункте меняем избыток на недостающее (движок: 2 из одной характеристики → 1 в другую)
+  if (here === 'exchange') {
+    const sorted = [...STATS].sort((a, b) => h.st[a] - h.st[b]);
+    const low = sorted[0];
+    const high = sorted[sorted.length - 1];
+    if (h.st[low] < CELL_RULES.fall.need && h.st[high] >= 4) return { type: 'exchange', from: high, to: low };
+  }
+  // при обнулившемся ПУ или ПС идём в лазарет (безумных лечат бесплатно) или к лицею
+  const weak = STATS.some((k) => h.st[k] <= 0);
+  if (weak) {
+    const to = nextToward(s, seat, (n) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum');
+    return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
+  }
+  const to = nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange');
   return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
 }
 

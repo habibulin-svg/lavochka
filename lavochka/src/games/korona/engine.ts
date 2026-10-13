@@ -249,6 +249,8 @@ function arrive(s: State, x: X, seat: number, rng: Rng): State {
     return st;
   }
   if (kind === 'hospital') {
+    // «бесплатно лечат только безумных (ПУ равны 0) и восстанавливают ПУ до 3»
+    if (h.st['ПУ'] === 0) st = give(st, x, seat, 'ПУ', CELL_RULES.hospital.madRestorePu);
     const fee = h.life < CELL_RULES.hospital.healTo ? (CELL_RULES.hospital.healTo - h.life) * CELL_RULES.hospital.pricePerLife : 0;
     if (fee > 0 && h.thalers >= fee) {
       st = money(st, x, seat, -fee);
