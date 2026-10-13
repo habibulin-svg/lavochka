@@ -29,7 +29,7 @@ def main():
     data = json.load(open(DATA, encoding='utf8'))
     cells = data['cells']
     names = [(norm(c['name']), c) for c in cells]
-    links, unresolved = [], 0
+    links, unresolved = [], []
 
     def find(text):
         key = norm(text)
@@ -47,7 +47,8 @@ def main():
         text = re.sub(r'^\d+\s*', '', text).strip()
         parts = [p.strip(' .()') for p in ARROW.split(text) if p.strip(' .()')]
         if len(parts) < 2:
-            unresolved += 1
+            # cross-клетки и Провалы: переход другого рода (бросок, уход в Эмбер) — сохраняем как есть
+            unresolved.append({'text': text, 'x': round(row['xy'][0][0] * SCALE, 1) if row['xy'] else None, 'y': round(row['xy'][0][1] * SCALE, 1) if row['xy'] else None})
             continue
         a, b = find(parts[0]), find(parts[1])
         xy = row['xy'][0] if row['xy'] else None
@@ -59,10 +60,10 @@ def main():
             'x': round(xy[0] * SCALE, 1) if xy else None,
             'y': round(xy[1] * SCALE, 1) if xy else None,
         })
-    json.dump({'note': 'Переходы поля 1: «⇄» и стрелки между клетками, координаты знаков в пикселях растра.', 'links': links},
+    json.dump({'note': 'Переходы поля 1: «⇄» и стрелки между клетками, координаты знаков в пикселях растра.', 'links': links, 'special': unresolved},
               open(OUT, 'w', encoding='utf8'), ensure_ascii=False, indent=1)
     both = sum(1 for l in links if l['from'] and l['to'])
-    print('связей: %d | опознаны обе клетки: %d | строк без стрелки: %d' % (len(links), both, unresolved))
+    print('связей: %d | опознаны обе клетки: %d | особых строк: %d' % (len(links), both, len(unresolved)))
     for l in links[:3]:
         print('  пример: %s -> %s | xy %s,%s' % (l['from'], l['to'], l['x'], l['y']))
     print('записано:', OUT)
