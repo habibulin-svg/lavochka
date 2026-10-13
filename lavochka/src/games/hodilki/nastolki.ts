@@ -3,6 +3,7 @@
  * картинки — public/hodilki/<поле>/ (tools/hodilki/tiles.py). Тексты клеток — с поля. */
 import type { Board, Cell, ItemId, NeedTo, Sign } from './core';
 import zatmir from './data/zatmir.json';
+import shel from './data/shel.json';
 import planeta from './data/planeta.json';
 import varvary from './data/varvary.json';
 import podveski from './data/podveski.json';
@@ -166,6 +167,22 @@ export const zatmirBoard: Board = {
     { rig: 5, caption: 'Ленка встаёт на 6.' },
   ],
 };
+const shelBoard: Board = {
+  id: 'shel',
+  title: 'Шёл солдат со службы',
+  img: imgOf('shel', shel as Raw),
+  cells: cellsOf(shel as Raw),
+  end: (shel as Raw).end,
+  token: tokenOf(shel as Raw),
+  goal: 'Первым добраться до пещеры — клетки 100.',
+  winText: 'первым добрался до пещеры',
+  rules: SHEGERYAN,
+  credit: 'По мотивам повести А. Конан Дойла. Художник П. Шегерян, «Орбита», 1990.',
+  demo: [
+    { rig: 3, caption: 'Выпало 4 — встреча с траходонами: Вовка пропустит ход.' },
+    { rig: 5, caption: 'Ленка встаёт на 6.' },
+  ],
+};
 
 export const planetaBoard: Board = {
   id: 'planeta',
@@ -239,4 +256,4 @@ export const sutraBoard: Board = {
   credit: 'Детская настольная игра.',
 };
 
-export const NASTOLKI = [zatmirBoard, planetaBoard, varvaryBoard, podveskiBoard, meplBoard, sutraBoard];
+export const NASTOLKI = [zatmirBoard, shelBoard, planetaBoard, varvaryBoard, podveskiBoard, meplBoard, sutraBoard];

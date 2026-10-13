@@ -8,7 +8,7 @@ import { signOf } from '../src/games/hodilki/nastolki';
 describe('Шёл солдат: поле', () => {
   it('сто сорок клеток по порядку, движение по возрастанию', () => {
     expect(board.cells.length).toBe(140);
-    expect(board.end).toBe(140);
+    expect(board.end).toBe(board.cells.length - 1);
     expect(board.w).toBe(2435);
     expect(board.h).toBe(3094);
     // координаты внутри поля
