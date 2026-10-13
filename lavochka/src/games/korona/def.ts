@@ -12,6 +12,7 @@ import { apply, kindOf, neighbours, newState, result, stepTargets, type Action, 
 import { CORONATION_TEXT, DECK_SIZE, START, STATS, WORLDS } from './rules';
 
 export interface KoronaView {
+  seats: number[];
   turn: number;
   phase: State['phase'];
   die: number;
@@ -91,6 +92,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
     const cardNum = s.card;
     const c = cardNum != null ? cardByNumber(cardNum) : null;
     return {
+      seats: s.seats,
       turn: s.turn,
       phase: s.phase,
       die: s.die,
