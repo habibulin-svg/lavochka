@@ -35,6 +35,14 @@ export interface Hero {
   items: number[];
   /** в Эмбер (поля 2) */
   ember: boolean;
+  /** жизни принца на поле 2 (отдельный счётчик, при входе в лабиринт остаётся только он) */
+  pj: number;
+  /** стал принцем в столице Эмбера */
+  prince: boolean;
+  /** где герой на поле 2 */
+  zone: 'capital' | 'labyrinth' | 'palace' | 'chambers' | 'throne' | 'arena';
+  /** кольцо лабиринта: 0 — внешнее, 2 — внутреннее */
+  ring: number;
 }
 
 export type Phase = 'roll' | 'step' | 'card' | 'over';
@@ -62,7 +70,19 @@ export type Action =
   | { type: 'exchange'; from: Stat; to: Stat }
   | { type: 'heal'; life: number }
   | { type: 'ok' }
-  | { type: 'fall' };
+  | { type: 'fall' }
+  // поле 2 «Королевство Эмбер»
+  | { type: 'prince' }
+  | { type: 'labyrinth' }
+  | { type: 'ringRoll' }
+  | { type: 'toPalace' }
+  | { type: 'toChambers' }
+  | { type: 'toArena' }
+  | { type: 'toThrone' }
+  | { type: 'duel'; rolls: [number, number][] }
+  | { type: 'coronate' }
+  | { type: 'buyPj' }
+  | { type: 'exchangePj'; from: Stat };
 
 export type Event =
   | { type: 'roll'; seat: number; die: number }
@@ -73,6 +93,9 @@ export type Event =
   | { type: 'life'; seat: number; delta: number }
   | { type: 'fall'; seat: number; ok: boolean }
   | { type: 'turn'; seat: number }
+  | { type: 'pj'; seat: number; delta: number }
+  | { type: 'zone'; seat: number; zone: string }
+  | { type: 'duel'; seat: number; rolls: [number, number][]; lost: number[] }
   | { type: 'over'; winner: number };
 
 export interface X {
@@ -154,7 +177,7 @@ export function newState(seats: Seat[], opts: { deck?: number } = {}, rng?: Rng)
   const names: Record<number, string> = {};
   const levels: Record<number, number> = {};
   for (const s of seats) {
-    heroes[s.seat] = { cell: START_CELL, life: START_LIFE, st: { ...START }, thalers: START_THALERS, items: [], ember: false };
+    heroes[s.seat] = { cell: START_CELL, life: START_LIFE, st: { ...START }, thalers: START_THALERS, items: [], ember: false, pj: 0, prince: false, zone: 'capital', ring: 0 };
     kinds[s.seat] = s.kind;
     names[s.seat] = s.name;
     levels[s.seat] = s.level ?? 2;
@@ -239,8 +262,11 @@ function arrive(s: State, x: X, seat: number): State {
     const ready = STATS.every((k) => h.st[k] >= need) && h.items.length === 0;
     x.ev.push({ type: 'fall', seat, ok: ready });
     if (ready) {
-      st = { ...st, phase: 'over', winner: seat, log: [...st.log, `${s.names[seat]} вышел в Королевство Эмбер.`] };
-      x.ev.push({ type: 'over', winner: seat });
+      // не конец партии: герой уходит на поле 2 и становится принцем в столице
+      const hero2 = { ...st.heroes[seat], ember: true, zone: 'capital' as const, prince: false, pj: 0, ring: 0, items: [] };
+      x.ev.push({ type: 'zone', seat, zone: 'capital' });
+      st = { ...st, heroes: { ...st.heroes, [seat]: hero2 }, phase: 'card', log: [...st.log, `${s.names[seat]} вышел в столицу Королевства Эмбер.`] };
+      x.ev.push({ type: 'card', seat, num: null, text: 'СТОЛИЦА КОРОЛЕВСТВА ЭМБЕР. Ты становишься Принцем: возьми карту принца (свои ПС, ПУ, ПМ и ПЖ прибавляются к его качествам), предметы, амулеты и деньги сохраняются. Перед входом в лабиринт можно обменять 5 характеристик на 1 ПЖ или купить 1 ПЖ за 20 талеров.' });
       return st;
     }
     st = give(st, x, seat, 'ПУ', -1);
@@ -339,6 +365,107 @@ export function apply(s: State, seat: number, a: Action, rng: Rng): { state: Sta
   if (a.type === 'fall') {
     if (kindOf(h.cell) !== 'fall') return null;
     return apply(s, seat, { type: 'ok' }, rng);
+  }
+  // ---- поле 2 «Королевство Эмбер» ----
+  if (a.type === 'prince') {
+    if (!h.ember || h.prince) return null;
+    const st = { ...s, heroes: { ...s.heroes, [seat]: { ...h, prince: true, pj: h.pj || Math.max(2, h.life) } } };
+    x.ev.push({ type: 'pj', seat, delta: st.heroes[seat].pj });
+    return { state: pass(st, x), events: x.ev };
+  }
+  if (a.type === 'labyrinth') {
+    // при входе в лабиринт остаётся только ПЖ
+    if (!h.ember || h.zone !== 'capital') return null;
+    const st = { ...s, heroes: { ...s.heroes, [seat]: { ...h, zone: 'labyrinth' as const, ring: 0, items: [], thalers: 0 } } };
+    x.ev.push({ type: 'zone', seat, zone: 'labyrinth' });
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'ringRoll') {
+    if (!h.ember || h.zone !== 'labyrinth') return null;
+    const die = 1 + rng.int(6);
+    // ворота: слева 4-6 взять N ПЖ, справа 1-3 отложить M ПЖ; по кольцам 2/4, 3/5, 1/3
+    const table = [
+      { take: 2, give: 4 },
+      { take: 3, give: 5 },
+      { take: 1, give: 3 },
+    ][Math.min(h.ring, 2)];
+    const left = die >= 4;
+    const d = left ? table.take : -table.give;
+    const pj = Math.max(0, h.pj + d);
+    let st: State = { ...s, heroes: { ...s.heroes, [seat]: { ...h, pj, ring: Math.min(h.ring + 1, 2) } } };
+    x.ev.push({ type: 'roll', seat, die });
+    x.ev.push({ type: 'pj', seat, delta: pj - h.pj });
+    if (pj <= 0) {
+      // принц погиб в лабиринте — возвращается в столицу
+      st = { ...st, heroes: { ...st.heroes, [seat]: { ...st.heroes[seat], pj: 2, zone: 'capital', ring: 0 } } };
+      x.ev.push({ type: 'duel', seat, rolls: [], lost: [seat] });
+    } else if (st.heroes[seat].ring === 2 && die >= 4) {
+      st = { ...st, heroes: { ...st.heroes, [seat]: { ...st.heroes[seat], zone: 'palace' } } };
+      x.ev.push({ type: 'zone', seat, zone: 'palace' });
+    }
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'toPalace') {
+    if (!h.ember || h.zone !== 'labyrinth') return null;
+    const st = { ...s, heroes: { ...s.heroes, [seat]: { ...h, zone: 'palace' as const } } };
+    x.ev.push({ type: 'zone', seat, zone: 'palace' });
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'toChambers' || a.type === 'toThrone' || a.type === 'toArena') {
+    if (!h.ember || h.zone !== 'palace') return null;
+    const zone = a.type === 'toChambers' ? 'chambers' : a.type === 'toThrone' ? 'throne' : 'arena';
+    const st = { ...s, heroes: { ...s.heroes, [seat]: { ...h, zone: zone as typeof h.zone } } };
+    x.ev.push({ type: 'zone', seat, zone });
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'duel') {
+    // поединок принцев: каждый дважды бросает, меньший теряет 1 ПЖ; при равном максимуме
+    // максимумы теряют по 1, остальные — столько, сколько максимумов
+    if (!h.ember || h.zone !== 'arena') return null;
+    const sums = a.rolls.map(([x1, y1]) => x1 + y1);
+    const best = Math.max(...sums);
+    const tops = sums.filter((v) => v === best).length;
+    const heroes = { ...s.heroes };
+    const lost: number[] = [];
+    s.seats.forEach((other, idx) => {
+      const oh = heroes[other];
+      if (!oh?.ember) return;
+      const mine = sums[idx] ?? 0;
+      const d = mine === best ? 1 : tops;
+      if (mine === best && tops > 1) {
+        // при равном максимуме: они теряют по 1, остальные — по числу максимумов
+      }
+      const pj = Math.max(0, oh.pj - d);
+      if (pj < oh.pj) lost.push(other);
+      heroes[other] = { ...oh, pj };
+    });
+    x.ev.push({ type: 'duel', seat, rolls: a.rolls, lost });
+    const alive = s.seats.filter((other) => heroes[other]?.ember && heroes[other].pj > 0);
+    let st: State = { ...s, heroes };
+    if (alive.length === 1 && heroes[alive[0]].zone === 'arena') {
+      st = { ...st, heroes: { ...st.heroes, [alive[0]]: { ...st.heroes[alive[0]], zone: 'chambers' } } };
+      x.ev.push({ type: 'zone', seat: alive[0], zone: 'chambers' });
+    }
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'coronate') {
+    if (!h.ember || h.zone !== 'throne') return null;
+    const st: State = { ...s, winner: seat, phase: 'over', log: [...s.log, `${s.names[seat]} — Владыка Королевства Эмбер.`] };
+    x.ev.push({ type: 'over', winner: seat });
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'buyPj') {
+    if (!h.ember || h.thalers < 20) return null;
+    const st = money({ ...s, heroes: { ...s.heroes, [seat]: { ...h, pj: h.pj + 1 } } }, x, seat, -20);
+    x.ev.push({ type: 'pj', seat, delta: 1 });
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'exchangePj') {
+    if (!h.ember || h.st[a.from] < 5) return null;
+    let st = give(s, x, seat, a.from, -5);
+    st = { ...st, heroes: { ...st.heroes, [seat]: { ...st.heroes[seat], pj: st.heroes[seat].pj + 1 } } };
+    x.ev.push({ type: 'pj', seat, delta: 1 });
+    return { state: st, events: x.ev };
   }
   if (a.type === 'ok') {
     if (s.phase !== 'card') return null;
