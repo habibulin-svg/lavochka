@@ -11,8 +11,7 @@
 .st-closed { fill: rgba(40, 25, 12, 0.88); stroke: #d8b070; stroke-width: 4; }
 .st-tok-txt { fill: #ffe9b0; font: 40px 'PT Serif', serif; }
 .st-city { fill: #ffe9b0; font: bold 44px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.75); stroke-width: 8; }
-.st-piece { stroke: #fff; stroke-width: 6; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55)); }
-.st-piece-txt { fill: #fff; font: bold 42px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.75); stroke-width: 6; }
+.st-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3)); }
 .st-gem { font: 44px serif; }
 .st-start-city { fill: rgba(255, 220, 120, 0.18); stroke: #ffd764; stroke-width: 6; cursor: pointer; animation: st-pulse 1.6s ease-in-out infinite; }
 @keyframes st-pulse { 0%, 100% { stroke-opacity: 0.5; } 50% { stroke-opacity: 1; } }

@@ -14,9 +14,11 @@ import './star.css';
 
 const money = (n: number) => `${n.toLocaleString('ru-RU')} $`;
 const nameOf = (seat: number) => SEATS[seat]?.name ?? String(seat);
-/** Фишка: размер и разводка, когда несколько встали на одну клетку. */
-const PIECE_R = 36;
-const PIECE_GAP = 68;
+/** Пуговица места — картинка из public/hodilki/buttons, как во всех играх сборника.
+ *  Размер подобран так, чтобы пуговица была заметно крупнее точек маршрута, но не закрывала соседние:
+ *  точки маршрута на карте ~40 px, пуговица — 68. */
+const PIECE_R = 34;
+const PIECE_GAP = 58;
 /** Квадрат жетона на карте — как напечатан (около 160 px). */
 const TOK_HALF = 78;
 /** Сколько держать событие на экране (мс), если за экраном не человек. */
@@ -64,8 +66,12 @@ export function createView(): GameView<State, Event> {
       list.forEach((seat, i) => {
         const off = list.length > 1 ? (i - (list.length - 1) / 2) * PIECE_GAP : 0;
         const x = c.x + off;
-        over!.append(svg('circle', { cx: x, cy: c.y, r: PIECE_R, fill: SEATS[seat]?.color ?? '#888', class: 'st-piece' }));
-        over!.append(label(x - 12, c.y + 14, 'st-piece-txt', nameOf(seat).slice(0, 1)));
+        over!.append(
+          svg('image', {
+            x: x - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
+            href: `/hodilki/buttons/${seat}.webp`, class: 'st-piece',
+          })
+        );
         if (st.diamond === seat && i === 0) over!.append(label(x + 24, c.y - 22, 'st-gem', '💎'));
         if (st.bandit[seat] && i === 0) over!.append(label(x + 22, c.y + 30, 'st-bandit', '🗡'));
       });
