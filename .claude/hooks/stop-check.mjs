@@ -1,6 +1,6 @@
 // Stop: если код сборника менялся с последней удачной проверки — tsc + vitest. Ошибки возвращают Claude к работе.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { APP, ROOT, git, out, readInput, run } from './lib.mjs';
 
@@ -34,15 +34,25 @@ const tests = tsc.ok ? run(join(APP, 'node_modules', 'vitest', 'vitest.mjs'), ['
 if (tsc.ok && tests.ok) {
   mkdirSync(cacheDir, { recursive: true });
   writeFileSync(cacheFile, fp);
+  try {
+    rmSync(join(cacheDir, 'stop-blocked'), { force: true });
+  } catch {
+    /* маркера могло не быть */
+  }
   out({ systemMessage: `✓ Типы и тесты в порядке. Незакоммиченных файлов: ${changed.length}.` });
   process.exit(0);
 }
 
 const tail = (s) => s.trim().split('\n').slice(-40).join('\n');
 const report = (tsc.ok ? '' : `TypeScript:\n${tail(tsc.out)}\n\n`) + (tests.ok ? '' : `Тесты:\n${tail(tests.out)}`);
-if (input.stop_hook_active) {
-  // уже возвращали к работе — не зацикливаемся, просто предупреждаем
+// В Claude Code повторный запуск помечен stop_hook_active. В DSH (мост хуков) это поле всегда false,
+// поэтому свой предохранитель: на ту же самую проверку возвращаем к работе только один раз.
+const blockFile = join(cacheDir, 'stop-blocked');
+const alreadyBlocked = existsSync(blockFile) && readFileSync(blockFile, 'utf8') === fp;
+if (input.stop_hook_active || alreadyBlocked) {
   out({ systemMessage: '⚠ Проверки сборника всё ещё не проходят (см. npm run check в lavochka).' });
   process.exit(0);
 }
+mkdirSync(cacheDir, { recursive: true });
+writeFileSync(blockFile, fp);
 out({ decision: 'block', reason: `Проверки сборника не прошли — почини перед завершением.\n\n${report}` });
