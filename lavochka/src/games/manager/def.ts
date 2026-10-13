@@ -595,6 +595,7 @@ export const def: GameDef<State, Action, Ev, State> = {
   presets: [
     { id: 'manager', label: 'Менеджер', hint: 'Ленинград 90-х: филиалы, предприятия, биржа', options: { map: 'manager', limit: 0 } },
     { id: 'manager20', label: 'Менеджер на 20 кругов', hint: 'побеждает самый богатый', options: { map: 'manager', limit: 20 } },
+    { id: 'odessa', label: 'Менеджер. Одесса', hint: 'Одесса 1990 года: те же правила, свои участки и карты', options: { map: 'odessa', limit: 0 } },
     { id: 'kosmos', label: 'Космос 2000', hint: 'планеты, казино, пираты и Астролог', options: { map: 'kosmos', limit: 0 } },
     { id: 'biznes', label: 'Бизнес', hint: 'патенты, филиалы, валютные предприятия, биржа и лотерея', options: { map: 'biznes', limit: 0 } },
     { id: 'imperiya', label: 'Империя', hint: 'планеты фантастов, ракеты, подпространство и антимир', options: { map: 'imperiya', limit: 0 } },

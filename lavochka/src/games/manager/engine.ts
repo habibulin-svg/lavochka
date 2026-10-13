@@ -2142,7 +2142,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         s.jail[seat] = 0;
         x.ev.push({ type: 'free', seat, how: 'forced' });
         s.phase = 'resolve';
-        const r = charge(x, seat, 500, null, 'выход с биржи', 'move');
+        const r = charge(x, seat, B(s).jailPay ?? 500, null, 'выход с биржи', 'move');
         if (r === 'ok') step(x, seat, d1 + d2);
         if (r !== 'debt') settle(x);
         return ok();

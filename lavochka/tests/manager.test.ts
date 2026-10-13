@@ -18,6 +18,33 @@ function act(s: State, seat: number, a: Action, rig?: number[]): State {
 }
 
 describe('Менеджер', () => {
+  it('одесское поле: то же кольцо, свои деньги и штраф за выход с биржи', () => {
+    const o = boardOf('odessa');
+    const m = boardOf('manager');
+    expect(o.cells.length).toBe(40);
+    expect(o.cells.length).toBe(m.cells.length);
+    // углы те же: старт, биржа, отдых, маклер
+    expect(o.cells[0].kind).toBe('start');
+    expect(o.cells[10].kind).toBe('jail');
+    expect(o.cells[20].kind).toBe('rest');
+    expect(o.cells[30].kind).toBe('gojail');
+    // типы клеток совпадают с ленинградским полем клетка-в-клетку
+    expect(o.cells.map((c) => c.kind).join(',')).toBe(m.cells.map((c) => c.kind).join(','));
+    // масштаб денег одесский
+    expect(o.money(3)).toBe(200000);
+    expect(o.startPay).toBe(20000);
+    expect(o.jailPay).toBe(5000);
+    expect(m.jailPay ?? 500).toBe(500);
+    // участки: те же группы и цена растёт по кругу
+    const props = o.cells.filter((c) => c.kind === 'prop');
+    expect(props.length).toBe(24);
+    expect(new Set(props.map((c) => c.group)).size).toBe(8);
+    expect(props[0].price).toBe(6000);
+    expect(props[props.length - 1].price).toBe(34000);
+    // обе колоды по 20 карт
+    expect(o.decks.map((d) => d.cards.length)).toEqual([20, 20]);
+  });
+
   it('поле: 40 клеток, 24 участка в 8 группах, цены растут', () => {
     const b = boardOf('manager');
     expect(b.cells.length).toBe(40);
