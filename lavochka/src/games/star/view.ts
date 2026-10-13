@@ -104,14 +104,6 @@ export function createView(): GameView<State, Event> {
       const c = CELLS[i];
       const tok = TOKEN_AT[i];
       const city = c.kind === 'city';
-      over.append(
-        svg('circle', {
-          cx: c.x,
-          cy: c.y,
-          r: tok ? 30 : city ? 26 : c.kind === 'sea' ? 7 : 9,
-          class: `st-dot${tok ? ' st-dot-tok' : ''}${city ? ' st-dot-city' : ''}${c.kind === 'sea' ? ' st-dot-sea' : ''}`,
-        })
-      );
       if (tok) {
         if ((shownOpen[i] ?? st.open[i]) && st.tokens[i]) {
           over.append(svg('image', { x: c.x - 66, y: c.y - 66, width: 132, height: 132, href: `/star/${TOK_FILE[st.tokens[i]!]}.webp` }));
@@ -219,7 +211,7 @@ export function createView(): GameView<State, Event> {
       wrap = document.createElement('div');
       wrap.className = 'st-wrap';
       wrap.innerHTML = `<div class="st-board">
-          <img class="st-map" src="/star/field.webp" alt="Карта Африки" draggable="false">
+          <img class="st-map st-map-mini" src="/star/field-small.webp" alt="" draggable="false"><img class="st-map st-map-full" src="/star/field.webp" alt="Карта Африки" draggable="false">
         </div>`;
       root.append(wrap);
       board = wrap.querySelector('.st-board') as HTMLElement;

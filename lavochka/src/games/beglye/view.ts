@@ -10,20 +10,6 @@ import './beglye.css';
 
 const nameOf = (seat: number) => SEATS[seat]?.name ?? String(seat);
 const PIECE_R = 30;
-/** Цвет кружка по знаку клетки. */
-const SIGN_COLOR: { [k: string]: string } = {
-  monastery: '#f4f2e3',
-  resident: '#c9a2e0',
-  ostrog: '#d8463c',
-  arrest: '#e8a13a',
-  forest: '#4f9d52',
-  plen: '#e0713a',
-  robber: '#6b4b3a',
-  death: '#8a8a8a',
-  boat: '#4a7fc1',
-  horse: '#c8a163',
-  cart: '#8f6b45',
-};
 
 export function createView(): GameView<State, Event> {
   let ctx: ViewCtx<Action> | null = null;
@@ -88,19 +74,6 @@ export function createView(): GameView<State, Event> {
     if (!v || !over || !btns || !stats) return;
     const st = v;
     over.replaceChildren();
-    for (let i = 0; i < CELLS.length; i++) {
-      const c = CELLS[i];
-      const sign = c.signs[0];
-      const color = c.kind === 'finish' ? '#ffd764' : c.kind === 'start' ? '#f4f2e3' : sign ? SIGN_COLOR[sign] ?? '#bbb' : 'rgba(0,0,0,0.25)';
-      over.append(
-        svg('circle', {
-          cx: c.x, cy: c.y,
-          r: c.kind === 'point' ? (sign ? 15 : 9) : 26,
-          class: 'bg-dot',
-          style: `stroke:${color}`,
-        })
-      );
-    }
     if (!busy && actSeat != null && st.phase === 'move' && st.left > 0) {
       for (const to of NEIGH[st.pos[actSeat]]) {
         const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 26, class: 'bg-move' });
@@ -148,7 +121,7 @@ export function createView(): GameView<State, Event> {
       ctx = c;
       wrap = document.createElement('div');
       wrap.className = 'bg-wrap';
-      wrap.innerHTML = `<div class="bg-board"><img class="bg-map" src="/beglye/field.webp" alt="Карта" draggable="false"></div>`;
+      wrap.innerHTML = `<div class="bg-board"><img class="bg-map bg-map-mini" src="/beglye/field-small.webp" alt="" draggable="false"><img class="bg-map bg-map-full" src="/beglye/field.webp" alt="Карта" draggable="false"></div>`;
       root.append(wrap);
       board = wrap.querySelector('.bg-board') as HTMLElement;
       over = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

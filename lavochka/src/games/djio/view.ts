@@ -6,7 +6,7 @@ import { sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import {
-  CELLS, H, LAIR_OF, NEIGH, W, bestWeapon, describe, hasHorse, scoreOf,
+  CELLS, H, NEIGH, W, bestWeapon, describe, hasHorse, scoreOf,
   type Action, type Event, type State,
 } from './engine';
 import { CARDS, ITEMS, itemOf as item } from './rules';
@@ -109,14 +109,6 @@ export function createView(): GameView<State, Event> {
     if (!v || !over || !btns || !stats) return;
     const st = v;
     over.replaceChildren();
-    for (let i = 0; i < CELLS.length; i++) {
-      const c = CELLS[i];
-      const cls = `dj-dot dj-${c.kind}`;
-      over.append(svg('circle', { cx: c.x, cy: c.y, r: c.kind === 'card' ? 26 : 30, class: cls }));
-      if (st.pos.some((p, s) => p === i && st.seats.includes(s) && LAIR_OF[i])) {
-        // на клетке чудовища — значок зверя
-      }
-    }
     // куда можно шагнуть (свой ход)
     if (!busy && st.phase === 'move' && st.left > 0 && actSeat != null) {
       for (const to of NEIGH[st.pos[actSeat]]) {
@@ -126,11 +118,6 @@ export function createView(): GameView<State, Event> {
       }
     }
     // дикие звери: где какое чудовище живёт (подсказка на карте)
-    for (let i = 0; i < CELLS.length; i++) {
-      if (!LAIR_OF[i]) continue;
-      const c = CELLS[i];
-      over.append(svg('circle', { cx: c.x, cy: c.y, r: 34, class: 'dj-danger' }));
-    }
     pieces();
     const line = (s: number) => {
       const it = st.items[s];
@@ -210,7 +197,7 @@ export function createView(): GameView<State, Event> {
       ctx = c;
       wrap = document.createElement('div');
       wrap.className = 'dj-wrap';
-      wrap.innerHTML = `<div class="dj-board"><img class="dj-map" src="/djio/field.webp" alt="Поле Джио-Джанги" draggable="false"></div>`;
+      wrap.innerHTML = `<div class="dj-board"><img class="dj-map dj-map-mini" src="/djio/field-small.webp" alt="" draggable="false"><img class="dj-map dj-map-full" src="/djio/field.webp" alt="Поле Джио-Джанги" draggable="false"></div>`;
       root.append(wrap);
       board = wrap.querySelector('.dj-board') as HTMLElement;
       over = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

@@ -39,3 +39,10 @@
 @media (max-width: 700px) {
   .st-stats { font-size: 13px; }
 }
+
+/* поле грузится из размытия: пока полная картинка едет, видна крошечная копия */
+.st-board { position: relative; }
+.st-map-mini { position: absolute; inset: 0; width: 100%; height: 100%; filter: blur(7px) saturate(1.1); transform: scale(1.05); transition: opacity .45s ease; }
+.st-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
+.st-board.ready .st-map-full { opacity: 1; }
+.st-board.ready .st-map-mini { opacity: 0; }
