@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import board from '../src/games/hodilki/data/shel.json';
 import items from '../src/games/shel/items.json';
+import { signOf } from '../src/games/hodilki/nastolki';
 
 describe('Шёл солдат: поле', () => {
   it('сто сорок клеток по порядку, движение по возрастанию', () => {
@@ -60,5 +61,26 @@ describe('Шёл солдат: предметы', () => {
     for (const it of list) {
       expect(existsSync(join(process.cwd(), 'public', 'shel', it.file)), it.file).toBe(true);
     }
+  });
+});
+
+describe('Шёл солдат: знаки движка', () => {
+  it('ярмарки разбираются как market, а не теряются', () => {
+    const fairs = board.cells
+      .map((c, i) => ({ i: i + 1, c }))
+      .filter((x) => (x.c as { q?: string }).q === 'fair');
+    expect(fairs.map((f) => f.i)).toEqual([9, 48, 88]);
+    for (const f of fairs) {
+      const sign = signOf((f.c as { s?: string }).s, f.i, undefined, undefined);
+      expect(sign?.k, 'ярмарка на клетке ' + f.i).toBe('market');
+    }
+  });
+
+  it('привалы остаются пропуском хода, петли разбираются как loop', () => {
+    const skip = board.cells.filter((c) => (c as { s?: string }).s === 'skip');
+    expect(skip.length).toBe(8);
+    const loop = signOf('loop:64,65', 64, undefined, undefined);
+    expect(loop?.k).toBe('loop');
+    expect(loop && loop.k === 'loop' ? loop.cells : []).toEqual([64, 65]);
   });
 });
