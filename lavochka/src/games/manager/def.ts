@@ -1,7 +1,7 @@
 /* «Менеджер», «Космос 2000» и «Бизнес» — одна карточка, поле (и с ним правила) выбирается настройкой. Движок — engine.ts, боты — bot.ts. */
 import type { DemoScript, GameDef, Rng, SeatSpec } from '../../core/types';
 import { SEATS as HSEATS } from '../hodilki/core';
-import { BOARDS, boardOf, INSURE, RATE, type MapId } from './boards';
+import { BM_COLORS, BOARDS, boardOf, INSURE, RATE, ROULETTE, STOCK_CARDS, type MapId } from './boards';
 import { choose } from './bot';
 import { apply, dollars, fmt, newState, toAct, view, type Action, type Event, type State } from './engine';
 
@@ -379,6 +379,112 @@ const BIZNES_RULES = [
   },
 ];
 
+const W = 'biznesmen' as const;
+/** Показ: карточка биржи в руку Вовке первой. */
+const hand0 = (s: State, ids: number[]) => {
+  s.hand[0] = [...ids, ...s.hand[0].filter((i) => !ids.includes(i))].slice(0, 7);
+};
+const SM = (c: number, up: boolean, n: number) => STOCK_CARDS.findIndex((k) => !k.big && k.c === c && k.up === up && (up ? k.a : k.b) === n);
+
+const BIZNESMEN_RULES = [
+  {
+    title: 'Бизнесмен: ход, участки и фирмы',
+    html: `<p>От 2 до 6 игроков, у каждого <b>250 000</b> и по одной акции каждого из четырёх цветов. Два кубика, от «Старта» по большому кругу.
+      Остановился на «Старте» или прошёл его — <b>20 000</b> из банка.</p>
+      <p>Свободный участок можно купить по цене на карточке; торгов нет — не купил, участок ждёт следующего. Собрал все три участка одного цвета
+      подряд на своей стороне поля — плата за пустой участок <b>вдвое</b>, и можно строить: сначала <b>филиал</b>, потом <b>предприятие</b>
+      (когда филиалы стоят на всех участках группы). Обе постройки стоят одинаково — цифра внизу карточки. В банке 20 филиалов и 12 предприятий.</p>
+      <p>«Выигрыш» — 40 000, «Прибыль» — 50 000, «Штраф» — 30 000, «Подарок» — три акции любого цвета.</p>`,
+    demo: demo(W, () => {}, [
+      { seat: 0, action: { type: 'roll' }, rig: [1, 2], caption: 'Вовка бросает 2 и 3 — фабрика «Динамо», 14 000.' },
+      { seat: 0, action: { type: 'buy' }, caption: 'Покупает.' },
+      { seat: 1, action: { type: 'roll' }, rig: [0, 1], caption: 'Ленка встаёт на «Юг Мебель»…' },
+      { seat: 1, action: { type: 'pass' }, caption: '…и не покупает: торгов здесь нет, участок остаётся свободным.' },
+    ]),
+  },
+  {
+    title: 'Бизнесмен: биржа',
+    html: `<p>Курс акций — фишки на табло-радуге: от 1 до 25 пунктов, пункт — <b>1 000</b>, вначале у всех цветов 10. На бирже попадают
+      с клетки «Биржа» и «Сыграйте на бирже», через «Маклера» (1 000 за услугу), с банка и отеля, по карточке, с 3-й клетки автомагистрали
+      и выбросив 3:3.</p>
+      <p>На бирже можно купить акции (не больше четырёх каждого цвета) и продать лишние по курсу, а потом сыграть одну из своих карточек биржи
+      (у каждого втайне три большие и четыре малые; сыгранную меняют на новую): <b>×2</b> и <b>:2</b>, <b>+10</b> своему цвету и −1, −2, −3 остальным,
+      малые — «+6, остальным −3» … или просто «−3» … «−6».</p>
+      <p>Когда курс меняется, <b>каждый получает или платит разницу × число своих акций</b>. Кто менял курс, на понижении не платит, а получает
+      компенсацию. Платят только наличными — нечем, банк прощает.</p>`,
+    demo: demo(
+      W,
+      (s) => {
+        hand0(s, [SM(0, true, 6)]);
+        s.pos[0] = 6;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 1], caption: 'Вовка встаёт на «Биржу».' },
+        { seat: 0, action: { type: 'shares', c: 0, n: 3 }, caption: 'Покупает три жёлтые акции по 10 000 — теперь у него их четыре.' },
+        { seat: 0, action: { type: 'play', card: 0, opt: 0 }, caption: 'Карточка «жёлтые +6, остальным −3»: Вовка получает 24 000 за жёлтые и 9 000 компенсации, Ленка получает 6 000 и платит 9 000.' },
+        { seat: 0, action: { type: 'pass' }, caption: 'Уходит с биржи.' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнесмен: за рубеж и обратно',
+    html: `<p>Внутренний круг — «за рубежом»: фирмы «Сони», «Боинг», «Полидор»… Фирма покупается целиком, построек на ней нет.
+      Туда попадают через <b>Банк</b> (продать банку 4 акции и заплатить 25 000) или через <b>Таможню</b> рядом с «Отелем» (10 000 и половина акций банку).</p>
+      <p>Обратно — через Банк (купить 4 акции и 25 000), через Таможню (5 000 пошлины за каждое приобретение за рубежом) или по <b>автомагистрали</b>:
+      на 3-й клетке — 5 акций и биржа, на 5-й и 6-й — авария, клиника «Стоп»: 30 000 и два хода пропуска, на 8-й — половина наличных в банк.
+      На перекрёстке — 5 000 пошлины и на большой круг или обратно за рубеж.</p>
+      <p><b>Супермаркет</b>: попавший платит 20 000; купить его — 50 000, тогда хозяину достаётся 15 000.</p>`,
+    demo: demo(
+      W,
+      (s) => {
+        s.pos[0] = 21;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 1], caption: 'Вовка останавливается на «Банке».' },
+        { seat: 0, action: { type: 'hub', opt: 'abroad' }, caption: 'Едет за рубеж: четыре акции банку по курсу, 25 000 за переход.' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 0], caption: 'Ленка ходит по большому кругу — «Выигрыш», 40 000.' },
+        { seat: 0, action: { type: 'roll' }, rig: [0, 0], caption: 'Вовка за рубежом — концерн «Локхид»: 500 000, пока не по карману.' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнесмен: отель и рулетка',
+    html: `<p>В <b>Отеле</b> можно три раза сыграть в рулетку и раз — на бирже. Рулетка есть и за рубежом: там играют сколько угодно.</p>
+      <p>Выбирают сектор «вход», бросают кубики и считают по часовой стрелке; выпавшее получают или платят. Выйти можно, только остановившись
+      на секторе «выход». Стрелка <b>«В банк»</b> — 200 000 и обязательный выход.</p>`,
+    demo: demo(
+      W,
+      (s) => {
+        s.pos[0] = 26;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 1], caption: 'Вовка в «Отеле».' },
+        { seat: 0, action: { type: 'hub', opt: 'roulette' }, caption: 'Рулетка — три броска.' },
+        { seat: 0, action: { type: 'roulette', entry: 1 }, rig: [3, 2], caption: 'От «+15 000» на 7 секторов по часовой — «В банк»: 200 000!' },
+        { seat: 0, action: { type: 'hub', opt: 'pass' }, caption: 'На биржу не пошёл — ход Ленки.' },
+      ]
+    ),
+  },
+  {
+    title: 'Бизнесмен: «Сюрприз», «Извещение», залог и банкротство',
+    html: `<p>«Сюрприз» и «Извещение» — по десять карточек: переходы, штрафы, наследство и «Детский мир» (сумму решает банкир — тут жребий),
+      «купите 3 акции», «ваш цвет вырос на 3 пункта», налог с оборота — половина последней покупки.</p>
+      <p>Не хватает денег — продайте постройки банку за полцены, заложите участок (половина цены), продайте акции. Не набрать — банкротство:
+      банк выплачивает долг кредитору, участки снова свободны. Побеждает последний; на время — у кого больше капитал (акции — по курсу).</p>`,
+    demo: demo(
+      W,
+      (s) => {
+        top(s, 1, 'Один цвет ваших');
+        s.shares[0] = [3, 1, 1, 1];
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 1], caption: 'Вовка тянет «Извещение»: один цвет ваших акций вырос на 3 пункта.' },
+        { seat: 0, action: { type: 'pick', c: 0 }, caption: 'Жёлтых у него три — +9 000; у Ленки одна жёлтая — ей +3 000.' },
+      ]
+    ),
+  },
+];
+
 function showcase(): State {
   const rng = { next: () => 0.5, int: (n: number) => n - 1, getState: () => 0 };
   const s = newState('manager', [0, 1, 2, 3], {}, rng);
@@ -434,10 +540,11 @@ export const def: GameDef<State, Action, Ev, State> = {
     { id: 'manager20', label: 'Менеджер на 20 кругов', hint: 'побеждает самый богатый', options: { map: 'manager', limit: 20 } },
     { id: 'kosmos', label: 'Космос 2000', hint: 'планеты, казино, пираты и Астролог', options: { map: 'kosmos', limit: 0 } },
     { id: 'biznes', label: 'Бизнес', hint: 'патенты, филиалы, валютные предприятия, биржа и лотерея', options: { map: 'biznes', limit: 0 } },
+    { id: 'biznesmen', label: 'Бизнесмен', hint: 'два круга, биржа акций с табло, рулетка, автомагистраль (1990)', options: { map: 'biznesmen', limit: 0 } },
   ],
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' ? opts.map : 'manager';
+    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' || opts.map === 'biznesmen' ? opts.map : 'manager';
     return newState(map, ids, { limit: Number(opts.limit) || 0, startPass: !!opts.startPass, loan: opts.loan !== false, premium: !!opts.premium }, rng);
   },
   toAct,
@@ -445,14 +552,14 @@ export const def: GameDef<State, Action, Ev, State> = {
     const r = apply(s, seat, a, rng);
     return r && { state: r.state, events: r.events.map((e) => ({ ...e, m: s.map })) };
   },
-  view: (s) => view(s),
+  view: (s, seats) => view(s, seats === 'all' ? s.seats : seats),
   result: (s) => s.result,
   showcase,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, level, rng) => choose(v, seat, level, rng) },
   describe: (ev, name) => describe(ev, name),
   rules: {
     goal: 'Покупать участки (или планеты), собирать с соперников плату за наём и разорить всех — остаться единственным, у кого есть капитал.',
-    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES],
+    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES, ...BIZNESMEN_RULES],
   },
 };
 
@@ -470,6 +577,13 @@ const QUIET = new Set([
   'страховка',
   'покупка долларов',
   'продажа долларов',
+  'покупка акций',
+  'продажа акций',
+  'переход границы через банк',
+  'таможня',
+  'пошлина на таможне',
+  'пошлина на перекрёстке',
+  'услуга маклера',
 ]);
 
 function describe(ev: Ev, name: (seat: number) => string): string | null {
@@ -551,6 +665,37 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} пропускает ход`;
     case 'again':
       return `${name(ev.seat)} ходит ещё раз`;
+    case 'shares': {
+      const col = BM_COLORS[ev.c].name;
+      if (ev.why === 'выигрыш') return `${name(ev.seat)} получает акции: ${col} × ${ev.n}`;
+      return ev.n > 0
+        ? `${name(ev.seat)} покупает акции: ${col} × ${ev.n} по ${m(ev.price * 1000)}${ev.why ? ` (${ev.why})` : ''}`
+        : `${name(ev.seat)} продаёт акции: ${col} × ${-ev.n} по ${m(ev.price * 1000)}${ev.why ? ` (${ev.why})` : ''}`;
+    }
+    case 'market': {
+      const ch = ev.to.map((p, c) => (p !== ev.from[c] ? `${BM_COLORS[c].name} ${ev.from[c]} → ${p}` : '')).filter(Boolean).join(', ');
+      return ev.seat == null ? `📈 Курс: ${ch}` : `📈 ${name(ev.seat)} играет карточку биржи: ${ch || 'курс не изменился'}`;
+    }
+    case 'roulette': {
+      const r = ROULETTE[ev.sector];
+      return `🎡 ${name(ev.seat)} в рулетке: ${ev.dice.join(' + ')} — ${r.bank ? '«В банк», +200 000' : (ev.amount > 0 ? '+' : '−') + m(Math.abs(ev.amount))}`;
+    }
+    case 'hub': {
+      const t: Record<string, string> = {
+        broker: 'платит маклеру 1 000 — на биржу',
+        roulette: 'садится за рулетку',
+        abroad: 'едет за рубеж через банк: 4 акции банку и 25 000',
+        home: 'возвращается домой через банк: 4 акции и 25 000',
+        road: 'едет домой по автомагистрали',
+        abroad2: 'выезжает за рубеж через таможню: 10 000 и половина акций',
+        home2: `возвращается через таможню${ev.cost ? ': пошлина ' + m(ev.cost) : ''}`,
+        exit: 'платит на перекрёстке 5 000 — на большой круг',
+        back: 'с перекрёстка — обратно за рубеж',
+      };
+      return t[ev.opt] ? `${name(ev.seat)} ${t[ev.opt]}` : null;
+    }
+    case 'wait':
+      return `🚑 ${name(ev.seat)} — авария, клиника «Стоп»: пропуск ${ev.n} ходов`;
     case 'end':
       return `🏆 ${ev.winners.map(name).join(', ')} — ${ev.text}`;
   }

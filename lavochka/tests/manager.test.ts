@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { boardOf } from '../src/games/manager/boards';
 import { def } from '../src/games/manager/def';
-import { apply, canBuild, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
+import { apply, canBuild, marketOpts, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
+import { STOCK_CARDS } from '../src/games/manager/boards';
 import { botSeats, defaults, simulate } from './harness';
 
 const rng = () => new RiggedRng(new SeededRng(7));
@@ -156,7 +157,101 @@ describe('Космос 2000', () => {
   });
 });
 
+describe('Бизнесмен', () => {
+  const W = 'biznesmen' as const;
+  it('поле: 66 клеток, 24 участка в 8 группах по 3, 10 фирм за рубежом, 52 карточки биржи', () => {
+    const b = boardOf(W);
+    expect(b.cells.length).toBe(66);
+    const props = b.cells.filter((c) => c.kind === 'prop' && c.group != null);
+    expect(props.length).toBe(24);
+    for (let g = 0; g < 8; g++) expect(props.filter((c) => c.group === g).length).toBe(3);
+    expect(b.cells.filter((c) => c.abroad).length).toBe(10);
+    expect(STOCK_CARDS.length).toBe(52);
+  });
+
+  it('старт: 250 000, по акции каждого цвета, 3 большие и 4 малые карточки; чужие карточки скрыты', () => {
+    const s = newState(W, [0, 1], {}, rng());
+    expect(s.cash[0]).toBe(250000);
+    expect(s.shares[1]).toEqual([1, 1, 1, 1]);
+    expect(s.hand[0].length).toBe(7);
+    expect(s.hand[0].filter((id) => id < 20).length).toBe(3);
+    const v = def.view(s, [0]);
+    expect(v.hand[1].every((id) => id === -1)).toBe(true);
+    expect(v.hand[0]).toEqual(s.hand[0]);
+  });
+
+  it('плата: вдвое за группу, филиал, предприятие только после филиалов на всех участках', () => {
+    let s = newState(W, [0, 1], {}, rng());
+    for (const c of [1, 3, 5]) s.owner[c] = 0;
+    expect(rent(s, 1)).toBe(4000);
+    s = act(s, 0, { type: 'build', cell: 1 });
+    expect(rent(s, 1)).toBe(20000);
+    expect(canBuild(s, 0, 1)).toBe(false);
+    s = act(s, 0, { type: 'build', cell: 3 });
+    s = act(s, 0, { type: 'build', cell: 5 });
+    s = act(s, 0, { type: 'build', cell: 1 });
+    expect(s.houses[1]).toBe(4);
+    expect(rent(s, 1)).toBe(60000);
+    expect(s.stock).toEqual([18, 11]);
+  });
+
+  it('биржа: карточка +6/−3, кто играл — получает и за понижение', () => {
+    let s = newState(W, [0, 1], {}, rng());
+    const id = STOCK_CARDS.findIndex((k) => !k.big && k.c === 0 && k.up && k.a === 6);
+    s.hand[0][0] = id;
+    s.pos[0] = 6;
+    s = act(s, 0, { type: 'roll' }, [1, 1]);
+    expect(s.phase).toBe('stocks');
+    s = act(s, 0, { type: 'shares', c: 0, n: 3 });
+    expect(apply(s, 0, { type: 'shares', c: 0, n: 1 }, rng())).toBeNull(); // не больше четырёх
+    s = act(s, 0, { type: 'play', card: 0, opt: 0 });
+    expect(s.price).toEqual([16, 7, 7, 7]);
+    expect(s.cash[0]).toBe(250000 - 30000 + 24000 + 9000);
+    expect(s.cash[1]).toBe(250000 + 6000 - 9000);
+    expect(marketOpts([10, 10, 10, 10], STOCK_CARDS.findIndex((k) => k.big && k.k === 'ten')).length).toBe(6);
+  });
+
+  it('банк: за рубеж за 4 акции и 25 000, обратно по автомагистрали до перекрёстка', () => {
+    let s = newState(W, [0, 1], {}, rng());
+    s.pos[0] = 21;
+    s = act(s, 0, { type: 'roll' }, [1, 1]);
+    expect(s.phase).toBe('hub');
+    s = act(s, 0, { type: 'hub', opt: 'abroad' });
+    expect(s.pos[0]).toBe(52);
+    expect(s.shares[0]).toEqual([0, 0, 0, 0]);
+    expect(s.cash[0]).toBe(250000 + 40000 - 25000);
+    s.turn = 0;
+    s.phase = 'hub';
+    s = act(s, 0, { type: 'hub', opt: 'road' });
+    expect(s.pos[0]).toBe(56);
+    s.turn = 0;
+    s.phase = 'roll';
+    s = act(s, 0, { type: 'roll' }, [5, 5]); // 12 шагов, но перекрёсток — 10-я клетка
+    expect(s.pos[0]).toBe(65);
+    expect(s.phase).toBe('hub');
+    s = act(s, 0, { type: 'hub', opt: 'exit' });
+    expect(s.pos[0]).toBe(36);
+  });
+
+  it('рулетка в отеле: «В банк» — 200 000 и выход', () => {
+    let s = newState(W, [0, 1], {}, rng());
+    s.pos[0] = 26;
+    s = act(s, 0, { type: 'roll' }, [1, 1]);
+    s = act(s, 0, { type: 'hub', opt: 'roulette' });
+    s = act(s, 0, { type: 'roulette', entry: 1 }, [3, 2]);
+    expect(s.cash[0]).toBe(450000);
+    expect(s.phase).toBe('hub');
+  });
+});
+
 describe('партии ботов', () => {
+  it('biznesmen, 20 кругов: доигрывают на 2–6 игроках', async () => {
+    for (let n = 2; n <= 6; n++) {
+      const res = await simulate(def, botSeats(def, n, [0, 1, 2]), { ...defaults(def), map: 'biznesmen', limit: 20 }, 700 + n);
+      expect(res.error, `${n} игроков`).toBeUndefined();
+      expect(res.finished, `${n} игроков: ${res.steps} шагов`).toBe(true);
+    }
+  }, 120_000);
   for (const map of ['manager', 'kosmos'] as const) {
     for (const limit of [0, 20]) {
       it(`${map}, ${limit ? limit + ' кругов' : 'до разорения'}: доигрывают на 2–6 игроках`, async () => {

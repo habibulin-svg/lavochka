@@ -4,10 +4,15 @@
  * сам предлагает выкупить третий участок группы, сидит на бирже, когда поле застроено.
  * «Бизнес»: средний и сложный покупают на валютной бирже доллары под предприятие на своей монополии, в долгах сначала продают доллары. */
 import type { Rng } from '../../core/types';
-import { INSURE, RATE } from './boards';
+import { INSURE, RATE, ROULETTE, SHARES_BUY_CAP } from './boards';
 import {
   B,
   alive,
+  bankShares,
+  hubOpts,
+  marketGain,
+  marketOpts,
+  sharePrice,
   canBuild,
   canMortgage,
   canRedeem,
@@ -25,7 +30,7 @@ import {
 /** Сколько держать в кармане. */
 function reserve(s: State, seat: number, level: number): number {
   if (s.map === 'kosmos') return [80, 200, 350][level];
-  const k = s.map === 'biznes' ? 5 : 1;
+  const k = s.map === 'biznes' ? 5 : s.map === 'biznesmen' ? 8 : 1;
   if (level === 0) return 2000 * k;
   let worst = 0;
   for (let c = 0; c < s.owner.length; c++) {
@@ -120,6 +125,9 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       return gain > (level === 2 ? 1000 : 0) ? { type: 'accept' } : { type: 'reject' };
     }
     case 'debt': {
+      // «Бизнесмен»: сначала акции — по курсу, без потерь
+      const sc = [0, 1, 2, 3].filter((c) => s.shares[seat][c] > 0).sort((a, c) => s.price[c] - s.price[a])[0];
+      if (s.map === 'biznesmen' && sc != null) return { type: 'shares', c: sc, n: -1 };
       if (s.usd[seat] >= 50) {
         const need = Math.ceil((s.debt!.amount - cash) / RATE / 50) * 50;
         return { type: 'exchange', usd: -Math.min(s.usd[seat] - (s.usd[seat] % 50), Math.max(50, need)) };
@@ -154,6 +162,27 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       if (buy > 0 && cash - buy * RATE >= res * (level === 2 ? 0.6 : 1)) return { type: 'exchange', usd: buy };
       return { type: 'pass' };
     }
+    case 'hub':
+      return hubChoice(s, seat, level, res, rng);
+    case 'stocks':
+      return stocksChoice(s, seat, level, res, rng);
+    case 'roulette': {
+      if (s.rl >= 0 && ROULETTE[s.rl].out) return { type: 'pass' };
+      if (s.rl >= 0) return { type: 'roulette' };
+      const entries = ROULETTE.map((r, i) => (r.in ? i : -1)).filter((i) => i >= 0);
+      const best = level === 0 ? entries[rng.int(entries.length)] : entries.sort((a, c) => spinEv(c) - spinEv(a))[0];
+      return { type: 'roulette', entry: best };
+    }
+    case 'pick': {
+      const pk = s.pick!;
+      const cs = [0, 1, 2, 3];
+      if (pk.mode === 'raise') return { type: 'pick', c: cs.sort((a, c) => s.shares[seat][c] - s.shares[seat][a])[0] };
+      // подарок — что дороже; покупка — что дешевле (и есть в банке)
+      const have = cs.filter((c) => bankShares(s, c) > 0);
+      const list = have.length ? have : cs;
+      list.sort((a, c) => (pk.mode === 'gift' ? s.price[c] - s.price[a] : s.price[a] - s.price[c]));
+      return { type: 'pick', c: list[0] };
+    }
     case 'bankBuy': {
       const price = b.cells[s.pos[seat]].price! + 100;
       if (cash >= price && cash - price >= res * (level === 0 ? 1 : 2) && rng.next() < [0.5, 0.8, 1][level]) return { type: 'buy' };
@@ -187,4 +216,72 @@ function groupDeal(s: State, seat: number, res: number): Action | null {
     return { type: 'offer', to: o, give: [], get: [c], cash: pay, cards: 0 };
   }
   return null;
+}
+
+/** «Бизнесмен»: средний выигрыш броска рулетки со стартового сектора (два кубика). */
+function spinEv(from: number): number {
+  let ev = 0;
+  for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) ev += ROULETTE[(from + a + b) % ROULETTE.length].v / 36;
+  return ev;
+}
+
+/** «Бизнесмен»: клетка с выбором — банк, отель, таможня, маклер, рулетка, перекрёсток. */
+function hubChoice(s: State, seat: number, level: number, res: number, rng: Rng): Action {
+  const opts = hubOpts(s).filter((o) => o.ok);
+  const has = (id: string) => opts.some((o) => o.id === id);
+  const cash = s.cash[seat];
+  const b = B(s);
+  // за рубежом есть что покупать
+  const freeAbroad = b.cells.some((c, i) => c.abroad && s.owner[i] == null && c.price! < cash - res);
+  const want = (id: string): boolean => {
+    switch (id) {
+      case 'exit':
+        return true;
+      case 'stocks':
+      case 'broker':
+        return level > 0 || rng.next() < 0.5;
+      case 'roulette':
+        return cash > res + 40000 && (level > 0 || rng.next() < 0.5);
+      case 'abroad':
+      case 'abroad2':
+        return freeAbroad && cash > res * 2 + 60000 && rng.next() < [0.3, 0.5, 0.7][level];
+      case 'home':
+        return (!freeAbroad && rng.next() < 0.6) || rng.next() < 0.2;
+      case 'home2':
+        return !freeAbroad || rng.next() < 0.35;
+      case 'road':
+        return !freeAbroad || rng.next() < 0.3;
+    }
+    return false;
+  };
+  for (const o of opts) if (o.id !== 'pass' && o.id !== 'back' && want(o.id)) return { type: 'hub', opt: o.id };
+  if (has('pass')) return { type: 'hub', opt: 'pass' };
+  return { type: 'hub', opt: opts[opts.length - 1]?.id ?? 'back' };
+}
+
+/** «Бизнесмен»: на бирже — подкупить акции под выгодную карточку и сыграть её. */
+function stocksChoice(s: State, seat: number, level: number, res: number, rng: Rng): Action {
+  if (s.played) return { type: 'pass' };
+  const hand = s.hand[seat];
+  let best: { card: number; opt: number; score: number; to: number[] } | null = null;
+  hand.forEach((id, card) => {
+    if (id < 0) return;
+    marketOpts(s.price, id).forEach((to, opt) => {
+      let score = marketGain(s, seat, seat, s.price, to);
+      for (let c = 0; c < 4; c++) score += (to[c] - s.price[c]) * 1000 * s.shares[seat][c];
+      if (level === 2) for (const p of alive(s)) if (p !== seat) score -= marketGain(s, p, seat, s.price, to) / 3;
+      if (level === 0) score = rng.next();
+      if (!best || score > best.score) best = { card, opt, score, to };
+    });
+  });
+  if (!best) return { type: 'pass' };
+  const bb = best as { card: number; opt: number; score: number; to: number[] };
+  // курс цвета пойдёт вверх — сначала докупить акций
+  if (level > 0) {
+    const c = [0, 1, 2, 3].sort((a, d) => bb.to[d] - s.price[d] - (bb.to[a] - s.price[a]))[0];
+    const rise = bb.to[c] - s.price[c];
+    if (rise >= 3 && s.shares[seat][c] < SHARES_BUY_CAP && bankShares(s, c) > 0 && s.cash[seat] - sharePrice(s, c) >= res) return { type: 'shares', c, n: 1 };
+  }
+  if (bb.score > 0 || level === 0) return { type: 'play', card: bb.card, opt: bb.opt };
+  return { type: 'pass' };
 }

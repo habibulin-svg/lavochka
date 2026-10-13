@@ -144,3 +144,45 @@
 .mg-notes .mg-note em { position: absolute; right: -2px; bottom: -4px; font: 700 10px/1 system-ui, sans-serif; color: #fff; text-shadow: 0 0 2px #000; font-style: normal; }
 .mg-props { display: flex; flex-wrap: wrap; gap: 4px; }
 .mg-free { font-size: 13px; }
+
+/* «Бизнесмен»: фишки курса на табло-радуге, биржа, рулетка, акции в панели */
+.mg-tick { position: absolute; z-index: 5; width: calc(var(--u) * 1.9); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, var(--c) 40%, #222 100%); box-shadow: 0 0 0 calc(var(--u) * 0.18) #111, 0 calc(var(--u) * 0.2) calc(var(--u) * 0.4) rgba(0, 0, 0, 0.7);
+  transition: left 0.6s ease, top 0.6s ease; pointer-events: none; }
+.mg-board[data-map='biznesmen'] .mg-token { width: 3.6%; }
+.mg-board[data-map='biznesmen'] .mg-center { overflow: auto; }
+.mg-board[data-map='biznesmen'] .mg-center .btn { font-size: calc(var(--u) * 1.45); padding: calc(var(--u) * 0.5) calc(var(--u) * 1); }
+.mg-board[data-map='biznesmen'] .mg-tray.dice-tray { min-height: calc(var(--u) * 7); }
+.mg-board[data-map='biznesmen'] .mg-card { width: calc(var(--u) * 22); }
+.mg-shs { display: inline-flex; gap: 2px; vertical-align: middle; }
+.mg-sh { display: inline-block; width: 1.25em; border-radius: 3px; background: var(--c); color: #111; text-align: center; font-weight: 700; font-style: normal; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.mg-board[data-map='biznesmen'] .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.78); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+.mg-shares { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.mg-share { display: flex; flex-direction: column; align-items: center; font-size: 11px; line-height: 1.2; }
+.mg-share i { width: 100%; aspect-ratio: 1.6; background: center / cover no-repeat; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+.mg-share b { font-size: 15px; }
+.mg-share small { opacity: 0.75; }
+.mg-scards { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.mg-scard { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 34px; min-height: 40px; padding: 2px 5px; box-sizing: border-box;
+  background: linear-gradient(180deg, var(--c) 0 55%, #fff 55%); color: #111; font: 800 15px/1.1 system-ui, sans-serif; border: 1px solid #222; border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); cursor: default; }
+.mg-scard small { font-size: 9px; font-weight: 600; }
+.mg-scard.big { min-width: 46px; min-height: 52px; }
+.mg-prompt .mg-scard { cursor: pointer; font-size: calc(var(--u) * 1.5); min-width: calc(var(--u) * 4); min-height: calc(var(--u) * 4.6); }
+.mg-prompt .mg-scard small { font-size: calc(var(--u) * 0.95); }
+.mg-scard.sel { outline: calc(var(--u) * 0.35) solid #ffd34a; transform: translateY(-8%); }
+.mg-stocks { display: flex; flex-direction: column; gap: calc(var(--u) * 0.3); background: rgba(10, 16, 40, 0.85); padding: calc(var(--u) * 0.5); border-radius: calc(var(--u) * 0.6); }
+.mg-srow { display: grid; grid-template-columns: calc(var(--u) * 3.6) 1fr auto auto auto auto; align-items: center; gap: calc(var(--u) * 0.6); font-size: calc(var(--u) * 1.4); text-align: left; }
+.mg-srow i { height: calc(var(--u) * 2.2); background: center / cover no-repeat; border-radius: 2px; }
+.mg-srow b { color: var(--c); font-size: calc(var(--u) * 1.8); text-shadow: 0 0 2px #000; }
+.mg-board[data-map='biznesmen'] .mg-srow .btn { font-size: calc(var(--u) * 1.15); padding: calc(var(--u) * 0.25) calc(var(--u) * 0.6); }
+.mg-roul { display: grid; grid-template-columns: repeat(4, auto); gap: calc(var(--u) * 0.3) calc(var(--u) * 0.6); background: rgba(250, 245, 230, 0.94); color: #1a2a5a;
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 1); border-radius: calc(var(--u) * 0.8); font-weight: 700; font-size: calc(var(--u) * 1.3); }
+.mg-roul span { padding: 0 calc(var(--u) * 0.3); border-radius: calc(var(--u) * 0.3); }
+.mg-roul .in { background: #3a5ed8; color: #fff; }
+.mg-roul .out { background: #fff; box-shadow: inset 0 0 0 1px #888; }
+.mg-roul .bank { background: #d8281c; color: #fff; }
+.mg-roul .minus { color: #a01a1a; }
+.mg-roul .in.minus { color: #ffd0c8; }
+.mg-roul .on { outline: calc(var(--u) * 0.3) solid #ffd34a; }
+.mg-colbtn { box-shadow: inset 0 calc(var(--u) * -0.5) 0 var(--c); }

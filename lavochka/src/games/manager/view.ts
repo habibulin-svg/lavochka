@@ -5,12 +5,16 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { boardOf, CASINO, CASINO_STAR, INSURE, RATE, type Board, type MapId } from './boards';
+import { BIG_CARDS, BM_COLORS, boardOf, CASINO, CASINO_STAR, INSURE, PRICE_MAX, RATE, ROULETTE, SHARES_BUY_CAP, STOCK_CARDS, TICKER, type Board, type MapId } from './boards';
 import type { Ev } from './def';
 import { SEATS } from './def';
 import {
   alive,
+  bankShares,
   canBuild,
+  hubOpts,
+  marketOpts,
+  sharePrice,
   canMortgage,
   canRedeem,
   canSell,
@@ -55,6 +59,8 @@ class ManagerView implements GameView<State, Ev> {
   private dealBtn!: HTMLButtonElement;
   private mine!: HTMLElement;
   private tray: DiceTray | null = null;
+  /** «Бизнесмен»: фишки курса на табло-радуге. */
+  private ticks: HTMLElement[] = [];
   private trayEl!: HTMLElement;
   private shown: number[] = [];
   private tokens = new Map<number, HTMLElement>();
@@ -145,10 +151,12 @@ class ManagerView implements GameView<State, Ev> {
     this.board.dataset.map = map;
     this.img.src = b.img;
     this.ctx.hold?.(8000);
-    // внутренний квадрат поля — под кубики, карточку и решения
+    // внутренний квадрат поля — под кубики, карточку и решения («Бизнесмен»: внутри поля ещё круг, решения — над табло-радугой)
     const inner = b.cells[0].w;
-    Object.assign(this.center.style, { left: inner * 100 + '%', top: inner * 100 + '%', width: (1 - 2 * inner) * 100 + '%', height: (1 - 2 * inner) * 100 + '%' });
-    Object.assign(this.pop.style, { left: inner * 100 + '%', top: inner * 100 + '%', width: (1 - 2 * inner) * 100 + '%', height: (1 - 2 * inner) * 100 + '%' });
+    const box = (r: { x: number; y: number; w: number; h: number }) => ({ left: r.x * 100 + '%', top: r.y * 100 + '%', width: r.w * 100 + '%', height: r.h * 100 + '%' });
+    const sq = { x: inner, y: inner, w: 1 - 2 * inner, h: 1 - 2 * inner };
+    Object.assign(this.center.style, box(b.center ?? sq));
+    Object.assign(this.pop.style, box(b.center ? { x: 0.15, y: 0.15, w: 0.7, h: 0.7 } : sq));
     this.cellsEl.textContent = '';
     this.marks = b.cells.map((c, i) => {
       const el = h(`<div class="mg-cell side-${c.side}${c.kind === 'prop' ? ' prop' : ''}" data-cell="${i}"
@@ -156,6 +164,14 @@ class ManagerView implements GameView<State, Ev> {
       this.cellsEl.appendChild(el);
       return el;
     });
+    this.ticks = [];
+    if (map === 'biznesmen') {
+      this.ticks = BM_COLORS.map((c) => {
+        const el = h(`<i class="mg-tick" style="--c:${c.color}"></i>`);
+        this.cellsEl.appendChild(el);
+        return el;
+      });
+    }
     this.tokensEl.textContent = '';
     this.tokens.clear();
     this.trayEl.textContent = '';
@@ -221,6 +237,22 @@ class ManagerView implements GameView<State, Ev> {
         case 'casino':
           this.say(`Казино: сектор ${ev.sector} — ${ev.amount > 0 ? '+' : '−'}${fmt(Math.abs(ev.amount))}${ev.star ? ' ★' : ''}`);
           await sleep(900 / speed);
+          break;
+        case 'roulette':
+          this.cardEl.hidden = true;
+          await this.tray?.roll(ev.dice, speed);
+          this.say(ROULETTE[ev.sector].bank ? 'Рулетка: «В банк»! +200 000' : `Рулетка: ${ev.amount > 0 ? '+' : '−'}${fmt(Math.abs(ev.amount))}`);
+          await sleep(900 / speed);
+          break;
+        case 'market':
+          this.placeTicks(ev.to);
+          this.say(`Курс: ${ev.to.map((p, c) => (p !== ev.from[c] ? `${BM_COLORS[c].short} ${ev.from[c]}→${p}` : '')).filter(Boolean).join(', ')}`);
+          Sound.card();
+          await sleep(1100 / speed);
+          break;
+        case 'shares':
+          Sound.place();
+          await sleep(200 / speed);
           break;
         case 'buy':
         case 'won':
@@ -293,6 +325,14 @@ class ManagerView implements GameView<State, Ev> {
         return me ? 'Казино: бросайте кубик' : `${nm} в казино…`;
       case 'bankBuy':
         return me ? 'Выкупить планету у банка?' : `${nm} думает…`;
+      case 'hub':
+        return me ? `${esc(b.cells[v.pos[who]].name)}: что делаем?` : `${nm}: ${esc(b.cells[v.pos[who]].name)}…`;
+      case 'stocks':
+        return me ? 'Биржа: купите или продайте акции и сыграйте карточку' : `${nm} играет на бирже…`;
+      case 'roulette':
+        return me ? 'Рулетка: бросайте кубики' : `${nm} играет в рулетку…`;
+      case 'pick':
+        return me ? 'Выберите цвет акций' : `${nm} выбирает акции…`;
     }
     return '';
   }
@@ -304,7 +344,9 @@ class ManagerView implements GameView<State, Ev> {
     const biz = b.id === 'biznes';
     const ins = v.ins[seat] ? (v.ins[seat] === 2 || biz ? 'страховка' : '½ страховки') : '';
     const perk = biz ? [v.perk[seat] & 1 ? 'без налога' : v.perk[seat] & 2 ? 'налог ½' : '', v.perk[seat] & 4 ? 'стройка запрещена' : ''] : [];
-    const flags = [biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? 'на бирже' : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
+    const bm = b.id === 'biznesmen';
+    const sh = bm ? v.shares[seat].map((k, c) => `<i class="mg-sh" style="--c:${BM_COLORS[c].color}">${k}</i>`).join('') : '';
+    const flags = [sh ? `<span class="mg-shs">${sh}</span>` : '', bm && v.wait[seat] ? `в клинике: ${v.wait[seat]}` : '', biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? 'на бирже' : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
       .filter(Boolean)
       .join(' · ');
     return `<b>${fmt(v.cash[seat])}</b> ${b.cur} · ${n} ${b.id === 'kosmos' ? 'пл.' : 'уч.'}${flags ? ' · ' + flags : ''}`;
@@ -358,6 +400,7 @@ class ManagerView implements GameView<State, Ev> {
     });
     this.syncTokens();
     this.placeTokens();
+    if (!this.busy && this.ticks.length) this.placeTicks(v.price);
     if (!this.busy) {
       if (v.card) this.showCard(v.card.deck, v.card.id);
       else this.cardEl.hidden = true;
@@ -383,6 +426,16 @@ class ManagerView implements GameView<State, Ev> {
       el.hidden = v.out[s];
       el.classList.toggle('on', !v.result && v.turn === s);
     }
+  }
+
+  /** Фишки курса на полосах радуги: клетка = пункт курса. */
+  private placeTicks(price: number[]) {
+    this.ticks.forEach((el, c) => {
+      const a = ((TICKER.a0 + (Math.min(PRICE_MAX, price[c]) - 1) * TICKER.da) * Math.PI) / 180;
+      el.style.left = (TICKER.cx + TICKER.r[c] * Math.sin(a)) * 100 + '%';
+      el.style.top = (TICKER.cy - TICKER.r[c] * Math.cos(a)) * 100 + '%';
+      el.title = `${BM_COLORS[c].name}: ${price[c]}`;
+    });
   }
 
   private placeTokens() {
@@ -424,7 +477,8 @@ class ManagerView implements GameView<State, Ev> {
     const props = owned(v, me);
     const notes = this.notes(v.cash[me], b.notes);
     const usd = b.usdNotes && v.usd[me] ? `<div class="mg-cash usd"><span class="mg-sum">${dollars(v.usd[me])}</span><span class="mg-notes">${this.notes(v.usd[me], b.usdNotes)}</span></div>` : '';
-    this.mine.innerHTML = `<div class="mg-cash"><span class="mg-sum">${fmt(v.cash[me])} ${b.cur}</span><span class="mg-notes">${notes}</span></div>${usd}
+    const bmx = b.id === 'biznesmen' ? this.bmPanel(v, me) : '';
+    this.mine.innerHTML = `<div class="mg-cash"><span class="mg-sum">${fmt(v.cash[me])} ${b.cur}</span><span class="mg-notes">${notes}</span></div>${usd}${bmx}
       ${v.freeCards[me].length ? `<div class="mg-free">🎫 освобождение от биржи × ${v.freeCards[me].length}</div>` : ''}
       ${props.length ? `<div class="mg-props">${props.map((c) => this.chip(c)).join('')}</div>` : `<div class="mg-empty">${b.id === 'kosmos' ? 'Планет пока нет' : 'Участков пока нет'}</div>`}`;
   }
@@ -438,10 +492,27 @@ class ManagerView implements GameView<State, Ev> {
       const k = Math.floor(rest / n.v);
       if (!k) continue;
       rest -= k * n.v;
-      out.push(`<i class="mg-note${b.id === 'kosmos' ? ' h' : ''}" style="background-image:url(${n.img})" title="${fmt(n.v)} × ${k}"><em>${k > 1 ? '×' + k : ''}</em></i>`);
+      out.push(`<i class="mg-note${b.id === 'kosmos' || b.notesH ? ' h' : ''}" style="background-image:url(${n.img})" title="${fmt(n.v)} × ${k}"><em>${k > 1 ? '×' + k : ''}</em></i>`);
       if (out.length >= 5) break;
     }
     return out.join('');
+  }
+
+  /** «Бизнесмен»: акции по цветам (картинка акции, число, курс) и свои карточки биржи. */
+  private bmPanel(v: State, me: number) {
+    const sh = BM_COLORS.map((col, c) => `<span class="mg-share" title="${col.name}: курс ${v.price[c]}"><i style="background-image:url(${col.img})"></i><b>${v.shares[me][c]}</b><small>по ${fmt(sharePrice(v, c))}</small></span>`).join('');
+    const cards = v.hand[me].filter((id) => id >= 0).map((id) => this.stockCard(id)).join('');
+    return `<div class="mg-shares">${sh}</div>${cards ? `<div class="mg-scards">${cards}</div>` : ''}`;
+  }
+
+  /** Карточка биржи «Бизнесмена»: цвет и что делает. */
+  private stockCard(id: number, extra = '') {
+    const k = STOCK_CARDS[id];
+    const col = BM_COLORS[k.c];
+    let t: string;
+    if (k.big) t = k.k === 'x2' ? '×2' : k.k === 'half' ? ':2' : '+10 <small>прочим −1 −2 −3</small>';
+    else t = k.up ? `+${k.a} <small>прочим −${k.b}</small>` : `−${k.b}`;
+    return `<span class="mg-scard${id < BIG_CARDS ? ' big' : ''}" style="--c:${col.color}" ${extra}>${t}</span>`;
   }
 
   private chip(c: number) {
@@ -489,6 +560,7 @@ class ManagerView implements GameView<State, Ev> {
     Sound.unlock();
     this.closePop();
     this.deal = null;
+    this.stockSel = -1;
     this.ctx.act(s, a);
   }
 
@@ -502,6 +574,20 @@ class ManagerView implements GameView<State, Ev> {
       return `<div class="mg-deed kos"><div class="mg-dh">${esc(cell.name)}<b>${fmt(cell.price!)}</b></div>
         <div class="mg-db"><div>рента: <b>${fmt(cell.rents![0])}</b></div>${o === -1 ? `<div>выкуп у банка: ${fmt(cell.price! + 100)}</div>` : ''}
         <div class="mg-own">владелец: ${esc(owner)}</div></div></div>`;
+    }
+    if (b.id === 'biznesmen') {
+      const own = o != null && o >= 0;
+      const firm = cell.group == null;
+      const gb = firm ? null : b.groups[cell.group!];
+      const lvM = own && !firm ? (v.houses[c] === 4 ? 2 : v.houses[c]) : -1;
+      const rowsM = ['участок', 'филиал', 'предприятие'];
+      const rows = firm
+        ? `<div class="mg-dr on"><span>${cell.fee ? `попавший платит ${fmt(cell.fee)}, хозяину` : 'плата за наём'}</span><b>${fmt(cell.rents![0])}</b></div>`
+        : cell.rents!.map((r, i) => `<div class="mg-dr${i === lvM ? ' on' : ''}"><span>${rowsM[i]}</span><b>${fmt(r)}</b></div>`).join('');
+      return `<div class="mg-deed"><div class="mg-dh" style="--g:${gb ? gb.color : '#d8d0b8'}">${esc(cell.full ?? cell.name)}<b>${fmt(cell.price!)}</b></div>
+        <div class="mg-db"><div class="mg-dt">плата за наём:</div>${rows}
+        ${firm ? `<div class="mg-dn">фирма за рубежом — без построек; на таможне за неё пошлина 5 000</div>` : `<div class="mg-dn">вся группа — плата за участок вдвое; стоимость филиала и предприятия — <b>${fmt(cell.build!)}</b></div>`}
+        <div class="mg-own">владелец: ${esc(owner)}${v.mort[c] ? ' · <b>заложен</b>' : ''}${own && !v.mort[c] ? ` · сейчас ${fmt(rent(v, c))}` : ''}</div></div></div>`;
     }
     const g = b.groups[cell.group!];
     if (b.id === 'biznes') {
@@ -537,9 +623,11 @@ class ManagerView implements GameView<State, Ev> {
     const cell = b.cells[c];
     if (op != null && v.owner[c] === op) {
       const biz = b.id === 'biznes';
+      const bmz = b.id === 'biznesmen';
       const cost = biz && v.houses[c] === 3 ? dollars(cell.buildUsd!) : fmt(cell.build!);
       const back = biz && v.houses[c] === 4 ? dollars(cell.buildUsd! / 2) : fmt(cell.build! / 2);
-      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${v.houses[c] === 3 ? 'Предприятие' : 'Филиал'} — ${cost}</button>`);
+      const entNext = bmz ? v.houses[c] === 1 : v.houses[c] === 3;
+      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${entNext ? 'Предприятие' : 'Филиал'} — ${cost}</button>`);
       if (canSell(v, op, c)) btns.push(`<button class="btn" data-a="sell">Продать постройку +${back}</button>`);
       if (canMortgage(v, op, c)) btns.push(`<button class="btn" data-a="mortgage">Заложить +${fmt(cell.price! / 2)}</button>`);
       if (canRedeem(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn" data-a="redeem">Выкупить −${fmt(redeemCost(v, c))}</button>`);
@@ -593,7 +681,7 @@ class ManagerView implements GameView<State, Ev> {
         const can = v.cash[seat] >= cell.price!;
         html = me
           ? `${this.propHtml(c)}<div class="mg-btns"><button class="btn primary" data-a="buy" ${can ? '' : 'disabled'}>Купить за ${fmt(cell.price!)}</button>
-              <button class="btn" data-a="pass">${b.id === 'kosmos' ? 'Не покупать — на торги' : 'Отказаться — на торги'}</button></div>
+              <button class="btn" data-a="pass">${b.id === 'kosmos' ? 'Не покупать — на торги' : b.id === 'biznesmen' ? 'Не покупать' : 'Отказаться — на торги'}</button></div>
               ${can ? '' : `<div class="mg-hint">Не хватает денег${b.id !== 'kosmos' ? ' — можно заложить участок или продать постройку (нажмите на свой участок)' : ' — можно продать планету банку'}</div>`}`
           : `<div class="mg-q">${nm}: ${esc(cell.full ?? cell.name)} — покупать?</div>`;
         break;
@@ -631,6 +719,10 @@ class ManagerView implements GameView<State, Ev> {
             if (canMortgage(v, seat, x)) out.push(`<button class="btn" data-op="mortgage" data-c="${x}">${esc(b.cells[x].name)}: заложить +${fmt(b.cells[x].price! / 2)}</button>`);
             return out;
           });
+          if (b.id === 'biznesmen')
+            v.shares[seat].forEach((k, cc) => {
+              if (k) acts.unshift(`<button class="btn" data-sh="${cc}" data-n="-1">продать ${BM_COLORS[cc].name.slice(0, -2)}ую акцию +${fmt(sharePrice(v, cc))}</button>`);
+            });
           if (b.id === 'biznes' && v.usd[seat] >= 50) {
             const need = Math.min(v.usd[seat] - (v.usd[seat] % 50), Math.ceil((d.amount - v.cash[seat]) / RATE / 50) * 50);
             acts.unshift(`<button class="btn" data-x="${-need}">продать ${dollars(need)} +${fmt(need * RATE)}</button>`);
@@ -685,6 +777,36 @@ class ManagerView implements GameView<State, Ev> {
           ? `${this.propHtml(c)}<div class="mg-btns"><button class="btn primary" data-a="buy" ${v.cash[seat] < cell.price! + 100 ? 'disabled' : ''}>Выкупить за ${fmt(cell.price! + 100)}</button><button class="btn" data-a="pass">Не надо</button></div>`
           : `<div class="mg-q">${nm}: выкупать ли планету у банка?</div>`;
         break;
+      case 'hub':
+        html = me
+          ? `<div class="mg-q">${esc(cell.name)}</div><div class="mg-btns col">${hubOpts(v)
+              .map((o, i) => `<button class="btn${i === 0 ? ' primary' : ''}" data-hub="${o.id}" ${o.ok ? '' : 'disabled'}>${esc(o.label)}</button>`)
+              .join('')}</div>`
+          : `<div class="mg-q">${nm}: ${esc(cell.name)}</div>`;
+        break;
+      case 'stocks':
+        html = this.stocksHtml(v, seat, me, nm);
+        break;
+      case 'roulette': {
+        const secs = ROULETTE.map((r, i) => `<span class="${r.bank ? 'bank' : r.v > 0 ? 'plus' : 'minus'}${i === v.rl ? ' on' : ''}${r.in ? ' in' : ''}${r.out ? ' out' : ''}">${r.bank ? 'В банк' : (r.v > 0 ? '+' : '−') + fmt(Math.abs(r.v))}</span>`).join('');
+        const left = v.rlLeft > 0 ? ` · осталось бросков: ${v.rlLeft}` : '';
+        let btns = '';
+        if (me && v.rl < 0) btns = `<div class="mg-q small">С какого сектора «вход» начать отсчёт?</div><div class="mg-btns">${ROULETTE.map((r, i) => (r.in ? `<button class="btn primary" data-entry="${i}">${r.v > 0 ? '+' : '−'}${fmt(Math.abs(r.v))}</button>` : '')).join('')}</div>`;
+        else if (me) btns = `<div class="mg-btns"><button class="btn primary" data-a="roulette" data-tap>Бросить кубики</button>${ROULETTE[v.rl].out ? '<button class="btn" data-a="pass">Выйти</button>' : ''}</div>`;
+        html = `<div class="mg-roul">${secs}</div><div class="mg-q small">По часовой: синие — «вход», белые — «выход» (выйти можно только на них), «В банк» — 200 000 и выход${left}</div>${btns || `<div class="mg-q">${nm} в рулетке</div>`}`;
+        break;
+      }
+      case 'pick': {
+        const pk = v.pick!;
+        const what = pk.mode === 'gift' ? `Выигрыш: ${pk.n} акц. любого цвета` : pk.mode === 'buy' ? `Купите в банке ${pk.n} акции` : `Один цвет ваших акций повысился на ${pk.n} пункта`;
+        html = me
+          ? `<div class="mg-q">${what}</div><div class="mg-btns">${BM_COLORS.map((col, cc) => {
+              const ok = pk.mode === 'raise' ? v.shares[seat][cc] > 0 : true;
+              return `<button class="btn mg-colbtn" style="--c:${col.color}" data-pick="${cc}" ${ok ? '' : 'disabled'}>${col.name} · ${v.price[cc]}${pk.mode !== 'raise' ? ` · в банке ${bankShares(v, cc)}` : ''}</button>`;
+            }).join('')}</div>`
+          : `<div class="mg-q">${nm}: ${what.toLowerCase()}</div>`;
+        break;
+      }
     }
     if (b.id === 'kosmos' && v.pot > 0 && !html) html = `<div class="mg-q small">Золото Амазонок: ${fmt(v.pot)}</div>`;
     p.innerHTML = html;
@@ -693,6 +815,44 @@ class ManagerView implements GameView<State, Ev> {
     p.querySelectorAll<HTMLButtonElement>('[data-ins]').forEach((el) => (el.onclick = () => this.send({ type: 'insure', level: Number(el.dataset.ins) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-x]').forEach((el) => (el.onclick = () => this.send({ type: 'exchange', usd: Number(el.dataset.x) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-op]').forEach((el) => (el.onclick = () => this.send({ type: el.dataset.op, cell: Number(el.dataset.c) } as Action, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-hub]').forEach((el) => (el.onclick = () => this.send({ type: 'hub', opt: el.dataset.hub! }, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-entry]').forEach((el) => (el.onclick = () => this.send({ type: 'roulette', entry: Number(el.dataset.entry) }, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((el) => (el.onclick = () => this.send({ type: 'pick', c: Number(el.dataset.pick) }, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-sh]').forEach((el) => (el.onclick = () => this.send({ type: 'shares', c: Number(el.dataset.sh), n: Number(el.dataset.n) }, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-play]').forEach((el) => (el.onclick = () => {
+      const [card, opt] = el.dataset.play!.split(':').map(Number);
+      this.send({ type: 'play', card, opt }, seat);
+    }));
+    p.querySelectorAll<HTMLElement>('[data-card]').forEach((el) => (el.onclick = () => {
+      this.stockSel = Number(el.dataset.card);
+      this.renderPrompt();
+    }));
+  }
+
+  /** Выбранная на бирже карточка (номер в руке). */
+  private stockSel = -1;
+
+  /** Биржа: курсы, купить/продать, карточки на руках — нажать, выбрать вариант. */
+  private stocksHtml(v: State, seat: number, me: boolean, nm: string) {
+    const rows = BM_COLORS.map((col, c) => {
+      const k = v.shares[seat][c];
+      const buy = me && k < SHARES_BUY_CAP && bankShares(v, c) > 0 && v.cash[seat] >= sharePrice(v, c);
+      return `<div class="mg-srow" style="--c:${col.color}"><i style="background-image:url(${col.img})"></i><span>${col.name}</span><b>${v.price[c]}</b><span>×${k}</span>
+        ${me ? `<button class="btn" data-sh="${c}" data-n="1" ${buy ? '' : 'disabled'}>купить</button><button class="btn" data-sh="${c}" data-n="-1" ${k ? '' : 'disabled'}>продать</button>` : ''}</div>`;
+    }).join('');
+    let cards = '';
+    if (me && !v.played) {
+      const hand = v.hand[seat];
+      if (this.stockSel >= hand.length) this.stockSel = -1;
+      cards = `<div class="mg-q small">Сыграйте одну карточку — нажмите на неё:</div><div class="mg-scards">${hand.map((id, i) => this.stockCard(id, `data-card="${i}"`).replace(`class="mg-scard`, `class="mg-scard${i === this.stockSel ? ' sel' : ''}`)).join('')}</div>`;
+      if (this.stockSel >= 0) {
+        const opts = marketOpts(v.price, hand[this.stockSel]);
+        cards += `<div class="mg-btns col">${opts
+          .map((to, j) => `<button class="btn primary" data-play="${this.stockSel}:${j}">${to.map((p, c) => (p !== v.price[c] ? `${BM_COLORS[c].short} ${v.price[c]}→${p}` : '')).filter(Boolean).join(', ') || 'курс не изменится'}</button>`)
+          .join('')}</div>`;
+      }
+    } else if (me) cards = '<div class="mg-q small">Карточка сыграна.</div>';
+    return `<div class="mg-q">${me ? 'Биржа' : nm + ' на бирже'} · 1 пункт = 1 000</div><div class="mg-stocks">${rows}</div>${cards}${me ? '<div class="mg-btns"><button class="btn" data-a="pass">Уйти с биржи</button></div>' : ''}`;
   }
 
   // ---------- сделка ----------
