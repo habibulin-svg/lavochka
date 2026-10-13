@@ -64,7 +64,7 @@ export type Action = { type: 'roll' } | { type: 'move' };
 export type Event =
   | { type: 'roll'; seat: number; die: number }
   | { type: 'move'; seat: number; path: number[] }
-  | { type: 'sign'; seat: number; sign: Sign; to: number }
+  | { type: 'sign'; seat: number; sign: Sign; to: number; /** Текст клетки (что случилось). */ text?: string }
   | { type: 'skip'; seat: number }
   | { type: 'win'; seat: number };
 

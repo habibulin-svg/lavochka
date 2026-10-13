@@ -138,7 +138,7 @@ class VoronaView implements GameView<State, Ev> {
         case 'mail':
           this.stage.innerHTML = `<div class="bv-show">${mailHtml(ev.id)}</div>`;
           Sound.card();
-          await sleep(1500 / speed);
+          await (this.ctx.read ? this.ctx.read(1500) : sleep(1500 / speed));
           break;
         case 'biz':
           if (ev.buy == null) {

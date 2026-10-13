@@ -76,6 +76,10 @@ class HodilkiView implements GameView<State, Event> {
   private gesture: { kind: 'pan' | 'token'; x0: number; y0: number; moved: boolean; dist?: number } | null = null;
   private eatClick = false;
   private tilesQueued = false;
+  /** Сдвиг общей карты вверх (под ней панель кнопок вида). */
+  private oy = 0;
+  /** Угол миникарты: обычно внизу слева, уходит, если там пуговицы. */
+  private corner: 'bl' | 'tl' | 'tr' = 'bl';
 
   private onKey = (e: KeyboardEvent) => {
     const t = e.target as HTMLElement;
@@ -127,6 +131,7 @@ class HodilkiView implements GameView<State, Event> {
     this.base.onload = () => {
       this.board.classList.add('ready');
       this.ctx.hold?.(0);
+      if (!this.ctx.demo) void this.frameTurn();
     };
     wrap.querySelector('.ks-cam')!.addEventListener('click', (e) => {
       e.preventDefault();
@@ -354,6 +359,8 @@ class HodilkiView implements GameView<State, Event> {
     this.board.style.width = `${this.bw}px`;
     this.board.style.height = `${this.bh}px`;
     this.apply(this.cam);
+    // первый крупный кадр — как только у стола появился размер и карта видна (до броска, а не под пальцем после него)
+    if (!this.pz && this.bw && this.v && !this.ctx.demo && this.board.classList.contains('ready')) void this.frameTurn();
   }
 
   /** Кадр без выхода краёв поля внутрь экрана. */
@@ -374,6 +381,7 @@ class HodilkiView implements GameView<State, Event> {
     const { z, fx, fy } = this.cam;
     // общая карта чуть выше центра — под ней панель кнопок вида
     const oy = this.ctx.demo ? 0 : 23 * Math.max(0, Math.min(1, 2 - z));
+    this.oy = oy;
     this.board.style.transform = `translate(${r.w / 2 - fx * this.bw * z}px, ${r.h / 2 - oy - fy * this.bh * z}px) scale(${z})`;
     this.wrap.classList.toggle('zoomed', z > 1.02);
     this.mini.hidden = z < 1.15 || this.ctx.demo;
@@ -492,6 +500,8 @@ class HodilkiView implements GameView<State, Event> {
   private frameCells(cells: number[], force = false): Promise<void> {
     const b = this.b;
     if (!b || !this.bw || !cells.length || (!force && (!this.follow || this.manual))) return Promise.resolve();
+    // пуговицу держат пальцем — не уводить карту из-под него
+    if (!force && this.gesture?.kind === 'token') return Promise.resolve();
     const xs = cells.map((i) => b.cells[i].x / b.img.w);
     const ys = cells.map((i) => b.cells[i].y / b.img.h);
     const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
@@ -625,6 +635,44 @@ class HodilkiView implements GameView<State, Event> {
       d.style.top = `${(cell.y / this.b.img.h) * 100}%`;
       d.classList.toggle('on', this.v.turn === s);
     }
+    this.placeMini();
+  }
+
+  /** Экранные точки, которые миникарта не должна закрывать: пуговицы и клетка хода. */
+  private hotPoints() {
+    const b = this.b!;
+    const v = this.v!;
+    const r = this.vp();
+    const { z, fx, fy } = this.cam;
+    const ids = v.seats.map((s) => this.shown[s] ?? 0);
+    if (v.winner == null && (v.phase ?? 'roll') === 'move') ids.push(target(v, b, v.turn));
+    return ids.map((i) => ({
+      x: r.w / 2 - fx * this.bw * z + (b.cells[i].x / b.img.w) * this.bw * z,
+      y: r.h / 2 - this.oy - fy * this.bh * z + (b.cells[i].y / b.img.h) * this.bh * z,
+    }));
+  }
+
+  private placeMini() {
+    const r = this.vp();
+    const mw = this.mini.offsetWidth;
+    const mh = this.mini.offsetHeight;
+    if (!mw || !mh) return;
+    const pts = this.hotPoints();
+    const pad = 28;
+    const box = (c: 'bl' | 'tl' | 'tr') => {
+      const x0 = c === 'tr' ? r.w - 10 - mw : 10;
+      const y0 = c === 'bl' ? r.h - 10 - mh : 10;
+      return { x0: x0 - pad, x1: x0 + mw + pad, y0: y0 - pad, y1: y0 + mh + pad };
+    };
+    const free = (c: 'bl' | 'tl' | 'tr') => {
+      const q = box(c);
+      return !pts.some((p) => p.x > q.x0 && p.x < q.x1 && p.y > q.y0 && p.y < q.y1);
+    };
+    if (!free(this.corner)) {
+      const next = (['bl', 'tl', 'tr'] as const).find(free);
+      if (next) this.corner = next;
+    } else if (this.corner !== 'bl' && free('bl')) this.corner = 'bl';
+    this.mini.dataset.corner = this.corner;
   }
 
   // ---------- жесты ----------
@@ -665,7 +713,7 @@ class HodilkiView implements GameView<State, Event> {
     if (this.ctx.demo || (e.target as HTMLElement).closest('.ks-cam, .ks-mini')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const tok = (e.target as HTMLElement).closest('.ks-token') as HTMLElement | null;
+    const tok = ((e.target as HTMLElement).closest('.ks-token') as HTMLElement | null) ?? this.nearMine(e.clientX, e.clientY);
     if (this.ptrs.size === 2) {
       // щипок: отпустить пуговицу, если тащили
       if (this.gesture?.kind === 'token') this.dropToken(null);
@@ -673,11 +721,22 @@ class HodilkiView implements GameView<State, Event> {
       const [a, b] = [...this.ptrs.values()];
       this.gesture = { kind: 'pan', x0: (a.x + b.x) / 2, y0: (a.y + b.y) / 2, moved: true, dist: Math.hypot(a.x - b.x, a.y - b.y) };
     } else if (tok && this.canMove() && +tok.dataset.seat! === this.actSeat) {
+      this.stopCam();
       this.gesture = { kind: 'token', x0: e.clientX, y0: e.clientY, moved: false };
     } else {
       this.gesture = { kind: 'pan', x0: e.clientX, y0: e.clientY, moved: false };
     }
     this.wrap.setPointerCapture(e.pointerId);
+  }
+
+  /** Своя пуговица рядом с точкой нажатия (палец крупнее пуговицы, а рядом — чужие). */
+  private nearMine(x: number, y: number): HTMLElement | null {
+    if (!this.canMove()) return null;
+    const el = this.tokens.get(this.actSeat!);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const reach = Math.max(26, r.width * 0.9);
+    return Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2)) < reach ? el : null;
   }
 
   private onMove(e: PointerEvent) {
@@ -830,7 +889,10 @@ class HodilkiView implements GameView<State, Event> {
     for (const ev of events) {
       if (ev.type === 'roll') {
         this.note.hidden = true;
-        void this.frameCells([this.shown[ev.seat]]);
+        // кадр «откуда и куда» — пока катится кубик: к ходу камера уже стоит и не уезжает из-под пальца
+        const b = this.b;
+        const to = b && v.turn === ev.seat && (v.phase ?? 'roll') === 'move' ? target(v, b, ev.seat) : null;
+        void this.frameCells(to != null ? [this.shown[ev.seat], to] : [this.shown[ev.seat]]);
         await this.tray.roll([ev.die], speed);
       } else if (ev.type === 'move') {
         const last = ev.path[ev.path.length - 1];
@@ -850,9 +912,10 @@ class HodilkiView implements GameView<State, Event> {
         await sleep(120 / speed);
       } else if (ev.type === 'sign') {
         const good = signGood(ev.sign);
-        const story = this.b?.cells[this.shown[ev.seat]]?.text;
+        const story = ev.text ?? this.b?.cells[this.shown[ev.seat]]?.text;
         this.say(`${story ? story + ' ' : ''}${strip(this.ctx.name(ev.seat))} ${signText(ev.sign)}${good ? '!' : '.'}`, good);
-        await sleep(500 / speed);
+        // дать прочитать: за экраном человек — ждём касания, иначе пауза
+        await (this.ctx.read ? this.ctx.read(story ? 1600 : 700) : sleep(500 / speed));
         if (ev.to !== this.shown[ev.seat]) {
           // перелёт: камера показывает и откуда, и куда; место назначения подгружается заранее
           await this.frameCells([this.shown[ev.seat], ev.to]);

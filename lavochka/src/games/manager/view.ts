@@ -227,7 +227,8 @@ class ManagerView implements GameView<State, Ev> {
         case 'card':
           this.showCard(ev.deck, ev.id);
           Sound.card();
-          await sleep(1500 / speed);
+          // дать прочитать карточку: за экраном человек — ждём касания
+          await (this.ctx.read ? this.ctx.read(1500) : sleep(1500 / speed));
           break;
         case 'pay':
           this.money(ev.from, -ev.amount);

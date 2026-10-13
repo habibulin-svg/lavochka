@@ -1,5 +1,6 @@
 /* Кинь-двинь — одна игра на нескольких оригинальных советских полях; поле выбирается настройкой и лежит в состоянии партии. */
 import type { GameDef, SeatSpec } from '../../core/types';
+import { esc } from '../../core/util';
 import { finishOf, pathFor, SEATS, signText, skipsOf, type Action, type Board, type Event, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
@@ -53,7 +54,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       dest = Math.max(0, Math.min(finish, sign.to));
       if (sign.skip) s.skip[seat] = sign.skip;
     }
-    ev.push({ type: 'sign', seat, sign, to: dest });
+    ev.push({ type: 'sign', seat, sign, to: dest, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
     s.pos[seat] = dest;
     if (dest === finish) return win();
   }
@@ -94,7 +95,7 @@ export const def: GameDef<State, Action, Event, State> = {
       case 'roll':
         return `${name(ev.seat)} бросает: <b>${ev.die}</b>`;
       case 'sign':
-        return `${name(ev.seat)} ${signText(ev.sign)}.`;
+        return `${ev.text ? `<i>${esc(ev.text)}</i> ` : ''}${name(ev.seat)} ${signText(ev.sign)}.`;
       case 'skip':
         return `${name(ev.seat)} пропускает ход.`;
       case 'win':

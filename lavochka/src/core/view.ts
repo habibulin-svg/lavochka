@@ -22,6 +22,9 @@ export interface ViewCtx<A = any> {
   input?(seat: number, input: unknown): void;
   /** Игра идёт по сети (не локально): снимки приходят с задержкой. */
   online?: boolean;
+  /** Дать прочитать (карточка, событие клетки): если за экраном человек — ждать его касания, иначе пауза ms.
+   * Сам текст игра показывает своей карточкой; в журнал он попадает строкой describe. */
+  read?(ms: number): Promise<void>;
 }
 
 export interface GameView<V = any, E = any> {

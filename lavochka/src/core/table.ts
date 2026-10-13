@@ -7,7 +7,7 @@ import { openSettings } from './settings-ui';
 import { saveSettings, settings } from './settings';
 import type { GameResult } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
-import { esc, h } from './util';
+import { esc, h, sleep } from './util';
 import type { GameModule, GameView, ViewCtx } from './view';
 import { Voice, type VoiceTile } from './voice';
 
@@ -136,6 +136,7 @@ export class Table {
       hold: (ms) => o.client.hold(ms),
       input: (seat, input) => o.client.input(seat, input),
       online: o.mode !== 'local',
+      read: (ms) => this.read(ms),
     };
     const self = this;
     this.view.mount(q('.table-board'), ctx);
@@ -414,6 +415,56 @@ export class Table {
       Sound.win();
       setTimeout(() => this.showResult(this.result!), 500);
     }
+  }
+
+  /** «Прочитай и нажми»: за экраном человек — подсказка над полем, ждём касания поля (или пробела/Enter); ход стола стоит.
+   * Включили «Пропустить», началась новая партия или за экраном одни боты — просто пауза. */
+  private read(ms: number): Promise<void> {
+    const speed = settings.speed || 1;
+    if (this.fast || this.closed || !this.mySeats.length) return sleep(ms / speed);
+    const board = this.el.querySelector('.table-board') as HTMLElement;
+    const gen = this.gen;
+    return new Promise((done) => {
+      const hint = h('<div class="read-hint">Нажмите, чтобы продолжить ▸</div>');
+      board.appendChild(hint);
+      const t0 = performance.now();
+      let over = false;
+      const finish = () => {
+        if (over) return;
+        over = true;
+        hint.remove();
+        board.removeEventListener('pointerdown', down, true);
+        document.removeEventListener('keydown', key, true);
+        clearInterval(poll);
+        done();
+      };
+      // касание продолжает игру и не доходит до поля (не бросает кубик, не двигает карту)
+      const eatClick = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      const down = (e: PointerEvent) => {
+        if (performance.now() - t0 < 350) return; // случайное касание во время анимации
+        e.preventDefault();
+        e.stopPropagation();
+        board.addEventListener('click', eatClick, { capture: true, once: true });
+        setTimeout(() => board.removeEventListener('click', eatClick, true), 600);
+        finish();
+      };
+      const key = (e: KeyboardEvent) => {
+        const tg = e.target as HTMLElement;
+        if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
+        if (e.code !== 'Space' && e.key !== 'Enter') return;
+        e.preventDefault();
+        e.stopPropagation();
+        finish();
+      };
+      const poll = setInterval(() => {
+        if (this.fast || this.closed || gen !== this.gen) finish();
+      }, 200);
+      board.addEventListener('pointerdown', down, true);
+      document.addEventListener('keydown', key, true);
+    });
   }
 
   private isOnlineMine(_seat: number) {
