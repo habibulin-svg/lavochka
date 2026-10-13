@@ -43,8 +43,14 @@ describe('Менеджер', () => {
     expect(o.cells[10].kind).toBe('jail');
     expect(o.cells[20].kind).toBe('rest');
     expect(o.cells[30].kind).toBe('gojail');
-    // типы клеток совпадают с ленинградским полем клетка-в-клетку
-    expect(o.cells.map((c) => c.kind).join(',')).toBe(m.cells.map((c) => c.kind).join(','));
+    // типы клеток совпадают с ленинградским полем, кроме одного места: на скане одесского поля
+    // «Извещение» стоит между гостиницами «Одесса» и «Красная» (клетка 27), а не после «Красной» (28)
+    const kinds = (b: typeof o) => b.cells.map((c) => c.kind);
+    const ok = kinds(o), mk = kinds(m);
+    [ok[27], ok[28]] = [ok[28], ok[27]];
+    expect(ok.join(',')).toBe(mk.join(','));
+    expect(o.cells[27].kind).toBe('card');
+    expect(o.cells[28].name).toBe('Красная');
     // масштаб денег одесский
     expect(o.money(3)).toBe(200000);
     expect(o.startPay).toBe(20000);
