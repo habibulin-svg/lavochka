@@ -243,8 +243,8 @@ function arrive(s: State, x: X, seat: number, rng: Rng): State {
   const kind = kindOf(h.cell);
   let st = s;
   if (kind === 'exchange') {
-    // вход стоит 5 талеров, если ничего не меняешь и не покупаешь
-    st = money(st, x, seat, h.thalers >= CELL_RULES.exchange.entryFine ? -CELL_RULES.exchange.entryFine : 0);
+    // по правилам вход стоит 5 талеров, только если ничего не меняешь и не покупаешь;
+    // в упрощённой версии плату не берём вовсе, иначе покупка характеристик не окупается
     st = { ...st, phase: 'card' };
     x.ev.push({ type: 'card', seat, num: null, text: 'ОБМЕННЫЙ ПУНКТ: можно обменять характеристики или купить за 5 талеров. Вход — 5 талеров.' });
     return st;

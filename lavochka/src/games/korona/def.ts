@@ -117,27 +117,19 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
     const to = nextToward(s, seat, (n) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum');
     return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
   }
-  // если состояние не меняется десятки ходов — меняем цель по кругу, чтобы выйти из цикла
+  // политика в три шага: есть деньги и недобор характеристик — на обменный пункт (покупка),
+  // иначе к лицею за ростом; всё набрано — к Провалу (это уже проверено выше)
   const sig = `${h.cell}|${h.life}|${h.thalers}|${STATS.map((k) => h.st[k]).join(',')}`;
   const idle = barren(seat, sig);
-  const cycle = Math.floor(idle / 40) % 3;
-  // если есть талеры — идём на обменный пункт покупать характеристики (5 талеров за одну),
-  // иначе к лицею и ведьмину лугу
-  const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice;
-  const want =
-    idle > 40
-      ? cycle === 0
-        ? (n: number) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum'
-        : cycle === 1
-          ? (n: number) => kindOf(n) === 'exchange'
-          : (n: number) => kindOf(n) === 'meadow' || kindOf(n) === 'lyceum'
-      : canBuy
-        ? (n: number) => kindOf(n) === 'exchange'
-        : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange';
-  // сначала пробуем дойти именно до обменного пункта (там покупка характеристик),
-  // и только если он недостижим — к лицею и лугу
-  const direct = nextToward(s, seat, want);
-  const to = direct ?? nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow') ?? stepTargets(s, seat)[0];
+  const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice && STATS.some((k) => h.st[k] < CELL_RULES.fall.need);
+  const want = canBuy
+    ? (n: number) => kindOf(n) === 'exchange'
+    : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow';
+  const to =
+    nextToward(s, seat, want) ??
+    // если долго нет роста — берём любую полезную клетку
+    (idle > 40 ? nextToward(s, seat, (n) => kindOf(n) === 'exchange' || kindOf(n) === 'hospital') : null) ??
+    stepTargets(s, seat)[0];
   return { type: 'step', to };
 }
 
