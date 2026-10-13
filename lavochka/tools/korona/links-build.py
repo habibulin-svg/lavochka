@@ -16,7 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 RAW = os.path.join(ROOT, 'lavochka', 'tools', 'korona', 'links-raw.json')
 DATA = os.path.join(ROOT, 'lavochka', 'src', 'games', 'korona', 'data.json')
 OUT = os.path.join(ROOT, 'lavochka', 'src', 'games', 'korona', 'links.json')
-ARROW = re.compile(r'\s*(?:→|->|=>|—>|➔|➜|⇄|↔|<->|⇆)\s*')
+ARROW = re.compile(r'\s*(?:→|->|=>|—>|➔|➜|⇄|↔|↕|↑|↓|<->|⇆)\s*')
 SCALE = 150 / 72
 
 
