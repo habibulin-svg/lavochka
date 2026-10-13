@@ -22,7 +22,7 @@ OUT_IMG = os.path.join(ROOT, 'lavochka', 'public', 'korona', 'cards')
 MONTAGE = os.path.join(ROOT, 'lavochka', 'tools', 'korona', 'cards-check.png')
 PDF_DIR = os.path.join('D:\\', 'temp', 'настолки', 'Корона Эмбера 1994 ги (Реставрация в векторе)', 'PDF')
 DPI = 110
-TITLE_MIN, TITLE_MAX = 12.5, 19.0
+TITLE_MIN, TITLE_MAX = 12.0, 20.0
 LINE_TOL = 4.0
 
 
@@ -76,7 +76,7 @@ def main():
             nxt = min((r['y0'] for r in below if is_title(r)), default=None)
             body = [r for r in below if nxt is None or r['y0'] < nxt - 2]
             text = ' '.join([t['text']] + [r['text'] for r in body]).strip()
-            if len(text) < 40:
+            if len(text) < 24:
                 continue
             n += 1
             made += 1
