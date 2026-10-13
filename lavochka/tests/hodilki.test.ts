@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, def } from '../src/games/hodilki/def';
-import { finishOf, type Board, type Event, type State } from '../src/games/hodilki/core';
+import { finishOf, type Board, type Event, type ItemId, type Sign, type State } from '../src/games/hodilki/core';
 
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
 
@@ -710,5 +710,116 @@ describe('кинь-двинь: боны, предметы и развилки', 
       BOARDS.splice(BOARDS.indexOf(other), 1);
       BOARDS.splice(BOARDS.indexOf(hop), 1);
     }
+  });
+});
+
+describe('кинь-двинь: «Лукоморье», части 2–4', () => {
+  const luk = (id: string) => BOARDS.find((b) => b.id === id)!;
+  /** Номер клетки по подписи с поля ((15), (24а), А…). */
+  const at = (id: string, label: string) => {
+    const i = luk(id).cells.findIndex((c) => c.label === label);
+    expect(i, `клетка «${label}» на ${id}`).toBeGreaterThanOrEqual(0);
+    return i;
+  };
+  /** Номер клетки по знаку (для клеток, которые на поле цифрой не подписаны). */
+  const bySign = (id: string, pred: (c: { sign: Sign | null }) => boolean) => {
+    const i = luk(id).cells.findIndex((c) => pred(c));
+    expect(i, `клетка по знаку на ${id}`).toBeGreaterThanOrEqual(0);
+    return i;
+  };
+  /** Партия на поле, пуговица Вовки стоит на клетке `cell`. */
+  const stand = (id: string, cell: number, opts: { coins?: number; items?: ItemId[] } = {}) => {
+    const rng = new RiggedRng(new SeededRng(9));
+    const s = def.setup(seats, { map: id }, rng) as State;
+    return {
+      ...s,
+      pos: s.pos.map((_, i) => (i === 0 ? cell : 0)),
+      turn: 0,
+      coins: [opts.coins ?? 50, opts.coins ?? 50],
+      items: [(opts.items ?? []) as never, null],
+      extra: [0, 0],
+    } as State;
+  };
+  const forkAt = (id: string, re: RegExp) => {
+    const i = bySign(id, (c) => c.sign?.k === 'fork' && re.test(c.sign.text ?? ''));
+    return { i, g: luk(id).cells[i].sign as Extract<Sign, { k: 'fork' }> };
+  };
+
+  it('четыре части серии на месте: боны, победа по знаку, стартовые броски', () => {
+    for (const id of ['luk1', 'luk2', 'luk3', 'luk4']) {
+      const b = luk(id);
+      expect(b.coins, id).toBe('бон');
+      expect(b.winBySign, id).toBe(true);
+      expect(b.startCoins, id).toBe(3);
+      expect(b.cells.length, id).toBeGreaterThan(30);
+      expect(finishOf(b), id).toBeGreaterThan(15);
+    }
+  });
+
+  it('переходы между частями ведут на существующие поля и клетки', () => {
+    for (const b of BOARDS) {
+      for (const c of b.cells) {
+        if (c.sign?.k !== 'field') continue;
+        const g = c.sign as Extract<Sign, { k: 'field' }>;
+        const target = BOARDS.find((x) => x.id === g.map);
+        expect(target, `поле ${g.map} из ${b.id}`).toBeDefined();
+        expect(g.to >= 0 && g.to < target!.cells.length, `клетка ${g.to} на ${g.map}`).toBe(true);
+        expect(target!.cells[g.to].off, `переход только на клетку пути (${g.map}:${g.to})`).toBeFalsy();
+      }
+    }
+  });
+
+  it('поле 2: Морской царь (21) отправляет к Рыбе, пиратам и сундуку', () => {
+    const { g } = forkAt('luk2', /Морской царь/);
+    const ends = g.branches.map((br) => br[br.length - 1]);
+    expect(ends).toEqual([at('luk2', '27'), at('luk2', '26'), at('luk2', '24б')]);
+  });
+
+  it('поле 2: у Корабля-призрака шесть входов, все ведут на нижний берег', () => {
+    const { g } = forkAt('luk2', /Корабль-призрак/);
+    expect(g.branches.length).toBe(6);
+    const out = at('luk2', '20') + 1; // нижний берег сразу за Кораблём-призраком
+    for (const br of g.branches) expect(br[br.length - 1]).toBe(out);
+    for (const br of g.branches) expect(luk('luk2').cells[br[0]].off, 'вход лабиринта — клетка дороги').toBe(true);
+  });
+
+  it('поле 2: терем (32) — с цветочком победа, без него назад на развилку (15)', () => {
+    const rng = new RiggedRng(new SeededRng(11));
+    const before = at('luk2', '32') - 1;
+    let a = turn(stand('luk2', before), 0, 1, rng);
+    expect(a.state.pos[0]).toBe(at('luk2', '15'));
+    expect(a.state.winner).toBeNull();
+    a = turn(stand('luk2', before, { items: ['flower'] }), 0, 1, rng);
+    expect(a.state.winner).toBe(0);
+  });
+
+  it('поле 3: Заоблачная даль (56) переносит в замок Кощея (поле 4)', () => {
+    const rng = new RiggedRng(new SeededRng(13));
+    const a = turn(stand('luk3', at('luk3', '56') - 1), 0, 1, rng);
+    expect(a.state.map).toBe('luk4');
+    expect(a.state.pos[0]).toBe(at('luk4', '57'));
+  });
+
+  it('поле 4: тронный зал — без иглы назад к Медведю, с иглой победа', () => {
+    const rng = new RiggedRng(new SeededRng(17));
+    const throne = at('luk4', '62');
+    const before = throne - 1;
+    let a = turn(stand('luk4', before), 0, 1, rng);
+    expect(a.state.pos[0]).toBe(throne);
+    // развилка в тронном зале решается следующим броском (ход после входа переходит дальше)
+    a = turn({ ...a.state, turn: 0 }, 0, 6, rng);
+    expect(a.state.winner).toBeNull();
+    expect(a.state.pos[0]).toBe(at('luk4', '59'));
+    let b = turn(stand('luk4', before, { items: ['needle'] }), 0, 1, rng);
+    b = turn({ ...b.state, turn: 0 }, 0, 6, rng);
+    expect(b.state.winner).toBe(0);
+  });
+
+  it('поле 4: кружок «?» даёт три лишних хода', () => {
+    const rng = new RiggedRng(new SeededRng(19));
+    const q = bySign('luk4', (c) => c.sign?.k === 'extra');
+    const a = turn(stand('luk4', q - 1), 0, 1, rng);
+    expect(a.state.extra?.[0]).toBe(2); // один лишний ход уже потрачен на этот бросок
+    expect(a.state.turn).toBe(0);
   });
 });

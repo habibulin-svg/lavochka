@@ -9,9 +9,9 @@ import { board as put } from './put';
 import { NASTOLKI } from './nastolki';
 import { shaybaBoard } from './shayba';
 import { vputBoard } from './vput';
-import { luk1Board } from './luk1';
+import { LUKOMORIE } from './luk';
 
-export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard, luk1Board];
+export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard, ...LUKOMORIE];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
