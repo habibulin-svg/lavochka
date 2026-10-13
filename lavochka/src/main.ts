@@ -11,12 +11,14 @@ import { yard } from './launcher/yard';
 import { cardHTML, DECK_STYLES } from './cards/render';
 import { makeDeck } from './cards/deck';
 
-async function openGame(g: CatalogEntry) {
-  if (!g.load) return;
+async function openGame(entry: CatalogEntry) {
+  // ярлык (например, «Шёл солдат» — поле кинь-двинь): открываем игру с заранее выбранными вариантами
+  const g = entry.of ? byId(entry.of) : entry;
+  if (!g?.load) return;
   try {
     const mod = (await g.load()).default;
     if (isArcade(mod)) openArcade(mod, () => yard.show());
-    else openHome(mod, () => yard.show());
+    else openHome(mod, () => yard.show(), entry.opts);
   } catch (e: any) {
     modal(`<h2>Не загрузилось</h2><p>${esc(e?.message || e)}</p>`, [{ text: 'Ок', primary: true }]);
   }

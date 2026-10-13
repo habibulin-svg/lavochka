@@ -6,7 +6,7 @@ import { onSettings, settings, store } from '../core/settings';
 import { modal, mountScreen, showScreen, toast } from '../core/ui';
 import { esc, h } from '../core/util';
 import { SeededRng } from '../core/rng';
-import { SHOWN, CATEGORIES, type CatalogEntry, type Category } from '../games/catalog';
+import { SHOWN, CATEGORIES, membersOf, byId, type CatalogEntry, type Category } from '../games/catalog';
 import './yard.css';
 
 const WAVE_NAMES: Record<number, string> = {
@@ -181,10 +181,15 @@ function scene(): string {
 
 // ------------------------------------------------------------------ карточки
 
+/** Готова ли карточка: своя игра, ярлык на готовую игру или группа, где есть готовое. */
+const isReady = (g: CatalogEntry): boolean => !!g.load || (!!g.of && !!byId(g.of)?.load) || membersOf(g).some(isReady);
+/** Сохранённая партия: у игры, ярлык — по игре, у группы — по любой из её игр. */
+const hasSave = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(hasSave) : !!g.load && !!loadSave(g.id));
+
 function card(g: CatalogEntry): HTMLElement {
-  const ready = !!g.load;
-  const save = ready && loadSave(g.id);
-  const el = h(`<button class="game-card${ready ? ' ready' : ''}" style="--tint:${g.tint}">
+  const ready = isReady(g);
+  const save = ready && hasSave(g);
+  const el = h(`<button class="game-card${ready ? ' ready' : ''}${g.members ? ' group' : ''}" style="--tint:${g.tint}">
       <span class="gc-pic">${
         g.thumb
           ? `<img src="${import.meta.env.BASE_URL}thumbs/${esc(g.thumb)}" alt="" loading="lazy">`
@@ -194,12 +199,13 @@ function card(g: CatalogEntry): HTMLElement {
       <span class="gc-title">${esc(g.title)}</span>
       <span class="gc-sub">${esc(g.sub)}</span>
       ${g.variants?.length ? `<span class="gc-vars">${g.variants.map(esc).join(' · ')}</span>` : ''}
-      <span class="gc-meta"><span class="gc-players">👥 ${esc(g.players)}</span>${save ? '<span class="gc-save">▶ партия</span>' : ''}</span>
+      <span class="gc-meta"><span class="gc-players">👥 ${esc(g.players)}</span>${g.members ? `<span class="gc-count">${membersOf(g).length} игр</span>` : ''}${save ? '<span class="gc-save">▶ партия</span>' : ''}</span>
       ${ready ? '' : `<span class="stamp">${esc(WAVE_NAMES[g.wave] ?? 'в планах')}</span>`}
     </button>`);
   el.onclick = () => {
     Sound.ui();
-    if (ready) yard.openGame(g);
+    if (g.members) yard.openGroup(g);
+    else if (ready) yard.openGame(g);
     else
       modal(
         `<h2>${esc(g.title)}</h2><p>${esc(g.sub)}.</p><p>Эту игру ещё строим — она появится в одной из следующих волн. Пока можно сыграть в то, что уже готово.</p>`,
@@ -273,6 +279,7 @@ export const yard = {
       const b = h<HTMLButtonElement>(`<button data-cat="${id}">${esc(title)}</button>`);
       b.onclick = () => {
         store.set('cat', id);
+        this.group = null;
         this.renderCards(id as any);
       };
       cats.appendChild(b);
@@ -282,12 +289,34 @@ export const yard = {
     this.renderCards(sel);
   },
 
+  /** Открытая группа (карточка «Приключения» и т. п.): двор показывает её игры, пока не нажали «назад». */
+  group: null as CatalogEntry | null,
+
+  openGroup(g: CatalogEntry) {
+    this.group = g;
+    this.renderCards(store.get<Category | 'all'>('cat', 'all'));
+  },
+
   renderCards(cat: Category | 'all') {
     const el = this.el!;
+    if (this.group) {
+      const g = this.group;
+      const box = el.querySelector('.cards') as HTMLElement;
+      box.innerHTML = '';
+      const head = h(`<div class="group-head"><button class="btn back">← Все игры</button><h2>${esc(g.icon)} ${esc(g.title)}</h2><p>${esc(g.sub)}</p></div>`);
+      (head.querySelector('button') as HTMLButtonElement).onclick = () => {
+        Sound.ui();
+        this.group = null;
+        this.renderCards(store.get<Category | 'all'>('cat', 'all'));
+      };
+      box.appendChild(head);
+      for (const m of membersOf(g).sort((a, b) => Number(isReady(b)) - Number(isReady(a)))) box.appendChild(card(m));
+      return;
+    }
     el.querySelectorAll<HTMLButtonElement>('.cats button').forEach((b) => b.classList.toggle('on', b.dataset.cat === cat));
     const box = el.querySelector('.cards') as HTMLElement;
     box.innerHTML = '';
-    const list = SHOWN.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(!!b.load) - Number(!!a.load));
+    const list = SHOWN.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(isReady(b)) - Number(isReady(a)));
     for (const g of list) box.appendChild(card(g));
   },
 

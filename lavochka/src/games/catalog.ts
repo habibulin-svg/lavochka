@@ -42,6 +42,13 @@ export interface CatalogEntry {
   /** Отложена до последней волны: код живёт, а в лаунчере карточки нет (открывается только по прямой ссылке). */
   shelved?: boolean;
   load?: () => Promise<{ default: GameModule | ArcadeModule }>;
+  /** Карточка-группа: открывает в лаунчере свой список карточек (id из каталога). */
+  members?: string[];
+  /** Игра входит в группу: отдельной карточки во дворе нет, она внутри карточки группы. */
+  group?: string;
+  /** Ярлык на другую игру с заранее выбранными вариантами (например, поле кинь-двинь). */
+  of?: string;
+  opts?: Record<string, unknown>;
 }
 
 export const CATALOG: CatalogEntry[] = [
@@ -69,14 +76,19 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a', thumb: 'balda.webp', load: () => withDict(import('./balda')), variants: ['5×5', '6×6 и 7×7', 'с диагоналями'] },
   // — настолки —
   { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12', thumb: 'erudit.webp', load: () => withDict(import('./erudit')), variants: ['эрудит', 'скрэббл', 'до 200 очков'] },
-  { id: 'hodilki', title: 'Кинь-двинь', sub: 'ходилки на советских полях', cat: 'tabletop', players: '2–10', wave: 7, icon: '🎲', tint: '#1d6a7a', thumb: 'hodilki.webp', load: () => import('./hodilki'), variants: ['Кругосветное путешествие', 'Затерянный мир', 'Шайба — хоккей с голами', 'Лукоморье — 4 части', 'и ещё 8 полей'] },
-  { id: 'manager', title: 'Менеджер', sub: 'Гостиный двор, ДЛТ и планеты', cat: 'tabletop', players: '2–6', wave: 7, icon: '₽', tint: '#7a2a1d', thumb: 'manager.webp', load: () => import('./manager'), variants: ['Одесса 1990', 'Менеджер', 'Космос 2000', 'Бизнес', 'Бизнесмен', 'Империя', 'на 20 или 40 кругов'] },
-  { id: 'vorona', title: 'Белая ворона', sub: 'зарплата, счета и бизнес по календарю', cat: 'tabletop', players: '2–6', wave: 7, icon: '🐦', tint: '#1d3a8a', thumb: 'vorona.webp', load: () => import('./vorona'), variants: ['синее издание', 'зелёное издание', 'от 1 до 6 месяцев'] },
-  { id: 'western', title: 'Вестерн', sub: 'акции, биржи, криминал и колонии — игра-комикс', cat: 'tabletop', players: '2–4', wave: 7, icon: '🤠', tint: '#8a3a12', thumb: 'western.webp', load: () => import('./western'), variants: ['полные правила', 'для начинающих', '3, 5 или 8 кругов'] },
-  { id: 'star', title: 'Звезда Африки', sub: 'поиски алмаза по карте: суша, море и авиалинии', cat: 'tabletop', players: '2–4', wave: 7, icon: '💎', tint: '#8a6a12', thumb: 'star.webp', load: () => import('./star'), variants: ['полные правила', 'без разбойников'] },
-  { id: 'djio', title: 'Чудовище Джио-Джанги', sub: 'экспедиция за деньгами: снаряжение, съёмка, охота', cat: 'tabletop', players: '2–5', wave: 7, icon: '🐊', tint: '#3f6b2a', thumb: 'djio.webp', load: () => import('./djio'), variants: ['Экспедиция по правилам', 'Быстрые сборы'] },
-  { id: 'korona', title: 'Корона Эмбера', sub: 'приключения и корона: четыре мира, лабиринт и поединок принцев', cat: 'tabletop', players: '2–4', wave: 7, icon: '👑', tint: '#6b4fa0', thumb: 'korona.webp', load: () => import('./korona'), variants: ['полный путь к короне', 'короткая партия'] },
-  { id: 'beglye', title: 'Беглые', sub: 'побег из монастыря к устью Дона: кубик со знаками', cat: 'tabletop', players: '2–6', wave: 7, icon: '⛓', tint: '#5a4632', thumb: 'beglye.webp', load: () => import('./beglye'), variants: ['По правилам'] },
+  { id: 'hodilki', title: 'Кинь-двинь', sub: 'ходилки на советских полях', cat: 'tabletop', group: 'adventures', players: '2–10', wave: 7, icon: '🎲', tint: '#1d6a7a', thumb: 'hodilki.webp', load: () => import('./hodilki'), variants: ['Кругосветное путешествие', 'Затерянный мир', 'Шайба — хоккей с голами', 'Лукоморье — 4 части', 'и ещё 8 полей'] },
+  { id: 'manager', title: 'Менеджер', sub: 'Гостиный двор, ДЛТ и планеты', cat: 'tabletop', group: 'kupi', players: '2–6', wave: 7, icon: '₽', tint: '#7a2a1d', thumb: 'manager.webp', load: () => import('./manager'), variants: ['Одесса 1990', 'Менеджер', 'Космос 2000', 'Бизнес', 'Бизнесмен', 'Империя', 'на 20 или 40 кругов'] },
+  { id: 'vorona', title: 'Белая ворона', sub: 'зарплата, счета и бизнес по календарю', cat: 'tabletop', group: 'kupi', players: '2–6', wave: 7, icon: '🐦', tint: '#1d3a8a', thumb: 'vorona.webp', load: () => import('./vorona'), variants: ['синее издание', 'зелёное издание', 'от 1 до 6 месяцев'] },
+  { id: 'western', title: 'Вестерн', sub: 'акции, биржи, криминал и колонии — игра-комикс', cat: 'tabletop', group: 'kupi', players: '2–4', wave: 7, icon: '🤠', tint: '#8a3a12', thumb: 'western.webp', load: () => import('./western'), variants: ['полные правила', 'для начинающих', '3, 5 или 8 кругов'] },
+  { id: 'star', title: 'Звезда Африки', sub: 'поиски алмаза по карте: суша, море и авиалинии', cat: 'tabletop', group: 'adventures', players: '2–4', wave: 7, icon: '💎', tint: '#8a6a12', thumb: 'star.webp', load: () => import('./star'), variants: ['полные правила', 'без разбойников'] },
+  { id: 'djio', title: 'Чудовище Джио-Джанги', sub: 'экспедиция за деньгами: снаряжение, съёмка, охота', cat: 'tabletop', group: 'adventures', players: '2–5', wave: 7, icon: '🐊', tint: '#3f6b2a', thumb: 'djio.webp', load: () => import('./djio'), variants: ['Экспедиция по правилам', 'Быстрые сборы'] },
+  { id: 'korona', title: 'Корона Эмбера', sub: 'приключения и корона: четыре мира, лабиринт и поединок принцев', cat: 'tabletop', group: 'adventures', players: '2–4', wave: 7, icon: '👑', tint: '#6b4fa0', thumb: 'korona.webp', load: () => import('./korona'), variants: ['полный путь к короне', 'короткая партия'] },
+  { id: 'beglye', title: 'Беглые', sub: 'побег из монастыря к устью Дона: кубик со знаками', cat: 'tabletop', group: 'adventures', players: '2–6', wave: 7, icon: '⛓', tint: '#5a4632', thumb: 'beglye.webp', load: () => import('./beglye'), variants: ['По правилам'] },
+  // группы: одна карточка во дворе, внутри — свой список
+  { id: 'adventures', title: 'Приключения', sub: 'кинь-двинь, клады, побеги и короны', cat: 'tabletop', players: '2–10', wave: 7, icon: '🗺', tint: '#1d6a7a', thumb: 'hodilki.webp', members: ['hodilki', 'shel', 'star', 'korona', 'djio', 'beglye'], variants: ['Кинь-двинь', 'Шёл солдат', 'Звезда Африки', 'Корона Эмбера', 'Джио-Джанги', 'Беглые'] },
+  { id: 'kupi', title: 'Купи-продай', sub: 'деньги, биржа и бизнес по-советски', cat: 'tabletop', players: '2–6', wave: 7, icon: '₽', tint: '#7a2a1d', thumb: 'manager.webp', members: ['manager', 'vorona', 'western', 'akcii'], variants: ['Менеджер', 'Белая ворона', 'Вестерн', 'Акционеры'] },
+  { id: 'shel', title: 'Шёл солдат со службы', sub: 'сказочная ходилка: ярмарки чудес, котомка и Конь-огонь', cat: 'tabletop', players: '2–10', wave: 7, icon: '🎖', tint: '#6a4a1d', thumb: 'shel.webp', group: 'adventures', of: 'hodilki', opts: { map: 'shel' } },
+  { id: 'akcii', title: 'Акционеры', sub: 'акции, дивиденды и большой бизнес', cat: 'tabletop', players: '2–6', wave: 8, icon: '📈', tint: '#2a5a3a', group: 'kupi' },
   // — настольный спорт —
   { id: 'billiards', title: 'Бильярд', sub: 'кий, мел и лузы', cat: 'sport', players: '1–2', wave: 6, icon: '🎱', tint: '#14532d', thumb: 'billiards.webp', load: () => import('./billiards'), variants: ['восьмёрка', 'американка', 'московская', 'невская', 'классика 71', 'снукер'] },
   { id: 'hockey', title: 'Настольный хоккей', sub: 'жестяные хоккеисты на штангах', cat: 'sport', players: '2', wave: 6, icon: '🏒', tint: '#1f4f7a', thumb: 'hockey.webp', load: () => import('./hockey'), variants: ['с ботом', 'вдвоём за экраном', 'по сети', 'до 5 шайб или 3 минуты', 'матч 10 минут'] },
@@ -93,7 +105,10 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'gops', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'arcade', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
 ];
 
-/** Карточки лаунчера — без отложенных. */
-export const SHOWN = CATALOG.filter((g) => !g.shelved);
+/** Карточки лаунчера — без отложенных и без тех, что живут внутри групп. */
+export const SHOWN = CATALOG.filter((g) => !g.shelved && !g.group);
+
+/** Карточки внутри группы — в порядке, заданном группой. */
+export const membersOf = (g: CatalogEntry) => (g.members ?? []).map((id) => byId(id)).filter((x): x is CatalogEntry => !!x && !x.shelved);
 
 export const byId = (id: string) => CATALOG.find((g) => g.id === id);

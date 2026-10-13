@@ -23,7 +23,7 @@ interface SetupDraft {
 
 const KIND_LABEL: Record<string, string> = { human: 'Человек', bot: 'Бот', remote: 'Сеть' };
 
-export function openHome(mod: GameModule, onBack: () => void) {
+export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<string, unknown>) {
   const def = mod.def;
   const seatsFor = (n: number) => (def.seatsFor ? def.seatsFor(n) : Array.from({ length: n }, (_, i) => i));
   const allSeats = seatsFor(def.players.max);
@@ -33,6 +33,11 @@ export function openHome(mod: GameModule, onBack: () => void) {
   const draft: SetupDraft = saved ?? { count: def.players.default, seats: {}, options: defaultOptions(def), preset: def.presets?.[0]?.id ?? null };
   draft.options = Object.assign(defaultOptions(def), draft.options);
   for (const s of allSeats) draft.seats[s] ??= { kind: 'off', level: midLevel, name: '' };
+  // вход по ярлыку: варианты заданы карточкой, подсвечиваем подходящий пресет
+  if (fixed) {
+    Object.assign(draft.options, fixed);
+    draft.preset = def.presets?.find((p) => Object.entries(fixed).every(([k, v]) => p.options[k] === v))?.id ?? null;
+  }
   const persist = () => store.set('setup.' + def.id, draft);
 
   const el = h(`<section class="home-screen">
