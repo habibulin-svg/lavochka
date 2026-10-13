@@ -244,6 +244,19 @@ class ManagerView implements GameView<State, Ev> {
           this.say(ROULETTE[ev.sector].bank ? 'Рулетка: «В банк»! +200 000' : `Рулетка: ${ev.amount > 0 ? '+' : '−'}${fmt(Math.abs(ev.amount))}`);
           await sleep(900 / speed);
           break;
+        case 'tower':
+          this.say(`Башня: (${ev.dice[0]} + ${ev.dice[1]}) × ${ev.k}`);
+          await sleep(900 / speed);
+          break;
+        case 'swap':
+          this.say(`Обмен разумов: ${strip(this.ctx.name(ev.a))} ⇄ ${strip(this.ctx.name(ev.b))}`);
+          Sound.jump();
+          await sleep(1200 / speed);
+          break;
+        case 'chrono':
+          this.say('Хроноклазм: заложенное уходит в фонд');
+          await sleep(1000 / speed);
+          break;
         case 'market':
           this.placeTicks(ev.to);
           this.say(`Курс: ${ev.to.map((p, c) => (p !== ev.from[c] ? `${BM_COLORS[c].short} ${ev.from[c]}→${p}` : '')).filter(Boolean).join(', ')}`);
@@ -333,6 +346,8 @@ class ManagerView implements GameView<State, Ev> {
         return me ? 'Рулетка: бросайте кубики' : `${nm} играет в рулетку…`;
       case 'pick':
         return me ? 'Выберите цвет акций' : `${nm} выбирает акции…`;
+      case 'sub':
+        return me ? 'Подпространство: на какую планету выходите?' : `${nm} выходит из подпространства…`;
     }
     return '';
   }
@@ -346,7 +361,11 @@ class ManagerView implements GameView<State, Ev> {
     const perk = biz ? [v.perk[seat] & 1 ? 'без налога' : v.perk[seat] & 2 ? 'налог ½' : '', v.perk[seat] & 4 ? 'стройка запрещена' : ''] : [];
     const bm = b.id === 'biznesmen';
     const sh = bm ? v.shares[seat].map((k, c) => `<i class="mg-sh" style="--c:${BM_COLORS[c].color}">${k}</i>`).join('') : '';
-    const flags = [sh ? `<span class="mg-shs">${sh}</span>` : '', bm && v.wait[seat] ? `в клинике: ${v.wait[seat]}` : '', biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? 'на бирже' : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
+    const imp = b.id === 'imperiya';
+    const impFlags = imp
+      ? [v.wait[seat] ? `пропуск ${v.wait[seat]}` : '', v.accel[seat] ? `ускорение ${v.accel[seat]}` : '', v.inertia[seat] ? 'инерциоид' : '', v.pyatak[seat] ? `пятак ×${v.pyatak[seat]}` : '']
+      : [];
+    const flags = [...impFlags, sh ? `<span class="mg-shs">${sh}</span>` : '', bm && v.wait[seat] ? `в клинике: ${v.wait[seat]}` : '', biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? 'на бирже' : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
       .filter(Boolean)
       .join(' · ');
     return `<b>${fmt(v.cash[seat])}</b> ${b.cur} · ${n} ${b.id === 'kosmos' ? 'пл.' : 'уч.'}${flags ? ' · ' + flags : ''}`;
@@ -391,7 +410,8 @@ class ManagerView implements GameView<State, Ev> {
         if (o != null) html = o < 4 ? `<i class="mg-chip" style="background-image:url(/manager/chip-${o < 0 ? 'bank' : o}.webp)"></i>` : `<i class="mg-chip ring" style="--c:${SEATS[o].color}"></i>`;
       } else if (o != null) {
         const hs = v.houses[i];
-        html = `<i class="mg-band">${hs === 4 ? '<b class="mg-ent"></b>' : '<b class="mg-house"></b>'.repeat(hs)}</i>${v.mort[i] ? '<span class="mg-mort">залог</span>' : ''}`;
+        const ent = hs === 4 && b.id !== 'imperiya';
+        html = `<i class="mg-band">${ent ? '<b class="mg-ent"></b>' : `<b class="mg-house${b.id === 'imperiya' ? ' rocket' : ''}"></b>`.repeat(hs)}</i>${v.mort[i] ? '<span class="mg-mort">залог</span>' : ''}`;
       }
       if (el.dataset.html !== html) {
         el.innerHTML = html;
@@ -521,7 +541,8 @@ class ManagerView implements GameView<State, Ev> {
     const cell = b.cells[c];
     const color = cell.group != null ? b.groups[cell.group].color : '#2a3a6a';
     const hs = v.houses[c];
-    return `<button class="mg-pchip${v.mort[c] ? ' mort' : ''}" data-cell="${c}" style="--g:${color}">${esc(cell.name)}${hs ? `<small>${hs === 4 ? '🏭' : '▪'.repeat(hs)}</small>` : ''}</button>`;
+    const mark = b.id === 'imperiya' ? '▲'.repeat(hs) : hs === 4 ? '🏭' : '▪'.repeat(hs);
+    return `<button class="mg-pchip${v.mort[c] ? ' mort' : ''}" data-cell="${c}" style="--g:${color}">${esc(cell.name)}${hs ? `<small>${mark}</small>` : ''}</button>`;
   }
 
   private showCard(deck: number, id: number) {
@@ -575,6 +596,24 @@ class ManagerView implements GameView<State, Ev> {
         <div class="mg-db"><div>рента: <b>${fmt(cell.rents![0])}</b></div>${o === -1 ? `<div>выкуп у банка: ${fmt(cell.price! + 100)}</div>` : ''}
         <div class="mg-own">владелец: ${esc(owner)}</div></div></div>`;
     }
+    if (b.id === 'imperiya') {
+      const own = o != null && o >= 0;
+      const tail = `<div class="mg-own">владелец: ${esc(owner)}${v.mort[c] ? ' · <b>заложен</b>' : ''}${own && !v.mort[c] && !cell.util ? ` · сейчас ${fmt(rent(v, c))}` : ''}</div>`;
+      const pledge = `<div class="mg-dr"><span>залог</span><b>${fmt(cell.price! / 2)}</b></div><div class="mg-dr"><span>выкуп</span><b>${fmt(redeemCost(v, c))}</b></div>`;
+      if (cell.util === 'base')
+        return `<div class="mg-deed"><div class="mg-dh" style="--g:#e8e4d8">${esc(cell.name)}<b>${fmt(cell.price!)}</b></div><div class="mg-db"><div class="mg-dt">плата по числу баз у хозяина:</div>
+          ${cell.rents!.map((r, i) => `<div class="mg-dr"><span>${i + 1}</span><b>${fmt(r)}</b></div>`).join('')}${pledge}${tail}</div></div>`;
+      if (cell.util === 'tower')
+        return `<div class="mg-deed"><div class="mg-dh" style="--g:#e8e4d8">${esc(cell.name)}<b>${fmt(cell.price!)}</b></div><div class="mg-db">
+          <div class="mg-dn">попавший бросает кубики и платит очки × 5, если у хозяина одна башня, × 10 — если обе</div>${pledge}${tail}</div></div>`;
+      const gi = b.groups[cell.group!];
+      const lvI = own ? v.houses[c] : -1;
+      return `<div class="mg-deed"><div class="mg-dh" style="--g:${gi.color}">${esc(cell.name)}<b>${fmt(cell.price!)}</b></div><div class="mg-db">
+        <div class="mg-dr${lvI === 0 ? ' on' : ''}"><span>фрахт</span><b>${fmt(cell.rents![0])}</b></div>
+        <div class="mg-dr"><span>ст. ракеты</span><b>${fmt(cell.build!)}</b></div>
+        ${cell.rents!.slice(1).map((r, i) => `<div class="mg-dr${lvI === i + 1 ? ' on' : ''}"><span>${'▲'.repeat(i + 1)}</span><b>${fmt(r)}</b></div>`).join('')}
+        ${pledge}<div class="mg-dn">${esc(gi.name)} — система: ракеты ставит хозяин всей системы</div>${tail}</div></div>`;
+    }
     if (b.id === 'biznesmen') {
       const own = o != null && o >= 0;
       const firm = cell.group == null;
@@ -627,8 +666,9 @@ class ManagerView implements GameView<State, Ev> {
       const cost = biz && v.houses[c] === 3 ? dollars(cell.buildUsd!) : fmt(cell.build!);
       const back = biz && v.houses[c] === 4 ? dollars(cell.buildUsd! / 2) : fmt(cell.build! / 2);
       const entNext = bmz ? v.houses[c] === 1 : v.houses[c] === 3;
-      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${entNext ? 'Предприятие' : 'Филиал'} — ${cost}</button>`);
-      if (canSell(v, op, c)) btns.push(`<button class="btn" data-a="sell">Продать постройку +${back}</button>`);
+      const imp = b.id === 'imperiya';
+      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${imp ? 'Ракета' : entNext ? 'Предприятие' : 'Филиал'} — ${cost}</button>`);
+      if (canSell(v, op, c)) btns.push(`<button class="btn" data-a="sell">Продать ${imp ? 'ракету' : 'постройку'} +${back}</button>`);
       if (canMortgage(v, op, c)) btns.push(`<button class="btn" data-a="mortgage">Заложить +${fmt(cell.price! / 2)}</button>`);
       if (canRedeem(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn" data-a="redeem">Выкупить −${fmt(redeemCost(v, c))}</button>`);
       if (b.id === 'kosmos' && v.phase !== 'debt') btns.push(`<button class="btn" data-a="sellBank">Продать банку +${fmt(cell.price!)}</button>`);
@@ -777,6 +817,19 @@ class ManagerView implements GameView<State, Ev> {
           ? `${this.propHtml(c)}<div class="mg-btns"><button class="btn primary" data-a="buy" ${v.cash[seat] < cell.price! + 100 ? 'disabled' : ''}>Выкупить за ${fmt(cell.price! + 100)}</button><button class="btn" data-a="pass">Не надо</button></div>`
           : `<div class="mg-q">${nm}: выкупать ли планету у банка?</div>`;
         break;
+      case 'sub': {
+        const exits = cell.exits ?? [];
+        html = me
+          ? `<div class="mg-q">${esc(cell.name)}: выход на планету</div><div class="mg-btns col">${exits
+              .map((e) => {
+                const o = v.owner[e];
+                const st = o == null ? `свободна, ${fmt(b.cells[e].price!)}` : o === seat ? 'ваша' : `${strip(this.ctx.name(o))}, фрахт ${fmt(rent(v, e))}`;
+                return `<button class="btn" data-exit="${e}">${esc(b.cells[e].name)} — ${st}</button>`;
+              })
+              .join('')}</div>`
+          : `<div class="mg-q">${nm} в подпространстве</div>`;
+        break;
+      }
       case 'hub':
         html = me
           ? `<div class="mg-q">${esc(cell.name)}</div><div class="mg-btns col">${hubOpts(v)
@@ -815,6 +868,7 @@ class ManagerView implements GameView<State, Ev> {
     p.querySelectorAll<HTMLButtonElement>('[data-ins]').forEach((el) => (el.onclick = () => this.send({ type: 'insure', level: Number(el.dataset.ins) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-x]').forEach((el) => (el.onclick = () => this.send({ type: 'exchange', usd: Number(el.dataset.x) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-op]').forEach((el) => (el.onclick = () => this.send({ type: el.dataset.op, cell: Number(el.dataset.c) } as Action, seat)));
+    p.querySelectorAll<HTMLButtonElement>('[data-exit]').forEach((el) => (el.onclick = () => this.send({ type: 'exit', cell: Number(el.dataset.exit) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-hub]').forEach((el) => (el.onclick = () => this.send({ type: 'hub', opt: el.dataset.hub! }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-entry]').forEach((el) => (el.onclick = () => this.send({ type: 'roulette', entry: Number(el.dataset.entry) }, seat)));
     p.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((el) => (el.onclick = () => this.send({ type: 'pick', c: Number(el.dataset.pick) }, seat)));

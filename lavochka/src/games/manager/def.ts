@@ -485,6 +485,63 @@ const BIZNESMEN_RULES = [
   },
 ];
 
+const I = 'imperiya' as const;
+
+const IMPERIYA_RULES = [
+  {
+    title: 'Империя: ход, планеты и ракеты',
+    html: `<p>От 2 до 6 игроков: вдвоём по <b>3000 боннов</b>, втроём по 2000, больше — по 1500. Все стартуют с <b>космодрома</b> в центре, бросают два кубика
+      и идут по стрелке на внешний круг. Дубль — ещё ход. За каждый полный круг (вход на «Гомера») — <b>200</b>.</p>
+      <p>Свободную планету, базу или башню можно купить. Планеты одного цвета — <b>система</b>: её хозяин ставит на планеты ракеты (до четырёх, равномерно),
+      и фрахт растёт по документу на владение. Базы: 20, 50, 100 или 200 — по числу баз у хозяина. Башня: бросок кубиков × 5 (две башни — × 10).</p>
+      <p>Отказался покупать — аукцион; отказавшийся торгуется, только когда цена выше номинала. Никто не купил — он платит штраф: половину цены.</p>`,
+    demo: demo(I, () => {}, [
+      { seat: 0, action: { type: 'roll' }, rig: [0, 1], caption: 'Вовка: 1 + 2 — с космодрома на «Гомера» и дальше: «Апулей», 70 боннов.' },
+      { seat: 0, action: { type: 'buy' }, caption: 'Покупает.' },
+      { seat: 1, action: { type: 'roll' }, rig: [0, 0], caption: 'Ленка: дубль 1 + 1 — «Х-фактор», и ещё ход.' },
+    ]),
+  },
+  {
+    title: 'Империя: малый круг, подпространство, антимир',
+    html: `<p>Остановился на «Леме» — следующий ход идёт по <b>малому кругу</b> внутреннего пространства (против часовой, по секторам): нуль переход,
+      обмен разумов, антимир, космодром — и снова на «Гомера».</p>
+      <p><b>Нуль переход</b>: следующий ход — по секторам <b>подпространства</b> (по часовой, 20 боннов за каждый), в конце хода выходят на одну из планет
+      этого сектора — куда указывают стрелки. <b>Антимир</b>: следующий ход — вспять. <b>Обмен разумов</b>: 150 в фонд, на третий раз — полный обмен
+      деньгами и имуществом с соседом слева.</p>`,
+    demo: demo(
+      I,
+      (s) => {
+        s.pos[0] = 31;
+        s.lapped[0] = true;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [2, 2], caption: 'Вовка: 3 + 3 — ровно на «Лем». Дубль — ещё ход.' },
+        { seat: 0, action: { type: 'pass' }, caption: 'Не покупает — аукцион.' },
+        { seat: 1, action: { type: 'fold' }, caption: 'Ленка пасует.' },
+        { seat: 0, action: { type: 'fold' }, caption: 'Вовке выше номинала не по душе — никто не купил, он платит штраф 200.' },
+        { seat: 0, action: { type: 'roll' }, rig: [0, 0], caption: 'Второй ход — по малому кругу: нуль переход, обмен разумов. 150 в фонд. И снова дубль.' },
+      ]
+    ),
+  },
+  {
+    title: 'Империя: Х-фактор, Контакт, Зона и особые клетки',
+    html: `<p>«Х-фактор» и «Контакт» — взять карточку и выполнить. <b>«Зона»</b> — три карточки подряд: на космодром, к Уэллсу, ускорение на два хода
+      (ход вдвое), инерциоид на круг (кубики бросают дважды)… «Неразменный пятак» дважды освобождает от штрафа.</p>
+      <p><b>Коллапс</b> — сразу ещё на вдвое больше клеток, чем прошёл. <b>Анабиоз</b> — пропустить три хода. <b>Хроноклазм</b> — все заложенные объекты
+      уходят в фонд без выкупа. Залог — половина цены, выкуп — 60 %; ракеты не закладывают, а продают в фонд за полцены.</p>`,
+    demo: demo(
+      I,
+      (s) => {
+        s.pos[0] = 1;
+        s.lapped[0] = true;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [0, 0], caption: 'Вовка: 1 + 1 — «Коллапс»: сразу ещё 4 клетки, до «Рабле». Дубль — ещё ход.' },
+      ]
+    ),
+  },
+];
+
 function showcase(): State {
   const rng = { next: () => 0.5, int: (n: number) => n - 1, getState: () => 0 };
   const s = newState('manager', [0, 1, 2, 3], {}, rng);
@@ -540,11 +597,12 @@ export const def: GameDef<State, Action, Ev, State> = {
     { id: 'manager20', label: 'Менеджер на 20 кругов', hint: 'побеждает самый богатый', options: { map: 'manager', limit: 20 } },
     { id: 'kosmos', label: 'Космос 2000', hint: 'планеты, казино, пираты и Астролог', options: { map: 'kosmos', limit: 0 } },
     { id: 'biznes', label: 'Бизнес', hint: 'патенты, филиалы, валютные предприятия, биржа и лотерея', options: { map: 'biznes', limit: 0 } },
+    { id: 'imperiya', label: 'Империя', hint: 'планеты фантастов, ракеты, подпространство и антимир', options: { map: 'imperiya', limit: 0 } },
     { id: 'biznesmen', label: 'Бизнесмен', hint: 'два круга, биржа акций с табло, рулетка, автомагистраль (1990)', options: { map: 'biznesmen', limit: 0 } },
   ],
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' || opts.map === 'biznesmen' ? opts.map : 'manager';
+    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' || opts.map === 'biznesmen' || opts.map === 'imperiya' ? opts.map : 'manager';
     return newState(map, ids, { limit: Number(opts.limit) || 0, startPass: !!opts.startPass, loan: opts.loan !== false, premium: !!opts.premium }, rng);
   },
   toAct,
@@ -559,7 +617,7 @@ export const def: GameDef<State, Action, Ev, State> = {
   describe: (ev, name) => describe(ev, name),
   rules: {
     goal: 'Покупать участки (или планеты), собирать с соперников плату за наём и разорить всех — остаться единственным, у кого есть капитал.',
-    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES, ...BIZNESMEN_RULES],
+    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES, ...BIZNESMEN_RULES, ...IMPERIYA_RULES],
   },
 };
 
@@ -584,6 +642,8 @@ const QUIET = new Set([
   'пошлина на таможне',
   'пошлина на перекрёстке',
   'услуга маклера',
+  'ракета',
+  'ракета продана банку',
 ]);
 
 function describe(ev: Ev, name: (seat: number) => string): string | null {
@@ -648,6 +708,7 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
     case 'casino':
       return `${name(ev.seat)} в казино: сектор ${ev.sector}, ${ev.amount > 0 ? '+' : '−'}${m(Math.abs(ev.amount))}${ev.star ? ' ★ — ещё бросок' : ''}`;
     case 'saved':
+      if (b.id === 'imperiya') return `${name(ev.seat)}: неразменный пятак — штраф не платит`;
       return `${name(ev.seat)} застрахован — убыток отменён, страховка израсходована`;
     case 'audit':
       return `Налоговая проверка: на кубике ${ev.die}${ev.die % 2 ? ' — нечет, штраф' : ' — чёт, обошлось'}`;
@@ -695,7 +756,31 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
       return t[ev.opt] ? `${name(ev.seat)} ${t[ev.opt]}` : null;
     }
     case 'wait':
+      if (b.id === 'imperiya') return `${name(ev.seat)} пропускает ${ev.n} ${ev.n === 3 ? 'хода — анабиоз' : 'хода'}`;
       return `🚑 ${name(ev.seat)} — авария, клиника «Стоп»: пропуск ${ev.n} ходов`;
+    case 'tower':
+      return `${name(ev.seat)} на башне: (${ev.dice[0]} + ${ev.dice[1]}) × ${ev.k}`;
+    case 'exit':
+      return `${name(ev.seat)} выходит из подпространства: ${cn(ev.cell)}`;
+    case 'swap':
+      return `🧠 Обмен разумов: ${name(ev.a)} и ${name(ev.b)} меняются всем — деньгами и имуществом`;
+    case 'chrono':
+      return ev.cells.length ? `⌛ Хроноклазм: заложенное уходит в фонд — ${ev.cells.map(cn).join(', ')}` : '⌛ Хроноклазм: заложенного нет';
+    case 'steal':
+      return `${name(ev.seat)} забирает у ${name(ev.from)}: ${cn(ev.cell)}`;
+    case 'annihilate':
+      return `💥 ${name(ev.seat)} аннигилирует ракету ${name(ev.from)}: ${cn(ev.cell)}`;
+    case 'flag': {
+      const t = {
+        inner: 'следующий ход — по малому кругу',
+        sub: 'нуль переход: следующий ход — по подпространству',
+        rev: 'антимир: следующий ход — вспять',
+        accel: 'ускорение на два хода',
+        inertia: 'инерциоид на один круг',
+        pyatak: 'неразменный пятак',
+      };
+      return `${name(ev.seat)}: ${t[ev.what]}`;
+    }
     case 'end':
       return `🏆 ${ev.winners.map(name).join(', ')} — ${ev.text}`;
   }

@@ -30,7 +30,7 @@ import {
 /** Сколько держать в кармане. */
 function reserve(s: State, seat: number, level: number): number {
   if (s.map === 'kosmos') return [80, 200, 350][level];
-  const k = s.map === 'biznes' ? 5 : s.map === 'biznesmen' ? 8 : 1;
+  const k = s.map === 'biznes' ? 5 : s.map === 'biznesmen' ? 8 : s.map === 'imperiya' ? 0.08 : 1;
   if (level === 0) return 2000 * k;
   let worst = 0;
   for (let c = 0; c < s.owner.length; c++) {
@@ -108,7 +108,9 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       const v = value(s, seat, a.cell, level) * [0.7, 1, 1.15][level];
       const max = Math.min(v, cash - (level === 0 ? 0 : res * 0.5));
       const price = b.cells[a.cell].price!;
-      const next = a.bid ? a.bid + roundTo(Math.max(b.step, a.bid * 0.1), b.step) : roundTo(price * 0.5, b.step);
+      let next = a.bid ? a.bid + roundTo(Math.max(b.step, a.bid * 0.1), b.step) : roundTo(price * 0.5, b.step);
+      // «Империя»: отказавшийся торгуется только выше цены
+      if (s.map === 'imperiya' && seat === s.turn && next <= price) next = price + b.step;
       if (next <= max && next <= cash) return { type: 'bid', amount: next };
       return { type: 'fold' };
     }
@@ -164,6 +166,18 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     }
     case 'hub':
       return hubChoice(s, seat, level, res, rng);
+    case 'sub': {
+      // «Империя»: выход из подпространства — на ничью планету по карману, на свою, а не на чужую дорогую
+      const exits = b.cells[s.pos[seat]].exits ?? [];
+      const score = (c: number) => {
+        const o = s.owner[c];
+        if (o == null) return cash >= b.cells[c].price! ? b.cells[c].price! : 0;
+        if (o === seat) return 50;
+        return -rent(s, c);
+      };
+      const best = level === 0 ? exits[rng.int(exits.length)] : [...exits].sort((p, q) => score(q) - score(p))[0];
+      return { type: 'exit', cell: best };
+    }
     case 'stocks':
       return stocksChoice(s, seat, level, res, rng);
     case 'roulette': {

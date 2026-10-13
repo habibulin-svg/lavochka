@@ -10,6 +10,10 @@ import {
   boardOf,
   CASINO,
   CASINO_STAR,
+  IMP_REDEEM,
+  IMP_START,
+  IMP_SUB_PAY,
+  IMP_SWAP_FEE,
   INSURE,
   POINT,
   PRICE0,
@@ -42,6 +46,8 @@ export type Phase =
   | 'hub'
   | 'roulette'
   | 'pick'
+  // «Империя»: выход из подпространства на планету сектора
+  | 'sub'
   | 'over';
 
 /** «Бизнесмен»: выбор цвета акций — подарок, покупка по карточке, повышение курса. */
@@ -162,6 +168,25 @@ export interface State {
   lastBuy: number[];
   /** Дубль 3:3 — в конце хода на биржу. */
   bonus: boolean;
+  // «Империя»
+  /** Следующий ход: по малому кругу (остановился на «Леме») или по подпространству (на нуль переходе). */
+  route: string[];
+  /** Остановился в антимире — следующий ход вспять. */
+  rev: boolean[];
+  /** «Ускорение»: сколько ходов ещё вдвое. */
+  accel: number[];
+  /** «Инерциоид»: до конца круга бросают кубики дважды. */
+  inertia: boolean[];
+  /** «Неразменный пятак»: сколько штрафов ещё простить. */
+  pyatak: number[];
+  /** Сколько раз попадал на «Обмен разумов». */
+  swaps: number[];
+  /** Уже выходил на внешний круг (первый выход с космодрома — не круг). */
+  lapped: boolean[];
+  /** Длина последнего хода (для «Коллапса»). */
+  lastMove: number;
+  /** «Зона»: сколько карточек ещё снять. */
+  zoneLeft: number;
   result: { winners: number[]; text: string } | null;
 }
 
@@ -190,7 +215,8 @@ export type Action =
   | { type: 'shares'; c: number; n: number }
   | { type: 'play'; card: number; opt: number }
   | { type: 'roulette'; entry?: number }
-  | { type: 'pick'; c: number };
+  | { type: 'pick'; c: number }
+  | { type: 'exit'; cell: number };
 
 type Who = number | null | 'pot';
 
@@ -234,6 +260,14 @@ export type Event =
   | { type: 'roulette'; seat: number; dice: number[]; sector: number; amount: number }
   | { type: 'hub'; seat: number; opt: string; cost: number }
   | { type: 'wait'; seat: number; n: number }
+  // «Империя»
+  | { type: 'tower'; seat: number; dice: number[]; k: number }
+  | { type: 'exit'; seat: number; cell: number }
+  | { type: 'swap'; a: number; b: number }
+  | { type: 'chrono'; cells: number[] }
+  | { type: 'steal'; seat: number; from: number; cell: number }
+  | { type: 'annihilate'; seat: number; from: number; cell: number }
+  | { type: 'flag'; seat: number; what: 'inner' | 'sub' | 'rev' | 'accel' | 'inertia' | 'pyatak' }
   | { type: 'end'; winners: number[]; text: string };
 
 /** Партия, затянувшаяся на столько кругов, заканчивается подсчётом капитала. */
@@ -245,6 +279,7 @@ export const B = (s: State): Board => boardOf(s.map);
 export const estate = (s: State) => s.map !== 'kosmos';
 export const isBiz = (s: State) => s.map === 'biznes';
 export const isBm = (s: State) => s.map === 'biznesmen';
+export const isImp = (s: State) => s.map === 'imperiya';
 export const N = (s: State) => B(s).cells.length;
 
 export const fmt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -291,6 +326,13 @@ export function clone(s: State): State {
     bought: s.bought.slice(),
     wait: s.wait.slice(),
     lastBuy: s.lastBuy.slice(),
+    route: s.route.slice(),
+    rev: s.rev.slice(),
+    accel: s.accel.slice(),
+    inertia: s.inertia.slice(),
+    pyatak: s.pyatak.slice(),
+    swaps: s.swaps.slice(),
+    lapped: s.lapped.slice(),
   };
 }
 
@@ -319,7 +361,7 @@ export function newState(map: MapId, seats: number[], o: { limit?: number; start
     perk: Array(6).fill(0),
     insPass: false,
     premium: !!o.premium,
-    pos: Array(6).fill(0),
+    pos: Array(6).fill(map === 'imperiya' ? IMP_START : 0),
     out: Array(6).fill(false),
     owner: Array(n).fill(null),
     houses: Array(n).fill(0),
@@ -345,7 +387,7 @@ export function newState(map: MapId, seats: number[], o: { limit?: number; start
     offer: null,
     debt: null,
     offers: 0,
-    stock: map === 'biznes' ? [18, 12] : bm ? [20, 12] : [26, 12],
+    stock: map === 'biznes' ? [18, 12] : bm ? [20, 12] : map === 'imperiya' ? [40, 0] : [26, 12],
     round: 1,
     limit: o.limit ?? 0,
     startPass: !!o.startPass,
@@ -365,6 +407,15 @@ export function newState(map: MapId, seats: number[], o: { limit?: number; start
     wait: Array(6).fill(0),
     lastBuy: Array(6).fill(0),
     bonus: false,
+    route: Array(6).fill(''),
+    rev: Array(6).fill(false),
+    accel: Array(6).fill(0),
+    inertia: Array(6).fill(false),
+    pyatak: Array(6).fill(0),
+    swaps: Array(6).fill(0),
+    lapped: Array(6).fill(false),
+    lastMove: 0,
+    zoneLeft: 0,
     result: null,
   };
 }
@@ -391,9 +442,22 @@ export function rent(s: State, c: number): number {
   if (isBiz(s)) return h === 0 ? cell.rents[fullGroup(s, c) ? 1 : 0] : cell.rents[h + 1];
   // «Бизнесмен»: участок (вдвое — если вся группа), филиал, предприятие; фирма — одна плата
   if (isBm(s)) return cell.group == null ? cell.rents[0] : h === 0 ? cell.rents[0] * (fullGroup(s, c) ? 2 : 1) : cell.rents[h === 4 ? 2 : 1];
+  // «Империя»: базы — по их числу у хозяина; башня — кубики × 5 или × 10 (здесь — в среднем); планета — фрахт и плата по ракетам
+  if (isImp(s)) {
+    if (cell.util) {
+      const k = sameUtil(s, c);
+      return cell.util === 'base' ? cell.rents[k - 1] : cell.rents[k - 1] * 7;
+    }
+    return cell.rents[h];
+  }
   return h === 0 && fullGroup(s, c) ? cell.rents[0] * 2 : cell.rents[h];
 }
 
+/** «Империя»: сколько баз (башен) у хозяина этой клетки. */
+export const sameUtil = (s: State, c: number) => {
+  const b = B(s);
+  return b.cells.filter((x, i) => x.util === b.cells[c].util && s.owner[i] === s.owner[c]).length;
+};
 const groupHouses = (s: State, c: number) => groupCells(s, B(s).cells[c].group!).map((i) => s.houses[i]);
 const groupBuilt = (s: State, c: number) => B(s).cells[c].group != null && groupHouses(s, c).some((h) => h > 0);
 
@@ -415,6 +479,8 @@ export function canBuild(s: State, seat: number, c: number): boolean {
     return false;
   }
   if (h >= 4 || h !== Math.min(...groupHouses(s, c))) return false;
+  // «Империя»: до четырёх ракет на планете, равномерно по системе
+  if (isImp(s)) return s.stock[0] >= 1 && s.cash[seat] >= cell.build!;
   if (h < 3 ? s.stock[0] < 1 : s.stock[1] < 1) return false;
   return s.cash[seat] >= cell.build!;
 }
@@ -423,12 +489,13 @@ export function canSell(s: State, seat: number, c: number): boolean {
   if (isBiz(s)) return s.owner[c] === seat && s.houses[c] > 0;
   // «Бизнесмен»: филиал нельзя снять, пока в группе стоит предприятие
   if (isBm(s)) return s.owner[c] === seat && s.houses[c] > 0 && (s.houses[c] === 4 || !groupHouses(s, c).includes(4));
-  return s.map === 'manager' && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
+  return (s.map === 'manager' || isImp(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
 }
 
 export const canMortgage = (s: State, seat: number, c: number) =>
-  estate(s) && s.owner[c] === seat && !s.mort[c] && (isBiz(s) ? s.houses[c] === 0 : !groupBuilt(s, c));
-export const redeemCost = (s: State, c: number) => B(s).cells[c].price! / 2;
+  estate(s) && s.owner[c] === seat && !s.mort[c] && (isBiz(s) || isImp(s) ? s.houses[c] === 0 : !groupBuilt(s, c));
+/** Выкуп: половина цены («Империя» — 60 %). */
+export const redeemCost = (s: State, c: number) => (isImp(s) ? Math.round((B(s).cells[c].price! * IMP_REDEEM) / 10) * 10 : B(s).cells[c].price! / 2);
 export const canRedeem = (s: State, seat: number, c: number) => s.owner[c] === seat && s.mort[c] && s.cash[seat] >= redeemCost(s, c);
 /** Участок можно продать или обменять: без построек в группе и не заложен. */
 export const tradeable = (s: State, seat: number, c: number) =>
@@ -572,7 +639,7 @@ function eliminate(x: Ctx, seat: number) {
   for (let c = 0; c < s.owner.length; c++) {
     if (s.owner[c] !== seat) continue;
     s.owner[c] = s.map === 'kosmos' ? -1 : null;
-    if (s.houses[c] === 4) {
+    if (s.houses[c] === 4 && !isImp(s)) {
       s.stock[1]++;
     } else s.stock[0] += s.houses[c];
     s.houses[c] = 0;
@@ -621,7 +688,7 @@ function checkWin(x: Ctx) {
   if (left.length <= 1 && !s.result) {
     s.result = {
       winners: left,
-      text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : isBm(s) ? 'единственный не разорился — настоящий бизнесмен' : isBiz(s) ? 'единственный не обанкротился — самое развитое производство' : 'единственный не разорился — монополист',
+      text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : isImp(s) ? 'единственный не разорился — властелин Империи' : isBm(s) ? 'единственный не разорился — настоящий бизнесмен' : isBiz(s) ? 'единственный не обанкротился — самое развитое производство' : 'единственный не разорился — монополист',
     };
     s.phase = 'over';
     x.ev.push({ type: 'end', winners: left, text: s.result.text });
@@ -691,6 +758,16 @@ function finish(x: Ctx) {
     return;
   }
   const seat = s.turn;
+  // «Империя»: «Зона» — три карточки подряд, каждая выполняется до конца
+  while (s.zoneLeft > 0 && !s.out[seat] && !s.result) {
+    s.zoneLeft--;
+    draw(x, seat, 2);
+    if (s.phase !== 'resolve') return;
+  }
+  if (s.result) {
+    s.phase = 'over';
+    return;
+  }
   // «Бизнесмен»: выпал дубль 3:3 — сыграть на бирже
   if (s.bonus) {
     s.bonus = false;
@@ -741,6 +818,10 @@ function passStart(x: Ctx, seat: number, landed: boolean) {
 /** Шаги фишки: n > 0 — вперёд, n < 0 — назад (назад «Старт» не платит). */
 function step(x: Ctx, seat: number, n: number) {
   const { s } = x;
+  if (isImp(s)) {
+    stepImp(x, seat, n);
+    return;
+  }
   const len = N(s);
   const next = B(s).next;
   const path: number[] = [];
@@ -794,6 +875,18 @@ function land(x: Ctx, seat: number) {
   switch (cell.kind) {
     case 'prop': {
       const own = s.owner[c];
+      // «Империя»: с «Лема» следующий ход — по малому кругу; башня — бросок кубиков
+      if (cell.enter) {
+        s.route[seat] = 'inner';
+        x.ev.push({ type: 'flag', seat, what: 'inner' });
+      }
+      if (cell.util === 'tower' && own != null && own !== seat && !s.mort[c]) {
+        const d = [x.rng.int(6) + 1, x.rng.int(6) + 1];
+        const k = sameUtil(s, c) >= 2 ? 10 : 5;
+        x.ev.push({ type: 'tower', seat, dice: d, k });
+        charge(x, seat, (d[0] + d[1]) * k, own, `${cell.name}: (${d[0]} + ${d[1]}) × ${k}`);
+        return;
+      }
       // «Бизнесмен», супермаркет: платят все, хозяину — его доля
       if (cell.fee) {
         if (own === seat) x.ev.push({ type: 'visit', seat, cell: c });
@@ -858,6 +951,47 @@ function land(x: Ctx, seat: number) {
       charge(x, seat, Math.floor(s.cash[seat] / 2 / 100) * 100, null, 'неудача на автомагистрали');
       return;
     case 'road':
+      return;
+    case 'collapse':
+      // сразу ещё на вдвое больше клеток, чем только что прошёл
+      if (s.lastMove > 0) step(x, seat, 2 * s.lastMove);
+      return;
+    case 'anabiosis':
+      s.wait[seat] = 3;
+      x.ev.push({ type: 'wait', seat, n: 3 });
+      return;
+    case 'zone':
+      s.zoneLeft = 3;
+      return;
+    case 'chrono': {
+      const cells = s.mort.flatMap((m, i) => (m ? [i] : []));
+      for (const i of cells) {
+        s.owner[i] = null;
+        s.mort[i] = false;
+      }
+      x.ev.push({ type: 'chrono', cells });
+      return;
+    }
+    case 'swap':
+      charge(x, seat, IMP_SWAP_FEE, null, 'обмен разумов');
+      if (s.out[seat]) return;
+      s.swaps[seat]++;
+      if (s.swaps[seat] >= 3) {
+        s.swaps[seat] = 0;
+        const nb = leftOf(s, seat);
+        if (nb != null && s.phase === 'resolve') swapAll(x, seat, nb);
+      }
+      return;
+    case 'nullpass':
+      s.route[seat] = 'sub';
+      x.ev.push({ type: 'flag', seat, what: 'sub' });
+      return;
+    case 'antimir':
+      s.rev[seat] = true;
+      x.ev.push({ type: 'flag', seat, what: 'rev' });
+      return;
+    case 'cosmodrome':
+    case 'sector':
       return;
     case 'gojail':
       goJail(x, seat);
@@ -935,6 +1069,12 @@ function applyFx(x: Ctx, seat: number, card: Card) {
   const { s } = x;
   const b = B(s);
   const fx = card.fx;
+  // «Империя»: неразменный пятак прощает штраф
+  if (isImp(s) && s.pyatak[seat] > 0 && fx.k === 'cash' && fx.n < 0) {
+    s.pyatak[seat]--;
+    x.ev.push({ type: 'saved', seat });
+    return;
+  }
   if (isBiz(s) && s.ins[seat] && (LOSS.has(fx.k) || (fx.k === 'cash' && fx.n < 0))) {
     s.ins[seat] = 0;
     x.ev.push({ type: 'saved', seat });
@@ -1057,9 +1197,141 @@ function applyFx(x: Ctx, seat: number, card: Card) {
     case 'raise':
       if (s.shares[seat].some((k) => k > 0)) openPick(x, { n: fx.n, mode: 'raise' });
       return;
+    case 'wait':
+      s.wait[seat] = fx.n;
+      x.ev.push({ type: 'wait', seat, n: fx.n });
+      return;
+    case 'nearestBase': {
+      let to = s.pos[seat];
+      for (let i = 1; i <= 38; i++) {
+        const c = (s.pos[seat] + i) % 38;
+        if (b.cells[c].util === 'base') {
+          to = c;
+          break;
+        }
+      }
+      moveTo(x, seat, to);
+      return;
+    }
+    case 'cosmodrome':
+      relocate(x, seat, IMP_START);
+      return;
+    case 'anabiosis':
+      relocate(x, seat, 9);
+      s.wait[seat] = 3;
+      x.ev.push({ type: 'wait', seat, n: 3 });
+      return;
+    case 'accel':
+      s.accel[seat] = 2;
+      x.ev.push({ type: 'flag', seat, what: 'accel' });
+      return;
+    case 'inertia':
+      s.inertia[seat] = true;
+      x.ev.push({ type: 'flag', seat, what: 'inertia' });
+      return;
+    case 'pyatak':
+      s.pyatak[seat] += 2;
+      x.ev.push({ type: 'flag', seat, what: 'pyatak' });
+      return;
+    case 'steal': {
+      // «любую карточку соседа слева» — самую дорогую из тех, что можно передать
+      const nb = leftOf(s, seat);
+      if (nb == null) return;
+      const c = owned(s, nb)
+        .filter((i) => tradeable(s, nb, i))
+        .sort((p, q) => b.cells[q].price! - b.cells[p].price!)[0];
+      if (c == null) return;
+      s.owner[c] = seat;
+      x.ev.push({ type: 'steal', seat, from: nb, cell: c });
+      return;
+    }
+    case 'annihilate': {
+      const nb = leftOf(s, seat);
+      if (nb == null) return;
+      const c = owned(s, nb)
+        .filter((i) => s.houses[i] > 0)
+        .sort((p, q) => s.houses[q] - s.houses[p] || b.cells[q].price! - b.cells[p].price!)[0];
+      if (c == null) return;
+      s.houses[c]--;
+      s.stock[0]++;
+      x.ev.push({ type: 'annihilate', seat, from: nb, cell: c });
+      return;
+    }
     case 'none':
       return;
   }
+}
+
+/** «Империя»: сосед слева — следующий по ходу живой игрок. */
+function leftOf(s: State, seat: number): number | null {
+  const i = s.seats.indexOf(seat);
+  for (let k = 1; k < s.seats.length; k++) {
+    const p = s.seats[(i + k) % s.seats.length];
+    if (!s.out[p]) return p;
+  }
+  return null;
+}
+
+/** «Обмен разумов»: полный обмен деньгами и имуществом с соседом. */
+function swapAll(x: Ctx, a: number, b: number) {
+  const { s } = x;
+  [s.cash[a], s.cash[b]] = [s.cash[b], s.cash[a]];
+  for (let i = 0; i < s.owner.length; i++) {
+    if (s.owner[i] === a) s.owner[i] = b;
+    else if (s.owner[i] === b) s.owner[i] = a;
+  }
+  x.ev.push({ type: 'swap', a, b });
+}
+
+/** «Империя»: ход по графу. Внешний круг по часовой; с «Лема» — в малый круг (нуль переход → обмен разумов → антимир →
+ * космодром), с космодрома — на «Гомера»; после антимира малый круг — вспять. Вход на «Гомера» — полный круг, 200. */
+function stepImp(x: Ctx, seat: number, n: number) {
+  const { s } = x;
+  const path: number[] = [];
+  let p = s.pos[seat];
+  let laps = 0;
+  if (n < 0) {
+    for (let i = 0; i < -n; i++) {
+      if (p < 38) p = (p + 37) % 38;
+      path.push(p);
+    }
+  } else {
+    const route = s.route[seat];
+    const rev = s.rev[seat];
+    s.route[seat] = '';
+    s.rev[seat] = false;
+    for (let i = 0; i < n; i++) {
+      let q: number;
+      if (route === 'inner' && p === 37 && i === 0) q = 39;
+      else if (rev && p >= 38) q = p === 41 ? 40 : p === 40 ? 39 : p === 39 ? 38 : 0;
+      else q = p < 38 ? (p + 1) % 38 : p === 38 ? 0 : p === 41 ? 38 : p + 1;
+      if (q === 0 && (p === 37 || p === 38)) laps++;
+      p = q;
+      path.push(p);
+    }
+  }
+  s.pos[seat] = p;
+  x.ev.push({ type: 'move', seat, path });
+  for (let k = 0; k < laps; k++) {
+    if (s.lapped[seat]) {
+      give(x, null, seat, B(s).startPay, 'полный круг');
+      s.inertia[seat] = false;
+    }
+    s.lapped[seat] = true;
+  }
+  if (s.out[seat]) return;
+  land(x, seat);
+}
+
+/** «Империя»: по секторам подпространства по часовой, 20 за каждый; в конце — выход на планету сектора. */
+function subMove(x: Ctx, seat: number, n: number) {
+  const { s } = x;
+  s.route[seat] = '';
+  const path = Array.from({ length: n }, (_, k) => 42 + (k % 4));
+  s.pos[seat] = path[path.length - 1];
+  x.ev.push({ type: 'move', seat, path });
+  give(x, null, seat, IMP_SUB_PAY * n, 'подпространство');
+  s.phase = 'sub';
 }
 
 /** Первый ничей участок по ходу от клетки from (не считая её); -1 — нет. */
@@ -1188,6 +1460,14 @@ function startAuction(x: Ctx, cell: number) {
 function endAuction(x: Ctx, cell: number, seat: number | null, price: number) {
   const { s } = x;
   s.auction = null;
+  if (seat == null && isImp(s)) {
+    // «Империя»: никто не купил — отказавшийся платит в фонд половину цены
+    x.ev.push({ type: 'won', seat, cell, price });
+    s.phase = 'resolve';
+    const fine = Math.round(B(s).cells[cell].price! / 2 / 10) * 10;
+    if (charge(x, s.turn, fine, null, 'штраф за отказ от покупки') !== 'debt') finish(x);
+    return;
+  }
   if (seat != null) {
     give(x, seat, null, price, 'торги');
     s.owner[cell] = seat;
@@ -1386,6 +1666,8 @@ export function hubOpts(s: State): HubOpt[] {
 /** Переезд без хода: на другой круг или с автомагистрали. */
 function relocate(x: Ctx, seat: number, to: number) {
   x.s.pos[seat] = to;
+  x.s.route[seat] = '';
+  x.s.rev[seat] = false;
   x.ev.push({ type: 'jump', seat, to });
 }
 
@@ -1637,6 +1919,13 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const c = cell(a.cell);
         if (c < 0 || s.phase === 'debt' || !canBuild(s, seat, c)) return null;
         const cost = b.cells[c].build!;
+        if (isImp(s)) {
+          s.stock[0]--;
+          s.houses[c]++;
+          give(x, seat, null, cost, 'ракета');
+          x.ev.push({ type: 'build', seat, cell: c, level: s.houses[c] });
+          return ok();
+        }
         if (isBm(s)) {
           if (s.houses[c] === 1) {
             s.stock[1]--;
@@ -1675,7 +1964,11 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const c = cell(a.cell);
         if (c < 0 || !canSell(s, seat, c)) return null;
         const half = b.cells[c].build! / 2;
-        if (isBm(s)) {
+        if (isImp(s)) {
+          s.houses[c]--;
+          s.stock[0]++;
+          give(x, null, seat, half, 'ракета продана банку');
+        } else if (isBm(s)) {
           if (s.houses[c] === 4) {
             s.stock[1]++;
             if (s.stock[0] >= 1) {
@@ -1773,6 +2066,31 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       if (a.type !== 'roll') return null;
       s.card = null;
       s.phase = 'resolve';
+      if (isImp(s)) {
+        // «Империя»: дубль — ещё ход; инерциоид — ещё пара кубиков; ускорение — вдвое
+        const d1 = rng.int(6) + 1;
+        const d2 = rng.int(6) + 1;
+        s.dice = [d1, d2];
+        x.ev.push({ type: 'roll', seat, dice: [d1, d2] });
+        s.again = d1 === d2;
+        let n = d1 + d2;
+        if (s.inertia[seat]) {
+          const d3 = rng.int(6) + 1;
+          const d4 = rng.int(6) + 1;
+          x.ev.push({ type: 'roll', seat, dice: [d3, d4] });
+          if (d3 === d4) s.again = true;
+          n += d3 + d4;
+        }
+        if (s.accel[seat] > 0) {
+          n *= 2;
+          s.accel[seat]--;
+        }
+        s.lastMove = n;
+        if (s.route[seat] === 'sub') subMove(x, seat, n);
+        else step(x, seat, n);
+        settle(x);
+        return ok();
+      }
       if (isBm(s)) {
         // «Бизнесмен»: два кубика, дубль 3:3 — ещё и биржа в конце хода
         const d1 = rng.int(6) + 1;
@@ -1872,6 +2190,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const n = Math.round(Number(a.amount));
         const min = au.bid ? au.bid + b.step : b.step;
         if (!Number.isFinite(n) || n < min || n > s.cash[seat] || n % b.step) return null;
+        // «Империя»: отказавшийся вступает в торги, только когда цена выше номинала
+        if (isImp(s) && seat === s.turn && n <= b.cells[au.cell].price!) return null;
         au.bid = n;
         au.leader = seat;
         au.at = (au.at + 1) % au.order.length;
@@ -1949,6 +2269,16 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       if (a.type !== 'pass') return null;
       s.phase = 'resolve';
       finish(x);
+      return ok();
+    }
+    case 'sub': {
+      // выход из подпространства на одну из планет сектора
+      const exits = b.cells[s.pos[seat]].exits ?? [];
+      if (a.type !== 'exit' || !exits.includes(a.cell)) return null;
+      relocate(x, seat, a.cell);
+      x.ev.push({ type: 'exit', seat, cell: a.cell });
+      land(x, seat);
+      settle(x);
       return ok();
     }
     case 'stocks':

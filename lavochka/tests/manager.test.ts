@@ -244,7 +244,88 @@ describe('Бизнесмен', () => {
   });
 });
 
+describe('Империя', () => {
+  const I = 'imperiya' as const;
+  it('поле: 38 клеток круга, 22 планеты в 8 системах, 4 базы и 2 башни; карточек по 14', () => {
+    const b = boardOf(I);
+    expect(b.cells.length).toBe(46);
+    const planets = b.cells.filter((c) => c.kind === 'prop' && c.group != null);
+    expect(planets.length).toBe(22);
+    expect(b.cells.filter((c) => c.util === 'base').length).toBe(4);
+    expect(b.cells.filter((c) => c.util === 'tower').length).toBe(2);
+    for (const d of b.decks) expect(d.cards.length).toBe(14);
+  });
+
+  it('старт с космодрома: первый выход на «Гомера» — не круг; с «Лема» — малый круг и снова «Гомер» за 200', () => {
+    let s = newState(I, [0, 1], {}, rng());
+    expect(s.cash[0]).toBe(3000);
+    s = act(s, 0, { type: 'roll' }, [0, 1]);
+    expect(s.pos[0]).toBe(2);
+    expect(s.cash[0]).toBe(3000);
+    s = newState(I, [0, 1], {}, rng());
+    s.pos[0] = 31;
+    s.lapped[0] = true;
+    s.owner[37] = 0; // «Лем» свой — решать нечего
+    s = act(s, 0, { type: 'roll' }, [1, 3]);
+    expect(s.pos[0]).toBe(37);
+    expect(s.route[0]).toBe('inner');
+    s.turn = 0;
+    s.phase = 'roll';
+    s = act(s, 0, { type: 'roll' }, [1, 2]); // 5: нуль переход, обмен разумов, антимир, космодром, «Гомер»
+    expect(s.pos[0]).toBe(0);
+    expect(s.cash[0]).toBe(3000 + 200);
+  });
+
+  it('нуль переход → подпространство: 20 за сектор и выход на планету сектора', () => {
+    let s = newState(I, [0, 1], {}, rng());
+    s.pos[0] = 39;
+    s.route[0] = 'sub';
+    s = act(s, 0, { type: 'roll' }, [1, 2]); // 5 секторов: I, II, III, IV, I
+    expect(s.phase).toBe('sub');
+    expect(s.pos[0]).toBe(42);
+    expect(s.cash[0]).toBe(3100);
+    expect(apply(s, 0, { type: 'exit', cell: 2 }, rng())).toBeNull();
+    s = act(s, 0, { type: 'exit', cell: 35 });
+    expect(s.pos[0]).toBe(35);
+    expect(s.phase).toBe('buy');
+  });
+
+  it('отказ от покупки: отказавшийся торгуется только выше номинала, никто не купил — штраф половина цены', () => {
+    let s = newState(I, [0, 1], {}, rng());
+    s = act(s, 0, { type: 'roll' }, [0, 1]); // «Апулей», 70
+    s = act(s, 0, { type: 'pass' });
+    s = act(s, 1, { type: 'fold' });
+    expect(apply(s, 0, { type: 'bid', amount: 60 }, rng())).toBeNull();
+    s = act(s, 0, { type: 'fold' });
+    expect(s.cash[0]).toBe(3000 - 40);
+  });
+
+  it('ракеты — на всю систему равномерно; плата по числу ракет; башня — кубики × 5', () => {
+    let s = newState(I, [0, 1], {}, rng());
+    s.owner[0] = 0;
+    s.owner[2] = 0;
+    expect(rent(s, 0)).toBe(10);
+    s = act(s, 0, { type: 'build', cell: 0 });
+    expect(canBuild(s, 0, 0)).toBe(false);
+    s = act(s, 0, { type: 'build', cell: 2 });
+    expect(rent(s, 2)).toBe(30);
+    expect(s.stock[0]).toBe(38);
+    s.owner[12] = 0;
+    s.turn = 1;
+    s.pos[1] = 9;
+    s = act(s, 1, { type: 'roll' }, [1, 0, 3, 4]); // 3 → «Башня рабов», бросок 4 + 5
+    expect(s.cash[1]).toBe(3000 - 45);
+  });
+});
+
 describe('партии ботов', () => {
+  it('imperiya, 20 кругов: доигрывают на 2–6 игроках', async () => {
+    for (let n = 2; n <= 6; n++) {
+      const res = await simulate(def, botSeats(def, n, [0, 1, 2]), { ...defaults(def), map: 'imperiya', limit: 20 }, 800 + n);
+      expect(res.error, `${n} игроков`).toBeUndefined();
+      expect(res.finished, `${n} игроков: ${res.steps} шагов`).toBe(true);
+    }
+  }, 120_000);
   it('biznesmen, 20 кругов: доигрывают на 2–6 игроках', async () => {
     for (let n = 2; n <= 6; n++) {
       const res = await simulate(def, botSeats(def, n, [0, 1, 2]), { ...defaults(def), map: 'biznesmen', limit: 20 }, 700 + n);
