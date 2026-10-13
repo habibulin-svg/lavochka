@@ -46,13 +46,31 @@ export function signOf(code: string | undefined, i: number, label: string | unde
       text: routeText ?? 'проверка',
     };
   }
-  if (code.startsWith('coins:')) return { k: 'coins', n: +code.slice(6), text: routeText ?? 'берёт боны' };
-  if (code.startsWith('coinsD:')) return { k: 'coins', dice: +code.slice(7), text: routeText ?? 'берёт боны' };
+  if (code.startsWith('coins:')) {
+    const [n, skip] = code.slice(6).split('+');
+    return { k: 'coins', n: +n, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны' };
+  }
+  if (code.startsWith('coinsD:')) {
+    const [d, skip] = code.slice(7).split('+');
+    return { k: 'coins', dice: +d, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны' };
+  }
   if (code.startsWith('lose:')) return { k: 'coins', n: +code.slice(5), loss: true, text: routeText ?? 'отдаёт боны' };
-  if (code.startsWith('loseD:')) return { k: 'coins', dice: +code.slice(6), loss: true, text: routeText ?? 'отдаёт боны' };
+  if (code.startsWith('loseD:')) {
+    const [d, skip] = code.slice(6).split('+');
+    return { k: 'coins', dice: +d, loss: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт боны' };
+  }
+  if (code.startsWith('field:')) {
+    const [map, to] = code.slice(6).split(':');
+    return { k: 'field', map, to: +to, text: routeText ?? 'переходит на другое поле' };
+  }
   if (code.startsWith('extra:')) return { k: 'extra', n: +code.slice(6), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('extraD:')) return { k: 'extra', dice: +code.slice(7), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('item:')) return { k: 'item', item: code.slice(5) as ItemId, text: routeText ?? 'берёт предмет' };
+  if (code.startsWith('pick:')) {
+    // «загадка: вопрос|ответ,ответ|клетка,клетка»
+    const [question, options, to] = code.slice(5).split('|');
+    return { k: 'pick', question, options: options.split(','), to: to.split(',').map(Number), text: routeText ?? 'загадка' };
+  }
   console.warn('кинь-двинь: неизвестный знак', code, label);
   return null;
 }

@@ -15,6 +15,13 @@ export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOAR
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
 
+/** Победа места: и состояние, и событие. */
+const winNow = (s: State, ev: Event[], seat: number) => {
+  s.winner = seat;
+  ev.push({ type: 'win', seat });
+  return { state: s, events: ev };
+};
+
 /** Счёт гонки с голами: «2 : 1» по дорожкам. */
 export const scoreText = (s: State, b: Board) => (s.goals ?? b.race?.tracks.map(() => 0) ?? []).join(' : ');
 
@@ -74,6 +81,21 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     if (board.race) return rollRace(s0, board, seat, rng);
     const die = rng.int(6) + 1;
     return { state: { ...s0, last: die, phase: 'move' }, events: [{ type: 'roll', seat, die }] };
+  }
+  // ответ на загадку: пуговица идёт на деление, которое назвал игрок
+  if (a?.type === 'pick') {
+    if (phase !== 'pick') return null;
+    const sign = board.cells[s0.pos[seat]]?.sign;
+    if (sign?.k !== 'pick') return null;
+    const i = Math.max(0, Math.min(sign.options.length - 1, Math.floor(a.pick) || 0));
+    const finish = finishOf(board);
+    const s: State = { ...s0, pos: s0.pos.slice(), phase: 'roll' };
+    const dest = Math.max(0, Math.min(finish, sign.to[i] ?? s0.pos[seat]));
+    const ev: Event[] = [{ type: 'sign', seat, sign: { ...sign, text: `${sign.text}: ${sign.options[i]}` }, to: dest }];
+    s.pos[seat] = dest;
+    if (dest === finish) return winNow(s, ev, seat);
+    s.turn = next(s, seat);
+    return { state: s, events: ev };
   }
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
   if (board.race) return moveRace(s0, board, seat);
@@ -138,7 +160,17 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       const delta = sign.loss ? -n : n;
       s.coins = many(s.coins, 0);
       s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + delta);
+      if (sign.skip) s.skip[seat] = sign.skip;
       ev.push({ type: 'coins', seat, delta, total: s.coins[seat] });
+    } else if (sign.k === 'field') {
+      // серия «Лукоморья»: часть 1–4 — разные поля одной карточки, переход переносит пуговицу на другое поле
+      const other = boardOf(sign.map);
+      const fromText = board.cells[to].text;
+      s.map = other.id;
+      dest = Math.max(0, Math.min(finishOf(other), sign.to));
+      ev.push({ type: 'sign', seat, sign, to: dest, ...(fromText ? { text: fromText } : {}) });
+      s.pos[seat] = dest;
+      return { state: s, events: ev };
     } else if (sign.k === 'item') {
       s.items = many(s.items, null);
       s.items[seat] = [...(s.items[seat] ?? []), sign.item];
@@ -156,6 +188,12 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
         return win();
       }
       dest = Math.max(0, Math.min(finish, hasItem && hasCoins ? (sign.yes as number) : sign.no));
+    } else if (sign.k === 'pick') {
+      // загадка: ход прерывается, пока игрок не назовёт ответ
+      ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+      s.pos[seat] = to;
+      s.phase = 'pick';
+      return { state: s, events: ev };
     } else if (sign.k === 'fork') {
       // дорога выбирается по остатку очков: сразу, если они ещё есть, иначе — на следующем ходу
       dest = to;
@@ -250,7 +288,19 @@ export const def: GameDef<State, Action, Event, State> = {
     }
     return { winners: [s.winner], text: b.winText };
   },
-  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v) => ({ type: (v.phase ?? 'roll') === 'roll' ? 'roll' : 'move' }) },
+  bot: {
+    levels: ['Лёгкий', 'Средний', 'Сложный'],
+    choose: (v) => {
+      const phase = v.phase ?? 'roll';
+      // загадка: бот называет ответ по кругу (правильного варианта в правилах нет — выбирает игрок)
+      if (phase === 'pick') {
+        const g = boardOf(v.map).cells[v.pos[v.turn]]?.sign;
+        const n = g?.k === 'pick' ? g.options.length : 1;
+        return { type: 'pick', pick: v.pos[v.turn] % Math.max(1, n) };
+      }
+      return { type: phase === 'roll' ? 'roll' : 'move' };
+    },
+  },
   describe(ev, name) {
     switch (ev.type) {
       case 'roll':

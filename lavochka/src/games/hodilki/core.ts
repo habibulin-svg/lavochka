@@ -10,8 +10,10 @@ export type Sign =
   | { k: 'jump'; to: number; text: string; good: boolean; skip?: number }
   /** Ветка «туда и обратно» (Шегерян: «до г. Крей и обратно», тупик): следующими бросками фишка идёт по cells (до конца ветки и назад), потом — дальше по пути. */
   | { k: 'route'; cells: number[]; text: string }
-  /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же. */
-  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; text: string }
+  /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же; skip — ещё и пропустить ходы. */
+  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; text: string }
+  /** Переброс на другое поле той же карточки (серия «Лукоморья»: части 1–4 связаны переходами). */
+  | { k: 'field'; map: string; to: number; text: string }
   /** Предмет: взять себе в инвентарь. */
   | { k: 'item'; item: ItemId; text: string }
   /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа. */
@@ -20,7 +22,9 @@ export type Sign =
    * byDiff[разница-1] — номер ветки, branches — сами ветки (клетки дороги и выход), roads — их названия. */
   | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string }
   /** Дополнительные ходы: `n` или сумма `dice` бросков. */
-  | { k: 'extra'; n?: number; dice?: number; text: string };
+  | { k: 'extra'; n?: number; dice?: number; text: string }
+  /** Загадка с ответами: игрок выбирает ответ, и пуговица идёт на клетку `to[выбор]` (Лукоморье: «угаданное число — номер пункта»). */
+  | { k: 'pick'; question: string; options: string[]; to: number[]; text: string };
 
 /** Предметы «Лукоморья»: их берут на клетках, по ним открываются переходы. */
 export type ItemId = 'flower' | 'cap' | 'key' | 'needle' | 'sword';
@@ -98,8 +102,8 @@ export interface State {
   /** Ветка пришла от развилки: на её конце ход не кончается, лишние очки идут дальше по пути. */
   routeFor?: (boolean | null)[];
   turn: number;
-  /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу. Нет поля — старая партия, значит 'roll'. */
-  phase?: 'roll' | 'move';
+  /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу, 'pick' — ждём ответа на загадку. Нет поля — старая партия, значит 'roll'. */
+  phase?: 'roll' | 'move' | 'pick';
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;
@@ -121,7 +125,7 @@ export interface State {
   extra?: number[];
 }
 
-export type Action = { type: 'roll' } | { type: 'move' };
+export type Action = { type: 'roll' } | { type: 'move' } | { type: 'pick'; pick: number };
 
 export type Event =
   | { type: 'roll'; seat: number; die: number; /** Что выпало: очки или клюшка (гонка с голами). */ kind?: 'pips' | 'red' | 'green'; card?: number; slot?: number }

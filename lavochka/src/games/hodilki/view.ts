@@ -46,6 +46,9 @@ class HodilkiView implements GameView<State, Event> {
   private panel!: HTMLElement;
   private hint!: HTMLElement;
   private rollBtn!: HTMLButtonElement;
+  private quizBox!: HTMLElement;
+  private qText!: HTMLElement;
+  private answers!: HTMLElement;
   private followBtn!: HTMLButtonElement;
   private tray!: DiceTray;
   /** «Шайба»: вместо лотка с кубиком — грань настоящего кубика и вытянутый квадратик. */
@@ -61,7 +64,7 @@ class HodilkiView implements GameView<State, Event> {
   private shown: number[] = [];
   /** Чьё действие ждём от этого экрана и какое. */
   private actSeat: number | null = null;
-  private phase: 'roll' | 'move' = 'roll';
+  private phase: 'roll' | 'move' | 'pick' = 'roll';
   /** Пуговица взята (нажатием) — видны шаги и клетка. */
   private picked = false;
   private busy = false;
@@ -185,6 +188,10 @@ class HodilkiView implements GameView<State, Event> {
           <img class="ks-card" alt="квадратик" draggable="false" hidden>
         </div>
         <button class="btn primary ks-roll" data-tap hidden>Бросить кубик</button>
+        <div class="ks-quiz" hidden>
+          <div class="ks-q"></div>
+          <div class="ks-answers"></div>
+        </div>
         ${ctx.demo ? '' : `<div class="hint small-hint ks-hint"><span class="ks-hint-text">Потом возьмите свою пуговицу и поставьте на подсвеченную клетку.</span> ${touchScreen() ? 'Бросок — кнопкой или тапом по полю.' : 'Пробел — бросок.'} Карту можно приближать ${touchScreen() ? 'двумя пальцами' : 'колесом'} и двигать.</div>`}
       </div>`);
     ctx.controls.appendChild(this.panel);
@@ -196,6 +203,9 @@ class HodilkiView implements GameView<State, Event> {
     this.cardImg = this.panel.querySelector('.ks-card') as HTMLImageElement;
     this.rollBtn = this.panel.querySelector('.ks-roll') as HTMLButtonElement;
     this.rollBtn.onclick = () => this.roll();
+    this.quizBox = this.panel.querySelector('.ks-quiz') as HTMLElement;
+    this.qText = this.panel.querySelector('.ks-q') as HTMLElement;
+    this.answers = this.panel.querySelector('.ks-answers') as HTMLElement;
     if (!ctx.demo) document.addEventListener('keydown', this.onKey);
 
     wrap.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
@@ -1099,9 +1109,32 @@ class HodilkiView implements GameView<State, Event> {
 
   setTurn(toAct: number[], interactive: number[]) {
     const v = this.v;
-    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move';
+    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move' | 'pick';
     this.actSeat = v && v.winner == null ? (interactive.find((x) => x === v.turn) ?? null) : null;
     if (this.actSeat == null) this.picked = false;
+    // загадка («Лукоморье»): показываем вопрос и ответы тому, кто ходит
+    const sign = v ? boardOf(v.map).cells[v.pos[v.turn]]?.sign : null;
+    const quiz = this.phase === 'pick' && sign?.k === 'pick' ? sign : null;
+    const ask = quiz && this.actSeat != null;
+    this.quizBox.hidden = !ask;
+    if (ask && quiz) {
+      this.qText.textContent = quiz.question;
+      this.answers.replaceChildren(
+        ...quiz.options.map((label, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn ks-answer';
+          btn.textContent = label;
+          btn.onclick = () => {
+            const seat = this.actSeat;
+            this.actSeat = null;
+            this.quizBox.hidden = true;
+            Sound.ui();
+            if (seat != null) this.ctx.act(seat, { type: 'pick', pick: i });
+          };
+          return btn;
+        })
+      );
+    }
     this.rollBtn.hidden = this.actSeat == null || this.phase !== 'roll';
     this.showMarks(this.picked);
     this.syncTokens();
@@ -1130,6 +1163,11 @@ class HodilkiView implements GameView<State, Event> {
       return me ? `Бросайте кубик. ${score}` : `Бросает ${this.ctx.name(toAct[0])}… ${score}`;
     }
     if (v.winner != null) return `${this.ctx.name(v.winner)}: ${b.winText}!`;
+    if ((v.phase ?? 'roll') === 'pick') {
+      const q = b.cells[v.pos[v.turn]]?.sign;
+      const ask = q?.k === 'pick' ? `Загадка: «${q.question}»` : 'Загадка';
+      return me ? `${ask} — выберите ответ` : `${this.ctx.name(toAct[0])} отвечает на загадку…`;
+    }
     if ((v.phase ?? 'roll') === 'move') return me ? `Выпало ${v.last} — возьмите свою пуговицу и переставьте` : `Ходит ${this.ctx.name(toAct[0])}…`;
     return me ? 'Бросайте кубик' : `Бросает ${this.ctx.name(toAct[0])}…`;
   }

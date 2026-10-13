@@ -463,4 +463,80 @@ describe('кинь-двинь: боны, предметы и развилки', 
     expect(s.extra![0]).toBe(0);
     expect(s.turn).toBe(1); // лишние кончились — ход перешёл
   });
+
+  it('загадка: ход ждёт ответа, пуговица идёт на названное деление', () => {
+    const rng = new RiggedRng(new SeededRng(27));
+    const quiz: Board = {
+      ...testBoard,
+      id: 'tests4',
+      title: 'Поле с загадкой',
+      end: 4,
+      cells: [
+        { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+        { x: 10, y: 0, sign: { k: 'pick', question: 'Сколько действующих лиц в сказке о репке?', options: ['4', '5', '6'], to: [2, 3, 4], text: 'загадка о репке' }, label: '2' },
+        { x: 20, y: 0, sign: null, label: '3' },
+        { x: 30, y: 0, sign: { k: 'coins', n: 5, text: 'берёт 5 бон' }, label: '4' },
+        { x: 40, y: 0, sign: null, label: '5' },
+      ],
+    };
+    BOARDS.push(quiz);
+    try {
+      const s = def.setup(seats2, { map: 'tests4' }, rng) as State;
+      s.turn = 0;
+      const r = turn(s, 0, 1, rng); // 1 → 2: загадка
+      expect(r.state.phase).toBe('pick');
+      expect(r.state.turn).toBe(0); // ход ждёт ответа
+      expect(signKind(r.events)).toBe('pick');
+      const botPick = def.bot.choose(r.state, 0, 1, rng) as unknown as { type: string };
+      expect(botPick.type).toBe('pick');
+      // назвали «5» — пуговица идёт на деление 4 и берёт боны
+      const r2 = def.apply(r.state, 0, { type: 'pick', pick: 1 }, rng)!;
+      expect(r2.state.pos[0]).toBe(3);
+      expect(r2.state.phase).toBe('roll');
+      expect(signText(r2.events)).toContain('5');
+      // назвали «6» — пуговица идёт на последнее деление и побеждает
+      const r3 = def.apply({ ...r.state, turn: 0 }, 0, { type: 'pick', pick: 2 }, rng)!;
+      expect(r3.state.winner).toBe(0);
+    } finally {
+      BOARDS.splice(BOARDS.indexOf(quiz), 1);
+    }
+  });
+
+  it('переход на другое поле (серия «Лукоморья») переносит пуговицу в его клетку', () => {
+    const rng = new RiggedRng(new SeededRng(26));
+    const other: Board = {
+      ...testBoard,
+      id: 'tests2',
+      title: 'Второе служебное поле',
+      end: 2,
+      cells: [
+        { x: 0, y: 0, sign: null, label: '1' },
+        { x: 10, y: 0, sign: null, label: '2' },
+        { x: 20, y: 0, sign: null, label: '3' },
+      ],
+    };
+    const hop: Board = {
+      ...testBoard,
+      id: 'tests3',
+      title: 'Поле с переходом',
+      end: 2,
+      cells: [
+        { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+        { x: 10, y: 0, sign: { k: 'field', map: 'tests2', to: 2, text: 'уносит на другое поле' }, label: '2' },
+        { x: 20, y: 0, sign: null, label: '3' },
+      ],
+    };
+    BOARDS.push(other, hop);
+    try {
+      let s = def.setup(seats2, { map: 'tests3' }, rng) as State;
+      s.turn = 0;
+      const r = turn(s, 0, 1, rng);
+      expect(r.state.map).toBe('tests2');
+      expect(r.state.pos[0]).toBe(2);
+      expect(r.state.winner).toBeNull();
+    } finally {
+      BOARDS.splice(BOARDS.indexOf(other), 1);
+      BOARDS.splice(BOARDS.indexOf(hop), 1);
+    }
+  });
 });
