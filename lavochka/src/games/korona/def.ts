@@ -132,7 +132,7 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
           ? (n: number) => kindOf(n) === 'exchange'
           : (n: number) => kindOf(n) === 'meadow' || kindOf(n) === 'lyceum'
       : canBuy
-        ? (n: number) => kindOf(n) === 'exchange' || kindOf(n) === 'lyceum'
+        ? (n: number) => kindOf(n) === 'exchange'
         : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange';
   // сначала пробуем дойти именно до обменного пункта (там покупка характеристик),
   // и только если он недостижим — к лицею и лугу
