@@ -29,6 +29,8 @@ SRC = {
     'podveski': 'materials/nastolki/podveski-korolevy/field.webp',
     'mepl': 'materials/nastolki/mepl-white/field.webp',
     'sutra': 'materials/nastolki/s-utra-do-vechera/field-1.webp',
+    # «Шайба» — гонка двух шайб по двум трекам (разметка — tools/hodilki/shayba.py)
+    'shayba': 'materials/nastolki/shayba/field.webp',
 }
 TILE = 512
 PREVIEW = 1600
@@ -37,8 +39,14 @@ Q = 80
 
 def build(id_, path):
     out = os.path.join(ROOT, 'lavochka', 'public', 'hodilki', id_)
-    shutil.rmtree(out, ignore_errors=True)
-    os.makedirs(out)
+    # чистим только своё (tiny/view и уровни тайлов): рядом могут лежать детали игры
+    # (у «Шайбы» — cards/ и parts: квадратики, грани кубика, жетоны-шайбы)
+    if os.path.isdir(out):
+        for name in os.listdir(out):
+            p = os.path.join(out, name)
+            if name in ('tiny.webp', 'view.webp') or (name.isdigit() and os.path.isdir(p)):
+                shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+    os.makedirs(out, exist_ok=True)
     im = Image.open(os.path.join(ROOT, path)).convert('RGB')
     w, h = im.size
     im.resize((64, round(64 * h / w)), Image.LANCZOS).save(os.path.join(out, 'tiny.webp'), quality=60)

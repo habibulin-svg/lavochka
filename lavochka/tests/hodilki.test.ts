@@ -84,3 +84,97 @@ describe('кинь-двинь: ветка «туда и обратно»', () =>
     expect(st.turn).toBe(0);
   });
 });
+
+/* «Шайба»: гонка двух шайб по двум трекам, кубик с клюшками и квадратики, финиш = гол. */
+describe('кинь-двинь: «Шайба»', () => {
+  const race = BOARDS.find((b) => b.id === 'shayba')!;
+  const two = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+
+  it('два трека по 30 клеток со своими стартом и воротами', () => {
+    const tracks = race.race!.tracks;
+    expect(tracks.length).toBe(2);
+    for (const t of tracks) {
+      expect(t.length).toBe(30);
+      expect(race.cells[t[0]].label).toBe('1');
+      expect(race.cells[t[29]].label).toBe('30');
+    }
+    // дорожки не пересекаются
+    expect(tracks[0].every((i) => !tracks[1].includes(i))).toBe(true);
+  });
+
+  it('очки ведут вперёд по своей дорожке, красная клюшка — назад, зелёная — вперёд', () => {
+    const rng = new RiggedRng(new SeededRng(3));
+    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    const track = race.race!.tracks[0];
+    // грань 3
+    rng.rig([2]);
+    let r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    expect(r.events[0]).toMatchObject({ type: 'roll', die: 3, kind: 'pips' });
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    s = r.state;
+    expect(s.pos[0]).toBe(track[3]);
+    expect(s.turn).toBe(1);
+    // зелёная клюшка: грань 6 и квадратик с двумя точками
+    rng.rig([5, 8]);
+    r = def.apply(s, 1, { type: 'roll' }, rng)!;
+    expect(r.events[0]).toMatchObject({ die: 6, kind: 'green', card: 2, slot: 8 });
+    r = def.apply(r.state, 1, { type: 'move' }, rng)!;
+    s = r.state;
+    expect(s.pos[1]).toBe(race.race!.tracks[1][2]);
+    // красная клюшка: грань 5 и квадратик с тремя точками — назад
+    rng.rig([4, 14]);
+    r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    expect(r.events[0]).toMatchObject({ die: 5, kind: 'red', card: 3 });
+    expect(r.state.last).toBe(-3);
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.pos[0]).toBe(track[0]);
+  });
+
+  it('назад дальше центра шайба не уходит', () => {
+    const rng = new RiggedRng(new SeededRng(4));
+    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    const track = race.race!.tracks[0];
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? track[1] : p)) };
+    rng.rig([4, 14]); // красная клюшка, квадратик на 3
+    let r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.pos[0]).toBe(track[0]);
+  });
+
+  it('клетка 30 — гол: шайба в центр, счёт растёт, лишние очки пропадают', () => {
+    const rng = new RiggedRng(new SeededRng(5));
+    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    const track = race.race!.tracks[0];
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? track[28] : p)) };
+    rng.rig([5]); // грань 6 — очков больше, чем осталось
+    let r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.events.some((e) => e.type === 'goal' && e.track === 0 && e.goals === 1)).toBe(true);
+    expect(r.state.pos[0]).toBe(track[0]);
+    expect(r.state.goals![0]).toBe(1);
+    expect(r.state.turn).toBe(1);
+  });
+
+  it('партия кончается по числу голов; в команде побеждают все, кто на дорожке', () => {
+    const rng = new RiggedRng(new SeededRng(6));
+    const four = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+    let s = def.setup(four, { map: 'shayba', goals: '2' }, rng) as State;
+    expect(s.target).toBe(2);
+    const track = race.race!.tracks[0];
+    s = { ...s, goals: [1, 0], pos: s.pos.map((p, i) => (i === 0 ? track[28] : p)) };
+    rng.rig([0]); // грань 1 — как раз в ворота
+    let r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.winner).toBe(0);
+    const res = def.result(r.state)!;
+    expect(res.winners).toEqual([0, 2]);
+    expect(res.text).toContain('2 : 0');
+  });
+
+  it('показ правил «Шайбы» включает клюшку с квадратиком', () => {
+    const section = def.rules.sections.find((x) => x.title === 'Шайба')!;
+    expect(section).toBeTruthy();
+    const kinds = section.demo!.steps.filter((st) => st.rig && st.rig.length > 1);
+    expect(kinds.length).toBeGreaterThan(0);
+  });
+});

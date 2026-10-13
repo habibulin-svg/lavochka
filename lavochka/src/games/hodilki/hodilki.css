@@ -82,6 +82,17 @@
 .ks-panel { display: flex; flex-direction: column; gap: 8px; }
 .ks-tray { height: 104px; }
 .ks-roll { width: 100%; font-size: 17px; }
+/* «Шайба»: грань кубика и вытянутый квадратик вместо лотка с кубиком */
+.ks-cube { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 104px;
+  background: rgba(0, 0, 0, 0.16); border-radius: 12px; padding: 8px; }
+.ks-cube .ks-face { height: 92px; width: auto; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45)); }
+.ks-cube .ks-card { height: 88px; width: auto; border-radius: 6px; box-shadow: 0 3px 7px rgba(0, 0, 0, 0.45); }
+.ks-cube img[hidden] { display: none; }
+.ks-cube-hint { font-size: 13px; line-height: 1.35; opacity: 0.85; text-align: center; padding: 0 6px; }
+.ks-cube-hint[hidden] { display: none; }
+/* шайба команды — картинка с поля, а не пуговица */
+.ks-token.ks-puck .ks-btn { border-radius: 50%; }
+.ks-mini-dot.ks-puck-dot { border-radius: 50%; }
 @media (max-width: 700px) {
   .ks-cam { gap: 4px; }
   .ks-cb { height: 34px; padding: 0; width: 38px; justify-content: center; }

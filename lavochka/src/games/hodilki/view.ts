@@ -8,8 +8,8 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { finishOf, signGood, signText, skipsOf, target, type Board, type Event, type State } from './core';
-import { boardOf } from './def';
+import { finishOf, pathFor, signGood, signText, skipsOf, target, trackOf, type Board, type Event, type State } from './core';
+import { boardOf, scoreText } from './def';
 import './hodilki.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -47,6 +47,11 @@ class HodilkiView implements GameView<State, Event> {
   private rollBtn!: HTMLButtonElement;
   private followBtn!: HTMLButtonElement;
   private tray!: DiceTray;
+  /** «Шайба»: вместо лотка с кубиком — грань настоящего кубика и вытянутый квадратик. */
+  private cubeBox!: HTMLElement;
+  private cubeHint!: HTMLElement;
+  private face!: HTMLImageElement;
+  private cardImg!: HTMLImageElement;
   private v: State | null = null;
   /** Где пуговица сейчас нарисована (во время анимации — не там, где в состоянии). */
   private shown: number[] = [];
@@ -170,11 +175,20 @@ class HodilkiView implements GameView<State, Event> {
 
     this.panel = h(`<div class="ks-panel">
         <div class="ks-tray"></div>
+        <div class="ks-cube" hidden>
+          <span class="ks-cube-hint">Кубик «Шайбы»: 1–4 — очки, красная клюшка — назад, зелёная — вперёд (тянут квадратик)</span>
+          <img class="ks-face" alt="кубик" draggable="false" hidden>
+          <img class="ks-card" alt="квадратик" draggable="false" hidden>
+        </div>
         <button class="btn primary ks-roll" data-tap hidden>Бросить кубик</button>
         ${ctx.demo ? '' : `<div class="hint small-hint ks-hint">${touchScreen() ? 'Бросок — кнопкой или тапом по полю.' : 'Пробел — бросок.'} Потом возьмите свою пуговицу и поставьте на подсвеченную клетку. Карту можно приближать ${touchScreen() ? 'двумя пальцами' : 'колесом'} и двигать.</div>`}
       </div>`);
     ctx.controls.appendChild(this.panel);
     this.tray = new DiceTray(this.panel.querySelector('.ks-tray') as HTMLElement, 1);
+    this.cubeBox = this.panel.querySelector('.ks-cube') as HTMLElement;
+    this.cubeHint = this.panel.querySelector('.ks-cube-hint') as HTMLElement;
+    this.face = this.panel.querySelector('.ks-face') as HTMLImageElement;
+    this.cardImg = this.panel.querySelector('.ks-card') as HTMLImageElement;
     this.rollBtn = this.panel.querySelector('.ks-roll') as HTMLButtonElement;
     this.rollBtn.onclick = () => this.roll();
     if (!ctx.demo) document.addEventListener('keydown', this.onKey);
@@ -210,6 +224,20 @@ class HodilkiView implements GameView<State, Event> {
     return this.actSeat != null && this.phase === 'move' && !this.busy && !!this.v;
   }
 
+  /** Место, за которым нарисована шайба дорожки: в гонке с голами напарники ходят одной шайбой. */
+  private puckSeat(seat: number): number {
+    const b = this.b;
+    const v = this.v;
+    if (!b?.race || !v) return seat;
+    const track = trackOf(b, seat);
+    return v.seats.find((s) => trackOf(b, s) === track) ?? seat;
+  }
+
+  /** Своя пуговица: у «Шайбы» — шайба своей дорожки. */
+  private myToken(): HTMLElement | null {
+    return this.actSeat == null ? null : (this.tokens.get(this.puckSeat(this.actSeat)) ?? null);
+  }
+
   /** Поставить пуговицу: dropped — уже стоит на клетке (перетащили), шагать не надо. */
   private commit(dropped: boolean) {
     if (!this.canMove() || !this.v || !this.b) return;
@@ -231,7 +259,7 @@ class HodilkiView implements GameView<State, Event> {
   private pick(on: boolean) {
     if (on && !this.canMove()) return;
     this.picked = on;
-    const el = this.actSeat != null ? this.tokens.get(this.actSeat) : null;
+    const el = this.myToken();
     el?.classList.toggle('lifted', on);
     this.showMarks(on);
     if (on) Sound.ui();
@@ -244,7 +272,9 @@ class HodilkiView implements GameView<State, Event> {
     const b = this.b;
     const seat = this.actSeat!;
     const from = this.v.pos[seat];
-    const to = target(this.v, b, seat);
+    const path = pathFor(this.v, b, seat);
+    if (!path.length) return;
+    const to = path[path.length - 1];
     const r = b.token * b.img.w * 0.62;
     const add = (tag: string, attrs: Record<string, string | number>, text?: string) => {
       const el = document.createElementNS(NS, tag);
@@ -252,17 +282,16 @@ class HodilkiView implements GameView<State, Event> {
       if (text) el.textContent = text;
       this.marks.appendChild(el);
     };
-    const pts: number[] = [];
-    for (let i = from; i <= to; i++) pts.push(i);
+    const pts: number[] = [from, ...path];
     add('polyline', { class: 'ks-trail', points: pts.map((i) => `${b.cells[i].x},${b.cells[i].y}`).join(' '), 'stroke-width': r * 0.22 });
-    for (let i = from + 1; i < to; i++) {
+    path.slice(0, -1).forEach((i, k) => {
       const c = b.cells[i];
       add('circle', { class: 'ks-stepdot', cx: c.x, cy: c.y, r: r * 0.42 });
-      add('text', { class: 'ks-stepnum', x: c.x, y: c.y, 'font-size': r * 0.5 }, String(i - from));
-    }
+      add('text', { class: 'ks-stepnum', x: c.x, y: c.y, 'font-size': r * 0.5 }, String(k + 1));
+    });
     const c = b.cells[to];
     add('circle', { class: 'ks-goal', cx: c.x, cy: c.y, r: r * 1.15, 'stroke-width': r * 0.2 });
-    add('text', { class: 'ks-goalnum', x: c.x, y: c.y < r * 3 ? c.y + r * 1.6 : c.y - r * 1.6, 'font-size': r * 0.8 }, String(to - from));
+    add('text', { class: 'ks-goalnum', x: c.x, y: c.y < r * 3 ? c.y + r * 1.6 : c.y - r * 1.6, 'font-size': r * 0.8 }, String(path.length));
   }
 
   // ---------- пуговицы ----------
@@ -271,13 +300,19 @@ class HodilkiView implements GameView<State, Event> {
     const v = this.v;
     const b = this.b;
     if (!v || !b) return;
-    // сколько пуговиц на клетке — раздвинуть веером
+    // сколько пуговиц на клетке — раздвинуть веером (в гонке с голами одна шайба на дорожку)
+    const ids = b.race ? v.seats.filter((s) => this.puckSeat(s) === s) : v.seats;
     const at = new Map<number, number[]>();
-    for (const s of v.seats) at.set(this.shown[s], [...(at.get(this.shown[s]) ?? []), s]);
-    for (const s of v.seats) {
+    for (const s of ids) at.set(this.shown[s], [...(at.get(this.shown[s]) ?? []), s]);
+    for (const s of ids) {
       let el = this.tokens.get(s);
       if (!el) {
-        el = h(`<div class="ks-token" data-seat="${s}"><div class="ks-btn" style="background-image:url(/hodilki/buttons/${s}.webp)"></div></div>`);
+        const puck = b.race?.pucks?.[trackOf(b, s)];
+        el = h(
+          puck && b.race
+            ? `<div class="ks-token ks-puck" data-seat="${s}"><div class="ks-btn" style="background-image:url(${puck})"></div></div>`
+            : `<div class="ks-token" data-seat="${s}"><div class="ks-btn" style="background-image:url(/hodilki/buttons/${s}.webp)"></div></div>`,
+        );
         this.board.appendChild(el);
         this.tokens.set(s, el);
       }
@@ -296,11 +331,15 @@ class HodilkiView implements GameView<State, Event> {
   /** Подсветка: чей ход, своя пуговица (можно взять). */
   private syncTokens() {
     const v = this.v;
+    const b = this.b;
     if (!v) return;
+    // в гонке с голами подсвечиваем дорожку того, чей ход (шайба одна на команду)
+    const turnSeat = b?.race ? this.puckSeat(v.turn) : v.turn;
+    const mineSeat = this.actSeat != null ? this.puckSeat(this.actSeat) : null;
     for (const [s, el] of this.tokens) {
-      el.classList.toggle('on', v.turn === s && v.winner == null);
-      el.classList.toggle('mine', s === this.actSeat && this.canMove());
-      if (s === this.actSeat && !this.picked && !el.classList.contains('drag') && !this.busy) el.classList.remove('lifted');
+      el.classList.toggle('on', turnSeat === s && v.winner == null);
+      el.classList.toggle('mine', s === mineSeat && this.canMove());
+      if (s === mineSeat && !this.picked && !el.classList.contains('drag') && !this.busy) el.classList.remove('lifted');
     }
   }
 
@@ -332,6 +371,18 @@ class HodilkiView implements GameView<State, Event> {
     this.marks.setAttribute('viewBox', `0 0 ${b.img.w} ${b.img.h}`);
     this.board.style.setProperty('--tk', `${b.token * 100}%`);
     this.mini.style.aspectRatio = `${b.img.w} / ${b.img.h}`;
+    // «Шайба»: вместо лотка с кубиком — грань кубика и квадратик
+    (this.tray.el as HTMLElement).hidden = !!b.race;
+    this.cubeBox.hidden = !b.race;
+    if (!b.race) {
+      this.cardImg.hidden = true;
+      this.face.removeAttribute('src');
+    } else if (!this.face.getAttribute('src')) {
+      // до первого броска в панели — подсказка, а не пустая рамка
+      this.face.hidden = true;
+      this.cardImg.hidden = true;
+      this.cubeHint.hidden = false;
+    }
     this.cam = { z: 1, fx: 0.5, fy: 0.5 };
     this.pz = 0;
     this.fit();
@@ -624,9 +675,11 @@ class HodilkiView implements GameView<State, Event> {
     const hh = Math.min(1, r.h / (z * this.bh));
     Object.assign(this.miniVp.style, { left: `${(fx - w / 2) * 100}%`, top: `${(fy - hh / 2) * 100}%`, width: `${w * 100}%`, height: `${hh * 100}%` });
     for (const s of this.v.seats) {
+      if (this.b?.race && this.puckSeat(s) !== s) continue;
       let d = this.miniDots.get(s);
       if (!d) {
-        d = h(`<i class="ks-mini-dot" style="background-image:url(/hodilki/buttons/${s}.webp)"></i>`);
+        const puck = this.b?.race?.pucks?.[trackOf(this.b, s)];
+        d = h(`<i class="ks-mini-dot" style="background-image:url(${puck ?? `/hodilki/buttons/${s}.webp`})"></i>`);
         this.mini.appendChild(d);
         this.miniDots.set(s, d);
       }
@@ -644,7 +697,7 @@ class HodilkiView implements GameView<State, Event> {
     const v = this.v!;
     const r = this.vp();
     const { z, fx, fy } = this.cam;
-    const ids = v.seats.map((s) => this.shown[s] ?? 0);
+    const ids = (b.race ? v.seats.filter((s) => this.puckSeat(s) === s) : v.seats).map((s) => this.shown[s] ?? 0);
     if (v.winner == null && (v.phase ?? 'roll') === 'move') ids.push(target(v, b, v.turn));
     return ids.map((i) => ({
       x: r.w / 2 - fx * this.bw * z + (b.cells[i].x / b.img.w) * this.bw * z,
@@ -720,7 +773,7 @@ class HodilkiView implements GameView<State, Event> {
       this.stopCam();
       const [a, b] = [...this.ptrs.values()];
       this.gesture = { kind: 'pan', x0: (a.x + b.x) / 2, y0: (a.y + b.y) / 2, moved: true, dist: Math.hypot(a.x - b.x, a.y - b.y) };
-    } else if (tok && this.canMove() && +tok.dataset.seat! === this.actSeat) {
+    } else if (tok && this.canMove() && +tok.dataset.seat! === this.puckSeat(this.actSeat!)) {
       this.stopCam();
       this.gesture = { kind: 'token', x0: e.clientX, y0: e.clientY, moved: false };
     } else {
@@ -732,7 +785,7 @@ class HodilkiView implements GameView<State, Event> {
   /** Своя пуговица рядом с точкой нажатия (палец крупнее пуговицы, а рядом — чужие). */
   private nearMine(x: number, y: number): HTMLElement | null {
     if (!this.canMove()) return null;
-    const el = this.tokens.get(this.actSeat!);
+    const el = this.myToken();
     if (!el) return null;
     const r = el.getBoundingClientRect();
     const reach = Math.max(26, r.width * 0.9);
@@ -763,7 +816,7 @@ class HodilkiView implements GameView<State, Event> {
     const dy = e.clientY - g.y0;
     if (!g.moved && Math.hypot(dx, dy) < 6) return;
     if (g.kind === 'token') {
-      const el = this.tokens.get(this.actSeat!);
+      const el = this.myToken();
       if (!el || !this.canMove()) return;
       if (!g.moved) {
         g.moved = true;
@@ -827,7 +880,7 @@ class HodilkiView implements GameView<State, Event> {
   /** Отпустили перетаскиваемую пуговицу: на нужной клетке — ход, иначе вернуть на место. */
   private dropToken(e: PointerEvent | null) {
     const seat = this.actSeat;
-    const el = seat != null ? this.tokens.get(seat) : null;
+    const el = this.myToken();
     if (!el || seat == null || !this.v || !this.b) return;
     el.classList.remove('drag');
     if (e && this.canMove()) {
@@ -862,7 +915,27 @@ class HodilkiView implements GameView<State, Event> {
   // ---------- состояние и анимации ----------
 
   private die(n: number | null) {
-    if (n) this.tray.show([n]);
+    const b = this.b;
+    const v = this.v;
+    if (!n || !v) return;
+    // «Шайба»: показываем грань кубика, а на клюшке — ещё и вытянутый квадратик
+    if (b?.race) {
+      const face = v.kind === 'red' ? b.race.die.stick : v.kind === 'green' ? b.race.die.stick + 1 : n;
+      this.showFace(face, v.card ?? null, v.cardSlot ?? null);
+      return;
+    }
+    this.tray.show([n]);
+  }
+
+  /** Грань кубика «Шайбы» (очки или клюшка) и квадратик, если выпала клюшка. */
+  private showFace(face: number, card: number | null, slot: number | null) {
+    const dir = '/hodilki/shayba';
+    this.face.src = face === 5 ? `${dir}/cube-stick-red.webp` : face === 6 ? `${dir}/cube-stick-green.webp` : `${dir}/cube-pips-${face}.webp`;
+    this.face.hidden = false;
+    this.cubeHint.hidden = true;
+    const stick = (face === 5 || face === 6) && card != null;
+    this.cardImg.hidden = !stick;
+    if (stick) this.cardImg.src = `${dir}/cards/ochko${card}-0${((slot ?? 0) % 5) + 1}.webp`;
   }
 
   private say(text: string, good: boolean) {
@@ -893,7 +966,12 @@ class HodilkiView implements GameView<State, Event> {
         const b = this.b;
         const to = b && v.turn === ev.seat && (v.phase ?? 'roll') === 'move' ? target(v, b, ev.seat) : null;
         void this.frameCells(to != null ? [this.shown[ev.seat], to] : [this.shown[ev.seat]]);
-        await this.tray.roll([ev.die], speed);
+        if (this.b?.race) {
+          this.showFace(ev.die, ev.card ?? null, ev.slot ?? null);
+          await sleep(560 / speed);
+        } else {
+          await this.tray.roll([ev.die], speed);
+        }
       } else if (ev.type === 'move') {
         const last = ev.path[ev.path.length - 1];
         if (last == null || this.shown[ev.seat] === last) continue; // пуговицу уже поставили руками
@@ -936,6 +1014,22 @@ class HodilkiView implements GameView<State, Event> {
       } else if (ev.type === 'skip') {
         this.say(`${strip(this.ctx.name(ev.seat))} пропускает ход.`, false);
         await sleep(650 / speed);
+      } else if (ev.type === 'goal') {
+        // шайба в воротах: показываем гол и возвращаем её в центр
+        const trail = this.b?.race?.tracks[ev.track];
+        if (trail) {
+          this.say(`🥅 Гол! ${strip(this.ctx.name(ev.seat))} — ${ev.goals} (до ${ev.target}).`, true);
+          Sound.win();
+          await this.frameCells([trail[trail.length - 1], trail[0]]);
+          const el = this.tokens.get(this.puckSeat(ev.seat));
+          el?.classList.add('fly', 'lifted');
+          await (this.ctx.read ? this.ctx.read(1500) : sleep(900 / speed));
+          this.shown[ev.seat] = trail[0];
+          this.place();
+          await sleep(700 / speed);
+          el?.classList.remove('fly', 'lifted');
+          Sound.place();
+        }
       } else if (ev.type === 'win') Sound.win();
     }
     this.useBoard(v.map);
@@ -961,15 +1055,35 @@ class HodilkiView implements GameView<State, Event> {
   }
 
   status(v: State, toAct: number[], interactive: number[]) {
-    if (v.winner != null) return `${this.ctx.name(v.winner)}: ${boardOf(v.map).winText}!`;
+    const b = boardOf(v.map);
     const me = interactive.includes(toAct[0]);
+    if (b.race) {
+      const score = `Счёт ${scoreText(v, b)}${v.target ? ` (до ${v.target})` : ''}.`;
+      if (v.winner != null) return `${this.ctx.name(v.winner)}: ${b.winText} — ${scoreText(v, b)}!`;
+      if ((v.phase ?? 'roll') === 'move') {
+        const what =
+          v.kind === 'red'
+            ? `🔴 красная клюшка: квадратик на ${v.card} — шайба назад на ${Math.abs(v.last ?? 0)}`
+            : v.kind === 'green'
+              ? `🟢 зелёная клюшка: квадратик на ${v.card} — шайба вперёд на ${v.last}`
+              : `Выпало ${v.last}`;
+        return me ? `${what} — возьмите свою шайбу и переставьте. ${score}` : `Ходит ${this.ctx.name(toAct[0])}… ${score}`;
+      }
+      return me ? `Бросайте кубик. ${score}` : `Бросает ${this.ctx.name(toAct[0])}… ${score}`;
+    }
+    if (v.winner != null) return `${this.ctx.name(v.winner)}: ${b.winText}!`;
     if ((v.phase ?? 'roll') === 'move') return me ? `Выпало ${v.last} — возьмите свою пуговицу и переставьте` : `Ходит ${this.ctx.name(toAct[0])}…`;
     return me ? 'Бросайте кубик' : `Бросает ${this.ctx.name(toAct[0])}…`;
   }
 
   playerStats(v: State, seat: number) {
-    const n = skipsOf(v, seat);
     const b = boardOf(v.map);
+    if (b.race) {
+      const trail = b.race.tracks[trackOf(b, seat)];
+      const at = Math.max(0, trail.indexOf(v.pos[seat]));
+      return `шайба ${at + 1}/${trail.length} · голы ${v.goals?.[trackOf(b, seat)] ?? 0}`;
+    }
+    const n = skipsOf(v, seat);
     return `${b.cells[v.pos[seat]]?.off ? '↪' : v.pos[seat]} / ${finishOf(b)}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
   }
 
