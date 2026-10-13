@@ -87,7 +87,7 @@ def main():
             # номер карточки напечатан крупной цифрой чуть ниже имени: ищем такую строку рядом
             num_row = None
             for r in rows:
-                if r['size'] >= 20 and re.fullmatch(r'\d{1,3}', r['text'].strip()) and t['y0'] - 6 <= r['y0'] <= t['y1'] + 22 and r['x0'] >= x0 - 90 and r['x1'] <= x1 + 90:
+                if r['size'] >= 19 and re.fullmatch(r'\d{1,3}', r['text'].strip()) and t['y0'] - 14 <= r['y0'] <= t['y1'] + 40 and r['x0'] >= x0 - 170 and r['x1'] <= x1 + 170:
                     num_row = r
                     break
             num = int(num_row['text']) if num_row else None
