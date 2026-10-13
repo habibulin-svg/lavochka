@@ -121,6 +121,9 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
   const sig = `${h.cell}|${h.life}|${h.thalers}|${STATS.map((k) => h.st[k]).join(',')}`;
   const idle = barren(seat, sig);
   const cycle = Math.floor(idle / 40) % 3;
+  // если есть талеры — идём на обменный пункт покупать характеристики (5 талеров за одну),
+  // иначе к лицею и ведьмину лугу
+  const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice;
   const want =
     idle > 40
       ? cycle === 0
@@ -128,9 +131,14 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
         : cycle === 1
           ? (n: number) => kindOf(n) === 'exchange'
           : (n: number) => kindOf(n) === 'meadow' || kindOf(n) === 'lyceum'
-      : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange';
-  const to = nextToward(s, seat, want);
-  return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
+      : canBuy
+        ? (n: number) => kindOf(n) === 'exchange' || kindOf(n) === 'lyceum'
+        : (n: number) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow' || kindOf(n) === 'exchange';
+  // сначала пробуем дойти именно до обменного пункта (там покупка характеристик),
+  // и только если он недостижим — к лицею и лугу
+  const direct = nextToward(s, seat, want);
+  const to = direct ?? nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow') ?? stepTargets(s, seat)[0];
+  return { type: 'step', to };
 }
 
 export const def: GameDef<State, Action, Event, KoronaView> = {
