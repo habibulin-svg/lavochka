@@ -334,6 +334,71 @@ describe('кинь-двинь: «В путь, друзья!»', () => {
 
 /* Движковые механики для «Лукоморья» (боны, предметы, развилки, условия, дополнительные ходы)
  * проверяются на служебном поле: оно подкладывается в список полей только на время этих тестов. */
+describe('кинь-двинь: «Лукоморье-1»', () => {
+  const board = BOARDS.find((x) => x.id === 'luk1')!;
+  const at = (label: string) => board.cells.findIndex((c) => c.label === label);
+  const seats2 = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+  const start = (rng: RiggedRng) => {
+    const s = def.setup(seats2, { map: 'luk1' }, rng) as State;
+    s.turn = 0;
+    s.coins = [0, 0];
+    return s;
+  };
+
+  it('поле: «старт» в начале, избушка 13 в конце, у камня развилка из трёх дорог', () => {
+    const end = board.end ?? board.cells.length - 1;
+    expect(board.cells[0].label).toBe('старт');
+    expect(board.cells[end].label).toBe('13');
+    const fork = board.cells[at('2')].sign;
+    expect(fork?.k).toBe('fork');
+    if (fork?.k !== 'fork') return;
+    expect(fork.roads).toEqual(['прямо', 'вверх', 'вниз']);
+    expect(fork.branches[0]).toEqual([]); // «прямо» — главный путь
+    expect(fork.branches[1].length).toBeGreaterThan(30); // верхняя дорога через 8, 9а, 6б, клад 7
+    expect(fork.branches[2].length).toBeGreaterThan(25); // нижняя через клад 4 и болото
+  });
+
+  it('развилка: остаток очков выбирает дорогу, и клад на дороге работает', () => {
+    const rng = new RiggedRng(new SeededRng(31));
+    let s = start(rng);
+    s = turn(s, 0, 6, rng).state; // старт → шестой кружок
+    const r = turn({ ...s, turn: 0 }, 0, 6, rng); // до камня один кружок, разница 5 — дорога «вниз»
+    expect(signText(r.events)).toContain('вниз');
+    expect(board.cells[r.state.pos[0]].off).toBe(true); // пуговица на дороге
+    // девятое деление дороги — клад (4): кубик бросают два раза и берут столько бон
+    const before = board.cells.findIndex((c) => c.label === '4');
+    const onRoad = { ...r.state, pos: [before - 1, 0], turn: 0, route: [[before], null] as State['route'], coins: [0, 0] };
+    const r2 = turn(onRoad, 0, 1, rng);
+    expect(r2.state.pos[0]).toBe(before);
+    expect(r2.state.coins![0]).toBeGreaterThanOrEqual(2);
+    expect(r2.events.some((e) => e.type === 'coins' && e.delta > 0)).toBe(true);
+  });
+
+  it('Баба Яга: с 20 бонами даёт клубок (победа), без них — назад к Дубу', () => {
+    const rng = new RiggedRng(new SeededRng(32));
+    const last = (board.end ?? board.cells.length - 1) - 1;
+    const poor = { ...start(rng), pos: [last, 0], turn: 0, coins: [19, 0] };
+    const r = turn(poor, 0, 1, rng);
+    expect(r.state.winner).toBeNull();
+    expect(r.state.pos[0]).toBe(at('3'));
+    const rich = { ...start(rng), pos: [last, 0], turn: 0, coins: [20, 0] };
+    const r2 = turn(rich, 0, 1, rng);
+    expect(r2.state.winner).toBe(0);
+    expect(def.result(r2.state)!.text).toContain('клубок');
+  });
+
+  it('загадка 12 спрашивает про репку и ведёт на названный пункт', () => {
+    const rng = new RiggedRng(new SeededRng(33));
+    const s = { ...start(rng), pos: [at('12') - 1, 0], turn: 0 };
+    const r = turn(s, 0, 1, rng);
+    expect(r.state.phase).toBe('pick');
+    const sign = board.cells[r.state.pos[0]].sign;
+    expect(sign?.k === 'pick' ? sign.question : '').toContain('репке');
+    const pick = def.apply(r.state, 0, { type: 'pick', pick: 0 }, rng)!;
+    expect(pick.state.pos[0]).toBe(at('2')); // первый ответ — пункт 2
+  });
+});
+
 describe('кинь-двинь: боны, предметы и развилки', () => {
   const testBoard: Board = {
     id: 'tests',
@@ -537,6 +602,75 @@ describe('кинь-двинь: боны, предметы и развилки', 
       expect(r2.events.some((e) => e.type === 'item' && e.lost)).toBe(true);
     } finally {
       BOARDS.splice(BOARDS.indexOf(gate), 1);
+    }
+  });
+
+  it('боны «по разнице»: пуговица останавливается на пункте и берёт неистраченные очки', () => {
+    const rng = new RiggedRng(new SeededRng(29));
+    const diffBoard: Board = {
+      ...testBoard,
+      id: 'tests6',
+      title: 'Поле с разницей',
+      end: 5,
+      cells: [
+        { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+        { x: 10, y: 0, sign: null, label: '2' },
+        { x: 20, y: 0, sign: null, label: '3' },
+        { x: 30, y: 0, sign: { k: 'coins', diff: true, text: 'берёт боны по разнице' }, label: '4' },
+        { x: 40, y: 0, sign: null, label: '5' },
+        { x: 50, y: 0, sign: null, label: '6' },
+      ],
+    };
+    BOARDS.push(diffBoard);
+    try {
+      const s = def.setup(seats2, { map: 'tests6' }, rng) as State;
+      s.turn = 0;
+      // бросок 5: до пункта «4» три кружка, пуговица встаёт на него и берёт разницу 2
+      const r = turn(s, 0, 5, rng);
+      expect(r.state.pos[0]).toBe(3);
+      expect(r.events.some((e) => e.type === 'coins' && e.delta === 2)).toBe(true);
+      // ровно на пункт: разница нулевая
+      const s2 = { ...s, pos: [1, 0], turn: 0 };
+      const r2 = turn(s2, 0, 2, rng);
+      expect(r2.state.pos[0]).toBe(3);
+      expect(r2.events.some((e) => e.type === 'coins' && e.delta === 0)).toBe(true);
+    } finally {
+      BOARDS.splice(BOARDS.indexOf(diffBoard), 1);
+    }
+  });
+
+  it('дорога развилки: знак на номерном пункте по дороге работает', () => {
+    const rng = new RiggedRng(new SeededRng(30));
+    const forkBoard: Board = {
+      ...testBoard,
+      id: 'tests7',
+      title: 'Поле с дорогой',
+      end: 4,
+      cells: [
+        { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+        { x: 10, y: 0, sign: { k: 'fork', byDiff: [0, 1], branches: [[], [5, 3]], roads: ['прямо', 'вниз'], text: 'развилка' }, label: '2' },
+        { x: 20, y: 0, sign: { k: 'coins', n: 6, text: 'клад' }, label: '3' },
+        { x: 30, y: 0, sign: null, label: '4' },
+        { x: 40, y: 0, sign: null, label: '5' },
+        { x: 0, y: 10, sign: null, off: true },
+      ],
+    };
+    BOARDS.push(forkBoard);
+    try {
+      // бросок 2: развилка решается разницей 1 — дорога «прямо», лишнее очко идёт дальше на «3» с кладом
+      const s = def.setup(seats2, { map: 'tests7' }, rng) as State;
+      s.turn = 0;
+      const r = turn(s, 0, 2, rng);
+      expect(r.state.pos[0]).toBe(2);
+      expect(r.state.coins![0]).toBe(6);
+      // бросок 3: разница 2 — дорога «вниз», клад на другой дороге (по дороге фишка идёт через клетку 5)
+      const s2 = { ...s, pos: [0, 0], turn: 0, coins: [0, 0] };
+      const r2 = turn(s2, 0, 3, rng);
+      expect(r2.state.pos[0]).toBe(3);
+      expect(r2.state.coins![0]).toBe(0);
+      expect(r2.state.route?.[0] ?? null).toBeNull();
+    } finally {
+      BOARDS.splice(BOARDS.indexOf(forkBoard), 1);
     }
   });
 

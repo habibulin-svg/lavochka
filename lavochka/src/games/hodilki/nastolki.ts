@@ -32,8 +32,15 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   if (code.startsWith('route:')) return { k: 'route', cells: code.slice(6).split(',').map(Number), text: routeText ?? 'идёт в обход' };
   // «Лукоморье»: боны, предметы, развилки и условия
   if (code.startsWith('fork:')) {
-    const [by, ...branches] = code.slice(5).split('|');
-    return { k: 'fork', byDiff: by.split('').map(Number), branches: branches.map((s) => s.split(',').map(Number)), text: routeText ?? 'развилка' };
+    // «fork:какая разница какая дорога|названия дорог|клетки дороги|клетки дороги»
+    const [by, roads, ...branches] = code.slice(5).split('|');
+    return {
+      k: 'fork',
+      byDiff: by.split('').map(Number),
+      branches: branches.map((s) => (s ? s.split(',').map(Number) : [])),
+      ...(roads ? { roads: roads.split(';') } : {}),
+      text: routeText ?? 'развилка',
+    };
   }
   if (code.startsWith('need:')) {
     const p = Object.fromEntries(code.slice(5).split(',').map((kv) => kv.split('=')));
@@ -62,6 +69,14 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   if (code.startsWith('field:')) {
     const [map, to] = code.slice(6).split(':');
     return { k: 'field', map, to: +to, text: routeText ?? 'переходит на другое поле' };
+  }
+  if (code.startsWith('coinsDiff:')) {
+    const [skip] = code.slice(10).split('+');
+    return { k: 'coins', diff: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны по разнице' };
+  }
+  if (code.startsWith('loseDiff:')) {
+    const [skip] = code.slice(9).split('+');
+    return { k: 'coins', diff: true, loss: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт боны по разнице' };
   }
   if (code.startsWith('extra:')) return { k: 'extra', n: +code.slice(6), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('extraD:')) return { k: 'extra', dice: +code.slice(7), text: routeText ?? 'дополнительные ходы' };

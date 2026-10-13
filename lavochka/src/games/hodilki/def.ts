@@ -9,8 +9,9 @@ import { board as put } from './put';
 import { NASTOLKI } from './nastolki';
 import { shaybaBoard } from './shayba';
 import { vputBoard } from './vput';
+import { luk1Board } from './luk1';
 
-export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard];
+export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard, luk1Board];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -93,7 +94,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const dest = Math.max(0, Math.min(finish, sign.to[i] ?? s0.pos[seat]));
     const ev: Event[] = [{ type: 'sign', seat, sign: { ...sign, text: `${sign.text}: ${sign.options[i]}` }, to: dest }];
     s.pos[seat] = dest;
-    if (dest === finish) return winNow(s, ev, seat);
+    if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
     s.turn = next(s, seat);
     return { state: s, events: ev };
   }
@@ -147,9 +148,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       text: `${g.text}${road ? ` (разница ${f.diff} — ${road})` : ` (разница ${f.diff})`}`,
     });
   }
-  if (to === finish) return win();
+  if (to === finish && !board.winBySign) return win();
   let again = false;
-  const sign = onRoute && !board.cells[to].off ? null : board.cells[to].sign;
+  // знак срабатывает на клетке, куда пуговица встала. Исключение — клетка, куда вернулась ветка-тупик
+  // («туда и обратно»): там знак не повторяется. Дорога развилки — не тупик, её номерные пункты
+  // (клады, выход из болота) работают как обычно, поэтому у развилок знаки не гасим.
+  const viaFork = (s0.routeFor?.[seat] ?? false) || walk.forks.length > 0;
+  const sign = onRoute && !viaFork && !board.cells[to].off ? null : board.cells[to].sign;
   if (sign) {
     let dest = to;
     /** Сколько бон даёт знак: число или сумму бросков («кубик можно бросать три раза»). */
@@ -163,7 +168,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     else if (sign.k === 'start') dest = 0;
     else if (sign.k === 'route') s.route![seat] = sign.cells.slice();
     else if (sign.k === 'coins') {
-      const n = sign.n ?? diceSum(sign.dice ?? 1);
+      // «разница» (Лукоморье): не число, а остаток очков — сколько не истрачено, пока пуговица дошла до пункта
+      const n = sign.diff ? Math.max(0, (s0.last ?? 0) - path.length) : (sign.n ?? diceSum(sign.dice ?? 1));
       const delta = sign.loss ? -n : n;
       s.coins = many(s.coins, 0);
       s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + delta);
@@ -217,7 +223,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     }
     ev.push({ type: 'sign', seat, sign, to: dest, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
     s.pos[seat] = dest;
-    if (dest === finish) return win();
+    if (dest === finish && !board.winBySign) return win();
   }
   if (!again && s.extra?.[seat]) {
     // накопленные дополнительные ходы: игрок бросает ещё раз, ход остаётся у него
@@ -266,23 +272,33 @@ export const def: GameDef<State, Action, Event, State> = {
     },
   ],
   presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
-  setup: (seats, opts) => {
+  setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     const board = boardOf(String(opts.map ?? BOARDS[0].id));
     const race = board.race;
+    // «Лукоморье»: перед игрой каждый берёт из банка бон по сумме трёх бросков, первым ходит богатейший
+    const coins = Array(10).fill(0);
+    if (board.startCoins) {
+      for (const s of ids) {
+        let sum = 0;
+        for (let i = 0; i < board.startCoins; i++) sum += rng.int(6) + 1;
+        coins[s] = sum;
+      }
+    }
+    const first = board.startCoins ? ids.reduce((best, s) => (coins[s] > coins[best] ? s : best), ids[0]) : ids[0];
     return {
       map: board.id,
       seats: ids,
       pos: Array(10).fill(0),
       skip: Array(10).fill(0),
       route: Array(10).fill(null),
-      turn: ids[0],
+      turn: first,
       phase: 'roll',
       last: null,
       winner: null,
       ...(race ? { goals: race.tracks.map(() => 0), target: Math.max(1, Number(opts.goals ?? race.target) || race.target), kind: null, card: null, cardSlot: null } : {}),
       // «Лукоморье»: боны, предметы и дополнительные ходы
-      ...(board.coins ? { coins: Array(10).fill(0), items: Array(10).fill(null), extra: Array(10).fill(0) } : {}),
+      ...(board.coins ? { coins, items: Array(10).fill(null), extra: Array(10).fill(0) } : {}),
     };
   },
   showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, phase: 'roll', last: 4, winner: null }),

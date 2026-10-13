@@ -30,6 +30,8 @@ SRC = {
     'mepl': 'materials/nastolki/mepl-white/field.webp',
     'sutra': 'materials/nastolki/s-utra-do-vechera/field-1.webp',
     'vput': 'materials/nastolki/v-put-druzya/field.webp',
+    # «Лукоморье» (4 части, 1995; разметка — tools/hodilki/lukomorie.py)
+    'luk1': 'materials/nastolki/lukomorie/field-1.webp',
     # «Шайба» — гонка двух шайб по двум трекам (разметка — tools/hodilki/shayba.py)
     'shayba': 'materials/nastolki/shayba/field.webp',
 }

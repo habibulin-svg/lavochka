@@ -10,8 +10,9 @@ export type Sign =
   | { k: 'jump'; to: number; text: string; good: boolean; skip?: number }
   /** Ветка «туда и обратно» (Шегерян: «до г. Крей и обратно», тупик): следующими бросками фишка идёт по cells (до конца ветки и назад), потом — дальше по пути. */
   | { k: 'route'; cells: number[]; text: string }
-  /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же; skip — ещё и пропустить ходы. */
-  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; text: string }
+  /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же; skip — ещё и пропустить ходы.
+   * `diff` — взять (или отдать) не число, а разницу «очки на кубике − кружки до этого пункта». */
+  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; diff?: boolean; text: string }
   /** Переброс на другое поле той же карточки (серия «Лукоморья»: части 1–4 связаны переходами). */
   | { k: 'field'; map: string; to: number; text: string }
   /** Предмет: взять себе в инвентарь. */
@@ -90,6 +91,10 @@ export interface Board {
   race?: Race;
   /** Как называются деньги на этом поле («боны» у «Лукоморья»); нет — поле без денег. */
   coins?: string;
+  /** Победа не по последней клетке, а по знаку на ней (Лукоморье: клубок у Бабы Яги, терем Василисы). */
+  winBySign?: boolean;
+  /** Перед игрой каждый берёт из банка бон по сумме `startCoins` бросков; первым ходит тот, у кого больше. */
+  startCoins?: number;
   /** Показ правил: шаги с подкрученным кубиком. rig — значения для rng.int (у клюшки их два: грань и квадратик). */
   demo?: { rig: number | number[]; caption: string; seat?: number }[];
 }
@@ -238,6 +243,8 @@ export function walkFor(s: State, b: Board, seat: number): Walk {
       cont = true;
       forks.push({ cell: at, diff: n, branch: pick.branch });
     }
+    // «взять/отдать разницу»: пуговица останавливается на пункте, не истратив очки — разница и есть плата
+    if (!route.length && g?.k === 'coins' && g.diff && n > 0) break;
   }
   return { path, route: route.length ? route : null, routeFor: cont && !!route.length, forks };
 }
