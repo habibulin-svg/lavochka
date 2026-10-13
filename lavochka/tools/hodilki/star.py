@@ -45,6 +45,26 @@ def main():
             if y not in byid[x]['next']:
                 byid[x]['next'].append(y)
                 byid[x]['kinds'][y] = kind
+    # Острова: куски карты, с которых по суше не уйти (Канары, Св. Елена, Мадагаскар). Игрок,
+    # оставшийся там без денег и подков, пропускает три хода (правила, «Разбойник»).
+    # Юг материка (Кейптаун, Уолфиш-Бей, Драконовы горы) в разметке тоже оторван от севера по суше —
+    # дорога там идёт через море, но это материк, поэтому островом он не считается.
+    ISLAND_SEEDS = ('2', '23', '26')
+    land = {c['id']: [n for n in c.get('next', []) if (c.get('kinds') or {}).get(n, 'land') == 'land'] for c in cells}
+    comp, groups = {}, 0
+    for c in cells:
+        if c['id'] in comp:
+            continue
+        groups += 1
+        stack, group = [c['id']], []
+        while stack:
+            x = stack.pop()
+            if x in comp:
+                continue
+            comp[x] = groups
+            group.append(x)
+            stack.extend(land[x])
+    island = {x for x in comp if any(comp[x] == comp[s] for s in ISLAND_SEEDS)}
     ids = {c['id'] for c in cells}
     for c in cells:
         for n in c.get('next', []):
@@ -76,6 +96,8 @@ def main():
                 'next': c.get('next', []),
                 **({'kinds': c['kinds']} if c.get('kinds') else {}),
                 **({'air': c['air']} if c.get('air') else {}),
+                **({'sign': c['sign']} if c.get('sign') else {}),
+                **({'island': 1} if c['id'] in island else {}),
             }
             for c in cells
         ],
@@ -89,9 +111,10 @@ def main():
         if name.endswith('.webp'):
             shutil.copyfile(os.path.join(SRC, 'parts', name), os.path.join(ASSETS, name))
     tok = sum(n for _, n in TOKENS)
-    print('звезда: клеток %d (жетонов %d, городов %d), жетонов в наборе %d, рёбер %d, авиалиний %d'
+    print('звезда: клеток %d (жетонов %d, городов %d), жетонов в наборе %d, рёбер %d, авиалиний %d, островных клеток %d, обведённых кружков %d'
           % (len(cells), sum(1 for c in cells if c['kind'] == 'token'), sum(1 for c in cells if c['kind'] == 'city'),
-             tok, sum(len(c.get('next', [])) for c in cells) // 2, sum(len(c.get('air', [])) for c in cells) // 2))
+             tok, sum(len(c.get('next', [])) for c in cells) // 2, sum(len(c.get('air', [])) for c in cells) // 2,
+             len(island), sum(1 for c in cells if c.get('sign') == 'skip')))
     size = sum(os.path.getsize(os.path.join(ASSETS, f)) for f in os.listdir(ASSETS))
     print('картинки в public/star: %.1f МБ' % (size / 1e6))
 

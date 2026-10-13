@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { def } from '../src/games/star/def';
 import {
-  AIR, AIR_FEE, DECK, EDGE, FINISH, IDX, NEIGH, SEA_FEE, SLAVE, START_MONEY, TOKEN_AT, apply, newState, view,
+  AIR, AIR_FEE, CAPE, DECK, EDGE, FINISH, HALT_AT, IDX, ISLAND_AT, NEIGH, OPEN_FEE, SEA_FEE, SLAVE, START_MONEY, TOKEN_AT,
+  apply, newState, view,
   type State,
 } from '../src/games/star/engine';
 
@@ -173,5 +174,130 @@ describe('звезда африки: движок', () => {
     const open = { ...s, open: s.open.map((o, i) => TOKEN_AT[i]) };
     const v2 = view(open);
     expect(v2.tokens.filter(Boolean).length).toBe(30);
+  });
+
+  it('обведённый кружок у Сахары: остановился — пропуск хода', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? IDX['b21'] : p)) };
+    const a = step(turnRoll(s, 0, 1, r).state, 0, IDX['b24'], r)!;
+    expect(a.events.some((e) => e.type === 'halt')).toBe(true);
+    expect(a.state.skip[0]).toBe(1);
+    // остальные кружки размечены так же
+    expect(HALT_AT[IDX['b24']]).toBe(true);
+    expect(HALT_AT[IDX['s47']]).toBe(true);
+    expect(HALT_AT[IDX['s54']]).toBe(true);
+  });
+
+  it('пройденный жетон открывают за 100', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = {
+      ...s,
+      tokens: s.tokens.slice(),
+      open: s.open.slice(),
+      pos: s.pos.map((p, i) => (i === 0 ? IDX['5'] : p)),
+    };
+    s.tokens[IDX['5']] = 'topaz';
+    s.open[IDX['5']] = false;
+    s = turnRoll(s, 0, 3, r).state;
+    // идём с Сахары (5, под ней топаз) через b21 и встаём на обведённый кружок b24
+    s = step(s, 0, IDX['b21'], r)!.state;
+    s = step(s, 0, IDX['b24'], r)!.state;
+    expect(s.passed).toContain(IDX['5']);
+    const a = apply(s, 0, { type: 'open', cell: IDX['5'] }, r)!;
+    expect(a.state.money[0]).toBe(START_MONEY - OPEN_FEE + 300);
+    // на непройденный или уже открытый жетон так не сходить
+    expect(apply(a.state, 0, { type: 'open', cell: IDX['5'] }, r)).toBeNull();
+    expect(apply(s, 0, { type: 'open', cell: IDX['8'] }, r)).toBeNull();
+    // без денег открыть нельзя
+    expect(apply({ ...s, money: s.money.map(() => 0) }, 0, { type: 'open', cell: IDX['5'] }, r)).toBeNull();
+  });
+
+  it('владельцу алмаза нельзя через открытого разбойника', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = {
+      ...s,
+      tokens: s.tokens.slice(),
+      open: s.open.slice(),
+      diamond: 0,
+      pos: s.pos.map((p, i) => (i === 0 ? IDX['b21'] : IDX['8'])),
+    };
+    s.tokens[IDX['5']] = 'robber';
+    s.open[IDX['5']] = true;
+    s = turnRoll(s, 0, 2, r).state;
+    expect(step(s, 0, IDX['5'], r)).toBeNull();
+    // а обычному игроку через него можно — и он становится разбойником-соперником
+    const other = { ...s, turn: 1, phase: 'roll' as const, left: 0, pos: s.pos.map((p, i) => (i === 1 ? IDX['b21'] : p)) };
+    const b = step(turnRoll(other, 1, 1, r).state, 1, IDX['5'], r)!;
+    expect(b.state.bandit[1]).toBe(true);
+    expect(b.state.tokens[IDX['5']]).toBe('empty'); // жетон разбойника выбыл из игры
+    expect(b.state.money[1]).toBe(START_MONEY); // деньги при нём
+  });
+
+  it('владелец налетел на разбойника: деньги в банк, алмаз открыто на Кейптауне', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = {
+      ...s,
+      tokens: s.tokens.slice(),
+      open: s.open.slice(),
+      diamond: 0,
+      money: [900, 500],
+      pos: s.pos.map((p, i) => (i === 0 ? IDX['b21'] : p)),
+    };
+    s.tokens[IDX['5']] = 'robber';
+    s.open[IDX['5']] = false;
+    const a = step(turnRoll(s, 0, 1, r).state, 0, IDX['5'], r)!;
+    expect(a.state.diamond).toBe(-1);
+    expect(a.state.diamondSite).toBe(CAPE);
+    expect(a.state.money[0]).toBe(0);
+    expect(a.events.some((e) => e.type === 'drop')).toBe(true);
+    // кто дошёл до Кейптауна, тот и подобрал алмаз
+    const near = { ...a.state, tokens: a.state.tokens.slice(), open: a.state.open.slice(), turn: 0 };
+    near.tokens[CAPE] = 'empty';
+    near.open[CAPE] = false;
+    near.pos = near.pos.map((p, i) => (i === 0 ? IDX['b116'] : p));
+    const b = step(turnRoll(near, 0, 1, r).state, 0, CAPE, r)!;
+    expect(b.state.diamond).toBe(0);
+    expect(b.state.diamondSite).toBe(-1);
+  });
+
+  it('разбойник-соперник догоняет владельца: алмаз и деньги переходят к нему', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = {
+      ...s,
+      tokens: s.tokens.slice(),
+      open: s.open.slice(),
+      diamond: 0,
+      money: [700, 500],
+      pos: s.pos.map((p, i) => (i === 0 ? IDX['b13'] : IDX['b21'])),
+      turn: 1,
+    };
+    s.tokens[IDX['5']] = 'robber';
+    s.open[IDX['5']] = true;
+    let cur = turnRoll(s, 1, 2, r).state;
+    cur = step(cur, 1, IDX['5'], r)!.state;
+    expect(cur.bandit[1]).toBe(true);
+    expect(cur.money[1]).toBe(500);
+    const a = step(cur, 1, IDX['b13'], r)!;
+    expect(a.state.diamond).toBe(1);
+    expect(a.state.bandit[1]).toBe(false);
+    expect(a.state.money[1]).toBe(1200);
+    expect(a.state.money[0]).toBe(0);
+    expect(a.events.some((e) => e.type === 'catch')).toBe(true);
+  });
+
+  it('остров: без денег и подков — три хода в ожидании', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? IDX['2'] : p)), money: [0, 500], turn: 0 };
+    const a = apply(s, 0, { type: 'roll' }, r)!;
+    expect(ISLAND_AT[IDX['2']]).toBe(true);
+    expect(a.events.some((e) => e.type === 'island')).toBe(true);
+    expect(a.state.skip[0]).toBe(2); // один ход уже пропущен, два ждут
+    expect(a.state.turn).toBe(1);
   });
 });
