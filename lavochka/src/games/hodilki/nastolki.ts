@@ -1,7 +1,7 @@
 /* Кинь-двинь: советские настолки-«комиксы» 1990–1992 (П. Шегерян, В. Горохов) и детская «С утра до вечера».
  * Разметка — data/<поле>.json (tools/hodilki/import.py из materials/nastolki/, поправки сверены по полю),
  * картинки — public/hodilki/<поле>/ (tools/hodilki/tiles.py). Тексты клеток — с поля. */
-import type { Board, Cell, Sign } from './core';
+import type { Board, Cell, ItemId, Sign } from './core';
 import zatmir from './data/zatmir.json';
 import planeta from './data/planeta.json';
 import varvary from './data/varvary.json';
@@ -30,6 +30,29 @@ export function signOf(code: string | undefined, i: number, label: string | unde
     return { k: 'jump', to, good, text: good ? 'идёт вперёд' : 'возвращается назад', ...(m[1] ? { skip: 1 } : {}) };
   }
   if (code.startsWith('route:')) return { k: 'route', cells: code.slice(6).split(',').map(Number), text: routeText ?? 'идёт в обход' };
+  // «Лукоморье»: боны, предметы, развилки и условия
+  if (code.startsWith('fork:')) {
+    const [by, ...branches] = code.slice(5).split('|');
+    return { k: 'fork', byDiff: by.split('').map(Number), branches: branches.map((s) => s.split(',').map(Number)), text: routeText ?? 'развилка' };
+  }
+  if (code.startsWith('need:')) {
+    const p = Object.fromEntries(code.slice(5).split(',').map((kv) => kv.split('=')));
+    return {
+      k: 'need',
+      ...(p.item ? { item: p.item as ItemId } : {}),
+      ...(p.coins ? { coins: +p.coins } : {}),
+      yes: p.yes === 'win' ? ('win' as const) : +p.yes,
+      no: +p.no,
+      text: routeText ?? 'проверка',
+    };
+  }
+  if (code.startsWith('coins:')) return { k: 'coins', n: +code.slice(6), text: routeText ?? 'берёт боны' };
+  if (code.startsWith('coinsD:')) return { k: 'coins', dice: +code.slice(7), text: routeText ?? 'берёт боны' };
+  if (code.startsWith('lose:')) return { k: 'coins', n: +code.slice(5), loss: true, text: routeText ?? 'отдаёт боны' };
+  if (code.startsWith('loseD:')) return { k: 'coins', dice: +code.slice(6), loss: true, text: routeText ?? 'отдаёт боны' };
+  if (code.startsWith('extra:')) return { k: 'extra', n: +code.slice(6), text: routeText ?? 'дополнительные ходы' };
+  if (code.startsWith('extraD:')) return { k: 'extra', dice: +code.slice(7), text: routeText ?? 'дополнительные ходы' };
+  if (code.startsWith('item:')) return { k: 'item', item: code.slice(5) as ItemId, text: routeText ?? 'берёт предмет' };
   console.warn('кинь-двинь: неизвестный знак', code, label);
   return null;
 }

@@ -2,7 +2,7 @@
  * «Шайба» — то же поле-карточка, но с гонкой: у каждой дорожки свои ворота, финиш = гол (см. Race в core.ts). */
 import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
-import { finishOf, pathFor, SEATS, signText, skipsOf, trackOf, type Action, type Board, type Event, type State } from './core';
+import { finishOf, itemName, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type Sign, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
@@ -78,15 +78,27 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
   if (board.race) return moveRace(s0, board, seat);
   const finish = finishOf(board);
-  const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), route: (s0.route ?? s0.pos.map(() => null)).slice(), phase: 'roll' };
+  const many = <T,>(list: T[] | undefined, fill: T) => (list ?? s0.pos.map(() => fill)).slice();
+  const s: State = {
+    ...s0,
+    pos: s0.pos.slice(),
+    skip: s0.skip.slice(),
+    route: many(s0.route, null),
+    routeFor: many(s0.routeFor, null),
+    ...(board.coins || s0.coins ? { coins: many(s0.coins, 0) } : {}),
+    ...(s0.items ? { items: s0.items.slice() } : {}),
+    ...(s0.extra ? { extra: s0.extra.slice() } : {}),
+    phase: 'roll',
+  };
   const ev: Event[] = [];
-  const path = pathFor(s0, board, seat);
-  const onRoute = !!s.route![seat]?.length;
+  const walk = walkFor(s0, board, seat);
+  const path = walk.path;
+  // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
+  // На клетках дорог («В путь, друзья!») знаки работают и по ветке: зелёный кружок — ещё бросок, оранжевый — пропуск хода.
+  const onRoute = !!s0.route?.[seat]?.length || walk.forks.length > 0;
   const to = path.length ? path[path.length - 1] : s.pos[seat];
-  if (onRoute) {
-    const rest = s.route![seat]!.slice(path.length);
-    s.route![seat] = rest.length ? rest : null;
-  }
+  s.route![seat] = walk.route;
+  s.routeFor![seat] = walk.routeFor ? true : null;
   s.pos[seat] = to;
   ev.push({ type: 'move', seat, path });
   const win = () => {
@@ -94,24 +106,71 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     ev.push({ type: 'win', seat });
     return { state: s, events: ev };
   };
+  // развилки, пройденные по дороге: пишем в журнал, какой путь выбрала разница очков
+  for (const f of walk.forks) {
+    const g = board.cells[f.cell].sign as Sign & { k: 'fork' };
+    const road = g.roads?.[f.branch];
+    ev.push({
+      type: 'sign',
+      seat,
+      sign: g,
+      to: f.cell,
+      text: `${g.text}${road ? ` (разница ${f.diff} — ${road})` : ` (разница ${f.diff})`}`,
+    });
+  }
   if (to === finish) return win();
   let again = false;
-  // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
-  // На клетках дорог («В путь, друзья!») знаки работают и по ветке: зелёный кружок — ещё бросок, оранжевый — пропуск хода.
   const sign = onRoute && !board.cells[to].off ? null : board.cells[to].sign;
   if (sign) {
     let dest = to;
+    /** Сколько бон даёт знак: число или сумму бросков («кубик можно бросать три раза»). */
+    const diceSum = (times: number) => {
+      let sum = 0;
+      for (let i = 0; i < Math.max(1, times); i++) sum += rng.int(6) + 1;
+      return sum;
+    };
     if (sign.k === 'skip') s.skip[seat] = sign.n ?? 1;
     else if (sign.k === 'again') again = true;
     else if (sign.k === 'start') dest = 0;
     else if (sign.k === 'route') s.route![seat] = sign.cells.slice();
-    else {
+    else if (sign.k === 'coins') {
+      const n = sign.n ?? diceSum(sign.dice ?? 1);
+      const delta = sign.loss ? -n : n;
+      s.coins = many(s.coins, 0);
+      s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + delta);
+      ev.push({ type: 'coins', seat, delta, total: s.coins[seat] });
+    } else if (sign.k === 'item') {
+      s.items = many(s.items, null);
+      s.items[seat] = [...(s.items[seat] ?? []), sign.item];
+      ev.push({ type: 'item', seat, item: sign.item });
+    } else if (sign.k === 'extra') {
+      const n = sign.n ?? diceSum(sign.dice ?? 1);
+      s.extra = many(s.extra, 0);
+      s.extra[seat] = (s.extra[seat] ?? 0) + n;
+      ev.push({ type: 'extra', seat, n });
+    } else if (sign.k === 'need') {
+      const hasItem = sign.item ? (s.items?.[seat] ?? []).includes(sign.item) : true;
+      const hasCoins = sign.coins != null ? (s.coins?.[seat] ?? 0) >= sign.coins : true;
+      if (hasItem && hasCoins && sign.yes === 'win') {
+        ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+        return win();
+      }
+      dest = Math.max(0, Math.min(finish, hasItem && hasCoins ? (sign.yes as number) : sign.no));
+    } else if (sign.k === 'fork') {
+      // дорога выбирается по остатку очков: сразу, если они ещё есть, иначе — на следующем ходу
+      dest = to;
+    } else {
       dest = Math.max(0, Math.min(finish, sign.to));
       if (sign.skip) s.skip[seat] = sign.skip;
     }
     ev.push({ type: 'sign', seat, sign, to: dest, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
     s.pos[seat] = dest;
     if (dest === finish) return win();
+  }
+  if (!again && s.extra?.[seat]) {
+    // накопленные дополнительные ходы: игрок бросает ещё раз, ход остаётся у него
+    s.extra[seat] = (s.extra[seat] ?? 0) - 1;
+    return { state: s, events: ev };
   }
   if (!again) {
     // следующий, кто не пропускает
@@ -170,6 +229,8 @@ export const def: GameDef<State, Action, Event, State> = {
       last: null,
       winner: null,
       ...(race ? { goals: race.tracks.map(() => 0), target: Math.max(1, Number(opts.goals ?? race.target) || race.target), kind: null, card: null, cardSlot: null } : {}),
+      // «Лукоморье»: боны, предметы и дополнительные ходы
+      ...(board.coins ? { coins: Array(10).fill(0), items: Array(10).fill(null), extra: Array(10).fill(0) } : {}),
     };
   },
   showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, phase: 'roll', last: 4, winner: null }),
@@ -200,6 +261,14 @@ export const def: GameDef<State, Action, Event, State> = {
         return `${ev.text ? `<i>${esc(ev.text)}</i> ` : ''}${name(ev.seat)} ${signText(ev.sign)}.`;
       case 'skip':
         return `${name(ev.seat)} пропускает ход.`;
+      case 'coins':
+        return ev.delta >= 0
+          ? `💰 ${name(ev.seat)} берёт <b>${ev.delta}</b> бон (всего ${ev.total}).`
+          : `💸 ${name(ev.seat)} отдаёт <b>${-ev.delta}</b> бон (осталось ${ev.total}).`;
+      case 'item':
+        return `🎁 ${name(ev.seat)} берёт <b>${itemName(ev.item)}</b>.`;
+      case 'extra':
+        return `⏩ ${name(ev.seat)} получает <b>${ev.n}</b> дополнительных хода.`;
       case 'goal':
         return `🥅 ${name(ev.seat)} забивает ${ev.goals}-ю шайбу (до ${ev.target}).`;
       case 'win':

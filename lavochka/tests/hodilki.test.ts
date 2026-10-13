@@ -1,8 +1,8 @@
 /* Кинь-двинь: разметка полей и знаки — ветки «туда и обратно», пропуск на несколько ходов, переходы. */
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, def } from '../src/games/hodilki/def';
-import { finishOf, type Event, type State } from '../src/games/hodilki/core';
+import { finishOf, type Board, type Event, type State } from '../src/games/hodilki/core';
 
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
 
@@ -12,11 +12,11 @@ function signKind(events: Event[]) {
   return ev && ev.type === 'sign' ? ev.sign.k : null;
 }
 
-/** Текст сработавшего знака (у переходов и ветвей он свой). */
+/** Текст сработавшего знака (в событиях он свой: у ветвей, переходов и развилок). */
 function signText(events: Event[]) {
   const ev = events.find((e) => e.type === 'sign');
-  const g = ev && ev.type === 'sign' ? ev.sign : null;
-  return g && (g.k === 'route' || g.k === 'jump') ? g.text : '';
+  if (!ev || ev.type !== 'sign') return '';
+  return ev.text ?? ('text' in ev.sign ? ev.sign.text : '');
 }
 
 /** Бросок с заданным значением кубика и ход. */
@@ -329,5 +329,138 @@ describe('кинь-двинь: «В путь, друзья!»', () => {
     expect(signText(r.events)).toContain('петл');
     expect(r.state.route![0]!.length).toBeGreaterThan(10); // петля и остаток дороги
     expect(walkRoute(r.state, rng).pos[0]).toBe(at('113'));
+  });
+});
+
+/* Движковые механики для «Лукоморья» (боны, предметы, развилки, условия, дополнительные ходы)
+ * проверяются на служебном поле: оно подкладывается в список полей только на время этих тестов. */
+describe('кинь-двинь: боны, предметы и развилки', () => {
+  const testBoard: Board = {
+    id: 'tests',
+    title: 'Служебное поле',
+    img: { w: 100, h: 100, dir: '', src: [100, 100], levels: 0 },
+    token: 0.05,
+    goal: '',
+    rules: '',
+    winText: 'прошёл служебное поле',
+    coins: 'бон',
+    cells: [
+      { x: 0, y: 0, sign: { k: 'start' }, label: '1' },
+      { x: 10, y: 0, sign: { k: 'coins', n: 7, text: 'берёт 7 бон' }, label: '2' },
+      { x: 20, y: 0, sign: { k: 'fork', byDiff: [0, 0, 1, 1, 2, 2], branches: [[11, 3], [12, 13, 3], [14, 15, 3]], roads: ['прямо', 'вверх', 'вниз'], text: 'развилка' }, label: '3' },
+      { x: 30, y: 0, sign: null, label: '4' },
+      { x: 40, y: 0, sign: { k: 'extra', n: 2, text: 'лишние ходы' }, label: '5' },
+      { x: 50, y: 0, sign: { k: 'coins', dice: 2, text: 'берёт бон по двум броскам' }, label: '6' },
+      { x: 60, y: 0, sign: { k: 'item', item: 'cap', text: 'берёт шапку-невидимку' }, label: '7' },
+      { x: 70, y: 0, sign: { k: 'need', item: 'cap', yes: 'win', no: 0, text: 'в шапке проходит дальше, без неё — назад' }, label: '8' },
+      { x: 80, y: 0, sign: { k: 'need', coins: 20, yes: 'win', no: 0, text: 'за 20 бон выкупает клубок' }, label: '9' },
+      { x: 90, y: 0, sign: { k: 'coins', n: 3, loss: true, text: 'отдаёт 3 боны' }, label: '10' },
+      { x: 95, y: 0, sign: null, label: '11' },
+      // клетки дорог развилки
+      { x: 0, y: 10, sign: null, off: true },
+      { x: 0, y: 20, sign: null, off: true },
+      { x: 0, y: 30, sign: null, off: true },
+      { x: 0, y: 40, sign: null, off: true },
+      { x: 0, y: 50, sign: null, off: true },
+    ],
+    end: 10,
+  };
+  const seats2 = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+  const start = (rng: RiggedRng, pos = 0) => {
+    const s = def.setup(seats2, { map: 'tests' }, rng) as State;
+    s.pos[0] = pos;
+    s.turn = 0;
+    return s;
+  };
+
+  beforeAll(() => BOARDS.push(testBoard));
+  afterAll(() => {
+    const i = BOARDS.indexOf(testBoard);
+    if (i >= 0) BOARDS.splice(i, 1);
+  });
+
+  it('боны: берёт числом и суммой бросков, отдаёт и не уходит в минус', () => {
+    const rng = new RiggedRng(new SeededRng(21));
+    let s = turn(start(rng, 0), 0, 1, rng).state;
+    expect(s.coins![0]).toBe(7);
+    // «бросьте кубик два раза»: сумма двух бросков
+    const s2 = start(rng, 4);
+    rng.rig([0, 0, 0]);
+    let r = def.apply(s2, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.events.some((e) => e.type === 'coins' && e.delta === 2)).toBe(true);
+    expect(r.state.coins![0]).toBe(2);
+    // отдаёт больше, чем есть — остаётся ноль
+    const poor = { ...start(rng, 8), coins: [1, 0], turn: 0 };
+    rng.rig([0]);
+    let r2 = def.apply(poor, 0, { type: 'roll' }, rng)!;
+    r2 = def.apply(r2.state, 0, { type: 'move' }, rng)!;
+    expect(r2.events.some((e) => e.type === 'coins' && e.delta === -3)).toBe(true);
+    expect(r2.state.coins![0]).toBe(0);
+  });
+
+  it('развилка: дорогу выбирает разница «очки на кубике − кружки до развилки»', () => {
+    const rng = new RiggedRng(new SeededRng(22));
+    // с клетки 2 бросок 2: до развилки один шаг, разница 1 — дорога «прямо»
+    let r = turn(start(rng, 1), 0, 2, rng);
+    expect(signKind(r.events)).toBe('fork');
+    expect(signText(r.events)).toContain('прямо');
+    expect(r.state.pos[0]).toBe(11); // первая клетка дороги «прямо»
+    expect(r.state.route![0]).toEqual([3]); // остаток ветки — выход на 4
+    expect(r.state.routeFor![0]).toBe(true); // лишние очки пойдут дальше по пути
+    // второй бросок доигрывает ветку и идёт дальше по ленте
+    r = turn({ ...r.state, turn: 0 }, 0, 2, rng);
+    expect(r.state.pos[0]).toBe(4); // 3 → 4
+    // фишка стоит на развилке — дорогу выбирает цифра на кубике (разница 3 — «вверх»)
+    const onFork = { ...start(rng, 2), last: 3, phase: 'move' as const };
+    const r3 = def.apply(onFork, 0, { type: 'move' }, rng)!;
+    expect(signText(r3.events)).toContain('вверх');
+    expect(r3.state.pos[0]).toBe(3); // дорога «вверх»: 12, 13 и выход на 4
+  });
+
+  it('предметы и условия: без шапки возвращает назад, в шапке — победа', () => {
+    const rng = new RiggedRng(new SeededRng(23));
+    // без шапки: с клетки 7 попадаем на 8 — условия нет, назад на 1
+    const r = turn(start(rng, 6), 0, 1, rng);
+    expect(r.state.pos[0]).toBe(0);
+    expect(r.state.winner).toBeNull();
+    // берём шапку (клетка 7) и снова идём на 8 — победа
+    let s = turn(start(rng, 5), 0, 1, rng).state;
+    expect(s.items![0]).toEqual(['cap']);
+    s.turn = 0;
+    const r2 = turn(s, 0, 1, rng);
+    expect(r2.state.winner).toBe(0);
+    expect(def.result(r2.state)!.text).toContain('служебное поле');
+  });
+
+  it('условие по бонам: 20 бон выкупают клубок, без них — назад', () => {
+    const rng = new RiggedRng(new SeededRng(24));
+    const poor = { ...start(rng, 7), coins: [3, 0], turn: 0 };
+    rng.rig([0]); // ровно один шаг — на клетку условия
+    let r = def.apply(poor, 0, { type: 'roll' }, rng)!;
+    r = def.apply({ ...r.state, turn: 0 }, 0, { type: 'move' }, rng)!;
+    expect(r.state.winner).toBeNull();
+    expect(r.state.pos[0]).toBe(0);
+    const rich = { ...start(rng, 7), coins: [20, 0], turn: 0 };
+    rng.rig([0]);
+    let r2 = def.apply(rich, 0, { type: 'roll' }, rng)!;
+    r2 = def.apply({ ...r2.state, turn: 0 }, 0, { type: 'move' }, rng)!;
+    expect(r2.state.winner).toBe(0);
+  });
+
+  it('дополнительные ходы: игрок бросает ещё раз, ход остаётся у него', () => {
+    const rng = new RiggedRng(new SeededRng(25));
+    // клетка 5 даёт два дополнительных хода: первый бросок засчитан сразу, остаётся один
+    let s = turn(start(rng, 3), 0, 1, rng).state;
+    expect(s.extra![0]).toBe(1);
+    expect(s.turn).toBe(0); // ход не перешёл
+    s.turn = 0;
+    s = turn(s, 0, 1, rng).state;
+    expect(s.extra![0]).toBe(0);
+    expect(s.turn).toBe(0); // и это был ещё один лишний ход
+    s.turn = 0;
+    s = turn(s, 0, 1, rng).state;
+    expect(s.extra![0]).toBe(0);
+    expect(s.turn).toBe(1); // лишние кончились — ход перешёл
   });
 });

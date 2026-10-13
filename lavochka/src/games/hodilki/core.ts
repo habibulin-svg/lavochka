@@ -9,7 +9,32 @@ export type Sign =
   /** Переход на клетку to; skip — и ещё пропустить столько ходов (Шегерян: «после пропуска хода — до 24»). */
   | { k: 'jump'; to: number; text: string; good: boolean; skip?: number }
   /** Ветка «туда и обратно» (Шегерян: «до г. Крей и обратно», тупик): следующими бросками фишка идёт по cells (до конца ветки и назад), потом — дальше по пути. */
-  | { k: 'route'; cells: number[]; text: string };
+  | { k: 'route'; cells: number[]; text: string }
+  /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же. */
+  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; text: string }
+  /** Предмет: взять себе в инвентарь. */
+  | { k: 'item'; item: ItemId; text: string }
+  /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа. */
+  | { k: 'need'; item?: ItemId; coins?: number; yes: number | 'win'; no: number; text: string }
+  /** Развилка: дорога выбирается по разнице «очки на кубике − число кружков до развилки» (1…6).
+   * byDiff[разница-1] — номер ветки, branches — сами ветки (клетки дороги и выход), roads — их названия. */
+  | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string }
+  /** Дополнительные ходы: `n` или сумма `dice` бросков. */
+  | { k: 'extra'; n?: number; dice?: number; text: string };
+
+/** Предметы «Лукоморья»: их берут на клетках, по ним открываются переходы. */
+export type ItemId = 'flower' | 'cap' | 'key' | 'needle' | 'sword';
+
+export const ITEMS: { id: ItemId; name: string; icon: string }[] = [
+  { id: 'flower', name: 'Аленький цветочек', icon: '🌺' },
+  { id: 'cap', name: 'Шапка-невидимка', icon: '🎩' },
+  { id: 'key', name: 'Золотой ключик', icon: '🗝' },
+  { id: 'needle', name: 'Игла — смерть Кощеева', icon: '🪡' },
+  { id: 'sword', name: 'Меч-кладенец', icon: '⚔' },
+];
+
+export const itemName = (id: ItemId) => ITEMS.find((i) => i.id === id)?.name ?? id;
+export const itemIcon = (id: ItemId) => ITEMS.find((i) => i.id === id)?.icon ?? '•';
 
 /** Гонка с голами («Шайба»): у каждой дорожки свой путь из общих клеток, финиш — не победа, а гол.
  * Места делятся на дорожки по кругу (0,2,4 — первая, 1,3,5 — вторая): вдвоём это две шайбы, вчетвером — две команды по два. */
@@ -55,6 +80,8 @@ export interface Board {
   credit?: string;
   /** Гонка с голами («Шайба»): своя дорожка каждому месту, кубик с клюшками, квадратики. */
   race?: Race;
+  /** Как называются деньги на этом поле («боны» у «Лукоморья»); нет — поле без денег. */
+  coins?: string;
   /** Показ правил: шаги с подкрученным кубиком. rig — значения для rng.int (у клюшки их два: грань и квадратик). */
   demo?: { rig: number | number[]; caption: string; seat?: number }[];
 }
@@ -68,6 +95,8 @@ export interface State {
   skip: (boolean | number)[];
   /** Ветка, по которой фишка идёт сейчас (остаток пути); нет — по основному пути. */
   route?: (number[] | null)[];
+  /** Ветка пришла от развилки: на её конце ход не кончается, лишние очки идут дальше по пути. */
+  routeFor?: (boolean | null)[];
   turn: number;
   /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу. Нет поля — старая партия, значит 'roll'. */
   phase?: 'roll' | 'move';
@@ -84,6 +113,12 @@ export interface State {
   card?: number | null;
   /** Гонка с голами: какой из пяти квадратиков с этими очками вытянули (0–14) — чтобы показать ту же картинку. */
   cardSlot?: number | null;
+  /** Боны (деньги «Лукоморья») по местам. */
+  coins?: number[];
+  /** Предметы по местам («Лукоморье»). */
+  items?: (ItemId[] | null)[];
+  /** Накопленные дополнительные ходы по местам. */
+  extra?: number[];
 }
 
 export type Action = { type: 'roll' } | { type: 'move' };
@@ -93,6 +128,12 @@ export type Event =
   | { type: 'move'; seat: number; path: number[] }
   | { type: 'sign'; seat: number; sign: Sign; to: number; /** Текст клетки (что случилось). */ text?: string }
   | { type: 'skip'; seat: number }
+  /** Боны: delta — сколько взял (или отдал, если отрицательно), total — сколько стало. */
+  | { type: 'coins'; seat: number; delta: number; total: number }
+  /** Предмет взят в инвентарь. */
+  | { type: 'item'; seat: number; item: ItemId }
+  /** Дополнительные ходы: сколько добавилось. */
+  | { type: 'extra'; seat: number; n: number }
   /** Гонка с голами: шайба в воротах, возвращается в центр. */
   | { type: 'goal'; seat: number; track: number; goals: number; target: number }
   | { type: 'win'; seat: number };
@@ -130,20 +171,71 @@ function racePath(s: State, b: Board, seat: number): number[] {
   return out;
 }
 
-/** Клетки, по которым пройдёт пуговица за бросок: сначала остаток ветки, потом основной путь. До финиша считать точно не нужно. */
-export function pathFor(s: State, b: Board, seat: number): number[] {
-  if (b.race) return racePath(s, b, seat);
-  const out: number[] = [];
+/** Какая дорога у развилки: разница «очки на кубике − число кружков до развилки» (1…6) выбирает ветку. */
+export function branchOf(g: Sign & { k: 'fork' }, diff: number): { branch: number; cells: number[] } {
+  const d = Math.max(1, Math.min(6, Math.round(diff) || 1));
+  const branch = Math.max(0, Math.min(g.branches.length - 1, g.byDiff[d - 1] ?? 0));
+  return { branch, cells: g.branches[branch] ?? [] };
+}
+
+/** Пройденная развилка: где, какая была разница и какую дорогу выбрали. */
+export interface ForkPass {
+  cell: number;
+  diff: number;
+  branch: number;
+}
+
+export interface Walk {
+  /** Клетки, по которым пройдёт пуговица за этот бросок. */
+  path: number[];
+  /** Остаток ветки после хода (у развилок дорога может кончиться раньше броска). */
+  route: number[] | null;
+  /** Куда пошла дорога от развилки (true — ход продолжается и за концом ветки). */
+  routeFor: boolean;
+  forks: ForkPass[];
+}
+
+/** Весь ход пуговицы: клетки, остаток ветки и пройденные развилки. Развилка решается на месте — по остатку очков. */
+export function walkFor(s: State, b: Board, seat: number): Walk {
+  if (b.race) return { path: racePath(s, b, seat), route: null, routeFor: false, forks: [] };
+  const path: number[] = [];
+  const forks: ForkPass[] = [];
   let n = s.last ?? 0;
-  const route = s.route?.[seat] ?? [];
-  for (let i = 0; i < route.length && n > 0; i++, n--) out.push(route[i]);
-  // ветка кончается на клетке входа — лишние очки пропадают (дошёл «и обратно» — стоп)
-  if (route.length) return out;
+  let route = (s.route?.[seat] ?? []).slice();
+  let cont = s.routeFor?.[seat] ?? false;
   let at = s.pos[seat];
   const end = finishOf(b);
-  for (; n > 0 && at < end; n--) out.push(++at);
-  return out;
+  // фишка стоит на развилке — дорога выбирается цифрой на кубике (в правилах: «если попал на неё — просто цифра»)
+  const here = b.cells[at]?.sign;
+  if (!route.length && here?.k === 'fork') {
+    const pick = branchOf(here, n);
+    route = pick.cells.slice();
+    cont = true;
+    forks.push({ cell: at, diff: n, branch: pick.branch });
+  }
+  while (n > 0) {
+    let next: number | undefined;
+    if (route.length) next = route.shift();
+    else if (cont && at < end) next = at + 1;
+    else if (!cont && path.length && s.route?.[seat]?.length) break; // ветка знака кончилась — лишние очки пропадают
+    else if (at < end) next = at + 1;
+    if (next == null) break;
+    at = next;
+    path.push(at);
+    n--;
+    const g = b.cells[at]?.sign;
+    if (!route.length && g?.k === 'fork' && n > 0) {
+      const pick = branchOf(g, n);
+      route = pick.cells.slice();
+      cont = true;
+      forks.push({ cell: at, diff: n, branch: pick.branch });
+    }
+  }
+  return { path, route: route.length ? route : null, routeFor: cont && !!route.length, forks };
 }
+
+/** Клетки, по которым пройдёт пуговица за бросок. */
+export const pathFor = (s: State, b: Board, seat: number): number[] => walkFor(s, b, seat).path;
 
 /** Куда встанет пуговица после броска (до знака). */
 export const target = (s: State, b: Board, seat: number) => {
@@ -156,7 +248,13 @@ export const skipsOf = (s: State, seat: number) => Number(s.skip[seat] || 0);
 export const signText = (g: Sign) =>
   g.k === 'skip' ? (g.n && g.n > 1 ? `пропускает ${g.n} хода` : 'пропускает ход') : g.k === 'again' ? 'ходит ещё раз' : g.k === 'start' ? 'начинает сначала' : g.text;
 
-export const signGood = (g: Sign) => g.k === 'again' || (g.k === 'jump' && g.good);
+export const signGood = (g: Sign) =>
+  g.k === 'again' ||
+  (g.k === 'jump' && g.good) ||
+  (g.k === 'coins' && !g.loss) ||
+  g.k === 'item' ||
+  g.k === 'extra' ||
+  (g.k === 'need' && g.yes === 'win');
 
 const rowWord = (n: number) => (n === 1 ? 'ряд' : n < 5 ? 'ряда' : 'рядов');
 

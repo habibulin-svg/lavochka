@@ -8,7 +8,7 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { finishOf, pathFor, signGood, signText, skipsOf, target, trackOf, type Board, type Event, type State } from './core';
+import { finishOf, itemIcon, pathFor, signGood, signText, skipsOf, target, trackOf, type Board, type Event, type State } from './core';
 import { boardOf, scoreText } from './def';
 import './hodilki.css';
 
@@ -1148,7 +1148,12 @@ class HodilkiView implements GameView<State, Event> {
     const here = b.cells[v.pos[seat]];
     const at = here?.off ? '↪' : (here?.label ?? v.pos[seat]);
     const last = b.cells[finishOf(b)]?.label ?? finishOf(b);
-    return `${at} / ${last}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
+    // «Лукоморье»: боны (деньги), предметы и накопленные дополнительные ходы
+    const coins = b.coins ? ` · ${b.coins} ${v.coins?.[seat] ?? 0}` : '';
+    const extra = v.extra?.[seat] ? ` · +${v.extra[seat]} ход` : '';
+    const items = (v.items?.[seat] ?? []).map(itemIcon).join('');
+    const bag = items ? ` · ${items}` : '';
+    return `${at} / ${last}${coins}${extra}${bag}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
   }
 
   destroy() {
