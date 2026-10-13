@@ -1,0 +1,34 @@
+/* Камера больших полей (core/boardcam.ts): окно, поле с transform, кнопки вида и миникарта — как в кинь-двинь. */
+.bc-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.bc-wrap.bc-zoomed { cursor: grab; }
+.bc-wrap.bc-zoomed:active { cursor: grabbing; }
+.bc-board { position: absolute !important; left: 0; top: 0; transform-origin: 0 0; flex: none; }
+.bc-board.bc-moving { will-change: transform; }
+
+.bc-cam { position: absolute; right: 10px; bottom: 8px; z-index: 70; display: flex; gap: 6px; align-items: center; }
+.bc-cb { height: 36px; min-width: 36px; padding: 0 12px 0 10px; border-radius: 18px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font: 600 14px/1 'PT Sans', system-ui, sans-serif; color: #2a2010; background: rgba(255, 250, 235, 0.94); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); white-space: nowrap; }
+.bc-cb b { font-size: 17px; line-height: 1; }
+.bc-cb:hover { background: #fff; }
+.bc-zoom { display: inline-flex; border-radius: 18px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.bc-zoom .bc-cb { box-shadow: none; padding: 0; justify-content: center; width: 40px; }
+.bc-zoom .bc-cb:first-child { border-radius: 18px 0 0 18px; border-right: 1px solid rgba(60, 40, 10, 0.2); }
+.bc-zoom .bc-cb:last-child { border-radius: 0 18px 18px 0; }
+.bc-follow b { color: #9a8a70; font-size: 12px; }
+.bc-follow.on { box-shadow: 0 0 0 2px #ffd24a, 0 2px 8px rgba(0, 0, 0, 0.45); }
+.bc-follow.on b { color: #d8241c; }
+
+.bc-mini { position: absolute; left: 10px; bottom: 10px; z-index: 70; width: min(220px, 28%); border-radius: 4px; overflow: hidden; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(255, 250, 235, 0.85); }
+.bc-mini[data-corner='tl'] { bottom: auto; top: 10px; }
+.bc-mini[data-corner='tr'] { bottom: auto; top: 10px; left: auto; right: 10px; }
+.bc-mini > img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.bc-mini-vp { position: absolute; border: 2px solid #ffd24a; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.28); border-radius: 2px; pointer-events: none; }
+.bc-mini-dot { position: absolute; width: 9px; height: 9px; transform: translate(-50%, -50%); background: center / 100% 100%; border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); pointer-events: none; }
+.bc-mini-dot.on { width: 12px; height: 12px; box-shadow: 0 0 0 2px #ffd24a, 0 1px 2px rgba(0, 0, 0, 0.7); }
+@media (max-width: 700px) {
+  .bc-cam { gap: 4px; }
+  .bc-cb { height: 34px; padding: 0; width: 38px; justify-content: center; }
+  .bc-cb span { display: none; }
+}

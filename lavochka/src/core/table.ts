@@ -147,6 +147,8 @@ export class Table {
       const b = this.el.querySelector<HTMLButtonElement>('.game-controls [data-tap]');
       if (b && !b.disabled && !b.hidden && b.offsetParent) b.click();
     });
+    // пробел — та же главная кнопка хода (бросок), как в кинь-двинь и нардах; игры со своим пробелом гасят событие сами
+    window.addEventListener('keydown', this.onSpace);
 
     this.unsub = o.client.on((m) => this.onMsg(m));
     o.client.onLost = () => this.lost();
@@ -598,6 +600,20 @@ export class Table {
     this.o.onLeave();
   }
 
+  private onSpace = (e: KeyboardEvent) => {
+    if (e.code !== 'Space' || e.defaultPrevented || e.repeat) return;
+    const t = e.target as HTMLElement;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    // главная кнопка в панели, иначе — на поле (казино и рулетка менеджера)
+    const ok = (x: HTMLButtonElement | null) => !!x && !x.disabled && !x.hidden && !!x.offsetParent;
+    const c = this.el.querySelector<HTMLButtonElement>('.game-controls [data-tap]');
+    const b = ok(c) ? c : [...this.el.querySelectorAll<HTMLButtonElement>('.table-board [data-tap]')].find(ok);
+    if (!b) return;
+    // не нажимать заодно кнопку, на которой фокус
+    e.preventDefault();
+    b.click();
+  };
+
   destroy() {
     if (this.closed) return;
     this.closed = true;
@@ -607,6 +623,7 @@ export class Table {
     this.voice?.destroy();
     this.voice = null;
     this.view.destroy?.();
+    window.removeEventListener('keydown', this.onSpace);
     closeAllModals();
     removeScreen('table');
   }

@@ -1,7 +1,7 @@
 /* «Менеджер» / «Космос 2000»: поле-скан, отметки на клетках, фишки, решения в центре поля. Размеры — в --u (сотая доля поля). */
 .table--manager { --table-bg: radial-gradient(ellipse at 50% 30%, #3a4a6a, #10162a); }
-.mg-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
-.mg-board { position: relative; flex: none; --u: 6px; border-radius: calc(var(--u) * 0.6); overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+.mg-wrap { position: relative; width: 100%; height: 100%; --u: 6px; user-select: none; -webkit-user-select: none; }
+.mg-board { position: absolute; --u: 6px; border-radius: calc(var(--u) * 0.6); overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
   opacity: 0; transition: opacity 0.5s ease; background: #22305a; }
 .mg-board.ready { opacity: 1; }
 .mg-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
@@ -39,7 +39,7 @@
 /* фишки */
 .mg-tokens { position: absolute; inset: 0; pointer-events: none; }
 .mg-token { position: absolute; z-index: 30; width: 4.4%; aspect-ratio: 1; transform: translate(-50%, -50%); transition: left 0.16s ease, top 0.16s ease; }
-.mg-board[data-map='kosmos'] .mg-token { width: 6.2%; }
+.mg-wrap[data-map='kosmos'] .mg-token { width: 6.2%; }
 .mg-btn { position: absolute; inset: 0; background: center / 100% 100% no-repeat; border-radius: 50%;
   filter: drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3)); transition: transform 0.16s ease; }
 .mg-btn.chip { width: auto; }
@@ -149,14 +149,14 @@
 .mg-tick { position: absolute; z-index: 5; width: calc(var(--u) * 1.9); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff 0 18%, var(--c) 40%, #222 100%); box-shadow: 0 0 0 calc(var(--u) * 0.18) #111, 0 calc(var(--u) * 0.2) calc(var(--u) * 0.4) rgba(0, 0, 0, 0.7);
   transition: left 0.6s ease, top 0.6s ease; pointer-events: none; }
-.mg-board[data-map='biznesmen'] .mg-token { width: 3.6%; }
-.mg-board[data-map='biznesmen'] .mg-center { overflow: auto; }
-.mg-board[data-map='biznesmen'] .mg-center .btn { font-size: calc(var(--u) * 1.45); padding: calc(var(--u) * 0.5) calc(var(--u) * 1); }
-.mg-board[data-map='biznesmen'] .mg-tray.dice-tray { min-height: calc(var(--u) * 7); }
-.mg-board[data-map='biznesmen'] .mg-card { width: calc(var(--u) * 22); }
+.mg-wrap[data-map='biznesmen'] .mg-token { width: 3.6%; }
+.mg-wrap[data-map='biznesmen'] .mg-center { overflow: auto; }
+.mg-wrap[data-map='biznesmen'] .mg-center .btn { font-size: calc(var(--u) * 1.45); padding: calc(var(--u) * 0.5) calc(var(--u) * 1); }
+.mg-wrap[data-map='biznesmen'] .mg-tray.dice-tray { min-height: calc(var(--u) * 7); }
+.mg-wrap[data-map='biznesmen'] .mg-card { width: calc(var(--u) * 22); }
 .mg-shs { display: inline-flex; gap: 2px; vertical-align: middle; }
 .mg-sh { display: inline-block; width: 1.25em; border-radius: 3px; background: var(--c); color: #111; text-align: center; font-weight: 700; font-style: normal; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
-.mg-board[data-map='biznesmen'] .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.78); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+.mg-wrap[data-map='biznesmen'] .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.78); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
 .mg-shares { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .mg-share { display: flex; flex-direction: column; align-items: center; font-size: 11px; line-height: 1.2; }
 .mg-share i { width: 100%; aspect-ratio: 1.6; background: center / cover no-repeat; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
@@ -175,7 +175,7 @@
 .mg-srow { display: grid; grid-template-columns: calc(var(--u) * 3.6) 1fr auto auto auto auto; align-items: center; gap: calc(var(--u) * 0.6); font-size: calc(var(--u) * 1.4); text-align: left; }
 .mg-srow i { height: calc(var(--u) * 2.2); background: center / cover no-repeat; border-radius: 2px; }
 .mg-srow b { color: var(--c); font-size: calc(var(--u) * 1.8); text-shadow: 0 0 2px #000; }
-.mg-board[data-map='biznesmen'] .mg-srow .btn { font-size: calc(var(--u) * 1.15); padding: calc(var(--u) * 0.25) calc(var(--u) * 0.6); }
+.mg-wrap[data-map='biznesmen'] .mg-srow .btn { font-size: calc(var(--u) * 1.15); padding: calc(var(--u) * 0.25) calc(var(--u) * 0.6); }
 .mg-roul { display: grid; grid-template-columns: repeat(4, auto); gap: calc(var(--u) * 0.3) calc(var(--u) * 0.6); background: rgba(250, 245, 230, 0.94); color: #1a2a5a;
   padding: calc(var(--u) * 0.6) calc(var(--u) * 1); border-radius: calc(var(--u) * 0.8); font-weight: 700; font-size: calc(var(--u) * 1.3); }
 .mg-roul span { padding: 0 calc(var(--u) * 0.3); border-radius: calc(var(--u) * 0.3); }
@@ -189,5 +189,10 @@
 
 /* «Империя»: ракеты на планетах */
 .mg-house.rocket { background: #e8e4d8; clip-path: polygon(50% 0, 85% 70%, 100% 100%, 0 100%, 15% 70%); box-shadow: none; }
-.mg-board[data-map='imperiya'] .mg-token { width: 3.8%; }
-.mg-board[data-map='imperiya'] .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.82); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+.mg-wrap[data-map='imperiya'] .mg-token { width: 3.8%; }
+.mg-wrap[data-map='imperiya'] .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.82); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+
+/* приближено: центр и карточка — в четверти экрана напротив фишки, с подложкой */
+.mg-center.mg-float-ui { justify-content: flex-start; overflow: auto; }
+.mg-center.mg-float-ui .mg-prompt:not(:empty) { background: rgba(8, 12, 30, 0.86); padding: calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+.mg-pop.mg-float-ui { border-radius: calc(var(--u) * 1); }

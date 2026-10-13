@@ -2,6 +2,7 @@
  * залог, жетоны «Космоса»; пуговицы игроков; в центре поля — кубики, вытянутая карточка и то, что сейчас решать
  * (покупка, торги, сделка, долг, страховка, казино). Нажатие на участок — его карточка «Право на собственность» с действиями. */
 import { Sound } from '../../core/audio';
+import { BoardCam } from '../../core/boardcam';
 import { DiceTray } from '../../core/dice';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -69,7 +70,10 @@ class ManagerView implements GameView<State, Ev> {
   private busy = false;
   private popCell: number | null = null;
   private deal: Deal | null = null;
-  private ro!: ResizeObserver;
+  private cam!: BoardCam;
+  /** Решения и карточка — в экранных координатах: где они при общем виде (доли поля). */
+  private centerBox = { x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
+  private popBox = { x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -77,15 +81,15 @@ class ManagerView implements GameView<State, Ev> {
         <div class="mg-board">
           <img class="mg-img" alt="поле" draggable="false">
           <div class="mg-cells"></div>
-          <div class="mg-center">
-            <div class="mg-tray"></div>
-            <div class="mg-card" hidden></div>
-            <div class="mg-prompt"></div>
-          </div>
           <div class="mg-tokens"></div>
           <div class="mg-float"></div>
-          <div class="mg-pop" hidden></div>
         </div>
+        <div class="mg-center bc-ui">
+          <div class="mg-tray"></div>
+          <div class="mg-card" hidden></div>
+          <div class="mg-prompt"></div>
+        </div>
+        <div class="mg-pop bc-ui" hidden></div>
       </div>`);
     root.appendChild(this.wrap);
     this.board = this.wrap.querySelector('.mg-board') as HTMLElement;
@@ -98,9 +102,22 @@ class ManagerView implements GameView<State, Ev> {
     this.prompt = this.wrap.querySelector('.mg-prompt') as HTMLElement;
     this.pop = this.wrap.querySelector('.mg-pop') as HTMLElement;
     this.float = this.wrap.querySelector('.mg-float') as HTMLElement;
+    this.cam = new BoardCam(this.wrap, this.board, {
+      w: 2000,
+      h: 2000,
+      mini: '',
+      token: 0.044,
+      followKey: 'manager.follow',
+      demo: ctx.demo,
+      speed: () => this.ctx.speed(),
+      dots: () => (this.v && this.b ? alive(this.v).map((s) => ({ key: s, ...this.pt(this.shown[s] ?? 0), img: `/hodilki/buttons/${s}.webp`, on: this.v!.turn === s })) : []),
+      turn: () => (this.v && this.b && !this.v.result ? [this.pt(this.shown[this.v.turn] ?? 0)] : []),
+      moved: () => this.placeUi(),
+    });
     this.img.onload = () => {
       this.board.classList.add('ready');
       this.ctx.hold?.(0);
+      this.cam.shown();
     };
 
     this.panel = h(`<div class="mg-panel">
@@ -133,15 +150,44 @@ class ManagerView implements GameView<State, Ev> {
       if (t === this.pop || t.closest('[data-close]')) this.closePop();
     });
 
-    this.ro = new ResizeObserver(() => this.fit());
-    this.ro.observe(this.wrap);
   }
 
-  private fit() {
-    const r = this.wrap.getBoundingClientRect();
-    const size = Math.max(200, Math.floor(Math.min(r.width, r.height)));
-    this.board.style.width = this.board.style.height = size + 'px';
-    this.board.style.setProperty('--u', size / 100 + 'px');
+  /** Центр клетки в координатах камеры (поле 2000×2000). */
+  private pt(i: number) {
+    const c = this.b!.cells[i];
+    return { x: (c.x + c.w / 2) * 2000, y: (c.y + c.h / 2) * 2000 };
+  }
+
+  private others() {
+    const v = this.v!;
+    return alive(v).map((s) => this.pt(this.shown[s] ?? 0));
+  }
+
+  /** Центр с кубиками и решениями и карточка участка: при общем виде — на своём месте поля, при приближении — в четверти экрана
+   * напротив того, кто ходит (чтобы не закрывать фишку). */
+  private placeUi() {
+    if (!this.b) return;
+    const W = this.wrap.clientWidth;
+    const H = this.wrap.clientHeight;
+    const put = (el: HTMLElement, r: { x: number; y: number; w: number; h: number }) => {
+      if (this.cam.zoom < 1.08) {
+        const a = this.cam.toScreen({ x: r.x * 2000, y: r.y * 2000 });
+        const b = this.cam.toScreen({ x: (r.x + r.w) * 2000, y: (r.y + r.h) * 2000 });
+        Object.assign(el.style, { left: a.x + 'px', top: a.y + 'px', width: b.x - a.x + 'px', height: b.y - a.y + 'px' });
+        el.classList.remove('mg-float-ui');
+        return;
+      }
+      const v = this.v;
+      const tok = v ? this.cam.toScreen(this.pt(this.shown[v.turn] ?? 0)) : { x: W, y: H };
+      const w = Math.min(W * 0.5, this.cam.bw * r.w) - 12;
+      const hh = Math.min(H - 70, this.cam.bh * r.h);
+      const left = tok.x < W / 2 ? W - w - 8 : 8;
+      const top = Math.max(8, Math.min(H - 62 - hh, tok.y < H / 2 ? H - 62 - hh : 8));
+      Object.assign(el.style, { left: left + 'px', top: top + 'px', width: w + 'px', height: hh + 'px' });
+      el.classList.add('mg-float-ui');
+    };
+    put(this.center, this.centerBox);
+    put(this.pop, this.popBox);
   }
 
   private useBoard(map: MapId) {
@@ -149,14 +195,16 @@ class ManagerView implements GameView<State, Ev> {
     const b = boardOf(map);
     this.b = b;
     this.board.dataset.map = map;
+    this.wrap.dataset.map = map;
     this.img.src = b.img;
+    this.cam.setMini(b.img);
     this.ctx.hold?.(8000);
     // внутренний квадрат поля — под кубики, карточку и решения («Бизнесмен»: внутри поля ещё круг, решения — над табло-радугой)
     const inner = b.cells[0].w;
-    const box = (r: { x: number; y: number; w: number; h: number }) => ({ left: r.x * 100 + '%', top: r.y * 100 + '%', width: r.w * 100 + '%', height: r.h * 100 + '%' });
     const sq = { x: inner, y: inner, w: 1 - 2 * inner, h: 1 - 2 * inner };
-    Object.assign(this.center.style, box(b.center ?? sq));
-    Object.assign(this.pop.style, box(b.center ? { x: 0.15, y: 0.15, w: 0.7, h: 0.7 } : sq));
+    this.centerBox = b.center ?? sq;
+    this.popBox = b.center ? { x: 0.15, y: 0.15, w: 0.7, h: 0.7 } : sq;
+    this.placeUi();
     this.cellsEl.textContent = '';
     this.marks = b.cells.map((c, i) => {
       const el = h(`<div class="mg-cell side-${c.side}${c.kind === 'prop' ? ' prop' : ''}" data-cell="${i}"
@@ -202,6 +250,7 @@ class ManagerView implements GameView<State, Ev> {
           break;
         case 'move': {
           const el = this.tokens.get(ev.seat);
+          await this.cam.frame([this.pt(this.shown[ev.seat] ?? 0), this.pt(ev.path[ev.path.length - 1])], this.others());
           el?.classList.add('lifted');
           for (const p of ev.path) {
             this.shown[ev.seat] = p;
@@ -216,6 +265,7 @@ class ManagerView implements GameView<State, Ev> {
         }
         case 'jump': {
           const el = this.tokens.get(ev.seat);
+          await this.cam.frame([this.pt(this.shown[ev.seat] ?? 0), this.pt(ev.to)], this.others());
           el?.classList.add('fly');
           this.shown[ev.seat] = ev.to;
           this.placeTokens();
@@ -307,8 +357,14 @@ class ManagerView implements GameView<State, Ev> {
   }
 
   setTurn(_toAct: number[], interactive: number[]) {
+    const mine = interactive.length > 0 && !this.interactive.length;
     this.interactive = interactive;
     this.render();
+    if (mine && this.v && this.b) {
+      this.cam.release();
+      void this.cam.frame([this.pt(this.shown[this.v.turn] ?? 0)], this.others());
+    }
+    this.placeUi();
   }
 
   status(v: State, toAct: number[], interactive: number[]) {
@@ -373,7 +429,7 @@ class ManagerView implements GameView<State, Ev> {
   }
 
   destroy() {
-    this.ro.disconnect();
+    this.cam.destroy();
   }
 
   // ---------- отрисовка ----------
