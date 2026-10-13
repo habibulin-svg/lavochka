@@ -105,8 +105,11 @@ export interface State {
   /** Открыт ли жетон. */
   open: boolean[];
   turn: number;
-  /** 'roll' — бросать кубик, 'step' — шагать по рёбрам (осталось left шагов). */
-  phase: 'roll' | 'step';
+  /** 'start' — каждый выбирает, откуда начинать (Танжер или Каир, так в правилах);
+   * 'roll' — бросать кубик, 'step' — шагать по рёбрам (осталось left шагов). */
+  phase: 'start' | 'roll' | 'step';
+  /** Кто уже выбрал стартовый город. */
+  started: boolean[];
   /** Сколько шагов осталось в этом ходу. */
   left: number;
   /** Кто несёт алмаз (-1 — не найден). */
@@ -126,6 +129,7 @@ export interface State {
 }
 
 export type Action =
+  | { type: 'start'; at: number }
   | { type: 'roll' }
   | { type: 'step'; to: number }
   | { type: 'stop' }
@@ -134,6 +138,7 @@ export type Action =
   | { type: 'open'; cell: number };
 
 export type Event =
+  | { type: 'start'; seat: number; at: number }
   | { type: 'roll'; seat: number; die: number }
   | { type: 'step'; seat: number; to: number; kind: Kind; fee?: number }
   | { type: 'air'; seat: number; to: number; fee: number }
@@ -168,6 +173,7 @@ export function newState(seats: number[], rng: Rng): State {
     open: CELLS.map(() => false),
     turn: seats[0],
     phase: 'roll',
+    started: CELLS.map(() => false),
     left: 0,
     diamond: -1,
     diamondSite: -1,
@@ -190,6 +196,7 @@ export const clone = (s: State): State => ({
   bandit: s.bandit.slice(),
   passed: s.passed.slice(),
   served: s.served.slice(),
+  started: s.started.slice(),
 });
 
 const nextSeat = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -314,6 +321,20 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (s0.winner != null || seat !== s0.turn) return null;
   const s = clone(s0);
   const ev: Event[] = [];
+  // начало партии: каждый сам решает, откуда идти — из Танжера или из Каира (так в правилах)
+  if (a?.type === 'start') {
+    if (s.phase !== 'start' || !FINISH.includes(a.at)) return null;
+    s.pos[seat] = a.at;
+    s.started[seat] = true;
+    ev.push({ type: 'start', seat, at: a.at });
+    const left = s.seats.filter((x) => !s.started[x]);
+    if (left.length) s.turn = left[0];
+    else {
+      s.phase = 'roll';
+      s.turn = s.seats[0];
+    }
+    return { state: s, events: ev };
+  }
   if (a?.type === 'roll') {
     if (s.phase !== 'roll') return null;
     // остров: без денег и подков отсюда не уплыть — три хода в ожидании (засчитываем один раз)
@@ -413,6 +434,8 @@ export const money = (n: number) => `${n.toLocaleString('ru-RU')} $`;
 /** Короткая запись хода для журнала. */
 export function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
+    case 'start':
+      return `${name(ev.seat)} ставит фишку в ${CELLS[ev.at].t ?? 'город'} и начинает оттуда.`;
     case 'roll':
       return `${name(ev.seat)} бросает кубик: <b>${ev.die}</b>.`;
     case 'step': {

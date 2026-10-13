@@ -2,7 +2,7 @@
  * с алмазом — к Танжеру или Каиру (обходя открытых разбойников), а сам разбойник-соперник охотится
  * за владельцем алмаза. Видит только своё view: что лежит под закрытыми жетонами, ему неизвестно. */
 import type { Rng } from '../../core/types';
-import { AIR, CELLS, FINISH, NEIGH, TOKEN_AT, type Action, type State } from './engine';
+import { AIR, CELLS, FINISH, NEIGH, START, TOKEN_AT, type Action, type State } from './engine';
 
 /** Кратчайший путь по числу переходов: расстояния и «откуда пришли» (граф небольшой — считаем по надобности). */
 interface Paths {
@@ -78,6 +78,8 @@ function stepTo(goal: number, cell: number, block: Block): number {
 
 export function choose(v: State, seat: number, level: number, rng: Rng): Action | null {
   if (v.winner != null) return null;
+  // начало партии: откуда начинать — Танжер или Каир. Лёгкий выбирает наугад, остальные — из Танжера
+  if (v.phase === 'start') return { type: 'start', at: level > 0 ? START : FINISH[rng.int(FINISH.length)] };
   if (v.phase === 'roll') {
     // сложный бот может срезать путь самолётом
     if (level > 1) {

@@ -28,6 +28,8 @@ function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps
 const roll = (seat: number, d: number, caption: string) => ({ seat, action: { type: 'roll' } as Action, rig: [d - 1], caption });
 const step = (seat: number, id: string, caption: string) => ({ seat, action: { type: 'step', to: IDX[id] } as Action, caption });
 const fly = (seat: number, id: string, caption: string) => ({ seat, action: { type: 'air', to: IDX[id] } as Action, caption });
+/** Выбор стартового города: по правилам каждый ставит фишку по желанию — в Танжер или Каир. */
+const pick = (seat: number, id: string, caption: string) => ({ seat, action: { type: 'start', at: IDX[id] } as Action, caption });
 
 export const def: GameDef<State, Action, Event, State> = {
   id: 'star',
@@ -43,7 +45,19 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'on', label: 'в игре (как в правилах)' },
         { value: 'off', label: 'без разбойников — спокойная игра' },
       ],
-      default: 'on',
+     	default: 'on',
+    },
+    {
+      key: 'city',
+      label: 'Стартовый город',
+      hint: 'По правилам каждый ставит фишку по желанию — в Танжер или Каир.',
+      type: 'select',
+      choices: [
+        { value: 'ask', label: 'каждый выбирает (как в правилах)' },
+        { value: 'Tg', label: 'все из Танжера' },
+        { value: 'K', label: 'все из Каира' },
+      ],
+      default: 'ask',
     },
   ],
   presets: [
@@ -54,6 +68,10 @@ export const def: GameDef<State, Action, Event, State> = {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     const s = newState(ids, rng);
     if (String(opts.robbers ?? 'on') === 'off') s.tokens = s.tokens.map((t) => (t === 'robber' ? 'empty' : t));
+    // «каждый выбирает» — начало партии начинается с выбора города; иначе все сразу стоят в выбранном
+    const city = String(opts.city ?? 'ask');
+    if (city === 'ask') s.phase = 'start';
+    else s.pos = s.pos.map(() => IDX[city]);
     return s;
   },
   showcase: () => {
@@ -81,8 +99,25 @@ export const def: GameDef<State, Action, Event, State> = {
     goal: 'Найти «Звезду Африки» и первым принести её в Танжер или Каир. По пути открывают закрытые жетоны: камни продают в банк, подковы хранят, разбойники отбирают деньги.',
     sections: [
       {
+        title: 'Откуда начинать: Танжер или Каир',
+        html: `<p>Перед первым броском каждый ставит свою фишку <b>по желанию</b> — в Танжер (северо-запад) или в Каир
+          (северо-восток), и берёт из банка <b>500 $</b>. Оба города — и старт, и финиш: «Звезду Африки» приносят в любой из них.</p>`,
+        demo: demo(
+          (s) => {
+            s.phase = 'start';
+            s.pos[0] = IDX['Tg'];
+            s.pos[1] = IDX['Tg'];
+            s.turn = 0;
+          },
+          [
+            pick(0, 'Tg', 'Вовка ставит фишку в Танжер — оттуда и пойдёт.'),
+            pick(1, 'K', 'Ленка выбирает Каир: с востока до Красного моря ближе.'),
+          ]
+        ),
+      },
+      {
         title: 'Ход, дороги и жетоны',
-        html: `<p>Каждый ставит фишку в Танжер и берёт из банка <b>500 $</b>. Бросают кубик и идут по карте <b>шаг за шагом</b>,
+        html: `<p>Каждый ставит фишку по желанию — в Танжер или Каир — и берёт из банка <b>500 $</b>. Бросают кубик и идут по карте <b>шаг за шагом</b>,
           сами выбирая дорогу на каждом перекрёстке: суша — бесплатно, выход из порта в море — <b>100 $</b>.
           Очки можно не истрачивать все — фишку разрешено остановить хоть на первом шаге.</p>
           <p>На 30 квадратах карты лежат закрытые жетоны. Остановились на квадрате — открыли его: <b>топаз</b> — 300 $,

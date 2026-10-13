@@ -1,6 +1,8 @@
-/* «Звезда Африки»: карта во всю ширину стола, поверх — точки графа, жетоны и фишки. */
-.st-wrap { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
-.st-map { max-width: 100%; max-height: 100%; display: block; border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+/* «Звезда Африки»: карта под камерой (boardcam), поверх — точки графа, жетоны и фишки. */
+.st-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.st-board { position: relative; transform-origin: 0 0; }
+.st-board.ready .st-map { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+.st-map { display: block; width: 100%; height: 100%; border-radius: 8px; user-select: none; }
 .st-over { position: absolute; inset: 0; width: 100%; height: 100%; }
 .st-dot { fill: rgba(30, 20, 10, 0.35); }
 .st-dot-sea { fill: rgba(20, 60, 120, 0.45); }
@@ -8,14 +10,16 @@
 .st-dot-city { fill: rgba(150, 20, 20, 0.55); stroke: #ffe9b0; stroke-width: 2; }
 .st-closed { fill: rgba(40, 25, 12, 0.88); stroke: #d8b070; stroke-width: 4; }
 .st-tok-txt { fill: #ffe9b0; font: 40px 'PT Serif', serif; }
-.st-city { fill: #ffe9b0; font: bold 40px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.7); stroke-width: 7; }
-.st-piece { stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
-.st-piece-txt { fill: #fff; font: bold 34px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.5); stroke-width: 5; }
-.st-gem { font: 40px serif; }
-.st-move { fill: rgba(40, 200, 90, 0.28); stroke: #4ee08a; stroke-width: 3; cursor: pointer; }
-.st-fly { fill: rgba(230, 60, 60, 0.25); stroke: #ff7a6a; stroke-width: 3; cursor: pointer; }
-.st-pass { fill: rgba(70, 150, 255, 0.22); stroke: #6cb2ff; stroke-width: 3; stroke-dasharray: 8 5; cursor: pointer; }
-.st-bandit { fill: #ffd2d2; font: 30px serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
+.st-city { fill: #ffe9b0; font: bold 44px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.75); stroke-width: 8; }
+.st-piece { stroke: #fff; stroke-width: 6; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55)); }
+.st-piece-txt { fill: #fff; font: bold 42px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.75); stroke-width: 6; }
+.st-gem { font: 44px serif; }
+.st-start-city { fill: rgba(255, 220, 120, 0.18); stroke: #ffd764; stroke-width: 6; cursor: pointer; animation: st-pulse 1.6s ease-in-out infinite; }
+@keyframes st-pulse { 0%, 100% { stroke-opacity: 0.5; } 50% { stroke-opacity: 1; } }
+.st-move { fill: rgba(40, 200, 90, 0.28); stroke: #4ee08a; stroke-width: 4; cursor: pointer; }
+.st-fly { fill: rgba(230, 60, 60, 0.25); stroke: #ff7a6a; stroke-width: 4; cursor: pointer; }
+.st-pass { fill: rgba(70, 150, 255, 0.22); stroke: #6cb2ff; stroke-width: 4; stroke-dasharray: 8 5; cursor: pointer; }
+.st-bandit { fill: #ffd2d2; font: 34px serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
 .st-panel { display: flex; flex-direction: column; gap: 8px; }
 .st-panel.st-hidden .st-btns { display: none; }
 .st-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }

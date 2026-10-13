@@ -19,6 +19,28 @@ const turnRoll = (s: State, seat: number, die: number, r: RiggedRng) => {
 };
 
 describe('звезда африки: движок', () => {
+  it('начало партии: каждый сам выбирает город — Танжер или Каир', () => {
+    const r = rng();
+    const seats = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));
+    const s = def.setup(seats, {}, r); // по умолчанию «каждый выбирает» — как в правилах
+    expect(s.phase).toBe('start');
+    expect(def.bot.choose(s, 0, 1, r)).toEqual({ type: 'start', at: IDX['Tg'] }); // средний выбирает Танжер
+    // не своя очередь и не город — не проходит
+    expect(apply(s, 1, { type: 'start', at: IDX['K'] }, r)).toBeNull();
+    expect(apply(s, 0, { type: 'start', at: IDX['1'] }, r)).toBeNull();
+    const a = apply(s, 0, { type: 'start', at: IDX['K'] }, r)!;
+    expect(a.state.pos[0]).toBe(IDX['K']);
+    expect(a.state.turn).toBe(1);
+    const b = apply(a.state, 1, { type: 'start', at: IDX['Tg'] }, r)!;
+    expect(b.state.pos[1]).toBe(IDX['Tg']);
+    expect(b.state.phase).toBe('roll'); // выбрали все — поехали
+    expect(b.state.turn).toBe(0);
+    // «все из Каира» — сразу без выбора
+    const fast = def.setup(seats, { city: 'K' }, r);
+    expect(fast.phase).toBe('roll');
+    expect(fast.pos[0]).toBe(IDX['K']);
+  });
+
   it('раскладка: 30 жетонов по квадратам, у всех 500 $, все в Танжере', () => {
     const r = rng();
     const s = newState([0, 1], r);
