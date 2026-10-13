@@ -2,9 +2,22 @@
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, def } from '../src/games/hodilki/def';
-import { finishOf, type State } from '../src/games/hodilki/core';
+import { finishOf, type Event, type State } from '../src/games/hodilki/core';
 
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+
+/** Знак, сработавший в событиях хода («route», «again», … — что именно). */
+function signKind(events: Event[]) {
+  const ev = events.find((e) => e.type === 'sign');
+  return ev && ev.type === 'sign' ? ev.sign.k : null;
+}
+
+/** Текст сработавшего знака (у переходов и ветвей он свой). */
+function signText(events: Event[]) {
+  const ev = events.find((e) => e.type === 'sign');
+  const g = ev && ev.type === 'sign' ? ev.sign : null;
+  return g && (g.k === 'route' || g.k === 'jump') ? g.text : '';
+}
 
 /** Бросок с заданным значением кубика и ход. */
 function turn(s: State, seat: number, die: number, rng: RiggedRng) {
@@ -25,7 +38,8 @@ describe('кинь-двинь: поля', () => {
       expect(c.x >= 0 && c.x <= b.img.w && c.y >= 0 && c.y <= b.img.h, `клетка ${i} внутри поля`).toBe(true);
       const g = c.sign;
       if (!g) return;
-      expect(i <= end, `знак на клетке ветки ${i}`).toBe(true);
+      // знаки стоят на делениях ленты или на клетках дороги («В путь, друзья!»)
+      expect(i <= end || c.off, `знак на клетке ветки ${i}`).toBe(true);
       if (g.k === 'jump') expect(g.to >= 0 && g.to <= end && g.to !== i, `переход с ${c.label ?? i}`).toBe(true);
       if (g.k === 'route') {
         expect(g.cells.length).toBeGreaterThan(1);
@@ -215,5 +229,105 @@ describe('кинь-двинь: «Шайба»', () => {
     expect(section).toBeTruthy();
     const kinds = section.demo!.steps.filter((st) => st.rig && st.rig.length > 1);
     expect(kinds.length).toBeGreaterThan(0);
+  });
+});
+
+describe('кинь-двинь: «В путь, друзья!»', () => {
+  const board = BOARDS.find((x) => x.id === 'vput')!;
+  const at = (label: string) => board.cells.findIndex((c) => c.label === label);
+  /** Пуговица встаёт на нужное деление ленты: один ход с деления перед ним. */
+  const landOn = (label: string, rng: RiggedRng) => {
+    const s = def.setup(seats, { map: 'vput' }, rng) as State;
+    s.pos[0] = at(label) - 1;
+    s.turn = 0;
+    return turn(s, 0, 1, rng);
+  };
+  /** Идти по ветке, пока она не кончится (знаки на дороге при этом срабатывают). */
+  const walkRoute = (s0: State, rng: RiggedRng) => {
+    let s = s0;
+    for (let k = 0; k < 60 && s.route?.[0]; k++) {
+      s.turn = 0;
+      s = turn(s, 0, 6, rng).state;
+    }
+    return s;
+  };
+
+  it('поле — лента 135 делений с серыми дорогами, красными полосками и треугольниками', () => {
+    expect(board.cells.slice(0, 135).map((c) => c.label)).toEqual(Array.from({ length: 135 }, (_, i) => String(i + 1)));
+    expect(def.rules.sections.some((x) => x.title === 'В путь, друзья!')).toBe(true);
+    const grey = board.cells.slice(0, 135).filter((c) => c.sign?.k === 'route').map((c) => c.label);
+    expect(grey).toEqual(['8', '13', '33', '41', '45', '53', '57', '79', '87', '92', '97', '115', '130']);
+  });
+
+  it('серая дорога уводит вперёд: с 8 пуговица выходит на 30', () => {
+    const rng = new RiggedRng(new SeededRng(11));
+    const r = landOn('8', rng);
+    expect(r.events.some((e) => e.type === 'sign' && e.sign.k === 'route')).toBe(true);
+    expect(r.state.route![0]!.length).toBeGreaterThan(4);
+    const s = walkRoute(r.state, rng);
+    expect(s.pos[0]).toBe(at('30'));
+    expect(s.route?.[0] ?? null).toBeNull();
+    // дальше — обычный ход по ленте
+    s.turn = 0;
+    expect(turn(s, 0, 1, rng).state.pos[0]).toBe(at('31'));
+  });
+
+  it('серая дорога возвращает назад: с 45 пуговица уходит на 26', () => {
+    const rng = new RiggedRng(new SeededRng(12));
+    const s = walkRoute(landOn('45', rng).state, rng);
+    expect(s.pos[0]).toBe(at('26'));
+  });
+
+  it('на серой дороге знаки работают: зелёный кружок — ещё бросок, оранжевый квадрат — пропуск хода', () => {
+    const rng = new RiggedRng(new SeededRng(13));
+    // дорога от 33: четвёртое деление — зелёный кружок
+    const s = landOn('33', rng).state;
+    s.turn = 0;
+    const r = turn(s, 0, 4, rng);
+    expect(r.events.some((e) => e.type === 'sign' && e.sign.k === 'again')).toBe(true);
+    expect(r.state.turn).toBe(0); // бросает ещё раз
+    // дорога от 79: третье деление — оранжевый квадрат (пропуск хода)
+    const rng2 = new RiggedRng(new SeededRng(14));
+    const s2 = landOn('79', rng2).state;
+    s2.turn = 0;
+    const r2 = turn(s2, 0, 3, rng2);
+    expect(r2.events.some((e) => e.type === 'sign' && e.sign.k === 'skip')).toBe(true);
+    expect(r2.state.skip[0]).toBeTruthy();
+  });
+
+  it('красная полоска 13 уводит в спираль и возвращает на 13, а не дальше', () => {
+    const rng = new RiggedRng(new SeededRng(15));
+    const r = landOn('13', rng);
+    expect(signKind(r.events)).toBe('route');
+    expect(signText(r.events)).toContain('спирал');
+    expect(r.state.route![0]!.length).toBeGreaterThan(8);
+    const s = walkRoute(r.state, rng);
+    expect(s.pos[0]).toBe(at('13'));
+    expect(s.route?.[0] ?? null).toBeNull(); // знак на 13 не срабатывает второй раз
+    s.turn = 0;
+    expect(turn(s, 0, 1, rng).state.pos[0]).toBe(at('14'));
+  });
+
+  it('красная полоска на серой дороге (97) уводит в петлю и выводит на 113', () => {
+    const rng = new RiggedRng(new SeededRng(16));
+    // 96 — зелёный кружок: пуговица встаёт на него, бросает ещё раз и попадает на серое 97
+    const s96 = def.setup(seats, { map: 'vput' }, rng) as State;
+    s96.pos[0] = at('96') - 1;
+    s96.turn = 0;
+    let s = turn(s96, 0, 1, rng).state;
+    s.turn = 0;
+    const onRoad = turn(s, 0, 1, rng);
+    expect(onRoad.state.pos[0]).toBe(at('97'));
+    expect(onRoad.state.route![0]!.length).toBeGreaterThan(8);
+    // шесть делений дороги, потом ещё три — третье и есть красная полоска
+    s = onRoad.state;
+    s.turn = 0;
+    s = turn(s, 0, 6, rng).state;
+    s.turn = 0;
+    const r = turn(s, 0, 3, rng);
+    expect(signKind(r.events)).toBe('route');
+    expect(signText(r.events)).toContain('петл');
+    expect(r.state.route![0]!.length).toBeGreaterThan(10); // петля и остаток дороги
+    expect(walkRoute(r.state, rng).pos[0]).toBe(at('113'));
   });
 });

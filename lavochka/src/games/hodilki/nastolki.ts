@@ -9,7 +9,7 @@ import podveski from './data/podveski.json';
 import mepl from './data/mepl.json';
 import sutra from './data/sutra.json';
 
-interface Raw {
+export interface Raw {
   w: number;
   h: number;
   end: number;
@@ -17,7 +17,7 @@ interface Raw {
 }
 
 /** Знак клетки из кода разметки. */
-function signOf(code: string | undefined, i: number, label: string | undefined, routeText: string | undefined): Sign | null {
+export function signOf(code: string | undefined, i: number, label: string | undefined, routeText: string | undefined): Sign | null {
   if (!code) return null;
   if (code === 'skip') return { k: 'skip' };
   if (/^skip\d$/.test(code)) return { k: 'skip', n: +code.slice(4) };
@@ -34,7 +34,7 @@ function signOf(code: string | undefined, i: number, label: string | undefined, 
   return null;
 }
 
-function cellsOf(raw: Raw): Cell[] {
+export function cellsOf(raw: Raw): Cell[] {
   return raw.cells.map((c, i) => {
     const cell: Cell = { x: c.x, y: c.y, sign: signOf(c.s, i, c.l, c.r) };
     if (c.l) cell.label = c.l;
@@ -51,14 +51,14 @@ function cellsOf(raw: Raw): Cell[] {
 }
 
 /** Размер пуговицы: доля ширины поля — по типичному шагу между клетками. */
-function tokenOf(raw: Raw): number {
+export function tokenOf(raw: Raw): number {
   const d: number[] = [];
   for (let i = 1; i <= raw.end; i++) d.push(Math.hypot(raw.cells[i].x - raw.cells[i - 1].x, raw.cells[i].y - raw.cells[i - 1].y));
   d.sort((a, b) => a - b);
   return (d[Math.floor(d.length / 2)] * 0.62) / raw.w;
 }
 
-const imgOf = (id: string, raw: Raw) => ({ w: raw.w, h: raw.h, dir: `/hodilki/${id}`, src: [raw.w, raw.h] as [number, number], levels: 2 });
+export const imgOf = (id: string, raw: Raw) => ({ w: raw.w, h: raw.h, dir: `/hodilki/${id}`, src: [raw.w, raw.h] as [number, number], levels: 2 });
 
 const SHEGERYAN = `<p>Бросайте кубик и ведите пуговицу по номерам клеток. Попали на цветную клетку — читайте, что случилось с героями, и делайте, что сказано:
   пропустить ход (или два), перейти на другую клетку вперёд или назад. Знак срабатывает один раз: на клетке, куда перенесло, его уже нет.</p>`;

@@ -8,8 +8,9 @@ import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
 import { NASTOLKI } from './nastolki';
 import { shaybaBoard } from './shayba';
+import { vputBoard } from './vput';
 
-export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard];
+export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -95,8 +96,9 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   };
   if (to === finish) return win();
   let again = false;
-  // по ветке знаки не срабатывают (и на клетке входа, куда вернулись, — тоже)
-  const sign = onRoute ? null : board.cells[to].sign;
+  // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
+  // На клетках дорог («В путь, друзья!») знаки работают и по ветке: зелёный кружок — ещё бросок, оранжевый — пропуск хода.
+  const sign = onRoute && !board.cells[to].off ? null : board.cells[to].sign;
   if (sign) {
     let dest = to;
     if (sign.k === 'skip') s.skip[seat] = sign.n ?? 1;

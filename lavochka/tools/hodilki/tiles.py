@@ -29,6 +29,7 @@ SRC = {
     'podveski': 'materials/nastolki/podveski-korolevy/field.webp',
     'mepl': 'materials/nastolki/mepl-white/field.webp',
     'sutra': 'materials/nastolki/s-utra-do-vechera/field-1.webp',
+    'vput': 'materials/nastolki/v-put-druzya/field.webp',
     # «Шайба» — гонка двух шайб по двум трекам (разметка — tools/hodilki/shayba.py)
     'shayba': 'materials/nastolki/shayba/field.webp',
 }

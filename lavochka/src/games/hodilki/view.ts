@@ -1144,7 +1144,11 @@ class HodilkiView implements GameView<State, Event> {
       return `${team}шайба ${at + 1}/${trail.length} · голы ${v.goals?.[trackOf(b, seat)] ?? 0}`;
     }
     const n = skipsOf(v, seat);
-    return `${b.cells[v.pos[seat]]?.off ? '↪' : v.pos[seat]} / ${finishOf(b)}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
+    // на полях с нумерацией делений (советские настолки) показываем номер с поля, а не индекс клетки
+    const here = b.cells[v.pos[seat]];
+    const at = here?.off ? '↪' : (here?.label ?? v.pos[seat]);
+    const last = b.cells[finishOf(b)]?.label ?? finishOf(b);
+    return `${at} / ${last}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
   }
 
   destroy() {
