@@ -26,8 +26,12 @@ export type Sign =
   /** Ярмарка чудес («Шёл солдат со службы»): общий запас волшебных предметов — взять до двух,
    * купить хлеб и огниво, обменять; остановка обязательная. */
   | { k: 'market'; text: string }
-  /** Петля («Шёл солдат»: Леший на 64/65, Пастух на 133): фишка идёт по клеткам петли до выхода. */
-  | { k: 'loop'; cells: number[]; text: string }
+  /** Петля («Шёл солдат»: Леший на 64/65, Пастух на 133): фишка идёт по клеткам петли, а выйти
+   * можно только броском (чёт/нечет или определённая грань); `out` — куда выходит, когда вырвался. */
+  | { k: 'loop'; cells: number[]; exit?: LoopExit; out?: number; text: string }
+  /** Событие с выбором («Шёл солдат»): игрок выбирает, чем пройти препятствие — предметом,
+   * хлебом, монетой или потерей ходов. Недоступные варианты показываются, но недоступны. */
+  | { k: 'choice'; title?: string; options: ChoiceOption[]; loss?: number; to?: number; failText?: string; self?: boolean; text: string }
   /** Дополнительные ходы: `n` или сумма `dice` бросков. */
   | { k: 'extra'; n?: number; dice?: number; text: string }
   /** Загадка с ответами: игрок выбирает ответ, и пуговица идёт на клетку `to[выбор]` (Лукоморье: «угаданное число — номер пункта»). */
@@ -43,6 +47,60 @@ export type Sign =
 /** Предметы «Лукоморья»: их берут на клетках, по ним открываются переходы. */
 export type ItemId = 'flower' | 'cap' | 'key' | 'needle' | 'sword';
 
+/** Карточка-предмет («Шёл солдат со службы»): у поля свой запас карточек с картинками. */
+export type CardId = string;
+
+/** Из чего выходит петля: чётный/нечётный бросок или определённые грани. */
+export type LoopExit = 'even' | 'odd' | number[];
+
+/** Вариант выбора на клетке-препятствии. */
+export interface ChoiceOption {
+  text: string;
+  /** Нужная карточка (иначе вариант недоступен). */
+  need?: CardId;
+  /** Нужен Конь-огонь (постоянная прибавка к броску). */
+  needHorse?: boolean;
+  /** Нужен флаг («подал» — Нищенке подавали). */
+  needIfFlag?: string;
+  /** Что уходит в общий запас. */
+  pay?: CardId[];
+  /** Что берётся из запаса. */
+  get?: CardId[];
+  /** Сколько ходов пропустить. */
+  skip?: number;
+  /** Переход на другую клетку ленты. */
+  to?: number;
+  /** Записать флаг. */
+  flag?: string;
+  /** Обход: знак route с этой дорогой (дороги поля: развилка, обход реки, петли). */
+  route?: number;
+  /** Хорошее событие (для журнала и звука). */
+  gained?: boolean;
+  /** Что сказать игроку после выбора. */
+  text2?: string;
+}
+
+/** Запас карточек на поле-«приключении»: ярмарки, котомка, лимиты. */
+export interface Deck {
+  cards: { id: CardId; name: string; img: string; kind: 'simple' | 'magic' | 'coins' }[];
+  /** Куда складываются картинки карточек (public/...). */
+  cardsDir: string;
+  /** Имя файла картинки карточки. */
+  cardImg: (c: { id: CardId; img: string }) => string;
+  /** Сколько карточек вида кладётся в запас при стольких игроках (индекс: 2, 3, 4 и больше). */
+  counts: number[];
+  /** Запас на партию: вид → [2 игрока, 3, 4, 4+]. */
+  stock: Record<string, [number, number, number, number]>;
+  /** Что солдат получает на старте. */
+  startCards: { card: CardId; n?: number }[];
+  /** Лимиты котомки. */
+  bag: { simple: number; magic: number; coins: number };
+  /** Клетки-ярмарки: остановка обязательная. */
+  market: number[];
+  /** Что сдаётся в запас на клетке (48 — Конь-огонь, 88 — клубок). */
+  keep?: Record<number, CardId[]>;
+}
+
 /** Куда ведёт исход условия: номер клетки этого поля, победа или переход на другое поле серии. */
 export type NeedTo = number | 'win' | { map: string; to: number };
 
@@ -56,6 +114,45 @@ export const ITEMS: { id: ItemId; name: string; icon: string }[] = [
 
 export const itemName = (id: ItemId) => ITEMS.find((i) => i.id === id)?.name ?? id;
 export const itemIcon = (id: ItemId) => ITEMS.find((i) => i.id === id)?.icon ?? '•';
+
+/** Что лежит в котомке («Шёл солдат»): простые (хлеб, огниво), волшебные и золотые монеты. */
+export interface Bag {
+  simple: number;
+  magic: number;
+  coins: number;
+}
+
+export function bagOf(b: Board, s: State, seat: number): Bag {
+  const d = b.deck;
+  const cards = s.cards?.[seat] ?? [];
+  if (!d) return { simple: 0, magic: 0, coins: 0 };
+  const kind = (id: CardId) => d.cards.find((c) => c.id === id)?.kind ?? 'magic';
+  return {
+    simple: cards.filter((c) => kind(c) === 'simple').length,
+    magic: cards.filter((c) => kind(c) === 'magic').length,
+    coins: cards.filter((c) => kind(c) === 'coins').length,
+  };
+}
+
+/** Хватает ли места в котомке (и есть ли карточка в общем запасе). */
+export function canPack(b: Board, s: State, seat: number, card: CardId, left?: number): boolean {
+  const d = b.deck;
+  if (!d) return false;
+  const have = left ?? s.stock?.[card] ?? 0;
+  if (have <= 0) return false;
+  const bag = bagOf(b, s, seat);
+  const kind = d.cards.find((c) => c.id === card)?.kind ?? 'magic';
+  return kind === 'simple' ? bag.simple < d.bag.simple : kind === 'coins' ? bag.coins < d.bag.coins : bag.magic < d.bag.magic;
+}
+
+/** Карточка из котомки — назад в общий запас (волшебные предметы в игре одноразовые). */
+export function unpack(cards: CardId[], stock: Record<string, number>, card: CardId) {
+  const i = cards.indexOf(card);
+  if (i >= 0) {
+    cards.splice(i, 1);
+    stock[card] = (stock[card] ?? 0) + 1;
+  }
+}
 
 /** Гонка с голами («Шайба»): у каждой дорожки свой путь из общих клеток, финиш — не победа, а гол.
  * Места делятся на дорожки по кругу (0,2,4 — первая, 1,3,5 — вторая): вдвоём это две шайбы, вчетвером — две команды по два. */
@@ -81,6 +178,9 @@ export interface Cell {
   text?: string;
   /** Клетка ветки, а не основного пути: на неё попадают только по знаку route. */
   off?: boolean;
+  /** Дороги безномерных клеток этого поля (развилка Распутья, обход реки, петли):
+   * выбор на клетке может отправить фишку по дороге с номером из списка. */
+  roads?: number[][];
 }
 
 export interface Board {
@@ -109,6 +209,10 @@ export interface Board {
   startCoins?: number;
   /** Показ правил: шаги с подкрученным кубиком. rig — значения для rng.int (у клюшки их два: грань и квадратик). */
   demo?: { rig: number | number[]; caption: string; seat?: number }[];
+  /** Приключение с запасом карточек и ярмарками («Шёл солдат со службы»). */
+  deck?: Deck;
+  /** Постоянная прибавка к броску (Конь-огонь) — знаки, с которых она начинается. */
+  bonusSigns?: number[];
   /** Серия: у игры несколько частей-полей — в настройках это одно поле и один пресет,
    * а партия идёт по частям до конца («Лукоморье»: клубок → цветочек → Заоблачная даль → замок Кощея). */
   series?: { id: string; label: string; part: number; count: number };
@@ -129,8 +233,9 @@ export interface State {
   routeFor?: (boolean | null)[];
   turn: number;
   /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу, 'pick' — ждём ответа на загадку,
-   * 'ask' — загадываем загадку остальным, 'answer' — остальные отвечают, 'judge' — загадавший решает, отгадали ли. */
-  phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge';
+   * 'ask' — загадываем загадку остальным, 'answer' — остальные отвечают, 'judge' — загадавший решает, отгадали ли,
+   * 'market' — игрок на ярмарке чудес, 'choose' — выбирает, чем пройти препятствие. */
+  phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose';
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;
@@ -152,6 +257,16 @@ export interface State {
   items?: (ItemId[] | null)[];
   /** Накопленные дополнительные ходы по местам. */
   extra?: number[];
+  /** Карточки-предметы по местам («Шёл солдат со службы»). */
+  cards?: (CardId[] | null)[];
+  /** Общий запас карточек: вид → сколько осталось. */
+  stock?: Record<string, number>;
+  /** Кто сейчас на ярмарке и сколько уже взял за это посещение. */
+  market?: { seat: number; took: number; bought: number } | null;
+  /** Флаги по местам («подал Нищенке», «черти в торбе»). */
+  flags?: (string[] | null)[];
+  /** Название клетки-препятствия, на котором игрок выбирает (для вида). */
+  choose?: { seat: number; title?: string; text: string; options: ChoiceOption[] } | null;
 }
 
 export type Action =
@@ -163,7 +278,11 @@ export type Action =
   /** Ответ на загадку: человек печатает `text`, бот называет свою удачу (`correct`). */
   | { type: 'answer'; text?: string; correct?: boolean }
   /** Загадавший решил: кто-то отгадал (ok) или никто. */
-  | { type: 'judge'; ok: boolean };
+  | { type: 'judge'; ok: boolean }
+  /** Ярмарка: взять волшебный предмет бесплатно, купить простой за золотой, закрыть ярмарку. */
+  | { type: 'market'; do: 'take' | 'buy' | 'done'; card?: CardId }
+  /** Выбор на клетке-препятствии: номер варианта. */
+  | { type: 'choose'; pick: number };
 
 /** Загадка, которую загадывают остальным («Лукоморье», поле 4). */
 export interface RiddleState {
@@ -193,6 +312,12 @@ export type Event =
   | { type: 'coins'; seat: number; delta: number; total: number }
   /** Предмет взят в инвентарь; lost — наоборот, отобран. */
   | { type: 'item'; seat: number; item: ItemId; lost?: boolean }
+  /** Карточка взята из общего запаса (ярмарка, событие) или ушла в запас. */
+  | { type: 'card'; seat: number; card: CardId; lost?: boolean; left?: number }
+  /** Ярмарка: что игрок сделал и что осталось в запасе. */
+  | { type: 'market'; seat: number; do: 'take' | 'buy' | 'done'; card?: CardId; stock?: Record<string, number> }
+  /** Выбор на препятствии: что выбрали и чем это обошлось. */
+  | { type: 'choose'; seat: number; text: string; option: string; skip?: number; to?: number }
   /** Дополнительные ходы: сколько добавилось. */
   | { type: 'extra'; seat: number; n: number }
   /** Гонка с голами: шайба в воротах, возвращается в центр. */
@@ -267,16 +392,20 @@ export interface Walk {
   forks: ForkPass[];
 }
 
-/** Весь ход пуговицы: клетки, остаток ветки и пройденные развилки. Развилка решается на месте — по остатку очков. */
-export function walkFor(s: State, b: Board, seat: number): Walk {
+/** Весь ход пуговицы: клетки, остаток ветки и пройденные развилки. Развилка решается на месте — по остатку очков.
+ * `steps` — сколько шагов идти, если не брать `s.last` (петля «Шёл солдата» ходит своими бросками). */
+export function walkFor(s: State, b: Board, seat: number, steps?: number): Walk {
   if (b.race) return { path: racePath(s, b, seat), route: null, routeFor: false, forks: [] };
   const path: number[] = [];
   const forks: ForkPass[] = [];
-  let n = s.last ?? 0;
+  // Конь-огонь: +2 к каждому ходу
+  let n = steps ?? (s.last ?? 0) + (s.flags?.[seat]?.includes('конь') ? 2 : 0);
   let route = (s.route?.[seat] ?? []).slice();
   let cont = s.routeFor?.[seat] ?? false;
   let at = s.pos[seat];
   const end = finishOf(b);
+  // ярмарки в разметке заданы номерами клеток с поля (48), а путь — индексами (47)
+  const stalls = (b.deck?.market ?? []).map((x) => x - 1);
   // фишка стоит на развилке — дорога выбирается цифрой на кубике (в правилах: «если попал на неё — просто цифра»)
   const here = b.cells[at]?.sign;
   if (!route.length && here?.k === 'fork') {
@@ -289,12 +418,15 @@ export function walkFor(s: State, b: Board, seat: number): Walk {
     let next: number | undefined;
     if (route.length) next = route.shift();
     else if (cont && at < end) next = at + 1;
-    else if (!cont && path.length && s.route?.[seat]?.length) break; // ветка знака кончилась — лишние очки пропадают
+    // ветка знака кончилась, а остаток очков был: с выхода ветки фишка никуда не идёт — ход кончается
+    else if (!cont && path.length && s.route?.[seat]?.length) break;
     else if (at < end) next = at + 1;
     if (next == null) break;
     at = next;
     path.push(at);
     n--;
+    // ярмарка чудес: остановка обязательная, даже если очков оставалось больше (в правилах: с 46 при 5 — на 48)
+    if (stalls.includes(at)) break;
     const g = b.cells[at]?.sign;
     if (!route.length && g?.k === 'fork' && n > 0) {
       const pick = branchOf(g, n);
@@ -306,6 +438,32 @@ export function walkFor(s: State, b: Board, seat: number): Walk {
     if (!route.length && g?.k === 'coins' && g.diff && n > 0) break;
   }
   return { path, route: route.length ? route : null, routeFor: cont && !!route.length, forks };
+}
+
+/** Выходит ли петля по этому броску: чёт/нечет или определённые грани. */
+export const loopOpens = (exit: LoopExit | undefined, die: number) =>
+  exit === 'even' ? die % 2 === 0 : exit === 'odd' ? die % 2 === 1 : Array.isArray(exit) ? exit.includes(die) : true;
+
+/** Ход по петле (Леший, Пастух): пуговица идёт по кружкам, а выйти можно только нужным броском.
+ * Вход — встал на клетку-вход: идём по кружку, пока не кончится круг, и бросаем про выход.
+ * Выход — `out` (первая клетка ленты) и дальше обычным порядком. */
+export function loopMove(s: State, b: Board, seat: number, die: number): Walk | null {
+  const route = (s.route?.[seat] ?? []).filter((x) => x != null);
+  const inLoop = route.length > 0 && b.cells[route[0]]?.off;
+  const here = b.cells[s.pos[seat]]?.sign;
+  const entry = here?.k === 'loop' ? here : null;
+  if (!entry && !inLoop) return null;
+  // знак петли лежит на клетке входа (Леший — на 64/65, Пастух — на 133)
+  const sign = entry ?? (b.cells[s.pos[seat]]?.sign as Sign & { k: 'loop' });
+  if (!sign || sign.k !== 'loop') return null;
+  const circle = sign.cells;
+  const w = walkFor(s, b, seat, die);
+  const left = (route.length ? route.length : circle.length) - w.path.length;
+  if (left > 0) return w; // круг ещё не пройден — идём по кружкам
+  // круг кончился: выйти можно только нужным броском (чёт/нечет), иначе начинаем круг заново
+  if (!loopOpens(sign.exit, die)) return { path: w.path, route: [...circle], routeFor: false, forks: [] };
+  // вырвался: пуговица встаёт на поле за петлёй и дальше идёт обычным порядком, остаток очков — по ленте
+  return walkFor({ ...s, pos: s.pos.map((x, i) => (i === seat ? (sign.out ?? x) : x)) }, b, seat, Math.max(0, die - w.path.length));
 }
 
 /** Клетки, по которым пройдёт пуговица за бросок. */
@@ -338,6 +496,7 @@ export const signGood = (g: Sign) =>
   (g.k === 'coins' && !g.loss) ||
   g.k === 'item' ||
   g.k === 'extra' ||
+  (g.k === 'choice' && g.options.some((o) => o.gained)) ||
   (g.k === 'need' && g.yes === 'win');
 
 const rowWord = (n: number) => (n === 1 ? 'ряд' : n < 5 ? 'ряда' : 'рядов');

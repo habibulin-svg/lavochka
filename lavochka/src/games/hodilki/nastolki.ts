@@ -3,7 +3,6 @@
  * картинки — public/hodilki/<поле>/ (tools/hodilki/tiles.py). Тексты клеток — с поля. */
 import type { Board, Cell, ItemId, NeedTo, Sign } from './core';
 import zatmir from './data/zatmir.json';
-import shel from './data/shel.json';
 import planeta from './data/planeta.json';
 import varvary from './data/varvary.json';
 import podveski from './data/podveski.json';
@@ -167,33 +166,6 @@ export const zatmirBoard: Board = {
     { rig: 5, caption: 'Ленка встаёт на 6.' },
   ],
 };
-const shelBoard: Board = {
-  id: 'shel',
-  title: 'Шёл солдат со службы',
-  img: imgOf('shel', shel as Raw),
-  cells: cellsOf(shel as Raw),
-  end: (shel as Raw).end,
-  token: tokenOf(shel as Raw),
-  goal: 'Первым добраться до пещеры — клетки 100.',
-  winText: 'первым добрался до пещеры',
-  rules: `<p><b>Путь солдата.</b> Бросайте кубик и ведите пуговицу по клеткам от дома до конца
-    дороги. Кто дошёл первым — победил. Поле — советская настолка «Шёл солдат со службы»: дорога
-    домой со всеми её встречами.</p>
-    <p><b>Привалы.</b> На восьми клетках солдат отдыхает: ход пропускается. Тексты клеток взяты
-    с поля, так что видно, где он и что там происходит.</p>
-    <p><b>Ярмарки чудес</b> (клетки 9, 48 и 88). По правилам поля на ярмарке останавливаются
-    обязательно, берут волшебные предметы, покупают хлеб и огниво; идти дальше без остановки
-    нельзя.</p>
-    <p><b>Нищенка</b> (15, 17, 19): подашь — пригодится. <b>Ведьма</b> (21) даёт Коня-огня тому,
-    кто не пожадничал. <b>Леший</b> кружит по петле (64–65), <b>Пастух</b> — по своей (133).</p>
-    <p>Сейчас движок отрабатывает ход и привалы; ярмарки, петли и подарки на клетках — в работе.</p>`,
-  credit: 'По мотивам повести А. Конан Дойла. Художник П. Шегерян, «Орбита», 1990.',
-  demo: [
-    { rig: 3, caption: 'Выпало 4 — встреча с траходонами: Вовка пропустит ход.' },
-    { rig: 5, caption: 'Ленка встаёт на 6.' },
-  ],
-};
-
 export const planetaBoard: Board = {
   id: 'planeta',
   title: 'Неукротимая планета',
@@ -266,4 +238,4 @@ export const sutraBoard: Board = {
   credit: 'Детская настольная игра.',
 };
 
-export const NASTOLKI = [zatmirBoard, shelBoard, planetaBoard, varvaryBoard, podveskiBoard, meplBoard, sutraBoard];
+export const NASTOLKI = [zatmirBoard, planetaBoard, varvaryBoard, podveskiBoard, meplBoard, sutraBoard];

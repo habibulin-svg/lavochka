@@ -1,0 +1,62 @@
+﻿<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>стенд «Кинь-двиня»</title>
+    <style>
+      body { margin: 0; background: #1d2b36; color: #eee; font: 14px 'PT Sans', sans-serif; }
+      #probe { display: grid; grid-template-columns: 1fr 340px; height: 100vh; }
+      #probe .table-board { position: relative; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="probe"></div>
+    <!--
+      Служебный стенд разработчика: посмотреть поле «Кинь-двиня» в нужной фазе без партии.
+      Открывать в превью так: /tools/hodilki/viewer.html?map=shel&phase=market
+      Фазы: roll (по умолчанию), market (ярмарка чудес), choose (выбор на препятствии), loop (круги Лешего).
+      На собранный сайт файл не попадает (Vite собирает только index.html).
+    -->
+    <script type="module">
+      import { boardOf, def } from '/src/games/hodilki/def.ts';
+      import { createView } from '/src/games/hodilki/view.ts';
+      import { SeededRng } from '/src/core/rng.ts';
+
+      const q = new URLSearchParams(location.search);
+      const map = q.get('map') ?? 'shel';
+      const phase = q.get('phase') ?? 'roll';
+      const rng = new SeededRng(7);
+      const seats = [0, 1].map((seat) => ({ seat, kind: 'bot', name: def.seats[seat].name, level: 1 }));
+      const root = document.getElementById('probe');
+      const board = document.createElement('div');
+      board.className = 'table-board';
+      const controls = document.createElement('div');
+      root.append(board, controls);
+      const view = createView();
+      view.mount(board, {
+        act: (seat, a) => console.log('act', seat, JSON.stringify(a)),
+        mySeats: [0],
+        demo: false,
+        controls,
+        name: (s) => def.seats[s].name,
+        speed: () => 1,
+        autoSingle: () => true,
+      });
+      let s = def.setup(seats, { map }, rng);
+      const b = boardOf(map);
+      if (phase === 'market') s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? b.deck.market[0] - 1 : p)), turn: 0, phase: 'market', market: { seat: 0, took: 0, bought: 0 } };
+      if (phase === 'choose') {
+        const at = b.cells.findIndex((c) => c.sign && c.sign.k === 'choice');
+        s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? at : p)), turn: 0, phase: 'choose', choose: { seat: 0, title: b.cells[at].sign.title, text: b.cells[at].sign.text, options: b.cells[at].sign.options } };
+      }
+      if (phase === 'loop') {
+        const at = b.cells.findIndex((c) => c.sign && c.sign.k === 'loop');
+        const g = b.cells[at].sign;
+        s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? at : p)), turn: 0, phase: 'move', last: 3, route: [g.cells.slice(), null], routeFor: [null, null] };
+      }
+      view.setView(s);
+      view.setTurn([s.turn], [s.turn]);
+      document.title = 'стенд: ' + map + ' / ' + phase;
+    </script>
+  </body>
+</html>

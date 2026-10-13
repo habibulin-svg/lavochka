@@ -3,16 +3,17 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
 import { answerMatches, diffForLevel, randomRiddle, ANSWER_CHANCE } from '../../words/riddles';
-import { finishOf, itemName, mapOf, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type NeedTo, type RiddleState, type Sign, type State } from './core';
+import { canPack, finishOf, itemName, loopMove, mapOf, pathFor, SEATS, signText, skipsOf, trackOf, unpack, walkFor, type Action, type Board, type CardId, type Event, type NeedTo, type RiddleState, type Sign, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
 import { NASTOLKI } from './nastolki';
+import { shelBoard } from './shel';
 import { shaybaBoard } from './shayba';
 import { vputBoard } from './vput';
 import { LUKOMORIE } from './luk';
 
-export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shaybaBoard, vputBoard, ...LUKOMORIE];
+export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shelBoard, shaybaBoard, vputBoard, ...LUKOMORIE];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
 
 const next = (s: State, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
@@ -32,8 +33,35 @@ const winNow = (s: State, ev: Event[], seat: number) => {
   return { state: s, events: ev };
 };
 
+/** Доступен ли вариант выбора («Шёл солдат»): есть предмет, Конь-огонь или нужный флаг. */
+function optionOk(b: Board, s: State, seat: number, o: { need?: CardId; needHorse?: boolean; needIfFlag?: string }): boolean {
+  void b;
+  if (o.needHorse && !(s.flags?.[seat] ?? []).includes('конь')) return false;
+  if (o.needIfFlag && !(s.flags?.[seat] ?? []).includes(o.needIfFlag)) return false;
+  if (o.need && !(s.cards?.[seat] ?? []).includes(o.need)) return false;
+  return true;
+}
+
+/** Номер клетки-ярмарки в разметке (поле) → индекс клетки в пути. */
+function marketIdx(b: Board): number[] {
+  return (b.deck?.market ?? []).map((x) => x - 1);
+}
+
 /** Конец хода: лишние ходы тратятся сразу, иначе ход переходит дальше (кто не пропускает). */
-function endTurn(s: State, seat: number, ev: Event[]) {
+function endTurn(s: State, seat: number, ev: Event[], board?: Board) {
+  // «Шёл солдат»: после препятствия пуговица может встать на ярмарку — тогда ход ждёт торговли
+  if (board?.deck) {
+    const to = s.pos[seat];
+    if (marketIdx(board).includes(to)) {
+      s.market = { seat, took: 0, bought: 0 };
+      s.phase = 'market';
+      const g = board.cells[to].sign;
+      if (g) ev.push({ type: 'sign', seat, sign: g, to });
+      return { state: s, events: ev };
+    }
+    const keep = board.deck.keep?.[to];
+    if (keep?.length) for (const c of keep) if ((s.cards?.[seat] ?? []).includes(c)) unpack(s.cards![seat]!, s.stock!, c);
+  }
   if (s.extra?.[seat]) {
     s.extra[seat] = (s.extra[seat] ?? 0) - 1;
     return { state: s, events: ev };
@@ -185,6 +213,85 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     }
     return endTurn(s, seat, ev);
   }
+  // Ярмарка чудес («Шёл солдат»): берут волшебные предметы, покупают хлеб и огниво, закрывают ярмарку
+  if (a?.type === 'market') {
+    if (phase !== 'market' || !board.deck || !s0.market || s0.market.seat !== seat) return null;
+    if (a.do === 'done') {
+      const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), market: null, phase: 'roll', ...bags(s0, 10) };
+      return endTurn(s, seat, [{ type: 'market', seat, do: 'done' }]);
+    }
+    const card = a.card as CardId;
+    const kind = board.deck.cards.find((c) => c.id === card)?.kind;
+    const visit = a.do === 'take' ? s0.market.took : s0.market.bought;
+    if (!kind || kind === 'coins' || visit >= 2) return null;
+    if (!canPack(board, s0, seat, card)) return null;
+    const cards = (s0.cards?.[seat] ?? []).slice();
+    const stock = { ...(s0.stock ?? {}) };
+    if (a.do === 'buy') {
+      // покупка простого предмета за золотой: монета уходит в общий запас
+      if (kind !== 'simple' || !cards.includes('coins')) return null;
+      cards.splice(cards.indexOf('coins'), 1);
+      stock['coins'] = (stock['coins'] ?? 0) + 1;
+    }
+    cards.push(card);
+    stock[card] = (stock[card] ?? 1) - 1;
+    const s: State = {
+      ...s0,
+      pos: s0.pos.slice(),
+      skip: s0.skip.slice(),
+      cards: (s0.cards ?? []).map((c, i) => (i === seat ? cards : c)),
+      stock,
+      market: { seat, took: s0.market.took + (a.do === 'take' ? 1 : 0), bought: s0.market.bought + (a.do === 'buy' ? 1 : 0) },
+    };
+    return { state: s, events: [{ type: 'market', seat, do: a.do, card, stock }] };
+  }
+  // Выбор на клетке-препятствии («Шёл солдат»)
+  if (a?.type === 'choose') {
+    if (phase !== 'choose' || !board.deck || s0.choose?.seat !== seat) return null;
+    const cur = s0.choose;
+    const i = Math.max(0, Math.min(cur.options.length - 1, Math.floor(a.pick) || 0));
+    const opt = cur.options[i];
+    if (!opt || !optionOk(board, s0, seat, opt)) return null;
+    const clone = <T,>(list: T[] | undefined, fill: T) => (list ?? s0.pos.map(() => fill)).slice();
+    const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), route: clone(s0.route, null), routeFor: clone(s0.routeFor, null), choose: null, phase: 'roll' };
+    s.cards = (s0.cards ?? []).map((c) => (c ? c.slice() : c));
+    s.stock = { ...(s0.stock ?? {}) };
+    s.flags = (s0.flags ?? []).map((f) => (f ? f.slice() : f));
+    const hand = s.cards[seat] ?? [];
+    const ev: Event[] = [{ type: 'choose', seat, text: cur.text, option: opt.text, ...(opt.skip ? { skip: opt.skip } : {}), ...(opt.to != null ? { to: opt.to } : {}) }];
+    for (const c of opt.pay ?? []) {
+      unpack(hand, s.stock!, c);
+      ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
+    }
+    for (const c of opt.get ?? []) {
+      if (s.stock![c] ? s.stock![c] > 0 : true) {
+        if (s.stock![c] != null) s.stock![c] -= 1;
+        hand.push(c);
+        ev.push({ type: 'card', seat, card: c, left: s.stock![c] });
+      }
+    }
+    s.cards[seat] = hand;
+    if (opt.flag) s.flags[seat] = [...(s.flags[seat] ?? []), opt.flag];
+    if (opt.skip) {
+      s.skip[seat] = opt.skip;
+      ev.push({ type: 'skip', seat });
+    }
+    if (opt.route != null) {
+      // дорога безномерных клеток: у клетки свой список дорог (обход Огненной реки и т. п.)
+      const road = board.cells[s0.pos[seat]]?.roads?.[opt.route];
+      s.route![seat] = road ? road.slice() : null;
+      s.routeFor![seat] = null;
+    }
+    if (opt.to != null) {
+      // в разметке поля «to» — номер клетки с поля (1…140), а позиция — индекс
+      s.pos[seat] = Math.max(0, Math.min(finishOf(board), opt.to - 1));
+      s.route![seat] = null;
+      s.routeFor![seat] = null;
+    }
+    if (opt.text2) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: [], text: opt.text2 }, to: s.pos[seat] });
+    if (s.pos[seat] >= finishOf(board) && !board.winBySign) return winNow(s, ev, seat);
+    return endTurn(s, seat, ev, board);
+  }
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
   if (board.race) return moveRace(s0, board, seat);
   const finish = finishOf(board);
@@ -199,6 +306,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     ...(board.coins || s0.coins ? { coins: many(s0.coins, 0) } : {}),
     ...(s0.items ? { items: s0.items.slice() } : {}),
     ...(s0.extra ? { extra: s0.extra.slice() } : {}),
+    ...(s0.cards ? { cards: s0.cards.map((c) => (c ? c.slice() : c)), stock: { ...(s0.stock ?? {}) }, flags: (s0.flags ?? []).map((f) => (f ? f.slice() : f)) } : {}),
     phase: 'roll',
   };
   const ev: Event[] = [];
@@ -244,7 +352,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat], ...(board.cells[s.pos[seat]].text ? { text: board.cells[s.pos[seat]].text } : {}) });
     return goNeed(hasItem && hasCoins ? stand.yes : stand.no);
   }
-  const walk = walkFor(s0, board, seat);
+  const walk = loopMove(s0, board, seat, s0.last) ?? walkFor(s0, board, seat);
   const path = walk.path;
   // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
   // На клетках дорог («В путь, друзья!») знаки работают и по ветке: зелёный кружок — ещё бросок, оранжевый — пропуск хода.
@@ -272,6 +380,55 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     });
   }
   if (to === finish && !board.winBySign) return win();
+  // Ярмарка чудес («Шёл солдат»): встал — торгуешься, ход не переходит, пока не закроешь ярмарку
+  if (board.deck && marketIdx(board).includes(to)) {
+    // на 48 расстаются с Конём-огнём, на 88 — с волшебным клубком (карточки уходят в общий запас)
+    for (const c of board.deck.keep?.[to + 1] ?? []) {
+      const hand = s.cards?.[seat] ?? [];
+      if (!hand.includes(c)) continue;
+      unpack(hand, s.stock!, c);
+      ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
+    }
+    s.market = { seat, took: 0, bought: 0 };
+    s.phase = 'market';
+    const g = board.cells[to].sign;
+    if (g) ev.push({ type: 'sign', seat, sign: g, to });
+    return { state: s, events: ev };
+  }
+  // Препятствие («Шёл солдат»): чем пройти — выбирает игрок (в списке видно, чем мог бы пройти)
+  if (board.deck) {
+    const g = board.cells[to].sign;
+    // «поле 48» в разметке — это индекс 47: сдаём Коня-огонь и клубок на ярмарках
+    const keep = board.deck.keep?.[to + 1];
+    if (keep?.length) {      for (const c of keep) {
+        const hand = s.cards?.[seat] ?? [];
+        if (hand.includes(c)) {
+          unpack(hand, s.stock!, c);
+          ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
+        }
+      }
+    }
+    // Конь-огонь: берег Огненной реки перескакивает с ходу (по правилам останавливаться не обязательно)
+    if (g?.k === 'choice' && (s.flags?.[seat] ?? []).includes('конь') && g.options.some((o) => o.needHorse)) {
+      s.pos[seat] = to + 1;
+      ev.push({ type: 'sign', seat, sign: g, to: s.pos[seat], text: 'Конь-огонь перенёс через Огненную реку.' });
+      return endTurn(s, seat, ev, board);
+    }
+    // петля (Леший, Пастух): встал на клетку-вход — дальше идёшь по кружкам, пока не выйдешь броском
+    if (g?.k === 'loop') {
+      s.route![seat] = g.cells.slice();
+      s.routeFor![seat] = null;
+      ev.push({ type: 'sign', seat, sign: g, to });
+      return endTurn(s, seat, ev, board);
+    }
+    if (g?.k === 'choice') {
+      s.pos[seat] = to;
+      s.choose = { seat, title: g.title, text: g.text, options: g.options };
+      s.phase = 'choose';
+      ev.push({ type: 'sign', seat, sign: g, to, text: g.text });
+      return { state: s, events: ev };
+    }
+  }
   let again = false;
   // знак срабатывает на клетке, куда пуговица встала. Исключение — клетка, куда вернулась ветка-тупик
   // («туда и обратно»): там знак не повторяется. Дорога развилки — не тупик, её номерные пункты
@@ -390,6 +547,15 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
 
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
+/** Запас карточек на партию: по числу игроков (2, 3, 4 и больше). */
+function stockFor(b: Board, n: number): Record<string, number> {
+  const deck = b.deck!;
+  const i = Math.max(0, Math.min(deck.counts.length - 1, n - 2));
+  const stock: Record<string, number> = {};
+  for (const [card, counts] of Object.entries(deck.stock)) stock[card] = counts[i] ?? counts[counts.length - 1];
+  return stock;
+}
+
 /** Поля для настройки: у серии («Лукоморье», 4 части) в списке стоит только первая часть —
  * партия всё равно идёт по всем частям, а с какой начать, решает настройка «Начать с части». */
 export const PICK_BOARDS = BOARDS.filter((b) => !b.series || b.series.part === 1);
@@ -461,6 +627,16 @@ export const def: GameDef<State, Action, Event, State> = {
       }
     }
     const first = board.startCoins ? ids.reduce((best, s) => (coins[s] > coins[best] ? s : best), ids[0]) : ids[0];
+    // «Шёл солдат»: общий запас карточек, ярмарки и котомка у каждого
+    const stock = board.deck ? stockFor(board, ids.length) : null;
+    const cards: (CardId[] | null)[] = Array(10).fill(null);
+    if (board.deck) {
+      for (const s of ids) {
+        const hand: CardId[] = [];
+        for (const st of board.deck.startCards) for (let i = 0; i < (st.n ?? 1); i++) hand.push(st.card);
+        cards[s] = hand;
+      }
+    }
     return {
       map: board.id,
       maps: Array(10).fill(board.id),
@@ -475,6 +651,8 @@ export const def: GameDef<State, Action, Event, State> = {
       ...(race ? { goals: race.tracks.map(() => 0), target: Math.max(1, Number(opts.goals ?? race.target) || race.target), kind: null, card: null, cardSlot: null } : {}),
       // «Лукоморье»: боны, предметы и дополнительные ходы
       ...(board.coins ? { coins, items: Array(10).fill(null), extra: Array(10).fill(0) } : {}),
+      // «Шёл солдат»: карточки в руке, общий запас, флаги и выбор на клетке
+      ...(board.deck && stock ? { cards, stock, flags: Array(10).fill(null), market: null, choose: null } : {}),
     };
   },
   showcase: () => ({ map: 'krugosvet', seats: [0, 1, 2, 3], pos: [4, 36, 45, 104, 0, 0, 0, 0, 0, 0], skip: Array(10).fill(false), turn: 1, phase: 'roll', last: 4, winner: null }),
@@ -523,6 +701,32 @@ export const def: GameDef<State, Action, Event, State> = {
         const n = g?.k === 'pick' ? g.options.length : 1;
         return { type: 'pick', pick: v.pos[v.turn] % Math.max(1, n) };
       }
+      // «Шёл солдат»: ярмарка — берём нужное из запаса, потом закрываем
+      if (phase === 'market') {
+        const b = boardOf(mapOf(v, seat));
+        const hand = v.cards?.[seat] ?? [];
+        const market = v.market;
+        if (market && market.took < 2) {
+          // чего не хватает: сначала «лекарство от нечисти», потом хлеб, огниво, монеты
+          const want: CardId[] = ['sword', 'cross', 'cap', 'towel', 'ball', 'bread', 'flint'];
+          for (const c of want) {
+            if (hand.includes(c)) continue;
+            if (!canPack(b, v, seat, c)) continue;
+            if ((v.stock?.[c] ?? 0) <= 0) continue;
+            return { type: 'market', do: 'take', card: c };
+          }
+        }
+        if (market && market.bought < 2 && !hand.includes('bread') && hand.includes('coins') && (v.stock?.['bread'] ?? 0) > 0) {
+          return { type: 'market', do: 'buy', card: 'bread' };
+        }
+        return { type: 'market', do: 'done' };
+      }
+      // «Шёл солдат»: выбор на препятствии — берём первый доступный вариант
+      if (phase === 'choose') {
+        const cur = v.choose;
+        const i = (cur?.options ?? []).findIndex((o) => optionOk(boardOf(mapOf(v, seat)), v, seat, o));
+        return { type: 'choose', pick: i < 0 ? 0 : i };
+      }
       return { type: phase === 'roll' ? 'roll' : 'move' };
     },
   },
@@ -546,6 +750,23 @@ export const def: GameDef<State, Action, Event, State> = {
           : `🎁 ${name(ev.seat)} берёт <b>${itemName(ev.item)}</b>.`;
       case 'extra':
         return `⏩ ${name(ev.seat)} получает <b>${ev.n}</b> дополнительных хода.`;
+      case 'card': {
+        const d = BOARDS.map((b) => b.deck).find(Boolean);
+        const nm = d?.cards.find((c) => c.id === ev.card)?.name ?? ev.card;
+        return ev.lost
+          ? `🎴 ${name(ev.seat)} отдаёт <b>${esc(nm)}</b>${ev.left != null ? ` (в запасе ${ev.left})` : ''}.`
+          : `🎴 ${name(ev.seat)} берёт <b>${esc(nm)}</b>${ev.left != null ? ` (в запасе ${ev.left})` : ''}.`;
+      }
+      case 'market': {
+        if (ev.do === 'done') return `🛖 ${name(ev.seat)} уходит с ярмарки.`;
+        const d = BOARDS.map((b) => b.deck).find(Boolean);
+        const nm = d?.cards.find((c) => c.id === ev.card)?.name ?? ev.card;
+        return ev.do === 'buy'
+          ? `🛖 ${name(ev.seat)} покупает <b>${esc(nm)}</b> за золотой.`
+          : `🛖 ${name(ev.seat)} берёт на ярмарке <b>${esc(nm)}</b>${ev.stock?.[ev.card!] != null ? ` (осталось ${ev.stock[ev.card!]})` : ''}.`;
+      }
+      case 'choose':
+        return `🎭 ${name(ev.seat)}: ${esc(ev.option)}.${ev.skip ? ` Пропуск ${ev.skip} ${ev.skip === 1 ? 'хода' : 'ходов'}.` : ''}`;
       case 'goal':
         return `🥅 ${name(ev.seat)} забивает ${ev.goals}-ю шайбу (до ${ev.target}).`;
       case 'ask':

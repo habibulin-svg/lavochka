@@ -60,6 +60,15 @@ class HodilkiView implements GameView<State, Event> {
   private rOwn!: HTMLInputElement;
   private rKey!: HTMLInputElement;
   private rJudgeBox!: HTMLElement;
+  /** «Шёл солдат»: выбор на препятствии и ярмарка чудес. */
+  private cBox!: HTMLElement;
+  private cTitle!: HTMLElement;
+  private cText!: HTMLElement;
+  private cOpts!: HTMLElement;
+  private mBox!: HTMLElement;
+  private mStock!: HTMLElement;
+  private mFree!: HTMLElement;
+  private mBuy!: HTMLElement;
   private followBtn!: HTMLButtonElement;
   private tray!: DiceTray;
   /** «Шайба»: вместо лотка с кубиком — грань настоящего кубика и вытянутый квадратик. */
@@ -75,7 +84,7 @@ class HodilkiView implements GameView<State, Event> {
   private shown: number[] = [];
   /** Чьё действие ждём от этого экрана и какое. */
   private actSeat: number | null = null;
-  private phase: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' = 'roll';
+  private phase: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' = 'roll';
   /** Пуговица взята (нажатием) — видны шаги и клетка. */
   private picked = false;
   private busy = false;
@@ -230,6 +239,27 @@ class HodilkiView implements GameView<State, Event> {
             </div>
           </div>
         </div>
+        <div class="ks-choice" hidden>
+          <div class="ks-ctitle"></div>
+          <div class="ks-ctext"></div>
+          <div class="ks-copts"></div>
+        </div>
+        <div class="ks-market" hidden>
+          <div class="ks-mtitle">Ярмарка чудес</div>
+          <div class="ks-mrow">
+            <span class="ks-mlbl">Запас:</span>
+            <span class="ks-mstock"></span>
+          </div>
+          <div class="ks-mrow">
+            <span class="ks-mlbl">Взять бесплатно:</span>
+            <span class="ks-mfree"></span>
+          </div>
+          <div class="ks-mrow">
+            <span class="ks-mlbl">Купить за золотой:</span>
+            <span class="ks-mbuy"></span>
+          </div>
+          <button class="btn primary ks-mdone" data-tap>Готово — дальше</button>
+        </div>
         ${ctx.demo ? '' : `<div class="hint small-hint ks-hint"><span class="ks-hint-text">Потом возьмите свою пуговицу и поставьте на подсвеченную клетку.</span> ${touchScreen() ? 'Бросок — кнопкой или тапом по полю.' : 'Пробел — бросок.'} Карту можно приближать ${touchScreen() ? 'двумя пальцами' : 'колесом'} и двигать.</div>`}
       </div>`);
     ctx.controls.appendChild(this.panel);
@@ -254,6 +284,16 @@ class HodilkiView implements GameView<State, Event> {
     this.rOwn = this.panel.querySelector('.ks-rown') as HTMLInputElement;
     this.rKey = this.panel.querySelector('.ks-rkey') as HTMLInputElement;
     this.rJudgeBox = this.panel.querySelector('.ks-rjudge') as HTMLElement;
+    // «Шёл солдат»: препятствие с выбором и ярмарка чудес
+    this.cBox = this.panel.querySelector('.ks-choice') as HTMLElement;
+    this.cTitle = this.panel.querySelector('.ks-ctitle') as HTMLElement;
+    this.cText = this.panel.querySelector('.ks-ctext') as HTMLElement;
+    this.cOpts = this.panel.querySelector('.ks-copts') as HTMLElement;
+    this.mBox = this.panel.querySelector('.ks-market') as HTMLElement;
+    this.mStock = this.panel.querySelector('.ks-mstock') as HTMLElement;
+    this.mFree = this.panel.querySelector('.ks-mfree') as HTMLElement;
+    this.mBuy = this.panel.querySelector('.ks-mbuy') as HTMLElement;
+    (this.panel.querySelector('.ks-mdone') as HTMLButtonElement).onclick = () => send({ type: 'market', do: 'done' });
     const send = (a: Action) => {
       const seat = this.actSeat;
       if (seat == null) return;
@@ -381,6 +421,8 @@ class HodilkiView implements GameView<State, Event> {
     const path = pathFor(this.v, b, seat);
     if (!path.length) return;
     const to = path[path.length - 1];
+    // страховка: если дорога знака ведёт за пределы поля, шаги просто не рисуем
+    if (!b.cells[from] || path.some((i) => !b.cells[i]) || !b.cells[to]) return;
     const r = b.token * b.img.w * 0.62;
     const add = (tag: string, attrs: Record<string, string | number>, text?: string) => {
       const el = document.createElementNS(NS, tag);
@@ -1216,7 +1258,7 @@ class HodilkiView implements GameView<State, Event> {
 
   setTurn(toAct: number[], interactive: number[]) {
     const v = this.v;
-    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge';
+    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose';
     this.actSeat = v && v.winner == null ? (interactive.find((x) => x === v.turn) ?? null) : null;
     if (this.actSeat == null) this.picked = false;
     // загадка («Лукоморье»): показываем вопрос и ответы тому, кто ходит
@@ -1243,6 +1285,8 @@ class HodilkiView implements GameView<State, Event> {
       );
     }
     this.rollBtn.hidden = this.actSeat == null || this.phase !== 'roll';
+    this.renderMarket(v);
+    this.renderChoice(v);
     // загадка остальным («Лукоморье», поле 4): загадать, ответить или судить
     const r = v?.riddle ?? null;
     const rOn = (this.phase === 'ask' || this.phase === 'answer' || this.phase === 'judge') && !!r;
@@ -1266,6 +1310,107 @@ class HodilkiView implements GameView<State, Event> {
       if (this.phase === 'roll') this.manual = false;
       void this.frameTurn();
     }
+  }
+
+  // ---------- «Шёл солдат»: ярмарка и выбор на препятствии ----------
+
+  /** Картинка карточки-предмета («Шёл солдат»). */
+  private cardImgFor(id: string): string | null {
+    const deck = this.b?.deck;
+    if (!deck) return null;
+    const card = deck.cards.find((c) => c.id === id);
+    return card ? `${deck.cardsDir}/${deck.cardImg(card)}` : null;
+  }
+
+  /** Кнопка-карточка: нажатие шлёт действие. */
+  private cardBtn(id: string, label: string, disabled: boolean, onClick: () => void): HTMLElement {
+    const img = this.cardImgFor(id);
+    const el = h(`<button class="ks-card${disabled ? ' off' : ''}" ${disabled ? 'disabled' : ''} title="${label}">
+      ${img ? `<img src="${img}" alt="" draggable="false">` : ''}<span>${label}</span></button>`);
+    if (!disabled) (el as HTMLButtonElement).onclick = onClick;
+    return el;
+  }
+
+  /** Ярмарка чудес: общий запас, «взять бесплатно» и «купить за золотой». */
+  private renderMarket(v: State | null) {
+    const deck = this.b?.deck;
+    const on = this.phase === 'market' && this.actSeat != null && !!deck && !!v?.market;
+    this.mBox.hidden = !on;
+    if (!on || !v || !deck) return;
+    const seat = this.actSeat!;
+    const hand = v.cards?.[seat] ?? [];
+    const visit = v.market!;
+    const stock = v.stock ?? {};
+    const canPack = (id: string) => {
+      const card = deck.cards.find((c) => c.id === id);
+      if (!card) return false;
+      const bag = (card.kind === 'simple' ? 'simple' : card.kind === 'coins' ? 'coins' : 'magic') as 'simple' | 'magic' | 'coins';
+      const have = hand.filter((c) => (deck.cards.find((x) => x.id === c)?.kind ?? 'magic') === bag).length;
+      return have < deck.bag[bag];
+    };
+    const send = (a: Action) => {
+      Sound.ui();
+      this.ctx.act(seat, a);
+    };
+    // запас: сколько чего лежит на ярмарке
+    this.mStock.replaceChildren(
+      ...deck.cards
+        .filter((c) => (stock[c.id] ?? 0) > 0)
+        .map((c) => h(`<span class="ks-chip"><img src="${this.cardImgFor(c.id)}" alt="" draggable="false"><b>${stock[c.id]}</b></span>`))
+    );
+    // взять бесплатно: волшебный предмет (не больше двух за посещение и по котомке)
+    this.mFree.replaceChildren(
+      ...deck.cards
+        .filter((c) => c.kind === 'magic')
+        .map((c) => {
+          const why = visit.took >= 2 ? 'за посещение взято два' : (stock[c.id] ?? 0) <= 0 ? 'в запасе нет' : !canPack(c.id) ? 'котомка полна' : '';
+          return this.cardBtn(c.id, why || c.name, !!why, () => send({ type: 'market', do: 'take', card: c.id }));
+        })
+    );
+    // купить: хлеб и огниво за золотой
+    this.mBuy.replaceChildren(
+      ...deck.cards
+        .filter((c) => c.kind === 'simple')
+        .map((c) => {
+          const why =
+            visit.bought >= 2 ? 'за посещение куплено два' : !hand.includes('coins') ? 'нет золотого' : (stock[c.id] ?? 0) <= 0 ? 'в запасе нет' : !canPack(c.id) ? 'котомка полна' : '';
+          return this.cardBtn(c.id, why || `${c.name} — 1 золотой`, !!why, () => send({ type: 'market', do: 'buy', card: c.id }));
+        })
+    );
+  }
+
+  /** Выбор на клетке-препятствии: чем пройти (недоступные варианты видны, но серые). */
+  private renderChoice(v: State | null) {
+    const deck = this.b?.deck;
+    const cur = v?.choose ?? null;
+    const on = this.phase === 'choose' && this.actSeat != null && !!deck && !!cur;
+    this.cBox.hidden = !on;
+    if (!on || !v || !cur) return;
+    const seat = this.actSeat!;
+    this.cTitle.textContent = cur.title ?? 'Событие';
+    this.cText.textContent = cur.text;
+    this.cOpts.replaceChildren(
+      ...cur.options.map((o, i) => {
+        const why =
+          o.need && !(v.cards?.[seat] ?? []).includes(o.need)
+            ? `нужно: ${this.b?.deck?.cards.find((c) => c.id === o.need)?.name ?? o.need}`
+            : o.needHorse && !(v.flags?.[seat] ?? []).includes('конь')
+              ? 'нужен Конь-огонь'
+              : o.needIfFlag && !(v.flags?.[seat] ?? []).includes(o.needIfFlag)
+                ? 'теперь нечем'
+                : '';
+        const btn = document.createElement('button');
+        btn.className = `btn ks-copt${why ? ' off' : ''}`;
+        btn.textContent = why ? `${o.text} (${why})` : o.text;
+        btn.disabled = !!why;
+        if (!why)
+          btn.onclick = () => {
+            Sound.ui();
+            this.ctx.act(seat, { type: 'choose', pick: i });
+          };
+        return btn;
+      })
+    );
   }
 
   status(v: State, toAct: number[], interactive: number[]) {
@@ -1302,6 +1447,13 @@ class HodilkiView implements GameView<State, Event> {
       const ask = q?.k === 'pick' ? `Загадка: «${q.question}»` : 'Загадка';
       return me ? `${ask} — выберите ответ` : `${this.ctx.name(toAct[0])} отвечает на загадку…`;
     }
+    if (ph === 'market') {
+      const togo = v.market?.seat ?? v.turn;
+      return me ? 'Ярмарка чудес: возьмите волшебные предметы и купите хлеб с огнивом.' : `${this.ctx.name(togo)} на ярмарке чудес…`;
+    }
+    if (ph === 'choose') {
+      return me ? `${v.choose?.title ?? 'Препятствие'}: выберите, чем пройти.` : `${this.ctx.name(toAct[0])} решает, как пройти препятствие…`;
+    }
     if ((v.phase ?? 'roll') === 'move') return me ? `Выпало ${v.last} — возьмите свою пуговицу и переставьте` : `Ходит ${this.ctx.name(toAct[0])}…`;
     return me ? 'Бросайте кубик' : `Бросает ${this.ctx.name(toAct[0])}…`;
   }
@@ -1324,7 +1476,16 @@ class HodilkiView implements GameView<State, Event> {
     const coins = b.coins ? ` · ${b.coins} ${v.coins?.[seat] ?? 0}` : '';
     const extra = v.extra?.[seat] ? ` · +${v.extra[seat]} ход` : '';
     const items = (v.items?.[seat] ?? []).map(itemIcon).join('');
-    const bag = items ? ` · ${items}` : '';
+    // «Шёл солдат»: карточки-предметы видны поимённо (у каждой своя картинка)
+    const cards = b.deck
+      ? (v.cards?.[seat] ?? [])
+          .map((id) => {
+            const c = b.deck!.cards.find((x) => x.id === id);
+            return c ? `<img class="ks-mini-card" src="${b.deck!.cardsDir}/${b.deck!.cardImg(c)}" alt="${c.name}" title="${c.name}">` : '';
+          })
+          .join('')
+      : '';
+    const bag = cards || (items ? ` · ${items}` : '');
     return `${at} / ${last}${coins}${extra}${bag}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
   }
 

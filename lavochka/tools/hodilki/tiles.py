@@ -30,6 +30,8 @@ SRC = {
     'mepl': 'materials/nastolki/mepl-white/field.webp',
     'sutra': 'materials/nastolki/s-utra-do-vechera/field-1.webp',
     'vput': 'materials/nastolki/v-put-druzya/field.webp',
+    # «Шёл солдат со службы» (1992; разметка — tools/hodilki/shel-cells.py и src/games/hodilki/shel.ts)
+    'shel': 'materials/nastolki/shumov/field.webp',
     # «Лукоморье» (4 части, 1995; разметка — tools/hodilki/lukomorie.py)
     'luk1': 'materials/nastolki/lukomorie/field-1.webp',
     'luk2': 'materials/nastolki/lukomorie/field-2.webp',

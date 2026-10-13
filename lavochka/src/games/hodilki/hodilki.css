@@ -105,6 +105,35 @@
 .ks-rbtns { display: flex; flex-wrap: wrap; gap: 6px; }
 .ks-cube-hint { font-size: 13px; line-height: 1.35; opacity: 0.85; text-align: center; padding: 0 6px; }
 .ks-cube-hint[hidden] { display: none; }
+/* «Шёл солдат»: событие с выбором — текст поля и кнопки «чем пройти» */
+.ks-choice { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); }
+.ks-choice[hidden] { display: none; }
+.ks-ctitle { font: 700 15px/1.2 'PT Serif', serif; }
+.ks-ctext { font: 14px/1.35 'PT Serif', serif; opacity: 0.92; }
+.ks-copts { display: flex; flex-direction: column; gap: 6px; }
+.ks-copt { text-align: left; justify-content: flex-start; }
+.ks-copt.off { opacity: 0.45; }
+/* «Шёл солдат»: ярмарка чудес — запас карточек и кнопки «взять» / «купить» */
+.ks-market { display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); }
+.ks-market[hidden] { display: none; }
+.ks-mtitle { font: 700 14px/1.2 'PT Serif', serif; }
+.ks-mrow { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+.ks-mlbl { font-size: 12px; opacity: 0.85; align-self: center; }
+.ks-mstock, .ks-mfree, .ks-mbuy { display: flex; flex-wrap: wrap; gap: 4px; }
+.ks-chip { display: inline-flex; align-items: center; gap: 2px; padding: 0 3px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); font-size: 11px; }
+.ks-chip img { height: 22px; width: auto; border-radius: 3px; }
+.ks-card { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 1px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.2); color: inherit; font: 10px/1.05 'PT Sans', sans-serif; cursor: pointer; max-width: 58px; }
+.ks-card img { height: 28px; width: auto; border-radius: 3px; display: block; }
+.ks-card span { text-align: center; }
+.ks-card.off { opacity: 0.4; cursor: default; }
+.ks-card.off img { filter: grayscale(0.7); }
+.ks-mini-card { height: 30px; width: auto; border-radius: 3px; margin-right: 2px; vertical-align: middle; }
+.ks-mdone { width: 100%; padding: 6px; font-size: 15px; }
+/* телефон: панель под полем, ярмарка и выбор не должны растягивать стол */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .ks-market, .ks-choice { max-height: 46vh; overflow: auto; }
+}
 /* шайба команды — картинка с поля, а не пуговица */
 .ks-token.ks-puck .ks-btn { border-radius: 50%; }
 .ks-mini-dot.ks-puck-dot { border-radius: 50%; }
