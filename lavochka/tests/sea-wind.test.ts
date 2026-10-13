@@ -14,35 +14,36 @@ describe('ветер и вертушка: углы и курсы', () => {
   });
 
   it('скорость по курсу: 3 — фордевинд и бакштаг, 2 — галфвинд, 1 — бейдевинд, 0 — против ветра', () => {
-    expect(sailSteps('N', 'N')).toBe(3); // ветер в корму
-    expect(sailSteps('N', 'NE')).toBe(3); // наискосок
-    expect(sailSteps('N', 'NW')).toBe(3);
-    expect(sailSteps('N', 'E')).toBe(2); // под прямым углом
+    // ветер дует С НОРДА: в корму идёт тот, кто правит на зюйд
+    expect(sailSteps('N', 'S')).toBe(3); // фордевинд
+    expect(sailSteps('N', 'SW')).toBe(3); // бакштаг
+    expect(sailSteps('N', 'SE')).toBe(3);
+    expect(sailSteps('N', 'E')).toBe(2); // галфвинд
     expect(sailSteps('N', 'W')).toBe(2);
-    expect(sailSteps('N', 'SW')).toBe(1); // круто против ветра
-    expect(sailSteps('N', 'SE')).toBe(1);
-    expect(sailSteps('N', 'S')).toBe(0); // прямо в нос
+    expect(sailSteps('N', 'NE')).toBe(1); // бейдевинд
+    expect(sailSteps('N', 'NW')).toBe(1);
+    expect(sailSteps('N', 'N')).toBe(0); // прямо в глаз ветра
   });
 
   it('штиль останавливает парусники, но на вёслах можно одну клетку', () => {
     const calm = { from: 'N', weather: 'calm' } as const;
-    expect(stepsFor(calm, 'N')).toBe(0);
     expect(stepsFor(calm, 'S')).toBe(0);
-    expect(stepsFor(calm, 'S', true)).toBe(1);
+    expect(stepsFor(calm, 'N')).toBe(0);
+    expect(stepsFor(calm, 'N', true)).toBe(1);
   });
 
   it('в свежий ветер парусник идёт по курсу, а на вёслах — и против ветра одну клетку', () => {
     const fresh = { from: 'E', weather: 'breeze' } as const;
-    expect(stepsFor(fresh, 'E')).toBe(3);
-    expect(stepsFor(fresh, 'N')).toBe(2);
-    expect(stepsFor(fresh, 'W')).toBe(0);
-    expect(stepsFor(fresh, 'W', true)).toBe(1);
+    expect(stepsFor(fresh, 'W')).toBe(3); // ветер с оста — в корму идёт курс на вест
+    expect(stepsFor(fresh, 'N')).toBe(2); // галфвинд
+    expect(stepsFor(fresh, 'E')).toBe(0); // прямо в глаз ветра
+    expect(stepsFor(fresh, 'E', true)).toBe(1); // на вёслах — одну клетку
   });
 
   it('в ураган своим курсом не идут — корабль дрейфует по ветру на клетку', () => {
     const storm = { from: 'N', weather: 'storm' } as const;
     expect(stepsFor(storm, 'S')).toBe(0);
-    expect(stepsFor(storm, 'S', true)).toBe(0);
+    expect(stepsFor(storm, 'N', true)).toBe(0);
     expect(drift(storm)).toEqual(POINT_STEP.S); // ветер с норда несёт на зюйд
     expect(drift({ from: 'W', weather: 'storm' })).toEqual(POINT_STEP.E);
   });
