@@ -84,6 +84,10 @@ export function createView(): GameView<State, Event> {
         const kind = best.getAttribute('data-move');
         ctx?.act(seat, kind === 'air' ? { type: 'air', to } : { type: 'step', to });
       };
+      // захват указателя: жест остаётся за пуговицей, браузер не перехватывает его прокруткой
+      try { el.setPointerCapture(e.pointerId); } catch { /* не все браузеры умеют */ }
+      el.addEventListener('pointerup', up, { once: true });
+      el.addEventListener('pointercancel', () => document.removeEventListener('pointerup', up), { once: true });
       document.addEventListener('pointerup', up, { once: true });
     });
   }

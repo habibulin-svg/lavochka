@@ -31,3 +31,6 @@
 .bg-board.ready .bg-map-mini { opacity: 0; }
 .bg-piece.bg-take { cursor: grab; }
 .bg-piece.bg-take:active { cursor: grabbing; }
+
+/* перетаскивание фишки: жест остаётся за нами, а не уходит в прокрутку */
+.bg-piece.bg-take { touch-action: none; }

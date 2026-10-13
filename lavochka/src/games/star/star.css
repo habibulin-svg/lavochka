@@ -52,3 +52,6 @@
 .st-open { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; gap: 6px; z-index: 6; pointer-events: none; }
 .st-open img { width: 64px; height: 88px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,.45); background: #f6efdd; }
 .st-open-empty { display: none; }
+
+/* перетаскивание фишки: жест остаётся за нами, а не уходит в прокрутку */
+.st-piece.st-take { touch-action: none; }
