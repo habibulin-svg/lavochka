@@ -7,6 +7,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   shishbesh: () => import('./shishbesh/def').then((m) => m.def),
   hodilki: () => import('./hodilki/def').then((m) => m.def),
   manager: () => import('./manager/def').then((m) => m.def),
+  vorona: () => import('./vorona/def').then((m) => m.def),
   nardy: () => import('./nardy/def').then((m) => m.def),
   durak: () => import('./durak/def').then((m) => m.def),
   chess: () => import('./chess/def').then((m) => m.def),
