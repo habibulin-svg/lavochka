@@ -28,3 +28,5 @@
 .dj-card-t { font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
 .dj-card-s { margin-top: 6px; font: 15px/1.4 'PT Serif', serif; color: #33240f; }
 .dj-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #8a7550; }
+.dj-piece.dj-take { cursor: grab; }
+.dj-piece.dj-take:active { cursor: grabbing; }

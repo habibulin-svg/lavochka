@@ -53,12 +53,37 @@ export function createView(): GameView<State, Event> {
       const c = CELLS[cell];
       list.forEach((seat, i) => {
         const off = list.length > 1 ? (i - (list.length - 1) / 2) * PIECE_GAP : 0;
-        over!.append(
-          svg('image', {
-            x: c.x + off - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
-            href: `/hodilki/buttons/${seat}.webp`, class: 'dj-piece',
-          })
-        );
+        const el = svg('image', {
+          x: c.x + off - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
+          href: `/hodilki/buttons/${seat}.webp`, class: 'dj-piece',
+        });
+        // свою пуговицу можно взять и переставить на подсвеченную клетку — как в кинь-двинь
+        if (seat === actSeat && st.phase === 'move' && st.left > 0) {
+          el.setAttribute('class', 'dj-piece dj-take');
+          el.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            const from = { x: e.clientX, y: e.clientY };
+            const up = (ev: PointerEvent) => {
+              document.removeEventListener('pointerup', up);
+              if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
+              const p = cam!.toImg(ev.clientX, ev.clientY);
+              let best = -1;
+              let bd = Infinity;
+              for (const g of Array.from(over!.querySelectorAll('circle.dj-move'))) {
+                const to = Number((g as Element).getAttribute('data-to'));
+                const cc = CELLS[to];
+                const d = Math.hypot(cc.x - p.x, cc.y - p.y);
+                if (d < bd) {
+                  bd = d;
+                  best = to;
+                }
+              }
+              if (best >= 0 && bd < 90) ctx?.act(seat, { type: 'step', to: best });
+            };
+            document.addEventListener('pointerup', up, { once: true });
+          });
+        }
+        over!.append(el);
         if (hasHorse(st, seat) && i === 0) {
           const t = svg('text', { x: c.x + off + 26, y: c.y - 22, class: 'dj-mark' });
           t.textContent = '🐎';
@@ -95,7 +120,7 @@ export function createView(): GameView<State, Event> {
     // куда можно шагнуть (свой ход)
     if (!busy && st.phase === 'move' && st.left > 0 && actSeat != null) {
       for (const to of NEIGH[st.pos[actSeat]]) {
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 30, class: 'dj-move' });
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 30, class: 'dj-move', 'data-to': to });
         g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'step', to }));
         over.append(g);
       }
