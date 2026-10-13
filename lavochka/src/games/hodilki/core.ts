@@ -17,8 +17,9 @@ export type Sign =
   | { k: 'field'; map: string; to: number; text: string }
   /** Предмет: взять себе в инвентарь. */
   | { k: 'item'; item: ItemId; text: string }
-  /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа. */
-  | { k: 'need'; item?: ItemId; coins?: number; yes: number | 'win'; no: number; text: string }
+  /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа,
+   * а исходом бывает и переход на другую часть серии (Лукоморье: клубок — и дальше во вторую часть). */
+  | { k: 'need'; item?: ItemId; coins?: number; yes: NeedTo; no: NeedTo; text: string }
   /** Развилка: дорога выбирается по разнице «очки на кубике − число кружков до развилки» (1…6).
    * byDiff[разница-1] — номер ветки, branches — сами ветки (клетки дороги и выход), roads — их названия. */
   | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string }
@@ -36,6 +37,9 @@ export type Sign =
 
 /** Предметы «Лукоморья»: их берут на клетках, по ним открываются переходы. */
 export type ItemId = 'flower' | 'cap' | 'key' | 'needle' | 'sword';
+
+/** Куда ведёт исход условия: номер клетки этого поля, победа или переход на другое поле серии. */
+export type NeedTo = number | 'win' | { map: string; to: number };
 
 export const ITEMS: { id: ItemId; name: string; icon: string }[] = [
   { id: 'flower', name: 'Аленький цветочек', icon: '🌺' },
@@ -100,11 +104,16 @@ export interface Board {
   startCoins?: number;
   /** Показ правил: шаги с подкрученным кубиком. rig — значения для rng.int (у клюшки их два: грань и квадратик). */
   demo?: { rig: number | number[]; caption: string; seat?: number }[];
+  /** Серия: у игры несколько частей-полей — в настройках это одно поле и один пресет,
+   * а партия идёт по частям до конца («Лукоморье»: клубок → цветочек → Заоблачная даль → замок Кощея). */
+  series?: { id: string; label: string; part: number; count: number };
 }
 
 export interface State {
-  /** Поле (id из BOARDS). */
+  /** Поле (id из BOARDS) — карта того, чей сейчас ход (у серии «Лукоморье» игроки могут быть на разных частях). */
   map: string;
+  /** Карта каждого места: у обычных полей у всех одна, у серии — своя (птица уносит в другую часть и т. п.). */
+  maps?: (string | null)[];
   seats: number[];
   pos: number[];
   /** Сколько ходов пропустить (старые сохранения — true/false). */
@@ -207,6 +216,9 @@ export const SEATS = [
 ];
 
 export const finishOf = (b: Board) => b.end ?? b.cells.length - 1;
+
+/** Карта места: у серии у каждого своя, у обычных полей — общая. */
+export const mapOf = (s: State, seat: number) => s.maps?.[seat] ?? s.map;
 
 /** Дорожка места: у обычных полей путь один на всех, у гонки с голами — по кругу (0, 2, 4… — первая шайба). */
 export const trackOf = (b: Board, seat: number) => (b.race ? seat % b.race.tracks.length : 0);

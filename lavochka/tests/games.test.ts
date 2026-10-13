@@ -52,7 +52,8 @@ describe.each(Object.keys(DEFS))('%s', (id) => {
     const def = await load();
     for (const p of def.presets || []) {
       const opts = { ...defaults(def), ...p.options };
-      const res = await simulate(def, botSeats(def, def.players.default), opts, 77);
+      // запас шагов: серии («Лукоморье» — четыре части подряд) ботам приходится проходить долго
+      const res = await simulate(def, botSeats(def, def.players.default), opts, 77, 400_000);
       expect(res.error, `пресет ${p.id}`).toBeUndefined();
       expect(res.finished, `пресет ${p.id}`).toBe(true);
     }

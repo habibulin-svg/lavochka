@@ -8,7 +8,7 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { finishOf, itemIcon, pathFor, signGood, signText, skipsOf, target, trackOf, type Action, type Board, type Event, type State } from './core';
+import { finishOf, itemIcon, mapOf, pathFor, signGood, signText, skipsOf, target, trackOf, type Action, type Board, type Event, type State } from './core';
 import { loadClues } from '../../words/clues';
 import { randomRiddle } from '../../words/riddles';
 import { boardOf, scoreText } from './def';
@@ -402,6 +402,16 @@ class HodilkiView implements GameView<State, Event> {
 
   // ---------- пуговицы ----------
 
+  /** Карта, которую показываем: того, чей ход (или моя, если сейчас мой ход). */
+  private boardSeat(v: State) {
+    return this.actSeat ?? v.turn;
+  }
+
+  /** Фишка этого места — на показанной карте? У серии «Лукоморье» игроки бывают на разных частях. */
+  private here(v: State, seat: number) {
+    return !this.b || mapOf(v, seat) === this.b.id;
+  }
+
   private place() {
     const v = this.v;
     const b = this.b;
@@ -411,7 +421,10 @@ class HodilkiView implements GameView<State, Event> {
     const at = new Map<number, number[]>();
     for (const s of ids) at.set(this.shown[s], [...(at.get(this.shown[s]) ?? []), s]);
     for (const s of ids) {
+      const here = this.here(v, s);
       let el = this.tokens.get(s);
+      if (el) el.hidden = !here;
+      if (!here) continue;
       if (!el) {
         const puck = b.race?.pucks?.[trackOf(b, s)];
         el = h(
@@ -1110,7 +1123,7 @@ class HodilkiView implements GameView<State, Event> {
   }
 
   setView(v: State) {
-    this.useBoard(v.map);
+    this.useBoard(mapOf(v, this.boardSeat(v)));
     this.v = v;
     this.shown = v.pos.slice();
     this.die(v.last);
@@ -1192,7 +1205,7 @@ class HodilkiView implements GameView<State, Event> {
         }
       } else if (ev.type === 'win') Sound.win();
     }
-    this.useBoard(v.map);
+    this.useBoard(mapOf(v, this.boardSeat(v)));
     this.v = v;
     this.shown = v.pos.slice();
     this.busy = false;
@@ -1205,7 +1218,7 @@ class HodilkiView implements GameView<State, Event> {
     this.actSeat = v && v.winner == null ? (interactive.find((x) => x === v.turn) ?? null) : null;
     if (this.actSeat == null) this.picked = false;
     // загадка («Лукоморье»): показываем вопрос и ответы тому, кто ходит
-    const sign = v ? boardOf(v.map).cells[v.pos[v.turn]]?.sign : null;
+    const sign = v ? boardOf(mapOf(v, v.turn)).cells[v.pos[v.turn]]?.sign : null;
     const quiz = this.phase === 'pick' && sign?.k === 'pick' ? sign : null;
     const ask = quiz && this.actSeat != null;
     this.quizBox.hidden = !ask;
@@ -1254,7 +1267,7 @@ class HodilkiView implements GameView<State, Event> {
   }
 
   status(v: State, toAct: number[], interactive: number[]) {
-    const b = boardOf(v.map);
+    const b = boardOf(mapOf(v, toAct[0] ?? v.turn));
     const me = interactive.includes(toAct[0]);
     if (b.race) {
       const score = `Счёт ${scoreText(v, b)}${v.target ? ` (до ${v.target})` : ''}.`;
@@ -1292,7 +1305,7 @@ class HodilkiView implements GameView<State, Event> {
   }
 
   playerStats(v: State, seat: number) {
-    const b = boardOf(v.map);
+    const b = boardOf(mapOf(v, seat));
     if (b.race) {
       const trail = b.race.tracks[trackOf(b, seat)];
       const at = Math.max(0, trail.indexOf(v.pos[seat]));

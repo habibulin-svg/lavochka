@@ -3,7 +3,7 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
 import { answerMatches, diffForLevel, randomRiddle, ANSWER_CHANCE } from '../../words/riddles';
-import { finishOf, itemName, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type RiddleState, type Sign, type State } from './core';
+import { finishOf, itemName, mapOf, pathFor, SEATS, signText, skipsOf, trackOf, walkFor, type Action, type Board, type Event, type NeedTo, type RiddleState, type Sign, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
@@ -45,6 +45,7 @@ function endTurn(s: State, seat: number, ev: Event[]) {
     t = next(s, t);
   }
   s.turn = t;
+  s.map = mapOf(s, t);
   return { state: s, events: ev };
 }
 
@@ -101,7 +102,7 @@ function moveRace(s0: State, b: Board, seat: number): { state: State; events: Ev
 function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number }): { state: State; events: Event[] } | null {
   if (s0.winner != null || seat !== s0.turn) return null;
   const phase = s0.phase ?? 'roll';
-  const board = boardOf(s0.map);
+  const board = boardOf(mapOf(s0, seat));
   if (a?.type === 'roll') {
     if (phase !== 'roll') return null;
     if (board.race) return rollRace(s0, board, seat, rng);
@@ -121,6 +122,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     s.pos[seat] = dest;
     if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
     s.turn = next(s, seat);
+    s.map = mapOf(s, s.turn);
     return { state: s, events: ev };
   }
   // «Лукоморье», поле 4: загадка остальным. Загадавший выбирает загадку (свою или из базы вопросов),
@@ -140,6 +142,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     };
     const s: State = { ...s0, pos: s0.pos.slice(), skip: s0.skip.slice(), riddle: r, phase: r.waiting.length ? 'answer' : 'judge' };
     s.turn = r.waiting[0] ?? seat;
+    s.map = mapOf(s, s.turn);
     return { state: s, events: [{ type: 'ask', seat, text }] };
   }
   if (a?.type === 'answer') {
@@ -157,6 +160,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const i = s0.seats.indexOf(seat);
     const after = s0.seats.slice(i + 1).concat(s0.seats.slice(0, i));
     s.turn = after.find((x) => r.waiting.includes(x)) ?? r.by;
+    s.map = mapOf(s, s.turn);
     return { state: s, events: [{ type: 'answer', seat, solved, ...(text ? { text } : {}) }] };
   }
   if (a?.type === 'judge') {
@@ -186,17 +190,36 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     skip: s0.skip.slice(),
     route: many(s0.route, null),
     routeFor: many(s0.routeFor, null),
+    maps: many(s0.maps, s0.map),
     ...(board.coins || s0.coins ? { coins: many(s0.coins, 0) } : {}),
     ...(s0.items ? { items: s0.items.slice() } : {}),
     ...(s0.extra ? { extra: s0.extra.slice() } : {}),
     phase: 'roll',
   };
   const ev: Event[] = [];
+  /** Исход условия: победа, клетка этого поля или переход на другую часть серии. */
+  const goNeed = (target: NeedTo) => {
+    if (target === 'win') return winNow(s, ev, seat);
+    if (typeof target === 'object') {
+      const other = boardOf(target.map);
+      s.maps = (s.maps ?? s0.pos.map(() => s.map)).slice();
+      s.maps[seat] = other.id;
+      s.pos[seat] = Math.max(0, Math.min(finishOf(other), target.to));
+      s.route = s.route ? s.route.map(() => null) : s.route;
+      s.routeFor = s.routeFor ? s.routeFor.map(() => null) : s.routeFor;
+      ev.push({ type: 'sign', seat, sign: { k: 'field', map: other.id, to: s.pos[seat], text: `переход в «${other.title}»` }, to: s.pos[seat] });
+      return endTurn(s, seat, ev);
+    }
+    s.pos[seat] = Math.max(0, Math.min(finish, target));
+    if (s.pos[seat] === finish && !board.winBySign) return winNow(s, ev, seat);
+    return endTurn(s, seat, ev);
+  };
   // «выход только нужной гранью»: пока не выпадет нужное, пуговица стоит на месте
   const stand = board.cells[s.pos[seat]]?.sign;
   if (stand?.k === 'wait' && (s0.last ?? 0) !== stand.die) {
     ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat] });
     s.turn = next(s, seat);
+    s.map = mapOf(s, s.turn);
     return { state: s, events: ev };
   }
   // Пуговица стоит на последней клетке ленты, а её знак не срабатывал: так бывает, если сюда перенесла
@@ -206,11 +229,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const hasItem = stand.item ? (s.items?.[seat] ?? []).includes(stand.item) : true;
     const hasCoins = stand.coins != null ? (s.coins?.[seat] ?? 0) >= stand.coins : true;
     ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat], ...(board.cells[s.pos[seat]].text ? { text: board.cells[s.pos[seat]].text } : {}) });
-    if (hasItem && hasCoins && stand.yes === 'win') return winNow(s, ev, seat);
-    const dest = Math.max(0, Math.min(finish, hasItem && hasCoins ? (stand.yes as number) : stand.no));
-    s.pos[seat] = dest;
-    if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
-    return endTurn(s, seat, ev);
+    return goNeed(hasItem && hasCoins ? stand.yes : stand.no);
   }
   const walk = walkFor(s0, board, seat);
   const path = walk.path;
@@ -270,7 +289,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       // серия «Лукоморья»: часть 1–4 — разные поля одной карточки, переход переносит пуговицу на другое поле
       const other = boardOf(sign.map);
       const fromText = board.cells[to].text;
-      s.map = other.id;
+      s.maps = (s.maps ?? s0.pos.map(() => s.map)).slice();
+      s.maps[seat] = other.id;
       dest = Math.max(0, Math.min(finishOf(other), sign.to));
       ev.push({ type: 'sign', seat, sign, to: dest, ...(fromText ? { text: fromText } : {}) });
       s.pos[seat] = dest;
@@ -310,11 +330,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     } else if (sign.k === 'need') {
       const hasItem = sign.item ? (s.items?.[seat] ?? []).includes(sign.item) : true;
       const hasCoins = sign.coins != null ? (s.coins?.[seat] ?? 0) >= sign.coins : true;
-      if (hasItem && hasCoins && sign.yes === 'win') {
-        ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
-        return win();
-      }
-      dest = Math.max(0, Math.min(finish, hasItem && hasCoins ? (sign.yes as number) : sign.no));
+      ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+      return goNeed(hasItem && hasCoins ? sign.yes : sign.no);
     } else if (sign.k === 'pick') {
       // загадка: ход прерывается, пока игрок не назовёт ответ
       ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
@@ -346,11 +363,32 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       t = next(s, t);
     }
     s.turn = t;
+    s.map = mapOf(s, t);
   }
   return { state: s, events: ev };
 }
 
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
+
+/** Поля для настройки: у серии («Лукоморье», 4 части) в списке стоит только первая часть —
+ * партия всё равно идёт по всем частям, а с какой начать, решает настройка «Начать с части». */
+export const PICK_BOARDS = BOARDS.filter((b) => !b.series || b.series.part === 1);
+export const boardLabel = (b: Board) => b.series?.label ?? b.title;
+
+/** Части серии по её id («luk»): [часть 1, часть 2, …]. */
+export const seriesParts = (id: string) => BOARDS.filter((b) => b.series?.id === id).sort((a, b) => a.series!.part - b.series!.part);
+
+/** С какого поля начинать партию: у серии — выбранная часть («начать с части»). */
+export function startBoard(opts: { [k: string]: unknown }): Board {
+  const first = boardOf(String(opts.map ?? BOARDS[0].id));
+  const id = first.series?.id;
+  if (!id) return first;
+  // в списке полей у серии стоит только первая часть; если же выбрана конкретная часть — начинаем с неё
+  if (first.series!.part !== 1) return first;
+  const parts = seriesParts(id);
+  const n = Math.max(1, Math.min(parts.length, Number(opts.lukStart ?? 1) || 1));
+  return parts[n - 1] ?? first;
+}
 
 export const def: GameDef<State, Action, Event, State> = {
   id: 'hodilki',
@@ -366,7 +404,17 @@ export const def: GameDef<State, Action, Event, State> = {
   countsHint: (opts) => (boardOf(String(opts.map ?? BOARDS[0].id)).race ? 'вдвоём или командами: 2 на 2 или 3 на 3, у команды одна шайба' : undefined),
   seats: SEATS,
   options: [
-    { key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id },
+    { key: 'map', label: 'Поле', type: 'select', choices: PICK_BOARDS.map((b) => ({ value: b.id, label: boardLabel(b) })), default: BOARDS[0].id },
+    // Серия «Лукоморье»: одна игра, но начинать можно с любой части — дальше партия идёт по всем частям до конца.
+    {
+      key: 'lukStart',
+      label: 'Начать с части',
+      hint: '«Лукоморье» — серия из четырёх частей: можно начать с любой, а игра всё равно пойдёт до замка Кощея.',
+      type: 'select',
+      choices: [1, 2, 3, 4].map((n) => ({ value: String(n), label: `часть ${n}` })),
+      default: '1',
+      showIf: (opts) => !!boardOf(String(opts.map ?? BOARDS[0].id)).series,
+    },
     // Настройка только для «Шайбы»: у остальных полей финиш, а не счёт по голам.
     {
       key: 'goals',
@@ -378,10 +426,10 @@ export const def: GameDef<State, Action, Event, State> = {
       showIf: (opts) => !!boardOf(String(opts.map ?? BOARDS[0].id)).race,
     },
   ],
-  presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
+  presets: PICK_BOARDS.map((b) => ({ id: b.series?.id ?? b.id, label: boardLabel(b), options: { map: b.id } })),
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    const board = boardOf(String(opts.map ?? BOARDS[0].id));
+    const board = startBoard(opts);
     const race = board.race;
     // «Лукоморье»: перед игрой каждый берёт из банка бон по сумме трёх бросков, первым ходит богатейший
     const coins = Array(10).fill(0);
@@ -395,6 +443,7 @@ export const def: GameDef<State, Action, Event, State> = {
     const first = board.startCoins ? ids.reduce((best, s) => (coins[s] > coins[best] ? s : best), ids[0]) : ids[0];
     return {
       map: board.id,
+      maps: Array(10).fill(board.id),
       seats: ids,
       pos: Array(10).fill(0),
       skip: Array(10).fill(0),
@@ -421,7 +470,7 @@ export const def: GameDef<State, Action, Event, State> = {
   },
   result: (s) => {
     if (s.winner == null) return null;
-    const b = boardOf(s.map);
+    const b = boardOf(mapOf(s, s.winner));
     if (b.race) {
       const track = trackOf(b, s.winner);
       return {
@@ -450,7 +499,7 @@ export const def: GameDef<State, Action, Event, State> = {
       if (phase === 'judge') return { type: 'judge', ok: (v.riddle?.solved.length ?? 0) > 0 };
       // загадка: бот называет ответ по кругу (правильного варианта в правилах нет — выбирает игрок)
       if (phase === 'pick') {
-        const g = boardOf(v.map).cells[v.pos[v.turn]]?.sign;
+        const g = boardOf(mapOf(v, v.turn)).cells[v.pos[v.turn]]?.sign;
         const n = g?.k === 'pick' ? g.options.length : 1;
         return { type: 'pick', pick: v.pos[v.turn] % Math.max(1, n) };
       }

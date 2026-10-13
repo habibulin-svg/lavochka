@@ -1,7 +1,7 @@
 /* Кинь-двинь: советские настолки-«комиксы» 1990–1992 (П. Шегерян, В. Горохов) и детская «С утра до вечера».
  * Разметка — data/<поле>.json (tools/hodilki/import.py из materials/nastolki/, поправки сверены по полю),
  * картинки — public/hodilki/<поле>/ (tools/hodilki/tiles.py). Тексты клеток — с поля. */
-import type { Board, Cell, ItemId, Sign } from './core';
+import type { Board, Cell, ItemId, NeedTo, Sign } from './core';
 import zatmir from './data/zatmir.json';
 import planeta from './data/planeta.json';
 import varvary from './data/varvary.json';
@@ -44,12 +44,22 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   }
   if (code.startsWith('need:')) {
     const p = Object.fromEntries(code.slice(5).split(',').map((kv) => kv.split('=')));
+    // исход — клетка этого поля, победа ('win') или переход на другую часть серии ('field:luk3:33')
+    const goal = (v: string | undefined): NeedTo => {
+      if (!v) return 0;
+      if (v === 'win') return 'win';
+      if (v.startsWith('field:')) {
+        const [, map, to] = v.split(':');
+        return { map, to: +to };
+      }
+      return +v;
+    };
     return {
       k: 'need',
       ...(p.item ? { item: p.item as ItemId } : {}),
       ...(p.coins ? { coins: +p.coins } : {}),
-      yes: p.yes === 'win' ? ('win' as const) : +p.yes,
-      no: +p.no,
+      yes: goal(p.yes),
+      no: goal(p.no),
       text: routeText ?? 'проверка',
     };
   }
@@ -61,7 +71,11 @@ export function signOf(code: string | undefined, i: number, label: string | unde
     const [d, skip] = code.slice(7).split('+');
     return { k: 'coins', dice: +d, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны' };
   }
-  if (code.startsWith('lose:')) return { k: 'coins', n: +code.slice(5), loss: true, text: routeText ?? 'отдаёт боны' };
+  if (code.startsWith('lose:')) {
+    // «отдай N и пропусти M ходов»: lose:5+1
+    const [n, skip] = code.slice(5).split('+');
+    return { k: 'coins', n: +n, loss: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт боны' };
+  }
   if (code.startsWith('loseD:')) {
     const [d, skip] = code.slice(6).split('+');
     return { k: 'coins', dice: +d, loss: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт боны' };

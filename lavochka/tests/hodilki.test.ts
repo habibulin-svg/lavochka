@@ -1,7 +1,7 @@
 /* Кинь-двинь: разметка полей и знаки — ветки «туда и обратно», пропуск на несколько ходов, переходы. */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { BOARDS, def } from '../src/games/hodilki/def';
+import { BOARDS, boardOf, def, PICK_BOARDS, seriesParts, startBoard } from '../src/games/hodilki/def';
 import { finishOf, type Board, type Event, type ItemId, type Sign, type State } from '../src/games/hodilki/core';
 import { riddlesOf } from '../src/words/riddles';
 
@@ -375,7 +375,7 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
     expect(r2.events.some((e) => e.type === 'coins' && e.delta > 0)).toBe(true);
   });
 
-  it('Баба Яга: с 20 бонами даёт клубок (победа), без них — назад к Дубу', () => {
+  it('Баба Яга: с 20 бонами даёт клубок и ведёт во вторую часть, без них — назад к Дубу', () => {
     const rng = new RiggedRng(new SeededRng(32));
     const last = (board.end ?? board.cells.length - 1) - 1;
     const poor = { ...start(rng), pos: [last, 0], turn: 0, coins: [19, 0] };
@@ -384,8 +384,9 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
     expect(r.state.pos[0]).toBe(at('3'));
     const rich = { ...start(rng), pos: [last, 0], turn: 0, coins: [20, 0] };
     const r2 = turn(rich, 0, 1, rng);
-    expect(r2.state.winner).toBe(0);
-    expect(def.result(r2.state)!.text).toContain('клубок');
+    expect(r2.state.maps?.[0]).toBe('luk2'); // клубок выкуплен — серия продолжается второй частью
+    expect(r2.state.pos[0]).toBe(0);
+    expect(def.result(r2.state)).toBeNull();
   });
 
   it('загадка 12 спрашивает про репку и ведёт на названный пункт', () => {
@@ -704,13 +705,53 @@ describe('кинь-двинь: боны, предметы и развилки', 
       let s = def.setup(seats2, { map: 'tests3' }, rng) as State;
       s.turn = 0;
       const r = turn(s, 0, 1, rng);
-      expect(r.state.map).toBe('tests2');
+      expect(r.state.maps?.[0]).toBe('tests2');
       expect(r.state.pos[0]).toBe(2);
       expect(r.state.winner).toBeNull();
     } finally {
       BOARDS.splice(BOARDS.indexOf(other), 1);
       BOARDS.splice(BOARDS.indexOf(hop), 1);
     }
+  });
+});
+
+describe('кинь-двинь: у знаков всех полей числа конечные', () => {
+  it.each(BOARDS.map((b) => b.id))('%s', (id) => {
+    const b = BOARDS.find((x) => x.id === id)!;
+    const num = (v: unknown, what: string) => expect(Number.isFinite(v as number), `${b.id}: ${what}`).toBe(true);
+    b.cells.forEach((c, i) => {
+      const g = c.sign;
+      if (!g) return;
+      const where = `${b.id} клетка ${c.label ?? i} (${g.k})`;
+      if (g.k === 'skip' && g.n != null) num(g.n, where);
+      if (g.k === 'jump') num(g.to, where);
+      if (g.k === 'coins') {
+        if (g.n != null) num(g.n, where);
+        if (g.dice != null) num(g.dice, where);
+        if (g.skip != null) num(g.skip, where);
+      }
+      if (g.k === 'extra') {
+        if (g.n != null) num(g.n, where);
+        if (g.dice != null) num(g.dice, where);
+      }
+      if (g.k === 'wait') num(g.die, where);
+      if (g.k === 'need') {
+        if (g.coins != null) num(g.coins, where);
+        for (const [k, v] of [['yes', g.yes], ['no', g.no]] as const) {
+          if (typeof v === 'number') num(v, `${where}, ${k}`);
+          if (typeof v === 'object') {
+            expect(BOARDS.some((x) => x.id === v.map), `${where}: поле ${v.map}`).toBe(true);
+            num(v.to, `${where}, ${k}`);
+          }
+        }
+      }
+      if (g.k === 'fork') {
+        num(g.byDiff.length, where);
+        for (const d of g.byDiff) num(d, where);
+        for (const br of g.branches) for (const x of br) num(x, where);
+      }
+      if (g.k === 'pick') for (const x of g.to) num(x, where);
+    });
   });
 });
 
@@ -784,20 +825,22 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     for (const br of g.branches) expect(luk('luk2').cells[br[0]].off, 'вход лабиринта — клетка дороги').toBe(true);
   });
 
-  it('поле 2: терем (32) — с цветочком победа, без него назад на развилку (15)', () => {
+  it('поле 2: терем (32) — с цветочком дальше в третью часть, без него назад на развилку (15)', () => {
     const rng = new RiggedRng(new SeededRng(11));
     const before = at('luk2', '32') - 1;
     let a = turn(stand('luk2', before), 0, 1, rng);
     expect(a.state.pos[0]).toBe(at('luk2', '15'));
     expect(a.state.winner).toBeNull();
     a = turn(stand('luk2', before, { items: ['flower'] }), 0, 1, rng);
-    expect(a.state.winner).toBe(0);
+    expect(a.state.maps?.[0]).toBe('luk3');
+    expect(a.state.pos[0]).toBe(at('luk3', '33'));
+    expect(a.state.winner).toBeNull();
   });
 
   it('поле 3: Заоблачная даль (56) переносит в замок Кощея (поле 4)', () => {
     const rng = new RiggedRng(new SeededRng(13));
     const a = turn(stand('luk3', at('luk3', '56') - 1), 0, 1, rng);
-    expect(a.state.map).toBe('luk4');
+    expect(a.state.maps?.[0]).toBe('luk4');
     expect(a.state.pos[0]).toBe(at('luk4', '57'));
   });
 
@@ -890,7 +933,45 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(a.state.pos[0]).toBe(at('luk1', '3')); // без 20 бон — назад к Дубу, а не «ни идти, ни пропустить»
     expect(a.state.turn).toBe(1);
     a = turn(stand('luk1', baba, { coins: 40 }), 0, 1, rng);
-    expect(a.state.winner).toBe(0); // с бонами — клубок и победа
-    expect(a.state.pos[0]).toBe(baba);
+    // с бонами клубок выкуплен — и пуговица идёт во вторую часть серии
+    expect(a.state.maps?.[0]).toBe('luk2');
+    expect(a.state.pos[0]).toBe(at('luk2', '14'));
+    expect(a.state.winner).toBeNull();
+  });
+
+  it('серия «Лукоморье» — одна игра из четырёх частей, начиная с любой', () => {
+    // в списке полей у серии стоит только первая часть, а начинать можно с любой
+    const first = BOARDS.find((b) => b.id === 'luk1')!;
+    expect(first.series).toEqual({ id: 'luk', label: 'Лукоморье. Приключенческий сериал (4 части)', part: 1, count: 4 });
+    expect(seriesParts('luk').map((b) => b.id)).toEqual(['luk1', 'luk2', 'luk3', 'luk4']);
+    expect(PICK_BOARDS.filter((b) => b.series?.id === 'luk').map((b) => b.id)).toEqual(['luk1']);
+    const rng = new RiggedRng(new SeededRng(37));
+    for (const n of [1, 2, 3, 4]) {
+      const b = startBoard({ map: 'luk1', lukStart: String(n) });
+      expect(b.id, `начало с части ${n}`).toBe(`luk${n}`);
+    }
+    // выбрана конкретная часть напрямую — начинаем с неё, настройка «начать с части» не мешает
+    expect(startBoard({ map: 'luk3', lukStart: '1' }).id).toBe('luk3');
+    // у поля не из серии — как было
+    expect(startBoard({ map: 'krugosvet', lukStart: '3' }).id).toBe('krugosvet');
+    expect(def.setup(seats, { map: 'luk1', lukStart: '4' }, rng).map).toBe('luk4');
+  });
+
+  it('серия: игроки бывают на разных картах — каждый ходит по своей', () => {
+    const rng = new RiggedRng(new SeededRng(41));
+    // Вовка в первой части, Ленка — во второй (так бывает после «птицы» и «провала»)
+    let s = def.setup(seats, { map: 'luk1' }, rng) as State;
+    s = { ...s, maps: s.maps!.map((m, i) => (i === 1 ? 'luk2' : m)), pos: s.pos.map((p, i) => (i === 1 ? 0 : p)) };
+    const a = def.apply(s, 0, { type: 'roll' }, rng)!;
+    expect(a.state.map).toBe('luk1'); // Вовка ходит по первой части
+    const b = def.apply(a.state, 0, { type: 'move' }, rng)!;
+    expect(b.state.pos[0]).toBeGreaterThan(0);
+    expect(b.state.turn).toBe(1);
+    expect(b.state.map).toBe('luk2'); // ход перешёл — и поле состояния стало Ленкиным
+    const c = def.apply(b.state, 1, { type: 'roll' }, rng)!;
+    const d = def.apply(c.state, 1, { type: 'move' }, rng)!;
+    expect(d.state.pos[1]).toBeGreaterThan(0);
+    expect(d.state.pos[1]).toBeLessThan(boardOf('luk2').cells.length); // её клетки — по второй карте
+    expect(d.state.pos[0]).toBe(b.state.pos[0]); // Вовка остался там же
   });
 });
