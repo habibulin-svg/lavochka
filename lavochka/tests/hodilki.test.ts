@@ -881,4 +881,16 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     rng.rig([79]);
     expect((def.bot.choose(s, 1, 2, rng) as { correct?: boolean }).correct).toBe(true);
   });
+
+  it('поле 1: у Бабы Яги условие спрашивают и когда пуговица тут уже стоит', () => {
+    // так бывает, если игрока перенесла сюда загадка (12): знак клетки назначения не срабатывает
+    const rng = new RiggedRng(new SeededRng(31));
+    const baba = at('luk1', '13');
+    let a = turn(stand('luk1', baba, { coins: 0 }), 0, 1, rng);
+    expect(a.state.pos[0]).toBe(at('luk1', '3')); // без 20 бон — назад к Дубу, а не «ни идти, ни пропустить»
+    expect(a.state.turn).toBe(1);
+    a = turn(stand('luk1', baba, { coins: 40 }), 0, 1, rng);
+    expect(a.state.winner).toBe(0); // с бонами — клубок и победа
+    expect(a.state.pos[0]).toBe(baba);
+  });
 });

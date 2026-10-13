@@ -199,6 +199,19 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     s.turn = next(s, seat);
     return { state: s, events: ev };
   }
+  // Пуговица стоит на последней клетке ленты, а её знак не срабатывал: так бывает, если сюда перенесла
+  // загадка или переход (у знака клетки назначения правило не повторяется). Идти дальше некуда — спрашиваем
+  // условие, иначе игрок застревает: «Баба Яга» на (13) требует 20 бон, а без них отправляет к Дубу.
+  if (stand?.k === 'need' && s.pos[seat] >= finish) {
+    const hasItem = stand.item ? (s.items?.[seat] ?? []).includes(stand.item) : true;
+    const hasCoins = stand.coins != null ? (s.coins?.[seat] ?? 0) >= stand.coins : true;
+    ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat], ...(board.cells[s.pos[seat]].text ? { text: board.cells[s.pos[seat]].text } : {}) });
+    if (hasItem && hasCoins && stand.yes === 'win') return winNow(s, ev, seat);
+    const dest = Math.max(0, Math.min(finish, hasItem && hasCoins ? (stand.yes as number) : stand.no));
+    s.pos[seat] = dest;
+    if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
+    return endTurn(s, seat, ev);
+  }
   const walk = walkFor(s0, board, seat);
   const path = walk.path;
   // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
