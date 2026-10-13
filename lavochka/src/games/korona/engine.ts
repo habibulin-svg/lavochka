@@ -323,8 +323,12 @@ function cardEffect(s: State, x: X, seat: number, text: string): State {
   const num = (w: string): number => (/^\d+$/.test(w) ? Number(w) : (NUM_WORDS[w.toLowerCase()] ?? 1));
   const add = /(возьми|возьмите|получи|получишь|возьми себе|прибавь)\s+(\d+|один|одна|два|две|три|четыре|пять|шесть)\s*(ПС|ПУ|ПМ|ПО|ПЖ|талер\w*)/gi;
   const lose = /(теряешь|потеряешь|отложи|отдай|лишаешься)\s+(\d+|один|одна|два|две|три|четыре|пять|шесть)\s*(ПС|ПУ|ПМ|ПО|ПЖ|талер\w*)/gi;
+  // УПРОЩЕНИЕ ДЛЯ СБОРНИКА: положительные эффекты карточек усилены втрое.
+  // В оригинале герой растёт ещё и от предметов с амулетами и от выбора на клетках,
+  // которых здесь нет; без усиления партия не сходится (рост меньше потерь).
+  const GAIN = 3;
   for (const m of t.matchAll(add)) {
-    const n = num(m[2]);
+    const n = num(m[2]) * GAIN;
     const target = m[3].toUpperCase();
     if (target.startsWith('ПЖ')) st = life(st, x, seat, n);
     else if (target.startsWith('ТАЛЕР')) st = money(st, x, seat, n);
@@ -340,7 +344,9 @@ function cardEffect(s: State, x: X, seat: number, text: string): State {
     else if (target.startsWith('ТАЛЕР')) st = money(st, x, seat, -n);
     else {
       const k = statOf(target);
-      if (k) st = give(st, x, seat, k, -n);
+      // УПРОЩЕНИЕ ДЛЯ СБОРНИКА: карточка не может уронить характеристику ниже единицы
+      // (иначе герой навсегда застревает с нулём и партия не сходится)
+      if (k) st = give(st, x, seat, k, -Math.min(n, Math.max(0, st.heroes[seat].st[k] - 1)));
     }
   }
   return st;

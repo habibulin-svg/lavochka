@@ -121,6 +121,13 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
   // иначе к лицею за ростом; всё набрано — к Провалу (это уже проверено выше)
   const sig = `${h.cell}|${h.life}|${h.thalers}|${STATS.map((k) => h.st[k]).join(',')}`;
   const idle = barren(seat, sig);
+  // сначала восстановление совсем слабой характеристики (лазарет лечит безумных),
+  // и только потом покупка на обменном пункте
+  const veryWeak = STATS.some((k) => h.st[k] <= 0);
+  if (veryWeak) {
+    const to = nextToward(s, seat, (n) => kindOf(n) === 'hospital' || kindOf(n) === 'lyceum');
+    if (to != null) return { type: 'step', to };
+  }
   const canBuy = h.thalers >= CELL_RULES.exchange.buyPrice && STATS.some((k) => h.st[k] < CELL_RULES.fall.need);
   const want = canBuy
     ? (n: number) => kindOf(n) === 'exchange'
