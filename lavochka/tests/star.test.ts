@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { def } from '../src/games/star/def';
 import {
-  AIR, AIR_FEE, CAPE, DECK, EDGE, FINISH, HALT_AT, IDX, ISLAND_AT, NEIGH, OPEN_FEE, SEA_FEE, SLAVE, START_MONEY, TOKEN_AT,
+  AIR, AIR_FEE, CAPE, CELLS, DECK, EDGE, FINISH, HALT_AT, IDX, ISLAND_AT, NEIGH, OPEN_FEE, SEA_FEE, SLAVE, START_MONEY, TOKEN_AT,
   apply, newState, view,
   type State,
 } from '../src/games/star/engine';
@@ -19,6 +19,19 @@ const turnRoll = (s: State, seat: number, die: number, r: RiggedRng) => {
 };
 
 describe('звезда африки: движок', () => {
+  it('дороги проходят и под квадратами жетонов — тупиков нет', () => {
+    // «Бахр эль Газаль»: разметка агента обрывала дорогу на квадрате, и с жетона был только путь назад
+    expect(NEIGH[IDX['16']]).toContain(IDX['b58']);
+    expect(NEIGH[IDX['16']]).toContain(IDX['b73']);
+    expect(NEIGH[IDX['b73']]).toContain(IDX['16']);
+    // «Озеро Виктория» и жетон 19 — то же самое
+    expect(NEIGH[IDX['25']]).toEqual(expect.arrayContaining([IDX['b105'], IDX['b110']]));
+    expect(NEIGH[IDX['19']]).toContain(IDX['b72']);
+    // ни один жетон не остался тупиком: у каждого не меньше двух дорог
+    const lonely = CELLS.map((c, i) => (c.kind === 'token' ? i : -1)).filter((i) => i >= 0 && NEIGH[i].length < 2);
+    expect(lonely.map((i) => CELLS[i].id)).toEqual([]);
+  });
+
   it('начало партии: каждый сам выбирает город — Танжер или Каир', () => {
     const r = rng();
     const seats = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));

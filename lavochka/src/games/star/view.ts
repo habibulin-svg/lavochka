@@ -6,7 +6,8 @@ import { sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import {
-  AIR, AIR_FEE, CELLS, EDGE, FINISH, H, IDX, NEIGH, OPEN_FEE, TOK_FILE, TOKEN_AT, W,
+  AIR, AIR_FEE, CELLS, EDGE, FINISH, H, IDX, NEIGH, OPEN_FEE, TOK_FILE, TOK_NAME, TOKEN_AT, W,
+  describe,
   type Action, type Event, type State,
 } from './engine';
 import './star.css';
@@ -16,6 +17,10 @@ const nameOf = (seat: number) => SEATS[seat]?.name ?? String(seat);
 /** Фишка: размер и разводка, когда несколько встали на одну клетку. */
 const PIECE_R = 36;
 const PIECE_GAP = 68;
+/** Квадрат жетона на карте — как напечатан (около 160 px). */
+const TOK_HALF = 78;
+/** Сколько держать событие на экране (мс), если за экраном не человек. */
+const PACE: { [k: string]: number } = { token: 2400, diamond: 2400, win: 2200, catch: 1800, island: 1600, skip: 1300, halt: 1500, drop: 1600 };
 
 export function createView(): GameView<State, Event> {
   let ctx: ViewCtx<Action> | null = null;
@@ -26,9 +31,17 @@ export function createView(): GameView<State, Event> {
   let btns: HTMLElement | null = null;
   let tray: DiceTray | null = null;
   let stats: HTMLElement | null = null;
+  let note: HTMLElement | null = null;
+  let card: HTMLElement | null = null;
   let cam: BoardCam | null = null;
   let v: State | null = null;
   let actSeat: number | null = null;
+  /** Где фишки нарисованы сейчас (по ходу показа событий они идут шаг за шагом). */
+  let shown: number[] = [];
+  /** Какие жетоны уже открыты на карте: переворачиваем ровно в тот момент, когда показываем карточку. */
+  let shownOpen: boolean[] = [];
+  /** Идёт показ событий: подсказки шагов не показываем, пока не дошли до конца. */
+  let busy = false;
 
   const svg = (tag: string, attrs: Record<string, string | number>) => {
     const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -45,7 +58,7 @@ export function createView(): GameView<State, Event> {
   function pieces() {
     const st = v!;
     const at = new Map<number, number[]>();
-    for (const seat of st.seats) at.set(st.pos[seat], [...(at.get(st.pos[seat]) ?? []), seat]);
+    for (const seat of st.seats) at.set(shown[seat] ?? st.pos[seat], [...(at.get(shown[seat] ?? st.pos[seat]) ?? []), seat]);
     for (const [cell, list] of at) {
       const c = CELLS[cell];
       list.forEach((seat, i) => {
@@ -94,12 +107,12 @@ export function createView(): GameView<State, Event> {
         })
       );
       if (tok) {
-        if (st.open[i] && st.tokens[i]) {
-          over.append(svg('image', { x: c.x - 26, y: c.y - 26, width: 52, height: 52, href: `/star/${TOK_FILE[st.tokens[i]!]}.webp` }));
-        } else if (st.open[i]) {
-          over.append(label(c.x - 6, c.y + 12, 'st-tok-txt', '·'));
+        if ((shownOpen[i] ?? st.open[i]) && st.tokens[i]) {
+          over.append(svg('image', { x: c.x - 66, y: c.y - 66, width: 132, height: 132, href: `/star/${TOK_FILE[st.tokens[i]!]}.webp` }));
+        } else if (shownOpen[i] ?? st.open[i]) {
+          over.append(label(c.x - 8, c.y + 16, 'st-tok-txt', '·'));
         } else {
-          over.append(svg('rect', { x: c.x - 24, y: c.y - 24, width: 48, height: 48, rx: 9, class: 'st-closed' }));
+          over.append(svg('rect', { x: c.x - TOK_HALF, y: c.y - TOK_HALF, width: TOK_HALF * 2, height: TOK_HALF * 2, rx: 16, class: 'st-closed' }));
         }
       }
       if (city) over.append(label(c.x - 46, c.y - 38, 'st-city', c.id === 'Tg' ? 'Танжер' : 'Каир'));
@@ -116,7 +129,7 @@ export function createView(): GameView<State, Event> {
       }
     }
     // куда можно шагнуть (свой ход)
-    if (st.phase === 'step' && st.left > 0 && actSeat != null) {
+    if (!busy && st.phase === 'step' && st.left > 0 && actSeat != null) {
       const from = st.pos[actSeat];
       const owner = st.diamond === actSeat;
       NEIGH[from].forEach((to, k) => {
@@ -156,6 +169,9 @@ export function createView(): GameView<State, Event> {
       const b = document.createElement('button');
       b.className = `btn ${cls}`.trim();
       b.innerHTML = text;
+      // тап по свободному месту доски и пробел нажимают главную кнопку хода — но только бросок:
+      // в шаге «Остановиться» на карте не должно срабатывать от тапа (по карте игрок выбирает шаг)
+      if (action.type === 'roll') b.dataset.tap = '';
       b.onclick = () => ctx?.act(seat, action);
       btns!.append(b);
     };
@@ -189,6 +205,7 @@ export function createView(): GameView<State, Event> {
     if (!cam || !v) return;
     void cam.frame(turnPoints(), others());
   }
+
 
   return {
     mount(root, c) {
@@ -239,16 +256,64 @@ export function createView(): GameView<State, Event> {
       stats = panel.querySelector('.st-stats') as HTMLElement;
       btns = panel.querySelector('.st-btns') as HTMLElement;
       tray = new DiceTray(panel.querySelector('.st-tray') as HTMLElement, 1);
+      // событие — плашкой сверху, открытый жетон — карточкой; и то и другое в координатах окна
+      note = document.createElement('div');
+      note.className = 'st-note bc-ui';
+      note.hidden = true;
+      card = document.createElement('div');
+      card.className = 'st-card bc-ui';
+      card.hidden = true;
+      card.innerHTML = `<img alt="" draggable="false"><div class="st-card-t"></div><div class="st-card-s"></div>
+        <div class="st-card-h">нажмите, чтобы продолжить</div>`;
+      // нажатие по карточке закрывает её (read() ждёт касания, а карточка не должна держать экран)
+      card.addEventListener('pointerdown', () => {
+        card!.hidden = true;
+      });
+      wrap.append(note, card);
     },
     setView(view) {
       v = view;
+      shown = view.pos.slice();
+      shownOpen = view.open.slice();
       render();
     },
+    /** Событие плашкой сверху; карточка жетона — отдельно, с картинкой. */
     async play(events, view) {
-      const rolled = events.find((e) => e.type === 'roll');
+      const speed = ctx?.speed?.() ?? 1;
       v = view;
-      if (rolled && rolled.type === 'roll' && tray) await tray.roll([rolled.die], ctx?.speed?.() ?? 1);
-      else await sleep(150);
+      busy = true;
+      card!.hidden = true;
+      note!.hidden = true;
+      for (const ev of events) {
+        if (ev.type === 'roll') {
+          if (tray) await tray.roll([ev.die], speed);
+          continue;
+        }
+        if (ev.type === 'step' || ev.type === 'air' || ev.type === 'start') {
+          shown[ev.seat] = ev.type === 'start' ? ev.at : ev.to;
+        }
+        const text = describe(ev, (s) => nameOf(s));
+        if (!text) continue;
+        note!.innerHTML = text;
+        note!.hidden = false;
+        render();
+        if (ev.type === 'token') {
+          // открытие жетона: сначала переворачиваем его на карте, потом показываем карточку и ЖДЁМ игрока
+          shownOpen[ev.cell] = true;
+          const img = card!.querySelector('img') as HTMLImageElement;
+          img.src = `/star/${TOK_FILE[ev.tok]}.webp`;
+          (card!.querySelector('.st-card-t') as HTMLElement).textContent = TOK_NAME[ev.tok] ?? '';
+          (card!.querySelector('.st-card-s') as HTMLElement).innerHTML = text;
+          card!.hidden = false;
+          await (ctx?.read ? ctx.read(PACE.token) : sleep(PACE.token / speed));
+          card!.hidden = true;
+        } else {
+          await (ctx?.read ? ctx.read(PACE[ev.type] ?? 900) : sleep((PACE[ev.type] ?? 900) / speed));
+        }
+        if (ev.type === 'step' || ev.type === 'air') await sleep(220 / speed);
+      }
+      busy = false;
+      note!.hidden = true;
       render();
       frame();
     },
@@ -294,9 +359,11 @@ export function createView(): GameView<State, Event> {
       cam?.destroy();
       wrap?.remove();
       panel?.remove();
-      wrap = board = over = panel = null;
+      wrap = board = over = panel = note = card = null;
       cam = null;
       v = null;
+      shown = [];
+      shownOpen = [];
     },
   };
 }

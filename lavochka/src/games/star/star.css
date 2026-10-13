@@ -21,6 +21,18 @@
 .st-pass { fill: rgba(70, 150, 255, 0.22); stroke: #6cb2ff; stroke-width: 4; stroke-dasharray: 8 5; cursor: pointer; }
 .st-bandit { fill: #ffd2d2; font: 34px serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
 .st-panel { display: flex; flex-direction: column; gap: 8px; }
+/* плашка события — сверху, в координатах окна */
+.st-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(22, 30, 46, 0.88); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
+/* карточка открытого жетона — по центру, ждёт нажатия */
+.st-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(320px, 84%);
+  padding: 14px 16px 10px; border-radius: 14px; text-align: center; cursor: pointer;
+  background: linear-gradient(#fdf6e3, #f3e6c8); border: 3px solid #caa96a; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); }
+.st-card img { width: 132px; height: 132px; object-fit: contain; }
+.st-card-t { font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
+.st-card-s { margin-top: 4px; font: 14px/1.35 'PT Serif', serif; color: #33240f; }
+.st-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #8a7550; }
 .st-panel.st-hidden .st-btns { display: none; }
 .st-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }
 .st-tray { height: 96px; }
