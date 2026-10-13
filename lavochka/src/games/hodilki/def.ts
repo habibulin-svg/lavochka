@@ -139,7 +139,19 @@ export const def: GameDef<State, Action, Event, State> = {
   },
   countsHint: (opts) => (boardOf(String(opts.map ?? BOARDS[0].id)).race ? 'вдвоём или командами: 2 на 2 или 3 на 3, у команды одна шайба' : undefined),
   seats: SEATS,
-  options: [{ key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id }],
+  options: [
+    { key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id },
+    // Настройка только для «Шайбы»: у остальных полей финиш, а не счёт по голам.
+    {
+      key: 'goals',
+      label: 'Голов до победы',
+      hint: 'Только для «Шайбы»: партия идёт до этого числа заброшенных шайб.',
+      type: 'select',
+      choices: [1, 3, 5, 7].map((n) => ({ value: String(n), label: n === 1 ? 'один гол' : `до ${n} голов` })),
+      default: '3',
+      showIf: (opts) => !!boardOf(String(opts.map ?? BOARDS[0].id)).race,
+    },
+  ],
   presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),
   setup: (seats, opts) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);

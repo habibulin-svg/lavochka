@@ -109,6 +109,14 @@ describe('кинь-двинь: «Шайба»', () => {
     expect(def.countsHint!({ map: 'krugosvet' })).toBeUndefined();
   });
 
+  it('настройка «Голов до победы» показывается только у «Шайбы» (по умолчанию 3, можно 1, 5, 7)', () => {
+    const o = def.options!.find((x) => x.key === 'goals')!;
+    expect(o.showIf!({ map: 'shayba' })).toBe(true);
+    expect(o.showIf!({ map: 'krugosvet' })).toBe(false);
+    expect(o.default).toBe('3');
+    expect(o.choices!.map((c) => c.value)).toEqual(['1', '3', '5', '7']);
+  });
+
   it('в командах напарники через одного ходят одной шайбой', () => {
     const rng = new RiggedRng(new SeededRng(11));
     const four = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));

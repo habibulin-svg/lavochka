@@ -947,6 +947,41 @@ class HodilkiView implements GameView<State, Event> {
     if (stick) this.cardImg.src = `${dir}/cards/ochko${card}-0${((slot ?? 0) % 5) + 1}.webp`;
   }
 
+  /** Бросок кубика «Шайбы»: как обычные кубики — стук костей и кувыркание.
+   * Грань с очками кувыркается, а клюшку не крутим (её не «бросают», а показывают) — вместо этого
+   * из мешочка вынимается квадратик. */
+  private async rollRaceDie(face: number, card: number | null, slot: number | null, speed: number) {
+    const dir = '/hodilki/shayba';
+    const dur = Math.round(1000 / Math.max(0.5, speed));
+    const stick = face >= 5;
+    this.cubeHint.hidden = true;
+    this.cardImg.hidden = true;
+    this.face.src = face === 5 ? `${dir}/cube-stick-red.webp` : face === 6 ? `${dir}/cube-stick-green.webp` : `${dir}/cube-pips-${face}.webp`;
+    this.face.hidden = false;
+    Sound.diceRoll(dur / 1000);
+    if (stick) {
+      // клюшка: грань просто ложится, а квадратик вытягивается из мешочка
+      await this.face.animate([{ opacity: 0, transform: 'scale(0.72)' }, { opacity: 1, transform: 'scale(1)' }], { duration: Math.round(260 / speed), easing: 'ease-out' }).finished;
+      if (card != null) {
+        this.cardImg.src = `${dir}/cards/ochko${card}-0${((slot ?? 0) % 5) + 1}.webp`;
+        this.cardImg.hidden = false;
+        Sound.ui();
+        await this.cardImg.animate([{ opacity: 0, transform: 'translateY(-18px) scale(0.8)' }, { opacity: 1, transform: 'none' }], { duration: Math.round(280 / speed), easing: 'ease-out' }).finished;
+      }
+    } else {
+      const spin = (Math.random() < 0.5 ? -1 : 1) * 360 * (2 + Math.floor(Math.random() * 2));
+      await this.face.animate(
+        [
+          { transform: 'translate(-16px, -12px) rotate(-40deg) scale(0.86)', opacity: 0.85, offset: 0 },
+          { transform: `translate(8px, 5px) rotate(${spin * 0.7}deg) scale(1.04)`, opacity: 1, offset: 0.62 },
+          { transform: `translate(0, 0) rotate(${spin}deg) scale(1)`, offset: 1 },
+        ],
+        { duration: dur, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' }
+      ).finished;
+    }
+    await sleep(140 / speed);
+  }
+
   /** Заранее загрузить и раскодировать картинки «Шайбы» (грани кубика, квадратики, шайбы) —
    * тогда после броска они показываются сразу, вместе с полем. */
   private preloadRace() {
@@ -993,12 +1028,8 @@ class HodilkiView implements GameView<State, Event> {
         const b = this.b;
         const to = b && v.turn === ev.seat && (v.phase ?? 'roll') === 'move' ? target(v, b, ev.seat) : null;
         void this.frameCells(to != null ? [this.shown[ev.seat], to] : [this.shown[ev.seat]]);
-        if (this.b?.race) {
-          this.showFace(ev.die, ev.card ?? null, ev.slot ?? null);
-          await sleep(560 / speed);
-        } else {
-          await this.tray.roll([ev.die], speed);
-        }
+        if (this.b?.race) await this.rollRaceDie(ev.die, ev.card ?? null, ev.slot ?? null, speed);
+        else await this.tray.roll([ev.die], speed);
       } else if (ev.type === 'move') {
         const last = ev.path[ev.path.length - 1];
         if (last == null || this.shown[ev.seat] === last) continue; // пуговицу уже поставили руками
