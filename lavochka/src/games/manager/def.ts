@@ -603,7 +603,8 @@ export const def: GameDef<State, Action, Ev, State> = {
   ],
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    const map: MapId = opts.map === 'kosmos' || opts.map === 'biznes' || opts.map === 'biznesmen' || opts.map === 'imperiya' ? opts.map : 'manager';
+    // поле берём из списка полей: раньше здесь был перечень вслепую, и новое поле («Одесса») в него не попало
+    const map: MapId = boardOf(String(opts.map ?? 'manager')).id;
     return newState(map, ids, { limit: Number(opts.limit) || 0, startPass: !!opts.startPass, loan: opts.loan !== false, premium: !!opts.premium }, rng);
   },
   toAct,

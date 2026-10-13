@@ -2049,8 +2049,10 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   switch (s.phase) {
     case 'roll': {
       if (a.type === 'payJail') {
-        if (s.map !== 'manager' || !s.jail[seat] || s.cash[seat] < 500) return null;
-        give(x, seat, null, 500, 'выход с биржи');
+        // плата за выход с биржи — из поля поля: у ленинградского 500, у одесского 5 000
+        const fee = B(s).jailPay ?? 500;
+        if (!s.jail[seat] || s.cash[seat] < fee) return null;
+        give(x, seat, null, fee, 'выход с биржи');
         s.jail[seat] = 0;
         x.ev.push({ type: 'free', seat, how: 'pay' });
         return ok();

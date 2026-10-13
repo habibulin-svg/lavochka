@@ -1,7 +1,7 @@
 /* «Менеджер» / «Космос 2000»: правила полей и партии ботов на обоих полях. */
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { boardOf } from '../src/games/manager/boards';
+import { BOARDS, boardOf } from '../src/games/manager/boards';
 import { def } from '../src/games/manager/def';
 import { apply, canBuild, marketOpts, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
 import { STOCK_CARDS } from '../src/games/manager/boards';
@@ -18,6 +18,21 @@ function act(s: State, seat: number, a: Action, rig?: number[]): State {
 }
 
 describe('Менеджер', () => {
+  it('каждый пресет открывает своё поле', () => {
+    const seats2 = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));
+    // любое поле из списка должно настраиваться своим id (раньше перечень полей был выписан вслепую,
+    // и новое поле «Одесса» в него не попало — пресет открывал ленинградское поле)
+    for (const b of BOARDS) {
+      const s = def.setup(seats2, { map: b.id, limit: 0 }, rng());
+      expect(s.map, b.id).toBe(b.id);
+      expect(boardOf(s.map).img, b.id).toBe(b.img);
+    }
+    for (const p of def.presets ?? []) {
+      const s = def.setup(seats2, { ...defaults(def), ...p.options }, rng());
+      expect(s.map, p.id).toBe(p.options?.map);
+    }
+  });
+
   it('одесское поле: то же кольцо, свои деньги и штраф за выход с биржи', () => {
     const o = boardOf('odessa');
     const m = boardOf('manager');
