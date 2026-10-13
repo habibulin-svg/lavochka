@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Program Files/nodejs/node.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.mjs\"",
+            "command": "\"C:/Program Files/nodejs/node.exe\" \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs\"",
             "timeout": 20
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Program Files/nodejs/node.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\"",
+            "command": "\"C:/Program Files/nodejs/node.exe\" \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-bash.mjs\"",
             "timeout": 10
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"C:/Program Files/nodejs/node.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-check.mjs\"",
+            "command": "\"C:/Program Files/nodejs/node.exe\" \"${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-check.mjs\"",
             "timeout": 240
           }
         ]
