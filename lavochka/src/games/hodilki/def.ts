@@ -119,6 +119,11 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const s: State = { ...s0, pos: s0.pos.slice(), phase: 'roll' };
     const dest = Math.max(0, Math.min(finish, sign.to[i] ?? s0.pos[seat]));
     const ev: Event[] = [{ type: 'sign', seat, sign: { ...sign, text: `${sign.text}: ${sign.options[i]}` }, to: dest }];
+    // ответ переносит пуговицу: остаток дороги-ветки за ней не тянется
+    if (dest !== s0.pos[seat]) {
+      if (s.route) s.route[seat] = null;
+      if (s.routeFor) s.routeFor[seat] = null;
+    }
     s.pos[seat] = dest;
     if (dest === finish && !board.winBySign) return winNow(s, ev, seat);
     s.turn = next(s, seat);
@@ -197,6 +202,12 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     phase: 'roll',
   };
   const ev: Event[] = [];
+  /** Пуговицу перенесло (прыжок, переход, условие, загадка) — остаток дороги-ветки больше не её:
+   * иначе после перехода она пойдёт по номерам чужого поля. */
+  const dropRoute = () => {
+    if (s.route) s.route[seat] = null;
+    if (s.routeFor) s.routeFor[seat] = null;
+  };
   /** Исход условия: победа, клетка этого поля или переход на другую часть серии. */
   const goNeed = (target: NeedTo) => {
     if (target === 'win') return winNow(s, ev, seat);
@@ -205,12 +216,14 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.maps = (s.maps ?? s0.pos.map(() => s.map)).slice();
       s.maps[seat] = other.id;
       s.pos[seat] = Math.max(0, Math.min(finishOf(other), target.to));
+      dropRoute();
       s.route = s.route ? s.route.map(() => null) : s.route;
       s.routeFor = s.routeFor ? s.routeFor.map(() => null) : s.routeFor;
       ev.push({ type: 'sign', seat, sign: { k: 'field', map: other.id, to: s.pos[seat], text: `переход в «${other.title}»` }, to: s.pos[seat] });
       return endTurn(s, seat, ev);
     }
     s.pos[seat] = Math.max(0, Math.min(finish, target));
+    dropRoute();
     if (s.pos[seat] === finish && !board.winBySign) return winNow(s, ev, seat);
     return endTurn(s, seat, ev);
   };
@@ -291,6 +304,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       const fromText = board.cells[to].text;
       s.maps = (s.maps ?? s0.pos.map(() => s.map)).slice();
       s.maps[seat] = other.id;
+      if (s.route) s.route[seat] = null;
+      if (s.routeFor) s.routeFor[seat] = null;
       dest = Math.max(0, Math.min(finishOf(other), sign.to));
       ev.push({ type: 'sign', seat, sign, to: dest, ...(fromText ? { text: fromText } : {}) });
       s.pos[seat] = dest;
@@ -347,6 +362,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     }
     ev.push({ type: 'sign', seat, sign, to: dest, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
     s.pos[seat] = dest;
+    if (dest !== to) dropRoute();
     if (dest === finish && !board.winBySign) return win();
   }
   if (!again && s.extra?.[seat]) {

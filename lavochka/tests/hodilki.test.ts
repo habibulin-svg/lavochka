@@ -974,4 +974,28 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(d.state.pos[1]).toBeLessThan(boardOf('luk2').cells.length); // её клетки — по второй карте
     expect(d.state.pos[0]).toBe(b.state.pos[0]); // Вовка остался там же
   });
+
+  it('перенос на другую часть не тащит за собой остаток дороги', () => {
+    // так было у пользователя: фишку перенесло «верхней дорогой» на другую карту, а маршрут-ветка
+    // остался от прежнего поля — и дальше движок вёл её по номерам чужой карты
+    const rng = new RiggedRng(new SeededRng(43));
+    const baba = at('luk1', '13');
+    let s = def.setup(seats, { map: 'luk1' }, rng) as State;
+    s = {
+      ...s,
+      pos: s.pos.map((p, i) => (i === 0 ? baba : p)), // стоим на (13): так бывает после переноса
+      route: (s.route ?? Array(10).fill(null)).map((r, i) => (i === 0 ? [100, 101, 102] : r)),
+      routeFor: (s.routeFor ?? Array(10).fill(null)).map((r, i) => (i === 0 ? true : r)),
+      coins: [20, 0],
+      turn: 0,
+    };
+    const a = turn(s, 0, 1, rng); // бросок: условие спрашивают, клубок выкуплен — и переход во вторую часть
+    expect(a.state.maps?.[0]).toBe('luk2');
+    expect(a.state.route?.[0] ?? null).toBeNull();
+    expect(a.state.routeFor?.[0] ?? null).toBeNull();
+    // следующий ход идёт по второй части, а не по чужим номерам
+    const b = turn({ ...a.state, turn: 0 }, 0, 3, rng);
+    expect(b.state.pos[0]).toBeGreaterThan(0);
+    expect(b.state.pos[0]).toBeLessThan(boardOf('luk2').cells.length);
+  });
 });
