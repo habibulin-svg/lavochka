@@ -356,9 +356,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     } else if (sign.k === 'fork') {
       // дорога выбирается по остатку очков: сразу, если они ещё есть, иначе — на следующем ходу
       dest = to;
-    } else {
+    } else if (sign.k === 'jump') {
       dest = Math.max(0, Math.min(finish, sign.to));
       if (sign.skip) s.skip[seat] = sign.skip;
+    } else {
+      // прочие знаки (ярмарка, петля, боны, предмет, условие) клетку не переносят:
+      // фишка остаётся там, куда пришла, а сам знак разбирается выше
+      dest = to;
     }
     ev.push({ type: 'sign', seat, sign, to: dest, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
     s.pos[seat] = dest;

@@ -42,6 +42,8 @@ export function signOf(code: string | undefined, i: number, label: string | unde
       text: routeText ?? 'развилка',
     };
   }
+  if (code === 'market') return { k: 'market', text: routeText ?? 'ярмарка чудес' };
+  if (code.startsWith('loop:')) return { k: 'loop', cells: code.slice(5).split(',').map(Number), text: routeText ?? 'петля' };
   if (code.startsWith('need:')) {
     const p = Object.fromEntries(code.slice(5).split(',').map((kv) => kv.split('=')));
     // исход — клетка этого поля, победа ('win') или переход на другую часть серии ('field:luk3:33')
