@@ -83,6 +83,14 @@ export function createView(): GameView<State, Event> {
               }
               if (best >= 0 && bd < 90) ctx?.act(seat, { type: 'step', to: best });
             };
+            // захват указателя: события идут на пуговицу, браузер не перехватывает жест
+            try {
+              el.setPointerCapture(e.pointerId);
+            } catch {
+              /* не все браузеры умеют — тогда ловим на документе */
+            }
+            el.addEventListener('pointerup', up, { once: true });
+            el.addEventListener('pointercancel', () => document.removeEventListener('pointerup', up), { once: true });
             document.addEventListener('pointerup', up, { once: true });
           });
         }

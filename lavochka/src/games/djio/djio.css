@@ -37,3 +37,5 @@
 .dj-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
 .dj-board.ready .dj-map-full { opacity: 1; }
 .dj-board.ready .dj-map-mini { opacity: 0; }
+/* пуговицу можно тащить: браузер не должен перехватывать жест прокруткой */
+.dj-piece.dj-take { touch-action: none; }
