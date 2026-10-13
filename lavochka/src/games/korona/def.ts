@@ -107,6 +107,8 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
     const sorted = [...STATS].sort((a, b) => h.st[a] - h.st[b]);
     const low = sorted[0];
     const high = sorted[sorted.length - 1];
+    // сначала покупка за талеры (5 за характеристику), потом обмен избытка
+    if (h.st[low] < CELL_RULES.fall.need && h.thalers >= CELL_RULES.exchange.buyPrice) return { type: 'buyStat', stat: low };
     if (h.st[low] < CELL_RULES.fall.need && h.st[high] >= 4) return { type: 'exchange', from: high, to: low };
   }
   // при обнулившемся ПУ или ПС идём в лазарет (безумных лечат бесплатно) или к лицею

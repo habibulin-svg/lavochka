@@ -97,17 +97,16 @@ describe('Корона Эмбера: ход', () => {
     expect(visited.size, 'фишки побывали на разных клетках').toBeGreaterThan(3);
   });
 
-  it('итог партии считается, когда кто-то вышел в Эмбер', () => {
+  it('итог партии считается после коронации', () => {
     const s0 = fresh(21);
-    const fallCell = PLAY_CELLS.map((c) => c.n).find((n) => kindOf(n) === 'fall')!;
     const h = s0.heroes[0];
-    const strong: State = {
+    const throne: State = {
       ...s0,
       turn: 0,
       phase: 'roll',
-      heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell, items: [], st: { ПС: 13, ПУ: 13, ПМ: 13, ПО: 13 } } },
+      heroes: { ...s0.heroes, [0]: { ...h, ember: true, prince: true, pj: 3, zone: 'throne', items: [] } },
     };
-    const end = act(strong, { type: 'roll' })!;
+    const end = act(throne, { type: 'coronate' })!;
     expect(end.winner).toBe(0);
     expect(result(end)?.winner).toBe(0);
     expect(result(end)?.scores.length).toBe(2);
@@ -117,19 +116,37 @@ describe('Корона Эмбера: ход', () => {
     const s0 = fresh(21);
     const fallCell = PLAY_CELLS.map((c) => c.n).find((n) => kindOf(n) === 'fall')!;
     const h = s0.heroes[0];
-    const weak: State = { ...s0, heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell } }, turn: 0, phase: 'roll' };
-    const played = act(weak, { type: 'roll' })!;
+    // клетка срабатывает, когда движение закончилось: ставим фазу шага и «останавливаемся»,
+    // предварительно шагнув (left < die)
+    const weak: State = { ...s0, heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell } }, turn: 0, phase: 'step', left: 1, die: 2 };
+    const played = act(weak, { type: 'stop' })!;
     expect(played.winner).toBeNull();
     expect(played.heroes[0].st['ПУ']).toBeLessThan(START['ПУ']);
 
     const strong: State = {
       ...s0,
       turn: 0,
-      phase: 'roll',
+      phase: 'step',
+      left: 1,
+      die: 2,
       heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell, items: [], st: { ПС: 13, ПУ: 13, ПМ: 13, ПО: 13 } } },
     };
-    const out = act(strong, { type: 'roll' })!;
-    expect(out.winner).toBe(0);
+    const out = act(strong, { type: 'stop' })!;
+    expect(out.winner).toBeNull();
+    expect(out.heroes[0].ember).toBe(true);
+    expect(out.heroes[0].zone).toBe('capital');
+    expect(out.heroes[0].items.length).toBe(0);
     for (const k of STATS) expect(out.heroes[0].st[k]).toBeGreaterThanOrEqual(13);
+    // принцем становится в столице, коронация в тронном зале даёт победу
+    const afterCard = act(out, { type: 'ok' })!;
+    // ход перешёл к другому игроку — возвращаем его нашему герою для проверки
+    const prince: State = { ...afterCard, turn: 0 };
+    const made = act(prince, { type: 'prince' })!;
+    expect(made.heroes[0].prince).toBe(true);
+    expect(made.heroes[0].pj).toBeGreaterThan(0);
+    const throne: State = { ...made, turn: 0, phase: 'roll', heroes: { ...made.heroes, [0]: { ...made.heroes[0], zone: 'throne' } } };
+    const crowned = act(throne, { type: 'coronate' })!;
+    expect(crowned.winner).toBe(0);
+    expect(result(crowned)?.winner).toBe(0);
   });
 });

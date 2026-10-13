@@ -69,6 +69,7 @@ export type Action =
   | { type: 'step'; to: number }
   | { type: 'stop' }
   | { type: 'exchange'; from: Stat; to: Stat }
+  | { type: 'buyStat'; stat: Stat }
   | { type: 'heal'; life: number }
   | { type: 'ok' }
   | { type: 'fall' }
@@ -363,13 +364,9 @@ export function apply(s: State, seat: number, a: Action, rng: Rng): { state: Sta
     if (s.phase !== 'roll') return null;
     const die = 1 + rng.int(6);
     x.ev.push({ type: 'roll', seat, die });
-    let st: State = { ...s, die, left: die, phase: 'step' };
-    const here = kindOf(h.cell);
-    if (here === 'exchange' || here === 'hospital' || here === 'fall') {
-      // на таких клетках сначала разбираемся с полем
-      st = arrive(st, x, seat, rng);
-      if (st.phase === 'card') return { state: st, events: x.ev };
-    }
+    // клетка срабатывает не при броске, а когда движение по ней закончилось
+    // (arrive вызывается при left === 0 или по «остановиться» после шага)
+    const st: State = { ...s, die, left: die, phase: 'step' };
     return { state: st, events: x.ev };
   }
   if (a.type === 'step') {
@@ -390,6 +387,14 @@ export function apply(s: State, seat: number, a: Action, rng: Rng): { state: Sta
     const moved = s.left < s.die;
     let st = moved ? arrive({ ...s, left: 0 }, x, seat, rng) : { ...s, left: 0 };
     if (st.phase !== 'card') st = pass(st, x);
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'buyStat') {
+    // «можешь купить за 5 талеров 1ПС или 1ПУ» — покупка характеристики на обменном пункте
+    if (kindOf(h.cell) !== 'exchange') return null;
+    if (h.thalers < CELL_RULES.exchange.buyPrice) return null;
+    let st = money(s, x, seat, -CELL_RULES.exchange.buyPrice);
+    st = give(st, x, seat, a.stat, 1);
     return { state: st, events: x.ev };
   }
   if (a.type === 'exchange') {
