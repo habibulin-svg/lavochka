@@ -130,6 +130,14 @@ export const def: GameDef<State, Action, Event, State> = {
   id: 'hodilki',
   title: 'Кинь-двинь',
   players: { min: 2, max: 10, default: 3 },
+  /** «Шайба» — игра на двоих или командами: 2 (дуэль), 4 (2 на 2) или 6 (3 на 3); остальные поля — 2–10. */
+  countsFor: (opts) => {
+    if (boardOf(String(opts.map ?? BOARDS[0].id)).race) return [2, 4, 6];
+    const out: number[] = [];
+    for (let n = 2; n <= 10; n++) out.push(n);
+    return out;
+  },
+  countsHint: (opts) => (boardOf(String(opts.map ?? BOARDS[0].id)).race ? 'вдвоём или командами: 2 на 2 или 3 на 3, у команды одна шайба' : undefined),
   seats: SEATS,
   options: [{ key: 'map', label: 'Поле', type: 'select', choices: BOARDS.map((b) => ({ value: b.id, label: b.title })), default: BOARDS[0].id }],
   presets: BOARDS.map((b) => ({ id: b.id, label: b.title, options: { map: b.id } })),

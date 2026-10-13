@@ -129,6 +129,11 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   id: string;
   title: string;
   players: { min: number; max: number; default: number };
+  /** Какие числа игроков допустимы при этих настройках (по умолчанию — весь отрезок min…max).
+   * «Шайба» в кинь-двинь: вдвоём (дуэль) или командами — только 2, 4 и 6. */
+  countsFor?(opts: Options): number[];
+  /** Подпись у выбора числа игроков при этих настройках: «вдвоём или командами: 2 на 2 / 3 на 3». */
+  countsHint?(opts: Options): string | undefined;
   /** Внешний вид мест (цвет, имя по умолчанию). Длина = максимальное число мест. */
   seats: SeatLook[];
   /** Какие места занимать при N игроках. По умолчанию — первые N. */

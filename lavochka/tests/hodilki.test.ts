@@ -102,6 +102,37 @@ describe('кинь-двинь: «Шайба»', () => {
     expect(tracks[0].every((i) => !tracks[1].includes(i))).toBe(true);
   });
 
+  it('играют вдвоём или командами: допустимы только 2, 4 и 6 игроков; на других полях — как раньше', () => {
+    expect(def.countsFor!({ map: 'shayba' })).toEqual([2, 4, 6]);
+    expect(def.countsFor!({ map: 'krugosvet' })).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(def.countsHint!({ map: 'shayba' })).toContain('2 на 2');
+    expect(def.countsHint!({ map: 'krugosvet' })).toBeUndefined();
+  });
+
+  it('в командах напарники через одного ходят одной шайбой', () => {
+    const rng = new RiggedRng(new SeededRng(11));
+    const four = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
+    const s0 = def.setup(four, { map: 'shayba' }, rng) as State;
+    const track = race.race!.tracks[0];
+    rng.rig([2]); // Вовка (место 0) — грань 3
+    let r = def.apply(s0, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    // шайба дорожки 0 сдвинулась, и у напарника (место 2) она там же
+    expect(r.state.pos[0]).toBe(track[3]);
+    expect(r.state.pos[2]).toBe(track[3]);
+    expect(r.state.turn).toBe(1);
+    // Ленка, потом напарник Вовки — он бросает той же шайбой
+    rng.rig([0]);
+    r = def.apply(r.state, 1, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 1, { type: 'move' }, rng)!;
+    expect(r.state.turn).toBe(2);
+    rng.rig([0]);
+    r = def.apply(r.state, 2, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 2, { type: 'move' }, rng)!;
+    expect(r.state.pos[0]).toBe(track[4]);
+    expect(r.state.pos[2]).toBe(track[4]);
+  });
+
   it('очки ведут вперёд по своей дорожке, красная клюшка — назад, зелёная — вперёд', () => {
     const rng = new RiggedRng(new SeededRng(3));
     let s = def.setup(two, { map: 'shayba' }, rng) as State;

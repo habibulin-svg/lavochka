@@ -46,7 +46,7 @@ export function openHome(mod: GameModule, onBack: () => void) {
         <div class="resume" hidden></div>
         <div class="home-extra" hidden></div>
         <h2>Новая партия</h2>
-        <div class="row count-row"><span class="lbl">Игроков:</span><div class="seg count-seg"></div></div>
+        <div class="row count-row"><span class="lbl">Игроков:</span><div class="seg count-seg"></div><small class="count-hint" hidden></small></div>
         <div class="seat-rows"></div>
         <div class="prefs"></div>
         <p class="hint">«Человек» — игра за этим экраном (по очереди). «Сеть» — место для друга: он подключится по коду комнаты.</p>
@@ -86,12 +86,35 @@ export function openHome(mod: GameModule, onBack: () => void) {
 
   // ---------- число игроков и места
   const seg = q('.count-seg');
-  for (let n = def.players.min; n <= def.players.max; n++) {
-    const b = h<HTMLButtonElement>(`<button data-n="${n}">${n}</button>`);
-    b.onclick = () => applyCount(n);
-    seg.appendChild(b);
+
+  /** Допустимые числа игроков при текущих настройках: игра может сузить список («Шайба» — 2, 4, 6). */
+  function counts(): number[] {
+    const list = (def.countsFor?.(draft.options) ?? []).filter((n) => n >= def.players.min && n <= def.players.max);
+    const uniq = [...new Set(list)].sort((a, b) => a - b);
+    if (uniq.length) return uniq;
+    const out: number[] = [];
+    for (let n = def.players.min; n <= def.players.max; n++) out.push(n);
+    return out;
   }
-  if (def.players.min === def.players.max) q('.count-row').hidden = true;
+
+  /** Пересобрать кнопки числа игроков; выбранное число, если оно больше не годится, подтянуть к подходящему. */
+  function renderCounts() {
+    const list = counts();
+    seg.replaceChildren();
+    for (const n of list) {
+      const b = h<HTMLButtonElement>(`<button data-n="${n}">${n}</button>`);
+      b.onclick = () => applyCount(n);
+      b.classList.toggle('on', n === draft.count);
+      seg.appendChild(b);
+    }
+    q('.count-row').hidden = list.length === 1;
+    const hint = def.countsHint?.(draft.options);
+    const hb = q('.count-hint');
+    hb.textContent = hint ?? '';
+    hb.hidden = !hint;
+    if (!list.includes(draft.count)) applyCount(list.find((n) => n >= draft.count) ?? list[list.length - 1]);
+    else renderSeats();
+  }
 
   function applyCount(n: number) {
     draft.count = n;
@@ -231,6 +254,7 @@ export function openHome(mod: GameModule, onBack: () => void) {
     optsBox.innerHTML = '';
     for (const o of def.options || []) if (!o.showIf || o.showIf(draft.options)) optsBox.appendChild(optControl(o));
     persist();
+    renderCounts();
   }
 
   // ---------- запуск
@@ -260,5 +284,6 @@ export function openHome(mod: GameModule, onBack: () => void) {
   if (!saved) applyCount(draft.count);
   else renderSeats();
   renderOpts();
+  renderCounts();
   showScreen('home');
 }

@@ -1108,7 +1108,9 @@ class HodilkiView implements GameView<State, Event> {
     if (b.race) {
       const trail = b.race.tracks[trackOf(b, seat)];
       const at = Math.max(0, trail.indexOf(v.pos[seat]));
-      return `шайба ${at + 1}/${trail.length} · голы ${v.goals?.[trackOf(b, seat)] ?? 0}`;
+      // командой играют вчетвером и вшестером: у команды одна шайба, напарники через одного
+      const team = v.seats.length > 2 ? `${trackOf(b, seat) ? 'Б' : 'А'} · ` : '';
+      return `${team}шайба ${at + 1}/${trail.length} · голы ${v.goals?.[trackOf(b, seat)] ?? 0}`;
     }
     const n = skipsOf(v, seat);
     return `${b.cells[v.pos[seat]]?.off ? '↪' : v.pos[seat]} / ${finishOf(b)}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
