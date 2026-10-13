@@ -56,6 +56,38 @@ export function createView(): GameView<State, Event> {
     return t;
   };
 
+  /** Свою фишку можно взять и переставить на подсвеченную клетку — как в «Кинь-двине». */
+  function takeable(el: SVGElement, seat: number) {
+    const st = v!;
+    const canMove = seat === actSeat && st.winner == null && (st.phase === 'start' || (st.phase === 'step' && st.left > 0));
+    if (!canMove) return;
+    el.setAttribute('class', el.getAttribute('class') + ' st-take');
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const from = { x: e.clientX, y: e.clientY };
+      const up = (ev: PointerEvent) => {
+        document.removeEventListener('pointerup', up);
+        if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
+        const p = cam!.toImg(ev.clientX, ev.clientY);
+        let best: Element | null = null;
+        let bd = Infinity;
+        for (const g of Array.from(over!.querySelectorAll('[data-move]'))) {
+          const cc = CELLS[Number(g.getAttribute('data-to'))];
+          const d = Math.hypot(cc.x - p.x, cc.y - p.y);
+          if (d < bd) {
+            bd = d;
+            best = g;
+          }
+        }
+        if (!best || bd > 90) return;
+        const to = Number(best.getAttribute('data-to'));
+        const kind = best.getAttribute('data-move');
+        ctx?.act(seat, kind === 'air' ? { type: 'air', to } : { type: 'step', to });
+      };
+      document.addEventListener('pointerup', up, { once: true });
+    });
+  }
+
   /** Фишки по клеткам: на одной клетке разводим в стороны, чтобы было видно всех. */
   function pieces() {
     const st = v!;
@@ -66,12 +98,12 @@ export function createView(): GameView<State, Event> {
       list.forEach((seat, i) => {
         const off = list.length > 1 ? (i - (list.length - 1) / 2) * PIECE_GAP : 0;
         const x = c.x + off;
-        over!.append(
-          svg('image', {
-            x: x - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
-            href: `/hodilki/buttons/${seat}.webp`, class: 'st-piece',
-          })
-        );
+        const el = svg('image', {
+          x: x - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
+          href: `/hodilki/buttons/${seat}.webp`, class: 'st-piece',
+        });
+        takeable(el, seat);
+        over!.append(el);
         if (st.diamond === seat && i === 0) over!.append(label(x + 24, c.y - 22, 'st-gem', '💎'));
         if (st.bandit[seat] && i === 0) over!.append(label(x + 22, c.y + 30, 'st-bandit', '🗡'));
       });
@@ -134,12 +166,12 @@ export function createView(): GameView<State, Event> {
         // владельцу алмаза нельзя проходить через открытых разбойников
         if (owner && st.open[to] && st.tokens[to] === 'robber') return;
         const sea = EDGE[from][k] === 'sea' && TOKEN_AT[from];
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: sea ? 38 : 32, class: 'st-move' });
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: sea ? 38 : 32, class: 'st-move', 'data-to': to, 'data-move': 'step' });
         g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'step', to }));
         over!.append(g);
       });
       for (const to of AIR[from]) {
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 28, class: 'st-fly' });
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 28, class: 'st-fly', 'data-to': to, 'data-move': 'air' });
         g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'air', to }));
         over!.append(g);
       }

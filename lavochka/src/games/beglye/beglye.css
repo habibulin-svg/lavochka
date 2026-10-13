@@ -29,3 +29,5 @@
 .bg-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
 .bg-board.ready .bg-map-full { opacity: 1; }
 .bg-board.ready .bg-map-mini { opacity: 0; }
+.bg-piece.bg-take { cursor: grab; }
+.bg-piece.bg-take:active { cursor: grabbing; }

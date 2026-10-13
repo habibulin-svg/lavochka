@@ -45,12 +45,12 @@ export function createView(): GameView<State, Event> {
       const c = CELLS[cell];
       list.forEach((seat, i) => {
         const off = list.length > 1 ? (i - (list.length - 1) / 2) * 50 : 0;
-        over!.append(
-          svg('image', {
-            x: c.x + off - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
-            href: `/hodilki/buttons/${seat}.webp`, class: 'bg-piece',
-          })
-        );
+        const el = svg('image', {
+          x: c.x + off - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
+          href: `/hodilki/buttons/${seat}.webp`, class: 'bg-piece',
+        });
+        takeable(el, seat);
+        over!.append(el);
         if (st.hold[seat] !== 'none' && i === 0) {
           const t = svg('text', { x: c.x + off + 20, y: c.y - 18, class: 'bg-mark' });
           t.textContent = st.hold[seat] === 'ostrog' ? '⛓' : st.hold[seat] === 'plen' ? '🐎' : st.hold[seat] === 'robber' ? '🗡' : '⛪';
@@ -58,6 +58,35 @@ export function createView(): GameView<State, Event> {
         }
       });
     }
+  }
+
+  /** Свою фишку можно взять и переставить на подсвеченную клетку — как в «Кинь-двине». */
+  function takeable(el: SVGElement, seat: number) {
+    const st = v!;
+    if (!(seat === actSeat && st.winner == null && st.phase === 'move' && st.left > 0)) return;
+    el.setAttribute('class', el.getAttribute('class') + ' bg-take');
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const from = { x: e.clientX, y: e.clientY };
+      const up = (ev: PointerEvent) => {
+        document.removeEventListener('pointerup', up);
+        if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
+        const p = cam!.toImg(ev.clientX, ev.clientY);
+        let best = -1;
+        let bd = Infinity;
+        for (const g of Array.from(over!.querySelectorAll('[data-move]'))) {
+          const to = Number(g.getAttribute('data-to'));
+          const cc = CELLS[to];
+          const d = Math.hypot(cc.x - p.x, cc.y - p.y);
+          if (d < bd) {
+            bd = d;
+            best = to;
+          }
+        }
+        if (best >= 0 && bd < 90) ctx?.act(seat, { type: 'step', to: best });
+      };
+      document.addEventListener('pointerup', up, { once: true });
+    });
   }
 
   function turnPoints(): CamPoint[] {
@@ -77,7 +106,7 @@ export function createView(): GameView<State, Event> {
     over.replaceChildren();
     if (!busy && actSeat != null && st.phase === 'move' && st.left > 0) {
       for (const to of NEIGH[st.pos[actSeat]]) {
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 26, class: 'bg-move' });
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 26, class: 'bg-move', 'data-to': to, 'data-move': 'step' });
         g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'step', to }));
         over.append(g);
       }

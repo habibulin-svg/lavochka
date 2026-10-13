@@ -46,3 +46,5 @@
 .st-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
 .st-board.ready .st-map-full { opacity: 1; }
 .st-board.ready .st-map-mini { opacity: 0; }
+.st-piece.st-take { cursor: grab; }
+.st-piece.st-take:active { cursor: grabbing; }
