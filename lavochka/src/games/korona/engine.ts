@@ -67,6 +67,7 @@ export interface State {
 export type Action =
   | { type: 'roll' }
   | { type: 'step'; to: number }
+  | { type: 'stop' }
   | { type: 'exchange'; from: Stat; to: Stat }
   | { type: 'heal'; life: number }
   | { type: 'ok' }
@@ -236,7 +237,7 @@ const life = (s: State, x: X, seat: number, d: number): State => {
 };
 
 /** Сойти на клетку: выполняем её правила. */
-function arrive(s: State, x: X, seat: number): State {
+function arrive(s: State, x: X, seat: number, rng: Rng): State {
   const h = s.heroes[seat];
   const kind = kindOf(h.cell);
   let st = s;
@@ -304,6 +305,42 @@ function arrive(s: State, x: X, seat: number): State {
 }
 
 /** Взять карточку приключений. */
+const NUM_WORDS: Record<string, number> = { один: 1, одна: 1, два: 2, две: 2, три: 3, четыре: 4, пять: 5, шесть: 6 };
+
+/** Эффект карточки по её тексту: «возьми 2 ПУ», «теряешь 1ПС», «получи 5 талеров». */
+function cardEffect(s: State, x: X, seat: number, text: string): State {
+  let st = s;
+  const t = text.replace(/\s+/g, ' ');
+  const statOf = (w: string): Stat | null => {
+    const u = w.toUpperCase();
+    return (['ПС', 'ПУ', 'ПМ', 'ПО'] as Stat[]).find((k) => u.startsWith(k)) ?? null;
+  };
+  const num = (w: string): number => (/^\d+$/.test(w) ? Number(w) : (NUM_WORDS[w.toLowerCase()] ?? 1));
+  const add = /(возьми|возьмите|получи|получишь|возьми себе|прибавь)\s+(\d+|один|одна|два|две|три|четыре|пять|шесть)\s*(ПС|ПУ|ПМ|ПО|ПЖ|талер\w*)/gi;
+  const lose = /(теряешь|потеряешь|отложи|отдай|лишаешься)\s+(\d+|один|одна|два|две|три|четыре|пять|шесть)\s*(ПС|ПУ|ПМ|ПО|ПЖ|талер\w*)/gi;
+  for (const m of t.matchAll(add)) {
+    const n = num(m[2]);
+    const target = m[3].toUpperCase();
+    if (target.startsWith('ПЖ')) st = life(st, x, seat, n);
+    else if (target.startsWith('ТАЛЕР')) st = money(st, x, seat, n);
+    else {
+      const k = statOf(target);
+      if (k) st = give(st, x, seat, k, n);
+    }
+  }
+  for (const m of t.matchAll(lose)) {
+    const n = num(m[2]);
+    const target = m[3].toUpperCase();
+    if (target.startsWith('ПЖ')) st = life(st, x, seat, -n);
+    else if (target.startsWith('ТАЛЕР')) st = money(st, x, seat, -n);
+    else {
+      const k = statOf(target);
+      if (k) st = give(st, x, seat, k, -n);
+    }
+  }
+  return st;
+}
+
 function draw(s: State, x: X, seat: number): State {
   if (!s.deck.length) return pass(s, x);
   const deck = [...s.deck];
@@ -311,7 +348,8 @@ function draw(s: State, x: X, seat: number): State {
   const c = cardByNumber(num);
   const text = c?.text ?? `Карточка №${num}`;
   x.ev.push({ type: 'card', seat, num, text });
-  const st: State = { ...s, deck, card: num, phase: 'card', log: [...s.log, `${s.names[seat]}: ${text.slice(0, 80)}`] };
+  const withEffect = cardEffect(s, x, seat, text);
+  const st: State = { ...withEffect, deck, card: num, phase: 'card', log: [...s.log, `${s.names[seat]}: ${text.slice(0, 80)}`] };
   return st;
 }
 
@@ -327,7 +365,7 @@ export function apply(s: State, seat: number, a: Action, rng: Rng): { state: Sta
     const here = kindOf(h.cell);
     if (here === 'exchange' || here === 'hospital' || here === 'fall') {
       // на таких клетках сначала разбираемся с полем
-      st = arrive(st, x, seat);
+      st = arrive(st, x, seat, rng);
       if (st.phase === 'card') return { state: st, events: x.ev };
     }
     return { state: st, events: x.ev };
@@ -339,9 +377,17 @@ export function apply(s: State, seat: number, a: Action, rng: Rng): { state: Sta
     x.ev.push({ type: 'step', seat, cell: a.to });
     let st: State = { ...s, heroes, left: s.left - 1 };
     if (st.left === 0) {
-      st = arrive(st, x, seat);
+      st = arrive(st, x, seat, rng);
       if (st.phase !== 'card') st = pass(st, x);
     }
+    return { state: st, events: x.ev };
+  }
+  if (a.type === 'stop') {
+    if (s.phase !== 'step') return null;
+    // клетка срабатывает, только если в этот ход на неё пришли: стоять и «собирать» её нельзя
+    const moved = s.left < s.die;
+    let st = moved ? arrive({ ...s, left: 0 }, x, seat, rng) : { ...s, left: 0 };
+    if (st.phase !== 'card') st = pass(st, x);
     return { state: st, events: x.ev };
   }
   if (a.type === 'exchange') {

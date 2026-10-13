@@ -9,7 +9,7 @@
 import type { BotDef, GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { cardByNumber } from './data';
 import { apply, kindOf, neighbours, newState, result, stepTargets, type Action, type Event, type State } from './engine';
-import { CORONATION_TEXT, DECK_SIZE, START, STATS, WORLDS } from './rules';
+import { CELL_RULES, CORONATION_TEXT, DECK_SIZE, START, STATS, WORLDS } from './rules';
 
 export interface KoronaView {
   seats: number[];
@@ -35,28 +35,58 @@ const SEAT_LOOK = [
   { name: 'Граф', color: '#e07b39', light: '#f6cfae', dark: '#8c4517' },
 ];
 
-/** Бот: идёт к ПРОВАЛУ и копит характеристики; уровень 1 — просто к соседу. */
+/** Сосед, ведущий по кратчайшему пути к ближайшей клетке нужного вида (BFS с возвратом по родителям). */
+function nextToward(s: State, seat: number, want: (n: number) => boolean): number | null {
+  const from = s.heroes[seat].cell;
+  const dist = new Map<number, number>([[from, 0]]);
+  const prev = new Map<number, number>();
+  const q: number[] = [from];
+  let found: number | null = null;
+  for (let i = 0; i < q.length && found == null; i++) {
+    const n = q[i];
+    if (n !== from && want(n)) {
+      found = n;
+      break;
+    }
+    for (const m of neighbours(n)) {
+      if (!dist.has(m)) {
+        dist.set(m, dist.get(n)! + 1);
+        prev.set(m, n);
+        q.push(m);
+      }
+    }
+  }
+  if (found == null) return null;
+  let cur = found;
+  while (prev.get(cur) != null && prev.get(cur) !== from) cur = prev.get(cur)!;
+  return prev.get(cur) === from ? cur : null;
+}
+
+/** Бот: копит характеристики у лицея, затем уходит через ПРОВАЛ и коронуется. */
 function chooseBot(s: State, seat: number, level: number): Action | null {
   if (s.winner != null || seat !== s.turn) return null;
   if (s.phase === 'card') return { type: 'ok' };
+  const h = s.heroes[seat];
+  // поле 2: стать принцем, пройти лабиринт, дойти до трона и короноваться
+  if (h.ember) {
+    if (!h.prince) return { type: 'prince' };
+    if (h.zone === 'capital') return { type: 'labyrinth' };
+    if (h.zone === 'labyrinth') return { type: 'toPalace' };
+    if (h.zone === 'palace') return { type: 'toThrone' };
+    if (h.zone === 'throne') return { type: 'coronate' };
+    return null;
+  }
   if (s.phase === 'roll') return { type: 'roll' };
   if (s.phase !== 'step') return null;
-  const targets = stepTargets(s, seat);
-  if (!targets.length) return null;
-  if (level === 1) return { type: 'step', to: targets[0] };
-  // уровни 2-3: сначала ищем ПРОВАЛ в двух шагах, иначе клетку, где растут характеристики
-  const goal = targets.find((n) => kindOf(n) === 'fall');
-  if (goal != null && s.left <= 2) return { type: 'step', to: goal };
-  const useful = targets
-    .map((n) => ({ n, k: kindOf(n) }))
-    .filter((x) => x.k === 'lyceum' || x.k === 'meadow' || x.k === 'exchange' || x.k === 'fall');
-  if (useful.length) return { type: 'step', to: useful[0].n };
-  if (level >= 3) {
-    // ищем соседа, у которого дальше больше соседей (не застревать в углу)
-    const ranked = targets.slice().sort((a, b) => neighbours(b).length - neighbours(a).length);
-    return { type: 'step', to: ranked[0] };
-  }
-  return { type: 'step', to: targets[0] };
+  // стоим на полезной клетке — останавливаемся, чтобы сработало её правило
+  const here = kindOf(h.cell);
+  if (s.left > 0 && (here === 'lyceum' || here === 'meadow' || here === 'exchange' || here === 'hospital')) return { type: 'stop' };
+  const ready = STATS.every((k) => h.st[k] >= CELL_RULES.fall.need) && h.items.length === 0;
+  if (ready) return { type: 'step', to: nextToward(s, seat, (n) => kindOf(n) === 'fall') ?? stepTargets(s, seat)[0] };
+  // уровень 1 — просто первый сосед; уровни 2-3 идут к лицею (там растут характеристики)
+  if (level === 1) return { type: 'step', to: stepTargets(s, seat)[0] };
+  const to = nextToward(s, seat, (n) => kindOf(n) === 'lyceum' || kindOf(n) === 'meadow');
+  return { type: 'step', to: to ?? stepTargets(s, seat)[0] };
 }
 
 export const def: GameDef<State, Action, Event, KoronaView> = {
