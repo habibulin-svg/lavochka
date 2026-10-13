@@ -78,9 +78,11 @@ function chooseBot(s: State, seat: number, level: number): Action | null {
   }
   if (s.phase === 'roll') return { type: 'roll' };
   if (s.phase !== 'step') return null;
-  // стоим на полезной клетке — останавливаемся, чтобы сработало её правило
+  // пришли на полезную клетку и ещё есть шаги — останавливаемся, чтобы сработало её правило;
+  // если просто стоим на ней с прошлого хода, идём дальше (иначе бот застревает на месте)
   const here = kindOf(h.cell);
-  if (s.left > 0 && (here === 'lyceum' || here === 'meadow' || here === 'exchange' || here === 'hospital')) return { type: 'stop' };
+  const moved = s.left < s.die;
+  if (moved && s.left > 0 && (here === 'lyceum' || here === 'meadow' || here === 'exchange' || here === 'hospital')) return { type: 'stop' };
   const ready = STATS.every((k) => h.st[k] >= CELL_RULES.fall.need) && h.items.length === 0;
   if (ready) return { type: 'step', to: nextToward(s, seat, (n) => kindOf(n) === 'fall') ?? stepTargets(s, seat)[0] };
   // уровень 1 — просто первый сосед; уровни 2-3 идут к лицею (там растут характеристики)
