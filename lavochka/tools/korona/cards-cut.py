@@ -10,6 +10,7 @@
 """
 import json
 import os
+import re
 
 import pymupdf
 from PIL import Image
@@ -21,7 +22,7 @@ OUT_IMG = os.path.join(ROOT, 'lavochka', 'public', 'korona', 'cards')
 MONTAGE = os.path.join(ROOT, 'lavochka', 'tools', 'korona', 'cards-check.png')
 PDF_DIR = os.path.join('D:\\', 'temp', 'настолки', 'Корона Эмбера 1994 ги (Реставрация в векторе)', 'PDF')
 DPI = 110
-TITLE_MIN, TITLE_MAX = 13.5, 18.0
+TITLE_MIN, TITLE_MAX = 12.5, 19.0
 LINE_TOL = 4.0
 
 
@@ -75,7 +76,7 @@ def main():
             nxt = min((r['y0'] for r in below if is_title(r)), default=None)
             body = [r for r in below if nxt is None or r['y0'] < nxt - 2]
             text = ' '.join([t['text']] + [r['text'] for r in body]).strip()
-            if len(text) < 60:
+            if len(text) < 40:
                 continue
             n += 1
             made += 1
@@ -83,11 +84,23 @@ def main():
             x1 = max([t['x1']] + [r['x1'] for r in body])
             y0 = t['y0']
             y1 = max([t['y1']] + [r['y1'] for r in body])
+            # номер карточки напечатан крупной цифрой чуть ниже имени: ищем такую строку рядом
+            num_row = None
+            for r in rows:
+                if r['size'] >= 20 and re.fullmatch(r'\d{1,3}', r['text'].strip()) and t['y0'] - 6 <= r['y0'] <= t['y1'] + 22 and r['x0'] >= x0 - 90 and r['x1'] <= x1 + 90:
+                    num_row = r
+                    break
+            num = int(num_row['text']) if num_row else None
+            if num_row:
+                y0 = min(y0, num_row['y0'])
+                y1 = max(y1, num_row['y1'])
+                x0 = min(x0, num_row['x0'])
+                x1 = max(x1, num_row['x1'])
             name = 'card-%03d.webp' % n
             img.crop((max(0, int((x0 - 6) * k)), max(0, int((y0 - 6) * k)), min(img.width, int((x1 + 6) * k)), min(img.height, int((y1 + 6) * k)))).save(
                 os.path.join(OUT_IMG, name), 'WEBP', quality=84, method=6
             )
-            cards.append({'n': n, 'page': page_no + 1, 'x': round(x0, 1), 'y': round(y0, 1), 'text': text, 'img': '/korona/cards/' + name})
+            cards.append({'n': n, 'num': num, 'page': page_no + 1, 'x': round(x0, 1), 'y': round(y0, 1), 'text': text, 'img': '/korona/cards/' + name})
         per_page.append(made)
     doc.close()
     json.dump({'note': 'Карты приключений: заголовки найдены по кеглю (13,5–18 pt), текст собран из строк карточки.', 'cards': cards},
@@ -99,7 +112,9 @@ def main():
             im = Image.open(os.path.join(OUT_IMG, f)).convert('RGB').resize((300, 210), Image.LANCZOS)
             m.paste(im, ((i % 4) * 300, (i // 4) * 210))
         m.save(MONTAGE)
-    print('карточек: %d | по страницам: %s' % (len(cards), per_page))
+    nums = sorted(c['num'] for c in cards if c['num'])
+    print('карточек: %d | с номером: %d | номера от %s до %s' % (len(cards), len(nums), nums[0] if nums else '-', nums[-1] if nums else '-'))
+    print('по страницам: %s' % per_page)
     print('записано:', OUT_JSON)
 
 
