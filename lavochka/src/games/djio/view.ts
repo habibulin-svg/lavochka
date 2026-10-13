@@ -35,7 +35,6 @@ export function createView(): GameView<State, Event> {
   let v: State | null = null;
   let actSeat: number | null = null;
   let shown: number[] = [];
-  let busy = false;
 
   const svg = (tag: string, attrs: Record<string, string | number>) => {
     const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -67,7 +66,10 @@ export function createView(): GameView<State, Event> {
             const up = (ev: PointerEvent) => {
               document.removeEventListener('pointerup', up);
               if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
-              const p = cam!.toImg(ev.clientX, ev.clientY);
+              const ctm = over!.getScreenCTM();
+              const p = ctm
+                ? { x: (ev.clientX - ctm.e) / ctm.a, y: (ev.clientY - ctm.f) / ctm.d }
+                : cam!.toImg(ev.clientX, ev.clientY);
               let best = -1;
               let bd = Infinity;
               for (const g of Array.from(over!.querySelectorAll('circle.dj-move'))) {
@@ -111,7 +113,7 @@ export function createView(): GameView<State, Event> {
     const st = v;
     over.replaceChildren();
     // куда можно шагнуть (свой ход)
-    if (!busy && st.phase === 'move' && st.left > 0 && actSeat != null) {
+    if (st.phase === 'move' && st.left > 0 && actSeat != null) {
       for (const to of NEIGH[st.pos[actSeat]]) {
         const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 30, class: 'dj-move', 'data-to': to });
         g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'step', to }));
@@ -258,7 +260,6 @@ export function createView(): GameView<State, Event> {
     async play(events, view) {
       const speed = ctx?.speed?.() ?? 1;
       v = view;
-      busy = true;
       card!.hidden = true;
       note!.hidden = true;
       for (const ev of events) {
@@ -291,7 +292,6 @@ export function createView(): GameView<State, Event> {
         }
         if (ev.type === 'step') await sleep(200 / speed);
       }
-      busy = false;
       note!.hidden = true;
       render();
       frame();
