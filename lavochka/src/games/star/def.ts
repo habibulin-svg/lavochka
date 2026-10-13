@@ -1,0 +1,145 @@
+/* «Звезда Африки» — карточка игры: карта-граф, закрытые жетоны, деньги, алмаз. Без DOM. */
+import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { SEATS as HSEATS } from '../hodilki/core';
+import { choose } from './bot';
+import {
+  AIR_FEE, CELLS, IDX, SEA_FEE, START_MONEY, TOK_NAME,
+  apply, describe, money, newState, toAct, view,
+  type Action, type Event, type State,
+} from './engine';
+
+export const SEATS = HSEATS.slice(0, 4);
+const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
+
+/** Показ правил: состояние подкручивается под нужный пример (как в «Вестерне»). */
+function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps'], options: Options = {}): DemoScript<State, Action> {
+  return {
+    seats: demoSeats,
+    options,
+    setup: (_def, rng: Rng) => {
+      const s = newState([0, 1], rng);
+      patch(s);
+      return s;
+    },
+    steps,
+  };
+}
+
+const roll = (seat: number, d: number, caption: string) => ({ seat, action: { type: 'roll' } as Action, rig: [d - 1], caption });
+const step = (seat: number, id: string, caption: string) => ({ seat, action: { type: 'step', to: IDX[id] } as Action, caption });
+const fly = (seat: number, id: string, caption: string) => ({ seat, action: { type: 'air', to: IDX[id] } as Action, caption });
+
+export const def: GameDef<State, Action, Event, State> = {
+  id: 'star',
+  title: 'Звезда Африки',
+  players: { min: 2, max: 4, default: 2 },
+  seats: SEATS,
+  options: [
+    {
+      key: 'robbers',
+      label: 'Разбойники',
+      type: 'select',
+      choices: [
+        { value: 'on', label: 'в игре (как в правилах)' },
+        { value: 'off', label: 'без разбойников — спокойная игра' },
+      ],
+      default: 'on',
+    },
+  ],
+  presets: [
+    { id: 'classic', label: 'Полные правила', options: { robbers: 'on' } },
+    { id: 'calm', label: 'Без разбойников', options: { robbers: 'off' } },
+  ],
+  setup: (seats, opts, rng) => {
+    const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
+    const s = newState(ids, rng);
+    if (String(opts.robbers ?? 'on') === 'off') s.tokens = s.tokens.map((t) => (t === 'robber' ? 'empty' : t));
+    return s;
+  },
+  showcase: () => {
+    const s = newState([0, 1, 2], { int: (n: number) => n - 1 } as Rng);
+    s.pos = s.pos.map((p, i) => (i === 0 ? IDX['b3'] : i === 1 ? IDX['s4'] : i === 2 ? IDX['b12'] : p));
+    s.open[IDX['1']] = true;
+    s.tokens[IDX['1']] = 'topaz';
+    s.open[IDX['3']] = true;
+    s.tokens[IDX['3']] = 'robber';
+    s.open[IDX['19']] = true;
+    s.tokens[IDX['19']] = 'horse';
+    s.money[0] = 1200;
+    return s;
+  },
+  toAct,
+  apply,
+  view: (s) => view(s),
+  result: (s) =>
+    s.winner == null
+      ? null
+      : { winners: [s.winner], text: `${SEATS[s.winner].name} доставил «Звезду Африки» в ${CELLS[s.pos[s.winner]].t ?? 'порт'}` },
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
+  describe,
+  rules: {
+    goal: 'Найти «Звезду Африки» и первым принести её в Танжер или Каир. По пути открывают закрытые жетоны: камни продают в банк, подковы хранят, разбойники отбирают деньги.',
+    sections: [
+      {
+        title: 'Ход, дороги и жетоны',
+        html: `<p>Каждый ставит фишку в Танжер и берёт из банка <b>500 $</b>. Бросают кубик и идут по карте <b>шаг за шагом</b>,
+          сами выбирая дорогу на каждом перекрёстке: суша — бесплатно, выход из порта в море — <b>100 $</b>.
+          Очки можно не истрачивать все — фишку разрешено остановить хоть на первом шаге.</p>
+          <p>На 30 квадратах карты лежат закрытые жетоны. Остановились на квадрате — открыли его: <b>топаз</b> — 300 $,
+          <b>изумруд</b> — 500 $, <b>рубин</b> — 800 $ (на Золотом Берегу плата вдвое), <b>подкова</b> — хранится до поры
+          (её меняют на 100 $ или на лишний бросок), <b>разбойник</b> — забирает все деньги (а на Невольничьем Берегу ещё и три хода рабства),
+          пустой — ничего.</p>`,
+        demo: demo(
+          (s) => {
+            s.tokens[IDX['1']] = 'topaz';
+            s.open[IDX['1']] = false;
+            s.pos[0] = IDX['b7'];
+            s.turn = 0;
+          },
+          [
+            roll(0, 1, 'Вовка бросает кубик: выпала единица — один шаг.'),
+            step(0, '1', 'Вовка входит в Тунис и открывает жетон: топаз — в банк 300 $.'),
+          ]
+        ),
+      },
+      {
+        title: 'Море и авиалинии',
+        html: `<p>Из порта в море можно выйти только за <b>100 $</b> — за каждый выход. По морю идут так же, как по суше: шаг за шагом по синим точкам.</p>
+          <p><b>Авиалинии</b> (красные линии) позволяют перелететь из города в город за <b>300 $</b> — кубик при этом не бросают,
+          но ход на этом заканчивается.</p>`,
+        demo: demo(
+          (s) => {
+            s.pos[0] = IDX['1'];
+            s.pos[1] = IDX['Tg'];
+            s.turn = 0;
+          },
+          [
+            roll(0, 1, 'Вовка стоит в порту: бросок — один шаг.'),
+            step(0, 's4', 'Шаг в море: из порта выход стоит 100 $.'),
+            fly(1, '3', 'Ленка из Танжера летит самолётом в Тунис — 300 $, без кубика.'),
+          ]
+        ),
+      },
+      {
+        title: 'Алмаз и финиш',
+        html: `<p>У кого оказалась «Звезда Африки», тот несёт её в <b>Танжер</b> или <b>Каир</b>. Первый, кто добрался с алмазом, побеждает.
+          Кто первым придёт в Кейптаун, получает премию <b>500 $</b>.</p>
+          <p>Пока алмаз не найден, открытые разбойники берут по 100 $ за проход и 100 $ со пропуском хода — за остановку на них.</p>`,
+        demo: demo(
+          (s) => {
+            s.pos[0] = IDX['b3'];
+            s.diamond = 0;
+            s.turn = 0;
+          },
+          [
+            roll(0, 1, 'С алмазом в руках Вовка подходит к Танжеру.'),
+            step(0, 'Tg', 'Вовка вносит «Звезду Африки» в Танжер — победа!'),
+          ]
+        ),
+      },
+    ],
+  },
+};
+
+/** Подписи для статуса и панели (использует вид). */
+export const HINTS = { sea: SEA_FEE, air: AIR_FEE, start: START_MONEY, tok: TOK_NAME, money };

@@ -1,0 +1,24 @@
+/* «Звезда Африки»: карта во всю ширину стола, поверх — точки графа, жетоны и фишки. */
+.st-wrap { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.st-map { max-width: 100%; max-height: 100%; display: block; border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+.st-over { position: absolute; inset: 0; width: 100%; height: 100%; }
+.st-dot { fill: rgba(30, 20, 10, 0.35); }
+.st-dot-sea { fill: rgba(20, 60, 120, 0.45); }
+.st-dot-tok { fill: rgba(120, 60, 20, 0.5); stroke: rgba(255, 240, 200, 0.6); stroke-width: 2; }
+.st-dot-city { fill: rgba(150, 20, 20, 0.55); stroke: #ffe9b0; stroke-width: 2; }
+.st-closed { fill: rgba(40, 25, 12, 0.88); stroke: #d8b070; stroke-width: 4; }
+.st-tok-txt { fill: #ffe9b0; font: 40px 'PT Serif', serif; }
+.st-city { fill: #ffe9b0; font: bold 40px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.7); stroke-width: 7; }
+.st-piece { stroke: rgba(0, 0, 0, 0.6); stroke-width: 5; }
+.st-piece-txt { fill: #fff; font: bold 34px 'PT Serif', serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.5); stroke-width: 5; }
+.st-gem { font: 40px serif; }
+.st-move { fill: rgba(40, 200, 90, 0.28); stroke: #4ee08a; stroke-width: 3; cursor: pointer; }
+.st-fly { fill: rgba(230, 60, 60, 0.25); stroke: #ff7a6a; stroke-width: 3; cursor: pointer; }
+.st-panel { display: flex; flex-direction: column; gap: 8px; }
+.st-panel.st-hidden .st-btns { display: none; }
+.st-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }
+.st-tray { height: 96px; }
+.st-btns { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 700px) {
+  .st-stats { font-size: 13px; }
+}
