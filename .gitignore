@@ -17,3 +17,8 @@ materials/brick/
 materials/mame-src/
 materials/words/
 docs/analysis/_tmp*/
+
+# всё, что лежит в materials/, — исходники для личного использования (сканы, выгрузки, json),
+# в репозиторий идёт только README.md со ссылками
+materials/*
+!materials/README.md
