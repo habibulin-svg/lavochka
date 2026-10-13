@@ -1,6 +1,7 @@
 /* Вид «Беглых»: карта под камерой, пуговицы-фишки, кубик со знаками и события, которые ждут игрока. */
 import { BoardCam, type CamPoint } from '../../core/boardcam';
 import { sleep } from '../../core/util';
+import { Sound } from '../../core/audio';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import {
@@ -189,6 +190,8 @@ export function createView(): GameView<State, Event> {
         note!.hidden = false;
         render();
         if (ev.type === 'roll') {
+          // стук костей — как в остальных играх
+          Sound.diceRoll(0.75);
           // показываем грань кубика карточкой и ждём игрока
           const face = FACES.find((f) => f.name === ev.face) ?? FACES[0];
           (card!.querySelector('.bg-card-f') as HTMLElement).textContent = face.short;
