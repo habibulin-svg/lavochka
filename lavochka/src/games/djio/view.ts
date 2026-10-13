@@ -306,6 +306,18 @@ export function createView(): GameView<State, Event> {
     },
     setTurn(_toAct, interactive) {
       actSeat = v && !v.over && interactive.includes(v.turn) ? v.turn : null;
+    // подсказка-состояние: видно, чей ход, сколько шагов и сколько кружков нарисовано,
+    // чтобы причина «не могу сходить» была видна сразу, а не угадывалась
+    const hint = wrap?.querySelector('.hint') as HTMLElement | null;
+    if (hint) {
+      const marks = over ? over.querySelectorAll('circle.dj-move').length : 0;
+      hint.textContent =
+        actSeat == null
+          ? 'Карта приближается колесом и кнопками «+» / «−».'
+          : v && v.phase === 'move'
+            ? `Ваш ход: осталось шагов ${v.left}, кружков для шага ${marks}. Возьмите пуговицу и поставьте на жёлтый кружок (или нажмите на кружок).`
+            : 'Бросьте кубик — пробелом, тапом по доске или кнопкой.';
+    }
       if (actSeat != null) cam?.release();
       render();
       frame();
