@@ -141,7 +141,30 @@ export function createView(): GameView<State, Event> {
       const tok = TOKEN_AT[i];
       const city = c.kind === 'city';
       if (tok) {
-        if ((shownOpen[i] ?? st.open[i]) && st.tokens[i]) {
+        if (i === 0) {
+        // лента открытых жетонов внизу доски: видно, что уже открыто
+        let strip = wrap?.querySelector('.st-open') as HTMLElement | null;
+        if (!strip && wrap) {
+          strip = document.createElement('div');
+          strip.className = 'st-open bc-ui';
+          wrap.append(strip);
+        }
+        if (strip) {
+          strip.replaceChildren();
+          for (let k = 0; k < CELLS.length; k++) {
+            const kk = st.tokens[k];
+            if (!kk || !st.open[k]) continue;
+            const im = document.createElement('img');
+            im.src = `/star/${TOK_FILE[kk]}.webp`;
+            im.alt = TOK_NAME[kk] ?? '';
+            im.title = TOK_NAME[kk] ?? '';
+            im.draggable = false;
+            strip.append(im);
+          }
+          strip.classList.toggle('st-open-empty', strip.childElementCount === 0);
+        }
+      }
+      if ((shownOpen[i] ?? st.open[i]) && st.tokens[i]) {
           over.append(svg('image', { x: c.x - 66, y: c.y - 66, width: 132, height: 132, href: `/star/${TOK_FILE[st.tokens[i]!]}.webp` }));
         } else if (shownOpen[i] ?? st.open[i]) {
           over.append(label(c.x - 8, c.y + 16, 'st-tok-txt', '·'));
