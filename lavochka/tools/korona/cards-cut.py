@@ -1,10 +1,11 @@
-"""«Корона Эмбера» — нарезка карт приключений из выгрузки текстовых блоков.
+"""«Корона Эмбера» — нарезка карт приключений (версия 2: заголовки по размеру шрифта).
 
-Блоки со страниц PDF группируем в карточки: сначала в строки (близкие по y и перекрывающиеся по x),
-потом строки — в карточку (по вертикальному разрыву). Каждой карточке режем картинку из рендера
-страницы и пишем текст в порядке чтения.
+В PDF карточки лежат по три в ряд, и «слепая» группировка по координатам путается: заголовок одной
+карточки по вертикали попадает между строками соседней. Надёжнее признак — кегль: у заголовков
+карточек он крупнее текста (тело ~7,5 pt, заголовки ~14–14,5 pt, крупнее — шапки страниц).
+Карточка = «заголовок + строки под ним в той же колонке до следующего заголовка».
 
-Пишем: lavochka/src/games/korona/cards.json и public/korona/cards/<n>.webp
+Пишем: lavochka/src/games/korona/cards.json, public/korona/cards/<n>.webp и монтаж для проверки глазами.
 Запуск из lavochka/:  python -I tools/korona/cards-cut.py
 """
 import json
@@ -17,92 +18,88 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 RAW = os.path.join(ROOT, 'lavochka', 'tools', 'korona', 'cards-raw.json')
 OUT_JSON = os.path.join(ROOT, 'lavochka', 'src', 'games', 'korona', 'cards.json')
 OUT_IMG = os.path.join(ROOT, 'lavochka', 'public', 'korona', 'cards')
+MONTAGE = os.path.join(ROOT, 'lavochka', 'tools', 'korona', 'cards-check.png')
+PDF_DIR = os.path.join('D:\\', 'temp', 'настолки', 'Корона Эмбера 1994 ги (Реставрация в векторе)', 'PDF')
 DPI = 110
-ROW_GAP = 12.0      # блоки ближе этого по вертикали — одна строка
-CARD_GAP = 30.0     # разрыв больше этого — новая карточка
+TITLE_MIN, TITLE_MAX = 13.5, 18.0
+LINE_TOL = 4.0
 
 
-def lines_of(blocks):
-    """Собрать блоки в строки: близкие по y и перекрывающиеся по x."""
+def lines_of(page):
+    """Строки страницы: текст, кегль, рамка (спаны собираем в строки по y)."""
+    spans = []
+    for block in page.get_text('dict')['blocks']:
+        for line in block.get('lines', []):
+            for s in line['spans']:
+                t = ' '.join(s['text'].split())
+                if t:
+                    spans.append({'text': t, 'size': round(s['size'], 1), 'x0': s['bbox'][0], 'y0': s['bbox'][1], 'x1': s['bbox'][2], 'y1': s['bbox'][3]})
+    spans.sort(key=lambda s: (s['y0'], s['x0']))
     rows = []
-    for b in sorted(blocks, key=lambda b: (round(b['y'] / 6), b['x'])):
-        placed = False
-        for row in rows:
-            r = row['rect']
-            if abs(b['y'] - r[1]) <= ROW_GAP and not (b['x'] + b['w'] < r[0] - 4 or b['x'] > r[2] + 4):
-                row['blocks'].append(b)
-                row['rect'] = (min(r[0], b['x']), min(r[1], b['y']), max(r[2], b['x'] + b['w']), max(r[3], b['y'] + b['h']))
-                placed = True
-                break
-        if not placed:
-            rows.append({'blocks': [b], 'rect': (b['x'], b['y'], b['x'] + b['w'], b['y'] + b['h'])})
-    rows.sort(key=lambda r: r['rect'][1])
-    for row in rows:
-        row['blocks'].sort(key=lambda b: b['x'])
+    for s in spans:
+        if rows and abs(s['y0'] - rows[-1]['y0']) <= LINE_TOL and not (s['x1'] < rows[-1]['x0'] - 6 or s['x0'] > rows[-1]['x1'] + 6):
+            r = rows[-1]
+            r['text'] += ' ' + s['text']
+            r['size'] = max(r['size'], s['size'])
+            r['x0'] = min(r['x0'], s['x0'])
+            r['x1'] = max(r['x1'], s['x1'])
+            r['y1'] = max(r['y1'], s['y1'])
+        else:
+            rows.append(dict(s))
     return rows
 
 
-def columns_of(rows, gap=40.0):
-    """Разбить строки на колонки карточек: страница A3 держит три карточки в ряд."""
-    cols = []
-    for row in sorted(rows, key=lambda r: r['rect'][0]):
-        x0, _, x1, _ = row['rect']
-        placed = False
-        for col in cols:
-            c = col['rect']
-            if x0 <= c[2] + gap and x1 >= c[0] - gap:
-                col['rows'].append(row)
-                col['rect'] = (min(c[0], x0), min(c[1], row['rect'][1]), max(c[2], x1), max(c[3], row['rect'][3]))
-                placed = True
-                break
-        if not placed:
-            cols.append({'rows': [row], 'rect': (x0, row['rect'][1], x1, row['rect'][3])})
-    return cols
-
-
-def cards_of(cols):
-    """В каждой колонке собрать строки в карточки по вертикальному разрыву."""
-    cards = []
-    for col in cols:
-        stack = []
-        for row in sorted(col['rows'], key=lambda r: r['rect'][1]):
-            if stack and row['rect'][1] - stack[-1]['rect'][3] <= CARD_GAP:
-                last = stack[-1]
-                last['rows'].append(row)
-                last['rect'] = (min(last['rect'][0], row['rect'][0]), last['rect'][1], max(last['rect'][2], row['rect'][2]), max(last['rect'][3], row['rect'][3]))
-            else:
-                stack.append({'rows': [row], 'rect': row['rect']})
-        cards.extend(stack)
-    return cards
+def is_title(row):
+    return TITLE_MIN <= row['size'] <= TITLE_MAX
 
 
 def main():
     raw = json.load(open(RAW, encoding='utf8'))
-    src = os.path.join('D:\\', 'temp', 'настолки', 'Корона Эмбера 1994 ги (Реставрация в векторе)', 'PDF', raw['src'])
-    doc = pymupdf.open(src)
+    doc = pymupdf.open(os.path.join(PDF_DIR, raw['src']))
     os.makedirs(OUT_IMG, exist_ok=True)
-    cards = []
-    n = 0
-    for page_info in raw['pages']:
-        page = doc[page_info['page'] - 1]
+    cards, n = [], 0
+    per_page = []
+    for page_no in range(len(doc)):
+        page = doc[page_no]
+        rows = lines_of(page)
+        titles = [r for r in rows if is_title(r)]
+        if not titles:
+            per_page.append(0)
+            continue
         pix = page.get_pixmap(dpi=DPI)
         img = Image.frombytes('RGB', (pix.width, pix.height), pix.samples)
         k = DPI / 72
-        for card in cards_of(columns_of(lines_of(page_info['blocks']))):
-            text = ' '.join(' '.join(b['text'] for b in row['blocks']) for row in card['rows']).strip()
+        made = 0
+        for t in titles:
+            below = [r for r in rows if r['y0'] > t['y1'] - 2 and not (r['x1'] < t['x0'] - 30 or r['x0'] > t['x1'] + 30)]
+            nxt = min((r['y0'] for r in below if is_title(r)), default=None)
+            body = [r for r in below if nxt is None or r['y0'] < nxt - 2]
+            text = ' '.join([t['text']] + [r['text'] for r in body]).strip()
             if len(text) < 60:
-                continue  # подписи-обрывки не считаем карточкой
+                continue
             n += 1
-            x0, y0, x1, y1 = card['rect']
-            pad = 6
-            box = (max(0, int((x0 - pad) * k)), max(0, int((y0 - pad) * k)), min(img.width, int((x1 + pad) * k)), min(img.height, int((y1 + pad) * k)))
+            made += 1
+            x0 = min([t['x0']] + [r['x0'] for r in body])
+            x1 = max([t['x1']] + [r['x1'] for r in body])
+            y0 = t['y0']
+            y1 = max([t['y1']] + [r['y1'] for r in body])
             name = 'card-%03d.webp' % n
-            img.crop(box).save(os.path.join(OUT_IMG, name), 'WEBP', quality=84, method=6)
-            cards.append({'n': n, 'page': page_info['page'], 'x': round(x0, 1), 'y': round(y0, 1), 'text': text, 'img': '/korona/cards/' + name})
+            img.crop((max(0, int((x0 - 6) * k)), max(0, int((y0 - 6) * k)), min(img.width, int((x1 + 6) * k)), min(img.height, int((y1 + 6) * k)))).save(
+                os.path.join(OUT_IMG, name), 'WEBP', quality=84, method=6
+            )
+            cards.append({'n': n, 'page': page_no + 1, 'x': round(x0, 1), 'y': round(y0, 1), 'text': text, 'img': '/korona/cards/' + name})
+        per_page.append(made)
     doc.close()
-    json.dump({'note': 'Карты приключений: текст вынут из векторного PDF, картинки нарезаны по блокам.', 'cards': cards},
+    json.dump({'note': 'Карты приключений: заголовки найдены по кеглю (13,5–18 pt), текст собран из строк карточки.', 'cards': cards},
               open(OUT_JSON, 'w', encoding='utf8'), ensure_ascii=False, indent=1)
-    print('карточек: %d | в среднем знаков: %d' % (len(cards), sum(len(c['text']) for c in cards) // max(1, len(cards))))
+    files = sorted(os.listdir(OUT_IMG))[:12]
+    if files:
+        m = Image.new('RGB', (300 * 4, 210 * 3), (240, 236, 226))
+        for i, f in enumerate(files):
+            im = Image.open(os.path.join(OUT_IMG, f)).convert('RGB').resize((300, 210), Image.LANCZOS)
+            m.paste(im, ((i % 4) * 300, (i // 4) * 210))
+        m.save(MONTAGE)
+    print('карточек: %d | по страницам: %s' % (len(cards), per_page))
     print('записано:', OUT_JSON)
 
 
