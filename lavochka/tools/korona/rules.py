@@ -31,7 +31,7 @@ def main():
         doc = pymupdf.open(os.path.join(PDF_DIR, f))
         chars = sum(len(p.get_text()) for p in doc)
         doc.close()
-        if chars > 4000:
+        if chars > 200:
             files.append(f)
     out = []
     for name in files:
