@@ -478,7 +478,9 @@ class HodilkiView implements GameView<State, Event> {
     this.tiny.src = `${b.img.dir}/tiny.webp`;
     this.base.src = `${b.img.dir}/view.webp`;
     this.base.alt = b.title;
-    (this.mini.querySelector('img') as HTMLImageElement).src = `${b.img.dir}/view.webp`;
+    // в показе правил миникарты может не быть — не падаем
+    const miniImg = this.mini?.querySelector('img') as HTMLImageElement | null | undefined;
+    if (miniImg) miniImg.src = `${b.img.dir}/view.webp`;
     if (b.race) this.preloadRace();
     // слои тайлов: более подробный — выше
     this.layers = Array.from({ length: b.img.levels }, (_, lv) => {
