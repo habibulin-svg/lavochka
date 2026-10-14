@@ -1,0 +1,13 @@
+/* Козёл: стол во дворе под потёртым зелёным сукном. */
+.table--kozel {
+  --panel-bg: linear-gradient(180deg, #eef0e6, #dadfcc);
+  --panel-ink: #1a1e10;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(230, 255, 200, 0.08), transparent 65%), #171c12;
+}
+.tv-cloth.kz-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.12), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.06) 0 3px, transparent 3px 9px),
+    linear-gradient(160deg, #5a7a3a, #34501e 70%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5), 0 0 0 10px #5a3a22, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
