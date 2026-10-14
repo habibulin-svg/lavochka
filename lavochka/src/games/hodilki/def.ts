@@ -375,7 +375,16 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     if (hasItem && hasCoins) payNeed(stand);
     return goNeed(hasItem && hasCoins ? stand.yes : stand.no);
   }
-  const walk = loopMove(s0, board, seat, s0.last) ?? walkFor(s0, board, seat);
+  // клетка «выход только нужной гранью — и сразу на клетку»: не та грань — стоит, та — переносит (знак там срабатывает)
+  const hold = board.cells[s.pos[seat]]?.hold;
+  if (hold && (s0.last ?? 0) !== hold.die) {
+    ev.push({ type: 'sign', seat, sign: { k: 'wait', die: hold.die, text: 'ждёт нужной грани' }, to: s.pos[seat] });
+    s.turn = next(s, seat);
+    s.map = mapOf(s, s.turn);
+    return { state: s, events: ev };
+  }
+  const holdWalk = hold?.to != null ? { path: [hold.to], route: null, routeFor: false, forks: [] } : null;
+  const walk = holdWalk ?? loopMove(s0, board, seat, s0.last) ?? walkFor(s0, board, seat);
   const path = walk.path;
   // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
   // На клетках дорог («В путь, друзья!») знаки работают и по ветке: зелёный кружок — ещё бросок, оранжевый — пропуск хода.
@@ -506,6 +515,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.items = many(s.items, null);
       s.items[seat] = [...(s.items[seat] ?? []), sign.item];
       ev.push({ type: 'item', seat, item: sign.item });
+      if (sign.to != null) dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
     } else if (sign.k === 'takeItem') {
       s.items = many(s.items, null);
       s.items[seat] = (s.items[seat] ?? []).filter((x) => x !== sign.item);

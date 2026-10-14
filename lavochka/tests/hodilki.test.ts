@@ -873,6 +873,16 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(a.state.winner).toBeNull();
   });
 
+  it('поле 2: с Аленького цветочка (28) выход только шестёркой — сразу на клад (30)', () => {
+    const rng = new RiggedRng(new SeededRng(12));
+    const flower = at('luk2', '28');
+    const a = turn(stand('luk2', flower, { coins: 0 }), 0, 1, rng);
+    expect(a.state.pos[0]).toBe(flower); // не шестёрка — стоит
+    const b = turn(stand('luk2', flower, { coins: 0 }), 0, 6, rng);
+    expect(b.state.pos[0]).toBe(at('luk2', '30'));
+    expect(b.state.coins![0]).toBeGreaterThanOrEqual(3); // клад (30) сработал
+  });
+
   it('поле 3: Заоблачная даль (56) переносит в замок Кощея (поле 4)', () => {
     const rng = new RiggedRng(new SeededRng(13));
     // перед (56) — Облако (55): выход только шестёркой

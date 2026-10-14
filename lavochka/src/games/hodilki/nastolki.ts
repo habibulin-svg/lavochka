@@ -13,7 +13,7 @@ export interface Raw {
   w: number;
   h: number;
   end: number;
-  cells: { x: number; y: number; l?: string; s?: string; t?: string; r?: string; off?: number; /** следующая клетка (поле-граф), −1 — тупик */ n?: number }[];
+  cells: { x: number; y: number; l?: string; s?: string; t?: string; r?: string; off?: number; /** следующая клетка (поле-граф), −1 — тупик */ n?: number; /** [грань, клетка]: выход отсюда только этой гранью — прямо на клетку */ h?: number[] }[];
 }
 
 /** Знак клетки из кода разметки. */
@@ -111,7 +111,11 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   }
   if (code.startsWith('extra:')) return { k: 'extra', n: +code.slice(6), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('extraD:')) return { k: 'extra', dice: +code.slice(7), text: routeText ?? 'дополнительные ходы' };
-  if (code.startsWith('item:')) return { k: 'item', item: code.slice(5) as ItemId, text: routeText ?? 'берёт предмет' };
+  if (code.startsWith('item:')) {
+    // «item:cap>98» — взять и перейти на клетку 98
+    const [item, to] = code.slice(5).split('>');
+    return { k: 'item', item: item as ItemId, ...(to ? { to: +to } : {}), text: routeText ?? 'берёт предмет' };
+  }
   if (code.startsWith('pick:') || code.startsWith('way:')) {
     // «загадка: вопрос|ответ,ответ|клетка,клетка»; «way:» — то же, но это выбор дороги (развилка в лабиринте)
     const way = code.startsWith('way:');
@@ -148,6 +152,7 @@ export function cellsOf(raw: Raw): Cell[] {
     if (c.t) cell.text = c.t;
     if (c.off) cell.off = true;
     if (c.n != null) cell.next = c.n;
+    if (c.h) cell.hold = { die: c.h[0], ...(c.h[1] != null ? { to: c.h[1] } : {}) };
     // подпись перехода — с номером клетки, куда ведёт («идёт вперёд на 22»)
     const g = cell.sign;
     if (g?.k === 'jump') {
