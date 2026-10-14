@@ -78,17 +78,20 @@ export function signOf(code: string | undefined, i: number, label: string | unde
     };
   }
   if (code.startsWith('coins:')) {
-    const [n, skip] = code.slice(6).split('+');
-    return { k: 'coins', n: +n, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны' };
+    // «coins:10>67» — взять и перейти на клетку 67 (кикиморы увлекли в Туман)
+    const [body, to] = code.slice(6).split('>');
+    const [n, skip] = body.split('+');
+    return { k: 'coins', n: +n, ...(skip ? { skip: +skip } : {}), ...(to ? { to: +to } : {}), text: routeText ?? 'берёт боны' };
   }
   if (code.startsWith('coinsD:')) {
     const [d, skip] = code.slice(7).split('+');
     return { k: 'coins', dice: +d, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны' };
   }
   if (code.startsWith('lose:')) {
-    // «отдай N и пропусти M ходов»: lose:5+1
-    const [n, skip] = code.slice(5).split('+');
-    return { k: 'coins', n: +n, loss: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт боны' };
+    // «отдай N и пропусти M ходов»: lose:5+1; «lose:5>100» — и перейти на клетку 100
+    const [body, to] = code.slice(5).split('>');
+    const [n, skip] = body.split('+');
+    return { k: 'coins', n: +n, loss: true, ...(skip ? { skip: +skip } : {}), ...(to ? { to: +to } : {}), text: routeText ?? 'отдаёт боны' };
   }
   if (code.startsWith('loseD:')) {
     const [d, skip] = code.slice(6).split('+');

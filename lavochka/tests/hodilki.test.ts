@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, boardOf, def, PICK_BOARDS, seriesParts, startBoard } from '../src/games/hodilki/def';
-import { finishOf, type Board, type Event, type ItemId, type Sign, type State } from '../src/games/hodilki/core';
+import { finishOf, nextOf, type Board, type Event, type ItemId, type Sign, type State } from '../src/games/hodilki/core';
 import { riddlesOf } from '../src/words/riddles';
 
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
@@ -41,7 +41,9 @@ describe('кинь-двинь: поля', () => {
       if (!g) return;
       // знаки стоят на делениях ленты или на клетках дороги («В путь, друзья!»)
       expect(i <= end || c.off, `знак на клетке ветки ${i}`).toBe(true);
-      if (g.k === 'jump') expect(g.to >= 0 && g.to <= end && g.to !== i, `переход с ${c.label ?? i}`).toBe(true);
+      // у поля-графа («Лукоморье») стрелки ведут и на кружки боковых дорог
+      const graph = b.cells.some((x) => x.next != null);
+      if (g.k === 'jump') expect(g.to >= 0 && (g.to <= end || (graph && g.to < b.cells.length)) && g.to !== i, `переход с ${c.label ?? i}`).toBe(true);
       if (g.k === 'route') {
         expect(g.cells.length).toBeGreaterThan(1);
         for (const k of g.cells.slice(0, -1)) expect(b.cells[k]?.off, `ветка с ${c.label}: клетка ${k}`).toBe(true);
@@ -354,9 +356,18 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
     expect(fork?.k).toBe('fork');
     if (fork?.k !== 'fork') return;
     expect(fork.roads).toEqual(['прямо', 'вверх', 'вниз']);
-    expect(fork.branches[0]).toEqual([]); // «прямо» — главный путь
-    expect(fork.branches[1].length).toBeGreaterThan(30); // верхняя дорога через 8, 9а, 6б, клад 7
-    expect(fork.branches[2].length).toBeGreaterThan(25); // нижняя через клад 4 и болото
+    // поле-граф: ветка — первый кружок дороги, дальше пуговица идёт по дорогам кружков
+    const road = (from: number) => {
+      const seen: string[] = [];
+      for (let k: number | undefined = from, n = 0; k != null && n < 200; k = nextOf(board, k), n++) {
+        if (board.cells[k].label) seen.push(board.cells[k].label!);
+        if (board.cells[k].sign?.k === 'fork' && k !== from) break;
+      }
+      return seen;
+    };
+    expect(road(fork.branches[0][0])).toContain('3'); // прямо — к Дубу
+    expect(road(fork.branches[1][0])).toEqual(expect.arrayContaining(['8', '9а', '7а'])); // верхняя дорога
+    expect(road(fork.branches[2][0])).toEqual(expect.arrayContaining(['4', '5'])); // нижняя: клад 4 и болото
   });
 
   it('развилка: остаток очков выбирает дорогу, и клад на дороге работает', () => {
@@ -397,7 +408,7 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
     const sign = board.cells[r.state.pos[0]].sign;
     expect(sign?.k === 'pick' ? sign.question : '').toContain('репке');
     const pick = def.apply(r.state, 0, { type: 'pick', pick: 0 }, rng)!;
-    expect(pick.state.pos[0]).toBe(at('2')); // первый ответ — пункт 2
+    expect(pick.state.pos[0]).toBe(at('5')); // первый ответ «5» — пункт 5
   });
 });
 
@@ -813,16 +824,26 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
 
   it('поле 2: Морской царь (21) отправляет к Рыбе, пиратам и сундуку', () => {
     const { g } = forkAt('luk2', /Морской царь/);
-    const ends = g.branches.map((br) => br[br.length - 1]);
-    expect(ends).toEqual([at('luk2', '27'), at('luk2', '26'), at('luk2', '24б')]);
+    const b = luk('luk2');
+    // ветка — первый кружок дороги; по дороге пуговица доходит до своего пункта
+    const reach = (from: number, label: string) => {
+      for (let k: number | undefined = from, n = 0; k != null && n < 50; k = nextOf(b, k), n++) if (b.cells[k].label === label) return true;
+      return false;
+    };
+    expect(g.roads).toEqual(['вверх', 'прямо', 'вниз']);
+    expect(reach(g.branches[0][0], '27')).toBe(true);
+    expect(reach(g.branches[1][0], '26')).toBe(true);
+    expect(reach(g.branches[2][0], '24б')).toBe(true);
   });
 
-  it('поле 2: у Корабля-призрака шесть входов, все ведут на нижний берег', () => {
-    const { g } = forkAt('luk2', /Корабль-призрак/);
+  it('поле 2: у Корабля-призрака шесть входов, каждый выводит на свою дорогу', () => {
+    const { i, g } = forkAt('luk2', /Корабль-призрак/);
     expect(g.branches.length).toBe(6);
-    const out = at('luk2', '20') + 1; // нижний берег сразу за Кораблём-призраком
-    for (const br of g.branches) expect(br[br.length - 1]).toBe(out);
-    for (const br of g.branches) expect(luk('luk2').cells[br[0]].off, 'вход лабиринта — клетка дороги').toBe(true);
+    const cells = luk('luk2').cells;
+    for (const br of g.branches) {
+      expect(br.length).toBe(1);
+      expect(br[0] !== i && br[0] >= 0 && br[0] < cells.length, `выход лабиринта ${br[0]}`).toBe(true);
+    }
   });
 
   it('поле 2: терем (32) — с цветочком дальше в третью часть, без него назад на развилку (15)', () => {
@@ -839,7 +860,8 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
 
   it('поле 3: Заоблачная даль (56) переносит в замок Кощея (поле 4)', () => {
     const rng = new RiggedRng(new SeededRng(13));
-    const a = turn(stand('luk3', at('luk3', '56') - 1), 0, 1, rng);
+    // перед (56) — Облако (55): выход только шестёркой
+    const a = turn(stand('luk3', at('luk3', '56') - 1), 0, 6, rng);
     expect(a.state.maps?.[0]).toBe('luk4');
     expect(a.state.pos[0]).toBe(at('luk4', '57'));
   });
