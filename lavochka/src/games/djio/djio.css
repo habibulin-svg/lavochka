@@ -1,41 +1,52 @@
-﻿/* «Чудовище Джио-Джанги»: поле под камерой, поверх — точки ленты, пуговицы и подсказки шагов. */
+/* «Чудовище Джио-Джанги»: поле под камерой, поверх — подсветки развилок, след хода и пуговицы. */
 .dj-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .dj-board { position: relative; transform-origin: 0 0; }
 .dj-board.ready .dj-map { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
 .dj-map { display: block; width: 100%; height: 100%; border-radius: 8px; user-select: none; }
 .dj-over { position: absolute; inset: 0; width: 100%; height: 100%; }
-.dj-dot { fill: rgba(255, 255, 255, 0.06); stroke: rgba(0, 0, 0, 0.35); stroke-width: 3; }
-.dj-card-kind { stroke: rgba(240, 200, 60, 0.9); }
-.dj-dot.dj-card { stroke: rgba(250, 205, 60, 0.75); }
-.dj-dot.dj-swamp { stroke: rgba(70, 190, 90, 0.8); }
-.dj-dot.dj-danger { stroke: rgba(220, 60, 50, 0.8); }
-.dj-dot.dj-cross { stroke: rgba(80, 140, 230, 0.85); }
-.dj-danger { fill: none; stroke: rgba(255, 90, 70, 0.35); stroke-width: 8; stroke-dasharray: 14 10; }
-.dj-move { fill: rgba(255, 214, 96, 0.30); stroke: #ffd764; stroke-width: 6; cursor: pointer; }
-.dj-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3)); }
-.dj-mark { font: 40px serif; }
-.dj-panel { display: flex; flex-direction: column; gap: 8px; }
-.dj-panel.dj-hidden .dj-btns { display: none; }
-.dj-stats { font: 14px/1.4 'PT Serif', serif; opacity: 0.92; }
-.dj-tray { height: 96px; }
-.dj-btns { display: flex; flex-direction: column; gap: 6px; max-height: 44vh; overflow: auto; }
-.dj-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
-  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(22, 30, 46, 0.88); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
-.dj-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(360px, 86%);
-  padding: 14px 16px 10px; border-radius: 14px; text-align: center; cursor: pointer;
-  background: linear-gradient(#fdf6e3, #f3e6c8); border: 3px solid #caa96a; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); }
-.dj-card-t { font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
-.dj-card-s { margin-top: 6px; font: 15px/1.4 'PT Serif', serif; color: #33240f; }
-.dj-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #8a7550; }
-.dj-piece.dj-take { cursor: grab; }
-.dj-piece.dj-take:active { cursor: grabbing; }
 
 /* поле грузится из размытия: пока полная картинка едет, видна крошечная копия */
-.dj-board { position: relative; }
 .dj-map-mini { position: absolute; inset: 0; width: 100%; height: 100%; filter: blur(7px) saturate(1.1); transform: scale(1.05); transition: opacity .45s ease; }
 .dj-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
 .dj-board.ready .dj-map-full { opacity: 1; }
 .dj-board.ready .dj-map-mini { opacity: 0; }
-/* пуговицу можно тащить: браузер не должен перехватывать жест прокруткой */
-.dj-piece.dj-take { touch-action: none; }
+
+/* куда шагнуть на развилке */
+.dj-move { fill: rgba(255, 214, 96, 0.32); stroke: #fff2a8; stroke-width: 12; cursor: pointer; animation: dj-pulse 1.2s ease-in-out infinite; }
+@keyframes dj-pulse { 0%, 100% { stroke-opacity: 0.45; } 50% { stroke-opacity: 1; } }
+
+/* след хода */
+.dj-trail-g { pointer-events: none; }
+.dj-trail-under { fill: none; stroke: rgba(0, 0, 0, 0.45); stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
+.dj-trail { fill: none; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 22; }
+
+/* фишки-пуговицы */
+.dj-piece image { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)); }
+.dj-shadow { fill: rgba(0, 0, 0, 0.28); }
+.dj-piece.dj-turn image { filter: drop-shadow(0 0 9px #fff6c0) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)); }
+.dj-mark { font: 50px serif; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 5; pointer-events: none; }
+.dj-piece.dj-can { cursor: grab; touch-action: none; }
+.dj-piece.dj-can:active { cursor: grabbing; }
+
+/* плашка события и карточка ситуаций — в координатах окна */
+.dj-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(22, 30, 46, 0.88); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; pointer-events: none; }
+.dj-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(360px, 86%);
+  padding: 14px 16px 12px; border-radius: 14px; text-align: center; pointer-events: none;
+  background: linear-gradient(#fdf6e3, #f3e6c8); border: 3px solid #caa96a; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+  animation: dj-flip 0.35s ease-out; }
+@keyframes dj-flip { from { transform: translate(-50%, -50%) rotateY(90deg) scale(0.8); } to { transform: translate(-50%, -50%); } }
+.dj-card-k { font: 12px/1 'PT Sans', system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #a2803e; }
+.dj-card-t { margin-top: 6px; font: bold 20px/1.2 'PT Serif', serif; color: #4a2f10; }
+.dj-card-s { margin-top: 6px; font: 15px/1.4 'PT Serif', serif; color: #33240f; }
+
+/* панель экспедиции */
+.dj-panel { display: flex; flex-direction: column; gap: 8px; }
+.dj-panel.dj-hidden .dj-btns { display: none; }
+.dj-tray { height: 96px; }
+.dj-btns { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow: auto; }
+.dj-btns .dj-buy { text-align: left; font-size: 13px; padding: 5px 10px; }
+.dj-btns .dj-buy small { display: block; opacity: .7; font-size: 11px; }
+.dj-shop-h { font: 600 13px/1.3 'PT Sans', system-ui, sans-serif; opacity: .85; margin-top: 4px; }
+.dj-stats { font: 13px/1.4 'PT Serif', serif; opacity: 0.92; display: flex; flex-direction: column; gap: 3px; }

@@ -1,207 +1,342 @@
-/* Вид «Чудовища Джио-Джанги»: поле под камерой сборника, пуговицы-фишки, панель экспедиции,
- * карточки ситуаций с ожиданием игрока (как в «Звезде Африки»). */
+/* Вид «Чудовища Джио-Джанги»: поле под камерой сборника (приближение, миникарта, «Где ход»), пуговицы-фишки
+ * едут по клеткам ленты шаг за шагом, подсветка развилок, карточки ситуаций и события плашками,
+ * панель экспедиции: кубик, кнопки хода, покупки, выбор (туземцы, переправа, зверь). */
+import { Sound } from '../../core/audio';
 import { BoardCam, type CamPoint } from '../../core/boardcam';
 import { DiceTray } from '../../core/dice';
 import { sleep } from '../../core/util';
-import { Sound } from '../../core/audio';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import {
-  CELLS, H, NEIGH, W, bestWeapon, describe, hasHorse, scoreOf,
+  CELLS, H, NEIGH, W, bestWeapon, canBuy, describe, foeName, has, hasHorse, isAnimal, options, pickLabel, scoreOf, seriesOf, shopAt,
   type Action, type Event, type State,
 } from './engine';
-import { CARDS, ITEMS, itemOf as item } from './rules';
+import { ANIMALS, CARDS, ITEMS, STOPS, itemOf, type StopKind } from './rules';
 import './djio.css';
 
 const money = (n: number) => `${n.toLocaleString('ru-RU')} $`;
 const nameOf = (seat: number) => SEATS[seat]?.name ?? String(seat);
-const PIECE_R = 34;
-const PIECE_GAP = 58;
-/** Сколько держать событие на экране, если за экраном не человек. */
-const PACE: { [k: string]: number } = { card: 2600, die: 2600, win: 2400, home: 2200, shoot: 1200, attack: 1600, cross: 1800, swamp: 1700, film: 1600 };
+/** Клетка ленты на поле — около 110 px; пуговица чуть меньше, чтобы стояла на клетке. */
+const PIECE_R = 50;
+const PIECE_GAP = 56;
+const NS = 'http://www.w3.org/2000/svg';
+/** Сколько держать событие (мс), если за экраном не человек. */
+const PACE: { [k: string]: number } = {
+  card: 2600, die: 2400, win: 2600, home: 2200, stop: 1500, swamp: 1700, rope: 1500, cross: 1700, foe: 1600,
+  natives: 1300, beast: 1400, film: 1500, shoot: 700, attack: 1000, kill: 1600, smoke: 1100, gift: 1300, need: 1300, wait: 1100,
+};
+/** Важные события: за экраном человек — ждём касания. */
+const IMPORTANT = new Set(['card', 'die', 'win', 'home', 'foe', 'kill']);
 
 export function createView(): GameView<State, Event> {
   let ctx: ViewCtx<Action> | null = null;
   let wrap: HTMLElement | null = null;
   let board: HTMLElement | null = null;
   let over: SVGSVGElement | null = null;
+  let gBoard: SVGGElement | null = null;
+  let gTrail: SVGGElement | null = null;
+  let gPieces: SVGGElement | null = null;
   let panel: HTMLElement | null = null;
+  let stats: HTMLElement | null = null;
   let btns: HTMLElement | null = null;
   let tray: DiceTray | null = null;
-  let stats: HTMLElement | null = null;
   let note: HTMLElement | null = null;
   let card: HTMLElement | null = null;
   let cam: BoardCam | null = null;
   let v: State | null = null;
   let actSeat: number | null = null;
   let shown: number[] = [];
+  let trail: { seat: number; cells: number[] } | null = null;
+  let busy = false;
+  const pieceEls = new Map<number, SVGGElement>();
+  const at = new Map<number, { x: number; y: number }>();
 
-  const svg = (tag: string, attrs: Record<string, string | number>) => {
-    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  const svg = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>) => {
+    const e = document.createElementNS(NS, tag);
     for (const [k, val] of Object.entries(attrs)) e.setAttribute(k, String(val));
     return e;
   };
+  const speed = () => Math.max(0.25, ctx?.speed?.() ?? 1);
 
-  function pieces() {
+  /* ---------- фишки ---------- */
+
+  function spots(): Map<number, { x: number; y: number }> {
     const st = v!;
-    const at = new Map<number, number[]>();
+    const by = new Map<number, number[]>();
     for (const seat of st.seats) {
-      const p = shown[seat] ?? st.pos[seat];
-      at.set(p, [...(at.get(p) ?? []), seat]);
+      const c = shown[seat] ?? st.pos[seat];
+      by.set(c, [...(by.get(c) ?? []), seat]);
     }
-    for (const [cell, list] of at) {
+    const out = new Map<number, { x: number; y: number }>();
+    for (const [cell, list] of by) {
       const c = CELLS[cell];
       list.forEach((seat, i) => {
         const off = list.length > 1 ? (i - (list.length - 1) / 2) * PIECE_GAP : 0;
-        const el = svg('image', {
-          x: c.x + off - PIECE_R, y: c.y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
-          href: `/hodilki/buttons/${seat}.webp`, class: 'dj-piece',
-        });
-        // свою пуговицу можно взять и переставить на подсвеченную клетку — как в кинь-двинь
-        if (seat === actSeat && st.phase === 'move' && st.left > 0) {
-          el.setAttribute('class', 'dj-piece dj-take');
-          el.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            const from = { x: e.clientX, y: e.clientY };
-            const up = (ev: PointerEvent) => {
-              document.removeEventListener('pointerup', up);
-              if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
-              const ctm = over!.getScreenCTM();
-              const p = ctm
-                ? { x: (ev.clientX - ctm.e) / ctm.a, y: (ev.clientY - ctm.f) / ctm.d }
-                : cam!.toImg(ev.clientX, ev.clientY);
-              let best = -1;
-              let bd = Infinity;
-              for (const g of Array.from(over!.querySelectorAll('circle.dj-move'))) {
-                const to = Number((g as Element).getAttribute('data-to'));
-                const cc = CELLS[to];
-                const d = Math.hypot(cc.x - p.x, cc.y - p.y);
-                if (d < bd) {
-                  bd = d;
-                  best = to;
-                }
-              }
-              if (best >= 0 && bd < 90) ctx?.act(seat, { type: 'step', to: best });
-            };
-            // захват указателя: события идут на пуговицу, браузер не перехватывает жест
-            try {
-              el.setPointerCapture(e.pointerId);
-            } catch {
-              /* не все браузеры умеют — тогда ловим на документе */
-            }
-            el.addEventListener('pointerup', up, { once: true });
-            el.addEventListener('pointercancel', () => document.removeEventListener('pointerup', up), { once: true });
-            document.addEventListener('pointerup', up, { once: true });
-          });
-        }
-        over!.append(el);
-        if (hasHorse(st, seat) && i === 0) {
-          const t = svg('text', { x: c.x + off + 26, y: c.y - 22, class: 'dj-mark' });
-          t.textContent = '🐎';
-          over!.append(t);
-        }
+        out.set(seat, { x: c.x + off, y: c.y - (list.length > 2 && i % 2 ? 30 : 0) });
       });
     }
+    return out;
   }
+
+  function pieceEl(seat: number): SVGGElement {
+    let g = pieceEls.get(seat);
+    if (g) return g;
+    g = svg('g', { class: 'dj-piece' });
+    g.append(
+      svg('ellipse', { cx: 0, cy: PIECE_R * 0.55, rx: PIECE_R * 0.95, ry: PIECE_R * 0.42, class: 'dj-shadow' }),
+      svg('image', { x: -PIECE_R, y: -PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2, href: `/hodilki/buttons/${seat}.webp` }),
+      svg('text', { x: PIECE_R * 0.5, y: -PIECE_R * 0.5, class: 'dj-mark' })
+    );
+    takeable(g, seat);
+    gPieces!.append(g);
+    pieceEls.set(seat, g);
+    return g;
+  }
+
+  const put = (seat: number, p: { x: number; y: number }, lift = 0) => {
+    pieceEl(seat).setAttribute('transform', `translate(${p.x} ${p.y - lift})${lift ? ` scale(${1 + lift / 160})` : ''}`);
+    at.set(seat, p);
+  };
+
+  function placePieces() {
+    if (!v || !gPieces) return;
+    const sp = spots();
+    for (const seat of v.seats) {
+      const g = pieceEl(seat);
+      g.classList.toggle('dj-turn', seat === v.turn && !v.over);
+      g.classList.toggle('dj-can', canMove(seat));
+      (g.querySelector('.dj-mark') as SVGTextElement).textContent = v.wait[seat] ? '⏳' : hasHorse(v, seat) ? '🐎' : '';
+      put(seat, sp.get(seat)!);
+    }
+    const cur = pieceEls.get(v.turn);
+    if (cur) gPieces.append(cur);
+  }
+
+  /** Фишка едет с клетки на клетку коротким скачком. */
+  function glide(seat: number, to: number, ms: number, arc: number): Promise<void> {
+    const from = at.get(seat) ?? { x: CELLS[to].x, y: CELLS[to].y };
+    shown[seat] = to;
+    const dest = spots().get(seat)!;
+    const g = pieceEl(seat);
+    gPieces!.append(g);
+    return new Promise((done) => {
+      const t0 = performance.now();
+      let end = false;
+      const finish = () => {
+        if (end) return;
+        end = true;
+        put(seat, dest);
+        placePieces();
+        done();
+      };
+      const tick = (now: number) => {
+        if (end) return;
+        const k = Math.min(1, (now - t0) / ms);
+        const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+        put(seat, { x: from.x + (dest.x - from.x) * e, y: from.y + (dest.y - from.y) * e }, Math.sin(Math.PI * k) * arc);
+        if (k < 1 && g.isConnected) requestAnimationFrame(tick);
+        else finish();
+      };
+      requestAnimationFrame(tick);
+      // вкладка в фоне не рисует кадры — фишка всё равно встаёт на место вовремя
+      setTimeout(finish, ms + 120);
+    });
+  }
+
+  const canMove = (seat: number) => !!v && !busy && seat === actSeat && !v.over && v.phase === 'move' && v.left > 0;
+  const targets = (): number[] => (v && actSeat != null && canMove(actSeat) ? options(v, actSeat) : []);
+
+  /** Свою фишку можно взять и переставить на подсвеченную клетку. */
+  function takeable(el: SVGGElement, seat: number) {
+    el.addEventListener('pointerdown', (e) => {
+      if (!canMove(seat)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const from = { x: e.clientX, y: e.clientY };
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* не все браузеры умеют */
+      }
+      const move = (ev: PointerEvent) => put(seat, cam!.toImg(ev.clientX, ev.clientY), 10);
+      const up = (ev: PointerEvent) => {
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', up);
+        el.removeEventListener('pointercancel', up);
+        if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6 || ev.type === 'pointercancel') {
+          placePieces();
+          return;
+        }
+        const p = cam!.toImg(ev.clientX, ev.clientY);
+        let best = -1;
+        let bd = Infinity;
+        for (const to of targets()) {
+          const d = Math.hypot(CELLS[to].x - p.x, CELLS[to].y - p.y);
+          if (d < bd) {
+            bd = d;
+            best = to;
+          }
+        }
+        if (best < 0 || bd > 120) {
+          placePieces();
+          return;
+        }
+        ctx?.act(seat, { type: 'step', to: best });
+      };
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+    });
+  }
+
+  /* ---------- карта ---------- */
 
   function turnPoints(): CamPoint[] {
     const st = v;
     if (!st || st.over) return [];
-    if (st.phase === 'buy') return [CELLS[st.pos[st.turn]]];
-    const seat = actSeat ?? st.turn;
-    const pts = [CELLS[st.pos[seat]]];
-    if (st.phase === 'move' && st.left > 0) for (const to of NEIGH[st.pos[seat]]) pts.push(CELLS[to]);
+    const from = shown[st.turn] ?? st.pos[st.turn];
+    const pts: CamPoint[] = [CELLS[from]];
+    if (st.phase === 'move' && st.left > 0) for (const to of NEIGH[from]) pts.push(CELLS[to]);
     return pts;
   }
-
   const others = (): CamPoint[] => (v ? v.seats.map((s) => CELLS[shown[s] ?? v!.pos[s]]) : []);
 
+  function drawTrail() {
+    if (!gTrail) return;
+    gTrail.replaceChildren();
+    if (!trail || trail.cells.length < 2) return;
+    const pts = trail.cells.map((c) => `${CELLS[c].x},${CELLS[c].y}`).join(' ');
+    gTrail.append(svg('polyline', { points: pts, class: 'dj-trail-under' }), svg('polyline', { points: pts, class: 'dj-trail', stroke: SEATS[trail.seat]?.color ?? '#fff' }));
+  }
+
   function render() {
-    if (!v || !over || !btns || !stats) return;
-    const st = v;
-    over.replaceChildren();
-    // куда можно шагнуть (свой ход)
-    if (st.phase === 'move' && st.left > 0 && actSeat != null) {
-      for (const to of NEIGH[st.pos[actSeat]]) {
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 30, class: 'dj-move', 'data-to': to });
-        g.addEventListener('click', () => ctx?.act(actSeat!, { type: 'step', to }));
-        over.append(g);
+    if (!v || !gBoard) return;
+    gBoard.replaceChildren();
+    if (!busy && actSeat != null) {
+      const seat = actSeat;
+      for (const to of targets()) {
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 62, class: 'dj-move' });
+        g.addEventListener('click', () => ctx?.act(seat, { type: 'step', to }));
+        gBoard.append(g);
       }
     }
-    // дикие звери: где какое чудовище живёт (подсказка на карте)
-    pieces();
-    const line = (s: number) => {
-      const it = st.items[s];
-      const bag = it.filter((x) => x !== 'horse').map((x) => item(x).name);
-      const skins = Object.keys(st.skins)
-        .filter((k) => k.startsWith(`${s}:`))
-        .map((k) => {
-          const n = st.skins[k];
-          const id = k.split(':')[1];
-          return `${id}×${n}`;
-        });
-      return `${nameOf(s)}: ${money(st.money[s])}${hasHorse(st, s) ? ' · 🐎' : ''}${bag.length ? ` · ${bag.join(', ')}` : ''}${skins.length ? ` · шкуры: ${skins.join(', ')}` : ''}`;
-    };
-    stats.textContent = st.seats.map((s) => line(s)).join('   ');
-    if (panel) panel.classList.toggle('dj-hidden', actSeat == null);
+    drawTrail();
+    placePieces();
+    panelRender();
+  }
+
+  function panelRender() {
+    const st = v!;
+    if (stats) {
+      stats.innerHTML = st.seats
+        .map((s) => {
+          const bag = st.items[s].map((x) => itemOf(x).name);
+          const skins = st.skins[s].map((id) => ANIMALS.find((a) => a.id === id)?.name ?? id);
+          return `<div><b style="color:${SEATS[s]?.color ?? '#fff'}">${nameOf(s)}</b>: ${money(st.money[s])}${bag.length ? ` · ${bag.join(', ')}` : ''}${skins.length ? ` · шкуры: ${skins.join(', ')}` : ''}</div>`;
+        })
+        .join('');
+    }
+    if (!btns) return;
     btns.replaceChildren();
-    if (actSeat == null) return;
+    if (panel) panel.classList.toggle('dj-hidden', actSeat == null || busy);
+    if (actSeat == null || busy || st.over) return;
     const seat = actSeat;
     const add = (text: string, cls: string, action: Action, tap = false) => {
       const b = document.createElement('button');
       b.className = `btn ${cls}`.trim();
       b.innerHTML = text;
       if (tap) b.dataset.tap = '';
-      b.onclick = () => ctx?.act(seat, action);
+      b.onclick = () => {
+        Sound.ui();
+        ctx?.act(seat, action);
+      };
       btns!.append(b);
     };
+    const shop = (title: string) => {
+      const h = document.createElement('div');
+      h.className = 'dj-shop-h';
+      h.textContent = title;
+      btns!.append(h);
+      for (const it of ITEMS) if (canBuy(st, seat, it.id)) add(`${it.name} — ${money(it.price)} <small>${it.note}</small>`, 'dj-buy', { type: 'buy', item: it.id });
+    };
     if (st.phase === 'buy') {
-      for (const it of ITEMS) {
-        const taken = st.seats.reduce((n, x) => n + st.items[x].filter((i) => i === it.id).length, 0);
-        if (taken >= it.count || st.money[seat] < it.price) continue;
-        if (it.id === 'horse' && hasHorse(st, seat)) continue;
-        add(`${it.name} — ${money(it.price)}`, '', { type: 'buy', item: it.id });
-      }
-      add('В путь!', 'primary', { type: 'ready' });
+      add('Хватит — закончить сборы', 'primary', { type: 'done' });
+      shop(st.perTurn > 1 ? `Покупка ${st.bought + 1} из ${st.perTurn} за этот ход:` : 'Купить один предмет (по одному за ход):');
       return;
     }
-    if (st.phase === 'card') {
-      add('Дальше', 'primary', { type: 'ok' }, true);
-      return;
-    }
-    if (st.phase === 'choice' && st.ask) {
-      for (const o of st.ask.options) {
-        if (st.ask.kind === 'give') add(`Взять: ${item(o).name}`, '', { type: 'pick', pick: o });
-        else add(`${item(o).name} (отдать)`, '', { type: 'pick', pick: o });
-      }
-      if (st.ask.kind === 'natives') {
-        if (st.money[seat] >= 10000) add('Отсчитать 10 000 $', '', { type: 'pick', pick: 'money' });
-        if (hasHorse(st, seat)) add('Отдать лошадь', '', { type: 'pick', pick: 'horse' });
+    if (st.phase === 'roll') {
+      if (isAnimal(st.pos[seat]) && !st.wait[seat]) add('📷 Снимать дальше (бросок у зверя)', 'primary', { type: 'film' });
+      const horse = hasHorse(st, seat) && !st.lead[seat];
+      add(st.wait[seat] ? `Бросить кубик (нужно ${st.wait[seat]})` : horse ? 'Бросить кубик (+6 лошадь)' : 'Бросить кубик', isAnimal(st.pos[seat]) ? '' : 'primary', { type: 'roll' }, true);
+      if (hasHorse(st, seat)) add(st.lead[seat] ? 'Сесть на лошадь (+6)' : 'Вести лошадь на поводу', '', { type: 'lead', on: !st.lead[seat] });
+      if (shopAt(st, seat)) {
+        shop(CELLS[st.pos[seat]].kind === 'monastery' ? 'Монастырь — купить:' : 'Гостиница — купить:');
+        if (CELLS[st.pos[seat]].kind === 'monastery') for (const it of new Set(st.items[seat])) add(`Продать: ${itemOf(it).name} — ${money(itemOf(it).price)}`, 'dj-buy', { type: 'sell', item: it });
       }
       return;
     }
-    if (st.phase === 'shoot') {
+    if (st.phase === 'ask' && st.ask) {
+      for (const o of st.ask.options) add(pickLabel(st.ask, o), '', { type: 'pick', pick: o });
+      return;
+    }
+    if (st.phase === 'shoot' && st.fight) {
       const w = bestWeapon(st, seat);
-      add(`Выстрел (${w ? item(w).name : '—'})`, 'primary', { type: 'shoot' }, true);
-      return;
+      add(`🎯 Выстрел (${w ? itemOf(w).name : '—'}) — попаданий ${st.fight.hits} из ${st.fight.need}, в серии ${st.fight.shots}`, 'primary', { type: 'shoot' }, true);
+      if (has(st, seat, 'smoke') && !(st.fight.oneShot && ['gangster', 'priests', 'mad', 'puma'].includes(st.fight.foe))) add('Бросить дымовую шашку и уйти', '', { type: 'smoke' });
     }
-    if (st.phase === 'stop') {
-      add('Привал: дальше', 'primary', { type: 'stop' }, true);
-      return;
-    }
-    if (st.phase === 'move') {
-      add(`Остановиться (осталось ${st.left})`, 'primary', { type: 'stop' });
-      return;
-    }
-    // обычный ход
-    add(hasHorse(st, seat) && !st.lead ? 'Бросить кубик (+6 за лошадь)' : 'Бросить кубик', 'primary', { type: 'roll' }, true);
-    if (hasHorse(st, seat)) add(st.lead ? 'Сесть на лошадь (+6)' : 'Вести лошадь на поводу', '', { type: 'lead', on: !st.lead });
   }
 
-  function frame() {
-    if (!cam || !v) return;
-    void cam.frame(turnPoints(), others());
+  function frame(pts?: CamPoint[]) {
+    if (!cam || !v) return Promise.resolve();
+    return cam.frame(pts ?? turnPoints(), others());
   }
+
+  function say(text: string) {
+    note!.innerHTML = text;
+    note!.hidden = false;
+  }
+  const wait = (type: string) => {
+    const ms = PACE[type] ?? 900;
+    return IMPORTANT.has(type) && ctx?.read ? ctx.read(ms) : sleep(ms / speed());
+  };
+
+  function sound(ev: Event) {
+    switch (ev.type) {
+      case 'buy':
+      case 'sell':
+      case 'item':
+      case 'gift':
+        return Sound.place();
+      case 'card':
+        return Sound.card();
+      case 'film':
+      case 'kill':
+        return Sound.jump();
+      case 'shoot':
+        return ev.hit ? Sound.capture() : Sound.beep(900, 0.06, 0.1);
+      case 'attack':
+        return ev.ok ? Sound.ui() : Sound.capture();
+      case 'die':
+        return Sound.nomove();
+      case 'swamp':
+      case 'cross':
+      case 'rope':
+      case 'need':
+      case 'wait':
+        return 'ok' in ev && ev.ok === false ? Sound.nomove() : 'saved' in ev && !ev.saved ? Sound.nomove() : Sound.ui();
+      case 'stop':
+        return Sound.home();
+      case 'home':
+      case 'win':
+        return Sound.win();
+      default:
+        return Sound.ui();
+    }
+  }
+
+  /** Кубик в лотке: бросок хода и все броски на клетках. */
+  const dieOf = (ev: Event): number | null =>
+    ev.type === 'swamp' || ev.type === 'cross' || ev.type === 'beast' || ev.type === 'shoot' || ev.type === 'attack' || ev.type === 'wait' ? ev.die : null;
 
   return {
     mount(root, c) {
@@ -211,9 +346,13 @@ export function createView(): GameView<State, Event> {
       wrap.innerHTML = `<div class="dj-board"><img class="dj-map dj-map-mini" src="/djio/field-small.webp" alt="" draggable="false"><img class="dj-map dj-map-full" src="/djio/field.webp" alt="Поле Джио-Джанги" draggable="false"></div>`;
       root.append(wrap);
       board = wrap.querySelector('.dj-board') as HTMLElement;
-      over = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      over = document.createElementNS(NS, 'svg');
       over.setAttribute('class', 'dj-over');
       over.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      gBoard = svg('g', {});
+      gTrail = svg('g', { class: 'dj-trail-g' });
+      gPieces = svg('g', {});
+      over.append(gBoard, gTrail, gPieces);
       board.append(over);
       cam = new BoardCam(wrap, board, {
         w: W,
@@ -224,13 +363,10 @@ export function createView(): GameView<State, Event> {
         followKey: 'djio.follow',
         demo: c.demo,
         speed: () => ctx!.speed(),
-        dots: () =>
-          v
-            ? v.seats.map((s) => ({ key: s, x: CELLS[v!.pos[s]].x, y: CELLS[v!.pos[s]].y, color: SEATS[s]?.color ?? '#888', on: s === v!.turn }))
-            : [],
+        dots: () => (v ? v.seats.map((s) => ({ key: s, x: CELLS[shown[s] ?? v!.pos[s]].x, y: CELLS[shown[s] ?? v!.pos[s]].y, img: `/hodilki/buttons/${s}.webp`, on: s === v!.turn })) : []),
         turn: turnPoints,
       });
-      const img = wrap.querySelector('.dj-map') as HTMLImageElement;
+      const img = wrap.querySelector('.dj-map-full') as HTMLImageElement;
       c.hold?.(9000);
       const ready = () => {
         board!.classList.add('ready');
@@ -241,9 +377,9 @@ export function createView(): GameView<State, Event> {
       else img.onload = ready;
       panel = document.createElement('div');
       panel.className = 'dj-panel';
-      panel.innerHTML = `<div class="dj-stats"></div><div class="dj-tray dice-tray"></div><div class="dj-btns"></div>
-        <div class="hint small-hint">Карта приближается колесом и кнопками «+» / «−». Зелёные кружки — куда шагнуть
-        (по ленте можно в любую сторону). У домиков, монастыря, хижин и костров остановка обязательна. Кубик — пробелом.</div>`;
+      panel.innerHTML = `<div class="dj-tray dice-tray"></div><div class="dj-btns"></div><div class="dj-stats"></div>
+        <div class="hint small-hint">Жёлтые кружки — куда шагнуть на развилке (или перетащите фишку). По ленте можно идти в любую сторону,
+        у построек, на берегу и в тупике у зверя — остановка. Кубик — пробелом или тапом по полю.</div>`;
       c.controls.append(panel);
       stats = panel.querySelector('.dj-stats') as HTMLElement;
       btns = panel.querySelector('.dj-btns') as HTMLElement;
@@ -254,96 +390,139 @@ export function createView(): GameView<State, Event> {
       card = document.createElement('div');
       card.className = 'dj-card bc-ui';
       card.hidden = true;
-      card.innerHTML = `<img alt="" draggable="false" hidden><div class="dj-card-t"></div><div class="dj-card-s"></div><div class="dj-card-h">нажмите, чтобы продолжить</div>`;
-      card.addEventListener('pointerdown', () => {
-        card!.hidden = true;
-      });
+      card.innerHTML = `<div class="dj-card-k">Карточка ситуаций</div><div class="dj-card-t"></div><div class="dj-card-s"></div>`;
       wrap.append(note, card);
     },
     setView(view) {
       v = view;
       shown = view.pos.slice();
+      if (view.phase !== 'move') trail = null;
       render();
     },
     async play(events, view) {
-      const speed = ctx?.speed?.() ?? 1;
+      const prev = v;
       v = view;
+      if (prev) shown = prev.pos.slice();
+      busy = true;
       card!.hidden = true;
       note!.hidden = true;
+      render();
       for (const ev of events) {
         if (ev.type === 'roll') {
-          if (tray) await tray.roll([ev.die], speed);
+          trail = { seat: ev.seat, cells: [shown[ev.seat]] };
+          drawTrail();
+          void frame([CELLS[shown[ev.seat]], ...NEIGH[shown[ev.seat]].map((n) => CELLS[n])]);
+          if (tray) await tray.roll([ev.die], speed());
+          if (ev.bonus) {
+            say(describe(ev, nameOf) ?? '');
+            await sleep(600 / speed());
+          }
           continue;
         }
-        // звуки событий: шаг, находка, съёмка, выстрел, беда, победа
-        if (ev.type === 'step') Sound.step();
-        if (ev.type === 'card' || ev.type === 'buy' || ev.type === 'item') Sound.place();
-        if (ev.type === 'film') Sound.jump();
-        if (ev.type === 'shoot' || ev.type === 'attack') Sound.diceRoll(0.35);
-        if (ev.type === 'die' || ev.type === 'cross' || ev.type === 'swamp') Sound.nomove();
-        if (ev.type === 'win' || ev.type === 'home') Sound.win();
-        if (ev.type === 'step') shown[ev.seat] = ev.to;
-        const text = describe(ev, (s) => nameOf(s));
-        if (!text) continue;
-        note!.innerHTML = text;
-        note!.hidden = false;
-        render();
-        if (ev.type === 'card') {
-          const c = CARDS.find((x) => x.n === ev.card)!;
-          (card!.querySelector('.dj-card-t') as HTMLElement).textContent = c.title;
-          (card!.querySelector('.dj-card-s') as HTMLElement).textContent = c.text;
-          card!.hidden = false;
-          await (ctx?.read ? ctx.read(PACE.card) : sleep(PACE.card / speed));
-          card!.hidden = true;
-        } else {
-          await (ctx?.read ? ctx.read(PACE[ev.type] ?? 900) : sleep((PACE[ev.type] ?? 900) / speed));
+        if (ev.type === 'step') {
+          if (!trail || trail.seat !== ev.seat) trail = { seat: ev.seat, cells: [ev.from] };
+          trail.cells.push(ev.to);
+          void frame([CELLS[ev.to], ...NEIGH[ev.to].map((n) => CELLS[n])]);
+          Sound.step();
+          await glide(ev.seat, ev.to, 260 / speed(), 30);
+          drawTrail();
+          if (ev.last) Sound.place();
+          continue;
         }
-        if (ev.type === 'step') await sleep(200 / speed);
+        if (ev.type === 'money') {
+          panelRender();
+          continue;
+        }
+        const d = dieOf(ev);
+        if (d != null && tray) await tray.roll([d], speed() * (ev.type === 'shoot' || ev.type === 'attack' ? 1.6 : 1));
+        if (ev.type === 'die') {
+          // гибель: фишка возвращается в гостиницу
+          say(describe(ev, nameOf) ?? '');
+          Sound.nomove();
+          await wait('die');
+          shown[ev.seat] = view.pos[ev.seat];
+          placePieces();
+          continue;
+        }
+        if (ev.type === 'item' || ev.type === 'done' || ev.type === 'buy' || ev.type === 'sell') {
+          sound(ev);
+          panelRender();
+          if (ev.type === 'buy' || ev.type === 'done') {
+            say(describe(ev, nameOf) ?? '');
+            await sleep(500 / speed());
+          }
+          continue;
+        }
+        const text = describe(ev, nameOf);
+        if (!text) continue;
+        sound(ev);
+        if (ev.type === 'card') {
+          const cc = CARDS.find((x) => x.n === ev.card)!;
+          (card!.querySelector('.dj-card-t') as HTMLElement).textContent = cc.title;
+          (card!.querySelector('.dj-card-s') as HTMLElement).textContent = cc.text;
+          card!.hidden = false;
+          note!.hidden = true;
+          await wait('card');
+          card!.hidden = true;
+          continue;
+        }
+        if (ev.type === 'stop') {
+          const st = STOPS[CELLS[ev.cell].kind as StopKind];
+          say(`<b>${st?.name ?? ''}</b> — ${st?.text ?? ''}`);
+        } else say(text);
+        await wait(ev.type);
       }
+      v = view;
+      shown = view.pos.slice();
+      busy = false;
       note!.hidden = true;
+      if (view.phase !== 'move') trail = null;
       render();
-      frame();
+      void frame();
     },
     setTurn(_toAct, interactive) {
       actSeat = v && !v.over && interactive.includes(v.turn) ? v.turn : null;
-    // подсказка-состояние: видно, чей ход, сколько шагов и сколько кружков нарисовано,
-    // чтобы причина «не могу сходить» была видна сразу, а не угадывалась
-    const hint = wrap?.querySelector('.hint') as HTMLElement | null;
-    if (hint) {
-      const marks = over ? over.querySelectorAll('circle.dj-move').length : 0;
-      hint.textContent =
-        actSeat == null
-          ? 'Карта приближается колесом и кнопками «+» / «−».'
-          : v && v.phase === 'move'
-            ? `Ваш ход: осталось шагов ${v.left}, кружков для шага ${marks}. Возьмите пуговицу и поставьте на жёлтый кружок (или нажмите на кружок).`
-            : 'Бросьте кубик — пробелом, тапом по доске или кнопкой.';
-    }
       if (actSeat != null) cam?.release();
       render();
-      frame();
+      void frame();
     },
-    status(view, act) {
+    status(view, toAct, interactive) {
       if (view.over) return 'Экспедиция окончена: считаем деньги, шкуры и снаряжение.';
-      if (view.phase === 'buy') return 'Сборы: покупайте снаряжение — по одному предмету за ход.';
-      if (view.phase === 'card') return 'Карточка ситуаций: прочитайте и нажмите «Дальше».';
-      if (view.phase === 'choice') return 'Выбирайте, что делать.';
-      if (view.phase === 'shoot') return `Стреляйте: попаданий ${view.hits}, нужно ещё.`;
-      if (view.phase === 'wait') return `Ждём цифру ${view.waits[act[0]]} — пока стоим на месте.`;
-      if (view.phase === 'move') return `Осталось шагов: ${view.left}.`;
-      return 'Бросайте кубик — пробелом или кнопкой.';
+      const seat = toAct[0];
+      const me = interactive.includes(seat);
+      const who = nameOf(seat);
+      if (view.phase === 'buy') return me ? 'Сборы: купите предмет или закончите сборы.' : `${who} собирается в путь.`;
+      if (view.phase === 'move') return me ? `Осталось шагов: ${view.left}. Развилка — выберите дорогу.` : `${who} идёт по ленте.`;
+      if (view.phase === 'ask' && view.ask) {
+        const what = { gift: 'Привал: что взять даром?', give: 'Карточка: что взять?', buy: 'Базар: что купить?', natives: 'Туземцы! Чем откупиться?', cross: 'Переправа: как переправляться?', beast: 'Зверь нападает: стрелять или уходить?' }[view.ask.kind];
+        return me ? what : `${who}: ${what.toLowerCase()}`;
+      }
+      if (view.phase === 'shoot' && view.fight) return `${me ? 'Стреляйте' : `${who} стреляет`}: ${foeName(view.fight.foe)} — попаданий ${view.fight.hits} из ${view.fight.need}, в серии ${view.fight.shots}.`;
+      if (view.wait[seat]) return me ? `Стоим, пока не выпадет ${view.wait[seat]}.` : `${who} ждёт «${view.wait[seat]}».`;
+      return me ? 'Бросайте кубик — пробелом, тапом по полю или кнопкой.' : `Ходит ${who}…`;
     },
     playerStats(view, seat) {
-      const it = view.items[seat];
-      return `${money(view.money[seat])}${hasHorse(view, seat) ? ' · 🐎' : ''}${it.length ? ` · ${it.length} предм.` : ''} · счёт ${money(scoreOf(view, seat))}`;
+      const w = bestWeapon(view, seat);
+      const parts = [money(view.money[seat])];
+      if (hasHorse(view, seat)) parts.push('🐎');
+      if (w) parts.push(`🔫${seriesOf(view, seat)}`);
+      if (view.skins[seat].length) parts.push(`шкур ${view.skins[seat].length}`);
+      if (view.wait[seat]) parts.push(`⏳${view.wait[seat]}`);
+      parts.push(`счёт ${money(scoreOf(view, seat))}`);
+      return parts.join(' · ');
     },
     destroy() {
       cam?.destroy();
       wrap?.remove();
       panel?.remove();
-      wrap = board = over = panel = note = card = null;
+      wrap = board = over = panel = note = card = stats = btns = null;
+      gBoard = gTrail = gPieces = null;
+      pieceEls.clear();
+      at.clear();
       cam = null;
       v = null;
       shown = [];
+      trail = null;
     },
   };
 }
