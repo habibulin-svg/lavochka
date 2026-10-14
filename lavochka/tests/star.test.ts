@@ -18,6 +18,16 @@ const turnRoll = (s: State, seat: number, die: number, r: RiggedRng) => {
   return a!;
 };
 
+describe('Звезда Африки: морской путь через Суакин', () => {
+  it('Суакин стоит на линии Красного моря: s13 — Суакин — s15, в обе стороны', () => {
+    const su = IDX['10'];
+    expect(NEIGH[IDX['s13']]).toContain(su);
+    expect(NEIGH[su]).toContain(IDX['s13']);
+    expect(NEIGH[su]).toContain(IDX['s15']);
+    expect(NEIGH[IDX['s13']]).not.toContain(IDX['s15']); // мимо порта напрямую нельзя
+  });
+});
+
 describe('звезда африки: движок', () => {
   it('дороги проходят и под квадратами жетонов — тупиков нет', () => {
     // «Бахр эль Газаль»: разметка агента обрывала дорогу на квадрате, и с жетона был только путь назад
