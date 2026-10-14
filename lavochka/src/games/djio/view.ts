@@ -36,6 +36,8 @@ export function createView(): GameView<State, Event> {
   let gBoard: SVGGElement | null = null;
   let gTrail: SVGGElement | null = null;
   let gPieces: SVGGElement | null = null;
+  /** Подсветка, куда шагнуть, — поверх фишек: чужая пуговица на клетке не закрывает дорогу. */
+  let gMarks: SVGGElement | null = null;
   let panel: HTMLElement | null = null;
   let stats: HTMLElement | null = null;
   let btns: HTMLElement | null = null;
@@ -210,14 +212,15 @@ export function createView(): GameView<State, Event> {
   }
 
   function render() {
-    if (!v || !gBoard) return;
+    if (!v || !gBoard || !gMarks) return;
     gBoard.replaceChildren();
+    gMarks.replaceChildren();
     if (!busy && actSeat != null) {
       const seat = actSeat;
       for (const to of targets()) {
-        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 62, class: 'dj-move' });
+        const g = svg('circle', { cx: CELLS[to].x, cy: CELLS[to].y, r: 62, class: 'dj-move', 'data-to': to });
         g.addEventListener('click', () => ctx?.act(seat, { type: 'step', to }));
-        gBoard.append(g);
+        gMarks.append(g);
       }
     }
     drawTrail();
@@ -352,7 +355,8 @@ export function createView(): GameView<State, Event> {
       gBoard = svg('g', {});
       gTrail = svg('g', { class: 'dj-trail-g' });
       gPieces = svg('g', {});
-      over.append(gBoard, gTrail, gPieces);
+      gMarks = svg('g', {});
+      over.append(gBoard, gTrail, gPieces, gMarks);
       board.append(over);
       cam = new BoardCam(wrap, board, {
         w: W,
@@ -516,7 +520,7 @@ export function createView(): GameView<State, Event> {
       wrap?.remove();
       panel?.remove();
       wrap = board = over = panel = note = card = stats = btns = null;
-      gBoard = gTrail = gPieces = null;
+      gBoard = gTrail = gPieces = gMarks = null;
       pieceEls.clear();
       at.clear();
       cam = null;
