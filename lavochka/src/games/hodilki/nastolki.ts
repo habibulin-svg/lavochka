@@ -13,29 +13,40 @@ export interface Raw {
   w: number;
   h: number;
   end: number;
-  cells: { x: number; y: number; l?: string; s?: string; t?: string; r?: string; off?: number }[];
+  cells: { x: number; y: number; l?: string; s?: string; t?: string; r?: string; off?: number; /** следующая клетка (поле-граф), −1 — тупик */ n?: number }[];
 }
 
 /** Знак клетки из кода разметки. */
 export function signOf(code: string | undefined, i: number, label: string | undefined, routeText: string | undefined): Sign | null {
   if (!code) return null;
+  // «lose:5>40» — знак с бонами и потом перенос на клетку 40 (яма → Три сосны)
+  const moved = /^((?:coins|coinsD|lose|loseD):[^>]*)>(\d+)$/.exec(code);
+  if (moved) {
+    const g = signOf(moved[1], i, label, routeText);
+    return g?.k === 'coins' ? { ...g, to: +moved[2] } : g;
+  }
   if (code === 'skip') return { k: 'skip' };
   if (/^skip\d$/.test(code)) return { k: 'skip', n: +code.slice(4) };
   if (code === 'again') return { k: 'again' };
   if (code === 'start') return { k: 'start' };
-  const m = /^(skip\+)?to:(\d+)$/.exec(code);
+  // to:N — по номеру клетки «вперёд/назад»; fwd:N / back:N — явно (у поля-графа номера клеток не говорят о направлении)
+  const m = /^(skip\+)?(to|fwd|back):(\d+)$/.exec(code);
   if (m) {
-    const to = +m[2];
-    const good = to > i;
+    const to = +m[3];
+    const good = m[2] === 'to' ? to > i : m[2] === 'fwd';
     return { k: 'jump', to, good, text: good ? 'идёт вперёд' : 'возвращается назад', ...(m[1] ? { skip: 1 } : {}) };
   }
   if (code.startsWith('route:')) return { k: 'route', cells: code.slice(6).split(',').map(Number), text: routeText ?? 'идёт в обход' };
   // «Лукоморье»: боны, предметы, развилки и условия
-  if (code.startsWith('fork:')) {
+  if (code.startsWith('fork:') || code.startsWith('fork~')) {
     // «fork:какая разница какая дорога|названия дорог|клетки дороги|клетки дороги»
-    const [by, roads, ...branches] = code.slice(5).split('|');
+    // «fork~:…» — кружок лабиринта (бросок — один переход по стрелке грани), «fork~+1:…» — и боны за переход
+    const lab = /^fork~([+-]\d+)?:/.exec(code);
+    const [by, roads, ...branches] = code.slice(lab ? lab[0].length : 5).split('|');
     return {
       k: 'fork',
+      ...(lab ? { step: true } : {}),
+      ...(lab?.[1] ? { coins: +lab[1] } : {}),
       byDiff: by.split('').map(Number),
       branches: branches.map((s) => (s ? s.split(',').map(Number) : [])),
       ...(roads ? { roads: roads.split(';') } : {}),
@@ -60,6 +71,7 @@ export function signOf(code: string | undefined, i: number, label: string | unde
       k: 'need',
       ...(p.item ? { item: p.item as ItemId } : {}),
       ...(p.coins ? { coins: +p.coins } : {}),
+      ...(p.pay ? { pay: true } : {}),
       yes: goal(p.yes),
       no: goal(p.no),
       text: routeText ?? 'проверка',
@@ -124,6 +136,7 @@ export function cellsOf(raw: Raw): Cell[] {
     if (c.l) cell.label = c.l;
     if (c.t) cell.text = c.t;
     if (c.off) cell.off = true;
+    if (c.n != null) cell.next = c.n;
     // подпись перехода — с номером клетки, куда ведёт («идёт вперёд на 22»)
     const g = cell.sign;
     if (g?.k === 'jump') {

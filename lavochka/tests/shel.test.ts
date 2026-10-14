@@ -6,7 +6,7 @@ import board from '../src/games/hodilki/data/shel.json';
 import branches from '../src/games/hodilki/data/shel-branches.json';
 import items from '../src/games/shel/items.json';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { bagOf, canPack, type Event, type Sign, type State } from '../src/games/hodilki/core';
+import { bagOf, canPack, type Event, type State } from '../src/games/hodilki/core';
 import { boardOf, def } from '../src/games/hodilki/def';
 import { BARS, shelBoard } from '../src/games/hodilki/shel';
 import { signOf } from '../src/games/hodilki/nastolki';
@@ -49,8 +49,8 @@ describe('Шёл солдат: поле', () => {
     expect(board.end).toBe(board.cells.length - 1);
     expect(board.w).toBe(2435);
     expect(board.h).toBe(3094);
-    // лента + дороги Распутья (15) + обход реки (8) + круги Лешего (11) + круги Пастуха (7)
-    expect(shelBoard.cells.length).toBe(140 + 15 + 8 + 11 + 7);
+    // лента + три дороги Распутья (по 6) + обход реки (7) + круги Лешего (11) + круги Пастуха (7)
+    expect(shelBoard.cells.length).toBe(140 + 18 + 7 + 11 + 7);
     expect(shelBoard.end).toBe(139);
     shelBoard.cells.forEach((c, i) => {
       expect(Number.isFinite(c.x) && Number.isFinite(c.y), `клетка ${i}`).toBe(true);
@@ -62,9 +62,9 @@ describe('Шёл солдат: поле', () => {
 
   it('безномерные клетки помечены как ветки и лежат после ленты', () => {
     const off = shelBoard.cells.filter((c) => c.off);
-    expect(off.length).toBe(41);
+    expect(off.length).toBe(43);
     const taken = Object.values(branches.parts).flat();
-    expect(taken.length).toBe(41);
+    expect(taken.length).toBe(43);
     for (const p of taken) expect(shelBoard.cells.some((c) => c.x === p.x && c.y === p.y && c.off)).toBe(true);
   });
 
@@ -87,11 +87,24 @@ describe('Шёл солдат: поле', () => {
   it('на клетках стоят знаки движка: ярмарки, выбор на препятствиях, петли', () => {
     for (const m of b.deck!.market) expect(b.cells[at(m)].sign?.k, `ярмарка ${m}`).toBe('market');
     for (const bar of BARS) for (const n of bar.at) expect(b.cells[at(n)].sign?.k, `${n} (${bar.title})`).toBe('choice');
-    for (const n of [64, 65, 133]) expect(b.cells[at(n)].sign?.k, `петля ${n}`).toBe('loop');
-    expect(b.cells[at(4)].sign?.k).toBe('fork');
+    expect(b.cells[at(133)].sign?.k, 'Пастух').toBe('loop');
+    expect(b.cells[at(4)].sign?.k).toBe('choice');
     expect(b.cells[at(37)].sign?.k).toBe('choice');
-    // у берега Огненной реки есть дорога обхода безномерных клеток
-    expect(b.cells[at(37)].roads?.[0]?.length ?? 0).toBeGreaterThan(5);
+    // привалы — выбор (хлеб или два хода), мосты через реку и яма — пропуск хода
+    for (const n of [6, 13, 24, 54, 68, 91, 110, 111]) expect(b.cells[at(n)].sign?.k, `привал ${n}`).toBe('choice');
+    for (const n of [76, 85, 118]) expect(b.cells[at(n)].sign?.k, `пропуск ${n}`).toBe('skip');
+    // у берега Огненной реки есть дорога обхода: семь кружков и выход на 38
+    expect(b.cells[at(37)].roads?.[0]).toHaveLength(8);
+    expect(b.cells[at(37)].roads?.[0]?.at(-1)).toBe(at(38));
+    // у Распутья — три дороги по шесть кружков, все выходят на 5
+    expect(b.cells[at(4)].roads?.map((r) => r.length)).toEqual([7, 7, 7]);
+    for (const r of b.cells[at(4)].roads ?? []) expect(r.at(-1)).toBe(at(5));
+    // соседние кружки дорог и кругов лежат рядом (не прыгают через поле)
+    const near = (i: number, j: number) => Math.hypot(b.cells[i].x - b.cells[j].x, b.cells[i].y - b.cells[j].y);
+    for (const r of [...(b.cells[at(4)].roads ?? []), ...(b.cells[at(37)].roads ?? [])]) {
+      for (let k = 1; k < r.length; k++) expect(near(r[k - 1], r[k]), `шаг ${r[k - 1]}→${r[k]}`).toBeLessThan(160);
+    }
+    for (const lp of b.loops ?? []) lp.cells.forEach((c, k) => expect(near(c, lp.cells[(k + 1) % lp.cells.length]), `круг ${c}`).toBeLessThan(220));
   });
 });
 
@@ -271,85 +284,113 @@ describe('Шёл солдат: препятствия и выбор', () => {
     expect(s.pos[0]).toBe(at(38));
   });
 
-  it('без моста Огненную реку обходят по скалам и возвращаются на 37', () => {
+  it('у Огненной реки без Коня останавливаются, а обходят по скалам и выходят на 38', () => {
     const rng = new RiggedRng(new SeededRng(14));
-    const s = turn(stand(at(35)), 0, 2, rng).state;
+    // с 35 бросок 6 — дальше берега (37) с ходу не пройти
+    const s = turn(stand(at(35)), 0, 6, rng).state;
     expect(s.pos[0]).toBe(at(37));
     expect(s.phase).toBe('choose');
     const bypass = s.choose!.options.findIndex((o) => o.route != null);
     expect(bypass).toBeGreaterThanOrEqual(0);
     const r = def.apply(s, 0, { type: 'choose', pick: bypass }, rng)!;
-    expect(r.state.route?.[0]?.length ?? 0, 'дорога обхода').toBeGreaterThan(3);
-    // идём по дороге, пока не вернёмся на 37
-    let st = r.state;
-    for (let i = 0; i < 30 && st.route?.[0]?.length; i++) {
-      st = { ...st, turn: 0 };
-      st = turn(st, 0, 6, rng).state;
-    }
-    expect(st.pos[0]).toBe(at(37));
+    expect(r.state.route?.[0]).toHaveLength(8);
+    // бросок 3 — по кружкам обхода
+    let st = turn({ ...r.state, turn: 0 }, 0, 3, rng).state;
+    expect(b.cells[st.pos[0]].off, 'на кружке обхода').toBe(true);
+    // бросок 6 — дошёл до конца обхода (4 кружка и 38), остаток очков — дальше по ленте
+    st = turn({ ...st, turn: 0 }, 0, 6, rng).state;
+    expect(st.pos[0]).toBe(at(39));
+    expect(st.route?.[0] ?? null).toBeNull();
+  });
+
+  it('с Конём-огнём реку проходят с ходу, на 48 Конь уходит вместе с прибавкой', () => {
+    const rng = new RiggedRng(new SeededRng(19));
+    // с 35 бросок 4 + 2 за Коня — мимо берега на 41 (Разбойники)
+    const s = turn(stand(at(35), { flags: ['конь'], cards: ['horse'] }), 0, 4, rng).state;
+    expect(s.pos[0]).toBe(at(41));
+    const m = turn(stand(at(44), { flags: ['конь'], cards: ['horse'] }), 0, 1, rng).state;
+    expect(m.pos[0]).toBe(at(47));
+    const m2 = turn(stand(at(45), { flags: ['конь'], cards: ['horse'] }), 0, 1, rng).state;
+    expect(m2.pos[0]).toBe(at(48));
+    expect(m2.cards![0]).not.toContain('horse');
+    expect(m2.flags![0]).not.toContain('конь');
+  });
+
+  it('привал: хлеб съеден и ход пропущен, без хлеба — два хода', () => {
+    const rng = new RiggedRng(new SeededRng(20));
+    const s = turn(stand(at(5), { cards: ['bread'] }), 0, 1, rng).state;
+    expect(s.pos[0]).toBe(at(6));
+    expect(s.choose?.title).toBe('Привал');
+    const eat = def.apply(s, 0, { type: 'choose', pick: 0 }, rng)!.state;
+    expect(eat.cards![0]).not.toContain('bread');
+    expect(eat.skip[0]).toBe(1);
+    const hungry = turn(stand(at(5), { cards: [] }), 0, 1, rng).state;
+    const last = hungry.choose!.options.length - 1;
+    expect(def.apply(hungry, 0, { type: 'choose', pick: 0 }, rng), 'без хлеба не съешь').toBeNull();
+    expect(def.apply(hungry, 0, { type: 'choose', pick: last }, rng)!.state.skip[0]).toBe(2);
   });
 });
 
 describe('Шёл солдат: петли и развилка', () => {
-  it('Леший водит кругами, выйти можно только чётным броском', () => {
+  it('Леший: без хлеба кружат по кружкам, выходят чётным броском на 66', () => {
     const rng = new RiggedRng(new SeededRng(15));
-    // встали на 64 — петля началась
-    const s = turn(stand(at(63)), 0, 1, rng).state;
+    const s = turn(stand(at(63), { cards: [] }), 0, 1, rng).state;
     expect(s.pos[0]).toBe(at(64));
-    expect(s.route?.[0]?.length ?? 0, 'кружки Лешего').toBeGreaterThan(5);
-    // нечётный бросок кружит по петле и не выпускает
-    let sp = s;
-    for (let i = 0; i < 6; i++) {
-      sp = { ...sp, turn: 0 };
-      sp = turn(sp, 0, 3, rng).state;
-    }
-    expect(b.cells[sp.pos[0]].off, 'кружит по кружкам').toBe(true);
-    // а чётный — выпускает за петлю: с 65 пуговица выходит на 66 и идёт дальше по ленте
-    let st = s;
-    for (let i = 0; i < 20 && st.route?.[0]; i++) {
-      st = { ...st, turn: 0 };
-      st = turn(st, 0, 2, rng).state;
-    }
-    expect(st.pos[0], 'вышел за петлю').toBeGreaterThanOrEqual(65);
-    expect(st.route?.[0] ?? null, 'петля кончилась').toBeNull();
+    expect(s.choose?.title).toBe('Леший чудесит');
+    const circle = s.choose!.options.findIndex((o) => o.toCell != null);
+    const lp = b.loops![0];
+    let st = def.apply(s, 0, { type: 'choose', pick: circle }, rng)!.state;
+    expect(st.pos[0]).toBe(lp.cells[0]);
+    // нечётный бросок кружит по кругу: 4 раза по 3 — двенадцать шагов, второй круг
+    for (let i = 0; i < 4; i++) st = turn({ ...st, turn: 0 }, 0, 3, rng).state;
+    expect(st.pos[0]).toBe(lp.cells[12 % lp.cells.length]);
+    // чётный выпускает: 66 и дальше по ленте
+    st = turn({ ...st, turn: 0 }, 0, 2, rng).state;
+    expect(st.pos[0]).toBe(at(67));
+  });
+
+  it('Леший: с хлебом проходят мимо', () => {
+    const rng = new RiggedRng(new SeededRng(21));
+    const s = turn(stand(at(63), { cards: ['bread'] }), 0, 1, rng).state;
+    const r = def.apply(s, 0, { type: 'choose', pick: 0 }, rng)!.state;
+    expect(r.pos[0]).toBe(at(64));
+    expect(r.cards![0]).not.toContain('bread');
+    expect(turn({ ...r, turn: 0 }, 0, 3, rng).state.pos[0]).toBe(at(67));
   });
 
   it('Пастух кружит, пока не выйдешь нечётным броском', () => {
     const rng = new RiggedRng(new SeededRng(16));
     const s = turn(stand(at(132)), 0, 1, rng).state;
-    expect(s.pos[0]).toBe(at(133));
-    expect(s.route?.[0]?.length ?? 0).toBeGreaterThan(4);
-    // чётный бросок оставляет в петле
-    let sp = { ...s, turn: 0 };
-    sp = turn(sp, 0, 2, rng).state;
-    expect(b.cells[sp.pos[0]].off, 'кружит по петле').toBe(true);
-    // нечётный выпускает за петлю (на 134 и дальше по ленте)
-    let st = s;
-    for (let i = 0; i < 20 && st.route?.[0]; i++) {
-      st = { ...st, turn: 0 };
-      st = turn(st, 0, 3, rng).state;
-    }
-    expect(st.pos[0], 'вышел за петлю').toBeGreaterThanOrEqual(133);
-    expect(st.route?.[0] ?? null).toBeNull();
+    const lp = b.loops![1];
+    expect(s.pos[0]).toBe(lp.cells[0]);
+    const sp = turn({ ...s, turn: 0 }, 0, 2, rng).state;
+    expect(sp.pos[0]).toBe(lp.cells[2]);
+    const out = turn({ ...sp, turn: 0 }, 0, 1, rng).state;
+    expect(out.pos[0]).toBe(at(134));
   });
 
-  it('на Распутье (4) фишка уходит на безномерную дорогу, а не идёт по номерам', () => {
+  it('Распутье: встал на 4 — выбираешь дорогу и идёшь по кружкам до 5', () => {
     const rng = new RiggedRng(new SeededRng(17));
-    // пуговица уже стоит на Распутье (4): бросок 1 — дорога выбирается остатком очков
-    const s0 = { ...stand(at(4)), last: 1, phase: 'move' as const };
-    rng.rig([0]);
-    const r = def.apply(s0, 0, { type: 'move' }, rng)!;
-    expect(r.events.some((e) => e.type === 'sign' && e.sign.k === 'fork')).toBe(true);
-    const first = r.state.pos[0];
-    expect(b.cells[first].off, 'пуговица на кружке дороги').toBe(true);
-    // дальше по дороге выходит на 5, а не шагает по номерам 6, 7, 8…
-    let st = r.state;
-    for (let i = 0; i < 20 && st.route?.[0]; i++) {
-      st = { ...st, turn: 0 };
-      st = turn(st, 0, 6, rng).state;
+    const s = turn(stand(at(1)), 0, 3, rng).state;
+    expect(s.pos[0]).toBe(at(4));
+    expect(s.choose?.title).toBe('Распутье');
+    expect(s.choose!.options).toHaveLength(3);
+    for (let road = 0; road < 3; road++) {
+      let st = def.apply(s, 0, { type: 'choose', pick: road }, rng)!.state;
+      st = turn({ ...st, turn: 0 }, 0, 5, rng).state;
+      expect(b.cells[st.pos[0]].off, 'на кружке дороги').toBe(true);
+      expect(st.pos[0]).toBe(b.cells[at(4)].roads![road][4]);
+      // ещё 3: последний кружок, 5, 6 (привал) — лишние очки идут дальше по ленте
+      st = turn({ ...st, turn: 0 }, 0, 3, rng).state;
+      expect(st.pos[0]).toBe(at(6));
+      expect(st.choose?.title).toBe('Привал');
     }
-    expect(st.pos[0], `вышел на поле 5, а не на ${(b.cells[st.pos[0]].label ?? st.pos[0])}`).toBeLessThanOrEqual(at(6));
-    expect(st.route?.[0] ?? null).toBeNull();
+  });
+
+  it('проскочил Распутье с хода — идёшь дальше по номерам', () => {
+    const rng = new RiggedRng(new SeededRng(18));
+    const s = turn(stand(at(1)), 0, 6, rng).state;
+    expect(s.pos[0]).toBe(at(7));
   });
 });
 
@@ -390,21 +431,26 @@ describe('Шёл солдат: показ правил', () => {
     // подкручен кубик у бросков: у каждого броска есть свои значения
     const rigs = sec.demo!.steps.map((st) => st.rig);
     expect(rigs.filter((r) => r && r.length).length, 'броски с подкрученным кубиком').toBeGreaterThanOrEqual(2);
-    expect(rigs.some((r) => (r?.length ?? 0) > 1), 'есть ход с двумя подкрутками').toBe(true);
+    // в показе есть выбор на клетке (Распутье, привал) и ярмарка чудес
+    const acts = sec.demo!.steps.map((st) => (st.action as { type: string }).type);
+    expect(acts).toContain('choose');
+    expect(acts).toContain('market');
     const kinds = def.rules.sections.map((x) => x.title);
     expect(kinds).toContain('Шёл солдат со службы');
   });
 });
 
 describe('Шёл солдат: разметка безномерных клеток', () => {
-  it('участки поля: три дороги Распутья, восемь кружков обхода и две петли', () => {
-    expect((branches.parts.fork ?? []).length).toBe(15);
-    expect((branches.parts.river ?? []).length).toBe(8);
-    expect((branches.parts.leshiy ?? []).length).toBe(11);
-    expect((branches.parts.pastukh ?? []).length).toBe(7);
-    const fork = b.cells[at(4)].sign as Extract<Sign, { k: 'fork' }>;
-    expect(fork.branches.length).toBe(3);
-    expect(fork.branches.map((x) => x.length)).toEqual([6, 5, 7]);
-    for (const br of fork.branches) expect(br[br.length - 1]).toBe(at(5));
+  it('участки поля: три дороги Распутья по шесть кружков, семь кружков обхода и два круга', () => {
+    expect(branches.parts.forkLow.length).toBe(6);
+    expect(branches.parts.forkMid.length).toBe(6);
+    expect(branches.parts.forkUp.length).toBe(6);
+    expect(branches.parts.river.length).toBe(7);
+    expect(branches.parts.leshiy.length).toBe(11);
+    expect(branches.parts.pastukh.length).toBe(7);
+    // кружки не повторяются и не совпадают с клетками ленты
+    const all = [...board.cells, ...Object.values(branches.parts).flat()];
+    for (let i = 0; i < all.length; i++)
+      for (let j = i + 1; j < all.length; j++) expect(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y), `кружки ${i} и ${j}`).toBeGreaterThan(40);
   });
 });

@@ -12,17 +12,19 @@ export type Sign =
   | { k: 'route'; cells: number[]; text: string }
   /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же; skip — ещё и пропустить ходы.
    * `diff` — взять (или отдать) не число, а разницу «очки на кубике − кружки до этого пункта». */
-  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; diff?: boolean; text: string }
+  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; diff?: boolean; /** И перенос на клетку (яма → Три сосны). */ to?: number; text: string }
   /** Переброс на другое поле той же карточки (серия «Лукоморья»: части 1–4 связаны переходами). */
   | { k: 'field'; map: string; to: number; text: string }
   /** Предмет: взять себе в инвентарь. */
   | { k: 'item'; item: ItemId; text: string }
   /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа,
    * а исходом бывает и переход на другую часть серии (Лукоморье: клубок — и дальше во вторую часть). */
-  | { k: 'need'; item?: ItemId; coins?: number; yes: NeedTo; no: NeedTo; text: string }
+  | { k: 'need'; item?: ItemId; coins?: number; /** Боны не только нужны, но и отдаются (клубок за 20 бон, Орёл за 15). */ pay?: boolean; yes: NeedTo; no: NeedTo; text: string }
   /** Развилка: дорога выбирается по разнице «очки на кубике − число кружков до развилки» (1…6).
    * byDiff[разница-1] — номер ветки, branches — сами ветки (клетки дороги и выход), roads — их названия. */
-  | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string }
+  | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string;
+      /** Кружок лабиринта («Лукоморье-4»): один бросок — один переход по стрелке грани; `coins` — боны за переход (+1/−1). */
+      step?: boolean; coins?: number }
   /** Ярмарка чудес («Шёл солдат со службы»): общий запас волшебных предметов — взять до двух,
    * купить хлеб и огниво, обменять; остановка обязательная. */
   | { k: 'market'; text: string }
@@ -68,10 +70,14 @@ export interface ChoiceOption {
   get?: CardId[];
   /** Сколько ходов пропустить. */
   skip?: number;
-  /** Переход на другую клетку ленты. */
+  /** Переход на другую клетку ленты (номер с поля, 1…140). */
   to?: number;
+  /** Переход на клетку по индексу в списке клеток (безномерные кружки: вход в круги Лешего). */
+  toCell?: number;
   /** Записать флаг. */
   flag?: string;
+  /** Снять флаг (черти выпущены из торбы). */
+  unflag?: string;
   /** Обход: знак route с этой дорогой (дороги поля: развилка, обход реки, петли). */
   route?: number;
   /** Хорошее событие (для журнала и звука). */
@@ -99,6 +105,20 @@ export interface Deck {
   market: number[];
   /** Что сдаётся в запас на клетке (48 — Конь-огонь, 88 — клубок). */
   keep?: Record<number, CardId[]>;
+  /** Какие флаги места снимаются на клетке (48 — с Конём-огнём расстаются, прибавка к броску пропадает). */
+  dropFlags?: Record<number, string[]>;
+  /** Клетки (номера с поля), мимо которых не пройти с ходу: фишка встаёт на них, если у места нет флага `unless`
+   * (берег Огненной реки: без Коня-огня надо остановиться и решать — мост, обход). */
+  halt?: { cell: number; unless?: string }[];
+}
+
+/** Круги («Шёл солдат»: Леший, Пастух): безномерные кружки по кругу; выйти можно только нужным броском —
+ * тогда первый шаг на клетку ленты `out` (номер с поля), остаток очков — дальше по ленте. */
+export interface Loop {
+  cells: number[];
+  exit: LoopExit;
+  out: number;
+  text: string;
 }
 
 /** Куда ведёт исход условия: номер клетки этого поля, победа или переход на другое поле серии. */
@@ -178,6 +198,8 @@ export interface Cell {
   text?: string;
   /** Клетка ветки, а не основного пути: на неё попадают только по знаку route. */
   off?: boolean;
+  /** Следующая клетка, если это не следующая по списку (поле-граф «Лукоморья»: дороги, развилки, переходы); −1 — дальше хода нет. */
+  next?: number;
   /** Дороги безномерных клеток этого поля (развилка Распутья, обход реки, петли):
    * выбор на клетке может отправить фишку по дороге с номером из списка. */
   roads?: number[][];
@@ -208,11 +230,13 @@ export interface Board {
   /** Перед игрой каждый берёт из банка бон по сумме `startCoins` бросков; первым ходит тот, у кого больше. */
   startCoins?: number;
   /** Показ правил: шаги с подкрученным кубиком. rig — значения для rng.int (у клюшки их два: грань и квадратик). */
-  demo?: { rig: number | number[]; caption: string; seat?: number }[];
+  demo?: { rig?: number | number[]; caption: string; seat?: number; /** Не бросок, а это действие (ярмарка, выбор на препятствии). */ act?: Action }[];
   /** Приключение с запасом карточек и ярмарками («Шёл солдат со службы»). */
   deck?: Deck;
   /** Постоянная прибавка к броску (Конь-огонь) — знаки, с которых она начинается. */
   bonusSigns?: number[];
+  /** Круги, из которых выходят только нужным броском («Шёл солдат»). */
+  loops?: Loop[];
   /** Серия: у игры несколько частей-полей — в настройках это одно поле и один пресет,
    * а партия идёт по частям до конца («Лукоморье»: клубок → цветочек → Заоблачная даль → замок Кощея). */
   series?: { id: string; label: string; part: number; count: number };
@@ -368,6 +392,13 @@ function racePath(s: State, b: Board, seat: number): number[] {
   return out;
 }
 
+/** Следующая клетка по ходу: своя у клетки поля-графа (`next`), иначе следующая по списку до финиша. */
+export function nextOf(b: Board, at: number): number | undefined {
+  const n = b.cells[at]?.next;
+  if (n != null) return n >= 0 ? n : undefined;
+  return at < finishOf(b) ? at + 1 : undefined;
+}
+
 /** Какая дорога у развилки: разница «очки на кубике − число кружков до развилки» (1…6) выбирает ветку. */
 export function branchOf(g: Sign & { k: 'fork' }, diff: number): { branch: number; cells: number[] } {
   const d = Math.max(1, Math.min(6, Math.round(diff) || 1));
@@ -403,9 +434,11 @@ export function walkFor(s: State, b: Board, seat: number, steps?: number): Walk 
   let route = (s.route?.[seat] ?? []).slice();
   let cont = s.routeFor?.[seat] ?? false;
   let at = s.pos[seat];
-  const end = finishOf(b);
   // ярмарки в разметке заданы номерами клеток с поля (48), а путь — индексами (47)
   const stalls = (b.deck?.market ?? []).map((x) => x - 1);
+  // берег Огненной реки: без Коня-огня с ходу не перейти — встаёшь и решаешь
+  const flags = s.flags?.[seat] ?? [];
+  for (const h of b.deck?.halt ?? []) if (!h.unless || !flags.includes(h.unless)) stalls.push(h.cell - 1);
   // фишка стоит на развилке — дорога выбирается цифрой на кубике (в правилах: «если попал на неё — просто цифра»)
   const here = b.cells[at]?.sign;
   if (!route.length && here?.k === 'fork') {
@@ -413,14 +446,16 @@ export function walkFor(s: State, b: Board, seat: number, steps?: number): Walk 
     route = pick.cells.slice();
     cont = true;
     forks.push({ cell: at, diff: n, branch: pick.branch });
+    // кружок лабиринта: бросок — это грань, по её стрелке ровно один переход (или пропуск хода)
+    if (here.step) n = route.length;
   }
   while (n > 0) {
     let next: number | undefined;
     if (route.length) next = route.shift();
-    else if (cont && at < end) next = at + 1;
+    else if (cont) next = nextOf(b, at);
     // ветка знака кончилась, а остаток очков был: с выхода ветки фишка никуда не идёт — ход кончается
-    else if (!cont && path.length && s.route?.[seat]?.length) break;
-    else if (at < end) next = at + 1;
+    else if (path.length && s.route?.[seat]?.length) break;
+    else next = nextOf(b, at);
     if (next == null) break;
     at = next;
     path.push(at);
@@ -428,6 +463,8 @@ export function walkFor(s: State, b: Board, seat: number, steps?: number): Walk 
     // ярмарка чудес: остановка обязательная, даже если очков оставалось больше (в правилах: с 46 при 5 — на 48)
     if (stalls.includes(at)) break;
     const g = b.cells[at]?.sign;
+    // вошёл в лабиринт: дальше — по броскам, по кружку за раз
+    if (!route.length && g?.k === 'fork' && g.step) break;
     if (!route.length && g?.k === 'fork' && n > 0) {
       const pick = branchOf(g, n);
       route = pick.cells.slice();
@@ -444,26 +481,24 @@ export function walkFor(s: State, b: Board, seat: number, steps?: number): Walk 
 export const loopOpens = (exit: LoopExit | undefined, die: number) =>
   exit === 'even' ? die % 2 === 0 : exit === 'odd' ? die % 2 === 1 : Array.isArray(exit) ? exit.includes(die) : true;
 
-/** Ход по петле (Леший, Пастух): пуговица идёт по кружкам, а выйти можно только нужным броском.
- * Вход — встал на клетку-вход: идём по кружку, пока не кончится круг, и бросаем про выход.
- * Выход — `out` (первая клетка ленты) и дальше обычным порядком. */
+/** Круг, на кружке которого стоит клетка (или null). */
+export const loopAt = (b: Board, cell: number) => b.loops?.find((l) => l.cells.includes(cell)) ?? null;
+
+/** Ход по кругу (Леший, Пастух): пуговица стоит на кружке круга. Нужный бросок (чёт/нечет) выпускает —
+ * первый шаг на клетку ленты за кругом, дальше по ленте; иначе пуговица идёт по кружкам дальше по кругу. */
 export function loopMove(s: State, b: Board, seat: number, die: number): Walk | null {
-  const route = (s.route?.[seat] ?? []).filter((x) => x != null);
-  const inLoop = route.length > 0 && b.cells[route[0]]?.off;
-  const here = b.cells[s.pos[seat]]?.sign;
-  const entry = here?.k === 'loop' ? here : null;
-  if (!entry && !inLoop) return null;
-  // знак петли лежит на клетке входа (Леший — на 64/65, Пастух — на 133)
-  const sign = entry ?? (b.cells[s.pos[seat]]?.sign as Sign & { k: 'loop' });
-  if (!sign || sign.k !== 'loop') return null;
-  const circle = sign.cells;
-  const w = walkFor(s, b, seat, die);
-  const left = (route.length ? route.length : circle.length) - w.path.length;
-  if (left > 0) return w; // круг ещё не пройден — идём по кружкам
-  // круг кончился: выйти можно только нужным броском (чёт/нечет), иначе начинаем круг заново
-  if (!loopOpens(sign.exit, die)) return { path: w.path, route: [...circle], routeFor: false, forks: [] };
-  // вырвался: пуговица встаёт на поле за петлёй и дальше идёт обычным порядком, остаток очков — по ленте
-  return walkFor({ ...s, pos: s.pos.map((x, i) => (i === seat ? (sign.out ?? x) : x)) }, b, seat, Math.max(0, die - w.path.length));
+  const lp = loopAt(b, s.pos[seat]);
+  if (!lp) return null;
+  if (loopOpens(lp.exit, die)) {
+    // встаём «перед» клеткой out (номер с поля → индекс out-1, а перед ней — out-2) и идём по ленте
+    const one = <T,>(list: T[] | undefined, v: T) => (list ?? s.pos.map(() => v)).map((x, i) => (i === seat ? v : x));
+    const from: State = { ...s, pos: s.pos.map((x, i) => (i === seat ? lp.out - 2 : x)), route: one(s.route, null), routeFor: one(s.routeFor, null) };
+    return walkFor(from, b, seat, die);
+  }
+  const j = Math.max(0, lp.cells.indexOf(s.pos[seat]));
+  const path: number[] = [];
+  for (let k = 1; k <= die; k++) path.push(lp.cells[(j + k) % lp.cells.length]);
+  return { path, route: null, routeFor: false, forks: [] };
 }
 
 /** Клетки, по которым пройдёт пуговица за бросок. */

@@ -59,7 +59,7 @@ function endTurn(s: State, seat: number, ev: Event[], board?: Board) {
       if (g) ev.push({ type: 'sign', seat, sign: g, to });
       return { state: s, events: ev };
     }
-    const keep = board.deck.keep?.[to];
+    const keep = board.deck.keep?.[to + 1];
     if (keep?.length) for (const c of keep) if ((s.cards?.[seat] ?? []).includes(c)) unpack(s.cards![seat]!, s.stock!, c);
   }
   if (s.extra?.[seat]) {
@@ -145,7 +145,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const i = Math.max(0, Math.min(sign.options.length - 1, Math.floor(a.pick) || 0));
     const finish = finishOf(board);
     const s: State = { ...s0, pos: s0.pos.slice(), phase: 'roll' };
-    const dest = Math.max(0, Math.min(finish, sign.to[i] ?? s0.pos[seat]));
+    const dest = Math.max(0, Math.min(board.cells.length - 1, sign.to[i] ?? s0.pos[seat]));
     const ev: Event[] = [{ type: 'sign', seat, sign: { ...sign, text: `${sign.text}: ${sign.options[i]}` }, to: dest }];
     // ответ переносит пуговицу: остаток дороги-ветки за ней не тянется
     if (dest !== s0.pos[seat]) {
@@ -263,23 +263,31 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       unpack(hand, s.stock!, c);
       ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
     }
-    for (const c of opt.get ?? []) {
-      if (s.stock![c] ? s.stock![c] > 0 : true) {
-        if (s.stock![c] != null) s.stock![c] -= 1;
-        hand.push(c);
-        ev.push({ type: 'card', seat, card: c, left: s.stock![c] });
-      }
-    }
     s.cards[seat] = hand;
-    if (opt.flag) s.flags[seat] = [...(s.flags[seat] ?? []), opt.flag];
+    for (const c of opt.get ?? []) {
+      // из общего запаса и только если влезает в котомку
+      if (!canPack(board, s, seat, c)) continue;
+      s.stock![c] -= 1;
+      hand.push(c);
+      ev.push({ type: 'card', seat, card: c, left: s.stock![c] });
+    }
+    if (opt.flag && !(s.flags[seat] ?? []).includes(opt.flag)) s.flags[seat] = [...(s.flags[seat] ?? []), opt.flag];
+    if (opt.unflag) s.flags[seat] = (s.flags[seat] ?? []).filter((f) => f !== opt.unflag);
     if (opt.skip) {
       s.skip[seat] = opt.skip;
       ev.push({ type: 'skip', seat });
     }
     if (opt.route != null) {
       // дорога безномерных клеток: у клетки свой список дорог (обход Огненной реки и т. п.)
+      // дорога кончается клеткой ленты — оттуда ход продолжается по номерам (лишние очки не пропадают)
       const road = board.cells[s0.pos[seat]]?.roads?.[opt.route];
       s.route![seat] = road ? road.slice() : null;
+      s.routeFor![seat] = road ? true : null;
+    }
+    if (opt.toCell != null && board.cells[opt.toCell]) {
+      // безномерный кружок (вход в круги Лешего): пуговица переходит туда
+      s.pos[seat] = opt.toCell;
+      s.route![seat] = null;
       s.routeFor![seat] = null;
     }
     if (opt.to != null) {
@@ -288,8 +296,9 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.route![seat] = null;
       s.routeFor![seat] = null;
     }
-    if (opt.text2) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: [], text: opt.text2 }, to: s.pos[seat] });
-    if (s.pos[seat] >= finishOf(board) && !board.winBySign) return winNow(s, ev, seat);
+    if (opt.text2) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: opt.gained ? [{ text: '', gained: true }] : [], text: opt.text2, self: true }, to: s.pos[seat] });
+    // безномерные кружки лежат в списке после финиша — победа только на самой клетке финиша
+    if (s.pos[seat] === finishOf(board) && !board.winBySign) return winNow(s, ev, seat);
     return endTurn(s, seat, ev, board);
   }
   if (a?.type !== 'move' || phase !== 'move' || !s0.last) return null;
@@ -316,6 +325,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     if (s.route) s.route[seat] = null;
     if (s.routeFor) s.routeFor[seat] = null;
   };
+  /** Условие выполнено, а боны по нему отдаются (клубок у Бабы Яги, перелёт на Орле). */
+  const payNeed = (g: Sign & { k: 'need' }) => {
+    if (!g.pay || !g.coins) return;
+    s.coins = many(s.coins, 0);
+    s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) - g.coins);
+    ev.push({ type: 'coins', seat, delta: -g.coins, total: s.coins[seat] });
+  };
   /** Исход условия: победа, клетка этого поля или переход на другую часть серии. */
   const goNeed = (target: NeedTo) => {
     if (target === 'win') return winNow(s, ev, seat);
@@ -323,14 +339,14 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       const other = boardOf(target.map);
       s.maps = (s.maps ?? s0.pos.map(() => s.map)).slice();
       s.maps[seat] = other.id;
-      s.pos[seat] = Math.max(0, Math.min(finishOf(other), target.to));
+      s.pos[seat] = Math.max(0, Math.min(other.cells.length - 1, target.to));
       dropRoute();
       s.route = s.route ? s.route.map(() => null) : s.route;
       s.routeFor = s.routeFor ? s.routeFor.map(() => null) : s.routeFor;
       ev.push({ type: 'sign', seat, sign: { k: 'field', map: other.id, to: s.pos[seat], text: `переход в «${other.title}»` }, to: s.pos[seat] });
       return endTurn(s, seat, ev);
     }
-    s.pos[seat] = Math.max(0, Math.min(finish, target));
+    s.pos[seat] = Math.max(0, Math.min(board.cells.length - 1, target));
     dropRoute();
     if (s.pos[seat] === finish && !board.winBySign) return winNow(s, ev, seat);
     return endTurn(s, seat, ev);
@@ -350,6 +366,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     const hasItem = stand.item ? (s.items?.[seat] ?? []).includes(stand.item) : true;
     const hasCoins = stand.coins != null ? (s.coins?.[seat] ?? 0) >= stand.coins : true;
     ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat], ...(board.cells[s.pos[seat]].text ? { text: board.cells[s.pos[seat]].text } : {}) });
+    if (hasItem && hasCoins) payNeed(stand);
     return goNeed(hasItem && hasCoins ? stand.yes : stand.no);
   }
   const walk = loopMove(s0, board, seat, s0.last) ?? walkFor(s0, board, seat);
@@ -378,6 +395,12 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       to: f.cell,
       text: `${g.text}${road ? ` (разница ${f.diff} — ${road})` : ` (разница ${f.diff})`}`,
     });
+    // лабиринт «Лукоморья-4»: каждый переход с кружка на кружок даёт (или отнимает) боны
+    if (g.step && g.coins && g.branches[f.branch]?.length) {
+      s.coins = many(s.coins, 0);
+      s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + g.coins);
+      ev.push({ type: 'coins', seat, delta: g.coins, total: s.coins[seat] });
+    }
   }
   if (to === finish && !board.winBySign) return win();
   // Ярмарка чудес («Шёл солдат»): встал — торгуешься, ход не переходит, пока не закроешь ярмарку
@@ -389,6 +412,9 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       unpack(hand, s.stock!, c);
       ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
     }
+    // а с ним и прибавка к броску: Конь-огонь остался на ярмарке
+    const drop = board.deck.dropFlags?.[to + 1] ?? [];
+    if (drop.length && s.flags) s.flags[seat] = (s.flags[seat] ?? []).filter((f) => !drop.includes(f));
     s.market = { seat, took: 0, bought: 0 };
     s.phase = 'market';
     const g = board.cells[to].sign;
@@ -414,18 +440,20 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       ev.push({ type: 'sign', seat, sign: g, to: s.pos[seat], text: 'Конь-огонь перенёс через Огненную реку.' });
       return endTurn(s, seat, ev, board);
     }
-    // петля (Леший, Пастух): встал на клетку-вход — дальше идёшь по кружкам, пока не выйдешь броском
+    // круги (Пастух): встал на клетку-вход — пуговица уходит на первый кружок и кружит, пока не выйдет броском
     if (g?.k === 'loop') {
-      s.route![seat] = g.cells.slice();
+      const first = g.cells[0] ?? to;
+      s.pos[seat] = first;
+      s.route![seat] = null;
       s.routeFor![seat] = null;
-      ev.push({ type: 'sign', seat, sign: g, to });
+      ev.push({ type: 'sign', seat, sign: g, to: first });
       return endTurn(s, seat, ev, board);
     }
     if (g?.k === 'choice') {
       s.pos[seat] = to;
       s.choose = { seat, title: g.title, text: g.text, options: g.options };
       s.phase = 'choose';
-      ev.push({ type: 'sign', seat, sign: g, to, text: g.text });
+      ev.push({ type: 'sign', seat, sign: { ...g, text: 'решает, как быть' }, to, text: g.title ? `${g.title}. ${g.text}` : g.text });
       return { state: s, events: ev };
     }
   }
@@ -455,6 +483,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + delta);
       if (sign.skip) s.skip[seat] = sign.skip;
       ev.push({ type: 'coins', seat, delta, total: s.coins[seat] });
+      if (sign.to != null) dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
     } else if (sign.k === 'field') {
       // серия «Лукоморья»: часть 1–4 — разные поля одной карточки, переход переносит пуговицу на другое поле
       const other = boardOf(sign.map);
@@ -463,7 +492,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.maps[seat] = other.id;
       if (s.route) s.route[seat] = null;
       if (s.routeFor) s.routeFor[seat] = null;
-      dest = Math.max(0, Math.min(finishOf(other), sign.to));
+      dest = Math.max(0, Math.min(other.cells.length - 1, sign.to));
       ev.push({ type: 'sign', seat, sign, to: dest, ...(fromText ? { text: fromText } : {}) });
       s.pos[seat] = dest;
       return { state: s, events: ev };
@@ -503,6 +532,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       const hasItem = sign.item ? (s.items?.[seat] ?? []).includes(sign.item) : true;
       const hasCoins = sign.coins != null ? (s.coins?.[seat] ?? 0) >= sign.coins : true;
       ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+      if (hasItem && hasCoins) payNeed(sign);
       return goNeed(hasItem && hasCoins ? sign.yes : sign.no);
     } else if (sign.k === 'pick') {
       // загадка: ход прерывается, пока игрок не назовёт ответ
@@ -514,7 +544,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       // дорога выбирается по остатку очков: сразу, если они ещё есть, иначе — на следующем ходу
       dest = to;
     } else if (sign.k === 'jump') {
-      dest = Math.max(0, Math.min(finish, sign.to));
+      dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
       if (sign.skip) s.skip[seat] = sign.skip;
     } else {
       // прочие знаки (ярмарка, петля, боны, предмет, условие) клетку не переносят:
@@ -737,6 +767,8 @@ export const def: GameDef<State, Action, Event, State> = {
         if (ev.kind === 'green') return `${name(ev.seat)} бросает: 🟢 зелёная клюшка, квадратик на <b>${ev.card}</b> — шайба вперёд.`;
         return `${name(ev.seat)} бросает: <b>${ev.die}</b>`;
       case 'sign':
+        // итог выбора на препятствии («Шёл солдат») — готовая фраза, без имени впереди
+        if (ev.sign.k === 'choice' && ev.sign.self && !ev.text) return `<i>${esc(ev.sign.text)}</i>`;
         return `${ev.text ? `<i>${esc(ev.text)}</i> ` : ''}${name(ev.seat)} ${signText(ev.sign)}.`;
       case 'skip':
         return `${name(ev.seat)} пропускает ход.`;
@@ -794,8 +826,10 @@ export const def: GameDef<State, Action, Event, State> = {
       html: `<p><i>${b.goal}</i></p>${b.rules}${b.credit ? `<p><small>${b.credit}</small></p>` : ''}`,
       demo: b.demo ? { seats: demoSeats, options: { map: b.id }, steps: b.demo.flatMap((d, i) => {
             const seat = d.seat ?? i % 2;
+            // не бросок, а действие на ярмарке или выбор на препятствии
+            if (d.act) return [{ seat, action: d.act, caption: d.caption }];
             return [
-              { seat, action: { type: 'roll' } as Action, rig: Array.isArray(d.rig) ? d.rig : [d.rig], caption: `${SEATS[seat].name} бросает кубик…` },
+              { seat, action: { type: 'roll' } as Action, rig: Array.isArray(d.rig) ? d.rig : [d.rig ?? 0], caption: `${SEATS[seat].name} бросает кубик…` },
               { seat, action: { type: 'move' } as Action, caption: d.caption },
             ];
           }) } : undefined,

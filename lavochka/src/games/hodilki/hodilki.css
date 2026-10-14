@@ -128,7 +128,8 @@
 .ks-card span { text-align: center; }
 .ks-card.off { opacity: 0.4; cursor: default; }
 .ks-card.off img { filter: grayscale(0.7); }
-.ks-mini-card { height: 30px; width: auto; border-radius: 3px; margin-right: 2px; vertical-align: middle; }
+.ks-mini-cards { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px; margin-top: 2px; }
+.ks-mini-card { height: 30px; width: 18px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
 .ks-mdone { width: 100%; padding: 6px; font-size: 15px; }
 /* телефон: панель под полем, ярмарка и выбор не должны растягивать стол */
 @media (max-width: 900px), (max-aspect-ratio: 1/1) {

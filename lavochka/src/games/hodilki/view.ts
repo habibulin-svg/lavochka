@@ -1208,7 +1208,9 @@ class HodilkiView implements GameView<State, Event> {
       } else if (ev.type === 'sign') {
         const good = signGood(ev.sign);
         const story = ev.text ?? this.b?.cells[this.shown[ev.seat]]?.text;
-        this.say(`${story ? story + ' ' : ''}${strip(this.ctx.name(ev.seat))} ${signText(ev.sign)}${good ? '!' : '.'}`, good);
+        // итог выбора на препятствии («Шёл солдат») — готовая фраза, без имени впереди
+        const said = ev.sign.k === 'choice' && ev.sign.self && !ev.text ? ev.sign.text : `${story ? story + ' ' : ''}${strip(this.ctx.name(ev.seat))} ${signText(ev.sign)}${good ? '!' : '.'}`;
+        this.say(said, good);
         // дать прочитать: за экраном человек — ждём касания, иначе пауза
         await (this.ctx.read ? this.ctx.read(story ? 1600 : 700) : sleep(500 / speed));
         if (ev.to !== this.shown[ev.seat]) {
@@ -1247,6 +1249,18 @@ class HodilkiView implements GameView<State, Event> {
           el?.classList.remove('fly', 'lifted');
           Sound.place();
         }
+      } else if (ev.type === 'card') {
+        // «Шёл солдат»: карточка-предмет пришла в котомку или ушла в общий запас
+        Sound.card();
+        await sleep(260 / speed);
+      } else if (ev.type === 'market') {
+        if (ev.do === 'done') Sound.ui();
+        else Sound.card();
+        await sleep(200 / speed);
+      } else if (ev.type === 'choose') {
+        Sound.ui();
+        this.say(`${strip(this.ctx.name(ev.seat))}: ${ev.option}.`, false);
+        await sleep(500 / speed);
       } else if (ev.type === 'win') Sound.win();
     }
     this.useBoard(mapOf(v, this.boardSeat(v)));
@@ -1397,7 +1411,7 @@ class HodilkiView implements GameView<State, Event> {
             : o.needHorse && !(v.flags?.[seat] ?? []).includes('конь')
               ? 'нужен Конь-огонь'
               : o.needIfFlag && !(v.flags?.[seat] ?? []).includes(o.needIfFlag)
-                ? 'теперь нечем'
+                ? (o.needIfFlag === 'подал' ? 'Нищенке не подавал' : 'нечем')
                 : '';
         const btn = document.createElement('button');
         btn.className = `btn ks-copt${why ? ' off' : ''}`;
@@ -1473,17 +1487,20 @@ class HodilkiView implements GameView<State, Event> {
     const at = here?.off ? '↪' : (here?.label ?? v.pos[seat]);
     const last = b.cells[finishOf(b)]?.label ?? finishOf(b);
     // «Лукоморье»: боны (деньги), предметы и накопленные дополнительные ходы
-    const coins = b.coins ? ` · ${b.coins} ${v.coins?.[seat] ?? 0}` : '';
+    // у «Шёл солдата» золотые — карточки в котомке, у «Лукоморья» — боны
+    const gold = b.deck ? (v.cards?.[seat] ?? []).filter((c) => b.deck!.cards.find((x) => x.id === c)?.kind === 'coins').length : (v.coins?.[seat] ?? 0);
+    const coins = b.coins ? ` · ${b.coins} ${gold}` : '';
     const extra = v.extra?.[seat] ? ` · +${v.extra[seat]} ход` : '';
     const items = (v.items?.[seat] ?? []).map(itemIcon).join('');
     // «Шёл солдат»: карточки-предметы видны поимённо (у каждой своя картинка)
+    // (монеты не рисуем: их число стоит в строке «золотых N»)
     const cards = b.deck
-      ? (v.cards?.[seat] ?? [])
+      ? `<span class="ks-mini-cards">${(v.cards?.[seat] ?? [])
           .map((id) => {
             const c = b.deck!.cards.find((x) => x.id === id);
-            return c ? `<img class="ks-mini-card" src="${b.deck!.cardsDir}/${b.deck!.cardImg(c)}" alt="${c.name}" title="${c.name}">` : '';
+            return c && c.kind !== 'coins' ? `<img class="ks-mini-card" src="${b.deck!.cardsDir}/${b.deck!.cardImg(c)}" alt="${c.name}" title="${c.name}">` : '';
           })
-          .join('')
+          .join('')}</span>`
       : '';
     const bag = cards || (items ? ` · ${items}` : '');
     return `${at} / ${last}${coins}${extra}${bag}${n ? ` · пропуск${n > 1 ? ' ×' + n : ''}` : ''}`;
