@@ -1,152 +1,194 @@
 import { describe, expect, it } from 'vitest';
-import { SeededRng } from '../src/core/rng';
-import { CARDS, CELLS, LINKS, PLAY_CELLS } from '../src/games/korona/data';
-import { apply, kindOf, neighbours, newState, result, stepTargets, type Action, type State } from '../src/games/korona/engine';
-import { DECK_SIZE, START, STATS } from '../src/games/korona/rules';
+import { RiggedRng, SeededRng } from '../src/core/rng';
+import { CELLS, DECK, EDGES1, PLAY_CELLS, ROAD, ROAD_BY_ID, ROSETTES } from '../src/games/korona/data';
+import { def } from '../src/games/korona/def';
+import { apply, botAction, distances, kindOf, legalPath, neighbours, newState, result, routes, type Action, type State } from '../src/games/korona/engine';
+import { START, STATS } from '../src/games/korona/rules';
 
-const seats = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'Игрок ' + seat, level: 2 }));
-const fresh = (seed = 7) => newState(seats, {}, new SeededRng(seed));
+const seats = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'Игрок ' + seat, level: 1 }));
+const fresh = (seed = 7, need = 6) => newState(seats, { need }, new SeededRng(seed));
 
-/** Сделать ход, если он законен; вернуть новое состояние или null. */
-function act(s: State, a: Action): State | null {
-  const r = apply(s, s.turn, a, new SeededRng(3));
+/** Ход с подкрученными кубиками (значения rng.int — бросок минус один). */
+function act(s: State, a: Action, rig: number[] = []): State | null {
+  const rng = new RiggedRng(new SeededRng(3));
+  rng.rig(rig);
+  const r = apply(s, s.turn, a, rng);
   return r ? r.state : null;
 }
 
-/** Простой бот: бросает, идёт к ближайшей клетке с ПРОВАЛОМ, иначе к соседу с меньшим номером. */
-function auto(s: State): Action | null {
-  if (s.phase === 'roll') return { type: 'roll' };
-  if (s.phase === 'card') return { type: 'ok' };
-  if (s.phase === 'step') {
-    const targets = stepTargets(s, s.turn);
-    if (!targets.length) return null;
-    const fall = targets.find((n) => kindOf(n) === 'fall');
-    return { type: 'step', to: fall ?? targets[0] };
-  }
-  return null;
-}
-
 describe('Корона Эмбера: данные', () => {
-  it('поле 1 собрано из отчёта', () => {
+  it('поле 1 собрано из отчёта, колода — только целые карточки', () => {
     expect(CELLS.length).toBe(81);
     expect(PLAY_CELLS.length).toBe(78);
-    expect(LINKS.length).toBe(37);
-    expect(CARDS.length).toBeGreaterThanOrEqual(189);
+    expect(DECK.length).toBeGreaterThan(120);
+    for (const c of DECK) {
+      expect(c.title.length, `карточка ${c.n}`).toBeGreaterThan(2);
+      // обрывки соседних карточек (начинаются со строчной) в колоду не попадают; строка сил «магия ум сила» — можно
+      expect(c.text, `карточка ${c.n}`).not.toMatch(/^(?!магия|ум|сила)[а-яё]/);
+    }
   });
 
-  it('колода — двести разных карточек', () => {
-    expect(DECK_SIZE).toBe(200);
-    const s = fresh(11);
-    expect(s.deck.length).toBe(200);
-    expect(new Set(s.deck).size).toBe(200);
+  it('дорога поля 2 замкнута: у каждой клетки есть выход, в столицу ведёт только «up»', () => {
+    for (const r of ROAD) {
+      const outs = [r.next, r.even, r.odd].filter(Boolean) as string[];
+      expect(outs.length, r.id).toBeGreaterThan(0);
+      for (const o of outs) expect(o === 'capital' || ROAD_BY_ID.has(o), `${r.id} → ${o}`).toBe(true);
+    }
+    expect(ROAD.filter((r) => r.next === 'capital').map((r) => r.id)).toEqual(['up']);
   });
 });
 
-describe('Корона Эмбера: граф движения', () => {
-  it('соседство симметрично и без петель', () => {
+describe('Корона Эмбера: проходы поля 1', () => {
+  it('соседство симметрично, без петель, все игровые клетки (кроме подполей) связаны', () => {
+    for (const [a, b] of EDGES1) {
+      expect(a).not.toBe(b);
+      expect(neighbours(b)).toContain(a);
+    }
+    const d = distances(1);
+    // двери подполей — тупики при обходе, поэтому считаем связность от двери тоже
+    const reach = new Set([...d.keys(), ...distances(33).keys(), ...distances(35).keys()]);
     for (const c of PLAY_CELLS) {
-      for (const n of neighbours(c.n)) {
-        expect(n, `клетка ${c.n}`).not.toBe(c.n);
-        expect(neighbours(n), `сосед ${n} клетки ${c.n}`).toContain(c.n);
-      }
+      if (c.subfield) continue;
+      expect(reach.has(c.n), `клетка ${c.n} ${c.name}`).toBe(true);
     }
   });
 
-  it('у каждой клетки сетки есть хотя бы один сосед', () => {
-    for (const c of PLAY_CELLS) {
-      if (c.subfield) continue;
-      expect(neighbours(c.n).length, `клетка ${c.n}`).toBeGreaterThan(0);
+  it('стены держат: через тёмную рамку и змей не пройти, через стрелки — можно', () => {
+    expect(neighbours(14)).not.toContain(15); // Древний тракт | Караван-сарай — рамка
+    expect(neighbours(7)).not.toContain(8); // чёрт между Миром Магии и Миром Ума
+    expect(neighbours(26)).not.toContain(27); // змея
+    expect(neighbours(7)).toContain(18); // стрелка в лазарет
+    expect(neighbours(61)).toContain(70); // Пустошь → Аэропорт
+  });
+
+  it('маршруты: ровно на бросок, без разворота, с остановкой «проходом»', () => {
+    const r = routes(72, 3);
+    for (const [end, path] of r) {
+      expect(legalPath(72, 3, path)).toBe(true);
+      expect(path[path.length - 1]).toBe(end);
+      expect(path.length === 3 || kindOf(end) !== 'plain').toBe(true);
     }
+    expect(r.has(70)).toBe(true);
+    // разворот на только что пройденную клетку запрещён
+    expect(legalPath(72, 2, [73, 72])).toBe(false);
+    // ЛАЗАРЕТ — «останавливаешься здесь проходом»
+    expect(routes(7, 4).get(18)).toEqual([18]);
   });
 });
 
 describe('Корона Эмбера: ход', () => {
-  it('бросок даёт шаги, шаг идёт только к соседу, ход переходит дальше', () => {
+  it('бросок → выбор пути → клетка срабатывает → «Дальше» передаёт ход', () => {
     const s0 = fresh(5);
-    const s1 = act(s0, { type: 'roll' })!;
-    expect(s1.die).toBeGreaterThanOrEqual(1);
-    expect(s1.die).toBeLessThanOrEqual(6);
-    expect(s1.left).toBe(s1.die);
-    // шаг не к соседу отклоняется
-    const here = s1.heroes[s1.turn].cell;
-    const alien = PLAY_CELLS.map((c) => c.n).find((n) => n !== here && !neighbours(here).includes(n))!;
-    expect(act(s1, { type: 'step', to: alien })).toBeNull();
-    // шаг к соседу проходит
-    const to = neighbours(here)[0];
-    const s2 = act(s1, { type: 'step', to })!;
-    expect(s2.heroes[s2.turn].cell).toBe(to);
-    expect(s2.left).toBe(s1.left - 1);
+    const s1 = act(s0, { type: 'roll' }, [2])!;
+    expect(s1.die).toBe(3);
+    expect(s1.phase).toBe('pick');
+    expect(act(s1, { type: 'go', path: [73, 74] })).toBeNull();
+    const r2 = apply(s1, 0, { type: 'go', path: [73, 74, 70] }, new SeededRng(3))!;
+    const s2 = r2.state;
+    expect(r2.events.filter((e) => e.type === 'step').map((e) => (e as { cell: number }).cell).slice(0, 3)).toEqual([73, 74, 70]);
+    // карточка могла ранить до нуля ПЖ — тогда путник очнулся в лазарете
+    expect([70, 18]).toContain(s2.heroes[0].cell);
+    expect(s2.phase).toBe('card');
+    expect(s2.card?.n).not.toBeNull();
+    const s3 = act(s2, { type: 'ok' })!;
+    expect(s3.turn).toBe(1);
+    expect(s3.phase).toBe('roll');
   });
 
-  it('партия продвигается: ходы сменяются, никто не застревает', () => {
-    // до самого Эмбера простым ботом не дойти — там нужно 13 по всем характеристикам,
-    // это и есть долгая игра; проверяем, что ход не залипает и фишки двигаются.
-    let s = fresh(13);
-    const visited = new Set<number>([s.heroes[0].cell]);
-    const turns = new Set<number>();
-    for (let i = 0; i < 60 && s.winner == null; i++) {
-      const a = auto(s);
-      if (!a) break;
-      const next = act(s, a);
-      if (!next) break;
-      s = next;
-      turns.add(s.turn);
-      for (const seat of s.seats) visited.add(s.heroes[seat].cell);
-    }
-    expect(turns.size, 'ходят разные игроки').toBeGreaterThan(1);
-    expect(visited.size, 'фишки побывали на разных клетках').toBeGreaterThan(3);
+  it('лицей учит по таблице с поля: 5 и 6 — по 2 ПС, ПУ, ПМ', () => {
+    const s0 = fresh(5);
+    const s = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], cell: 10 } } };
+    const s1 = act(s, { type: 'roll' }, [1])!;
+    const s2 = act(s1, { type: 'go', path: [9, 8] }, [4, 5])!;
+    expect(s2.card?.title).toBe('ЛИЦЕЙ');
+    for (const k of ['ПС', 'ПУ', 'ПМ'] as const) expect(s2.heroes[0].st[k]).toBe(START[k] + 2);
   });
 
-  it('итог партии считается после коронации', () => {
+  it('Храм Бааля затягивает в подполе, выход — сектор 8 на Лысую гору', () => {
+    const s0 = fresh(5);
+    const s = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], cell: 18 } } };
+    const s1 = act(s, { type: 'roll' }, [0])!;
+    const s2 = act(s1, { type: 'go', path: [26] })!;
+    expect(s2.heroes[0].cell).toBe(25);
+    expect(s2.heroes[0].sector).toBe(0);
+    const back = { ...act(s2, { type: 'ok' })!, turn: 0 };
+    // из сектора 0 бросок 6 → сектор 6; ещё 2 → сектор 8, выход
+    const s3 = act(back, { type: 'roll' }, [5])!;
+    expect(s3.heroes[0].sector).toBe(6);
+    const s4 = act({ ...act(s3, { type: 'ok' })!, turn: 0 }, { type: 'roll' }, [1])!;
+    expect(s4.heroes[0].sector).toBeNull();
+    expect(s4.heroes[0].cell).toBe(ROSETTES[0].exit);
+  });
+
+  it('ПРОВАЛ пускает только с порогом по всем характеристикам', () => {
+    const s0 = fresh(21, 6);
+    const weak = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], cell: 12 } } };
+    const w = act(act(weak, { type: 'roll' }, [0])!, { type: 'go', path: [22] })!;
+    expect(w.heroes[0].zone).toBe('world');
+    expect(w.heroes[0].st['ПУ']).toBe(START['ПУ'] - 1);
+
+    const strong = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], cell: 12, st: { ПС: 6, ПУ: 6, ПМ: 6, ПО: 6 } } } };
+    const o = act(act(strong, { type: 'roll' }, [0])!, { type: 'go', path: [22] })!;
+    expect(o.heroes[0].zone).toBe('road');
+    expect(o.heroes[0].st['ПО']).toBe(0);
+  });
+
+  it('дорога поля 2: развилка по чётности, столица делает принцем', () => {
     const s0 = fresh(21);
-    const h = s0.heroes[0];
-    const throne: State = {
-      ...s0,
-      turn: 0,
-      phase: 'roll',
-      heroes: { ...s0.heroes, [0]: { ...h, ember: true, prince: true, pj: 3, zone: 'throne', items: [] } },
-    };
-    const end = act(throne, { type: 'coronate' })!;
+    // от верхней развилки чётный бросок ведёт наверх, в столицу
+    const s = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], zone: 'road' as const, node: 'FT' } } };
+    const s1 = act(s, { type: 'roll' }, [1])!;
+    expect(s1.heroes[0].zone).toBe('capital');
+    expect(s1.heroes[0].prince).toBe(true);
+    expect(s1.heroes[0].pj).toBeGreaterThan(4);
+    // нечётный — вниз, к центру
+    const s2 = act(s, { type: 'roll' }, [0])!;
+    expect(s2.heroes[0].node).toBe('d1');
+  });
+
+  it('лабиринт, покои и коронация', () => {
+    const s0 = fresh(21);
+    let s: State = { ...s0, heroes: { ...s0.heroes, 0: { ...s0.heroes[0], zone: 'capital', prince: true, pj: 8, thalers: 30 } } };
+    s = act(s, { type: 'buyPj' })!;
+    expect(s.heroes[0].pj).toBe(9);
+    s = { ...act(s, { type: 'labyrinth' })!, turn: 0 };
+    expect(s.heroes[0].thalers).toBe(0);
+    for (const r of [5, 5, 5]) s = { ...act(s, { type: 'roll' }, [r])!, turn: 0 };
+    expect(s.heroes[0].zone).toBe('palace');
+    expect(s.heroes[0].pj).toBe(9 + 1 + 2 + 3);
+    for (let i = 0; i < 4; i++) s = { ...act(s, { type: 'climb' })!, turn: 0 };
+    expect(s.heroes[0].room).toBe(3);
+    const end = act(s, { type: 'climb' })!;
     expect(end.winner).toBe(0);
     expect(result(end)?.winner).toBe(0);
-    expect(result(end)?.scores.length).toBe(2);
   });
 
-  it('ПРОВАЛ пускает в Эмбер только с 13 по всем характеристикам и пустой котомкой', () => {
+  it('поединок: проигравший возвращается в столицу', () => {
     const s0 = fresh(21);
-    const fallCell = PLAY_CELLS.map((c) => c.n).find((n) => kindOf(n) === 'fall')!;
-    const h = s0.heroes[0];
-    // клетка срабатывает, когда движение закончилось: ставим фазу шага и «останавливаемся»,
-    // предварительно шагнув (left < die)
-    const weak: State = { ...s0, heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell } }, turn: 0, phase: 'step', left: 1, die: 2 };
-    const played = act(weak, { type: 'stop' })!;
-    expect(played.winner).toBeNull();
-    expect(played.heroes[0].st['ПУ']).toBeLessThan(START['ПУ']);
-
-    const strong: State = {
+    const s: State = {
       ...s0,
-      turn: 0,
-      phase: 'step',
-      left: 1,
-      die: 2,
-      heroes: { ...s0.heroes, [0]: { ...h, cell: fallCell, items: [], st: { ПС: 13, ПУ: 13, ПМ: 13, ПО: 13 } } },
+      heroes: {
+        0: { ...s0.heroes[0], zone: 'palace', prince: true, pj: 1 },
+        1: { ...s0.heroes[1], zone: 'chambers', prince: true, pj: 1, room: 2 },
+      },
     };
-    const out = act(strong, { type: 'stop' })!;
-    expect(out.winner).toBeNull();
-    expect(out.heroes[0].ember).toBe(true);
-    expect(out.heroes[0].zone).toBe('capital');
-    expect(out.heroes[0].items.length).toBe(0);
-    for (const k of STATS) expect(out.heroes[0].st[k]).toBeGreaterThanOrEqual(13);
-    // принцем становится в столице, коронация в тронном зале даёт победу
-    const afterCard = act(out, { type: 'ok' })!;
-    // ход перешёл к другому игроку — возвращаем его нашему герою для проверки
-    const prince: State = { ...afterCard, turn: 0 };
-    const made = act(prince, { type: 'prince' })!;
-    expect(made.heroes[0].prince).toBe(true);
-    expect(made.heroes[0].pj).toBeGreaterThan(0);
-    const throne: State = { ...made, turn: 0, phase: 'roll', heroes: { ...made.heroes, [0]: { ...made.heroes[0], zone: 'throne' } } };
-    const crowned = act(throne, { type: 'coronate' })!;
-    expect(crowned.winner).toBe(0);
-    expect(result(crowned)?.winner).toBe(0);
+    const d = act(s, { type: 'challenge', target: 1 }, [5, 5, 0, 0])!;
+    expect(d.heroes[1].zone).toBe('capital');
+    expect(d.heroes[0].zone).toBe('chambers');
+  });
+
+  it('бот доводит партию двоих до коронации', () => {
+    let s = def.setup(seats, { need: '6', deck: 'all' }, new SeededRng(9));
+    const rng = new SeededRng(4);
+    let n = 0;
+    while (s.winner == null && n < 20000) {
+      const a = botAction(s, s.turn, 1, rng)!;
+      const r = def.apply(s, s.turn, a, rng);
+      expect(r, JSON.stringify(a)).not.toBeNull();
+      s = r!.state;
+      n++;
+    }
+    expect(s.winner).not.toBeNull();
+    for (const k of STATS) expect(typeof s.heroes[0].st[k]).toBe('number');
   });
 });

@@ -1,35 +1,61 @@
 /**
- * «Корона Эмбера 1994» — вид: камера на поле 1 с переключателем на поле 2, пуговицы-фишки,
- * панель характеристик, карточки приключений с ожиданием игрока и перетаскивание фишки.
+ * «Корона Эмбера 1994» — вид: два поля под камерой сборника (Мир Приключений и Королевство Эмбер),
+ * пуговицы-фишки с ходом по клеткам, маршруты броска, карточки приключений, кубики и звуки.
  *
- * Образец — вид «Джио-Джанги» (`src/games/djio/view.ts`): та же схема монтирования
- * (доска с крошечной и полной картинкой, SVG-слой поверх, BoardCam), те же события.
+ * Поле показывается то, где сейчас ход (или где идёт событие); кнопкой его можно переключить вручную.
+ * Смена поля пересоздаёт окно камеры целиком: у BoardCam размеры поля задаются один раз.
  */
 import './korona.css';
-import { BoardCam } from '../../core/boardcam';
-import { sleep } from '../../core/util';
+import { Sound } from '../../core/audio';
+import { BoardCam, type CamPoint } from '../../core/boardcam';
+import { DiceTray } from '../../core/dice';
+import { esc, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
-import { FIELD1, FIELD2, cellPx, cell } from './data';
-import type { Event, State } from './engine';
-import { STATS, type Stat } from './rules';
+import { FIELD1, FIELD2, PLACES2, ROAD_BY_ID, cell, cellPx, sectorPx } from './data';
 import type { KoronaView as KV } from './def';
+import { kindOf, place2, routes, type Action, type Event, type Hero, type Zone } from './engine';
+import { STATS, type Stat } from './rules';
 
-const PIECE_R = 34;
-const W = Math.round(FIELD1.pt[0] * FIELD1.scale);
-const H = Math.round(FIELD1.pt[1] * FIELD1.scale);
-const W2 = Math.round(FIELD2.pt[0] * FIELD2.scale);
-const H2 = Math.round(FIELD2.pt[1] * FIELD2.scale);
+type F = 1 | 2;
+interface Pos {
+  f: F;
+  x: number;
+  y: number;
+}
 
-/** Позиции зон поля 2 (из field2.json) — куда ставить фишку в Эмбере. */
-const ZONE_XY: Record<string, [number, number]> = {
-  capital: [W2 * 0.5, H2 * 0.93],
-  labyrinth: [W2 * 0.47, H2 * 0.52],
-  palace: [W2 * 0.22, H2 * 0.72],
-  chambers: [W2 * 0.22, H2 * 0.62],
-  throne: [W2 * 0.5, H2 * 0.1],
-  arena: [W2 * 0.6, H2 * 0.3],
+const DIM: Record<F, { w: number; h: number; img: string; mini: string; r: number; name: string }> = {
+  1: { w: Math.round(FIELD1.pt[0] * FIELD1.scale), h: Math.round(FIELD1.pt[1] * FIELD1.scale), img: '/korona/field1.webp', mini: '/korona/field1-small.webp', r: 95, name: 'Мир Приключений' },
+  2: { w: 1743, h: 3567, img: '/korona/field2.webp', mini: '/korona/field2-small.webp', r: 40, name: 'Королевство Эмбер' },
 };
+void FIELD2;
+
+/** Сколько держать событие, если за экраном не человек. */
+const PACE = { card: 2600, zone: 1500, duel: 900 };
+
+const nameOf = (s: number) => SEATS[s]?.name ?? String(s);
+const color = (s: number) => SEATS[s]?.color ?? '#888';
+
+/** Где стоит фишка героя по состоянию. */
+function posOf(h: Hero): Pos {
+  if (h.zone === 'world') {
+    const p = h.sector != null ? sectorPx(h.cell, h.sector) : cellPx(h.cell);
+    return { f: 1, x: p?.x ?? 0, y: p?.y ?? 0 };
+  }
+  const p = place2(h);
+  return { f: 2, x: p.x, y: p.y };
+}
+
+/** Куда ставить фишку по событию смены места (точное место — в итоговом виде). */
+function zonePos(z: Zone, h: Hero | undefined): Pos {
+  if (h && h.zone === z) return posOf(h);
+  if (z === 'world') return h ? posOf(h) : { f: 1, x: 0, y: 0 };
+  if (z === 'road') return { f: 2, ...ROAD_BY_ID.get('fall')! };
+  if (z === 'capital') return { f: 2, ...PLACES2.capital };
+  if (z === 'labyrinth') return { f: 2, ...PLACES2.labyrinthIn };
+  if (z === 'palace') return { f: 2, ...PLACES2.palace };
+  return { f: 2, ...PLACES2.rooms[0] };
+}
 
 const svg = (tag: string, attrs: Record<string, string | number>): SVGElement => {
   const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -37,284 +63,529 @@ const svg = (tag: string, attrs: Record<string, string | number>): SVGElement =>
   return el;
 };
 
-class View implements GameView<KV, Event> {
-  private wrap: HTMLElement | null = null;
-  private board: HTMLElement | null = null;
-  private over: SVGSVGElement | null = null;
-  private btns: HTMLElement | null = null;
-  private stats: HTMLElement | null = null;
-  private note: HTMLElement | null = null;
-  private card: HTMLElement | null = null;
-  private cam: BoardCam | null = null;
-  private ctx: ViewCtx | null = null;
-  private v: KV | null = null;
-  private actSeat: number | null = null;
-  private ember = false;
+export function createView(): GameView<KV, Event> {
+  let ctx: ViewCtx<Action> | null = null;
+  let root: HTMLElement | null = null;
+  let wrap: HTMLElement | null = null;
+  let board: HTMLElement | null = null;
+  let over: SVGSVGElement | null = null;
+  let cam: BoardCam | null = null;
+  let field: F = 1;
+  /** игрок сам переключил поле — не дёргать его, пока не начнётся его ход */
+  let pinned = false;
+  let panel: HTMLElement | null = null;
+  let stats: HTMLElement | null = null;
+  let btns: HTMLElement | null = null;
+  let hint: HTMLElement | null = null;
+  let tray: DiceTray | null = null;
+  let note: HTMLElement | null = null;
+  let card: HTMLElement | null = null;
+  let v: KV | null = null;
+  let actSeat: number | null = null;
+  /** где фишки нарисованы сейчас (во время проигрыша событий — отстают от состояния) */
+  const shown = new Map<number, Pos>();
+  const pieceEl = new Map<number, SVGElement>();
+  /** след последнего хода */
+  let trail: { seat: number; f: F; pts: CamPoint[] } | null = null;
+  let playing = false;
 
-  mount(root: HTMLElement, c: ViewCtx) {
-    this.ctx = c;
-    const wrap = document.createElement('div');
+  // ---------- поле и камера ----------
+
+  function buildField(f: F) {
+    field = f;
+    cam?.destroy();
+    wrap?.remove();
+    const d = DIM[f];
+    wrap = document.createElement('div');
     wrap.className = 'kn-wrap';
     wrap.innerHTML =
-      '<div class="kn-board"><img class="kn-map kn-map-mini" src="/korona/field1-small.webp" alt="" draggable="false">' +
-      '<img class="kn-map kn-map-full" src="/korona/field1.webp" alt="Мир Приключений" draggable="false"></div>' +
-      '<div class="kn-side">' +
-      '<div class="kn-stats"></div>' +
-      '<div class="kn-btns"></div>' +
-      '<div class="kn-note"></div>' +
-      '<div class="kn-card bc-ui" hidden></div>' +
-      '</div>';
-    root.append(wrap);
-    this.wrap = wrap;
-    this.board = wrap.querySelector('.kn-board') as HTMLElement;
-    const over = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      `<div class="kn-board"><img class="kn-map kn-map-mini" src="${d.mini}" alt="" draggable="false">` +
+      `<img class="kn-map kn-map-full" src="${d.img}" alt="${d.name}" draggable="false"></div>`;
+    root!.append(wrap);
+    board = wrap.querySelector('.kn-board') as HTMLElement;
+    over = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     over.setAttribute('class', 'kn-over');
-    over.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    this.board.append(over);
-    this.over = over;
-    this.btns = wrap.querySelector('.kn-btns') as HTMLElement;
-    this.stats = wrap.querySelector('.kn-stats') as HTMLElement;
-    this.note = wrap.querySelector('.kn-note') as HTMLElement;
-    this.card = wrap.querySelector('.kn-card') as HTMLElement;
-    this.cam = new BoardCam(wrap, this.board, {
-      w: W,
-      h: H,
-      mini: '/korona/field1.webp',
-      src: W,
-      token: (PIECE_R * 2) / W,
+    over.setAttribute('viewBox', `0 0 ${d.w} ${d.h}`);
+    board.append(over);
+    note = document.createElement('div');
+    note.className = 'kn-note bc-ui';
+    note.hidden = true;
+    card = document.createElement('div');
+    card.className = 'kn-card bc-ui';
+    card.hidden = true;
+    wrap.append(note, card);
+    cam = new BoardCam(wrap, board, {
+      w: d.w,
+      h: d.h,
+      mini: d.img,
+      src: d.w,
+      token: (d.r * 2) / d.w,
       followKey: 'korona.follow',
-      demo: c.demo,
-      speed: () => this.ctx!.speed(),
+      demo: ctx!.demo,
+      speed: () => ctx!.speed(),
       dots: () =>
-        this.v
-          ? this.v.seats
-              .filter((s) => !this.v!.heroes[s]?.ember)
-              .map((s) => {
-                const p = cellPx(this.v!.heroes[s].cell);
-                return { key: s, x: p?.x ?? 0, y: p?.y ?? 0, color: SEATS[s]?.color ?? '#888', on: s === this.v!.turn };
-              })
+        v
+          ? v.seats
+              .filter((s) => shown.get(s)?.f === field)
+              .map((s) => ({ key: s, x: shown.get(s)!.x, y: shown.get(s)!.y, color: color(s), on: s === v!.turn }))
           : [],
-      turn: () => (this.actSeat != null && this.v && !this.v.heroes[this.actSeat]?.ember ? [cellPx(this.v.heroes[this.actSeat].cell) ?? { x: 0, y: 0 }] : []),
+      turn: turnPoints,
     });
     const full = wrap.querySelector('.kn-map-full') as HTMLImageElement;
-    const ready = () => this.board?.classList.add('ready');
-    if (full.complete) ready();
+    const ready = () => {
+      board?.classList.add('ready');
+      ctx?.hold?.(0);
+      cam?.shown();
+      frame();
+    };
+    if (full.complete && full.naturalWidth) ready();
     else full.addEventListener('load', ready, { once: true });
-    c.hold?.(9000);
-    this.render();
+    render();
   }
 
-  private render() {
-    if (!this.over || !this.v || !this.btns || !this.stats || !this.note) return;
-    const v = this.v;
-    const over = this.over;
-    over.replaceChildren();
-    // фишки: в Эмбере — по зонам поля 2, иначе по клеткам поля 1
-    const onField2 = this.ember;
-    const off = new Map<number, number>();
+  function turnPoints(): CamPoint[] {
+    if (!v || v.winner != null) return [];
+    const p = shown.get(v.turn);
+    if (!p || p.f !== field) return [];
+    const pts: CamPoint[] = [p];
+    if (v.phase === 'pick' && actSeat === v.turn) for (const end of routes(v.heroes[v.turn].cell, v.die).keys()) pts.push(cellPx(end)!);
+    return pts;
+  }
+
+  function frame() {
+    if (!cam || !v) return;
+    const others = v.seats.map((s) => shown.get(s)).filter((p): p is Pos => !!p && p.f === field);
+    void cam.frame(turnPoints(), others);
+  }
+
+  // ---------- отрисовка ----------
+
+  /** Смещения, чтобы фишки на одной клетке не накрывали друг друга. */
+  function spread(): Map<number, { x: number; y: number }> {
+    const out = new Map<number, { x: number; y: number }>();
+    if (!v) return out;
+    const groups = new Map<string, number[]>();
     for (const s of v.seats) {
-      const h = v.heroes[s];
-      if (!h) continue;
-      const inEmber = !!h.ember;
-      if (inEmber !== onField2) continue;
-      let x: number;
-      let y: number;
-      if (inEmber) {
-        const z = ZONE_XY[h.zone] ?? [W2 / 2, H2 / 2];
-        x = (z[0] / W2) * W;
-        y = (z[1] / H2) * H;
-      } else {
-        const p = cellPx(h.cell);
-        if (!p) continue;
-        const k = off.get(h.cell) ?? 0;
-        off.set(h.cell, k + 1);
-        x = p.x + k * 46;
-        y = p.y;
-      }
-      const el = svg('image', {
-        x: x - PIECE_R,
-        y: y - PIECE_R,
-        width: PIECE_R * 2,
-        height: PIECE_R * 2,
-        href: `/hodilki/buttons/${s}.webp`,
-        class: s === this.actSeat ? 'kn-piece kn-take' : 'kn-piece',
-      });
-      if (s === this.actSeat && v.phase === 'step' && v.left > 0) this.takeable(el as SVGImageElement, s);
-      over.append(el);
+      const p = shown.get(s);
+      if (!p || p.f !== field) continue;
+      const k = `${Math.round(p.x / 20)},${Math.round(p.y / 20)}`;
+      groups.set(k, [...(groups.get(k) ?? []), s]);
     }
-    // кружки шага
-    if (v.phase === 'step' && v.left > 0 && this.actSeat != null && !v.heroes[this.actSeat]?.ember) {
-      for (const to of v.targets) {
-        const p = cellPx(to);
-        if (!p) continue;
-        const g = svg('circle', { cx: p.x, cy: p.y, r: 30, class: 'kn-move', 'data-to': to });
-        g.addEventListener('click', () => this.ctx?.act(this.actSeat!, { type: 'step', to }));
+    const gap = DIM[field].r * 1.15;
+    for (const list of groups.values()) {
+      list.forEach((s, i) => {
+        const p = shown.get(s)!;
+        const off = list.length > 1 ? (i - (list.length - 1) / 2) * gap : 0;
+        out.set(s, { x: p.x + off, y: p.y });
+      });
+    }
+    return out;
+  }
+
+  function render() {
+    if (!over || !v) return;
+    const st = v;
+    const R = DIM[field].r;
+    over.replaceChildren();
+    pieceEl.clear();
+    // след хода
+    if (trail && trail.f === field && trail.pts.length > 1) {
+      over.append(svg('polyline', { points: trail.pts.map((p) => `${p.x},${p.y}`).join(' '), class: 'kn-trail', stroke: color(trail.seat) }));
+    }
+    // маршруты броска: жёлтые кружки на конечных клетках, наведение рисует путь
+    const me = actSeat;
+    if (me != null && st.phase === 'pick' && field === 1 && st.heroes[me]?.zone === 'world' && !playing) {
+      const from = cellPx(st.heroes[me].cell)!;
+      const route = svg('polyline', { class: 'kn-route', points: '' });
+      over.append(route);
+      for (const [end, path] of routes(st.heroes[me].cell, st.die)) {
+        const p = cellPx(end)!;
+        const g = svg('circle', { cx: p.x, cy: p.y, r: R * 1.9, class: 'kn-move', 'data-to': end });
+        const pts = [from, ...path.map((c) => cellPx(c)!)].map((q) => `${q.x},${q.y}`).join(' ');
+        g.addEventListener('pointerenter', () => route.setAttribute('points', pts));
+        g.addEventListener('pointerleave', () => route.setAttribute('points', ''));
+        g.addEventListener('click', () => ctx?.act(me, { type: 'go', path }));
         over.append(g);
       }
     }
-    // панель
-    this.btns.replaceChildren();
-    const b = (label: string, fn: () => void, tap = false) => {
-      const el = document.createElement('button');
-      el.className = 'btn kn-btn';
-      el.textContent = label;
-      if (tap) el.setAttribute('data-tap', '');
-      el.addEventListener('click', fn);
-      this.btns!.append(el);
-    };
-    if (this.actSeat != null) {
-      const h = v.heroes[this.actSeat];
-      if (h?.ember) {
-        if (!h.prince) b('Стать принцем', () => this.ctx?.act(this.actSeat!, { type: 'prince' }), true);
-        else if (h.zone === 'capital') {
-          b('В лабиринт', () => this.ctx?.act(this.actSeat!, { type: 'labyrinth' }), true);
-          b('Купить ПЖ (20 талеров)', () => this.ctx?.act(this.actSeat!, { type: 'buyPj' }));
-        } else if (h.zone === 'labyrinth') b('Бросок у ворот', () => this.ctx?.act(this.actSeat!, { type: 'ringRoll' }), true);
-        else if (h.zone === 'palace') {
-          b('В покои', () => this.ctx?.act(this.actSeat!, { type: 'toChambers' }));
-          b('На арену', () => this.ctx?.act(this.actSeat!, { type: 'toArena' }));
-          b('В тронный зал', () => this.ctx?.act(this.actSeat!, { type: 'toThrone' }));
-        } else if (h.zone === 'throne') b('Коронация', () => this.ctx?.act(this.actSeat!, { type: 'coronate' }), true);
-      } else if (v.phase === 'roll') b('Бросить кубик', () => this.ctx?.act(this.actSeat!, { type: 'roll' }), true);
-      else if (v.phase === 'card') b('Дальше', () => this.ctx?.act(this.actSeat!, { type: 'ok' }), true);
+    // фишки
+    const at = spread();
+    for (const s of st.seats) {
+      const p = at.get(s);
+      if (!p) continue;
+      const el = svg('image', {
+        x: p.x - R, y: p.y - R, width: R * 2, height: R * 2,
+        href: `/hodilki/buttons/${s}.webp`,
+        class: 'kn-piece' + (s === st.turn && st.winner == null ? ' kn-on' : ''),
+      });
+      if (s === me && st.phase === 'pick' && field === 1 && !playing) takeable(el, s);
+      pieceEl.set(s, el);
+      over.append(el);
     }
-    const btn2 = document.createElement('button');
-    btn2.className = 'btn kn-btn kn-switch';
-    btn2.textContent = onField2 ? 'Показать Мир Приключений' : 'Показать Королевство Эмбер';
-    btn2.addEventListener('click', () => {
-      this.ember = !this.ember;
-      const full = this.wrap?.querySelector('.kn-map-full') as HTMLImageElement | null;
-      const mini = this.wrap?.querySelector('.kn-map-mini') as HTMLImageElement | null;
-      if (full && mini) {
-        full.src = this.ember ? '/korona/field2.webp' : '/korona/field1.webp';
-        mini.src = this.ember ? '/korona/field2-small.webp' : '/korona/field1-small.webp';
-      }
-      this.over?.setAttribute('viewBox', `0 0 ${this.ember ? W2 : W} ${this.ember ? H2 : H}`);
-      this.render();
-    });
-    this.btns.append(btn2);
-    // сводка и подсказка
-    this.stats.innerHTML = v.seats
-      .map((s) => {
-        const h = v.heroes[s];
-        if (!h) return '';
-        const st = STATS.map((k) => `${k} ${h.st[k as Stat]}`).join(' · ');
-        return `<div class="kn-p"><b style="color:${SEATS[s]?.color ?? '#888'}">${v.names[s] ?? 'Игрок ' + s}</b> ${h.ember ? `принц, ПЖ ${h.pj}` : `${st} · ПЖ ${h.life} · ${h.thalers} талеров`}</div>`;
-      })
-      .join('');
-    const marks = over.querySelectorAll('circle.kn-move').length;
-    this.note.textContent =
-      this.actSeat == null
-        ? 'Ждём других игроков.'
-        : v.phase === 'step'
-          ? `Ваш ход: осталось шагов ${v.left}, кружков для шага ${marks}. Возьмите пуговицу и поставьте на жёлтый кружок.`
-          : v.phase === 'roll'
-            ? 'Бросьте кубик — пробелом, тапом по доске или кнопкой.'
-            : 'Смотрите карточку и жмите «Дальше».';
-    this.showCard();
+    panelRender();
   }
 
-  /** Карточка приключений — ждёт игрока. */
-  private showCard() {
-    if (!this.card || !this.v) return;
-    const c = this.v.card;
-    if (!c) {
-      this.card.hidden = true;
-      return;
-    }
-    this.card.hidden = false;
-    this.card.innerHTML =
-      (c.num != null ? `<img src="/korona/cards/card-${String(c.num).padStart(3, '0')}.webp" alt="" draggable="false">` : '') +
-      `<div class="kn-card-t">${c.num != null ? 'Карточка №' + c.num : 'Поле'}</div><div class="kn-card-s">${c.text}</div><div class="kn-card-h">нажмите, чтобы продолжить</div>`;
-  }
-
-  /** Перетаскивание своей пуговицы на подсвеченную клетку (как в «Джио-Джанги»). */
-  private takeable(el: SVGElement, seat: number) {
+  /** Пуговицу можно взять и отпустить на жёлтом кружке. */
+  function takeable(el: SVGElement, seat: number) {
+    el.classList.add('kn-take');
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const from = { x: (e as PointerEvent).clientX, y: (e as PointerEvent).clientY };
+      e.stopPropagation();
+      const from = { x: e.clientX, y: e.clientY };
       const up = (ev: PointerEvent) => {
         document.removeEventListener('pointerup', up);
-        if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6) return;
-        const ctm = this.over!.getScreenCTM();
-        const p = ctm ? { x: (ev.clientX - ctm.e) / ctm.a, y: (ev.clientY - ctm.f) / ctm.d } : { x: 0, y: 0 };
-        let best = -1;
+        if (Math.hypot(ev.clientX - from.x, ev.clientY - from.y) < 6 || !over || !v) return;
+        const ctm = over.getScreenCTM();
+        const p = ctm ? { x: (ev.clientX - ctm.e) / ctm.a, y: (ev.clientY - ctm.f) / ctm.d } : cam!.toImg(ev.clientX, ev.clientY);
+        let best: number[] | null = null;
         let bd = Infinity;
-        for (const g of Array.from(this.over!.querySelectorAll('circle.kn-move'))) {
-          const to = Number(g.getAttribute('data-to'));
-          const cc = cell(to);
-          if (!cc) continue;
-          const px = cellPx(to)!;
-          const d = Math.hypot(px.x - p.x, px.y - p.y);
+        for (const [end, path] of routes(v.heroes[seat].cell, v.die)) {
+          const q = cellPx(end)!;
+          const d = Math.hypot(q.x - p.x, q.y - p.y);
           if (d < bd) {
             bd = d;
-            best = to;
+            best = path;
           }
         }
-        if (best >= 0 && bd < 90) this.ctx?.act(seat, { type: 'step', to: best });
+        if (best && bd < 260) ctx?.act(seat, { type: 'go', path: best });
       };
       try {
-        el.setPointerCapture((e as PointerEvent).pointerId);
+        el.setPointerCapture(e.pointerId);
       } catch {
-        /* не все браузеры умеют */
+        /* не все браузеры умеют — ловим на документе */
       }
       el.addEventListener('pointerup', up, { once: true });
       document.addEventListener('pointerup', up, { once: true });
     });
   }
 
-  setView(view: KV) {
-    this.v = view;
-    if (view.heroes[view.turn]?.ember) this.ember = true;
-    this.render();
+  function heroLine(s: number, h: Hero): string {
+    const where =
+      h.zone === 'world'
+        ? esc(h.sector != null ? `${cell(h.cell)?.name ?? ''}, сектор ${h.sector || '—'}` : (cell(h.cell)?.name ?? ''))
+        : { road: 'дорога к столице', capital: 'столица Эмбера', labyrinth: `лабиринт, кольцо ${h.ring + 1}`, palace: 'дворец', chambers: `покои, клетка ${h.room + 1}` }[h.zone];
+    const stl = STATS.map((k) => `<span class="${v && h.st[k] >= v.need ? 'kn-ok' : ''}">${k} ${h.st[k as Stat]}</span>`).join(' ');
+    const body = h.prince ? `принц · <b>ПЖ ${h.pj}</b>` : `${stl} · ПЖ ${h.life} · ${h.thalers} т.`;
+    return `<div class="kn-p${v && s === v.turn ? ' kn-p-on' : ''}"><b style="color:${color(s)}">${esc(v?.names[s] ?? nameOf(s))}</b> <i>${where}</i><br>${body}</div>`;
   }
 
-  async play(events: Event[], view: KV) {
-    for (const ev of events) {
-      if (ev.type === 'card') {
-        this.v = view;
-        this.showCard();
-        await this.ctx?.read?.(900);
+  function panelRender() {
+    if (!v || !stats || !btns || !hint) return;
+    const st = v;
+    // характеристики всех путников — в общей панели стола (playerStats), здесь — только ходящий
+    stats.innerHTML = heroLine(st.turn, st.heroes[st.turn]) + `<div class="kn-need">Порог Провала: ${st.need} · в колоде ${st.deckLeft}</div>`;
+    btns.replaceChildren();
+    const sw = document.createElement('button');
+    sw.className = 'btn small kn-switch';
+    sw.textContent = field === 1 ? 'Показать: Королевство Эмбер' : 'Показать: Мир Приключений';
+    sw.onclick = () => {
+      pinned = true;
+      buildField(field === 1 ? 2 : 1);
+      frame();
+    };
+    const me = actSeat;
+    if (me == null || playing || st.winner != null) {
+      btns.append(sw);
+      hint.textContent = st.winner != null ? '' : 'Ходят другие. Карта двигается мышью, колесом и кнопками «+» / «−».';
+      return;
+    }
+    const h = st.heroes[me];
+    const add = (text: string, action: Action, primary = false, tap = false) => {
+      const b = document.createElement('button');
+      b.className = 'btn' + (primary ? ' primary' : '');
+      b.innerHTML = text;
+      if (tap) b.dataset.tap = '';
+      b.onclick = () => ctx?.act(me, action);
+      btns!.append(b);
+    };
+    if (st.phase === 'card') {
+      add('Дальше', { type: 'ok' }, true, true);
+      hint.textContent = 'Прочитайте карточку и нажмите «Дальше».';
+    } else if (st.phase === 'shop') {
+      const low = [...STATS].sort((a, b) => h.st[a] - h.st[b])[0];
+      const high = [...STATS].sort((a, b) => h.st[b] - h.st[a])[0];
+      for (const k of STATS) if (h.thalers >= 5) add(`Купить 1 ${k} за 5 талеров`, { type: 'buyStat', stat: k });
+      if (h.st[high] >= 2 && high !== low) add(`Обменять 2 ${high} на 1 ${low}`, { type: 'exchange', from: high, to: low });
+      add('Дальше', { type: 'ok' }, true, true);
+      hint.textContent = 'Обменный пункт: купите или обменяйте характеристики, затем «Дальше».';
+    } else if (st.phase === 'pick') {
+      hint.textContent = `Выпало ${st.die}. Жёлтые кружки — куда можно прийти (наведите — покажу маршрут). Нажмите кружок или перетащите пуговицу.`;
+    } else if (st.phase === 'roll') {
+      if (h.zone === 'capital') {
+        if (h.thalers >= 20) add('Купить 1 ПЖ за 20 талеров', { type: 'buyPj' });
+        for (const k of ['ПС', 'ПУ', 'ПМ'] as Stat[]) if (h.st[k] >= 5) add(`Обменять 5 ${k} на 1 ПЖ`, { type: 'exchangePj', from: k });
+        add('Войти в лабиринт', { type: 'labyrinth' }, true, true);
+        hint.textContent = 'Столица: вы принц. В лабиринт можно взять только ПЖ — деньги останутся здесь.';
+      } else if (h.zone === 'palace') {
+        for (const o of st.seats) if (o !== me && st.heroes[o].zone === 'chambers') add(`Вызвать на поединок: ${esc(st.names[o])} (ПЖ ${st.heroes[o].pj})`, { type: 'challenge', target: o });
+        add('В дворцовые покои', { type: 'climb' }, true, true);
+        hint.textContent = 'Дворец: идите в покои или вызовите на поединок принца, который уже там.';
+      } else if (h.zone === 'chambers') {
+        add(h.room >= 3 ? 'В тронный зал — коронация!' : 'Подняться выше', { type: 'climb' }, true, true);
+        hint.textContent = 'Покои: по клетке за ход, до тронного зала.';
       } else {
-        this.v = { ...view };
-        this.render();
-        await sleep(260 / Math.max(0.4, this.ctx!.speed()));
+        add(h.zone === 'labyrinth' ? 'Бросить кубик у ворот' : 'Бросить кубик', { type: 'roll' }, true, true);
+        hint.textContent =
+          h.zone === 'labyrinth' ? 'Ворота: 4–6 — налево, возьмёте ПЖ; 1–3 — направо, отдадите.'
+          : h.zone === 'road' ? 'Дорога идёт по стрелкам сама: развилки — по чётному или нечётному броску.'
+          : h.sector != null ? 'Вы бродите по секторам подполя: бросок ведёт по кругу, сектор 8 — выход.'
+          : 'Бросьте кубик — кнопкой, пробелом или тапом по полю.';
       }
     }
-    this.setView(view);
+    btns.append(sw);
   }
 
-  setTurn(toAct: number[], interactive: number[]) {
-    this.actSeat = interactive.length ? interactive[0] : toAct.length ? toAct[0] : null;
-    this.render();
+  // ---------- карточка и подпись ----------
+
+  function cardHtml(c: { n: number | null; title: string; text: string; lines: string[] }, wait: boolean) {
+    return (
+      `<div class="kn-card-k">${c.n != null ? 'Карточка приключений' : 'Поле'}</div>` +
+      `<div class="kn-card-t">${esc(c.title)}</div><div class="kn-card-s">${esc(c.text)}</div>` +
+      (c.lines.length ? `<div class="kn-card-r">${c.lines.map((l) => `<span class="${/−/.test(l) ? 'kn-bad' : 'kn-good'}">${esc(l)}</span>`).join('')}</div>` : '') +
+      (wait ? '<div class="kn-card-h">нажмите, чтобы продолжить</div>' : '')
+    );
   }
 
-  status(view: KV, _toAct: number[], interactive: number[]) {
-    if (!interactive.length) return 'Ждём других игроков';
-    const h = view.heroes[interactive[0]];
-    if (h?.ember) return h.prince ? `Принц: ПЖ ${h.pj}` : 'Столица Эмбера: станьте принцем';
-    return view.phase === 'roll' ? 'Бросайте кубик' : view.phase === 'step' ? `Осталось шагов: ${view.left}` : 'Смотрите карточку';
+  async function say(text: string, ms: number) {
+    if (!note) return;
+    note.innerHTML = text;
+    note.hidden = false;
+    await (ctx?.read ? ctx.read(ms) : sleep(ms / (ctx?.speed() ?? 1)));
+    if (note) note.hidden = true;
   }
 
-  playerStats(view: KV, seat: number) {
-    const h = view.heroes[seat];
-    if (!h) return '';
-    if (h.ember) return `Принц Эмбера · ПЖ ${h.pj}`;
-    return `${STATS.map((k) => `${k} ${h.st[k as Stat]}`).join(' · ')} · ПЖ ${h.life} · ${h.thalers} талеров`;
+  // ---------- движение ----------
+
+  /** Плавно перевести фишку в точку (на текущем поле). */
+  function glide(seat: number, to: Pos, ms: number): Promise<void> {
+    const from = shown.get(seat);
+    shown.set(seat, to);
+    if (!from || from.f !== to.f || to.f !== field) {
+      render();
+      return Promise.resolve();
+    }
+    // остальные фишки раздвигаются заранее, движущаяся едет поверх
+    render();
+    const el = pieceEl.get(seat);
+    if (!el || !over) return Promise.resolve();
+    over.append(el);
+    const R = DIM[field].r;
+    const end = { x: Number(el.getAttribute('x')) + R, y: Number(el.getAttribute('y')) + R };
+    const t0 = performance.now();
+    return new Promise((res) => {
+      // в фоновой вкладке кадры не идут — страховка таймером, чтобы партия не вставала
+      let fin = false;
+      const finish = () => {
+        if (fin) return;
+        fin = true;
+        el.setAttribute('x', String(end.x - R));
+        el.setAttribute('y', String(end.y - R));
+        res();
+      };
+      setTimeout(finish, ms + 80);
+      const tick = (t: number) => {
+        if (fin) return;
+        const k = Math.min(1, (t - t0) / ms);
+        const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+        const hop = Math.sin(Math.PI * k) * R * 0.5;
+        el.setAttribute('x', String(from.x + (end.x - from.x) * e - R));
+        el.setAttribute('y', String(from.y + (end.y - from.y) * e - R - hop));
+        if (k < 1) requestAnimationFrame(tick);
+        else finish();
+      };
+      requestAnimationFrame(tick);
+    });
   }
 
-  destroy() {
-    this.cam?.destroy();
-    this.cam = null;
-    this.wrap?.remove();
-    this.wrap = null;
+  function follow(p: Pos) {
+    if (!pinned && p.f !== field) buildField(p.f);
+    if (cam && p.f === field && v) void cam.frame([p], []);
   }
+
+  return {
+    mount(r, c) {
+      ctx = c;
+      root = r;
+      c.hold?.(9000);
+      panel = document.createElement('div');
+      panel.className = 'kn-panel';
+      panel.innerHTML = '<div class="kn-stats"></div><div class="kn-tray"></div><div class="kn-btns"></div><div class="hint small-hint kn-hint"></div>';
+      c.controls.append(panel);
+      stats = panel.querySelector('.kn-stats') as HTMLElement;
+      btns = panel.querySelector('.kn-btns') as HTMLElement;
+      hint = panel.querySelector('.kn-hint') as HTMLElement;
+      tray = new DiceTray(panel.querySelector('.kn-tray') as HTMLElement, 2);
+      tray.dice[1].wrap.hidden = true;
+      buildField(1);
+    },
+
+    setView(view) {
+      v = view;
+      shown.clear();
+      for (const s of view.seats) shown.set(s, posOf(view.heroes[s]));
+      const mine = shown.get(view.turn);
+      if (mine && !pinned && mine.f !== field) buildField(mine.f);
+      else render();
+    },
+
+    async play(events, view) {
+      const speed = Math.max(0.3, ctx?.speed?.() ?? 1);
+      const stepMs = 300 / speed;
+      playing = true;
+      if (card) card.hidden = true;
+      const prev = v;
+      // промежуточный вид — прежний, но с новыми числами для панели
+      v = { ...view, phase: prev?.phase === 'pick' ? 'roll' : view.phase };
+      for (const ev of events) {
+        if (!wrap) break;
+        switch (ev.type) {
+          case 'roll': {
+            if (ev.dice) {
+              tray!.dice[1].wrap.hidden = false;
+              await tray!.roll(ev.dice, speed);
+            } else {
+              tray!.dice[1].wrap.hidden = true;
+              await tray!.roll([ev.die], speed);
+              const p = shown.get(ev.seat);
+              trail = p ? { seat: ev.seat, f: p.f, pts: [p] } : null;
+            }
+            break;
+          }
+          case 'step': {
+            const p = cellPx(ev.cell)!;
+            const to: Pos = { f: 1, x: p.x, y: p.y };
+            follow(to);
+            if (trail && trail.seat === ev.seat && trail.f === 1) trail.pts.push(to);
+            Sound.step();
+            await glide(ev.seat, to, stepMs);
+            break;
+          }
+          case 'sector': {
+            const p = sectorPx(ev.cell, ev.sector);
+            const to: Pos = { f: 1, x: p.x, y: p.y };
+            follow(to);
+            Sound.step();
+            await glide(ev.seat, to, stepMs * 1.5);
+            break;
+          }
+          case 'road': {
+            const n = ROAD_BY_ID.get(ev.node)!;
+            const to: Pos = { f: 2, x: n.x, y: n.y };
+            follow(to);
+            if (trail && trail.seat === ev.seat) {
+              if (trail.f !== 2) trail = { seat: ev.seat, f: 2, pts: [shown.get(ev.seat) ?? to] };
+              trail.pts.push(to);
+            }
+            Sound.step();
+            await glide(ev.seat, to, stepMs);
+            break;
+          }
+          case 'zone': {
+            const to = zonePos(ev.zone, view.heroes[ev.seat]);
+            follow(to);
+            Sound.jump();
+            await glide(ev.seat, to, stepMs * 2);
+            await say(esc(ev.text), PACE.zone);
+            break;
+          }
+          case 'card': {
+            Sound.card();
+            render();
+            if (card) {
+              card.innerHTML = cardHtml(ev.card, true);
+              card.hidden = false;
+              await (ctx?.read ? ctx.read(PACE.card) : sleep(PACE.card / speed));
+              if (card) card.hidden = true;
+            }
+            break;
+          }
+          case 'stat':
+          case 'life':
+          case 'money':
+          case 'pj':
+            if (ev.delta < 0) Sound.nomove();
+            break;
+          case 'duel': {
+            Sound.capture();
+            await tray!.roll(ev.a, speed);
+            await say(`Поединок: ${esc(nameOf(ev.seat))} ${ev.a[0]}+${ev.a[1]} против ${esc(nameOf(ev.target))} ${ev.b[0]}+${ev.b[1]}`, PACE.duel);
+            break;
+          }
+          case 'skip':
+            await say(`${esc(view.names[ev.seat] ?? nameOf(ev.seat))} пропускает ход`, 900);
+            break;
+          case 'over':
+            Sound.win();
+            break;
+          case 'turn':
+            break;
+        }
+      }
+      playing = false;
+      v = view;
+      for (const s of view.seats) shown.set(s, posOf(view.heroes[s]));
+      const mine = shown.get(view.turn);
+      if (mine && !pinned && mine.f !== field) buildField(mine.f);
+      else render();
+      frame();
+    },
+
+    setTurn(_toAct, interactive) {
+      const was = actSeat;
+      actSeat = v && v.winner == null && interactive.includes(v.turn) ? v.turn : null;
+      if (actSeat != null && was == null) {
+        // начался свой ход: показываем своё поле, камера снова ведёт
+        pinned = false;
+        const p = shown.get(actSeat);
+        if (p && p.f !== field) buildField(p.f);
+        cam?.release();
+      }
+      render();
+      // своя карточка ждёт «Дальше» — показываем её поверх поля, нажатие по ней = «Дальше»
+      if (card && v && actSeat != null && v.phase === 'card' && v.card) {
+        card.innerHTML = cardHtml(v.card, true);
+        card.hidden = false;
+        const me = actSeat;
+        card.onpointerdown = () => {
+          card!.hidden = true;
+          ctx?.act(me, { type: 'ok' });
+        };
+      } else if (card) {
+        card.hidden = true;
+        card.onpointerdown = null;
+      }
+      frame();
+    },
+
+    status(view, _toAct, interactive) {
+      if (view.winner != null) return `${view.names[view.winner]} — Владыка Королевства Эмбер`;
+      const h = view.heroes[view.turn];
+      const who = interactive.includes(view.turn) ? 'Ваш ход' : `Ходит ${view.names[view.turn]}`;
+      if (view.phase === 'pick') return `${who}: выпало ${view.die}, выбирайте, куда идти`;
+      if (view.phase === 'card') return `${who}: карточка`;
+      if (view.phase === 'shop') return `${who}: обменный пункт`;
+      const z = { world: kindOf(h.cell) === 'door' || h.sector != null ? 'подполе' : 'Мир Приключений', road: 'дорога к столице', capital: 'столица', labyrinth: 'лабиринт', palace: 'дворец', chambers: 'покои' }[h.zone];
+      return `${who} (${z})`;
+    },
+
+    playerStats(view, s) {
+      const h = view.heroes[s];
+      if (!h) return '';
+      if (h.prince) return `Принц · ПЖ ${h.pj}`;
+      return `${STATS.map((k) => (h.st[k] >= view.need ? `<b>${k} ${h.st[k as Stat]}</b>` : `${k} ${h.st[k as Stat]}`)).join(' · ')} · ПЖ ${h.life} · ${h.thalers} т.`;
+    },
+
+    destroy() {
+      cam?.destroy();
+      wrap?.remove();
+      panel?.remove();
+      cam = null;
+      wrap = board = over = panel = note = card = stats = btns = hint = null;
+      v = null;
+      shown.clear();
+      pieceEl.clear();
+    },
+  };
 }
 
-/** Фабрика вида: каждому экрану — свой экземпляр. */
-export const createView = () => new View();
 export default createView;
-
-/** Для отладки: размеры полей. */
-export const fieldSizes = { field1: [W, H], field2: [W2, H2] } as const;
-export type { State };
