@@ -1,0 +1,13 @@
+/* Кинг: «дамский преферанс» — синее сукно ломберного столика. */
+.table--king {
+  --panel-bg: linear-gradient(180deg, #ecedf5, #d6d9e8);
+  --panel-ink: #141a2a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(210, 220, 255, 0.08), transparent 65%), #12141e;
+}
+.tv-cloth.kg-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.12), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #2f4f8a, #1c3060 70%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5), 0 0 0 10px #6a4426, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
