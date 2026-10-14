@@ -177,18 +177,22 @@ describe('звезда африки: движок', () => {
     expect(FINISH).toContain(IDX['Tg']);
   });
 
-  it('подкова: 100 $ или лишний бросок', () => {
+  it('подкова: 100 $ или лишний ход', () => {
     const r = rng();
     let s = newState([0, 1], r);
-    s = { ...s, horses: [1, 0] };
+    s = { ...s, horses: [1, 0, 0, 0] };
     let a = apply(s, 0, { type: 'horse', use: 'money' }, r)!;
     expect(a.state.money[0]).toBe(START_MONEY + 100);
     expect(a.state.horses[0]).toBe(0);
-    s = { ...s, turn: 0, phase: 'step', left: 2 };
+    // лишний ход: после конца своего хода игрок ходит ещё раз
     a = apply(s, 0, { type: 'horse', use: 'move' }, r)!;
-    expect(a.state.phase).toBe('roll');
-    expect(a.state.turn).toBe(0);
-    expect(apply({ ...s, horses: [0, 0] }, 0, { type: 'horse', use: 'money' }, r)).toBeNull();
+    expect(a.state.extra[0]).toBe(1);
+    const t = turnRoll(a.state, 0, 1, r).state;
+    const b = step(t, 0, NEIGH[t.pos[0]][0], r)!;
+    expect(b.state.turn).toBe(0);
+    expect(b.state.phase).toBe('roll');
+    expect(b.events.some((e) => e.type === 'extra')).toBe(true);
+    expect(apply({ ...s, horses: [0, 0, 0, 0] }, 0, { type: 'horse', use: 'money' }, r)).toBeNull();
   });
 
   it('пропуск хода: рабство отбывается, ход переходит', () => {
@@ -224,29 +228,41 @@ describe('звезда африки: движок', () => {
     expect(HALT_AT[IDX['s54']]).toBe(true);
   });
 
-  it('пройденный жетон открывают за 100', () => {
+  it('проход не открывает жетон; истратив все очки, пройденный открывают за 100', () => {
     const r = rng();
     let s = newState([0, 1], r);
-    s = {
-      ...s,
-      tokens: s.tokens.slice(),
-      open: s.open.slice(),
-      pos: s.pos.map((p, i) => (i === 0 ? IDX['5'] : p)),
-    };
+    s = { ...s, tokens: s.tokens.slice(), open: s.open.slice(), pos: s.pos.map((p, i) => (i === 0 ? IDX['b10'] : p)) };
     s.tokens[IDX['5']] = 'topaz';
-    s.open[IDX['5']] = false;
+    s.tokens[IDX['b21']] = null;
     s = turnRoll(s, 0, 3, r).state;
-    // идём с Сахары (5, под ней топаз) через b21 и встаём на обведённый кружок b24
+    s = step(s, 0, IDX['b13'], r)!.state;
+    s = step(s, 0, IDX['5'], r)!.state;
+    expect(s.open[IDX['5']]).toBe(false); // мимо — не открывается
     s = step(s, 0, IDX['b21'], r)!.state;
-    s = step(s, 0, IDX['b24'], r)!.state;
+    expect(s.phase).toBe('open');
     expect(s.passed).toContain(IDX['5']);
+    // без денег открыть нельзя, чужой жетон — тоже
+    expect(apply({ ...s, money: s.money.map(() => 0) }, 0, { type: 'open', cell: IDX['5'] }, r)).toBeNull();
+    expect(apply(s, 0, { type: 'open', cell: IDX['8'] }, r)).toBeNull();
     const a = apply(s, 0, { type: 'open', cell: IDX['5'] }, r)!;
     expect(a.state.money[0]).toBe(START_MONEY - OPEN_FEE + 300);
-    // на непройденный или уже открытый жетон так не сходить
-    expect(apply(a.state, 0, { type: 'open', cell: IDX['5'] }, r)).toBeNull();
-    expect(apply(s, 0, { type: 'open', cell: IDX['8'] }, r)).toBeNull();
-    // без денег открыть нельзя
-    expect(apply({ ...s, money: s.money.map(() => 0) }, 0, { type: 'open', cell: IDX['5'] }, r)).toBeNull();
+    expect(a.state.turn).toBe(1); // открывать больше нечего — ход перешёл
+    // остановился раньше — пройденные не открыть: ход сразу переходит
+    let e = turnRoll({ ...s, phase: 'roll', turn: 0, passed: [], pos: s.pos.map((p, i) => (i === 0 ? IDX['b10'] : p)) }, 0, 3, r).state;
+    e = step(e, 0, IDX['b13'], r)!.state;
+    e = step(e, 0, IDX['5'], r)!.state;
+    e = step(e, 0, IDX['b21'], r)!.state;
+    expect(e.phase).toBe('open');
+    const stop = apply(e, 0, { type: 'stop' }, r)!;
+    expect(stop.state.turn).toBe(1);
+  });
+
+  it('в море из порта без денег не выйти', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = turnRoll({ ...s, money: [50, 500, 500, 500] }, 0, 2, r).state;
+    const sea = NEIGH[s.pos[0]].find((_, i) => EDGE[s.pos[0]][i] === 'sea')!;
+    expect(step(s, 0, sea, r)).toBeNull();
   });
 
   it('владельцу алмаза нельзя через открытого разбойника', () => {
@@ -267,7 +283,7 @@ describe('звезда африки: движок', () => {
     const other = { ...s, turn: 1, phase: 'roll' as const, left: 0, pos: s.pos.map((p, i) => (i === 1 ? IDX['b21'] : p)) };
     const b = step(turnRoll(other, 1, 1, r).state, 1, IDX['5'], r)!;
     expect(b.state.bandit[1]).toBe(true);
-    expect(b.state.tokens[IDX['5']]).toBe('empty'); // жетон разбойника выбыл из игры
+    expect(b.state.banditTok[1]).toBe(IDX['5']); // жетон выбудет, когда разбойник догонит владельца
     expect(b.state.money[1]).toBe(START_MONEY); // деньги при нём
   });
 
@@ -323,6 +339,7 @@ describe('звезда африки: движок', () => {
     expect(a.state.money[1]).toBe(1200);
     expect(a.state.money[0]).toBe(0);
     expect(a.events.some((e) => e.type === 'catch')).toBe(true);
+    expect(a.state.tokens[IDX['5']]).toBe('empty'); // жетон разбойника выбыл из игры
   });
 
   it('остров: без денег и подков — три хода в ожидании', () => {
