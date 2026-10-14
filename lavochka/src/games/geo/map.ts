@@ -392,7 +392,7 @@ export function outlineSvg(id: string, w = 240, h = 180, cls = 'geo-outline'): s
 }
 
 /** Мини-карта «где это»: мир или страна-родитель серым, объект — красным, с кольцом. */
-export function locatorSvg(id: string, w = 300, h = 170): string {
+export function locatorSvg(id: string, w = 300, h = 170, cls = 'geo-locator'): string {
   const e = BY_ID[id];
   const f = FEATS.get(id);
   if (!e || !f) return '';
@@ -411,5 +411,5 @@ export function locatorSvg(id: string, w = 300, h = 170): string {
   const parts = ctx.map((x) => `<path class="${x.properties.id === id ? 'me' : 'ctx'}" d="${path(x) ?? ''}"/>`).join('');
   const p = proj(c);
   const ring = p ? `<circle class="ring" cx="${p[0]}" cy="${p[1]}" r="9"/>` : '';
-  return `<svg class="geo-locator" viewBox="0 0 ${w} ${h}">${isWorld ? `<path class="globe" d="${path({ type: 'Sphere' })}"/>` : ''}${parts}${ring}</svg>`;
+  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}">${isWorld ? `<path class="globe" d="${path({ type: 'Sphere' })}"/>` : ''}${parts}${ring}</svg>`;
 }

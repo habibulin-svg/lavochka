@@ -36,11 +36,15 @@
 .geo-q { font: 600 13px/1.2 'PT Sans', Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; text-align: center; }
 .geo-face { display: flex; align-items: center; justify-content: center; min-height: 0; max-width: 100%; }
 .geo-face .geo-txt { font: 700 26px/1.1 'Times New Roman', Times, serif; text-align: center; }
-.geo-prompt .geo-flag.big { height: 60px; }
-.geo-prompt .geo-arms.big { height: 64px; }
+/* на карте подсказка не должна съедать карту, но флаг и герб — разборчиво */
+.geo-prompt .geo-flag.big { height: clamp(56px, 12cqh, 110px); }
+.geo-prompt .geo-arms.big { height: clamp(80px, 17cqh, 160px); }
 .geo-prompt .geo-outline { height: 64px; width: auto; }
 .geo-flag { height: 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); background: #fff; }
-.geo-arms { height: 52px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
+.geo-arms { height: 52px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); image-rendering: auto; }
+/* регион на карте своей страны (вопрос «место на карте») */
+.geo-place { display: block; border-radius: 4px; }
+.geo-prompt .geo-place { height: clamp(120px, 30cqh, 320px); width: auto; max-width: 100%; }
 .geo-outline { display: block; width: auto; height: 100px; }
 .geo-outline path { fill: #6a8f5a; stroke: #2a3a20; stroke-width: 1.2; stroke-linejoin: round; }
 .geo-prog.hurry { color: #c0281e; }
@@ -53,6 +57,9 @@
 .geo-quiz .geo-prompt .geo-outline { height: 100%; width: 100%; max-height: 100%; }
 .geo-quiz .geo-prompt .geo-flag.big { height: clamp(90px, 46cqh, 300px); width: auto; max-width: 92%; object-fit: contain; }
 .geo-quiz .geo-prompt .geo-arms.big { height: 100%; max-height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+.geo-quiz .geo-prompt .geo-place { height: 100%; width: 100%; max-height: 100%; }
+/* герб и место на карте — мелкие детали: карточке вопроса больше места */
+.geo-quiz .geo-prompt.ask-arms .geo-face, .geo-quiz .geo-prompt.ask-place .geo-face { min-height: clamp(120px, 34cqh, 420px); }
 .geo-quiz .geo-stage { flex: 0 0 auto; }
 .geo-quiz .geo-opts { padding: 2px 0; }
 
@@ -149,11 +156,13 @@
   .geo-ref-body { grid-template-columns: 1fr; grid-template-rows: 38% 1fr; }
   .geo-ref .list { border-right: 0; border-bottom: 1px solid #c8bea4; }
   .geo-opts { grid-template-columns: 1fr; gap: 6px; }
+  /* картинки на телефоне — всё равно два столбца: в один они ужимаются до крошек */
+  .geo-opts.pics { grid-template-columns: 1fr 1fr; }
   .geo-opt { min-height: 48px; padding: 8px; font-size: 18px; }
 }
 
-.geo-quiz .geo-stage:has(.geo-opts.pics) { flex: 2 1 0; min-height: 0; }
+.geo-quiz .geo-stage:has(.geo-opts.pics) { flex: 2.4 1 0; min-height: 0; }
 .geo-quiz .geo-opts.pics { height: 100%; grid-auto-rows: 1fr; }
-.geo-quiz .geo-opts.pics .geo-opt { min-height: 0; padding: 6px; }
+.geo-quiz .geo-opts.pics .geo-opt { min-height: 0; padding: 4px; overflow: hidden; }
 .geo-quiz .geo-opts.pics .geo-flag, .geo-quiz .geo-opts.pics .geo-arms, .geo-quiz .geo-opts.pics .geo-outline { height: 100%; max-height: 100%; max-width: 100%; object-fit: contain; }
 .geo-quiz .geo-opt { font-size: clamp(18px, 4.2cqh, 26px); }

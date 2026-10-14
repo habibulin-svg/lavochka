@@ -56,7 +56,8 @@ export interface State {
   over: boolean;
 }
 
-export type Action = { type: 'pick'; id: string } | { type: 'skip' };
+/** q — номер вопроса, на который отвечают: запоздавший ответ (таймер, двойное нажатие) не попадает в следующий вопрос. */
+export type Action = { type: 'pick'; id: string; q?: number } | { type: 'skip'; q?: number };
 
 export type Event =
   | { type: 'try'; seat: number; id: string; ok: boolean; pts: number; fin: boolean }
@@ -80,12 +81,22 @@ export function optsOf(o: Options): Opts {
   const set = SETS.some((x) => x.id === o.set) ? String(o.set) : 'world';
   let ask = String(mode === 'map' ? o.mapAsk ?? 'name' : o.ask ?? 'flag') as Face;
   let pick = String(o.pick ?? 'name') as Face;
+  const country = set === 'reg' ? String(o.country ?? 'all') : 'all';
+  if (mode === 'quiz' && pick === 'place') pick = 'name';
+  // «чей регион» осмыслен, только когда страны разные (регионы всех стран сразу, зависимые территории мира);
+  // страна одна (выбрана страна, регионы России, штаты США) — спрашиваем название: регион показан на карте страны
+  if (mode === 'quiz' && pick === 'parent' && (set === 'ru' || set === 'us' || (set === 'reg' && country !== 'all'))) {
+    pick = 'name';
+    ask = 'place';
+  }
   if (mode === 'quiz' && ask === pick) pick = ask === 'name' ? 'capital' : 'name';
   if (mode === 'quiz' && pick === 'parent' && ask === 'outline' && set !== 'reg') ask = 'name';
+  // регион на карте своей страны сам выдаёт ответ «чей он»
+  if (mode === 'quiz' && pick === 'parent' && ask === 'place' && set === 'reg') ask = 'flag';
   return {
     mode,
     set,
-    country: set === 'reg' ? String(o.country ?? 'all') : 'all',
+    country,
     hard: WORLD_SETS.includes(set) && !!o.hard,
     ask,
     pick,
@@ -164,6 +175,7 @@ export function toAct(s: State): number[] {
 
 export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
   if (s0.over || !s0.seats.includes(seat) || s0.fin[seat]) return null;
+  if (a && a.q != null && a.q !== s0.i) return null;
   const q = s0.qs[s0.i];
   const right = answerOf(s0, q);
   const mine = s0.tries[seat];
@@ -301,14 +313,14 @@ export const def: GameDef<State, Action, Event, State> = {
       key: 'ask',
       label: 'Вопрос',
       type: 'select',
-      choices: (['flag', 'arms', 'outline', 'name', 'capital'] as Face[]).map((f) => ({ value: f, label: FACE_LABEL[f] })),
+      choices: (['flag', 'arms', 'outline', 'place', 'name', 'capital'] as Face[]).map((f) => ({ value: f, label: FACE_LABEL[f] })),
       default: 'flag',
       showIf: (o) => o.mode === 'quiz',
     },
     {
       key: 'pick',
       label: 'Ответ',
-      hint: '«страна» — чей это регион или территория',
+      hint: '«страна» — чей это регион; если страна одна, спрашивают название региона',
       type: 'select',
       choices: (['name', 'flag', 'arms', 'capital', 'outline', 'parent'] as Face[]).map((f) => ({ value: f, label: FACE_LABEL[f] })),
       default: 'name',
@@ -383,7 +395,8 @@ export const def: GameDef<State, Action, Event, State> = {
         title: 'Выбрать из четырёх',
         html: `<p>Показывают флаг, герб, контур, название или столицу — выберите ответ из четырёх вариантов. Одна попытка, верно — <b>3 очка</b>.
           Что спрашивать и чем отвечать, выбирается в настройках: флаг → название, страна → столица, название → флаг…</p>
-          <p><b>Чей регион</b> — показывают флаг или герб региона (Бавария, Каталония, Квебек…) или зависимой территории, а выбрать надо страну.</p>`,
+          <p><b>Чей регион</b> — показывают флаг или герб региона (Бавария, Каталония, Квебек…) или зависимой территории, а выбрать надо страну.
+          Если страна выбрана одна, спрашивают уже не страну, а название: регион показан на карте своей страны.</p>`,
         demo: demo({ mode: 'quiz', set: 'eu', ask: 'flag', pick: 'name' }, ['SWE', 'ITA'], (s) => [
           { seat: 0, action: { type: 'pick', id: wrongOpt(s, 0) }, caption: 'Флаг Швеции — а Вовка ошибся.' },
           { seat: 0, action: { type: 'pick', id: 'ITA' }, caption: 'Италия — верно, 3 очка.' },

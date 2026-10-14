@@ -5,7 +5,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { armsUrl, ent, type Entity, type Face, flagUrl, frameOf, fullName, KIND_LABEL } from './data';
 import { answerOf, type Event, MAP_TRIES, type State, targets, title } from './def';
-import { GeoMap, layerOf, loadLayer, outlineSvg } from './map';
+import { GeoMap, layerOf, loadLayer, locatorSvg, outlineSvg } from './map';
 import { openRef } from './ref';
 import './geo.css';
 
@@ -24,6 +24,8 @@ export function face(e: Entity, f: Face, big = false): string {
       return outlineSvg(e.id, big ? 300 : 200, big ? 200 : 130);
     case 'parent':
       return `<span class="geo-txt">${esc(ent(e.p!)?.n ?? '')}</span>`;
+    case 'place':
+      return locatorSvg(e.id, big ? 420 : 240, big ? 260 : 150, 'geo-locator geo-place') || `<span class="geo-txt">?</span>`;
     default:
       return `<span class="geo-txt">${esc(fullName(e))}</span>`;
   }
@@ -43,7 +45,9 @@ const Q_PICK: Record<string, string> = {
   outline: 'Какие у него очертания?',
   parent: 'В какой это стране?',
 };
-const ASK_LBL: Record<string, string> = { flag: 'Флаг', arms: 'Герб', outline: 'Контур', capital: 'Столица', name: '' };
+/** Сколько ждать ответа комнаты на отправленный ход, прежде чем разрешить отправить его снова. */
+const SENT_TTL = 6000;
+const ASK_LBL: Record<string, string> = { flag: 'Флаг', arms: 'Герб', outline: 'Контур', place: 'На карте', capital: 'Столица', name: '' };
 
 class GeoView implements GameView<State, Event> {
   private ctx!: ViewCtx;
@@ -61,6 +65,14 @@ class GeoView implements GameView<State, Event> {
   private token = 0;
   /** Время на вопрос: обратный отсчёт. */
   private clock: ReturnType<typeof setInterval> | undefined;
+  /** Растёт, когда стол присылает состояние целиком (начало, переподключение, «стол обновлён»):
+   * недоигранный play() старого состояния не должен потом перерисовать поверх него устаревший вопрос. */
+  private epoch = 0;
+  /** Идёт показ ответа: подвал занят ответом и кнопкой «Дальше». */
+  private revealing = false;
+  /** Что этот экран уже отправил в текущем вопросе: «вопрос:место» → нажатые id ('' — «Не знаю»).
+   * Ответ ушёл, а состояние ещё не вернулось — повторно не шлём (иначе комната молча отбросит ход, и стол уйдёт в пересинхронизацию). */
+  private sent = new Map<string, { ids: string[]; at: number }>();
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -85,7 +97,26 @@ class GeoView implements GameView<State, Event> {
 
   destroy() {
     this.token++;
+    this.epoch++;
+    this.next?.();
     clearInterval(this.clock);
+  }
+
+  /** Отправить ход места, если он ещё не отправлен; false — не отправлен. */
+  private send(seat: number, a: { type: 'pick'; id: string } | { type: 'skip' }): boolean {
+    const s = this.s;
+    if (!s || s.over || !s.seats.includes(seat) || s.fin[seat]) return false;
+    const key = `${s.i}:${seat}`;
+    // ответа на отправленное нет слишком долго (ход потерялся при обрыве) — разрешаем отправить снова
+    const rec = this.sent.get(key);
+    const out = rec && Date.now() - rec.at < SENT_TTL ? rec.ids : [];
+    const done = [...new Set([...(s.tries[seat] ?? []), ...out])];
+    if (out.includes('') || done.length >= (s.o.mode === 'map' ? MAP_TRIES : 1)) return false;
+    // ответ уже отправлен, а состояние ещё не пришло: в викторине — одна попытка, на карте — не жать ту же страну дважды
+    if (a.type === 'pick' && done.includes(a.id)) return false;
+    this.sent.set(key, { ids: [...out, a.type === 'pick' ? a.id : ''], at: Date.now() });
+    this.ctx.act(seat, { ...a, q: s.i });
+    return true;
   }
 
   /** Отсчёт времени на вопрос i; вышло — за свои места этого экрана жмём «Не знаю». */
@@ -103,20 +134,31 @@ class GeoView implements GameView<State, Event> {
       el.classList.toggle('hurry', left <= 5);
       if (left > 0) return;
       clearInterval(this.clock);
-      for (const x of this.ctx.mySeats) if (s.seats.includes(x) && !s.fin[x]) this.ctx.act(x, { type: 'skip' });
+      for (const x of this.ctx.mySeats) this.send(x, { type: 'skip' });
     };
     this.clock = setInterval(tick, 250);
     tick();
   }
 
   private pick(id: string) {
-    if (this.seat == null || !this.s || this.s.over) return;
-    this.ctx.act(this.seat, { type: 'pick', id });
+    if (this.seat == null || !this.s || this.s.over || this.revealing) return;
+    this.send(this.seat, { type: 'pick', id });
   }
 
+  /** Состояние целиком от стола (начало, переподключение): всё недоигранное — бросить. */
   setView(v: State) {
+    this.epoch++;
+    this.next?.();
+    // состояние от комнаты — что она получила, то в нём и есть
+    this.sent.clear();
+    this.show(v);
+  }
+
+  private show(v: State) {
     this.s = v;
-    void this.render(v);
+    // отправленное за прошлые вопросы больше не нужно
+    for (const k of [...this.sent.keys()]) if (Number(k.split(':')[0]) !== v.i) this.sent.delete(k);
+    void this.render(v).catch((e) => console.error('geo render', e));
   }
 
   private async render(v: State) {
@@ -130,6 +172,7 @@ class GeoView implements GameView<State, Event> {
     // контуры нужны и для карты, и для вопроса «контур»
     const need = new Set([layerOf(e.id)]);
     if (o.mode === 'quiz' && (o.ask === 'outline' || o.pick === 'outline')) for (const id of q.opts ?? []) need.add(layerOf(id));
+    if (o.mode === 'quiz' && o.ask === 'place') need.add(frameOf(e, o.set).layer);
     if (o.mode === 'map') need.add(frameOf(e, o.set).layer);
     await Promise.all([...need].map(loadLayer).concat(o.mode === 'quiz' ? [loadLayer('detail')] : [])).catch(() => {});
     if (tok !== this.token) return;
@@ -137,9 +180,14 @@ class GeoView implements GameView<State, Event> {
     this.drawn = v.i;
     if (fresh) {
       this.startClock(v);
-      const lbl = o.mode === 'map' ? Q_MAP[o.ask] : `${ASK_LBL[o.ask] ? ASK_LBL[o.ask] + ' · ' : ''}${Q_PICK[o.pick]}`;
-      const big = o.ask === 'flag' || o.ask === 'arms' || o.ask === 'outline';
-      this.prompt.className = `geo-prompt${big ? ' pic' : ''}`;
+      const lbl =
+        o.mode === 'map'
+          ? Q_MAP[o.ask]
+          : o.ask === 'place' && o.pick === 'name'
+            ? `Что отмечено на карте?`
+            : `${ASK_LBL[o.ask] ? ASK_LBL[o.ask] + ' · ' : ''}${Q_PICK[o.pick]}`;
+      const big = o.ask === 'flag' || o.ask === 'arms' || o.ask === 'outline' || o.ask === 'place';
+      this.prompt.className = `geo-prompt${big ? ` pic ask-${o.ask}` : ''}`;
       this.root.classList.toggle('geo-quiz', o.mode === 'quiz');
       this.prompt.innerHTML = `<div class="geo-q">${esc(lbl)}</div><div class="geo-face">${face(e, o.ask, true)}</div>`;
     }
@@ -149,7 +197,16 @@ class GeoView implements GameView<State, Event> {
         this.stage.appendChild(this.map.el);
       }
       const fr = frameOf(e, o.set);
-      await this.map.show(fr.key, new Set(targets(o, e).map((x) => x.id)));
+      try {
+        await this.map.show(fr.key, new Set(targets(o, e).map((x) => x.id)));
+      } catch (err) {
+        // карта не скачалась (обрыв сети) — пробуем ещё раз, а не оставляем пустое поле
+        console.warn('geo: карта не загрузилась', err);
+        setTimeout(() => {
+          if (tok === this.token && this.s === v) void this.render(v).catch(() => {});
+        }, 2000);
+        return;
+      }
       if (tok !== this.token) return;
       this.map.clearMarks();
       for (const id of this.mine(v)) this.map.mark(id, 'bad');
@@ -174,6 +231,8 @@ class GeoView implements GameView<State, Event> {
   }
 
   private footer(v: State) {
+    // во время показа ответа подвал занят ответом и «Дальше» — чужой ход его не стирает
+    if (this.revealing) return;
     this.foot.innerHTML = '';
     if (this.ctx.demo || v.over) return;
     const seat = this.seat;
@@ -181,7 +240,7 @@ class GeoView implements GameView<State, Event> {
       const left = MAP_TRIES - (v.tries[seat]?.length ?? 0);
       this.foot.appendChild(h(`<span class="geo-left">Попыток: ${'●'.repeat(left)}${'○'.repeat(MAP_TRIES - left)}</span>`));
       const skip = h<HTMLButtonElement>(`<button class="btn small">Не знаю</button>`);
-      skip.onclick = () => this.ctx.act(seat, { type: 'skip' });
+      skip.onclick = () => this.send(seat, { type: 'skip' });
       this.foot.appendChild(skip);
     } else if (seat == null && this.ctx.mySeats.some((x) => v.seats.includes(x)) && v.seats.length > 1) {
       this.foot.appendChild(h(`<span class="geo-left">Ждём остальных…</span>`));
@@ -190,7 +249,9 @@ class GeoView implements GameView<State, Event> {
 
   async play(events: Event[], v: State) {
     const prev = this.s;
+    const epoch = this.epoch;
     for (const ev of events) {
+      if (epoch !== this.epoch) return;
       if (ev.type === 'try') {
         const mine = this.ctx.mySeats.includes(ev.seat);
         if (mine) ev.ok ? Sound.home() : Sound.nomove();
@@ -202,12 +263,15 @@ class GeoView implements GameView<State, Event> {
       if (ev.type === 'reveal' && prev) await this.reveal(prev, ev, v);
       if (ev.type === 'over') Sound.win();
     }
-    this.setView(v);
+    // пока шёл показ, стол прислал состояние целиком — оно новее нашего v
+    if (epoch === this.epoch) this.show(v);
   }
 
   /** Показать ответ; кто из этого экрана ошибся — тому подольше (или до «Дальше»). */
   private async reveal(prev: State, ev: Extract<Event, { type: 'reveal' }>, v: State) {
     this.token++;
+    // вопрос закрыт: его отсчёт больше не идёт (иначе за время показа он дотикает и нажмёт «Не знаю»)
+    clearInterval(this.clock);
     const e = ent(ev.e);
     const local = this.ctx.mySeats.filter((x) => prev.seats.includes(x));
     const missed = local.some((x) => (v.log[ev.i]?.[x] ?? 0) === 0);
@@ -219,6 +283,16 @@ class GeoView implements GameView<State, Event> {
       this.stage.querySelector(`[data-id="${ev.answer}"]`)?.classList.add('ans');
     }
     // кто как ответил
+    this.revealing = true;
+    try {
+      await this.revealBody(prev, ev, v, e, missed);
+    } finally {
+      this.revealing = false;
+      this.next = null;
+    }
+  }
+
+  private async revealBody(prev: State, ev: Extract<Event, { type: 'reveal' }>, v: State, e: Entity, missed: boolean) {
     if (prev.seats.length > 1) {
       const row = prev.seats.map((x) => `<span class="geo-who ${v.log[ev.i]?.[x] ? 'ok' : 'bad'}">${this.ctx.name(x)} ${v.log[ev.i]?.[x] ? '+' + v.log[ev.i][x] : '✘'}</span>`).join('');
       this.foot.innerHTML = row;
@@ -238,8 +312,14 @@ class GeoView implements GameView<State, Event> {
         };
         b.onclick = () => this.next?.();
       });
-      this.next = null;
-    } else await sleep(wait / Math.max(0.5, this.ctx.speed()));
+    } else
+      await new Promise<void>((res) => {
+        const t = setTimeout(res, wait / Math.max(0.5, this.ctx.speed()));
+        this.next = () => {
+          clearTimeout(t);
+          res();
+        };
+      });
   }
 
   private summary(v: State) {

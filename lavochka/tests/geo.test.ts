@@ -33,6 +33,18 @@ describe('география', () => {
         }
   });
 
+  it('«чей регион» при одной стране — вопрос о названии региона, показанного на карте', () => {
+    for (const o of [{ set: 'reg', country: 'DEU' }, { set: 'ru', country: 'all' }, { set: 'us', country: 'all' }]) {
+      const opts = optsOf({ mode: 'quiz', ask: 'flag', pick: 'parent', ...o });
+      expect(opts.pick, o.set).toBe('name');
+      expect(opts.ask, o.set).toBe('place');
+      const s = newState([0], opts, new SeededRng(5));
+      for (const q of s.qs) expect(q.opts).toContain(q.e);
+    }
+    // страны разные — вопрос «чей» остаётся
+    expect(optsOf({ mode: 'quiz', set: 'reg', country: 'all', ask: 'flag', pick: 'parent' }).pick).toBe('parent');
+  });
+
   it('на карте три попытки: 3, 2, 1 очко', () => {
     const s0 = newState([0], optsOf({ mode: 'map', set: 'eu' }), new SeededRng(1), ['AUT', 'PRT']);
     let r = apply(s0, 0, { type: 'pick', id: 'CHE' })!;

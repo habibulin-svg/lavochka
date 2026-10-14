@@ -76,7 +76,7 @@ export const KIND_LABEL: Record<Kind, string> = {
 };
 
 /** Что спрашиваем и чем отвечаем. */
-export type Face = 'name' | 'flag' | 'arms' | 'capital' | 'outline' | 'parent';
+export type Face = 'name' | 'flag' | 'arms' | 'capital' | 'outline' | 'parent' | 'place';
 
 export const FACE_LABEL: Record<Face, string> = {
   name: 'название',
@@ -85,6 +85,7 @@ export const FACE_LABEL: Record<Face, string> = {
   capital: 'столица',
   outline: 'контур',
   parent: 'страна',
+  place: 'место на карте',
 };
 
 /** Регионы за морем — на карте страны не рисуются (в викторине остаются). */
@@ -106,6 +107,9 @@ export function hasFace(e: Entity, f: Face): boolean {
       return (e.area ?? Infinity) >= 400;
     case 'parent':
       return !!e.p && !!BY_ID[e.p];
+    case 'place':
+      // заморские регионы на карте страны не рисуются
+      return !OFF_MAP.has(e.id);
   }
 }
 

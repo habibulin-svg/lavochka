@@ -4,7 +4,7 @@
 Читает tools/geo/data/raw.json, кэширует ответы в tools/geo/data/wd/ (повторный запуск ничего не перекачивает).
 Пишет:
   src/games/geo/entities.json — список объектов (см. Entity в src/games/geo/data.ts);
-  public/geo/f/<id>.webp — флаг (вписан в 480×240), public/geo/a/<id>.webp — герб (вписан в 180×180);
+  public/geo/f/<id>.webp — флаг (вписан в 480×240), public/geo/a/<id>.webp — герб (вписан в 360×360);
   tools/geo/data/report.txt — чего не нашлось.
 """
 import hashlib
@@ -254,7 +254,21 @@ def save(url, dest, box):
 
 if '--no-images' not in sys.argv:
     furl = thumbs([e['_flag'] for e in out if e['_flag']], 500)
-    aurl = thumbs([e['_arms'] for e in out if e['_arms']], 330)
+    aurl = thumbs([e['_arms'] for e in out if e['_arms']], 500)
+    # недостающие картинки качаем в несколько потоков: Викисклад рисует непрошенный размер по 10–20 с на штуку
+    from concurrent.futures import ThreadPoolExecutor
+    jobs = []
+    for e in out:
+        fid = e['id'].lower()
+        for key, urls, d, box in (('_flag', furl, 'f', (480, 240)), ('_arms', aurl, 'a', (360, 360))):
+            u = e[key] and urls.get(e[key].replace('_', ' '))
+            if u and not os.path.exists(os.path.join(OUT_IMG, d, fid + '.webp')):
+                jobs.append((u, os.path.join(OUT_IMG, d, fid + '.webp'), box))
+    print('качаем картинок:', len(jobs))
+    with ThreadPoolExecutor(6) as pool:
+        for k, _ in enumerate(pool.map(lambda j: save(*j), jobs)):
+            if k % 25 == 0:
+                print(f'  {k}/{len(jobs)}')
     for n, e in enumerate(out):
         fid = e['id'].lower()
         if e['_flag']:
@@ -267,7 +281,7 @@ if '--no-images' not in sys.argv:
             report.append(f'флага нет в Викиданных: {e["id"]} {e["n"]}')
         if e['_arms']:
             u = aurl.get(e['_arms'].replace('_', ' '))
-            if u and save(u, os.path.join(OUT_IMG, 'a', fid + '.webp'), (180, 180)):
+            if u and save(u, os.path.join(OUT_IMG, 'a', fid + '.webp'), (360, 360)):
                 e['a'] = 1
             else:
                 report.append(f'нет герба: {e["id"]} {e["n"]} ({e["_arms"]})')
