@@ -137,6 +137,16 @@ describe('Менеджер', () => {
     expect(s.cash[0]).toBe(cash + 2000);
   });
 
+  it('Одесса: проход через «Старт» — 20 000 (правила те же, что у Ленинграда)', () => {
+    let s = newState('odessa', [0, 1], {}, rng());
+    const len = boardOf('odessa').cells.length;
+    s.pos[0] = len - 4;
+    const cash = s.cash[0];
+    s = act(s, 0, { type: 'roll' }, [0, 3]); // 1 + 4: через «Старт» на 1, фабрика «Книжная» — не куплена
+    expect(s.pos[0]).toBe(1);
+    expect(s.cash[0]).toBe(cash + 20000);
+  });
+
   it('долг: заложить и заплатить, иначе разорение и выплата кредитору банком', () => {
     let s = newState('manager', [0, 1, 2], {}, rng());
     for (const c of [6, 7, 9]) {

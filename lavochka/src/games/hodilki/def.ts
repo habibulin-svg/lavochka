@@ -264,9 +264,14 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       ev.push({ type: 'card', seat, card: c, lost: true, left: s.stock![c] });
     }
     s.cards[seat] = hand;
+    const missed: string[] = [];
     for (const c of opt.get ?? []) {
-      // из общего запаса и только если влезает в котомку
-      if (!canPack(board, s, seat, c)) continue;
+      // из общего запаса и только если влезает в котомку; не влезло — игрок должен увидеть почему
+      if (!canPack(board, s, seat, c)) {
+        const name = board.deck?.cards.find((x) => x.id === c)?.name ?? c;
+        missed.push((s.stock?.[c] ?? 0) > 0 ? `«${name}» не влез — котомка полна` : `«${name}» уже разобран — в запасе нет`);
+        continue;
+      }
       s.stock![c] -= 1;
       hand.push(c);
       ev.push({ type: 'card', seat, card: c, left: s.stock![c] });
@@ -296,7 +301,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.route![seat] = null;
       s.routeFor![seat] = null;
     }
-    if (opt.text2) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: opt.gained ? [{ text: '', gained: true }] : [], text: opt.text2, self: true }, to: s.pos[seat] });
+    if (opt.text2) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: opt.gained && !missed.length ? [{ text: '', gained: true }] : [], text: opt.text2, self: true }, to: s.pos[seat] });
+    if (missed.length) ev.push({ type: 'sign', seat, sign: { k: 'choice', options: [], text: `Но ${missed.join(', ')}.`, self: true }, to: s.pos[seat] });
     // безномерные кружки лежат в списке после финиша — победа только на самой клетке финиша
     if (s.pos[seat] === finishOf(board) && !board.winBySign) return winNow(s, ev, seat);
     return endTurn(s, seat, ev, board);

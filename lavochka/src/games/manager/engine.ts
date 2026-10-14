@@ -280,6 +280,8 @@ export const estate = (s: State) => s.map !== 'kosmos';
 export const isBiz = (s: State) => s.map === 'biznes';
 export const isBm = (s: State) => s.map === 'biznesmen';
 export const isImp = (s: State) => s.map === 'imperiya';
+/** Поля по правилам «Менеджера» (Ленинград и Одесса — одни правила, разные клетки). */
+export const isMgr = (s: State) => s.map === 'manager' || s.map === 'odessa';
 export const N = (s: State) => B(s).cells.length;
 
 export const fmt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -489,7 +491,7 @@ export function canSell(s: State, seat: number, c: number): boolean {
   if (isBiz(s)) return s.owner[c] === seat && s.houses[c] > 0;
   // «Бизнесмен»: филиал нельзя снять, пока в группе стоит предприятие
   if (isBm(s)) return s.owner[c] === seat && s.houses[c] > 0 && (s.houses[c] === 4 || !groupHouses(s, c).includes(4));
-  return (s.map === 'manager' || isImp(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
+  return (isMgr(s) || isImp(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
 }
 
 export const canMortgage = (s: State, seat: number, c: number) =>
@@ -799,7 +801,7 @@ function passStart(x: Ctx, seat: number, landed: boolean) {
   if (isBiz(s)) {
     s.perk[seat] = 0; // льготы — до конца круга
     if (s.premium) give(x, null, seat, b.startPay, 'премия за круг');
-  } else if (s.map === 'manager' || isBm(s) || landed || s.startPass) give(x, null, seat, b.startPay, landed ? 'остановка на «Старте»' : 'проход через «Старт»');
+  } else if (isMgr(s) || isBm(s) || landed || s.startPass) give(x, null, seat, b.startPay, landed ? 'остановка на «Старте»' : 'проход через «Старт»');
   if (s.loan[seat] > 0) {
     s.loanLaps[seat]++;
     if (s.cash[seat] >= s.loan[seat]) {
