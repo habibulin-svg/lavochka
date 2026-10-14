@@ -1,0 +1,26 @@
+/* Общий стол взяточных игр. Сукно задаёт игра своим классом (.tv-cloth.<игра>). */
+.tv-cloth {
+  position: absolute; inset: 14px; border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.12), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #2f6b45, #1d4a2e 70%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5), 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.tv-plates { position: absolute; inset: 0; }
+.tv-pile::before { content: ''; position: absolute; inset: 0; transform: translate(-2px, 3px); border-radius: 5% / 3.2%; background: #d9cfba; z-index: -1; }
+.tv-center { position: absolute; transform: translateX(-50%); padding: 5px 14px; border-radius: 12px; background: rgba(250, 246, 232, 0.93); color: #1a1a22;
+  font: 700 17px 'PT Serif', Georgia, serif; text-align: center; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); white-space: nowrap; }
+.tv-center.corner { transform: none; text-align: left; }
+.tv-center small { display: block; font: 400 12px system-ui, sans-serif; opacity: 0.75; }
+.tv-center .red { color: #c8102e; }
+.cs-card.tv-no .cs-face { opacity: 0.6; }
+.tv-controls, .tv-btns { display: flex; flex-direction: column; gap: 6px; }
+.tv-btns > .btn { width: 100%; }
+.tv-ask { font-weight: 700; }
+.tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+.tv-grid .btn { padding: 8px 0; font-weight: 700; }
+.tv-grid .btn.red { color: #c8102e; }
+.cs-port .tv-center { font-size: 21px; }
+.cs-port .tv-center.corner { transform: none; text-align: left; }
+.tv-center small { font-size: 15px; }
