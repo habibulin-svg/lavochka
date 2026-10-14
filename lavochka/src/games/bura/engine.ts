@@ -8,6 +8,11 @@
  * Бура — три козыря на руке, москва — три туза: на своём заходе показал — выиграл кон сразу.
  * Карты кончились, а никто не вскрылся — выигрывает тот, у кого больше очков во взятках.
  * Проигравшим кон — палки: 2, без единой взятки — 4, после буры или москвы — 4. Набравший 12 палок проиграл партию.
+ *
+ * Буркозёл (пресет, mode = 'kozel'): на руке 4 карты, заходят 1–4 картами одной масти. Кон играют до конца колоды
+ * (или «вскрываются» на 61 из 120). Штрафы как в Козле: лучшему — 0, у кого 31 и больше — 2, 30 и меньше — 4, без взяток — 6;
+ * ошибся при вскрытии — 6. Бура — 4 козыря, москва — 3 туза с козырным: кон сразу, остальным по 6. Поровну у лучших — «яйца»:
+ * штрафов нет, следующий кон вдвойне.
  */
 import type { Options, Rng } from '../../core/types';
 import { sameCard, type Card, type Suit } from '../../cards/deck';
@@ -19,11 +24,26 @@ export interface Cfg {
   blind: boolean;
   /** До скольких палок. */
   limit: number;
+  /** Карт на руке: 3 (бура) или 4 (буркозёл). */
+  hand: number;
+  /** Счёт кона: 'bura' — вскрыться на 31; 'kozel' — доиграть, 61 из 120, штрафы 2/4/6. */
+  mode: 'bura' | 'kozel';
 }
 
 export function cfgFrom(o: Options): Cfg {
-  return { moscow: o.moscow !== false, blind: !!o.blind, limit: [8, 12, 16].includes(Number(o.limit)) ? Number(o.limit) : 12 };
+  return {
+    moscow: o.moscow !== false,
+    blind: !!o.blind,
+    limit: [8, 12, 16].includes(Number(o.limit)) ? Number(o.limit) : 12,
+    hand: Number(o.hand) === 4 ? 4 : 3,
+    mode: o.mode === 'kozel' ? 'kozel' : 'bura',
+  };
 }
+
+/** Карт на руке (старые сохранения — без поля). */
+export const handSize = (cfg: Cfg) => cfg.hand || 3;
+/** Сколько надо набрать, чтобы вскрыться. */
+export const target = (cfg: Cfg) => (cfg.mode === 'kozel' ? 61 : TARGET);
 
 export const POINTS: Record<number, number> = { 14: 11, 10: 10, 13: 4, 12: 3, 11: 2, 9: 0, 8: 0, 7: 0, 6: 0 };
 export const POWER: Record<number, number> = { 14: 9, 10: 8, 13: 7, 12: 6, 11: 5, 9: 4, 8: 3, 7: 2, 6: 1 };
@@ -50,6 +70,8 @@ export interface State {
   phase: 'lead' | 'answer' | 'over';
   palki: number[];
   round: number;
+  /** Множитель штрафов после «яиц» (буркозёл). */
+  eggs?: number;
   /** Чем кончился последний кон — для показа. */
   last: { winner: number | null; reason: 'declare' | 'wrong' | 'bura' | 'moscow' | 'cards'; pts: number[] } | null;
   loser: number | null;
@@ -125,10 +147,29 @@ export function leads(hand: Card[]): Card[][] {
   return out;
 }
 
-export const isBura = (hand: Card[], trump: Suit) => hand.length === 3 && hand.every((c) => c.s === trump);
-export const isMoscow = (hand: Card[]) => hand.length === 3 && hand.every((c) => c.r === 14);
+/** Бура — полная рука козырей (3 или 4). */
+export const isBura = (hand: Card[], trump: Suit, size = 3) => hand.length === size && hand.every((c) => c.s === trump);
+/** Москва — три туза; при четырёх картах на руке — три туза, и среди них козырный. */
+export function isMoscow(hand: Card[], size = 3, trump?: Suit): boolean {
+  const aces = hand.filter((c) => c.r === 14);
+  if (size === 3) return hand.length === 3 && aces.length === 3;
+  return aces.length >= 3 && aces.some((c) => c.s === trump);
+}
 
 const nextIn = (list: number[], seat: number) => list[(list.indexOf(seat) + 1) % list.length];
+
+/** Кто отвечает следующим: пустые руки (колода кончилась неровно) пропускают; круг замкнулся — leader. */
+function nextAnswer(s: State, seat: number, leader: number): number {
+  let p = nextIn(s.seats, seat);
+  while (p !== leader && !s.hands[p].length) p = nextIn(s.seats, p);
+  return p;
+}
+
+/** Сколько карт можно зайти: не больше самой короткой непустой руки (в конце колоды добор бывает неровным). */
+export function maxLead(s: State): number {
+  const n = s.seats.map((p) => handCount(s, p)).filter((x) => x > 0);
+  return n.length ? Math.min(...n) : 0;
+}
 
 // ---------------------------------------------------------------- партия
 
@@ -168,7 +209,7 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
   const dealer = s0.round === 0 ? s0.seats[s0.seats.length - 1] : nextIn(s0.seats, s0.dealer);
   const deck = shuffle(makeDeck36(), rng);
   const hands: Card[][] = [[], [], [], []];
-  for (const p of s0.seats) hands[p] = deck.splice(0, 3);
+  for (const p of s0.seats) hands[p] = deck.splice(0, handSize(s0.cfg));
   // козырь — следующая карта, её кладут под колоду открытой: она уйдёт последней
   const trumpCard = deck.shift()!;
   deck.push(trumpCard);
@@ -201,6 +242,22 @@ export const toAct = (s: State): number[] => (s.phase === 'over' ? [] : [s.turn]
 function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' | 'bura' | 'moscow' | 'cards', ev: Event[], rng: Rng): { state: State; events: Event[] } {
   const pts = s.piles.map(pilePoints);
   const add = [0, 0, 0, 0];
+  let eggs = s.eggs ?? 1;
+  if (s.cfg.mode === 'kozel') {
+    // буркозёл: штрафы как в Козле
+    const top = Math.max(...s.seats.map((x) => pts[x]));
+    const tie = reason === 'cards' && winner == null;
+    for (const p of s.seats) {
+      if (reason === 'wrong') {
+        if (p === winner) add[p] = 6 * eggs;
+        continue;
+      }
+      if (p === winner || (tie && pts[p] === top)) continue;
+      add[p] = (reason === 'bura' || reason === 'moscow' || s.tricks[p] === 0 ? 6 : pts[p] <= 30 ? 4 : 2) * eggs;
+    }
+    // «яйца»: лучшие поровну — следующий кон вдвойне
+    eggs = tie ? eggs * 2 : 1;
+  } else
   for (const p of s.seats) {
     if (reason === 'wrong') {
       // ошибся при вскрытии — палки только ему
@@ -218,7 +275,7 @@ function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' |
   const palki = s.palki.map((x, i) => x + add[i]);
   const realWinner = reason === 'wrong' ? null : winner;
   ev.push({ type: 'round', winner: realWinner, reason, pts, add, palki: palki.slice() });
-  const st: State = { ...s, palki, last: { winner: realWinner, reason, pts }, lead: null, best: null, answers: [] };
+  const st: State = { ...s, palki, eggs, last: { winner: realWinner, reason, pts }, lead: null, best: null, answers: [] };
   const top = Math.max(...s.seats.map((x) => palki[x]));
   if (top >= s.cfg.limit) {
     st.phase = 'over';
@@ -240,24 +297,26 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (s0.phase === 'lead') {
     if (a.type === 'declare') {
       const pts = pilePoints(s.piles[seat]);
-      const ok = pts >= TARGET;
+      const ok = pts >= target(s.cfg);
       ev.push({ type: 'declare', seat, pts, ok });
       return endRound(s, seat, ok ? 'declare' : 'wrong', ev, rng);
     }
     if (a.type === 'show') {
-      const ok = a.kind === 'bura' ? isBura(hand, s.trump) : s.cfg.moscow && isMoscow(hand);
+      const ok = a.kind === 'bura' ? isBura(hand, s.trump, handSize(s.cfg)) : s.cfg.moscow && isMoscow(hand, handSize(s.cfg), s.trump);
       if (!ok) return null;
       ev.push({ type: 'show', seat, kind: a.kind, cards: hand.slice() });
       return endRound(s, seat, a.kind, ev, rng);
     }
-    if (a.type !== 'lead' || !Array.isArray(a.cards) || !a.cards.length || !hasAll(hand, a.cards) || !a.cards.every((c) => c.s === a.cards[0].s)) return null;
+    if (a.type !== 'lead' || !Array.isArray(a.cards) || !a.cards.length || a.cards.length > maxLead(s) || !hasAll(hand, a.cards) || !a.cards.every((c) => c.s === a.cards[0].s)) return null;
     s.hands[seat] = without(hand, a.cards);
     s.lead = { seat, cards: a.cards.slice() };
     s.best = { seat, cards: a.cards.slice() };
     s.answers = [];
     s.phase = 'answer';
-    s.turn = nextIn(s.seats, seat);
+    s.turn = nextAnswer(s, seat, seat);
     ev.push({ type: 'lead', seat, cards: a.cards.slice() });
+    // отвечать некому (у остальных карты кончились) — взятка заходившему
+    if (s.turn === seat) return takeTrick(s, ev, rng);
     return { state: s, events: ev };
   }
   // ответ на заход
@@ -272,12 +331,17 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     s.best = { seat, cards: a.cards.slice() };
     ev.push({ type: 'beat', seat, cards: a.cards.slice() });
   } else ev.push({ type: 'skip', seat, count: a.cards.length, cards: a.cards.slice() });
-  const next = nextIn(s.seats, seat);
+  const next = nextAnswer(s, seat, lead.seat);
   if (next !== lead.seat) {
     s.turn = next;
     return { state: s, events: ev };
   }
-  // все ответили — взятка тому, кто держит
+  return takeTrick(s, ev, rng);
+}
+
+/** Все ответили — взятка тому, кто держит; добор; конец кона, если карты кончились. */
+function takeTrick(s: State, ev: Event[], rng: Rng): { state: State; events: Event[] } {
+  const lead = s.lead!;
   const w = s.best!.seat;
   const all = [...lead.cards, ...s.answers.flatMap((x) => x.cards)];
   s.piles[w] = [...s.piles[w], ...all];
@@ -286,11 +350,11 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   s.lead = null;
   s.best = null;
   s.answers = [];
-  // добор до трёх, первым — взявший
+  // добор до полной руки, первым — взявший
   const deck = s.deck.slice();
   let p = w;
   for (let i = 0; i < s.seats.length; i++) {
-    const need = Math.max(0, 3 - s.hands[p].length);
+    const need = Math.max(0, handSize(s.cfg) - s.hands[p].length);
     const got = deck.splice(0, need);
     if (got.length) {
       s.hands[p] = [...s.hands[p], ...got];

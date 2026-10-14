@@ -12,7 +12,7 @@ export const SEATS = [
 ];
 
 const cn = (c: Card) => `<b>${c.r === 14 ? 'Т' : c.r === 13 ? 'К' : c.r === 12 ? 'Д' : c.r === 11 ? 'В' : c.r}${SUIT_SYM[c.s]}</b>`;
-const REASON = { declare: 'вскрылся — 31 есть', wrong: 'вскрылся без 31', bura: 'бура!', moscow: 'москва!', cards: 'карты кончились' };
+const REASON: Record<string, string> = { declare: 'вскрылся — 31 есть', wrong: 'вскрылся без 31', bura: 'бура!', moscow: 'москва!', cards: 'карты кончились' };
 
 function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
@@ -75,7 +75,27 @@ export const def: GameDef<State, Action, Event, View> = {
   players: { min: 2, max: 4, default: 2 },
   seats: SEATS,
   options: [
-    { key: 'moscow', label: 'Москва', type: 'toggle', default: true, hint: 'Три туза на руке — сразу выигрыш кона, как бура.' },
+    { key: 'moscow', label: 'Москва', type: 'toggle', default: true, hint: 'Три туза на руке (при четырёх картах — с козырным) — сразу выигрыш кона, как бура.' },
+    {
+      key: 'mode',
+      label: 'Кон',
+      type: 'select',
+      choices: [
+        { value: 'bura', label: 'бура: вскрыться на 31' },
+        { value: 'kozel', label: 'буркозёл: до конца, 61 из 120' },
+      ],
+      default: 'bura',
+    },
+    {
+      key: 'hand',
+      label: 'Карт на руке',
+      type: 'select',
+      choices: [
+        { value: 3, label: 'по 3' },
+        { value: 4, label: 'по 4' },
+      ],
+      default: 3,
+    },
     { key: 'blind', label: 'Вслепую', type: 'toggle', default: false, hint: 'Свои очки не показываются — считайте в уме, как во дворе.' },
     {
       key: 'limit',
@@ -90,9 +110,10 @@ export const def: GameDef<State, Action, Event, View> = {
     },
   ],
   presets: [
-    { id: 'classic', label: 'Классическая', hint: 'С москвой, очки видны', options: { moscow: true, blind: false, limit: 12 } },
-    { id: 'blind', label: 'Вслепую', hint: 'Считай очки в уме — ошибёшься, проиграешь', options: { moscow: true, blind: true, limit: 12 } },
-    { id: 'quick', label: 'Быстрая', hint: 'До 8 палок', options: { moscow: true, blind: false, limit: 8 } },
+    { id: 'classic', label: 'Классическая', hint: 'С москвой, очки видны', options: { mode: 'bura', hand: 3, moscow: true, blind: false, limit: 12 } },
+    { id: 'blind', label: 'Вслепую', hint: 'Считай очки в уме — ошибёшься, проиграешь', options: { mode: 'bura', hand: 3, moscow: true, blind: true, limit: 12 } },
+    { id: 'quick', label: 'Быстрая', hint: 'До 8 палок', options: { mode: 'bura', hand: 3, moscow: true, blind: false, limit: 8 } },
+    { id: 'burkozel', label: 'Буркозёл', hint: 'По 4 карты, кон до конца: 61 из 120, штрафы 2/4/6 до 12', options: { mode: 'kozel', hand: 4, moscow: true, blind: false, limit: 12 } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -166,6 +187,27 @@ export const def: GameDef<State, Action, Event, View> = {
           setup: () => pos(['6H 9H AH', '10C 7S 8S'], 'QH', '7D 8D'),
           intro: 'У Вовки три червы, а черви — козырь.',
           steps: [A(0, { type: 'show', kind: 'bura' }, 'Бура! Кон за Вовкой.')],
+        },
+      },
+      {
+        title: 'Буркозёл',
+        html: `<p>Бура пополам с Козлом. На руке <b>по 4 карты</b>, заходить можно и всеми четырьмя одной масти. Кон играют до последней карты:
+          все очки — 120, выигрывает набравший больше (можно и раньше «вскрыться», если у тебя уже 61).</p>
+          <p>Штрафные «палки»: у кого 31 и больше — 2, 30 и меньше — 4, ни одной взятки — 6. Лучшему — ничего. Поровну у лучших — «яйца»:
+          следующий кон вдвойне. <b>Бура</b> — четыре козыря, <b>москва</b> — три туза с козырным: кон сразу, остальным по 6. 12 палок — козёл.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'kozel', hand: 4 },
+          setup: () => {
+            const s = pos(['7D 9D KD 6C', 'AD 6H 10C 8S'], 'QH', '7S 8D 9C JS JC');
+            s.cfg = cfgFrom({ mode: 'kozel', hand: 4 });
+            return s;
+          },
+          intro: 'Козырь — черви, на руке по четыре.',
+          steps: [
+            A(0, { type: 'lead', cards: [C('7D'), C('9D'), C('KD')] }, 'Вовка заходит тремя бубнами.'),
+            A(1, { type: 'skip', cards: [C('10C'), C('8S'), C('6H')] }, 'Покрыть все три Ленке нечем — туз и козырь есть, а третьей карты нет. Скидывает втёмную, взятка Вовке.'),
+          ],
         },
       },
     ],

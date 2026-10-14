@@ -4,7 +4,7 @@
  *   Сложный — ещё и заходит парой-тройкой одной масти, бережёт козыри, считает, что последним бить выгодно всегда. */
 import type { Rng } from '../../core/types';
 import type { Card } from '../../cards/deck';
-import { combos, covers, isBura, isMoscow, leads, pilePoints, POINTS, POWER, TARGET, type Action, type State } from './engine';
+import { combos, covers, isBura, isMoscow, leads, pilePoints, POINTS, POWER, handSize, maxLead, target, type Action, type State } from './engine';
 
 const cost = (cs: Card[], trump: string) => cs.reduce((a, c) => a + (c.s === trump ? 8 + POWER[c.r] : POWER[c.r] * 0.6), 0);
 
@@ -13,12 +13,12 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const hand = s.hands[seat];
   const trump = s.trump;
   if (s.phase === 'lead') {
-    if (isBura(hand, trump)) return { type: 'show', kind: 'bura' };
-    if (s.cfg.moscow && isMoscow(hand)) return { type: 'show', kind: 'moscow' };
+    if (isBura(hand, trump, handSize(s.cfg))) return { type: 'show', kind: 'bura' };
+    if (s.cfg.moscow && isMoscow(hand, handSize(s.cfg), trump)) return { type: 'show', kind: 'moscow' };
     const mine = pilePoints(s.piles[seat]);
     // лёгкий иногда «не досчитывает» и вскрывается позже
-    if (mine >= TARGET && (level > 0 || rng.next() < 0.7)) return { type: 'declare' };
-    const opts = leads(hand);
+    if (mine >= target(s.cfg) && (level > 0 || rng.next() < 0.7)) return { type: 'declare' };
+    const opts = leads(hand).filter((cs) => cs.length <= maxLead(s));
     if (level === 0) return { type: 'lead', cards: opts[rng.int(opts.length)] };
     const scored = opts.map((cs) => {
       const pts = pilePoints(cs);

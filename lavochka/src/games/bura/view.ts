@@ -7,7 +7,7 @@ import { preloadDeck } from '../../cards/render';
 import { settings } from '../../core/settings';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
-import { covers, deckLeft, handCount, isBura, isMoscow, type Event, type View } from './engine';
+import { covers, deckLeft, handCount, handSize, maxLead, isBura, isMoscow, target, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './bura.css';
 
@@ -194,7 +194,7 @@ class BuraView implements GameView<View, Event> {
     if (i >= 0) this.selected.splice(i, 1);
     else {
       if (v.phase === 'lead' && this.selected.length && this.selected[0].s !== card.s) this.selected = [];
-      const k = v.phase === 'answer' ? v.lead!.cards.length : 3;
+      const k = v.phase === 'answer' ? v.lead!.cards.length : Math.min(handSize(v.cfg), maxLead(v));
       if (this.selected.length >= k) this.selected.shift();
       this.selected.push(card);
     }
@@ -233,10 +233,10 @@ class BuraView implements GameView<View, Event> {
     if (!v || seat == null || this.ctx.demo || this.hidden) return;
     const hand = v.hands[seat];
     if (v.phase === 'lead') {
-      if (isBura(hand, v.trump)) this.button('Бура! Показать', true, () => this.send({ type: 'show', kind: 'bura' }));
-      if (v.cfg.moscow && isMoscow(hand)) this.button('Москва! Показать', true, () => this.send({ type: 'show', kind: 'moscow' }));
+      if (isBura(hand, v.trump, handSize(v.cfg))) this.button('Бура! Показать', true, () => this.send({ type: 'show', kind: 'bura' }));
+      if (v.cfg.moscow && isMoscow(hand, handSize(v.cfg), v.trump)) this.button('Москва! Показать', true, () => this.send({ type: 'show', kind: 'moscow' }));
       this.button(this.selected.length ? `Зайти (${this.selected.length})` : 'Выберите карты для захода', !!this.selected.length, () => this.send({ type: 'lead', cards: this.selected }), !this.selected.length);
-      this.button('«Вскрываюсь!» — у меня 31', false, () => this.send({ type: 'declare' }));
+      this.button(`«Вскрываюсь!» — у меня ${target(v.cfg)}`, false, () => this.send({ type: 'declare' }));
       return;
     }
     const k = v.lead!.cards.length;
