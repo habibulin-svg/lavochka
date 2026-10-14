@@ -133,7 +133,8 @@ class BluffView implements GameView<View, Event> {
       for (let k = 0; k < cnt; k++) {
         if (me) {
           const p = fan(cnt, k, a.x, a.y, g.port ? 480 : 760, g.port ? 60 : 78, 16, 10);
-          if (!up) {
+          // карты, которых ещё не видно (стопка только летит в руку), — рубашкой
+          if (!up || !list[k]) {
             items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: g.hs, z: 100 + k });
             continue;
           }

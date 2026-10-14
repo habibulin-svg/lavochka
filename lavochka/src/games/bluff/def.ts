@@ -14,6 +14,9 @@ export const SEATS = [
   { name: 'Светка', color: '#1f8a8a', light: '#58bdbd', dark: '#0f4a4a' },
 ];
 
+/** «3 карты», «5 карт». */
+export const cardsWord = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'карту' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'карты' : 'карт'}`;
+
 const cn = (c: Card) => `<b>${c.r === 14 ? 'Т' : c.r === 13 ? 'К' : c.r === 12 ? 'Д' : c.r === 11 ? 'В' : c.r}${SUIT_SYM[c.s]}</b>`;
 
 /** Ранг: [одна, две-четыре, пять и больше], женский ли род. */
@@ -52,9 +55,9 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'believe':
       return `${name(ev.seat)}: «Верю». Стопка — в отбой.`;
     case 'check':
-      return `${name(ev.seat)}: «Не верю!» — ${ev.shown.map(cn).join(' ')}. ${ev.liar ? `Враньё! ${name(ev.of)} забирает` : `Правда! ${name(ev.seat)} забирает`} ${ev.count} карт.`;
+      return `${name(ev.seat)}: «Не верю!» — ${ev.shown.map(cn).join(' ')}. ${ev.liar ? `Враньё! ${name(ev.of)} забирает` : `Правда! ${name(ev.seat)} забирает`} ${cardsWord(ev.count)}.`;
     case 'bin':
-      return `Стопка (${ev.count}) — в отбой.`;
+      return `Стопка (${cardsWord(ev.count)}) — в отбой.`;
     case 'quad':
       return `${name(ev.seat)} сбрасывает четыре ${rankPlural(ev.rank)}.`;
     case 'done':
