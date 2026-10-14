@@ -40,13 +40,14 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   // «Лукоморье»: боны, предметы, развилки и условия
   if (code.startsWith('fork:') || code.startsWith('fork~')) {
     // «fork:какая разница какая дорога|названия дорог|клетки дороги|клетки дороги»
-    // «fork~:…» — кружок лабиринта (бросок — один переход по стрелке грани), «fork~+1:…» — и боны за переход
-    const lab = /^fork~([+-]\d+)?:/.exec(code);
+    // «fork~:…» — кружок лабиринта (бросок — один переход по стрелке грани), «fork~+1:…» — и боны за переход, «fork~+1#key:…» — и предмет на кружке
+    const lab = /^fork~([+-]\d+)?(?:#(\w+))?:/.exec(code);
     const [by, roads, ...branches] = code.slice(lab ? lab[0].length : 5).split('|');
     return {
       k: 'fork',
       ...(lab ? { step: true } : {}),
       ...(lab?.[1] ? { coins: +lab[1] } : {}),
+      ...(lab?.[2] ? { item: lab[2] as ItemId } : {}),
       byDiff: by.split('').map(Number),
       branches: branches.map((s) => (s ? s.split(',').map(Number) : [])),
       ...(roads ? { roads: roads.split(';') } : {}),
@@ -152,7 +153,7 @@ export function cellsOf(raw: Raw): Cell[] {
     if (c.t) cell.text = c.t;
     if (c.off) cell.off = true;
     if (c.n != null) cell.next = c.n;
-    if (c.h) cell.hold = { die: c.h[0], ...(c.h[1] != null ? { to: c.h[1] } : {}) };
+    if (c.h) cell.hold = { die: c.h[0], ...(c.h[1] != null ? { to: c.h[1] } : {}), ...(c.h[2] ? { free: true } : {}) };
     // подпись перехода — с номером клетки, куда ведёт («идёт вперёд на 22»)
     const g = cell.sign;
     if (g?.k === 'jump') {

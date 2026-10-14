@@ -377,13 +377,13 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   }
   // клетка «выход только нужной гранью — и сразу на клетку»: не та грань — стоит, та — переносит (знак там срабатывает)
   const hold = board.cells[s.pos[seat]]?.hold;
-  if (hold && (s0.last ?? 0) !== hold.die) {
+  if (hold && !hold.free && (s0.last ?? 0) !== hold.die) {
     ev.push({ type: 'sign', seat, sign: { k: 'wait', die: hold.die, text: 'ждёт нужной грани' }, to: s.pos[seat] });
     s.turn = next(s, seat);
     s.map = mapOf(s, s.turn);
     return { state: s, events: ev };
   }
-  const holdWalk = hold?.to != null ? { path: [hold.to], route: null, routeFor: false, forks: [] } : null;
+  const holdWalk = hold?.to != null && (s0.last ?? 0) === hold.die ? { path: [hold.to], route: null, routeFor: false, forks: [] } : null;
   const walk = holdWalk ?? loopMove(s0, board, seat, s0.last) ?? walkFor(s0, board, seat);
   const path = walk.path;
   // знаки срабатывают на делениях ленты; на клетке, куда вернулась ветка, — уже нет.
@@ -559,6 +559,12 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     } else if (sign.k === 'fork') {
       // дорога выбирается по остатку очков: сразу, если они ещё есть, иначе — на следующем ходу
       dest = to;
+      // кружок облачной лотереи с предметом (ключ, игла): встал — берёшь
+      if (sign.item && !(s.items?.[seat] ?? []).includes(sign.item)) {
+        s.items = many(s.items, null);
+        s.items[seat] = [...(s.items[seat] ?? []), sign.item];
+        ev.push({ type: 'item', seat, item: sign.item });
+      }
     } else if (sign.k === 'jump') {
       dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
       if (sign.skip) s.skip[seat] = sign.skip;

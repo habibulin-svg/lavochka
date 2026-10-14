@@ -894,16 +894,31 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
   it('поле 4: тронный зал — без иглы назад к Медведю, с иглой победа', () => {
     const rng = new RiggedRng(new SeededRng(17));
     const throne = at('luk4', '62');
-    const before = throne - 1;
+    // кружок Кощеева лабиринта, у которого грань 1 ведёт в тронный зал
+    const before = bySign('luk4', (c) => c.sign?.k === 'fork' && !!c.sign.step && c.sign.branches[0]?.[0] === throne);
     let a = turn(stand('luk4', before), 0, 1, rng);
     expect(a.state.pos[0]).toBe(throne);
-    // развилка в тронном зале решается следующим броском (ход после входа переходит дальше)
+    // развилка в тронном зале решается следующим броском
     a = turn({ ...a.state, turn: 0 }, 0, 6, rng);
     expect(a.state.winner).toBeNull();
     expect(a.state.pos[0]).toBe(at('luk4', '59'));
     let b = turn(stand('luk4', before, { items: ['needle'] }), 0, 1, rng);
     b = turn({ ...b.state, turn: 0 }, 0, 6, rng);
     expect(b.state.winner).toBe(0);
+  });
+
+  it('поле 4: А–Д держат до своей грани, Е — при 1–5 к Медведю, при 6 в лабиринт', () => {
+    const rng = new RiggedRng(new SeededRng(18));
+    let a = turn(stand('luk4', at('luk4', 'А')), 0, 2, rng);
+    expect(a.state.pos[0]).toBe(at('luk4', 'А')); // на А нужна единица
+    a = turn(stand('luk4', at('luk4', 'А')), 0, 1, rng);
+    expect(a.state.pos[0]).toBe(at('luk4', 'Б'));
+    a = turn(stand('luk4', at('luk4', 'Д')), 0, 5, rng);
+    expect(a.state.pos[0]).toBe(at('luk4', 'Е'));
+    a = turn(stand('luk4', at('luk4', 'Е'), { items: ['key'] }), 0, 3, rng);
+    expect(a.state.pos[0]).toBe(at('luk4', 'А')); // через Медведя (59) с ключом снова на А
+    a = turn(stand('luk4', at('luk4', 'Е')), 0, 6, rng);
+    expect(luk('luk4').cells[a.state.pos[0]].sign?.k).toBe('fork'); // кружок Кощеева лабиринта
   });
 
   it('поле 4: кружок «?» — загадка остальным, лишние ходы только за неотгаданную', () => {
