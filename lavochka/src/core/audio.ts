@@ -194,6 +194,16 @@ export const Sound = {
       tone(t + i * 0.13, { freq: f / 2, dur: 0.3, gain: 0.06 });
     });
   },
+  /** Ручкой по бумаге: strokes коротких штрихов (крестик — два, нолик — один длинный). */
+  pen(strokes = 2) {
+    const c = on();
+    if (!c) return;
+    let t = c.currentTime;
+    for (let i = 0; i < strokes; i++) {
+      for (let k = 0; k < 5; k++) click(t + k * 0.018, { freq: 3800 + Math.random() * 1600, q: 1.4, dur: 0.03, gain: 0.07 });
+      t += 0.13 + Math.random() * 0.04;
+    }
+  },
   /** Карта ложится на стол. */
   card() {
     const c = on();

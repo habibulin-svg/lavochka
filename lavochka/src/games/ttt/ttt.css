@@ -1,0 +1,32 @@
+/* Крестики-нолики: тетрадный лист, синяя и красная ручки. */
+.table--ttt {
+  --panel-bg: repeating-linear-gradient(0deg, rgba(120, 160, 200, 0.18) 0 1px, transparent 1px 18px), repeating-linear-gradient(90deg, rgba(120, 160, 200, 0.18) 0 1px, transparent 1px 18px), #f6f3e8;
+  --panel-ink: #1f2a50;
+  --panel-edge: rgba(40, 60, 120, 0.4);
+  --table-bg: radial-gradient(ellipse at 50% 25%, rgba(255, 240, 200, 0.12), transparent 60%), linear-gradient(160deg, #3a3226, #1c1812 70%);
+}
+.tt-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.tt-board { width: 100%; height: 100%; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55)); user-select: none; }
+.tt-board .tt-paper { fill: #f6f3e8; }
+.tt-board .tt-sq { stroke: #9cc0dc; stroke-width: 0.8; opacity: 0.7; }
+.tt-board .tt-grid { stroke: #2b2b3a; fill: none; stroke-linecap: round; opacity: 0.85; }
+.tt-board .tt-grid.thin { opacity: 0.75; }
+.tt-board .tt-done { opacity: 0.32; }
+.tt-board .tt-ink { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.tt-board .tt-ink.big { opacity: 0.9; }
+.tt-board .tt-ink.fresh { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tt-draw 0.22s ease-out forwards; }
+.tt-board .tt-ink.fresh.t2 { animation-delay: 0.13s; }
+.tt-board .tt-ink.fresh.big { animation-duration: 0.4s; }
+.tt-board .tt-ink.fresh.win { animation-duration: 0.5s; opacity: 0.85; }
+@keyframes tt-draw { to { stroke-dashoffset: 0; } }
+.tt-board .tt-hit { fill: transparent; cursor: pointer; }
+.tt-board .tt-hit:hover { fill: var(--c); fill-opacity: 0.12; }
+.tt-board .tt-allowed { fill: #ffe27a; fill-opacity: 0.28; stroke: var(--c); stroke-opacity: 0.35; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.tt-board .tt-allowed.mine { fill-opacity: 0.45; stroke-opacity: 0.7; }
+.tt-board .tt-last { fill: none; stroke: #e0a020; stroke-width: 1.6; }
+.tt-board .tt-banner rect { fill: rgba(246, 243, 232, 0.95); stroke: #1f3a8f; stroke-width: 2.5; }
+.tt-board .tt-banner text { font: 700 34px 'Caveat', cursive; fill: #b8281e; text-anchor: middle; dominant-baseline: central; }
+.tt-controls { display: flex; flex-direction: column; gap: 8px; }
+.tt-btns { display: flex; flex-direction: column; gap: 6px; }
+.tt-btns .btn { width: 100%; }
+@media (prefers-reduced-motion: reduce) { .tt-board .tt-ink.fresh { animation: none; stroke-dashoffset: 0; } }

@@ -72,6 +72,7 @@ export const CATALOG: CatalogEntry[] = [
   // — на бумаге —
   { id: 'seabattle', title: 'Морской бой', sub: 'в клеточку, ручкой', cat: 'paper', players: '2', wave: 2, icon: '⚓', tint: '#2b5c9e', thumb: 'seabattle.webp', load: () => import('./seabattle'), variants: ['классика', 'сальво', 'западный флот'] },
   { id: 'dots', title: 'Точки', sub: 'окружи соседа', cat: 'paper', players: '2–4', wave: 2, icon: '⁘', tint: '#3a4f8a', thumb: 'dots.webp', load: () => import('./dots'), variants: ['на листочке', 'быстрая', 'спортивная'] },
+  { id: 'ttt', title: 'Крестики-нолики', sub: 'три в ряд — и ультимативные на девяти полях', cat: 'paper', players: '2', wave: 8, icon: '✕', tint: '#1f3a8f', thumb: 'ttt.webp', load: () => import('./ttt'), variants: ['классические 3×3', 'ультимативные', 'серия партий'] },
   { id: 'puzzles', title: 'Головоломки', sub: 'кроссворды, сканворды, судоку — одному или всем двором', cat: 'paper', players: '1–6', wave: 16, icon: '✎', tint: '#5a4a2a', thumb: 'puzzles.webp', load: () => withClues(import('./puzzles')), variants: ['кроссворд', 'сканворд', 'судоку', 'пикросс'] },
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a', thumb: 'balda.webp', load: () => withDict(import('./balda')), variants: ['5×5', '6×6 и 7×7', 'с диагоналями'] },
   // — настолки —
