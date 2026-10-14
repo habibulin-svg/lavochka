@@ -9,6 +9,7 @@
   python tools/geo/blur.py a/ago      — только эти картинки
   python tools/geo/blur.py --grid a/ago   — картинка с координатной сеткой для разметки (D:/temp/geo-blur/grid)
   python tools/geo/blur.py --check a/ago  — «до | после» рядом (D:/temp/geo-blur/check)
+  --boxes FILE.json — рамки из FILE поверх blur.json (для --check: разметка в своём файле, не трогая общий)
 """
 import json
 import os
@@ -24,11 +25,16 @@ OUT_ORIG = os.environ.get('GEO_ORIG', 'D:/temp/geo-blur/orig')
 WORK = 'D:/temp/geo-blur'
 
 
+EXTRA = None  # --boxes FILE: рамки поверх blur.json
+
+
 def load_boxes():
-    if not os.path.exists(BOXES):
-        return {}
-    with open(BOXES, encoding='utf-8') as f:
-        return json.load(f)
+    boxes = {}
+    for p in (BOXES, EXTRA):
+        if p and os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                boxes.update(json.load(f))
+    return boxes
 
 
 def original(key):
@@ -132,7 +138,12 @@ def check(key):
 
 
 if __name__ == '__main__':
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    argv = sys.argv[1:]
+    if '--boxes' in argv:
+        i = argv.index('--boxes')
+        EXTRA = argv[i + 1]
+        del argv[i:i + 2]
+    args = [a for a in argv if not a.startswith('--')]
     if '--grid' in sys.argv:
         for k in args:
             print(grid(k))
