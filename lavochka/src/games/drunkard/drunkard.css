@@ -1,0 +1,26 @@
+/* Пьяница: зелёное сукно на табуретке. */
+.table--drunkard {
+  --panel-bg: linear-gradient(180deg, #f1ead6, #e0d4b4);
+  --panel-ink: #2a1a0a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.1), transparent 65%), #1c2420;
+}
+.dk-cloth {
+  position: absolute; inset: 14px; border-radius: 50% / 40%;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #2f6b45, #1d4a2e 70%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5), 0 0 0 10px #5a3a22, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.cs-port .dk-cloth { border-radius: 40% / 30%; }
+.dk-plates { position: absolute; inset: 0; }
+.dk-top::after { content: ''; position: absolute; inset: 0; border-radius: 5% / 3.2%; box-shadow: -2px 3px 0 #bfb39a, -4px 6px 0 #a99d84; z-index: -1; }
+.cs-plate.dk-out { opacity: 0.55; text-decoration: line-through; }
+.dk-round { position: absolute; transform: translate(-50%, -50%); text-align: center; color: #f5ecd0; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.dk-round small { display: block; font-size: 14px; opacity: 0.8; }
+.dk-war { font: 700 30px 'PT Serif', Georgia, serif; color: #ffd24a; }
+.cs-card.dk-win .cs-face { box-shadow: 0 0 0 3px #ffd24a, 0 0 16px 4px rgba(255, 200, 60, 0.85); }
+.dk-controls { display: flex; flex-direction: column; gap: 8px; }
+.dk-btns .btn { width: 100%; }
+.dk-auto { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.cs-port .dk-round small { font-size: 18px; }
