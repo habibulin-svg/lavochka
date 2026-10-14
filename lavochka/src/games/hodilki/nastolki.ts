@@ -112,10 +112,18 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   if (code.startsWith('extra:')) return { k: 'extra', n: +code.slice(6), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('extraD:')) return { k: 'extra', dice: +code.slice(7), text: routeText ?? 'дополнительные ходы' };
   if (code.startsWith('item:')) return { k: 'item', item: code.slice(5) as ItemId, text: routeText ?? 'берёт предмет' };
-  if (code.startsWith('pick:')) {
-    // «загадка: вопрос|ответ,ответ|клетка,клетка»
-    const [question, options, to] = code.slice(5).split('|');
-    return { k: 'pick', question, options: options.split(','), to: to.split(',').map(Number), text: routeText ?? 'загадка' };
+  if (code.startsWith('pick:') || code.startsWith('way:')) {
+    // «загадка: вопрос|ответ,ответ|клетка,клетка»; «way:» — то же, но это выбор дороги (развилка в лабиринте)
+    const way = code.startsWith('way:');
+    const [question, options, to] = code.slice(way ? 4 : 5).split('|');
+    return {
+      k: 'pick',
+      question,
+      options: options.split(','),
+      to: to.split(',').map(Number),
+      ...(way ? { way: true } : {}),
+      text: routeText ?? (way ? 'выбирает дорогу' : 'загадка'),
+    };
   }
   if (code.startsWith('wait:')) return { k: 'wait', die: +code.slice(5), text: routeText ?? 'ждёт нужной грани' };
   if (code.startsWith('takeItem:')) return { k: 'takeItem', item: code.slice(9) as ItemId, text: routeText ?? 'теряет предмет' };

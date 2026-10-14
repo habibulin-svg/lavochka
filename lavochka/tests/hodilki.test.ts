@@ -400,6 +400,21 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
     expect(def.result(r2.state)).toBeNull();
   });
 
+  it('лабиринт Кота (3): вход по кубику, на развилке лабиринта игрок выбирает дорогу', () => {
+    const rng = new RiggedRng(new SeededRng(34));
+    const cat = at('3');
+    // стоит у Кота: выпало 2 — второй вход, дорога делится, ход ждёт выбора
+    const r = turn({ ...start(rng), pos: [cat, 0], turn: 0 }, 0, 2, rng);
+    expect(r.state.phase).toBe('pick');
+    const way = board.cells[r.state.pos[0]].sign;
+    expect(way?.k === 'pick' && way.way).toBe(true);
+    const pick = def.apply(r.state, 0, { type: 'pick', pick: 2 }, rng)!;
+    expect(pick.state.pos[0]).toBe(at('10')); // третья дорога — к перекрёстку (10)
+    // выпало 1 — первый вход ведёт прямо к выходу из болота (5)
+    const one = turn({ ...start(rng), pos: [cat, 0], turn: 0 }, 0, 1, rng);
+    expect(one.state.pos[0]).toBe(at('5'));
+  });
+
   it('загадка 12 спрашивает про репку и ведёт на названный пункт', () => {
     const rng = new RiggedRng(new SeededRng(33));
     const s = { ...start(rng), pos: [at('12') - 1, 0], turn: 0 };

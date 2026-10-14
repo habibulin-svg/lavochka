@@ -1458,6 +1458,7 @@ class HodilkiView implements GameView<State, Event> {
     }
     if (ph === 'pick') {
       const q = b.cells[v.pos[v.turn]]?.sign;
+      if (q?.k === 'pick' && q.way) return me ? `${q.question} — выберите дорогу` : `${this.ctx.name(toAct[0])} выбирает дорогу…`;
       const ask = q?.k === 'pick' ? `Загадка: «${q.question}»` : 'Загадка';
       return me ? `${ask} — выберите ответ` : `${this.ctx.name(toAct[0])} отвечает на загадку…`;
     }
