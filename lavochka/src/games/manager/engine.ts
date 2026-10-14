@@ -110,6 +110,8 @@ export interface State {
   phase: Phase;
   dice: number[] | null;
   doubles: number;
+  /** «Менеджер» (Ленинград, Одесса): участки, на которых уже строили с последнего броска — за ход по одной постройке на участок. */
+  built?: number[];
   /** Ещё ход тому же игроку (дубль, «пояс астероидов»). */
   again: boolean;
   /** Биржа: 0 — свободен, k — сидит, k-я попытка выйти. */
@@ -481,6 +483,8 @@ export function canBuild(s: State, seat: number, c: number): boolean {
     return false;
   }
   if (h >= 4 || h !== Math.min(...groupHouses(s, c))) return false;
+  // по правилам «Менеджера»: за один ход на каждом участке группы — по одному филиалу (или одно предприятие)
+  if (isMgr(s) && s.built?.includes(c)) return false;
   // «Империя»: до четырёх ракет на планете, равномерно по системе
   if (isImp(s)) return s.stock[0] >= 1 && s.cash[seat] >= cell.build!;
   if (h < 3 ? s.stock[0] < 1 : s.stock[1] < 1) return false;
@@ -494,14 +498,15 @@ export function canSell(s: State, seat: number, c: number): boolean {
   return (isMgr(s) || isImp(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
 }
 
+// «Менеджер»: нельзя заложить участок, если постройка стоит на нём самом (rules.txt, «Торговля собственностью»)
 export const canMortgage = (s: State, seat: number, c: number) =>
-  estate(s) && s.owner[c] === seat && !s.mort[c] && (isBiz(s) || isImp(s) ? s.houses[c] === 0 : !groupBuilt(s, c));
+  estate(s) && s.owner[c] === seat && !s.mort[c] && (isBiz(s) || isImp(s) || isMgr(s) ? s.houses[c] === 0 : !groupBuilt(s, c));
 /** Выкуп: половина цены («Империя» — 60 %). */
 export const redeemCost = (s: State, c: number) => (isImp(s) ? Math.round((B(s).cells[c].price! * IMP_REDEEM) / 10) * 10 : B(s).cells[c].price! / 2);
 export const canRedeem = (s: State, seat: number, c: number) => s.owner[c] === seat && s.mort[c] && s.cash[seat] >= redeemCost(s, c);
-/** Участок можно продать или обменять: без построек в группе и не заложен. */
+/** Участок можно продать или обменять: не заложен и без построек (в «Менеджере» и «Бизнесе» — на нём самом, на других полях — в группе). */
 export const tradeable = (s: State, seat: number, c: number) =>
-  s.owner[c] === seat && !s.mort[c] && !(isBiz(s) ? s.houses[c] > 0 : s.map !== 'kosmos' && groupBuilt(s, c));
+  s.owner[c] === seat && !s.mort[c] && !(isBiz(s) || isMgr(s) ? s.houses[c] > 0 : s.map !== 'kosmos' && groupBuilt(s, c));
 
 /** Сколько стоит постройка на участке (рубли; валютное предприятие «Бизнеса» — по курсу биржи). */
 export function buildValue(s: State, c: number): number {
@@ -1958,6 +1963,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
           s.stock[0] += 3;
         } else s.stock[0]--;
         s.houses[c]++;
+        if (isMgr(s)) s.built = [...(s.built ?? []), c];
         give(x, seat, null, cost, s.houses[c] === 4 ? 'предприятие' : 'филиал');
         x.ev.push({ type: 'build', seat, cell: c, level: s.houses[c] });
         return ok();
@@ -2068,6 +2074,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         return ok();
       }
       if (a.type !== 'roll') return null;
+      s.built = [];
       s.card = null;
       s.phase = 'resolve';
       if (isImp(s)) {

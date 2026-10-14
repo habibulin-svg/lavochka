@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, boardOf } from '../src/games/manager/boards';
 import { def } from '../src/games/manager/def';
-import { apply, canBuild, marketOpts, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
+import { apply, canBuild, canMortgage, marketOpts, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
 import { STOCK_CARDS } from '../src/games/manager/boards';
 import { botSeats, defaults, simulate } from './harness';
 
@@ -135,6 +135,21 @@ describe('Менеджер', () => {
     s = act(s, 0, { type: 'roll' }, [1, 3]); // 36 + 6 = 2
     expect(s.pos[0]).toBe(2);
     expect(s.cash[0]).toBe(cash + 2000);
+  });
+
+  it('за один ход — по одной постройке на участок; заложить можно участок без построек на нём', () => {
+    for (const map of ['manager', 'odessa'] as const) {
+      let s = newState(map, [0, 1], {}, rng());
+      for (const c of [1, 2, 4]) s.owner[c] = 0;
+      for (const c of [1, 2, 4]) s = act(s, 0, { type: 'build', cell: c });
+      expect(canBuild(s, 0, 1), map).toBe(false); // ровно, но на участке 1 в этот ход уже строили
+      s.built = []; // новый бросок
+      expect(canBuild(s, 0, 1), map).toBe(true);
+      // постройки только на 1 и 2: участок 4 без постройки закладывается
+      s = { ...s, houses: s.houses.map((h, i) => (i === 4 ? 0 : h)) };
+      expect(canMortgage(s, 0, 4), map).toBe(true);
+      expect(canMortgage(s, 0, 1), map).toBe(false);
+    }
   });
 
   it('Одесса: проход через «Старт» — 20 000 (правила те же, что у Ленинграда)', () => {
