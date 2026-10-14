@@ -1,0 +1,38 @@
+/* Г*вно: дворовый стол — доски под клеёнкой, по центру кольцо такта и ладони. */
+.gv-cloth {
+  position: absolute; inset: 12px; border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.16), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 14px, transparent 14px 28px),
+    repeating-linear-gradient(-45deg, rgba(160, 40, 30, 0.12) 0 14px, transparent 14px 28px),
+    linear-gradient(160deg, #e9dcc0, #cdb894 70%);
+  box-shadow: inset 0 0 60px rgba(70, 40, 10, 0.45), 0 0 0 10px #6b4a2a, 0 0 0 13px #3e2814, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.gv-plates { position: absolute; inset: 0; }
+.gv-let { color: #b3201a !important; letter-spacing: 1px; }
+.cs-plate.gv-lost { background: #ffd9c9; box-shadow: 0 0 0 3px #c0392b, 0 2px 8px rgba(0, 0, 0, 0.4); }
+.gv-arrow { position: absolute; transform: translate(-50%, -50%) rotate(-12deg); font: italic 700 15px 'PT Serif', Georgia, serif; color: rgba(60, 35, 10, 0.55); }
+.gv-ring {
+  --f: 0; position: absolute; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%;
+  background: conic-gradient(#b3322a calc(var(--f) * 360deg), rgba(60, 35, 10, 0.16) 0);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; color: #3a2410;
+  transition: opacity 0.3s;
+}
+.gv-ring::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: #efe3c8; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25); }
+.gv-ring b, .gv-ring small { position: relative; }
+.gv-ring b { font: 700 30px 'PT Serif', Georgia, serif; line-height: 1; }
+.gv-ring small { font: 12px system-ui, sans-serif; opacity: 0.7; }
+.gv-ring.off { opacity: 0; }
+.gv-palms { position: absolute; width: 0; height: 0; }
+.gv-palm {
+  position: absolute; left: 0; top: 0; width: 64px; height: 64px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 34px; line-height: 1; background: var(--c); box-shadow: 0 0 0 3px #fff8e6, 0 6px 12px rgba(0, 0, 0, 0.45); animation: gv-slap 0.18s ease-out;
+}
+.gv-palm small { font: 700 11px system-ui, sans-serif; color: #fff; margin-top: 1px; }
+@keyframes gv-slap { from { scale: 1.8; opacity: 0.2; } to { scale: 1; opacity: 1; } }
+.gv-controls { display: flex; flex-direction: column; gap: 8px; }
+.gv-slap { width: 100%; padding: 18px 0; font-size: 24px; font-weight: 800; touch-action: manipulation; user-select: none; }
+.gv-slap.hit { transform: scale(0.95); }
+.gv-hint { font-size: 14px; line-height: 1.35; }
+.cs-port .gv-ring { width: 110px; height: 110px; margin: -55px 0 0 -55px; }
+.cs-port .gv-arrow { font-size: 19px; }
