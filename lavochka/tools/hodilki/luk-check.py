@@ -46,12 +46,18 @@ for i, c in enumerate([] if LABELS else cells):
 COLS = [(255, 0, 200, 230), (0, 200, 0, 230), (255, 140, 0, 230), (0, 220, 220, 230), (150, 0, 255, 230), (120, 80, 0, 230)]
 for i, c in enumerate([] if LABELS else cells):
     s = c.get('s', '')
-    if s.startswith('fork:'):
-        parts = s[5:].split('|')
+    if s.startswith('fork:') or s.startswith('fork~'):
+        parts = s.split(':', 1)[1].split('|')
         for bi, br in enumerate(parts[2:]):
             seq = [i] + [int(x) for x in br.split(',') if x]
             for a, b in zip(seq, seq[1:]):
                 arrow(P(a), P(b), COLS[bi % 6], 3)
+            # номер грани/дороги — у кружка, откуда выходит стрелка
+            if len(seq) > 1:
+                (x0, y0), (x1, y1) = P(seq[0]), P(seq[1])
+                t = 0.32 if (x1 - x0) ** 2 + (y1 - y0) ** 2 > 400 else 0.5
+                d.text((x0 + (x1 - x0) * t - 6, y0 + (y1 - y0) * t - 10), str(bi + 1), fill=COLS[bi % 6][:3], font=font,
+                       stroke_width=3, stroke_fill=(255, 255, 255))
     elif s.split(':')[0].split('+')[-1] in ('to', 'fwd', 'back'):
         arrow(P(i), P(int(s.split(':')[-1])), (255, 0, 0, 255), 5, True)
     elif '>' in s:
