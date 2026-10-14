@@ -34,6 +34,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   preferans: () => import('./preferans/def').then((m) => m.def),
   drunkard: () => import('./drunkard/def').then((m) => m.def),
   bluff: () => import('./bluff/def').then((m) => m.def),
+  sunduchok: () => import('./sunduchok/def').then((m) => m.def),
   holdem: () => import('./holdem/def').then((m) => m.def),
   solitaire: () => import('./solitaire/def').then((m) => m.def),
   geo: () => import('./geo/def').then((m) => m.def),

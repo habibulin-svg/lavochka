@@ -1,0 +1,25 @@
+/* Сундучок: деревянный стол на веранде. */
+.table--sunduchok {
+  --panel-bg: linear-gradient(180deg, #f6eedb, #e8dbbb);
+  --panel-ink: #2a1a0a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.12), transparent 65%), #22170f;
+}
+.sd-cloth {
+  position: absolute; inset: 14px; border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 240, 210, 0.16), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 120px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 3px, transparent 3px 9px),
+    linear-gradient(170deg, #9a6a3c, #6e4524 75%);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 18px 30px rgba(0, 0, 0, 0.5);
+}
+.sd-plates { position: absolute; inset: 0; }
+.sd-bz { position: absolute; transform: translateX(-50%); color: #fbf1da; font-size: 14px; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.sd-controls { display: flex; flex-direction: column; gap: 8px; }
+.sd-btns { display: flex; flex-direction: column; gap: 6px; }
+.sd-btns > .btn { width: 100%; }
+.sd-ask { font-weight: 700; }
+.sd-suits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.sd-suits .btn { font-size: 22px; padding: 4px 0; }
+.sd-suits .btn.red { color: #c8102e; }
+.cs-port .sd-bz { font-size: 17px; }
