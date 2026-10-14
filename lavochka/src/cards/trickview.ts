@@ -32,6 +32,8 @@ export interface TrickModel {
   trumpCard?: Card | null;
   /** Надпись посередине над взяткой: контракт, заказ. */
   center?: string;
+  /** Чужая рука лежит открыто (лобовая: видны все карты, кроме своей). */
+  open?(seat: number): boolean;
 }
 
 export interface TrickGeo {
@@ -164,12 +166,17 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
       const p = this.trickPt(m, t.seat);
       items.push({ key: cardKey(t.card), card: t.card, x: p.x, y: p.y, r: ((t.seat * 13 + i * 7) % 16) - 8, s: g.port ? 0.8 : 0.85, z: 200 + i, fromPt: this.anchor(m, t.seat) });
     });
-    if (m.trumpCard) items.push({ key: cardKey(m.trumpCard), card: m.trumpCard, x: g.port ? 470 : 905, y: g.port ? 600 : 380, r: 90, s: 0.6, z: 1 });
+    if (m.trumpCard) {
+      // остаток колоды в углу, козырь — поперёк из-под него
+      const d = g.port ? { x: 470, y: 600 } : { x: 92, y: 190 };
+      items.push({ key: cardKey(m.trumpCard), card: m.trumpCard, x: d.x + 22, y: d.y, r: 90, s: 0.55, z: 1 });
+      items.push({ key: 'tv-deck', card: null, x: d.x, y: d.y, r: 0, s: 0.55, z: 2 });
+    }
     for (const seat of m.seats) {
       const cnt = m.count(seat);
       const a = this.anchor(m, seat);
       const me = seat === this.viewer;
-      const up = this.faceUp(m, seat);
+      const up = me ? this.faceUp(m, seat) : !!m.open?.(seat);
       const list = up ? sortHand(m.hand(seat), m.trump ?? undefined) : [];
       for (let k = 0; k < cnt; k++) {
         if (me) {
@@ -185,7 +192,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : 'tv-no') : '', data: ok ? { hand: c.s + c.r } : undefined });
         } else {
           const p = fan(cnt, k, a.x, a.y, g.port ? 70 : 110, 8, 6, 10);
-          items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: g.os, z: 50 + k });
+          const c = up ? list[k] : undefined;
+          items.push(c ? { key: cardKey(c), card: c, ...p, s: g.os, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: g.os, z: 50 + k });
         }
       }
       const tk = m.tricks(seat);

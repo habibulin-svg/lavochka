@@ -1,0 +1,34 @@
+/* Расписной покер: зелёное сукно кухонного стола под клеёнкой и тетрадная роспись. */
+.table--raspisnoy {
+  --panel-bg: linear-gradient(180deg, #f3f1e6, #e2dcc6);
+  --panel-ink: #1e1a10;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 200, 0.08), transparent 65%), #17150e;
+}
+.tv-cloth.rp-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.12), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #3a6b3a, #234423 70%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5), 0 0 0 10px #7a5a32, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.rp-note { font-size: 13px; opacity: 0.8; }
+/* роспись: тетрадный лист в клетку, заказ — карандашом, очки — синей ручкой */
+.rp-sheet { margin-top: 8px; }
+.rp-sheet-t { font: 700 14px 'PT Serif', Georgia, serif; margin-bottom: 4px; }
+.rs-wrap { max-height: 300px; overflow-y: auto; border-radius: 4px; box-shadow: 0 1px 3px rgba(60, 40, 10, 0.35);
+  background: #fbf8ee linear-gradient(90deg, rgba(70, 110, 170, 0.12) 1px, transparent 1px) 0 0 / 14px 14px,
+    #fbf8ee linear-gradient(rgba(70, 110, 170, 0.12) 1px, transparent 1px) 0 0 / 14px 14px; }
+.rs { width: 100%; border-collapse: collapse; font: 14px 'PT Sans Narrow', 'PT Sans', Arial, sans-serif; color: #1d3a8f; }
+.rs th { font: 600 12px 'PT Sans', Arial, sans-serif; padding: 3px 2px; border-bottom: 1.5px solid #4a4a52; position: sticky; top: 0; background: #fbf8ee; }
+.rs td { padding: 1px 3px; text-align: center; border-bottom: 1px solid rgba(74, 74, 82, 0.18); }
+.rs td.rs-n { color: #4a4a52; font-weight: 700; border-right: 1.5px solid #4a4a52; width: 1%; white-space: nowrap; }
+.rs td.rs-b { color: #4a4a52; font-size: 12px; border-left: 1px solid rgba(74, 74, 82, 0.45); width: 1%; }
+.rs td.rs-p { font-weight: 700; }
+.rs td.rs-p.minus { color: #c8102e; }
+.rs td.rs-p.over { opacity: 0.55; }
+.rs td.pencil { color: #6a6a72; font-style: italic; }
+.rs tr.blk td { border-top: 1.5px solid #4a4a52; }
+.rs tr.cur td { background: rgba(255, 210, 74, 0.35); }
+.rs tr.todo td { color: transparent; }
+.rs tr.todo td.rs-n { color: #9a9aa2; }
+.rs tfoot td { position: sticky; bottom: 0; background: #fbf8ee; font-weight: 700; border-top: 2px solid #4a4a52; color: #1d3a8f; }
