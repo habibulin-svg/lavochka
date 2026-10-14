@@ -1,0 +1,7 @@
+/* Храп: сукно потёртое, бордовое — «под картёжный стол в подсобке». */
+.tv-cloth.kh-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #6a2a2a, #3f1616 70%);
+}
