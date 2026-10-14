@@ -7,6 +7,7 @@
   public/geo/f/<id>.webp — флаг (вписан в 480×240), public/geo/a/<id>.webp — герб (вписан в 360×360);
   tools/geo/data/report.txt — чего не нашлось.
 """
+import blur  # noqa: E402  (tools/geo/blur.py)
 import hashlib
 import io
 import json
@@ -248,6 +249,10 @@ def save(url, dest, box):
     im = im.convert('RGBA')
     im.thumbnail(box, Image.LANCZOS)
     im.save(dest, 'WEBP', quality=86, method=6)
+    # свежая картинка — прежний оригинал для размытия названий устарел
+    stale = os.path.join(blur.OUT_ORIG, os.path.basename(os.path.dirname(dest)), os.path.basename(dest))
+    if os.path.exists(stale):
+        os.remove(stale)
     time.sleep(0.15)
     return True
 
@@ -321,3 +326,7 @@ with open(OUT_JSON, 'w', encoding='utf-8') as fh:
 with open(os.path.join(DATA, 'report.txt'), 'w', encoding='utf-8') as fh:
     fh.write('\n'.join(report) + '\n')
 print('объектов:', len(out), '· с флагом:', sum(1 for e in out if e.get('f')), '· с гербом:', sum(1 for e in out if e.get('a')), '· замечаний:', len(report))
+
+# названия территорий на флагах и гербах — размыть (рамки в tools/geo/blur.json)
+if '--no-images' not in sys.argv:
+    print('размыто картинок:', blur.apply())
