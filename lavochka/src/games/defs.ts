@@ -27,6 +27,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   dots: () => import('./dots/def').then((m) => m.def),
   ttt: () => import('./ttt/def').then((m) => m.def),
   hangman: () => Promise.all([import('./hangman/def'), loadDict(), loadClues()]).then(([m]) => m.def),
+  paperball: () => import('./paperball/def').then((m) => m.def),
   puzzles: () => Promise.all([import('./puzzles/def'), loadClues()]).then(([m]) => m.def),
   thousand: () => import('./thousand/def').then((m) => m.def),
   bura: () => import('./bura/def').then((m) => m.def),
