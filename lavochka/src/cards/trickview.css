@@ -14,7 +14,7 @@
 .tv-center.corner { transform: none; text-align: left; }
 .tv-center small { display: block; font: 400 12px system-ui, sans-serif; opacity: 0.75; }
 .tv-center .red { color: #c8102e; }
-.cs-card.tv-no .cs-face { opacity: 0.6; }
+.cs-card.tv-no .cs-face { filter: brightness(0.72) saturate(0.7); }
 .tv-controls, .tv-btns { display: flex; flex-direction: column; gap: 6px; }
 .tv-btns > .btn { width: 100%; }
 .tv-ask { font-weight: 700; }

@@ -182,6 +182,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
       const me = seat === this.viewer;
       const up = me ? this.faceUp(m, seat) : !!m.open?.(seat);
       const list = up ? sortHand(m.hand(seat), m.trump ?? undefined) : [];
+      // гасим неходовые, только когда в руке есть чем ходить (в торговле/заказе — нет)
+      const anyOk = up && list.some((c) => m.canPlay(c));
       for (let k = 0; k < cnt; k++) {
         if (me) {
           const p = fan(cnt, k, a.x, a.y, g.port ? 480 : 720, g.port ? 56 : 76, 16, 10);
@@ -193,7 +195,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           const act = this.actSeat === seat && !this.hidden;
           const ok = act && m.canPlay(c);
           const sel = this.selected.some((x) => sameCard(x, c));
-          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : 'tv-no') : '', data: ok ? { hand: c.s + c.r } : undefined });
+          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: c.s + c.r } : undefined });
         } else {
           const big = up && m.openBig;
           // крупная открытая рука сбоку — уже и не за краем стола
@@ -207,7 +209,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           const ok = from && m.canPlay(c!);
           items.push(
             c
-              ? { key: cardKey(c), card: c, x: p.x, y: p.y + (ok ? -10 : 0), r: p.r, s: os, z: 50 + k, cls: from ? (ok ? 'cs-can' : 'tv-no') : '', data: ok ? { hand: c.s + c.r, from: String(seat) } : undefined }
+              ? { key: cardKey(c), card: c, x: p.x, y: p.y + (ok ? -10 : 0), r: p.r, s: os, z: 50 + k, cls: from ? (ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: c.s + c.r, from: String(seat) } : undefined }
               : { key: `b:${seat}:${k}`, card: null, ...p, s: os, z: 50 + k }
           );
         }

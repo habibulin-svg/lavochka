@@ -67,11 +67,11 @@ export const def: GameDef<State, Action, Event, View> = {
       type: 'select',
       choices: [
         { value: 2500, label: 'медленно — 2,5 с' },
-        { value: 2000, label: 'спокойно — 2 с' },
-        { value: 1500, label: 'обычно — 1,5 с' },
+        { value: 2000, label: 'обычно — 2 с' },
+        { value: 1500, label: 'бодро — 1,5 с' },
         { value: 1000, label: 'быстро — 1 с' },
       ],
-      default: 1500,
+      default: 2000,
     },
     { key: 'silent', label: 'Тихое', type: 'toggle', default: false, hint: 'Про хлопок не объявляют: смотри, не легла ли на стол чья-то ладонь.' },
     {
@@ -87,8 +87,8 @@ export const def: GameDef<State, Action, Event, View> = {
     },
   ],
   presets: [
-    { id: 'classic', label: 'Дворовое', hint: 'Такт 1,5 с, до всего слова', options: { tact: 1500, silent: false, limit: 5 } },
-    { id: 'silent', label: 'Тихое', hint: 'Без крика — замечай ладони на столе', options: { tact: 1500, silent: true, limit: 5 } },
+    { id: 'classic', label: 'Дворовое', hint: 'Такт 2 с, до всего слова', options: { tact: 2000, silent: false, limit: 5 } },
+    { id: 'silent', label: 'Тихое', hint: 'Без крика — замечай ладони на столе', options: { tact: 2000, silent: true, limit: 5 } },
     { id: 'fast', label: 'Быстрое', hint: 'Такт 1 с, до трёх букв', options: { tact: 1000, silent: false, limit: 3 } },
     { id: 'calm', label: 'Для начала', hint: 'Такт 2,5 с — успеть разобраться', options: { tact: 2500, silent: false, limit: 3 } },
   ],
