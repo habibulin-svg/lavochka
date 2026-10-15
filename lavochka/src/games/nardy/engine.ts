@@ -1,4 +1,4 @@
-/* Нарды — правила (без DOM): длинные, короткие и гюльбара.
+/* Нарды — правила (без DOM): длинные, короткие, гюльбара и греческие тавли (портес, плакото, февга).
  *
  * Доска — 24 пункта, абсолютные номера 0..23: нижний ряд слева направо (0..11), верхний справа налево (12..23).
  * Так ход «вперёд» по абсолютным номерам — против часовой стрелки.
@@ -7,10 +7,15 @@
  *   Чёрные (1) в длинных и гюльбаре: i → i — голова слева внизу, дом слева вверху (ходят в ту же сторону).
  *   Чёрные (1) в коротких: i → (35 - i) % 24 — навстречу белым, дом справа вверху.
  * pts[a] > 0 — столько белых шашек на пункте a, < 0 — чёрных.
+ *
+ * Тавли (греческие): портес — короткие без куба (марс 2, кокс не считается); февга — длинные без правила головы, но пока первая
+ * шашка не дошла до четверти соперника (индекс 12), с головы другую не снимают; плакото — шашки навстречу друг другу,
+ * все 15 на старте, не бьют, а «зажимают»: встал на одиночную шашку соперника — она лежит под твоей и не ходит, пока ты не уйдёшь;
+ * зажал «мать» (шашку соперника на его стартовом пункте) — победа с 2 очками. Матч тавли — эти три игры по кругу до N очков.
  */
 import type { Options, Rng } from '../../core/types';
 
-export type Mode = 'long' | 'short' | 'gulbara';
+export type Mode = 'long' | 'short' | 'gulbara' | 'plakoto' | 'fevga' | 'portes';
 export type HeadRule = 'classic' | 'strict' | 'free';
 export type Block6 = 'rule' | 'home' | 'forbid' | 'allow';
 
@@ -32,7 +37,14 @@ export interface Cfg {
   cascade: boolean;
   /** Гюльбара: несыгранный остаток каскада доигрывает соперник. */
   steal: boolean;
+  /** Матч тавли: портес → плакото → февга по кругу. */
+  tavli?: boolean;
 }
+
+/** Игра тавли по номеру партии. */
+export const tavliMode = (game: number): Mode => (['portes', 'plakoto', 'fevga'] as const)[(game - 1) % 3];
+/** Встречная геометрия (как в коротких). */
+export const isShortGeo = (cfg: Cfg) => cfg.mode === 'short' || cfg.mode === 'portes' || cfg.mode === 'plakoto';
 
 export const DEFAULT_CFG: Cfg = {
   mode: 'long',
@@ -49,7 +61,11 @@ export const DEFAULT_CFG: Cfg = {
 export function cfgFrom(o: Options): Cfg {
   const pick = <T extends string>(v: unknown, list: readonly T[], def: T): T => (list as readonly unknown[]).includes(v) ? (v as T) : def;
   const bool = (v: unknown, def: boolean) => (typeof v === 'boolean' ? v : def);
-  const mode = pick(o.mode, ['long', 'short', 'gulbara'] as const, 'long');
+  const tavli = o.mode === 'tavli';
+  const mode = tavli ? 'portes' : pick(o.mode, ['long', 'short', 'gulbara', 'plakoto', 'fevga', 'portes'] as const, 'long');
+  const greek = mode === 'plakoto' || mode === 'fevga' || mode === 'portes';
+  if (greek)
+    return { mode, target: Math.max(1, Math.min(25, Number(o.target) || (tavli ? 5 : 1))), head: 'free', block6: 'rule', mars: true, koks: false, cube: false, cascade: false, steal: false, tavli };
   return {
     mode,
     target: Math.max(1, Math.min(25, Number(o.target) || 1)),
@@ -76,6 +92,8 @@ export interface CubeState {
 export interface State {
   cfg: Cfg;
   pts: number[];
+  /** Плакото: кто зажат на пункте (место) или -1. */
+  pin?: number[];
   bar: [number, number];
   off: [number, number];
   cur: number;
@@ -114,10 +132,10 @@ export type Action =
   | { type: 'take' }
   | { type: 'drop' };
 
-export type EndKind = 'oin' | 'mars' | 'koks' | 'drop';
+export type EndKind = 'oin' | 'mars' | 'koks' | 'drop' | 'mother';
 
 export type Event =
-  | { type: 'opening'; rolls: [number, number][]; first: number; game: number }
+  | { type: 'opening'; rolls: [number, number][]; first: number; game: number; mode?: Mode }
   | { type: 'roll'; seat: number; dice: [number, number]; cascade?: number[]; noMoves?: boolean }
   | { type: 'stage'; seat: number; value: number }
   | {
@@ -130,6 +148,8 @@ export type Event =
       fromAbs: number;
       toAbs: number;
       hit?: boolean;
+      /** Плакото: зажал шашку соперника. */
+      pin?: boolean;
       stolen?: boolean;
     }
   | { type: 'forfeit'; seat: number; count: number; toOpponent: boolean }
@@ -148,13 +168,13 @@ export interface Step {
 
 export function absOf(cfg: Cfg, p: number, i: number): number {
   if (p === 0) return (12 + i) % 24;
-  return cfg.mode === 'short' ? (35 - i) % 24 : i;
+  return isShortGeo(cfg) ? (35 - i) % 24 : i;
 }
 
 const PATH_CACHE = new Map<string, number[][]>();
 /** idxOf[p][a] — индекс пути игрока p для абсолютного пункта a. */
 export function idxTable(cfg: Cfg): number[][] {
-  const key = cfg.mode === 'short' ? 's' : 'l';
+  const key = isShortGeo(cfg) ? 's' : 'l';
   let t = PATH_CACHE.get(key);
   if (!t) {
     t = [0, 1].map((p) => {
@@ -168,7 +188,8 @@ export function idxTable(cfg: Cfg): number[][] {
 }
 
 export const sign = (p: number) => (p === 0 ? 1 : -1);
-export const isLong = (cfg: Cfg) => cfg.mode !== 'short';
+/** Длинная геометрия: шашка не бьёт, одиночка закрывает пункт (длинные, гюльбара, февга). */
+export const isLong = (cfg: Cfg) => !isShortGeo(cfg);
 
 /** Шашек игрока p на индексе пути i. */
 export function own(s: State, p: number, i: number): number {
@@ -184,6 +205,8 @@ export function foe(s: State, p: number, i: number): number {
 export function allHome(s: State, p: number): boolean {
   if (s.bar[p]) return false;
   for (let i = 0; i < 18; i++) if (own(s, p, i)) return false;
+  // плакото: зажатые шашки тоже должны быть дома
+  if (s.pin) for (let a = 0; a < 24; a++) if (s.pin[a] === p && idxTable(s.cfg)[p][a] < 18) return false;
   return true;
 }
 
@@ -199,7 +222,7 @@ function emptyBoard(cfg: Cfg): number[] {
   const pts = new Array(24).fill(0);
   const put = (p: number, i: number, n: number) => (pts[absOf(cfg, p, i)] += n * sign(p));
   for (const p of [0, 1]) {
-    if (cfg.mode === 'short') {
+    if (cfg.mode === 'short' || cfg.mode === 'portes') {
       // 24-й пункт — 2, 13-й — 5, 8-й — 3, 6-й — 5 (индекс пути = 24 - номер пункта)
       put(p, 0, 2);
       put(p, 11, 5);
@@ -211,7 +234,9 @@ function emptyBoard(cfg: Cfg): number[] {
 }
 
 function freshGame(s: State) {
+  if (s.cfg.tavli) s.cfg = { ...s.cfg, mode: tavliMode(s.game) };
   s.pts = emptyBoard(s.cfg);
+  s.pin = s.cfg.mode === 'plakoto' ? new Array(24).fill(-1) : undefined;
   s.bar = [0, 0];
   s.off = [0, 0];
   s.phase = 'opening';
@@ -243,6 +268,7 @@ export const clone = (s: State): State => ({
   ...s,
   cfg: s.cfg,
   pts: s.pts.slice(),
+  pin: s.pin ? s.pin.slice() : undefined,
   bar: [s.bar[0], s.bar[1]],
   off: [s.off[0], s.off[1]],
   dice: [s.dice[0], s.dice[1]],
@@ -304,9 +330,20 @@ function stepTarget(s: State, p: number, from: number, die: number): number | nu
     if (!s.bar[p]) return null;
   } else if (from < 0 || from > 23 || !own(s, p, from)) return null;
   if (long && from === 0 && s.headMoves >= headLimit(s, p)) return null;
+  // февга: пока первая шашка не дошла до четверти соперника, с головы вторую не снимают
+  if (s.cfg.mode === 'fevga' && from === 0) {
+    let far = -1;
+    for (let i = 1; i < 24; i++) if (own(s, p, i)) far = i;
+    if (far >= 1 && far < 12 && !s.off[p]) return null;
+  }
   const to = (from === BAR ? -1 : from) + die;
   if (to < 24) {
     const f = foe(s, p, to);
+    if (s.cfg.mode === 'plakoto') {
+      // встать можно на пустой, свой или одиночную шашку соперника, под которой никто не зажат
+      if (f > 1 || (f === 1 && s.pin![absOf(s.cfg, p, to)] !== -1)) return null;
+      return to;
+    }
     if (long ? f > 0 : f > 1) return null;
     return to;
   }
@@ -322,10 +359,25 @@ function stepTarget(s: State, p: number, from: number, die: number): number | nu
 function doStep(s: State, p: number, from: number, die: number, to: number) {
   const sg = sign(p);
   let hit = false;
+  let pinned = false;
   if (from === BAR) s.bar[p]--;
-  else s.pts[absOf(s.cfg, p, from)] -= sg;
-  if (to === OFF) s.off[p]++;
   else {
+    const fa = absOf(s.cfg, p, from);
+    s.pts[fa] -= sg;
+    // плакото: ушла последняя шашка — зажатая освобождается
+    if (s.pin && s.pts[fa] === 0 && s.pin[fa] !== -1) {
+      s.pts[fa] = sign(s.pin[fa]);
+      s.pin[fa] = -1;
+    }
+  }
+  if (to === OFF) s.off[p]++;
+  else if (s.pin && s.pts[absOf(s.cfg, p, to)] * sg < 0) {
+    // плакото: зажимаем одиночку
+    const a = absOf(s.cfg, p, to);
+    s.pin[a] = 1 - p;
+    s.pts[a] = sg;
+    pinned = true;
+  } else {
     const a = absOf(s.cfg, p, to);
     if (s.pts[a] * sg < 0) {
       // короткие: бьём одиночную шашку
@@ -348,6 +400,7 @@ function doStep(s: State, p: number, from: number, die: number, to: number) {
     toAbs: to === OFF ? 24 : absOf(s.cfg, p, to),
   };
   if (hit) ev.hit = true;
+  if (pinned) ev.pin = true;
   return ev;
 }
 
@@ -372,7 +425,7 @@ function rawSteps(s: State, p: number): Step[] {
 }
 
 export function boardKey(s: State): string {
-  return s.pts.join(',') + '|' + s.bar.join(',') + '|' + s.off.join(',') + '|' + s.left.join(',') + '|' + s.headMoves;
+  return s.pts.join(',') + '|' + (s.pin ? s.pin.join(',') : '') + '|' + s.bar.join(',') + '|' + s.off.join(',') + '|' + s.left.join(',') + '|' + s.headMoves;
 }
 
 /** Сколько ещё кубиков можно сыграть из этой позиции (в пределах текущей части хода). */
@@ -433,7 +486,8 @@ export function mayDouble(s: State): boolean {
 function endGame(s: State, w: number, kind: EndKind, events: Event[]) {
   const l = 1 - w;
   let base = 1;
-  if (kind !== 'drop' && s.off[l] === 0 && s.cfg.mars) {
+  if (kind === 'mother') base = 2;
+  else if (kind !== 'drop' && s.off[l] === 0 && s.cfg.mars) {
     kind = 'mars';
     base = 2;
     if (s.cfg.koks && isKoks(s, l)) {
@@ -568,9 +622,9 @@ export function apply(state: State, seat: number, a: Action, rng: Rng): { state:
     if (x === y) y = x === 6 ? 5 : x + 1;
     const first = x > y ? 0 : 1;
     s.cur = first;
-    events.push({ type: 'opening', rolls, first, game: s.game });
-    if (s.cfg.mode === 'short') {
-      // в коротких первый ход играют сразу этими кубиками
+    events.push({ type: 'opening', rolls, first, game: s.game, mode: s.cfg.mode });
+    if (isShortGeo(s.cfg) || s.cfg.mode === 'fevga') {
+      // в коротких (и в тавли) первый ход играют сразу этими кубиками
       startMoves(s, Math.max(x, y), Math.min(x, y), events, { type: 'roll', seat: first, dice: [Math.max(x, y), Math.min(x, y)] });
     } else s.phase = 'roll';
     return { state: s, events };
@@ -593,6 +647,11 @@ export function apply(state: State, seat: number, a: Action, rng: Rng): { state:
     const ev = doStep(s, seat, a.from, a.die, to);
     if (s.stealing) ev.stolen = true;
     events.push(ev);
+    // плакото: зажата «мать» — шашка соперника на его стартовом пункте
+    if (ev.pin && to !== OFF && idxTable(s.cfg)[1 - seat][absOf(s.cfg, seat, to)] === 0) {
+      endGame(s, seat, 'mother', events);
+      return { state: s, events };
+    }
     if (s.off[seat] === CHECKERS) {
       endGame(s, seat, 'oin', events);
       return { state: s, events };

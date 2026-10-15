@@ -49,6 +49,8 @@ interface Model {
   pts: number[];
   bar: [number, number];
   off: [number, number];
+  /** Плакото: кто зажат на пункте или -1. */
+  pin?: number[];
 }
 
 class NardyView implements GameView<State, Event> {
@@ -316,11 +318,15 @@ class NardyView implements GameView<State, Event> {
       const v = m.pts[a];
       if (!v) continue;
       const p = v > 0 ? 0 : 1;
+      // плакото: зажатая шашка соперника — в основании стопки
+      const pinned = m.pin && m.pin[a] >= 0 ? m.pin[a] : -1;
+      const shift = pinned >= 0 ? 1 : 0;
       const n = Math.abs(v);
       const { x, bottom } = pointGeo(a);
       const idx = me === p ? this.pathIdx(p, a) : -9;
+      if (pinned >= 0) s += this.checkerSvg(pinned, x, stackY(bottom, 0, n + 1), ' class-add="pinned"');
       for (let k = 0; k < n; k++) {
-        const y = stackY(bottom, k, n);
+        const y = stackY(bottom, k + shift, n + shift);
         const top = k === n - 1;
         const cls = top && movable.has(idx) ? ` data-from="${idx}" class-add="${this.selected === idx ? 'selected' : 'movable'}"` : '';
         s += this.checkerSvg(p, x, y, cls);
@@ -415,7 +421,7 @@ class NardyView implements GameView<State, Event> {
   // ---------------------------------------------------------------- состояние
 
   private syncModel(s: State) {
-    this.model = { pts: s.pts.slice(), bar: [s.bar[0], s.bar[1]], off: [s.off[0], s.off[1]] };
+    this.model = { pts: s.pts.slice(), bar: [s.bar[0], s.bar[1]], off: [s.off[0], s.off[1]], pin: s.pin ? s.pin.slice() : undefined };
   }
 
   private bottomSeat() {

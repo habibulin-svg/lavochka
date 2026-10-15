@@ -12,14 +12,16 @@ export const SEATS = [
 /** Номер пункта глазами игрока: 24 — голова / самый дальний, 1 — последний пункт дома. */
 const ptName = (i: number) => (i === BAR ? 'бар' : i === OFF ? 'снята' : String(24 - i));
 
-const END_TEXT: Record<EndKind, string> = { oin: 'ойн', mars: 'марс', koks: 'кокс', drop: 'отказ от удвоения' };
+const END_TEXT: Record<EndKind, string> = { oin: 'ойн', mars: 'марс', koks: 'кокс', drop: 'отказ от удвоения', mother: 'зажата «мать»' };
+const GREEK = ['tavli', 'portes', 'plakoto', 'fevga'];
+const MODE_NAME: Record<string, string> = { portes: 'портес', plakoto: 'плакото', fevga: 'февга' };
 
 function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
     case 'opening': {
       const last = ev.rolls[ev.rolls.length - 1];
       const ties = ev.rolls.length > 1 ? ` (${ev.rolls.length - 1} ${plural(ev.rolls.length - 1, 'раз', 'раза', 'раз')} поровну)` : '';
-      return `${ev.game > 1 ? `<b>Партия ${ev.game}.</b> ` : ''}Розыгрыш первого хода: ${name(0)} ${last[0]}, ${name(1)} ${last[1]}${ties} — начинают ${name(ev.first)}.`;
+      return `${ev.game > 1 ? `<b>Партия ${ev.game}.</b> ` : ''}${ev.mode && MODE_NAME[ev.mode] ? `<b>${MODE_NAME[ev.mode]}</b>. ` : ''}Розыгрыш первого хода: ${name(0)} ${last[0]}, ${name(1)} ${last[1]}${ties} — начинают ${name(ev.first)}.`;
     }
     case 'roll': {
       let t = `${name(ev.seat)}: <b>${ev.dice[0]}:${ev.dice[1]}</b>`;
@@ -33,6 +35,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'move': {
       let t = `${name(ev.seat)}${ev.stolen ? ' (за соперника)' : ''}: ${ev.from === BAR ? 'с бара' : ptName(ev.from)} → ${ev.to === OFF ? 'снята' : ptName(ev.to)}`;
       if (ev.hit) t += ' — <b>бьёт!</b>';
+      if (ev.pin) t += ' — <b>зажимает!</b>';
       return t;
     }
     case 'forfeit':
@@ -99,6 +102,10 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'long', label: 'длинные нарды' },
         { value: 'short', label: 'короткие нарды' },
         { value: 'gulbara', label: 'гюльбара' },
+        { value: 'tavli', label: 'тавли — портес, плакото, февга по кругу' },
+        { value: 'portes', label: 'портес (греческие короткие)' },
+        { value: 'plakoto', label: 'плакото — зажимать, а не бить' },
+        { value: 'fevga', label: 'февга (греческие длинные)' },
       ],
       default: 'long',
     },
@@ -124,7 +131,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'free', label: 'сколько угодно' },
       ],
       default: 'classic',
-      showIf: (o) => o.mode !== 'short',
+      showIf: (o) => o.mode !== 'short' && !GREEK.includes(String(o.mode)),
     },
     {
       key: 'block6',
@@ -137,7 +144,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'allow', label: 'можно всегда' },
       ],
       default: 'rule',
-      showIf: (o) => o.mode !== 'short',
+      showIf: (o) => o.mode !== 'short' && !GREEK.includes(String(o.mode)),
     },
     { key: 'mars', label: 'Марс — 2 очка', hint: 'Соперник не успел снять ни одной шашки.', type: 'toggle', default: true },
     {
@@ -146,7 +153,7 @@ export const def: GameDef<State, Action, Event, State> = {
       hint: 'Марс, да ещё у проигравшего шашки остались в первой четверти пути (в коротких — на баре или в доме победителя).',
       type: 'toggle',
       default: false,
-      showIf: (o) => o.mars === true,
+      showIf: (o) => o.mars === true && !GREEK.includes(String(o.mode)),
     },
     { key: 'cube', label: 'Куб удвоения', hint: 'Перед броском можно предложить удвоить ставку; отказ — проигрыш по текущему кубу.', type: 'toggle', default: false, showIf: (o) => o.mode === 'short' },
     { key: 'cascade', label: 'Каскад дублей', hint: 'С четвёртого хода дубль тянет за собой все старшие дубли до 6:6.', type: 'toggle', default: true, showIf: (o) => o.mode === 'gulbara' },
@@ -158,6 +165,10 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'short', label: 'Короткие', hint: 'С боем и баром, марс и кокс', options: { mode: 'short', target: 1, mars: true, koks: true, cube: false } },
     { id: 'short-cube', label: 'Короткие с кубом', hint: 'Матч до 5 очков с кубом удвоения', options: { mode: 'short', target: 5, mars: true, koks: true, cube: true } },
     { id: 'gulbara', label: 'Гюльбара', hint: 'Каскад дублей до 6:6', options: { mode: 'gulbara', target: 1, head: 'free', block6: 'rule', mars: true, koks: false, cascade: true, steal: true } },
+    { id: 'tavli', label: 'Тавли', hint: 'Греческий матч до 5: портес, плакото, февга по очереди', options: { mode: 'tavli', target: 5, mars: true } },
+    { id: 'portes', label: 'Портес', hint: 'Греческие короткие: бой, бар, марс — 2', options: { mode: 'portes', target: 1, mars: true } },
+    { id: 'plakoto', label: 'Плакото', hint: 'Шашки навстречу; не бьют, а зажимают', options: { mode: 'plakoto', target: 1, mars: true } },
+    { id: 'fevga', label: 'Февга', hint: 'Греческие длинные: первая шашка уходит вперёд одна', options: { mode: 'fevga', target: 1, mars: true } },
   ],
 
   setup: (_seats, opts) => newGame(cfgFrom(opts)),
@@ -309,6 +320,30 @@ export const def: GameDef<State, Action, Event, State> = {
             mv(5, 6),
             mv(5, 6),
             mv(5, 6, 'Каскад сыгран.'),
+          ],
+        },
+      },
+      {
+        title: 'Тавли: портес и февга',
+        html: `<p><b>Тавли</b> — греческий матч из трёх игр по очереди: портес, плакото, февга, и снова по кругу, пока кто-то не наберёт условленные очки
+          (обычно 5 или 7). Победа — 1 очко, марс (соперник не снял ни одной шашки) — 2.</p>
+          <p><b>Портес</b> — это короткие нарды без куба: шашки идут навстречу, одиночку бьют на бар, с бара входят в дом соперника.
+          <b>Февга</b> — длинные нарды: все 15 шашек на старте, ходят в одну сторону, не бьют, одна шашка держит пункт.
+          Правила головы нет, зато пока первая ушедшая шашка не дошла до четверти соперника, вторую со старта снимать нельзя.</p>`,
+      },
+      {
+        title: 'Плакото: зажим',
+        html: `<p>Все 15 шашек на стартовом пункте, идут навстречу друг другу. Шашки не бьют: встал на <b>одиночную</b> шашку соперника — она
+          <b>зажата</b> под твоей и не ходит, пока ты не уйдёшь с пункта. На пункт с двумя шашками соперника не встать.</p>
+          <p>Зажал «мать» — шашку соперника на его стартовом пункте — и сразу победа с 2 очками.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => pos({ mode: 'plakoto', head: 'free' }, [[0, 13], [5, 1], [2, 1]], [[0, 14], [15, 1]]),
+          intro: 'Плакото. Одиночная чёрная шашка в трёх пунктах от белой.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice(3, 1), caption: 'Выпало 3 и 1.' },
+            mv(5, 3, 'Тройкой — прямо на чёрную: она зажата и не сдвинется, пока белая стоит сверху.'),
+            mv(2, 1, 'Единицей — другой шашкой.'),
           ],
         },
       },

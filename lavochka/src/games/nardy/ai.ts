@@ -1,6 +1,6 @@
 /* Нарды — боты: перебор всех вариантов хода целиком и оценка позиции. */
 import type { Rng } from '../../core/types';
-import { BAR, boardKey, finals, isLong, legalSteps, own, pipCount, simStep, type Action, type State, type Step } from './engine';
+import { BAR, boardKey, finals, isLong, isShortGeo, legalSteps, own, pipCount, simStep, type Action, type State, type Step } from './engine';
 
 /** Сколько из 36 бросков попадают на расстояние d (короткие нарды, прямые и комбинированные удары). */
 const SHOTS = [0, 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1];
@@ -104,7 +104,7 @@ function side(s: State, p: number, w: W): number {
 function idxOfAbs(s: State, o: number, j: number): number {
   // абсолютный пункт индекса j пути соперника
   if (o === 0) return (12 + j) % 24;
-  return s.cfg.mode === 'short' ? (35 - j) % 24 : j;
+  return isShortGeo(s.cfg) ? (35 - j) % 24 : j;
 }
 
 export function evaluate(s: State, p: number, level: number): number {
