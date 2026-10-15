@@ -1,5 +1,5 @@
 /* Яхтзи: стол — сукно с лотком для костей, ниже тетрадный лист с таблицей. */
-.yz-wrap { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: 10px; box-sizing: border-box; overflow: auto; }
+.yz-wrap { position: relative; width: 100%; height: 100%; user-select: none; display: flex; align-items: flex-start; justify-content: center; padding: 10px; box-sizing: border-box; overflow: auto; }
 .yz-table {
   width: min(100%, 760px); margin: auto 0; display: flex; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; border-radius: 18px;
   background: radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.1), transparent 60%), repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px), linear-gradient(160deg, #2f6b45, #1d4a2e 70%);
@@ -45,4 +45,16 @@
   .yz-tray { gap: 6px; }
   .yz-die .die-wrap { zoom: 0.92; }
   .yz-sheet { font-size: 14px; padding-left: 26px; }
+}
+/* в показе правил (окошко ниже 520px) — плотнее, чтобы таблица помещалась целиком */
+@container (max-height: 520px) {
+  .yz-table { padding: 8px; gap: 4px; }
+  .yz-tray { padding: 6px 4px 2px; }
+  .yz-die .die-wrap { zoom: 0.75; }
+  .yz-info { font-size: 14px; }
+  .yz-sheet { font-size: 12px; padding: 4px 4px 4px 22px; background: #fdfaf0; }
+  .yz-sheet::before { left: 16px; }
+  .yz-grid th, .yz-grid td { height: 13px; padding: 0 4px; line-height: 13px; }
+  .yz-grid small { display: inline; font-size: 10px; }
+  .yz-grid td.opt { font-size: 14px; }
 }

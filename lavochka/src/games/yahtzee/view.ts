@@ -22,6 +22,7 @@ class YahtzeeView implements GameView<State, Event> {
   private hint!: HTMLElement;
   private hold = [false, false, false, false, false];
   private actSeat: number | null = null;
+  private holdKey = '';
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -38,13 +39,17 @@ class YahtzeeView implements GameView<State, Event> {
       this.slots.push(slot);
       this.trays.push(new DiceTray(slot.querySelector('.yz-die') as HTMLElement, 1));
     }
+    // касание кубика — отложить; гасим клик, иначе стол примет его за тап по свободному месту и бросит кости
     tray.addEventListener('click', (e) => {
       const el = (e.target as HTMLElement).closest('[data-die]') as HTMLElement | null;
-      if (el) this.toggle(Number(el.dataset.die));
+      if (!el) return;
+      e.preventDefault();
+      this.toggle(Number(el.dataset.die));
     });
     this.info = this.wrap.querySelector('.yz-info') as HTMLElement;
     this.sheet = this.wrap.querySelector('.yz-sheet') as HTMLElement;
     this.sheet.addEventListener('click', (e) => {
+      e.preventDefault();
       const el = (e.target as HTMLElement).closest('[data-cat]') as HTMLElement | null;
       if (el && this.actSeat != null) this.send({ type: 'score', cat: el.dataset.cat });
     });
@@ -212,7 +217,12 @@ class YahtzeeView implements GameView<State, Event> {
   setTurn(toAct: number[], interactive: number[]) {
     const v = this.v;
     this.actSeat = v && !v.over && !this.ctx.demo ? (interactive.find((x) => toAct.includes(x)) ?? null) : null;
-    if (v) this.hold = v.rolls > 0 && v.rolls < 3 ? v.held.slice() : [false, false, false, false, false];
+    // отложенное сбрасываем только при новом броске или смене хода — повторный вызов не должен стирать выбор
+    const key = v ? `${v.turn}:${v.rolls}:${v.moves}` : '';
+    if (v && key !== this.holdKey) {
+      this.holdKey = key;
+      this.hold = v.rolls > 0 && v.rolls < 3 ? v.held.slice() : [false, false, false, false, false];
+    }
     this.draw();
   }
 
