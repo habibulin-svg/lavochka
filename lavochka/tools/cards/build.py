@@ -44,7 +44,8 @@ DECKS = {
     # pips — откуда брать значок масти
     'atlas': {'paper': (250, 248, 240), 'font': 'bahnschrift.ttf|Bold Condensed', 'squeeze': 0.80, 'bold': 0.0, 'small': 0.44,
               'pips': 'sample', 'back': (186, 46, 38)},
-    'slavic': {'paper': (250, 246, 232), 'font': 'ARIALNB.TTF', 'squeeze': 0.66, 'bold': 0.0, 'small': 0.62,
+    # drop — насколько индекс может опуститься от верха ради размера; у славянской — у верха, как в оригинале (замечание пользователя)
+    'slavic': {'paper': (250, 246, 232), 'font': 'ARIALNB.TTF', 'squeeze': 0.66, 'bold': 0.0, 'small': 0.62, 'drop': 24,
                'pips': 'ace', 'back': (150, 38, 48)},
     'russian': {'paper': (251, 249, 241), 'font': 'times.ttf', 'squeeze': 0.62, 'bold': 0.022, 'small': 0.62,
                 'pips': 'sample', 'back': (160, 64, 34)},
@@ -444,11 +445,11 @@ def find_spot(busy, m, cx: float, top: float, shift: int):
     return best
 
 
-def place_index(busy: dict, masks: dict, wmax: int, hint):
+def place_index(busy: dict, masks: dict, wmax: int, hint, drop: int = 60):
     """Одно место индекса на колоду: такое, где он встаёт на всех фигурах с наименьшими сдвигами
     (не больше SHIFT px). Возвращает (cx, top, {угол фигуры: (cx, top)}) или (None, список неудач)."""
     best, worst = None, None
-    for top in range(TOP, TOP + 61, 3):
+    for top in range(TOP, TOP + drop + 1, 3):
         for cx in range(EDGE + (wmax + 1) // 2, EDGE + wmax // 2 + 25, 3):
             total, spots, miss = abs(top - hint[1]) * 0.05 + abs(cx - hint[0]) * 0.05, {}, []
             for key, b in busy.items():
@@ -561,7 +562,7 @@ def build(src: Path, out: Path, only=None, pips_only=False):
             geo = index_geometry(samples, widest, pips)
             masks = {(s, r, c): block_mask(blocks[s, LETTER[r]]) for (s, r, c) in busy}
             wmax = max(b.size[0] for b in widest.values())
-            cx, top, *rest = place_index(busy, masks, wmax, (geo['dcx'], geo['dtop'])) + (None,)
+            cx, top, *rest = place_index(busy, masks, wmax, (geo['dcx'], geo['dtop']), cfg.get('drop', 60)) + (None,)
             if cx is not None:
                 spots = rest[0]
                 geo = index_geometry(samples, widest, pips, cx)
