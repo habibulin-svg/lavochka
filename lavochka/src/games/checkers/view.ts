@@ -96,8 +96,15 @@ class CheckersView implements GameView<S, E> {
 
   // ---------------------------------------------------------------- доска
 
+  /** Турецкие: доска без шахматки — все поля игровые. */
+  private uni = false;
+  private needBuild(st: { n: number; cfg?: { variant?: string } }) {
+    return st.n !== this.n || (st.cfg?.variant === 'turkish') !== this.uni;
+  }
+
   private build(n: number) {
     this.n = n;
+    this.uni = this.s?.cfg?.variant === 'turkish';
     const SQ = this.SQ;
     const light = woodTexture(WOODS.maple, 256, 31);
     const darkW = woodTexture(WOODS.walnut, 256, 17);
@@ -118,7 +125,8 @@ class CheckersView implements GameView<S, E> {
     s += `<rect width="${W}" height="${W}" rx="14" fill="#2a1408"/><image href="${frame}" width="${W}" height="${W}" preserveAspectRatio="none" opacity=".95" clip-path="url(#${this.uid}Round)"/>`;
     s += `<rect x="${F - 6}" y="${F - 6}" width="${IN + 12}" height="${IN + 12}" rx="3" fill="#1a0c04"/>`;
     for (let r = 0; r < n; r++)
-      for (let f = 0; f < n; f++) s += `<rect x="${F + f * SQ}" y="${F + r * SQ}" width="${SQ}" height="${SQ}" fill="url(#${this.uid}${dark(n, (n - 1 - r) * n + f) ? 'D' : 'L'})"/>`;
+      for (let f = 0; f < n; f++)
+        s += `<rect x="${F + f * SQ}" y="${F + r * SQ}" width="${SQ}" height="${SQ}" fill="url(#${this.uid}${!this.uni && dark(n, (n - 1 - r) * n + f) ? 'D' : 'L'})"${this.uni ? ' stroke="#3a2010" stroke-width="1.5"' : ''}/>`;
     s += `<rect x="${F}" y="${F}" width="${IN}" height="${IN}" fill="url(#${this.uid}Lac)" pointer-events="none"/>`;
     s += `<g id="${this.uid}Coords"></g><g id="${this.uid}Marks"></g><g id="${this.uid}Targets"></g><g id="${this.uid}Pieces"></g><g id="${this.uid}Banner"></g>`;
     // шов складной доски — только там, где он идёт по краю клеток
@@ -212,7 +220,7 @@ class CheckersView implements GameView<S, E> {
   private render() {
     const st = this.s;
     if (!st) return;
-    if (st.n !== this.n) {
+    if (this.needBuild(st)) {
       this.build(st.n);
       this.renderCoords();
     }
@@ -419,7 +427,7 @@ class CheckersView implements GameView<S, E> {
     const mine = this.ctx.mySeats;
     const auto = mine.length === 1 && mine[0] === 1;
     this.flipped = this.userFlip ?? auto;
-    if (this.s && this.s.n !== this.n) this.build(this.s.n);
+    if (this.s && this.needBuild(this.s)) this.build(this.s.n);
     this.renderCoords();
     this.render();
   }
@@ -460,7 +468,7 @@ class CheckersView implements GameView<S, E> {
   setView(s: S) {
     this.s = s;
     this.recvAt = Date.now();
-    if (s.n !== this.n) this.build(s.n);
+    if (this.needBuild(s)) this.build(s.n);
     this.gBanner.innerHTML = '';
     this.applyFlip();
   }

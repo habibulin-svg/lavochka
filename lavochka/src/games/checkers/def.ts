@@ -38,6 +38,7 @@ const VARIANT: Record<Variant, string> = {
   brazil: 'Бразильские шашки',
   bashni: 'Столбовые шашки (башни)',
   lasca: 'Ласка — столбовые 7×7',
+  turkish: 'Турецкие шашки',
 };
 
 function describe(ev: E, name: (seat: number) => string): string | null {
@@ -95,6 +96,7 @@ export const def: GameDef<S, A, E, S> = {
         { value: 'brazil', label: 'бразильские — 8×8 по международным правилам' },
         { value: 'bashni', label: 'столбовые (башни) — побитые уходят в плен' },
         { value: 'lasca', label: 'Ласка — столбовые 7×7, дамка на шаг' },
+        { value: 'turkish', label: 'турецкие — все поля, ходы прямо и вбок' },
         { value: 'ugolki', label: 'уголки — перевести шашки в чужой угол' },
       ],
       default: 'russian',
@@ -177,6 +179,7 @@ export const def: GameDef<S, A, E, S> = {
     { id: 'brazil', label: 'Бразильские', hint: '8×8, но бить обязательно больше всех', options: { variant: 'brazil', giveaway: false, fuk: false } },
     { id: 'bashni', label: 'Столбовые', hint: 'Башни: побитые шашки не снимают, а забирают в плен', options: { variant: 'bashni', giveaway: false, fuk: false } },
     { id: 'lasca', label: 'Ласка', hint: 'Международные столбовые на доске 7×7', options: { variant: 'lasca', giveaway: false, fuk: false } },
+    { id: 'turkish', label: 'Турецкие', hint: 'Все 64 поля, ходы по вертикали и горизонтали, бить больше всех', options: { variant: 'turkish', giveaway: false, fuk: false } },
     { id: 'ugolki', label: 'Уголки', hint: 'Дом 3×3, ходы по вертикали и горизонтали', options: { variant: 'ugolki', ugHome: '3x3', ugMoves: 'classic' } },
     { id: 'ugolki-diag', label: 'Диагональные уголки', hint: 'Ходы и прыжки во все стороны', options: { variant: 'ugolki', ugHome: '3x3', ugMoves: 'diagonal' } },
   ],
@@ -362,6 +365,24 @@ export const def: GameDef<S, A, E, S> = {
             cap(mv(0, 7, 'c3', 'd4'), 'Белые выходят в центр.'),
             cap(mv(1, 7, 'e5', 'c3'), 'Чёрные бьют — белая шашка уходит в плен под чёрную.'),
             cap(mv(0, 7, 'b2', 'd4'), 'Белые бьют верхушку башни: чёрная — в плен, а белая на c3 снова свободна.'),
+          ],
+        },
+      },
+      {
+        title: 'Турецкие шашки',
+        html: `<p>Играют на <b>всех 64 полях</b>, по 16 шашек на втором и третьем рядах (первый ряд пустой). Ходят и бьют <b>по вертикали и горизонтали</b>:</p><ul>
+          <li>простая — на одно поле <b>вперёд или вбок</b>, назад нельзя ни ходить, ни бить;</li>
+          <li>дамка — на любое расстояние прямо, бьёт издалека, но в серии не разворачивается назад;</li>
+          <li>побитая шашка снимается <b>сразу</b>; бить обязательно, и <b>больше всех</b>;</li>
+          <li>простая становится дамкой, только закончив ход на последнем ряду.</li></ul>`,
+        demo: {
+          seats: demoSeats,
+          options: { variant: 'turkish' },
+          setup: () => newGame(cfgFrom({ variant: 'turkish' })),
+          steps: [
+            cap(mv(0, 8, 'b3', 'b4'), 'Белые — шаг вперёд.'),
+            cap(mv(1, 8, 'b6', 'b5'), 'Чёрные выходят навстречу.'),
+            cap(mv(0, 8, 'b4', 'b6', 'b8'), 'Белые бьют две шашки подряд — вперёд и ещё раз вперёд — и, закончив ход на последнем ряду, становятся дамкой.'),
           ],
         },
       },

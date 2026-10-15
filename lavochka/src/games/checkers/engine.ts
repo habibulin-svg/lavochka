@@ -1,4 +1,4 @@
-/* Шашки — правила (без DOM): русские, международные (10×10), бразильские, столбовые (башни) и Ласка (7×7);
+/* Шашки — правила (без DOM): русские, международные (10×10), бразильские, столбовые (башни), Ласка (7×7) и турецкие;
  * поддавки и «фук» по-дворовому — на любой доске.
  *
  * Доска n×n, индекс = ряд * n + вертикаль (a1 = 0, ряд 0 — со стороны белых). Играют только тёмные поля: (ряд + вертикаль) чётно.
@@ -7,10 +7,13 @@
  * Место 0 — белые (ходят первыми), 1 — чёрные.
  * Обычные шашки бьют «турецким ударом»: побитые снимаются после хода, а до того мешают и второй раз их не бьют.
  * В столбовых побитая (верхняя шашка башни) сразу уходит под низ бьющей башни — с одной башни можно взять несколько.
+ * Турецкие: все 64 поля, по 16 шашек на 2-м и 3-м рядах; ходят и бьют по вертикали и горизонтали — простая вперёд и вбок,
+ * дамка — на любое расстояние; побитые снимаются сразу; бить обязательно наибольшее число; дамка в серии не разворачивается
+ * назад; простая, дошедшая до последнего ряда в бою, становится дамкой только в конце хода.
  */
 import type { Options } from '../../core/types';
 
-export type Variant = 'russian' | 'international' | 'brazil' | 'bashni' | 'lasca';
+export type Variant = 'russian' | 'international' | 'brazil' | 'bashni' | 'lasca' | 'turkish';
 
 export interface Cfg {
   variant: Variant;
@@ -25,7 +28,7 @@ export interface Cfg {
 
 export const DEFAULT_CFG: Cfg = { variant: 'russian', giveaway: false, fuk: false, clock: 0, inc: 0 };
 
-const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca'];
+const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca', 'turkish'];
 
 export function cfgFrom(o: Options): Cfg {
   const v = String(o.variant) as Variant;
@@ -56,6 +59,8 @@ interface Rules {
   /** Ничья через столько полуходов: в обычных — у обоих есть дамки, никто не бил и не ходил простой;
    *  в столбовых — никто не бил и не делал дамку (соотношение сил не менялось). */
   quietLimit: number;
+  /** Турецкие: ходы по вертикали и горизонтали, все поля доски. */
+  ortho?: boolean;
 }
 
 export const RULES: Record<Variant, Rules> = {
@@ -64,7 +69,17 @@ export const RULES: Record<Variant, Rules> = {
   brazil: { n: 8, rows: 3, maxCapture: true, promoteMid: 'none', backCapture: true, flying: true, columns: false, quietLimit: 50 },
   bashni: { n: 8, rows: 3, maxCapture: false, promoteMid: 'continue', backCapture: true, flying: true, columns: true, quietLimit: 30 },
   lasca: { n: 7, rows: 3, maxCapture: false, promoteMid: 'stop', backCapture: false, flying: false, columns: true, quietLimit: 30 },
+  turkish: { n: 8, rows: 2, maxCapture: true, promoteMid: 'none', backCapture: false, flying: true, columns: false, quietLimit: 30, ortho: true },
 };
+
+const ORTHO = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+/** Играет ли поле: в турецких — все. */
+export const playable = (v: Variant, n: number, sq: number) => (RULES[v].ortho ? true : dark(n, sq));
 
 export interface Move {
   from: number;
@@ -169,6 +184,15 @@ const lastRow = (n: number, c: number, sq: number) => Math.floor(sq / n) === (c 
 export function newGame(cfg: Cfg): State {
   const { n, rows } = RULES[cfg.variant];
   const board = Array<string>(n * n).fill('');
+  if (RULES[cfg.variant].ortho) {
+    // турецкие: 2-й и 3-й ряды, первый пустой
+    for (let sq = 0; sq < n * n; sq++) {
+      const r = Math.floor(sq / n);
+      if (r === 1 || r === 2) board[sq] = 'w';
+      else if (r === n - 2 || r === n - 3) board[sq] = 'b';
+    }
+    return fromBoard(cfg, board, 0);
+  }
   for (let sq = 0; sq < n * n; sq++) {
     if (!dark(n, sq)) continue;
     const r = Math.floor(sq / n);
@@ -225,7 +249,9 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
   work[from] = '';
   const caps: number[] = [];
   const path: number[] = [];
-  const dirs = (king: boolean) => (king || rules.backCapture ? DIRS : DIRS.filter(([dr]) => dr === fwd));
+  const dirs = (king: boolean) => (rules.ortho ? (king ? ORTHO : ORTHO.filter(([dr]) => dr !== -fwd)) : king || rules.backCapture ? DIRS : DIRS.filter(([dr]) => dr === fwd));
+  // турецкие: дамка в серии не разворачивается назад
+  let lastDir: number[] | null = null;
   // побитую в обычных шашках второй раз не бьют; в столбовых она уже ушла, а башня под ней — снова цель
   const target = (t: number) => own(work[t], 1 - c) && (rules.columns || !caps.includes(t));
 
@@ -244,16 +270,20 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
     return lands.length ? { v: t, lands } : null;
   };
 
-  const canCapture = (sq: number, king: boolean) => dirs(king).some(([dr, df]) => victimAt(sq, king, dr, df));
+  const canCapture = (sq: number, king: boolean) => dirs(king).some(([dr, df]) => !(rules.ortho && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) && victimAt(sq, king, dr, df));
 
   const dfs = (sq: number, king: boolean) => {
     for (const [dr, df] of dirs(king)) {
+      if (rules.ortho && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) continue;
       const hit = victimAt(sq, king, dr, df);
       if (!hit) continue;
       caps.push(hit.v);
-      // столбовые: верхняя шашка жертвы сразу уходит под бьющую башню
+      // столбовые: верхняя шашка жертвы сразу уходит под бьющую башню; турецкие — снимается сразу
       const saved = work[hit.v];
       if (rules.columns) work[hit.v] = saved.slice(1);
+      else if (rules.ortho) work[hit.v] = '';
+      const prevDir = lastDir;
+      lastDir = [dr, df];
       const next = hit.lands.map((l) => {
         const promoted = !king && lastRow(n, c, l) && rules.promoteMid !== 'none';
         return { l, k: king || (promoted && rules.promoteMid === 'continue'), promoted, stop: promoted && rules.promoteMid === 'stop' };
@@ -267,6 +297,7 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
         path.pop();
       }
       work[hit.v] = saved;
+      lastDir = prevDir;
       caps.pop();
     }
   };
@@ -276,6 +307,18 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
 function quietFrom(b: string[], n: number, from: number, rules: Rules, out: Move[]) {
   const p = b[from];
   const c = colorOf(p);
+  if (rules.ortho) {
+    const fwd = c === 0 ? 1 : -1;
+    for (const [dr, df] of isKing(p) ? ORTHO : ORTHO.filter(([d]) => d !== -fwd)) {
+      let t = step(n, from, dr, df);
+      while (t >= 0 && b[t] === '') {
+        out.push({ from, path: [t], caps: [], promo: !isKing(p) && lastRow(n, c, t) });
+        if (!isKing(p)) break;
+        t = step(n, t, dr, df);
+      }
+    }
+    return;
+  }
   if (isKing(p)) {
     for (const [dr, df] of DIRS) {
       let t = step(n, from, dr, df);
