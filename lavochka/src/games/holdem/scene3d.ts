@@ -104,6 +104,8 @@ export const RIM_RZ = FELT_RZ + RACE + RAIL_W;
 const CARD_W = 1;
 const CARD_H = 1.55;
 const CARD_T = 0.014;
+/** Смещение мип-уровня текстуры карт (меньше нуля — чётче): индекс мелкой карты на сукне не расплывается. */
+const CARD_LOD_BIAS = -0.6;
 const CHIP_R = 0.2;
 const CHIP_H = 0.055;
 
@@ -580,8 +582,15 @@ export class Table3D {
   private paint(mesh: THREE.Mesh, c: Card | null) {
     mesh.userData.card = c;
     // бумага с лёгким лаком; без тонового сжатия — красные масти не уходят в оранжевый, а белое под лампой не выгорает
-    const mk = (t: THREE.Texture) =>
-      new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, transparent: true, toneMapped: false });
+    const mk = (t: THREE.Texture) => {
+      const m = new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, transparent: true, toneMapped: false });
+      // карты на сукне видны вскользь и мелко: мип-уровень на полступени чётче — индекс читается, а не расплывается
+      m.onBeforeCompile = (sh) => {
+        sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', THREE.ShaderChunk.map_fragment.replace('texture2D( map, vMapUv )', `texture2D( map, vMapUv, ${CARD_LOD_BIAS.toFixed(2)} )`));
+      };
+      m.customProgramCacheKey = () => 'card-lod';
+      return m;
+    };
     const old = mesh.material as THREE.Material[];
     if (Array.isArray(old)) for (const m of old) if (m !== this.edgeMat) m.dispose();
     mesh.material = [mk(this.texture(c)), mk(this.texture(null)), this.edgeMat];

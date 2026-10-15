@@ -16,7 +16,7 @@
  * Вертикальный экран (телефон): если игра дала размеры portrait, сцена переключается на них, когда место под стол
  * вытянуто вверх; игра узнаёт об этом через onMode и раскладывает карты заново (cs.portrait, cs.W, cs.H). */
 import { settings } from '../core/settings';
-import { cardUrl } from './render';
+import { cardUrl, jokerHTML } from './render';
 import { cardId, cardName, type Card } from './deck';
 import './stage.css';
 
@@ -269,7 +269,7 @@ export class CardStage {
     const want = c ? cardId(c) : 'back';
     el.dataset.face = want;
     if (c && c.r === 15) {
-      face.innerHTML = `<span class="card card-joker" data-red="${c.s === 'H' || c.s === 'D' ? 1 : 0}"><b>★</b><small>ДЖОКЕР</small></span>`;
+      face.innerHTML = jokerHTML(c, settings.deck);
       return Promise.resolve();
     }
     const old = face.firstElementChild as HTMLElement | null;

@@ -1,39 +1,65 @@
 #!/usr/bin/env python3
-"""Сборка колод из сканов (нужен только Pillow).
+"""Сборка колод из сканов (нужны Pillow и numpy; шрифты — из C:/Windows/Fonts).
 
-    python tools/cards/build.py ../materials/cards public/cards
+    python tools/cards/build.py ../materials/cards public/cards [atlas,slavic,russian] [pips]
 
-Что делает с каждой колодой (atlas, slavic, russian):
-  * тузы и фигуры — вырезает карту из скана по светлой области, выравнивает цвет бумаги, скругляет углы;
-  * числовые 2–10 — собирает на чистой бумаге: значки масти и маленький значок индекса вырезаны из образца
-    той же масти (или из туза), цифры — шрифтом, похожим на колодный; раскладка значков снята с образцов;
-  * поверх всех карт — «картон»: лёгкое зерно, неровность тона, чуть потёртые края и углы, редкие царапины
-    и залом (у каждой карты свои — случай от её имени);
-  * рубашка — решётка из cards/back.webp, перекрашенная в оттенок колоды.
-Выход: <out>/<колода>/<масть><ранг>.webp (S10, HA…) и back.webp.
+Что делает с каждой колодой (atlas, slavic, russian). Рисунок колод — оригинальный, задача — читаемость
+на телефоне при виде «как те самые колоды» (решения пользователя 2026-10-16):
+  * тузы и фигуры — вырезка из скана, ровная бумага, плотнее краска, резкость; мелкий индекс скана стирается
+    по его пикселям (на его место — цвет соседней бумаги), новый пишется крупнее рядом, не задевая рисунок и рамку;
+  * индекс — гарнитурой, как на сканах колоды; один шрифт, одно ужатие, одна высота и одна маленькая масть на
+    все 13 рангов; высота — наибольшая, при которой индекс встаёт на всех фигурах (место общее, сдвиг ≤ SHIFT);
+  * числовые 2–10 — на чистой бумаге: значки масти из образца (или с туза), раскладка как на образцах, ряды
+    и колонки одни на колоду; колонки отодвинуты, чтобы индекс на значки не наезжал;
+  * без потёртостей и царапин; чёткий тёмный обрез по краю;
+  * рубашка — та же «плетёнка» из cards/back.webp в оттенке колоды, только крупнее (линий меньше, они тоньше).
+Выход: <out>/<колода>/<масть><ранг>.webp (S10, HA…) и back.webp, 480×744.
 """
-import random
 import sys
 from collections import deque
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+import numpy as np
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
-W, H = 320, 496  # выходной размер карты (58×90 мм)
-RADIUS = 16
-GAP = 6  # наименьший зазор между индексом и значком, px
+W, H = 480, 744  # выходной размер карты (58×90 мм)
+RADIUS = 24
+GAP = 9  # наименьший зазор между индексом и значком, px
 SUITS = 'SCDH'
 SCAN_SUIT = {'S': 's', 'C': 'c', 'D': 'd', 'H': 'h'}
 SCAN_RANK = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'}
 SAMPLE = {'S': 10, 'H': 9, 'D': 8, 'C': 7}  # какая числовая карта масти есть в скане
+LETTER = {11: 'В', 12: 'Д', 13: 'К', 14: 'Т'}
+TEXTS = [str(r) for r in range(2, 11)] + list(LETTER.values())
 
 FONTS = 'C:/Windows/Fonts/'
+# Индекс — гарнитурой, как на сканах колоды (сверено бок о бок, решение пользователя 2026-10-16):
+# одна гарнитура, одно ужатие (squeeze — ширина знаков как на скане) и одна жирность на цифры и буквы.
+#   atlas   — узкий «чертёжный» гротеск с прямыми боками у 0, 8, 9 → Bahnschrift Bold Condensed (DIN);
+#   slavic  — жирный узкий гротеск (В, Д, К, Т фигур) → Arial Narrow Bold;
+#   russian — узкая антиква (Таймс-подобная, умеренный контраст) → Times New Roman, чуть ужирнённый обводкой.
+# bold — обводка, доля высоты цифр: «чуть плотнее» оригинала, чтобы читалось мелко.
 DECKS = {
-    # paper — цвет бумаги после выравнивания; font — шрифт цифр индекса; pips — откуда брать значок масти
-    'atlas': {'paper': (247, 244, 233), 'font': 'ARIALN.TTF', 'pips': 'sample', 'back': (186, 46, 38)},
-    'slavic': {'paper': (247, 242, 226), 'font': 'BOD_CB.TTF', 'pips': 'ace', 'back': (150, 38, 48)},
-    'russian': {'paper': (248, 246, 236), 'font': 'BOD_CR.TTF', 'pips': 'sample', 'back': (160, 64, 34)},
+    # paper — цвет бумаги после выравнивания; small — высота маленькой масти под цифрами (доля их высоты);
+    # pips — откуда брать значок масти
+    'atlas': {'paper': (250, 248, 240), 'font': 'bahnschrift.ttf|Bold Condensed', 'squeeze': 0.80, 'bold': 0.0, 'small': 0.44,
+              'pips': 'sample', 'back': (186, 46, 38)},
+    'slavic': {'paper': (250, 246, 232), 'font': 'ARIALNB.TTF', 'squeeze': 0.66, 'bold': 0.0, 'small': 0.62,
+               'pips': 'ace', 'back': (150, 38, 48)},
+    'russian': {'paper': (251, 249, 241), 'font': 'times.ttf', 'squeeze': 0.62, 'bold': 0.022, 'small': 0.62,
+                'pips': 'sample', 'back': (160, 64, 34)},
 }
+XL_MAX = 0.315
+PIP_Y = 0.165  # верхний ряд значков не выше этой доли высоты (не упираться в край)
+INDEX_H = 0.105  # высота цифр индекса (желаемая), доля высоты карты; на всю колоду одна
+K_MIN = 0.6  # меньше этой доли от INDEX_H индекс не уменьшаем
+SMALL_GAP = 0.12  # зазор между цифрами (их выносными) и мастью — доля высоты цифр
+EDGE = 10  # индекс не ближе к боковому обрезу, px
+TOP = 22  # и к верхнему
+MARGIN = 4  # и к рисунку и рамке фигур
+SHIFT = 8  # насколько индекс фигуры можно сдвинуть с общего места, px
+ACE_PIP = 0.23  # значок с туза (славянская колода): наибольший размер, доля ширины — как на её числовых
+BACK_ZOOM = 1.7  # рубашка: тот же рисунок, крупнее — линий на карте меньше
 
 
 # ---------------------------------------------------------------- вырезка и цвет
@@ -69,7 +95,13 @@ def balance(im: Image.Image, target) -> Image.Image:
 
 def load_scan(deck_dir: Path, name: str, paper) -> Image.Image:
     im = Image.open(deck_dir / f'{name}.jpg').convert('RGB')
-    return balance(fit(crop_card(im)), paper)
+    im = balance(fit(crop_card(im)), paper)
+    # краска плотнее (тёмное — к чёрному), цвет сочнее, резче — рисунок тот же
+    im = im.point(lambda v: max(0, min(255, int((v - 14) * 255 / 241))))
+    im = balance(im, paper)
+    im = ImageEnhance.Color(im).enhance(1.15)
+    im = ImageEnhance.Contrast(im).enhance(1.06)
+    return im.filter(ImageFilter.UnsharpMask(radius=1.8, percent=120, threshold=2))
 
 
 def fit(im: Image.Image) -> Image.Image:
@@ -186,29 +218,6 @@ class Sample:
         self.small = glyph(im, self.mask, self.small_comp, pad=1)
 
 
-class Index:
-    """Индекс туза в левом верхнем углу: буква «Т» (по ней — высота и место цифр) и маленькая масть под ней."""
-
-    def __init__(self, ace: Image.Image, paper, fallback: 'Index | None' = None):
-        mask = ink_map(ace, paper)
-        comps = [c for c in components(mask, thr=70, min_area=4) if c[2] < W * 0.2 and c[3] < H * 0.3 and c[0] > 3 and c[1] > 3]
-        letters = [c for c in comps if c[1] < H * 0.12 and c[3] - c[1] > H * 0.04]
-        if letters:
-            letter = max(letters, key=lambda c: c[3] - c[1])
-            self.top, self.height = letter[1], letter[3] - letter[1]
-            self.cx = (letter[0] + letter[2]) / 2
-            self.color = solid_color(ace, mask, letter)
-        elif fallback:  # буква слилась с орнаментом — берём место цифр с другого туза колоды
-            self.top, self.height, self.cx = fallback.top, fallback.height, fallback.cx
-        else:
-            raise ValueError('не нашёл букву индекса на тузе')
-        bottom = self.top + self.height
-        below = [c for c in comps if c[1] > bottom - 2 and c[4] > 30]
-        suit = min(below, key=lambda c: abs((c[0] + c[2]) / 2 - self.cx) + (c[1] - bottom) * 0.5)
-        self.suit_c = ((suit[0] + suit[2]) / 2, (suit[1] + suit[3]) / 2)
-        self.suit = glyph(ace, mask, suit, pad=1)
-
-
 def ace_pip(ace: Image.Image, paper, size) -> Image.Image:
     """Большая масть в центре туза — уменьшенная до размера значка."""
     mask = ink_map(ace, paper)
@@ -246,160 +255,273 @@ def paste_center(layer: Image.Image, g: Image.Image, cx: float, cy: float, flip=
     layer.alpha_composite(g, (round(cx - g.size[0] / 2), round(cy - g.size[1] / 2)))
 
 
-def digits_image(text: str, font_path: str, height: int, squeeze: float, color) -> Image.Image:
-    """Цифры заданной высоты (по «0»), ужатые по ширине в squeeze раз."""
-    size = height
-    font = ImageFont.truetype(font_path, size)
-    for _ in range(60):
-        bb = font.getbbox('0')
-        if bb[3] - bb[1] >= height:
-            break
-        size += 1
-        font = ImageFont.truetype(font_path, size)
-    bb = font.getbbox(text)
-    img = Image.new('RGBA', (bb[2] - bb[0] + 2, bb[3] - bb[1] + 2), (0, 0, 0, 0))
-    ImageDraw.Draw(img).text((1 - bb[0], 1 - bb[1]), text, font=font, fill=color + (255,))
-    return img.resize((max(1, round(img.size[0] * squeeze)), height), Image.LANCZOS)
+class IndexFont:
+    """Гарнитура индекса колоды: одна высота (по «0»), одно ужатие по ширине и одна жирность — для цифр
+    и букв всех тринадцати рангов. Рисуется вчетверо крупнее и уменьшается — края чистые."""
+    S = 4
+
+    def __init__(self, spec: str, cap: int, squeeze: float, bold: float):
+        S = self.S
+        path, _, var = spec.partition('|')
+
+        def font(size):
+            f = ImageFont.truetype(FONTS + path, size)
+            if var:
+                f.set_variation_by_name(var)
+            return f
+
+        self.stroke = round(bold * cap * S)
+        size = cap * S
+        f = font(size)
+        while True:
+            bb = f.getbbox('0', stroke_width=self.stroke)
+            if bb[3] - bb[1] >= cap * S:
+                break
+            size += 1
+            f = font(size)
+        self.f, self.cap, self.sq = f, cap, squeeze
+        self.top = bb[1]
+        # нижний край — общий для всех знаков (у «Д» выносные): масть под ним стоит на одной высоте
+        self.bottom = max(f.getbbox(t, stroke_width=self.stroke)[3] for t in TEXTS)
+        self.desc = max(0, round((self.bottom - bb[3]) / S))
+
+    def image(self, text: str, color) -> Image.Image:
+        """Знак индекса; верх картинки — верх цифр (с полем в 1 px)."""
+        S = self.S
+        bb = self.f.getbbox(text, stroke_width=self.stroke)
+        a = Image.new('L', (bb[2] - bb[0] + 2 * S, self.bottom - self.top + 2 * S), 0)
+        ImageDraw.Draw(a).text((S - bb[0], S - self.top), text, font=self.f, fill=255,
+                               stroke_width=self.stroke, stroke_fill=255)
+        a = a.resize((max(1, round(a.size[0] * self.sq / S)), round(a.size[1] / S)), Image.LANCZOS)
+        out = Image.new('RGBA', a.size, color + (255,))
+        out.putalpha(a)
+        return out
 
 
-def index_geometry(samples: dict, font_path: str) -> dict:
-    """Один индекс на всю колоду: медианы по образцам всех мастей (высота цифр, ширина-ужатие, место)."""
+def index_block(font: IndexFont, text: str, pip: Image.Image, color, small: float) -> Image.Image:
+    """Индекс целиком: знак и маленькая масть под ним, оба по одной середине. Размеры и зазоры —
+    общие на колоду, поэтому у всех карт масть стоит на одной высоте."""
+    t = font.image(text, color)
+    g = small_of(pip, font.cap * small)
+    gy = 1 + font.cap + font.desc + round(font.cap * SMALL_GAP)
+    w = max(t.size[0], g.size[0])
+    blk = Image.new('RGBA', (w, gy + g.size[1] + 1), (0, 0, 0, 0))
+    blk.alpha_composite(t, ((w - t.size[0]) // 2, 0))
+    blk.alpha_composite(g, ((w - g.size[0]) // 2, gy))
+    return blk
+
+
+def block_mask(blk: Image.Image):
+    return np.asarray(blk.getchannel('A')) > 30
+
+
+def index_geometry(samples: dict, blocks: dict, pips: dict, dcx=None) -> dict:
+    """Место индекса числовых карт (одно на колоду) и колонки значков, не задевающие самый широкий индекс."""
     med = lambda xs: sorted(xs)[len(xs) // 2]
-    dh = med([sm.digit_box[3] - sm.digit_box[1] for sm in samples.values()])
-    def squeeze(sm):
-        x0, _, x1, _ = sm.digit_box
-        return (x1 - x0) / digits_image(str(sm.rank), font_path, dh, 1.0, (0, 0, 0)).size[0]
-
-    # «10» — по настоящей десятке (пики), одиночные цифры — по девятке, восьмёрке и семёрке
-    ten = [squeeze(sm) for sm in samples.values() if sm.rank == 10]
-    one = [squeeze(sm) for sm in samples.values() if sm.rank != 10]
-    sq1 = med(one)
-    sq10 = med(ten) if ten else sq1
-    # колонки значков — одни на колоду: как на образцах, но не ближе GAP к самой широкой «10»
-    dcx = med([(sm.digit_box[0] + sm.digit_box[2]) / 2 for sm in samples.values()])
-    w10 = digits_image('10', font_path, dh, sq10, (0, 0, 0)).size[0]
-    need = max((dcx + w10 / 2 + GAP + sm.pip.size[0] / 2) / W for sm in samples.values())
+    wmax = max(b.size[0] for b in blocks.values())
+    if dcx is None:
+        dcx = max(med([(sm.digit_box[0] + sm.digit_box[2]) / 2 for sm in samples.values()]), EDGE + wmax / 2)
+    dtop = max(med([sm.digit_box[1] for sm in samples.values()]), TOP)
+    wnum = max(blocks[str(r)].size[0] for r in range(2, 11))
+    pw = max(p.size[0] for p in pips.values())
+    need = (dcx + wnum / 2 + GAP + pw / 2) / W
     xl = max(med([sm.xl for sm in samples.values()]), need)
-    return {
-        'xl': xl,
-        'dh': dh,
-        'squeeze': sq1,
-        'squeeze10': sq10,
-        'dtop': med([sm.digit_box[1] for sm in samples.values()]),
-        'dcx': med([(sm.digit_box[0] + sm.digit_box[2]) / 2 for sm in samples.values()]),
-        'scx': med([(sm.small_box[0] + sm.small_box[2]) / 2 for sm in samples.values()]),
-        'scy': med([(sm.small_box[1] + sm.small_box[3]) / 2 for sm in samples.values()]),
-    }
+    # колонки не дальше XL_MAX от края — иначе значки сбиваются к середине; лишнее — уменьшаем значки
+    pip_k = 1.0
+    if xl > XL_MAX:
+        pip_k = max(0.6, 2 * (XL_MAX * W - dcx - wnum / 2 - GAP) / pw)
+        xl = XL_MAX
+    # ряды — одни на колоду (медиана образцов), верхний и нижний не ближе PIP_Y к обрезу
+    y0 = max(med([sm.y0 for sm in samples.values()]), PIP_Y)
+    y1 = min(med([sm.y1 for sm in samples.values()]), 1 - PIP_Y)
+    return {'pip_k': pip_k, 'xl': xl, 'y0': y0, 'y1': y1, 'dcx': round(dcx), 'dtop': round(dtop)}
 
 
-def pip_card(rank: int, sm: Sample, pip: Image.Image, small: Image.Image, color, font_path: str, paper, geo: dict) -> Image.Image:
-    """Числовая карта в масштабах образца: значки того же размера и в тех же колонках и рядах;
-    индекс (высота, ширина и место цифр, место маленькой масти) — общий на всю колоду (geo)."""
+def paste_index(layer: Image.Image, blk: Image.Image, cx: float, top: float):
+    """Индекс в левый верхний угол и его же, повёрнутый, — в правый нижний."""
+    x, y = round(cx - blk.size[0] / 2), round(top)
+    layer.alpha_composite(blk, (x, y))
+    layer.alpha_composite(blk.rotate(180), (W - x - blk.size[0], H - y - blk.size[1]))
+
+
+def pip_card(rank: int, pip: Image.Image, blk: Image.Image, paper, geo: dict) -> Image.Image:
+    """Числовая карта: значки в колонках и рядах колоды (geo), индекс — общий на колоду."""
     card = Image.new('RGBA', (W, H), paper + (255,))
     layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    for (fx, fy) in layout(rank, geo['xl'], 1 - geo['xl'], sm.y0, sm.y1):
+    for (fx, fy) in layout(rank, geo['xl'], 1 - geo['xl'], geo['y0'], geo['y1']):
         paste_center(layer, pip, fx * W, fy * H, flip=fy > 0.5 + 1e-6)
-    idx = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    t = digits_image(str(rank), font_path, geo['dh'], geo['squeeze10' if rank == 10 else 'squeeze'], color)
-    idx.alpha_composite(t, (round(geo['dcx'] - t.size[0] / 2), geo['dtop']))
-    sb = sm.small_box
-    g = small.resize((sb[2] - sb[0] + 2, sb[3] - sb[1] + 2), Image.LANCZOS) if small.size != (sb[2] - sb[0] + 2, sb[3] - sb[1] + 2) else small
-    paste_center(idx, g, geo['scx'], geo['scy'])
-    layer.alpha_composite(idx)
-    layer.alpha_composite(idx.rotate(180))
+    paste_index(layer, blk, geo['dcx'], geo['dtop'])
     card.alpha_composite(layer)
     return card.convert('RGB')
 
 
-# ---------------------------------------------------------------- картон и потёртости
-
-_NOISE = {}
-
-
-def noise(size, sigma, seed):
-    """Шум с нужным разбросом: кусок общей текстуры со сдвигом от seed (быстро и повторяемо)."""
-    key = sigma
-    if key not in _NOISE:
-        rnd = random.Random(sigma)
-        tw, th = 1024, 1024
-        tex = Image.new('L', (tw, th))
-        tex.putdata([max(0, min(255, int(rnd.gauss(128, sigma)))) for _ in range(tw * th)])
-        _NOISE[key] = tex
-    tex = _NOISE[key]
-    w, h = size
-    rnd = random.Random(seed)
-    x, y = rnd.randint(0, tex.size[0] - w), rnd.randint(0, tex.size[1] - h)
-    return tex.crop((x, y, x + w, y + h))
+def small_of(pip: Image.Image, height: float) -> Image.Image:
+    """Маленькая масть индекса — уменьшенный большой значок той же колоды (чётче, чем растянутый мелкий)."""
+    k = height / pip.size[1]
+    return pip.resize((max(1, round(pip.size[0] * k)), max(1, round(height))), Image.LANCZOS)
 
 
-def wear(card: Image.Image, seed: str) -> Image.Image:
-    rnd = random.Random(seed)
-    card = card.convert('RGB')
-    # зерно картона
-    grain = noise((W, H), 9, seed + 'g').filter(ImageFilter.GaussianBlur(0.6))
-    card = Image.blend(card, ImageChops.overlay(card, Image.merge('RGB', [grain] * 3)), 0.35)
-    # неровность тона — крупные пятна в пару процентов
-    mott = noise((10, 15), 30, seed + 'm').resize((W, H), Image.BICUBIC).filter(ImageFilter.GaussianBlur(18))
-    shade = mott.point(lambda v: int(255 - max(0, 128 - v) * 0.10))
-    card = ImageChops.multiply(card, Image.merge('RGB', [shade] * 3))
-    # края: чуть темнее у обреза, углы потёрты (светлее, как стёртая краска)
-    edge = Image.new('L', (W, H), 255)
-    ed = ImageDraw.Draw(edge)
-    ed.rounded_rectangle((0, 0, W - 1, H - 1), RADIUS, outline=232, width=2)
-    ed.rounded_rectangle((2, 2, W - 3, H - 3), RADIUS - 2, outline=246, width=2)
-    card = ImageChops.multiply(card, Image.merge('RGB', [edge.filter(ImageFilter.GaussianBlur(1))] * 3))
-    rub = Image.new('L', (W, H), 0)
-    rd = ImageDraw.Draw(rub)
-    for (cx, cy) in ((0, 0), (W, 0), (0, H), (W, H)):
-        for _ in range(rnd.randint(2, 5)):
-            r = rnd.uniform(2, 7)
-            x = cx + (rnd.uniform(3, 14) if cx == 0 else -rnd.uniform(3, 14))
-            y = cy + (rnd.uniform(3, 14) if cy == 0 else -rnd.uniform(3, 14))
-            rd.ellipse((x - r, y - r, x + r, y + r), fill=rnd.randint(20, 55))
-    for _ in range(rnd.randint(3, 8)):  # мелкие сколы по обрезу
-        side = rnd.randint(0, 3)
-        t = rnd.uniform(0.1, 0.9)
-        x, y = [(t * W, 1), (t * W, H - 2), (1, t * H), (W - 2, t * H)][side]
-        r = rnd.uniform(1, 3)
-        rd.ellipse((x - r, y - r, x + r, y + r), fill=rnd.randint(25, 60))
-    rub = rub.filter(ImageFilter.GaussianBlur(1.6))
-    card = Image.composite(Image.new('RGB', (W, H), (238, 234, 222)), card, rub)
-    # царапины и залом — редко и очень бледно
-    marks = Image.new('L', (W, H), 0)
-    md = ImageDraw.Draw(marks)
-    for _ in range(rnd.choice([0, 0, 1, 1, 2])):
-        x, y = rnd.uniform(30, W - 30), rnd.uniform(40, H - 40)
-        dx, dy = rnd.uniform(-60, 60), rnd.uniform(-25, 25)
-        md.line((x, y, x + dx, y + dy), fill=rnd.randint(18, 30), width=1)
-    if rnd.random() < 0.18:
-        y = rnd.uniform(H * 0.25, H * 0.75)
-        tilt = rnd.uniform(-30, 30)
-        md.line((0, y, W, y + tilt), fill=26, width=2)
-    marks = marks.filter(ImageFilter.GaussianBlur(0.7))
-    card = Image.composite(Image.new('RGB', (W, H), (255, 255, 250)), card, marks)
-    # скруглённые углы (сглаживание — рисуем вчетверо крупнее)
-    big = Image.new('L', (W * 4, H * 4), 0)
-    ImageDraw.Draw(big).rounded_rectangle((0, 0, W * 4 - 1, H * 4 - 1), RADIUS * 4, fill=255)
-    out = card.convert('RGBA')
-    out.putalpha(big.resize((W, H), Image.LANCZOS))
+def color_ink(card: Image.Image, color) -> Image.Image:
+    """Пиксели краски индекса (чёрной или красной): серая лента, цветной орнамент и бумага — не она."""
+    a = np.asarray(card.convert('RGB')).astype(np.int32)
+    if max(color) < 90:  # чёрная: тёмное и почти без цвета
+        m = (a.sum(2) < 3 * 125) & (a.max(2) - a.min(2) < 70)
+    else:
+        m = ((a - np.array(color)) ** 2).sum(2) < 120 ** 2
+    return Image.fromarray((m * 255).astype(np.uint8))
+
+
+def erase_corner(card: Image.Image, paper, color) -> Image.Image:
+    """Туз/фигура: мелкий индекс скана (буква и масть под ней в левом верхнем углу) стираем по его же
+    пикселям — рисунок и рамку не трогаем."""
+    mask = color_ink(card, color)
+    comps = [c for c in components(mask, thr=128, min_area=4) if c[2] < W * 0.2 and c[3] < H * 0.3 and c[0] > 3 and c[1] > 3]
+    letters = [c for c in comps if c[1] < H * 0.12 and c[3] - c[1] > H * 0.035 and c[2] - c[0] < W * 0.12]
+    if not letters:
+        return card
+    letter = max(letters, key=lambda c: c[3] - c[1])
+    top, lh = letter[1], letter[3] - letter[1]
+    lcx = (letter[0] + letter[2]) / 2
+    # части буквы (у «Д», «К» бывают отдельные штрихи) и масть под ней
+    parts = [c for c in comps if c[1] >= top - 3 and c[3] <= top + lh + 3 and abs((c[0] + c[2]) / 2 - lcx) < W * 0.06]
+    below = [c for c in comps if c[1] > top + lh - 2 and c[4] > 20 and abs((c[0] + c[2]) / 2 - lcx) < W * 0.06 and c[1] < top + lh + H * 0.08]
+    suit = min(below, key=lambda c: c[1]) if below else None
+    er = Image.new('L', (W, H), 0)
+    ep = er.load()
+    for c in parts + ([suit] if suit else []):
+        for (x, y) in c[5]:
+            ep[x, y] = 255
+    # с ореолом скана (полутона и обводка от резкости) — иначе остаётся тень старой буквы
+    er = er.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(1.0))
+    return Image.composite(paper_fill(card, paper, er), card.convert('RGB'), er)
+
+
+def paper_fill(card: Image.Image, paper, hole: Image.Image) -> Image.Image:
+    """Бумага вместо стёртого: цвет соседней чистой бумаги (она на сканах неровная — плоская заливка
+    оставила бы светлую «тень» буквы)."""
+    a = np.asarray(card.convert('RGB')).astype(np.float32)
+    keep = (np.asarray(hole) < 10) & (np.asarray(ink_map(card, paper)) < 30)
+    acc = np.zeros_like(a)
+    wsum = np.zeros(keep.shape, np.float32)
+    for r in (6, 14, 30):  # чем дальше от края дыры, тем шире берём
+        k = Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.BoxBlur(r))
+        kw = np.asarray(k).astype(np.float32) / 255
+        ch = [np.asarray(Image.fromarray((a[..., i] * keep).astype(np.uint8)).filter(ImageFilter.BoxBlur(r))).astype(np.float32) for i in range(3)]
+        avg = np.stack(ch, -1) / np.maximum(kw, 1e-3)[..., None]
+        use = (wsum < 0.5) & (kw > 0.15)
+        acc[use] = avg[use]
+        wsum[use] = 1
+    acc[wsum == 0] = paper
+    return Image.fromarray(np.clip(acc, 0, 255).astype(np.uint8))
+
+
+def busy_map(card: Image.Image, paper):
+    """Где индексу нельзя: краска рисунка и рамки (с запасом MARGIN), обрез и скруглённый угол."""
+    ink = ink_map(card, paper).point(lambda v: 255 if v > 40 else 0)
+    # соринки скана (точки в пару пикселей) — не рисунок: размыкание, потом запас вокруг
+    ink = ink.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MaxFilter(2 * MARGIN + 1))
+    busy = np.asarray(ink) > 0
+    yy, xx = np.mgrid[0:H, 0:W]
+    r = RADIUS + EDGE
+    corner = (xx < r) & (yy < r) & ((r - xx) ** 2 + (r - yy) ** 2 > (r - EDGE) ** 2)
+    return busy | corner | (xx < EDGE) | (yy < TOP - 8)
+
+
+def find_spot(busy, m, cx: float, top: float, shift: int):
+    """Ближайшее к (cx, top) место, где индекс ничего не задевает: (цена сдвига, cx, top) или None."""
+    h, w = m.shape
+    best = None
+    for dy in range(-shift, shift + 1, 2):
+        for dx in range(-shift, shift + 1, 2):
+            cost = abs(dx) * 1.5 + abs(dy)
+            if best and cost >= best[0]:
+                continue
+            x, y = round(cx - w / 2) + dx, round(top) + dy
+            if x < 0 or y < 0 or x + w > W or y + h > H:
+                continue
+            if not (busy[y:y + h, x:x + w] & m).any():
+                best = (cost, x + w / 2, y)
+    return best
+
+
+def place_index(busy: dict, masks: dict, wmax: int, hint):
+    """Одно место индекса на колоду: такое, где он встаёт на всех фигурах с наименьшими сдвигами
+    (не больше SHIFT px). Возвращает (cx, top, {угол фигуры: (cx, top)}) или (None, список неудач)."""
+    best, worst = None, None
+    for top in range(TOP, TOP + 61, 3):
+        for cx in range(EDGE + (wmax + 1) // 2, EDGE + wmax // 2 + 25, 3):
+            total, spots, miss = abs(top - hint[1]) * 0.05 + abs(cx - hint[0]) * 0.05, {}, []
+            for key, b in busy.items():
+                spot = find_spot(b, masks[key], cx, top, SHIFT)
+                if spot is None:
+                    miss.append(key)
+                    if worst and len(miss) >= len(worst):
+                        break
+                    continue
+                total += spot[0]
+                spots[key] = spot[1:]
+                if best and total >= best[0]:
+                    break
+            if miss:
+                if worst is None or len(miss) < len(worst):
+                    worst = miss
+            elif best is None or total < best[0]:
+                best = (total, cx, top, spots)
+    return best[1:] if best else (None, worst)
+
+
+def finish(card: Image.Image) -> Image.Image:
+    """Скруглённые углы и чёткий тёмный обрез — вместо потёртостей (решение пользователя 2026-10-16)."""
+    S = 3
+    big = Image.new('L', (W * S, H * S), 0)
+    ImageDraw.Draw(big).rounded_rectangle((0, 0, W * S - 1, H * S - 1), RADIUS * S, fill=255)
+    alpha = big.resize((W, H), Image.LANCZOS)
+    line = Image.new('L', (W * S, H * S), 0)
+    ImageDraw.Draw(line).rounded_rectangle((0, 0, W * S - 1, H * S - 1), RADIUS * S, outline=255, width=7)
+    line = line.resize((W, H), Image.LANCZOS)
+    out = Image.composite(Image.new('RGB', (W, H), (70, 60, 50)), card.convert('RGB'), line).convert('RGBA')
+    out.putalpha(alpha)
     return out
 
 
 # ---------------------------------------------------------------- рубашка
 
 def back(src: Path, color, paper, seed: str) -> Image.Image:
-    im = Image.open(src).convert('RGB')
-    im = fit(crop_card(im))
+    im = crop_card(Image.open(src).convert('RGB'))
+    # тот же рисунок, но крупнее: берём середину и растягиваем — линий на карте меньше
+    w, h = im.size
+    cw, ch = round(w / BACK_ZOOM), round(h / BACK_ZOOM)
+    im = im.crop(((w - cw) // 2, (h - ch) // 2, (w - cw) // 2 + cw, (h - ch) // 2 + ch))
+    im = fit(im)
     p = paper_of(im)
     ink = ink_map(im, p)
     card = Image.new('RGB', (W, H), paper)
-    card = Image.composite(Image.new('RGB', (W, H), color), card, ink.point(lambda v: min(255, int(v * 1.25))))
-    return wear(card, seed)
+    # контур линий резче, а сами линии тоньше: растянутый скан мягкий и при увеличении линии толстеют —
+    # берём только плотную середину линии и круто поднимаем край
+    ink = ink.filter(ImageFilter.GaussianBlur(0.8)).point(lambda v: max(0, min(255, int((v - 170) * 4))))
+    # соринки скана (отдельные точки) — не рисунок
+    specks = Image.new('L', (W, H), 0)
+    sp = specks.load()
+    for c in components(ink, thr=60, min_area=1):
+        if c[4] < 60:
+            for (x, y) in c[5]:
+                sp[x, y] = 255
+    ink = ImageChops.subtract(ink, specks.filter(ImageFilter.MaxFilter(3)))
+    card = Image.composite(Image.new('RGB', (W, H), color), card, ink)
+    return finish(card)
+
+
+def recolor(g: Image.Image, color) -> Image.Image:
+    """Значок одним цветом краски (прозрачность — его же), край чуть плотнее."""
+    a = g.getchannel('A').point(lambda v: min(255, int(v * 1.15)))
+    out = Image.new('RGBA', g.size, color + (255,))
+    out.putalpha(a)
+    return out
 
 
 def save(im: Image.Image, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    im.save(path, 'WEBP', quality=84, method=4)
+    im.save(path, 'WEBP', quality=88, method=5)
 
 
 def build(src: Path, out: Path, only=None, pips_only=False):
@@ -410,21 +532,63 @@ def build(src: Path, out: Path, only=None, pips_only=False):
         paper = cfg['paper']
         aces = {s: load_scan(ddir, f'{SCAN_SUIT[s]}A', paper) for s in SUITS}
         samples = {s: Sample(load_scan(ddir, f'{SCAN_SUIT[s]}{SAMPLE[s]}', paper), paper, SAMPLE[s]) for s in SUITS}
-        geo = index_geometry(samples, FONTS + cfg['font'])
-        print(deck, 'индекс', geo)
+        colors, pips = {}, {}
         for s in SUITS:
-            for r in (() if pips_only else (11, 12, 13, 14)):
-                im = aces[s] if r == 14 else load_scan(ddir, f'{SCAN_SUIT[s]}{SCAN_RANK[r]}', paper)
-                save(wear(im, f'{deck}{s}{r}'), out / deck / f'{s}{r}.webp')
             sm = samples[s]
             color = solid_color(sm.im, sm.mask, sm.pip_box)
-            pip, small = sm.pip, sm.small
+            if max(color) - min(color) < 50:  # чёрная краска — гуще
+                color = tuple(int(v * 0.35) for v in color)
+            pip = sm.pip
             if cfg['pips'] == 'ace':  # образцы мелкие и мутные — значки берём с туза той же колоды
-                pip = ace_pip(aces[s], paper, max(sm.pip.size))
-                small = Index(aces[s], paper, Index(aces['S'], paper)).suit
+                pip = ace_pip(aces[s], paper, round(ACE_PIP * W))
+            colors[s], pips[s] = color, recolor(pip, color)
+        # тузы и фигуры: старый индекс стёрт в обоих углах; где индексу нельзя — для каждого угла
+        faces, busy = {}, {}
+        for s in SUITS:
+            for r in (11, 12, 13, 14):
+                im = aces[s] if r == 14 else load_scan(ddir, f'{SCAN_SUIT[s]}{SCAN_RANK[r]}', paper)
+                im = erase_corner(erase_corner(im, paper, colors[s]).rotate(180), paper, colors[s]).rotate(180)
+                faces[s, r] = im
+                busy[s, r, 0] = busy_map(im, paper)
+                busy[s, r, 1] = busy_map(im.rotate(180), paper)
+        # одна высота индекса на всю колоду — наибольшая, при которой он встаёт на всех фигурах, не задевая
+        # рисунок и рамку (место — как у числовых, допускается небольшой сдвиг)
+        k = 1.0
+        while True:
+            font = IndexFont(cfg['font'], round(INDEX_H * H * k), cfg['squeeze'], cfg['bold'])
+            blocks = {(s, t): index_block(font, t, pips[s], colors[s], cfg['small']) for s in SUITS for t in TEXTS}
+            widest = {t: max((blocks[s, t] for s in SUITS), key=lambda b: b.size[0]) for t in TEXTS}
+            geo = index_geometry(samples, widest, pips)
+            masks = {(s, r, c): block_mask(blocks[s, LETTER[r]]) for (s, r, c) in busy}
+            wmax = max(b.size[0] for b in widest.values())
+            cx, top, *rest = place_index(busy, masks, wmax, (geo['dcx'], geo['dtop'])) + (None,)
+            if cx is not None:
+                spots = rest[0]
+                geo = index_geometry(samples, widest, pips, cx)
+                geo['dtop'] = top
+                break
+            print(f'  {deck}: высота {font.cap}px не встаёт на', ' '.join(f'{s}{r}/{c}' for s, r, c in top))
+            if k <= K_MIN:
+                raise SystemExit(f'{deck}: индекс не помещается')
+            k -= 0.02
+        print(deck, 'индекс', font.cap, 'px', geo, 'сдвиги:',
+              {f'{s}{r}/{c}': (round(v[0] - geo['dcx']), v[1] - geo['dtop']) for (s, r, c), v in spots.items() if round(v[0]) != geo['dcx'] or v[1] != geo['dtop']})
+        for s in SUITS:
+            sm = samples[s]
+            pip = pips[s]
+            if geo['pip_k'] < 1:
+                pip = pip.resize((round(pip.size[0] * geo['pip_k']), round(pip.size[1] * geo['pip_k'])), Image.LANCZOS)
+            for r in (() if pips_only else (11, 12, 13, 14)):
+                im = faces[s, r].convert('RGBA')
+                blk = blocks[s, LETTER[r]]
+                for c in (0, 1):
+                    cx, top = spots[s, r, c]
+                    im.alpha_composite(blk, (round(cx - blk.size[0] / 2), round(top)))
+                    im = im.rotate(180)
+                save(finish(im), out / deck / f'{s}{r}.webp')
             for r in range(2, 11):
-                im = pip_card(r, sm, pip, small, color, FONTS + cfg['font'], paper, geo)
-                save(wear(im, f'{deck}{s}{r}'), out / deck / f'{s}{r}.webp')
+                im = pip_card(r, pip, blocks[s, str(r)], paper, geo)
+                save(finish(im), out / deck / f'{s}{r}.webp')
         if not pips_only:
             save(back(src / 'back.webp', cfg['back'], paper, deck + 'back'), out / deck / 'back.webp')
 

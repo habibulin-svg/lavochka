@@ -13,9 +13,15 @@ export function cardUrl(c: Card | null, st: DeckStyle): string {
   return `${BASE}cards/${st}/${c ? c.s + c.r : 'back'}.webp`;
 }
 
-/** Карта как HTML. null — рубашка. Джокера в колодах нет — рисуем простой картонкой. */
+/** Джокер: в сканах колод его нет — рисуем в CSS той же бумагой и тем же шрифтом индекса, что у колоды. */
+export function jokerHTML(c: Card, st: DeckStyle, cls = 'card'): string {
+  const red = c.s === 'H' || c.s === 'D' ? 1 : 0;
+  return `<span class="${cls} card-joker" data-deck="${st}" data-red="${red}" role="img" aria-label="джокер"><i>ДЖОКЕР</i><b>★</b><i>ДЖОКЕР</i></span>`;
+}
+
+/** Карта как HTML. null — рубашка. */
 export function cardHTML(c: Card | null, st: DeckStyle, cls = 'card'): string {
-  if (c && c.r === 15) return `<span class="${cls} card-joker" data-red="${c.s === 'H' || c.s === 'D' ? 1 : 0}"><b>★</b><small>ДЖОКЕР</small></span>`;
+  if (c && c.r === 15) return jokerHTML(c, st, cls);
   return `<img class="${cls}" src="${cardUrl(c, st)}" alt="${c ? cardName(c) : 'рубашка'}" draggable="false" decoding="async">`;
 }
 
