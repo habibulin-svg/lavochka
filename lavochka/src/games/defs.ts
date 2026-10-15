@@ -48,6 +48,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   khrap: () => import('./khrap/def').then((m) => m.def),
   bridge: () => import('./bridge/def').then((m) => m.def),
   poker: () => import('./poker/def').then((m) => m.def),
+  go: () => import('./go/def').then((m) => m.def),
   ochko: () => import('./ochko/def').then((m) => m.def),
   seka: () => import('./seka/def').then((m) => m.def),
   holdem: () => import('./holdem/def').then((m) => m.def),
