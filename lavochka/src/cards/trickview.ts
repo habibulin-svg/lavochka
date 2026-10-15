@@ -34,6 +34,10 @@ export interface TrickModel {
   center?: string;
   /** Чужая рука лежит открыто (лобовая: видны все карты, кроме своей). */
   open?(seat: number): boolean;
+  /** Из этой открытой чужой руки ходит этот экран (болван в бридже): её карты касаются, как свои. */
+  playFrom?(seat: number): boolean;
+  /** Открытые чужие руки крупнее (болван). */
+  openBig?: boolean;
 }
 
 export interface TrickGeo {
@@ -191,9 +195,21 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           const sel = this.selected.some((x) => sameCard(x, c));
           items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : 'tv-no') : '', data: ok ? { hand: c.s + c.r } : undefined });
         } else {
-          const p = fan(cnt, k, a.x, a.y, g.port ? 70 : 110, 8, 6, 10);
+          const big = up && m.openBig;
+          // крупная открытая рука сбоку — уже и не за краем стола
+          const sideSeat = Math.abs(a.x - g.center.x) > (g.port ? 120 : 200);
+          const bw = sideSeat ? (g.port ? 190 : 270) : g.port ? 300 : 420;
+          const bx = big ? Math.max(bw / 2 + 50, Math.min(g.W - bw / 2 - 50, a.x)) : a.x;
+          const p = fan(cnt, k, bx, a.y, big ? bw : g.port ? 70 : 110, big ? (sideSeat ? 22 : g.port ? 34 : 40) : 8, 6, big ? 4 : 10);
           const c = up ? list[k] : undefined;
-          items.push(c ? { key: cardKey(c), card: c, ...p, s: g.os, z: 50 + k } : { key: `b:${seat}:${k}`, card: null, ...p, s: g.os, z: 50 + k });
+          const os = big ? (g.port ? 0.62 : 0.66) : g.os;
+          const from = !!c && this.actSeat != null && !this.hidden && !!m.playFrom?.(seat);
+          const ok = from && m.canPlay(c!);
+          items.push(
+            c
+              ? { key: cardKey(c), card: c, x: p.x, y: p.y + (ok ? -10 : 0), r: p.r, s: os, z: 50 + k, cls: from ? (ok ? 'cs-can' : 'tv-no') : '', data: ok ? { hand: c.s + c.r, from: String(seat) } : undefined }
+              : { key: `b:${seat}:${k}`, card: null, ...p, s: os, z: 50 + k }
+          );
         }
       }
       const tk = m.tricks(seat);
@@ -238,7 +254,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
     const el = (e.target as Element).closest('[data-hand]') as HTMLElement | null;
     if (!el) return;
     const m = this.model(v);
-    const card = m.hand(this.actSeat).find((c) => c.s + c.r === el.dataset.hand);
+    const from = el.dataset.from != null ? Number(el.dataset.from) : this.actSeat;
+    const card = m.hand(from).find((c) => c.s + c.r === el.dataset.hand);
     if (!card || !m.canPlay(card)) return;
     this.onCard(card);
   }

@@ -1,0 +1,21 @@
+/* Бридж: тёмно-зелёное сукно клуба; торговая коробка и запись в панели. */
+.tv-cloth.br-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(160deg, #1f5a3c, #12382a 70%);
+}
+.bg-box { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; max-height: 210px; overflow-y: auto; }
+.bg-box.mini { grid-template-columns: 1fr 1fr; max-height: none; }
+.bg-box .btn { padding: 6px 0; font-weight: 700; width: 100%; background: #fdfaf0; color: #1a1a22; border: 1px solid #b9a77f; box-shadow: none; }
+.bg-box .btn:hover { background: #fff1b8; }
+.bg-box .btn.red { color: #c8102e; }
+.bg-row { display: flex; gap: 4px; }
+.bg-row .btn { flex: 1; }
+.bg-sheet { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.bg-auction, .bg-rubber { width: 100%; border-collapse: collapse; background: #fdfaf0; color: #1d2a4a; box-shadow: 0 1px 3px rgba(60, 40, 10, 0.35); }
+.bg-auction th, .bg-auction td, .bg-rubber th, .bg-rubber td { border: 1px solid rgba(60, 80, 140, 0.3); padding: 1px 4px; text-align: center; }
+.bg-auction td span[title]:not([title='']) { text-decoration: underline dotted; cursor: help; }
+.bg-rubber tr.below td { border-top: 2px solid #1d2a4a; }
+.bg-rubber tr.tot td { font-weight: 700; border-top: 2px solid #1d2a4a; }
+.bg-rubber small { font-size: 10px; color: #556; }
