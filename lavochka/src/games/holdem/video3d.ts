@@ -60,6 +60,8 @@ function pump() {
       .then((b) => job.done(URL.createObjectURL(b)))
       .catch((e) => {
         console.warn('холдем: ролик', job.url, e);
+        // не запоминаем неудачу: следующий запрос скачает заново (сеть до Render бывает рваной)
+        blobs.delete(job.url);
         job.done(null);
       })
       .finally(() => {
@@ -531,7 +533,7 @@ export async function loadVideoPeople(): Promise<People | null> {
   el.setAttribute('playsinline', '');
   el.src = url;
   try {
-    await Promise.race([el.play(), new Promise((_, no) => setTimeout(() => no(new Error('таймаут')), 4000))]);
+    await Promise.race([el.play(), new Promise((_, no) => setTimeout(() => no(new Error('таймаут')), 10000))]);
   } catch (e) {
     console.warn('холдем: видео не играет — люди будут 3D', e);
     return null;

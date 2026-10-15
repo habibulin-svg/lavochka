@@ -425,26 +425,47 @@ export class Table3D {
   private loadPeople() {
     if (this.peopleLoading) return;
     this.peopleLoading = true;
-    // люди-видео (как в Apple poker); не играет видео — 3D-модели
-    import('./video3d')
-      .then((m) => m.loadVideoPeople())
-      .catch((e) => {
-        console.warn('холдем: видео-персонажи', e);
-        return null;
-      })
+    // люди-видео (как в Apple poker); не играет видео — 3D-модели, а видео пробуем ещё (медленная сеть — не навсегда)
+    const video = () =>
+      import('./video3d')
+        .then((m) => m.loadVideoPeople())
+        .catch((e) => {
+          console.warn('холдем: видео-персонажи', e);
+          return null;
+        });
+    video()
       .then((p) => p ?? import('./people3d').then((m) => m.loadPeople()))
       .then((p) => {
-        if (this.disposed || !p) return;
-        this.people = p;
-        this.videoPeople = p.kind === 'video';
-        // камера «как в Apple poker» — только с видео-людьми: встаём сразу
-        this.camInit = false;
-        this.aimCamera();
-        this.scene.add(p.group);
-        this.syncPeople();
-        this.kick();
+        this.usePeople(p);
+        if (p?.kind !== 'video') this.retryVideo(video, 3);
       })
       .catch((e) => console.warn('холдем: персонажи не загрузились', e));
+  }
+
+  /** Посадить людей за стол (заменив прежних). */
+  private usePeople(p: People | null) {
+    if (this.disposed || !p) return;
+    if (this.people) {
+      this.scene.remove(this.people.group);
+      this.people.dispose();
+    }
+    this.people = p;
+    this.videoPeople = p.kind === 'video';
+    // камера «как в Apple poker» — только с видео-людьми: встаём сразу
+    this.camInit = false;
+    this.aimCamera();
+    this.scene.add(p.group);
+    this.syncPeople();
+    this.kick();
+  }
+
+  /** Видео не пошло с первого раза — через полминуты ещё попытка; удалось — меняем 3D-людей на живых. */
+  private retryVideo(video: () => Promise<People | null>, left: number) {
+    if (left <= 0) return;
+    setTimeout(() => {
+      if (this.disposed || this.videoPeople) return;
+      void video().then((p) => (p ? this.usePeople(p) : this.retryVideo(video, left - 1)));
+    }, 30000);
   }
 
   private syncPeople() {
