@@ -8,26 +8,30 @@
  * соперника сделал там 2 или 3 — забираешь, и так же из предыдущих лунок соперника подряд, пока там 2 или 3.
  * Забрать сразу все камни соперника нельзя (взятие отменяется). Если у соперника пусто — обязан ходом дать ему камни;
  * не можешь — партия кончается, свои камни забираешь себе. 25 и больше — победа; бесконечный круг — каждый берёт свои.
+ * Тогыз кумалак — 2×9 лунок, туздык: правила в togyz.ts.
  */
 import type { Options } from '../../core/types';
+import { TOGYZ_SEEDS, tApply, tFinish, tLegal, tRow } from './togyz';
 
 export interface Cfg {
-  variant: 'kalah' | 'oware';
+  variant: 'kalah' | 'oware' | 'togyz';
   seeds: number;
 }
 
 export function cfgFrom(o: Options): Cfg {
-  const variant = o.variant === 'oware' ? 'oware' : 'kalah';
+  const variant = o.variant === 'oware' ? 'oware' : o.variant === 'togyz' ? 'togyz' : 'kalah';
   const seeds = [3, 4, 5, 6].includes(Number(o.seeds)) ? Number(o.seeds) : 4;
-  return { variant, seeds: variant === 'oware' ? 4 : seeds };
+  return { variant, seeds: variant === 'oware' ? 4 : variant === 'togyz' ? TOGYZ_SEEDS : seeds };
 }
 
 export interface State {
   cfg: Cfg;
-  /** Лунки 0–5 — место 0 (слева направо снизу), 6–11 — место 1 (справа налево сверху). */
+  /** Лунки 0–5 — место 0 (слева направо снизу), 6–11 — место 1 (справа налево сверху); в тогыз кумалаке — 0–8 и 9–17. */
   pits: number[];
-  /** Дом (калах) или взятое (оваре). */
+  /** Дом (калах), взятое (оваре) или казан (тогыз). */
   store: [number, number];
+  /** Туздык каждого (номер лунки на стороне соперника) или -1; только в тогыз кумалаке. */
+  tuz: [number, number];
   turn: number;
   moves: number;
   last: { seat: number; pit: number; path: number[]; captured: number[]; again: boolean } | null;
@@ -36,14 +40,16 @@ export interface State {
 }
 
 export type Action = { type: 'sow'; pit: number };
-export type Event = { type: 'sow'; seat: number; pit: number; path: number[]; captured: number[]; again: boolean } | { type: 'end'; winner: number | null; store: [number, number] };
+export type Event = { type: 'sow'; seat: number; pit: number; path: number[]; captured: number[]; again: boolean; tuz?: boolean } | { type: 'end'; winner: number | null; store: [number, number] };
 
+/** Лунок в ряду. */
+export const pitsPerRow = (cfg: Cfg) => (cfg.variant === 'togyz' ? 9 : 6);
 export const own = (seat: number, pit: number) => (seat === 0 ? pit < 6 : pit >= 6);
-const rowOf = (seat: number) => (seat === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11]);
+const rowOf = (seat: number, cfg?: Cfg) => (cfg?.variant === 'togyz' ? tRow(seat) : seat === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11]);
 export const opposite = (pit: number) => 11 - pit;
 
 export function newState(cfg: Cfg): State {
-  return { cfg, pits: Array(12).fill(cfg.seeds), store: [0, 0], turn: 0, moves: 0, last: null, over: false, winner: null };
+  return { cfg, pits: Array(pitsPerRow(cfg) * 2).fill(cfg.seeds), store: [0, 0], tuz: [-1, -1], turn: 0, moves: 0, last: null, over: false, winner: null };
 }
 
 export function setup(_s: number[], opts: Options): State {
@@ -91,6 +97,7 @@ function sowRaw(s: State, seat: number, pit: number) {
 
 /** Можно ли пойти из лунки. */
 export function legal(s: State, seat: number): number[] {
+  if (s.cfg.variant === 'togyz') return tLegal(s, seat);
   const row = rowOf(seat).filter((p) => s.pits[p] > 0);
   if (s.cfg.variant === 'oware') {
     // соперник пуст — только ходы, которые дают ему камни
@@ -103,6 +110,14 @@ export function legal(s: State, seat: number): number[] {
 export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
   if (s0.over || seat !== s0.turn || !a || a.type !== 'sow' || !legal(s0, seat).includes(a.pit)) return null;
   const s: State = { ...s0, store: [...s0.store] as [number, number] };
+  if (s.cfg.variant === 'togyz') {
+    const t = tApply(s, seat, a.pit);
+    s.moves++;
+    s.turn = 1 - seat;
+    const ev: Event[] = [{ type: 'sow', seat, pit: a.pit, path: s.last!.path, captured: t.captured, again: false, tuz: t.tuz }];
+    if (tFinish(s)) finish(s, ev);
+    return { state: s, events: ev };
+  }
   const r = sowRaw(s0, seat, a.pit);
   s.pits = r.pits;
   s.store = r.store;
@@ -166,7 +181,10 @@ function finishIfOver(s: State, ev: Event[]) {
       end = true;
     }
   }
-  if (!end) return;
+  if (end) finish(s, ev);
+}
+
+function finish(s: State, ev: Event[]) {
   s.over = true;
   s.winner = s.store[0] > s.store[1] ? 0 : s.store[1] > s.store[0] ? 1 : null;
   ev.push({ type: 'end', winner: s.winner, store: [...s.store] as [number, number] });

@@ -1,5 +1,6 @@
 /* Манкала — боты: перебор с отсечением (минимакс), оценка — разница взятого/домов.
- *   Лёгкий — на 1 ход вперёд, иногда случайно; Средний — 4 хода; Сложный — 7 ходов (в оваре — 6). */
+ *   Лёгкий — на 1 ход вперёд, иногда случайно; Средний — 4 хода; Сложный — 7 ходов (в оваре — 6).
+ *   В тогыз кумалаке ходов и камней больше — Средний 3, Сложный 5. */
 import type { Rng } from '../../core/types';
 import { apply, legal, type Action, type State } from './engine';
 
@@ -30,7 +31,8 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const moves = legal(s, seat);
   if (!moves.length) return null;
   if (level === 0 && rng.next() < 0.3) return { type: 'sow', pit: moves[rng.int(moves.length)] };
-  const depth = level === 0 ? 1 : level === 1 ? 4 : s.cfg.variant === 'oware' ? 6 : 7;
+  const togyz = s.cfg.variant === 'togyz';
+  const depth = level === 0 ? 1 : level === 1 ? (togyz ? 3 : 4) : togyz ? 5 : s.cfg.variant === 'oware' ? 6 : 7;
   let best = moves[0];
   let bv = -Infinity;
   for (const p of moves) {

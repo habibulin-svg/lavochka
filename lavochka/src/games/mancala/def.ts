@@ -12,7 +12,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
   if (ev.type === 'sow') {
     const parts: string[] = [];
     if (ev.again) parts.push('последний в дом — ходит ещё');
-    if (ev.captured.length) parts.push('берёт камни');
+    if (ev.tuz) parts.push('ставит туздык');
+    else if (ev.captured.length) parts.push('берёт камни');
     return parts.length ? `${name(ev.seat)}: ${parts.join(', ')}` : null;
   }
   if (ev.type === 'end') return `🏁 ${ev.store[0]} : ${ev.store[1]}${ev.winner == null ? ' — ничья' : ` — победа: ${name(ev.winner)}`}.`;
@@ -20,11 +21,12 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 }
 
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
-function pos(variant: string, pits: number[], store: [number, number] = [0, 0], turn = 0): State {
+function pos(variant: string, pits: number[], store: [number, number] = [0, 0], turn = 0, tuz: [number, number] = [-1, -1]): State {
   const s = newState(cfgFrom({ variant }));
   s.pits = pits.slice();
   s.store = store;
   s.turn = turn;
+  s.tuz = tuz;
   return s;
 }
 const S = (seat: number, pit: number, caption?: string) => ({ seat, action: { type: 'sow', pit } as Action, caption });
@@ -42,6 +44,7 @@ export const def: GameDef<State, Action, Event, State> = {
       choices: [
         { value: 'kalah', label: 'калах — с домами, повторный ход' },
         { value: 'oware', label: 'оваре — бери по 2 и 3' },
+        { value: 'togyz', label: 'тогыз кумалак — 2×9 лунок, туздык' },
       ],
       default: 'kalah',
     },
@@ -56,13 +59,14 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 6, label: '6' },
       ],
       default: 4,
-      showIf: (o) => o.variant !== 'oware',
+      showIf: (o) => o.variant !== 'oware' && o.variant !== 'togyz',
     },
   ],
   presets: [
     { id: 'kalah', label: 'Калах', hint: 'По 4 камня, дома, повторный ход и взятие напротив', options: { variant: 'kalah', seeds: 4 } },
     { id: 'kalah6', label: 'Калах (6)', hint: 'По 6 камней — дольше', options: { variant: 'kalah', seeds: 6 } },
     { id: 'oware', label: 'Оваре', hint: 'Африканская: бери по 2 и 3, корми соперника', options: { variant: 'oware' } },
+    { id: 'togyz', label: 'Тогыз кумалак', hint: 'Казахская и киргизская: 9 лунок по 9 камней, туздык, до 82', options: { variant: 'togyz' } },
   ],
 
   setup: (seats, opts) => setup(seats.map((x) => x.seat), opts),
@@ -80,7 +84,7 @@ export const def: GameDef<State, Action, Event, State> = {
   showcase: () => pos('kalah', [0, 5, 3, 7, 1, 2, 4, 0, 6, 2, 1, 3], [9, 5], 0),
 
   rules: {
-    goal: 'Собрать больше камней, чем соперник: в свой дом (калах) или взятками (оваре).',
+    goal: 'Собрать больше камней, чем соперник: в свой дом (калах), взятками (оваре) или в казан (тогыз кумалак — 82 из 162).',
     sections: [
       {
         title: 'Раскладка',
@@ -114,6 +118,30 @@ export const def: GameDef<State, Action, Event, State> = {
           setup: () => pos('oware', [1, 3, 0, 4, 2, 2, 1, 2, 4, 1, 5, 3], [0, 0]),
           intro: 'Оваре. В шестой лунке Вовки два камня.',
           steps: [S(0, 5, 'Два камня: в первую и вторую лунки Ленки — там стало 2 и 3. Вовка берёт обе.')],
+        },
+      },
+      {
+        title: 'Тогыз кумалак: посев и взятие',
+        html: `<p>Казахская и киргизская игра (тогуз коргоол): два ряда по <b>девять лунок</b>, в каждой по девять камней, между рядами — два казана.
+          Ход: взять все камни из своей лунки и раскладывать по одному против часовой стрелки, <b>первый — в ту же лунку</b>
+          (если там был один камень — он уходит в следующую). Последний камень упал к сопернику и там стало <b>чётное</b> число — всё оттуда в свой казан.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => pos('togyz', [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]),
+          intro: 'Начало: по девять камней.',
+          steps: [S(0, 6, 'Седьмая лунка: первый камень — в неё же, дальше по одному; последний — в шестую лунку Ленки, там стало 10. Чётно — Вовка берёт 10.')],
+        },
+      },
+      {
+        title: 'Туздык',
+        html: `<p>Последний камень сделал в лунке соперника ровно <b>три</b> — лунка становится твоим <b>туздыком</b> (отмечена), три камня — в казан,
+          и до конца партии каждый камень, попавший туда, идёт в твой казан. Туздык один на партию; нельзя в 9-й лунке соперника
+          и в лунке с тем же номером, что туздык соперника. Набрал <b>82</b> — победа, 81:81 — ничья; нечем ходить — камни на доске получают хозяева рядов.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => pos('togyz', [2, 5, 0, 7, 3, 1, 4, 0, 6, 3, 2, 8, 0, 2, 1, 6, 4, 2], [30, 31]),
+          intro: 'У Ленки в пятой лунке два камня.',
+          steps: [S(0, 8, 'Шесть камней из девятой: первый — в неё же, последний — в пятую лунку Ленки, там стало три. Туздык Вовки!')],
         },
       },
     ],

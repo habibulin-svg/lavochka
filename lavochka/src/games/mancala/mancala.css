@@ -1,32 +1,35 @@
-/* Манкала: доска из тёмного дерева, лунки-чаши, бусины. */
-.mc-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; user-select: none; }
+/* Манкала: доска — картинка (tools/boards/mancala.py), поверх — камни, зоны касания и счётчики. */
+.mc-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; user-select: none; container-type: size; }
 .mc-board {
-  display: flex; align-items: stretch; gap: 10px; padding: 16px; border-radius: 60px; width: min(100%, 980px); aspect-ratio: 3 / 1; box-sizing: border-box;
-  background: repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.08) 0 4px, transparent 4px 13px), linear-gradient(170deg, #8a5228, #5a3014 70%);
-  box-shadow: inset 0 2px 0 rgba(255, 220, 170, 0.3), inset 0 -6px 14px rgba(0, 0, 0, 0.45), 0 18px 30px rgba(0, 0, 0, 0.55);
+  position: relative; width: min(100cqw, calc(100cqh * 3.07)); max-height: 100%; aspect-ratio: 3.07;
+  background: var(--img) center / 100% 100% no-repeat; filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.5));
 }
-.mc-rows { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-.mc-row { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-.mc-pit, .mc-store {
-  position: relative; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #3a1c08, #5a3014 70%, #6a3a18);
-  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 220, 170, 0.25);
+.mc-board[data-kind='togyz'] { width: min(100cqw, calc(100cqh * 1.607)); }
+.mc-stones { position: absolute; inset: 0; pointer-events: none; }
+.mc-stones i {
+  position: absolute; width: var(--d); aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: center / contain no-repeat;
 }
-.mc-store { width: 13%; border-radius: 40px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8px; }
-.mc-store small { position: relative; color: #f6e2b0; font: 12px system-ui, sans-serif; text-align: center; padding: 0 4px; }
-.mc-pit b, .mc-store b { position: absolute; left: 50%; bottom: -2px; transform: translate(-50%, 50%); background: #f4ecd8; color: #2a1a0a; border-radius: 10px; padding: 0 7px; font: 700 14px system-ui, sans-serif; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-.mc-store b { position: static; transform: none; margin-bottom: 4px; font-size: 18px; }
-.mc-beads { position: absolute; inset: 12%; }
-.mc-beads i { position: absolute; width: 18%; aspect-ratio: 1; margin: -9% 0 0 -9%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff8, transparent 40%), var(--b); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
-.mc-store .mc-beads i { width: 26%; }
-.mc-pit.can { cursor: pointer; box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.6), 0 0 0 3px #ffd24a; }
-.mc-pit.can:hover { filter: brightness(1.15); }
-.mc-pit.hot { box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.6), 0 0 0 3px #fff3b0, 0 0 14px #ffd24a; }
-.mc-pit.took { box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.6), 0 0 0 3px #e0674f; }
+.mc-hole, .mc-store { position: absolute; border-radius: 50%; }
+.mc-board[data-kind='togyz'] .mc-hole, .mc-board[data-kind='togyz'] .mc-store { border-radius: 6%; }
+.mc-hole.can { cursor: pointer; box-shadow: 0 0 0 3px rgba(255, 210, 74, 0.95), 0 0 16px 2px rgba(255, 200, 60, 0.55); }
+.mc-hole.can:hover { background: rgba(255, 230, 140, 0.12); }
+.mc-hole.hot { box-shadow: 0 0 0 3px #fff3b0, 0 0 18px 4px rgba(255, 210, 74, 0.8); }
+.mc-hole.took { box-shadow: 0 0 0 3px rgba(224, 103, 79, 0.95); }
+.mc-hole.tuz { box-shadow: inset 0 0 0 3px var(--tc), 0 0 10px var(--tc); }
+.mc-hole b, .mc-store b {
+  position: absolute; left: 50%; transform: translateX(-50%); min-width: 1.6em; text-align: center;
+  background: rgba(250, 244, 228, 0.94); color: #2a1a0a; border-radius: 999px; padding: 1px 6px;
+  font: 700 clamp(10px, 1.6cqw, 16px) 'PT Sans', system-ui, sans-serif; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); pointer-events: none;
+}
+.mc-hole b { bottom: -0.9em; }
+.mc-hole b.up { bottom: auto; top: -0.9em; }
+.mc-hole.tuz b { background: var(--tc); color: #fff; }
+.mc-store b { bottom: 4%; font-size: clamp(12px, 2cqw, 20px); }
+.mc-store small {
+  position: absolute; left: 50%; top: 4%; transform: translateX(-50%); color: #fff5dc; white-space: nowrap;
+  font: 600 clamp(9px, 1.3cqw, 13px) 'PT Sans', system-ui, sans-serif; text-shadow: 0 1px 2px #000, 0 0 6px #000;
+}
+.mc-store.long b { bottom: auto; top: 50%; left: auto; right: 1.5%; transform: translateY(-50%); }
+.mc-store.long small { top: 50%; left: auto; right: calc(1.5% + 3.4em); transform: translateY(-50%); background: rgba(40, 24, 8, 0.55); padding: 1px 8px; border-radius: 999px; }
 .mc-hint { font-size: 13.5px; }
-@media (max-aspect-ratio: 1/1) {
-  .mc-board { aspect-ratio: auto; height: auto; border-radius: 30px; padding: 10px; gap: 6px; }
-  .mc-rows { gap: 6px; }
-  .mc-row { gap: 6px; }
-  .mc-pit { aspect-ratio: 1; }
-}
-.mc-store .mc-beads { inset: 8% 10% 38% 10%; }

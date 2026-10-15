@@ -1,24 +1,70 @@
-/* Манкала — отрисовка: деревянная доска, два ряда лунок (свой — снизу), дома по краям (калах) или кучки взятого (оваре).
- * Камешки — цветные бусины (до 18 видно россыпью, дальше число). Ход — касание своей лунки; раскладка показывается по камню. */
+/* Манкала — отрисовка: резная доска-картинка (tools/boards/mancala.py, геометрия — layout.ts), свой ряд снизу.
+ * Камни — картинки с тенью: стеклянные шарики (калах), семена цезальпинии (оваре), окатыши-кумалаки (тогыз);
+ * в лунке лежат россыпью в несколько слоёв, в казанах тогыза — рядами вдоль паза. Сверху — зоны касания и счётчики.
+ * Ход — касание своей лунки; раскладка показывается по камню. Туздык — кольцо цвета хозяина. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { legal, type Event, type State } from './engine';
+import { legal, pitsPerRow, type Event, type State } from './engine';
 import { SEATS } from './def';
+import { KALAH, TOGYZ, type BoardGeo, type Hole } from './layout';
 import './mancala.css';
 
-const COLORS = ['#c8432f', '#2f7ac8', '#e0b02a', '#3a9a52', '#8a4ac0', '#e07a2a', '#d8d0c0'];
+const TEX = `${import.meta.env.BASE_URL}tex/mancala/`;
+const SPRITES: Record<string, string[]> = {
+  kalah: Array.from({ length: 7 }, (_, i) => `marble${i}`),
+  oware: Array.from({ length: 4 }, (_, i) => `seed${i}`),
+  togyz: Array.from({ length: 6 }, (_, i) => `kum${i}`),
+};
+/** Больше этого камней в лунке не рисуем (дальше — только число). */
+const MAX_PIT = 26;
+const MAX_STORE = 96;
 
-/** Россыпь бусин в лунке (детерминированно от номера лунки и количества). */
-function beads(n: number, seed: number): string {
-  let out = '';
-  const k = Math.min(n, 18);
-  for (let i = 0; i < k; i++) {
-    const a = (i * 2.399 + seed) % (Math.PI * 2);
-    const r = 8 + ((i * 7 + seed * 3) % 24);
-    const x = 50 + Math.cos(a) * r * (i < 1 ? 0 : 1);
-    const y = 50 + Math.sin(a) * r * (i < 1 ? 0 : 1);
-    out += `<i style="left:${x}%;top:${y}%;--b:${COLORS[(i + seed) % COLORS.length]}"></i>`;
+/** Россыпь в эллипсе: подсолнух по слоям, каждый следующий слой чуть сдвинут и ближе к центру. Координаты — доли полуосей. */
+function spill(n: number, cap: number, seed: number): [number, number][] {
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const layer = Math.floor(i / cap);
+    const j = i % cap;
+    const m = Math.min(cap, n - layer * cap);
+    const r = (m === 1 ? 0.08 : 0.6 * Math.sqrt((j + 0.5) / m)) * (1 - 0.15 * Math.min(layer, 3));
+    const a = j * 2.39996 + seed * 1.7 + layer * 0.95;
+    out.push([Math.cos(a) * r, Math.sin(a) * r]);
+  }
+  return out;
+}
+
+/** Два ровных столбика вдоль отсека (тогыз): шаг — диаметр шарика; не влезли — третий столбик посередине поверх. */
+function columns(n: number, hole: Hole, d: number, aspect: number): [number, number][] {
+  const ball = d * 0.68;
+  const stepV = (ball * aspect) / hole.ry;
+  const du = (ball * 0.55) / hole.rx;
+  const rows = Math.max(1, Math.floor(1.7 / stepV));
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const layer = Math.floor(i / (rows * 2));
+    const k = i % (rows * 2);
+    const row = Math.floor(k / 2);
+    const u = layer ? 0 : k % 2 ? du : -du;
+    out.push([u, -0.85 + stepV * (row + 0.5) + (layer ? stepV * 0.5 : 0)]);
+  }
+  return out;
+}
+
+/** Ряды вдоль длинного паза (казан тогыза). */
+function groove(n: number, hole: Hole, d: number, seed: number): [number, number][] {
+  const len = (hole.rx - hole.ry * 0.4) * 2;
+  const step = d * 0.78;
+  const cols = Math.max(1, Math.floor(len / step));
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const layer = Math.floor(i / (cols * 2));
+    const k = i % (cols * 2);
+    const col = Math.floor(k / 2);
+    const rowv = k % 2;
+    const jit = Math.sin((i + seed) * 12.9898) * 0.08;
+    const x = -len / 2 + step * (col + 0.5 + (layer % 2) * 0.5) + jit * d;
+    out.push([x / hole.rx, (rowv ? 0.32 : -0.32) + jit + (layer ? -0.05 : 0)]);
   }
   return out;
 }
@@ -31,6 +77,7 @@ class MancalaView implements GameView<State, Event> {
   private actSeat: number | null = null;
   private me = 0;
   private hot = -1;
+  private kind = '';
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -46,6 +93,7 @@ class MancalaView implements GameView<State, Event> {
       const pit = Number(el.dataset.pit);
       if (!legal(s, this.actSeat).includes(pit)) return;
       e.preventDefault();
+      e.stopPropagation();
       const seat = this.actSeat;
       this.actSeat = null;
       Sound.unlock();
@@ -53,18 +101,62 @@ class MancalaView implements GameView<State, Event> {
     });
   }
 
+  private geo(s: State): BoardGeo {
+    return s.cfg.variant === 'togyz' ? TOGYZ : KALAH;
+  }
+
   private draw() {
     const s = this.s;
     if (!s) return;
+    const g = this.geo(s);
     const me = this.me;
-    // свой ряд снизу слева направо, чужой — сверху справа налево (по ходу раскладки)
-    const bottom = me === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
-    const top = me === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
+    const N = pitsPerRow(s.cfg);
+    if (this.kind !== s.cfg.variant) {
+      this.kind = s.cfg.variant;
+      this.board.style.setProperty('--img', `url("${TEX}${g.img}")`);
+      this.board.style.aspectRatio = String(g.aspect);
+      this.board.dataset.kind = s.cfg.variant;
+      for (const f of SPRITES[s.cfg.variant]) new Image().src = `${TEX}${f}.webp`;
+    }
+    // свой ряд снизу слева направо, чужой — сверху справа налево (по ходу раскладки против часовой)
+    const mine = Array.from({ length: N }, (_, i) => me * N + i);
+    const theirs = Array.from({ length: N }, (_, i) => (1 - me) * N + (N - 1 - i));
+    const sprites = SPRITES[s.cfg.variant] ?? SPRITES.kalah;
+    const d = g.stone * g.bottom[0].rx * 2; // камень — доля ширины доски
+    const stones: string[] = [];
+    const put = (hole: Hole, n: number, seed: number, long: boolean, max: number) => {
+      const k = Math.min(n, max);
+      const store = hole === g.mine || hole === g.theirs;
+      const pts = long ? groove(k, hole, d, seed) : g.columns && !store ? columns(k, hole, d, g.aspect) : spill(k, store ? g.cap * 2 : g.cap, seed);
+      pts.forEach(([u, v], i) => {
+        const x = hole.x + u * hole.rx;
+        const y = hole.y + v * hole.ry;
+        const f = sprites[(i * 5 + seed * 3) % sprites.length];
+        stones.push(`<i style="left:${(x * 100).toFixed(2)}%;top:${(y * 100).toFixed(2)}%;background-image:url('${TEX}${f}.webp')"></i>`);
+      });
+    };
     const ok = this.actSeat != null ? legal(s, this.actSeat) : [];
-    const pit = (p: number) => `<div class="mc-pit${ok.includes(p) ? ' can' : ''}${p === this.hot ? ' hot' : ''}${s.last && (s.last.captured.includes(p)) ? ' took' : ''}" data-pit="${p}"><div class="mc-beads">${beads(s.pits[p], p)}</div><b>${s.pits[p]}</b></div>`;
-    const store = (seat: number) => `<div class="mc-store" style="--c:${SEATS[seat].color}"><div class="mc-beads">${beads(s.store[seat], seat + 20)}</div><b>${s.store[seat]}</b><small>${esc2(this.ctx.name(seat))}</small></div>`;
-    this.board.innerHTML = `${store(1 - me)}<div class="mc-rows"><div class="mc-row">${top.map(pit).join('')}</div><div class="mc-row">${bottom.map(pit).join('')}</div></div>${store(me)}`;
-    this.board.classList.toggle('oware', s.cfg.variant === 'oware');
+    const longStore = s.cfg.variant === 'togyz';
+    let hits = '';
+    const tuzOwner = (p: number) => (s.tuz?.[0] === p ? 0 : s.tuz?.[1] === p ? 1 : -1);
+    const pitEl = (p: number, hole: Hole, up: boolean) => {
+      put(hole, s.pits[p], p + 1, false, MAX_PIT);
+      const t = tuzOwner(p);
+      // туздык — белый шарик в лунке, как на турнирной доске
+      if (t >= 0) stones.push(`<i style="left:${(hole.x * 100).toFixed(2)}%;top:${(hole.y * 100).toFixed(2)}%;background-image:url('${TEX}tuz.webp')"></i>`);
+      const cls = `mc-hole${ok.includes(p) ? ' can' : ''}${p === this.hot ? ' hot' : ''}${s.last?.captured.includes(p) ? ' took' : ''}${t >= 0 ? ' tuz' : ''}`;
+      hits += `<div class="${cls}" data-pit="${p}" style="${box(hole)}${t >= 0 ? `;--tc:${SEATS[t].color}` : ''}"><b class="${up ? 'up' : ''}">${t >= 0 ? 'туздык' : s.pits[p]}</b></div>`;
+    };
+    mine.forEach((p, i) => pitEl(p, g.bottom[i], false));
+    theirs.forEach((p, i) => pitEl(p, g.top[i], true));
+    const storeEl = (seat: number, hole: Hole, own: boolean) => {
+      put(hole, s.store[seat], seat + 40, longStore, MAX_STORE);
+      hits += `<div class="mc-store${longStore ? ' long' : ''}${own ? ' own' : ''}" style="${box(hole)};--c:${SEATS[seat].color}"><b>${s.store[seat]}</b><small>${esc2(this.ctx.name(seat))}</small></div>`;
+    };
+    storeEl(me, g.mine, true);
+    storeEl(1 - me, g.theirs, false);
+    this.board.style.setProperty('--d', `${(d * 100).toFixed(2)}%`);
+    this.board.innerHTML = `<div class="mc-stones">${stones.join('')}</div>${hits}`;
     if (!this.ctx.demo) this.hint.textContent = this.actSeat != null ? 'Ваш ход: коснитесь своей лунки (нижний ряд).' : s.over ? 'Партия окончена.' : '';
   }
 
@@ -119,8 +211,13 @@ class MancalaView implements GameView<State, Event> {
   }
 
   playerStats(v: State, seat: number) {
-    return `${v.cfg.variant === 'kalah' ? 'в доме' : 'взято'}: ${v.store[seat]}`;
+    return `${v.cfg.variant === 'kalah' ? 'в доме' : v.cfg.variant === 'togyz' ? 'в казане' : 'взято'}: ${v.store[seat]}`;
   }
+}
+
+/** Место лунки на доске (проценты). */
+function box(o: Hole): string {
+  return `left:${((o.x - o.rx) * 100).toFixed(2)}%;top:${((o.y - o.ry) * 100).toFixed(2)}%;width:${(o.rx * 200).toFixed(2)}%;height:${(o.ry * 200).toFixed(2)}%`;
 }
 
 const esc2 = (s: string) => s.replace(/<[^>]+>/g, '');
