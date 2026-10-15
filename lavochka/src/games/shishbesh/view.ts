@@ -67,9 +67,7 @@ class ShishView implements GameView<State, Event> {
       this.board.setRotation(this.bottomSeat(s));
     } else this.board.render(s, false);
     this.board.gLast.innerHTML = '';
-    // людо — один кубик
-    this.tray.dice[1].wrap.style.display = s.cfg?.game === 'ludo' ? 'none' : '';
-    this.tray.show(s.dice[0] ? s.dice : null, s.phase === 'move' ? (s.cfg?.game === 'ludo' ? [s.used[0], true] : s.used) : [true, true]);
+    this.tray.show(s.dice[0] ? s.dice : null, s.phase === 'move' ? s.used : [true, true]);
   }
 
   async play(events: Event[], s: State) {

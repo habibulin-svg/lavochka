@@ -2,6 +2,14 @@
 import type { GameDef, Rng, SeatSpec } from '../../core/types';
 import { chooseMove } from './ai';
 import { applyMove, applyRoll, cfgFrom, DEFAULT_CFG, newGame, type Action, type Cfg, type Event, type State } from './engine';
+import { chooseL } from '../ludo/ai';
+import { applyLMove, applyLRoll, isL, lcfgFrom, lToAct, newLGame, type LAction, type LEvent, type LState } from '../ludo/engine';
+
+/** Людо и парчис играются на своих досках своим движком (src/games/ludo); шиш-беш — этим. */
+type AnyState = State | LState;
+type AnyAction = Action | LAction;
+type AnyEvent = Event | LEvent;
+const isLudoOpts = (o: { game?: unknown }) => o.game === 'ludo' || o.game === 'parchis';
 
 export const SEATS = [
   { name: 'Красный', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -10,9 +18,29 @@ export const SEATS = [
   { name: 'Синий', color: '#2b5c9e', light: '#5f8fd0', dark: '#16325a' },
 ];
 
-const AGAIN: Record<string, string> = { double: 'Дубль (в людо — шестёрка)', capture: 'За срубленную фишку', both: 'Дубль и рубка' };
+const AGAIN: Record<string, string> = { double: 'Дубль', capture: 'За срубленную фишку', both: 'Дубль и рубка' };
 
-function describe(ev: Event, name: (seat: number) => string): string {
+function describeL(ev: LEvent, name: (seat: number) => string): string {
+  const lines: string[] = [];
+  const who = name(ev.seat);
+  if (ev.type === 'roll') {
+    lines.push(`${who} выбросил <b>${ev.die}</b>${ev.value !== ev.die ? ` — ходит на ${ev.value}` : ''}`);
+    if (ev.burnt) lines.push(ev.penalty ? '<i>Третья шестёрка подряд — фишка, ходившая последней, идёт домой.</i>' : '<i>Третья шестёрка подряд — ход сгорает.</i>');
+    else if (ev.noMoves) lines.push('<i>Ходов нет.</i>');
+  } else {
+    let t = ev.from < 0 ? `${who} выводит фишку` : ev.bonus ? `${who} ходит бонусом на ${ev.gain}` : `${who} ходит на ${ev.steps}`;
+    if (ev.goal) t += ' и доводит её до центра';
+    if (ev.captured.length) t += ' и рубит ' + ev.captured.map((c) => name(c.seat)).join(', ') + '!';
+    lines.push(t);
+    if (ev.win) lines.push(`🏆 ${who} довёл все фишки!`);
+  }
+  if (ev.again && !(ev.type === 'move' && ev.win)) lines.push(`<i>${name(ev.next)} бросает ещё раз.</i>`);
+  return lines.join('<br>');
+}
+
+function describe(ev0: AnyEvent, name: (seat: number) => string): string {
+  if ((ev0 as LEvent).lg) return describeL(ev0 as LEvent, name);
+  const ev = ev0 as Event;
   const lines: string[] = [];
   if (ev.type === 'roll') {
     const dbl = ev.dice[1] && ev.dice[0] === ev.dice[1] ? ' — <b>дубль!</b>' : '';
@@ -66,7 +94,16 @@ function pos(red: number[], green: number[], cfg: Cfg = DEFAULT_CFG): State {
 /** Кубики для подкрутки: dice(6, 4) → значения rng.int(6). */
 const dice = (a: number, b: number) => [a - 1, b - 1];
 
-export const def: GameDef<State, Action, Event, State> = {
+/** Позиция людо/парчиса для показа: фишки красного и зелёного, ход красного. */
+function lpos(kind: 'ludo' | 'parchis', red: number[], green: number[], extra: Record<string, unknown> = {}): LState {
+  const s = newLGame([0, 1], lcfgFrom({ game: kind, ...extra }));
+  s.pieces[0] = red;
+  s.pieces[1] = green;
+  s.cur = s.seats.indexOf(0);
+  return s;
+}
+
+export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
   id: 'shishbesh',
   title: 'Шиш-беш',
   players: { min: 2, max: 4, default: 4 },
@@ -80,10 +117,25 @@ export const def: GameDef<State, Action, Event, State> = {
       type: 'select',
       choices: [
         { value: 'shishbesh', label: 'шиш-беш — два кубика, углы, укрытия' },
-        { value: 'ludo', label: 'людо — один кубик, выход на 6' },
-        { value: 'parchis', label: 'парчис — выход на 5, блокады, бонусы' },
+        { value: 'ludo', label: 'людо — своя доска, выход на 6' },
+        { value: 'parchis', label: 'парчис — испанская доска, выход на 5, барьеры, бонусы' },
       ],
       default: 'shishbesh',
+    },
+    {
+      key: 'ludoBonus',
+      label: 'Ещё бросок за рубку и за фишку в доме',
+      type: 'toggle',
+      default: false,
+      showIf: (o) => o.game === 'ludo',
+    },
+    {
+      key: 'ludoBlocks',
+      label: 'Блоки',
+      type: 'toggle',
+      default: false,
+      hint: 'Две свои фишки на клетке — ни пройти, ни срубить.',
+      showIf: (o) => o.game === 'ludo',
     },
     {
       key: 'arm',
@@ -134,30 +186,40 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'long', label: 'Длинное поле', hint: 'Плечо креста на клетку длиннее', options: { arm: 6, houses: 'opposite', start: 'six' } },
     { id: 'alternate', label: 'Домики через один', hint: 'Укрытия на луче не напротив, а со сдвигом на клетку', options: { arm: 5, houses: 'alternate', start: 'six' } },
     { id: 'double', label: 'Старт на дубль', hint: 'Фишка выходит из парка только на дубль', options: { arm: 5, houses: 'opposite', start: 'double' } },
-    { id: 'ludo', label: 'Людо', hint: 'Один кубик, выход и лишний бросок на 6, безопасные звёзды', options: { game: 'ludo' } },
-    { id: 'parchis', label: 'Парчис', hint: 'Выход на 5, блокады, +20 за рубку и +10 за дом', options: { game: 'parchis' } },
+    { id: 'ludo', label: 'Людо', hint: 'Своя доска, один кубик, выход и ещё бросок на 6, безопасные звёзды', options: { game: 'ludo', ludoBonus: false, ludoBlocks: false } },
+    { id: 'ludoplus', label: 'Людо с бонусами', hint: 'Ещё бросок за рубку и за дом, блоки из двух фишек', options: { game: 'ludo', ludoBonus: true, ludoBlocks: true } },
+    { id: 'parchis', label: 'Парчис', hint: 'Испанская доска на 68 клеток: выход на 5, барьеры, +20 за рубку и +10 за дом', options: { game: 'parchis' } },
   ],
 
-  setup: (seats, opts, rng) => newGame(seats.map((s) => s.seat), rng, cfgFrom(opts)),
+  setup: (seats, opts, rng) => (isLudoOpts(opts) ? newLGame(seats.map((s) => s.seat), lcfgFrom(opts)) : newGame(seats.map((s) => s.seat), rng, cfgFrom(opts))),
 
-  toAct: (s) => (s.phase === 'over' ? [] : [s.players[s.cur].seat]),
+  toAct: (s) => (isL(s) ? lToAct(s) : s.phase === 'over' ? [] : [s.players[s.cur].seat]),
 
-  apply(s, seat, a, rng: Rng) {
+  apply(s0, seat, a0, rng: Rng) {
+    if (isL(s0)) {
+      if (s0.phase === 'over' || s0.seats[s0.cur] !== seat) return null;
+      const a = a0 as LAction;
+      if (a.type === 'roll') return applyLRoll(s0, rng.int(6) + 1);
+      if (a.type === 'move' && s0.phase === 'move') return applyLMove(s0, a.piece);
+      return null;
+    }
+    const s = s0;
+    const a = a0 as Action;
     if (s.phase === 'over' || s.players[s.cur].seat !== seat) return null;
     let res: { state: State; event: Event } | null = null;
-    if (a.type === 'roll') res = applyRoll(s, s.cfg?.game === 'ludo' ? [rng.int(6) + 1, 0] : [rng.int(6) + 1, rng.int(6) + 1]);
+    if (a.type === 'roll') res = applyRoll(s, [rng.int(6) + 1, rng.int(6) + 1]);
     else if (a.type === 'move') res = applyMove(s, a);
     return res && { state: res.state, events: [res.event] };
   },
 
   view: (s) => s,
 
-  result: (s) =>
-    s.winner == null ? null : { winners: [s.winner], text: 'первым завёл все четыре фишки в домик' },
+  result: (s) => (s.winner == null ? null : { winners: [s.winner], text: isL(s) ? 'первым довёл все четыре фишки' : 'первым завёл все четыре фишки в домик' }),
 
   bot: {
     levels: ['Лёгкий', 'Средний', 'Сложный'],
-    choose(s, _seat, level, rng) {
+    choose(s, seat, level, rng) {
+      if (isL(s)) return chooseL(s, seat, level, rng);
       if (s.phase === 'roll') return { type: 'roll' };
       const m = chooseMove(s, level, rng);
       return m && { type: 'move', piece: m.piece, die: m.die, to: m.to };
@@ -306,39 +368,55 @@ export const def: GameDef<State, Action, Event, State> = {
       },
       {
         title: 'Людо',
-        html: `<p>Тот же крест с длинным плечом, но правила людо. Кубик <b>один</b>. Фишка выходит из парка только на <b>6</b> и сразу встаёт на свою первую клетку круга.
-          Шестёрка даёт <b>ещё бросок</b>, но три шестёрки подряд — ход сгорает.</p>
-          <p>Рубят на любой клетке, кроме <b>безопасных</b> (отмечены на поле): своей стартовой у каждого и «звезды» через восемь от неё. Свои фишки могут стоять вместе.
-          В домик — только точным броском до последней клетки; все четыре там — победа. Прыжков с углов нет.</p>`,
+        html: `<p>Своя доска: крест 15×15, круг из 52 клеток, в углах — дворы, у каждого цвета дорожка из пяти клеток к центру. Кубик <b>один</b>,
+          ходят по часовой стрелке. Фишка выходит со двора только на <b>6</b> — на свою цветную стартовую клетку; шестёрка даёт <b>ещё бросок</b>,
+          но три шестёрки подряд — ход сгорает.</p>
+          <p>Встал на чужую фишку — она идёт обратно во двор. Кроме <b>безопасных</b> клеток: стартовых и звёзд. В центр — только точным броском;
+          все четыре фишки в центре — победа. «Людо с бонусами»: ещё бросок за рубку и за фишку в центре, две свои фишки на клетке — блок.</p>`,
         demo: {
           seats: demoSeats,
           options: { game: 'ludo' },
-          setup: () => pos([-1, -1, -1, -1], [20, -1, -1, -1], cfgFrom({ game: 'ludo' })),
-          intro: 'Людо. Все красные фишки в парке.',
+          setup: () => lpos('ludo', [-1, -1, -1, -1], [43, -1, -1, -1]),
+          intro: 'Людо. Все красные фишки во дворе, зелёная — недалеко от красного старта.',
           steps: [
-            { seat: 0, action: { type: 'roll' }, rig: [5], caption: 'Выпала шестёрка — можно выводить.' },
-            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 1 }, caption: 'Фишка встаёт на свою стартовую клетку. За шестёрку — ещё бросок.' },
+            { seat: 0, action: { type: 'roll' }, rig: [5], caption: 'Шестёрка — можно выводить.' },
+            { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Фишка встаёт на красную стартовую клетку. За шестёрку — ещё бросок.' },
             { seat: 0, action: { type: 'roll' }, rig: [3], caption: 'Выпало 4.' },
-            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 5 }, caption: 'Фишка идёт вперёд на четыре.' },
+            { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Четыре клетки — прямо на зелёную: рубка, зелёная уходит во двор.' },
+          ],
+        },
+      },
+      {
+        title: 'Людо: в центр',
+        html: `<p>Обойдя круг, фишка сворачивает на свою цветную дорожку — туда чужие не заходят. Дальше — только точным броском: выпало больше, чем осталось, — этой фишкой хода нет.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'ludo' },
+          setup: () => lpos('ludo', [53, 56, 56, 56], [20, -1, -1, -1]),
+          intro: 'Три красные фишки уже в центре, четвёртой осталось три клетки.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: [2], caption: 'Ровно три!' },
+            { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Четвёртая фишка в центре — победа.' },
           ],
         },
       },
       {
         title: 'Парчис',
-        html: `<p>Испанский парчис: два кубика, фишка выходит на <b>5</b> — одним кубиком или суммой двух. Две свои фишки на клетке — <b>блокада</b>:
-          её не проходит никто, даже свои. На безопасных клетках не рубят (там могут стоять две фишки разных цветов).</p>
-          <p>Срубил — <b>+20</b> клеток одной фишкой, завёл фишку в домик — <b>+10</b>. Дубль — бросок ещё раз, но третий дубль подряд
-          отправляет вашу самую дальнюю фишку обратно в парк.</p>`,
+        html: `<p>Испанская доска: 68 клеток с номерами, ходят <b>против часовой</b>. У каждого цвета — дом в углу, выход (5, 22, 39, 56) и коридор из семи клеток к центру.
+          Кубик один. Фишка выходит на <b>5</b> — и это обязательно, если есть кого выводить. Шестёрка — ещё бросок, а когда во дворе никого нет, она считается за <b>7</b>.
+          Третья шестёрка подряд — фишка, ходившая последней, возвращается домой.</p>
+          <p>Встал на чужую фишку — она идёт домой, а ты ходишь <b>+20</b> любой своей фишкой; дошёл до центра — <b>+10</b>.
+          Не рубят на 12 клетках-<b>сегуро</b> с кружком: там вдвоём могут стоять разные цвета. На клетке не больше двух фишек.
+          Две фишки одного цвета — <b>барьер</b>: сквозь него не проходит никто; выпала шестёрка — свой барьер обязан разбить.</p>`,
         demo: {
           seats: demoSeats,
           options: { game: 'parchis' },
-          setup: () => pos([10, -1, -1, -1], [56, -1, -1, -1], cfgFrom({ game: 'parchis' })),
-          intro: 'Парчис. Красная фишка в четырёх клетках от зелёной.',
+          setup: () => lpos('parchis', [0, -1, -1, -1], [55, -1, -1, -1]),
+          intro: 'Красная фишка на своём выходе (39), зелёная — на 43.',
           steps: [
-            { seat: 0, action: { type: 'roll' }, rig: dice(4, 2), caption: 'Выпало 4 и 2.' },
-            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 14 }, caption: 'Четвёркой — рубка! Зелёная в парк, а красному бонус +20.' },
-            { seat: 0, action: { type: 'move', piece: 0, die: 3, to: 34 }, caption: 'Бонус: фишка проходит двадцать клеток.' },
-            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 36 }, caption: 'И двойкой — дальше.' },
+            { seat: 0, action: { type: 'roll' }, rig: [3], caption: 'Выпало 4.' },
+            { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Четыре клетки — на 43: рубка! Зелёная домой, красному +20.' },
+            { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Бонус: та же фишка проходит двадцать клеток.' },
           ],
         },
       },
