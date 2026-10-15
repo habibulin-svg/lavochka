@@ -4,10 +4,10 @@ import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { BLACK, hoshi, isLegal, WHITE, type Event, type State } from './engine';
+import { ghostSvg, gobanAspect, gobanBoard, gobanBox, gobanDefs, lastMark, pointAt, preloadGoban, stoneSvg } from './goban';
 import './go.css';
 
 const NS = 'http://www.w3.org/2000/svg';
-const COLS = 'ABCDEFGHJKLMNOPQRST';
 
 class GoView implements GameView<State, Event> {
   private ctx!: ViewCtx;
@@ -19,6 +19,7 @@ class GoView implements GameView<State, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
+    preloadGoban();
     const wrap = h(`<div class="go-wrap"><svg class="go-board" xmlns="${NS}"></svg></div>`);
     root.appendChild(wrap);
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
@@ -51,14 +52,7 @@ class GoView implements GameView<State, Event> {
   }
 
   private pointAt(e: MouseEvent): number {
-    const s = this.s;
-    if (!s) return -1;
-    const r = this.svg.getBoundingClientRect();
-    const n = s.n;
-    const size = n + 1;
-    const x = Math.round(((e.clientX - r.left) / r.width) * size - 1);
-    const y = Math.round(((e.clientY - r.top) / r.height) * size - 1);
-    return x >= 0 && y >= 0 && x < n && y < n ? y * n + x : -1;
+    return this.s ? pointAt(this.svg, this.s.n, e) : -1;
   }
 
   private send(a: unknown) {
@@ -74,29 +68,16 @@ class GoView implements GameView<State, Event> {
     const s = this.s;
     if (!s) return;
     const n = s.n;
-    const V = n + 1;
-    this.svg.setAttribute('viewBox', `0 0 ${V} ${V}`);
+    this.svg.setAttribute('viewBox', gobanBox(n));
+    this.svg.style.aspectRatio = gobanAspect(n);
     const L = (i: number) => i + 1;
-    let o = `<defs>
-      <radialGradient id="go-b" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#6a6a6a"/><stop offset="0.35" stop-color="#2a2a2a"/><stop offset="1" stop-color="#050505"/></radialGradient>
-      <radialGradient id="go-w" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#ece8dc"/><stop offset="1" stop-color="#bdb8aa"/></radialGradient>
-    </defs><rect x="0" y="0" width="${V}" height="${V}" class="go-wood"/>`;
-    const sw = n === 19 ? 0.045 : 0.05;
-    for (let i = 0; i < n; i++) {
-      o += `<line x1="${L(0)}" y1="${L(i)}" x2="${L(n - 1)}" y2="${L(i)}" stroke-width="${sw}" class="go-line"/>`;
-      o += `<line x1="${L(i)}" y1="${L(0)}" x2="${L(i)}" y2="${L(n - 1)}" stroke-width="${sw}" class="go-line"/>`;
-      o += `<text x="${L(i)}" y="${V - 0.25}" class="go-lbl">${COLS[i]}</text><text x="0.35" y="${L(i) + 0.12}" class="go-lbl">${n - i}</text>`;
-    }
-    for (const p of hoshi(n)) o += `<circle cx="${L(p % n)}" cy="${L(Math.floor(p / n))}" r="${n === 19 ? 0.12 : 0.1}" class="go-star"/>`;
+    let o = gobanDefs() + gobanBoard(n, hoshi(n));
     const dead = new Set(s.final?.dead ?? []);
     for (let p = 0; p < n * n; p++) {
       const c = s.board[p];
       if (!c) continue;
-      const x = L(p % n);
-      const y = L(Math.floor(p / n));
-      o += `<circle cx="${x + 0.04}" cy="${y + 0.06}" r="0.47" class="go-shadow"/>`;
-      o += `<circle cx="${x}" cy="${y}" r="0.47" fill="url(#go-${c === BLACK ? 'b' : 'w'})" class="go-stone${dead.has(p) ? ' dead' : ''}"/>`;
-      if (p === s.last && !s.over) o += `<circle cx="${x}" cy="${y}" r="0.18" class="go-last ${c === BLACK ? 'on-b' : 'on-w'}"/>`;
+      o += stoneSvg(p, n, c === BLACK, dead.has(p) ? ' opacity="0.42"' : '');
+      if (p === s.last && !s.over) o += lastMark(p, n, c === BLACK);
     }
     // территория после конца партии
     if (s.final && !s.final.resign) {
@@ -111,7 +92,7 @@ class GoView implements GameView<State, Event> {
     // тень будущего хода
     if (this.actSeat != null && this.hover >= 0 && isLegal(s, this.hover)) {
       const c = this.actSeat === 0 ? BLACK : WHITE;
-      o += `<circle cx="${L(this.hover % n)}" cy="${L(Math.floor(this.hover / n))}" r="0.45" fill="url(#go-${c === BLACK ? 'b' : 'w'})" class="go-ghost"/>`;
+      o += ghostSvg(this.hover, n, c === BLACK);
     }
     this.svg.innerHTML = o;
     this.drawPanel();

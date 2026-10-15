@@ -1,19 +1,8 @@
-/* Го: доска из светлого дерева (кая), чёрные — сланец, белые — ракушка. */
+/* Го: гобан рисует goban.ts (общий с рэндзю); здесь — раскладка и территория в конце партии. */
 .go-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box; user-select: none; }
-.go-board { height: 100%; max-width: 100%; aspect-ratio: 1; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55)); cursor: pointer; }
-.go-wood { fill: #dcb36a; }
-.go-board { background: none; }
-.go-line { stroke: #3a2810; }
-.go-star { fill: #3a2810; }
-.go-lbl { font: 0.32px system-ui, sans-serif; fill: #5a4020; text-anchor: middle; }
-.go-shadow { fill: rgba(0, 0, 0, 0.3); }
-.go-stone.dead { opacity: 0.4; }
-.go-last { fill: none; stroke-width: 0.06; }
-.go-last.on-b { stroke: #f0e8d0; }
-.go-last.on-w { stroke: #222; }
-.go-terr.b { fill: #111; }
+.go-board { height: 100%; max-width: 100%; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5)); cursor: pointer; }
+.go-terr.b { fill: #15151a; }
 .go-terr.w { fill: #fff; stroke: #333; stroke-width: 0.03; }
-.go-ghost { opacity: 0.45; pointer-events: none; }
 .go-panel { display: flex; flex-direction: column; gap: 6px; }
 .go-row { display: flex; gap: 4px; }
 .go-row .btn { flex: 1; }
