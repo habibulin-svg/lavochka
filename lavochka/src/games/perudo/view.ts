@@ -8,8 +8,10 @@ import { calzaAllowed, minBid, totalDice, validBid, wild, type Event, type Revea
 import { bidText, SEATS } from './def';
 import './perudo.css';
 
-const PIPS: Record<number, number[]> = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
-export const dieHTML = (v: number, cls = '') => `<span class="pd-die ${cls}" data-v="${v}">${Array.from({ length: 9 }, (_, i) => `<i${PIPS[v].includes(i + 1) ? ' class="p"' : ''}></i>`).join('')}</span>`;
+const TEX = `${import.meta.env.BASE_URL}tex/perudo/`;
+/** Кость-картинка (tools/boards/perudo.py): цвет места (seat 0–5) или нейтральная «слоновая кость». */
+export const dieHTML = (v: number, cls = '', seat: number | null = null) =>
+  `<img class="pd-die ${cls}" data-v="${v}" src="${TEX}d${seat == null ? 'n' : seat % 6}${v}.webp" alt="${v}" draggable="false">`;
 
 class PerudoView implements GameView<State, Event> {
   private ctx!: ViewCtx;
@@ -113,8 +115,8 @@ class PerudoView implements GameView<State, Event> {
       const on = !v.over && v.turn === p;
       const shown = rv ? rv.dice[p] : me || this.ctx.demo ? v.dice[p] : [];
       const wildOnes = rv ? this.ctxWild(rv) : false;
-      const dice = shown.map((x) => dieHTML(x, rv && counted(rv.bid.face, x, wildOnes) ? 'hit' : '')).join('');
-      const cup = rv || out ? '' : `<div class="pd-cup${me ? ' mine' : ''}" style="--c:${SEATS[p].color}"></div>`;
+      const dice = shown.map((x) => dieHTML(x, rv && counted(rv.bid.face, x, wildOnes) ? 'hit' : '', p)).join('');
+      const cup = out ? '' : `<img class="pd-cup${me ? ' mine' : ''}${rv ? ' up' : ''}" src="${TEX}cup${p % 6}.webp" alt="" draggable="false">`;
       const pips = Array.from({ length: Math.max(0, cnt) }, () => '<b></b>').join('');
       const last = v.history.filter((b) => b.seat === p).pop();
       s += `<div class="pd-seat${me ? ' me' : ''}${out ? ' out' : ''}" style="left:${at.x}%;top:${at.y}%">
