@@ -1,0 +1,227 @@
+{
+  "games/age_of_empires_2": {
+    "author": "Ensemble Studios",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Age_of_Empires_2_Logo.svg"
+  },
+  "games/atomic_heart": {
+    "author": "Mundfish",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Atomic_Heart_logo.svg"
+  },
+  "games/bioshock": {
+    "author": "2K Games",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BioShock-Logo.svg"
+  },
+  "games/cs_16": {
+    "author": "Valve Corperation",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Counter-Strike_CS_logo.svg"
+  },
+  "games/cyberpunk_2077": {
+    "author": "Abzeronow",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Samurai_guitarist_(Cyberpunk_2077)_cosplayer_at_Anime_Boston_2026_-_20260404_335PM.jpg"
+  },
+  "games/dark_souls": {
+    "author": "Hidetaka Miyazaki",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Solaire_of_Astora%27s_Sun_without_details.png"
+  },
+  "games/doom": {
+    "author": "id Software; Bethesda Softworks, LLC",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Doom_%E2%80%93_Game%E2%80%99s_logo.svg"
+  },
+  "games/dota_2": {
+    "author": "Good Will Hunting",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Dota-2-simplified-logo.svg"
+  },
+  "games/fallout_2": {
+    "author": "Black Isle Studios",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Fallout_2_logo.png"
+  },
+  "games/fallout_nv": {
+    "author": "noxwyll",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Fallout_New_Vegas_logo.png"
+  },
+  "games/gothic_2": {
+    "author": "PiranhaGreg",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Gothic_II_N%C3%A1vraty.png"
+  },
+  "games/gta_5": {
+    "author": "Rockstar Games",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Grand_Theft_Auto_logo_series.svg"
+  },
+  "games/gta_san_andreas": {
+    "author": "Rockstar Games / Take-Two Interactive",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Grand_Theft_Auto_San_Andreas_logo.svg"
+  },
+  "games/gta_vice_city": {
+    "author": "Rockstar Games",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Grand_Theft_Auto_Vice_City_logo.svg"
+  },
+  "games/half_life": {
+    "author": "Valve",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Half-Life_Logo_Orange.svg"
+  },
+  "games/half_life_2": {
+    "author": "Source converted by Fleshgrinder",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Half-Life_2_Logo.svg"
+  },
+  "games/heroes_3": {
+    "author": "new world computing",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Homm3-logo.svg"
+  },
+  "games/il2_sturmovik": {
+    "author": "1C Maddox Games back in 2001 (all content, since 2012, is property of 1C Game Studios, a distinct company)",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:2001_IL-2_Sturmovik_logo.jpg"
+  },
+  "games/kosmicheskie_reyndzhery": {
+    "author": "Sergey Galyonkin from Raleigh, USA",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Space_Rangers_girl_at_Igromir_2011_(6219642705).jpg"
+  },
+  "games/lemmings": {
+    "author": "Luca Mascaro",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lemmings_Cosplay.jpg"
+  },
+  "games/mafia_city_of_lost_heaven": {
+    "author": "Unknown authorUnknown author",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Logo_Mafia.svg"
+  },
+  "games/mass_effect_2": {
+    "author": "BioWare and Electronic Arts",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Logo_Mass_Effect.svg"
+  },
+  "games/max_payne": {
+    "author": "Zeehan Mahmud",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Max-payne-logo-png_seeklogo-448813.png"
+  },
+  "games/metro_2033": {
+    "author": "Sergey Galyonkin",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Metro_2033_at_Igromir_2009_1.jpg"
+  },
+  "games/minecraft": {
+    "author": "Xbox México",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:A_2009_screenshot_from_an_early_version_of_Minecraft,_then_called_%22Cave_Game%22.png"
+  },
+  "games/morrowind": {
+    "author": "Pottero",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mapa_Vvardenfell_(TES_III).png"
+  },
+  "games/mortal_kombat_3": {
+    "author": "Emptywords",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Ultimatemortalkombat3arcade.jpg"
+  },
+  "games/myst": {
+    "author": "Cyan Worlds",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Myst_logo.png"
+  },
+  "games/nfs_underground_2": {
+    "author": "Electronic Arts",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:NFSU2.svg"
+  },
+  "games/portal_2": {
+    "author": "Valve Corporation",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Portal_2_Official_Logo.png"
+  },
+  "games/prince_of_persia": {
+    "author": "Jordan Mechner",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Prince_of_Persia_1_-_Macintosh_-_Starting_screen.png"
+  },
+  "games/red_dead_redemption_2": {
+    "author": "Rockstar Games",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Red_Dead_Redemption_2_Logo.png"
+  },
+  "games/resident_evil_4": {
+    "author": "Capcom France",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Resident_Evil_4_-_Leon_S._Kennedy.jpg"
+  },
+  "games/sapper": {
+    "author": "Dimitri “Diti” Torterat",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Minesperfect_windowsxp.png"
+  },
+  "games/sim_city": {
+    "author": "w:de:Electronic Arts",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Simcity_Logo.jpg"
+  },
+  "games/skyrim": {
+    "author": "Bethesda Software",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:The_Elder_Scrolls_V_-_Skyrim_logo.png"
+  },
+  "games/solitaire": {
+    "author": "Thalain, based on Wikimedia Commons images by Nanami Kamimura",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Klondike_(solitaire).png"
+  },
+  "games/stalker_shoc": {
+    "author": "Pottero",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:S.T.A.L.K.E.R._old_logo.png"
+  },
+  "games/starcraft": {
+    "author": "Blizzard Entertainment.",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:StarCraft_Logo.png"
+  },
+  "games/street_fighter_2": {
+    "author": "Jonathan Sloan from Burnaby, Canada",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Street_Fighter_II_arcade-20061027.jpg"
+  },
+  "games/super_mario_bros": {
+    "author": "Umweltschützen",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Super_Mario_Bros._World_1-1.jpg"
+  },
+  "games/tetris": {
+    "author": "The Tetris Company",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Tetris_logo_2019.svg"
+  },
+  "games/the_sims": {
+    "author": "Electronic Arts, Inc. (EA)",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Logo_of_The_Sims_(2013).svg"
+  },
+  "games/witcher_3": {
+    "author": "CD Projekt RED",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:EN_The-Witcher-3_Logo-Black_RGB.svg"
+  },
+  "games/world_of_warcraft": {
+    "author": "Santamarcanda",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Group_of_Warcraft_characters_in_TLP_2017_03.jpg"
+  }
+}

@@ -1,6 +1,6 @@
 // Шпион: собрать базы слов из docs/analysis/spy-*.json в src/games/spy/words.json.
 // У каждого слова — признаки (номера значений вопросов темы, см. src/games/spy/themes.ts), по ним отвечают боты.
-// Картинки — public/spy/<тема>/<id>.webp (есть файл — img: 1); лицензии из public/spy/credits-*.json сводятся в public/spy/credits.html.
+// Картинки — public/spy/<тема>/<id>.webp (есть файл — img: 1); лицензии из public/spy/credits-*.json (подбор — tools/spy/commons.py) сводятся в public/spy/credits.html.
 // Запуск из lavochka/: node tools/spy/build.mjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,7 +48,8 @@ function marks(t, x) {
 }
 
 const out = {};
-const credits = Object.assign({}, ...['a', 'b'].map((k) => (fs.existsSync(`${PUB}/credits-${k}.json`) ? JSON.parse(fs.readFileSync(`${PUB}/credits-${k}.json`, 'utf8')) : {})));
+// credits-a.json — первая партия, credits-b-<тема>.json — tools/spy/commons.py; более поздние перекрывают
+const credits = Object.assign({}, ...fs.readdirSync(PUB).filter((f) => /^credits-.*\.json$/.test(f)).sort().map((f) => JSON.parse(fs.readFileSync(`${PUB}/${f}`, 'utf8'))));
 let imgs = 0;
 for (const [t, fn] of Object.entries(THEMES)) {
   const seen = new Set();

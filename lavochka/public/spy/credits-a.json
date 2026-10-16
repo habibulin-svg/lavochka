@@ -49,11 +49,6 @@
     "license": "Public domain",
     "source": "https://commons.wikimedia.org/wiki/File%3AIlia_Efimovich_Repin_%281844-1930%29_-_Volga_Boatmen_%281870-1873%29.jpg"
   },
-  "art/campbell_soup": {
-    "author": "Andy Warhol",
-    "license": "CC BY-SA 2.0",
-    "source": "https://commons.wikimedia.org/wiki/File%3AAndy_Warhol_Campbell%27s_Soup_Cans_%28MoMA_-_New_York%29.jpg"
-  },
   "art/dama_s_gornostaem": {
     "author": "Leonardo da Vinci",
     "license": "Public domain",
@@ -88,11 +83,6 @@
     "author": "Alexei Savrasov",
     "license": "Public domain",
     "source": "https://commons.wikimedia.org/wiki/File%3ARooksBackOfSavrasov.jpg"
-  },
-  "art/guernica": {
-    "author": "Jules Verne Times Two",
-    "license": "CC BY-SA 4.0",
-    "source": "https://commons.wikimedia.org/wiki/File%3AGuernica_reproduction_on_tiled_wall%2C_Guernica%2C_Spain_%28PPL3-Altered%29_julesvernex2.jpg"
   },
   "art/ivan_grozny_ubivaet_syna": {
     "author": "Pierre André Leclercq",
@@ -769,11 +759,6 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File%3APanorama_of_Malbork_Castle%2C_part_4.jpg"
   },
-  "history/senat_drevnego_rima": {
-    "author": "Ernest Joseph Bailly",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File%3AErnest_Joseph_Bailly_-_The_Vestal_Virgins_Handing_over_the_Testament_of_Emperor_Augustus_to_the_Roman_Senate_-_2005-O_-_Museum_of_Fine_Arts_Ghent_%28MSK%29.jpg"
-  },
   "history/shaolin_monastery": {
     "author": "Gary Todd from Xinzheng, China",
     "license": "CC0",
@@ -808,11 +793,6 @@
     "author": "Unknown author Unknown author",
     "license": "CC0",
     "source": "https://commons.wikimedia.org/wiki/File%3AAlexander_Graham_Bell_1895_NPG_77_363.jpg"
-  },
-  "history/termopily": {
-    "author": "Unknown author Unknown author",
-    "license": "CC BY 4.0",
-    "source": "https://commons.wikimedia.org/wiki/File%3A2020_Greek_Commemorative_2_Euro_Coin_%222500th_Anniversary_of_the_Battle_of_Thermopylae%22_M.Hoffmann.png"
   },
   "history/tseppelin_dirizhabl": {
     "author": "Unknown author Unknown author",
@@ -853,11 +833,6 @@
     "author": "Lodovico Pogliaghi",
     "license": "Public domain",
     "source": "https://commons.wikimedia.org/wiki/File%3ALodovico_Pogliaghi_-_Escape_of_Spartacus_and_his_fellowmen%2C_revolt_of_Capua_73_BC_asi.jpg"
-  },
-  "history/vykhod_v_kosmos": {
-    "author": "Espace Lollini",
-    "license": "Public domain",
-    "source": "https://commons.wikimedia.org/wiki/File%3A60_years_of_Voskhod-2_spaceflight.jpg"
   },
   "history/vysadka_na_lunu": {
     "author": "NASA",
@@ -1048,11 +1023,6 @@
     "author": "George Shuklin",
     "license": "CC BY-SA 2.5",
     "source": "https://commons.wikimedia.org/wiki/File%3A%D0%92%D0%B0%D0%B3%D0%BE%D0%BD_%D1%87%D0%B5%D1%82%D1%8B%D1%80%D0%B5%D1%85%D0%BE%D1%81%D0%BD%D1%8B%D0%B9_%D1%82%D0%B8%D0%BF%D0%B0_%D0%A1%D0%92%D0%9F%D0%A1_%E2%84%96_3_%2811%29.jpg"
-  },
-  "locations/poliklinika": {
-    "author": "Главархив Москвы",
-    "license": "CC BY 4.0",
-    "source": "https://commons.wikimedia.org/wiki/File%3APeople_on_Polyclinic_of_Soviet_Ministry_of_Defense_1954.jpg"
   },
   "locations/remont_obuvi": {
     "author": "Андрей Романенко",
