@@ -1,0 +1,821 @@
+[
+  {
+    "id": "master_and_margarita",
+    "name": "Мастер и Маргарита",
+    "author": "Михаил Булгаков",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "sobache_serdtse_book",
+    "name": "Собачье сердце",
+    "author": "Михаил Булгаков",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "war_and_peace",
+    "name": "Война и мир",
+    "author": "Лев Толстой",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "top_books"
+    ]
+  },
+  {
+    "id": "crime_and_punishment",
+    "name": "Преступление и наказание",
+    "author": "Фёдор Достоевский",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "top_books"
+    ]
+  },
+  {
+    "id": "evgeniy_onegin",
+    "name": "Евгений Онегин",
+    "author": "Александр Пушкин",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "geroy_nashego_vremeni",
+    "name": "Герой нашего времени",
+    "author": "Михаил Лермонтов",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic"
+    ]
+  },
+  {
+    "id": "mertvye_dushi",
+    "name": "Мёртвые души",
+    "author": "Николай Гоголь",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic"
+    ]
+  },
+  {
+    "id": "ottsy_i_deti",
+    "name": "Отцы и дети",
+    "author": "Иван Тургенев",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic"
+    ]
+  },
+  {
+    "id": "vishnevy_sad",
+    "name": "Вишнёвый сад",
+    "author": "Антон Чехов",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic"
+    ]
+  },
+  {
+    "id": "tihiy_don",
+    "name": "Тихий Дон",
+    "author": "Михаил Шолохов",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "nobel"
+    ]
+  },
+  {
+    "id": "dvenadtsat_stulyev",
+    "name": "Двенадцать стульев",
+    "author": "Илья Ильф, Евгений Петров",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "zolotoy_telyonok",
+    "name": "Золотой телёнок",
+    "author": "Илья Ильф, Евгений Петров",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "doktor_zhivago",
+    "name": "Доктор Живаго",
+    "author": "Борис Пастернак",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "nobel"
+    ]
+  },
+  {
+    "id": "piknik_na_obochine",
+    "name": "Пикник на обочине",
+    "author": "Аркадий и Борис Стругацкие",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "sci-fi",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "ponedelnik_nachinaetsya_v_subbotu",
+    "name": "Понедельник начинается в субботу",
+    "author": "Аркадий и Борис Стругацкие",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "trudno_byt_bogom",
+    "name": "Трудно быть богом",
+    "author": "Аркадий и Борис Стругацкие",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "chelovek_amfibiya",
+    "name": "Человек-амфибия",
+    "author": "Александр Беляев",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "giperboloid_inzhenera_garina",
+    "name": "Гиперболоид инженера Гарина",
+    "author": "Алексей Толстой",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "nochnoy_dozor_book",
+    "name": "Ночной Дозор",
+    "author": "Сергей Лукьяненко",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern",
+      "fantasy",
+      "cult"
+    ]
+  },
+  {
+    "id": "metro_2033_book",
+    "name": "Метро 2033",
+    "author": "Дмитрий Глуховский",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern",
+      "sci-fi",
+      "postapoc"
+    ]
+  },
+  {
+    "id": "lord_of_the_rings_book",
+    "name": "Властелин колец",
+    "author": "Дж. Р. Р. Толкин",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "fantasy",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "hobbit",
+    "name": "Хоббит, или Туда и обратно",
+    "author": "Дж. Р. Р. Толкин",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "fantasy"
+    ]
+  },
+  {
+    "id": "1984_book",
+    "name": "1984",
+    "author": "Джордж Оруэлл",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "dystopia",
+      "top_books"
+    ]
+  },
+  {
+    "id": "harry_potter",
+    "name": "Гарри Поттер и философский камень",
+    "author": "Дж. К. Роулинг",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "fantasy",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "dune",
+    "name": "Дюна",
+    "author": "Фрэнк Герберт",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "sci-fi",
+      "top_books"
+    ]
+  },
+  {
+    "id": "fahrenheit_451",
+    "name": "451 градус по Фаренгейту",
+    "author": "Рэй Брэдбери",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "sci-fi",
+      "dystopia"
+    ]
+  },
+  {
+    "id": "brave_new_world",
+    "name": "О дивный новый мир",
+    "author": "Олдос Хаксли",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "dystopia"
+    ]
+  },
+  {
+    "id": "game_of_thrones_book",
+    "name": "Игра престолов (Песнь льда и пламени)",
+    "author": "Джордж Р. Р. Мартин",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "fantasy",
+      "cult"
+    ]
+  },
+  {
+    "id": "witcher_book",
+    "name": "Последнее желание (Ведьмак)",
+    "author": "Анджей Сапковский",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "fantasy",
+      "cult"
+    ]
+  },
+  {
+    "id": "sherlock_holmes_book",
+    "name": "Приключения Шерлока Холмса",
+    "author": "Артур Конан Дойл",
+    "period": "classic",
+    "genre": "detective",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "detective",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "orient_express",
+    "name": "Убийство в «Восточном экспрессе»",
+    "author": "Агата Кристи",
+    "period": "classic",
+    "genre": "detective",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "detective",
+      "cult"
+    ]
+  },
+  {
+    "id": "and_then_there_were_none",
+    "name": "Десять негритят",
+    "author": "Агата Кристи",
+    "period": "classic",
+    "genre": "detective",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "detective",
+      "cult"
+    ]
+  },
+  {
+    "id": "era_miloserdiya",
+    "name": "Эра милосердия",
+    "author": "Аркадий и Георгий Вайнеры",
+    "period": "classic",
+    "genre": "detective",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "detective"
+    ]
+  },
+  {
+    "id": "azazel",
+    "name": "Азазель (Эраст Фандорин)",
+    "author": "Борис Акунин",
+    "period": "modern",
+    "genre": "detective",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern",
+      "detective",
+      "cult"
+    ]
+  },
+  {
+    "id": "da_vinci_code",
+    "name": "Код да Винчи",
+    "author": "Дэн Браун",
+    "period": "modern",
+    "genre": "detective",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "detective",
+      "thriller"
+    ]
+  },
+  {
+    "id": "girl_with_dragon_tattoo",
+    "name": "Девушка с татуировкой дракона",
+    "author": "Стиг Ларссон",
+    "period": "modern",
+    "genre": "detective",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "detective",
+      "thriller"
+    ]
+  },
+  {
+    "id": "monte_cristo",
+    "name": "Граф Монте-Кристо",
+    "author": "Александр Дюма",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "adventure",
+      "cult",
+      "top_books"
+    ]
+  },
+  {
+    "id": "three_musketeers",
+    "name": "Три мушкетёра",
+    "author": "Александр Дюма",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "adventure",
+      "cult"
+    ]
+  },
+  {
+    "id": "robinson_crusoe",
+    "name": "Робинзон Крузо",
+    "author": "Даниэль Дефо",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "adventure"
+    ]
+  },
+  {
+    "id": "treasure_island",
+    "name": "Остров сокровищ",
+    "author": "Роберт Льюис Стивенсон",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "adventure",
+      "cult"
+    ]
+  },
+  {
+    "id": "tom_sawyer",
+    "name": "Приключения Тома Сойера",
+    "author": "Марк Твен",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "adventure"
+    ]
+  },
+  {
+    "id": "great_gatsby",
+    "name": "Великий Гэтсби",
+    "author": "Фрэнсис Скотт Фицджеральд",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic"
+    ]
+  },
+  {
+    "id": "old_man_and_the_sea",
+    "name": "Старик и море",
+    "author": "Эрнест Хемингуэй",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "nobel"
+    ]
+  },
+  {
+    "id": "one_hundred_years_of_solitude",
+    "name": "Сто лет одиночества",
+    "author": "Габриэль Гарсиа Маркес",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "nobel"
+    ]
+  },
+  {
+    "id": "little_prince",
+    "name": "Маленький принц",
+    "author": "Антуан де Сент-Экзюпери",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "generation_p",
+    "name": "Generation «П»",
+    "author": "Виктор Пелевин",
+    "period": "modern",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern",
+      "cult"
+    ]
+  },
+  {
+    "id": "chapaev_i_pustota",
+    "name": "Чапаев и Пустота",
+    "author": "Виктор Пелевин",
+    "period": "modern",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern",
+      "cult"
+    ]
+  },
+  {
+    "id": "geograf_globus_propil",
+    "name": "Географ глобус пропил",
+    "author": "Алексей Иванов",
+    "period": "modern",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern"
+    ]
+  },
+  {
+    "id": "lavr",
+    "name": "Лавр",
+    "author": "Евгений Водолазкин",
+    "period": "modern",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern"
+    ]
+  },
+  {
+    "id": "zuleyha",
+    "name": "Зулейха открывает глаза",
+    "author": "Гузель Яхина",
+    "period": "modern",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "modern"
+    ]
+  },
+  {
+    "id": "besy",
+    "name": "Бесы",
+    "author": "Фёдор Достоевский",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "brat_karamazovy",
+    "name": "Братья Карамазовы",
+    "author": "Фёдор Достоевский",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "anna_karenina",
+    "name": "Анна Каренина",
+    "author": "Лев Толстой",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic",
+      "top_books"
+    ]
+  },
+  {
+    "id": "kapitanskaya_dochka",
+    "name": "Капитанская дочка",
+    "author": "Александр Пушкин",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "russia",
+    "tags": [
+      "russia",
+      "classic"
+    ]
+  },
+  {
+    "id": "beleet_parus",
+    "name": "Белеет парус одинокий",
+    "author": "Валентин Катаев",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic"
+    ]
+  },
+  {
+    "id": "alye_parusa",
+    "name": "Алые паруса",
+    "author": "Александр Грин",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "kak_zakalyalas_stal",
+    "name": "Как закалялась сталь",
+    "author": "Николай Островский",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic"
+    ]
+  },
+  {
+    "id": "volshebnik_izumrudnogo_goroda",
+    "name": "Волшебник Изумрудного города",
+    "author": "Александр Волков",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "neznayka_na_lune",
+    "name": "Незнайка на Луне",
+    "author": "Николай Носов",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "ussr",
+    "tags": [
+      "ussr",
+      "classic",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "alisa_v_strane_chudes",
+    "name": "Алиса в Стране чудес",
+    "author": "Льюис Кэрролл",
+    "period": "classic",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "fantasy",
+      "cult"
+    ]
+  },
+  {
+    "id": "portret_dorian_greya",
+    "name": "Портрет Дориана Грея",
+    "author": "Оскар Уайльд",
+    "period": "classic",
+    "genre": "classic_prose",
+    "region": "world",
+    "tags": [
+      "world",
+      "classic",
+      "cult"
+    ]
+  },
+  {
+    "id": "golodnye_igry",
+    "name": "Голодные игры",
+    "author": "Сьюзен Коллинз",
+    "period": "modern",
+    "genre": "sci-fi_fantasy",
+    "region": "world",
+    "tags": [
+      "world",
+      "modern",
+      "dystopia"
+    ]
+  }
+]

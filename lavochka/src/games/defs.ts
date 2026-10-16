@@ -57,6 +57,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   solitaire: () => import('./solitaire/def').then((m) => m.def),
   geo: () => import('./geo/def').then((m) => m.def),
   mafia: () => import('./mafia/def').then((m) => m.def),
+  spy: () => import('./spy/def').then((m) => m.def),
   balda: () => Promise.all([import('./balda/def'), loadDict()]).then(([m]) => m.def),
   erudit: () => Promise.all([import('./erudit/def'), loadDict()]).then(([m]) => m.def),
 };

@@ -1,0 +1,2344 @@
+[
+  {
+    "id": "brilliantovaya_ruka",
+    "name": "Бриллиантовая рука",
+    "year": 1968,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "crime"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "ivan_vasilievich",
+    "name": "Иван Васильевич меняет профессию",
+    "year": 1973,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "sci-fi"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "operatsiya_y",
+    "name": "Операция «Ы» и другие приключения Шурика",
+    "year": 1965,
+    "country": "ussr",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "kavkazskaya_plennitsa",
+    "name": "Кавказская пленница",
+    "year": 1967,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "dzhentlmeny_udachi",
+    "name": "Джентльмены удачи",
+    "year": 1971,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "crime"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "crime",
+      "cult"
+    ]
+  },
+  {
+    "id": "sluzhebny_roman",
+    "name": "Служебный роман",
+    "year": 1977,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "romance"
+    ]
+  },
+  {
+    "id": "moskva_slezam_ne_verit",
+    "name": "Москва слезам не верит",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "drama",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "drama",
+      "oscar"
+    ]
+  },
+  {
+    "id": "ironiya_sudby",
+    "name": "Ирония судьбы, или С лёгким паром!",
+    "year": 1975,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "lyubov_i_golubi",
+    "name": "Любовь и голуби",
+    "year": 1984,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "v_boy_idut_odni_stariki",
+    "name": "В бой идут одни «старики»",
+    "year": 1973,
+    "country": "ussr",
+    "genre": [
+      "war",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "war",
+      "drama"
+    ]
+  },
+  {
+    "id": "sobache_serdtse",
+    "name": "Собачье сердце",
+    "year": 1988,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "kin_dza_dza",
+    "name": "Кин-дза-дза!",
+    "year": 1986,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "mesto_vstrechi",
+    "name": "Место встречи изменить нельзя",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "crime",
+      "detective"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "crime",
+      "action"
+    ]
+  },
+  {
+    "id": "semnadtsat_mgnoveniy",
+    "name": "Семнадцать мгновений весны",
+    "year": 1973,
+    "country": "ussr",
+    "genre": [
+      "war",
+      "thriller"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "beloe_solntse_pustyni",
+    "name": "Белое солнце пустыни",
+    "year": 1970,
+    "country": "ussr",
+    "genre": [
+      "action",
+      "western"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "garazh",
+    "name": "Гараж",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy"
+    ]
+  },
+  {
+    "id": "tot_samy_myunkhgauzen",
+    "name": "Тот самый Мюнхгаузен",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "fantasy"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy",
+      "fantasy"
+    ]
+  },
+  {
+    "id": "pokrovskie_vorota",
+    "name": "Покровские ворота",
+    "year": 1982,
+    "country": "ussr",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "comedy"
+    ]
+  },
+  {
+    "id": "sherlock_holmes_ussr",
+    "name": "Приключения Шерлока Холмса и доктора Ватсона",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "detective",
+      "crime"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "detective"
+    ]
+  },
+  {
+    "id": "dartagnan_musketeers",
+    "name": "Д’Артаньян и три мушкетёра",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "adventure",
+      "musical"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "adventure",
+      "action"
+    ]
+  },
+  {
+    "id": "stalker",
+    "name": "Сталкер",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "sci-fi",
+      "arthouse"
+    ]
+  },
+  {
+    "id": "solyaris",
+    "name": "Солярис",
+    "year": 1972,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "sci-fi",
+      "arthouse"
+    ]
+  },
+  {
+    "id": "gostya_iz_buduschego",
+    "name": "Гостья из будущего",
+    "year": 1984,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "adventure"
+    ],
+    "tags": [
+      "ussr",
+      "sci-fi",
+      "family",
+      "cult"
+    ]
+  },
+  {
+    "id": "elektronik",
+    "name": "Приключения Электроника",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "sci-fi",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "sci-fi",
+      "family"
+    ]
+  },
+  {
+    "id": "morozko",
+    "name": "Морозко",
+    "year": 1964,
+    "country": "ussr",
+    "genre": [
+      "fairy_tale",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "family",
+      "cult"
+    ]
+  },
+  {
+    "id": "ostrov_sokrovisch_film",
+    "name": "Остров сокровищ",
+    "year": 1982,
+    "country": "ussr",
+    "genre": [
+      "adventure"
+    ],
+    "tags": [
+      "ussr",
+      "adventure"
+    ]
+  },
+  {
+    "id": "ekipazh",
+    "name": "Экипаж",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "disaster",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "action",
+      "disaster"
+    ]
+  },
+  {
+    "id": "oni_srazhalis_za_rodinu",
+    "name": "Они сражались за Родину",
+    "year": 1975,
+    "country": "ussr",
+    "genre": [
+      "war",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "top250",
+      "war"
+    ]
+  },
+  {
+    "id": "brat",
+    "name": "Брат",
+    "year": 1997,
+    "country": "russia",
+    "genre": [
+      "crime",
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "top250",
+      "action",
+      "crime",
+      "cult"
+    ]
+  },
+  {
+    "id": "brat_2",
+    "name": "Брат 2",
+    "year": 2000,
+    "country": "russia",
+    "genre": [
+      "crime",
+      "action"
+    ],
+    "tags": [
+      "russia",
+      "top250",
+      "action",
+      "crime",
+      "cult"
+    ]
+  },
+  {
+    "id": "osobennosti_ohoty",
+    "name": "Особенности национальной охоты",
+    "year": 1995,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "top250",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "osobennosti_rybalki",
+    "name": "Особенности национальной рыбалки",
+    "year": 1998,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "comedy"
+    ]
+  },
+  {
+    "id": "bumer",
+    "name": "Бумер",
+    "year": 2003,
+    "country": "russia",
+    "genre": [
+      "crime",
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "crime",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "zhmurki",
+    "name": "Жмурки",
+    "year": 2005,
+    "country": "russia",
+    "genre": [
+      "comedy",
+      "crime"
+    ],
+    "tags": [
+      "russia",
+      "comedy",
+      "action",
+      "crime",
+      "cult"
+    ]
+  },
+  {
+    "id": "dmb",
+    "name": "ДМБ",
+    "year": 2000,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "voroshilovsky_strelok",
+    "name": "Ворошиловский стрелок",
+    "year": 1999,
+    "country": "russia",
+    "genre": [
+      "drama",
+      "crime"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "top250",
+      "drama",
+      "action"
+    ]
+  },
+  {
+    "id": "shirli_myrli",
+    "name": "Ширли-мырли",
+    "year": 1995,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "nochnoy_dozor",
+    "name": "Ночной дозор",
+    "year": 2004,
+    "country": "russia",
+    "genre": [
+      "fantasy",
+      "action"
+    ],
+    "tags": [
+      "russia",
+      "fantasy",
+      "action",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "dnevnoy_dozor",
+    "name": "Дневной дозор",
+    "year": 2005,
+    "country": "russia",
+    "genre": [
+      "fantasy",
+      "action"
+    ],
+    "tags": [
+      "russia",
+      "fantasy",
+      "action"
+    ]
+  },
+  {
+    "id": "sestry",
+    "name": "Сёстры",
+    "year": 2001,
+    "country": "russia",
+    "genre": [
+      "crime",
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "crime",
+      "drama"
+    ]
+  },
+  {
+    "id": "ostrov",
+    "name": "Остров",
+    "year": 2006,
+    "country": "russia",
+    "genre": [
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "top250",
+      "drama"
+    ]
+  },
+  {
+    "id": "durak",
+    "name": "Дурак",
+    "year": 2014,
+    "country": "russia",
+    "genre": [
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "top250",
+      "drama"
+    ]
+  },
+  {
+    "id": "leviafan",
+    "name": "Левиафан",
+    "year": 2014,
+    "country": "russia",
+    "genre": [
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "drama"
+    ]
+  },
+  {
+    "id": "major_grom",
+    "name": "Майор Гром: Чумной Доктор",
+    "year": 2021,
+    "country": "russia",
+    "genre": [
+      "action",
+      "comic"
+    ],
+    "tags": [
+      "russia",
+      "action",
+      "crime"
+    ]
+  },
+  {
+    "id": "dvizhenie_vverh",
+    "name": "Движение вверх",
+    "year": 2017,
+    "country": "russia",
+    "genre": [
+      "sport",
+      "drama"
+    ],
+    "tags": [
+      "russia",
+      "sport",
+      "drama"
+    ]
+  },
+  {
+    "id": "holop",
+    "name": "Холоп",
+    "year": 2019,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "comedy"
+    ]
+  },
+  {
+    "id": "gorko",
+    "name": "Горько!",
+    "year": 2013,
+    "country": "russia",
+    "genre": [
+      "comedy"
+    ],
+    "tags": [
+      "russia",
+      "comedy"
+    ]
+  },
+  {
+    "id": "sibirskiy_tsiryulnik",
+    "name": "Сибирский цирюльник",
+    "year": 1998,
+    "country": "russia",
+    "genre": [
+      "drama",
+      "romance"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "drama"
+    ]
+  },
+  {
+    "id": "utonlennye_solntsem",
+    "name": "Утомлённые солнцем",
+    "year": 1994,
+    "country": "russia",
+    "genre": [
+      "drama",
+      "history"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "drama",
+      "oscar"
+    ]
+  },
+  {
+    "id": "strana_gluhih",
+    "name": "Страна глухих",
+    "year": 1998,
+    "country": "russia",
+    "genre": [
+      "drama",
+      "crime"
+    ],
+    "tags": [
+      "russia",
+      "90s",
+      "drama"
+    ]
+  },
+  {
+    "id": "legend_17",
+    "name": "Легенда № 17",
+    "year": 2013,
+    "country": "russia",
+    "genre": [
+      "sport",
+      "biography"
+    ],
+    "tags": [
+      "russia",
+      "top250",
+      "sport",
+      "drama"
+    ]
+  },
+  {
+    "id": "terminator_2",
+    "name": "Терминатор 2: Судный день",
+    "year": 1991,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "sci-fi"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "action",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "matrix",
+    "name": "Матрица",
+    "year": 1999,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "action"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "action",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "pulp_fiction",
+    "name": "Криминальное чтиво",
+    "year": 1994,
+    "country": "hollywood",
+    "genre": [
+      "crime",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "crime",
+      "cult"
+    ]
+  },
+  {
+    "id": "shawshank",
+    "name": "Побег из Шоушенка",
+    "year": 1994,
+    "country": "hollywood",
+    "genre": [
+      "drama"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "drama"
+    ]
+  },
+  {
+    "id": "green_mile",
+    "name": "Зелёная миля",
+    "year": 1999,
+    "country": "hollywood",
+    "genre": [
+      "drama",
+      "fantasy"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "drama",
+      "fantasy"
+    ]
+  },
+  {
+    "id": "forrest_gump",
+    "name": "Форрест Гамп",
+    "year": 1994,
+    "country": "hollywood",
+    "genre": [
+      "drama",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "drama",
+      "oscar"
+    ]
+  },
+  {
+    "id": "leon",
+    "name": "Леон",
+    "year": 1994,
+    "country": "europe",
+    "genre": [
+      "action",
+      "crime"
+    ],
+    "tags": [
+      "europe",
+      "90s",
+      "top250",
+      "action",
+      "crime"
+    ]
+  },
+  {
+    "id": "fight_club",
+    "name": "Бойцовский клуб",
+    "year": 1999,
+    "country": "hollywood",
+    "genre": [
+      "drama",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "thriller",
+      "cult"
+    ]
+  },
+  {
+    "id": "titanic",
+    "name": "Титаник",
+    "year": 1997,
+    "country": "hollywood",
+    "genre": [
+      "romance",
+      "disaster"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "romance",
+      "disaster",
+      "oscar"
+    ]
+  },
+  {
+    "id": "back_to_future",
+    "name": "Назад в будущее",
+    "year": 1985,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "sci-fi",
+      "comedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "lord_of_the_rings",
+    "name": "Властелин колец: Братство Кольца",
+    "year": 2001,
+    "country": "hollywood",
+    "genre": [
+      "fantasy",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "fantasy",
+      "adventure"
+    ]
+  },
+  {
+    "id": "gladiator",
+    "name": "Гладиатор",
+    "year": 2000,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "history"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "action",
+      "history",
+      "oscar"
+    ]
+  },
+  {
+    "id": "jurassic_park",
+    "name": "Парк Юрского периода",
+    "year": 1993,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "sci-fi",
+      "adventure"
+    ]
+  },
+  {
+    "id": "godfather",
+    "name": "Крёстный отец",
+    "year": 1972,
+    "country": "hollywood",
+    "genre": [
+      "crime",
+      "drama"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "crime",
+      "drama",
+      "oscar"
+    ]
+  },
+  {
+    "id": "dark_knight",
+    "name": "Тёмный рыцарь",
+    "year": 2008,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "crime"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "action",
+      "crime"
+    ]
+  },
+  {
+    "id": "star_wars",
+    "name": "Звёздные войны: Эпизод 4 — Новая надежда",
+    "year": 1977,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "sci-fi",
+      "adventure",
+      "cult"
+    ]
+  },
+  {
+    "id": "home_alone",
+    "name": "Один дома",
+    "year": 1990,
+    "country": "hollywood",
+    "genre": [
+      "comedy",
+      "family"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "comedy",
+      "family"
+    ]
+  },
+  {
+    "id": "silence_of_lambs",
+    "name": "Молчание ягнят",
+    "year": 1991,
+    "country": "hollywood",
+    "genre": [
+      "thriller",
+      "horror"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "thriller",
+      "horror",
+      "oscar"
+    ]
+  },
+  {
+    "id": "interstellar",
+    "name": "Интерстеллар",
+    "year": 2014,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "drama"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "sci-fi",
+      "drama"
+    ]
+  },
+  {
+    "id": "inception",
+    "name": "Начало",
+    "year": 2010,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "action"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "sci-fi",
+      "action"
+    ]
+  },
+  {
+    "id": "avatar",
+    "name": "Аватар",
+    "year": 2009,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "sci-fi",
+      "adventure"
+    ]
+  },
+  {
+    "id": "die_hard",
+    "name": "Крепкий орешек",
+    "year": 1988,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "thriller",
+      "cult"
+    ]
+  },
+  {
+    "id": "rambo",
+    "name": "Рэмбо: Первая кровь",
+    "year": 1982,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "war"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "predator",
+    "name": "Хищник",
+    "year": 1987,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "sci-fi",
+      "horror"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "sci-fi",
+      "horror",
+      "cult"
+    ]
+  },
+  {
+    "id": "commando",
+    "name": "Коммандо",
+    "year": 1985,
+    "country": "hollywood",
+    "genre": [
+      "action"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "lethal_weapon",
+    "name": "Смертельное оружие",
+    "year": 1987,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "comedy"
+    ]
+  },
+  {
+    "id": "rock_film",
+    "name": "Скала",
+    "year": 1996,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "action",
+      "thriller"
+    ]
+  },
+  {
+    "id": "speed",
+    "name": "Скорость",
+    "year": 1994,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "action",
+      "thriller"
+    ]
+  },
+  {
+    "id": "john_wick",
+    "name": "Джон Уик",
+    "year": 2014,
+    "country": "hollywood",
+    "genre": [
+      "action",
+      "crime"
+    ],
+    "tags": [
+      "hollywood",
+      "action",
+      "crime"
+    ]
+  },
+  {
+    "id": "alien",
+    "name": "Чужой",
+    "year": 1979,
+    "country": "hollywood",
+    "genre": [
+      "sci-fi",
+      "horror"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "horror",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "the_thing",
+    "name": "Нечто",
+    "year": 1982,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "sci-fi"
+    ],
+    "tags": [
+      "hollywood",
+      "horror",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "shining",
+    "name": "Сияние",
+    "year": 1980,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "horror",
+      "cult"
+    ]
+  },
+  {
+    "id": "nightmare_on_elm_street",
+    "name": "Кошмар на улице Вязов",
+    "year": 1984,
+    "country": "hollywood",
+    "genre": [
+      "horror"
+    ],
+    "tags": [
+      "hollywood",
+      "horror",
+      "cult"
+    ]
+  },
+  {
+    "id": "scream",
+    "name": "Крик",
+    "year": 1996,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "mystery"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "horror"
+    ]
+  },
+  {
+    "id": "the_ring",
+    "name": "Звонок",
+    "year": 2002,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "mystery"
+    ],
+    "tags": [
+      "hollywood",
+      "horror"
+    ]
+  },
+  {
+    "id": "saw",
+    "name": "Пила: Игра на выживание",
+    "year": 2004,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "thriller"
+    ],
+    "tags": [
+      "hollywood",
+      "horror",
+      "thriller"
+    ]
+  },
+  {
+    "id": "resident_evil",
+    "name": "Обитель зла",
+    "year": 2002,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "action"
+    ],
+    "tags": [
+      "hollywood",
+      "horror",
+      "action"
+    ]
+  },
+  {
+    "id": "dracula",
+    "name": "Дракула Брэма Стокера",
+    "year": 1992,
+    "country": "hollywood",
+    "genre": [
+      "horror",
+      "romance"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "horror",
+      "oscar"
+    ]
+  },
+  {
+    "id": "viy",
+    "name": "Вий",
+    "year": 1967,
+    "country": "ussr",
+    "genre": [
+      "horror",
+      "fantasy"
+    ],
+    "tags": [
+      "ussr",
+      "horror",
+      "cult"
+    ]
+  },
+  {
+    "id": "taxi",
+    "name": "Такси",
+    "year": 1998,
+    "country": "europe",
+    "genre": [
+      "comedy",
+      "action"
+    ],
+    "tags": [
+      "europe",
+      "90s",
+      "comedy",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "amelie",
+    "name": "Амели",
+    "year": 2001,
+    "country": "europe",
+    "genre": [
+      "comedy",
+      "romance"
+    ],
+    "tags": [
+      "europe",
+      "top250",
+      "comedy",
+      "romance"
+    ]
+  },
+  {
+    "id": "fifth_element",
+    "name": "Пятый элемент",
+    "year": 1997,
+    "country": "europe",
+    "genre": [
+      "sci-fi",
+      "action"
+    ],
+    "tags": [
+      "europe",
+      "90s",
+      "top250",
+      "sci-fi",
+      "action",
+      "cult"
+    ]
+  },
+  {
+    "id": "dostuchatsya_do_nebes",
+    "name": "Достучаться до небес",
+    "year": 1997,
+    "country": "europe",
+    "genre": [
+      "drama",
+      "comedy"
+    ],
+    "tags": [
+      "europe",
+      "90s",
+      "top250",
+      "drama",
+      "cult"
+    ]
+  },
+  {
+    "id": "life_is_beautiful",
+    "name": "Жизнь прекрасна",
+    "year": 1997,
+    "country": "europe",
+    "genre": [
+      "drama",
+      "comedy"
+    ],
+    "tags": [
+      "europe",
+      "90s",
+      "top250",
+      "drama",
+      "oscar"
+    ]
+  },
+  {
+    "id": "good_bad_ugly",
+    "name": "Хороший, плохой, злой",
+    "year": 1966,
+    "country": "europe",
+    "genre": [
+      "western",
+      "adventure"
+    ],
+    "tags": [
+      "europe",
+      "top250",
+      "western",
+      "action"
+    ]
+  },
+  {
+    "id": "intouchables",
+    "name": "1+1 (Неприкасаемые)",
+    "year": 2011,
+    "country": "europe",
+    "genre": [
+      "comedy",
+      "drama"
+    ],
+    "tags": [
+      "europe",
+      "top250",
+      "comedy",
+      "drama"
+    ]
+  },
+  {
+    "id": "astérix_mission_cleopatre",
+    "name": "Астерикс и Обеликс: Миссия Клеопатра",
+    "year": 2002,
+    "country": "europe",
+    "genre": [
+      "comedy",
+      "adventure"
+    ],
+    "tags": [
+      "europe",
+      "comedy",
+      "adventure"
+    ]
+  },
+  {
+    "id": "nu_pogodi",
+    "name": "Ну, погоди!",
+    "year": 1969,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "prostokvashino",
+    "name": "Трое из Простоквашино",
+    "year": 1978,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "vinni_puh",
+    "name": "Винни-Пух",
+    "year": 1969,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "zhil_byl_pyos",
+    "name": "Жил-был пёс",
+    "year": 1982,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "bremenskie_muzykanty",
+    "name": "Бременские музыканты",
+    "year": 1969,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "musical"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "tayna_tretyey_planety",
+    "name": "Тайна третьей планеты",
+    "year": 1981,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "sci-fi"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "ostrov_sokrovisch_mult",
+    "name": "Остров сокровищ (м/ф)",
+    "year": 1988,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "ezhik_v_tumane",
+    "name": "Ёжик в тумане",
+    "year": 1975,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "drama"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "arthouse"
+    ]
+  },
+  {
+    "id": "padal_proshlogodniy_sneg",
+    "name": "Падал прошлогодний снег",
+    "year": 1983,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "popugay_kesha",
+    "name": "Возвращение блудного попугая",
+    "year": 1984,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "cheburashka",
+    "name": "Чебурашка и Крокодил Гена",
+    "year": 1969,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "karlson",
+    "name": "Малыш и Карлсон",
+    "year": 1968,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "kot_leopold",
+    "name": "Приключения кота Леопольда",
+    "year": 1975,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "lion_king",
+    "name": "Король Лев",
+    "year": 1994,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "drama"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "shrek",
+    "name": "Шрек",
+    "year": 2001,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "aladdin",
+    "name": "Аладдин",
+    "year": 1992,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "toy_story",
+    "name": "История игрушек",
+    "year": 1995,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "animation",
+      "cartoons_hollywood"
+    ]
+  },
+  {
+    "id": "beauty_and_beast",
+    "name": "Красавица и Чудовище",
+    "year": 1991,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "musical"
+    ],
+    "tags": [
+      "hollywood",
+      "90s",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "tom_and_jerry",
+    "name": "Том и Джерри",
+    "year": 1965,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "animation",
+      "cartoons_hollywood",
+      "cult"
+    ]
+  },
+  {
+    "id": "ice_age",
+    "name": "Ледниковый период",
+    "year": 2002,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "animation",
+      "cartoons_hollywood"
+    ]
+  },
+  {
+    "id": "finding_nemo",
+    "name": "В поисках Немо",
+    "year": 2003,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "monsters_inc",
+    "name": "Корпорация монстров",
+    "year": 2001,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "animation",
+      "cartoons_hollywood"
+    ]
+  },
+  {
+    "id": "cars",
+    "name": "Тачки",
+    "year": 2006,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "sport"
+    ],
+    "tags": [
+      "hollywood",
+      "animation",
+      "cartoons_hollywood"
+    ]
+  },
+  {
+    "id": "wall_e",
+    "name": "ВАЛЛ-И",
+    "year": 2008,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "sci-fi"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "sci-fi",
+      "oscar"
+    ]
+  },
+  {
+    "id": "up_cartoon",
+    "name": "Вверх",
+    "year": 2009,
+    "country": "hollywood",
+    "genre": [
+      "animation",
+      "adventure"
+    ],
+    "tags": [
+      "hollywood",
+      "top250",
+      "animation",
+      "cartoons_hollywood",
+      "oscar"
+    ]
+  },
+  {
+    "id": "spirited_away",
+    "name": "Унесённые призраками",
+    "year": 2001,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "top250",
+      "animation",
+      "cartoons_anime",
+      "oscar"
+    ]
+  },
+  {
+    "id": "totoro",
+    "name": "Мой сосед Тоторо",
+    "year": 1988,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "top250",
+      "animation",
+      "cartoons_anime"
+    ]
+  },
+  {
+    "id": "howls_moving_castle",
+    "name": "Ходячий замок",
+    "year": 2004,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "top250",
+      "animation",
+      "cartoons_anime"
+    ]
+  },
+  {
+    "id": "princess_mononoke",
+    "name": "Принцесса Мононоке",
+    "year": 1997,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "90s",
+      "top250",
+      "animation",
+      "cartoons_anime"
+    ]
+  },
+  {
+    "id": "death_note",
+    "name": "Тетрадь смерти",
+    "year": 2006,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "thriller"
+    ],
+    "tags": [
+      "anime",
+      "cartoons_anime",
+      "cult"
+    ]
+  },
+  {
+    "id": "naruto",
+    "name": "Наруто",
+    "year": 2002,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "action"
+    ],
+    "tags": [
+      "anime",
+      "cartoons_anime",
+      "cult"
+    ]
+  },
+  {
+    "id": "sailor_moon",
+    "name": "Сейлор Мун",
+    "year": 1992,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "90s",
+      "cartoons_anime",
+      "cult"
+    ]
+  },
+  {
+    "id": "evangelion",
+    "name": "Евангелион",
+    "year": 1995,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "sci-fi"
+    ],
+    "tags": [
+      "anime",
+      "90s",
+      "cartoons_anime",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "akira",
+    "name": "Акира",
+    "year": 1988,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "sci-fi"
+    ],
+    "tags": [
+      "anime",
+      "cartoons_anime",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "your_name",
+    "name": "Твоё имя",
+    "year": 2016,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "romance"
+    ],
+    "tags": [
+      "anime",
+      "top250",
+      "cartoons_anime"
+    ]
+  },
+  {
+    "id": "snezhnaya_koroleva_1957",
+    "name": "Снежная королева",
+    "year": 1957,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "fairy_tale"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "fairy_tale",
+      "cult"
+    ]
+  },
+  {
+    "id": "plastilinovaya_vorona",
+    "name": "Пластилиновая ворона",
+    "year": 1981,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "krokha_enot",
+    "name": "Крошка Енот и тот, кто сидит в пруду",
+    "year": 1971,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "kak_lev_poluchil_grivu",
+    "name": "Как лев получил свою гриву",
+    "year": 1973,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "buratino_1975",
+    "name": "Приключения Буратино",
+    "year": 1975,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "letuchiy_korabl",
+    "name": "Летучий корабль",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "fairy_tale"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "baba_yaga_protiv",
+    "name": "Баба Яга против!",
+    "year": 1979,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "comedy"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr",
+      "cult"
+    ]
+  },
+  {
+    "id": "lyagushka_puteshestvennitsa",
+    "name": "Лягушка-путешественница",
+    "year": 1965,
+    "country": "ussr",
+    "genre": [
+      "animation",
+      "family"
+    ],
+    "tags": [
+      "ussr",
+      "animation",
+      "cartoons_ussr"
+    ]
+  },
+  {
+    "id": "ghost_in_the_shell",
+    "name": "Призрак в доспехах",
+    "year": 1995,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "sci-fi"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "sci-fi",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "kikis_delivery_service",
+    "name": "Ведьмина служба доставки",
+    "year": 1989,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "fantasy",
+      "cult"
+    ]
+  },
+  {
+    "id": "ponyo",
+    "name": "Рыбка Поньо на утёсе",
+    "year": 2008,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "fantasy"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "fantasy"
+    ]
+  },
+  {
+    "id": "porco_rosso",
+    "name": "Порко Россо",
+    "year": 1992,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "adventure"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "90s"
+    ]
+  },
+  {
+    "id": "paprika",
+    "name": "Паприка",
+    "year": 2006,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "sci-fi"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": "wind_rises",
+    "name": "Ветер крепчает",
+    "year": 2013,
+    "country": "anime",
+    "genre": [
+      "anime",
+      "drama"
+    ],
+    "tags": [
+      "anime",
+      "animation",
+      "cartoons_anime",
+      "drama"
+    ]
+  }
+]

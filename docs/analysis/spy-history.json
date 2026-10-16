@@ -1,0 +1,845 @@
+[
+  {
+    "id": "saloon_wild_west",
+    "name": "Салун на Диком Западе",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Стрельба, виски за стойкой, покерные столы, ковбои и шериф",
+    "tags": [
+      "place",
+      "western",
+      "usa"
+    ]
+  },
+  {
+    "id": "knyazheskie_palaty",
+    "name": "Княжеские палаты в Древней Руси",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "russia",
+    "description": "Князь на троне, дружинники на пиру, гусляры, мед в кубках",
+    "tags": [
+      "place",
+      "russia",
+      "middle_ages"
+    ]
+  },
+  {
+    "id": "rytsarskiy_zamok",
+    "name": "Средневековый рыцарский замок (Оружейная палата)",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Тяжёлые доспехи, мечи на стенах, факелы, оруженосцы",
+    "tags": [
+      "place",
+      "middle_ages",
+      "europe"
+    ]
+  },
+  {
+    "id": "rimskiy_kolizey",
+    "name": "Римский Колизей (Гладиаторская арена)",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Песок, залитый кровью, рёв толпы, гладиаторы и император с пальцем вниз",
+    "tags": [
+      "place",
+      "ancient",
+      "rome",
+      "cult"
+    ]
+  },
+  {
+    "id": "piratskiy_korabl",
+    "name": "Пиратский парусный фрегат",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Чёрный флаг, пушечные порты, капитанский мостик, ром и сундуки с пиастрами",
+    "tags": [
+      "place",
+      "pirates",
+      "sea"
+    ]
+  },
+  {
+    "id": "okop_pervoy_mirovoy",
+    "name": "Окоп Первой мировой войны",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Колючая проволока, грязь, противогазы, пулемётные гнёзда и свист снарядов",
+    "tags": [
+      "place",
+      "war",
+      "20th_century"
+    ]
+  },
+  {
+    "id": "gromnitsa_faraona",
+    "name": "Гробница египетского фараона (Внутри пирамиды)",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Саркофаг, иероглифы на каменных стенах, факелы и ловушки жрецов",
+    "tags": [
+      "place",
+      "ancient",
+      "egypt"
+    ]
+  },
+  {
+    "id": "shaolin_monastery",
+    "name": "Монастырь Шаолинь",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Монахи в оранжевых одеяниях, тренировки с шестами, медитация в саду",
+    "tags": [
+      "place",
+      "asia",
+      "middle_ages"
+    ]
+  },
+  {
+    "id": "versal_bal",
+    "name": "Версальский дворец (Королевский бал)",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Напудренные парики, шёлковые камзолы, зеркальная галерея и интриги двора",
+    "tags": [
+      "place",
+      "europe",
+      "court"
+    ]
+  },
+  {
+    "id": "drakkar_vikingov",
+    "name": "Драккар викингов в походе",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Резная голова дракона на носу, круглые щиты вдоль бортов, вёсла в тумане",
+    "tags": [
+      "place",
+      "middle_ages",
+      "vikings"
+    ]
+  },
+  {
+    "id": "senat_drevnego_rima",
+    "name": "Сенат Древнего Рима",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Сенаторы в белых тогах, мраморные колонны, яростные политические речи",
+    "tags": [
+      "place",
+      "ancient",
+      "rome"
+    ]
+  },
+  {
+    "id": "kabinet_alhimika",
+    "name": "Кабинет средневекового алхимика",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Реторты, колбы с зельями, сушёные травы, свитки и поиски философского камня",
+    "tags": [
+      "place",
+      "middle_ages",
+      "mystery"
+    ]
+  },
+  {
+    "id": "peshchera_pervobytnyh",
+    "name": "Пещера первобытного племени",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Очаг, наскальные рисунки мамонтов, шкуры зверей и кремнёвые копья",
+    "tags": [
+      "place",
+      "ancient",
+      "prehistoric"
+    ]
+  },
+  {
+    "id": "tseppelin_dirizhabl",
+    "name": "Пассажирский дирижабль (Цеппелин 1930-х)",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Роскошный салон в облаках, гул пропеллеров, смотровые панорамные окна",
+    "tags": [
+      "place",
+      "20th_century",
+      "aviation"
+    ]
+  },
+  {
+    "id": "yurta_chingiskhana",
+    "name": "Ставка хана в Орде (Юрта Чингисхана)",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Войлочные ковры, золотой трон хана, военачальники-темники, сабли и луки",
+    "tags": [
+      "place",
+      "middle_ages",
+      "nomad"
+    ]
+  },
+  {
+    "id": "karavan_shelkoviy_put",
+    "name": "Торговый караван на Великом шёлковом пути",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Верблюды с тюками пряностей и шёлка, восточный базар на оазисе",
+    "tags": [
+      "place",
+      "middle_ages",
+      "trade"
+    ]
+  },
+  {
+    "id": "zastenok_inkvizitsii",
+    "name": "Подземелье святой инквизиции",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Инквизитор в капюшоне, цепи, дыба, пламя факелов и протокол допроса",
+    "tags": [
+      "place",
+      "middle_ages",
+      "europe"
+    ]
+  },
+  {
+    "id": "dvor_imperatora_peterburg",
+    "name": "Зимний дворец (Императорский бал XIX века)",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "Офицеры в гусарских ментиках, шуршание кринолинов, вальс под оркестр",
+    "tags": [
+      "place",
+      "russia",
+      "empire"
+    ]
+  },
+  {
+    "id": "smolny_1917",
+    "name": "Штаб революции в Смольном (Октябрь 1917)",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Матросы с пулемётными лентами, табачный дым, мандаты и лозунги большевиков",
+    "tags": [
+      "place",
+      "russia",
+      "revolution"
+    ]
+  },
+  {
+    "id": "ubijstvo_tsezarya",
+    "name": "Убийство Юлия Цезаря («И ты, Брут!»)",
+    "category": "historical_event",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "15 марта 44 года до н.э., 23 кинжальных удара заговорщиков у статуи Помпея",
+    "tags": [
+      "event",
+      "ancient",
+      "rome",
+      "cult"
+    ]
+  },
+  {
+    "id": "kreshchenie_rusi",
+    "name": "Крещение Руси князем Владимиром",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "russia",
+    "description": "988 год, массовое крещение киевлян в водах Днепра, ниспровержение идолов Перуна",
+    "tags": [
+      "event",
+      "russia",
+      "middle_ages",
+      "cult"
+    ]
+  },
+  {
+    "id": "ledovoe_poboische",
+    "name": "Ледовое побоище (Битва на Чудском озере)",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "russia",
+    "description": "5 апреля 1242 года, разгром рыцарей Ливонского ордена дружиной Александра Невского",
+    "tags": [
+      "event",
+      "russia",
+      "middle_ages",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "kulikovskaya_bitva",
+    "name": "Куликовская битва",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "russia",
+    "description": "8 сентября 1380 года, поединок Пересвета с Челубеем, победа Дмитрия Донского над Мамаем",
+    "tags": [
+      "event",
+      "russia",
+      "middle_ages",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "otkrytie_ameriki",
+    "name": "Открытие Америки Христофором Колумбом",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "12 октября 1492 года, каравеллы «Санта-Мария», «Пинта» и «Нинья», крик матроса «Земля!»",
+    "tags": [
+      "event",
+      "world",
+      "discovery",
+      "cult"
+    ]
+  },
+  {
+    "id": "padenie_konstantinopolya",
+    "name": "Падение Константинополя под ударами османов",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "29 мая 1453 года, султан Мехмед II, гибель Византийской империи, штурм Феодосиевых стен",
+    "tags": [
+      "event",
+      "world",
+      "middle_ages",
+      "war"
+    ]
+  },
+  {
+    "id": "varfolomeevskaya_noch",
+    "name": "Варфоломеевская ночь в Париже",
+    "category": "historical_event",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "24 августа 1572 года, резня гугенотов католиками по приказу Екатерины Медичи",
+    "tags": [
+      "event",
+      "world",
+      "europe",
+      "tragedy"
+    ]
+  },
+  {
+    "id": "bostonskoe_chaepitie",
+    "name": "Бостонское чаепитие",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "16 декабря 1773 года, колонисты сбросили ящики с чаем Ост-Индской компании в океан",
+    "tags": [
+      "event",
+      "world",
+      "usa",
+      "revolution"
+    ]
+  },
+  {
+    "id": "shturm_bastilii",
+    "name": "Штурм Бастилии (Начало Французской революции)",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "14 июля 1789 года, парижский народ берёт крепость-тюрьму, гильотина, лозунг «Свобода, равенство, братство»",
+    "tags": [
+      "event",
+      "world",
+      "europe",
+      "revolution",
+      "cult"
+    ]
+  },
+  {
+    "id": "borodino",
+    "name": "Бородинская битва (Отечественная война 1812 года)",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "26 августа 1812 года, Кутузов против Наполеона, батарея Раевского, Багратионовы флеши",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "vosstanie_dekabristov",
+    "name": "Восстание декабристов на Сенатской площади",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "14 декабря 1825 года, каре восставших полков у Медного всадника, выстрел Каховского в Милорадовича",
+    "tags": [
+      "event",
+      "russia",
+      "revolution",
+      "cult"
+    ]
+  },
+  {
+    "id": "otmena_krepostnogo_prava",
+    "name": "Отмена крепостного права в России",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "1861 год, манифест царя-освободителя Александра II о даровании крестьянам свободы",
+    "tags": [
+      "event",
+      "russia",
+      "reform"
+    ]
+  },
+  {
+    "id": "gibel_titanika",
+    "name": "Крушение пассажирского лайнера «Титаник»",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Апрель 1912 года, столкновение с айсбергом в Атлантике, играющий оркестр, недостаток шлюпок",
+    "tags": [
+      "event",
+      "world",
+      "tragedy",
+      "cult"
+    ]
+  },
+  {
+    "id": "ubijstvo_ferdinanda",
+    "name": "Убийство эрцгерцога Франца Фердинанда в Сараево",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "28 июня 1914 года, выстрелы Гаврилы Принципа, послужившие поводом к Первой мировой войне",
+    "tags": [
+      "event",
+      "world",
+      "europe",
+      "war"
+    ]
+  },
+  {
+    "id": "zalp_avrory_1917",
+    "name": "Залп крейсера «Аврора» и взятие Зимнего дворца",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Октябрь 1917 года, холостой выстрел с Невы, арест Временного правительства, Ленин у власти",
+    "tags": [
+      "event",
+      "russia",
+      "revolution",
+      "cult"
+    ]
+  },
+  {
+    "id": "parad_1941",
+    "name": "Парад на Красной площади 7 ноября 1941 года",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Солдаты и танки прямо со снежной Красной площади уходят на защиту Москвы",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "stalingradskaya_bitva",
+    "name": "Сталинградская битва (Дом Павлова, котел Паулюса)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "1942–1943 годы, ожесточённые бои за Мамаев курган, окружение и капитуляция 6-й армии Паулюса",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "vysadka_v_normandii",
+    "name": "Высадка союзников в Нормандии (День «Д»)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "6 июня 1944 года, операция «Оверлорд», десант на пляж Омаха, открытие Второго фронта",
+    "tags": [
+      "event",
+      "world",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "znamya_pobedy_reikhstag",
+    "name": "Водружение Знамени Победы над Рейхстагом",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Май 1945 года, штурм Берлина, красное знамя на куполе поверженного Рейхстага",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "polyot_gagarina",
+    "name": "Первый полёт человека в космос (Юрий Гагарин)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "12 апреля 1961 года, корабль «Восток-1», космодром Байконур, легендарное «Поехали!»",
+    "tags": [
+      "event",
+      "russia",
+      "space",
+      "cult"
+    ]
+  },
+  {
+    "id": "vysadka_na_lunu",
+    "name": "Высадка человека на Луну (Нил Армстронг)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "20 июля 1969 года, корабль «Аполлон-11», модуль «Орёл», «Один маленький шаг для человека...»",
+    "tags": [
+      "event",
+      "world",
+      "space",
+      "cult"
+    ]
+  },
+  {
+    "id": "padenie_berlinskoy_steny",
+    "name": "Падение Берлинской стены",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "9 ноября 1989 года, ликующие толпы, разрушение стены кувалдами, объединение Германии",
+    "tags": [
+      "event",
+      "world",
+      "europe",
+      "cult"
+    ]
+  },
+  {
+    "id": "raspad_sssr",
+    "name": "Подписание Беловежских соглашений (Распад СССР)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Декабрь 1991 года, Вискули, Ельцин, Кравчук и Шушкевич объявляют о прекращении существования СССР",
+    "tags": [
+      "event",
+      "russia",
+      "cult"
+    ]
+  },
+  {
+    "id": "zamok_drakuly",
+    "name": "Замок Дракулы в Трансильвании",
+    "category": "historical_place",
+    "epoch": "middle_ages",
+    "region": "world",
+    "description": "Тёмные коридоры, гроб, летучие мыши и граф в плаще",
+    "tags": [
+      "place",
+      "middle_ages",
+      "europe",
+      "mystery"
+    ]
+  },
+  {
+    "id": "stantsiya_mir",
+    "name": "Орбитальная станция «Мир»",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Невесомость, иллюминатор с Землёй, тесные отсеки и космонавты",
+    "tags": [
+      "place",
+      "russia",
+      "space",
+      "20th_century"
+    ]
+  },
+  {
+    "id": "podvodnaya_lodka",
+    "name": "Отсек подводной лодки",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Перископ, гидроакустик, тусклый свет и тишина под водой",
+    "tags": [
+      "place",
+      "war",
+      "20th_century"
+    ]
+  },
+  {
+    "id": "sovetskaya_kommunalka",
+    "name": "Советская коммунальная квартира",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Общая кухня, очередь в ванную, соседи и телевизор",
+    "tags": [
+      "place",
+      "russia",
+      "20th_century"
+    ]
+  },
+  {
+    "id": "pionerskiy_lager",
+    "name": "Пионерский лагерь",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Линейка, горн, отряд, костёр и вечерние страшилки",
+    "tags": [
+      "place",
+      "russia",
+      "20th_century",
+      "cult"
+    ]
+  },
+  {
+    "id": "shkolnyy_klass",
+    "name": "Школьный класс в советское время",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Доска, парты, дневник и звонок с урока",
+    "tags": [
+      "place",
+      "russia",
+      "20th_century"
+    ]
+  },
+  {
+    "id": "antichniy_teatr",
+    "name": "Древнегреческий театр",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Амфитеатр, маски, хор и трагедия на сцене",
+    "tags": [
+      "place",
+      "ancient",
+      "greece",
+      "cult"
+    ]
+  },
+  {
+    "id": "kitayskaya_stena",
+    "name": "Великая Китайская стена",
+    "category": "historical_place",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Сторожевые башни, императорская стража, бесконечные ступени",
+    "tags": [
+      "place",
+      "asia",
+      "ancient"
+    ]
+  },
+  {
+    "id": "pochtovy_dilizhans",
+    "name": "Почтовый дилижанс",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Ямщик, пыльная дорога, пассажиры и разбойники на перевале",
+    "tags": [
+      "place",
+      "western",
+      "modern_history"
+    ]
+  },
+  {
+    "id": "lunapark",
+    "name": "Лунапарк (Колесо обозрения)",
+    "category": "historical_place",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Карусели, сладкая вата, пряники и аттракционы",
+    "tags": [
+      "place",
+      "20th_century",
+      "fun"
+    ]
+  },
+  {
+    "id": "kolesny_parokhod",
+    "name": "Колёсный пароход на Волге",
+    "category": "historical_place",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "Колёса по воде, палуба, самовар, купцы и речной ветер",
+    "tags": [
+      "place",
+      "russia",
+      "modern_history"
+    ]
+  },
+  {
+    "id": "poltavskaya_bitva",
+    "name": "Полтавская битва",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "Пётр I, шведская армия, редуты и победный салют",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "pozhar_moskvy_1812",
+    "name": "Пожар Москвы 1812 года",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "russia",
+    "description": "Горящие деревянные дома и французская армия в пылающем городе",
+    "tags": [
+      "event",
+      "russia",
+      "war"
+    ]
+  },
+  {
+    "id": "vaterloo",
+    "name": "Битва при Ватерлоо",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Наполеон, каре, пушки и поражение императора",
+    "tags": [
+      "event",
+      "world",
+      "europe",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "termopily",
+    "name": "Битва при Фермопилах",
+    "category": "historical_event",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Триста спартанцев в узком проходе и царь Леонид",
+    "tags": [
+      "event",
+      "ancient",
+      "greece",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "vosstanie_spartaka",
+    "name": "Восстание Спартака",
+    "category": "historical_event",
+    "epoch": "ancient",
+    "region": "world",
+    "description": "Гладиаторы, рабы с оружием и бунт против Рима",
+    "tags": [
+      "event",
+      "ancient",
+      "rome",
+      "war"
+    ]
+  },
+  {
+    "id": "blokada_leningrada",
+    "name": "Блокада Ленинграда",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Голод, холод, сирены, хлеб по норме и метроном",
+    "tags": [
+      "event",
+      "russia",
+      "war",
+      "cult"
+    ]
+  },
+  {
+    "id": "vykhod_v_kosmos",
+    "name": "Первый выход человека в открытый космос (Алексей Леонов)",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "russia",
+    "description": "Скафандр, трос, чёрное небо и Земля внизу",
+    "tags": [
+      "event",
+      "russia",
+      "space",
+      "cult"
+    ]
+  },
+  {
+    "id": "polyot_brat_rait",
+    "name": "Первый полёт братьев Райт",
+    "category": "historical_event",
+    "epoch": "20th_century",
+    "region": "world",
+    "description": "Деревянный самолёт, поле, ветер и первые секунды в воздухе",
+    "tags": [
+      "event",
+      "world",
+      "aviation"
+    ]
+  },
+  {
+    "id": "telefon_bella",
+    "name": "Изобретение телефона (Александр Белл)",
+    "category": "historical_event",
+    "epoch": "modern_history",
+    "region": "world",
+    "description": "Первая фраза по проводу и изобретатель в лаборатории",
+    "tags": [
+      "event",
+      "world",
+      "modern_history"
+    ]
+  }
+]

@@ -1,0 +1,1001 @@
+[
+  {
+    "id": "heroes_3",
+    "name": "Герои меча и магии III (Heroes of Might and Magic III)",
+    "year": 1999,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "turn_based",
+      "90s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "half_life",
+    "name": "Half-Life",
+    "year": 1998,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "shooter",
+      "90s",
+      "sci-fi",
+      "cult"
+    ]
+  },
+  {
+    "id": "half_life_2",
+    "name": "Half-Life 2",
+    "year": 2004,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "shooter",
+      "00s",
+      "sci-fi",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "cs_16",
+    "name": "Counter-Strike (1.6 / Source / GO)",
+    "year": 2000,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "tags": [
+      "shooter",
+      "multiplayer",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "doom",
+    "name": "Doom",
+    "year": 1993,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "shooter",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "quake_3",
+    "name": "Quake III Arena",
+    "year": 1999,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "tags": [
+      "shooter",
+      "multiplayer",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "warcraft_3",
+    "name": "Warcraft III: Reign of Chaos / The Frozen Throne",
+    "year": 2002,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "00s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "starcraft",
+    "name": "StarCraft / Brood War",
+    "year": 1998,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "diablo_2",
+    "name": "Diablo II",
+    "year": 2000,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "rpg",
+      "hack_and_slash",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "fallout_2",
+    "name": "Fallout 2",
+    "year": 1998,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "rpg",
+      "postapoc",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "fallout_nv",
+    "name": "Fallout: New Vegas",
+    "year": 2010,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "postapoc",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "gta_san_andreas",
+    "name": "Grand Theft Auto: San Andreas",
+    "year": 2004,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "action",
+      "open_world",
+      "00s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "gta_vice_city",
+    "name": "Grand Theft Auto: Vice City",
+    "year": 2002,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "action",
+      "open_world",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "gta_5",
+    "name": "Grand Theft Auto V",
+    "year": 2013,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "action",
+      "open_world",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "stalker_shoc",
+    "name": "S.T.A.L.K.E.R.: Тень Чернобыля",
+    "year": 2007,
+    "origin": "cis",
+    "genre": "shooter",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "cis",
+      "shooter",
+      "rpg",
+      "00s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "metro_2033",
+    "name": "Metro 2033 / Exodus",
+    "year": 2010,
+    "origin": "cis",
+    "genre": "shooter",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "cis",
+      "shooter",
+      "postapoc",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "kosmicheskie_reyndzhery",
+    "name": "Космические рейнджеры 2: Доминаторы",
+    "year": 2004,
+    "origin": "cis",
+    "genre": "rpg",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "cis",
+      "rpg",
+      "strategy",
+      "space",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "dalnoboyshchiki_2",
+    "name": "Дальнобойщики 2",
+    "year": 2001,
+    "origin": "cis",
+    "genre": "simulator",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "cis",
+      "simulator",
+      "racing",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "korsary_2",
+    "name": "Корсары (Пираты Карибского моря)",
+    "year": 2000,
+    "origin": "cis",
+    "genre": "rpg",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "cis",
+      "rpg",
+      "pirates",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "allody",
+    "name": "Аллоды: Печать тайны",
+    "year": 1998,
+    "origin": "cis",
+    "genre": "rpg",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "cis",
+      "rpg",
+      "strategy",
+      "90s"
+    ]
+  },
+  {
+    "id": "il2_sturmovik",
+    "name": "Ил-2 Штурмовик",
+    "year": 2001,
+    "origin": "cis",
+    "genre": "simulator",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "cis",
+      "simulator",
+      "flight",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "petka_i_vich",
+    "name": "Петька и Василий Иванович спасают галактику",
+    "year": 1998,
+    "origin": "cis",
+    "genre": "quest",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "cis",
+      "quest",
+      "comedy",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "atomic_heart",
+    "name": "Atomic Heart",
+    "year": 2023,
+    "origin": "cis",
+    "genre": "shooter",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "cis",
+      "shooter",
+      "sci-fi",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "tetris",
+    "name": "Тетрис (Алексей Пажитнов)",
+    "year": 1984,
+    "origin": "cis",
+    "genre": "puzzle",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "tags": [
+      "cis",
+      "puzzle",
+      "80s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "morrowind",
+    "name": "The Elder Scrolls III: Morrowind",
+    "year": 2002,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "rpg",
+      "open_world",
+      "fantasy",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "skyrim",
+    "name": "The Elder Scrolls V: Skyrim",
+    "year": 2011,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "open_world",
+      "fantasy",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "witcher_3",
+    "name": "Ведьмак 3: Дикая Охота (The Witcher 3)",
+    "year": 2015,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "open_world",
+      "fantasy",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "gothic_2",
+    "name": "Готика II (Gothic II)",
+    "year": 2002,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "rpg",
+      "fantasy",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "world_of_warcraft",
+    "name": "World of Warcraft",
+    "year": 2004,
+    "origin": "world",
+    "genre": "mmo",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "tags": [
+      "mmo",
+      "rpg",
+      "multiplayer",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "dota_2",
+    "name": "Dota 2 (и карта Defense of the Ancients)",
+    "year": 2003,
+    "origin": "world",
+    "genre": "moba",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "tags": [
+      "moba",
+      "multiplayer",
+      "00s",
+      "10s_20s",
+      "cult"
+    ]
+  },
+  {
+    "id": "minecraft",
+    "name": "Minecraft",
+    "year": 2011,
+    "origin": "world",
+    "genre": "sandbox",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "sandbox",
+      "survival",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "civilization_4",
+    "name": "Сид Мейер: Цивилизация (Sid Meier's Civilization)",
+    "year": 2005,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s",
+      "00s",
+      "10s_20s"
+    ],
+    "tags": [
+      "strategy",
+      "turn_based",
+      "cult"
+    ]
+  },
+  {
+    "id": "age_of_empires_2",
+    "name": "Age of Empires II: The Age of Kings",
+    "year": 1999,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "red_alert_2",
+    "name": "Command & Conquer: Red Alert 2",
+    "year": 2000,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "stronghold_crusader",
+    "name": "Stronghold Crusader",
+    "year": 2002,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "medieval",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "max_payne",
+    "name": "Max Payne",
+    "year": 2001,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "action",
+      "shooter",
+      "noir",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "mafia_city_of_lost_heaven",
+    "name": "Mafia: The City of Lost Heaven",
+    "year": 2002,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "action",
+      "crime",
+      "story",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "nfs_underground_2",
+    "name": "Need for Speed: Underground 2",
+    "year": 2004,
+    "origin": "world",
+    "genre": "racing",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "racing",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "nfs_most_wanted",
+    "name": "Need for Speed: Most Wanted",
+    "year": 2005,
+    "origin": "world",
+    "genre": "racing",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "racing",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "mortal_kombat_3",
+    "name": "Mortal Kombat 3 (Ultimate)",
+    "year": 1995,
+    "origin": "world",
+    "genre": "fighting",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "fighting",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "the_sims",
+    "name": "The Sims (1 / 2)",
+    "year": 2000,
+    "origin": "world",
+    "genre": "simulator",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "simulator",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "mass_effect_2",
+    "name": "Mass Effect 2",
+    "year": 2010,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "sci-fi",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "bioshock",
+    "name": "BioShock",
+    "year": 2007,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "shooter",
+      "immersive_sim",
+      "00s"
+    ]
+  },
+  {
+    "id": "dark_souls",
+    "name": "Dark Souls",
+    "year": 2011,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "souls",
+      "10s_20s",
+      "cult"
+    ]
+  },
+  {
+    "id": "silent_hill_2",
+    "name": "Silent Hill 2",
+    "year": 2001,
+    "origin": "world",
+    "genre": "horror",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "horror",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "resident_evil_4",
+    "name": "Resident Evil 4",
+    "year": 2005,
+    "origin": "world",
+    "genre": "horror",
+    "eras": [
+      "00s"
+    ],
+    "tags": [
+      "horror",
+      "action",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "portal_2",
+    "name": "Portal 2",
+    "year": 2011,
+    "origin": "world",
+    "genre": "puzzle",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "puzzle",
+      "sci-fi",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "cyberpunk_2077",
+    "name": "Cyberpunk 2077",
+    "year": 2020,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "rpg",
+      "open_world",
+      "cyberpunk",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "red_dead_redemption_2",
+    "name": "Red Dead Redemption 2",
+    "year": 2018,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "10s_20s"
+    ],
+    "tags": [
+      "action",
+      "western",
+      "open_world",
+      "10s_20s",
+      "top_games"
+    ]
+  },
+  {
+    "id": "sapper",
+    "name": "Сапёр (Minesweeper)",
+    "year": 1990,
+    "origin": "world",
+    "genre": "puzzle",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "puzzle",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "solitaire",
+    "name": "Пасьянс «Солитер» (Solitaire)",
+    "year": 1990,
+    "origin": "world",
+    "genre": "puzzle",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "puzzle",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "prince_of_persia",
+    "name": "Prince of Persia",
+    "year": 1989,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "tags": [
+      "action",
+      "platformer",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "lemmings",
+    "name": "Lemmings (Лемминги)",
+    "year": 1991,
+    "origin": "world",
+    "genre": "puzzle",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "puzzle",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "worms",
+    "name": "Worms (Червячки)",
+    "year": 1995,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "strategy",
+      "turn_based",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "duke_nukem_3d",
+    "name": "Duke Nukem 3D",
+    "year": 1996,
+    "origin": "world",
+    "genre": "shooter",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "shooter",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "diablo",
+    "name": "Diablo",
+    "year": 1996,
+    "origin": "world",
+    "genre": "rpg",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "rpg",
+      "hack_and_slash",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "warcraft_2",
+    "name": "Warcraft II: Tides of Darkness",
+    "year": 1995,
+    "origin": "world",
+    "genre": "strategy",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "strategy",
+      "rts",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "super_mario_bros",
+    "name": "Super Mario Bros.",
+    "year": 1985,
+    "origin": "world",
+    "genre": "action",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "tags": [
+      "action",
+      "platformer",
+      "80s",
+      "90s",
+      "cult",
+      "top_games"
+    ]
+  },
+  {
+    "id": "sim_city",
+    "name": "SimCity",
+    "year": 1989,
+    "origin": "world",
+    "genre": "simulator",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "tags": [
+      "simulator",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "street_fighter_2",
+    "name": "Street Fighter II",
+    "year": 1991,
+    "origin": "world",
+    "genre": "fighting",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "fighting",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "myst",
+    "name": "Myst",
+    "year": 1993,
+    "origin": "world",
+    "genre": "puzzle",
+    "eras": [
+      "90s"
+    ],
+    "tags": [
+      "puzzle",
+      "90s",
+      "cult"
+    ]
+  }
+]

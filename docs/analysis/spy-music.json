@@ -1,0 +1,1532 @@
+[
+  {
+    "id": "kino",
+    "name": "Кино (Виктор Цой)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s"
+    ],
+    "hit": "Группа крови / Пачка сигарет",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "cult"
+    ]
+  },
+  {
+    "id": "akvarium",
+    "name": "Аквариум (Борис Гребенщиков)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Город золотой / Поезд в огне",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "alisa",
+    "name": "Алиса (Константин Кинчев)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Трасса Е-95 / Мы вместе",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "ddt",
+    "name": "ДДТ (Юрий Шевчук)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Что такое осень / Дождь",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "nautilus",
+    "name": "Nautilus Pompilius",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Скованные одной цепью / Гудбай, Америка",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "bravo",
+    "name": "Браво (Жанна Агузарова / Валерий Сюткин)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Вася / Жёлтые ботинки",
+    "tags": [
+      "russia",
+      "rock",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "sekret",
+    "name": "Секрет",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s"
+    ],
+    "hit": "Привет / Моя любовь на пятом этаже",
+    "tags": [
+      "russia",
+      "rock",
+      "80s"
+    ]
+  },
+  {
+    "id": "korol_i_shut",
+    "name": "Король и Шут",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Лесник / Кукла колдуна",
+    "tags": [
+      "russia",
+      "rock",
+      "punk",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "splin",
+    "name": "Сплин",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Моё сердце / Выхода нет",
+    "tags": [
+      "russia",
+      "rock",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "mumiytroll",
+    "name": "Мумий Тролль (Илья Лагутенко)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Владивосток 2000 / Утекай",
+    "tags": [
+      "russia",
+      "rock",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "agata_kristi",
+    "name": "Агата Кристи",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Как на войне / Ковёр-вертолёт",
+    "tags": [
+      "russia",
+      "rock",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "sektor_gaza",
+    "name": "Сектор Газа (Юрий Хой)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s"
+    ],
+    "hit": "Туман / Пора домой",
+    "tags": [
+      "russia",
+      "rock",
+      "punk",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "grazhdanskaya_oborona",
+    "name": "Гражданская Оборона (Егор Летов)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Всё идёт по плану / Моя оборона",
+    "tags": [
+      "russia",
+      "rock",
+      "punk",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "nogu_svelo",
+    "name": "Ногу Свело!",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Хару Мамбуру",
+    "tags": [
+      "russia",
+      "rock",
+      "90s"
+    ]
+  },
+  {
+    "id": "chizh",
+    "name": "Чиж & Co",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s"
+    ],
+    "hit": "О любви / Вечная молодость",
+    "tags": [
+      "russia",
+      "rock",
+      "90s"
+    ]
+  },
+  {
+    "id": "zemfira",
+    "name": "Земфира",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Ариведерчи / Ромашки / Искала",
+    "tags": [
+      "russia",
+      "rock",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "bi_2",
+    "name": "Би-2",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Полковнику никто не пишет / Варвара",
+    "tags": [
+      "russia",
+      "rock",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "leningrad",
+    "name": "Ленинград (Сергей Шнуров)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "В Питере — пить / Экспонат (Лабутены)",
+    "tags": [
+      "russia",
+      "rock",
+      "ska",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "zveri",
+    "name": "Звери",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Районы-кварталы / Дожди-пистолеты",
+    "tags": [
+      "russia",
+      "rock",
+      "pop",
+      "00s"
+    ]
+  },
+  {
+    "id": "melnitsa",
+    "name": "Мельница (Хелависа)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Ночная кобыла / Дорога сна",
+    "tags": [
+      "russia",
+      "rock",
+      "folk",
+      "00s"
+    ]
+  },
+  {
+    "id": "lumen",
+    "name": "Lumen",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Гореть / Сид и Нэнси",
+    "tags": [
+      "russia",
+      "rock",
+      "punk",
+      "00s"
+    ]
+  },
+  {
+    "id": "pornofilmy",
+    "name": "Порнофильмы",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Я так соскучился / Чужой среди своих",
+    "tags": [
+      "russia",
+      "rock",
+      "punk",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "dayte_tank",
+    "name": "Дайте танк (!)",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Люди / Утро",
+    "tags": [
+      "russia",
+      "rock",
+      "indie",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "the_hatters",
+    "name": "The Hatters",
+    "country": "russia",
+    "genre": "rock",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Да, со мной не просто / Russian Style",
+    "tags": [
+      "russia",
+      "rock",
+      "folk",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "ariya",
+    "name": "Ария (Валерий Кипелов)",
+    "country": "russia",
+    "genre": "metal",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Улица Роз / Беспечный ангел",
+    "tags": [
+      "russia",
+      "metal",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "kipelov",
+    "name": "Кипелов",
+    "country": "russia",
+    "genre": "metal",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Я свободен",
+    "tags": [
+      "russia",
+      "metal",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "epidemiy",
+    "name": "Эпидемия",
+    "country": "russia",
+    "genre": "metal",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Всадник из льда / Эльфийская рукопись",
+    "tags": [
+      "russia",
+      "metal",
+      "00s"
+    ]
+  },
+  {
+    "id": "slot",
+    "name": "Слот",
+    "country": "russia",
+    "genre": "metal",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Мёртвые звёзды / Круги на воде",
+    "tags": [
+      "russia",
+      "metal",
+      "alternative",
+      "00s"
+    ]
+  },
+  {
+    "id": "amatory",
+    "name": "Amatory",
+    "country": "russia",
+    "genre": "metal",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Чёрно-белые дни",
+    "tags": [
+      "russia",
+      "metal",
+      "00s"
+    ]
+  },
+  {
+    "id": "pugacheva",
+    "name": "Алла Пугачёва",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Миллион алых роз / Айсберг",
+    "tags": [
+      "russia",
+      "pop",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "leontiev",
+    "name": "Валерий Леонтьев",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Дельтаплан / Казанова",
+    "tags": [
+      "russia",
+      "pop",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "laskoviy_may",
+    "name": "Ласковый май (Юрий Шатунов)",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Белые розы / Седая ночь",
+    "tags": [
+      "russia",
+      "pop",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "mirazh",
+    "name": "Мираж",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Музыка нас связала / Наступает ночь",
+    "tags": [
+      "russia",
+      "pop",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "ruki_vverh",
+    "name": "Руки Вверх! (Сергей Жуков)",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Крошка моя / 18 мне уже",
+    "tags": [
+      "russia",
+      "pop",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "ivanushki",
+    "name": "Иванушки International",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Тополиный пух / Тучи",
+    "tags": [
+      "russia",
+      "pop",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "kombinatsiya",
+    "name": "Комбинация",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "American Boy / Бухгалтер",
+    "tags": [
+      "russia",
+      "pop",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "diskoteka_avariya",
+    "name": "Дискотека Авария",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Новогодняя / Пей пиво",
+    "tags": [
+      "russia",
+      "pop",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "tatu",
+    "name": "Тату (t.A.T.u.)",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Нас не догонят / Я сошла с ума",
+    "tags": [
+      "russia",
+      "pop",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "maksim",
+    "name": "МакSим",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Знаешь ли ты / Трудный возраст",
+    "tags": [
+      "russia",
+      "pop",
+      "00s"
+    ]
+  },
+  {
+    "id": "dima_bilan",
+    "name": "Дима Билан",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Невозможное возможно / Believe",
+    "tags": [
+      "russia",
+      "pop",
+      "00s"
+    ]
+  },
+  {
+    "id": "glyukoza",
+    "name": "Глюк’oZa",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Невеста / Ненавижу",
+    "tags": [
+      "russia",
+      "pop",
+      "00s"
+    ]
+  },
+  {
+    "id": "little_big",
+    "name": "Little Big",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Skibidi / Uno",
+    "tags": [
+      "russia",
+      "pop",
+      "electronic",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "monetochka",
+    "name": "Монеточка",
+    "country": "russia",
+    "genre": "pop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Каждый раз / Нимфоманка",
+    "tags": [
+      "russia",
+      "pop",
+      "indie",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "basta",
+    "name": "Баста",
+    "country": "russia",
+    "genre": "hiphop",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Сансара / Выпускной (Медлячок)",
+    "tags": [
+      "russia",
+      "hiphop",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "oxxxymiron",
+    "name": "Oxxxymiron",
+    "country": "russia",
+    "genre": "hiphop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Город под подошвой / Где нас нет",
+    "tags": [
+      "russia",
+      "hiphop",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "queen",
+    "name": "Queen (Freddie Mercury)",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s"
+    ],
+    "hit": "Bohemian Rhapsody / We Will Rock You",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "cult"
+    ]
+  },
+  {
+    "id": "pink_floyd",
+    "name": "Pink Floyd",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s"
+    ],
+    "hit": "Another Brick in the Wall / Comfortably Numb",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "cult"
+    ]
+  },
+  {
+    "id": "bon_jovi",
+    "name": "Bon Jovi",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Livin' on a Prayer / It's My Life",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "guns_n_roses",
+    "name": "Guns N' Roses",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Sweet Child O' Mine / Don't Cry",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "u2",
+    "name": "U2",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "With or Without You / Beautiful Day",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "scorpions",
+    "name": "Scorpions",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Wind of Change / Still Loving You",
+    "tags": [
+      "world",
+      "rock",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "nirvana",
+    "name": "Nirvana (Kurt Cobain)",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s"
+    ],
+    "hit": "Smells Like Teen Spirit / Come as You Are",
+    "tags": [
+      "world",
+      "rock",
+      "grunge",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "rhcp",
+    "name": "Red Hot Chili Peppers",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Californication / Can't Stop",
+    "tags": [
+      "world",
+      "rock",
+      "funk",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "oasis",
+    "name": "Oasis",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s"
+    ],
+    "hit": "Wonderwall / Don't Look Back in Anger",
+    "tags": [
+      "world",
+      "rock",
+      "britpop",
+      "90s"
+    ]
+  },
+  {
+    "id": "radiohead",
+    "name": "Radiohead",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Creep / Karma Police",
+    "tags": [
+      "world",
+      "rock",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "green_day",
+    "name": "Green Day",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Boulevard of Broken Dreams / Basket Case",
+    "tags": [
+      "world",
+      "rock",
+      "punk",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "the_offspring",
+    "name": "The Offspring",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "90s"
+    ],
+    "hit": "The Kids Aren't Alright / Pretty Fly",
+    "tags": [
+      "world",
+      "rock",
+      "punk",
+      "90s"
+    ]
+  },
+  {
+    "id": "linkin_park",
+    "name": "Linkin Park (Chester Bennington)",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Numb / In the End / Faint",
+    "tags": [
+      "world",
+      "rock",
+      "alternative",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "coldplay",
+    "name": "Coldplay",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Viva La Vida / The Scientist / Yellow",
+    "tags": [
+      "world",
+      "rock",
+      "pop",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "muse",
+    "name": "Muse",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Supermassive Black Hole / Uprising",
+    "tags": [
+      "world",
+      "rock",
+      "alternative",
+      "00s"
+    ]
+  },
+  {
+    "id": "gorillaz",
+    "name": "Gorillaz",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Feel Good Inc. / Clint Eastwood",
+    "tags": [
+      "world",
+      "rock",
+      "hiphop",
+      "00s"
+    ]
+  },
+  {
+    "id": "arctic_monkeys",
+    "name": "Arctic Monkeys",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Do I Wanna Know? / 505",
+    "tags": [
+      "world",
+      "rock",
+      "indie",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "thirty_seconds_to_mars",
+    "name": "30 Seconds to Mars (Jared Leto)",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "00s"
+    ],
+    "hit": "The Kill / From Yesterday",
+    "tags": [
+      "world",
+      "rock",
+      "00s"
+    ]
+  },
+  {
+    "id": "imagine_dragons",
+    "name": "Imagine Dragons",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Radioactive / Believer / Demons",
+    "tags": [
+      "world",
+      "rock",
+      "pop",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "maneskin",
+    "name": "Måneskin",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Beggin' / Zitti e buoni",
+    "tags": [
+      "world",
+      "rock",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "metallica",
+    "name": "Metallica",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Enter Sandman / Nothing Else Matters",
+    "tags": [
+      "world",
+      "metal",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "iron_maiden",
+    "name": "Iron Maiden",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "The Trooper / Fear of the Dark",
+    "tags": [
+      "world",
+      "metal",
+      "80s",
+      "90s"
+    ]
+  },
+  {
+    "id": "ac_dc",
+    "name": "AC/DC",
+    "country": "world",
+    "genre": "rock",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Highway to Hell / Thunderstruck",
+    "tags": [
+      "world",
+      "rock",
+      "metal",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "rammstein",
+    "name": "Rammstein (Till Lindemann)",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "90s",
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Du Hast / Sonne / Deutschland",
+    "tags": [
+      "world",
+      "metal",
+      "industrial",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "soad",
+    "name": "System of a Down",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Chop Suey! / Toxicity",
+    "tags": [
+      "world",
+      "metal",
+      "alternative",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "slipknot",
+    "name": "Slipknot",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Psychosocial / Duality",
+    "tags": [
+      "world",
+      "metal",
+      "00s"
+    ]
+  },
+  {
+    "id": "nightwish",
+    "name": "Nightwish",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "00s"
+    ],
+    "hit": "Wish I Had an Angel / Nemo",
+    "tags": [
+      "world",
+      "metal",
+      "symphonic",
+      "00s"
+    ]
+  },
+  {
+    "id": "korn",
+    "name": "Korn",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Freak on a Leash / Falling Away from Me",
+    "tags": [
+      "world",
+      "metal",
+      "nu-metal",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "michael_jackson",
+    "name": "Michael Jackson",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Billie Jean / Thriller / Smooth Criminal",
+    "tags": [
+      "world",
+      "pop",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "madonna",
+    "name": "Madonna",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Like a Prayer / Frozen / Hung Up",
+    "tags": [
+      "world",
+      "pop",
+      "80s",
+      "90s",
+      "00s"
+    ]
+  },
+  {
+    "id": "modern_talking",
+    "name": "Modern Talking",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "You're My Heart, You're My Soul / Cheri, Cheri Lady",
+    "tags": [
+      "world",
+      "pop",
+      "disco",
+      "80s",
+      "cult"
+    ]
+  },
+  {
+    "id": "depeche_mode",
+    "name": "Depeche Mode",
+    "country": "world",
+    "genre": "electronic",
+    "eras": [
+      "80s",
+      "90s",
+      "00s"
+    ],
+    "hit": "Enjoy the Silence / Personal Jesus",
+    "tags": [
+      "world",
+      "electronic",
+      "rock",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "britney_spears",
+    "name": "Britney Spears",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "...Baby One More Time / Toxic / Oops!... I Did It Again",
+    "tags": [
+      "world",
+      "pop",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "backstreet_boys",
+    "name": "Backstreet Boys",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Everybody / I Want It That Way",
+    "tags": [
+      "world",
+      "pop",
+      "90s"
+    ]
+  },
+  {
+    "id": "spice_girls",
+    "name": "Spice Girls",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "90s"
+    ],
+    "hit": "Wannabe / Viva Forever",
+    "tags": [
+      "world",
+      "pop",
+      "90s"
+    ]
+  },
+  {
+    "id": "the_prodigy",
+    "name": "The Prodigy",
+    "country": "world",
+    "genre": "electronic",
+    "eras": [
+      "90s",
+      "00s"
+    ],
+    "hit": "Breathe / Firestarter / Smack My Bitch Up",
+    "tags": [
+      "world",
+      "electronic",
+      "rave",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "eminem",
+    "name": "Eminem",
+    "country": "world",
+    "genre": "hiphop",
+    "eras": [
+      "90s",
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Lose Yourself / The Real Slim Shady",
+    "tags": [
+      "world",
+      "hiphop",
+      "90s",
+      "00s",
+      "cult"
+    ]
+  },
+  {
+    "id": "shakira",
+    "name": "Shakira",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Whenever, Wherever / Hips Don't Lie / Waka Waka",
+    "tags": [
+      "world",
+      "pop",
+      "00s"
+    ]
+  },
+  {
+    "id": "lady_gaga",
+    "name": "Lady Gaga",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Bad Romance / Poker Face",
+    "tags": [
+      "world",
+      "pop",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "rihanna",
+    "name": "Rihanna",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "00s",
+      "10s_20s"
+    ],
+    "hit": "Umbrella / Diamonds",
+    "tags": [
+      "world",
+      "pop",
+      "00s",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "taylor_swift",
+    "name": "Taylor Swift",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Shake It Off / Blank Space",
+    "tags": [
+      "world",
+      "pop",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "billie_eilish",
+    "name": "Billie Eilish",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Bad Guy / Lovely",
+    "tags": [
+      "world",
+      "pop",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "the_weeknd",
+    "name": "The Weeknd",
+    "country": "world",
+    "genre": "pop",
+    "eras": [
+      "10s_20s"
+    ],
+    "hit": "Blinding Lights / Starboy",
+    "tags": [
+      "world",
+      "pop",
+      "10s_20s"
+    ]
+  },
+  {
+    "id": "judas_priest",
+    "name": "Judas Priest",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Breaking the Law / Painkiller",
+    "tags": [
+      "world",
+      "metal",
+      "80s",
+      "90s",
+      "cult"
+    ]
+  },
+  {
+    "id": "megadeth",
+    "name": "Megadeth",
+    "country": "world",
+    "genre": "metal",
+    "eras": [
+      "80s",
+      "90s"
+    ],
+    "hit": "Symphony of Destruction / Hangar 18",
+    "tags": [
+      "world",
+      "metal",
+      "80s",
+      "90s"
+    ]
+  }
+]
