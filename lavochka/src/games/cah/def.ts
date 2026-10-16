@@ -91,7 +91,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { key: 'rando', label: 'Рандо Кардриссиан', hint: 'воображаемый игрок кладёт случайные карты', type: 'toggle', default: false },
     { key: 'reboot', label: 'Перезапуск вселенной', hint: 'отдать очко и обменять карты из руки', type: 'toggle', default: false },
     { key: 'heat', label: 'С запасом', hint: 'на «Выберите 2» все сначала берут ещё карту', type: 'toggle', default: false },
-    { key: 'happy', label: 'Счастливый конец', hint: 'последний раунд — «Сделайте хайку»', type: 'toggle', default: false },
+    { key: 'happy', label: 'Счастливый конец', hint: 'последний раунд — «Сочините хайку»', type: 'toggle', default: false },
     { key: 'godless', label: 'Бог умер', hint: 'Царя нет — лучший ответ выбирают все голосованием', type: 'toggle', default: false },
   ],
   presets: [
@@ -180,11 +180,11 @@ export const def: GameDef<State, Action, Event, View> = {
         demo: {
           seats: demoSeats(4),
           setup: () => {
-            const s = pos(4, 'Я напиваюсь, чтобы забыть', 3, { 0: ['Пятичасовая игровая сессия', 'Соглашение о неразглашении'], 1: ['Опухоль мозга'], 2: ['Ошибка'] });
+            const s = pos(4, 'Я пью, чтобы забыть', 3, { 0: ['Пятичасовая игровая сессия', 'Соглашение о неразглашении'], 1: ['Опухоль мозга'], 2: ['Ошибка'] });
             s.scores = { 0: 2, 1: 1, 2: 1, 3: 2 };
             return s;
           },
-          intro: 'Царь — Танька: «Я напиваюсь, чтобы забыть _». У Вовки два хороших ответа и два очка.',
+          intro: 'Царь — Танька: «Я пью, чтобы забыть вот это: _». У Вовки два хороших ответа и два очка.',
           steps: [
             act(0, { type: 'play', cards: [W('Пятичасовая игровая сессия')], bet: [W('Соглашение о неразглашении')] }, 'Вовка ставит очко и кладёт обе карты.'),
             act(1, { type: 'play', cards: [W('Опухоль мозга')] }),
@@ -205,7 +205,7 @@ export const def: GameDef<State, Action, Event, View> = {
           <ul><li><b>Рандо Кардриссиан.</b> Каждый раунд воображаемый игрок Рандо кладёт верхние карты колоды. Если он наберёт больше всех — все идут домой со стыдом.</li>
           <li><b>Перезапуск вселенной.</b> Перед ходом можно отдать одно очко, сбросить сколько угодно белых карт и добрать до десяти.</li>
           <li><b>С запасом.</b> На «Выберите 2» все сначала берут ещё одну карту — чтобы было из чего выбрать.</li>
-          <li><b>Счастливый конец.</b> Когда кто-то набрал нужные очки, играется последний раунд — «Сделайте хайку» (выберите 3).</li>
+          <li><b>Счастливый конец.</b> Когда кто-то набрал нужные очки, играется последний раунд — «Сочините хайку» (выберите 3).</li>
           <li><b>Бог умер.</b> Царя нет: карты кладут все, а потом голосуют за лучший ответ (за свой нельзя). Ничья — очко всем, кто набрал больше всех голосов.</li></ul>`,
         demo: {
           seats: demoSeats(3),
@@ -229,7 +229,7 @@ export const def: GameDef<State, Action, Event, View> = {
         title: 'Авторы и лицензия',
         html: `<p><b>Cards Against Humanity</b> — игра Cards Against Humanity LLC (Josh Dillon, Daniel Dranove, Eli Halpern, Ben Hantoot, David Munk, David Pinsof, Max Temkin, Eliot Weinstein).
           Тексты карт и правил — официальная русская версия с <a href="https://www.cardsagainsthumanity.com/" target="_blank" rel="noopener">cardsagainsthumanity.com</a>
-          (переводчики в файле не указаны). «Cards Against Humanity» — зарегистрированный товарный знак Cards Against Humanity LLC.</p>
+          (переводчики в файле не указаны); перевод отредактирован для этой версии: язык, падежи пропусков, опечатки, несколько американских реалий заменены нашими. «Cards Against Humanity» — зарегистрированный товарный знак Cards Against Humanity LLC.</p>
           <p>Игра распространяется по лицензии <a href="https://creativecommons.org/licenses/by-nc-sa/2.0/deed.ru" target="_blank" rel="noopener">CC BY-NC-SA 2.0</a>:
           только некоммерческое использование, с указанием авторов. Эта электронная версия — производная работа, распространяется по той же лицензии.
           <a href="/cah/credits.html" target="_blank">Подробнее</a>.</p>`,

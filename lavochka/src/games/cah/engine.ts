@@ -12,7 +12,7 @@ export const BLANK0 = 10000;
 /** Место Рандо Кардриссиана в ответах и очках. */
 export const RANDO = -1;
 export const HAND = 10;
-export const HAIKU = BLACK.findIndex((b) => b.t.startsWith('Сделайте хайку'));
+export const HAIKU = BLACK.findIndex((b) => b.t.startsWith('Сочините хайку'));
 export const GOALS = [5, 7, 10];
 const BLANKS = 30;
 
@@ -470,6 +470,17 @@ export function whiteText(id: number, texts?: Record<number, string>): string {
 }
 
 /** Чёрная карта с ответами: пропуски заполнены, на вопрос — ответ после. Части: [текст, вставка, текст…]. */
+/** Имена собственные в начале белых карт, которые не пишутся со строчной. */
+const PROPER = /^(Сталин|Ганди|Опра|Бог\b|Освенцим|Пак-Мэн|Пепси|Кадыров|Карты против|Первый канал|Её Величество|Великая Отечественная|Священное Писание|Папа Римский|Тёма|Борис|Барак|Константин|Дарт|Дональд|Джо\b|Канье|Николас|Владимир)/;
+
+/** Ответ посреди фразы: первая буква строчная, если это не имя, не аббревиатура и не латиница. */
+export function lowerFirst(a: string): string {
+  const first = a.split(/[\s,.!?—-]/)[0];
+  if (!/^[А-ЯЁ][а-яё]/.test(first)) return a; // «СПИД», «NFT», «50 мг», ««Ветряная мельница»»
+  if (PROPER.test(a)) return a;
+  return a[0].toLowerCase() + a.slice(1);
+}
+
 export function fillParts(black: number, answers: string[]): { t: string; a?: boolean }[] {
   const b = BLACK[black];
   const clean = (x: string) => x.replace(/[.!]+$/, '');
@@ -482,7 +493,11 @@ export function fillParts(black: number, answers: string[]): { t: string; a?: bo
   }
   parts.forEach((p, i) => {
     if (p) out.push({ t: p });
-    if (i < parts.length - 1) out.push({ t: clean(answers[i] ?? '…'), a: true });
+    if (i >= parts.length - 1) return;
+    const a = clean(answers[i] ?? '…');
+    // посреди фразы (не в начале, не после точки и не в кавычках) — со строчной
+    const before = parts.slice(0, i + 1).join('').trimEnd();
+    out.push({ t: before && !/[.!?«]$/.test(before) ? lowerFirst(a) : a, a: true });
   });
   // ответов больше, чем пропусков (хайку) — дописать в конце
   for (let i = parts.length - 1; i < answers.length; i++) out.push({ t: ' ' + answers[i], a: true });

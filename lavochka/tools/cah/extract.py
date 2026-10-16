@@ -5,6 +5,8 @@ PDF: https://img.cah.io/files/vc07edlh/production/b723eee31eed83d49b7cf926395987
 карты, 27–31 — чёрные; на странице сетка 4×5 квадратных карт по 143 pt.
 Пропуск на чёрной карте в тексте PDF — табуляция; значок «PICK n» нарисован кривыми —
 цифру узнаём по числу элементов контура.
+Поверх разбора — редактура перевода из tools/cah/fixes.json (исходный текст → исправленный)
+и общая типографика (кавычки-ёлочки, длинное тире, многоточие, буква ё).
 
     python -I tools/cah/extract.py D:/temp/cah/dl/cah-ru.pdf src/games/cah/cards.json
 """
@@ -12,7 +14,28 @@ import json
 import re
 import sys
 
+import os
+
 import pymupdf
+
+FIXES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixes.json')
+# слова, где в переводе пропущена «ё» (только однозначные)
+YO = {
+    'еще': 'ещё', 'Еще': 'Ещё', 'трех': 'трёх', 'серьезн': 'серьёзн', 'ребенок': 'ребёнок', 'ребенк': 'ребёнк',
+    'мертв': 'мёртв', 'Мертв': 'Мёртв', 'Черн': 'Чёрн', 'черный': 'чёрный',
+    'черная': 'чёрная', 'черные': 'чёрные', 'черной': 'чёрной', 'обнаженн': 'обнажённ', 'Обнаженн': 'Обнажённ',
+    'Козел': 'Козёл', 'твое': 'твоё', 'нее ': 'неё ', 'всем своем': 'всём своём', 'признает': 'признаёт',
+    'развернется': 'развернётся', 'зеленый': 'зелёный', 'тяжелом': 'тяжёлом', 'мертвых': 'мёртвых',
+}
+
+
+def typo(s):
+    s = re.sub(r'[“"]([^”"]*)[”"]', r'«\1»', s)
+    s = s.replace(' - ', ' — ').replace('...', '…')
+    s = re.sub(r'«([^»]*)\.»', r'«\1».', s)  # точка за кавычкой
+    for a, b in YO.items():
+        s = re.sub(r'(?<![А-Яа-яЁё])' + a, b, s)
+    return s
 
 X = [19.9, 163.0, 306.1, 449.2, 592.1]
 Y = [18.3 + 143.2 * k for k in range(6)]
@@ -87,6 +110,16 @@ def main(src, out):
                     if n == 3:  # в оригинале на таких картах «DRAW 2, PICK 3»
                         card['draw'] = 2
                     black.append(card)
+    fx = json.load(open(FIXES, encoding='utf-8'))
+    unused = (set(fx['white']) - set(white)) | (set(fx['black']) - {b['t'] for b in black})
+    for u in unused:
+        print('!! правка не нашла карту:', u, file=sys.stderr)
+    white = [typo(fx['white'].get(t, t)) for t in white]
+    for b in black:
+        b['t'] = typo(fx['black'].get(b['t'], b['t']))
+        if b['t'].count('_') not in (0, b['pick']):
+            print('!! после правки пропусков не столько, сколько PICK:', b['t'], file=sys.stderr)
+    print('исправлено белых', len(fx['white']), 'чёрных', len(fx['black']))
     json.dump({'white': white, 'black': black}, open(out, 'w', encoding='utf-8'),
               ensure_ascii=False, indent=0)
     print('белых', len(white), 'чёрных', len(black),
