@@ -1,0 +1,136 @@
+/* «Акционеры»: поле, фишки, флажки владельцев с предприятиями, указатель биржи, карточки и патенты поверх поля. Размеры — в --u. */
+.table--akcii { --table-bg: radial-gradient(ellipse at 50% 30%, #2f5a3a, #0e1f14); }
+.ak-wrap { position: relative; width: 100%; height: 100%; --u: 8px; --v: max(11px, var(--u)); }
+.ak-board { position: absolute; --u: 8px; border-radius: calc(var(--u) * 0.4); overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+  opacity: 0; transition: opacity 0.5s ease; background: #e8efe0; }
+.ak-board.ready { opacity: 1; }
+.ak-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.ak-marks, .ak-tokens { position: absolute; inset: 0; pointer-events: none; }
+
+.ak-token { position: absolute; z-index: 30; width: 4%; aspect-ratio: 1; transform: translate(-50%, -50%); transition: left 0.15s ease, top 0.15s ease; }
+.ak-btn { position: absolute; inset: 0; background: center / 100% 100% no-repeat; border-radius: 50%;
+  box-shadow: 0 0 0 calc(var(--u) * 0.18) #fff, 0 0 0 calc(var(--u) * 0.3) rgba(0, 0, 0, 0.75), 0 calc(var(--u) * 0.3) calc(var(--u) * 0.6) rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease; }
+.ak-token.lifted .ak-btn { transform: translate(-6%, -10%) scale(1.25); }
+.ak-token.out { opacity: 0.35; filter: grayscale(1); }
+.ak-token.on { z-index: 32; }
+.ak-token::before { content: ''; position: absolute; inset: -30%; border-radius: 50%; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(circle, rgba(255, 220, 90, 0) 50%, rgba(255, 220, 90, 0.95) 58%, rgba(255, 220, 90, 0) 72%); }
+.ak-token.on::before { opacity: 1; animation: ak-pulse 1.2s ease-in-out infinite; }
+@keyframes ak-pulse { 0%, 100% { transform: scale(0.9); } 50% { transform: scale(1.12); } }
+
+/* владелец фирмы: цветная планка над картинкой, на ней — кубики-предприятия (малые фишки) */
+.ak-own { position: absolute; transform: translate(-50%, -50%); z-index: 6; min-width: 4.4%; height: 1.5%; box-sizing: border-box; padding: 0 0.3%;
+  display: flex; align-items: center; justify-content: center; gap: 0.25%; background: var(--c); border: calc(var(--u) * 0.15) solid #fff; border-radius: calc(var(--u) * 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+.ak-own i { display: block; height: 70%; aspect-ratio: 1; background: #fff; border-radius: 15%; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
+.ak-own.mort { background: repeating-linear-gradient(45deg, var(--c) 0 4px, #333 4px 8px); opacity: 0.85; }
+/* курс компании у сектора биржи */
+.ak-rate { position: absolute; transform: translate(-50%, -50%); z-index: 6; white-space: nowrap; font: 800 calc(var(--u) * 1.1) / 1 Arial, sans-serif;
+  color: #111; background: #fff6c8; border: calc(var(--u) * 0.12) solid #111; border-radius: calc(var(--u) * 0.8); padding: calc(var(--u) * 0.2) calc(var(--u) * 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+.ak-rate.up { background: #ffc8b8; color: #a01010; }
+.ak-rate.down { background: #c8f5b8; color: #10601a; }
+.ak-strike { position: absolute; transform: translate(-50%, -50%) rotate(-8deg); z-index: 7; font: 900 calc(var(--u) * 1.4) / 1 Arial, sans-serif; color: #c01010;
+  border: calc(var(--u) * 0.3) solid #c01010; padding: calc(var(--u) * 0.3) calc(var(--u) * 0.6); background: rgba(255, 255, 255, 0.85); letter-spacing: 0.05em; }
+
+/* указатель биржи — «указательный палец», вращается вокруг центра восьмиугольника */
+.ak-pointer { position: absolute; width: 0; height: 0; z-index: 8; --rot: 0deg; transform: rotate(var(--rot)); transition: transform 1.6s cubic-bezier(0.15, 0.6, 0.2, 1); }
+.ak-hand { position: absolute; left: 0; bottom: 0; width: calc(var(--u) * 1.3); height: calc(var(--u) * 26); transform: translateX(-50%); transform-origin: 50% 100%;
+  background: linear-gradient(90deg, #6a3a10, #c88a3a 40%, #8a5018); border-radius: 50% 50% 30% 30% / 8% 8% 4% 4%; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); opacity: 0;
+  transition: opacity 0.3s, height 0.4s; }
+.ak-hand::before { content: '☝'; position: absolute; left: 50%; top: 0; transform: translate(-50%, -70%); font-size: calc(var(--u) * 3.4); line-height: 1; filter: drop-shadow(0 1px 2px #000); }
+.ak-hand::after { content: ''; position: absolute; left: 50%; bottom: 0; width: calc(var(--u) * 3); aspect-ratio: 1; transform: translate(-50%, 50%); border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe08a, #a06010); box-shadow: 0 1px 3px #000; }
+.ak-pointer.on .ak-hand { opacity: 1; }
+.ak-pointer.inner .ak-hand { height: calc(var(--u) * 14); }
+
+/* решения и карточки поверх поля */
+.ak-stage { position: absolute; left: 2%; right: 50%; top: 50%; bottom: 62px; z-index: 80; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font: calc(var(--v) * 1.15) / 1.3 system-ui, sans-serif; color: #fff; }
+.ak-stage > * { pointer-events: auto; }
+.ak-stage.top { top: 2%; bottom: 50%; }
+.ak-stage.right { left: 50%; right: 2%; }
+.ak-box { display: flex; flex-direction: column; align-items: center; gap: calc(var(--v) * 0.7); max-height: 100%; overflow: auto; box-sizing: border-box; max-width: 100%;
+  background: rgba(14, 36, 22, 0.92); padding: calc(var(--v) * 1); border-radius: calc(var(--v) * 0.8); box-shadow: 0 calc(var(--v) * 0.4) calc(var(--v) * 1.4) rgba(0, 0, 0, 0.6); }
+.ak-show { animation: ak-flip 0.4s ease; }
+@keyframes ak-flip { from { transform: perspective(600px) rotateX(70deg) scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+.ak-q { text-align: center; max-width: calc(var(--v) * 34); }
+.ak-q.big { font-size: calc(var(--v) * 2.2); }
+.ak-wait { opacity: 0.75; font-style: italic; }
+.ak-btns { display: flex; flex-wrap: wrap; gap: calc(var(--v) * 0.5); justify-content: center; }
+.ak-stage .btn { font-size: calc(var(--v) * 1.1); padding: calc(var(--v) * 0.45) calc(var(--v) * 0.9); }
+.ak-score { display: grid; gap: calc(var(--v) * 0.3); min-width: 60%; }
+.ak-score div { display: flex; justify-content: space-between; gap: calc(var(--v) * 2); }
+
+/* клетка поля / фирма — белая табличка с ценами, как на поле */
+.ak-card { width: calc(var(--v) * 24); max-width: 100%; box-sizing: border-box; background: #fff; color: #111; border: calc(var(--v) * 0.3) solid #1a1a1a;
+  border-radius: calc(var(--v) * 0.3); padding: calc(var(--v) * 0.8) calc(var(--v) * 1); font: calc(var(--v) * 1.05) / 1.3 Arial, sans-serif; text-align: center;
+  box-shadow: calc(var(--v) * 0.3) calc(var(--v) * 0.3) 0 #2a7a3a; }
+.ak-cname { font: italic 800 calc(var(--v) * 1.45) / 1.2 Arial, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: calc(var(--v) * 0.3); }
+.ak-ctext { text-align: left; }
+.ak-co { font-size: calc(var(--v) * 0.9); color: #2a6a3a; font-weight: 700; }
+.ak-price { font: 800 calc(var(--v) * 1.6) / 1.2 Arial, sans-serif; letter-spacing: 0.08em; }
+.ak-price small { font-size: 0.6em; color: #a01010; }
+.ak-ent { font-size: calc(var(--v) * 0.95); text-transform: uppercase; border-bottom: calc(var(--v) * 0.15) solid #111; padding-bottom: calc(var(--v) * 0.3); margin-bottom: calc(var(--v) * 0.3); }
+.ak-ent b { display: block; font-size: 1.15em; }
+.ak-prof div { display: flex; justify-content: space-between; font-family: 'Courier New', monospace; font-size: calc(var(--v) * 1.15); padding: 0 calc(var(--v) * 0.3); }
+.ak-prof div.cur { background: #ffe66a; font-weight: 800; }
+.ak-ownline { margin-top: calc(var(--v) * 0.4); text-align: center; font-size: calc(var(--v) * 1); background: rgba(14, 36, 22, 0.92); color: #fff;
+  border-radius: 0 0 calc(var(--v) * 0.4) calc(var(--v) * 0.4); padding: calc(var(--v) * 0.2); }
+
+/* патент: узорная рамка цвета вида, белая табличка, сумма с оборота */
+.ak-patent { width: calc(var(--v) * 22); aspect-ratio: 1.7; box-sizing: border-box; padding: calc(var(--v) * 1.4); border-radius: calc(var(--v) * 0.3);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.35) 0 22%, transparent 24%) 0 0 / calc(var(--v) * 1.6) calc(var(--v) * 1.6),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 6px), var(--c);
+  box-shadow: 0 calc(var(--v) * 0.3) calc(var(--v) * 0.8) rgba(0, 0, 0, 0.6); display: flex; }
+.ak-pin { flex: 1; background: #fff; color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.2); }
+.ak-pname { font: italic 800 calc(var(--v) * 1.8) / 1.1 'Times New Roman', serif; text-transform: uppercase; }
+.ak-pval { font: italic 700 calc(var(--v) * 2.2) / 1.1 'Times New Roman', serif; }
+.ak-pmul { font-size: calc(var(--v) * 1); color: #a01010; font-weight: 700; }
+
+/* «Известие» — газетная вырезка, «Телекс» — лента телетайпа */
+.ak-news { width: calc(var(--v) * 26); max-width: 100%; box-sizing: border-box; color: #1a1a1a; padding: calc(var(--v) * 1) calc(var(--v) * 1.2);
+  box-shadow: 0 calc(var(--v) * 0.3) calc(var(--v) * 0.8) rgba(0, 0, 0, 0.6); }
+.ak-news.izv { background: #f4efe0; border-top: calc(var(--v) * 0.3) double #222; border-bottom: calc(var(--v) * 0.3) double #222; transform: rotate(-1deg);
+  font: calc(var(--v) * 1.2) / 1.35 Georgia, 'Times New Roman', serif; }
+.ak-news.izv .ak-nhead { font: 900 calc(var(--v) * 2) / 1 Georgia, serif; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #222;
+  padding-bottom: calc(var(--v) * 0.4); margin-bottom: calc(var(--v) * 0.5); text-align: center; }
+.ak-news.telex { background: #fffbd2; transform: rotate(1deg); font: 700 calc(var(--v) * 1.1) / 1.45 'Courier New', monospace; text-transform: uppercase;
+  border-left: calc(var(--v) * 1.2) dotted #c8c08a; border-right: calc(var(--v) * 1.2) dotted #c8c08a; }
+.ak-news.telex .ak-nhead { font: 900 calc(var(--v) * 1.5) / 1 'Courier New', monospace; letter-spacing: 0.4em; color: #1a3a8a; margin-bottom: calc(var(--v) * 0.5); }
+
+.ak-tip { position: absolute; z-index: 50; transform: translate(-50%, calc(-100% - var(--v) * 1.5)); filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5)); cursor: pointer; }
+.ak-tip.below { transform: translate(-50%, calc(var(--v) * 1.5)); }
+
+.ak-float { position: absolute; inset: 0; pointer-events: none; z-index: 60; }
+.ak-delta { position: absolute; transform: translate(-50%, -140%); font: 800 calc(var(--v) * 1.5) / 1 system-ui, sans-serif; text-shadow: 0 0 3px #000, 0 1px 2px #000;
+  animation: ak-up 1.6s ease-out forwards; white-space: nowrap; }
+.ak-delta.plus { color: #8aff7a; }
+.ak-delta.minus { color: #ff7a6a; }
+@keyframes ak-up { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: calc(var(--v) * -4); } }
+.ak-say { position: absolute; left: 50%; top: 40%; transform: translateX(-50%); background: rgba(14, 36, 22, 0.94); color: #ffe27a; white-space: nowrap; max-width: 90%;
+  overflow: hidden; text-overflow: ellipsis; font: 700 calc(var(--v) * 1.6) / 1.3 system-ui, sans-serif; padding: calc(var(--v) * 0.4) calc(var(--v) * 1.2);
+  border-radius: calc(var(--v) * 0.6); animation: ak-say 2.2s ease forwards; }
+@keyframes ak-say { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* панель стола */
+.ak-panel { display: flex; flex-direction: column; gap: 8px; }
+.ak-tray { height: 90px; }
+.ak-roll { width: 100%; font-size: 17px; }
+.ak-mine { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.ak-cash b { font: 800 22px/1.2 system-ui, sans-serif; }
+.ak-rows { display: flex; flex-direction: column; gap: 2px; }
+.ak-debt, .ak-debt b { color: #c0281c; }
+.ak-pats { display: flex; flex-wrap: wrap; gap: 4px; }
+.ak-pats span { border: 3px solid var(--c, #888); background: #fff; color: #111; border-radius: 3px; padding: 0 5px; font: italic 700 12px/1.5 'Times New Roman', serif; text-transform: uppercase; }
+.ak-pats span.rk { border-color: #333; background: #333; color: #fff; }
+.ak-flags { font-size: 12px; }
+.ak-firms { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; }
+.ak-firm { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ak-firm.mort { opacity: 0.7; }
+.ak-firm > span:first-child { display: flex; flex-direction: column; line-height: 1.2; }
+.ak-firm small { opacity: 0.75; font-size: 11px; }
+.ak-fb { display: flex; gap: 3px; flex: none; }
+.ak-fb .btn { padding: 2px 6px; font-size: 11px; }
+.ak-rateslist { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; opacity: 0.85; }
