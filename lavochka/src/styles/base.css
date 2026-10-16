@@ -319,6 +319,14 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .voice-tile.wait .voice-face { opacity: 0.55; animation: voice-wait 1.2s ease-in-out infinite; }
 .voice-tile.fail .voice-face { opacity: 0.5; box-shadow: 0 0 0 2px #b8322a; }
 @keyframes voice-wait { 50% { opacity: 0.3; } }
+/* крупное видео главного игрока (GameView.spotlight) */
+.voice-spot { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: #15100c; box-shadow: 0 0 0 4px #e3b25a, 0 10px 24px rgba(0, 0, 0, 0.5); }
+.voice-spot video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.voice-spot.me video { transform: scaleX(-1); }
+.voice-spot-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 10px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.7)); color: #fff; font-size: 13px; text-align: center; }
+.voice-spot.empty { aspect-ratio: auto; min-height: 64px; display: flex; align-items: center; justify-content: center; }
+.voice-spot.empty .voice-spot-cap { position: static; background: none; padding: 10px; }
+.voice-spot-float { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: min(46%, 400px); z-index: 30; }
 .voice-name { font-size: 11px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voice-tile audio { display: none; }
 

@@ -81,13 +81,13 @@ export class Voice {
     return typeof RTCPeerConnection !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   }
 
-  /** Войти в голосовой чат (спросит разрешение на микрофон, с камерой — и на неё). */
-  async join(video: boolean) {
+  /** Войти в голосовой чат (спросит разрешение на микрофон, с камерой — и на неё). hd — камера почётче (её покажут крупно). */
+  async join(video: boolean, hd = false) {
     if (this.joined) return;
     const [local, ice] = await Promise.all([
       navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: video ? { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 15 } } : false,
+        video: video ? (hd ? { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 } } : { width: { ideal: 160 }, height: { ideal: 120 }, frameRate: { ideal: 15 } }) : false,
       }),
       iceServers(),
     ]);

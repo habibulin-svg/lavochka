@@ -48,6 +48,8 @@ export class Table {
   private closed = false;
   private voice: Voice | null = null;
   private voiceEls = new Map<string, HTMLElement>();
+  /** Крупное видео главного игрока (GameView.spotlight). */
+  private spotEl: HTMLElement | null = null;
   /** Сторож хода: свой ход отправлен, а стол не сдвинулся — попросить комнату прислать его заново. */
   private actTimer: ReturnType<typeof setTimeout> | undefined;
   private actTries = 0;
@@ -173,6 +175,7 @@ export class Table {
     const box = this.el.querySelector('.voice') as HTMLElement;
     if (!v || this.closed) return;
     box.hidden = false;
+    this.renderSpot();
     const tiles = v.tiles();
     if (!v.joined) {
       this.voiceEls.clear();
@@ -182,7 +185,7 @@ export class Table {
         box.dataset.who = who;
         box.innerHTML = `<div class="voice-row"><button class="btn small" data-v="join">🎤 Голос</button><button class="btn small" data-v="cam">📷 С камерой</button></div>${who ? `<div class="voice-who">В разговоре: ${who}</div>` : ''}`;
         const join = (video: boolean) =>
-          v.join(video).catch((e) => toast(e?.name === 'NotAllowedError' ? 'Нет доступа к микрофону или камере' : 'Не удалось включить микрофон', 4000));
+          v.join(video, !!this.view.spotlight).catch((e) => toast(e?.name === 'NotAllowedError' ? 'Нет доступа к микрофону или камере' : 'Не удалось включить микрофон', 4000));
         (box.querySelector('[data-v=join]') as HTMLButtonElement).onclick = () => join(false);
         (box.querySelector('[data-v=cam]') as HTMLButtonElement).onclick = () => join(true);
       }
@@ -272,6 +275,51 @@ export class Table {
   private applyQuiet() {
     if (!this.voice || !this.current) return;
     this.voice.setQuiet(this.view.quiet ? this.view.quiet(this.current) : null);
+    this.renderSpot();
+  }
+
+  /** Видео главного игрока крупно (крокодил: показывающий) — в [data-spot] доски или поверх неё. */
+  private renderSpot() {
+    const v = this.voice;
+    const seat = v && this.current && this.view.spotlight ? this.view.spotlight(this.current) : null;
+    if (!v || seat == null || this.closed) {
+      this.spotEl?.remove();
+      this.spotEl = null;
+      return;
+    }
+    if (!this.spotEl) {
+      this.spotEl = h('<div class="voice-spot"><video autoplay playsinline muted></video><div class="voice-spot-cap"></div></div>');
+      this.spotEl.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest('[data-v=spotcam]');
+        if (!b || !this.voice) return;
+        e.stopPropagation();
+        this.voice.join(true, true).catch(() => toast('Нет доступа к камере', 4000));
+      });
+    }
+    const slot = this.el.querySelector<HTMLElement>('.table-board [data-spot]') ?? (this.el.querySelector('.table-board') as HTMLElement);
+    if (this.spotEl.parentElement !== slot) slot.appendChild(this.spotEl);
+    this.spotEl.classList.toggle('voice-spot-float', !slot.matches('[data-spot]'));
+    const tile = v.tiles().find((t) => t.seat === seat);
+    const mine = this.mySeats.includes(seat);
+    const nm = esc(this.name(seat).replace(/<[^>]+>/g, ''));
+    const vid = this.spotEl.querySelector('video') as HTMLVideoElement;
+    const cap = this.spotEl.querySelector('.voice-spot-cap') as HTMLElement;
+    const live = !!(tile?.video && tile.stream?.getVideoTracks().length);
+    this.spotEl.classList.toggle('empty', !live);
+    this.spotEl.classList.toggle('me', !!tile?.me);
+    vid.hidden = !live;
+    if (live && vid.srcObject !== tile!.stream) {
+      vid.srcObject = tile!.stream;
+      void vid.play().catch(() => {});
+    } else if (!live && vid.srcObject) vid.srcObject = null;
+    const html = live
+      ? `📷 ${tile!.me ? 'вас видят все' : nm}`
+      : mine
+        ? v.joined
+          ? 'Вас не видно: выйдите из голоса и войдите «📷 С камерой»'
+          : 'Вас должны видеть! <button class="btn small" data-v="spotcam">📷 Включить камеру</button>'
+        : `📷 ${nm}: камера выключена${v.joined ? '' : ' — войдите в голос, чтобы видеть'}`;
+    if (cap.innerHTML !== html) cap.innerHTML = html;
   }
 
   private watchAct(since = Date.now()) {
