@@ -112,12 +112,12 @@ class YahtzeeView implements GameView<State, Event> {
     const head = `<tr><th></th>${seats.map((p) => `<th style="color:${SEATS[p].ink ?? SEATS[p].color}" class="${p === v.turn && !v.over ? 'cur' : ''}">${esc(this.plain(p).replace(/\s*\(.*\)\s*$/, '').slice(0, 8))}</th>`).join('')}</tr>`;
     if (v.cfg.variant === 'poker') {
       const rows = [
-        `<tr><td>Побед</td>${seats.map((p) => `<td class="big">${v.wins[p]}</td>`).join('')}</tr>`,
-        `<tr><td>Кон ${v.pround}</td>${seats.map((p) => `<td>${v.hands[p] ? dice(v.hands[p]!) + `<small>${HAND_NAME[pokerRank(v.hands[p]!)[0]]}</small>` : p === v.turn && v.rolls ? '…' : ''}</td>`).join('')}</tr>`,
+        `<tr><td class="lb">Побед</td>${seats.map((p) => `<td class="ink big"><i>${v.wins[p]}</i></td>`).join('')}</tr>`,
+        `<tr><td class="lb">Кон ${v.pround}</td>${seats.map((p) => `<td>${v.hands[p] ? dice(v.hands[p]!) + `<small>${HAND_NAME[pokerRank(v.hands[p]!)[0]]}</small>` : p === v.turn && v.rolls ? '…' : ''}</td>`).join('')}</tr>`,
       ];
       if (v.last)
         rows.push(
-          `<tr class="prev"><td>Прошлый</td>${seats
+          `<tr class="prev"><td class="lb">Прошлый</td>${seats
             .map((p) => {
               const hd = v.last!.hands[p];
               const win = v.last!.winners.length === 1 && v.last!.winners[0] === p;
@@ -125,30 +125,35 @@ class YahtzeeView implements GameView<State, Event> {
             })
             .join('')}</tr>`
         );
-      this.sheet.innerHTML = `<table class="yz-grid poker">${head}${rows.join('')}</table><div class="yz-note">До ${v.cfg.wins} побед.</div>`;
+      this.sheet.innerHTML = `<div class="yz-title">${TITLE.poker}</div><table class="yz-grid poker">${head}${rows.join('')}</table><div class="yz-note">До ${v.cfg.wins} побед.</div>`;
       return;
     }
     const opts = this.actSeat != null ? options(v, this.actSeat) : [];
+    // записано — рукой, чернилами (лёгкий наклон у каждой цифры свой); можно записать — карандашом
     const cell = (p: number, c: string) => {
       const val = v.sheet[p][c];
-      if (val != null) return `<td class="${val === 0 ? 'zero' : ''}">${val === 0 ? '—' : val}</td>`;
+      if (val != null) return `<td class="ink${val === 0 ? ' zero' : ''}"><i style="--r:${tilt(p, c)}deg">${val === 0 ? '—' : val}</i></td>`;
       const o = p === this.actSeat ? opts.find((x) => x.cat === c) : undefined;
-      return o ? `<td class="opt" data-cat="${c}">${o.pts}</td>` : '<td></td>';
+      return o ? `<td class="opt" data-cat="${c}"><i>${o.pts}</i></td>` : '<td></td>';
+    };
+    const label = (c: string) => {
+      const n = /^n([1-6])$/.exec(c);
+      return n ? `<td class="lb"><img src="${TEX}d${n[1]}.webp" alt="">${CAT_NAME[c as keyof typeof CAT_NAME]}</td>` : `<td class="lb">${CAT_NAME[c as keyof typeof CAT_NAME]}</td>`;
     };
     const cats = catsOf(v.cfg);
     const rows: string[] = [];
     for (const c of cats) {
-      rows.push(`<tr class="${c === 'n6' ? 'sep' : ''}"><td>${CAT_NAME[c]}</td>${seats.map((p) => cell(p, c)).join('')}</tr>`);
+      rows.push(`<tr class="${c === 'n6' ? 'sep' : ''}">${label(c)}${seats.map((p) => cell(p, c)).join('')}</tr>`);
       if (c === 'n6' && v.cfg.variant === 'yahtzee')
-        rows.push(`<tr class="sum"><td>Верх · бонус</td>${seats.map((p) => {
+        rows.push(`<tr class="sum"><td class="lb">Верх <small>· бонус +35 от 63</small></td>${seats.map((p) => {
           const u = upperSum(v.sheet[p]);
-          return `<td>${u}${u >= 63 ? ' <b>+35</b>' : `<small>/63</small>`}</td>`;
+          return `<td class="ink"><i>${u}${u >= 63 ? ' <b>+35</b>' : ''}</i>${u < 63 ? '<small>/63</small>' : ''}</td>`;
         }).join('')}</tr>`);
     }
-    if (v.cfg.variant === 'yahtzee' && seats.some((p) => v.ybonus[p])) rows.push(`<tr><td>Ещё яхтзи</td>${seats.map((p) => `<td>${v.ybonus[p] || ''}</td>`).join('')}</tr>`);
+    if (v.cfg.variant === 'yahtzee' && seats.some((p) => v.ybonus[p])) rows.push(`<tr><td class="lb">Ещё яхтзи</td>${seats.map((p) => `<td class="ink"><i>${v.ybonus[p] || ''}</i></td>`).join('')}</tr>`);
     const top = Math.max(...seats.map((p) => total(v, p)));
-    rows.push(`<tr class="total"><td>Итого</td>${seats.map((p) => `<td class="${v.over && total(v, p) === top ? 'win' : ''}">${total(v, p)}</td>`).join('')}</tr>`);
-    this.sheet.innerHTML = `<table class="yz-grid">${head}${rows.join('')}</table>`;
+    rows.push(`<tr class="total"><td class="lb">Итого</td>${seats.map((p) => `<td class="ink${v.over && total(v, p) === top ? ' win' : ''}"><i>${total(v, p)}</i></td>`).join('')}</tr>`);
+    this.sheet.innerHTML = `<div class="yz-title">${TITLE[v.cfg.variant] ?? 'Яхтзи'}</div><table class="yz-grid">${head}${rows.join('')}</table>`;
   }
 
   private drawPanel() {
@@ -236,7 +241,11 @@ class YahtzeeView implements GameView<State, Event> {
   }
 }
 
-const dice = (d: number[]) => `<span class="yz-dots">${d.map((x) => `<i>${x}</i>`).join('')}</span>`;
+const TEX = `${import.meta.env.BASE_URL}tex/yahtzee/`;
+const TITLE: Record<string, string> = { yahtzee: 'Яхтзи', generala: 'Генерал', poker: 'Покер на костях' };
+/** Наклон рукописной цифры: свой у каждой клетки, устойчивый. */
+const tilt = (p: number, c: string) => ((((p + 3) * 31 + [...c].reduce((a, ch) => a * 7 + ch.charCodeAt(0), 0)) % 9) - 4) * 0.8;
+const dice = (d: number[]) => `<span class="yz-dots">${d.map((x) => `<img src="${TEX}d${x}.webp" alt="${x}">`).join('')}</span>`;
 
 export function createView(): GameView<State, Event> {
   return new YahtzeeView();

@@ -1,13 +1,14 @@
-/* Яхтзи: стол — сукно с лотком для костей, ниже тетрадный лист с таблицей. */
+/* Яхтзи: стол — сукно в деревянной раме с лотком костей, ниже бланк счёта (бумага, печать, очки от руки). */
 .yz-wrap { position: relative; width: 100%; height: 100%; user-select: none; display: flex; align-items: flex-start; justify-content: center; padding: 10px; box-sizing: border-box; overflow: auto; }
 .yz-table {
   width: min(100%, 760px); margin: auto 0; display: flex; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; border-radius: 18px;
-  background: radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.1), transparent 60%), repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px), linear-gradient(160deg, #2f6b45, #1d4a2e 70%);
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 0 0 8px #5b2f12, 0 0 0 10px #2a1206, 0 14px 26px rgba(0, 0, 0, 0.5);
+  border: 10px solid transparent;
+  background: radial-gradient(ellipse at 50% 18%, rgba(255, 255, 230, 0.14), transparent 60%) padding-box, url('/tex/perudo/felt.webp') center / 192px padding-box, url('/tex/perudo/wood.webp') center / 256px border-box;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5), 0 14px 26px rgba(0, 0, 0, 0.55);
 }
 .yz-tray { display: flex; justify-content: center; gap: 12px; padding: 18px 8px 8px; }
 .yz-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 0.2s; }
-.yz-slot small { font: 700 11px system-ui, sans-serif; color: #ffe08a; visibility: hidden; text-transform: uppercase; letter-spacing: 0.5px; }
+.yz-slot small { font: 600 11px 'PT Sans', system-ui, sans-serif; color: #2a1a0a; background: #ffe08a; padding: 0 6px; border-radius: 999px; visibility: hidden; }
 .yz-slot.held { transform: translateY(-12px); }
 .yz-slot.held small { visibility: visible; }
 .yz-slot.held .die-wrap { filter: drop-shadow(0 0 6px #ffd24a) drop-shadow(0 0 2px #ffd24a); }
@@ -17,26 +18,38 @@
 .yz-die .die-wrap { zoom: 1.16; }
 .yz-info { text-align: center; font: 700 17px 'PT Serif', Georgia, serif; color: #f6e2b0; min-height: 1.4em; }
 .yz-info span { padding: 1px 8px; border-radius: 8px; background: #fbf3df; }
+/* бланк счёта: бумага, печатная сетка и подписи, очки — от руки чернилами, подсказки — карандашом */
 .yz-sheet {
-  background: repeating-linear-gradient(#fdfaf0 0 23px, #b9cfe6 23px 24px), #fdfaf0; border-radius: 4px; padding: 8px 8px 10px 30px; position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45); color: #1d2a4a; font: 16px 'PT Serif', Georgia, serif; overflow-x: auto;
+  background: url('/tex/yahtzee/paper.webp') center / 256px, #fbf7ea; border-radius: 3px; padding: 10px 12px 12px; position: relative;
+  box-shadow: 0 1px 0 #e9e1c8, 0 2px 0 #f6f0de, 0 3px 0 #e2d9bd, 0 8px 16px rgba(0, 0, 0, 0.45); color: #24304a; font: 15px 'PT Sans', system-ui, sans-serif; overflow-x: auto;
 }
-.yz-sheet::before { content: ''; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: #e08a8a; }
+.yz-title { font: 400 22px 'Russo One', 'PT Sans', sans-serif; color: #a3271f; letter-spacing: 3px; text-transform: uppercase; text-align: center; margin: -2px 0 6px; }
 .yz-grid { border-collapse: collapse; width: 100%; }
-.yz-grid th, .yz-grid td { border: 1px solid rgba(60, 80, 140, 0.35); padding: 2px 6px; text-align: center; height: 22px; white-space: nowrap; }
-.yz-grid td:first-child { text-align: left; font-style: italic; }
-.yz-grid th.cur { background: #fff1b8; }
-.yz-grid tr.sep td { border-bottom: 2px solid rgba(60, 80, 140, 0.6); }
-.yz-grid tr.sum td { font-size: 13px; color: #445; }
-.yz-grid tr.total td { font-weight: 700; border-top: 2px solid rgba(60, 80, 140, 0.6); }
-.yz-grid td.zero { color: #999; }
-.yz-grid td.win { background: #ffe9a8; }
-.yz-grid td.opt { color: #888; font-family: 'Caveat', 'Comic Sans MS', cursive; font-size: 18px; cursor: pointer; background: rgba(255, 220, 120, 0.25); }
-.yz-grid td.opt:hover { background: rgba(255, 210, 74, 0.6); color: #333; }
-.yz-grid td.big { font-size: 22px; font-weight: 700; }
+.yz-grid th, .yz-grid td { border: 1px solid #a9b6cf; padding: 1px 6px; text-align: center; height: 26px; white-space: nowrap; }
+.yz-grid th { font: 700 14px 'PT Sans', sans-serif; border-bottom: 2px solid #5e6f95; padding: 3px 6px; }
+.yz-grid th:first-child { border-top-color: transparent; border-left-color: transparent; }
+.yz-grid td.lb { text-align: left; font-weight: 700; color: #2c3a5e; background: rgba(170, 185, 215, 0.12); }
+.yz-grid td.lb img { width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; }
+.yz-grid td.lb small { font-weight: 400; color: #6a7590; font-size: 12px; }
+.yz-grid th.cur { background: rgba(255, 214, 90, 0.35); }
+.yz-grid tr.sep td { border-bottom: 2px solid #5e6f95; }
+.yz-grid tr.sum td { background: rgba(170, 185, 215, 0.2); }
+.yz-grid tr.sum td small { font-size: 12px; color: #7a86a0; }
+.yz-grid tr.total td { border-top: 2px solid #5e6f95; }
+.yz-grid td.ink i { display: inline-block; font: 700 23px/1 'Caveat', cursive; font-style: normal; color: #1f3a8f; transform: rotate(var(--r, 0deg)); }
+.yz-grid td.ink b { font-weight: 700; color: #a3271f; }
+.yz-grid tr.total td.ink i { font-size: 27px; }
+.yz-grid td.zero i { color: #5a6a9a; }
+.yz-grid td.win { background: rgba(255, 214, 90, 0.4); }
+.yz-grid td.win i { text-decoration: underline 2px #a3271f; text-underline-offset: 3px; }
+.yz-grid td.opt { cursor: pointer; }
+.yz-grid td.opt i { font: 700 22px/1 'Caveat', cursive; font-style: normal; color: #6f6f68; border-bottom: 1px dashed #a09e94; }
+.yz-grid td.opt:hover { background: rgba(255, 214, 90, 0.45); }
+.yz-grid td.opt:hover i { color: #3a3a36; }
+.yz-grid td.big i { font-size: 28px; }
 .yz-grid small { display: block; font-size: 11px; color: #556; }
-.yz-dots { display: inline-flex; gap: 2px; }
-.yz-dots i { font: 700 13px system-ui, sans-serif; font-style: normal; width: 17px; height: 17px; line-height: 17px; border-radius: 4px; background: #f3e7c9; box-shadow: inset 0 0 0 1px #a08452; }
+.yz-dots { display: inline-flex; gap: 1px; }
+.yz-dots img { width: 20px; height: 20px; }
 .yz-note { font-size: 13px; color: #556; margin-top: 4px; }
 .yz-panel { display: flex; flex-direction: column; gap: 6px; }
 .yz-panel .btn { width: 100%; }
@@ -44,7 +57,9 @@
 @media (max-width: 600px) {
   .yz-tray { gap: 6px; }
   .yz-die .die-wrap { zoom: 0.92; }
-  .yz-sheet { font-size: 14px; padding-left: 26px; }
+  .yz-sheet { font-size: 13px; padding: 8px 6px 10px; }
+  .yz-grid th, .yz-grid td { padding: 1px 3px; }
+  .yz-grid td.ink i, .yz-grid td.opt i { font-size: 20px; }
 }
 /* в показе правил (окошко ниже 520px) — плотнее, чтобы таблица помещалась целиком */
 @container (max-height: 520px) {
@@ -52,9 +67,11 @@
   .yz-tray { padding: 6px 4px 2px; }
   .yz-die .die-wrap { zoom: 0.75; }
   .yz-info { font-size: 14px; }
-  .yz-sheet { font-size: 12px; padding: 4px 4px 4px 22px; background: #fdfaf0; }
-  .yz-sheet::before { left: 16px; }
+  .yz-sheet { font-size: 12px; padding: 4px; }
+  .yz-title { font-size: 14px; margin: 0 0 2px; }
+  .yz-grid td.lb img { width: 12px; height: 12px; }
+  .yz-grid td.ink i { font-size: 15px; }
   .yz-grid th, .yz-grid td { height: 13px; padding: 0 4px; line-height: 13px; }
   .yz-grid small { display: inline; font-size: 10px; }
-  .yz-grid td.opt { font-size: 14px; }
+  .yz-grid td.opt i { font-size: 15px; }
 }
