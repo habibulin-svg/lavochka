@@ -26,48 +26,11 @@ import {
   type Tile,
   type View,
 } from './engine';
+import { backSvg, boneSvg, CX, CY, H, NS, planksSvg, U, W } from './draw';
 import { jointAt, layout, layoutParallel, type Slot, type V2 } from './layout';
+import { createTrainView } from './train-view';
+import type { TEvent, TView } from './train';
 import './domino.css';
-
-const NS = 'http://www.w3.org/2000/svg';
-const W = 1000;
-const H = 720;
-/** Единица ряда: кость — 2×1 единицы. */
-const U = 40;
-const CX = W / 2;
-const CY = 330;
-// ---------------------------------------------------------------- рисунок кости
-
-const PIPS: Record<number, V2[]> = {
-  0: [],
-  1: [[0, 0]],
-  2: [[-1, -1], [1, 1]],
-  3: [[-1, -1], [0, 0], [1, 1]],
-  4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
-  5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
-  6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
-};
-
-/** Кость: центр (x, y) в пикселях, s — единица, angle — поворот (0 — горизонтально, a слева). */
-function boneSvg(a: number, b: number, x: number, y: number, s: number, angle: number, cls = '', attrs = ''): string {
-  const w = s * 2 - 2;
-  const hh = s - 2;
-  const half = (n: number, cx: number) =>
-    PIPS[n].map(([px, py]) => `<circle cx="${cx + px * s * 0.26}" cy="${py * s * 0.26}" r="${s * 0.1}" class="dm-pip"/>`).join('');
-  return `<g class="dm-bone ${cls}" transform="translate(${x},${y}) rotate(${angle})" ${attrs}>
-    <rect x="${-w / 2}" y="${-hh / 2}" width="${w}" height="${hh}" rx="${s * 0.16}" class="dm-face"/>
-    <rect x="${-w / 2 + 1.5}" y="${-hh / 2 + 1.5}" width="${w - 3}" height="${hh - 3}" rx="${s * 0.13}" class="dm-shine"/>
-    <line x1="0" y1="${-hh / 2 + s * 0.12}" x2="0" y2="${hh / 2 - s * 0.12}" class="dm-mid"/>
-    <circle r="${s * 0.09}" class="dm-pin"/>
-    ${half(a, -s / 2)}${half(b, s / 2)}
-  </g>`;
-}
-
-function backSvg(x: number, y: number, s: number, angle: number): string {
-  const w = s * 2 - 2;
-  const hh = s - 2;
-  return `<g class="dm-back" transform="translate(${x},${y}) rotate(${angle})"><rect x="${-w / 2}" y="${-hh / 2}" width="${w}" height="${hh}" rx="${s * 0.16}"/><circle r="${s * 0.09}" class="dm-pin"/></g>`;
-}
 
 const angleOf = (dir: V2) => (dir[0] === 1 ? 0 : dir[0] === -1 ? 180 : dir[1] === 1 ? 90 : -90);
 
@@ -111,7 +74,7 @@ class DominoView implements GameView<View, Event> {
     this.gGhost = this.svg.querySelector('.dm-ghost') as SVGGElement;
     this.gHands = this.svg.querySelector('.dm-hands') as SVGGElement;
     this.gBanner = this.svg.querySelector('.dm-banner') as SVGGElement;
-    this.drawPlanks(this.svg.querySelector('.dm-planks') as SVGGElement);
+    (this.svg.querySelector('.dm-planks') as SVGGElement).innerHTML = planksSvg();
     this.cover = wrap.querySelector('.dm-cover') as HTMLElement;
     (this.cover.querySelector('button') as HTMLButtonElement).onclick = () => {
       Sound.unlock();
@@ -123,27 +86,6 @@ class DominoView implements GameView<View, Event> {
     ctx.controls.appendChild(ctl);
     this.btns = ctl.querySelector('.dm-btns') as HTMLElement;
     this.svg.addEventListener('click', (e) => this.onClick(e));
-  }
-
-  /** Стол во дворе: крашеные доски, облупившаяся краска, пара гвоздей. */
-  private drawPlanks(g: SVGGElement) {
-    let s = `<rect width="${W}" height="${H}" rx="18" fill="#2f5a34"/>`;
-    const n = 7;
-    for (let i = 0; i < n; i++) {
-      const y = (H / n) * i;
-      const tone = ['#3a6a3e', '#356339', '#3d6f41', '#33603a'][i % 4];
-      s += `<rect x="0" y="${y + 2}" width="${W}" height="${H / n - 4}" fill="${tone}"/>`;
-      s += `<rect x="0" y="${y + H / n - 3}" width="${W}" height="3" fill="#1a2e1a" opacity=".55"/>`;
-      // облупилась краска — проглядывает дерево
-      for (let k = 0; k < 3; k++) {
-        const px = ((i * 337 + k * 211) % (W - 120)) + 40;
-        const py = y + 10 + ((i * 53 + k * 29) % Math.max(10, H / n - 30));
-        s += `<ellipse cx="${px}" cy="${py}" rx="${18 + ((i + k) % 3) * 9}" ry="${4 + (k % 2) * 2}" fill="#8a6a42" opacity=".35"/>`;
-      }
-      for (const nx of [26, W - 26]) s += `<circle cx="${nx}" cy="${y + H / n / 2}" r="3" fill="#2a2a24"/><circle cx="${nx - 0.8}" cy="${y + H / n / 2 - 0.8}" r="1.2" fill="#8a8a7a"/>`;
-    }
-    s += `<rect width="${W}" height="${H}" rx="18" fill="none" stroke="#1a2e1a" stroke-width="6"/>`;
-    g.innerHTML = s;
   }
 
   // ---------------------------------------------------------------- места за столом
@@ -548,6 +490,45 @@ class DominoView implements GameView<View, Event> {
   }
 }
 
-export function createView(): GameView<View, Event> {
-  return new DominoView();
+/** Карточка одна: мексиканский поезд рисуется своим видом, остальные разновидности — этим. Вид выбирается по первому состоянию. */
+class DominoSwitch implements GameView<View | TView, Event | TEvent> {
+  private inner: GameView | null = null;
+  private root!: HTMLElement;
+  private ctx!: ViewCtx;
+
+  mount(root: HTMLElement, ctx: ViewCtx) {
+    this.root = root;
+    this.ctx = ctx;
+  }
+
+  private of(v: View | TView): GameView {
+    if (!this.inner) {
+      this.inner = v.cfg.variant === 'train' ? createTrainView() : new DominoView();
+      this.inner.mount(this.root, this.ctx);
+    }
+    return this.inner;
+  }
+
+  setView(v: View | TView) {
+    this.of(v).setView(v);
+  }
+  play(events: (Event | TEvent)[], v: View | TView) {
+    return this.of(v).play(events, v);
+  }
+  setTurn(toAct: number[], interactive: number[]) {
+    this.inner?.setTurn(toAct, interactive);
+  }
+  status(v: View | TView, toAct: number[], interactive: number[]) {
+    return this.of(v).status?.(v, toAct, interactive) ?? '';
+  }
+  playerStats(v: View | TView, seat: number) {
+    return this.of(v).playerStats?.(v, seat) ?? '';
+  }
+  destroy() {
+    this.inner?.destroy?.();
+  }
+}
+
+export function createView(): GameView<View | TView, Event | TEvent> {
+  return new DominoSwitch();
 }

@@ -34,3 +34,7 @@
 .dm-btns { display: flex; flex-direction: column; gap: 6px; }
 .dm-btns .btn { width: 100%; }
 .dm-ask { font-weight: 700; }
+.dm-board .tr-station { fill: rgba(30, 40, 26, 0.55); stroke: #c9a24a; stroke-width: 3; stroke-dasharray: 8 5; }
+.dm-board .tr-rail { fill: none; stroke: rgba(240, 220, 160, 0.35); stroke-width: 3; stroke-dasharray: 2 6; stroke-linecap: round; }
+.dm-board .tr-label { font: 700 15px 'PT Sans', Arial, sans-serif; fill: #f0e6c8; }
+.dm-board .tr-label.tr-mine { fill: #ffd060; }

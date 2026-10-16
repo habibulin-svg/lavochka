@@ -1,6 +1,7 @@
 /* Домино «Козёл» — описание игры для сборника: козёл, морской козёл, осёл; боты, журнал, скрытые руки, правила с показом. Без DOM. */
 import type { GameDef, SeatSpec } from '../../core/types';
 import { choose } from './ai';
+import { isTrainCfg, MEX, newTrain, trainApply, trainChoose, trainSetup, trainView, type TAction, type TEvent, type TState, type TView } from './train';
 import {
   allBones,
   apply,
@@ -31,9 +32,36 @@ export const SEATS = [
 ];
 
 const bn = (b: Bone) => `${b[0]}-${b[1]}`;
+
+type DState = State | TState;
+type DAction = Action | TAction;
+type DEvent = Event | TEvent;
+type DView = View | TView;
+const isT = (s: { cfg: { variant: string } }): s is TState => s.cfg.variant === 'train';
+
+function describeTrain(ev: TEvent, name: (seat: number) => string): string | null {
+  const tr = (t: number, seat: number) => (t === MEX ? 'в мексиканский' : t === seat ? 'в свой поезд' : `в поезд ${name(t)}`);
+  switch (ev.type) {
+    case 'tdeal':
+      return `Кон ${ev.round}: на станции ${ev.engine}-${ev.engine}. В базаре ${ev.yard}. Начинает ${name(ev.first)}.`;
+    case 'tplay':
+      return `${name(ev.seat)}: <b>${bn(ev.bone)}</b> ${tr(ev.train, ev.seat)}${ev.closed ? ' — дубль закрыт' : ''}${ev.double ? ' — <b>дубль!</b>' : ''}`;
+    case 'tdraw':
+      return `${name(ev.seat)} берёт из базара.`;
+    case 'tpass':
+      return `${name(ev.seat)} пропускает — на его поезде паровозик 🚂`;
+    case 'tround':
+      return `${ev.out != null ? `${name(ev.out)} выложил все кости!` : 'Поезда встали — ходить некому.'} Счёт: ${ev.scores.filter((_, i) => ev.hands[i].length || ev.pips[i] || ev.out === i).join(' : ')}.`;
+    case 'tend':
+      return `🚂 <b>${ev.winners.map(name).join(' и ')}</b> — меньше всех очков, приехали первыми!`;
+  }
+  return null;
+}
 const ARM = ['влево', 'вправо', 'вверх', 'вниз'];
 
-function describe(ev: Event, name: (seat: number) => string): string | null {
+function describe(ev0: DEvent, name: (seat: number) => string): string | null {
+  if (ev0.type.startsWith('t')) return describeTrain(ev0 as TEvent, name);
+  const ev = ev0 as Event;
   switch (ev.type) {
     case 'deal': {
       const extra = ev.eggs ? ` Разыгрываются яйца (${ev.eggs}).` : ev.sto != null ? ' Кон «на сто»!' : '';
@@ -80,8 +108,10 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 }
 
 /** Чужие кости при раздаче и из базара не показываем. */
-function redact(ev: Event, seats: number[] | 'all'): Event | null {
+function redact(ev: DEvent, seats: number[] | 'all'): DEvent | null {
   if (seats === 'all') return ev;
+  if (ev.type === 'tdeal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) ? h : [])) };
+  if (ev.type === 'tdraw' && !seats.includes(ev.seat)) return { ...ev, bone: undefined };
   if (ev.type === 'deal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) && !ev.hidden ? h : [])) };
   if (ev.type === 'draw' && !seats.includes(ev.seat)) return { ...ev, bone: undefined };
   return ev;
@@ -134,10 +164,11 @@ const V_LABEL: Record<string, string> = {
   muggins: 'маггинс (все пятёрки) — до 200',
   general: 'генерал — выйти на 0-0 или 6-6',
   sport: 'спортивное — парами, сдачи по очереди',
+  train: 'мексиканский поезд — станция, свой поезд и общий',
   kolbasa: 'колбаса — вслепую из своей линии, режь колбасу!',
 };
 
-export const def: GameDef<State, Action, Event, View> = {
+export const def: GameDef<DState, DAction, DEvent, DView> = {
   id: 'domino',
   title: 'Домино',
   players: { min: 2, max: 4, default: 4 },
@@ -158,6 +189,17 @@ export const def: GameDef<State, Action, Event, View> = {
       default: true,
       hint: 'Напарник сидит напротив, очки пишут на пару.',
       showIf: (o) => ['kozel', 'osel', 'muggins'].includes(String(o.variant ?? 'kozel')),
+    },
+    {
+      key: 'rounds',
+      label: 'Конов',
+      type: 'select',
+      choices: [
+        { value: 7, label: '7 — от 6-6 до 0-0' },
+        { value: 3, label: '3 — 6-6, 5-5, 4-4' },
+      ],
+      default: 7,
+      showIf: (o) => o.variant === 'train',
     },
     {
       key: 'deals',
@@ -184,16 +226,25 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'muggins', label: 'Маггинс', hint: 'Английские «все пятёрки»: до 200', options: { variant: 'muggins', pairs: false } },
     { id: 'general', label: 'Генерал', hint: 'Обеденный: кто выйдет на 0-0 или 6-6 — навешивает генерала', options: { variant: 'general', generals: 3 } },
     { id: 'sport', label: 'Спортивное', hint: 'Парами, 4 сдачи, заходят по очереди', options: { variant: 'sport', deals: 4 } },
+    { id: 'train', label: 'Мексиканский поезд', hint: 'От станции — свой поезд у каждого и общий мексиканский; семь конов', options: { variant: 'train', rounds: 7 } },
     { id: 'kolbasa', label: 'Колбаса', hint: 'Вдвоём: кости вслепую из своей линии, ножом отрезаешь колбасу сопернику', options: { variant: 'kolbasa' } },
   ],
 
-  setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
-  toAct,
-  apply: (s, seat, a, rng) => apply(s, seat, a, rng),
-  view: (s, seats) => makeView(s, seats),
+  setup: (seats, opts, rng) => {
+    const list = seats.map((x) => x.seat).sort((a, b) => a - b);
+    return isTrainCfg(opts) ? trainSetup(list, opts, rng) : setup(list, opts, rng);
+  },
+  toAct: (s) => (isT(s) ? (s.phase === 'over' ? [] : [s.turn]) : toAct(s)),
+  apply: (s, seat, a, rng) => (isT(s) ? trainApply(s, seat, a as TAction, rng) : apply(s, seat, a as Action, rng)),
+  view: (s, seats) => (isT(s) ? trainView(s, seats) : makeView(s, seats)),
   redact,
   result(s) {
     if (s.phase !== 'over') return null;
+    if (isT(s)) {
+      const sc: Record<number, number> = {};
+      for (const seat of s.seats) sc[seat] = -s.scores[seat];
+      return { winners: s.winners, text: `меньше всех очков: ${s.seats.map((x) => s.scores[x]).join(' : ')}`, scores: sc };
+    }
     const scores: Record<number, number> = {};
     const sign = badScore(s.cfg) ? -1 : 1;
     for (const seat of s.seats) scores[seat] = sign * s.scores[sideOf(s, seat)];
@@ -206,7 +257,7 @@ export const def: GameDef<State, Action, Event, View> = {
           : `счёт ${s.scores.join(' : ')}`;
     return { winners: s.winners, text, scores };
   },
-  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => choose(v, seat, lv, rng) },
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isT(v) ? trainChoose(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
   describe,
 
   showcase: () => {
@@ -371,6 +422,39 @@ export const def: GameDef<State, Action, Event, View> = {
             }),
           intro: 'У Михалыча осталось одно «пусто-пусто», а на конце как раз пусто.',
           steps: [P(0, 0, 0, 0, 'Выходит на 0-0 — Петрович, который ходит следом, получает генерала!')],
+        },
+      },
+      {
+        title: 'Мексиканский поезд',
+        html: `<p>Семь конов. В первом на «станцию» в центре ставят дубль 6-6, во втором 5-5 — и так до «пусто-пусто».
+          Остальные кости раздают: вдвоём по 8, втроём по 7, вчетвером по 6; лишнее — базар.</p>
+          <p>От станции у каждого <b>свой поезд</b>, и ещё один общий — <b>мексиканский</b>. За ход кладёшь одну кость:
+          в свой поезд, в мексиканский или в чужой — если на нём стоит <b>паровозик</b>. Нечем ходить — берёшь одну из базара;
+          не подошла — пропускаешь, и на твой поезд ставят паровозик: теперь туда могут ходить все, пока сам в него не сходишь.</p>
+          <p>Положил <b>дубль</b> — ходи ещё раз и закрой его. Не смог — дубль висит, и все по очереди обязаны закрыть его,
+          прежде чем ходить куда-то ещё. Кон кончается, когда кто-то выложил все кости или поезда встали. Очки с рук пишут на себя;
+          после седьмого кона выиграл тот, у кого меньше.</p>`,
+        demo: {
+          seats: demoSeats([0, 1, 2]),
+          options: { variant: 'train' },
+          setup: () => {
+            const s = newTrain({ variant: 'train', rounds: 7 }, [0, 1, 2]);
+            s.round = 1;
+            s.engine = 6;
+            s.hands = [[[4, 4], [1, 4], [0, 2]], [[2, 6], [0, 5]], [[3, 5], [1, 3]], []];
+            s.yard = [[2, 3], [0, 0]];
+            s.trains = [[{ a: 6, b: 4, seat: 0 }], [{ a: 6, b: 1, seat: 1 }], [{ a: 6, b: 3, seat: 2 }], [], [{ a: 6, b: 5, seat: 2 }]];
+            s.open = [false, false, true, false, true];
+            s.turn = 0;
+            return s;
+          },
+          intro: 'Станция 6-6. У Санька на поезде паровозик — он открыт для всех.',
+          steps: [
+            { seat: 0, action: { type: 'play', bone: [4, 4], train: 0 } as TAction, caption: 'Михалыч кладёт дубль 4-4 в свой поезд — и ходит ещё раз…' },
+            { seat: 0, action: { type: 'play', bone: [1, 4], train: 0 } as TAction, caption: '…закрывает дубль: 4-1.' },
+            { seat: 1, action: { type: 'play', bone: [0, 5], train: MEX } as TAction, caption: 'Петрович — в мексиканский: 5-0.' },
+            { seat: 2, action: { type: 'play', bone: [1, 3], train: 2 } as TAction, caption: 'Санёк ходит в свой поезд — паровозик снят.' },
+          ],
         },
       },
       {
