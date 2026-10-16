@@ -90,6 +90,7 @@ export const CATALOG: CatalogEntry[] = [
   // — компанией —
   { id: 'geo', title: 'География', sub: 'флаги, гербы, столицы и карта мира', cat: 'company', players: '1–6', wave: 16, icon: '🌍', tint: '#2a6a8a', thumb: 'geo.webp', load: () => import('./geo'), variants: ['где на карте', 'флаги', 'гербы', 'контуры', 'столицы', 'регионы РФ и штаты США', 'чей регион', 'справочник'] },
   { id: 'spy', title: 'Шпион', sub: 'все знают, где мы, — кроме одного', cat: 'company', players: '3–10', wave: 17, icon: '🕵', tint: '#2a2e3a', thumb: 'spy.webp', load: () => import('./spy'), variants: ['локации', 'кино', 'мультфильмы', 'музыка', 'книги', 'компьютерные игры', 'живопись', 'география', 'история', 'всё вперемешку'] },
+  { id: 'whoami', title: 'Кто я?', sub: 'персонаж на лбу — все видят, кроме тебя', cat: 'company', players: '3–10', wave: 17, icon: '🙋', tint: '#3a3420', thumb: 'whoami.webp', load: () => import('./whoami'), variants: ['все подряд', 'знаменитости', 'герои', 'наши'] },
   { id: 'mafia', title: 'Мафия', sub: 'город засыпает…', cat: 'company', players: '6–16', wave: 4, icon: '🎭', tint: '#2a1a2e', thumb: 'mafia.webp', load: () => import('./mafia'), variants: ['классическая', 'с доктором и путаной', 'спортивная'] },
   // — на бумаге —
   { id: 'seabattle', title: 'Морской бой', sub: 'в клеточку, ручкой', cat: 'paper', players: '2', wave: 2, icon: '⚓', tint: '#2b5c9e', thumb: 'seabattle.webp', load: () => import('./seabattle'), variants: ['классика', 'сальво', 'западный флот'] },

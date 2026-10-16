@@ -1,0 +1,69 @@
+/* Кто я?: вечерний двор, над каждым игроком — жёлтый стикер с персонажем (у себя — «?»), в центре — тетрадный листок. */
+.table--whoami {
+  --panel-bg: linear-gradient(180deg, #efe6d2, #ddd0b4);
+  --panel-ink: #2a2014;
+  --table-bg: #151a22;
+}
+.wh-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 18px; background: #1b2230; font-family: 'PT Sans', Arial, sans-serif; }
+.wh-bg { position: absolute; inset: 0; background: linear-gradient(rgba(12, 16, 28, 0.5), rgba(12, 16, 28, 0.68)), url(/tex/mafia/night.webp) center / cover no-repeat; pointer-events: none; }
+.wh-ring { position: absolute; inset: 0; }
+.wh-seat { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; width: 130px; z-index: 2; }
+.wh-note { position: relative; min-width: 96px; max-width: 128px; min-height: 40px; padding: 7px 8px 6px; box-sizing: border-box; background: linear-gradient(180deg, #fff59a, #f6e56a);
+  color: #2a2014; font: 700 13px/1.15 'PT Sans', Arial, sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transform: rotate(var(--t)); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.45); border-radius: 2px; }
+.wh-note::before { content: ''; position: absolute; top: -6px; left: 50%; width: 34px; height: 12px; transform: translateX(-50%) rotate(-3deg); background: rgba(230, 230, 220, 0.6); }
+.wh-mystery { font: 700 26px 'PT Serif', Georgia, serif; color: #8a6a10; background: linear-gradient(180deg, #fff9c8, #f2e8a0); }
+.wh-empty { opacity: 0.45; }
+.wh-done { background: linear-gradient(180deg, #c8f0b0, #a8e090); }
+.wh-place { font-size: 11px; color: #2f7a3e; }
+.wh-face { width: 46px; height: 46px; border-radius: 50%; background: var(--c); color: #fff; font: 700 21px/46px 'PT Sans', Arial, sans-serif; text-align: center;
+  border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); transition: transform 0.2s; }
+.wh-name { background: rgba(250, 244, 230, 0.94); color: #2a2014; padding: 1px 8px; border-radius: 999px; font-size: 13px; white-space: nowrap; }
+.wh-seat.wh-me .wh-face { border-color: #ffd24a; }
+.wh-seat.wh-turn .wh-face { transform: scale(1.12); box-shadow: 0 0 0 4px #ffd24a, 0 4px 12px rgba(0, 0, 0, 0.5); }
+.wh-ans { padding: 0 7px; border-radius: 6px; color: #fff; font: 700 12px 'PT Sans', Arial, sans-serif; }
+.wh-a-y { background: #2f7a3e; }
+.wh-a-n { background: #b3322a; }
+.wh-a-u { background: #6a6a6a; }
+.wh-center { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(-0.6deg); width: min(40%, 330px); max-height: 40%; overflow: hidden;
+  background: #f7f1e1 repeating-linear-gradient(transparent 0 21px, rgba(60, 90, 160, 0.16) 21px 22px); color: #2a2014; border-radius: 4px; padding: 10px 12px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px; }
+.wh-big { font: 700 17px 'PT Serif', Georgia, serif; text-align: center; }
+.wh-sub { font-size: 13px; text-align: center; }
+.wh-line { opacity: 0.6; }
+.wh-cur { opacity: 1; }
+.wh-y { color: #2f7a3e; }
+.wh-n { color: #b3322a; }
+.wh-u { color: #6a6a6a; }
+.wh-sheet { position: absolute; inset: 0; z-index: 8; background: rgba(10, 12, 20, 0.7); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.wh-sheet-box { background: #f7f1e1; color: #2a2014; border-radius: 8px; width: min(100%, 640px); max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
+.wh-sheet-head { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #d8ccb0; }
+.wh-sheet-head b { flex: 1; }
+.wh-sheet-head input { width: 140px; padding: 4px 8px; border-radius: 6px; border: 1px solid #b0a080; font: 14px 'PT Sans', Arial, sans-serif; }
+.wh-list { overflow: auto; padding: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 4px; }
+.wh-c { text-align: left; background: #fffaf0; border: 1px solid #e0d4b8; border-radius: 6px; padding: 5px 8px; font: 14px 'PT Sans', Arial, sans-serif; color: #2a2014; cursor: pointer; }
+.wh-c:hover:not(:disabled) { background: #fff59a; border-color: #c4a812; }
+.wh-c:disabled { opacity: 0.35; cursor: default; }
+.wh-panel { display: flex; flex-direction: column; gap: 8px; }
+.wh-panel .btn { width: 100%; }
+.wh-ask { font-weight: 700; }
+.wh-qs { display: flex; flex-direction: column; gap: 3px; max-height: 300px; overflow: auto; }
+.wh-qbtn { text-align: left; white-space: normal; padding-top: 4px; padding-bottom: 4px; }
+.wh-asked { opacity: 0.6; }
+.wh-own { display: flex; flex-direction: column; gap: 4px; }
+.wh-own input { width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 8px; border: 1px solid #b0a080; font: 14px 'PT Sans', Arial, sans-serif; }
+.wh-row { display: flex; gap: 6px; }
+.wh-row .btn { flex: 1; width: auto; }
+.wh-vote { display: flex; gap: 6px; align-items: center; }
+.wh-vote .btn { flex: 1; width: auto; }
+.wh-b-y { background: #2f7a3e; color: #fff; }
+.wh-b-n { background: #b3322a; color: #fff; }
+.wh-guess { background: #fff59a; font-weight: 700; }
+.wh-known { font-size: 13px; background: rgba(255, 255, 255, 0.45); border-radius: 6px; padding: 6px 8px; }
+@media (max-width: 700px) {
+  .wh-seat { width: 92px; }
+  .wh-note { min-width: 74px; max-width: 92px; font-size: 11px; min-height: 32px; padding: 5px; }
+  .wh-face { width: 36px; height: 36px; font-size: 16px; line-height: 36px; }
+  .wh-name { font-size: 11px; padding: 0 5px; }
+  .wh-center { width: 56%; font-size: 11px; }
+}
