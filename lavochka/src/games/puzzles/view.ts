@@ -235,7 +235,7 @@ class PuzzlesView implements GameView<State, Event> {
         );
       }
       else if (v.kind === 'scanword') {
-        const qs = d.words.map((wd, k) => ({ wd, k })).filter(({ wd }) => wd.at === i);
+        const qs = cluesAt(d, i);
         el = h(`<div class="pz-c pz-qc${qs.length ? '' : ' dead'}" data-i="${i}">${qs
           .map(({ wd, k }) => `<div class="qt" data-w="${k}" title="${esc(wd.clue)}"><span>${hyph(esc(wd.clue))}</span></div>`)
           .join('')}</div>`);
@@ -555,7 +555,7 @@ class PuzzlesView implements GameView<State, Event> {
       const d = v.data as WordData;
       if (d.block[i]) {
         // сканворд: вопрос — к его слову (второе нажатие — ко второму вопросу клетки)
-        const qs = d.words.map((wd, k) => ({ wd, k })).filter(({ wd }) => wd.at === i);
+        const qs = cluesAt(d, i);
         if (!qs.length) return;
         const cur = this.activeWord();
         const n = qs.findIndex(({ k }) => k === cur);
@@ -723,6 +723,15 @@ function arrow(at: number, start: number, dir: 0 | 1, _w: number): 'r' | 'd' | '
   const fromLeft = start === at + 1;
   if (dir === 0) return fromLeft ? 'r' : 'dr';
   return fromLeft ? 'rd' : 'd';
+}
+
+/** Вопросы клетки сканворда сверху вниз, как в газете: сначала тот, чья стрелка выходит вправо (загнутая вниз — у верхнего края, выше прямой), потом выходящий вниз. */
+function cluesAt(d: WordData, i: number): { wd: WordData['words'][number]; k: number }[] {
+  const rank = (wd: WordData['words'][number]) => ({ rd: 0, r: 1, dr: 2, d: 3 } as const)[arrow(wd.at, wd.cells[0], wd.dir, 0)];
+  return d.words
+    .map((wd, k) => ({ wd, k }))
+    .filter(({ wd }) => wd.at === i)
+    .sort((a, b) => rank(a.wd) - rank(b.wd));
 }
 
 /** Газетные стрелки в первой клетке ответа (клетка — 20×20). */
