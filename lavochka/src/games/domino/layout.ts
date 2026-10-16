@@ -141,3 +141,30 @@ export function layout(chain: Chain): { center: Slot | null; arms: Slot[][] } {
   }
   return { center, arms };
 }
+
+// ---------------------------------------------------------------- колбаса
+
+/** Колбаса: первая кость стоймя слева, от неё вправо две параллельные линии; длинные переносятся полосой ниже. */
+const KX0 = -9;
+const PER = 9;
+const BAND = 2.6;
+
+export function layoutParallel(chain: Chain): { center: Slot | null; arms: Slot[][] } {
+  const arms: Slot[][] = [[], [], [], []];
+  const ct = chain.center;
+  if (!ct) return { center: null, arms };
+  const center: Slot = { c: [KX0, 0], dir: [0, 1], cross: false, tile: ct };
+  for (const arm of [0, 1])
+    chain.arms[arm].tiles.forEach((t, k) => {
+      const band = Math.floor(k / PER);
+      arms[arm].push({ c: [KX0 + 1.5 + 2 * (k % PER), (arm === 0 ? -0.5 : 0.5) + band * BAND], dir: [1, 0], cross: false, tile: t });
+    });
+  return { center, arms };
+}
+
+/** Стык k линии arm (перед костью k; k = длина — конец): точка в единицах. */
+export function jointAt(arm: number, k: number): V2 {
+  if (k === 0) return [KX0 + 0.5, arm === 0 ? -0.5 : 0.5];
+  const band = Math.floor((k - 1) / PER);
+  return [KX0 + 0.5 + 2 * ((k - 1) % PER) + 2, (arm === 0 ? -0.5 : 0.5) + band * BAND];
+}

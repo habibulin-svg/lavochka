@@ -13,17 +13,20 @@ import {
   handCount,
   isDouble,
   placements,
+  isKolbasa,
+  kolMoves,
   previewPlace,
   sameBone,
   sideOf,
   teams,
+  type Action,
   type Bone,
   type Event,
   type Placement,
   type Tile,
   type View,
 } from './engine';
-import { layout, type Slot, type V2 } from './layout';
+import { jointAt, layout, layoutParallel, type Slot, type V2 } from './layout';
 import './domino.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -83,6 +86,8 @@ class DominoView implements GameView<View, Event> {
   private actSeat: number | null = null;
   private selected: Bone | null = null;
   private opts: Placement[] = [];
+  /** Колбаса: ходы открытой кости. */
+  private kmoves: Action[] = [];
   private pendingClose: Placement | null = null;
   private fresh: Tile | null = null;
 
@@ -150,6 +155,7 @@ class DominoView implements GameView<View, Event> {
 
   private faceUp(seat: number) {
     if (this.ctx.demo) return true;
+    if (this.v && isKolbasa(this.v.cfg)) return false;
     return seat === this.viewer && !this.hidden && this.ctx.mySeats.includes(seat);
   }
 
@@ -187,7 +193,7 @@ class DominoView implements GameView<View, Event> {
   private draw() {
     const v = this.v;
     if (!v) return;
-    const lay = layout(v.chain);
+    const lay = this.lay(v.chain);
     let t = '';
     const all: Slot[] = [];
     if (lay.center) all.push(lay.center);
@@ -209,6 +215,10 @@ class DominoView implements GameView<View, Event> {
     this.gTable.innerHTML = t;
     this.drawHands();
     this.drawGhosts();
+  }
+
+  private lay(c: View['chain']) {
+    return this.v && isKolbasa(this.v.cfg) ? layoutParallel(c) : layout(c);
   }
 
   private drawHands() {
@@ -252,6 +262,11 @@ class DominoView implements GameView<View, Event> {
         const [lx, ly] = sp === 0 ? [CX + 300, H - 22] : sp === 2 ? [CX + 160, 30] : sp === 1 ? [70, CY - 120] : [W - 70, CY - 120];
         s += `<text class="dm-team" x="${lx}" y="${ly}">пара ${sideOf(v, seat) === 0 ? 'А' : 'Б'}</text>`;
       }
+      // колбаса: открытая крайняя кость ходящего
+      if (isKolbasa(v.cfg) && v.front && v.turn === seat && v.phase !== 'over') {
+        const [fx, fy, fa] = sp === 0 ? [CX + 320, H - 70, 0] : sp === 2 ? [CX + 220, 60, 0] : sp === 1 ? [110, CY + 200, 90] : [W - 110, CY + 200, 90];
+        s += boneSvg(v.front[0], v.front[1], fx, fy, 30, fa, 'dm-fresh', 'filter="url(#dmShadow)"');
+      }
       if (this.actSeat === seat || (v.turn === seat && v.phase !== 'over')) {
         const [lx, ly] = sp === 0 ? [CX - 300, H - 22] : sp === 2 ? [CX - 160, 30] : sp === 1 ? [70, CY + 130] : [W - 70, CY + 130];
         s += `<text class="dm-turn" x="${lx}" y="${ly}">◆ ходит</text>`;
@@ -264,11 +279,28 @@ class DominoView implements GameView<View, Event> {
   private drawGhosts() {
     const v = this.v!;
     let g = '';
+    if (isKolbasa(v.cfg) && this.actSeat != null && v.front) {
+      this.kmoves.forEach((m, i) => {
+        if (m.type === 'play') {
+          const pv = previewPlace(v, { bone: v.front!, arm: m.arm }, this.actSeat!);
+          const lay = layoutParallel(pv.chain);
+          const sl = [lay.center, ...lay.arms.flat()].find((x) => x && x.tile === pv.tile);
+          if (sl) g += this.slotSvg(sl, 'dm-ghost-bone', `data-km="${i}"`);
+        } else if (m.type === 'cut') {
+          // нож — поперёк обеих линий на стыке
+          const [x, y] = this.px([jointAt(0, m.k)[0], jointAt(0, m.k)[1] + 0.5]);
+          g += boneSvg(v.front![0], v.front![1], x, y, U, 90, 'dm-ghost-bone', `data-km="${i}"`);
+        } else if (m.type === 'insert') {
+          const [x, y] = this.px(jointAt(m.arm, m.k));
+          g += boneSvg(v.front![0], v.front![1], x, y, U * 0.6, 90, 'dm-ghost-bone', `data-km="${i}"`);
+        }
+      });
+    }
     if (this.selected && this.actSeat != null) {
       for (const p of this.opts.filter((x) => sameBone(x.bone, this.selected!))) {
         // первый дубль в осле и телефоне перестраивает ряд — призрак ищем в новой раскладке
         const pv = previewPlace(v, p, this.actSeat);
-        const lay = layout(pv.chain);
+        const lay = this.lay(pv.chain);
         const sl = [lay.center, ...lay.arms.flat()].find((x) => x && x.tile === pv.tile);
         if (sl) g += this.slotSvg(sl, 'dm-ghost-bone', `data-arm="${p.arm}"`);
       }
@@ -282,6 +314,12 @@ class DominoView implements GameView<View, Event> {
     const v = this.v;
     const seat = this.actSeat;
     if (!v || seat == null || this.hidden) return;
+    const km = (e.target as Element).closest('[data-km]') as SVGElement | null;
+    if (km) {
+      const m = this.kmoves[+km.dataset.km!];
+      if (m) this.send(m);
+      return;
+    }
     const ghost = (e.target as Element).closest('[data-arm]') as SVGElement | null;
     if (ghost && this.selected) {
       const p = this.opts.find((x) => sameBone(x.bone, this.selected!) && x.arm === +ghost.dataset.arm!);
@@ -331,6 +369,7 @@ class DominoView implements GameView<View, Event> {
     this.selected = null;
     this.opts = [];
     this.pendingClose = null;
+    this.kmoves = [];
     this.btns.innerHTML = '';
     if (this.v) this.draw();
   }
@@ -365,6 +404,10 @@ class DominoView implements GameView<View, Event> {
       this.button('Хватит', true, () => this.send({ type: 'enough' }));
       return;
     }
+    if (isKolbasa(v.cfg)) {
+      if (!this.kmoves.length) this.button('Некуда — в хвост колбасы', true, () => this.send({ type: 'skip' }));
+      return;
+    }
     if (!this.opts.length) {
       if (canDraw(v, bazaarLeft(v))) this.button(`Взять из базара (${bazaarLeft(v)})`, true, () => this.send({ type: 'draw' }));
       else this.button('Пропустить — «еду!»', true, () => this.send({ type: 'pass' }));
@@ -373,6 +416,8 @@ class DominoView implements GameView<View, Event> {
 
   setView(v: View) {
     this.v = v;
+    const hint = this.btns.parentElement?.querySelector('.small-hint');
+    if (hint && isKolbasa(v.cfg)) hint.textContent = 'Крайняя кость вашей линии открывается сама — нажмите на подсвеченное место в ряду.';
     this.fresh = null;
     this.gBanner.innerHTML = '';
     this.draw();
@@ -391,6 +436,12 @@ class DominoView implements GameView<View, Event> {
         if (ev.sto) await this.banner('На сто!', 900 / speed);
         else if (ev.pts) await this.banner(`+${ev.pts}`, 650 / speed);
         else await sleep(420 / speed);
+      } else if (ev.type === 'cut') {
+        Sound.place();
+        await this.banner('Режет колбасу!', 1100 / speed);
+      } else if (ev.type === 'insert' || ev.type === 'skip') {
+        Sound.place();
+        await sleep(300 / speed);
       } else if (ev.type === 'draw') {
         Sound.card();
         await sleep(200 / speed);
@@ -440,7 +491,14 @@ class DominoView implements GameView<View, Event> {
       this.cover.hidden = true;
     }
     this.actSeat = seat;
-    if (seat != null) this.opts = placements(v, v.hands[seat], v.phase === 'more');
+    if (seat != null && isKolbasa(v.cfg) && v.front) {
+      this.kmoves = kolMoves(v, v.front);
+      if (this.kmoves.length === 1 && this.ctx.autoSingle()) {
+        const only = this.kmoves[0];
+        this.draw();
+        setTimeout(() => this.actSeat === seat && this.send(only), 350);
+      }
+    } else if (seat != null) this.opts = placements(v, v.hands[seat], v.phase === 'more');
     this.draw();
     this.renderButtons();
     // покрывало сняли — кнопки появятся после
@@ -464,6 +522,14 @@ class DominoView implements GameView<View, Event> {
     const who = toAct[0];
     if (who == null) return '';
     const mine = interactive.includes(who);
+    if (isKolbasa(v.cfg)) {
+      const f = v.front ? `${v.front[0]}-${v.front[1]}` : '';
+      if (!mine) return `${name(who)} открыл ${f}…`;
+      if (!v.front) return 'Ваш ход';
+      const ms = kolMoves(v, v.front);
+      if (!ms.length) return `Открыли ${f} — некуда, в хвост колбасы`;
+      return ms.some((m) => m.type === 'cut') ? `Открыли ${f} — это нож! Режьте колбасу` : `Открыли ${f} — нажмите на подсвеченное место`;
+    }
     if (v.phase === 'more') return mine ? 'Можно доложить дубль — или «хватит»' : `${name(who)} докладывает дубли…`;
     if (!mine) return `Ходит ${name(who)}…`;
     const can = placements(v, v.hands[who], false).length > 0;

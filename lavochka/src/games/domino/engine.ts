@@ -26,10 +26,15 @@
  * следом (оба разом — два). Счёта очков нет; набрал генералов сколько условились — проиграл.
  * Спортивное: парами, заходят по очереди любой костью, играют 4/8/12 сдач; выигравшая сдачу пара пишет себе очки
  * соперников; больше набравшая — победила.
+ * Колбаса: вдвоём, у каждого по 14 закрытых костей в линию — никто, и сам хозяин, их не видит. Берёшь крайнюю справа
+ * и кладёшь к концу ряда; ряд растёт двумя параллельными линиями от первой кости. Кость, у которой числа совпадают со
+ * стыком обеих линий на одном месте, «режет колбасу»: всё до стыка (с первой костью) уходит сопернику в хвост линии,
+ * а нож становится новым началом. Дубль можно вставить в любой стык с его числом. Некуда — кость в хвост своей линии. Кто остался с костями —
+ * пишет на себя их очки; до 101.
  */
 import type { Options, Rng } from '../../core/types';
 
-export type Variant = 'kozel' | 'morskoy' | 'osel' | 'telefon' | 'muggins' | 'general' | 'sport';
+export type Variant = 'kozel' | 'morskoy' | 'osel' | 'telefon' | 'muggins' | 'general' | 'sport' | 'kolbasa';
 export type Bone = [number, number];
 
 export interface Cfg {
@@ -42,7 +47,7 @@ export interface Cfg {
   generals: number;
 }
 
-const VARIANTS: Variant[] = ['kozel', 'morskoy', 'osel', 'telefon', 'muggins', 'general', 'sport'];
+const VARIANTS: Variant[] = ['kozel', 'morskoy', 'osel', 'telefon', 'muggins', 'general', 'sport', 'kolbasa'];
 
 export function cfgFrom(o: Options): Cfg {
   const v = String(o.variant) as Variant;
@@ -63,10 +68,13 @@ export const limits = (cfg: Cfg) =>
       ? { min: 0, to: 225 }
       : cfg.variant === 'muggins'
         ? { min: 0, to: 200 }
-        : { min: 13, to: 101 };
+        : cfg.variant === 'kolbasa'
+          ? { min: 0, to: 101 }
+          : { min: 13, to: 101 };
 
 /** Очки — «плохие» (кто больше, тот проиграл): козёл, осёл, генерал. */
-export const badScore = (cfg: Cfg) => cfg.variant === 'kozel' || cfg.variant === 'osel' || cfg.variant === 'general';
+export const badScore = (cfg: Cfg) => cfg.variant === 'kozel' || cfg.variant === 'osel' || cfg.variant === 'general' || cfg.variant === 'kolbasa';
+export const isKolbasa = (cfg: Cfg) => cfg.variant === 'kolbasa';
 /** Первый дубль открывает четыре стороны. */
 export const spinVariant = (cfg: Cfg) => cfg.variant === 'osel' || cfg.variant === 'muggins' || cfg.variant === 'telefon';
 /** Очки за концы, кратные пяти. */
@@ -145,13 +153,21 @@ export interface View extends State {
   counts: number[];
   bazaarCount: number;
   me: number[];
+  /** Колбаса: открытая крайняя кость ходящего (её видят все). */
+  front: Bone | null;
 }
 
 export type Action =
   | { type: 'play'; bone: Bone; arm: number; close?: boolean }
   | { type: 'draw' }
   | { type: 'pass' }
-  | { type: 'enough' };
+  | { type: 'enough' }
+  /** Колбаса: разрезать на стыке k обеих линий. */
+  | { type: 'cut'; k: number }
+  /** Колбаса: вставить дубль в стык k линии arm. */
+  | { type: 'insert'; arm: number; k: number }
+  /** Колбаса: кость некуда — в хвост своей линии. */
+  | { type: 'skip' };
 
 export interface RoundRes {
   /** Кто выиграл кон (место) — вышел первым или выиграл рыбу; null — яйца / не в счёт. */
@@ -166,11 +182,14 @@ export interface RoundRes {
 }
 
 export type Event =
-  | { type: 'deal'; round: number; counts: number[]; bazaar: number; first: number; opener: Bone | null; hands?: Bone[][]; sto?: number | null; eggs?: number }
+  | { type: 'deal'; round: number; counts: number[]; bazaar: number; first: number; opener: Bone | null; hands?: Bone[][]; sto?: number | null; eggs?: number; hidden?: boolean }
   | { type: 'play'; seat: number; bone: Bone; arm: number; tile: Tile; close: boolean; center: boolean; root?: boolean; pts?: number; sto?: boolean }
   | { type: 'draw'; seat: number; bone?: Bone; left: number }
   | { type: 'pass'; seat: number }
   | { type: 'enough'; seat: number }
+  | { type: 'cut'; seat: number; bone: Bone; k: number; moved: Bone[]; to: number }
+  | { type: 'insert'; seat: number; bone: Bone; arm: number; k: number }
+  | { type: 'skip'; seat: number; bone: Bone }
   | { type: 'round'; res: RoundRes; scores: number[]; hands: Bone[][]; sides: number[][] }
   | { type: 'end'; goat: number | null; goatSeats: number[]; winners: number[]; scores: number[]; text: string };
 
@@ -208,7 +227,7 @@ export const sideCount = (s: Pick<State, 'cfg' | 'seats'>) => (teams(s) ? 2 : s.
 export const sideSeats = (s: Pick<State, 'cfg' | 'seats'>, side: number) => s.seats.filter((x) => sideOf(s, x) === side);
 export const nextSeat = (s: Pick<State, 'seats'>, seat: number) => s.seats[(s.seats.indexOf(seat) + 1) % s.seats.length];
 /** Сколько костей на руку. */
-export const handSize = (cfg: Cfg, n: number) => (cfg.variant === 'muggins' && n > 2 ? 5 : 7);
+export const handSize = (cfg: Cfg, n: number) => (cfg.variant === 'kolbasa' ? Math.floor(28 / n) : cfg.variant === 'muggins' && n > 2 ? 5 : 7);
 
 // ---------------------------------------------------------------- ряд
 
@@ -403,6 +422,7 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
   first = s.seats[0];
   if (v === 'general') pick([D(1), ...LOW_DOUBLES]);
   else if (v === 'sport') first = s.seats[(s.round - 1) % s.seats.length];
+  else if (v === 'kolbasa') first = firstKon ? s.seats[rng.int(s.seats.length)] : s0.lastWinner!;
   else if (v === 'morskoy' && s.eggs > 0) pick([D(1), ...LOW_DOUBLES]);
   else if (v === 'morskoy' && s.sto != null) first = s0.lastWinner != null && sideOf(s, s0.lastWinner) === s.sto ? s0.lastWinner : sideSeats(s, s.sto)[0];
   else if (v === 'morskoy' && s.debt) first = s.debt.seat;
@@ -416,7 +436,7 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
   const counts = [0, 1, 2, 3].map((x) => s.hands[x].length);
   return {
     state: s,
-    events: [{ type: 'deal', round: s.round, counts, bazaar: s.bazaar.length, first, opener, hands: s.hands.map((h) => h.slice()), sto: s.sto, eggs: s.eggs }],
+    events: [{ type: 'deal', round: s.round, counts, bazaar: s.bazaar.length, first, opener, hands: s.hands.map((h) => h.slice()), sto: s.sto, eggs: s.eggs, hidden: v === 'kolbasa' }],
   };
 }
 
@@ -737,8 +757,89 @@ function endRound(s: State, outSeat: number | null, ev: Event[], rng: Rng): { st
   return { state: d.state, events: [...ev, ...d.events] };
 }
 
+// ---------------------------------------------------------------- колбаса
+
+/** Число на стыке k линии arm: 0…len-1 — внутренний стык (перед костью k), len — конец линии. */
+export function jointValue(c: Chain, arm: number, k: number): number | null {
+  const t = c.arms[arm].tiles;
+  if (!c.center || k < 0 || k > t.length) return null;
+  if (k < t.length) return t[k].a;
+  return t.length ? t[t.length - 1].b : arm === 0 ? c.center.a : c.center.b;
+}
+
+/** Ходы колбасы для открытой кости. */
+export function kolMoves(s: Pick<State, 'chain' | 'cfg'>, bone: Bone): Action[] {
+  const c = s.chain;
+  if (!c.center) return [{ type: 'play', bone, arm: -1 }];
+  const out: Action[] = [];
+  for (const e of ends(c, s.cfg)) if (bone[0] === e.v || bone[1] === e.v) out.push({ type: 'play', bone, arm: e.arm });
+  // нож: на стыке обеих линий (когда в каждой есть хоть одна кость)
+  const l0 = c.arms[0].tiles.length;
+  const l1 = c.arms[1].tiles.length;
+  if (l0 && l1)
+    for (let k = 1; k <= Math.min(l0, l1); k++) {
+      const v0 = jointValue(c, 0, k)!;
+      const v1 = jointValue(c, 1, k)!;
+      if (sameBone(bone, [v0, v1])) out.push({ type: 'cut', k });
+    }
+  // дубль — в любой внутренний стык со своим числом
+  if (isDouble(bone))
+    for (const arm of [0, 1])
+      for (let k = 0; k < c.arms[arm].tiles.length; k++) if (jointValue(c, arm, k) === bone[0]) out.push({ type: 'insert', arm, k });
+  return out;
+}
+
+function applyKolbasa(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
+  const line = s0.hands[seat];
+  const bone = line[0];
+  if (!bone) return null;
+  const moves = kolMoves(s0, bone);
+  const ev: Event[] = [];
+  const rest = line.slice(1);
+  const hands = s0.hands.slice();
+  if (a.type === 'skip') {
+    if (moves.length) return null;
+    hands[seat] = [...rest, bone];
+    ev.push({ type: 'skip', seat, bone });
+    const s: State = { ...s0, hands, passes: s0.passes + 1 };
+    // полный круг по всем линиям без хода — рыба
+    const total = s.seats.reduce((n, x) => n + s.hands[x].length, 0);
+    if (s.passes >= total) return endRound(s, null, ev, rng);
+    return { state: { ...s, turn: nextSeat(s, seat) }, events: ev };
+  }
+  const ok = moves.some((m) => JSON.stringify(m) === JSON.stringify(a.type === 'play' ? { type: 'play', bone, arm: a.arm } : a));
+  if (!ok || (a.type === 'play' && !sameBone(a.bone, bone))) return null;
+  hands[seat] = rest;
+  let s: State = { ...s0, hands, passes: 0, lastSeat: seat, turnBones: [bone], opener: null };
+  if (a.type === 'play') {
+    const { chain, tile } = placeTile(s0.chain, bone, a.arm, seat, false, s0.cfg);
+    s.chain = chain;
+    ev.push({ type: 'play', seat, bone, arm: a.arm, tile, close: false, center: a.arm < 0 });
+  } else if (a.type === 'cut') {
+    // нож ложится поперёк обеих линий; всё, что до него (с первой костью), уходит сопернику, нож — новое начало
+    const c = s0.chain;
+    const v0 = jointValue(c, 0, a.k)!;
+    const v1 = jointValue(c, 1, a.k)!;
+    const moved: Bone[] = [norm([c.center!.a, c.center!.b])];
+    for (const arm of [0, 1]) moved.push(...c.arms[arm].tiles.slice(0, a.k).map((t) => norm([t.a, t.b])));
+    const chain: Chain = { center: { a: v0, b: v1, seat }, arms: c.arms.map((x) => ({ tiles: x.tiles.slice(a.k), closed: false })), spin: false };
+    const to = nextSeat(s0, seat);
+    hands[to] = [...hands[to], ...moved];
+    s = { ...s, chain };
+    ev.push({ type: 'cut', seat, bone, k: a.k, moved, to });
+  } else if (a.type === 'insert') {
+    const chain = cloneChain(s0.chain);
+    chain.arms[a.arm].tiles.splice(a.k, 0, { a: bone[0], b: bone[0], seat });
+    s = { ...s, chain };
+    ev.push({ type: 'insert', seat, bone, arm: a.arm, k: a.k });
+  } else return null;
+  if (!hands[seat].length) return endRound(s, seat, ev, rng);
+  return { state: { ...s, turn: nextSeat(s, seat) }, events: ev };
+}
+
 export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
   if (s0.phase === 'over' || seat !== s0.turn || !a || typeof a !== 'object') return null;
+  if (isKolbasa(s0.cfg)) return applyKolbasa(s0, seat, a, rng);
   const hand = s0.hands[seat];
   const ev: Event[] = [];
   if (a.type === 'enough') {
@@ -808,9 +909,13 @@ function afterTurn(s: State, seat: number, ev: Event[], rng: Rng): { state: Stat
 }
 
 export function makeView(s: State, seats: number[] | 'all'): View {
-  const see = (x: number) => seats === 'all' || seats.includes(x);
+  // в колбасе свою линию не видит и хозяин — открыта только крайняя кость ходящего
+  const kol = isKolbasa(s.cfg);
+  const see = (x: number) => !kol && (seats === 'all' || seats.includes(x));
+  const front = (s as Partial<View>).front !== undefined ? (s as View).front : kol && s.phase !== 'over' ? (s.hands[s.turn][0] ?? null) : null;
   return {
     ...s,
+    front,
     hands: s.hands.map((h, x) => (see(x) ? h.slice() : [])),
     bazaar: [],
     // повторный вызов на готовом виде (превью) не теряет счётчиков

@@ -4,7 +4,7 @@
  *   Сложный — ещё и «режет» соперника (ставит на концы, которых у него нет), не мешает напарнику,
  *   считает выложенные кости, в осле закрывает стороны, выгодные соперникам, в генерале бережёт 0-0 и 6-6 на выход. */
 import type { Rng } from '../../core/types';
-import { bazaarLeft, canDraw, endSum, ends, fivesVariant, isDouble, nextSeat, pips, placeTilePreview, placements, sameBone, sideOf, teams, type Action, type Bone, type Placement, type State } from './engine';
+import { bazaarLeft, canDraw, endSum, ends, fivesVariant, isDouble, isKolbasa, kolMoves, nextSeat, pips, placeTilePreview, placements, sameBone, sideOf, teams, type Action, type Bone, type Placement, type State, type View } from './engine';
 
 function countOnTable(s: State): number[] {
   const seen = Array(7).fill(0);
@@ -72,8 +72,30 @@ function score(s: State, seat: number, p: Placement, level: number): number {
   return v;
 }
 
+/** Колбаса: режем, сколько можно больше; дубль — в стык; иначе к концу. */
+function chooseKolbasa(s: State, level: number, rng: Rng): Action {
+  const front = (s as Partial<View>).front ?? s.hands[s.turn][0];
+  if (!front) return { type: 'skip' };
+  const moves = kolMoves(s, front);
+  if (!moves.length) return { type: 'skip' };
+  if (level === 0) return moves[rng.int(moves.length)];
+  const val = (m: Action) => {
+    if (m.type === 'cut') return 100 + 2 * m.k;
+    if (m.type === 'insert') return 5;
+    // к концу: на сложном — ставим так, чтобы концы линий не совпали с костями, которыми соперник мог бы резать
+    if (level >= 2 && m.type === 'play' && m.arm >= 0) {
+      const after = placeTilePreview(s, { bone: front, arm: m.arm }, s.turn);
+      const e = ends(after, s.cfg).map((x) => x.v);
+      return e.length === 2 && e[0] === e[1] ? 3 : 4;
+    }
+    return 4;
+  };
+  return moves.map((m) => ({ m, v: val(m) + rng.next() })).sort((a, b) => b.v - a.v)[0].m;
+}
+
 export function choose(s: State, seat: number, level: number, rng: Rng): Action | null {
   if (s.phase === 'over' || s.turn !== seat) return null;
+  if (isKolbasa(s.cfg)) return chooseKolbasa(s, level, rng);
   const hand = s.hands[seat];
   const more = s.phase === 'more';
   const opts = placements(s, hand, more);

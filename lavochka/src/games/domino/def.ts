@@ -52,6 +52,12 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)}: «Еду!» — пропуск.`;
     case 'enough':
       return null;
+    case 'cut':
+      return `${name(ev.seat)}: <b>${bn(ev.bone)}</b> — <b>режет колбасу!</b> ${name(ev.to)} забирает ${ev.moved.length} к.`;
+    case 'insert':
+      return `${name(ev.seat)}: дубль <b>${bn(ev.bone)}</b> вставлен в стык`;
+    case 'skip':
+      return `${name(ev.seat)}: ${bn(ev.bone)} некуда — в хвост колбасы.`;
     case 'round': {
       const r = ev.res;
       const who = (i: number) => ev.sides[i].map(name).join(' и ');
@@ -76,7 +82,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 /** Чужие кости при раздаче и из базара не показываем. */
 function redact(ev: Event, seats: number[] | 'all'): Event | null {
   if (seats === 'all') return ev;
-  if (ev.type === 'deal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) ? h : [])) };
+  if (ev.type === 'deal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) && !ev.hidden ? h : [])) };
   if (ev.type === 'draw' && !seats.includes(ev.seat)) return { ...ev, bone: undefined };
   return ev;
 }
@@ -128,6 +134,7 @@ const V_LABEL: Record<string, string> = {
   muggins: 'маггинс (все пятёрки) — до 200',
   general: 'генерал — выйти на 0-0 или 6-6',
   sport: 'спортивное — парами, сдачи по очереди',
+  kolbasa: 'колбаса — вслепую из своей линии, режь колбасу!',
 };
 
 export const def: GameDef<State, Action, Event, View> = {
@@ -177,6 +184,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'muggins', label: 'Маггинс', hint: 'Английские «все пятёрки»: до 200', options: { variant: 'muggins', pairs: false } },
     { id: 'general', label: 'Генерал', hint: 'Обеденный: кто выйдет на 0-0 или 6-6 — навешивает генерала', options: { variant: 'general', generals: 3 } },
     { id: 'sport', label: 'Спортивное', hint: 'Парами, 4 сдачи, заходят по очереди', options: { variant: 'sport', deals: 4 } },
+    { id: 'kolbasa', label: 'Колбаса', hint: 'Вдвоём: кости вслепую из своей линии, ножом отрезаешь колбасу сопернику', options: { variant: 'kolbasa' } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -363,6 +371,37 @@ export const def: GameDef<State, Action, Event, View> = {
             }),
           intro: 'У Михалыча осталось одно «пусто-пусто», а на конце как раз пусто.',
           steps: [P(0, 0, 0, 0, 'Выходит на 0-0 — Петрович, который ходит следом, получает генерала!')],
+        },
+      },
+      {
+        title: 'Колбаса',
+        html: `<p>Вдвоём, по 14 костей, и каждый выкладывает свои в линию <b>рубашкой вверх</b> — не видит их и сам хозяин.
+          В свой ход берёшь крайнюю справа, открываешь и кладёшь к концу ряда. Ряд растёт от первой кости <b>двумя параллельными линиями</b>.
+          Некуда положить — кость уходит в хвост твоей линии (налево).</p>
+          <p>Кость, у которой числа совпадают со стыком <b>обеих</b> линий на одном месте, — <b>нож</b>: кладёшь её поперёк,
+          и всё, что до неё, вместе с первой костью, — отрезанная колбаса — уходит сопернику в хвост линии. Нож становится новым началом.
+          Дубль можно вставить в любой стык со своим числом, раздвинув линию.</p>
+          <p>Кончились кости — выиграл кон, соперник пишет на себя очки своей линии. Кто набрал <b>101</b> — козёл.</p>`,
+        demo: {
+          seats: demoSeats([0, 2]),
+          options: { variant: 'kolbasa' },
+          setup: () =>
+            pos({ variant: 'kolbasa' }, [0, 2], { 0: [[0, 5], [2, 3], [1, 1]], 2: [[4, 4], [2, 6], [2, 2], [0, 4]] }, {
+              turn: 0,
+              opener: null,
+              chain: {
+                center: { a: 1, b: 2, seat: 2 },
+                arms: [
+                  { tiles: [{ a: 1, b: 3, seat: 0 }, { a: 3, b: 6, seat: 2 }, { a: 6, b: 5, seat: 0 }], closed: false },
+                  { tiles: [{ a: 2, b: 4, seat: 0 }, { a: 4, b: 1, seat: 2 }, { a: 1, b: 0, seat: 0 }], closed: false },
+                  { tiles: [], closed: false },
+                  { tiles: [], closed: false },
+                ],
+                spin: false,
+              },
+            }),
+          intro: 'Две линии по три кости, на концах пять и пусто. Михалыч открывает свою крайнюю — 5-0!',
+          steps: [{ seat: 0, action: { type: 'cut', k: 3 } as Action, caption: 'Это нож: поперёк обеих линий — и вся колбаса, семь костей, уходит Саньку в хвост.' }],
         },
       },
       {

@@ -213,3 +213,39 @@ describe('разновидности', () => {
     expect(s.turn).toBe(1);
   });
 });
+
+describe('колбаса', () => {
+  it('нож режет всё до стыка вместе с первой костью и становится новым началом', () => {
+    const sec = def.rules.sections.find((x) => x.title === 'Колбаса')!;
+    const s = sec.demo!.setup!(def, rng()) as State;
+    const r = apply(s, 0, { type: 'cut', k: 3 }, rng())!;
+    expect(r).not.toBeNull();
+    expect(r.state.chain.center).toMatchObject({ a: 5, b: 0 });
+    expect(r.state.chain.arms[0].tiles.length + r.state.chain.arms[1].tiles.length).toBe(0);
+    // 4 своих + 7 отрезанных
+    expect(r.state.hands[2].length).toBe(11);
+    expect(r.state.hands[0]).toEqual([[2, 3], [1, 1]]);
+  });
+
+  it('дубль вставляют в стык, некуда — в хвост своей линии', () => {
+    const chain = {
+      center: { a: 1, b: 2, seat: 0 },
+      arms: [{ tiles: [{ a: 1, b: 3, seat: 0 }, { a: 3, b: 6, seat: 0 }], closed: false }, { tiles: [], closed: false }, { tiles: [], closed: false }, { tiles: [], closed: false }],
+      spin: false,
+    };
+    let s = pos('kolbasa', [0, 2], { 0: [[3, 3], [4, 5]], 2: [[0, 0], [5, 5]] }, { turn: 0, chain });
+    s = apply(s, 0, { type: 'insert', arm: 0, k: 1 }, rng())!.state;
+    expect(s.chain.arms[0].tiles.map((t) => `${t.a}${t.b}`)).toEqual(['13', '33', '36']);
+    expect(apply(s, 2, { type: 'play', bone: [0, 0], arm: 0 }, rng())).toBeNull();
+    s = apply(s, 2, { type: 'skip' }, rng())!.state;
+    expect(s.hands[2]).toEqual([[5, 5], [0, 0]]);
+  });
+
+  it('свою линию не видит и хозяин — открыта только крайняя кость ходящего', () => {
+    const s = deal(newState(cfgFrom({ variant: 'kolbasa' }), [0, 2]), rng()).state;
+    const v = makeView(s, [s.turn]);
+    expect(v.hands[s.turn]).toEqual([]);
+    expect(v.counts[s.turn]).toBe(14);
+    expect(v.front).toEqual(s.hands[s.turn][0]);
+  });
+});
