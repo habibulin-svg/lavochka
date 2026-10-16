@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { def } from '../src/games/domino/def';
-import { apply, cfgFrom, deal, ends, handPips, makeView, newState, placements, type Action, type Bone, type State } from '../src/games/domino/engine';
+import { apply, cfgFrom, deal, endSum, ends, handPips, makeView, newState, placements, type Action, type Bone, type State } from '../src/games/domino/engine';
 
 const rng = () => new SeededRng(7);
 const empty = () => [0, 1, 2, 3].map(() => ({ tiles: [], closed: false }));
@@ -43,10 +43,10 @@ describe('ходы', () => {
     s = play(s, 1, 1, 4, 1).state;
     expect(ends(s.chain, s.cfg).map((e) => e.v)).toEqual([1, 4]);
   });
-  it('базар: берут, только когда нечем ходить; пусто — пропуск', () => {
+  it('базар: берут, только когда нечем ходить; последнюю кость в козле не берут', () => {
     let s = pos('kozel', [0, 2], { 0: [[1, 2]], 2: [[4, 4], [2, 6]] }, {
       turn: 0,
-      bazaar: [[2, 4], [5, 6]],
+      bazaar: [[2, 4], [5, 6], [0, 0]],
       chain: { center: { a: 5, b: 5, seat: 2 }, arms: empty() },
     });
     expect(apply(s, 0, { type: 'pass' }, rng())).toBeNull();
@@ -131,5 +131,85 @@ describe('скрытые кости', () => {
       expect(apply(s, s.turn, a, rng())).not.toBeNull();
     }
     expect(placements(s, s.hands[s.turn]).length).toBeGreaterThan(0);
+  });
+});
+
+describe('разновидности', () => {
+  const chain = (a: number, b: number, spin = false) => ({ center: { a, b, seat: 0 }, arms: empty(), spin });
+
+  it('осёл: первый дубль посреди ряда становится центром на четыре стороны', () => {
+    let s = pos('osel', [0, 1, 2, 3], { 0: [[2, 5], [0, 1]], 1: [[5, 5], [0, 2]], 2: [[1, 5]], 3: [[0, 3]] }, { turn: 0 });
+    s = play(s, 0, 2, 5, -1).state;
+    expect(ends(s.chain, s.cfg).length).toBe(2);
+    s = play(s, 1, 5, 5, 1).state;
+    expect(s.chain.center).toMatchObject({ a: 5, b: 5 });
+    expect(s.chain.spin).toBe(true);
+    expect(ends(s.chain, s.cfg).map((e) => e.v).sort()).toEqual([2, 5, 5, 5]);
+  });
+
+  it('осёл: пока дублей не было, два дубля «Закрыто!» на оба конца кончают кон', () => {
+    const s = pos('osel', [0, 1, 2, 3], { 0: [[2, 2], [5, 5], [1, 1]], 1: [[0, 1]], 2: [[0, 3]], 3: [[0, 4]] }, { turn: 0, chain: chain(2, 5) });
+    let r = play(s, 0, 2, 2, 0, true);
+    expect(r.state.phase).toBe('more');
+    r = play(r.state, 0, 5, 5, 1, true);
+    expect(r.events.some((e) => e.type === 'round')).toBe(true);
+  });
+
+  it('морской: два дубля разом, пишет выигравший от 25', () => {
+    let s = pos('morskoy', [0, 2], { 0: [[2, 2], [3, 3]], 2: [[6, 6], [5, 6], [4, 5]] }, { turn: 0, chain: chain(2, 3) });
+    s = play(s, 0, 2, 2, 0).state;
+    expect(s.phase).toBe('more');
+    const r = play(s, 0, 3, 3, 1);
+    // у соперника 12 + 11 + 9 = 32 — пишет выигравший
+    expect(r.state.scores).toEqual([32, 0]);
+  });
+
+  it('морской: меньше 25 не пишут; чужие очки списывают', () => {
+    let r = play(pos('morskoy', [0, 2], { 0: [[2, 4]], 2: [[1, 2], [0, 3]] }, { turn: 0, chain: chain(2, 3) }), 0, 2, 4, 0);
+    expect(r.state.scores).toEqual([0, 0]);
+    r = play(pos('morskoy', [0, 2], { 0: [[2, 4]], 2: [[6, 6], [5, 6], [4, 5]] }, { turn: 0, chain: chain(2, 3), scores: [0, 60] }), 0, 2, 4, 0);
+    expect(r.state.scores).toEqual([0, 0]);
+  });
+
+  it('морской: вышел на 0-0 — лысый, партия', () => {
+    const r = play(pos('morskoy', [0, 2], { 0: [[0, 0]], 2: [[1, 2]] }, { turn: 0, chain: chain(0, 3) }), 0, 0, 0, 0);
+    expect(r.state.phase).toBe('over');
+    expect(r.state.winners).toEqual([0]);
+  });
+
+  it('морской: одинокие 6-6 — 50, 0-0 с 6-6 — 75', () => {
+    const cfg = cfgFrom({ variant: 'morskoy' });
+    expect(handPips([[6, 6]], cfg)).toBe(50);
+    expect(handPips([[0, 0], [6, 6]], cfg)).toBe(75);
+  });
+
+  it('телефон: дом 4-4, концы 6 и 3 — 6-6 даёт 15, 4-5 к дому — 20', () => {
+    const sec = def.rules.sections.find((x) => x.title === 'Телефон')!;
+    let s = sec.demo!.setup!(def, rng()) as State;
+    expect(endSum(s.chain, s.cfg)).toBe(9);
+    s = play(s, 0, 6, 6, 0).state;
+    expect(s.scores[0]).toBe(15);
+    s = play(s, 2, 4, 5, 2).state;
+    expect(s.scores[1]).toBe(20);
+  });
+
+  it('телефон: вверх-вниз от дома — только когда перекрыт с обеих сторон', () => {
+    let s = pos('telefon', [0, 2], { 0: [[4, 4], [1, 2]], 2: [[4, 6], [0, 3]] }, { turn: 0 });
+    s = play(s, 0, 4, 4, -1).state;
+    expect(ends(s.chain, s.cfg).length).toBe(2);
+  });
+
+  it('генерал: вышел на 0-0 — генерал следующему', () => {
+    const sec = def.rules.sections.find((x) => x.title === 'Генерал')!;
+    const s = sec.demo!.setup!(def, rng()) as State;
+    const r = play(s, 0, 0, 0, 0);
+    expect(r.state.scores).toEqual([0, 1]);
+  });
+
+  it('спортивное: заходят по очереди', () => {
+    let s = deal(newState(cfgFrom({ variant: 'sport' }), [0, 1, 2, 3]), rng()).state;
+    expect(s.turn).toBe(0);
+    s = deal(s, rng()).state;
+    expect(s.turn).toBe(1);
   });
 });

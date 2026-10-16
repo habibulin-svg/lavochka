@@ -6,21 +6,24 @@ import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import {
+  badScore,
   bazaarLeft,
-  ends,
+  canDraw,
+  chainAfter,
   handCount,
   isDouble,
   placements,
+  previewPlace,
   sameBone,
   sideOf,
   teams,
   type Bone,
-  type Chain,
   type Event,
   type Placement,
   type Tile,
   type View,
 } from './engine';
+import { layout, type Slot, type V2 } from './layout';
 import './domino.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -30,87 +33,6 @@ const H = 720;
 const U = 40;
 const CX = W / 2;
 const CY = 330;
-/** Границы ряда в единицах от центра. */
-const XB = 10;
-const YB = 5.2;
-
-type V2 = [number, number];
-
-/** Положение кости ряда: центр (в единицах), направление, поперёк ли (дубль). */
-interface Slot {
-  c: V2;
-  dir: V2;
-  cross: boolean;
-  tile: Tile;
-}
-
-const ARMS: { run: V2; turn: V2 }[] = [
-  { run: [-1, 0], turn: [0, -1] },
-  { run: [1, 0], turn: [0, 1] },
-  { run: [0, -1], turn: [1, 0] },
-  { run: [0, 1], turn: [-1, 0] },
-];
-
-/** Раскладка ряда «змейкой». extra — ещё одна кость (призрак для подсказки) на руку arm. */
-function layout(chain: Chain, extra?: { arm: number; tile: Tile }): { center: Slot | null; arms: Slot[][] } {
-  if (!chain.center) {
-    if (extra && extra.arm < 0) {
-      const d = extra.tile.a === extra.tile.b;
-      return { center: { c: [0, 0], dir: [1, 0], cross: d, tile: extra.tile }, arms: [[], [], [], []] };
-    }
-    return { center: null, arms: [[], [], [], []] };
-  }
-  const ct = chain.center;
-  const cd = ct.a === ct.b;
-  const center: Slot = { c: [0, 0], dir: [1, 0], cross: cd, tile: ct };
-  // полуразмеры центральной кости: по горизонтали и вертикали
-  const hx = cd ? 0.5 : 1;
-  const hy = cd ? 1 : 0.5;
-  const arms: Slot[][] = [];
-  for (let i = 0; i < 4; i++) {
-    const tiles = chain.arms[i].tiles.slice();
-    if (extra && extra.arm === i) tiles.push(extra.tile);
-    const cfgA = ARMS[i];
-    let dir: V2 = cfgA.run;
-    let pos: V2 = [dir[0] * hx, dir[1] * hy];
-    let hw = i < 2 ? hy : hx; // полуширина предыдущей кости поперёк хода
-    let mode: 'run' | 'short' = 'run';
-    let runDir: V2 = cfgA.run;
-    const out: Slot[] = [];
-    for (const t of tiles) {
-      const dbl = t.a === t.b;
-      const L = dbl ? 1 : 2;
-      const horiz = dir[0] !== 0;
-      const bound = horiz ? XB : YB;
-      const coord = horiz ? pos[0] : pos[1];
-      const sign = horiz ? dir[0] : dir[1];
-      if (mode === 'run' && Math.abs(coord + sign * (L + 0.2)) > bound) {
-        // поворот на короткое колено
-        const nd = cfgA.turn;
-        pos = [pos[0] - dir[0] * 0.5 + nd[0] * hw, pos[1] - dir[1] * 0.5 + nd[1] * hw];
-        dir = nd;
-        mode = 'short';
-      }
-      const len = dbl ? 1 : 2;
-      const c: V2 = [pos[0] + (dir[0] * len) / 2, pos[1] + (dir[1] * len) / 2];
-      out.push({ c, dir, cross: dbl, tile: t });
-      pos = [pos[0] + dir[0] * len, pos[1] + dir[1] * len];
-      hw = dbl ? 1 : 0.5;
-      // после короткого колена — сразу обратно
-      if (mode === 'short') {
-        const nd: V2 = [-runDir[0], -runDir[1]];
-        pos = [pos[0] - dir[0] * 0.5 + nd[0] * hw, pos[1] - dir[1] * 0.5 + nd[1] * hw];
-        runDir = nd;
-        dir = nd;
-        mode = 'run';
-        hw = 0.5;
-      }
-    }
-    arms.push(out);
-  }
-  return { center, arms };
-}
-
 // ---------------------------------------------------------------- рисунок кости
 
 const PIPS: Record<number, V2[]> = {
@@ -344,11 +266,11 @@ class DominoView implements GameView<View, Event> {
     let g = '';
     if (this.selected && this.actSeat != null) {
       for (const p of this.opts.filter((x) => sameBone(x.bone, this.selected!))) {
-        const e = ends(v.chain, v.cfg).find((x) => x.arm === p.arm);
-        const tile: Tile = p.arm < 0 ? { a: p.bone[0], b: p.bone[1], seat: this.actSeat } : { a: e!.v, b: p.bone[0] === e!.v ? p.bone[1] : p.bone[0], seat: this.actSeat };
-        const lay = layout(v.chain, { arm: p.arm, tile });
-        const sl = p.arm < 0 ? lay.center! : lay.arms[p.arm][lay.arms[p.arm].length - 1];
-        g += this.slotSvg(sl, 'dm-ghost-bone', `data-arm="${p.arm}"`);
+        // первый дубль в осле и телефоне перестраивает ряд — призрак ищем в новой раскладке
+        const pv = previewPlace(v, p, this.actSeat);
+        const lay = layout(pv.chain);
+        const sl = [lay.center, ...lay.arms.flat()].find((x) => x && x.tile === pv.tile);
+        if (sl) g += this.slotSvg(sl, 'dm-ghost-bone', `data-arm="${p.arm}"`);
       }
     }
     this.gGhost.innerHTML = g;
@@ -444,7 +366,7 @@ class DominoView implements GameView<View, Event> {
       return;
     }
     if (!this.opts.length) {
-      if (bazaarLeft(v)) this.button(`Взять из базара (${bazaarLeft(v)})`, true, () => this.send({ type: 'draw' }));
+      if (canDraw(v, bazaarLeft(v))) this.button(`Взять из базара (${bazaarLeft(v)})`, true, () => this.send({ type: 'draw' }));
       else this.button('Пропустить — «еду!»', true, () => this.send({ type: 'pass' }));
     }
   }
@@ -461,11 +383,14 @@ class DominoView implements GameView<View, Event> {
     this.clearTurn();
     for (const ev of events) {
       if (ev.type === 'play') {
-        this.v = { ...this.v!, chain: chainAfter(this.v!.chain, ev), hands: this.v!.hands.map((hh, i) => (i === ev.seat ? hh.filter((b) => !sameBone(b, ev.bone)) : hh)), counts: this.v!.counts.map((c, i) => (i === ev.seat ? c - 1 : c)) };
+        this.v = { ...this.v!, chain: chainAfter(this.v!.chain, ev, this.v!.cfg), hands: this.v!.hands.map((hh, i) => (i === ev.seat ? hh.filter((b) => !sameBone(b, ev.bone)) : hh)), counts: this.v!.counts.map((c, i) => (i === ev.seat ? c - 1 : c)) };
         this.fresh = ev.tile;
+        if (ev.pts) this.v = { ...this.v!, scores: this.v!.scores.map((x, i) => (i === sideOf(this.v!, ev.seat) ? x + ev.pts! : x)) };
         this.draw();
         Sound.place();
-        await sleep(420 / speed);
+        if (ev.sto) await this.banner('На сто!', 900 / speed);
+        else if (ev.pts) await this.banner(`+${ev.pts}`, 650 / speed);
+        else await sleep(420 / speed);
       } else if (ev.type === 'draw') {
         Sound.card();
         await sleep(200 / speed);
@@ -475,7 +400,7 @@ class DominoView implements GameView<View, Event> {
       } else if (ev.type === 'round') {
         Sound.place();
         const r = ev.res;
-        const txt = r.fish ? (r.winner == null ? 'Рыба! Яйца' : 'Рыба!') : 'Кон окончен';
+        const txt = r.note && /лысый|на сто|свояк|генерал|Генерал/i.test(r.note) ? r.note.replace(/[.!]+$/, '!').slice(0, 34) : r.fish ? 'Рыба!' : 'Кон окончен';
         await this.banner(txt, 1500 / speed);
       } else if (ev.type === 'deal') {
         Sound.shuffle();
@@ -483,7 +408,7 @@ class DominoView implements GameView<View, Event> {
         Sound.win();
         this.v = v;
         this.draw();
-        await this.banner('Козёл!', 0);
+        await this.banner(!ev.winners.length ? 'Ничья' : v.cfg.variant === 'general' ? 'Генерал!' : badScore(v.cfg) ? 'Козёл!' : 'Победа!', 0);
       }
     }
     this.v = v;
@@ -530,32 +455,31 @@ class DominoView implements GameView<View, Event> {
 
   status(v: View, toAct: number[], interactive: number[]) {
     const name = (p: number) => this.ctx.name(p);
-    if (v.phase === 'over') return v.goat != null ? `Козёл — ${v.seats.filter((x) => sideOf(v, x) === v.goat).map(name).join(' и ')}` : 'Партия окончена';
+    if (v.phase === 'over') {
+      if (!v.winners.length) return 'Ничья';
+      if (v.cfg.variant === 'general' && v.goat != null) return `Генерал — ${v.seats.filter((x) => sideOf(v, x) === v.goat).map(name).join(' и ')}`;
+      if (badScore(v.cfg) && v.goat != null) return `Козёл — ${v.seats.filter((x) => sideOf(v, x) === v.goat).map(name).join(' и ')}`;
+      return `Победа — ${v.winners.map(name).join(' и ')}`;
+    }
     const who = toAct[0];
     if (who == null) return '';
     const mine = interactive.includes(who);
-    if (v.phase === 'more') return mine ? 'Можно доложить дубли — или «хватит»' : `${name(who)} докладывает дубли…`;
+    if (v.phase === 'more') return mine ? 'Можно доложить дубль — или «хватит»' : `${name(who)} докладывает дубли…`;
     if (!mine) return `Ходит ${name(who)}…`;
     const can = placements(v, v.hands[who], false).length > 0;
-    if (!v.chain.center) return v.opener ? `Ваш ход: начинайте с ${v.opener[0]}-${v.opener[1]}` : 'Ваш ход: начинайте любой костью';
-    return can ? 'Ваш ход' : bazaarLeft(v) ? 'Нечем ходить — берите из базара' : 'Нечем ходить — пропускайте';
+    if (!v.chain.center) {
+      const sto = v.cfg.variant === 'morskoy' && v.scores[sideOf(v, who)] > 0 && v.sto == null ? ' (зайдёте 6-6 — кон «на сто»)' : '';
+      return v.opener ? `Ваш ход: начинайте с ${v.opener[0]}-${v.opener[1]}` : `Ваш ход: начинайте любой костью${sto}`;
+    }
+    return can ? 'Ваш ход' : canDraw(v, bazaarLeft(v)) ? 'Нечем ходить — берите из базара' : 'Нечем ходить — пропускайте';
   }
 
   playerStats(v: View, seat: number) {
     const side = sideOf(v, seat);
-    return `<span title="Костей на руке">${handCount(v, seat)} к.</span> · <span title="Записано очков">${v.scores[side]} оч.${v.hang[side] ? ` <small>(+${v.hang[side]})</small>` : ''}</span>`;
+    const sc = v.cfg.variant === 'general' ? `<span title="Навешано генералов">🎖 ${v.scores[side]}</span>` : `<span title="Записано очков">${v.scores[side]} оч.${v.hang[side] ? ` <small>(+${v.hang[side]})</small>` : ''}</span>`;
+    const sto = v.sto === side ? ' · <b title="Кон «на сто»">на сто</b>' : '';
+    return `<span title="Костей на руке">${handCount(v, seat)} к.</span> · ${sc}${sto}`;
   }
-}
-
-/** Ряд после события хода (для пошагового показа без ожидания нового состояния). */
-function chainAfter(c: Chain, ev: Extract<Event, { type: 'play' }>): Chain {
-  const chain: Chain = { center: c.center, arms: c.arms.map((a) => ({ tiles: a.tiles.slice(), closed: a.closed })) };
-  if (ev.center) chain.center = ev.tile;
-  else {
-    chain.arms[ev.arm].tiles.push(ev.tile);
-    if (ev.close) chain.arms[ev.arm].closed = true;
-  }
-  return chain;
 }
 
 export function createView(): GameView<View, Event> {

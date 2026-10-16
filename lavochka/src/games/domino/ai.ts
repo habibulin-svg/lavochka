@@ -1,10 +1,10 @@
 /* Домино — боты. Видят только свою руку, ряд и то, на какие числа другие уже не могли ходить.
  *   Лёгкий — кладёт любую подходящую кость;
- *   Средний — сбрасывает тяжёлые кости и дубли, бережёт разнообразие руки;
+ *   Средний — сбрасывает тяжёлые кости и дубли, бережёт разнообразие руки, в «пятёрках» берёт очки;
  *   Сложный — ещё и «режет» соперника (ставит на концы, которых у него нет), не мешает напарнику,
- *   считает выложенные кости и в осле закрывает стороны, которые выгодны соперникам. */
+ *   считает выложенные кости, в осле закрывает стороны, выгодные соперникам, в генерале бережёт 0-0 и 6-6 на выход. */
 import type { Rng } from '../../core/types';
-import { bazaarLeft, ends, isDouble, nextSeat, pips, placeTilePreview, placements, sideOf, teams, type Action, type Bone, type Placement, type State } from './engine';
+import { bazaarLeft, canDraw, endSum, ends, fivesVariant, isDouble, nextSeat, pips, placeTilePreview, placements, sameBone, sideOf, teams, type Action, type Bone, type Placement, type State } from './engine';
 
 function countOnTable(s: State): number[] {
   const seen = Array(7).fill(0);
@@ -17,9 +17,11 @@ function countOnTable(s: State): number[] {
   return seen;
 }
 
+const special = (b: Bone) => isDouble(b) && (b[0] === 0 || b[0] === 6);
+
 function score(s: State, seat: number, p: Placement, level: number): number {
   const hand = s.hands[seat];
-  const rest = hand.filter((b) => b !== p.bone);
+  const rest = hand.filter((b) => !sameBone(b, p.bone));
   let v = pips(p.bone) * 2 + (isDouble(p.bone) ? 9 : 0);
   // разнообразие: сколько разных чисел останется в руке
   const kinds = new Set<number>();
@@ -28,8 +30,17 @@ function score(s: State, seat: number, p: Placement, level: number): number {
     kinds.add(b[1]);
   }
   v += kinds.size * 2;
-  if (level < 2) return v;
   const after = placeTilePreview(s, p, seat);
+  if (fivesVariant(s.cfg)) {
+    const sum = endSum(after, s.cfg);
+    if (sum > 0 && sum % 5 === 0) v += sum * (level === 0 ? 0 : 2);
+  }
+  if (s.cfg.variant === 'general' && level >= 1 && special(p.bone)) {
+    // генерал: 0-0 и 6-6 — на выход; раньше времени не тратить
+    const finishing = rest.every((b) => special(b));
+    v += finishing ? 60 : -60;
+  }
+  if (level < 2) return v;
   const es = ends(after, s.cfg).map((e) => e.v);
   const table = countOnTable({ ...s, chain: after } as State);
   const next = nextSeat(s, seat);
@@ -47,6 +58,17 @@ function score(s: State, seat: number, p: Placement, level: number): number {
     const partner = s.seats.find((x) => x !== seat && sideOf(s, x) === sideOf(s, seat));
     if (partner != null) for (const e of es) if (s.lacks[partner].includes(e)) v -= 4;
   }
+  // пятёрки: не оставлять следующему лёгкие очки — сколько его ответов на один конец дадут кратное пяти
+  if (fivesVariant(s.cfg) && opp) {
+    const sum = endSum(after, s.cfg);
+    let gifts = 0;
+    for (const e of es)
+      for (let x = 0; x <= 6; x++) {
+        const t = sum - e + x;
+        if (t > 0 && t % 5 === 0 && !s.lacks[next].includes(e)) gifts++;
+      }
+    v -= gifts * 0.8;
+  }
   return v;
 }
 
@@ -57,22 +79,23 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const opts = placements(s, hand, more);
   if (!opts.length) {
     if (more) return { type: 'enough' };
-    return bazaarLeft(s) ? { type: 'draw' } : { type: 'pass' };
+    return canDraw(s, bazaarLeft(s)) ? { type: 'draw' } : { type: 'pass' };
   }
-  // доложить дубли (осёл): лёгкий — как получится, остальные — всегда, дубли трудно сбросить
+  // доложить дубли: лёгкий — как получится, остальные — всегда (кроме генеральских раньше времени)
   if (more && level === 0 && rng.next() < 0.4) return { type: 'enough' };
   let pick: Placement;
   if (level === 0) pick = opts[rng.int(opts.length)];
   else {
     const scored = opts.map((p) => ({ p, v: score(s, seat, p, level) + rng.next() * (level === 1 ? 3 : 0.5) }));
     scored.sort((a, b) => b.v - a.v);
+    if (more && s.cfg.variant === 'general' && special(scored[0].p.bone) && scored[0].v < 0) return { type: 'enough' };
     pick = scored[0].p;
   }
   const act: Action = { type: 'play', bone: pick.bone as Bone, arm: pick.arm };
   // осёл: закрыть сторону дублем, если на это число у меня больше нечего класть, а соперник на него ходит
   if (s.cfg.variant === 'osel' && isDouble(pick.bone) && pick.arm >= 0 && level >= 1) {
     const v = pick.bone[0];
-    const rest = hand.filter((b) => b !== pick.bone);
+    const rest = hand.filter((b) => !sameBone(b, pick.bone));
     const mine = rest.some((b) => b[0] === v || b[1] === v);
     const next = nextSeat(s, seat);
     const nextLacks = s.lacks[next].includes(v);
