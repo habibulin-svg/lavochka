@@ -1,0 +1,44 @@
+/* «Астронавты»: звёздная карта под камерой, корабли-пуговицы и двусторонние карточки с переворотом. */
+.as-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; background: #05070f; }
+.as-board { position: relative; transform-origin: 0 0; }
+.as-map { display: block; width: 100%; height: 100%; border-radius: 6px; user-select: none; }
+.as-board.ready .as-map-full { box-shadow: 0 6px 22px rgba(0, 0, 0, 0.7); }
+.as-map-mini { position: absolute; inset: 0; filter: blur(7px); transform: scale(1.03); transition: opacity .45s ease; }
+.as-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
+.as-board.ready .as-map-full { opacity: 1; }
+.as-board.ready .as-map-mini { opacity: 0; }
+.as-over { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.as-piece { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 8px rgba(120, 170, 255, 0.35)); }
+.as-turn { fill: rgba(255, 220, 90, 0.18); stroke: #ffd75a; stroke-width: 5; stroke-dasharray: 10 7; }
+
+.as-panel { display: flex; flex-direction: column; gap: 8px; }
+.as-tray.dice-tray { min-height: 90px; }
+.as-btns { display: flex; flex-direction: column; gap: 6px; }
+.as-quiz { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #f4ecd8; color: #2a1d0e; border: 1px solid #c9b48a; }
+.as-quiz[hidden] { display: none; }
+.as-q { font: 600 15px/1.35 'PT Serif', serif; }
+.as-q-wait { font: 13px/1.3 'PT Sans', system-ui, sans-serif; opacity: .8; }
+.as-opt { text-align: left; }
+.as-last { display: flex; align-items: center; gap: 8px; text-align: left; }
+.as-last img { width: 44px; height: 34px; object-fit: cover; border: 1px solid #333; border-radius: 3px; background: #fff; }
+
+.as-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(10, 22, 60, 0.9); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
+.as-note .nm { color: #ffe28a; }
+
+/* карточка: две стороны, переворот вокруг вертикальной оси */
+.as-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70;
+  width: 440px; perspective: 1400px; cursor: pointer; }
+.as-card[hidden] { display: none; }
+.as-flip { position: relative; aspect-ratio: 720 / 552; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.3, .7, .3, 1); }
+.as-tall .as-flip { aspect-ratio: 552 / 720; }
+.as-card.as-flipped .as-flip { transform: rotateY(180deg); }
+.as-face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: #fff; border-radius: 4px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 0, 0, 0.3); user-select: none; }
+.as-back { transform: rotateY(180deg); }
+.as-card-cap { margin-top: 8px; text-align: center; font: 12px/1.3 'PT Sans', system-ui, sans-serif; color: #cfd8ff; text-shadow: 0 1px 3px #000; }
+.as-card.as-locked { cursor: default; }
+.as-card-x { position: absolute; right: -12px; top: -12px; width: 30px; height: 30px; border-radius: 50%; border: 0; display: none;
+  background: #1c2a5a; color: #fff; font: 16px/30px system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
+.as-card.as-peek .as-card-x { display: block; }
