@@ -1,5 +1,6 @@
 /* «Морские стратегии» — две морские игры художника В. М. Голицына (правила — журнал «Пионер», 1989–1990):
- * «Пираты» (испанцы везут золото в Кадикс, пираты его отбивают) и «Захват колоний» (кто первым наберёт 29 очков за порты).
+ * «Пираты» (испанцы везут золото в Кадикс, пираты его отбивают) и «Захват колоний» (кто первым наберёт 29 очков за порты),
+ * и «Путешествие в Швамбранию» Л. Кассиля («Малыш») — поход вокруг страны по компасу с вопросниками (движок — shv/).
  * Одна карточка, игра выбирается настройкой «Игра», как поле у кинь-двинь. */
 import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { SEATS as HSEATS } from '../hodilki/core';
@@ -8,8 +9,23 @@ import { DEFAULTS, apply, newState, points, shipLabel, toAct, view, type Action,
 import { MAPS, type MapId } from './maps';
 import { angleFor } from './spinner';
 import { POINT_NAMES, type Point } from './wind';
+import { chooseShv } from './shv/bot';
+import { SHV_DEFAULTS, SHV_EVENTS, apply as applyShv, newShv, toAct as toActShv, type ShvAction, type ShvEvent, type ShvOpts, type ShvState } from './shv/engine';
+import { SHV_RULES, describeShv } from './shv/rules';
+
+type AnyState = State | ShvState;
+type AnyAction = Action | ShvAction;
+type AnyEvent = Event | ShvEvent;
+const isShv = (s: AnyState): s is ShvState => s.game === 'shv';
 
 export const SEATS = HSEATS.slice(0, 9);
+
+const shvOpts = (o: Options): Partial<ShvOpts> => ({
+  quiz: (o.quiz as ShvOpts['quiz']) ?? SHV_DEFAULTS.quiz,
+  marks: Number(o.marks ?? SHV_DEFAULTS.marks),
+  ice: SHV_DEFAULTS.ice,
+  limit: Number(o.limit ?? SHV_DEFAULTS.limit),
+});
 
 const optsOf = (o: Options): Partial<Opts> => ({
   game: (o.game as MapId) ?? DEFAULTS.game,
@@ -288,12 +304,13 @@ function showcase(): State {
   return s;
 }
 
-export const def: GameDef<State, Action, Event, State> = {
+export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
   id: 'sea',
   title: 'Морские стратегии',
   players: { min: 2, max: 9, default: 2 },
-  countsFor: (o) => (o.game === 'kolonii' ? [2, 3, 4, 5] : [2, 3, 4, 5, 6, 7, 8, 9]),
-  countsHint: (o) => (o.game === 'kolonii' ? 'от двух до пяти капитанов' : 'вдвоём — испанцы против пиратов; до девяти — по кораблю на каждого'),
+  countsFor: (o) => (o.game === 'kolonii' || o.game === 'shv' ? [2, 3, 4, 5] : [2, 3, 4, 5, 6, 7, 8, 9]),
+  countsHint: (o) =>
+    o.game === 'shv' ? 'от двух до пяти капитанов' : o.game === 'kolonii' ? 'от двух до пяти капитанов' : 'вдвоём — испанцы против пиратов; до девяти — по кораблю на каждого',
   seats: SEATS,
   options: [
     {
@@ -303,8 +320,33 @@ export const def: GameDef<State, Action, Event, State> = {
       choices: [
         { value: 'piraty', label: 'Пираты — золото из Америки' },
         { value: 'kolonii', label: 'Захват колоний — до 29 очков' },
+        { value: 'shv', label: 'Путешествие в Швамбранию — по компасу вокруг страны' },
       ],
       default: 'piraty',
+    },
+    {
+      key: 'quiz',
+      label: 'Вопросники',
+      type: 'select',
+      choices: [
+        { value: 'letters', label: 'по правилам: номер и буква на компасе' },
+        { value: 'easy', label: 'облегчённый вариант: только номер (для младших)' },
+        { value: 'none', label: 'без вопросников — одна гонка' },
+      ],
+      default: SHV_DEFAULTS.quiz,
+      showIf: (o) => o.game === 'shv',
+    },
+    {
+      key: 'marks',
+      label: 'Марок на дорогу',
+      type: 'select',
+      choices: [
+        { value: 30, label: '30 швамбраний, как в правилах' },
+        { value: 20, label: '20 — туже с топливом' },
+        { value: 45, label: '45 — с запасом' },
+      ],
+      default: SHV_DEFAULTS.marks,
+      showIf: (o) => o.game === 'shv',
     },
     {
       key: 'shore',
@@ -315,7 +357,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'wreck', label: 'корабль гибнет (журнал «Пионер»)' },
       ],
       default: DEFAULTS.shore,
-      showIf: (o) => o.game !== 'kolonii',
+      showIf: (o) => o.game === 'piraty' || o.game === undefined,
     },
     {
       key: 'oars',
@@ -326,7 +368,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'calm', label: 'только в штиль' },
       ],
       default: DEFAULTS.oars,
-      showIf: (o) => o.game !== 'kolonii',
+      showIf: (o) => o.game === 'piraty' || o.game === undefined,
     },
     {
       key: 'target',
@@ -370,14 +412,30 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'piraty-pioner', label: 'Пираты — по журналу «Пионер»', hint: 'на скалах гибнут сразу, вёсла только в штиль', options: { game: 'piraty', shore: 'wreck', oars: 'calm' } },
     { id: 'kolonii', label: 'Захват колоний', options: { game: 'kolonii', target: 29, ships: 0, revive: false } },
     { id: 'kolonii-short', label: 'Захват колоний — до 20 очков', options: { game: 'kolonii', target: 20, ships: 0, revive: true } },
+    { id: 'shv', label: 'Путешествие в Швамбранию', hint: 'по книге правил: компас, вопросники с буквой, 30 марок', options: { game: 'shv', quiz: 'letters', marks: 30 } },
+    { id: 'shv-easy', label: 'Швамбрания — облегчённый вариант', hint: 'буква не нужна: назвать любое слово раздела', options: { game: 'shv', quiz: 'easy', marks: 30 } },
+    { id: 'shv-race', label: 'Швамбрания — без вопросников', hint: 'одна гонка вокруг страны', options: { game: 'shv', quiz: 'none', marks: 30 } },
   ],
-  setup: (seats, o, rng) => newState(seats.map((x) => x.seat), optsOf(o), rng),
-  toAct,
-  apply,
-  view,
-  result: (s) => (s.result ? { winners: s.result.winners, text: s.result.text, scores: s.game === 'kolonii' ? Object.fromEntries(s.seats.map((x) => [x, points(s, x)])) : undefined } : null),
-  bot: { levels: LEVELS, choose: (v, seat, level, rng) => choose(v, seat, level, rng) },
-  describe(e, name) {
+  setup: (seats, o, rng) =>
+    o.game === 'shv'
+      ? newShv(
+          seats.map((x) => x.seat),
+          seats.filter((x) => x.kind !== 'bot').map((x) => x.seat),
+          shvOpts(o),
+          rng,
+        )
+      : newState(seats.map((x) => x.seat), optsOf(o), rng),
+  toAct: (s) => (isShv(s) ? toActShv(s) : toAct(s)),
+  apply: (s, seat, a, rng) => (isShv(s) ? applyShv(s, seat, a as ShvAction, rng) : apply(s, seat, a as Action, rng)),
+  view: (s, seats) => (isShv(s) ? s : view(s, seats)),
+  result: (s) =>
+    s.result
+      ? { winners: s.result.winners, text: s.result.text, scores: s.game === 'kolonii' ? Object.fromEntries(s.seats.map((x) => [x, points(s as State, x)])) : undefined }
+      : null,
+  bot: { levels: LEVELS, choose: (v, seat, level, rng) => (isShv(v) ? chooseShv(v, seat, level, rng) : choose(v, seat, level, rng)) },
+  describe(ev, name) {
+    if (SHV_EVENTS.has(ev.t)) return describeShv(ev as ShvEvent, name);
+    const e = ev as Event;
     switch (e.t) {
       case 'gold':
         return `${name(e.seat)} тайно выбрал галион с золотом`;
@@ -404,9 +462,11 @@ export const def: GameDef<State, Action, Event, State> = {
     }
   },
   rules: {
-    goal: `Две морские игры В. М. Голицына на его картах. <b>«Пираты»</b>: испанцы ведут галион с золотом из Вера-Круца в Кадикс, пираты его ищут и отбивают.
-      <b>«Захват колоний»</b>: капитаны сбивают и занимают порты Индийского и Тихого океанов — кто первым наберёт 29 очков.`,
-    sections: RULES,
+    goal: `Три морские игры. Две — В. М. Голицына на его картах: <b>«Пираты»</b> (испанцы ведут галион с золотом из Вера-Круца в Кадикс, пираты его ищут и отбивают)
+      и <b>«Захват колоний»</b> (капитаны сбивают и занимают порты Индийского и Тихого океанов — кто первым наберёт 29 очков).
+      Третья — <b>«Путешествие в Швамбранию»</b> Льва Кассиля: поход вокруг выдуманной страны по компасу-циферблату, с вопросниками в гаванях, —
+      кто первым бросит якорь на Большом рейде Швамбраэны.`,
+    sections: [...RULES, ...SHV_RULES],
   },
   showcase,
 };
