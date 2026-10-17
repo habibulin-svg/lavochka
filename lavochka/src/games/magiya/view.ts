@@ -10,7 +10,7 @@ import { esc, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { CELLS, FIELD, LINES, POWERS, SPIRITS, WEBS, heroOf, powerOf, spiritOf, type Power, type Spirit } from './data';
 import type { MagiyaView as V } from './def';
-import { qualified, routes, type Action, type Event, type Hero } from './engine';
+import { moves, qualified, type Action, type Event, type Hero } from './engine';
 
 const R = 56;
 const IMG = '/magic/';
@@ -96,7 +96,7 @@ export function createView(): GameView<V, Event> {
   function targets(): number[] {
     if (!v || actSeat == null || playing) return [];
     const h = v.heroes[actSeat];
-    if (v.phase === 'move' && v.die != null) return [...routes(v, actSeat, v.die).keys()];
+    if (v.phase === 'move' && v.die != null) return [...moves(v, actSeat, v.die).keys()];
     if (v.phase === 'tunnel') return WEBS.filter((w) => w !== h.cell);
     if (v.phase === 'line' && v.line) return LINES[v.line];
     return [];
@@ -161,7 +161,7 @@ export function createView(): GameView<V, Event> {
       const route = svg('polyline', { class: 'mg-route', points: '' });
       over.append(route);
       const from = pt(st.heroes[mine].cell);
-      const paths = st.phase === 'move' && st.die != null ? routes(st, mine, st.die) : null;
+      const paths = st.phase === 'move' && st.die != null ? moves(st, mine, st.die) : null;
       for (const t of targets()) {
         const p = pt(t);
         const g = svg('circle', { cx: p.x, cy: p.y, r: R * 1.35, class: 'mg-move' + (st.phase === 'move' ? '' : ' mg-jump') });
@@ -454,7 +454,7 @@ export function createView(): GameView<V, Event> {
       const who = interactive.includes(view.turn) ? 'Ваш ход' : `Ходит ${view.names[view.turn]}`;
       switch (view.phase) {
         case 'move':
-          return `${who}: выпало ${view.die}, выбирайте, куда идти`;
+          return `${who}: выпало ${view.die} — переставьте фишку на подсвеченную клетку`;
         case 'tunnel':
           return `${who}: пространственный туннель`;
         case 'line':

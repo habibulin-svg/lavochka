@@ -22,7 +22,10 @@ export interface State {
   /** Сколько ходов пропустить. */
   skip: number[];
   turn: number;
-  phase: 'roll' | 'quiz';
+  /** move — кубик брошен, игрок сам переставляет корабль на подсвеченную точку (как в кинь-двинь). */
+  phase: 'roll' | 'move' | 'quiz';
+  /** Куда встанет корабль после броска (фаза move). */
+  target: number | null;
   quiz: Quiz | null;
   /** Последний бросок. */
   die: number | null;
@@ -37,7 +40,7 @@ export interface State {
   moves: number;
 }
 
-export type Action = { type: 'roll' } | { type: 'answer'; pick: string };
+export type Action = { type: 'roll' } | { type: 'move' } | { type: 'answer'; pick: string };
 
 export type Event =
   | { type: 'roll'; seat: number; die: number; bonus: number; steps: number; first?: boolean }
@@ -69,6 +72,7 @@ export function newState(seats: number[], o: Options = {}): State {
     skip: Array(n).fill(0),
     turn: seats[0],
     phase: 'roll',
+    target: null,
     quiz: null,
     die: null,
     winner: null,
@@ -82,6 +86,7 @@ export function newState(seats: number[], o: Options = {}): State {
 /** Передать ход: следующий по кругу, а кто пропускает — отмечает пропуск и ждёт. */
 function pass(s: State, seat: number, ev: Event[]) {
   s.phase = 'roll';
+  s.target = null;
   s.quiz = null;
   let i = s.seats.indexOf(seat);
   for (let guard = 0; guard < 64; guard++) {
@@ -170,10 +175,21 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       pass(s, seat, ev);
       return { state: s, events: ev };
     }
-    const to = Math.min(HOME, from + steps);
+    // корабль игрок переставляет сам — действием move
+    s.phase = 'move';
+    s.target = Math.min(HOME, from + steps);
+    return { state: s, events: ev };
+  }
+
+  if (a.type === 'move') {
+    if (s.phase !== 'move' || s.target == null) return null;
+    const from = s.pos[seat];
+    const to = s.target;
     const path: number[] = [];
     for (let i = from + 1; i <= to; i++) path.push(i);
     s.pos[seat] = to;
+    s.target = null;
+    s.phase = 'roll';
     ev.push({ type: 'move', seat, path });
     if (to >= HOME) {
       s.winner = seat;

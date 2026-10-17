@@ -4,7 +4,7 @@
  */
 import type { BotDef, DemoStep, GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { APEX, CELLS, HEROES, MAIN, POWERS, SPIRITS, START, cellByName, type Cell, type Spirit } from './data';
-import { apply, botAction, describe, newState, routes, score, type Action, type Event, type Opts, type State } from './engine';
+import { apply, botAction, describe, moves, newState, score, type Action, type Event, type Opts, type State } from './engine';
 
 export type MagiyaView = State;
 
@@ -70,7 +70,7 @@ function steps(setup: () => State, script: Line[]): DemoStep<Action>[] {
     const die = l.roll;
     run(l.seat, { type: 'roll' }, [l.roll - 1]);
     if ((s.phase as string) === 'move') {
-      const ends = [...routes(s, l.seat, die).keys()];
+      const ends = [...moves(s, l.seat, die).keys()];
       const want = l.to == null ? ends : ends.filter((c) => (typeof l.to === 'string' ? c === cellByName(l.to) : (l.to as (c: Cell) => boolean)(CELLS[c])));
       if (!want.length) throw new Error('показ «Магии»: нет пути к цели');
       const go: Action = { type: 'go', to: want[0] };

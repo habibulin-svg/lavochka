@@ -38,6 +38,11 @@ export function createView(): GameView<State, Ev> {
   /** Последняя карточка партии — открыть ещё раз из панели. */
   let last: number | null = null;
   let resize: ResizeObserver | null = null;
+  /** Игрок взял свой корабль (фаза move) — шаги подсвечены ярче. */
+  let picked = false;
+
+  /** Ход за этим экраном: кубик брошен, корабль надо переставить самому. */
+  const canMove = () => !!v && !busy && v.winner == null && v.phase === 'move' && v.target != null && actSeat === v.turn;
 
   const speed = () => ctx?.speed?.() ?? 1;
   const wait = (ms: number) => (ctx?.read ? ctx.read(ms) : sleep(ms / speed()));
@@ -130,10 +135,12 @@ export function createView(): GameView<State, Ev> {
         const x = c.x + off;
         const y = c.y + dy;
         if (st.winner == null && seat === st.turn) over!.append(svg('circle', { cx: x, cy: y, r: PIECE_R + 9, class: 'as-turn' }));
+        const mine = seat === st.turn && canMove();
+        const lift = mine && picked ? 10 : 0;
         over!.append(
           svg('image', {
-            x: x - PIECE_R, y: y - PIECE_R, width: PIECE_R * 2, height: PIECE_R * 2,
-            href: `/hodilki/buttons/${seat}.webp`, class: 'as-piece',
+            x: x - PIECE_R, y: y - PIECE_R - lift, width: PIECE_R * 2, height: PIECE_R * 2,
+            href: `/hodilki/buttons/${seat}.webp`, class: `as-piece${mine ? ' as-mine' : ''}${lift ? ' as-lifted' : ''}`,
           })
         );
       });
@@ -146,8 +153,49 @@ export function createView(): GameView<State, Ev> {
     const seat = st.turn;
     const p = shown[seat] ?? st.pos[seat];
     const pts = [at(p)];
-    for (let k = 1; k <= 6; k++) if (p + k <= HOME) pts.push(at(p + k));
+    const end = st.phase === 'move' && st.target != null ? st.target : p + 6;
+    for (let k = p + 1; k <= end; k++) if (k <= HOME) pts.push(at(k));
     return pts;
+  }
+
+  /** Фаза move: шаги до точки назначения и сама точка (как в кинь-двинь). */
+  function marks() {
+    const st = v!;
+    if (busy || st.phase !== 'move' || st.target == null) return;
+    const from = st.pos[st.turn];
+    const mine = canMove();
+    for (let k = from + 1; k < st.target; k++) {
+      const c = at(k);
+      over!.append(svg('circle', { cx: c.x, cy: c.y, r: picked ? 11 : 8, class: 'as-step' }));
+    }
+    const t = at(st.target);
+    over!.append(svg('circle', { cx: t.x, cy: t.y, r: PIECE_R + 6, class: `as-target${mine ? ' as-go' : ''}` }));
+  }
+
+  /** Касание поля: свой корабль — взять, подсвеченная точка — поставить. */
+  function onBoardClick(e: MouseEvent) {
+    if (!canMove() || !cam || !v) return;
+    if (cardEl && !cardEl.hidden && cardEl.contains(e.target as Node)) return;
+    // попадание — по экранному прямоугольнику подсвеченной точки и своего корабля, с запасом под палец
+    const near = (el: Element | null) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const pad = Math.max(0, (44 - Math.min(r.width, r.height)) / 2);
+      return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad;
+    };
+    const t = over?.querySelector('.as-target') ?? null;
+    const me = over?.querySelector('.as-mine') ?? null;
+    if (near(t)) {
+      picked = false;
+      Sound.place?.();
+      ctx?.act(v.turn, { type: 'move' });
+      return;
+    }
+    if (near(me)) {
+      picked = !picked;
+      Sound.step();
+      render();
+    }
   }
 
   const others = (): CamPoint[] => (v ? v.seats.map((s) => at(shown[s] ?? v!.pos[s])) : []);
@@ -174,6 +222,7 @@ export function createView(): GameView<State, Ev> {
     if (!v || !over || !btns || !quizBox) return;
     const st = v;
     over.replaceChildren();
+    marks();
     pieces();
     btns.replaceChildren();
     quizBox.replaceChildren();
@@ -215,6 +264,12 @@ export function createView(): GameView<State, Ev> {
       const seat = actSeat;
       b.onclick = () => ctx?.act(seat, { type: 'roll' });
       btns.append(b);
+    }
+    if (canMove()) {
+      const tip = document.createElement('div');
+      tip.className = 'as-q-wait';
+      tip.textContent = `Переставьте корабль на точку ${v.target! >= HOME ? '«Земля»' : v.target}: нажмите на свой корабль и на подсвеченную точку.`;
+      btns.append(tip);
     }
     renderLast();
   }
@@ -286,6 +341,7 @@ export function createView(): GameView<State, Ev> {
       cardEl.innerHTML = `<div class="as-flip"><img class="as-face as-front" alt="" draggable="false"><img class="as-face as-back" alt="" draggable="false"></div>
         <div class="as-card-cap"></div><button class="as-card-x" aria-label="Закрыть">✕</button>`;
       wrap.append(note, cardEl);
+      wrap.addEventListener('click', onBoardClick);
       resize = new ResizeObserver(() => fitCard());
       resize.observe(wrap);
       document.addEventListener('pointerdown', onCardPointer, true);
@@ -300,6 +356,7 @@ export function createView(): GameView<State, Ev> {
     async play(events, view) {
       const sp = speed();
       busy = true;
+      picked = false;
       if (card && card.mode !== 'quiz') hideCard();
       // вопрос и кнопки прошлого состояния убрать: пока идут события, отвечать и бросать нечего
       render();
@@ -373,6 +430,7 @@ export function createView(): GameView<State, Ev> {
       if (view.winner != null) return `${nameOf(view.winner)} вернулся на Землю — победа!`;
       const me = act.includes(view.turn);
       if (view.phase === 'quiz') return me ? 'Назовите, что на карточке.' : 'Отвечает на вопрос…';
+      if (view.phase === 'move') return me ? `Выпало ${view.die}. Переставьте свой корабль на подсвеченную точку.` : 'Переставляет корабль…';
       const b = view.bonus[view.turn];
       const add = b ? ` (${ptsText(b)} к броску)` : '';
       return me ? `Бросайте кубик${add}.` : `Бросает кубик${add}…`;

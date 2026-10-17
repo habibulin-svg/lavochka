@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { LEGS, NODES, apply, left, lettersAt, newShv, nodeOf, numberAt, rigLetters, rigNumber, type LegId, type ShvAction, type ShvState } from '../src/games/sea/shv/engine';
+import { LEGS, NODES, apply, left, sailPath, lettersAt, newShv, nodeOf, numberAt, rigLetters, rigNumber, type LegId, type ShvAction, type ShvState } from '../src/games/sea/shv/engine';
 import { BOOKS, known, letterOk } from '../src/games/sea/shv/words';
 
 const rig = (...v: number[]) => {
@@ -24,8 +24,29 @@ function put(s: ShvState, seat: number, leg: LegId, at: string | number) {
 const act = (s: ShvState, seat: number, a: ShvAction, ...r: number[]) => {
   const res = apply(s, seat, a, rig(...r));
   expect(res, JSON.stringify(a) + ' в фазе ' + s.phase).not.toBeNull();
-  return res!.state;
+  // корабль игрок ведёт сам: после компаса (развилки, побега) — действие sail
+  const st = res!.state;
+  if (st.phase !== 'sail' || a.type === 'sail') return st;
+  const go = apply(st, st.seats[st.turn], { type: 'sail' }, rig());
+  expect(go).not.toBeNull();
+  return go!.state;
 };
+
+describe('Швамбрания: ход сам', () => {
+  it('после компаса корабль стоит, пока игрок его не поведёт; путь подсвечивается заранее', () => {
+    let s = game();
+    put(s, 0, 'start', 0);
+    s.phase = 'spin';
+    const r = apply(s, 0, { type: 'spin' }, rig(rigNumber(4)))!.state;
+    if (r.phase === 'sail') {
+      expect(nodeOf(r.ships[0])).toBe(nodeOf(s.ships[0]));
+      const path = sailPath(r);
+      expect(path.length).toBeGreaterThan(0);
+      s = apply(r, 0, { type: 'sail' }, rig())!.state;
+      expect(nodeOf(s.ships[0])).not.toBe(nodeOf(r.ships[0]));
+    } else expect(['fork', 'spin']).toContain(r.phase);
+  });
+});
 
 describe('Швамбрания: маршрут', () => {
   it('все узлы ног пути есть на карте, лишних нет', () => {

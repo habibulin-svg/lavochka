@@ -163,6 +163,22 @@ export function routes(s: State, seat: number, die: number): Map<number, number[
 
 const inBsq = (h: Hero) => CELLS[h.cell].region === 'bsq';
 
+/**
+ * Куда можно пойти на die: конец → путь. В «чёрном квадрате» — один путь по кольцу против часовой,
+ * иначе — routes(). Фишку игрок всегда ставит сам (фаза move), даже если путь один — как в кинь-двинь.
+ */
+export function moves(s: State, seat: number, die: number): Map<number, number[]> {
+  const h = s.heroes[seat];
+  if (!inBsq(h)) return routes(s, seat, die);
+  const path: number[] = [];
+  let c = h.cell;
+  for (let k = 0; k < die; k++) {
+    c = CELLS[c].next[0];
+    path.push(c);
+  }
+  return new Map([[c, path]]);
+}
+
 // ---------- знаки ----------
 
 function gainTri(s: State, seat: number, n: number, ev: Event[]) {
@@ -349,38 +365,34 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: S;
       const die = rng.int(6) + 1;
       s.die = die;
       ev.push({ type: 'roll', seat, die });
-      if (inBsq(h)) {
-        // по кольцу против часовой; встал на туннель — выход
-        let c = h.cell;
-        for (let k = 0; k < die; k++) {
-          const nx = CELLS[c].next[0];
-          h.prev = c;
-          c = nx;
-          ev.push({ type: 'step', seat, cell: c });
-        }
-        h.cell = c;
-        if (c === BSQ_WEB) {
-          s.phase = 'tunnel';
-          s.mustTunnel = true;
-        } else endTurn(s, ev);
-        break;
-      }
-      const r = routes(s, seat, die);
-      if (r.size === 0) {
+      if (moves(s, seat, die).size === 0) {
         endTurn(s, ev);
         break;
       }
-      if (r.size === 1) {
-        moveAlong(s, seat, [...r.values()][0], ev);
-        break;
-      }
+      // фишку игрок переставляет сам — действием go
       s.phase = 'move';
       break;
     }
     case 'go': {
       if (s.phase !== 'move' || s.die == null) return null;
-      const path = routes(s, seat, s.die).get(a.to);
+      const path = moves(s, seat, s.die).get(a.to);
       if (!path) return null;
+      if (inBsq(h)) {
+        // по кольцу против часовой; встал на туннель — выход
+        for (const c of path) {
+          h.prev = h.cell;
+          h.cell = c;
+          ev.push({ type: 'step', seat, cell: c });
+        }
+        if (h.cell === BSQ_WEB) {
+          s.phase = 'tunnel';
+          s.mustTunnel = true;
+        } else {
+          s.phase = 'roll';
+          endTurn(s, ev);
+        }
+        break;
+      }
       moveAlong(s, seat, path, ev);
       break;
     }
@@ -593,7 +605,7 @@ export function botAction(s: State, seat: number, level: number, rng: Rng): Acti
     case 'roll':
       return { type: 'roll' };
     case 'move': {
-      const ends = [...routes(s, seat, s.die!).keys()];
+      const ends = [...moves(s, seat, s.die!).keys()];
       if (!ends.length) return null;
       if (careless) return { type: 'go', to: pick(rng, ends) };
       let best = ends[0];

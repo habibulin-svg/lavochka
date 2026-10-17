@@ -6,7 +6,7 @@ import { BoardCam, type CamPoint } from '../../../core/boardcam';
 import { esc, h, sleep } from '../../../core/util';
 import type { GameView, ViewCtx } from '../../../core/view';
 import { SEATS as HSEATS } from '../../hodilki/core';
-import { MAP, NODES, nodeOf, ransom, seatNow, type Ship, type ShvAction, type ShvEvent, type ShvState } from './engine';
+import { MAP, NODES, nodeOf, ransom, sailPath, seatNow, type Ship, type ShvAction, type ShvEvent, type ShvState } from './engine';
 import { BOOKS, sectionOf } from './words';
 import { describeShv } from './rules';
 
@@ -101,6 +101,14 @@ class ShvView implements GameView<ShvState, ShvEvent> {
       const inp = this.mine.querySelector('input') as HTMLInputElement | null;
       const text = inp?.value.trim() ?? '';
       this.send(text ? { type: 'answer', text } : { type: 'giveup' });
+    });
+    // корабль игрок ведёт сам: касание своего корабля или конечного узла подсвеченного пути
+    this.board.addEventListener('click', (e) => {
+      const v = this.v;
+      if (!v || v.phase !== 'sail' || !this.mineTurn()) return;
+      const t = e.target as HTMLElement;
+      const ship = t.closest('.shv-ship') as HTMLElement | null;
+      if (t.closest('.shv-goal') || (ship && +ship.dataset.seat! === seatNow(v))) this.send({ type: 'sail' });
     });
     this.board.style.setProperty('--cell', '2.2%');
     this.img.src = MAP.img;
@@ -251,6 +259,8 @@ class ShvView implements GameView<ShvState, ShvEvent> {
         return me ? `Засчитать ответ «${esc(v.quiz?.answer ?? '')}»?` : `${nm} решает, засчитать ли ответ…`;
       case 'fork':
         return me ? 'Развилка — выберите путь' : `${nm} выбирает путь…`;
+      case 'sail':
+        return me ? `${v.pending?.steps ?? ''} — ведите корабль по подсвеченному пути` : `${nm} ведёт корабль…`;
       case 'pirates':
         return me ? 'Пираты! Откупиться или сдаться?' : `${nm}: пираты!`;
       case 'escape':
@@ -294,6 +304,7 @@ class ShvView implements GameView<ShvState, ShvEvent> {
       }
       const sh = v.ships[x];
       el.classList.toggle('on', !v.result && x === seatNow(v));
+      el.classList.toggle('mine', v.phase === 'sail' && x === seatNow(v) && this.mineTurn());
       el.classList.toggle('wreck', !!sh.wrecked);
       el.classList.toggle('lotsman', !!sh.lotsman);
       el.classList.toggle('plen', !!sh.inPlen || !!sh.captive);
@@ -328,6 +339,16 @@ class ShvView implements GameView<ShvState, ShvEvent> {
     let html = '';
     if (v.pennant) html += `<img class="shv-pennant" src="/shv/pennant.webp" alt="вымпел" title="Вымпел Великого Лоцмана" style="${pct('P_GROT', -70)}">`;
     if (v.frozen) html += `<div class="shv-ice" style="${pct('d184')}" title="Льды: путь закрыт">❄</div>`;
+    if (v.phase === 'sail' && !this.busy) {
+      const path = sailPath(v);
+      const mine = this.mineTurn();
+      path.forEach((n, i) => {
+        html +=
+          i === path.length - 1
+            ? `<div class="shv-goal${mine ? ' go' : ''}" style="${pct(n)}" title="Сюда — ${path.length} ${path.length === 1 ? 'узел' : path.length < 5 ? 'узла' : 'узлов'}"></div>`
+            : `<div class="shv-step" style="${pct(n)}"><b>${i + 1}</b></div>`;
+      });
+    }
     this.marksEl.innerHTML = html;
   }
 
@@ -364,6 +385,10 @@ class ShvView implements GameView<ShvState, ShvEvent> {
         case 'judge':
           html += `<div class="sea-note">${esc(SEATS[v.quiz!.seat].name)} отвечает: <b>«${esc(v.quiz!.answer ?? '')}»</b>. Такого слова нет в словаре игры — засчитать?</div>
             <div class="sea-btns">${btn({ type: 'judge', ok: true }, 'Засчитать', 'primary')}${btn({ type: 'judge', ok: false }, 'Не засчитывать', 'warn')}</div>`;
+          break;
+        case 'sail':
+          html += `<div class="sea-note">Путь подсвечен — ведите корабль сами: нажмите на свой корабль или на конечный узел.</div>
+            <div class="sea-btns">${btn({ type: 'sail' }, 'Вести корабль', 'primary')}</div>`;
           break;
         case 'fork':
           html +=

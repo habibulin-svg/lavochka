@@ -1,8 +1,9 @@
 /* «Путешествие в Швамбранию» — правила с показом (по книге правил издательства «Малыш») и строки журнала. Без DOM. */
 import type { DemoScript, DemoStep, SeatSpec } from '../../../core/types';
 import { SEATS as HSEATS } from '../../hodilki/core';
-import { LEGS, PORTS, newShv, rigLetters, rigNumber, seatNow, type LegId, type Ship, type ShvAction, type ShvEvent, type ShvState } from './engine';
+import { LEGS, PORTS, apply, newShv, rigLetters, rigNumber, seatNow, type LegId, type Ship, type ShvAction, type ShvEvent, type ShvState } from './engine';
 import { BOOKS, sectionOf } from './words';
+import { RiggedRng, SeededRng } from '../../../core/rng';
 
 const two: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: HSEATS[seat].name, level: 1 }));
 
@@ -18,17 +19,37 @@ function put(s: ShvState, seat: number, leg: LegId, at: string | number, more: P
 }
 
 function demo(patch: (s: ShvState) => void, steps: DemoStep<ShvAction>[], quiz: 'letters' | 'easy' = 'letters'): DemoScript<ShvState, ShvAction> {
+  const setup = () => {
+    const s = newShv([0, 1], [], { quiz }, new SeededRng(1));
+    patch(s);
+    s.phase = s.ships[seatNow(s)].quiz ? 'quiz' : 'spin';
+    return s;
+  };
   return {
     seats: two,
     options: { game: 'shv', quiz },
-    setup: (_d, rng) => {
-      const s = newShv([0, 1], [], { quiz }, rng);
-      patch(s);
-      s.phase = s.ships[seatNow(s)].quiz ? 'quiz' : 'spin';
-      return s;
-    },
-    steps,
+    setup,
+    steps: withSail(setup(), steps),
   };
+}
+
+/** Корабль игрок ведёт сам: где после шага ход ждёт фазы sail — вставить шаг «повести корабль». */
+function withSail(s: ShvState, steps: DemoStep<ShvAction>[]): DemoStep<ShvAction>[] {
+  const out: DemoStep<ShvAction>[] = [];
+  for (const st of steps) {
+    out.push(st);
+    const r = new RiggedRng(new SeededRng(1));
+    r.rig(st.rig);
+    const res = apply(s, st.seat, st.action, r);
+    if (!res) return steps;
+    s = res.state;
+    if (s.phase === 'sail') {
+      const seat = seatNow(s);
+      out.push({ seat, action: { type: 'sail' } });
+      s = apply(s, seat, { type: 'sail' }, new SeededRng(1))!.state;
+    }
+  }
+  return out;
 }
 
 const spin = (seat: number, n: number, caption?: string): DemoStep<ShvAction> => ({ seat, action: { type: 'spin' }, rig: [rigNumber(n)], ...(caption ? { caption } : {}) });
@@ -46,7 +67,8 @@ export const SHV_RULES = [
     html: `<p><b>«Путешествие в Швамбранию»</b> — настольная игра-повесть Льва Кассиля (издательство «Малыш»). Капитаны (от двух до пяти) ведут корабли
       по чёрной маршрутной линии вокруг выдуманной страны Швамбрании, <b>по часовой стрелке</b>: от Большого рейда столицы Швамбраэны (красный кружок с белым якорем)
       и обратно на него. Линия разделена на узлы — точки.</p>
-      <p>Кубика нет — есть <b>компас-циферблат</b>: стрелку запускают щелчком, она показывает, сколько узлов пройти за ход, <b>от 1 до 12</b>.</p>
+      <p>Кубика нет — есть <b>компас-циферблат</b>: стрелку запускают щелчком, она показывает, сколько узлов пройти за ход, <b>от 1 до 12</b>.
+      Корабль капитан ведёт <b>сам</b>: путь подсвечен — нажмите на свой корабль или на конечный узел.</p>
       <p>Но прежде чем выйти в поход, каждый сдаёт экзамен по <b>«Капитанскому вопроснику»</b>: стрелку запускают дважды — в первый раз смотрят на номер
       (это номер вопроса), во второй — на букву. Ответ должен начинаться именно с этой буквы. Ответил — можно сразу выходить; не ответил — ход пропущен,
       в следующий раз — новая попытка.</p>`,

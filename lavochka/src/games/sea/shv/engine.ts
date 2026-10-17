@@ -148,7 +148,8 @@ export interface Quiz {
   judge?: number;
 }
 
-export type Phase = 'quiz' | 'answer' | 'judge' | 'spin' | 'fork' | 'pirates' | 'escape' | 'tow' | 'bayFail';
+/** sail — компас показал число, корабль игрок ведёт сам (как в кинь-двинь). */
+export type Phase = 'quiz' | 'answer' | 'judge' | 'spin' | 'sail' | 'fork' | 'pirates' | 'escape' | 'tow' | 'bayFail';
 
 export interface Result {
   winners: number[];
@@ -187,6 +188,7 @@ export type ShvAction =
   | { type: 'giveup' }
   | { type: 'judge'; ok: boolean }
   | { type: 'spin' }
+  | { type: 'sail' }
   | { type: 'fork'; way: 'ice' | 'south' | 'straight' | 'bay' }
   | { type: 'pirates'; pay: boolean }
   | { type: 'escape'; way: 'N' | 'W' }
@@ -447,6 +449,30 @@ function walk(s: ShvState, sh: Ship, n: number): { path: string[]; fork?: 'n4' |
     if (isPort(node) || node === 'ANCHOR') break;
   }
   return { path, passed };
+}
+
+/** Куда пойдёт корабль в фазе sail: узлы пути (до развилки, если она на пути). */
+export function sailPath(s: ShvState): string[] {
+  if (s.phase !== 'sail' || !s.pending) return [];
+  const c = clone(s);
+  return walk(c, c.ships[seatNow(c)], s.pending.steps).path;
+}
+
+/** Компас указал ход — игрок сам ведёт корабль (фаза sail); пустой ход — сразу дальше. */
+function sail(s: ShvState, sh: Ship, steps: number, free: boolean, ev: ShvEvent[]) {
+  if (steps > 0 && walkable(s, sh)) {
+    s.pending = { steps, free };
+    s.phase = 'sail';
+    return;
+  }
+  s.phase = 'spin';
+  move(s, sh, steps, free, ev);
+}
+
+/** Есть ли куда сделать хоть шаг (стоит на развилке — сначала выбор пути, без фазы sail). */
+function walkable(s: ShvState, sh: Ship) {
+  const c = clone(s);
+  return walk(c, c.ships[sh.seat], 1).path.length > 0;
 }
 
 /** Бесплатный перенос вперёд (течение, караванная тропа, лодка, лишний узел у 7): без событий в конце. */
@@ -772,6 +798,13 @@ export function apply(s0: ShvState, seat: number, a: ShvAction, rng: Rng): { sta
       const free = s.free;
       const steps = pay(s, sh, n, ev);
       s.free = false;
+      sail(s, sh, steps, free, ev);
+      break;
+    }
+    case 'sail': {
+      if (s.phase !== 'sail' || !s.pending) return null;
+      const { steps, free } = s.pending;
+      s.phase = 'spin';
       move(s, sh, steps, free, ev);
       break;
     }
@@ -787,8 +820,7 @@ export function apply(s0: ShvState, seat: number, a: ShvAction, rng: Rng): { sta
         sh.choice.n12 = a.way;
       }
       const { steps, free } = s.pending;
-      s.phase = 'spin';
-      move(s, sh, steps, free, ev);
+      sail(s, sh, steps, free, ev);
       break;
     }
     case 'pirates': {
@@ -813,8 +845,7 @@ export function apply(s0: ShvState, seat: number, a: ShvAction, rng: Rng): { sta
       sh.trail = [];
       ev.push({ t: 'escape', seat: sh.seat, way: a.way });
       const steps = pay(s, sh, s.pending.steps, ev);
-      s.phase = 'spin';
-      move(s, sh, steps, false, ev);
+      sail(s, sh, steps, false, ev);
       break;
     }
     case 'tow': {

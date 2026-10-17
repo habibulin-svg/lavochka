@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { APEX, BSQ_START, BSQ_WEB, CELLS, LINES, MAIN, START, WEBS, cellByName, mazeNext } from '../src/games/magiya/data';
 import { optsOf } from '../src/games/magiya/def';
-import { apply, newState, routes, type Opts, type State } from '../src/games/magiya/engine';
+import { apply, botAction, moves, newState, routes, type Opts, type State } from '../src/games/magiya/engine';
 import type { Rng } from '../src/core/types';
 
 const dice = (...v: number[]): Rng => {
@@ -13,8 +13,27 @@ const game = (o: Partial<Opts> = {}): State => newState([{ seat: 0, name: 'А' }
 const put = (s: State, cell: number, more: Partial<State['heroes'][number]> = {}) => {
   s.heroes[0] = { ...s.heroes[0], cell, prev: -1, ...more };
 };
-const roll = (s: State, d: number) => apply(s, 0, { type: 'roll' }, dice(d))!;
+/** Бросок; если путь один — игрок сам ставит фишку (go), при развилке — ждёт выбора. */
+const roll = (s: State, d: number) => {
+  const r = apply(s, 0, { type: 'roll' }, dice(d))!;
+  if (r.state.phase !== 'move') return r;
+  const ends = [...moves(r.state, 0, d).keys()];
+  if (ends.length !== 1) return r;
+  const g = apply(r.state, 0, { type: 'go', to: ends[0] }, dice())!;
+  return { state: g.state, events: [...r.events, ...g.events] };
+};
 const before = (name: string, n: number) => MAIN[(MAIN.indexOf(cellByName(name)) - n + MAIN.length) % MAIN.length];
+
+describe('ход сам', () => {
+  it('после броска фишка стоит, пока игрок её не переставит — даже когда путь один', () => {
+    const s = game();
+    put(s, MAIN[5]);
+    const r = apply(s, 0, { type: 'roll' }, dice(3))!.state;
+    expect(r.phase).toBe('move');
+    expect(r.heroes[0].cell).toBe(MAIN[5]);
+    expect(botAction(r, 0, 1, dice())).toMatchObject({ type: 'go' });
+  });
+});
 
 describe('поле', () => {
   it('основной путь замкнут, у всех клеток есть ход дальше', () => {

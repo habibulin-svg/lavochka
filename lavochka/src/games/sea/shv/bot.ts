@@ -27,6 +27,8 @@ export function chooseShv(s: ShvState, seat: number, level: number, rng: Rng): S
       return { type: 'bay', retry: level >= 1 ? sh.marks < 6 : coin() };
     case 'spin':
       return { type: 'spin' };
+    case 'sail':
+      return { type: 'sail' };
     case 'fork': {
       if (s.pending?.fork === 'n4') {
         const ice = level === 0 ? coin() : level === 1 ? rng.next() < 0.4 : false;

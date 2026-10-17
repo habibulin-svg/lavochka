@@ -14,9 +14,26 @@ function act(s: State, seat: number, a: Action, rig?: number[]): State {
   expect(res, JSON.stringify(a)).not.toBeNull();
   return res!.state;
 }
-const roll = (s: State, seat: number, d: number) => act(s, seat, { type: 'roll' }, [d - 1]);
+/** Бросок; если корабль летит — игрок сам переставляет его (move). */
+const roll = (s: State, seat: number, d: number) => {
+  const r = act(s, seat, { type: 'roll' }, [d - 1]);
+  return r.phase === 'move' ? act(r, seat, { type: 'move' }) : r;
+};
 
 describe('Астронавты', () => {
+  it('ход сам: после броска корабль стоит, пока игрок его не переставит', () => {
+    let s = newState([0, 1]);
+    s = act(s, 0, { type: 'roll' }, [4]);
+    expect(s.phase).toBe('move');
+    expect(s.pos[0]).toBe(0);
+    expect(s.target).toBe(3);
+    expect(apply(s, 0, { type: 'roll' }, rng())).toBeNull();
+    expect(choose(s, 0, 1, rng())).toEqual({ type: 'move' });
+    s = act(s, 0, { type: 'move' });
+    expect(s.pos[0]).toBe(3);
+    expect(s.turn).toBe(1);
+  });
+
   it('разметка: Земля и 190 точек, карточки и маршрут на разных точках', () => {
     expect(POINTS.length).toBe(191);
     expect(HOME).toBe(191);

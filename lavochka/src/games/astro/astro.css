@@ -42,3 +42,10 @@
 .as-card-x { position: absolute; right: -12px; top: -12px; width: 30px; height: 30px; border-radius: 50%; border: 0; display: none;
   background: #1c2a5a; color: #fff; font: 16px/30px system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
 .as-card.as-peek .as-card-x { display: block; }
+/* ход сам: шаги до точки и точка назначения (как в кинь-двинь) */
+.as-step { fill: rgba(255, 215, 90, 0.85); stroke: #6a4a00; stroke-width: 2; }
+.as-target { fill: rgba(255, 215, 90, 0.16); stroke: #ffd75a; stroke-width: 6; }
+.as-target.as-go { animation: as-pulse 1.1s ease-in-out infinite; }
+.as-mine { cursor: pointer; }
+.as-lifted { filter: drop-shadow(0 12px 8px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 12px rgba(255, 215, 90, 0.7)); }
+@keyframes as-pulse { 50% { stroke-width: 11; fill: rgba(255, 215, 90, 0.32); } }
