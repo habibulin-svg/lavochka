@@ -88,7 +88,8 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
       <div class="mg-sel"><b>Выбор трассы</b>
         <div class="mg-pads">${TRACKS.map((t, i) => `<button class="mg-pad" data-t="${t.id}" title="${t.title}: клавиша ${i + 1}"><i></i><span>${t.title}</span></button>`).join('')}</div>
         <button class="btn primary mg-start" title="Старт: Enter">Старт</button>
-      </div>`,
+      </div>
+      <button class="btn small" data-a="reset" title="Выключить и включить автомат">Сброс</button>`,
     pad: 'x',
     buttons: [
       { id: 'gas', label: 'ГАЗ', big: true },
@@ -224,6 +225,11 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
     const ev: MagEvent[] = [];
     if (!start(s, ev)) say(s.credits ? '' : 'СНАЧАЛА ОПУСТИТЕ МОНЕТУ');
     handle(ev);
+  };
+  (info.querySelector('[data-a=reset]') as HTMLButtonElement).onclick = (e) => {
+    (e.currentTarget as HTMLButtonElement).blur();
+    Object.assign(s, newMag((Date.now() % 100000) + 1));
+    sh.say('Автомат перезапущен.');
   };
   const startBtn = info.querySelector('.mg-start') as HTMLButtonElement;
   startBtn.onclick = () => {

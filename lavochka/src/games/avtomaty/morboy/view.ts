@@ -1,46 +1,57 @@
-/* «Морской бой»: вид в окуляр перископа во весь экран, как на снимке настоящего автомата — овальный вырез на чёрном,
- * панорама под зелёным стеклом (рисованные кучевые облака, море в мазках волн), плоские силуэты кораблей на горизонте,
- * две тёмные линии визиров, зелёные лампочки трассы торпеды. Табло (пуски, попадания, транспаранты) — в чёрных углах
- * вокруг окуляра. Логика — logic.ts. */
+/* «Морской бой»: вид в окуляр перископа на диораму — как у настоящего автомата это не картинка, а ящик: задник
+ * с небом и облаками под светом лампы, боковые стенки с расписными горами, скалы-мысы в углах, пол — море со
+ * стеклом и лампочками трасс; корабли — силуэты на цепи вдоль задника. Всё рисуем в перспективе один раз, потом
+ * сдвигаем при повороте перископа. Транспаранты «ПРИЗОВАЯ ИГРА ОКОНЧЕНА» горят прямо на небе; при попадании свет
+ * в ящике гаснет. Табло «ПУСК» и «ТОРПЕДИРОВАНО» — красным по краям окуляра. Логика — logic.ts. */
 import { audioOut } from '../../../core/audio';
 import type { ArcadeInstance, ArcadeOpts } from '../../../core/arcade';
 import { giveBack, takeCoin } from '../coins';
 import { mountShell } from '../screen';
 import {
-  AIM_MAX, BLAST_TIME, coin, fire, FOV, HALF_W, LAUNCHES, newSea, roseOn, ships, SHIP_LEN, step, TICK, torpedoLamp,
-  trackX, TRACKS, turn, type SeaEvent, type SeaState,
+  AIM_MAX, BLAST_TIME, coin, fire, HALF_W, LAUNCHES, newSea, roseOn, ships, step, TICK, torpedoLamp, trackX,
+  TRACKS, turn, type SeaEvent, type SeaState,
 } from './logic';
 
-// ---- окуляр и панорама — в своих координатах VW×VH (мир в см); экран вокруг — LW×LH: широкий (табло по бокам)
-// или высокий для телефона стоя (табло над и под окуляром, бока обрезаны)
+// ---- окуляр VW×VH (свои координаты), экран LW×LH: сверху полоса «ПУСК», снизу «ТОРПЕДИРОВАНО»
 const VW = 1200;
-const VH = 560;
+const VH = 700;
+const TOP = 80;
+const LW = VW;
+const LH = TOP + VH + 130;
 const OX = VW / 2;
 const OY = VH / 2;
-const RX = 440;
-const RY = 279;
-const K = (RX * 2) / FOV; // точек на см: поле зрения — ширина окуляра
-const HOR = VH * 0.73; // линия горизонта, как на снимке
-const PAN_W = (HALF_W + 18) * 2; // ширина заготовки панорамы, см
+const RX = 590;
+const RY = 345;
 /** Линии визиров — делят окуляр на три окна. */
-const VISOR = RX * 0.357;
+const VISOR = RX * 0.38;
 
-const LAMP_Z = Array.from({ length: 10 }, (_, i) => Math.pow(0.8, i)); // глубина лампочек: 1 у глаза … ~0.13 у горизонта
+// ---- ящик: задник — плоскость Z=1, пол и потолок сходятся к уровню глаза E; Z меньше — ближе к перископу
+const B = HALF_W + 2; // полуширина задника, см
+const K = 10.8; // точек на см на заднике
+const BW = B * K; // полуширина задника, точек
+const WT = 165; // верх задника
+const HOR = 420; // низ задника — горизонт
+const E = 300; // уровень глаза
+const Z_NEAR = 0.24;
+const sx0 = (X: number, Z: number) => X / Z; // X — точки на заднике (Z=1)
+const sy0 = (Y: number, Z: number) => E + (Y - E) / Z;
+/** Панорама шире окуляра: при повороте перископа сдвигается на ±AIM_MAX см. */
+const PW = Math.ceil(2 * (OX + AIM_MAX * K + 40));
+const PC = PW / 2;
 
-/** Точка трассы k, лампочка i (1…10) в координатах мира (x — см, y — точки экрана). */
+/** Лампочка трассы k, номер i (1 — у перископа … 10 — у горизонта): точка на полу. */
 function lampAt(k: number, i: number) {
-  const d = LAMP_Z[i - 1];
-  const f = 1 - d;
-  const bottom = VH * 1.02;
-  return { x: (trackX(k) * f) / 0.87, y: HOR + (bottom - HOR) * d * 0.9, r: 3 + 8 * d };
+  const Z = 0.3 + ((i - 1) / 9) * 0.66;
+  const X = trackX(k) * K * ((Z - Z_NEAR) / (1 - Z_NEAR)); // трасса идёт от перископа к точке на заднике
+  return { x: sx0(X, Z), y: sy0(HOR, Z), r: 2.4 / Z };
 }
 
-/** Контур окуляра: сверхэллипс (бока круче, чем у эллипса). */
+/** Контур окуляра: сверхэллипс (бока и верх площе эллипса). */
 function scopePath(g: CanvasRenderingContext2D, grow = 0) {
-  const n = 2.6;
+  const n = 3;
   g.beginPath();
-  for (let i = 0; i <= 160; i++) {
-    const t = (i / 160) * Math.PI * 2;
+  for (let i = 0; i <= 180; i++) {
+    const t = (i / 180) * Math.PI * 2;
     const c = Math.cos(t);
     const s = Math.sin(t);
     const x = OX + (RX + grow) * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
@@ -51,172 +62,314 @@ function scopePath(g: CanvasRenderingContext2D, grow = 0) {
   g.closePath();
 }
 
-// ---- силуэты кораблей (см, носом вправо, начало — середина киля): корпус тёмный, надстройка цветная
-type Part = { fill: string; path: Path2D };
-function shipParts(kind: number): Part[] {
-  const hull = new Path2D();
-  const top = new Path2D();
-  const extra = new Path2D();
-  if (kind === 0) {
-    // грузовой пароход: длинный корпус с седловатой палубой, ступенчатая надстройка светлой охрой, мачта
-    hull.moveTo(-3.9, -0.95);
-    hull.lineTo(3.6, -1.15);
-    hull.lineTo(3.1, 0);
-    hull.lineTo(-3.4, 0);
-    hull.closePath();
-    top.rect(-2.5, -1.75, 3.6, 0.85);
-    top.rect(-1.9, -2.4, 2.4, 0.7);
-    top.rect(-1.3, -2.95, 1.3, 0.6);
-    top.rect(-0.85, -3.9, 0.28, 1.0); // мачта
-    top.rect(-0.3, -3.25, 0.5, 0.35);
-    top.rect(1.3, -1.4, 0.9, 0.3);
-  } else {
-    // сторожевик: корпус с высоким носом, надстройка — синяя пирамида с красными огнями
-    hull.moveTo(-3.6, -0.9);
-    hull.lineTo(3.9, -1.3);
-    hull.lineTo(3.2, 0);
-    hull.lineTo(-3.2, 0);
-    hull.closePath();
-    top.moveTo(-1.8, -1.0);
-    top.lineTo(-0.2, -3.6);
-    top.lineTo(0.15, -3.6);
-    top.lineTo(1.6, -1.1);
-    top.closePath();
-    extra.rect(-2.4, -1.45, 0.6, 0.5);
-    extra.rect(1.7, -1.6, 0.6, 0.5);
-  }
-  return [
-    { fill: '#2c3442', path: hull },
-    { fill: kind === 0 ? '#e3cf92' : '#3567b8', path: top },
-    { fill: '#c83a2a', path: extra },
-  ];
-}
-const SHIPS = [shipParts(0), shipParts(1)];
-
 /** Детерминированный «шум» для росписи. */
 const rnd = (() => {
   let x = 7;
   return () => (x = (x * 16807) % 2147483647) / 2147483647;
 })();
 
-/** Кучевое облако как на росписи: сплошной силуэт клубов кремовой краской с тёмной обводкой и завитками внутри,
- * плоское снизу; большие — башней вверх. */
-function cloud(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number) {
+const canvas = (w: number, h: number) => {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  return c;
+};
+
+/** Облако росписи: мягкие белые клубы с серо-голубой тенью снизу, плоское основание. */
+function cloud(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, shade = 'rgba(120,150,150,0.55)') {
   const puffs: [number, number, number][] = [];
-  const n = 6 + Math.floor(w / 22);
+  const n = 4 + Math.floor(w / 18);
   for (let i = 0; i < n; i++) {
     const t = i / (n - 1);
-    const hump = Math.pow(Math.sin(Math.PI * t), 0.8);
-    const r = h * (0.18 + 0.32 * hump) * (0.8 + rnd() * 0.4);
-    puffs.push([cx - w / 2 + w * t, cy - r * 0.55 - hump * h * 0.35 * rnd(), r]);
-  }
-  for (let i = 0; i < n * 0.8; i++) {
-    const t = 0.2 + rnd() * 0.6;
-    const hump = Math.sin(Math.PI * t);
-    puffs.push([cx - w / 2 + w * t, cy - h * (0.35 + 0.45 * hump * rnd()), h * (0.12 + 0.2 * hump)]);
+    const hump = Math.pow(Math.sin(Math.PI * t), 0.9);
+    const r = h * (0.25 + 0.4 * hump) * (0.75 + rnd() * 0.5);
+    puffs.push([cx - w / 2 + w * t, cy - r * 0.5 - hump * h * 0.25 * rnd(), r]);
   }
   g.save();
   g.beginPath();
   g.rect(cx - w, cy - h * 3, w * 2, h * 3);
-  g.clip(); // низ облака — ровный
-  const all = (grow: number, fill: string) => {
-    g.fillStyle = fill;
-    g.beginPath();
-    for (const [x, y, r] of puffs) {
-      g.moveTo(x + r + grow, y);
-      g.arc(x, y, r + grow, 0, Math.PI * 2);
-    }
-    g.fill();
-  };
-  all(2.2, 'rgba(105,120,98,0.85)'); // обводка
-  all(0, '#d9d9bf');
-  // завитки: верхняя дуга каждого клуба, светлая шапка и тёмная черта
-  g.lineCap = 'round';
+  g.clip();
+  g.filter = 'blur(1.2px)';
+  g.fillStyle = shade;
+  g.beginPath();
   for (const [x, y, r] of puffs) {
-    if (r < 6) continue;
-    g.strokeStyle = 'rgba(250,248,230,0.7)';
-    g.lineWidth = Math.max(2, r * 0.25);
-    g.beginPath();
-    g.arc(x - r * 0.08, y + r * 0.05, r * 0.7, Math.PI * 1.1, Math.PI * 1.7);
-    g.stroke();
-    g.strokeStyle = 'rgba(120,132,108,0.55)';
-    g.lineWidth = 1.4;
-    g.beginPath();
-    g.arc(x, y + r * 0.35, r * 0.95, Math.PI * 1.15, Math.PI * 1.55);
-    g.stroke();
+    g.moveTo(x + r, y + r * 0.25);
+    g.arc(x, y + r * 0.25, r, 0, Math.PI * 2);
   }
+  g.fill();
+  g.fillStyle = '#f2f6ee';
+  g.beginPath();
+  for (const [x, y, r] of puffs) {
+    g.moveTo(x + r * 0.92, y - r * 0.05);
+    g.arc(x, y - r * 0.05, r * 0.92, 0, Math.PI * 2);
+  }
+  g.fill();
   g.restore();
-  g.fillStyle = 'rgba(105,120,98,0.6)';
-  g.fillRect(cx - w / 2 - h * 0.2, cy - 2, w + h * 0.4, 2);
 }
 
-/** Заготовка панорамы: небо, облака, море в мазках волн, прорези лампочек. */
-function paintPanorama() {
-  const W = Math.round(PAN_W * K);
-  const back = document.createElement('canvas');
-  back.width = W;
-  back.height = VH;
+/** Горы росписи на стенке: красно-бурые пики со снежными шапками, тёмная теневая сторона. */
+function mountains(g: CanvasRenderingContext2D, w: number, base: number, peaks: [number, number][], dark = 1) {
+  for (const [px, ph] of peaks) {
+    const half = ph * (0.45 + rnd() * 0.25);
+    const top = base - ph;
+    g.fillStyle = `rgb(${Math.round(150 * dark)},${Math.round(88 * dark)},${Math.round(58 * dark)})`;
+    g.beginPath();
+    g.moveTo(px - half, base);
+    g.lineTo(px - half * 0.35, top + ph * 0.35);
+    g.lineTo(px, top);
+    g.lineTo(px + half * 0.4, top + ph * 0.3);
+    g.lineTo(px + half, base);
+    g.fill();
+    // теневая сторона
+    g.fillStyle = `rgb(${Math.round(78 * dark)},${Math.round(42 * dark)},${Math.round(30 * dark)})`;
+    g.beginPath();
+    g.moveTo(px, top);
+    g.lineTo(px + half * 0.4, top + ph * 0.3);
+    g.lineTo(px + half, base);
+    g.lineTo(px + half * 0.1, base);
+    g.lineTo(px + half * 0.15, top + ph * 0.45);
+    g.fill();
+    // снег
+    g.fillStyle = `rgb(${Math.round(236 * dark)},${Math.round(236 * dark)},${Math.round(226 * dark)})`;
+    g.beginPath();
+    g.moveTo(px, top);
+    g.lineTo(px - half * 0.22, top + ph * 0.2);
+    g.lineTo(px - half * 0.05, top + ph * 0.16);
+    g.lineTo(px + half * 0.06, top + ph * 0.24);
+    g.lineTo(px + half * 0.24, top + ph * 0.18);
+    g.fill();
+  }
+  void w;
+}
+
+/** Небо росписи: мятный градиент, светлее под лампой. */
+function sky(g: CanvasRenderingContext2D, w: number, h: number, dark = 1) {
+  const gr = g.createLinearGradient(0, 0, 0, h);
+  const c = (r: number, gg: number, b: number) => `rgb(${Math.round(r * dark)},${Math.round(gg * dark)},${Math.round(b * dark)})`;
+  gr.addColorStop(0, c(150, 205, 190));
+  gr.addColorStop(0.5, c(112, 172, 158));
+  gr.addColorStop(1, c(150, 188, 174));
+  g.fillStyle = gr;
+  g.fillRect(0, 0, w, h);
+}
+
+/** Стенка ящика в перспективе: текстура ложится полосками от задника (Z=1) к перископу (Z_NEAR). */
+function wall(g: CanvasRenderingContext2D, tex: HTMLCanvasElement, side: -1 | 1) {
+  const steps = 260;
+  for (let i = 0; i < steps; i++) {
+    const z1 = 1 - ((1 - Z_NEAR) * i) / steps;
+    const z2 = 1 - ((1 - Z_NEAR) * (i + 1)) / steps;
+    const xa = PC + side * sx0(BW, z1);
+    const xb = PC + side * sx0(BW, z2);
+    const top = sy0(WT, (z1 + z2) / 2);
+    const bot = sy0(HOR, (z1 + z2) / 2);
+    const u = (i / steps) * tex.width;
+    g.drawImage(tex, u, 0, tex.width / steps + 0.5, tex.height, Math.min(xa, xb), top, Math.abs(xb - xa) + 0.6, bot - top);
+  }
+}
+
+/** Заготовка диорамы: задник, стенки, потолок, пол-море; отдельно — скалы (стоят перед кораблями). */
+function paintBox() {
+  const back = canvas(PW, VH);
   const g = back.getContext('2d')!;
-  const X = (cm: number) => (cm + PAN_W / 2) * K;
-  const sky = g.createLinearGradient(0, 0, 0, HOR);
-  sky.addColorStop(0, '#4b8775');
-  sky.addColorStop(0.55, '#79a48e');
-  sky.addColorStop(1, '#93b199');
-  g.fillStyle = sky;
-  g.fillRect(0, 0, W, HOR + 2);
-  // облака: ряды вверху, громады в середине, лёгкие у горизонта
-  for (let x = 40; x < W; x += 260 + rnd() * 220) cloud(g, x, 50 + rnd() * 60, 150 + rnd() * 180, 34 + rnd() * 22);
-  for (let x = 120; x < W; x += 380 + rnd() * 300) cloud(g, x, HOR * 0.66 + rnd() * 30, 260 + rnd() * 220, 110 + rnd() * 80);
-  for (let x = 0; x < W; x += 200 + rnd() * 200) {
-    g.strokeStyle = 'rgba(220,220,190,0.35)';
-    g.lineWidth = 1.5;
-    const y = HOR * (0.78 + rnd() * 0.15);
-    for (let k = 0; k < 6; k++) {
-      g.beginPath();
-      g.arc(x + k * 16, y, 9 + rnd() * 5, Math.PI, 0);
-      g.stroke();
-    }
+  g.fillStyle = '#050607';
+  g.fillRect(0, 0, PW, VH);
+  // задник
+  const bw = Math.round(BW * 2);
+  const bh = HOR - WT;
+  const bt = canvas(bw, bh);
+  const b = bt.getContext('2d')!;
+  sky(b, bw, bh);
+  for (let x = 20; x < bw; x += 70 + rnd() * 70) cloud(b, x, 40 + rnd() * 50, 50 + rnd() * 60, 16 + rnd() * 10);
+  for (let x = 60; x < bw; x += 120 + rnd() * 90) cloud(b, x, 110 + rnd() * 40, 90 + rnd() * 80, 26 + rnd() * 16);
+  // дымка у горизонта
+  const haze = b.createLinearGradient(0, bh * 0.55, 0, bh);
+  haze.addColorStop(0, 'rgba(190,215,205,0)');
+  haze.addColorStop(1, 'rgba(190,215,205,0.55)');
+  b.fillStyle = haze;
+  b.fillRect(0, 0, bw, bh);
+  g.drawImage(bt, PC - BW, WT);
+  // стенки: небо, облака, горы вдоль низа (правая — в тени)
+  for (const side of [-1, 1] as const) {
+    const dark = side < 0 ? 1 : 0.78;
+    const tw = 600;
+    const th = bh;
+    const tx = canvas(tw, th);
+    const t = tx.getContext('2d')!;
+    sky(t, tw, th, dark);
+    for (let x = 20; x < tw; x += 60 + rnd() * 70) cloud(t, x, 30 + rnd() * 60, 40 + rnd() * 40, 14 + rnd() * 8, `rgba(90,130,150,${0.6 * dark})`);
+    // дальний хребет — бледнее, ближний — крупные пики
+    const far: [number, number][] = [];
+    for (let x = 0; x < tw; x += 50 + rnd() * 60) far.push([x, th * (0.25 + rnd() * 0.2)]);
+    mountains(t, tw, th, far, dark * 0.75);
+    t.fillStyle = `rgba(150,195,185,${0.45 * dark})`;
+    t.fillRect(0, 0, tw, th);
+    const peaks: [number, number][] = [];
+    for (let x = 30; x < tw; x += 90 + rnd() * 110) peaks.push([x, th * (0.45 + rnd() * 0.4)]);
+    mountains(t, tw, th, peaks, dark);
+    // стенка ближе к перископу — темнее (свет лампы падает на задник)
+    const fall = t.createLinearGradient(0, 0, tw, 0);
+    fall.addColorStop(0, 'rgba(0,0,0,0)');
+    fall.addColorStop(1, 'rgba(0,0,0,0.45)');
+    t.fillStyle = fall;
+    t.fillRect(0, 0, tw, th);
+    wall(g, tx, side);
   }
-  // море: тёмно-зелёное, мазки волн светлее и крупнее к зрителю
-  const sea = g.createLinearGradient(0, HOR, 0, VH);
-  sea.addColorStop(0, '#5b7d64');
-  sea.addColorStop(0.3, '#3f5f48');
-  sea.addColorStop(1, '#22382a');
-  g.fillStyle = sea;
-  g.fillRect(0, HOR, W, VH - HOR);
-  for (let row = 0; row < 40; row++) {
-    const t = row / 40;
-    const y = HOR + 3 + (VH - HOR) * Math.pow(t, 1.5);
-    const len = 40 + 220 * t;
-    g.lineWidth = 0.8 + 3 * t;
-    for (let x = -rnd() * len; x < W; x += len * (0.7 + rnd() * 0.7)) {
-      g.strokeStyle = rnd() < 0.6 ? `rgba(150,195,160,${0.25 + 0.25 * t})` : `rgba(15,35,22,${0.3 + 0.2 * t})`;
-      g.beginPath();
-      g.moveTo(x, y);
-      g.bezierCurveTo(x + len * 0.3, y - 1 - 3 * t, x + len * 0.6, y + 1 + 3 * t, x + len, y);
-      g.stroke();
-    }
+  // потолок — тёмный, у задника светлая полоса от лампы
+  g.fillStyle = '#0b0f0e';
+  g.beginPath();
+  g.moveTo(PC - BW, WT);
+  g.lineTo(PC + BW, WT);
+  g.lineTo(PC + sx0(BW, Z_NEAR), sy0(WT, Z_NEAR));
+  g.lineTo(PC - sx0(BW, Z_NEAR), sy0(WT, Z_NEAR));
+  g.fill();
+  const lamp = g.createLinearGradient(0, WT - 50, 0, WT);
+  lamp.addColorStop(0, 'rgba(160,210,190,0)');
+  lamp.addColorStop(1, 'rgba(170,220,200,0.35)');
+  g.fillStyle = lamp;
+  g.fillRect(PC - BW * 1.4, WT - 50, BW * 2.8, 50);
+  // свет лампы на заднике сверху
+  for (const lx of [-0.55, 0, 0.55]) {
+    const x = PC + lx * BW;
+    const sp = g.createRadialGradient(x, WT, 0, x, WT, 170);
+    sp.addColorStop(0, 'rgba(235,255,240,0.55)');
+    sp.addColorStop(1, 'rgba(235,255,240,0)');
+    g.fillStyle = sp;
+    g.fillRect(x - 170, WT, 340, 170);
   }
-  // прорези под лампочки — восемь лучей по десять, еле видны
+  // пол — море: строки текстуры волн в перспективе
+  const sw = 900;
+  const shh = 400;
+  const st = canvas(sw, shh);
+  const s = st.getContext('2d')!;
+  const sea = s.createLinearGradient(0, 0, 0, shh);
+  sea.addColorStop(0, '#93b3aa');
+  sea.addColorStop(0.3, '#6a948c');
+  sea.addColorStop(1, '#3a6661');
+  s.fillStyle = sea;
+  s.fillRect(0, 0, sw, shh);
+  s.filter = 'blur(1.5px)';
+  for (let i = 0; i < 140; i++) {
+    const y = rnd() * shh;
+    const len = 60 + rnd() * 260;
+    const x = rnd() * sw;
+    s.strokeStyle = rnd() < 0.7 ? `rgba(225,240,232,${0.1 + rnd() * 0.2})` : `rgba(20,50,46,${0.12 + rnd() * 0.18})`;
+    s.lineWidth = 2 + rnd() * 4;
+    s.beginPath();
+    s.moveTo(x, y);
+    s.bezierCurveTo(x + len * 0.3, y - 2, x + len * 0.7, y + 2, x + len, y);
+    s.stroke();
+  }
+  for (let y = HOR; y < VH; y++) {
+    const Z = (HOR - E) / (y + 0.5 - E);
+    if (Z < Z_NEAR * 0.6) break;
+    const v = Math.min(shh - 1, ((1 - Math.min(1, Z)) / (1 - Z_NEAR * 0.6)) * shh);
+    const half = sx0(BW, Z);
+    g.drawImage(st, 0, v, sw, 1, PC - half, y, half * 2, 1.2);
+  }
+  // блики ламп на стекле моря
+  for (const [dx, y, r, c] of [[0, VH - 90, 170, '255,215,210'], [-120, VH - 150, 90, '220,255,230'], [140, VH - 120, 110, '255,235,220']] as const) {
+    const gl = g.createRadialGradient(PC + dx, y, 0, PC + dx, y, r);
+    gl.addColorStop(0, `rgba(${c},0.32)`);
+    gl.addColorStop(1, `rgba(${c},0)`);
+    g.fillStyle = gl;
+    g.save();
+    g.translate(PC + dx, y);
+    g.scale(1.8, 0.45);
+    g.translate(-(PC + dx), -y);
+    g.fillRect(PC + dx - r, y - r, r * 2, r * 2);
+    g.restore();
+  }
+  // прорези лампочек трасс
   for (let k = 0; k < TRACKS; k++)
     for (let i = 1; i <= 10; i++) {
       const l = lampAt(k, i);
-      g.fillStyle = 'rgba(10,30,18,0.45)';
+      g.fillStyle = 'rgba(10,30,26,0.14)';
       g.beginPath();
-      g.ellipse(X(l.x), l.y, l.r * 1.2, l.r * 0.5, 0, 0, Math.PI * 2);
+      g.ellipse(PC + l.x, l.y, l.r * 1.3, l.r * 0.45, 0, 0, Math.PI * 2);
       g.fill();
     }
+  // скалы-мысы в углах задника — отдельный слой поверх кораблей
+  const rocks = canvas(PW, VH);
+  const r = rocks.getContext('2d')!;
+  for (const side of [-1, 1]) {
+    const cx = PC + side * (BW - 30);
+    const pts: [number, number][] = [
+      [-46, 6], [-40, -22], [-30, -30], [-24, -58], [-12, -44], [-4, -78], [6, -52], [14, -60], [26, -26], [40, -18], [52, 6],
+    ];
+    r.save();
+    r.translate(cx, HOR);
+    r.scale(side * 1.5, 1.5);
+    r.translate(-cx, -HOR);
+    r.fillStyle = '#3a271d';
+    r.beginPath();
+    pts.forEach(([x, y], i) => (i ? r.lineTo(cx + x, HOR + y) : r.moveTo(cx + x, HOR + y)));
+    r.closePath();
+    r.fill();
+    r.fillStyle = 'rgba(205,125,70,0.7)'; // освещённые грани
+    r.beginPath();
+    r.moveTo(cx - 4, HOR - 78);
+    r.lineTo(cx - 12, HOR - 44);
+    r.lineTo(cx - 2, HOR - 30);
+    r.closePath();
+    r.fill();
+    r.beginPath();
+    r.moveTo(cx - 24, HOR - 58);
+    r.lineTo(cx - 30, HOR - 30);
+    r.lineTo(cx - 20, HOR - 24);
+    r.closePath();
+    r.fill();
+    r.restore();
+  }
   // зерно росписи
-  const grain = g.getImageData(0, 0, W, VH);
+  const grain = g.getImageData(0, 0, PW, VH);
   for (let i = 0; i < grain.data.length; i += 4) {
-    const v = (rnd() - 0.5) * 14;
+    const v = (rnd() - 0.5) * 10;
     grain.data[i] += v;
     grain.data[i + 1] += v;
     grain.data[i + 2] += v;
   }
   g.putImageData(grain, 0, 0);
-  return { back, X };
+  return { back, rocks };
 }
+
+// ---- силуэты кораблей (см, носом вправо, начало — середина киля)
+function shipPath(kind: number) {
+  const p = new Path2D();
+  if (kind === 0) {
+    // крейсер: корпус, ступенчатая надстройка, мачта, башни
+    p.moveTo(-3.8, -0.7);
+    p.lineTo(3.9, -0.9);
+    p.lineTo(3.3, 0);
+    p.lineTo(-3.5, 0);
+    p.closePath();
+    p.rect(-2.2, -1.4, 3.6, 0.75);
+    p.rect(-1.4, -2.1, 2.0, 0.75);
+    p.rect(-0.7, -2.9, 0.9, 0.85);
+    p.rect(-0.35, -4.0, 0.22, 1.2);
+    p.rect(-1.0, -3.6, 1.5, 0.15);
+    p.rect(2.0, -1.2, 0.9, 0.35);
+    p.rect(-3.2, -1.1, 0.9, 0.35);
+  } else {
+    // эсминец: длинный низкий корпус, две трубы, мачта
+    p.moveTo(-3.6, -0.6);
+    p.lineTo(3.9, -1.0);
+    p.lineTo(3.2, 0);
+    p.lineTo(-3.3, 0);
+    p.closePath();
+    p.rect(-1.2, -1.3, 2.8, 0.7);
+    p.rect(0.4, -2.0, 0.9, 0.75);
+    p.rect(-0.8, -2.0, 0.45, 0.75);
+    p.rect(-0.1, -1.9, 0.4, 0.6);
+    p.rect(0.8, -3.2, 0.16, 1.25);
+    p.rect(2.2, -1.05, 0.7, 0.3);
+    p.rect(-2.7, -0.95, 0.7, 0.3);
+  }
+  return p;
+}
+const SHIPS = [shipPath(0), shipPath(1)];
+/** Видимая длина силуэта, см (корабли на диораме мелкие). */
+const SHIP_VIS = 5.2;
 
 export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const s: SeaState = newSea();
@@ -224,9 +377,10 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
   const turning = { l: false, r: false };
   const sh = mountShell(root, opts, {
     cls: 'avs--scope',
-    aspect: VW / VH,
+    aspect: LW / LH,
     info: `<p><b>«Морской бой»</b> <small>(электромеханический, 1974)</small>. Перископ, восемь трасс торпед, силуэты кораблей на цепи — по заводскому техописанию.
-      10 торпед; 10 попаданий из 10 — призовая игра, ещё три пуска.</p>`,
+      10 торпед; 10 попаданий из 10 — призовая игра, ещё три пуска.</p>
+      <button class="btn small" data-a="reset" title="Выключить и включить автомат">Сброс</button>`,
     pad: 'x',
     buttons: [{ id: 'fire', label: 'ПУСК', big: true }],
     onCoin: () => insertCoin(),
@@ -236,30 +390,16 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
       else if (k === 'fire' && down) doFire();
     },
   });
-  const view = document.createElement('canvas');
+  const view = canvas(LW, LH);
   sh.screen.appendChild(view);
-  let LW = VW;
-  let LH = VH;
-  let tall = false;
-  let sized = false;
-  const layout = () => {
-    const r = sh.wrap.getBoundingClientRect();
-    const t = r.width > 0 && r.width / Math.max(1, r.height) < 1.3;
-    if (t === tall && sized) return; // у нового холста свой размер 300×150 — первый раз задаём всегда
-    tall = t;
-    sized = true;
-    LW = tall ? 900 : VW;
-    LH = tall ? VH + 220 : VH;
-    view.width = LW;
-    view.height = LH;
-    sh.wrap.style.setProperty('--ar', String(LW / LH));
-  };
-  layout();
-  const ro = new ResizeObserver(layout);
-  ro.observe(sh.wrap);
   const ctx = view.getContext('2d')!;
   const { say, drawPocket } = sh;
-  const pan = paintPanorama();
+  const box = paintBox();
+  (sh.info.querySelector('[data-a=reset]') as HTMLButtonElement).onclick = (e) => {
+    (e.currentTarget as HTMLButtonElement).blur();
+    Object.assign(s, newSea());
+    say('Автомат перезапущен.');
+  };
 
   // ---- звук (ШЭМС): шум торпеды, взрыв, «боевая» тревога
   const snd = {
@@ -365,8 +505,9 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     let lx = e.clientX;
     let moved = 0;
     const move = (ev: PointerEvent) => {
-      const w = view.getBoundingClientRect().width * ((RX * 2) / LW) || 1;
-      turn(s, s.aim - ((ev.clientX - lx) / w) * FOV);
+      // диорама идёт за пальцем: сдвиг в точках холста / точек на см
+      const scale = LW / (view.getBoundingClientRect().width || 1);
+      turn(s, s.aim - ((ev.clientX - lx) * scale) / K);
       moved += Math.abs(ev.clientX - lx);
       lx = ev.clientX;
     };
@@ -382,205 +523,224 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
   });
 
   // ---- отрисовка
+  const glow = (x: number, y: number, r: number, a: number, rgb: string) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,255,240,${a})`);
+    g.addColorStop(0.18, `rgba(${rgb},${a * 0.9})`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  };
   const lampGlow = (x: number, y: number, r: number, a: number) => {
-    // лампа под зелёным стеклом: горячее ядро и зелёное пятно, расплывшееся в стекле
-    const R = r * 4.5;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, R);
-    g.addColorStop(0, `rgba(235,255,220,${a})`);
-    g.addColorStop(0.15, `rgba(170,255,150,${a * 0.9})`);
-    g.addColorStop(0.45, `rgba(70,220,110,${a * 0.4})`);
-    g.addColorStop(1, 'rgba(40,180,90,0)');
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(x, y, R, R * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.translate(x, y);
+    ctx.scale(1, 0.55);
+    glow(0, 0, r * 4.5, a, '120,255,160');
     ctx.restore();
   };
 
-  // табло в углах: лампы-номера и транспаранты (горят — светятся тёплым)
-  const lampNum = (x: number, y: number, n: number, on: boolean) => {
-    ctx.beginPath();
-    ctx.arc(x, y, 12, 0, Math.PI * 2);
+  // транспаранты на небе задника: не горят — чуть темнее росписи, горят — тёплым светом сквозь стекло
+  const skyWord = (x: number, y: number, t: string, on: boolean) => {
+    ctx.font = '700 24px "Arial Narrow", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     if (on) {
-      const g = ctx.createRadialGradient(x, y, 0, x, y, 18);
-      g.addColorStop(0, '#fffbe6');
-      g.addColorStop(0.5, '#ffd84a');
-      g.addColorStop(1, 'rgba(255,150,0,0)');
-      ctx.fillStyle = g;
-      ctx.fill();
+      ctx.save();
+      ctx.shadowColor = '#ff8a1a';
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = '#ffb04a';
+      ctx.fillText(t, x, y);
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = '#ffe2b0';
+      ctx.fillText(t, x, y);
+      ctx.restore();
     } else {
-      ctx.fillStyle = '#16191a';
-      ctx.fill();
-      ctx.strokeStyle = '#3a4140';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      ctx.fillStyle = 'rgba(60,95,88,0.2)';
+      ctx.fillText(t, x, y);
     }
-    ctx.fillStyle = on ? '#6a1500' : '#59625f';
-    ctx.font = '700 13px "Arial Narrow", Arial, sans-serif';
+  };
+
+  // табло по краям окуляра — красный неон
+  const NEON = '#ff3b2a';
+  const neonCircle = (x: number, y: number, n: number, on: boolean, r = 17) => {
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = on ? NEON : '#3a0f0b';
+    ctx.fillStyle = on ? 'rgba(255,60,40,0.2)' : 'rgba(40,8,6,0.6)';
+    if (on) {
+      ctx.shadowColor = NEON;
+      ctx.shadowBlur = 16;
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = on ? '#ffd2c8' : '#4a1510';
+    ctx.font = `700 ${Math.round(r * 1.15)}px "Arial Narrow", Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(n), x, y + 1);
+    ctx.restore();
   };
-  const banner = (x: number, y: number, w: number, text: string, on: boolean) => {
-    ctx.fillStyle = on ? '#fff0a0' : '#141718';
-    ctx.strokeStyle = on ? '#ffd84a' : '#343b3a';
-    ctx.lineWidth = 1.5;
+  const neonPlate = (x: number, y: number, w: number, h: number, t: string, on: boolean) => {
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = on ? NEON : '#3a0f0b';
+    ctx.fillStyle = on ? 'rgba(255,60,40,0.25)' : 'rgba(40,8,6,0.6)';
     if (on) {
-      ctx.shadowColor = '#ffcc33';
-      ctx.shadowBlur = 16;
+      ctx.shadowColor = NEON;
+      ctx.shadowBlur = 18;
     }
-    ctx.fillRect(x, y, w, 24);
-    ctx.shadowBlur = 0;
-    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, 23);
-    ctx.fillStyle = on ? '#7a1b00' : '#5a6361';
-    ctx.font = '700 14px "Arial Narrow", Arial, sans-serif';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = on ? '#ffd2c8' : '#4a1510';
+    ctx.font = `700 ${Math.round(h * 0.62)}px "Arial Narrow", Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + w / 2, y + 13);
+    ctx.fillText(t, x + w / 2, y + h / 2 + 1);
+    ctx.restore();
   };
-  const caption = (x: number, y: number, t: string) => {
-    ctx.fillStyle = '#7d8885';
-    ctx.font = '700 12px "Arial Narrow", Arial, sans-serif';
+  /** «ТОРПЕДИРОВАНО» — по дуге нижнего края окуляра. */
+  const neonArc = (t: string, on: boolean) => {
+    const cx = LW / 2 + 50;
+    const cy = TOP + VH - 260;
+    const R = 360;
+    ctx.save();
+    ctx.font = '700 30px "Arial Narrow", Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(t, x, y);
+    ctx.textBaseline = 'middle';
+    const span = 0.8;
+    ctx.lineWidth = 46;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = on ? 'rgba(255,60,40,0.22)' : 'rgba(40,8,6,0.6)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, Math.PI / 2 + span / 2, Math.PI / 2 - span / 2, true);
+    ctx.stroke();
+    if (on) {
+      ctx.shadowColor = NEON;
+      ctx.shadowBlur = 16;
+    }
+    for (let i = 0; i < t.length; i++) {
+      const a = Math.PI / 2 + span / 2 - (span * (i + 0.5)) / t.length;
+      ctx.save();
+      ctx.translate(cx + R * Math.cos(a), cy + R * Math.sin(a));
+      ctx.rotate(a - Math.PI / 2);
+      ctx.fillStyle = on ? '#ffd2c8' : '#4a1510';
+      ctx.fillText(t[i], 0, 0);
+      ctx.restore();
+    }
+    ctx.restore();
   };
+
   const drawBoard = () => {
     const blink = roseOn(s);
-    caption(80, 22, 'ПУСКИ');
-    caption(LW - 80, 22, 'ПОРАЖЕНО');
-    for (let i = 0; i < 10; i++) {
-      const cx = 24 + (i % 5) * 28;
-      const cy = 42 + Math.floor(i / 5) * 30;
+    neonPlate(14, 12, 104, 54, 'ПУСК', s.ready && (blink || !s.alarm));
+    for (let i = 0; i < LAUNCHES; i++) {
       const n = i + 1;
-      lampNum(cx, cy, n, s.playing && (n === s.litLaunch || (s.prize && n === LAUNCHES)));
-      lampNum(LW - 136 + (i % 5) * 28, cy, n, n === s.litHit || (s.hits >= LAUNCHES && n === LAUNCHES && s.litHit !== 0));
+      neonCircle(150 + i * 44, 39, n, s.playing && (n === s.litLaunch || (s.prize && n === LAUNCHES)));
     }
-    banner(14, LH - 104, 120, 'ПРИЗОВАЯ', s.prize);
-    banner(14, LH - 74, 120, 'ИГРА', true);
-    banner(14, LH - 44, 120, 'ОКОНЧЕНА', !s.playing);
-    banner(LW - 154, LH - 74, 140, 'ТОРПЕДИРОВАНО', s.torpedoed);
-    banner(LW - 124, LH - 44, 80, 'ПУСК', s.ready && (blink || !s.alarm));
-    // «роза ветров» мигает, пока ждёт пуска
-    const rx = tall ? LW / 2 : LW - 84;
-    const ry = tall ? 55 : 130;
-    ctx.save();
-    ctx.translate(rx, ry);
-    const on = roseOn(s) && s.playing && s.ready;
-    ctx.fillStyle = on ? '#f6c23a' : '#2a2e2e';
-    ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
-      const r = i % 2 ? 7 : 22;
-      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    ctx.closePath();
-    if (on) {
-      ctx.shadowColor = '#ffcc33';
-      ctx.shadowBlur = 14;
-    }
-    ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = '#7d8885';
-    ctx.font = '700 11px "Arial Narrow", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('ЛЕВЫЙ БОРТ', 210, LH - 12);
-    ctx.fillText('ПРАВЫЙ БОРТ', LW - 210, LH - 12);
+    const hitN = s.litHit || (s.hits >= LAUNCHES ? LAUNCHES : 0);
+    neonCircle(LW / 2 - 165, TOP + VH + 38, hitN || 0, hitN > 0, 24);
+    neonArc('ТОРПЕДИРОВАНО', s.torpedoed);
   };
 
   const draw = () => {
-    const sx = (cm: number) => OX + (cm - s.aim) * K;
-    const srcX = pan.X(s.aim) - OX;
+    const shift = -s.aim * K; // поворот перископа сдвигает диораму
+    const px = (x: number) => OX + shift + x; // x — точки от середины задника
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, LW, LH);
     ctx.save();
-    ctx.translate((LW - VW) / 2, (LH - VH) / 2);
+    ctx.translate(0, TOP);
     ctx.save();
     scopePath(ctx);
     ctx.clip();
-    ctx.drawImage(pan.back, srcX, 0, VW, VH, 0, 0, VW, VH);
-    // корабли на линии горизонта (покачиваются на цепи)
+    ctx.drawImage(box.back, PC - OX - shift, 0, VW, VH, 0, 0, VW, VH);
+    // транспаранты на небе
+    const ty = WT + 58;
+    skyWord(px(-104), ty, 'ПРИЗОВАЯ', s.prize);
+    skyWord(px(0), ty, 'ИГРА', true);
+    skyWord(px(100), ty, 'ОКОНЧЕНА', !s.playing);
+    // корабли вдоль задника (на цепи), уходят за скалы
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px(-BW), 0, BW * 2, HOR + 2);
+    ctx.clip();
     for (const shp of ships(s)) {
-      const x = sx(shp.x);
-      if (x < -300 || x > VW + 300) continue;
       ctx.save();
-      // корабль выходит из дымки у края панорамы и уходит в неё
       ctx.globalAlpha = Math.max(0, Math.min(1, (HALF_W + 5 - Math.abs(shp.x)) / 5));
-      ctx.translate(x, HOR + 2 + Math.sin(s.time * 3 + shp.kind) * 0.6);
-      ctx.scale((shp.dir * K * SHIP_LEN) / 7.7, (K * SHIP_LEN) / 7.7);
-      for (const part of SHIPS[shp.kind]) {
-        ctx.fillStyle = part.fill;
-        ctx.fill(part.path);
-      }
+      ctx.translate(px(shp.x * K), HOR + 1 + Math.sin(s.time * 3 + shp.kind) * 0.4);
+      const k = (K * SHIP_VIS) / 7.7;
+      ctx.scale(shp.dir * k, k);
+      ctx.fillStyle = '#14181a';
+      ctx.fill(SHIPS[shp.kind]);
       ctx.restore();
     }
-    // лампочки трассы под стеклом
+    ctx.restore();
+    ctx.drawImage(box.rocks, PC - OX - shift, 0, VW, VH, 0, 0, VW, VH);
+    // взрыв: свет в ящике гаснет, у цели — красная вспышка
+    if (s.blast > 0) {
+      const f = s.blast / BLAST_TIME;
+      ctx.fillStyle = 'rgba(0,0,0,0.94)';
+      ctx.fillRect(0, 0, VW, VH);
+      const bx = px(trackX(s.blastTrack) * K);
+      const flick = 0.7 + 0.3 * Math.sin(s.time * 37);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      glow(bx, HOR - 12, 120, 0.7 * flick * Math.min(1, f * 1.6), '230,40,20');
+      ctx.restore();
+      skyWord(px(0), ty, 'ИГРА', true);
+      if (s.prize) skyWord(px(-104), ty, 'ПРИЗОВАЯ', true);
+    } else if (!s.playing) {
+      ctx.fillStyle = 'rgba(0,6,4,0.12)';
+      ctx.fillRect(0, 0, VW, VH);
+    }
+    // лампочки трассы под стеклом моря
     const lamp = torpedoLamp(s);
     if (s.torpedo && lamp) {
       if (lamp > 1) {
         const p = lampAt(s.torpedo.track, lamp - 1);
         const cool = Math.max(0, 1 - ((s.torpedo.t % TICK) / TICK) * 2.2);
-        if (cool > 0) lampGlow(sx(p.x), p.y, p.r, 0.55 * cool);
+        if (cool > 0) lampGlow(px(p.x), p.y, p.r, 0.55 * cool);
       }
       const l = lampAt(s.torpedo.track, lamp);
-      const warm = Math.min(1, ((s.torpedo.t % TICK) / TICK) * 4 + 0.35);
-      lampGlow(sx(l.x), l.y, l.r, warm);
+      lampGlow(px(l.x), l.y, l.r, Math.min(1, ((s.torpedo.t % TICK) / TICK) * 4 + 0.35));
     }
-    // освещение: затемнение при взрыве и красный фонарь
-    if (s.blast > 0) {
-      const f = s.blast / BLAST_TIME;
-      ctx.fillStyle = 'rgba(2,6,4,0.86)';
-      ctx.fillRect(0, 0, VW, VH);
-      const bx = sx(trackX(s.blastTrack));
-      const flick = 0.75 + 0.25 * Math.sin(s.time * 37);
-      const g = ctx.createRadialGradient(bx, HOR - 10, 0, bx, HOR - 10, 260);
-      g.addColorStop(0, `rgba(255,120,60,${0.95 * flick * Math.min(1, f * 1.6)})`);
-      g.addColorStop(0.35, `rgba(220,30,20,${0.6 * flick * Math.min(1, f * 1.4)})`);
-      g.addColorStop(1, 'rgba(120,0,0,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, VW, VH);
-    } else if (!s.playing) {
-      ctx.fillStyle = 'rgba(0,10,4,0.22)';
-      ctx.fillRect(0, 0, VW, VH);
-    }
-    // зелёное стекло: тон и затенение к краю окуляра
-    ctx.fillStyle = 'rgba(40,90,50,0.12)';
+    // стекло окуляра: зеленоватый тон и затенение к краю
+    ctx.fillStyle = 'rgba(30,80,60,0.1)';
     ctx.fillRect(0, 0, VW, VH);
-    const vg = ctx.createRadialGradient(OX, OY, RY * 0.7, OX, OY, RX * 1.05);
+    const vg = ctx.createRadialGradient(OX, OY, RY * 0.75, OX, OY, RX * 1.08);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,8,2,0.6)');
+    vg.addColorStop(1, 'rgba(0,4,2,0.5)');
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, VW, VH);
-    // линии визиров — во всю высоту
-    ctx.fillStyle = '#0b0d0c';
-    ctx.fillRect(OX - VISOR - 2, 0, 4, VH);
-    ctx.fillRect(OX + VISOR - 2, 0, 4, VH);
-    // средний визир — метка прицела над горизонтом
-    ctx.beginPath();
-    ctx.moveTo(OX - 7, HOR - 46);
-    ctx.lineTo(OX + 7, HOR - 46);
-    ctx.lineTo(OX, HOR - 30);
-    ctx.closePath();
-    ctx.fill();
+    // визиры: две линии во всю высоту и шкала прицела под горизонтом
+    ctx.fillStyle = 'rgba(8,10,10,0.85)';
+    ctx.fillRect(OX - VISOR - 1.5, 0, 3, VH);
+    ctx.fillRect(OX + VISOR - 1.5, 0, 3, VH);
+    const ry = HOR + 46;
+    ctx.fillRect(OX - 165, ry - 1, 330, 2.5);
+    for (let i = -11; i <= 11; i++) ctx.fillRect(OX + i * 15 - 1, ry - 7, 2, 14);
+    ctx.fillRect(OX - 1.5, ry - 16, 3, 32);
     ctx.restore();
     // кромка окуляра — мягкая тень
     ctx.save();
-    scopePath(ctx, 6);
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-    ctx.filter = 'blur(6px)';
+    scopePath(ctx, 8);
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+    ctx.filter = 'blur(7px)';
     ctx.stroke();
     ctx.restore();
     ctx.restore();
     drawBoard();
-    // указатель поворота
-    const nx = LW / 2 + (s.aim / AIM_MAX) * 120;
-    ctx.fillStyle = '#3a4140';
-    ctx.fillRect(LW / 2 - 130, LH - 6, 260, 2);
-    ctx.fillStyle = '#ffd84a';
-    ctx.fillRect(nx - 2, LH - 12, 4, 10);
+    // указатель поворота перископа
+    const nx = LW / 2 + 170 + (s.aim / AIM_MAX) * 130;
+    ctx.fillStyle = '#3a0f0b';
+    ctx.fillRect(LW / 2 + 40, LH - 18, 260, 3);
+    ctx.fillStyle = NEON;
+    ctx.fillRect(nx - 2, LH - 26, 4, 14);
   };
 
   let dead = false;
@@ -618,7 +778,6 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     },
     destroy() {
       dead = true;
-      ro.disconnect();
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku);

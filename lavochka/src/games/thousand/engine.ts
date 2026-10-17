@@ -18,7 +18,8 @@
 import type { Options, Rng } from '../../core/types';
 import { sameCard, type Card, type Suit } from '../../cards/deck';
 
-export type BoltMode = 'off' | '3' | '3row' | '5';
+/** '3row0' — три болта подряд: самосвал, счёт в ноль (и из минуса тоже). */
+export type BoltMode = 'off' | '3' | '3row' | '3row0' | '5';
 export type DumpMode = 'off' | 'plus' | 'both';
 export type RospisMode = 'off' | '60' | 'half';
 
@@ -57,7 +58,7 @@ export interface Cfg {
 export function cfgFrom(o: Options): Cfg {
   // старые сохранённые настройки: bolts/dump были переключателями
   o = { ...o, bolts: o.boltMode ?? o.bolts, dump: o.dumpMode ?? o.dump } as Options;
-  const bolts: BoltMode = o.bolts === false ? 'off' : o.bolts === true || o.bolts == null ? '3' : (['off', '3', '3row', '5'] as const).includes(o.bolts as BoltMode) ? (o.bolts as BoltMode) : '3';
+  const bolts: BoltMode = o.bolts === false ? 'off' : o.bolts === true || o.bolts == null ? '3' : (['off', '3', '3row', '3row0', '5'] as const).includes(o.bolts as BoltMode) ? (o.bolts as BoltMode) : '3';
   const dump: DumpMode = o.dump === true ? 'plus' : o.dump === false ? 'off' : o.dump === 'plus' || o.dump === 'both' ? o.dump : o.dump == null ? 'both' : 'off';
   const rospis: RospisMode = o.rospis === 'off' || o.rospis === 'half' ? o.rospis : o.rospis === false ? 'off' : '60';
   return {
@@ -600,10 +601,15 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
         const limit = cfg.bolts === '5' ? 5 : 3;
         if (bolts[p] >= limit) {
           bolts[p] = 0;
-          v -= PENALTY * k;
-          notes.push(`bolt${limit}:${p}`);
+          if (cfg.bolts === '3row0') {
+            v = 0;
+            notes.push(`bolt0:${p}`);
+          } else {
+            v -= PENALTY * k;
+            notes.push(`bolt${limit}:${p}`);
+          }
         }
-      } else if (cfg.bolts === '3row') bolts[p] = 0;
+      } else if (cfg.bolts === '3row' || cfg.bolts === '3row0') bolts[p] = 0;
     }
     if (cfg.barrel && !playing) {
       // сдающий вчетвером: марьяж из прикупа может посадить на бочку, но попытки у него не идут

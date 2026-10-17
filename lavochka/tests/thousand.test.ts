@@ -262,6 +262,18 @@ describe('договорённости подсчёта', () => {
     expect(five.sc.scores[0]).toBe(200);
     expect(five.r.state.bolts[0]).toBe(4);
   });
+  it('болты: три подряд — самосвал в ноль, и из плюса, и из минуса', () => {
+    const third = (scores: number[]) =>
+      lastTrick(playPos(['9C', 'AC', '10C'], { bid: 100, bidder: 1, roundPts: [0, 120, 0, 0], tricksTaken: [0, 7, 0, 0], tricksPlayed: 7, bolts: [2, 0, 0, 0], scores }, { bolts: '3row0' }), ['9C', 'AC', '10C']);
+    const plus = third([340, 0, 0, 0]);
+    expect(plus.sc.scores[0]).toBe(0);
+    expect(plus.sc.notes).toContain('bolt0:0');
+    expect(plus.r.state.bolts[0]).toBe(0);
+    expect(third([-210, 0, 0, 0]).sc.scores[0]).toBe(0);
+    // взятка обнуляет счётчик, как у «три подряд»
+    const row = lastTrick(playPos(['AC', '9C', '10C'], { bid: 100, bidder: 1, roundPts: [20, 100, 0, 0], tricksTaken: [1, 6, 0, 0], tricksPlayed: 7, bolts: [2, 0, 0, 0] }, { bolts: '3row0' }), ['AC', '9C', '10C']);
+    expect(row.r.state.bolts[0]).toBe(0);
+  });
   it('на бочке болтов не пишут; трижды слетел — в ноль', () => {
     const s = playPos(['9C', 'AC', '10C'], { bid: 100, bidder: 1, roundPts: [0, 120, 0, 0], tricksTaken: [0, 7, 0, 0], tricksPlayed: 7, scores: [880, 0, 0, 0], barrel: [3, 0, 0, 0], falls: [2, 0, 0, 0] });
     const { sc, r } = lastTrick(s, ['9C', 'AC', '10C']);
