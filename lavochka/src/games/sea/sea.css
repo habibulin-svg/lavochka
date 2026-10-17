@@ -1,0 +1,88 @@
+/* «Морские стратегии»: карта, корабли-кружки, порты колоний, вертушка в панели. Размеры на поле — от ширины клетки --cell (в % ширины карты). */
+.table--sea { --table-bg: radial-gradient(ellipse at 50% 30%, #2a4a6a, #0b1a2a); }
+.sea-wrap { position: relative; width: 100%; height: 100%; --u: 8px; }
+.sea-board { position: absolute; --u: 8px; --cell: 1.9%; border-radius: calc(var(--u) * 0.3); overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+  opacity: 0; transition: opacity 0.5s ease; background: #d8cfb0; }
+.sea-board.ready { opacity: 1; }
+.sea-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.sea-marks, .sea-ships { position: absolute; inset: 0; pointer-events: none; }
+
+/* корабль: флажок-кружок с названием из листа «Корабли», кольцо — цвет игрока */
+.sea-ship { position: absolute; z-index: 30; width: calc(var(--cell) * 0.86); aspect-ratio: 1; transform: translate(-50%, -50%); transition: left 0.2s ease, top 0.2s ease;
+  pointer-events: auto; cursor: pointer; container-type: inline-size; }
+.sea-ship.small { width: calc(var(--cell) * 0.6); }
+.sea-disc { position: absolute; inset: 0; border-radius: 50%; background: center / 100% 100% no-repeat;
+  box-shadow: 0 0 0 calc(var(--u) * 0.16) var(--c), 0 0 0 calc(var(--u) * 0.26) #111, 0 calc(var(--u) * 0.15) calc(var(--u) * 0.4) rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease, filter 0.3s; }
+.sea-ship.lifted .sea-disc { transform: scale(1.3) translateY(-8%); }
+.sea-ship.hl .sea-disc, .sea-ship.sel .sea-disc { transform: scale(1.25); }
+.sea-ship.sel::before, .sea-ship.on::before { content: ''; position: absolute; inset: -35%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 220, 90, 0) 48%, rgba(255, 220, 90, 0.9) 58%, rgba(255, 220, 90, 0) 72%); }
+.sea-ship.on::before { opacity: 0.55; animation: sea-pulse 1.4s ease-in-out infinite; }
+.sea-ship.sel::before { opacity: 1; background: radial-gradient(circle, rgba(120, 255, 140, 0) 48%, rgba(120, 255, 140, 0.95) 58%, rgba(120, 255, 140, 0) 72%); }
+.sea-ship.done .sea-disc { filter: saturate(0.4) brightness(0.85); }
+.sea-ship.gold .sea-disc { box-shadow: 0 0 0 calc(var(--u) * 0.16) var(--c), 0 0 0 calc(var(--u) * 0.3) #ffd23a, 0 0 calc(var(--u) * 0.6) #ffd23a; }
+.sea-ship.sunk { display: none; }
+.sea-ship.sinking { animation: sea-sink 1s ease forwards; }
+.sea-ship.wreck .sea-disc, .sea-ship.derelict .sea-disc { filter: grayscale(0.9) brightness(0.7); }
+.sea-ship.ashore .sea-disc { transform: rotate(25deg); filter: sepia(0.6); }
+.sea-ship.fire .sea-disc { animation: sea-fire 0.3s ease 3; }
+@keyframes sea-pulse { 0%, 100% { transform: scale(0.9); } 50% { transform: scale(1.1); } }
+@keyframes sea-sink { to { opacity: 0; transform: translate(-50%, -20%) scale(0.4) rotate(40deg); } }
+@keyframes sea-fire { 50% { filter: brightness(1.8) drop-shadow(0 0 6px #ff9a20); } }
+.sea-flag { position: absolute; right: -22%; top: -22%; font: 900 32cqw / 1 serif; font-style: normal; color: #fff; background: #111;
+  border-radius: 50%; width: 46%; height: 46%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1px #fff; }
+.sea-flag:empty { display: none; }
+.sea-holes { position: absolute; left: 50%; bottom: -26%; transform: translateX(-50%); display: flex; gap: 1px; font-style: normal; white-space: nowrap; }
+.sea-holes b { width: 24cqw; aspect-ratio: 1; border-radius: 50%; background: #d01010; box-shadow: 0 0 0 1px #fff; }
+.sea-holes u, .sea-holes em { text-decoration: none; font: 800 34cqw / 1 Arial, sans-serif; color: #fff; background: #333; padding: 0 2px; border-radius: 3px; font-style: normal; }
+
+/* куда можно пойти и по кому стрелять */
+.sea-dot { position: absolute; z-index: 25; width: calc(var(--cell) * 0.9); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer;
+  border-radius: 20%; background: rgba(60, 220, 90, 0.38); box-shadow: inset 0 0 0 calc(var(--u) * 0.18) rgba(20, 140, 40, 0.95); }
+.sea-dot:hover { background: rgba(60, 220, 90, 0.65); }
+.sea-aim { position: absolute; z-index: 35; width: calc(var(--cell) * 1.2); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: auto; cursor: crosshair;
+  border-radius: 50%; box-shadow: inset 0 0 0 calc(var(--u) * 0.22) #e01818, 0 0 calc(var(--u) * 0.5) #e01818; animation: sea-pulse 1s ease-in-out infinite; }
+
+/* порт-колония: цена, пробоины, владелец */
+.sea-port { position: absolute; z-index: 20; transform: translate(-50%, -110%); display: flex; align-items: center; gap: 2px; pointer-events: none;
+  font: 800 calc(var(--u) * 0.75) / 1 Arial, sans-serif; }
+.sea-port b { min-width: 1.3em; height: 1.3em; display: flex; align-items: center; justify-content: center; border-radius: 3px; background: #fff6d0; color: #6a1a10;
+  border: 1px solid #6a1a10; }
+.sea-port.own b { background: var(--c); color: #fff; border-color: #fff; box-shadow: 0 0 0 1px #111; }
+.sea-port.down b { background: repeating-linear-gradient(45deg, #888 0 3px, #444 3px 6px); color: #fff; }
+.sea-port i, .sea-port em { font-style: normal; background: #d01010; color: #fff; padding: 1px 2px; border-radius: 3px; }
+.sea-port em { background: #2a5a2a; }
+
+.sea-float { position: absolute; inset: 0; pointer-events: none; z-index: 60; }
+.sea-say { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); background: rgba(10, 26, 42, 0.94); color: #ffe27a; white-space: nowrap; max-width: 90%;
+  font: 700 max(14px, calc(var(--u) * 1.4)) / 1.2 system-ui, sans-serif; padding: 0.5em 1em; border-radius: 0.6em; animation: sea-say 2.2s ease forwards; overflow: hidden; text-overflow: ellipsis; }
+@keyframes sea-say { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.sea-boom { position: absolute; transform: translate(-50%, -50%); font-size: max(26px, calc(var(--u) * 3)); animation: sea-boom 1.1s ease forwards; }
+@keyframes sea-boom { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 25% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -80%) scale(1); opacity: 0; } }
+
+/* панель: вертушка и свои корабли */
+.sea-panel { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.sea-spinner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.sea-panel { min-width: 0; max-width: 100%; }
+.sea-rose { width: 132px; height: 132px; flex: none; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5)); }
+.sea-rl { font: 700 13px/1 Georgia, serif; fill: #f3e7c4; text-anchor: middle; dominant-baseline: middle; }
+.sea-needle { transition: transform 1.4s cubic-bezier(0.15, 0.6, 0.2, 1); }
+.sea-wind { font: 600 14px/1.3 system-ui, sans-serif; }
+.sea-w { display: inline-block; padding: 1px 6px; border-radius: 4px; font-weight: 800; }
+.sea-w.calm { background: #f2c419; color: #3a2a00; }
+.sea-w.storm { background: #d8371f; color: #fff; }
+.sea-w.breeze { background: #8ec5e8; color: #0a2a40; }
+.sea-h { font-weight: 800; margin-bottom: 4px; }
+.sea-note { font-size: 13px; opacity: 0.85; line-height: 1.35; }
+.sea-list { display: flex; flex-direction: column; gap: 3px; max-height: 210px; overflow: auto; }
+.sea-row { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.07); cursor: pointer; font-size: 14px; }
+.sea-row > span:nth-child(2) { flex: 1; }
+.sea-row.sel { background: rgba(120, 255, 140, 0.25); }
+.sea-row small { opacity: 0.75; font-size: 12px; }
+.sea-row b { margin-left: auto; }
+.sea-mini { width: 22px; height: 22px; border-radius: 50%; background: center / cover; box-shadow: 0 0 0 2px var(--c); flex: none; }
+.sea-red { color: #ff5a4a; letter-spacing: -2px; }
+.sea-btns { display: flex; flex-wrap: wrap; gap: 5px; }
+.sea-btns .btn { font-size: 13px; padding: 5px 9px; }
+.sea-btns .btn.warn { background: #8a2a1a; color: #fff; }
