@@ -495,9 +495,31 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     return done();
   }
   if (a.type !== 'step' || s.phase !== 'step' || s.left <= 0) return null;
-  const from = s.pos[seat];
-  const k = NEIGH[from].indexOf(a.to);
-  if (k < 0 || !canStep(s, seat, from, k)) return null;
+  const k0 = NEIGH[s.pos[seat]].indexOf(a.to);
+  if (k0 < 0 || !canStep(s, seat, s.pos[seat], k0)) return null;
+  // шаг в выбранную сторону, а дальше путь прокладывается сам, пока дорога однозначна (как в «Джио-Джанги»):
+  // остановка — на развилке и там, где есть что решать (жетон, город, порт, кружок, финиш, Кейптаун)
+  let to = a.to;
+  for (;;) {
+    const from = s.pos[seat];
+    if (!stepOnce(s, seat, from, to, ev)) return done();
+    const next = s.phase === 'step' && s.left > 0 && plain(s, to) ? ahead(s, seat, to, from) : [];
+    if (next.length !== 1) return done();
+    to = next[0];
+  }
+}
+
+/** Клетка, через которую путь идёт сам: просто точка дороги, без жетона, города, кружка и алмаза. */
+const plain = (s: State, cell: number) =>
+  !TOKEN_AT[cell] && !PORT[cell] && !HALT_AT[cell] && !FINISH.includes(cell) && cell !== CAPE && cell !== s.diamondSite && !AIR[cell].length;
+
+/** Куда можно шагнуть дальше, не возвращаясь туда, откуда пришёл. */
+export const ahead = (s: State, seat: number, cell: number, back: number) =>
+  NEIGH[cell].filter((n, j) => n !== back && canStep(s, seat, cell, j));
+
+/** Один шаг с клетки from на to. false — ход закончился (победа, очки кончились, идти некуда). */
+function stepOnce(s: State, seat: number, from: number, to: number, ev: Event[]): boolean {
+  const k = NEIGH[from].indexOf(to);
   const kind = EDGE[from][k];
   let fee = 0;
   if (kind === 'sea' && PORT[from]) {
@@ -512,15 +534,19 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   // клетка, с которой ушли (не стартовая этого хода), — пройденная: её закрытый жетон можно открыть за 100
   if (s.left < s.die && TOKEN_AT[from] && !s.open[from] && !s.passed.includes(from)) s.passed.push(from);
   s.left--;
-  ev.push({ type: 'step', seat, from, to: a.to, kind, ...(fee ? { fee } : {}), ...(s.left <= 0 ? { last: true } : {}) });
-  if (enter(s, seat, a.to, ev)) return done();
-  if (s.left <= 0) spent(s, seat, ev);
-  else if (!NEIGH[a.to].some((_, j) => canStep(s, seat, a.to, j))) {
+  ev.push({ type: 'step', seat, from, to, kind, ...(fee ? { fee } : {}), ...(s.left <= 0 ? { last: true } : {}) });
+  if (enter(s, seat, to, ev)) return false;
+  if (s.left <= 0) {
+    spent(s, seat, ev);
+    return false;
+  }
+  if (!NEIGH[to].some((_, j) => canStep(s, seat, to, j))) {
     // дальше идти некуда — стоим здесь
     halt(s, seat, ev);
     pass(s, seat, ev);
+    return false;
   }
-  return done();
+  return true;
 }
 
 /** Места, которые могут ходить прямо сейчас. */

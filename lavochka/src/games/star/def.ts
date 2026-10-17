@@ -1,5 +1,6 @@
 /* «Звезда Африки» — карточка игры: карта-граф, закрытые жетоны, деньги, алмаз. Без DOM. */
 import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { RiggedRng, SeededRng } from '../../core/rng';
 import { SEATS as HSEATS } from '../hodilki/core';
 import { choose } from './bot';
 import {
@@ -12,7 +13,7 @@ export const SEATS = HSEATS.slice(0, 4);
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
 /** Показ правил: состояние подкручивается под нужный пример (как в «Вестерне»). */
-function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps'], options: Options = {}): DemoScript<State, Action> {
+function demo0(patch: (s: State) => void, steps: DemoScript<State, Action>['steps'], options: Options = {}): DemoScript<State, Action> {
   return {
     seats: demoSeats,
     options,
@@ -23,6 +24,29 @@ function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps
     },
     steps,
   };
+}
+
+/** Путь по однозначной дороге прокладывается сам: шаги показа, которые он уже прошёл, выпадают, их подписи — к предыдущему. */
+function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps'], options: Options = {}): DemoScript<State, Action> {
+  const d = demo0(patch, steps, options);
+  const rng = new RiggedRng(new SeededRng(20240607));
+  let st = d.setup!(null as never, rng);
+  const out: DemoScript<State, Action>['steps'] = [];
+  for (const step of steps) {
+    rng.rig(step.rig);
+    const r = apply(st, step.seat, step.action, rng);
+    if (!r) {
+      if (step.action.type === 'step' && out.length) {
+        const prev = out[out.length - 1];
+        out[out.length - 1] = { ...prev, caption: [prev.caption, step.caption].filter(Boolean).join(' ') };
+        continue;
+      }
+      return d;
+    }
+    st = r.state;
+    out.push(step);
+  }
+  return { ...d, steps: out };
 }
 
 const roll = (seat: number, d: number, caption: string) => ({ seat, action: { type: 'roll' } as Action, rig: [d - 1], caption });

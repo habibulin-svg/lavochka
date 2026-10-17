@@ -87,14 +87,32 @@ describe('звезда африки: движок', () => {
     // не сосед — нельзя
     expect(step(s, 0, IDX['30'], r)).toBeNull();
     const to = NEIGH[s.pos[0]][0];
-    const a = step(s, 0, to, r)!;
-    expect(a.state.pos[0]).toBe(to);
-    expect(a.state.left).toBe(1);
-    expect(a.state.turn).toBe(0);
-    const b = step(a.state, 0, NEIGH[to].find((x) => x !== s.pos[0])!, r)!;
-    expect(b.state.left).toBe(0);
-    expect(b.state.turn).toBe(1); // очки кончились — ход перешёл
-    expect(b.state.phase).toBe('roll');
+    let a = step(s, 0, to, r)!;
+    // по однозначной дороге путь идёт сам: шагов в событиях — сколько очков истрачено
+    const steps = a.events.filter((e) => e.type === 'step');
+    expect(steps[0]).toMatchObject({ from: s.pos[0], to });
+    if (a.state.left > 0) {
+      expect(a.state.turn).toBe(0);
+      a = step(a.state, 0, NEIGH[a.state.pos[0]].find((x) => x !== to)!, r)!;
+    }
+    expect(a.state.left).toBe(0);
+    expect(a.state.turn).toBe(1); // очки кончились — ход перешёл
+    expect(a.state.phase).toBe('roll');
+  });
+
+  it('путь по однозначной дороге прокладывается сам — до развилки или клетки с решением', () => {
+    const r = rng();
+    let s = newState([0, 1], r);
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? IDX['b10'] : p)) };
+    s = turnRoll(s, 0, 6, r).state;
+    const a = step(s, 0, IDX['b13'], r)!;
+    const steps = a.events.filter((e) => e.type === 'step');
+    const last = a.state.pos[0];
+    // остановка — не на простой точке с единственной дорогой вперёд
+    const prev = steps.length > 1 ? (steps[steps.length - 1] as { from: number }).from : s.pos[0];
+    const plainOne = CELLS[last].kind === 'land' || CELLS[last].kind === 'sea';
+    if (a.state.phase === 'step') expect(!plainOne || NEIGH[last].filter((n) => n !== prev).length !== 1).toBe(true);
+    expect(a.state.left).toBe(6 - steps.length);
   });
 
   it('можно остановиться, не истратив все очки', () => {
@@ -118,9 +136,11 @@ describe('звезда африки: движок', () => {
     expect(a.state.money[0]).toBe(START_MONEY - SEA_FEE);
     expect(a.events.some((e) => e.type === 'step' && e.fee === SEA_FEE)).toBe(true);
     // следующий шаг — уже не из порта: бесплатно
-    const next = NEIGH[sea!].find((x) => x !== s.pos[0])!;
-    const b = step(a.state, 0, next, r)!;
-    expect(b.state.money[0]).toBe(START_MONEY - SEA_FEE);
+    if (a.state.phase === 'step' && a.state.pos[0] === sea) {
+      const next = NEIGH[sea!].find((x) => x !== s.pos[0])!;
+      const b = step(a.state, 0, next, r)!;
+      expect(b.state.money[0]).toBe(START_MONEY - SEA_FEE);
+    } else expect(a.events.filter((e) => e.type === 'step' && e.fee).length).toBe(1);
   });
 
   it('перелёт: 300 $, без кубика, ход заканчивается', () => {
@@ -246,7 +266,8 @@ describe('звезда африки: движок', () => {
     s.tokens[IDX['b21']] = null;
     s = turnRoll(s, 0, 3, r).state;
     s = step(s, 0, IDX['b13'], r)!.state;
-    s = step(s, 0, IDX['5'], r)!.state;
+    if (s.pos[0] !== IDX['5']) s = step(s, 0, IDX['5'], r)!.state;
+    expect(s.pos[0]).toBe(IDX['5']); // путь сам остановился на квадрате жетона
     expect(s.open[IDX['5']]).toBe(false); // мимо — не открывается
     s = step(s, 0, IDX['b21'], r)!.state;
     expect(s.phase).toBe('open');
@@ -260,7 +281,7 @@ describe('звезда африки: движок', () => {
     // остановился раньше — пройденные не открыть: ход сразу переходит
     let e = turnRoll({ ...s, phase: 'roll', turn: 0, passed: [], pos: s.pos.map((p, i) => (i === 0 ? IDX['b10'] : p)) }, 0, 3, r).state;
     e = step(e, 0, IDX['b13'], r)!.state;
-    e = step(e, 0, IDX['5'], r)!.state;
+    if (e.pos[0] !== IDX['5']) e = step(e, 0, IDX['5'], r)!.state;
     e = step(e, 0, IDX['b21'], r)!.state;
     expect(e.phase).toBe('open');
     const stop = apply(e, 0, { type: 'stop' }, r)!;
