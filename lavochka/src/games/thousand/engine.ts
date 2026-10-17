@@ -18,8 +18,9 @@
 import type { Options, Rng } from '../../core/types';
 import { sameCard, type Card, type Suit } from '../../cards/deck';
 
-/** '3row0' — три болта подряд: самосвал, счёт в ноль (и из минуса тоже). */
-export type BoltMode = 'off' | '3' | '3row' | '3row0' | '5';
+/** '3row0' — три болта подряд: самосвал, счёт в ноль (и из минуса тоже).
+ * '3+row0' — и то и другое: каждый третий болт −120, а три подряд — в ноль (самосвал главнее, сбрасывает оба счёта). */
+export type BoltMode = 'off' | '3' | '3row' | '3row0' | '3+row0' | '5';
 export type DumpMode = 'off' | 'plus' | 'both';
 export type RospisMode = 'off' | '60' | 'half';
 
@@ -58,7 +59,7 @@ export interface Cfg {
 export function cfgFrom(o: Options): Cfg {
   // старые сохранённые настройки: bolts/dump были переключателями
   o = { ...o, bolts: o.boltMode ?? o.bolts, dump: o.dumpMode ?? o.dump } as Options;
-  const bolts: BoltMode = o.bolts === false ? 'off' : o.bolts === true || o.bolts == null ? '3' : (['off', '3', '3row', '3row0', '5'] as const).includes(o.bolts as BoltMode) ? (o.bolts as BoltMode) : '3';
+  const bolts: BoltMode = o.bolts === false ? 'off' : o.bolts === true || o.bolts == null ? '3' : (['off', '3', '3row', '3row0', '3+row0', '5'] as const).includes(o.bolts as BoltMode) ? (o.bolts as BoltMode) : '3';
   const dump: DumpMode = o.dump === true ? 'plus' : o.dump === false ? 'off' : o.dump === 'plus' || o.dump === 'both' ? o.dump : o.dump == null ? 'both' : 'off';
   const rospis: RospisMode = o.rospis === 'off' || o.rospis === 'half' ? o.rospis : o.rospis === false ? 'off' : '60';
   return {
@@ -141,6 +142,8 @@ export interface State {
   /** Запись по конам: строки «пули». */
   sheet: { round: number; deltas: number[]; bidder: number; bid: number; made: boolean; tag?: 'dark' | 'rospis' | 'golden' | 'fine' }[];
   bolts: number[];
+  /** Болты подряд — для «3+row0», где общий счёт болтов и серия ведутся отдельно (в старых сохранениях нет). */
+  boltRow?: number[];
   /** Сколько конов сидит на бочке (0 — не на бочке). */
   barrel: number[];
   /** Сколько раз слетал с бочки. */
@@ -292,6 +295,7 @@ export function newState(cfg: Cfg, seats: number[]): State {
     scores: Array(n).fill(0),
     sheet: [],
     bolts: Array(n).fill(0),
+    boltRow: Array(n).fill(0),
     barrel: Array(n).fill(0),
     falls: Array(n).fill(0),
     rospisN: Array(n).fill(0),
@@ -554,6 +558,7 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
   const notes: string[] = [];
   const scores = s.scores.slice();
   const bolts = s.bolts.slice();
+  const boltRow = s.boltRow?.slice() ?? Array(s.bolts.length).fill(0);
   const barrel = s.barrel.slice();
   const falls = s.falls.slice();
   const rospisN = s.rospisN.slice();
@@ -598,18 +603,32 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
       if (s.tricksTaken[p] === 0) {
         bolts[p]++;
         notes.push(`bolt:${p}`);
-        const limit = cfg.bolts === '5' ? 5 : 3;
-        if (bolts[p] >= limit) {
-          bolts[p] = 0;
-          if (cfg.bolts === '3row0') {
+        if (cfg.bolts === '3+row0') {
+          // общий счёт и серия подряд — отдельно; самосвал главнее и сбрасывает оба
+          if (++boltRow[p] >= 3) {
+            bolts[p] = boltRow[p] = 0;
             v = 0;
             notes.push(`bolt0:${p}`);
-          } else {
+          } else if (bolts[p] >= 3) {
+            bolts[p] = 0;
             v -= PENALTY * k;
-            notes.push(`bolt${limit}:${p}`);
+            notes.push(`bolt3:${p}`);
+          }
+        } else {
+          const limit = cfg.bolts === '5' ? 5 : 3;
+          if (bolts[p] >= limit) {
+            bolts[p] = 0;
+            if (cfg.bolts === '3row0') {
+              v = 0;
+              notes.push(`bolt0:${p}`);
+            } else {
+              v -= PENALTY * k;
+              notes.push(`bolt${limit}:${p}`);
+            }
           }
         }
       } else if (cfg.bolts === '3row' || cfg.bolts === '3row0') bolts[p] = 0;
+      else if (cfg.bolts === '3+row0') boltRow[p] = 0;
     }
     if (cfg.barrel && !playing) {
       // сдающий вчетвером: марьяж из прикупа может посадить на бочку, но попытки у него не идут
@@ -655,7 +674,7 @@ function scoreRound(s: State, ev: Event[], rng: Rng, rospis = false): { state: S
         scores[q] = v;
       }
   const tag = rospis ? 'rospis' : s.dark ? 'dark' : s.golden ? 'golden' : undefined;
-  const st: State = { ...s, scores, bolts, barrel, falls, rospisN, redeals: 0, sheet: [...s.sheet, { round: s.round, deltas, bidder: s.bidder, bid: s.bid, made, tag }] };
+  const st: State = { ...s, scores, bolts, boltRow, barrel, falls, rospisN, redeals: 0, sheet: [...s.sheet, { round: s.round, deltas, bidder: s.bidder, bid: s.bid, made, tag }] };
   ev.push({
     type: 'score',
     deltas,
