@@ -1,0 +1,87 @@
+/* Автоматы «15 копеек»: экран на всю область, монетоприёмник в углу, сенсорное управление поверх. */
+.avs { position: relative; width: 100%; height: 100%; display: grid; place-items: center; user-select: none; -webkit-user-select: none;
+  touch-action: none; -webkit-tap-highlight-color: transparent; }
+.avs-screen { position: relative; width: min(100cqw, 100cqh * var(--ar)); aspect-ratio: var(--ar); }
+.avs-screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* кинескоп: тёмное стекло со скруглёнными углами, свечение люминофора, строки и блик */
+.avs--crt .avs-screen { border-radius: 3.5% / 4.6%; overflow: hidden; background: #000;
+  box-shadow: 0 0 0 0.5cqmin #050505, 0 0 3cqmin rgba(120, 170, 255, 0.12); }
+.avs--crt canvas { image-rendering: pixelated; filter: saturate(1.12) contrast(1.06) brightness(1.06) blur(0.3px); }
+.avs--crt .avs-screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background:
+    repeating-linear-gradient(rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 28% 8%, rgba(255, 255, 255, 0.1), transparent 36%),
+    radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.5) 100%);
+  box-shadow: inset 0 0 2.4cqmin rgba(0, 0, 0, 0.8); }
+
+/* монетоприёмник — полупрозрачный, в правом верхнем углу; монета проваливается в щель */
+.avs-coin { position: absolute; right: 0.6cqmin; top: 0.6cqmin; z-index: 3; height: min(12cqh, 92px); aspect-ratio: 154 / 314; padding: 0;
+  border: 0; background: none; cursor: pointer; opacity: 0.35; transition: opacity 0.15s; }
+.avs-coin:hover, .avs-coin.drop { opacity: 0.9; }
+.avs-mech { width: 100%; height: 100%; display: block; border-radius: 4px; pointer-events: none; }
+.avs-drop { position: absolute; left: 22%; top: 6%; width: 56%; opacity: 0; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6)); }
+.avs-coin.drop .avs-drop { animation: avs-drop 0.45s ease-in forwards; }
+@keyframes avs-drop {
+  0% { opacity: 1; transform: translateY(-90%) scale(1.1); }
+  60% { opacity: 1; transform: translateY(8%) scaleX(0.2); }
+  100% { opacity: 0; transform: translateY(20%) scaleX(0.08); }
+}
+
+.avs-msg { position: absolute; left: 50%; top: 50%; z-index: 4; transform: translate(-50%, -50%); max-width: min(80%, 520px); padding: 10px 16px;
+  border-radius: 10px; text-align: center; background: rgba(0, 0, 0, 0.78); color: #ffe9a0; font: 700 clamp(13px, 2.6cqmin, 20px)/1.3 system-ui, sans-serif;
+  pointer-events: none; }
+
+/* сенсорное управление — только на телефоне/планшете */
+.avs-touch { display: none; }
+@media (pointer: coarse) {
+  .avs { align-content: start; }
+  .avs-touch { display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .avs-pad { position: absolute; left: 3vmin; bottom: 3vmin; width: min(36vmin, 190px); aspect-ratio: 1; border-radius: 50%; pointer-events: auto;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0 30%, rgba(255, 255, 255, 0.13) 31% 66%, rgba(255, 255, 255, 0.06) 67%);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28); }
+  .avs-pad--x { aspect-ratio: 2 / 1; border-radius: 999px; width: min(48vmin, 250px); }
+  .avs-knob { position: absolute; left: 32%; top: 32%; width: 36%; height: 36%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.2) 60%); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+  .avs-pad--x .avs-knob { left: 41%; top: 14%; width: 18%; height: 72%; }
+  .avs-btns { position: absolute; right: 3vmin; bottom: 3vmin; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 2.4vmin; }
+  .avs-tb { width: min(19vmin, 96px); aspect-ratio: 1; border-radius: 50%; border: 0; padding: 0; pointer-events: auto; cursor: pointer;
+    background: radial-gradient(circle at 38% 32%, rgba(255, 140, 120, 0.6), rgba(200, 30, 20, 0.42) 65%); color: rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3); font: 700 clamp(11px, 3vmin, 15px)/1.1 system-ui, sans-serif; }
+  .avs-tb.big { width: min(25vmin, 120px); }
+  .avs-tb:nth-child(2) { margin-right: 8vmin; }
+  .avs-tb.down { transform: scale(0.92); filter: brightness(1.4); }
+  .avs-coin { opacity: 0.6; }
+}
+/* телефон стоя: под экраном — ручка слева, кнопки справа, монетоприёмник между ними */
+@media (pointer: coarse) and (max-aspect-ratio: 1/1) {
+  .avs-coin { top: calc(100cqw / var(--ar) + 3vmin); right: 3vmin; height: min(26vmin, 130px); }
+  .avs-pad { width: min(44vmin, 210px); bottom: 5vmin; }
+  .avs-pad--x { width: min(46vmin, 250px); }
+  .avs-tb { width: min(21vmin, 100px); }
+  .avs-tb.big { width: min(27vmin, 130px); }
+}
+
+/* карточка справа */
+.avt-info p { margin: 0 0 8px; }
+.avt-info small { color: var(--muted, #888); }
+.avt-mode { margin: 6px 0; }
+.avt-pocket { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; font-size: 14px; }
+.avt-coins { display: inline-flex; gap: 3px; }
+.avt-coins img { width: 24px; height: 24px; display: block; filter: brightness(1.25) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4)); }
+.avt-coins img.gone { opacity: 0.18; filter: grayscale(1); }
+.avt-info .btn.small { margin-top: 2px; }
+
+/* экран — вся область; на телефоне — выше, чтобы под экраном поместились ручка и кнопки */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .arcade--avtomaty .arcade-main { height: min(100vw * 0.75, 80vh); }
+}
+@media (pointer: coarse) and (max-aspect-ratio: 1/1) {
+  .arcade--avtomaty .arcade-main { height: calc(100svh - 70px); }
+}
+@media (pointer: coarse) and (min-aspect-ratio: 1/1) and (max-height: 600px) {
+  .arcade--avtomaty .arcade-main { height: 100svh; }
+}
+.avt-rules { margin: 0 0 8px; font-size: 13px; }
+.avt-rules summary { cursor: pointer; font-weight: 700; }
+.avt-rules ol { margin: 4px 0 0; padding-left: 20px; }

@@ -1,126 +1,117 @@
-/* «Магистраль М»: монитор в чёрной рамке, экран — растровая картинка телевизионной игры на рассыпной логике
- * (машины-«гантели», как в заставке на фото; парапет из прямоугольников; индикаторы и финишная лента), под ним
- * пульт: два руля, педали, чёрный блок с жёлтой наклейкой «Выбор трассы» и монетоприёмник. Логика — logic.ts. */
+/* «Магистраль М»: экран телевизионной игры на рассыпной логике во всю область — как на снимке настоящего автомата:
+ * голубое поле, парапет из чёрно-белых полос, пунктир осевой, машины-«болиды» из крупных точек, посередине чёрная
+ * полоса с финишной лентой и столбиками индикаторов. Выбор трассы и «Старт» — в карточке справа (клавиши 1…5, Enter),
+ * на телефоне — руль, газ и тормоз поверх экрана. Логика — logic.ts. */
 import { audioOut } from '../../../core/audio';
 import type { ArcadeInstance, ArcadeOpts } from '../../../core/arcade';
-import { coinMode, DAILY, giveBack, pocket, setCoinMode, takeCoin, type CoinMode } from '../coins';
+import { giveBack, takeCoin } from '../coins';
+import { mountShell } from '../screen';
+import './magistral.css';
 import {
   CAR_H, CAR_W, chooseTrack, coin, CRASH_TIME, greenIndicator, indicator, newMag, POST_GAP, start, step, TH, TRACKS, TW,
   type MagEvent, type MagState, type Mover, type Player, type TrackKind,
 } from './logic';
-import './magistral.css';
 
-// ---- экран: 320×240 точек, трасса 400×800 условных → 120×240; между трассами — индикаторы
+// ---- экран 320×240: две трассы по 136 точек, между ними чёрная полоса индикаторов, по краям — зелёная кайма
 const SW = 320;
 const SH = 240;
-const S = SH / TH; // 0.3
-const TRACK_PX = TW * S; // 120
-const GAP = SW - TRACK_PX * 2 - 20; // 60 — середина под индикаторы
-const X0 = [10, 10 + TRACK_PX + GAP];
+const SY = SH / TH; // 0.3
+const TRACK_PX = 136;
+const SX = TRACK_PX / TW; // 0.34
+const EDGE = 8;
+const GAP = SW - EDGE * 2 - TRACK_PX * 2; // 32
+const X0 = [EDGE, EDGE + TRACK_PX + GAP];
 
-/** Палитра: 3 разряда на цвет, как у видеосигнала автомата. */
+/** Палитра — как на снимке экрана. */
 const C = {
-  field: '#ee8fa6', // розовое поле, как на фото экрана
-  road: '#c96a86',
+  field: '#a9c3db',
+  night: '#141c2c',
+  edge: '#5fe05a',
   post: '#ffffff',
-  car: '#a8b4ff', // сиреневые машины, как в заставке
-  carEdge: '#4848b4',
-  p1: '#2a48ff',
-  p2: '#ff2424',
-  green: '#12c832',
-  tape: '#000000',
-  spec: '#000000',
+  postDark: '#101010',
+  lane: '#ffffff',
+  car: '#8cf07c', // машины автомата — салатовые
+  wide: '#cc2a22', // широкая попутная — красная
+  p1: '#ff5a1e', // левый игрок — оранжевый
+  p2: '#3448ff', // правый — синий
+  green: '#2fd84a',
+  tape: '#ff4a1a',
+  strip: '#050505',
   text: '#ffffff',
-  night: '#120012',
 };
 
-/** Машина-«гантель»: две оси с колёсами и корпус (сверху вниз, носом вверх). */
-function drawCar(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, color: string, edge: string) {
-  const W = Math.round(w * S);
-  const H = Math.round(CAR_H * S);
-  const x = Math.round(cx - W / 2);
-  const y = Math.round(cy - H / 2);
-  const body = Math.max(3, Math.round(W * 0.34));
-  const bx = Math.round(cx - body / 2);
-  g.fillStyle = edge;
-  g.fillRect(bx - 1, y - 1, body + 2, H + 2);
+/** «Болид» сверху, носом вверх: переднее антикрыло с колёсами, кокпит, задняя ось с широкими колёсами, спойлер. */
+const CAR = [
+  '.XXX.....XXX.',
+  '.XXXXXXXXXXX.',
+  '.XXX.XXX.XXX.',
+  '.....XXX.....',
+  '....XXXXX....',
+  '....X...X....',
+  '....X...X....',
+  '....XXXXX....',
+  'XXX.XXXXX.XXX',
+  'XXXXXXXXXXXXX',
+  'XXX.XXXXX.XXX',
+  'XXX.XXXXX.XXX',
+  '....XXXXX....',
+  '..XXXXXXXXX..',
+];
+
+function drawCar(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, color: string, flip = false) {
+  const W = w * SX;
+  const H = CAR_H * SY;
+  const cw = W / CAR[0].length;
+  const ch = H / CAR.length;
+  const x0 = Math.round(cx - W / 2);
+  const y0 = Math.round(cy - H / 2);
   g.fillStyle = color;
-  g.fillRect(bx, y, body, H);
-  for (const ay of [y + 2, y + H - 7]) {
-    g.fillStyle = edge;
-    g.fillRect(x - 1, ay - 1, W + 2, 7);
-    g.fillStyle = color;
-    g.fillRect(x, ay + 1, W, 3);
-    g.fillRect(x, ay, 3, 5);
-    g.fillRect(x + W - 3, ay, 3, 5);
+  for (let r = 0; r < CAR.length; r++) {
+    const row = CAR[flip ? CAR.length - 1 - r : r];
+    for (let c = 0; c < row.length; c++)
+      if (row[c] === 'X') g.fillRect(Math.floor(x0 + c * cw), Math.floor(y0 + r * ch), Math.ceil(cw), Math.ceil(ch));
   }
-  g.fillStyle = edge;
-  g.fillRect(bx + 1, Math.round(cy - 2), body - 2, 4); // кабина
 }
 
 export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const s: MagState = newMag((Date.now() % 100000) + 1);
   if (import.meta.env.DEV) (window as unknown as { magistral?: MagState }).magistral = s;
-  const base = `${import.meta.env.BASE_URL}avtomaty/cab/`;
-  const wheel = (side: 'l' | 'r') => `<div class="mg-wheel mg-wheel-${side}" title="${side === 'l' ? 'Руль левого игрока: A/D' : 'Руль правого игрока: ← →'}">
-      <svg viewBox="-50 -50 100 100"><circle r="44" fill="none" stroke="#141414" stroke-width="9"/><circle r="44" fill="none" stroke="#3a3a3a" stroke-width="2" stroke-dasharray="3 5"/>
-      <circle r="11" fill="#1d1d1d" stroke="#555" stroke-width="2"/><path d="M-9 4 L-40 14 L-38 22 L-6 10Z M9 4 L40 14 L38 22 L6 10Z M-4 10 L-6 42 L6 42 L4 10Z" fill="#141414"/>
-      <circle r="5" fill="#8a8a8a"/></svg>
-      <div class="mg-pedal" title="${side === 'l' ? 'Педаль: W' : 'Педаль: ↑'}"><i></i></div></div>`;
-  const wrap = document.createElement('div');
-  wrap.className = 'mg';
-  wrap.innerHTML = `<div class="mg-cab">
-      <div class="mg-mon"><div class="mg-crt"><canvas width="${SW}" height="${SH}"></canvas><div class="mg-glass"></div></div></div>
-      <div class="mg-desk">
-        ${wheel('l')}
-        <div class="mg-box">
-          <div class="mg-sticker">
-            <div class="mg-sel"><b>Выбор трассы</b>
-              <div class="mg-pads">${TRACKS.map((t, i) => `<button class="mg-pad" data-t="${t.id}" title="${t.title}: клавиша ${i + 1}"><i></i><span>${t.title}</span></button>`).join('')}</div>
-            </div>
-            <div class="mg-startrow"><span class="mg-ico mg-ico-1">1</span><button class="mg-pad mg-start" title="Старт: Enter"><i></i><span>старт</span></button><span class="mg-ico mg-ico-2">2</span></div>
-            <p>Опустите монету: 15 коп. — один игрок, 30 коп. — двое. Выберите трассу и коснитесь «СТАРТ». Руль — машина вправо-влево, педаль — скорость.
-              Обгоните зелёный индикатор до финишной ленты — получите приз: пересеките надпись ПРИЗ.</p>
-          </div>
-          <button class="mg-coin" title="Бросить монету 15 коп.: пробел"><img alt="" src="${base}coinmech.webp"><i></i></button>
-        </div>
-        ${wheel('r')}
-      </div>
-    </div>`;
-  root.appendChild(wrap);
-  const q = <T extends Element>(sel: string) => wrap.querySelector(sel) as T;
-  const cv = q<HTMLCanvasElement>('canvas');
-  const g = cv.getContext('2d')!;
-  const coinBtn = q<HTMLButtonElement>('.mg-coin');
-  const wheels = [q<HTMLElement>('.mg-wheel-l svg'), q<HTMLElement>('.mg-wheel-r svg')];
-  const pedals = [q<HTMLElement>('.mg-wheel-l .mg-pedal'), q<HTMLElement>('.mg-wheel-r .mg-pedal')];
-
-  // ---- карточка справа: монеты
-  const info = document.createElement('div');
-  info.className = 'avt-info';
-  info.innerHTML = `<p><b>«Магистраль»</b> <small>(телевизионный, 1980-е)</small>. Гонки на двоих: пять трасс, руль и педаль — по заводскому руководству.</p>
-    <div class="seg avt-mode">
-      <button data-m="strict" title="Рубль на день — шесть монет; кончились — приходите завтра">Строго: рубль в день</button>
-      <button data-m="free" title="Монета всегда найдётся">Бесконечные монетки</button>
-    </div>
-    <div class="avt-pocket"></div>`;
-  opts?.panel?.appendChild(info);
-  const pocketEl = info.querySelector('.avt-pocket') as HTMLElement;
-  const drawPocket = () => {
-    const p = pocket();
-    info.querySelectorAll<HTMLElement>('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === coinMode()));
-    pocketEl.innerHTML =
-      coinMode() === 'strict'
-        ? `<span class="avt-coins">${Array.from({ length: DAILY }, (_, i) => `<i class="${i < p.left ? '' : 'gone'}"></i>`).join('')}</span> ${p.left ? `В кармане ${p.left} × 15 коп.` : 'Монеты кончились — приходите завтра.'}`
-        : `<span class="avt-coins"><i></i><i></i><i></i></span> Монет сколько угодно. Сегодня брошено: ${p.played}.`;
-  };
-  info.querySelectorAll<HTMLButtonElement>('[data-m]').forEach((b) => {
-    b.onclick = () => {
-      setCoinMode(b.dataset.m as CoinMode);
-      drawPocket();
-    };
+  const touch = [
+    { wheel: 0, pedal: false, brake: false },
+    { wheel: 0, pedal: false, brake: false },
+  ];
+  const sh = mountShell(root, opts, {
+    cls: 'avs--crt avs--mag',
+    aspect: 4 / 3,
+    info: `<p><b>«Магистраль»</b> <small>(телевизионный, 1980-е)</small>. Гонки на двоих: пять трасс, руль и педаль — по заводскому руководству.
+      15 коп. — один игрок, 30 коп. — двое. Обгоните зелёный индикатор до финишной ленты — пересеките надпись ПРИЗ.</p>
+      <div class="mg-sel"><b>Выбор трассы</b>
+        <div class="mg-pads">${TRACKS.map((t, i) => `<button class="mg-pad" data-t="${t.id}" title="${t.title}: клавиша ${i + 1}"><i></i><span>${t.title}</span></button>`).join('')}</div>
+        <button class="btn primary mg-start" title="Старт: Enter">Старт</button>
+      </div>`,
+    pad: 'x',
+    buttons: [
+      { id: 'gas', label: 'ГАЗ', big: true },
+      { id: 'brake', label: 'ТОРМОЗ' },
+      { id: 'start', label: 'СТАРТ' },
+    ],
+    onCoin: () => insertCoin(),
+    onInput: (k, down) => {
+      const t = touch[0];
+      if (k === 'left') t.wheel = down ? -1 : t.wheel < 0 ? 0 : t.wheel;
+      else if (k === 'right') t.wheel = down ? 1 : t.wheel > 0 ? 0 : t.wheel;
+      else if (k === 'gas') t.pedal = down;
+      else if (k === 'brake') t.brake = down;
+      else if (k === 'start' && down) doStart();
+    },
   });
-  drawPocket();
+  const cv = document.createElement('canvas');
+  cv.width = SW;
+  cv.height = SH;
+  sh.screen.appendChild(cv);
+  const g = cv.getContext('2d')!;
+  const info = sh.info;
+  const { drawPocket } = sh;
 
   // ---- звук: моторы, взрыв, сирена спецмашины, музыкальная заставка
   const audio = audioOut();
@@ -198,36 +189,43 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
   const insertCoin = () => {
     if (paused) return;
     if (!takeCoin()) {
-      say('Монеты кончились');
+      say('МОНЕТЫ КОНЧИЛИСЬ');
       drawPocket();
       return;
     }
-    coinBtn.classList.remove('drop');
-    void coinBtn.offsetWidth;
-    coinBtn.classList.add('drop');
+    sh.drop();
     const ev: MagEvent[] = [];
     if (!coin(s, ev)) {
       giveBack();
-      say(s.mode === 'play' ? 'Идёт игра — монета в возврат' : 'Уже оплачено двое');
-    } else say(s.credits === 1 ? 'Один игрок. Ещё монета — двое' : 'Играют двое');
+      say(s.mode === 'play' ? 'ИДЁТ ИГРА — МОНЕТА В ВОЗВРАТ' : 'УЖЕ ОПЛАЧЕНО ДВОЕ');
+    } else say(s.credits === 1 ? 'ОДИН ИГРОК. ЕЩЁ МОНЕТА — ДВОЕ' : 'ИГРАЮТ ДВОЕ');
     handle(ev);
     drawPocket();
   };
-  coinBtn.onclick = insertCoin;
   const pick = (t: TrackKind) => {
     if (paused) return;
     chooseTrack(s, t);
   };
-  wrap.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach((b) => (b.onclick = () => pick(b.dataset.t as TrackKind)));
+  info.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach(
+    (b) =>
+      (b.onclick = () => {
+        b.blur();
+        pick(b.dataset.t as TrackKind);
+      }),
+  );
   const doStart = () => {
     if (paused) return;
     const ev: MagEvent[] = [];
-    if (!start(s, ev)) say(s.credits ? '' : 'Сначала опустите монету');
+    if (!start(s, ev)) say(s.credits ? '' : 'СНАЧАЛА ОПУСТИТЕ МОНЕТУ');
     handle(ev);
   };
-  q<HTMLButtonElement>('.mg-start').onclick = doStart;
+  const startBtn = info.querySelector('.mg-start') as HTMLButtonElement;
+  startBtn.onclick = () => {
+    startBtn.blur();
+    doStart();
+  };
 
-  // ---- руль и педаль: клавиши (A/D/W — левый, ←/→/↑ — правый; один игрок — любые), мышь и палец
+  // ---- руль и педаль: клавиши (A/D/W/S — левый, стрелки — правый; один игрок — любые), палец
   const keys = new Set<string>();
   const onKey = (e: KeyboardEvent, down: boolean) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -258,39 +256,6 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
   window.addEventListener('keydown', kd);
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', clear);
-  const touch = [{ wheel: 0, pedal: false }, { wheel: 0, pedal: false }];
-  wrap.querySelectorAll<HTMLElement>('.mg-wheel').forEach((el, i) => {
-    const svg = el.querySelector('svg') as SVGElement;
-    svg.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      svg.setPointerCapture(e.pointerId);
-      const r = svg.getBoundingClientRect();
-      const move = (ev: PointerEvent) => (touch[i].wheel = Math.max(-1, Math.min(1, ((ev.clientX - (r.left + r.width / 2)) / (r.width / 2)) * 1.6)));
-      const up = () => {
-        touch[i].wheel = 0;
-        svg.removeEventListener('pointermove', move);
-        svg.removeEventListener('pointerup', up);
-        svg.removeEventListener('pointercancel', up);
-      };
-      move(e);
-      svg.addEventListener('pointermove', move);
-      svg.addEventListener('pointerup', up);
-      svg.addEventListener('pointercancel', up);
-    });
-    const ped = el.querySelector('.mg-pedal') as HTMLElement;
-    ped.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      ped.setPointerCapture(e.pointerId);
-      touch[i].pedal = true;
-      const up = () => {
-        touch[i].pedal = false;
-        ped.removeEventListener('pointerup', up);
-        ped.removeEventListener('pointercancel', up);
-      };
-      ped.addEventListener('pointerup', up);
-      ped.addEventListener('pointercancel', up);
-    });
-  });
 
   const readInput = (dt: number) => {
     const two = s.players[1].on;
@@ -302,16 +267,16 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
       const ks = sets[i];
       const L = ks.length ? has(ks[0]) || has(ks[4] ?? '') : false;
       const R = ks.length ? has(ks[1]) || has(ks[5] ?? '') : false;
-      const gas = (ks.length ? has(ks[2]) || has(ks[6] ?? '') : false) || touch[i].pedal || (!two && i === 0 && touch[1].pedal);
-      const brake = ks.length ? has(ks[3]) || has(ks[7] ?? '') : false;
-      const tw = touch[i].wheel || (!two && i === 0 ? touch[1].wheel : 0);
-      p.wheel = tw || (R ? 1 : 0) - (L ? 1 : 0);
+      const gas = (ks.length ? has(ks[2]) || has(ks[6] ?? '') : false) || touch[i].pedal;
+      const brake = (ks.length ? has(ks[3]) || has(ks[7] ?? '') : false) || touch[i].brake;
+      p.wheel = touch[i].wheel || (R ? 1 : 0) - (L ? 1 : 0);
       // педаль на пружине: жмём — опускается, отпустили — возвращается
       p.pedal = brake ? Math.max(0, p.pedal - 3 * dt) : gas ? Math.min(1, p.pedal + 1.6 * dt) : Math.max(0, p.pedal - 1.2 * dt);
     });
   };
 
   // ---- отрисовка экрана
+  const oncoming = (c: Mover) => c.kind === 'car' && (s.track === 'learn' || s.track === 'night' || (s.track === 'race' && c.x < TW / 2));
   const drawTrack = (p: Player, x0: number, idx: number) => {
     g.save();
     g.translate(x0, 0);
@@ -321,60 +286,51 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
     const night = s.track === 'night' && s.mode === 'play';
     g.fillStyle = night ? C.night : C.field;
     g.fillRect(0, 0, TRACK_PX, SH);
-    const py = p.y * S;
-    const px = p.x * S;
+    const py = p.y * SY;
+    const px = p.x * SX;
     if (night && p.on) {
-      // темнота заштрихована, луч фар — единственное освещённое место (рис. 5 руководства)
-      g.strokeStyle = '#4a0a2a';
-      g.lineWidth = 1;
-      for (let y = -40; y < SH + 20; y += 10) {
-        g.beginPath();
-        g.moveTo(0, y + ((s.clock * 40) % 10));
-        g.lineTo(TRACK_PX, y + 26 + ((s.clock * 40) % 10));
-        g.stroke();
-      }
+      // темнота; луч фар — единственное освещённое место (рис. 5 руководства)
       g.fillStyle = C.field;
       g.beginPath();
       g.moveTo(px - 4, py - 10);
-      g.lineTo(px - 26, 0);
-      g.lineTo(px + 26, 0);
+      g.lineTo(px - 30, 0);
+      g.lineTo(px + 30, 0);
       g.lineTo(px + 4, py - 10);
       g.fill();
     }
-    // разделительная полоса «Гоночной»
+    // осевая «Гоночной» — белый пунктир
     if (s.track === 'race') {
-      g.fillStyle = C.post;
-      for (let y = -POST_GAP; y < TH + POST_GAP; y += POST_GAP / 2) g.fillRect(TRACK_PX / 2 - 0.5, Math.round((y + (p.scroll * 2) % (POST_GAP / 2)) * S), 1, 6);
+      g.fillStyle = C.lane;
+      const step = POST_GAP / 2;
+      for (let y = -step; y < TH + step; y += step) g.fillRect(Math.round(TRACK_PX / 2) - 1, Math.round((y + ((p.scroll * 2) % step)) * SY), 2, 10);
     }
-    // парапет — бегущие столбики
-    g.strokeStyle = C.post;
-    g.lineWidth = 1;
-    for (let y = -POST_GAP; y < TH + POST_GAP; y += POST_GAP) {
-      const yy = Math.round((y + p.scroll) * S) + 0.5;
-      g.strokeRect(2.5, yy, 4, 9);
-      g.strokeRect(TRACK_PX - 6.5, yy, 4, 9);
+    // парапет — бегущие чёрно-белые полосы по краям
+    for (let y = -POST_GAP; y < TH + POST_GAP; y += POST_GAP / 2) {
+      const yy = Math.round((y + (p.scroll % (POST_GAP / 2))) * SY);
+      const odd = Math.round(y / (POST_GAP / 2)) % 2 === 0;
+      g.fillStyle = odd ? C.post : C.postDark;
+      g.fillRect(0, yy, 4, Math.ceil((POST_GAP / 2) * SY));
+      g.fillRect(TRACK_PX - 4, yy, 4, Math.ceil((POST_GAP / 2) * SY));
     }
     // машины автомата
     const inBeam = (c: Mover) => {
       if (!night) return true;
-      const cy = c.y * S;
+      const cy = c.y * SY;
       if (cy > py) return false;
-      const half = 4 + ((py - cy) / py) * 22;
-      return Math.abs(c.x * S - px) < half + 6;
+      const half = 4 + ((py - cy) / py) * 26;
+      return Math.abs(c.x * SX - px) < half + 6;
     };
     for (const c of p.cars) {
       if (!inBeam(c)) continue;
-      if (c.kind === 'spec') {
-        const blink = Math.floor(s.clock * 6) % 2 === 0;
-        drawCar(g, c.x * S, c.y * S, c.w, C.spec, blink ? '#3cf' : '#f33');
-      } else drawCar(g, c.x * S, c.y * S, c.w, C.car, C.carEdge);
+      if (c.kind === 'spec') drawCar(g, c.x * SX, c.y * SY, c.w, Math.floor(s.clock * 6) % 2 === 0 ? '#ffffff' : '#ff2a2a');
+      else drawCar(g, c.x * SX, c.y * SY, c.w, c.kind === 'wide' ? C.wide : C.car, oncoming(c));
     }
     // ПРИЗ — надпись поперёк трассы
     if (p.prizeSign !== null) {
       g.fillStyle = Math.floor(s.clock * 5) % 2 ? '#ffff00' : '#ffffff';
       g.font = 'bold 22px monospace';
       g.textAlign = 'center';
-      g.fillText('ПРИЗ', TRACK_PX / 2, p.prizeSign * S + 8);
+      g.fillText('ПРИЗ', TRACK_PX / 2, p.prizeSign * SY + 8);
     }
     // машина игрока или взрыв
     if (p.on) {
@@ -384,14 +340,14 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
         for (let k = 0; k < 10; k++) {
           const a = (k / 10) * Math.PI * 2 + t * 3;
           g.fillStyle = k % 2 ? '#ffff00' : '#ffffff';
-          const rr = r * (0.6 + 0.4 * ((k * 37) % 7) / 7);
-          g.fillRect(Math.round(p.boom.x * S + Math.cos(a) * rr) - 2, Math.round(p.boom.y * S + Math.sin(a) * rr) - 2, 4, 4);
+          const rr = r * (0.6 + (0.4 * ((k * 37) % 7)) / 7);
+          g.fillRect(Math.round(p.boom.x * SX + Math.cos(a) * rr) - 2, Math.round(p.boom.y * SY + Math.sin(a) * rr) - 2, 4, 4);
         }
         if (t < CRASH_TIME * 0.4) {
           g.fillStyle = '#ffffff';
-          g.fillRect(Math.round(p.boom.x * S) - 6, Math.round(p.boom.y * S) - 6, 12, 12);
+          g.fillRect(Math.round(p.boom.x * SX) - 6, Math.round(p.boom.y * SY) - 6, 12, 12);
         }
-      } else drawCar(g, px, py, CAR_W, idx ? C.p2 : C.p1, '#ffffff');
+      } else drawCar(g, px, py, CAR_W, idx ? C.p2 : C.p1);
     }
     g.restore();
   };
@@ -399,70 +355,32 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
   const drawCenter = () => {
     const x0 = X0[0] + TRACK_PX;
     const cx = x0 + GAP / 2;
-    g.fillStyle = C.field;
+    g.fillStyle = C.strip;
     g.fillRect(x0, 0, GAP, SH);
-    // финишная лента и основание
+    // финишная лента наверху
     g.fillStyle = C.tape;
-    g.fillRect(cx - 14, 8, 28, 5);
-    const base = SH - 18;
-    g.fillRect(cx - 18, base, 36, 2);
-    const top = 16;
-    const bar = (x: number, w: number, v: number, col: string, outline = false) => {
-      const h = Math.round((base - top) * v);
-      if (outline) {
-        g.strokeStyle = col;
-        g.lineWidth = 1;
-        g.strokeRect(x + 0.5, base - h + 0.5, w - 1, h);
-      } else {
-        g.fillStyle = col;
-        g.fillRect(x, base - h, w, h);
-      }
+    g.fillRect(cx - 11, 8, 22, 6);
+    const base = SH - 4;
+    const top = 18;
+    const bar = (x: number, w: number, v: number, col: string) => {
+      const h = Math.max(1, Math.round((base - top) * v));
+      g.fillStyle = col;
+      g.fillRect(x, base - h, w, h);
     };
     const [p1, p2] = s.players;
-    if (p1.on || s.mode === 'over') bar(cx - 12, 7, indicator(p1), C.p1);
-    if (p2.on || s.mode === 'over') bar(cx + 5, 7, indicator(p2), C.p2);
-    bar(cx - 4, 8, greenIndicator(s), C.green);
+    if (p1.on || s.mode === 'over') bar(cx - 11, 6, indicator(p1), C.p1);
+    bar(cx - 3, 6, greenIndicator(s), C.green);
+    if (p2.on || s.mode === 'over') bar(cx + 5, 6, indicator(p2), C.p2);
   };
 
-  const ATTRACT = [
-    '....XXXX....',
-    'XXXXX..XXXXX',
-    'XX.XXXXXX.XX',
-    'XX.X....X.XX',
-    'XXXX.XX.XXXX',
-    'XX.X....X.XX',
-    'XX.XXXXXX.XX',
-    'XXXXXXXXXXXX',
-    '....XXXX....',
-    '....XXXX....',
-    '....XXXX....',
-    '..XXXXXXXX..',
-    'XXXX.XX.XXXX',
-    'XX.XXXXXX.XX',
-    'XX.X.XX.X.XX',
-    'XX.XXXXXX.XX',
-    'XXXX.XX.XXXX',
-    '..XXXXXXXX..',
-  ];
-  const drawAttract = () => {
-    g.fillStyle = C.field;
-    g.fillRect(0, 0, SW, SH);
-    const k = 12;
-    const ox = SW / 2 - (ATTRACT[0].length * k) / 2;
-    const oy = SH / 2 - (ATTRACT.length * k) / 2 + Math.sin(s.clock * 1.4) * 4;
-    for (let y = 0; y < ATTRACT.length; y++)
-      for (let x = 0; x < ATTRACT[y].length; x++) {
-        if (ATTRACT[y][x] !== 'X') continue;
-        g.fillStyle = '#c8ccff';
-        g.fillRect(ox + x * k, oy + y * k, k, k);
-        // тонкая синяя кайма только по внешнему краю фигуры, как на экране автомата
-        g.fillStyle = '#5a6cf0';
-        const empty = (dx: number, dy: number) => (ATTRACT[y + dy]?.[x + dx] ?? '.') !== 'X';
-        if (empty(-1, 0)) g.fillRect(ox + x * k, oy + y * k, 1, k);
-        if (empty(1, 0)) g.fillRect(ox + x * k + k - 1, oy + y * k, 1, k);
-        if (empty(0, -1)) g.fillRect(ox + x * k, oy + y * k, k, 1);
-        if (empty(0, 1)) g.fillRect(ox + x * k, oy + y * k + k - 1, k, 1);
-      }
+  const drawFrame = () => {
+    // зелёная кайма по краям экрана
+    g.fillStyle = C.strip;
+    g.fillRect(0, 0, EDGE, SH);
+    g.fillRect(SW - EDGE, 0, EDGE, SH);
+    g.fillStyle = C.edge;
+    g.fillRect(2, 0, 3, SH);
+    g.fillRect(SW - 5, 0, 3, SH);
   };
 
   const text = (t: string, y: number, col = C.text, size = 16) => {
@@ -474,34 +392,44 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
     g.fillText(t, SW / 2, y);
   };
 
+  // заставка: машины стоят на старте, бежит парапет
+  const idle: Player[] = [s.players[0], s.players[1]];
+  const drawAttract = () => {
+    const sc = s.clock * 160;
+    idle.forEach((p, i) => {
+      const fake = { ...p, on: false, scroll: sc % POST_GAP, cars: [], prizeSign: null } as Player;
+      drawTrack(fake, X0[i], i);
+      g.save();
+      g.translate(X0[i], 0);
+      drawCar(g, TRACK_PX / 2, SH - 40, CAR_W, i ? C.p2 : C.p1);
+      drawCar(g, TRACK_PX * 0.3, ((sc * 0.6 + i * 90) % (SH + 60)) - 30, CAR_W, C.car);
+      g.restore();
+    });
+    drawCenter();
+    drawFrame();
+  };
+
   const draw = () => {
     g.imageSmoothingEnabled = false;
     if (s.mode === 'attract' || s.mode === 'ready') {
       drawAttract();
+      text('МАГИСТРАЛЬ', 40, '#ffff00', 22);
       if (s.mode === 'ready') {
-        text(`ОПЛАЧЕНО: ${s.credits === 2 ? 'ДВОЕ' : 'ОДИН'}`, 22, '#ffff00', 14);
-        text(`ТРАССА «${TRACKS.find((t) => t.id === s.track)!.title.toUpperCase()}»`, SH - 30, '#ffffff', 13);
-        if (Math.floor(s.clock * 2) % 2) text('КОСНИТЕСЬ «СТАРТ»', SH - 12, '#ffff00', 12);
-      }
+        text(`ОПЛАЧЕНО: ${s.credits === 2 ? 'ДВОЕ' : 'ОДИН'}`, 70, '#ffffff', 14);
+        text(`ТРАССА «${TRACKS.find((t) => t.id === s.track)!.title.toUpperCase()}»`, SH - 60, '#ffffff', 13);
+        if (Math.floor(s.clock * 2) % 2) text('НАЖМИТЕ «СТАРТ»', SH - 42, '#ffff00', 12);
+      } else if (Math.floor(s.clock * 1.5) % 2) text('ОПУСТИТЕ МОНЕТУ', SH - 42, '#ffffff', 13);
     } else {
       drawTrack(s.players[0], X0[0], 0);
       drawTrack(s.players[1], X0[1], 1);
       drawCenter();
-      g.fillStyle = '#5a1030';
-      g.fillRect(0, 0, X0[0], SH);
-      g.fillRect(SW - 10, 0, 10, SH);
+      drawFrame();
       if (s.prizeRound && s.mode === 'play') text('ПРИЗОВАЯ ИГРА', 30, '#ffff00', 12);
       if (s.mode === 'over') text('КОНЕЦ ИГРЫ', SH / 2, '#ffff00', 22);
     }
-    if (s.clock < msgUntil && msgText) text(msgText, SH / 2 + 40, '#ffffff', 12);
-    // пульт: руль, педаль
-    s.players.forEach((p, i) => {
-      wheels[i].style.transform = `rotate(${p.wheel * 70}deg)`;
-      pedals[i].style.setProperty('--p', String(p.pedal));
-    });
-    wrap.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach((b) => b.classList.toggle('on', b.dataset.t === s.track));
-    q<HTMLButtonElement>('.mg-start').classList.toggle('on', s.mode === 'ready' && Math.floor(s.clock * 2) % 2 === 0);
-    wrap.querySelectorAll('.mg-ico').forEach((el, i) => el.classList.toggle('on', (s.mode === 'ready' && s.credits > i) || (s.mode === 'play' && s.players[i].on)));
+    if (s.clock < msgUntil && msgText) text(msgText, SH / 2 + 40, '#ffffff', 11);
+    info.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach((b) => b.classList.toggle('on', b.dataset.t === s.track));
+    startBtn.classList.toggle('blink', s.mode === 'ready' && Math.floor(s.clock * 2) % 2 === 0);
   };
 
   let dead = false;
@@ -549,11 +477,10 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
         }
         e?.gn.disconnect();
       });
-      info.remove();
       window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', clear);
-      wrap.remove();
+      sh.destroy();
     },
   };
 }

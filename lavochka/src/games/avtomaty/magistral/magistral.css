@@ -1,55 +1,12 @@
-/* «Магистраль»: жёлтая стойка, монитор в чёрной рамке, пульт — рули, педали, чёрный блок с жёлтой наклейкой. */
-.mg { width: 100%; height: 100%; display: grid; place-items: center; }
-.mg-cab { --w: min(100cqw, 100cqh / 1.06); width: var(--w); container-type: inline-size; position: relative; user-select: none; -webkit-user-select: none;
-  touch-action: none; padding: 2cqw; box-sizing: border-box; border-radius: 1.4cqw;
-  background: linear-gradient(90deg, #d9a400, #ffd21f 14%, #ffdc3a 50%, #ffd21f 86%, #d9a400);
-  box-shadow: inset 0 0.4cqw 0 rgba(255, 255, 255, 0.4), 0 1.4cqw 2.6cqw rgba(0, 0, 0, 0.5); }
-
-/* монитор: чёрный пластик, кинескоп с выпуклостью */
-.mg-mon { padding: 2.6cqw; border-radius: 3cqw; background: linear-gradient(#2a2a2a, #0d0d0d);
-  box-shadow: inset 0 0.4cqw 0.6cqw rgba(255, 255, 255, 0.15), 0 0.8cqw 1.4cqw rgba(0, 0, 0, 0.55); }
-.mg-crt { position: relative; aspect-ratio: 4 / 3; border-radius: 5cqw / 6.5cqw; overflow: hidden; background: #000; box-shadow: 0 0 0 0.5cqw #050505; }
-.mg-crt canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated;
-  filter: saturate(1.1) contrast(1.05) blur(0.3px); }
-.mg-glass { position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  background: repeating-linear-gradient(rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px),
-    radial-gradient(120% 90% at 30% 12%, rgba(255, 255, 255, 0.14), transparent 38%),
-    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
-  box-shadow: inset 0 0 3cqw rgba(0, 0, 0, 0.75); }
-
-/* пульт */
-.mg-desk { display: grid; grid-template-columns: 1fr 1.35fr 1fr; align-items: center; gap: 2cqw; margin-top: 2cqw; }
-.mg-wheel { display: flex; flex-direction: column; align-items: center; gap: 1cqw; }
-.mg-wheel svg { width: 85%; aspect-ratio: 1; display: block; cursor: grab; transition: transform 0.06s; filter: drop-shadow(0 0.8cqw 0.8cqw rgba(0, 0, 0, 0.5)); }
-.mg-pedal { --p: 0; width: 44%; height: 4.4cqw; border-radius: 0.6cqw; cursor: pointer; perspective: 30cqw; }
-.mg-pedal i { display: block; width: 100%; height: 100%; border-radius: 0.6cqw; transform-origin: 50% 100%;
-  background: repeating-linear-gradient(90deg, #8d8d8d 0 0.6cqw, #bdbdbd 0.6cqw 0.9cqw), linear-gradient(#d0d0d0, #777);
-  background-blend-mode: multiply; box-shadow: inset 0 0 0 0.25cqw #555, 0 0.6cqw 0.6cqw rgba(0, 0, 0, 0.45);
-  transform: rotateX(calc(25deg + var(--p) * 30deg)); transition: transform 0.05s; }
-
-.mg-box { display: grid; grid-template-columns: 1fr auto; gap: 1.4cqw; align-items: center; padding: 1.4cqw; border-radius: 1cqw;
-  background: linear-gradient(#262626, #111); box-shadow: inset 0 0.3cqw 0 rgba(255, 255, 255, 0.12), 0 0.8cqw 1.2cqw rgba(0, 0, 0, 0.5); }
-.mg-sticker { background: #ffc61a; border-radius: 0.6cqw; padding: 1cqw; color: #141414; font: 700 1.25cqw/1.2 'Arial Narrow', Arial, sans-serif;
-  box-shadow: inset 0 0 0 0.25cqw #1a1a1a, inset 0 0 0 0.45cqw #ffc61a, inset 0 0 0 0.6cqw #1a1a1a; }
-.mg-sticker p { margin: 0.8cqw 0 0; font-weight: 400; font-size: 1.1cqw; text-align: justify; }
-.mg-sel b { display: block; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; font-size: 1.4cqw; margin-bottom: 0.6cqw; }
-.mg-pads { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6cqw; }
-.mg-pad { display: flex; flex-direction: column; align-items: center; gap: 0.4cqw; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.mg-pad i { width: 3.4cqw; height: 3.4cqw; border-radius: 0.4cqw; background: linear-gradient(135deg, #d8d8d8, #8a8a8a); box-shadow: 0 0 0 0.3cqw #1a1a1a, inset 0 0 0.4cqw rgba(0, 0, 0, 0.4); }
-.mg-pad span { font: 700 1cqw/1 'Arial Narrow', Arial, sans-serif; text-transform: lowercase; color: #141414; }
-.mg-pad.on i { background: radial-gradient(circle, #fffbe0, #ffe25a 55%, #e3a600); box-shadow: 0 0 0 0.3cqw #1a1a1a, 0 0 1.2cqw #ffe25a; }
-.mg-startrow { display: flex; align-items: center; justify-content: center; gap: 2cqw; margin-top: 0.8cqw; }
-.mg-ico { width: 3cqw; height: 3cqw; border-radius: 50%; display: grid; place-items: center; font: 900 1.6cqw/1 Arial, sans-serif; color: #fff;
-  background: #7a7a7a; box-shadow: 0 0 0 0.25cqw #1a1a1a; }
-.mg-ico-1.on { background: #2a48ff; box-shadow: 0 0 0 0.25cqw #1a1a1a, 0 0 1cqw #6f86ff; }
-.mg-ico-2.on { background: #e81d1d; box-shadow: 0 0 0 0.25cqw #1a1a1a, 0 0 1cqw #ff6f6f; }
-.mg-coin { position: relative; width: 6.6cqw; padding: 0; border: 0; background: none; cursor: pointer; }
-.mg-coin img { width: 100%; display: block; border-radius: 0.3cqw; box-shadow: 0 0.4cqw 0.8cqw rgba(0, 0, 0, 0.5); }
-.mg-coin i { position: absolute; left: 22%; top: 2%; width: 55%; aspect-ratio: 1; border-radius: 50%; opacity: 0; pointer-events: none;
-  background: radial-gradient(circle at 35% 30%, #fff8d0, #d4b25a 45%, #8f6d1e); }
-.mg-coin.drop i { animation: mg-drop 0.4s ease-in forwards; }
-@keyframes mg-drop {
-  0% { opacity: 1; transform: translateY(-120%) scaleX(1); }
-  60% { opacity: 1; transform: translateY(30%) scaleX(0.22); }
-  100% { opacity: 0; transform: translateY(50%) scaleX(0.1); }
-}
+/* «Магистраль»: кайма кинескопа — зелёная, как на снимке; выбор трассы — жёлтая наклейка в карточке справа. */
+.avs--mag .avs-screen { box-shadow: 0 0 0 0.5cqmin #050505, 0 0 3cqmin rgba(90, 230, 90, 0.18); }
+.mg-sel { margin: 8px 0; padding: 8px; border-radius: 8px; background: #ffc61a; color: #141414;
+  box-shadow: inset 0 0 0 2px #1a1a1a, inset 0 0 0 4px #ffc61a, inset 0 0 0 5px #1a1a1a; }
+.mg-sel b { display: block; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; font: 700 14px 'Arial Narrow', Arial, sans-serif; margin-bottom: 6px; }
+.mg-pads { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.mg-pad { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: none; cursor: pointer; }
+.mg-pad i { width: 28px; height: 28px; border-radius: 4px; background: linear-gradient(135deg, #d8d8d8, #8a8a8a); box-shadow: 0 0 0 2px #1a1a1a; }
+.mg-pad span { font: 700 11px/1 'Arial Narrow', Arial, sans-serif; text-transform: lowercase; color: #141414; }
+.mg-pad.on i { background: radial-gradient(circle, #fffbe0, #ffe25a 55%, #e3a600); box-shadow: 0 0 0 2px #1a1a1a, 0 0 10px #fff2a0; }
+.mg-start { display: block; width: 100%; margin-top: 8px; }
+.mg-start.blink { filter: brightness(1.3); }

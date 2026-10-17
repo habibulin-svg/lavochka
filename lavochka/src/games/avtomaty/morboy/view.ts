@@ -1,80 +1,156 @@
-/* «Морской бой»: табло (роспись по стеклу, лампы номеров и транспарантов, смотровые окна), вид в окуляр перископа
- * (панорама: небо, горы на боковых щитах, зелёное стекло моря с восемью лучами лампочек, силуэты на цепи, три визира),
- * щит с рукоятками («ПУСК» на правой), шкалой «градусы» и монетоприёмником. Логика — logic.ts. */
+/* «Морской бой»: вид в окуляр перископа во весь экран, как на снимке настоящего автомата — овальный вырез на чёрном,
+ * панорама под зелёным стеклом (рисованные кучевые облака, море в мазках волн), плоские силуэты кораблей на горизонте,
+ * две тёмные линии визиров, зелёные лампочки трассы торпеды. Табло (пуски, попадания, транспаранты) — в чёрных углах
+ * вокруг окуляра. Логика — logic.ts. */
 import { audioOut } from '../../../core/audio';
 import type { ArcadeInstance, ArcadeOpts } from '../../../core/arcade';
-import { coinMode, DAILY, giveBack, pocket, setCoinMode, takeCoin, type CoinMode } from '../coins';
+import { giveBack, takeCoin } from '../coins';
+import { mountShell } from '../screen';
 import {
   AIM_MAX, BLAST_TIME, coin, fire, FOV, HALF_W, LAUNCHES, newSea, roseOn, ships, SHIP_LEN, step, TICK, torpedoLamp,
   trackX, TRACKS, turn, type SeaEvent, type SeaState,
 } from './logic';
-import './morboy.css';
 
-// ---- панорама: мир в см, экран окуляра VW×VH
+// ---- окуляр и панорама — в своих координатах VW×VH (мир в см); экран вокруг — LW×LH: широкий (табло по бокам)
+// или высокий для телефона стоя (табло над и под окуляром, бока обрезаны)
 const VW = 1200;
 const VH = 560;
-const K = VW / FOV; // точек на см
-const HOR = VH * 0.47; // линия горизонта
-const PAN_W = (HALF_W + 16) * 2; // ширина заготовки панорамы, см
+const OX = VW / 2;
+const OY = VH / 2;
+const RX = 440;
+const RY = 279;
+const K = (RX * 2) / FOV; // точек на см: поле зрения — ширина окуляра
+const HOR = VH * 0.73; // линия горизонта, как на снимке
+const PAN_W = (HALF_W + 18) * 2; // ширина заготовки панорамы, см
+/** Линии визиров — делят окуляр на три окна. */
+const VISOR = RX * 0.357;
 
 const LAMP_Z = Array.from({ length: 10 }, (_, i) => Math.pow(0.8, i)); // глубина лампочек: 1 у глаза … ~0.13 у горизонта
 
 /** Точка трассы k, лампочка i (1…10) в координатах мира (x — см, y — точки экрана). */
 function lampAt(k: number, i: number) {
   const d = LAMP_Z[i - 1];
-  const f = 1 - d; // 0 у подлодки, ~0.87 у горизонта
-  const bottom = VH * 1.05;
-  return { x: trackX(k) * f / 0.87, y: HOR + (bottom - HOR) * d * 0.92, r: 3 + 9 * d };
+  const f = 1 - d;
+  const bottom = VH * 1.02;
+  return { x: (trackX(k) * f) / 0.87, y: HOR + (bottom - HOR) * d * 0.9, r: 3 + 8 * d };
 }
 
-// ---- силуэты кораблей (см, носом вправо, начало — середина киля)
-function cruiser(p: Path2D) {
-  p.moveTo(-3.8, 0);
-  p.lineTo(3.9, 0);
-  p.lineTo(3.4, -0.55);
-  p.lineTo(-3.6, -0.55);
-  p.closePath();
-  p.rect(-2.6, -1.05, 4.6, 0.55);
-  p.rect(-1.6, -1.6, 2.4, 0.6);
-  p.rect(-0.6, -2.4, 0.9, 0.85);
-  p.rect(-1.25, -2.2, 0.35, 0.65); // труба
-  p.rect(0.55, -1.95, 0.35, 0.4);
-  p.rect(-0.25, -3.3, 0.12, 0.95); // мачта
-  p.rect(-1.0, -3.0, 1.6, 0.08);
-  p.rect(2.0, -0.9, 1.3, 0.3); // носовая башня, ствол
-  p.rect(3.0, -0.85, 0.9, 0.08);
-  p.rect(-3.3, -0.9, 1.1, 0.3); // кормовая
-  p.rect(-3.9, -0.85, 0.8, 0.08);
+/** Контур окуляра: сверхэллипс (бока круче, чем у эллипса). */
+function scopePath(g: CanvasRenderingContext2D, grow = 0) {
+  const n = 2.6;
+  g.beginPath();
+  for (let i = 0; i <= 160; i++) {
+    const t = (i / 160) * Math.PI * 2;
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    const x = OX + (RX + grow) * Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+    const y = OY + (RY + grow) * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
+    if (i) g.lineTo(x, y);
+    else g.moveTo(x, y);
+  }
+  g.closePath();
 }
-function destroyer(p: Path2D) {
-  p.moveTo(-3.6, 0);
-  p.lineTo(3.8, 0);
-  p.lineTo(3.0, -0.5);
-  p.lineTo(-3.4, -0.45);
-  p.closePath();
-  p.rect(-1.4, -1.0, 3.0, 0.5);
-  p.rect(0.6, -1.6, 0.9, 0.6);
-  p.rect(-0.9, -1.75, 0.5, 0.75); // трубы
-  p.rect(-0.2, -1.6, 0.45, 0.6);
-  p.rect(1.0, -2.7, 0.1, 1.1);
-  p.rect(0.5, -2.45, 1.1, 0.07);
-  p.rect(2.0, -0.8, 0.8, 0.3);
-  p.rect(2.6, -0.75, 0.7, 0.07);
-  p.rect(-2.8, -0.75, 0.8, 0.28);
+
+// ---- силуэты кораблей (см, носом вправо, начало — середина киля): корпус тёмный, надстройка цветная
+type Part = { fill: string; path: Path2D };
+function shipParts(kind: number): Part[] {
+  const hull = new Path2D();
+  const top = new Path2D();
+  const extra = new Path2D();
+  if (kind === 0) {
+    // грузовой пароход: длинный корпус с седловатой палубой, ступенчатая надстройка светлой охрой, мачта
+    hull.moveTo(-3.9, -0.95);
+    hull.lineTo(3.6, -1.15);
+    hull.lineTo(3.1, 0);
+    hull.lineTo(-3.4, 0);
+    hull.closePath();
+    top.rect(-2.5, -1.75, 3.6, 0.85);
+    top.rect(-1.9, -2.4, 2.4, 0.7);
+    top.rect(-1.3, -2.95, 1.3, 0.6);
+    top.rect(-0.85, -3.9, 0.28, 1.0); // мачта
+    top.rect(-0.3, -3.25, 0.5, 0.35);
+    top.rect(1.3, -1.4, 0.9, 0.3);
+  } else {
+    // сторожевик: корпус с высоким носом, надстройка — синяя пирамида с красными огнями
+    hull.moveTo(-3.6, -0.9);
+    hull.lineTo(3.9, -1.3);
+    hull.lineTo(3.2, 0);
+    hull.lineTo(-3.2, 0);
+    hull.closePath();
+    top.moveTo(-1.8, -1.0);
+    top.lineTo(-0.2, -3.6);
+    top.lineTo(0.15, -3.6);
+    top.lineTo(1.6, -1.1);
+    top.closePath();
+    extra.rect(-2.4, -1.45, 0.6, 0.5);
+    extra.rect(1.7, -1.6, 0.6, 0.5);
+  }
+  return [
+    { fill: '#2c3442', path: hull },
+    { fill: kind === 0 ? '#e3cf92' : '#3567b8', path: top },
+    { fill: '#c83a2a', path: extra },
+  ];
 }
-const SHIPS = [cruiser, destroyer].map((f) => {
-  const p = new Path2D();
-  f(p);
-  return p;
-});
+const SHIPS = [shipParts(0), shipParts(1)];
 
 /** Детерминированный «шум» для росписи. */
 const rnd = (() => {
   let x = 7;
-  return () => ((x = (x * 16807) % 2147483647) / 2147483647);
+  return () => (x = (x * 16807) % 2147483647) / 2147483647;
 })();
 
-/** Заготовки: задник (небо, море со стеклом и прорезями лампочек), боковые щиты с горами. */
+/** Кучевое облако как на росписи: сплошной силуэт клубов кремовой краской с тёмной обводкой и завитками внутри,
+ * плоское снизу; большие — башней вверх. */
+function cloud(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number) {
+  const puffs: [number, number, number][] = [];
+  const n = 6 + Math.floor(w / 22);
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const hump = Math.pow(Math.sin(Math.PI * t), 0.8);
+    const r = h * (0.18 + 0.32 * hump) * (0.8 + rnd() * 0.4);
+    puffs.push([cx - w / 2 + w * t, cy - r * 0.55 - hump * h * 0.35 * rnd(), r]);
+  }
+  for (let i = 0; i < n * 0.8; i++) {
+    const t = 0.2 + rnd() * 0.6;
+    const hump = Math.sin(Math.PI * t);
+    puffs.push([cx - w / 2 + w * t, cy - h * (0.35 + 0.45 * hump * rnd()), h * (0.12 + 0.2 * hump)]);
+  }
+  g.save();
+  g.beginPath();
+  g.rect(cx - w, cy - h * 3, w * 2, h * 3);
+  g.clip(); // низ облака — ровный
+  const all = (grow: number, fill: string) => {
+    g.fillStyle = fill;
+    g.beginPath();
+    for (const [x, y, r] of puffs) {
+      g.moveTo(x + r + grow, y);
+      g.arc(x, y, r + grow, 0, Math.PI * 2);
+    }
+    g.fill();
+  };
+  all(2.2, 'rgba(105,120,98,0.85)'); // обводка
+  all(0, '#d9d9bf');
+  // завитки: верхняя дуга каждого клуба, светлая шапка и тёмная черта
+  g.lineCap = 'round';
+  for (const [x, y, r] of puffs) {
+    if (r < 6) continue;
+    g.strokeStyle = 'rgba(250,248,230,0.7)';
+    g.lineWidth = Math.max(2, r * 0.25);
+    g.beginPath();
+    g.arc(x - r * 0.08, y + r * 0.05, r * 0.7, Math.PI * 1.1, Math.PI * 1.7);
+    g.stroke();
+    g.strokeStyle = 'rgba(120,132,108,0.55)';
+    g.lineWidth = 1.4;
+    g.beginPath();
+    g.arc(x, y + r * 0.35, r * 0.95, Math.PI * 1.15, Math.PI * 1.55);
+    g.stroke();
+  }
+  g.restore();
+  g.fillStyle = 'rgba(105,120,98,0.6)';
+  g.fillRect(cx - w / 2 - h * 0.2, cy - 2, w + h * 0.4, 2);
+}
+
+/** Заготовка панорамы: небо, облака, море в мазках волн, прорези лампочек. */
 function paintPanorama() {
   const W = Math.round(PAN_W * K);
   const back = document.createElement('canvas');
@@ -82,249 +158,106 @@ function paintPanorama() {
   back.height = VH;
   const g = back.getContext('2d')!;
   const X = (cm: number) => (cm + PAN_W / 2) * K;
-  // небо: светлое у горизонта, голубое выше, мазки облаков
   const sky = g.createLinearGradient(0, 0, 0, HOR);
-  sky.addColorStop(0, '#3f7fb8');
-  sky.addColorStop(0.55, '#7fb4d8');
-  sky.addColorStop(1, '#d9e7e4');
+  sky.addColorStop(0, '#4b8775');
+  sky.addColorStop(0.55, '#79a48e');
+  sky.addColorStop(1, '#93b199');
   g.fillStyle = sky;
   g.fillRect(0, 0, W, HOR + 2);
-  for (let i = 0; i < 26; i++) {
-    const cx = rnd() * W;
-    const cy = 30 + rnd() * (HOR * 0.6);
-    const rw = 80 + rnd() * 220;
-    const rh = 10 + rnd() * 22;
-    const cg = g.createRadialGradient(cx, cy, 0, cx, cy, rw);
-    cg.addColorStop(0, 'rgba(255,255,255,0.55)');
-    cg.addColorStop(1, 'rgba(255,255,255,0)');
-    g.save();
-    g.translate(cx, cy);
-    g.scale(1, rh / rw);
-    g.translate(-cx, -cy);
-    g.fillStyle = cg;
-    g.beginPath();
-    g.arc(cx, cy, rw, 0, Math.PI * 2);
-    g.fill();
-    g.restore();
-  }
-  // дальний берег у горизонта
-  g.fillStyle = 'rgba(70,95,110,0.55)';
-  g.beginPath();
-  g.moveTo(0, HOR);
-  for (let x = 0; x <= W; x += 40) g.lineTo(x, HOR - 6 - 6 * Math.sin(x / 170) - 4 * Math.sin(x / 47));
-  g.lineTo(W, HOR);
-  g.fill();
-  // море: зелёное стекло, подсвеченное снизу, с рисунком волн
-  const sea = g.createLinearGradient(0, HOR, 0, VH);
-  sea.addColorStop(0, '#2f6f5a');
-  sea.addColorStop(0.35, '#1f6b45');
-  sea.addColorStop(1, '#0f4a2c');
-  g.fillStyle = sea;
-  g.fillRect(0, HOR, W, VH - HOR);
-  for (let row = 0; row < 46; row++) {
-    const t = row / 46;
-    const y = HOR + 4 + (VH - HOR) * Math.pow(t, 1.7);
-    const amp = 2 + 10 * t;
-    const len = 30 + 140 * t;
-    g.lineWidth = 1 + 3.5 * t;
-    for (let x = -rnd() * len; x < W; x += len * (0.8 + rnd() * 0.6)) {
-      g.strokeStyle = rnd() < 0.5 ? `rgba(150,220,170,${0.18 + 0.2 * t})` : `rgba(10,40,25,${0.25 + 0.2 * t})`;
+  // облака: ряды вверху, громады в середине, лёгкие у горизонта
+  for (let x = 40; x < W; x += 260 + rnd() * 220) cloud(g, x, 50 + rnd() * 60, 150 + rnd() * 180, 34 + rnd() * 22);
+  for (let x = 120; x < W; x += 380 + rnd() * 300) cloud(g, x, HOR * 0.66 + rnd() * 30, 260 + rnd() * 220, 110 + rnd() * 80);
+  for (let x = 0; x < W; x += 200 + rnd() * 200) {
+    g.strokeStyle = 'rgba(220,220,190,0.35)';
+    g.lineWidth = 1.5;
+    const y = HOR * (0.78 + rnd() * 0.15);
+    for (let k = 0; k < 6; k++) {
       g.beginPath();
-      g.moveTo(x, y);
-      g.quadraticCurveTo(x + len * 0.25, y - amp, x + len * 0.5, y);
-      g.quadraticCurveTo(x + len * 0.75, y + amp * 0.6, x + len, y);
+      g.arc(x + k * 16, y, 9 + rnd() * 5, Math.PI, 0);
       g.stroke();
     }
   }
-  // прорези под лампочки — восемь лучей по десять
-  for (let k = 0; k < TRACKS; k++) {
+  // море: тёмно-зелёное, мазки волн светлее и крупнее к зрителю
+  const sea = g.createLinearGradient(0, HOR, 0, VH);
+  sea.addColorStop(0, '#5b7d64');
+  sea.addColorStop(0.3, '#3f5f48');
+  sea.addColorStop(1, '#22382a');
+  g.fillStyle = sea;
+  g.fillRect(0, HOR, W, VH - HOR);
+  for (let row = 0; row < 40; row++) {
+    const t = row / 40;
+    const y = HOR + 3 + (VH - HOR) * Math.pow(t, 1.5);
+    const len = 40 + 220 * t;
+    g.lineWidth = 0.8 + 3 * t;
+    for (let x = -rnd() * len; x < W; x += len * (0.7 + rnd() * 0.7)) {
+      g.strokeStyle = rnd() < 0.6 ? `rgba(150,195,160,${0.25 + 0.25 * t})` : `rgba(15,35,22,${0.3 + 0.2 * t})`;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.bezierCurveTo(x + len * 0.3, y - 1 - 3 * t, x + len * 0.6, y + 1 + 3 * t, x + len, y);
+      g.stroke();
+    }
+  }
+  // прорези под лампочки — восемь лучей по десять, еле видны
+  for (let k = 0; k < TRACKS; k++)
     for (let i = 1; i <= 10; i++) {
       const l = lampAt(k, i);
-      g.fillStyle = 'rgba(5,25,15,0.55)';
+      g.fillStyle = 'rgba(10,30,18,0.45)';
       g.beginPath();
-      g.ellipse(X(l.x), l.y, l.r * 1.25, l.r * 0.5, 0, 0, Math.PI * 2);
+      g.ellipse(X(l.x), l.y, l.r * 1.2, l.r * 0.5, 0, 0, Math.PI * 2);
       g.fill();
     }
+  // зерно росписи
+  const grain = g.getImageData(0, 0, W, VH);
+  for (let i = 0; i < grain.data.length; i += 4) {
+    const v = (rnd() - 0.5) * 14;
+    grain.data[i] += v;
+    grain.data[i + 1] += v;
+    grain.data[i + 2] += v;
   }
-  // боковые щиты с горами (стоят перед цепью — корабли уходят за них)
-  const shields = document.createElement('canvas');
-  shields.width = W;
-  shields.height = VH;
-  const s = shields.getContext('2d')!;
-  for (const side of [-1, 1]) {
-    const edge = X(side * (HALF_W - 1));
-    const far = side < 0 ? 0 : W;
-    for (let layer = 0; layer < 3; layer++) {
-      s.fillStyle = ['#5d6f86', '#44526a', '#2f3a4c'][layer];
-      s.beginPath();
-      s.moveTo(far, HOR + 8);
-      let x = far;
-      const step = -side * (36 - layer * 6); // от края панорамы к середине
-      let y = HOR - 60 - layer * 25;
-      while ((side < 0 && x < edge + 40 - layer * 30) || (side > 0 && x > edge - 40 + layer * 30)) {
-        x += step;
-        y = Math.max(HOR - 200 + layer * 30, Math.min(HOR - 10, y + (rnd() - 0.45) * 50));
-        s.lineTo(x, y);
-      }
-      s.lineTo(x + step, HOR + 8);
-      s.closePath();
-      s.fill();
-    }
-    // скалистый мыс у воды
-    s.fillStyle = '#26303d';
-    s.beginPath();
-    s.moveTo(edge - side * 10, HOR + 8);
-    s.lineTo(edge + side * 30, HOR - 30);
-    s.lineTo(far, HOR - 40);
-    s.lineTo(far, HOR + 10);
-    s.fill();
-  }
-  return { back, shields, X };
-}
-
-function buildBoard(): string {
-  const circ = (cx: number, cy: number, n: number, kind: 'l' | 'h') =>
-    `<g class="mb-num" data-${kind}="${n}"><circle cx="${cx}" cy="${cy}" r="15"/><text x="${cx}" y="${cy + 6}">${n}</text></g>`;
-  const hits = Array.from({ length: 10 }, (_, i) => circ(48 + i * 27, 108 + Math.pow(i - 4.5, 2) * 0.9, i + 1, 'h')).join('');
-  const launches = Array.from({ length: 10 }, (_, i) => circ(640 + i * 33, 214, i + 1, 'l')).join('');
-  return `<svg class="mb-board" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="mbSky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#d6262d"/><stop offset=".35" stop-color="#ee4a2a"/><stop offset=".6" stop-color="#f7892a"/><stop offset=".75" stop-color="#fbb92e"/>
-      </linearGradient>
-      <radialGradient id="mbLamp"><stop offset="0" stop-color="#fffbe6"/><stop offset=".55" stop-color="#ffe066"/><stop offset="1" stop-color="#ff9d00" stop-opacity="0"/></radialGradient>
-      <filter id="mbGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
-    </defs>
-    <rect width="1000" height="400" fill="url(#mbSky)"/>
-    <path d="M0 150 C120 140 220 165 330 150 S560 140 700 158 S900 150 1000 140 L1000 170 C880 182 760 170 640 182 S380 180 250 176 S80 176 0 182Z" fill="#fbd03a" opacity=".85"/>
-    <path d="M0 190 C140 182 260 200 420 190 S700 196 1000 186 L1000 214 C820 222 620 210 430 220 S120 222 0 218Z" fill="#f7a6b8" opacity=".75"/>
-    <!-- самолёт -->
-    <path d="M640 78 l70 10 l42 -14 l6 4 l-34 16 l50 6 l12 -10 l6 2 l-6 14 l4 2 l-60 -2 l-46 18 l-6 -3 l30 -18 l-62 -10z" fill="#1d1d1d"/>
-    <!-- море -->
-    <path d="M0 250 C90 236 170 262 260 246 S430 238 520 252 S700 240 800 252 S940 246 1000 240 L1000 400 L0 400Z" fill="#8fd2ec"/>
-    <path d="M0 290 C70 270 150 300 240 280 S420 300 520 284 S720 300 820 282 S960 292 1000 284 L1000 400 L0 400Z" fill="#2e9e52"/>
-    <path d="M0 330 C80 312 160 342 260 322 S460 344 560 326 S760 344 860 328 S960 336 1000 330 L1000 400 L0 400Z" fill="#1d7d3c"/>
-    <path d="M30 262 c30 -18 60 -6 90 -16 c-10 22 -50 30 -90 16z M420 270 c40 -26 80 -8 120 -20 c-14 28 -70 34 -120 20z M760 268 c30 -20 80 -10 110 -18 c-16 24 -60 30 -110 18z" fill="#fff"/>
-    <!-- водяные столбы и взрыв -->
-    <path d="M520 262 C516 200 528 150 540 112 C552 150 556 200 552 262Z M566 262 C566 210 574 170 582 140 C590 176 592 220 588 262Z" fill="#f4fbff"/>
-    <g class="mb-blastimg">
-      <path d="M210 262 L178 150 L232 222 L250 92 L270 214 L320 120 L300 226 L370 170 L318 254Z" fill="#f4fbff"/>
-      <path d="M230 262 L222 190 L250 230 L268 150 L282 228 L318 190 L298 262Z" fill="#ffcf2e"/>
-      <path d="M250 262 L250 214 L266 238 L282 206 L284 262Z" fill="#e8331d"/>
-      <path d="M150 268 L196 232 L214 262 L196 276Z M168 246 l-6 -40 l8 0 l6 34z" fill="#111"/>
-      <path d="M310 272 L356 236 L388 258 L350 286Z M340 250 l10 -28 l7 3 l-9 28z" fill="#111"/>
-    </g>
-    <!-- подлодка: массивный корпус охрой с чёрной тенью, рубка, антенны, бурун у носа -->
-    <path d="M470 366 C520 330 640 300 790 276 C860 266 930 258 968 262 C982 266 980 280 964 288 C900 314 760 346 610 372 C560 382 500 388 478 380 C466 376 464 370 470 366Z" fill="#141414"/>
-    <path d="M500 356 C560 330 690 304 820 284 C880 276 930 270 958 270 L960 276 C900 292 780 316 660 338 C590 350 540 360 506 364Z" fill="#e8b434"/>
-    <path d="M520 350 C580 330 700 308 830 290" fill="none" stroke="#141414" stroke-width="3"/>
-    <path d="M690 300 L700 238 L790 230 L806 282Z" fill="#141414"/>
-    <path d="M706 296 L714 246 L780 240 L790 280Z" fill="#e8b434"/>
-    <path d="M722 290 L726 250 L742 248 L740 288Z M752 286 L755 246 L770 245 L770 282Z" fill="#141414"/>
-    <path d="M740 238 l3 -64 l6 0 l-3 64z M766 236 l2 -40 l5 0 l-2 40z" fill="#141414"/>
-    <path d="M746 176 L540 300 M746 176 L930 252" stroke="#141414" stroke-width="2"/>
-    <path d="M840 274 l40 -6 l4 8 l-40 6z" fill="#141414"/>
-    <path d="M452 384 c40 -30 90 -40 140 -26 c-30 6 -60 20 -70 34 c-24 4 -50 0 -70 -8z M600 372 c60 2 120 -8 170 -24 c-30 26 -110 40 -170 24z" fill="#fff"/>
-    <!-- заголовок и транспаранты -->
-    <text class="mb-title" x="590" y="56">МОРСКОЙ БОЙ</text>
-    <g class="mb-tr" data-t="prize"><rect x="18" y="14" width="96" height="24" rx="3"/><text x="66" y="32">ПРИЗОВАЯ</text></g>
-    <g class="mb-tr" data-t="game"><rect x="118" y="14" width="64" height="24" rx="3"/><text x="150" y="32">ИГРА</text></g>
-    <g class="mb-tr" data-t="over"><rect x="186" y="14" width="100" height="24" rx="3"/><text x="236" y="32">ОКОНЧЕНА</text></g>
-    <g class="mb-tr" data-t="torp"><rect x="40" y="52" width="210" height="26" rx="3"/><text x="145" y="71">ТОРПЕДИРОВАНО</text></g>
-    <g class="mb-tr" data-t="pusk"><rect x="760" y="168" width="80" height="26" rx="3"/><text x="800" y="187">ПУСК</text></g>
-    ${hits}${launches}
-    <!-- роза ветров -->
-    <g class="mb-rose" transform="translate(920 92)">
-      <circle r="44" class="mb-rose-glow"/>
-      <path d="M0 -40 L9 -9 L40 0 L9 9 L0 40 L-9 9 L-40 0 L-9 -9Z" fill="#f6c23a" stroke="#7a3d00" stroke-width="2"/>
-      <path d="M0 -40 L9 -9 L0 0Z M40 0 L9 9 L0 0Z M0 40 L-9 9 L0 0Z M-40 0 L-9 -9 L0 0Z" fill="#c9302c"/>
-      <circle r="7" fill="#fff4c8" stroke="#7a3d00" stroke-width="2"/>
-    </g>
-    <!-- смотровые окна -->
-    <rect x="36" y="286" width="196" height="100" rx="8" class="mb-win-frame"/>
-    <rect x="786" y="292" width="180" height="96" rx="8" class="mb-win-frame"/>
-    <rect x="3" y="3" width="994" height="394" rx="10" fill="none" stroke="#1a6f2b" stroke-width="6"/>
-  </svg>`;
+  g.putImageData(grain, 0, 0);
+  return { back, X };
 }
 
 export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const s: SeaState = newSea();
   if (import.meta.env.DEV) (window as unknown as { morboy?: SeaState }).morboy = s; // для проверки в превью
-  const wrap = document.createElement('div');
-  wrap.className = 'mb';
-  wrap.innerHTML = `<div class="mb-cab">
-      <div class="mb-top">${buildBoard()}
-        <canvas class="mb-win" style="left:3.6%;top:71.5%;width:19.6%;height:25%"></canvas>
-        <canvas class="mb-win" style="left:78.6%;top:73%;width:18%;height:24%"></canvas>
-      </div>
-      <div class="mb-scope">
-        <div class="mb-hood"><canvas class="mb-view" width="${VW}" height="${VH}"></canvas><div class="mb-eye"></div></div>
-        <div class="mb-msg" hidden></div>
-      </div>
-      <div class="mb-panel">
-        <div class="mb-grip mb-grip-l" title="Рукоятка перископа: стрелки ← →"><i></i></div>
-        <div class="mb-gauge" title="Поворот перископа"><svg viewBox="0 0 200 90"><path d="M20 80 A90 90 0 0 1 180 80" fill="none" stroke="#7a1d12" stroke-width="3"/>
-          ${Array.from({ length: 17 }, (_, i) => {
-            const a = Math.PI * (1 - i / 16);
-            const r1 = 72, r2 = i % 4 === 0 ? 58 : 64;
-            return `<line x1="${100 + r1 * Math.cos(a)}" y1="${88 - r1 * Math.sin(a)}" x2="${100 + r2 * Math.cos(a)}" y2="${88 - r2 * Math.sin(a)}" stroke="#3a1a10" stroke-width="2"/>`;
-          }).join('')}
-          <text x="28" y="88">ЛЕВЫЙ БОРТ</text><text x="100" y="60" text-anchor="middle">ГРАДУСЫ</text><text x="172" y="88" text-anchor="end">ПРАВЫЙ БОРТ</text>
-          <line class="mb-needle" x1="100" y1="88" x2="100" y2="22" stroke="#111" stroke-width="3"/></svg></div>
-        <div class="mb-grip mb-grip-r" title="Правая рукоятка — кнопка «ПУСК»: Z, Enter или щелчок"><i></i><button class="mb-fire" title="ПУСК"></button></div>
-        <button class="mb-coin" title="Бросить монету 15 коп.: пробел"><i></i><span>15 коп.</span></button>
-      </div>
-    </div>`;
-  root.appendChild(wrap);
-  const q = <T extends Element>(sel: string) => wrap.querySelector(sel) as T;
-  const view = q<HTMLCanvasElement>('.mb-view');
+  const turning = { l: false, r: false };
+  const sh = mountShell(root, opts, {
+    cls: 'avs--scope',
+    aspect: VW / VH,
+    info: `<p><b>«Морской бой»</b> <small>(электромеханический, 1974)</small>. Перископ, восемь трасс торпед, силуэты кораблей на цепи — по заводскому техописанию.
+      10 торпед; 10 попаданий из 10 — призовая игра, ещё три пуска.</p>`,
+    pad: 'x',
+    buttons: [{ id: 'fire', label: 'ПУСК', big: true }],
+    onCoin: () => insertCoin(),
+    onInput: (k, down) => {
+      if (k === 'left') turning.l = down;
+      else if (k === 'right') turning.r = down;
+      else if (k === 'fire' && down) doFire();
+    },
+  });
+  const view = document.createElement('canvas');
+  sh.screen.appendChild(view);
+  let LW = VW;
+  let LH = VH;
+  let tall = false;
+  const layout = () => {
+    const r = sh.wrap.getBoundingClientRect();
+    const t = r.width > 0 && r.width / Math.max(1, r.height) < 1.3;
+    if (t === tall && view.width) return;
+    tall = t;
+    LW = tall ? 900 : VW;
+    LH = tall ? VH + 220 : VH;
+    view.width = LW;
+    view.height = LH;
+    sh.wrap.style.setProperty('--ar', String(LW / LH));
+  };
+  layout();
+  const ro = new ResizeObserver(layout);
+  ro.observe(sh.wrap);
   const ctx = view.getContext('2d')!;
-  const wins = [...wrap.querySelectorAll<HTMLCanvasElement>('.mb-win')];
-  wins.forEach((c) => {
-    c.width = 360;
-    c.height = 180;
-  });
-  const msg = q<HTMLElement>('.mb-msg');
-  const needle = q<SVGLineElement>('.mb-needle');
-  const fireBtn = q<HTMLButtonElement>('.mb-fire');
-  const coinBtn = q<HTMLButtonElement>('.mb-coin');
-  const svg = q<SVGSVGElement>('.mb-board');
+  const { say, drawPocket } = sh;
   const pan = paintPanorama();
-
-  // ---- карточка справа: монеты
-  const info = document.createElement('div');
-  info.className = 'avt-info';
-  info.innerHTML = `<p><b>«Морской бой»</b> <small>(электромеханический, 1974)</small>. Перископ, восемь трасс торпед, силуэты кораблей на цепи — по заводскому техописанию.</p>
-    <div class="seg avt-mode">
-      <button data-m="strict" title="Рубль на день — шесть монет; кончились — приходите завтра">Строго: рубль в день</button>
-      <button data-m="free" title="Монета всегда найдётся">Бесконечные монетки</button>
-    </div>
-    <div class="avt-pocket"></div>`;
-  opts?.panel?.appendChild(info);
-  const pocketEl = info.querySelector('.avt-pocket') as HTMLElement;
-  const drawPocket = () => {
-    const p = pocket();
-    info.querySelectorAll<HTMLElement>('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === coinMode()));
-    pocketEl.innerHTML =
-      coinMode() === 'strict'
-        ? `<span class="avt-coins">${Array.from({ length: DAILY }, (_, i) => `<i class="${i < p.left ? '' : 'gone'}"></i>`).join('')}</span> ${p.left ? `В кармане ${p.left} × 15 коп.` : 'Монеты кончились — приходите завтра.'}`
-        : `<span class="avt-coins"><i></i><i></i><i></i></span> Монет сколько угодно. Сегодня брошено: ${p.played}.`;
-  };
-  info.querySelectorAll<HTMLButtonElement>('[data-m]').forEach((b) => {
-    b.onclick = () => {
-      setCoinMode(b.dataset.m as CoinMode);
-      drawPocket();
-    };
-  });
-  drawPocket();
-
-  let msgTimer = 0;
-  const say = (t: string, ms = 2400) => {
-    msg.textContent = t;
-    msg.hidden = false;
-    clearTimeout(msgTimer);
-    msgTimer = window.setTimeout(() => (msg.hidden = true), ms);
-  };
 
   // ---- звук (ШЭМС): шум торпеды, взрыв, «боевая» тревога
   const snd = {
@@ -380,9 +313,7 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
       drawPocket();
       return;
     }
-    coinBtn.classList.remove('drop');
-    void coinBtn.offsetWidth;
-    coinBtn.classList.add('drop');
+    sh.drop();
     const ev: SeaEvent[] = [];
     if (!coin(s, ev)) {
       giveBack();
@@ -391,24 +322,15 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     handle(ev);
     drawPocket();
   };
-  coinBtn.onclick = insertCoin;
 
   const doFire = () => {
     if (paused) return;
-    fireBtn.classList.add('down');
-    setTimeout(() => fireBtn.classList.remove('down'), 140);
     const ev: SeaEvent[] = [];
     fire(s, ev);
     handle(ev);
   };
-  fireBtn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    doFire();
-  });
 
-  // ---- поворот перископа: клавиши, перетаскивание по окуляру или рукояткам
-  const turning = { l: false, r: false };
+  // ---- поворот перископа: клавиши; мышью или пальцем — тащить панораму, щелчок без сдвига — «ПУСК»
   const onKey = (e: KeyboardEvent, down: boolean) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     if (e.metaKey || e.altKey) return;
@@ -425,6 +347,7 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     } else if (k === 'z' || k === 'я' || k === 'enter' || k === 'control' || k === 'arrowup' || k === 'w' || k === 'ц') {
       e.preventDefault();
       if (down && !e.repeat) doFire();
+      sh.lit('fire', down);
     }
   };
   const kd = (e: KeyboardEvent) => onKey(e, true);
@@ -433,72 +356,167 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
   window.addEventListener('keydown', kd);
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', blur);
-  const dragTurn = (el: HTMLElement, sens: number) => {
-    el.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).closest('.mb-fire')) return;
-      e.preventDefault();
-      el.setPointerCapture(e.pointerId);
-      let lx = e.clientX;
-      const move = (ev: PointerEvent) => {
-        const w = el.getBoundingClientRect().width || 1;
-        turn(s, s.aim - ((ev.clientX - lx) / w) * sens);
-        lx = ev.clientX;
-      };
-      const up = () => {
-        el.removeEventListener('pointermove', move);
-        el.removeEventListener('pointerup', up);
-        el.removeEventListener('pointercancel', up);
-      };
-      el.addEventListener('pointermove', move);
-      el.addEventListener('pointerup', up);
-      el.addEventListener('pointercancel', up);
-    });
-  };
-  dragTurn(q('.mb-hood'), FOV);
-  dragTurn(q('.mb-panel'), -FOV * 1.2);
+  view.style.cursor = 'ew-resize';
+  view.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    view.setPointerCapture(e.pointerId);
+    let lx = e.clientX;
+    let moved = 0;
+    const move = (ev: PointerEvent) => {
+      const w = view.getBoundingClientRect().width * ((RX * 2) / LW) || 1;
+      turn(s, s.aim - ((ev.clientX - lx) / w) * FOV);
+      moved += Math.abs(ev.clientX - lx);
+      lx = ev.clientX;
+    };
+    const up = () => {
+      view.removeEventListener('pointermove', move);
+      view.removeEventListener('pointerup', up);
+      view.removeEventListener('pointercancel', up);
+      if (moved < 6 && e.pointerType === 'mouse') doFire();
+    };
+    view.addEventListener('pointermove', move);
+    view.addEventListener('pointerup', up);
+    view.addEventListener('pointercancel', up);
+  });
 
   // ---- отрисовка
   const lampGlow = (x: number, y: number, r: number, a: number) => {
-    // лампа под зелёным стеклом: горячее ядро, тёплый ореол и пятно, расплывшееся в стекле
-    const R = r * 5;
+    // лампа под зелёным стеклом: горячее ядро и зелёное пятно, расплывшееся в стекле
+    const R = r * 4.5;
     const g = ctx.createRadialGradient(x, y, 0, x, y, R);
-    g.addColorStop(0, `rgba(255,255,235,${a})`);
-    g.addColorStop(0.12, `rgba(255,246,170,${a * 0.95})`);
-    g.addColorStop(0.4, `rgba(200,240,120,${a * 0.45})`);
-    g.addColorStop(1, 'rgba(60,200,110,0)');
+    g.addColorStop(0, `rgba(235,255,220,${a})`);
+    g.addColorStop(0.15, `rgba(170,255,150,${a * 0.9})`);
+    g.addColorStop(0.45, `rgba(70,220,110,${a * 0.4})`);
+    g.addColorStop(1, 'rgba(40,180,90,0)');
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(x, y, R, R * 0.55, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, R, R * 0.6, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   };
 
+  // табло в углах: лампы-номера и транспаранты (горят — светятся тёплым)
+  const lampNum = (x: number, y: number, n: number, on: boolean) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    if (on) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 18);
+      g.addColorStop(0, '#fffbe6');
+      g.addColorStop(0.5, '#ffd84a');
+      g.addColorStop(1, 'rgba(255,150,0,0)');
+      ctx.fillStyle = g;
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#16191a';
+      ctx.fill();
+      ctx.strokeStyle = '#3a4140';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.fillStyle = on ? '#6a1500' : '#59625f';
+    ctx.font = '700 13px "Arial Narrow", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(n), x, y + 1);
+  };
+  const banner = (x: number, y: number, w: number, text: string, on: boolean) => {
+    ctx.fillStyle = on ? '#fff0a0' : '#141718';
+    ctx.strokeStyle = on ? '#ffd84a' : '#343b3a';
+    ctx.lineWidth = 1.5;
+    if (on) {
+      ctx.shadowColor = '#ffcc33';
+      ctx.shadowBlur = 16;
+    }
+    ctx.fillRect(x, y, w, 24);
+    ctx.shadowBlur = 0;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, 23);
+    ctx.fillStyle = on ? '#7a1b00' : '#5a6361';
+    ctx.font = '700 14px "Arial Narrow", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + w / 2, y + 13);
+  };
+  const caption = (x: number, y: number, t: string) => {
+    ctx.fillStyle = '#7d8885';
+    ctx.font = '700 12px "Arial Narrow", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(t, x, y);
+  };
+  const drawBoard = () => {
+    const blink = roseOn(s);
+    caption(80, 22, 'ПУСКИ');
+    caption(LW - 80, 22, 'ПОРАЖЕНО');
+    for (let i = 0; i < 10; i++) {
+      const cx = 24 + (i % 5) * 28;
+      const cy = 42 + Math.floor(i / 5) * 30;
+      const n = i + 1;
+      lampNum(cx, cy, n, s.playing && (n === s.litLaunch || (s.prize && n === LAUNCHES)));
+      lampNum(LW - 136 + (i % 5) * 28, cy, n, n === s.litHit || (s.hits >= LAUNCHES && n === LAUNCHES && s.litHit !== 0));
+    }
+    banner(14, LH - 104, 120, 'ПРИЗОВАЯ', s.prize);
+    banner(14, LH - 74, 120, 'ИГРА', true);
+    banner(14, LH - 44, 120, 'ОКОНЧЕНА', !s.playing);
+    banner(LW - 154, LH - 74, 140, 'ТОРПЕДИРОВАНО', s.torpedoed);
+    banner(LW - 124, LH - 44, 80, 'ПУСК', s.ready && (blink || !s.alarm));
+    // «роза ветров» мигает, пока ждёт пуска
+    const rx = tall ? LW / 2 : LW - 84;
+    const ry = tall ? 55 : 130;
+    ctx.save();
+    ctx.translate(rx, ry);
+    const on = roseOn(s) && s.playing && s.ready;
+    ctx.fillStyle = on ? '#f6c23a' : '#2a2e2e';
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 ? 7 : 22;
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    if (on) {
+      ctx.shadowColor = '#ffcc33';
+      ctx.shadowBlur = 14;
+    }
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#7d8885';
+    ctx.font = '700 11px "Arial Narrow", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ЛЕВЫЙ БОРТ', 210, LH - 12);
+    ctx.fillText('ПРАВЫЙ БОРТ', LW - 210, LH - 12);
+  };
+
   const draw = () => {
-    const sx = (cm: number) => VW / 2 + (cm - s.aim) * K;
-    const srcX = pan.X(s.aim - FOV / 2);
-    ctx.clearRect(0, 0, VW, VH);
+    const sx = (cm: number) => OX + (cm - s.aim) * K;
+    const srcX = pan.X(s.aim) - OX;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, LW, LH);
+    ctx.save();
+    ctx.translate((LW - VW) / 2, (LH - VH) / 2);
+    ctx.save();
+    scopePath(ctx);
+    ctx.clip();
     ctx.drawImage(pan.back, srcX, 0, VW, VH, 0, 0, VW, VH);
     // корабли на линии горизонта (покачиваются на цепи)
-    for (const sh of ships(s)) {
-      const x = sx(sh.x);
+    for (const shp of ships(s)) {
+      const x = sx(shp.x);
       if (x < -300 || x > VW + 300) continue;
       ctx.save();
-      ctx.translate(x, HOR + 3 + Math.sin(s.time * 3 + sh.kind) * 0.6);
-      ctx.scale((sh.dir * K * SHIP_LEN) / 7.7, (K * SHIP_LEN) / 7.7);
-      ctx.fillStyle = '#121418';
-      ctx.fill(SHIPS[sh.kind]);
-      ctx.strokeStyle = 'rgba(200,210,220,0.35)';
-      ctx.lineWidth = 0.05;
-      ctx.stroke(SHIPS[sh.kind]);
+      // корабль выходит из дымки у края панорамы и уходит в неё
+      ctx.globalAlpha = Math.max(0, Math.min(1, (HALF_W + 5 - Math.abs(shp.x)) / 5));
+      ctx.translate(x, HOR + 2 + Math.sin(s.time * 3 + shp.kind) * 0.6);
+      ctx.scale((shp.dir * K * SHIP_LEN) / 7.7, (K * SHIP_LEN) / 7.7);
+      for (const part of SHIPS[shp.kind]) {
+        ctx.fillStyle = part.fill;
+        ctx.fill(part.path);
+      }
       ctx.restore();
     }
-    ctx.drawImage(pan.shields, srcX, 0, VW, VH, 0, 0, VW, VH);
     // лампочки трассы под стеклом
     const lamp = torpedoLamp(s);
     if (s.torpedo && lamp) {
-      // нить предыдущей лампы ещё остывает
       if (lamp > 1) {
         const p = lampAt(s.torpedo.track, lamp - 1);
         const cool = Math.max(0, 1 - ((s.torpedo.t % TICK) / TICK) * 2.2);
@@ -511,7 +529,7 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     // освещение: затемнение при взрыве и красный фонарь
     if (s.blast > 0) {
       const f = s.blast / BLAST_TIME;
-      ctx.fillStyle = 'rgba(2,4,8,0.86)';
+      ctx.fillStyle = 'rgba(2,6,4,0.86)';
       ctx.fillRect(0, 0, VW, VH);
       const bx = sx(trackX(s.blastTrack));
       const flick = 0.75 + 0.25 * Math.sin(s.time * 37);
@@ -522,49 +540,45 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, VW, VH);
     } else if (!s.playing) {
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillStyle = 'rgba(0,10,4,0.22)';
       ctx.fillRect(0, 0, VW, VH);
     }
-    // смотровые окна табло — та же панорама целиком, без визиров
-    for (const w of wins) {
-      const c = w.getContext('2d')!;
-      c.drawImage(view, VW * 0.1, VH * 0.18, VW * 0.8, VH * 0.6, 0, 0, w.width, w.height);
-    }
-    // визиры: средний и два боковых (тёмные, не в фокусе)
-    ctx.save();
-    ctx.filter = 'blur(2px)';
-    ctx.fillStyle = 'rgba(15,15,15,0.85)';
-    for (const [dx, w] of [[0, 7], [-VW * 0.14, 5], [VW * 0.14, 5]] as const) {
-      const x = VW / 2 + dx;
-      ctx.beginPath();
-      ctx.moveTo(x - w, 0);
-      ctx.lineTo(x + w, 0);
-      ctx.lineTo(x + w, HOR - 34);
-      ctx.lineTo(x, HOR - 12);
-      ctx.lineTo(x - w, HOR - 34);
-      ctx.fill();
-    }
+    // зелёное стекло: тон и затенение к краю окуляра
+    ctx.fillStyle = 'rgba(40,90,50,0.12)';
+    ctx.fillRect(0, 0, VW, VH);
+    const vg = ctx.createRadialGradient(OX, OY, RY * 0.7, OX, OY, RX * 1.05);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,8,2,0.6)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, VW, VH);
+    // линии визиров — во всю высоту
+    ctx.fillStyle = '#0b0d0c';
+    ctx.fillRect(OX - VISOR - 2, 0, 4, VH);
+    ctx.fillRect(OX + VISOR - 2, 0, 4, VH);
+    // средний визир — метка прицела над горизонтом
+    ctx.beginPath();
+    ctx.moveTo(OX - 7, HOR - 46);
+    ctx.lineTo(OX + 7, HOR - 46);
+    ctx.lineTo(OX, HOR - 30);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
-  };
-
-  const syncBoard = () => {
-    const tr = (t: string, on: boolean) => svg.querySelector(`[data-t=${t}]`)?.classList.toggle('on', on);
-    tr('game', true);
-    tr('over', !s.playing);
-    tr('prize', s.prize);
-    tr('pusk', s.ready);
-    tr('torp', s.torpedoed);
-    svg.querySelectorAll<SVGGElement>('[data-l]').forEach((g) => {
-      const n = Number(g.dataset.l);
-      g.classList.toggle('on', s.playing && (n === s.litLaunch || (s.prize && n === LAUNCHES)));
-    });
-    svg.querySelectorAll<SVGGElement>('[data-h]').forEach((g) => {
-      const n = Number(g.dataset.h);
-      g.classList.toggle('on', n === s.litHit || (s.hits >= LAUNCHES && n === LAUNCHES && s.litHit !== 0));
-    });
-    svg.querySelector('.mb-blastimg')?.classList.toggle('on', s.blast > 0);
-    svg.querySelector('.mb-rose')?.classList.toggle('on', roseOn(s));
-    needle.setAttribute('transform', `rotate(${(s.aim / AIM_MAX) * 70} 100 88)`);
+    // кромка окуляра — мягкая тень
+    ctx.save();
+    scopePath(ctx, 6);
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.filter = 'blur(6px)';
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+    drawBoard();
+    // указатель поворота
+    const nx = LW / 2 + (s.aim / AIM_MAX) * 120;
+    ctx.fillStyle = '#3a4140';
+    ctx.fillRect(LW / 2 - 130, LH - 6, 260, 2);
+    ctx.fillStyle = '#ffd84a';
+    ctx.fillRect(nx - 2, LH - 12, 4, 10);
   };
 
   let dead = false;
@@ -587,11 +601,10 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
       rose = r;
     }
     draw();
-    syncBoard();
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
-  say('Опустите монету (пробел). Перископ — стрелками или мышью, «ПУСК» — Z.', 4200);
+  say('Опустите монету (пробел). Перископ — стрелками или мышью, «ПУСК» — Z или щелчок.', 4200);
 
   return {
     pause(on) {
@@ -603,13 +616,12 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
     },
     destroy() {
       dead = true;
+      ro.disconnect();
       cancelAnimationFrame(raf);
-      clearTimeout(msgTimer);
-      info.remove();
       window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur);
-      wrap.remove();
+      sh.destroy();
     },
   };
 }
