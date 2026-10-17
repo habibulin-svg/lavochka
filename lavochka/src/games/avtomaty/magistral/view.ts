@@ -204,7 +204,13 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
   };
   const pick = (t: TrackKind) => {
     if (paused) return;
+    if (s.mode === 'play') {
+      say('ТРАССУ ВЫБИРАЮТ ДО СТАРТА');
+      sh.say('Трассу выбирают до «Старта» — дождитесь конца заезда.');
+      return;
+    }
     chooseTrack(s, t);
+    say(`ТРАССА «${TRACKS.find((x) => x.id === t)!.title.toUpperCase()}»`, 1.5);
   };
   info.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach(
     (b) =>
@@ -418,7 +424,10 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
         text(`ОПЛАЧЕНО: ${s.credits === 2 ? 'ДВОЕ' : 'ОДИН'}`, 70, '#ffffff', 14);
         text(`ТРАССА «${TRACKS.find((t) => t.id === s.track)!.title.toUpperCase()}»`, SH - 60, '#ffffff', 13);
         if (Math.floor(s.clock * 2) % 2) text('НАЖМИТЕ «СТАРТ»', SH - 42, '#ffff00', 12);
-      } else if (Math.floor(s.clock * 1.5) % 2) text('ОПУСТИТЕ МОНЕТУ', SH - 42, '#ffffff', 13);
+      } else {
+        text(`ТРАССА «${TRACKS.find((t) => t.id === s.track)!.title.toUpperCase()}»`, SH - 60, '#ffffff', 13);
+        if (Math.floor(s.clock * 1.5) % 2) text('ОПУСТИТЕ МОНЕТУ', SH - 42, '#ffffff', 13);
+      }
     } else {
       drawTrack(s.players[0], X0[0], 0);
       drawTrack(s.players[1], X0[1], 1);
@@ -429,6 +438,7 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
     }
     if (s.clock < msgUntil && msgText) text(msgText, SH / 2 + 40, '#ffffff', 11);
     info.querySelectorAll<HTMLButtonElement>('.mg-pad[data-t]').forEach((b) => b.classList.toggle('on', b.dataset.t === s.track));
+    info.querySelector('.mg-sel')?.classList.toggle('locked', s.mode === 'play');
     startBtn.classList.toggle('blink', s.mode === 'ready' && Math.floor(s.clock * 2) % 2 === 0);
   };
 

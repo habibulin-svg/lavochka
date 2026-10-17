@@ -10,3 +10,5 @@
 .mg-pad.on i { background: radial-gradient(circle, #fffbe0, #ffe25a 55%, #e3a600); box-shadow: 0 0 0 2px #1a1a1a, 0 0 10px #fff2a0; }
 .mg-start { display: block; width: 100%; margin-top: 8px; }
 .mg-start.blink { filter: brightness(1.3); }
+/* во время заезда трассу не меняют — площадки притушены */
+.mg-sel.locked .mg-pads, .mg-sel.locked .mg-start { opacity: 0.5; }

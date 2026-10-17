@@ -241,11 +241,13 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
   let LW = VW;
   let LH = VH;
   let tall = false;
+  let sized = false;
   const layout = () => {
     const r = sh.wrap.getBoundingClientRect();
     const t = r.width > 0 && r.width / Math.max(1, r.height) < 1.3;
-    if (t === tall && view.width) return;
+    if (t === tall && sized) return; // у нового холста свой размер 300×150 — первый раз задаём всегда
     tall = t;
+    sized = true;
     LW = tall ? 900 : VW;
     LH = tall ? VH + 220 : VH;
     view.width = LW;
