@@ -1,7 +1,7 @@
 /* Советские микропроцессорные автоматы: образы из MAME, своя эмуляция. */
 import type { TiaKind } from '../../arcade/tiamc1';
 
-export type Board = TiaKind | 'photon' | 'photon2';
+export type Board = TiaKind | 'photon' | 'photon2' | 'morboy';
 
 export interface AutoGame {
   id: string;
@@ -22,6 +22,14 @@ export interface AutoGame {
 }
 
 export const GAMES: AutoGame[] = [
+  {
+    id: 'morboy',
+    title: 'Морской бой',
+    board: 'электромеханический, 1974',
+    kind: 'morboy',
+    about: 'Перископ, восемь трасс торпед и силуэты кораблей на цепи — по заводскому техописанию. 10 торпед; 10 попаданий — призовая игра, ещё три пуска.',
+    joy: 'xy',
+  },
   {
     id: 'konek',
     title: 'Конёк-Горбунок',

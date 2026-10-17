@@ -1,0 +1,70 @@
+/* «Морской бой»: табло — роспись по стеклу с лампами, окуляр перископа в резиновом наглазнике, зелёный щит. */
+.mb { width: 100%; height: 100%; display: grid; place-items: center; }
+.mb-cab { --w: min(100cqw, 100cqh / 1.08); width: var(--w); container-type: inline-size; position: relative; user-select: none; -webkit-user-select: none;
+  touch-action: none; border-radius: 1.2cqw; padding: 1.4cqw; box-sizing: border-box;
+  background: linear-gradient(90deg, #2c8a3a, #46b04f 18%, #4cbb55 50%, #46b04f 82%, #2c8a3a);
+  box-shadow: inset 0 0 0 0.5cqw #9be05a, 0 1.4cqw 2.6cqw rgba(0, 0, 0, 0.5); }
+.mb-top { position: relative; aspect-ratio: 1000 / 400; border-radius: 0.8cqw; overflow: hidden; box-shadow: 0 0 0 0.5cqw #111; }
+.mb-board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.mb-board text { font-family: 'Arial Narrow', Arial, sans-serif; font-weight: 700; text-anchor: middle; }
+.mb-title { font: italic 900 52px Georgia, 'Times New Roman', serif; fill: #ffd21f; stroke: #2a1205; stroke-width: 3; paint-order: stroke; letter-spacing: 1px; }
+/* транспаранты: тёмные буквы на росписи; горят — подсвечены изнутри */
+.mb-tr rect { fill: rgba(20, 10, 5, 0.18); }
+.mb-tr text { font-size: 17px; fill: #2a1308; letter-spacing: 0.5px; }
+.mb-tr.on rect { fill: #fff2a8; filter: url(#mbGlow); }
+.mb-tr.on text { fill: #7a1b00; }
+.mb-num circle { fill: rgba(255, 255, 255, 0.12); stroke: #1a0d06; stroke-width: 2.4; }
+.mb-num text { font-size: 17px; fill: #1a0d06; }
+.mb-num.on circle { fill: url(#mbLamp); stroke: #ffefa0; filter: drop-shadow(0 0 6px #ffd84a); }
+.mb-num.on text { fill: #6a1500; }
+.mb-rose-glow { fill: none; }
+.mb-rose.on .mb-rose-glow { fill: url(#mbLamp); filter: url(#mbGlow); }
+.mb-blastimg { filter: brightness(0.75) saturate(0.8); transition: filter 0.1s; }
+.mb-blastimg.on { filter: brightness(1.35) saturate(1.3) drop-shadow(0 0 10px #ffd34a); }
+.mb-win-frame { fill: #0b0f10; stroke: #111; stroke-width: 6; }
+.mb-win { position: absolute; display: block; border-radius: 0.6cqw; opacity: 0.85; filter: brightness(0.8) contrast(1.1); }
+
+/* окуляр: резиновый наглазник, внутри — панорама в зеркале */
+.mb-scope { position: relative; margin: 1.6cqw 0 0; }
+.mb-hood { position: relative; aspect-ratio: 1200 / 560; border-radius: 9cqw / 7cqw; padding: 1.6cqw; box-sizing: border-box; cursor: ew-resize;
+  background: radial-gradient(ellipse at 50% 30%, #3a3a3a, #141414 70%);
+  box-shadow: inset 0 0.6cqw 1.2cqw rgba(255, 255, 255, 0.12), inset 0 -1cqw 2cqw #000, 0 0.8cqw 1.6cqw rgba(0, 0, 0, 0.6); }
+.mb-view { width: 100%; height: 100%; display: block; border-radius: 7.5cqw / 5.5cqw; }
+.mb-eye { position: absolute; inset: 1.6cqw; border-radius: 7.5cqw / 5.5cqw; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.75) 100%), radial-gradient(ellipse at 30% 18%, rgba(255, 255, 255, 0.08), transparent 40%);
+  box-shadow: inset 0 0 2.5cqw rgba(0, 0, 0, 0.9); }
+.mb-msg { position: absolute; left: 20%; right: 20%; bottom: 10%; padding: 0.8cqw 1.4cqw; border-radius: 0.8cqw; text-align: center; pointer-events: none;
+  background: rgba(0, 0, 0, 0.72); color: #ffe9a0; font: 700 2cqw/1.3 system-ui, sans-serif; }
+
+/* щит: рукоятки, шкала поворота, монетоприёмник */
+.mb-panel { position: relative; display: grid; grid-template-columns: 1fr 1.25fr 1fr 0.7fr; align-items: center; gap: 2cqw; margin-top: 1.6cqw;
+  padding: 1.4cqw 2cqw; border-radius: 0.8cqw; cursor: ew-resize;
+  background: linear-gradient(#2f6b33, #255a2a); box-shadow: inset 0 0.3cqw 0 rgba(255, 255, 255, 0.12), inset 0 -0.6cqw 1cqw rgba(0, 0, 0, 0.35); }
+.mb-grip { position: relative; height: 5cqw; display: flex; align-items: center; }
+.mb-grip i { display: block; width: 100%; height: 3.6cqw; border-radius: 1.8cqw;
+  background: repeating-linear-gradient(90deg, #1b1b1b 0 0.5cqw, #2f2f2f 0.5cqw 0.8cqw), linear-gradient(#444, #0b0b0b);
+  background-blend-mode: multiply; box-shadow: inset 0 0.4cqw 0.6cqw rgba(255, 255, 255, 0.18), 0 0.6cqw 0.8cqw rgba(0, 0, 0, 0.55); }
+.mb-grip-l i { border-radius: 1.8cqw 0.6cqw 0.6cqw 1.8cqw; }
+.mb-grip-r i { border-radius: 0.6cqw 1.8cqw 1.8cqw 0.6cqw; }
+.mb-fire { position: absolute; right: 18%; top: -1.6cqw; width: 4.4cqw; height: 4.4cqw; border-radius: 50%; border: 0; cursor: pointer;
+  background: radial-gradient(circle at 38% 32%, #ff9b8a, #d61e10 50%, #6b0a03); box-shadow: 0 0 0 0.5cqw #1a1a1a, 0 0.8cqw 0 0.5cqw #050505;
+  transition: transform 0.05s, box-shadow 0.05s; -webkit-tap-highlight-color: transparent; }
+.mb-fire.down { transform: translateY(0.6cqw); box-shadow: 0 0 0 0.5cqw #1a1a1a, 0 0.2cqw 0 0.5cqw #050505; }
+.mb-gauge { aspect-ratio: 200 / 90; border-radius: 4cqw 4cqw 1cqw 1cqw; padding: 0.4cqw 0.8cqw 0;
+  background: radial-gradient(ellipse at 50% 100%, #ffd9a0, #f08a5a 70%, #c4502e);
+  box-shadow: inset 0 0 0 0.35cqw #b9b9b9, inset 0 0 0 0.6cqw #555, 0 0.4cqw 0.8cqw rgba(0, 0, 0, 0.5); }
+.mb-gauge svg { width: 100%; height: 100%; display: block; }
+.mb-gauge text { font: 700 9px 'Arial Narrow', Arial, sans-serif; fill: #3a1a10; }
+.mb-coin { position: relative; justify-self: center; width: 7cqw; height: 10cqw; border: 0; border-radius: 0.5cqw; cursor: pointer; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8cqw;
+  background: linear-gradient(135deg, #f4f4f4, #a8a8a8 40%, #e6e6e6 60%, #8d8d8d); box-shadow: inset 0 0 0 0.3cqw #777, 0 0.4cqw 0.8cqw rgba(0, 0, 0, 0.45); }
+.mb-coin::before { content: ''; width: 0.9cqw; height: 4cqw; border-radius: 0.5cqw; background: #111; box-shadow: 0 0 0 0.3cqw #777; }
+.mb-coin span { font: 900 1.5cqw/1 Arial, sans-serif; color: #222; }
+.mb-coin i { position: absolute; left: 50%; top: 0; width: 4cqw; height: 4cqw; margin-left: -2cqw; border-radius: 50%; opacity: 0; pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, #fff8d0, #d4b25a 45%, #8f6d1e); }
+.mb-coin.drop i { animation: mb-drop 0.4s ease-in forwards; }
+@keyframes mb-drop {
+  0% { opacity: 1; transform: translateY(-120%) scaleX(1); }
+  60% { opacity: 1; transform: translateY(40%) scaleX(0.22); }
+  100% { opacity: 0; transform: translateY(70%) scaleX(0.1); }
+}
