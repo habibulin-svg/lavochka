@@ -1,0 +1,55 @@
+/* «Магия»: поле под камерой, фишки-портреты, маршруты, талисманы из оригинального листа */
+.mg-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.mg-board { position: relative; transform-origin: 0 0; }
+.mg-map { display: block; width: 100%; height: 100%; border-radius: 8px; user-select: none; }
+.mg-map-mini { position: absolute; inset: 0; filter: blur(7px) saturate(1.1); transform: scale(1.05); transition: opacity .45s ease; }
+.mg-map-full { position: relative; opacity: 0; transition: opacity .45s ease; }
+.mg-board.ready .mg-map-full { opacity: 1; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5); }
+.mg-board.ready .mg-map-mini { opacity: 0; }
+.mg-over { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mg-piece { pointer-events: none; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .6)) drop-shadow(0 8px 12px rgba(0, 0, 0, .3)); }
+.mg-ring { stroke: #fff8e6; stroke-width: 5; }
+.mg-on .mg-ring { stroke: #ffd764; stroke-width: 9; }
+.mg-move { fill: rgba(255, 214, 96, 0.3); stroke: #ffd764; stroke-width: 12; cursor: pointer; }
+.mg-move:hover { fill: rgba(255, 214, 96, 0.55); }
+.mg-jump { fill: rgba(120, 200, 255, 0.28); stroke: #7cd0ff; }
+.mg-jump:hover { fill: rgba(120, 200, 255, 0.55); }
+.mg-route { fill: none; stroke: #ffd764; stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 46; pointer-events: none; }
+.mg-trail { fill: none; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 34 24; opacity: .75; pointer-events: none; }
+
+.mg-panel { display: flex; flex-direction: column; gap: 8px; }
+.mg-me { font: 13px/1.35 'PT Serif', serif; }
+.mg-me-top { display: flex; gap: 8px; align-items: flex-start; }
+.mg-me i { opacity: .75; font-size: 12px; }
+.mg-fig { width: 46px; height: auto; border-radius: 4px; box-shadow: 0 2px 6px rgba(0, 0, 0, .45); flex: none; }
+.mg-tri { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 16px; }
+.mg-tri img { width: 22px; height: auto; }
+.mg-tri .mg-port { width: 26px; margin-left: 8px; border-radius: 50%; }
+.mg-tri .mg-magc { width: 26px; margin-left: 6px; }
+.mg-need { font: 12px/1.3 'PT Sans', system-ui, sans-serif; opacity: .8; }
+.mg-ts { display: grid; grid-template-columns: repeat(8, minmax(0, 30px)); gap: 3px; margin-top: 6px; }
+.mg-t { width: 100%; height: auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+.mg-t.mg-off { opacity: .18; filter: grayscale(1); }
+.mg-tray { height: 84px; }
+.mg-btns { display: flex; flex-direction: column; gap: 6px; }
+
+.mg-note { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; padding: 7px 16px; border-radius: 18px;
+  font: 600 15px/1.35 'PT Serif', serif; color: #fff; background: rgba(30, 14, 46, 0.9); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  width: max-content; max-width: min(680px, calc(100% - 24px)); text-align: center; }
+.mg-note-tri { width: 18px; vertical-align: -3px; }
+.mg-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; width: min(420px, 90%);
+  max-height: calc(100% - 70px); overflow: auto; padding: 12px 16px 14px; border-radius: 8px; text-align: center;
+  background: #fff8e6; color: #1a1a1a; border: 3px solid #b8323a; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); }
+.mg-card-k { font: 11px/1 'PT Sans', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #b8323a; }
+.mg-card-t { margin-top: 6px; font: 800 19px/1.2 'PT Sans', system-ui, sans-serif; }
+.mg-card-img { display: block; margin: 10px auto 0; height: min(230px, 34vh); width: auto; border-radius: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
+.mg-pick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+.mg-pick-b { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 74px; padding: 4px; border: 2px solid transparent;
+  border-radius: 6px; background: none; cursor: pointer; font: 11px/1.15 'PT Sans', system-ui, sans-serif; color: #1a1a1a; }
+.mg-pick-b:hover, .mg-pick-b:focus-visible { border-color: #b8323a; background: rgba(184, 50, 58, .08); }
+.mg-pick-b img { width: 62px; height: auto; border-radius: 3px; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+.mg-pick-b .mg-pick-port { border-radius: 50%; }
+/* показ правил: панель на тёмном */
+.demo-controls .mg-me { color: #efe6cc; }
+.demo-controls .mg-ts { grid-template-columns: repeat(8, minmax(0, 22px)); }
+@media (max-width: 700px) { .mg-fig { width: 34px; } .mg-ts { grid-template-columns: repeat(8, minmax(0, 26px)); margin-top: 4px; } }

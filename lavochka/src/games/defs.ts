@@ -14,6 +14,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   star: () => import('./star/def').then((m) => m.def),
   djio: () => import('./djio/def').then((m) => m.def),
   korona: () => import('./korona/def').then((m) => m.def),
+  magiya: () => import('./magiya/def').then((m) => m.def),
   beglye: () => import('./beglye/def').then((m) => m.def),
   nardy: () => import('./nardy/def').then((m) => m.def),
   durak: () => import('./durak/def').then((m) => m.def),
