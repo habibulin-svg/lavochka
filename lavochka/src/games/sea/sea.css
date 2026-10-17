@@ -86,3 +86,42 @@
 .sea-btns { display: flex; flex-wrap: wrap; gap: 5px; }
 .sea-btns .btn { font-size: 13px; padding: 5px 9px; }
 .sea-btns .btn.warn { background: #8a2a1a; color: #fff; }
+
+/* «Путешествие в Швамбранию»: кораблики на узлах маршрута, оригинальный компас со стрелкой, марки-швамбрании */
+.shv-ship { position: absolute; z-index: 30; width: 2.6%; aspect-ratio: 1; transform: translate(-50%, -60%); transition: left 0.2s ease, top 0.2s ease; pointer-events: auto;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65)); }
+.shv-ship svg { width: 100%; height: 100%; display: block; transition: transform 0.15s ease; }
+.shv-ship.small { width: 2%; }
+.shv-ship.lifted svg { transform: scale(1.3) translateY(-10%); }
+.shv-ship.on::before { content: ''; position: absolute; inset: -30%; border-radius: 50%; pointer-events: none; animation: sea-pulse 1.4s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(255, 220, 90, 0) 45%, rgba(255, 220, 90, 0.85) 58%, rgba(255, 220, 90, 0) 72%); }
+.shv-ship.wreck svg { filter: sepia(0.5); }
+.shv-ship.plen svg { filter: grayscale(0.8) brightness(0.8); }
+.shv-pen { display: none; position: absolute; right: -35%; top: -45%; width: 60%; aspect-ratio: 0.7; background: url(/shv/pennant.webp) center / contain no-repeat; }
+.shv-ship.lotsman .shv-pen { display: block; }
+.shv-pennant { position: absolute; z-index: 20; width: 3%; transform: translate(-50%, -50%) rotate(-12deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); pointer-events: none; }
+.shv-ice { position: absolute; z-index: 20; transform: translate(-50%, -50%); font-size: max(18px, 2.4vw); color: #eaf6ff; text-shadow: 0 0 6px #1a5aa0, 0 0 2px #000; pointer-events: none; }
+
+.shv-compass { position: relative; width: 150px; height: 150px; margin: 0 auto; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5)); }
+.shv-compass img { width: 100%; height: 100%; display: block; }
+.shv-needle { position: absolute; left: 50%; top: 50%; width: 14px; height: 70px; margin: -70px 0 0 -7px; transform-origin: 50% 100%;
+  transition: transform 1.3s cubic-bezier(0.15, 0.6, 0.2, 1); pointer-events: none; filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6)); }
+.shv-needle::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #10182e 50%, #34508f 50%);
+  clip-path: polygon(50% 0, 100% 78%, 50% 100%, 0 78%); }
+.shv-needle::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #d8b040; box-shadow: 0 0 0 2px #1b2a52; }
+.shv-readout { text-align: center; font: 600 14px/1.3 system-ui, sans-serif; min-height: 1.3em; }
+.shv-readout b { font-size: 20px; }
+.shv-stamps { display: inline-flex; align-items: center; gap: 1px; flex-wrap: wrap; }
+.shv-stamps img { width: 15px; height: 15px; border-radius: 2px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); }
+.shv-stamps b { margin-left: 4px; font-size: 13px; }
+.shv-stamps i { font-style: normal; font-size: 11px; margin: 0 2px; }
+.shv-list .sea-row { flex-wrap: wrap; cursor: default; }
+.shv-list .sea-row small { display: block; opacity: 0.75; font-size: 11px; }
+.shv-mini { width: 24px; height: 24px; flex: none; }
+.shv-mini svg { width: 100%; height: 100%; }
+.shv-q { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; background: #f3e7c4; color: #3a2410; }
+.shv-q small { font-size: 11px; opacity: 0.8; }
+.shv-q b { font-size: 15px; }
+.shv-q em { font-style: normal; font-weight: 900; color: #b0201a; font-size: 17px; }
+.shv-answer { display: flex; gap: 5px; }
+.shv-answer input { flex: 1; min-width: 0; font: 16px system-ui, sans-serif; padding: 5px 8px; border-radius: 6px; border: 1px solid #888; }
