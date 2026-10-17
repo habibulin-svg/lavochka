@@ -19,7 +19,7 @@ const mem = new Map<string, string>();
 
 const load = (id: string, kind: (typeof GAMES)[number]['kind']): ArcadeMachine => {
   const img = new Uint8Array(readFileSync(join(__dirname, '..', 'public', 'avtomaty', `${id}.bin`)));
-  if (kind === 'morboy') throw new Error('не плата');
+  if (kind === 'morboy' || kind === 'magistral') throw new Error('не плата');
   return kind === 'photon' ? new Photon(img) : kind === 'photon2' ? new Photon2(img) : new TiaMc1(img, kind);
 };
 /** Заставка что-то нарисовала: не один цвет и заметно не-чёрных точек («Кот» пишет белым по чёрному). */
@@ -32,7 +32,7 @@ const run = (m: ArcadeMachine, s: number, each?: (f: number) => void) => {
 };
 
 describe('автоматы', () => {
-  for (const g of GAMES.filter((x) => x.kind !== 'morboy')) {
+  for (const g of GAMES.filter((x) => x.kind !== 'morboy' && x.kind !== 'magistral')) {
     it(`${g.title}: заставка на экране`, () => {
       const m = load(g.id, g.kind);
       run(m, g.id === 'konek' || g.id === 'gorodki' ? 14 : 8);

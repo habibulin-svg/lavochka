@@ -127,6 +127,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   };
   pauseBtn.onclick = () => {
     Sound.ui();
+    pauseBtn.blur();
     setPaused(!paused);
   };
   veil.onclick = () => setPaused(false);
@@ -134,6 +135,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
     const b = h<HTMLButtonElement>(`<button class="btn primary">▶ ${esc(s.label)}</button>`);
     b.onclick = () => {
       Sound.ui();
+      b.blur();
       setPaused(false);
       inst?.launch?.(s.id);
     };
@@ -189,6 +191,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
     const b = h<HTMLButtonElement>(`<button class="${m.id === mode ? 'on' : ''}" title="${esc(m.hint ?? '')}">${label}</button>`);
     b.onclick = () => {
       Sound.ui();
+      b.blur(); // пробел в аркадах — игровая клавиша (монета, прыжок): не должен снова жать кнопку списка
       mode = m.id;
       store.set(`arcade.${mod.id}.mode`, mode);
       modes.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));

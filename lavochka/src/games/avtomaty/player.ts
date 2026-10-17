@@ -51,7 +51,7 @@ const circ = (x: number, y: number, r: number) => rect([x - r, y - r, x + r, y +
 function makeMachine(kind: AutoGame['kind'], img: Uint8Array): ArcadeMachine {
   if (kind === 'photon') return new Photon(img);
   if (kind === 'photon2') return new Photon2(img);
-  if (kind === 'morboy') throw new Error('«Морской бой» — не плата, у него свой вид');
+  if (kind === 'morboy' || kind === 'magistral') throw new Error('«Морской бой» — не плата, у него свой вид');
   return new TiaMc1(img, kind);
 }
 

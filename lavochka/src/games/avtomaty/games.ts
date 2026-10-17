@@ -1,7 +1,7 @@
 /* Советские микропроцессорные автоматы: образы из MAME, своя эмуляция. */
 import type { TiaKind } from '../../arcade/tiamc1';
 
-export type Board = TiaKind | 'photon' | 'photon2' | 'morboy';
+export type Board = TiaKind | 'photon' | 'photon2' | 'morboy' | 'magistral';
 
 export interface AutoGame {
   id: string;
@@ -28,6 +28,14 @@ export const GAMES: AutoGame[] = [
     board: 'электромеханический, 1974',
     kind: 'morboy',
     about: 'Перископ, восемь трасс торпед и силуэты кораблей на цепи — по заводскому техописанию. 10 торпед; 10 попаданий — призовая игра, ещё три пуска.',
+    joy: 'xy',
+  },
+  {
+    id: 'magistral',
+    title: 'Магистраль',
+    board: 'телевизионный, гонки на двоих',
+    kind: 'magistral',
+    about: 'Гонки на двоих по заводскому руководству: пять трасс — учебная, гоночная, специальная, ночная, гололёд. Обгони зелёный индикатор — приз.',
     joy: 'xy',
   },
   {
