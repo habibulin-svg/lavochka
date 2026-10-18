@@ -148,6 +148,20 @@ b.lt-cell.can:hover { box-shadow: 0 0 0 2px #b3322a; }
 .lt-sheets.small .lt-qcard.mini b { display: none; }
 .lt-tally { font: 13px 'PT Sans', sans-serif; color: #4a3a26; }
 
+/* ---- показ правил: окошко маленькое — всё помельче, чтобы три карточки влезли без прокрутки */
+.demo-board .lt-cloth { padding: 6px; gap: 6px; }
+.demo-board .lt-top { gap: 8px; }
+.demo-board .lt-bag { width: 40px; height: 46px; }
+.demo-board .lt-bag::before { left: 12px; right: 12px; }
+.demo-board .lt-bag span { bottom: 6px; font-size: 12px; }
+.demo-board .lt-barrel { --w: 22px; }
+.demo-board .lt-barrel.big { --w: 40px; }
+.demo-board .lt-call { font-size: 18px; }
+.demo-board .lt-prize, .demo-board .lt-who { font-size: 12px; }
+.demo-board .lt-card.big { --cell: min(6cqw, 8.6cqh); }
+.demo-board .lt-card:not(.big) { --cell: min(3.8cqw, 5.6cqh); }
+.demo-board .lt-sheet { width: min(560px, 94cqw); }
+
 @media (max-width: 600px) {
   .lt-cloth { padding: 8px 6px 18px; gap: 8px; }
   .lt-qcard { width: 170px; min-height: 120px; padding-top: 44px; font-size: 13px; }

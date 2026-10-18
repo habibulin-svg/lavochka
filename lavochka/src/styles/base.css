@@ -238,7 +238,7 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .rules-text p { line-height: 1.45; margin: 6px 0; }
 .demo { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .demo-stage { display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: center; background: #2a2230; border-radius: 10px; padding: 8px; }
-.demo-board { height: min(52vh, 440px); container-type: size; }
+.demo-board { height: min(52vh, 440px); container-type: size; position: relative; }
 .demo-controls .dice-tray { min-height: 80px; gap: 14px; }
 .demo-head { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; position: sticky; top: -22px; z-index: 2; }
 .demo-head .demo-caption { flex: 1; min-width: 220px; }
