@@ -19,8 +19,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PLANS = json.loads((ROOT / 'src/games/zakoldovannaya/data/plans.json').read_text(encoding='utf-8'))
 OUT = ROOT / 'public/zakoldovannaya/plans'
 
+BG, WALL, ROOM, INK = '#e9dcbc', '#7a5636', '#cdbb92', '#3b2716'
+
 # мутные сканы: тоньше разрез проёмов
-TUNE = {'1.webp': {'cut': 7}}
+TUNE = {'1.webp': {'cut': 7}, '3.webp': {'c': 14, 'block': 25, 'cut': 9}}
+# номер замка, который не находится сам: центр и высота в единицах плана
+TITLE = {'3.webp': (261, 40, 21)}
 
 # Части, где скан слишком мутный, — нарисованы вручную по скану и связям комнат (в единицах плана).
 # box — что заменяем; body — контур постройки (стены); floors — полы комнат; doors — двери; secret — потайные «S».
@@ -43,8 +47,129 @@ def cells15() -> list[dict]:
     return out
 
 
+def label(x: float, y: float, text: str, size: float = 7, rot: int = 0) -> str:
+    tr = f' transform="rotate({rot} {x} {y})"' if rot else ''
+    return (f'<text x="{x}" y="{y + size * 0.35:.1f}" font-family="PT Sans, Arial, sans-serif" font-weight="700" font-size="{size}" '
+            f'text-anchor="middle" fill="{INK}"{tr}>{text}</text>')
+
+
+def fir(cx: float, top: float, hh: float) -> str:
+    """Ёлка в три яруса — лес на плане."""
+    w = hh * 0.62
+    pts = []
+    for t in range(3):
+        y0 = top + hh * 0.28 * t
+        y1 = y0 + hh * 0.42
+        ww = w * (0.55 + 0.22 * t) / 2
+        pts.append(f'M{cx:.1f} {y0:.1f}L{cx + ww:.1f} {y1:.1f}L{cx - ww:.1f} {y1:.1f}Z')
+    trunk = f'<rect x="{cx - 1:.1f}" y="{top + hh * 0.98:.1f}" width="2" height="{hh * 0.12:.1f}" fill="{INK}"/>'
+    return f'<path d="{"".join(pts)}" fill="#6f7d3c" stroke="{INK}" stroke-width=".7" stroke-linejoin="round"/>' + trunk
+
+
+def sector(cx: float, cy: float, r0: float, r1: float, a0: float, a1: float, n: int = 28) -> list[tuple[float, float]]:
+    """Кольцевой сектор (углы в градусах, y вниз)."""
+    out = [(cx + r1 * np.cos(np.radians(a)), cy + r1 * np.sin(np.radians(a))) for a in np.linspace(a0, a1, n)]
+    out += [(cx + r0 * np.cos(np.radians(a)), cy + r0 * np.sin(np.radians(a))) for a in np.linspace(a1, a0, n)]
+    return out
+
+
+def polar(cx: float, cy: float, r: float, a: float) -> tuple[float, float]:
+    return round(cx + r * np.cos(np.radians(a)), 1), round(cy + r * np.sin(np.radians(a)), 1)
+
+
+def castle3() -> list[dict]:
+    """3-й замок: дуга с коридором и комнатами 3–6, круглый зал 1 с перегородкой, дом 7–8, башня 2, кельи 9–12."""
+    C = (172, 106)
+    W, F = 1, 2
+    draw = [
+        ('poly', sector(*C, 33, 72, 108, 236), W),  # дуга
+        ('line', [(121, 50.5), (190, 50.5)], 7, W),  # верхняя стена
+        ('poly', [(186, 36), (229, 36), (229, 71), (186, 71)], W),  # дом 7–8
+        ('line', [(220, 69), (232.5, 86), (232.5, 120), (196, 120)], 5, W),  # стена к залу
+        ('line', [(174, 52), (174, 82)], 7, W),  # переход к залу
+        ('line', [(168, 128), (159, 172)], 6, W),  # стена вниз
+        ('circle', *C, 26, W),  # зал
+        ('circle', 200.5, 173, 26.5, W),  # башня 2
+        ('poly', sector(*C, 61, 68, 114, 230), F),  # коридор
+        ('poly', sector(*C, 37, 57, 113, 135), F),  # 3
+        ('poly', sector(*C, 37, 57, 140, 163), F),  # 4
+        ('poly', sector(*C, 37, 57, 171, 198), F),  # 5
+        ('poly', sector(*C, 36, 61, 205, 215), F),  # проход c2
+        ('poly', sector(*C, 37, 57, 220, 233), F),  # 6
+        ('circle', *C, 21.5, F),  # пол зала
+        ('line', [(177.5, 82.5), (167.5, 128.5)], 4, W),  # перегородка зала
+        ('poly', [(191, 41), (205, 41), (205, 67), (191, 67)], F),  # 7
+        ('poly', [(210, 41), (224, 41), (224, 67), (210, 67)], F),  # 8
+        ('circle', 200.5, 173, 21, F),  # пол башни
+    ]
+    doors = [polar(*C, 72, 180), polar(*C, 59, 210), polar(*C, 47, 217.5), polar(*C, 47, 201.5), polar(*C, 34.5, 210),
+             polar(*C, 47, 167), polar(*C, 47, 137.5), polar(*C, 34.5, 151), polar(*C, 34.5, 124), (172.5, 105),
+             (169, 82), polar(*C, 24, 330), (198, 69), (217, 69), (207.5, 55), (200.5, 199)]
+    cells = []
+    for y0, y1 in ((57, 85), (94, 126), (130, 162), (166, 200)):
+        draw += [('poly', [(245, y0), (285, y0), (285, y1), (245, y1)], W), ('poly', [(250, y0 + 5), (280, y0 + 5), (280, y1 - 5), (250, y1 - 5)], F)]
+        cells.append((273, y0 + 6, 6, 9))
+    return [{'box': (99, 30, 290, 206), 'body': [], 'floors': [], 'draw': draw, 'doors': doors,
+             'stairs': [(215, 42, 6, 9), (179, 86, 6, 12), (206, 160, 6, 11)] + cells}]
+
+
+def castle9() -> list[dict]:
+    """9-й замок, левое крыло: дом 2–3 и два блока келий (6–8–10, 7–9–11) с коридором между ними."""
+    W, F = 1, 2
+    draw = [
+        ('line', [(55, 64), (55, 45), (168, 45)], 5, W),  # стена от дома вверх и верхняя стена
+        ('poly', [(42, 63), (83, 63), (83, 115), (42, 115)], W),  # дом 2–3
+        ('poly', [(47, 68), (78, 68), (78, 88), (47, 88)], F),  # 3
+        ('poly', [(47, 93), (78, 93), (78, 110), (47, 110)], F),  # 2
+        ('poly', [(96, 46), (165, 46), (165, 117), (96, 117)], W),  # блоки келий
+        ('poly', [(100, 50), (119, 50), (119, 70), (100, 70)], F),  # 6
+        ('poly', [(100, 74), (119, 74), (119, 92), (100, 92)], F),  # 8
+        ('poly', [(100, 96), (119, 96), (119, 113), (100, 113)], F),  # 10
+        ('poly', [(124, 50), (136, 50), (136, 113), (124, 113)], F),  # коридор c4
+        ('poly', [(141, 50), (160, 50), (160, 70), (141, 70)], F),  # 7
+        ('poly', [(141, 74), (160, 74), (160, 92), (141, 92)], F),  # 9
+        ('poly', [(141, 96), (160, 96), (160, 113), (141, 113)], F),  # 11
+    ]
+    doors = [(62.5, 90.5), (76, 65.5), (65, 112.5), (97.5, 58), (109.5, 72), (109.5, 94), (121.5, 83), (121.5, 104.5),
+             (138.5, 83), (138.5, 104.5), (150.5, 72), (150.5, 94), (162.5, 60), (130, 115)]
+    low = [  # нижний ряд: 13, 15, 16, 17, 18 и 12, 14, 24
+        ('poly', [(123, 119), (259, 119), (259, 189), (123, 189)], W),
+        ('poly', [(127, 133), (141, 133), (141, 152), (127, 152)], F),  # 13
+        ('poly', [(146, 133), (162, 133), (162, 152), (146, 152)], F),  # 15
+        ('poly', [(167, 133), (185, 133), (185, 152), (167, 152)], F),  # 16
+        ('poly', [(190, 123), (218, 123), (218, 152), (190, 152)], F),  # 17
+        ('poly', [(223, 123), (250, 123), (250, 152), (223, 152)], F),  # 18
+        ('poly', [(127, 160), (143, 160), (143, 185), (127, 185)], F),  # 12
+        ('poly', [(148, 160), (185, 160), (185, 185), (148, 185)], F),  # 14
+        ('poly', [(190, 160), (250, 160), (250, 185), (190, 185)], F),  # 24
+    ]
+    low_doors = [(124.5, 143), (143.5, 141), (164.5, 141), (155, 156), (145.5, 173), (187.5, 172), (204, 156), (236, 156),
+                 (220.5, 138), (204, 121), (236.5, 121), (253, 136)]
+    return [{'box': (39, 40, 167, 118), 'body': [], 'floors': [], 'draw': draw, 'doors': doors},
+            {'box': (120, 119, 263, 192), 'body': [], 'floors': [], 'draw': low, 'doors': low_doors, 'stairs': [(238, 179, 10, 5)]}]
+
+
 HAND = {
+    '9.webp': castle9(),
     '15.webp': cells15(),
+    # 3: берег с причалами, лодка, корабль и подписи; сам замок — castle3()
+    '3.webp': castle3() + [{'box': (0, 15, 99, 216), 'body': [], 'floors': [], 'svg': (
+        f'<polyline points="72,22 72,52 60,52 60,78 72,78 72,138 67,138 67,199 68,210" fill="none" stroke="{INK}" stroke-width="1.3"/>'
+        f'<path d="M55 57Q61.5 66 55 75Q48.5 66 55 57Z" fill="{WALL}" stroke="{INK}" stroke-width=".9"/>'
+        f'<path d="M56.5 139L64 151L64 197L49 197L49 151Z" fill="{WALL}" stroke="{INK}" stroke-width=".9"/>'
+        f'<rect x="52" y="153" width="9" height="40" fill="{ROOM}" stroke="{INK}" stroke-width=".7"/>'
+        + label(29, 61, 'Лодка может', 7.5, -90) + label(40, 64, 'плыть', 7.5, -90)
+        + label(78, 158, 'Корабль может', 7.5, -90) + label(90, 160, 'плыть за 10 монет', 7.5, -90))}],
+    '4.webp': [{'box': (357, 72, 411, 84), 'body': [], 'floors': [], 'svg': label(384, 78, 'ТРАКТИР', 8.5)}],
+    # 8: подпись «подземелье» и лес у замка (место 16)
+    '8.webp': [
+        {'box': (473, 118, 500, 266), 'body': [], 'floors': [],
+         'svg': ''.join(label(488, 130 + 13 * i, ch, 9) for i, ch in enumerate('подземелье'))},
+        {'box': (388, 34, 468, 104), 'body': [], 'floors': [],
+         'svg': ''.join(fir(*t) for t in [(434, 42, 28), (450, 47, 22), (412, 44, 30), (425, 54, 26), (398, 64, 26),
+                                          (412, 72, 26), (428, 74, 24), (443, 70, 24), (457, 70, 26)])
+                + f'<path d="M438 70A6 6 0 0 1 450 70Z" fill="{INK}"/>'},
+    ],
     '1.webp': [{  # донжон первого замка
         'box': (110, 62, 223, 160),
         'body': [(112, 81), (165, 81), (165, 67), (205, 67), (205, 81), (221, 81), (221, 154), (112, 154)],
@@ -67,11 +192,10 @@ HAND = {
     }],
 }
 
-BG, WALL, ROOM, INK = '#e9dcbc', '#7a5636', '#cdbb92', '#3b2716'
 ROOM_KINDS = {'room', 'tower', 'corridor'}
 
 
-def segment(im: np.ndarray, seeds: list[tuple[int, int]], cut: int = 13, block: int = 41, sharpen: bool = False) -> np.ndarray:
+def segment(im: np.ndarray, seeds: list[tuple[int, int]], cut: int = 13, block: int = 41, sharpen: bool = False, c: int | None = None) -> np.ndarray:
     """0 — фон, 1 — стена, 2 — комната, 3 — тушь."""
     if sharpen:  # мутный скан: подчеркнуть тонкие линии
         im = cv2.addWeighted(im, 2.2, cv2.GaussianBlur(im, (0, 0), 3), -1.2, 0)
@@ -79,7 +203,7 @@ def segment(im: np.ndarray, seeds: list[tuple[int, int]], cut: int = 13, block: 
     # светлота заливки скана (самый частый серый, не фон): по ней — чувствительность к туши
     hist = np.bincount(cv2.medianBlur(im, 9).ravel(), minlength=256)
     fill = int(np.argmax(hist[60:245])) + 60
-    c = int(np.clip(0.4 * (255 - fill), 7, 22))
+    c = c if c is not None else int(np.clip(0.4 * (255 - fill), 7, 22))
     ink = cv2.adaptiveThreshold(b, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, block, c)
     n, lab, st, _ = cv2.connectedComponentsWithStats(ink, 8)
     small = np.isin(lab, np.nonzero(st[:, 4] < 25)[0]) & (lab > 0)
@@ -151,6 +275,48 @@ def find_doors(im: np.ndarray, labels: list[tuple[float, float]] = ()) -> list[t
     return out
 
 
+def missing_doors(cls: np.ndarray, rooms: list[dict], links: list[dict], doors: list, k: float) -> list[tuple[float, float, float]]:
+    """Двери, которых не нашли на скане, — по связям комнат: в самом тонком месте стены между двумя комнатами."""
+    H, W = cls.shape
+    byid = {str(r['id']): r for r in rooms}
+    labs = {}
+    for c in (0, 2):
+        _, labs[c] = cv2.connectedComponents((cls == c).astype(np.uint8), connectivity=4)
+
+    def region(r: dict) -> np.ndarray | None:
+        c = 2 if r.get('kind') in ROOM_KINDS else 0
+        x, y = int(r['x'] * k), int(r['y'] * k)
+        win = labs[c][max(0, y - 20):y + 21, max(0, x - 20):x + 21]
+        v = win[win > 0]
+        if not v.size:
+            return None
+        return labs[c] == np.bincount(v).argmax()
+
+    r0 = np.median([d[2] for d in doors]) if doors else 2.2 * k
+    out: list[tuple[float, float, float]] = []
+    for l in links:
+        if l.get('kind') != 'door' or str(l['a']) not in byid or str(l['b']) not in byid:
+            continue
+        ma, mb = region(byid[str(l['a'])]), region(byid[str(l['b'])])
+        if ma is None or mb is None or (ma & mb).any():
+            continue
+        ys, xs = np.nonzero(ma | mb)
+        y0, y1, x0, x1 = max(0, ys.min() - 40), min(H, ys.max() + 41), max(0, xs.min() - 40), min(W, xs.max() + 41)
+        da = cv2.distanceTransform((~ma[y0:y1, x0:x1]).astype(np.uint8), cv2.DIST_L2, 5)
+        db = cv2.distanceTransform((~mb[y0:y1, x0:x1]).astype(np.uint8), cv2.DIST_L2, 5)
+        sc = da + db + np.abs(da - db)  # посередине стены и где она тоньше всего
+        sc[cls[y0:y1, x0:x1] != 1] = 1e9
+        i = int(np.argmin(sc))
+        if sc.flat[i] > 26 * k / 3 * 2:
+            continue
+        py, px = divmod(i, x1 - x0)
+        px, py = px + x0, py + y0
+        if any(np.hypot(px - d[0], py - d[1]) < 20 for d in doors + out):
+            continue
+        out.append((float(px), float(py), float(r0)))
+    return out
+
+
 def castle_number(cls: np.ndarray, seeds: list[tuple[int, int]]) -> tuple[float, float, float] | None:
     """Крупный номер замка в углу листа: плотные знаки без комнат внутри, справа. Стираем — его наберём шрифтом.
     Вернёт (x, y, высота) в пикселях скана."""
@@ -182,7 +348,7 @@ def erase_numbers(cls: np.ndarray, labels: list[tuple[float, float]]) -> list[tu
     вокруг (номер потом набирается шрифтом). Значки «S» и прочее рядом не трогаем."""
     ink = (cls == 3).astype(np.uint8)
     n, lab, st, cen = cv2.connectedComponentsWithStats(ink, 8)
-    small = [i for i in range(1, n) if st[i, 2] <= 34 and st[i, 3] <= 40 and st[i, 4] >= 6]
+    small = [i for i in range(1, n) if st[i, 2] <= 64 and st[i, 3] <= 40 and st[i, 4] >= 6]
     gone: set[int] = set()
     where: list[tuple[float, float] | None] = []
     for px, py in labels:
@@ -324,12 +490,25 @@ def build(cid: str, idx: int, img: str) -> None:
             cv2.fillPoly(sub, [np.array([(x * k, y * k) for x, y in part['body']], np.int32)], 1)
         for f in part['floors']:
             cv2.fillPoly(sub, [np.array([(x * k, y * k) for x, y in f], np.int32)], 2)
+        for op in part.get('draw', []):
+            if op[0] == 'poly':
+                cv2.fillPoly(sub, [np.array([(x * k, y * k) for x, y in op[1]], np.int32)], op[2])
+            elif op[0] == 'line':
+                cv2.polylines(sub, [np.array([(x * k, y * k) for x, y in op[1]], np.int32)], False, op[3], int(op[2] * k))
+            elif op[0] == 'circle':
+                cv2.circle(sub, (int(op[1] * k), int(op[2] * k)), int(op[3] * k), op[4], -1)
         cls[y0:y1, x0:x1] = sub[y0:y1, x0:x1]
     big = castle_number(cls, [(int(r['x'] * k), int(r['y'] * k)) for r in rooms])
+    if img in TITLE:
+        tx, ty, th = TITLE[img]
+        cv2.rectangle(cls, (int((tx - th * 0.6) * k), int((ty - th * 0.6) * k)), (int((tx + th * 0.6) * k), int((ty + th * 0.6) * k)), 0, -1)
+        big = (tx * k, ty * k, th * k)
     doors = find_doors(im, [(r['x'] * k, r['y'] * k) for r in numbered])
     for part in hand:
         bx0, by0, bx1, by1 = (v * k for v in part['box'])
         doors = [d for d in doors if not (bx0 <= d[0] <= bx1 and by0 <= d[1] <= by1)] + [(x * k, y * k, 2.2 * k) for x, y in part.get('doors', [])]
+    if not hand:  # в нарисованных вручную частях двери заданы сами
+        doors += missing_doors(cls, rooms, P['links'], doors, k)
     for x, y, r in doors:
         # проём с дверью — сплошная стена, сама дверь рисуется кружком поверх
         cv2.circle(cls, (int(x), int(y)), int(r + 3), 1, -1)
@@ -338,6 +517,15 @@ def build(cid: str, idx: int, img: str) -> None:
     def handmade(r: dict) -> bool:
         return any(p['box'][0] <= r['x'] <= p['box'][2] and p['box'][1] <= r['y'] <= p['box'][3] for p in HAND.get(img, []))
     numbered = [{**r, 'x': (sp[0] / k if sp and not handmade(r) else r['x']), 'y': (sp[1] / k if sp and not handmade(r) else r['y'])} for r, sp in zip(numbered, spots)]
+    # страховка: под набранным номером старой туши не остаётся (цифры, слипшиеся со значком лестницы)
+    for r in numbered:
+        hw, hh = (len(str(r['id'])) * 3.4 + 1.5) * k, 6.5 * k
+        x0, x1 = int(max(0, r['x'] * k - hw)), int(r['x'] * k + hw)
+        y0, y1 = int(max(0, r['y'] * k - hh)), int(r['y'] * k + hh)
+        win = cls[y0:y1, x0:x1]
+        vals = win[win != 3]
+        if vals.size:
+            win[win == 3] = np.bincount(vals, minlength=3).argmax()
     # длинные обводки туши — часть стены (края задаёт ровная обводка), тушью остаются только значки: двери, «S», ловушки
     marks = np.zeros(cls.shape, bool)
     n, lab, st, _ = cv2.connectedComponentsWithStats((cls == 3).astype(np.uint8), 8)
@@ -348,7 +536,7 @@ def build(cid: str, idx: int, img: str) -> None:
         ring = cls[max(0, y - 4):y + bh + 4, max(0, x - 4):x + bw + 4]
         vals = ring[ring != 3]
         around = int(np.bincount(vals, minlength=3).argmax()) if vals.size else 1
-        if a < 20:
+        if a < 20 or (around == 0 and a < 45):
             cls[lab == i] = around  # соринка — под цвет окружения, без дырок в заливке
             continue
         # чёрточки внутри стены — шум скана
@@ -391,7 +579,7 @@ def build(cid: str, idx: int, img: str) -> None:
         f'<g font-family="PT Sans, Arial, sans-serif" font-weight="700" font-size="11" text-anchor="middle" fill="#2b1a0e">{nums}</g>'
         f'<g font-family="PT Serif, Georgia, serif" font-weight="700" font-style="italic" font-size="8" text-anchor="middle" fill="{INK}">{secret}</g>'
         f'<g stroke="{ROOM}" stroke-width=".5">{stairs}</g>{arrows}'
-        f'{title}'
+        f'{title}{"".join(part.get("svg", "") for part in hand)}'
         '</svg>'
     )
     name = Path(img).stem + '.svg'
