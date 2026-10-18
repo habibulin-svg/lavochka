@@ -67,7 +67,9 @@ export class PlanView {
       part.style.left = `${x}px`;
       part.style.width = `${w * this.scale}px`;
       part.style.height = `${h * this.scale}px`;
-      if (img) part.innerHTML = `<img src="${IMG}plans/${img}" alt="" draggable="false" class="zs-plan-img ${look() === 'color' ? 'tinted' : ''}">`;
+      // цветной вид — чистый рисунок той же геометрии (tools/zakoldovannaya/plans_svg.py), «как в 1990-м» — скан книги
+      if (img && look() === 'color') part.innerHTML = `<img src="${IMG}plans/${img.replace(/\.webp$/, '.svg')}" alt="" draggable="false" class="zs-plan-img clean">`;
+      else if (img) part.innerHTML = `<img src="${IMG}plans/${img}" alt="" draggable="false" class="zs-plan-img">`;
       else part.innerHTML = this.schematic(plan, i, w, h);
       this.sheet.append(part);
       this.offs.push(x);
@@ -88,20 +90,17 @@ export class PlanView {
     void site;
   }
 
-  /** Достроенная часть: комнаты рамками на пергаменте, ходы — линиями. */
+  /** Достроенная часть — в той же манере, что и перерисованные планы книги: толстые стены, проходы, светлые комнаты. */
   private schematic(plan: Plan, img: number, w: number, h: number): string {
     const rooms = plan.rooms.filter((r) => (r.img ?? 0) === img);
     const ids = new Set(rooms.map((r) => r.id));
-    const lines = plan.links
-      .filter((l) => ids.has(l.a) && ids.has(l.b))
-      .map((l) => {
-        const a = rooms.find((r) => r.id === l.a)!;
-        const b = rooms.find((r) => r.id === l.b)!;
-        return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="zs-sch-${l.kind}"/>`;
-      })
-      .join('');
-    const boxes = rooms.map((r) => `<rect x="${r.x - 22}" y="${r.y - 18}" width="44" height="36" rx="3"/><text x="${r.x}" y="${r.y + 5}">${r.id}</text>`).join('');
-    return `<svg class="zs-sch" viewBox="0 0 ${w} ${h}" width="100%" height="100%"><rect width="${w}" height="${h}" class="zs-sch-bg"/>${lines}${boxes}<text x="${w / 2}" y="${h - 8}" class="zs-sch-note">достроено: на плане книги не нарисовано</text></svg>`;
+    const links = plan.links.filter((l) => ids.has(l.a) && ids.has(l.b)).map((l) => ({ l, a: rooms.find((r) => r.id === l.a)!, b: rooms.find((r) => r.id === l.b)! }));
+    const line = (a: PlanRoom, b: PlanRoom, cls: string) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${cls}"/>`;
+    const box = (r: PlanRoom, pad: number, cls: string) => `<rect x="${r.x - 20 - pad}" y="${r.y - 16 - pad}" width="${40 + 2 * pad}" height="${32 + 2 * pad}" rx="2" class="${cls}"/>`;
+    return `<svg class="zs-sch" viewBox="0 0 ${w} ${h}" width="100%" height="100%"><rect width="${w}" height="${h}" class="zs-sch-bg"/>
+      ${links.map(({ a, b }) => line(a, b, 'zs-sch-cw')).join('')}${rooms.map((r) => box(r, 5, 'zs-sch-wall')).join('')}
+      ${links.map(({ l, a, b }) => line(a, b, l.kind === 'secret' ? 'zs-sch-cs' : 'zs-sch-cf')).join('')}${rooms.map((r) => box(r, 0, 'zs-sch-room')).join('')}
+      ${rooms.map((r) => `<text x="${r.x}" y="${r.y + 4}">${r.id}</text>`).join('')}<text x="${w / 2}" y="${h - 6}" class="zs-sch-note">достроено: на плане книги не нарисовано</text></svg>`;
   }
 
   private pos(r: PlanRoom): { x: number; y: number } {

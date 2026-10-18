@@ -93,10 +93,14 @@
 .zs-num { position: absolute; transform: translate(-50%, -50%); font: 700 16px 'PT Sans', sans-serif; color: #fff; background: rgba(142, 27, 18, .8); border-radius: 8px; padding: 0 5px; pointer-events: none; }
 .zs-num.done { background: rgba(60, 60, 60, .7); }
 .zs-sch-bg { fill: #e9dcbc; }
-.zs-sch rect:not(.zs-sch-bg) { fill: #cdbb92; stroke: #4a3520; stroke-width: 2; }
+.zs-plan-img.clean { filter: none; }
+.zs-root.night .zs-plan-img.clean { filter: brightness(.82); }
 .zs-sch text { font: 700 13px 'PT Sans', sans-serif; text-anchor: middle; fill: #2b1a0e; }
-.zs-sch line { stroke: #4a3520; stroke-width: 3; }
-.zs-sch .zs-sch-secret { stroke-dasharray: 4 4; stroke: #8e1b12; }
+.zs-sch .zs-sch-wall { fill: #7a5636; stroke: #3b2716; stroke-width: 1.1; }
+.zs-sch .zs-sch-room { fill: #cdbb92; stroke: #3b2716; stroke-width: .9; }
+.zs-sch .zs-sch-cw { stroke: #7a5636; stroke-width: 15; }
+.zs-sch .zs-sch-cf { stroke: #cdbb92; stroke-width: 6; }
+.zs-sch .zs-sch-cs { stroke: #cdbb92; stroke-width: 6; stroke-dasharray: 3 3; }
 .zs-sch-note { font-style: italic; font-weight: 400 !important; opacity: .7; }
 
 /* бой */
