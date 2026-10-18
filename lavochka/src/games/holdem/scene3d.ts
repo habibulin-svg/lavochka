@@ -88,6 +88,13 @@ const SLOT = {
   /** Моя ставка — внизу кадра слева (справа — мои карты). */
   mine: { f: 6.1, r: -2.0 },
 };
+/** Узкий экран (телефон стоя): кадр по ширине впритык к общим картам — стопка и фишка дилера ближе к середине,
+ * банк левее (справа внизу крупные свои карты). */
+const SLOT_NARROW: Partial<typeof SLOT> = {
+  stack: { f: 1.0, r: 1.65 },
+  button: { f: 2.15, r: -1.85 },
+  pot: { f: 5.3, r: -1.1 },
+};
 
 const CX = 500;
 const CY = 320;
@@ -235,6 +242,8 @@ export class Table3D {
   private shot: number | null = null;
   /** Вид «как в Apple poker»: кого снимаем (основание кадра у борта и направление к камере) — общие карты и банк
    * кладём перед ним, как будто он напротив нас. null — обычная раскладка. */
+  /** Узкий экран (телефон стоя) — своя раскладка вещей на сукне. */
+  private narrow = false;
   private stage: { seat: number; base: THREE.Vector3; fwd: THREE.Vector3 } | null = null;
   private lastItems: Item3D[] = [];
   /** Сукно с разметкой (рамка для общих карт, надписи) и без — для вида «как в Apple», где карты кладутся перед соперником. */
@@ -935,8 +944,10 @@ export class Table3D {
       const aLow = Math.atan2(hCam, D - STAGE_BOARD - 2.6);
       const pitch = (aHead + aLow) / 2;
       let vfov = (aLow - aHead) * 1.08;
-      // узкий экран: по ширине должны влезть соперник (локти могут чуть выйти за край) и все пять общих карт
-      const hfov = 2 * Math.atan(Math.max(5.0 / 2 / D, (2.4 * CARD_W * STAGE_CARD + 0.25) / (D - STAGE_BOARD)));
+      // узкий экран: по ширине должны влезть соперник (локти выходят за край) и все пять общих карт — впритык,
+      // чтобы карты были крупнее; глубина — вдоль взгляда (камера смотрит сверху вниз под углом pitch)
+      const depth = (dz: number, dy: number) => dz * Math.cos(pitch) + dy * Math.sin(pitch);
+      const hfov = 2 * Math.atan(Math.max(4.4 / 2 / depth(D, hCam - 3), (2.4 * CARD_W * STAGE_CARD + 0.2) / depth(D - STAGE_BOARD, hCam)));
       vfov = Math.max(vfov, 2 * Math.atan(Math.tan(hfov / 2) / Math.max(a, 0.1)));
       this.fovGoal = THREE.MathUtils.clamp((vfov * 180) / Math.PI, 30, 80);
       this.camGoal.pos.copy(base).addScaledVector(fwd, D).setY(hCam);
@@ -1030,7 +1041,8 @@ export class Table3D {
    * (по умолчанию — разлёт столбиков стопки, 0,6, и ещё запас до валика). */
   private slot(name: keyof typeof SLOT, h = 0.02, margin = 0.95): THREE.Vector3 {
     const st = this.stage!;
-    const p = st.base.clone().addScaledVector(st.fwd, SLOT[name].f).addScaledVector(this.right(st), SLOT[name].r).setY(h);
+    const sl = (this.narrow && SLOT_NARROW[name]) || SLOT[name];
+    const p = st.base.clone().addScaledVector(st.fwd, sl.f).addScaledVector(this.right(st), sl.r).setY(h);
     // на закруглении стола место сбоку от соперника заезжает на валик (стол «съедает» карты и фишки) — сдвигаем к середине
     const rx = FELT_RX - margin;
     const rz = FELT_RZ - margin;
@@ -1121,9 +1133,15 @@ export class Table3D {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.host.style.setProperty('--hand', `${Math.round(Math.min(h * 0.24, w * 0.15))}px`);
+    // узкий экран (телефон стоя): свои карты крупнее, своя табличка уходит влево, чтобы не лечь под них
+    const narrow = w / h < 1;
+    const flip = narrow !== this.narrow;
+    this.narrow = narrow;
+    this.host.classList.toggle('hd-narrow', narrow);
+    this.host.style.setProperty('--hand', `${Math.round(narrow ? Math.min(h * 0.2, w * 0.3) : Math.min(h * 0.24, w * 0.15))}px`);
     this.camInit = false;
     this.aimCamera();
+    if (flip && this.stage) this.restage();
     this.drawLabels();
     this.kick();
   }
