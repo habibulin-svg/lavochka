@@ -45,7 +45,8 @@ export class Authority {
   }
 
   act(seat: number, action: unknown): StepResult | null {
-    if (this.result || !this.toAct().includes(seat)) return null;
+    if (this.result) return null;
+    if (!this.toAct().includes(seat) && !this.def.free?.(this.state, seat, action)) return null;
     let res;
     try {
       res = this.def.apply(this.state, seat, action, this.rng);

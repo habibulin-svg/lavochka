@@ -128,9 +128,9 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     for (const s of allSeats) {
       const st = draft.seats[s];
       if (!active.includes(s)) st.kind = 'off';
-      else if (st.kind === 'off') st.kind = !anyHuman && s === active[0] ? 'human' : 'bot';
+      else if (st.kind === 'off') st.kind = !anyHuman && s === (def.defaultHuman != null && active.includes(def.defaultHuman) ? def.defaultHuman : active[0]) ? 'human' : 'bot';
     }
-    if (!active.some((s) => draft.seats[s].kind === 'human' || draft.seats[s].kind === 'remote')) draft.seats[active[0]].kind = 'human';
+    if (!active.some((s) => draft.seats[s].kind === 'human' || draft.seats[s].kind === 'remote')) draft.seats[def.defaultHuman != null && active.includes(def.defaultHuman) ? def.defaultHuman : active[0]].kind = 'human';
     renderSeats();
   }
 
