@@ -22,3 +22,8 @@ docs/analysis/_tmp*/
 # в репозиторий идёт только README.md со ссылками
 materials/*
 !materials/README.md
+
+# секреты (ключи API) — только локально
+.env
+*.env
+!*.env.example

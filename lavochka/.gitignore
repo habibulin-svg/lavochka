@@ -4,3 +4,5 @@ dist-server
 /data
 tools/solitaire/raw/
 tools/geo/data/
+tools/seo/raw/
+tools/seo/raw-run.log
