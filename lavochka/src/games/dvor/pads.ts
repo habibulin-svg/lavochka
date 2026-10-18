@@ -14,6 +14,7 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import type { KakuroData, KratData, MirrorData, RaskData } from './kinds/paint';
 import type { GearsAns, GearsData, TurnirData, ZemData } from './kinds/mech';
 import { COLORS, type Fig, type KartinkaData, type MatrixData, type OdinData, type VennData } from './kinds/misc';
 import type { FonariData } from './kinds/fonari';
@@ -1700,6 +1701,209 @@ function zemPad(d: ZemData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- по кратным
+
+function kratPad(d: KratData, changed: Changed): Pad {
+  const { n } = d;
+  const el = h(`<div class="dv-krat" style="--n:${n}"></div>`);
+  let path = [d.start];
+  let fixed = 1;
+  let off = false;
+  const boxes: HTMLElement[] = [];
+  const adj = (a: number, b: number) => Math.abs((a % n) - (b % n)) + Math.abs(((a / n) | 0) - ((b / n) | 0)) === 1;
+  const draw = () => {
+    const at = new Map(path.map((c, i) => [c, i]));
+    boxes.forEach((b, i) => {
+      b.classList.toggle('on', at.has(i));
+      b.classList.toggle('head', i === path[path.length - 1]);
+      b.classList.toggle('fixed', (at.get(i) ?? 99) < fixed);
+    });
+  };
+  d.nums.forEach((v, i) => {
+    const b = h(`<div class="kr${i === d.start ? ' st' : i === d.end ? ' fin' : ''}">${v}</div>`);
+    b.addEventListener('click', () => {
+      if (off) return;
+      const at = path.indexOf(i);
+      if (at >= 0) path = path.slice(0, Math.max(at + 1, fixed));
+      else if (adj(path[path.length - 1], i)) path.push(i);
+      else return;
+      draw();
+      changed();
+    });
+    boxes.push(b);
+    el.appendChild(b);
+  });
+  draw();
+  const wrap = h(`<div class="dv-morboyw"><p class="dv-known">Прыгать можно только на числа, которые делятся на <b>${d.k}</b>. Начало — зелёная клетка, конец — красная. Нажимай клетки по порядку.</p></div>`);
+  wrap.appendChild(el);
+  return {
+    el: wrap,
+    answer: () => (path[path.length - 1] === d.end ? path.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { path: number[] } | undefined;
+        if (!r || r.path.length <= fixed) continue;
+        path = r.path.slice();
+        fixed = r.path.length;
+      }
+      draw();
+    },
+    solution(sol) {
+      path = (sol as number[]).slice();
+      draw();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- зеркало
+
+function mirrorPad(d: MirrorData, changed: Changed): Pad {
+  const { n } = d;
+  const g: number[] = d.given.map((v) => (v === 1 ? 1 : 0));
+  const el = h(`<div class="dv-mir ax-${d.axis}" style="--n:${n}"></div>`);
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  const draw = (i: number) => boxes[i].classList.toggle('on', !!g[i]);
+  d.given.forEach((v, i) => {
+    const b = h(`<div class="${v === -1 ? 'mm' : 'mg'}"></div>`);
+    if (v === -1)
+      b.addEventListener('click', () => {
+        if (off) return;
+        g[i] = g[i] ? 0 : 1;
+        draw(i);
+        changed();
+      });
+    boxes.push(b);
+    el.appendChild(b);
+    draw(i);
+  });
+  const what = d.axis === 'v' ? 'Зеркало стоит посередине — дорисуй правую половину.' : d.axis === 'd' ? 'Зеркало — по диагонали из левого верхнего угла. Дорисуй верхний правый треугольник.' : 'Снежинка сложена вчетверо: дорисуй остальные три четверти — зеркально по обеим осям.';
+  const wrap = h(`<div class="dv-morboyw"><p class="dv-known">${what}</p></div>`);
+  wrap.appendChild(el);
+  return {
+    el: wrap,
+    answer: () => g.slice(),
+    hints() {},
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        if (d.given[i] === -1 && g[i] !== v) boxes[i].classList.add('fix');
+        g[i] = v;
+        draw(i);
+      });
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- раскраска
+
+const PAINT = ['#e9e4d6', '#d9534f', '#3e7cc9', '#f0c419', '#4caf50'];
+
+function raskPad(d: RaskData, changed: Changed): Pad {
+  const nReg = Math.max(...d.reg) + 1;
+  const col = new Array(nReg).fill(0);
+  const fixed = new Set<number>();
+  d.given.forEach(([r, c]) => {
+    col[r] = c;
+    fixed.add(r);
+  });
+  const el = h(`<div class="dv-rask" style="--w:${d.w}"></div>`);
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  const draw = () =>
+    boxes.forEach((b, i) => {
+      const r = d.reg[i];
+      b.style.background = PAINT[col[r]];
+      b.classList.toggle('fixed', fixed.has(r));
+    });
+  d.reg.forEach((r, i) => {
+    const x = i % d.w;
+    const y = (i / d.w) | 0;
+    const bw = [y === 0 || d.reg[i - d.w] !== r, x === d.w - 1 || d.reg[i + 1] !== r, y === d.h - 1 || d.reg[i + d.w] !== r, x === 0 || d.reg[i - 1] !== r];
+    const b = h(`<div style="border-width:${bw.map((v) => (v ? '2px' : '0')).join(' ')}"></div>`);
+    b.addEventListener('click', () => {
+      if (off || fixed.has(r)) return;
+      col[r] = (col[r] + 1) % (d.colors + 1);
+      draw();
+      changed();
+    });
+    boxes.push(b);
+    el.appendChild(b);
+  });
+  draw();
+  const wrap = h(`<div class="dv-morboyw"><p class="dv-known">Цветов: ${PAINT.slice(1, d.colors + 1).map((c) => `<i class="sw" style="background:${c}"></i>`).join(' ')}. Нажатие по участку — следующий цвет. Соседние участки (по стороне) — разного цвета.</p></div>`);
+  wrap.appendChild(el);
+  return {
+    el: wrap,
+    answer: () => (col.every(Boolean) ? col.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { r: number; c: number } | undefined;
+        if (!r) continue;
+        col[r.r] = r.c;
+        fixed.add(r.r);
+      }
+      draw();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((c, r) => (col[r] = c));
+      draw();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- какуро
+
+function kakuroPad(d: KakuroData, changed: Changed): Pad {
+  const el = h(`<div class="dv-kak" data-grid="${d.w}" style="--w:${d.w}"></div>`);
+  const inputs: (HTMLInputElement | null)[] = [];
+  d.cells.forEach((v, i) => {
+    if (v === -1) {
+      const s = d.sums[i];
+      el.appendChild(h(`<div class="kw">${s ? `${s[1] ? `<i class="dn">${s[1]}</i>` : ''}${s[0] ? `<i class="rt">${s[0]}</i>` : ''}` : ''}</div>`));
+      inputs.push(null);
+    } else if (v > 0) {
+      el.appendChild(h(`<div class="kg">${v}</div>`));
+      inputs.push(null);
+    } else {
+      const inp = digitCell(9, changed);
+      el.appendChild(inp);
+      inputs.push(inp);
+    }
+  });
+  return {
+    el,
+    answer() {
+      const out = d.cells.map((v, i) => (v === -1 ? 0 : v > 0 ? v : Number(inputs[i]!.value || 0)));
+      return d.cells.some((v, i) => v === 0 && !out[i]) ? null : out;
+    },
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        const inp = r && inputs[r.i];
+        if (inp) setCell(inp, r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        const inp = inputs[i];
+        if (inp && Number(inp.value) !== v) setCell(inp, v, 'shown');
+      });
+    },
+    lock() {
+      inputs.forEach((i) => i && (i.readOnly = true));
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -1758,6 +1962,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return turnirPad(data as TurnirData, changed);
     case 'zem':
       return zemPad(data as ZemData, changed);
+    case 'krat':
+      return kratPad(data as KratData, changed);
+    case 'mirror':
+      return mirrorPad(data as MirrorData, changed);
+    case 'rask':
+      return raskPad(data as RaskData, changed);
+    case 'kakuro':
+      return kakuroPad(data as KakuroData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }

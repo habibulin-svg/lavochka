@@ -7,6 +7,7 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkKakuro, checkKrat, checkMirror, checkRask, genKakuro, genKrat, genMirror, genRask, solveKakuro, solveKrat, solveMirror, solveRask, type KakuroData, type KratData, type MirrorData, type RaskData } from './paint';
 import { checkGears, checkZem, genGears, genTurnir, genZem, solveGears, solveTurnir, solveZem, type GearsAns, type GearsData, type TurnirData, type ZemData } from './mech';
 import { checkKartinka, genKartinka, genMatrix, genOdin, genVenn, solveKartinka, solveMatrix, solveOdin, solveVenn, type KartinkaData, type MatrixData, type OdinData, type VennData } from './misc';
 import { checkFonari, genFonari, solveFonari, type FonariData } from './fonari';
@@ -526,6 +527,74 @@ const zem: Kind<ZemData, number, string> = {
   solve: (d) => String(solveZem(d)).replace('.', ','),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn, gears, turnir, zem };
+const krat: Kind<KratData, number[], number[]> = {
+  id: 'krat',
+  title: 'По кратным',
+  how: 'Пройди от зелёной клетки до красной, наступая только на числа, которые делятся без остатка на указанное. Ходить — вбок, вверх, вниз.',
+  par: [45, 90, 150],
+  pts: [1, 2, 3],
+  gen: (lv, rng) => genKrat(lv, rng),
+  check: (d, _s, a) => checkKrat(d, a),
+  hint(d, sol, k) {
+    if (k === 0) return { text: `Признак: число делится на ${d.k}, если ${d.k === 3 ? 'сумма цифр делится на 3' : d.k === 4 ? 'две последние цифры делятся на 4' : d.k === 6 ? 'оно чётное и сумма цифр делится на 3' : d.k === 8 ? 'оно есть в таблице умножения на 8: 8, 16, 24, … 96' : 'оно есть в таблице умножения на 7: 7, 14, 21, … 98'}.` };
+    if (k === 1) return { text: 'Первая половина пути проложена.', reveal: { path: sol.slice(0, Math.ceil(sol.length / 2)) } };
+    return null;
+  },
+  solve: (d) => solveKrat(d),
+};
+
+const mirror: Kind<MirrorData, number[], number[]> = {
+  id: 'mirror',
+  title: 'Зеркало',
+  how: 'Половина узора нарисована. Дорисуй вторую — зеркально.',
+  par: [45, 90, 150],
+  pts: [1, 2, 3],
+  gen: (lv, rng) => genMirror(lv, rng),
+  check: (d, _s, a) => checkMirror(d, a),
+  hint(d, _sol, k) {
+    if (k > 0) return null;
+    return { text: d.axis === 'd' ? 'Клетка в строке r и столбце c отражается в строку c и столбец r.' : 'Иди по строке: что слева от зеркала на таком-то расстоянии, то справа на таком же.' };
+  },
+  solve: (d) => solveMirror(d),
+};
+
+const rask: Kind<RaskData, number[], number[]> = {
+  id: 'rask',
+  title: 'Раскраска',
+  how: 'Раскрась все участки так, чтобы соседние (по стороне) были разного цвета. Часть уже покрашена.',
+  par: [60, 120, 200],
+  pts: [1, 2, 4],
+  gen: (lv, rng) => genRask(lv, rng),
+  check: (d, _s, a) => checkRask(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const known = new Set(d.given.map(([r]) => r));
+    const free = sol.map((_, r) => r).filter((r) => !known.has(r));
+    const r = nth(free, k, sol.length * 89 + d.colors);
+    if (r == null) return null;
+    return { text: 'Ещё один участок покрашен.', reveal: { r, c: sol[r] } };
+  },
+  solve: (d) => solveRask(d),
+};
+
+const kakuro: Kind<KakuroData, number[], number[]> = {
+  id: 'kakuro',
+  title: 'Какуро',
+  how: 'Впиши цифры от 1 до 9: число в тёмной клетке — сумма цифр справа от неё (верхнее) или под ней (нижнее). Внутри одной суммы цифры не повторяются.',
+  par: [60, 150, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genKakuro(lv, rng),
+  check: (d, _s, a) => checkKakuro(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const free = d.cells.map((v, i) => (v === 0 ? i : -1)).filter((i) => i >= 0);
+    const i = nth(free, k, d.w * 97 + free.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке — ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveKakuro(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn, gears, turnir, zem, krat, mirror, rask, kakuro };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;
