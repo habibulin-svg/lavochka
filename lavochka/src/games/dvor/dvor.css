@@ -211,3 +211,49 @@
 .dv-shop .buy .sum { font: 700 26px 'Caveat', cursive; color: #23408f; }
 .dv-shop .buy.ask .sum { color: #a3261f; }
 .dv-shop .dv-got { font: 700 20px 'Caveat', cursive; color: #2a6a2a; margin-left: 6px; }
+
+/* подвал */
+.dv-lab { width: min(100%, 520px); }
+.dv-lab svg { width: 100%; height: auto; display: block; user-select: none; }
+.dv-lab .floor { fill: #e9e3d2; }
+.dv-lab .hits rect { fill: transparent; cursor: pointer; }
+.dv-lab .hits rect:hover { fill: rgba(35, 64, 143, 0.08); }
+.dv-lab .wall { stroke: #4a3a2a; stroke-width: 3.2; stroke-linecap: round; fill: none; }
+.dv-lab .path { fill: none; stroke: #23408f; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; pointer-events: none; }
+.dv-lab .path.shown { stroke: #b3261e; }
+.dv-lab .mk { font-size: 20px; text-anchor: middle; pointer-events: none; }
+
+/* стрелки */
+.dv-strelki { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(62px, calc((100vw - 90px) / var(--n))); gap: 3px; }
+.dv-strelki .st { position: relative; width: var(--u); height: var(--u); box-sizing: border-box; border: 2px solid #555; border-radius: 3px; background: rgba(255, 255, 255, 0.9); }
+.dv-strelki .st.given { background: #efe9d6; }
+.dv-strelki .ar { position: absolute; right: 3px; top: -1px; font: 700 calc(var(--u) * 0.3) 'PT Sans', sans-serif; color: #a3261f; pointer-events: none; }
+.dv-strelki .num { position: absolute; inset: 0; padding: calc(var(--u) * 0.2) calc(var(--u) * 0.12) 0 0; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--u) * 0.5) 'Caveat', cursive; color: #222; }
+.dv-strelki .cell { width: 100%; height: 100%; padding: calc(var(--u) * 0.2) calc(var(--u) * 0.12) 0 0; box-sizing: border-box; border: none; background: transparent; text-align: center; font: 700 calc(var(--u) * 0.5) 'Caveat', cursive; color: var(--ink); outline: none; }
+.dv-strelki .cell:focus { box-shadow: inset 0 0 0 2px #2a5ab8; }
+
+/* сапёр */
+.dv-saperw, .dv-morboyw { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dv-saper { display: grid; grid-template-columns: repeat(var(--w), var(--u)); --u: min(48px, calc((100vw - 90px) / var(--w))); gap: 2px; }
+.dv-saper > div { width: var(--u); height: var(--u); display: flex; align-items: center; justify-content: center; border-radius: 3px; font: 700 calc(var(--u) * 0.6) 'Caveat', cursive; user-select: none; }
+.dv-saper .op { background: #e8e3d4; color: #23408f; }
+.dv-saper .op[data-n='2'] { color: #2a7a3a; }
+.dv-saper .op[data-n='3'] { color: #b3261e; }
+.dv-saper .op[data-n='4'], .dv-saper .op[data-n='5'] { color: #6a2a8a; }
+.dv-saper .cl { background: linear-gradient(135deg, #8aa06a, #5f7a46); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25); cursor: pointer; font-size: calc(var(--u) * 0.5); }
+.dv-saper .cl.sure { outline: 3px solid #2a7a3a; outline-offset: -3px; }
+.dv-saper .cl.wrong { outline: 3px solid #b3261e; outline-offset: -3px; }
+.dv-saper .cl.missed { background: #f3c2b8; }
+
+/* морской бой по числам */
+.dv-morboy { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(44px, calc((100vw - 90px) / var(--n))); border-left: 2px solid #23408f; border-top: 2px solid #23408f; }
+.dv-morboy > div { width: var(--u); height: var(--u); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.dv-morboy .mb { border-right: 1px solid rgba(35, 64, 143, 0.45); border-bottom: 1px solid rgba(35, 64, 143, 0.45); cursor: pointer; }
+.dv-morboy .mb.ship::after { content: ''; width: 72%; height: 72%; background: #23408f; border-radius: 2px; }
+.dv-morboy .mb.sea::after { content: ''; width: 22%; height: 22%; border-radius: 50%; background: #23408f; opacity: 0.7; }
+.dv-morboy .mb.fixed { background: rgba(42, 122, 58, 0.15); cursor: default; }
+.dv-morboy .mb.fix { background: rgba(179, 38, 30, 0.2); }
+.dv-morboy .cnt { font: 700 calc(var(--u) * 0.6) 'Caveat', cursive; color: #a3261f; }
+.dv-morboy .cnt.ok { color: #2a7a3a; }
+.dv-morboyw .fl { letter-spacing: -2px; color: #23408f; margin-right: 6px; }
+.dv-known.small { font-size: 13px; opacity: 0.75; }

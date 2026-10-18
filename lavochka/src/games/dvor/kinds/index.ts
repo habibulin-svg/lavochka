@@ -7,6 +7,10 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkLab, genLab, solveLab, type LabData } from './labirint';
+import { checkMorboy, genMorboy, solveMorboy, type MorboyData } from './morboy';
+import { checkSaper, genSaper, solveSaper, type SaperData } from './saper';
+import { checkStrelki, genStrelki, solveStrelki, type StrelkiData } from './strelki';
 import { checkKenken, genKenken, solveKenken, type KenkenData } from './kenken';
 import { genKazaki, genOkno, solveKazaki, solveOkno, type KazakiData, type OknoData } from './liars';
 import { fitsAll, genOstatki, solveOstatki, type OstatkiData } from './ostatki';
@@ -255,6 +259,75 @@ const zadachka: Kind<ZadachkaData, number, number> = {
   solve: (d) => solveZadachka(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka };
+const labirint: Kind<LabData, number[], number[]> = {
+  id: 'labirint',
+  title: 'Подвал',
+  how: 'Выведи из подвала к двери: нажимай клетки — путь тянется по прямому коридору, где нет стены. Нажатие на клетку пути — откатиться к ней.',
+  par: [40, 80, 150],
+  pts: [1, 2, 3],
+  gen: (lv, rng) => genLab(lv, rng),
+  check: (d, _s, a) => checkLab(d, a),
+  hint(_d, sol, k) {
+    if (k > 1) return null;
+    const len = Math.ceil((sol.length * (k + 1)) / 3);
+    return { text: k ? 'Ещё кусок пути проложен.' : 'Первая треть пути проложена.', reveal: { path: sol.slice(0, len) } };
+  },
+  solve: (d) => solveLab(d),
+};
+
+const strelki: Kind<StrelkiData, number[], number[]> = {
+  id: 'strelki',
+  title: 'Стрелки',
+  how: 'Пронумеруй клетки от 1 до последней: следующая клетка лежит по направлению стрелки (на любом расстоянии). Звёздочка — конец пути.',
+  par: [90, 180, 330],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genStrelki(lv, rng),
+  check: (d, _s, a) => checkStrelki(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const empty = d.given.map((g, i) => (g ? -1 : i)).filter((i) => i >= 0);
+    const i = nth(empty, k, d.n * 43 + empty.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке — ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveStrelki(d),
+};
+
+const saper: Kind<SaperData, number[], number[]> = {
+  id: 'saper',
+  title: 'Сапёр',
+  how: 'Число в открытой клетке — сколько мин среди восьми соседей. Отметь все мины (нажатием на закрытую клетку). Угадывать не нужно.',
+  par: [90, 180, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genSaper(lv, rng),
+  check: (d, _s, a) => checkSaper(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const i = nth(sol, k, d.w * 47 + d.mines);
+    if (i == null) return null;
+    return { text: 'В отмеченной клетке точно мина.', reveal: { i } };
+  },
+  solve: (d) => solveSaper(d),
+};
+
+const morboy: Kind<MorboyData, number[], number[]> = {
+  id: 'morboy',
+  title: 'Морской бой',
+  how: 'Расставь флот: число у строки и столбца — сколько в них палуб. Корабли прямые и не касаются друг друга даже углами.',
+  par: [120, 240, 420],
+  pts: [2, 4, 5],
+  gen: (lv, rng) => genMorboy(lv, rng),
+  check: (d, _s, a) => checkMorboy(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const ships = sol.map((v, i) => (v && !d.shown[i] ? i : -1)).filter((i) => i >= 0);
+    const i = nth(ships, k, d.n * 53 + d.fleet.length);
+    if (i == null) return null;
+    return { text: 'В отмеченной клетке — палуба.', reveal: { i, v: 2 } };
+  },
+  solve: (d) => solveMorboy(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;

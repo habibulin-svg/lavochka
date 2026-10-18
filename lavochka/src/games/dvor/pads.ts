@@ -14,6 +14,10 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import { open, type LabData } from './kinds/labirint';
+import type { MorboyData } from './kinds/morboy';
+import type { SaperData } from './kinds/saper';
+import { ARROWS, type StrelkiData } from './kinds/strelki';
 
 export interface Pad {
   el: HTMLElement;
@@ -779,6 +783,262 @@ function zadachkaPad(d: ZadachkaData, changed: Changed): Pad {
   return numPad(body, 'Ответ:', changed);
 }
 
+// ---------------------------------------------------------------- подвал (лабиринт)
+
+function labPad(d: LabData, changed: Changed): Pad {
+  const U = 30;
+  const W = d.w * U;
+  const H = d.h * U;
+  const el = h(`<div class="dv-lab"></div>`);
+  let walls = '';
+  d.walls.forEach((m, i) => {
+    const x = (i % d.w) * U;
+    const y = ((i / d.w) | 0) * U;
+    if (m & 1) walls += `M${x} ${y}h${U}`;
+    if (m & 8) walls += `M${x} ${y}v${U}`;
+    if (i % d.w === d.w - 1 && m & 2) walls += `M${x + U} ${y}v${U}`;
+    if ((i / d.w | 0) === d.h - 1 && m & 4) walls += `M${x} ${y + U}h${U}`;
+  });
+  const cxy = (i: number) => [((i % d.w) + 0.5) * U, (((i / d.w) | 0) + 0.5) * U];
+  const [sx, sy] = cxy(d.start);
+  const [ex, ey] = cxy(d.end);
+  el.innerHTML = `<svg viewBox="-4 -4 ${W + 8} ${H + 8}">
+    <rect class="floor" x="0" y="0" width="${W}" height="${H}"/>
+    <g class="hits">${d.walls.map((_, i) => `<rect x="${(i % d.w) * U}" y="${((i / d.w) | 0) * U}" width="${U}" height="${U}" data-i="${i}"/>`).join('')}</g>
+    <polyline class="path" points=""/>
+    <path class="wall" d="${walls}"/>
+    <text class="mk" x="${sx}" y="${sy + 7}">🧒</text><text class="mk" x="${ex}" y="${ey + 7}">🚪</text>
+  </svg>`;
+  const line = el.querySelector('.path') as SVGPolylineElement;
+  let path = [d.start];
+  let fixed = 0;
+  let off = false;
+  const draw = () => line.setAttribute('points', path.map((i) => cxy(i).join(',')).join(' '));
+  el.querySelector('svg')!.addEventListener('click', (e) => {
+    if (off) return;
+    const r = (e.target as Element).closest('[data-i]') as SVGElement | null;
+    if (!r) return;
+    const i = Number(r.dataset.i);
+    const at = path.indexOf(i);
+    if (at >= 0) path = path.slice(0, Math.max(at + 1, fixed));
+    else {
+      // по прямому коридору — сразу до нажатой клетки, без стен по дороге
+      const last = path[path.length - 1];
+      const step = (i % d.w) === (last % d.w) ? (i > last ? d.w : -d.w) : ((i / d.w) | 0) === ((last / d.w) | 0) ? (i > last ? 1 : -1) : 0;
+      if (!step) return;
+      const run: number[] = [];
+      for (let c = last; c !== i; c += step) {
+        if (!open(d, c, c + step) || path.includes(c + step)) return;
+        run.push(c + step);
+      }
+      path.push(...run);
+    }
+    draw();
+    changed();
+  });
+  draw();
+  return {
+    el,
+    answer: () => (path[path.length - 1] === d.end ? path.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { path: number[] } | undefined;
+        if (!r || r.path.length <= fixed) continue;
+        path = r.path.slice();
+        fixed = r.path.length;
+      }
+      draw();
+    },
+    solution(sol) {
+      path = (sol as number[]).slice();
+      draw();
+      line.classList.add('shown');
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- стрелки
+
+function strelkiPad(d: StrelkiData, changed: Changed): Pad {
+  const N = d.n * d.n;
+  const el = h(`<div class="dv-strelki" data-grid="${d.n}" style="--n:${d.n}"></div>`);
+  const inputs: (HTMLInputElement | null)[] = [];
+  for (let i = 0; i < N; i++) {
+    const arrow = d.dir[i] < 0 ? '★' : ARROWS[d.dir[i]];
+    const box = h(`<div class="st"><span class="ar">${arrow}</span></div>`);
+    if (d.given[i]) {
+      box.appendChild(h(`<b class="num">${d.given[i]}</b>`));
+      box.classList.add('given');
+      inputs.push(null);
+    } else {
+      const inp = h<HTMLInputElement>(`<input class="cell" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="номер">`);
+      inp.oninput = () => {
+        inp.value = inp.value.replace(/\D/g, '').slice(0, 2);
+        changed();
+      };
+      box.appendChild(inp);
+      inputs.push(inp);
+    }
+    el.appendChild(box);
+  }
+  return {
+    el,
+    answer() {
+      const out = d.given.map((g, i) => g || Number(inputs[i]!.value || 0));
+      return out.some((v) => !v) ? null : out;
+    },
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        const inp = r && inputs[r.i];
+        if (inp) setCell(inp, r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        const inp = inputs[i];
+        if (inp && Number(inp.value) !== v) setCell(inp, v, 'shown');
+      });
+    },
+    lock() {
+      inputs.forEach((i) => i && (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- сапёр
+
+function saperPad(d: SaperData, changed: Changed): Pad {
+  const el = h(`<div class="dv-saper" style="--w:${d.w}"></div>`);
+  const flag = new Set<number>();
+  const sure = new Set<number>();
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  const info = h(`<p class="dv-known">Мин на поле: <b>${d.mines}</b>. Отмечено: <b class="cnt">0</b>.</p>`);
+  const cnt = info.querySelector('.cnt') as HTMLElement;
+  const draw = (i: number) => {
+    const b = boxes[i];
+    b.classList.toggle('flag', flag.has(i));
+    b.classList.toggle('sure', sure.has(i));
+    b.textContent = flag.has(i) ? '💣' : '';
+    cnt.textContent = String(flag.size);
+  };
+  d.open.forEach((v, i) => {
+    const b = h(`<div class="${v < 0 ? 'cl' : 'op'}">${v > 0 ? v : ''}</div>`);
+    if (v > 0) b.dataset.n = String(v);
+    if (v < 0)
+      b.addEventListener('click', () => {
+        if (off || sure.has(i)) return;
+        if (flag.has(i)) flag.delete(i);
+        else flag.add(i);
+        draw(i);
+        changed();
+      });
+    boxes.push(b);
+    el.appendChild(b);
+  });
+  const wrap = h(`<div class="dv-saperw"></div>`);
+  wrap.append(info, el);
+  return {
+    el: wrap,
+    answer: () => (flag.size === d.mines ? [...flag].sort((a, b) => a - b) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number } | undefined;
+        if (r?.i == null) continue;
+        flag.add(r.i);
+        sure.add(r.i);
+        draw(r.i);
+      }
+    },
+    solution(sol) {
+      const s = new Set(sol as number[]);
+      for (const i of [...flag]) if (!s.has(i)) boxes[i].classList.add('wrong');
+      for (const i of s) {
+        if (!flag.has(i)) boxes[i].classList.add('missed');
+        flag.add(i);
+        draw(i);
+      }
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- морской бой по числам
+
+function morboyPad(d: MorboyData, changed: Changed): Pad {
+  const { n } = d;
+  // 0 — пусто, 1 — палуба, 2 — вода (пометка)
+  const st: number[] = d.shown.map((v) => (v === 2 ? 1 : v === 1 ? 2 : 0));
+  const fixed = new Set(d.shown.map((v, i) => (v ? i : -1)).filter((i) => i >= 0));
+  const el = h(`<div class="dv-morboy" style="--n:${n + 1}"></div>`);
+  const boxes: HTMLElement[] = [];
+  const rowEls: HTMLElement[] = [];
+  const colEls: HTMLElement[] = [];
+  let off = false;
+  const sums = () => {
+    for (let r = 0; r < n; r++) rowEls[r].classList.toggle('ok', st.slice(r * n, r * n + n).filter((v) => v === 1).length === d.rows[r]);
+    for (let c = 0; c < n; c++) colEls[c].classList.toggle('ok', Array.from({ length: n }, (_, r) => st[r * n + c]).filter((v) => v === 1).length === d.cols[c]);
+  };
+  const draw = (i: number) => {
+    boxes[i].className = `mb ${st[i] === 1 ? 'ship' : st[i] === 2 ? 'sea' : ''}${fixed.has(i) ? ' fixed' : ''}`;
+  };
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const i = r * n + c;
+      const b = h(`<div></div>`);
+      b.addEventListener('click', () => {
+        if (off || fixed.has(i)) return;
+        st[i] = (st[i] + 1) % 3;
+        draw(i);
+        sums();
+        changed();
+      });
+      boxes.push(b);
+      el.appendChild(b);
+      draw(i);
+    }
+    rowEls.push(el.appendChild(h(`<div class="cnt">${d.rows[r]}</div>`)));
+  }
+  for (let c = 0; c < n; c++) colEls.push(el.appendChild(h(`<div class="cnt">${d.cols[c]}</div>`)));
+  el.appendChild(h(`<div></div>`));
+  const wrap = h(`<div class="dv-morboyw"><p class="dv-known">Флот: ${d.fleet.map((l) => `<span class="fl">${'■'.repeat(l)}</span>`).join(' ')}</p></div>`);
+  wrap.appendChild(el);
+  wrap.appendChild(h(`<p class="dv-known small">Нажатие: палуба → вода (пометка) → пусто.</p>`));
+  sums();
+  return {
+    el: wrap,
+    answer: () => (st.some((v) => v === 1) ? st.map((v) => (v === 1 ? 1 : 0)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (!r) continue;
+        st[r.i] = r.v === 2 ? 1 : 2;
+        fixed.add(r.i);
+        draw(r.i);
+      }
+      sums();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        const wrong = (v === 1) !== (st[i] === 1);
+        st[i] = v ? 1 : 2;
+        draw(i);
+        if (wrong) boxes[i].classList.add('fix');
+      });
+      sums();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -807,6 +1067,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return ostatkiPad(data as OstatkiData, changed);
     case 'zadachka':
       return zadachkaPad(data as ZadachkaData, changed);
+    case 'labirint':
+      return labPad(data as LabData, changed);
+    case 'strelki':
+      return strelkiPad(data as StrelkiData, changed);
+    case 'saper':
+      return saperPad(data as SaperData, changed);
+    case 'morboy':
+      return morboyPad(data as MorboyData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }
