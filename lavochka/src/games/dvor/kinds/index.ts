@@ -7,6 +7,10 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkFonari, genFonari, solveFonari, type FonariData } from './fonari';
+import { checkGryadki, genGryadki, solveGryadki, VEG_NAMES, type GryadkiData } from './gryadki';
+import { checkPalatki, genPalatki, solvePalatki, type PalatkiData } from './palatki';
+import { checkShikaku, genShikaku, solveShikaku, type ShikakuData } from './shikaku';
 import { checkLab, genLab, solveLab, type LabData } from './labirint';
 import { checkMorboy, genMorboy, solveMorboy, type MorboyData } from './morboy';
 import { checkSaper, genSaper, solveSaper, type SaperData } from './saper';
@@ -328,6 +332,78 @@ const morboy: Kind<MorboyData, number[], number[]> = {
   solve: (d) => solveMorboy(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy };
+const shikaku: Kind<ShikakuData, number[], number[]> = {
+  id: 'shikaku',
+  title: 'Ножички',
+  how: 'Раздели поле на прямоугольники: в каждом ровно одно число, и оно равно площади участка. Тяни пальцем или мышью от угла до угла; нажатие по участку — убрать.',
+  par: [60, 150, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genShikaku(lv, rng),
+  check: (d, _s, a) => checkShikaku(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const clues = d.nums.map((v, i) => (v > 1 ? i : -1)).filter((i) => i >= 0);
+    const c = nth(clues, k, d.w * 59 + clues.length);
+    if (c == null) return null;
+    return { text: `Участок числа ${d.nums[c]} отмечен.`, reveal: { c, cells: sol.map((o, i) => (o === c ? i : -1)).filter((i) => i >= 0) } };
+  },
+  solve: (d) => solveShikaku(d),
+};
+
+const palatki: Kind<PalatkiData, number[], number[]> = {
+  id: 'palatki',
+  title: 'Палатки',
+  how: 'У каждого дерева — своя палатка в соседней клетке (сбоку, сверху или снизу). Палатки не касаются даже углами. Число у строки и столбца — сколько в них палаток.',
+  par: [90, 180, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genPalatki(lv, rng),
+  check: (d, _s, a) => checkPalatki(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const tents = sol.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
+    const i = nth(tents, k, d.n * 61 + d.trees.length);
+    if (i == null) return null;
+    return { text: 'Палатка в отмеченной клетке стоит верно.', reveal: { i } };
+  },
+  solve: (d) => solvePalatki(d),
+};
+
+const fonari: Kind<FonariData, number[], number[]> = {
+  id: 'fonari',
+  title: 'Фонари',
+  how: 'Поставь фонари так, чтобы осветить все светлые клетки. Фонарь светит по строке и столбцу до стены; два фонаря не должны светить друг на друга. Число на стене — сколько фонарей с ней рядом.',
+  par: [90, 180, 330],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genFonari(lv, rng),
+  check: (d, _s, a) => checkFonari(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const bulbs = sol.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
+    const i = nth(bulbs, k, d.n * 67 + bulbs.length);
+    if (i == null) return null;
+    return { text: 'В отмеченной клетке — фонарь.', reveal: { i } };
+  },
+  solve: (d) => solveFonari(d),
+};
+
+const gryadki: Kind<GryadkiData, number[], number[]> = {
+  id: 'gryadki',
+  title: 'Грядки',
+  how: 'В каждой строке, каждом столбце и на каждой грядке (обведена) — все овощи по одному разу. Досади огород.',
+  par: [90, 180, 330],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genGryadki(lv, rng),
+  check: (d, _s, a) => checkGryadki(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const empty = d.given.map((g, i) => (g ? -1 : i)).filter((i) => i >= 0);
+    const i = nth(empty, k, d.n * 71 + empty.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке — ${VEG_NAMES[sol[i] - 1]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveGryadki(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;

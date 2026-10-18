@@ -14,6 +14,10 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import type { FonariData } from './kinds/fonari';
+import { VEG, VEG_NAMES, type GryadkiData } from './kinds/gryadki';
+import type { PalatkiData } from './kinds/palatki';
+import type { ShikakuData } from './kinds/shikaku';
 import { open, type LabData } from './kinds/labirint';
 import type { MorboyData } from './kinds/morboy';
 import type { SaperData } from './kinds/saper';
@@ -1039,6 +1043,320 @@ function morboyPad(d: MorboyData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- ножички (шикаку)
+
+function shikakuPad(d: ShikakuData, changed: Changed): Pad {
+  const N = d.w * d.h;
+  const owner = new Array(N).fill(-1);
+  const fixedC = new Set<number>();
+  const el = h(`<div class="dv-shik" style="--w:${d.w}"></div>`);
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  let from = -1;
+  // цвет участка — по номеру клетки-числа
+  const tint = (c: number) => `hsl(${(c * 137) % 360} 55% 82%)`;
+  const draw = () => {
+    for (let i = 0; i < N; i++) {
+      const c = owner[i];
+      const b = boxes[i];
+      b.style.background = c >= 0 ? tint(c) : '';
+      const x = i % d.w;
+      const y = (i / d.w) | 0;
+      const diff = (j: number, ok: boolean) => !ok || owner[j] !== c || c < 0;
+      b.style.borderTopWidth = diff(i - d.w, y > 0) ? '2px' : '0';
+      b.style.borderLeftWidth = diff(i - 1, x > 0) ? '2px' : '0';
+      b.classList.toggle('bad', c >= 0 && [...owner].filter((o) => o === c).length !== d.nums[c]);
+      b.classList.toggle('fixed', fixedC.has(c));
+    }
+  };
+  const cellAt = (e: PointerEvent) => {
+    const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-i]') as HTMLElement | null;
+    return t && el.contains(t) ? Number(t.dataset.i) : -1;
+  };
+  const rectCells = (a: number, b: number) => {
+    const x0 = Math.min(a % d.w, b % d.w);
+    const x1 = Math.max(a % d.w, b % d.w);
+    const y0 = Math.min((a / d.w) | 0, (b / d.w) | 0);
+    const y1 = Math.max((a / d.w) | 0, (b / d.w) | 0);
+    const out: number[] = [];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) out.push(y * d.w + x);
+    return out;
+  };
+  const preview = (a: number, b: number) => {
+    const cs = new Set(a >= 0 && b >= 0 ? rectCells(a, b) : []);
+    boxes.forEach((x, i) => x.classList.toggle('sel', cs.has(i)));
+  };
+  for (let i = 0; i < N; i++) {
+    const b = h(`<div data-i="${i}">${d.nums[i] || ''}</div>`);
+    boxes.push(b);
+    el.appendChild(b);
+  }
+  el.addEventListener('pointerdown', (e) => {
+    if (off) return;
+    e.preventDefault();
+    from = cellAt(e);
+    if (from >= 0) {
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* синтетическое событие без захвата — не страшно */
+      }
+      preview(from, from);
+    }
+  });
+  el.addEventListener('pointercancel', () => {
+    from = -1;
+    preview(-1, -1);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (from >= 0) preview(from, cellAt(e));
+  });
+  el.addEventListener('pointerup', (e) => {
+    if (from < 0) return;
+    const to = cellAt(e);
+    const a = from;
+    from = -1;
+    preview(-1, -1);
+    if (to < 0) return;
+    const cs = rectCells(a, to);
+    if (a === to && owner[a] >= 0) {
+      // нажатие по участку — убрать его
+      const c = owner[a];
+      if (fixedC.has(c)) return;
+      for (let i = 0; i < N; i++) if (owner[i] === c) owner[i] = -1;
+    } else {
+      const clues = cs.filter((i) => d.nums[i]);
+      if (clues.length !== 1) return;
+      const c = clues[0];
+      if (fixedC.has(c) || cs.some((i) => fixedC.has(owner[i]))) return;
+      // старый участок этого числа и пересечённые — снять
+      const hit = new Set(cs.map((i) => owner[i]).filter((o) => o >= 0));
+      hit.add(c);
+      for (let i = 0; i < N; i++) if (hit.has(owner[i])) owner[i] = -1;
+      cs.forEach((i) => (owner[i] = c));
+    }
+    draw();
+    changed();
+  });
+  draw();
+  return {
+    el,
+    answer: () => (owner.every((o) => o >= 0) ? owner.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { c: number; cells: number[] } | undefined;
+        if (!r) continue;
+        for (let i = 0; i < N; i++) if (owner[i] === r.c || r.cells.includes(i)) owner[i] = -1;
+        r.cells.forEach((i) => (owner[i] = r.c));
+        fixedC.add(r.c);
+      }
+      draw();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((c, i) => (owner[i] = c));
+      draw();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- палатки
+
+function palatkiPad(d: PalatkiData, changed: Changed): Pad {
+  const { n } = d;
+  const tree = new Set(d.trees);
+  const st = new Array(n * n).fill(0); // 1 — палатка, 2 — трава (пометка)
+  const fixed = new Set<number>();
+  const el = h(`<div class="dv-pal" style="--n:${n + 1}"></div>`);
+  const boxes: HTMLElement[] = [];
+  const rowEls: HTMLElement[] = [];
+  const colEls: HTMLElement[] = [];
+  let off = false;
+  const draw = () => {
+    boxes.forEach((b, i) => {
+      if (tree.has(i)) return;
+      b.textContent = st[i] === 1 ? '⛺' : st[i] === 2 ? '·' : '';
+      b.className = `pc${st[i] === 2 ? ' grass' : ''}${fixed.has(i) ? ' fixed' : ''}`;
+    });
+    for (let r = 0; r < n; r++) rowEls[r].classList.toggle('ok', st.slice(r * n, r * n + n).filter((v) => v === 1).length === d.rows[r]);
+    for (let c = 0; c < n; c++) colEls[c].classList.toggle('ok', Array.from({ length: n }, (_, r) => st[r * n + c]).filter((v) => v === 1).length === d.cols[c]);
+  };
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const i = r * n + c;
+      const b = h(`<div class="${tree.has(i) ? 'tree' : 'pc'}">${tree.has(i) ? '🌳' : ''}</div>`);
+      if (!tree.has(i))
+        b.addEventListener('click', () => {
+          if (off || fixed.has(i)) return;
+          st[i] = (st[i] + 1) % 3;
+          draw();
+          changed();
+        });
+      boxes.push(b);
+      el.appendChild(b);
+    }
+    rowEls.push(el.appendChild(h(`<div class="cnt">${d.rows[r]}</div>`)));
+  }
+  for (let c = 0; c < n; c++) colEls.push(el.appendChild(h(`<div class="cnt">${d.cols[c]}</div>`)));
+  el.appendChild(h(`<div></div>`));
+  const wrap = h(`<div class="dv-morboyw"></div>`);
+  wrap.append(el, h(`<p class="dv-known small">Нажатие: палатка → трава (пометка) → пусто.</p>`));
+  draw();
+  return {
+    el: wrap,
+    answer: () => (st.some((v) => v === 1) ? st.map((v) => (v === 1 ? 1 : 0)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number } | undefined;
+        if (!r) continue;
+        st[r.i] = 1;
+        fixed.add(r.i);
+      }
+      draw();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => !tree.has(i) && (st[i] = v ? 1 : 2));
+      draw();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- фонари
+
+function fonariPad(d: FonariData, changed: Changed): Pad {
+  const { n } = d;
+  const N = n * n;
+  const bulb = new Array(N).fill(0);
+  const fixed = new Set<number>();
+  const el = h(`<div class="dv-fon" style="--n:${n}"></div>`);
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  const seeFrom = (i: number) => {
+    const out = [i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      let x = (i % n) + dx;
+      let y = ((i / n) | 0) + dy;
+      while (x >= 0 && y >= 0 && x < n && y < n && d.cells[y * n + x] === -1) {
+        out.push(y * n + x);
+        x += dx;
+        y += dy;
+      }
+    }
+    return out;
+  };
+  const draw = () => {
+    const lit = new Array(N).fill(0);
+    bulb.forEach((b, i) => b && seeFrom(i).forEach((j) => lit[j]++));
+    boxes.forEach((b, i) => {
+      if (d.cells[i] !== -1) {
+        const near = [i - n, i + n, i % n ? i - 1 : -1, (i + 1) % n ? i + 1 : -1].filter((j) => j >= 0 && j < N && bulb[j]).length;
+        b.classList.toggle('ok', d.cells[i] >= 0 && near === d.cells[i]);
+        b.classList.toggle('over', d.cells[i] >= 0 && near > d.cells[i]);
+        return;
+      }
+      b.textContent = bulb[i] ? '💡' : '';
+      b.classList.toggle('lit', lit[i] > 0);
+      b.classList.toggle('clash', !!bulb[i] && lit[i] > 1);
+      b.classList.toggle('fixed', fixed.has(i));
+    });
+  };
+  d.cells.forEach((v, i) => {
+    const b = h(`<div class="${v === -1 ? 'fw' : 'fb'}">${v >= 0 ? v : ''}</div>`);
+    if (v === -1)
+      b.addEventListener('click', () => {
+        if (off || fixed.has(i)) return;
+        bulb[i] = bulb[i] ? 0 : 1;
+        draw();
+        changed();
+      });
+    boxes.push(b);
+    el.appendChild(b);
+  });
+  draw();
+  return {
+    el,
+    answer: () => (bulb.some(Boolean) ? bulb.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number } | undefined;
+        if (!r) continue;
+        bulb[r.i] = 1;
+        fixed.add(r.i);
+      }
+      draw();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => (bulb[i] = v));
+      draw();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- грядки
+
+function gryadkiPad(d: GryadkiData, changed: Changed): Pad {
+  const { n } = d;
+  const N = n * n;
+  const g = d.given.slice();
+  const fixed = new Set(d.given.map((v, i) => (v ? i : -1)).filter((i) => i >= 0));
+  const el = h(`<div class="dv-gry" style="--n:${n}"></div>`);
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  const draw = (i: number) => {
+    boxes[i].textContent = g[i] ? VEG[g[i] - 1] : '';
+    boxes[i].classList.toggle('given', fixed.has(i));
+  };
+  for (let i = 0; i < N; i++) {
+    const r = (i / n) | 0;
+    const c = i % n;
+    const k = d.reg[i];
+    const b = [r === 0 || d.reg[i - n] !== k, c === n - 1 || d.reg[i + 1] !== k, r === n - 1 || d.reg[i + n] !== k, c === 0 || d.reg[i - 1] !== k];
+    const box = h(`<div class="gc" style="border-width:${b.map((x) => (x ? '3px' : '1px')).join(' ')};background:hsl(${(k * 67) % 360} 40% 90%)"></div>`);
+    box.addEventListener('click', () => {
+      if (off || fixed.has(i)) return;
+      g[i] = (g[i] + 1) % (n + 1);
+      draw(i);
+      changed();
+    });
+    boxes.push(box);
+    el.appendChild(box);
+    draw(i);
+  }
+  const wrap = h(`<div class="dv-morboyw"><p class="dv-known">Овощи: ${VEG.slice(0, n).map((v, i) => `${v} ${VEG_NAMES[i]}`).join(', ')}. Нажатие по клетке — следующий овощ.</p></div>`);
+  wrap.appendChild(el);
+  return {
+    el: wrap,
+    answer: () => (g.every(Boolean) ? g.slice() : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (!r) continue;
+        g[r.i] = r.v;
+        fixed.add(r.i);
+        draw(r.i);
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        if (g[i] !== v) boxes[i].classList.add('shown');
+        g[i] = v;
+        draw(i);
+      });
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -1075,6 +1393,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return saperPad(data as SaperData, changed);
     case 'morboy':
       return morboyPad(data as MorboyData, changed);
+    case 'shikaku':
+      return shikakuPad(data as ShikakuData, changed);
+    case 'palatki':
+      return palatkiPad(data as PalatkiData, changed);
+    case 'fonari':
+      return fonariPad(data as FonariData, changed);
+    case 'gryadki':
+      return gryadkiPad(data as GryadkiData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }

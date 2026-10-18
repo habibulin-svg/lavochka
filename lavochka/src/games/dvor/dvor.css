@@ -257,3 +257,37 @@
 .dv-morboy .cnt.ok { color: #2a7a3a; }
 .dv-morboyw .fl { letter-spacing: -2px; color: #23408f; margin-right: 6px; }
 .dv-known.small { font-size: 13px; opacity: 0.75; }
+
+/* ножички */
+.dv-shik { display: grid; grid-template-columns: repeat(var(--w), var(--u)); --u: min(50px, calc((100vw - 90px) / var(--w))); border-right: 2px solid #23408f; border-bottom: 2px solid #23408f; touch-action: none; user-select: none; }
+.dv-shik > div { width: var(--u); height: var(--u); box-sizing: border-box; border: 0 solid #23408f; outline: 1px dashed rgba(35, 64, 143, 0.25); outline-offset: -1px; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--u) * 0.55) 'Caveat', cursive; color: #222; cursor: crosshair; }
+.dv-shik > div.sel { box-shadow: inset 0 0 0 3px rgba(42, 90, 184, 0.6); }
+.dv-shik > div.bad { color: #b3261e; }
+.dv-shik > div.fixed { color: #2a6a2a; }
+
+/* палатки */
+.dv-pal { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(46px, calc((100vw - 90px) / var(--n))); }
+.dv-pal > div { width: var(--u); height: var(--u); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 0.6); }
+.dv-pal .pc, .dv-pal .tree { border: 1px solid rgba(35, 64, 143, 0.35); background: #e7efd6; }
+.dv-pal .pc { cursor: pointer; }
+.dv-pal .pc.grass { color: #2a7a3a; font: 700 calc(var(--u) * 0.8) 'Caveat', cursive; }
+.dv-pal .pc.fixed { background: #cfe8c4; cursor: default; }
+.dv-pal .cnt { font: 700 calc(var(--u) * 0.6) 'Caveat', cursive; color: #a3261f; }
+.dv-pal .cnt.ok { color: #2a7a3a; }
+
+/* фонари */
+.dv-fon { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(50px, calc((100vw - 90px) / var(--n))); border: 2px solid #333; }
+.dv-fon > div { width: var(--u); height: var(--u); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.dv-fon .fw { background: #d9d6cc; border: 1px solid rgba(0, 0, 0, 0.12); cursor: pointer; font-size: calc(var(--u) * 0.6); transition: background 0.15s; }
+.dv-fon .fw.lit { background: #fff1a8; }
+.dv-fon .fw.clash { background: #f6b3a8; }
+.dv-fon .fw.fixed { box-shadow: inset 0 0 0 3px #2a7a3a; cursor: default; }
+.dv-fon .fb { background: #2b2b33; color: #f2f2f2; font: 700 calc(var(--u) * 0.55) 'PT Sans', sans-serif; }
+.dv-fon .fb.ok { color: #7fdc8a; }
+.dv-fon .fb.over { color: #ff8a7a; }
+
+/* грядки */
+.dv-gry { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(56px, calc((100vw - 90px) / var(--n))); border: 2px solid #5a3a1a; }
+.dv-gry .gc { width: var(--u); height: var(--u); box-sizing: border-box; border: 0 solid #5a3a1a; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 0.6); cursor: pointer; user-select: none; }
+.dv-gry .gc.given { cursor: default; filter: saturate(0.8); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12); }
+.dv-gry .gc.shown { box-shadow: inset 0 0 0 3px #b3261e; }
