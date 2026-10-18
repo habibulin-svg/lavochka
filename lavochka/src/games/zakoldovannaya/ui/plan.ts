@@ -17,6 +17,8 @@ export class PlanView {
   /** Приблизить к отряду (иначе — весь план). */
   private near = true;
   private herePos: { x: number; y: number } | null = null;
+  /** Разведанная часть плана (у ведущего — весь план): её показывает «Весь план». */
+  private box: { x0: number; y0: number; x1: number; y1: number } | null = null;
   onRoom: ((id: string) => void) | null = null;
 
   constructor(parent: HTMLElement) {
@@ -141,6 +143,16 @@ export class PlanView {
     marks.replaceChildren();
     const here = plan.rooms.find((r) => r.id === room);
     this.herePos = here ? this.pos(here) : null;
+    // рамка разведанного: пройденные комнаты и видимые выходы
+    const floor = here?.img ?? 0;
+    const known = v.gm ? [] : plan.rooms.filter((r) => (r.img ?? 0) === floor && (visited.has(r.id) || r.id === room || v.exits.some((e) => e.to === r.id)));
+    this.box = null;
+    for (const r of known) {
+      const p = this.pos(r);
+      const pad = Math.max(30, Number(r.r) || 0) * this.scale;
+      const b: { x0: number; y0: number; x1: number; y1: number } = this.box ?? { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+      this.box = { x0: Math.min(b.x0, p.x - pad), y0: Math.min(b.y0, p.y - pad), x1: Math.max(b.x1, p.x + pad), y1: Math.max(b.y1, p.y + pad) };
+    }
     if (here) {
       const p = this.pos(here);
       const m = document.createElement('div');
@@ -181,19 +193,20 @@ export class PlanView {
     const W = this.el.clientWidth;
     const H = this.el.clientHeight;
     const kAll = Math.min(W / sw, H / sh, 1.6);
+    this.sheet.style.transition = 'transform .45s ease';
     if (!this.near || !this.herePos) {
-      this.sheet.style.transform = `translate(${(W - sw * kAll) / 2}px, ${(H - sh * kAll) / 2}px) scale(${kAll})`;
+      // весь план: у героев — вся разведанная часть (туман вокруг не нужен), у ведущего — все листы
+      const b = this.box ?? { x0: 0, y0: 0, x1: sw, y1: sh };
+      const bw = b.x1 - b.x0;
+      const bh = b.y1 - b.y0;
+      const k = Math.min((W - 24) / bw, (H - 24) / bh, 0.55);
+      this.sheet.style.transform = `translate(${W / 2 - (b.x0 + bw / 2) * k}px, ${H / 2 - (b.y0 + bh / 2) * k}px) scale(${k})`;
       return;
     }
-    // ближе: комната отряда в середине, видно соседей
-    const k = Math.max(kAll, Math.min(1.25, (Math.min(W, H) / 520) * 1.0));
-    let x = W / 2 - this.herePos.x * k;
-    let y = H / 2 - this.herePos.y * k;
-    x = Math.min(Math.max(x, W - sw * k - 20), 20);
-    y = Math.min(Math.max(y, H - sh * k - 20), 20);
-    if (sw * k < W) x = (W - sw * k) / 2;
-    if (sh * k < H) y = (H - sh * k) / 2;
-    this.sheet.style.transition = 'transform .45s ease';
+    // ближе: комната отряда в середине, видно соседей (за краем листа — тот же тёмный фон, что и туман)
+    const k = Math.max(Math.min(kAll, 0.5), Math.min(0.85, Math.min(W, H) / 900));
+    const x = W / 2 - this.herePos.x * k;
+    const y = H / 2 - this.herePos.y * k;
     this.sheet.style.transform = `translate(${x}px, ${y}px) scale(${k})`;
   }
 }
