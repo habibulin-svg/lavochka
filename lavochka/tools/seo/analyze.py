@@ -90,6 +90,22 @@ GAME_KEYS = {
     'brick': ['тетрис', 'brick', 'брик'],
     'avtomaty': ['автомат'],
     'loto': ['лото'],
+    '_backlog_loto': ['лото'],
+    '_backlog_ur': ['ур'],
+    '_backlog_romashka': ['ромашк', 'китайские шашки'],
+    '_backlog_stratego': ['стратего', 'сражение'],
+    '_backlog_shogi': ['сеги', 'сёги', 'шоги'],
+    '_backlog_xiangqi': ['китайские шахматы', 'сянци'],
+    '_backlog_mahjong': ['маджонг', 'маджонг', 'мачжонг'],
+    '_backlog_reversi': ['реверси', 'отелло'],
+    '_backlog_carrom': ['кэрром', 'карром'],
+    '_backlog_canasta': ['канаст'],
+    '_backlog_belot': ['белот', 'деберц'],
+    '_backlog_skat': ['скат'],
+    '_backlog_rummy': ['рамми', 'румикуб'],
+    '_backlog_mill': ['мельниц'],
+    '_backlog_nep': ['нэп'],
+    '_backlog_worms': ['вормс', 'червячк', 'worms'],
 }
 
 # фраза с этими словами — не про игру
