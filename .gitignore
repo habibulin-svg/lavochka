@@ -27,3 +27,4 @@ materials/*
 .env
 *.env
 !*.env.example
+lavochka/tools/seo/*.log
