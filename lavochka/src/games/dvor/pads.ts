@@ -14,6 +14,7 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import { COLORS, type Fig, type KartinkaData, type MatrixData, type OdinData, type VennData } from './kinds/misc';
 import type { FonariData } from './kinds/fonari';
 import { VEG, VEG_NAMES, type GryadkiData } from './kinds/gryadki';
 import type { PalatkiData } from './kinds/palatki';
@@ -1357,6 +1358,199 @@ function gryadkiPad(d: GryadkiData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- картинка (нонограмма)
+
+function kartinkaPad(d: KartinkaData, changed: Changed): Pad {
+  const { w, h: hh } = d;
+  const st = new Array(w * hh).fill(0); // 1 — закрашено, 2 — крестик
+  const fixed = new Set<number>();
+  d.open.forEach(([i, v]) => {
+    st[i] = v ? 1 : 2;
+    fixed.add(i);
+  });
+  const maxR = Math.max(...d.rows.map((r) => r.length));
+  const maxC = Math.max(...d.cols.map((c) => c.length));
+  const el = h(`<div class="dv-kart" style="--w:${w};--u:min(34px, calc((100vw - 110px) / ${w + 2}))"></div>`);
+  el.appendChild(h(`<div class="corner"></div>`));
+  d.cols.forEach((c) => el.appendChild(h(`<div class="ch" style="height:calc(${maxC} * 0.95em)">${c.map((x) => `<span>${x}</span>`).join('')}</div>`)));
+  const boxes: HTMLElement[] = [];
+  let off = false;
+  let paint = -1;
+  const draw = (i: number) => {
+    boxes[i].className = `kc${st[i] === 1 ? ' on' : st[i] === 2 ? ' x' : ''}${fixed.has(i) ? ' fixed' : ''}${(i % w) % 5 === 4 && i % w !== w - 1 ? ' br' : ''}${((i / w) | 0) % 5 === 4 && ((i / w) | 0) !== hh - 1 ? ' bb' : ''}`;
+  };
+  for (let r = 0; r < hh; r++) {
+    el.appendChild(h(`<div class="rh" style="min-width:calc(${maxR} * 0.75em)">${d.rows[r].map((x) => `<span>${x}</span>`).join(' ')}</div>`));
+    for (let c = 0; c < w; c++) {
+      const i = r * w + c;
+      const b = h(`<div data-i="${i}"></div>`);
+      boxes.push(b);
+      el.appendChild(b);
+      draw(i);
+    }
+  }
+  // нажатие — по кругу: закрасить → крестик → пусто; протягивание красит тем же
+  const apply = (i: number) => {
+    if (fixed.has(i) || st[i] === paint) return;
+    st[i] = paint;
+    draw(i);
+    changed();
+  };
+  const at = (e: PointerEvent) => {
+    const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-i]') as HTMLElement | null;
+    return t && el.contains(t) ? Number(t.dataset.i) : -1;
+  };
+  el.addEventListener('pointerdown', (e) => {
+    const i = at(e);
+    if (off || i < 0 || fixed.has(i)) return;
+    e.preventDefault();
+    paint = (st[i] + 1) % 3;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      /* синтетическое */
+    }
+    apply(i);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (paint < 0) return;
+    const i = at(e);
+    if (i >= 0) apply(i);
+  });
+  const stop = () => (paint = -1);
+  el.addEventListener('pointerup', stop);
+  el.addEventListener('pointercancel', stop);
+  return {
+    el,
+    answer: () => (st.some((v) => v === 1) ? st.map((v) => (v === 1 ? 1 : 0)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (!r) continue;
+        st[r.i] = r.v ? 1 : 2;
+        fixed.add(r.i);
+        draw(r.i);
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        st[i] = v ? 1 : 2;
+        draw(i);
+      });
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- найди одиночку
+
+function odinPad(d: OdinData, changed: Changed): Pad {
+  let pick = -1;
+  let off = false;
+  const el = h(`<div class="dv-odin" style="--c:${d.cols}"></div>`);
+  const boxes = d.cells.map((x, i) => {
+    const b = h(`<button class="oc" type="button">${x}</button>`);
+    b.addEventListener('click', () => {
+      if (off || b.classList.contains('gone')) return;
+      pick = pick === i ? -1 : i;
+      boxes.forEach((y, j) => y.classList.toggle('pick', j === pick));
+      changed();
+    });
+    el.appendChild(b);
+    return b;
+  });
+  return {
+    el,
+    answer: () => (pick >= 0 ? pick : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { icon: string } | undefined;
+        if (!r) continue;
+        boxes.forEach((b, i) => d.cells[i] === r.icon && b.classList.add('gone'));
+      }
+    },
+    solution(sol) {
+      boxes[sol as number].classList.add('right');
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- матрица
+
+function figSvg(f: Fig): string {
+  const one = (cx: number, cy: number, s: number) => {
+    const c = COLORS[f.color];
+    switch (f.shape) {
+      case 0:
+        return `<circle cx="${cx}" cy="${cy}" r="${s}" fill="${c}"/>`;
+      case 1:
+        return `<rect x="${cx - s}" y="${cy - s}" width="${2 * s}" height="${2 * s}" fill="${c}"/>`;
+      case 2:
+        return `<polygon points="${cx},${cy - s * 1.1} ${cx + s * 1.1},${cy + s * 0.9} ${cx - s * 1.1},${cy + s * 0.9}" fill="${c}"/>`;
+      default:
+        return `<polygon points="${cx},${cy - s * 1.2} ${cx + s},${cy} ${cx},${cy + s * 1.2} ${cx - s},${cy}" fill="${c}"/>`;
+    }
+  };
+  const n = f.count + 1;
+  const pos = n === 1 ? [[30, 30]] : n === 2 ? [[18, 30], [42, 30]] : [[30, 16], [17, 41], [43, 41]];
+  return `<svg viewBox="0 0 60 60">${pos.map(([x, y]) => one(x, y, n === 1 ? 14 : 10)).join('')}</svg>`;
+}
+
+function matrixPad(d: MatrixData, changed: Changed): Pad {
+  let pick = -1;
+  let off = false;
+  const el = h(`<div class="dv-matrix"><div class="grid">${d.cells.map((f) => `<div class="mc">${figSvg(f)}</div>`).join('')}<div class="mc q">?</div></div>
+    <p class="dv-known">Что встанет на место знака вопроса?</p><div class="opts"></div></div>`);
+  const opts = el.querySelector('.opts') as HTMLElement;
+  const btns = d.options.map((f, i) => {
+    const b = h(`<button type="button" class="mc opt">${figSvg(f)}</button>`);
+    b.addEventListener('click', () => {
+      if (off || b.classList.contains('gone')) return;
+      pick = i;
+      btns.forEach((x, j) => x.classList.toggle('pick', j === i));
+      changed();
+    });
+    opts.appendChild(b);
+    return b;
+  });
+  return {
+    el,
+    answer: () => (pick >= 0 ? pick : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { not: number } | undefined;
+        if (r?.not != null) btns[r.not].classList.add('gone');
+      }
+    },
+    solution(sol) {
+      btns[sol as number].classList.add('right');
+      (el.querySelector('.q') as HTMLElement).innerHTML = figSvg(d.options[sol as number]);
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- кружки (Венн)
+
+function vennPad(d: VennData, changed: Changed): Pad {
+  const three = d.sets.length === 3;
+  const circles = three
+    ? `<circle cx="125" cy="72" r="52"/><circle cx="185" cy="72" r="52"/><circle cx="155" cy="120" r="52"/>
+       <text x="4" y="16">${esc(d.sets[0])}</text><text x="306" y="16" text-anchor="end">${esc(d.sets[1])}</text><text x="155" y="190" text-anchor="middle">${esc(d.sets[2])}</text>`
+    : `<circle cx="125" cy="85" r="62"/><circle cx="185" cy="85" r="62"/>
+       <text x="4" y="16">${esc(d.sets[0])}</text><text x="306" y="16" text-anchor="end">${esc(d.sets[1])}</text>`;
+  const body = h(`<div class="dv-venn"><ul>${d.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
+    <svg viewBox="0 0 310 ${three ? 196 : 160}">${circles}</svg><p><b>${esc(d.ask)}</b></p><p class="dv-known small">Кружки нарисованы для подсчёта — впиши числа в голове или на бумажке.</p></div>`);
+  return numPad(body, 'Ответ:', changed);
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -1401,6 +1595,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return fonariPad(data as FonariData, changed);
     case 'gryadki':
       return gryadkiPad(data as GryadkiData, changed);
+    case 'kartinka':
+      return kartinkaPad(data as KartinkaData, changed);
+    case 'odin':
+      return odinPad(data as OdinData, changed);
+    case 'matrix':
+      return matrixPad(data as MatrixData, changed);
+    case 'venn':
+      return vennPad(data as VennData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }

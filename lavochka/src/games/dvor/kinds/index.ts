@@ -7,6 +7,7 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkKartinka, genKartinka, genMatrix, genOdin, genVenn, solveKartinka, solveMatrix, solveOdin, solveVenn, type KartinkaData, type MatrixData, type OdinData, type VennData } from './misc';
 import { checkFonari, genFonari, solveFonari, type FonariData } from './fonari';
 import { checkGryadki, genGryadki, solveGryadki, VEG_NAMES, type GryadkiData } from './gryadki';
 import { checkPalatki, genPalatki, solvePalatki, type PalatkiData } from './palatki';
@@ -404,6 +405,78 @@ const gryadki: Kind<GryadkiData, number[], number[]> = {
   solve: (d) => solveGryadki(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki };
+const kartinka: Kind<KartinkaData, number[], number[]> = {
+  id: 'kartinka',
+  title: 'Картинка',
+  how: 'Числа слева и сверху — длины закрашенных отрезков в строке и столбце по порядку, между отрезками хоть одна пустая клетка. Закрась картинку: нажатие — закрасить, ещё — крестик, ещё — стереть; можно протягивать.',
+  par: [60, 180, 360],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genKartinka(lv, rng),
+  check: (d, _s, a) => checkKartinka(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const known = new Set(d.open.map(([i]) => i));
+    const cells = sol.map((v, i) => (v && !known.has(i) ? i : -1)).filter((i) => i >= 0);
+    const i = nth(cells, k, d.w * 73 + cells.length);
+    if (i == null) return null;
+    return { text: 'Отмеченная клетка закрашена.', reveal: { i, v: 1 } };
+  },
+  solve: (d) => solveKartinka(d),
+};
+
+const odin: Kind<OdinData, number, number> = {
+  id: 'odin',
+  title: 'Одиночка',
+  how: 'Все значки здесь парные — кроме одного. Найди одиночку и нажми на него.',
+  par: [30, 50, 80],
+  pts: [1, 2, 3],
+  gen: (lv, rng) => genOdin(lv, rng),
+  check: (_d, sol, a) => a === sol,
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const icons = [...new Set(d.cells)].filter((x) => x !== d.cells[sol]);
+    const icon = nth(icons, k, d.cells.length * 79);
+    if (!icon) return null;
+    return { text: `${icon} — не одиночка, убираем.`, reveal: { icon } };
+  },
+  solve: (d) => solveOdin(d),
+};
+
+const matrix: Kind<MatrixData, number, number> = {
+  id: 'matrix',
+  title: 'Что дальше',
+  how: 'В каждой строке фигуры меняются по одному правилу: какой-то признак (форма, цвет, сколько штук) одинаков во всей строке, а какой-то перебирает три разных значения. Выбери недостающую фигуру.',
+  par: [45, 90, 150],
+  pts: [1, 2, 4],
+  gen: (lv, rng) => genMatrix(lv, rng),
+  check: (_d, sol, a) => a === sol,
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const wrong = d.options.map((_, i) => i).filter((i) => i !== sol);
+    const i = nth(wrong, k, 83 + d.options.length);
+    if (i == null) return null;
+    return { text: 'Один неверный вариант убран.', reveal: { not: i } };
+  },
+  solve: (d) => solveMatrix(d),
+};
+
+const venn: Kind<VennData, number, number> = {
+  id: 'venn',
+  title: 'Кружки',
+  how: 'Нарисуй кружки, впиши сначала числа в самую серединку, где кружки пересекаются, потом — по краям.',
+  par: [60, 90, 180],
+  pts: [1, 2, 4],
+  gen: (lv, rng) => genVenn(lv, rng),
+  check: (_d, sol, a) => Number(a) === sol,
+  hint(d, _sol, k) {
+    if (k > 1) return null;
+    if (k === 0) return { text: 'Кто ходит в оба кружка, посчитан дважды — и среди одних, и среди других.' };
+    if (d.q === 'onlyA') return { text: `В «${d.sets[0]}» без других: из всех вычти тех, кто ходит ещё и в «${d.sets[1]}» или «${d.sets[2]}», но тех, кто во всех трёх, вычтешь дважды — верни их.` };
+    return { text: `Только в «${d.sets[0]}» — ${d.q === 'none' ? d.p[1] - d.p[3] : d.p[0] - d.p[2]}.` };
+  },
+  solve: (d) => solveVenn(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;

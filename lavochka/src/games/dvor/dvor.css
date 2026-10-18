@@ -291,3 +291,40 @@
 .dv-gry .gc { width: var(--u); height: var(--u); box-sizing: border-box; border: 0 solid #5a3a1a; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 0.6); cursor: pointer; user-select: none; }
 .dv-gry .gc.given { cursor: default; filter: saturate(0.8); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12); }
 .dv-gry .gc.shown { box-shadow: inset 0 0 0 3px #b3261e; }
+
+/* картинка (японский кроссворд) */
+.dv-kart { display: grid; grid-template-columns: auto repeat(var(--w), var(--u)); touch-action: none; user-select: none; font: 700 15px/1 'PT Sans', sans-serif; color: #23408f; }
+.dv-kart .ch { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 1px; padding-bottom: 3px; }
+.dv-kart .rh { display: flex; justify-content: flex-end; align-items: center; gap: 5px; padding-right: 5px; white-space: nowrap; }
+.dv-kart .kc { width: var(--u); height: var(--u); box-sizing: border-box; border: 1px solid rgba(35, 64, 143, 0.45); background: rgba(255, 255, 255, 0.85); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dv-kart .kc.br { border-right: 2px solid #23408f; }
+.dv-kart .kc.bb { border-bottom: 2px solid #23408f; }
+.dv-kart .kc.on { background: #23408f; }
+.dv-kart .kc.x::after { content: '×'; color: #b3322a; font-size: calc(var(--u) * 0.6); }
+.dv-kart .kc.fixed.on { background: #2a7a3a; }
+
+/* одиночка */
+.dv-odin { display: grid; grid-template-columns: repeat(var(--c), min(56px, calc((100vw - 100px) / var(--c)))); gap: 4px; }
+.dv-odin .oc { aspect-ratio: 1; font-size: min(30px, calc((100vw - 100px) / var(--c) * 0.55)); background: rgba(255, 255, 255, 0.85); border: 1px solid #ccd; border-radius: 6px; cursor: pointer; padding: 0; }
+.dv-odin .oc.pick { outline: 3px solid #23408f; }
+.dv-odin .oc.gone { opacity: 0.15; cursor: default; }
+.dv-odin .oc.right { outline: 3px solid #2a7a3a; background: #e4f4e0; }
+
+/* что дальше */
+.dv-matrix { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dv-matrix .grid { display: grid; grid-template-columns: repeat(3, 76px); gap: 4px; padding: 4px; border: 2px solid #23408f; background: rgba(255, 255, 255, 0.8); }
+.dv-matrix .mc { width: 76px; height: 76px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(35, 64, 143, 0.3); background: #fff; padding: 4px; }
+.dv-matrix .mc svg { width: 100%; height: 100%; }
+.dv-matrix .q { font: 700 40px 'Caveat', cursive; color: #a3261f; }
+.dv-matrix .opts { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; justify-content: center; width: 100%; max-width: 520px; }
+.dv-matrix .opt { flex: none; display: flex; }
+.dv-matrix .opt { cursor: pointer; border-radius: 6px; }
+.dv-matrix .opt.pick { outline: 3px solid #23408f; }
+.dv-matrix .opt.gone { opacity: 0.2; cursor: default; }
+.dv-matrix .opt.right { outline: 3px solid #2a7a3a; }
+
+/* кружки */
+.dv-venn svg { width: min(100%, 360px); display: block; margin: 4px auto; }
+.dv-venn circle { fill: rgba(35, 64, 143, 0.08); stroke: #23408f; stroke-width: 2; }
+.dv-venn text { font: 700 15px 'Caveat', cursive; fill: #a3261f; }
+.dv-venn ul { margin: 4px 0; padding-left: 20px; }
