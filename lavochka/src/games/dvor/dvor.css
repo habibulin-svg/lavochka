@@ -1,0 +1,143 @@
+/* «А у нас во дворе»: тетрадный лист в клетку — голубые клетки, красное поле, синяя ручка. */
+.table--dvor {
+  --panel-bg: #f6f3ea;
+  --panel-ink: #1c2440;
+  --panel-edge: rgba(30, 40, 80, 0.3);
+  --table-bg: radial-gradient(ellipse at 50% 15%, rgba(255, 240, 200, 0.12), transparent 60%), linear-gradient(160deg, #3c4a3a, #1c241c 70%);
+}
+.dv-wrap { width: 100%; height: 100%; display: flex; justify-content: center; overflow: auto; padding: 10px 8px; box-sizing: border-box; }
+.dv-sheet {
+  --ink: #1d2a6b;
+  --cell: 20px;
+  position: relative;
+  width: min(760px, 100%);
+  min-height: 100%;
+  height: max-content;
+  box-sizing: border-box;
+  padding: 12px 14px 18px 44px;
+  color: #1c1c24;
+  font-family: 'PT Sans', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.35;
+  background-color: #fbfbf6;
+  background-image: linear-gradient(90deg, transparent 32px, rgba(210, 40, 40, 0.55) 32px, rgba(210, 40, 40, 0.55) 34px, transparent 34px),
+    linear-gradient(rgba(70, 130, 200, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 130, 200, 0.22) 1px, transparent 1px);
+  background-size: 100% 100%, var(--cell) var(--cell), var(--cell) var(--cell);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+}
+.dv-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; border-bottom: 2px solid var(--ink); padding-bottom: 4px; margin-bottom: 4px; }
+.dv-stage { font-family: 'Russo One', sans-serif; font-size: 18px; color: var(--ink); }
+.dv-kind { font-family: 'Caveat', cursive; font-size: 22px; color: #a3261f; }
+.dv-par { margin-left: auto; opacity: 0.7; font-size: 13px; }
+.dv-clock { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; }
+.dv-clock.over { color: #b3261e; }
+.dv-score { font-weight: 700; color: var(--ink); }
+.dv-num { font-size: 12px; opacity: 0.6; }
+.dv-lead { margin: 6px 0; font-style: italic; }
+.dv-how { margin: 4px 0 10px; font-family: 'Caveat', cursive; font-size: 20px; color: var(--ink); line-height: 1.15; }
+.dv-pad { display: flex; justify-content: center; }
+.dv-msg { min-height: 1.4em; text-align: center; font-weight: 700; margin-top: 6px; }
+.dv-msg.bad { color: #b3261e; }
+.dv-msg.warn { color: #8a5a10; }
+.dv-hints { list-style: none; padding: 0; margin: 6px 0; font-family: 'Caveat', cursive; font-size: 20px; color: #2a6a2a; }
+.dv-ctl { display: flex; flex-wrap: wrap; gap: 6px; }
+.dv-done { margin-top: 10px; padding: 10px 12px; border: 2px dashed var(--ink); background: rgba(255, 255, 255, 0.7); }
+.dv-done.ok { border-color: #2a7a3a; }
+.dv-done.fail { border-color: #b3261e; }
+.dv-done-t { font-family: 'Russo One', sans-serif; font-size: 22px; }
+.dv-done.ok .dv-done-t { color: #2a7a3a; }
+.dv-done.fail .dv-done-t { color: #b3261e; }
+.dv-fact { margin: 8px 0 0; }
+
+/* кто где */
+.dv-zebra { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+.dv-clues { margin: 0; padding-left: 22px; }
+.dv-clues li { cursor: pointer; margin: 2px 0; }
+.dv-clues li.used { text-decoration: line-through; opacity: 0.5; }
+.dv-zscroll { overflow-x: auto; display: flex; justify-content: safe center; max-width: 100%; }
+.dv-zsvg { display: block; height: auto; user-select: none; flex-shrink: 0; }
+.dv-zsvg .dv-ink { stroke: #23408f; fill: none; stroke-linecap: round; opacity: 0.85; }
+.dv-zsvg text { font-family: 'Caveat', cursive; fill: #23408f; }
+.dv-zsvg .dv-hcat { font-size: 21px; font-weight: 700; text-anchor: middle; }
+.dv-zsvg .dv-hval { font-size: 19px; }
+.dv-zsvg .dv-hrow { font-size: 19px; text-anchor: end; }
+.dv-zsvg .dv-hit { fill: transparent; cursor: pointer; }
+.dv-zsvg .dv-hit:hover { fill: rgba(35, 64, 143, 0.07); }
+.dv-zsvg .dv-mk { pointer-events: none; }
+.dv-zsvg .dv-yes { fill: none; stroke: #23408f; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.dv-zsvg .dv-yes.fixed { stroke: #2a7a3a; }
+.dv-zsvg .dv-no { fill: none; stroke: #b3322a; stroke-width: 2; stroke-linecap: round; opacity: 0.75; }
+.dv-zans { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dv-zans > b { font-family: 'Caveat', cursive; font-size: 24px; color: #23408f; }
+.dv-ztab { border-collapse: collapse; font-family: 'Caveat', cursive; font-size: 21px; color: #23408f; }
+.dv-ztab th, .dv-ztab td { border: 1.6px solid rgba(35, 64, 143, 0.75); padding: 0 6px; font-weight: 700; }
+.dv-ztab tr:nth-child(odd) td { border-radius: 2px; }
+.dv-ztab select { font: inherit; font-weight: 700; color: #23408f; background: transparent; border: none; appearance: none; -webkit-appearance: none; padding: 2px 4px; cursor: pointer; max-width: 170px; text-align: center; }
+.dv-ztab select:disabled { color: #2a7a3a; opacity: 1; cursor: default; }
+.dv-zebra.locked select { color: #23408f; }
+
+/* классики */
+.dv-hid { display: grid; grid-template-columns: repeat(var(--cols), var(--u)); --u: min(52px, calc((100vw - 90px) / var(--cols))); gap: 3px; }
+.dv-hid > * { width: var(--u); height: var(--u); box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
+.dv-hid .hole { background: transparent; }
+.dv-hid .given, .dv-hid .cell { border: 2px solid #555; background: rgba(255, 255, 255, 0.9); font-family: 'Caveat', cursive; font-size: calc(var(--u) * 0.55); font-weight: 700; }
+.dv-hid .given { color: #222; background: #efe9d6; }
+.dv-hid .given.end { background: #f6d9a8; }
+.dv-hid .cell { color: var(--ink); text-align: center; padding: 0; outline: none; }
+.dv-hid .cell:focus { border-color: #2a5ab8; box-shadow: 0 0 0 2px rgba(42, 90, 184, 0.3); }
+.dv-hid .cell.fixed { color: #2a6a2a; background: #e4f4e0; }
+.dv-hid .cell.shown { color: #b3261e; }
+
+/* мостки */
+.dv-hashi { width: min(100%, 460px); }
+.dv-hashi svg { width: 100%; height: auto; display: block; background: rgba(140, 170, 200, 0.25); border-radius: 6px; }
+.dv-hashi .gap { fill: transparent; cursor: pointer; }
+.dv-hashi .plank { stroke: #8a5a2a; stroke-width: 4; stroke-linecap: round; }
+.dv-hashi .plank.fixed { stroke: #2a7a3a; }
+.dv-hashi .brick rect { fill: #b84a32; stroke: #6a2414; stroke-width: 2; }
+.dv-hashi .brick text { fill: #fff; font: 700 17px 'PT Sans', sans-serif; text-anchor: middle; pointer-events: none; }
+.dv-hashi .brick { cursor: pointer; }
+.dv-hashi .brick.full rect { fill: #4a7a3a; stroke: #24461a; }
+.dv-hashi .brick.over rect { fill: #e0a020; }
+.dv-hashi .brick.sel rect { stroke: #ffe14a; stroke-width: 4; }
+
+/* кто разбил, казаки */
+.dv-say { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.dv-say .row { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; background: rgba(255, 255, 255, 0.8); border-radius: 6px; border: 1px solid #ccd; cursor: pointer; }
+.dv-say .row span { font-style: italic; }
+.dv-say .row.cleared { opacity: 0.45; text-decoration: line-through; }
+.dv-say .row.guilty { background: #fde2dc; border-color: #b3261e; }
+.dv-say .row.kz { flex-direction: column; align-items: stretch; cursor: default; }
+.dv-say .kz-pick { display: flex; gap: 6px; }
+.dv-say .kz-pick .btn.on[data-v='0'] { background: #2a7a3a; color: #fff; }
+.dv-say .kz-pick .btn.on[data-v='1'] { background: #b3261e; color: #fff; }
+.dv-known { margin: 4px 0 0; }
+
+/* итог */
+.dv-final { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 20px; }
+.dv-gramota { text-align: center; padding: 18px 26px; border: 6px double #b08a2a; background: #fffbe8; max-width: 440px; }
+.dv-gramota h2 { font-family: 'Ruslan Display', 'Russo One', serif; font-size: 28px; margin: 6px 0; color: #8a2a1a; }
+.dv-medal { font-size: 54px; }
+.dv-rank { border-collapse: collapse; background: rgba(255, 255, 255, 0.85); }
+.dv-rank th, .dv-rank td { border: 1px solid #99a; padding: 3px 10px; }
+.dv-rank tr.me td { font-weight: 700; }
+
+@media (max-width: 600px) {
+  .dv-sheet { padding-left: 38px; font-size: 14px; }
+  .dv-par { margin-left: 0; }
+}
+
+/* телефон: лист почти во весь экран, кнопки — сразу под ним одной строкой */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .table--dvor .table-main { height: calc(100svh - 92px); min-height: min(100vw, 75vh); }
+  .table--dvor .dv-wrap { padding: 4px 2px; }
+  .table--dvor .dv-ctl { flex-wrap: nowrap; }
+  .table--dvor .dv-ctl .btn { padding-left: 10px; padding-right: 10px; white-space: nowrap; }
+}
+.dv-zans { max-width: 100%; overflow-x: auto; }
+@media (max-width: 520px) {
+  .dv-ztab { font-size: 18px; }
+  .dv-ztab th, .dv-ztab td { padding: 0 3px; }
+  .dv-ztab select { max-width: 110px; padding: 2px 0; }
+}

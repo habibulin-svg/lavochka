@@ -1,0 +1,209 @@
+/* «А у нас во дворе» — дворовая олимпиада головоломок: прятки, классики, казаки-разбойники… — повод для задач.
+ * Олимпиада (по этапам) или тренировка одного типа; одному или наперегонки. Без DOM. */
+import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
+import { SeededRng } from '../../core/rng';
+import { esc } from '../../core/util';
+import { apply, cfgOf, newState, redact, result, toAct, view, type Action, type Event, type State, type View } from './engine';
+import { kindOf, KINDS } from './kinds';
+
+export const SEATS = [
+  { name: 'Вовка', color: '#c0281e', light: '#e86a5a', dark: '#7a140e' },
+  { name: 'Ленка', color: '#23408f', light: '#5a78c8', dark: '#122450' },
+  { name: 'Серёга', color: '#2a7a3a', light: '#5aaa6a', dark: '#164a20' },
+  { name: 'Танька', color: '#8a5a10', light: '#c8964a', dark: '#4a3008' },
+  { name: 'Димка', color: '#6a2a8a', light: '#9a6ab8', dark: '#3a1250' },
+  { name: 'Оля', color: '#127a7a', light: '#4ab0b0', dark: '#0a4a4a' },
+];
+
+export const fmtSec = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
+function describe(ev: Event, name: (seat: number) => string): string | null {
+  switch (ev.type) {
+    case 'open':
+      return null;
+    case 'hint':
+      return `${name(ev.seat)} берёт подсказку${ev.text ? `: ${esc(ev.text)}` : ''}`;
+    case 'wrong':
+      return `${name(ev.seat)}: не сходится`;
+    case 'solved': {
+      const m = ev.mark;
+      const extra = [m.par ? 'в норматив' : '', m.first ? 'первым' : ''].filter(Boolean).join(', ');
+      return `✔ ${name(ev.seat)} решает задачу ${ev.i + 1} за ${fmtSec(m.sec)} — <b>+${m.pts}</b>${extra ? ` (${extra})` : ''}`;
+    }
+    case 'skip':
+      return `${name(ev.seat)} сдаётся на задаче ${ev.i + 1}`;
+    case 'finish':
+      return `🏁 ${name(ev.seat)} всё решил: ${ev.score} очков`;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------- бот
+
+/** Бот «решает» за норматив × множитель уровня (разброс ±40 %, свой у каждой задачи), считая от открытия задачи;
+ * ответ — своим решателем по условию. Когда ходы идут без пауз (тесты, «пропустить»), решает через 40 ходов «думаю». */
+function botChoose(v: View, seat: number, level: number, rng: { next(): number; int(n: number): number }): Action {
+  const b = v.boards[seat];
+  if (!b || b.i >= v.total) return { t: 'think' };
+  if (b.phase === 'done') return { t: 'next' };
+  const p = b.cur;
+  if (!p) return { t: 'think' };
+  const K = kindOf(p.kind);
+  const u = (((seat + 1) * 2654435761 + b.i * 40503 + b.t0) >>> 0) / 4294967296;
+  const target = K.par[p.level] * [1.6, 1.0, 0.6][level] * (0.6 + 0.8 * u) * 1000;
+  const elapsed = Date.now() - b.t0;
+  const thinks = b.thinks ?? 0;
+  // «время не идёт»: десятки ходов почти мгновенно (тесты, «пропустить») — решаем сразу
+  const ready = elapsed >= target || (thinks >= 40 && elapsed < thinks * 50);
+  const hints = b.hints?.length ?? 0;
+  if (level === 0 && hints < 1 && Date.now() - b.t0 >= target * 0.5 && rng.next() < 0.05) return { t: 'hint' };
+  if (!ready) return { t: 'think' };
+  // лёгкий иногда ошибается
+  if (level === 0 && (b.wrong ?? 0) < 1 && rng.next() < 0.25) return { t: 'ans', a: null };
+  return { t: 'ans', a: K.solve(p.data) };
+}
+
+// ---------------------------------------------------------------- показ правил
+
+const demoSeats: SeatSpec[] = [{ seat: 0, kind: 'bot', name: SEATS[0].name, level: 1 }];
+
+function kindDemo(kind: string, seed: number, intro: string, caps: string[]): DemoScript<State, Action> {
+  let base: State | null = null;
+  const get = () => (base ??= newState(cfgOf({ mode: 'train', kind, count: 1, lvl: 0 }), [0], new SeededRng(seed)));
+  return {
+    seats: demoSeats,
+    options: { mode: 'train', kind, count: 1, lvl: 0 },
+    setup: () => get(),
+    intro,
+    get steps() {
+      const s = get();
+      const p = s.list[0];
+      return [
+        { seat: 0, action: { t: 'hint' } as Action, caption: caps[0] },
+        { seat: 0, action: { t: 'ans', a: kindOf(kind).solve(p.data) } as Action, caption: caps[1] },
+      ];
+    },
+  };
+}
+
+const KIND_CHOICES = Object.values(KINDS).map((k) => ({ value: k.id, label: k.title }));
+
+export const def: GameDef<State, Action, Event, View> = {
+  id: 'dvor',
+  title: 'А у нас во дворе',
+  players: { min: 1, max: 6, default: 1 },
+  seats: SEATS,
+  options: [
+    {
+      key: 'mode',
+      label: 'Как играем',
+      type: 'select',
+      choices: [
+        { value: 'olymp', label: 'Олимпиада по этапам' },
+        { value: 'train', label: 'Тренировка одного типа' },
+      ],
+      default: 'olymp',
+    },
+    {
+      key: 'stages',
+      label: 'Этапов',
+      hint: 'на каждом этапе — две задачи',
+      type: 'select',
+      choices: [
+        { value: 2, label: '2' },
+        { value: 4, label: '4' },
+        { value: 8, label: 'все 8' },
+      ],
+      default: 4,
+      showIf: (o) => o.mode !== 'train',
+    },
+    { key: 'kind', label: 'Задачи', type: 'select', choices: KIND_CHOICES, default: 'zebra', showIf: (o) => o.mode === 'train' },
+    {
+      key: 'count',
+      label: 'Задач',
+      type: 'select',
+      choices: [
+        { value: 3, label: '3' },
+        { value: 5, label: '5' },
+        { value: 10, label: '10' },
+      ],
+      default: 5,
+      showIf: (o) => o.mode === 'train',
+    },
+    {
+      key: 'lvl',
+      label: 'Трудность',
+      type: 'select',
+      choices: [
+        { value: -1, label: 'растёт к концу' },
+        { value: 0, label: 'лёгкие' },
+        { value: 1, label: 'средние' },
+        { value: 2, label: 'трудные' },
+      ],
+      default: -1,
+    },
+  ],
+  presets: [
+    { id: 'olymp', label: 'Олимпиада', hint: '4 этапа по две задачи, от лёгких к трудным', options: { mode: 'olymp', stages: 4, lvl: -1 } },
+    { id: 'big', label: 'Большая олимпиада', hint: 'все 8 этапов', options: { mode: 'olymp', stages: 8, lvl: -1 } },
+    { id: 'warm', label: 'Разминка', hint: '2 этапа, лёгкие задачи', options: { mode: 'olymp', stages: 2, lvl: 0 } },
+    { id: 'train', label: 'Тренировка', hint: 'пять задач одного типа', options: { mode: 'train', kind: 'zebra', count: 5, lvl: 1 } },
+  ],
+  setup: (seats, opts, rng) => newState(cfgOf(opts), seats.map((s) => s.seat), rng),
+  toAct,
+  apply: (s, seat, a, rng) => apply(s, seat, a, rng),
+  view,
+  redact,
+  result,
+  describe,
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: botChoose },
+  showcase() {
+    // «Кто где» с открытыми подсказками: видно рукописную сетку с галочками
+    let s = newState(cfgOf({ mode: 'olymp', stages: 2, lvl: 0 }), [0], new SeededRng(2026));
+    const zi = s.list.findIndex((p) => p.kind === 'zebra');
+    if (zi > 0) s = { ...s, list: [s.list[zi], ...s.list.filter((_, i) => i !== zi)] };
+    for (let k = 0; k < 3; k++) s = apply(s, 0, { t: 'hint' }, new SeededRng(k), s.boards[0].t0 + 47000)?.state ?? s;
+    return s;
+  },
+  rules: {
+    goal: 'Ребята устроили во дворе олимпиаду: каждая дворовая игра — повод для головоломки. Решайте задачи, набирайте очки и получайте грамоту. Вдвоём и больше — наперегонки на одних и тех же задачах.',
+    sections: [
+      {
+        title: 'Очки и грамоты',
+        html: `<p>За каждую задачу — <b>очки</b> (лёгкая — меньше, трудная — больше). Каждая <b>подсказка</b> и каждая <b>ошибка</b> снимают очко, но решённая задача приносит хотя бы одно.
+          Уложился в <b>норматив</b> (время над задачей) — +1. Решил раньше всех — ещё +1.</p>
+          <p>Не получается — можно <b>сдаться</b>: покажут ответ, очков не будет. В конце — грамота: золотая (80% от возможного), серебряная, бронзовая.</p>`,
+      },
+      {
+        title: 'Кто где',
+        html: `<p>Логическая сетка, как в знаменитой загадке Эйнштейна. По подсказкам выясните, у кого что. Удобно отмечать в сетке: <b>✓</b> — точно да, <b>✕</b> — точно нет;
+          в каждой строке и каждом столбце одного блока ровно одна ✓. Ответ — таблица внизу.</p>`,
+        demo: kindDemo('zebra', 11, 'Прятки: кто где прятался.', ['Подсказка открывает одну клетку ответа — но стоит очко.', 'Сетка сошлась — ответ верный.']),
+      },
+      {
+        title: 'Классики',
+        html: `<p>Числа идут цепочкой от 1 до последнего: каждое следующее — в <b>соседней</b> клетке, хоть наискосок. Часть чисел дана — впишите остальные.
+          Начинайте с мест, где между данными числами всего один-два шага.</p>`,
+        demo: kindDemo('hidato', 7, 'Классики с наполовину стёртыми числами.', ['Подсказка ставит одно число на место.', 'Вся цепочка заполнена.']),
+      },
+      {
+        title: 'Мостки',
+        html: `<p>Кирпичи с числами — острова. Соедините их досками: доска идёт только по прямой, доски не пересекаются, между двумя кирпичами — одна или две.
+          Число на кирпиче — сколько досок к нему подходит. И по доскам должно быть можно дойти от любого кирпича до любого.</p>
+          <p>Нажмите на промежуток между кирпичами: одна доска, две, убрать.</p>`,
+        demo: kindDemo('hashi', 5, 'Двор после ливня.', ['Подсказка кладёт одну доску правильно.', 'Все кирпичи связаны.']),
+      },
+      {
+        title: 'Кто разбил',
+        html: `<p>Каждый говорит своё, а известно только, сколько из них сказали правду. Предположите по очереди, что виноват каждый, и посчитайте правдивых — сойдётся только один.</p>`,
+        demo: kindDemo('okno', 3, 'Мяч влетел в окно.', ['Первая подсказка — как рассуждать.', 'Виновник найден.']),
+      },
+      {
+        title: 'Казаки и разбойники',
+        html: `<p>Казаки всегда говорят правду, разбойники всегда врут. По тому, что сказал каждый, разберитесь, кто есть кто.
+          Предположите про одного и проверьте, не выйдет ли противоречия.</p>`,
+        demo: kindDemo('kazaki', 9, 'Кто казак, кто разбойник?', ['Подсказка — как рассуждать.', 'Все роли сошлись.']),
+      },
+    ],
+  },
+};

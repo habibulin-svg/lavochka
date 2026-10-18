@@ -68,6 +68,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   spy: () => import('./spy/def').then((m) => m.def),
   whoami: () => import('./whoami/def').then((m) => m.def),
   danetki: () => import('./danetki/def').then((m) => m.def),
+  dvor: () => import('./dvor/def').then((m) => m.def),
   hat: () => Promise.all([import('./hat/def'), loadClues()]).then(([m]) => m.def),
   crocodile: () => Promise.all([import('./crocodile/def'), loadClues()]).then(([m]) => m.def),
   'secret-hitler': () => import('./secret-hitler/def').then((m) => m.def),
