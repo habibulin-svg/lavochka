@@ -328,3 +328,27 @@
 .dv-venn circle { fill: rgba(35, 64, 143, 0.08); stroke: #23408f; stroke-width: 2; }
 .dv-venn text { font: 700 15px 'Caveat', cursive; fill: #a3261f; }
 .dv-venn ul { margin: 4px 0; padding-left: 20px; }
+
+/* шестерёнки */
+.dv-gears svg { width: min(100%, 640px); display: block; margin: 0 auto; }
+.dv-gears .g path { fill: #c9c2b0; stroke: #4a4436; stroke-width: 1.5; }
+.dv-gears .g.first path { fill: #a8d39a; }
+.dv-gears .g.ask path { fill: #f3d28a; }
+.dv-gears .axle { fill: #4a4436; }
+.dv-gears .g text { font: 700 15px 'PT Sans', sans-serif; text-anchor: middle; fill: #222; }
+.dv-gears .belt { stroke: #333; stroke-width: 2.4; stroke-dasharray: 5 3; }
+.dv-gears .lbl { font: 700 20px 'Caveat', cursive; text-anchor: middle; fill: #2a6a2a; }
+.dv-gears .lbl.ask { fill: #a3261f; }
+.dv-dir { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.dv-dir .btn.on { background: #23408f; color: #fff; }
+
+/* турнир */
+.dv-ttab { border-collapse: collapse; font-family: 'Caveat', cursive; font-size: 21px; color: #23408f; margin: 4px 0; }
+.dv-ttab th, .dv-ttab td { border: 1.6px solid rgba(35, 64, 143, 0.75); padding: 0 10px; }
+.dv-turnir ul { margin: 2px 0; padding-left: 22px; }
+
+/* земелька */
+.dv-zem svg { width: min(100%, 420px); display: block; margin: 0 auto; }
+.dv-zem .gr { stroke: rgba(70, 130, 200, 0.45); stroke-width: 1; fill: none; }
+.dv-zem polygon { fill: rgba(140, 100, 50, 0.3); stroke: #6a4a1a; stroke-width: 2.5; stroke-linejoin: round; }
+.dv-zem circle { fill: #6a4a1a; }

@@ -7,6 +7,7 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkGears, checkZem, genGears, genTurnir, genZem, solveGears, solveTurnir, solveZem, type GearsAns, type GearsData, type TurnirData, type ZemData } from './mech';
 import { checkKartinka, genKartinka, genMatrix, genOdin, genVenn, solveKartinka, solveMatrix, solveOdin, solveVenn, type KartinkaData, type MatrixData, type OdinData, type VennData } from './misc';
 import { checkFonari, genFonari, solveFonari, type FonariData } from './fonari';
 import { checkGryadki, genGryadki, solveGryadki, VEG_NAMES, type GryadkiData } from './gryadki';
@@ -477,6 +478,54 @@ const venn: Kind<VennData, number, number> = {
   solve: (d) => solveVenn(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn };
+const gears: Kind<GearsData, GearsAns, GearsAns> = {
+  id: 'gears',
+  title: 'Шестерёнки',
+  how: 'Сколько оборотов и в какую сторону сделает отмеченная шестерёнка? Зубья, что прошли по одной, прошли и по другой.',
+  par: [60, 120, 200],
+  pts: [1, 2, 4],
+  gen: (lv, rng) => genGears(lv, rng),
+  check: (d, _s, a) => checkGears(d, a),
+  hint(d, sol, k) {
+    if (k === 0) return { text: `Промежуточные шестерёнки число оборотов не меняют: важны только первая (${d.teeth[0]} зубьев) и отмеченная (${d.teeth[d.ask]}). Сколько зубьев прошло у первой?` };
+    if (k === 1) return { text: `Отмеченная крутится ${sol.cw ? 'по часовой' : 'против часовой'} стрелки.` };
+    return null;
+  },
+  solve: (d) => solveGears(d),
+};
+
+const turnir: Kind<TurnirData, number, number> = {
+  id: 'turnir',
+  title: 'Турнир',
+  how: 'По очкам команд и известным результатам восстанови, как прошёл турнир.',
+  par: [60, 180, 300],
+  pts: [1, 3, 5],
+  gen: (lv, rng) => genTurnir(lv, rng),
+  check: (_d, sol, a) => a === sol,
+  hint(d, _sol, k) {
+    if (k === 0) return { text: `Каждый матч приносит командам вместе 3 очка, а ничья — только 2. Матчей всего ${(d.teams.length * (d.teams.length - 1)) / 2}.` };
+    if (k === 1 && d.ask) return { text: 'Начни с команды, у которой очков совсем мало или очень много: её результаты почти однозначны.' };
+    return null;
+  },
+  solve: (d) => solveTurnir(d),
+};
+
+const zem: Kind<ZemData, number, string> = {
+  id: 'zem',
+  title: 'Земелька',
+  how: 'Сколько клеток в участке? Удобно обвести его прямоугольником и вычесть лишние треугольники по углам.',
+  par: [45, 120, 200],
+  pts: [1, 3, 4],
+  gen: (lv, rng) => genZem(lv, rng),
+  check: (d, _s, a) => checkZem(d, a),
+  hint(_d, _sol, k) {
+    if (k === 0) return { text: 'Обведи участок прямоугольником по линиям клеток и посчитай его площадь.' };
+    if (k === 1) return { text: 'Прямоугольный треугольник с катетами a и b — это ровно половина прямоугольника a × b.' };
+    return null;
+  },
+  solve: (d) => String(solveZem(d)).replace('.', ','),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn, gears, turnir, zem };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;

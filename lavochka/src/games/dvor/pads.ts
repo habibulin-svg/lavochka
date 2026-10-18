@@ -14,6 +14,7 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import type { GearsAns, GearsData, TurnirData, ZemData } from './kinds/mech';
 import { COLORS, type Fig, type KartinkaData, type MatrixData, type OdinData, type VennData } from './kinds/misc';
 import type { FonariData } from './kinds/fonari';
 import { VEG, VEG_NAMES, type GryadkiData } from './kinds/gryadki';
@@ -1551,6 +1552,154 @@ function vennPad(d: VennData, changed: Changed): Pad {
   return numPad(body, 'Ответ:', changed);
 }
 
+// ---------------------------------------------------------------- шестерёнки
+
+function gearSvg(cx: number, cy: number, r: number, teeth: number, cls: string): string {
+  const k = Math.min(teeth, 24);
+  let d = '';
+  for (let i = 0; i < k * 2; i++) {
+    const a = (i * Math.PI) / k;
+    const rr = i % 2 ? r : r + 5;
+    d += `${i ? 'L' : 'M'}${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`;
+  }
+  return `<g class="${cls}"><path d="${d}Z"/><text x="${cx}" y="${cy + 5}">${teeth}</text></g>`;
+}
+
+function gearsPad(d: GearsData, changed: Changed): Pad {
+  // раскладка в ряд: радиус ~ зубьям; сцепленные — вплотную, на цепи/ремне — с промежутком
+  const R = d.teeth.map((t) => 12 + t * 0.9);
+  const xs: number[] = [];
+  let x = R[0] + 8;
+  d.teeth.forEach((_, i) => {
+    if (i) x += R[i - 1] + R[i] + (d.links[i - 1] === 'mesh' ? 4 : 34);
+    xs.push(x);
+  });
+  const W = x + R[R.length - 1] + 10;
+  const H = Math.max(...R) * 2 + 40;
+  const cy = H / 2 - 6;
+  let links = '';
+  d.links.forEach((l, i) => {
+    if (l === 'mesh') return;
+    const [a, b] = [xs[i], xs[i + 1]];
+    if (l === 'chain') links += `<line class="belt" x1="${a}" y1="${cy - R[i]}" x2="${b}" y2="${cy - R[i + 1]}"/><line class="belt" x1="${a}" y1="${cy + R[i]}" x2="${b}" y2="${cy + R[i + 1]}"/>`;
+    else links += `<line class="belt" x1="${a}" y1="${cy - R[i]}" x2="${b}" y2="${cy + R[i + 1]}"/><line class="belt" x1="${a}" y1="${cy + R[i]}" x2="${b}" y2="${cy - R[i + 1]}"/>`;
+  });
+  const gears = d.teeth.map((t, i) => gearSvg(xs[i], cy, R[i], t, i === 0 ? 'g first' : i === d.ask ? 'g ask' : 'g')).join('');
+  const marks = `<text class="lbl" x="${xs[0]}" y="${H - 4}">↻ ${d.turns}</text><text class="lbl ask" x="${xs[d.ask]}" y="${H - 4}">?</text>`;
+  const el = h(`<div class="dv-gears"><svg viewBox="0 0 ${W} ${H}">${links}${gears}${marks}</svg>
+    <p class="dv-known">Числа — зубья. Сцепленные зубьями крутятся в разные стороны; на цепи — в одну сторону; на перекрещённом ремне — в разные.
+    Первая (зелёная) делает <b>${d.turns}</b> ${d.turns === 1 ? 'оборот' : d.turns < 5 ? 'оборота' : 'оборотов'} по часовой стрелке. Что сделает отмеченная «?»?</p></div>`);
+  const { el: ask, inp } = numAnswer('Оборотов:', changed);
+  const dir = h(`<div class="dv-dir"><button type="button" class="btn small" data-cw="1">↻ по часовой</button><button type="button" class="btn small" data-cw="0">↺ против</button></div>`);
+  let cw: boolean | null = null;
+  const btns = [...dir.querySelectorAll('button')] as HTMLButtonElement[];
+  const setDir = (v: boolean | null) => {
+    cw = v;
+    btns.forEach((b) => b.classList.toggle('on', v != null && (b.dataset.cw === '1') === v));
+  };
+  btns.forEach((b) =>
+    b.addEventListener('click', () => {
+      setDir(b.dataset.cw === '1');
+      changed();
+    }),
+  );
+  el.append(ask, dir);
+  return {
+    el,
+    answer: () => (inp.value && cw != null ? { turns: Number(inp.value), cw } : null),
+    hints() {},
+    solution(sol) {
+      const s = sol as GearsAns;
+      if (Number(inp.value) !== s.turns) {
+        inp.value = String(s.turns);
+        inp.classList.add('shown');
+      }
+      setDir(s.cw);
+    },
+    lock() {
+      inp.readOnly = true;
+      btns.forEach((b) => (b.disabled = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- турнир
+
+function turnirPad(d: TurnirData, changed: Changed): Pad {
+  const t = (i: number) => esc(d.teams[i]);
+  const res = (r: number, i: number, j: number) => (r === 0 ? `${t(i)} — ${t(j)}: ничья` : `${t(r === 1 ? i : j)} обыграл ${t(r === 1 ? j : i)}`);
+  const body = h(`<div class="dv-turnir">
+    <p>Турнир по футболу двор на двор: каждая команда сыграла с каждой по разу. За победу — 3 очка, за ничью — 1, за поражение — 0.</p>
+    <table class="dv-ttab"><tr><th>Команда</th><th>Очки</th></tr>${d.teams.map((_, i) => `<tr><td>${t(i)}</td><td>${d.points[i]}</td></tr>`).join('')}</table>
+    ${d.known.length ? `<p>Известно:</p><ul>${d.known.map(([i, j, r]) => `<li>${res(r, i, j)}</li>`).join('')}</ul>` : ''}
+    <p><b>${d.ask ? `Как сыграли ${t(d.ask[0])} и ${t(d.ask[1])}?` : 'Сколько матчей закончились вничью?'}</b></p></div>`);
+  if (!d.ask) return numPad(body, 'Ничьих:', changed);
+  const [a, b] = d.ask;
+  let pick: number | null = null;
+  const row = h(`<div class="dv-dir"><button type="button" class="btn small" data-r="1">победа ${t(a)}</button><button type="button" class="btn small" data-r="0">ничья</button><button type="button" class="btn small" data-r="-1">победа ${t(b)}</button></div>`);
+  const btns = [...row.querySelectorAll('button')] as HTMLButtonElement[];
+  const set = (v: number | null) => {
+    pick = v;
+    btns.forEach((x) => x.classList.toggle('on', v != null && Number(x.dataset.r) === v));
+  };
+  btns.forEach((x) =>
+    x.addEventListener('click', () => {
+      set(Number(x.dataset.r));
+      changed();
+    }),
+  );
+  const el = h(`<div class="dv-chain"></div>`);
+  el.append(body, row);
+  return {
+    el,
+    answer: () => pick,
+    hints() {},
+    solution(sol) {
+      set(sol as number);
+    },
+    lock() {
+      btns.forEach((x) => (x.disabled = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- земелька
+
+function zemPad(d: ZemData, changed: Changed): Pad {
+  const U = 30;
+  let grid = '';
+  for (let x = 0; x <= d.w; x++) grid += `M${x * U} 0V${d.h * U}`;
+  for (let y = 0; y <= d.h; y++) grid += `M0 ${y * U}H${d.w * U}`;
+  const poly = d.pts.map(([x, y]) => `${x * U},${y * U}`).join(' ');
+  const body = h(`<div class="dv-zem"><svg viewBox="-4 -4 ${d.w * U + 8} ${d.h * U + 8}"><path class="gr" d="${grid}"/><polygon points="${poly}"/>${d.pts
+    .map(([x, y]) => `<circle cx="${x * U}" cy="${y * U}" r="3.5"/>`)
+    .join('')}</svg><p><b>Сколько клеток земли в участке?</b> Половинки клеток тоже считаются: ответ может быть с «,5».</p></div>`);
+  const el = h(`<div class="dv-chain"></div>`);
+  el.appendChild(body);
+  const ask = h(`<label class="dv-cask">Площадь: <input class="cell wide" inputmode="decimal" maxlength="5" autocomplete="off" aria-label="площадь"> клеток</label>`);
+  const inp = ask.querySelector('input') as HTMLInputElement;
+  inp.oninput = () => {
+    inp.value = inp.value.replace(/[^\d,.]/g, '').replace('.', ',').slice(0, 5);
+    changed();
+  };
+  el.appendChild(ask);
+  return {
+    el,
+    answer: () => (inp.value ? inp.value : null),
+    hints() {},
+    solution(sol) {
+      const s = String(sol).replace('.', ',');
+      if (inp.value !== s) {
+        inp.value = s;
+        inp.classList.add('shown');
+      }
+    },
+    lock() {
+      inp.readOnly = true;
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -1603,6 +1752,12 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return matrixPad(data as MatrixData, changed);
     case 'venn':
       return vennPad(data as VennData, changed);
+    case 'gears':
+      return gearsPad(data as GearsData, changed);
+    case 'turnir':
+      return turnirPad(data as TurnirData, changed);
+    case 'zem':
+      return zemPad(data as ZemData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }
