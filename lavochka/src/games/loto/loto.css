@@ -1,0 +1,155 @@
+/* Лото: клеёнка на кухонном столе, картон 70-х, тёмно-зелёные пластмассовые бочонки. */
+.lt-wrap { position: absolute; inset: 0; overflow: auto; }
+.lt-cloth {
+  min-height: 100%; box-sizing: border-box; padding: 12px 12px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background:
+    repeating-linear-gradient(0deg, rgba(178, 40, 40, .13) 0 22px, transparent 22px 44px),
+    repeating-linear-gradient(90deg, rgba(178, 40, 40, .13) 0 22px, transparent 22px 44px),
+    #f3ecdc;
+}
+.lt-cloth.world {
+  background:
+    repeating-linear-gradient(0deg, rgba(40, 90, 150, .12) 0 22px, transparent 22px 44px),
+    repeating-linear-gradient(90deg, rgba(40, 90, 150, .12) 0 22px, transparent 22px 44px),
+    #f1eee4;
+}
+
+/* ---- мешок и бочонки */
+.lt-top { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 760px; justify-content: center; flex-wrap: wrap; }
+.lt-bag {
+  width: 64px; height: 74px; position: relative; flex: none;
+  background: radial-gradient(ellipse at 40% 35%, #c9b48a, #8f7748 70%, #6d5a34);
+  border-radius: 46% 46% 40% 40% / 30% 30% 60% 60%;
+  box-shadow: inset -6px -8px 14px rgba(0,0,0,.25), 0 4px 6px rgba(0,0,0,.25);
+}
+.lt-bag::before { content: ''; position: absolute; left: 20px; right: 20px; top: -6px; height: 14px; border-radius: 6px; background: #7d6638; box-shadow: 0 3px 0 #b9302a; }
+.lt-bag span { position: absolute; inset: auto 0 12px; text-align: center; font: 700 15px 'PT Sans', sans-serif; color: #fff8e6; text-shadow: 0 1px 2px #0008; }
+.lt-last { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lt-call { font: 700 clamp(18px, 3.4vw, 28px) 'PT Serif', serif; color: #3a2a18; max-width: 320px; line-height: 1.15; }
+.lt-recent { display: flex; gap: 4px; flex-wrap: wrap; max-width: 300px; }
+
+.lt-barrel {
+  --w: 34px; width: var(--w); height: calc(var(--w) * 1.25); position: relative; display: inline-block; flex: none;
+  border-radius: 22% / 14%;
+  background: linear-gradient(90deg, #12392b, #2e6b52 30%, #3f8466 45%, #23573f 70%, #0f3125);
+  box-shadow: 0 2px 3px rgba(0,0,0,.35);
+}
+.lt-barrel::before, .lt-barrel::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; background: rgba(0,0,0,.25); }
+.lt-barrel::before { top: 22%; } .lt-barrel::after { bottom: 22%; }
+.lt-barrel span {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font: 700 calc(var(--w) * .46) 'PT Serif', serif; color: #f0e3b4; text-shadow: 0 1px 0 #000a;
+}
+.lt-barrel.big { --w: 66px; }
+.lt-barrel.fresh { animation: lt-pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes lt-pop { from { transform: translateY(-30px) scale(.4) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.lt-prize { font: 15px 'PT Sans', sans-serif; color: #4a3a26; }
+.lt-banner {
+  font: 700 18px 'PT Sans', sans-serif; color: #fff; background: #b3322a; padding: 6px 16px; border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.3); text-align: center; max-width: 92%;
+}
+
+/* ---- карточки: пастельный картон, белые клетки с числом */
+.lt-cards { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.lt-mine, .lt-other { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.lt-mine { width: 100%; }
+.lt-others { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: center; }
+.lt-other.turn .lt-who { text-decoration: underline; }
+.lt-who { font: 700 14px 'PT Sans', sans-serif; }
+
+.lt-card {
+  --c: #f4cf6a; --cd: #e2b44a; --cell: 26px;
+  background: var(--c); padding: calc(var(--cell) * .2); border-radius: 3px;
+  box-shadow: 0 0 0 2px #fffbe9 inset, 0 0 0 1px var(--cd), 0 3px 6px rgba(0,0,0,.25);
+  display: flex; flex-direction: column; gap: calc(var(--cell) * .12);
+}
+.lt-card.big { --cell: clamp(32px, 9.4vw, 52px); }
+.t-yellow { --c: #f6cd6b; --cd: #d9a93f; }
+.t-pink { --c: #f3b3b9; --cd: #d98890; }
+.t-blue { --c: #a9cbe8; --cd: #7aa3c8; }
+.t-green { --c: #b9d9a1; --cd: #8db477; }
+.t-orange { --c: #f5b77a; --cd: #d88f4c; }
+.lt-row { display: grid; grid-template-columns: repeat(9, var(--cell)); gap: calc(var(--cell) * .12); }
+.lt-cell { height: var(--cell); position: relative; border-radius: 1px; }
+.lt-cell.empty { background: rgba(255,255,255,.12); }
+b.lt-cell {
+  background: #fffdf6; color: #1b1b1b; box-shadow: 0 0 0 1px rgba(0,0,0,.12);
+  display: block; font-weight: 700;
+}
+b.lt-cell span {
+  position: absolute; left: 0; right: 0; top: 4%; text-align: center;
+  font: italic 700 calc(var(--cell) * .55) 'PT Serif', 'Times New Roman', serif; letter-spacing: -.02em;
+}
+b.lt-cell small { position: absolute; right: 6%; bottom: 3%; font: 700 calc(var(--cell) * .2) 'PT Sans', sans-serif; color: #333; }
+b.lt-cell.can { cursor: pointer; }
+b.lt-cell.can:hover { box-shadow: 0 0 0 2px #b3322a; }
+.lt-chip {
+  position: absolute; inset: 9%; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a7a, #c22a1c 55%, #7e1209);
+  box-shadow: 0 2px 2px rgba(0,0,0,.4), inset 0 -2px 3px rgba(0,0,0,.3), inset 0 0 0 2px rgba(255,255,255,.18);
+}
+.lt-chip.fresh { animation: lt-chip .18s ease-out; }
+@keyframes lt-chip { from { transform: scale(1.6); opacity: 0; } }
+.lt-card:not(.big) .lt-chip { inset: 4%; }
+.shake { animation: lt-shake .3s; }
+@keyframes lt-shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* ---- панель: кнопка и контрольная доска */
+.lt-panel { display: flex; flex-direction: column; gap: 8px; }
+.lt-draw { width: 100%; }
+.lt-board { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; font: 11px 'PT Sans', sans-serif; }
+.lt-board i { font-style: normal; text-align: center; padding: 2px 0; border-radius: 2px; color: #999; background: rgba(0,0,0,.04); }
+.lt-board i.on { color: #fff; background: #2e6b52; }
+.lt-board i.last { background: #b3322a; }
+.lt-tip { margin: 0; font-size: 14px; }
+.lt-pass { width: 100%; }
+
+/* ---- «Вокруг света» */
+.lt-ask { display: flex; align-items: center; gap: 14px; }
+.lt-asknote { font: 14px 'PT Sans', sans-serif; color: #4a3a26; }
+.lt-qcard {
+  width: 210px; min-height: 150px; box-sizing: border-box; position: relative;
+  background: #fbfaf5; border-radius: 5px; box-shadow: 0 3px 8px rgba(0,0,0,.28); padding: 54px 14px 14px;
+  font: 700 15px/1.25 'PT Sans', Arial, sans-serif; color: #222;
+}
+.lt-qcard b {
+  position: absolute; right: 14px; top: 10px; padding: 4px 10px 6px 12px; font: 700 20px 'PT Sans', sans-serif;
+  border-left: 1.5px solid #222; border-bottom: 1.5px solid #222;
+}
+.lt-qcard p { margin: 0; }
+.lt-qcard.empty { background: repeating-linear-gradient(45deg, #e8e2d0 0 6px, #f2ecdc 6px 12px); }
+.lt-qcard.mini {
+  position: absolute; inset: 6%; width: auto; min-height: 0; padding: 0; transform: rotate(-4deg);
+  display: block; box-shadow: 0 2px 4px rgba(0,0,0,.35);
+}
+.lt-qcard.mini b { right: 8%; top: 6%; font-size: clamp(10px, 2.2vw, 15px); padding: 2px 6px 3px 7px; }
+
+.lt-sheets { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.lt-sheet {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 12px; padding: 12px 14px 8px;
+  background: #faf6ea; border-radius: 4px; box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  width: min(560px, 94vw); box-sizing: border-box;
+}
+.lt-sheet.hint { animation: lt-hint 1.2s ease-in-out infinite alternate; }
+@keyframes lt-hint { to { box-shadow: 0 0 0 4px #e3a51a, 0 3px 8px rgba(0,0,0,.25); } }
+.lt-pic { margin: 0; position: relative; display: flex; flex-direction: column; align-items: center; }
+.lt-pic img { width: 100%; aspect-ratio: 1; display: block; }
+.lt-pic figcaption { font: 700 clamp(9px, 1.9vw, 12px)/1.15 'PT Serif', 'Times New Roman', serif; text-align: center; margin-top: 3px; min-height: 2.3em; color: #222; }
+.lt-pic.can { cursor: pointer; }
+.lt-pic.can:hover img { outline: 3px solid #b3322a; }
+.lt-pic.picked img { outline: 3px solid #2b5c9e; }
+.lt-pic.right img { outline: 4px solid #2f7a3e; }
+.lt-pic.wrong img { outline: 4px solid #e3a51a; }
+.lt-sheets.small .lt-sheet { width: 150px; padding: 5px; gap: 3px; }
+.lt-sheets.small figcaption { display: none; }
+.lt-sheets.small .lt-qcard.mini b { display: none; }
+.lt-tally { font: 13px 'PT Sans', sans-serif; color: #4a3a26; }
+
+@media (max-width: 600px) {
+  .lt-cloth { padding: 8px 6px 18px; gap: 8px; }
+  .lt-qcard { width: 170px; min-height: 120px; padding-top: 44px; font-size: 13px; }
+  .lt-recent { max-width: 100%; justify-content: center; }
+  .lt-sheet { gap: 6px; padding: 8px; }
+}
