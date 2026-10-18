@@ -7,11 +7,14 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { cardNums, fullRows, ownerOf, picsOf, STAGES, type Card, type Event, type View } from './engine';
 import { barrelCall } from './names';
-import { edition } from './world-data';
+import { edition, type Edition } from './world-data';
 import './loto.css';
 
 const PIC = `${import.meta.env.BASE_URL}loto/`;
 const TINTS = ['yellow', 'pink', 'blue', 'green', 'orange'];
+
+/** Как в коробке: под топографическими знаками и картинками-числами («384 000 километров») подписи нет — это и есть вопрос. */
+const bare = (ed: Edition, n: number) => (ed.q[n] ?? '').startsWith('Топографический знак') || /^\d[\d ]* километров$/.test(ed.a[n] ?? '');
 
 class LotoView implements GameView<View, Event> {
   private ctx!: ViewCtx;
@@ -173,7 +176,7 @@ class LotoView implements GameView<View, Event> {
         const act = can && !cov ? `data-do="pic" data-seat="${seat}" data-pic="${n}"` : '';
         return `<figure class="lt-pic${cov ? ' cov' : ''}${rv}${sel}${act ? ' can' : ''}" ${act}><img src="${PIC}${ed.dir}/p${n}.webp" alt="" loading="lazy" draggable="false">${
           cov ? `<div class="lt-qcard mini"><b>${n}</b></div>` : ''
-        }<figcaption>${esc(ed.a[n] ?? '')}</figcaption></figure>`;
+        }<figcaption>${bare(ed, n) ? '' : esc(ed.a[n] ?? '')}</figcaption></figure>`;
       })
       .join('');
     const hint = big && v.cfg.hint && v.current != null && ed.sheets[id].includes(v.current) && !v.covered.includes(v.current) ? ' hint' : '';
