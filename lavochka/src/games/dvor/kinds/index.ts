@@ -2,13 +2,17 @@
 import { shuffle, SeededRng } from '../../../core/rng';
 import { stageOf } from '../stages';
 import { checkBulls, genBulls, solveBulls, type BullsData } from './bulls';
+import { checkClock, genClock, ruleOf, solveClock, type ClockData } from './clock';
 import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
 import { checkKenken, genKenken, solveKenken, type KenkenData } from './kenken';
 import { genKazaki, genOkno, solveKazaki, solveOkno, type KazakiData, type OknoData } from './liars';
+import { fitsAll, genOstatki, solveOstatki, type OstatkiData } from './ostatki';
+import { GOODS, genShop, shopKnown, solveShop, type ShopData } from './shop';
 import { checkStopki, genStopki, solveStopki, type StopkiData } from './stopki';
+import { genZadachka, solveZadachka, type ZadachkaData } from './zadachki';
 import { checkZebra, genZebra, solveZebra, type ZebraData } from './zebra';
 
 export type { Hint, Kind } from './kind';
@@ -180,5 +184,77 @@ const chain: Kind<ChainData, number, number> = {
   solve: (d) => solveChain(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain };
+const clock: Kind<ClockData, string, string> = {
+  id: 'clock',
+  title: 'Шифр по часам',
+  how: 'Каждый циферблат — одна буква: номер буквы в алфавите считается по часам и минутам. Расшифруй записку.',
+  par: [90, 150, 270],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genClock(lv, rng),
+  check: (_d, sol, a) => checkClock(sol, a),
+  hint(d, sol, k) {
+    if (!d.rule && k === 0) return { text: `Правило: ${ruleOf(d).text}.`, reveal: { rule: ruleOf(d).text } };
+    const kk = d.rule ? k : k - 1;
+    if (kk > 1) return null;
+    const idx = [...sol].map((c, i) => (c === ' ' ? -1 : i)).filter((i) => i >= 0);
+    const i = nth(idx, kk, sol.length * 41);
+    if (i == null) return null;
+    return { text: `${sol.slice(0, i).replace(/ /g, '').length + 1}-й циферблат записки — буква «${sol[i]}».`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveClock(d),
+};
+
+const shop: Kind<ShopData, number, number> = {
+  id: 'shop',
+  title: 'Магазин',
+  how: 'У каждого товара своя цена. По тому, сколько стоили покупки, найди, сколько стоит то, что спрашивают.',
+  par: [90, 180, 300],
+  pts: [2, 3, 4],
+  gen: (lv, rng) => genShop(lv, rng),
+  check: (_d, sol, a) => Number(a) === sol,
+  hint(d, _sol, k) {
+    if (k === 0) return { text: 'Сравни две покупки, которые отличаются одним товаром: разница сумм — его цена (или цена нескольких штук).' };
+    if (k > 1) return null;
+    const one = shopKnown(d);
+    if (!one) return null;
+    return { text: `${GOODS[d.goods[one.i]].icon} ${GOODS[d.goods[one.i]].name} стоит ${one.v} коп.`, reveal: one };
+  },
+  solve: (d) => solveShop(d),
+};
+
+const ostatki: Kind<OstatkiData, number, number> = {
+  id: 'ostatki',
+  title: 'Лишний',
+  how: 'Ребята делятся на команды, и кто-то остаётся лишним. Найди, сколько всего ребят.',
+  par: [60, 120, 200],
+  pts: [1, 2, 4],
+  gen: (lv, rng) => genOstatki(lv, rng),
+  check: (d, _s, a) => typeof a === 'number' && a > d.lo && a < d.hi && fitsAll(d, a),
+  hint(d, _sol, k) {
+    if (k === 0) {
+      const s = d.splits[d.splits.length - 1];
+      const xs: number[] = [];
+      for (let x = d.lo + 1; x < d.hi && xs.length < 6; x++) if (x % s.m === s.r) xs.push(x);
+      return { text: `Начни с самого большого деления: по ${s.m} с ${s.r} лишними подходят ${xs.join(', ')}… Теперь проверь их другими делениями.` };
+    }
+    if (k === 1) return { text: 'Если при делении на два числа лишних «одного не хватает» — ищи число, на единицу меньше общего кратного.' };
+    return null;
+  },
+  solve: (d) => solveOstatki(d),
+};
+
+const zadachka: Kind<ZadachkaData, number, number> = {
+  id: 'zadachka',
+  title: 'Задачка',
+  how: 'Задачка на смекалку: ответ — одно число. Не спеши — первый ответ, что приходит в голову, часто неверный.',
+  par: [60, 120, 210],
+  pts: [1, 2, 4],
+  gen: (lv, rng, ctx) => genZadachka(lv, ctx.names, rng),
+  check: (_d, sol, a) => Number(a) === sol,
+  hint: (d, _sol, k) => (d.hints[k] ? { text: d.hints[k] } : null),
+  solve: (d) => solveZadachka(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka };
+
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;

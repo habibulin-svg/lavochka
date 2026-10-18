@@ -10,6 +10,10 @@ import type { BullsData } from './kinds/bulls';
 import { fant, gen as genOf, type ChainData } from './kinds/chain';
 import { OP_SIGN, type KenkenData } from './kinds/kenken';
 import type { StopkiData } from './kinds/stopki';
+import { ABC, type ClockData } from './kinds/clock';
+import type { OstatkiData } from './kinds/ostatki';
+import { GOODS, type ShopData } from './kinds/shop';
+import type { ZadachkaData } from './kinds/zadachki';
 
 export interface Pad {
   el: HTMLElement;
@@ -623,6 +627,158 @@ function chainPad(d: ChainData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- ответ — одно число (лишний, задачка, магазин)
+
+function numAnswer(label: string, changed: Changed, unit = ''): { el: HTMLElement; inp: HTMLInputElement } {
+  const el = h(`<label class="dv-cask">${esc(label)} <input class="cell wide" inputmode="numeric" maxlength="5" autocomplete="off" aria-label="ответ">${unit ? ` <span>${esc(unit)}</span>` : ''}</label>`);
+  const inp = el.querySelector('input') as HTMLInputElement;
+  inp.oninput = () => {
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 5);
+    changed();
+  };
+  return { el, inp };
+}
+
+function numPad(body: HTMLElement, label: string, changed: Changed, unit = ''): Pad {
+  const el = h(`<div class="dv-chain"></div>`);
+  el.appendChild(body);
+  const { el: ask, inp } = numAnswer(label, changed, unit);
+  el.appendChild(ask);
+  return {
+    el,
+    answer: () => (inp.value ? Number(inp.value) : null),
+    hints() {},
+    solution(sol) {
+      if (Number(inp.value) !== sol) {
+        inp.value = String(sol);
+        inp.classList.add('shown');
+      }
+    },
+    lock() {
+      inp.readOnly = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- шифр по часам
+
+/** Циферблат: часовая стрелка сдвигается с минутами, как на настоящих часах. */
+function clockSvg(h0: number, m: number, cls = ''): string {
+  const ha = ((h0 % 12) + m / 60) * 30;
+  const ma = m * 6;
+  const hand = (a: number, len: number, w: number) => {
+    const rad = ((a - 90) * Math.PI) / 180;
+    return `<line x1="30" y1="30" x2="${(30 + Math.cos(rad) * len).toFixed(1)}" y2="${(30 + Math.sin(rad) * len).toFixed(1)}" stroke-width="${w}"/>`;
+  };
+  let ticks = '';
+  for (let k = 0; k < 12; k++) {
+    const rad = ((k * 30 - 90) * Math.PI) / 180;
+    const big = k % 3 === 0;
+    ticks += `<line class="tk" x1="${(30 + Math.cos(rad) * (big ? 21 : 23)).toFixed(1)}" y1="${(30 + Math.sin(rad) * (big ? 21 : 23)).toFixed(1)}" x2="${(30 + Math.cos(rad) * 26).toFixed(1)}" y2="${(30 + Math.sin(rad) * 26).toFixed(1)}" stroke-width="${big ? 2.4 : 1.3}"/>`;
+  }
+  return `<svg class="dv-clk ${cls}" viewBox="0 0 60 60"><circle cx="30" cy="30" r="27"/>${ticks}<g class="hands">${hand(ha, 14, 3.4)}${hand(ma, 22, 2)}</g><circle class="pin" cx="30" cy="30" r="2"/></svg>`;
+}
+
+function clockPad(d: ClockData, changed: Changed): Pad {
+  const el = h(`<div class="dv-clock"></div>`);
+  if (d.rule) el.appendChild(h(`<p class="dv-known">Ключ: <b>${esc(d.rule)}</b>. А — 1, Б — 2, … Я — 32 (буквы Ё нет).</p>`));
+  else if (d.example) {
+    el.appendChild(h(`<p class="dv-known">Ключ разбойники не говорят. Зато у казаков есть расшифрованное слово <b>${esc(d.example.word)}</b>. А — 1, Б — 2, … Я — 32 (буквы Ё нет).</p>`));
+    el.appendChild(h(`<div class="dv-clks ex">${d.example.times.map((t, i) => `<figure>${clockSvg(t[0], t[1])}<figcaption>${esc(d.example!.word[i])}</figcaption></figure>`).join('')}</div>`));
+  }
+  el.appendChild(h(`<p class="dv-known">Записка:</p>`));
+  const row = h(`<div class="dv-clks"></div>`);
+  const caps: HTMLElement[] = [];
+  d.times.forEach((t) => {
+    if (!t) {
+      row.appendChild(h(`<i class="sp"></i>`));
+      return;
+    }
+    const f = h(`<figure>${clockSvg(t[0], t[1])}<figcaption></figcaption></figure>`);
+    caps.push(f.querySelector('figcaption') as HTMLElement);
+    row.appendChild(f);
+  });
+  el.appendChild(row);
+  // азбука с номерами — чтобы не пересчитывать на пальцах
+  el.appendChild(h(`<div class="dv-abc">${ABC.split('').map((c, i) => `<span><b>${c}</b>${i + 1}</span>`).join('')}</div>`));
+  const ask = h(`<label class="dv-cask">Записка: <input class="cell word" autocomplete="off" aria-label="расшифровка"></label>`);
+  const inp = ask.querySelector('input') as HTMLInputElement;
+  inp.oninput = () => {
+    inp.value = inp.value.toUpperCase().replace(/[^А-ЯЁ ]/g, '');
+    changed();
+  };
+  el.appendChild(ask);
+  // номер буквы в записке (без пробелов) → подпись под циферблатом
+  const letterAt = (i: number) => d.times.slice(0, i).filter(Boolean).length;
+  return {
+    el,
+    answer: () => (inp.value.trim() ? inp.value : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: string } | undefined;
+        if (r?.i == null) continue;
+        const cap = caps[letterAt(r.i)];
+        if (cap) cap.textContent = r.v;
+      }
+    },
+    solution(sol) {
+      const s = sol as string;
+      [...s].forEach((c, i) => c !== ' ' && caps[letterAt(i)] && (caps[letterAt(i)].textContent = c));
+      if (inp.value.replace(/\s/g, '').replace(/Ё/g, 'Е') !== s.replace(/\s/g, '')) {
+        inp.value = s;
+        inp.classList.add('shown');
+      }
+    },
+    lock() {
+      inp.readOnly = true;
+    },
+  };
+}
+
+// ---------------------------------------------------------------- магазин
+
+function shopPad(d: ShopData, changed: Changed): Pad {
+  const pics = (n: number[]) =>
+    n
+      .map((k, i) => (k ? `<span class="it">${(GOODS[d.goods[i]].icon + ' ').repeat(k).trim()}</span>` : ''))
+      .filter(Boolean)
+      .join('<b class="plus">+</b>');
+  const body = h(`<div class="dv-shop">
+      <p class="dv-known">Цены: ${d.goods.map((g) => `${GOODS[g].icon} ${esc(GOODS[g].name)}`).join(', ')}.</p>
+      ${d.buys.map((b) => `<div class="buy">${pics(b.n)}<b class="eq">=</b><span class="sum">${b.sum} коп.</span></div>`).join('')}
+      <div class="buy ask">${pics(d.ask)}<b class="eq">=</b><span class="sum">?</span></div>
+    </div>`);
+  const pad = numPad(body, 'Сколько стоит?', changed, 'коп.');
+  const known = body.querySelector('.dv-known') as HTMLElement;
+  pad.hints = (hs) => {
+    for (const hnt of hs) {
+      const r = hnt.reveal as { i: number; v: number } | undefined;
+      if (r && !known.dataset[`k${r.i}`]) {
+        known.dataset[`k${r.i}`] = '1';
+        known.appendChild(h(`<span class="dv-got"> ${GOODS[d.goods[r.i]].icon} = ${r.v} коп.</span>`));
+      }
+    }
+  };
+  return pad;
+}
+
+// ---------------------------------------------------------------- лишний
+
+function ostatkiPad(d: OstatkiData, changed: Changed): Pad {
+  const lead = (m: number, r: number) =>
+    r === 0 ? `по ${m} — все разбились ровно` : `по ${m} — ${r === 1 ? 'один лишний' : `${r} лишних`}`;
+  const body = h(`<div><p>Делятся на ${esc(d.what)}:</p><ul>${d.splits.map((s) => `<li>${lead(s.m, s.r)};</li>`).join('')}</ul>
+    <p>Ребят во дворе больше ${d.lo}, но меньше ${d.hi}.</p></div>`);
+  return numPad(body, 'Сколько ребят?', changed);
+}
+
+// ---------------------------------------------------------------- задачка
+
+function zadachkaPad(d: ZadachkaData, changed: Changed): Pad {
+  const body = h(`<div><p>${esc(d.text)}</p><p><b>${esc(d.ask)}</b></p></div>`);
+  return numPad(body, 'Ответ:', changed);
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -643,6 +799,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return kenkenPad(data as KenkenData, changed);
     case 'chain':
       return chainPad(data as ChainData, changed);
+    case 'clock':
+      return clockPad(data as ClockData, changed);
+    case 'shop':
+      return shopPad(data as ShopData, changed);
+    case 'ostatki':
+      return ostatkiPad(data as OstatkiData, changed);
+    case 'zadachka':
+      return zadachkaPad(data as ZadachkaData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }
