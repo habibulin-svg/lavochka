@@ -1,0 +1,30 @@
+/* Маджонг: тёмно-зелёное сукно, кости слоновой кости. */
+.table--mahjong, .table--mahjong4 {
+  --table-bg: radial-gradient(ellipse at 50% 35%, #2f6b48 0%, #1d4a31 55%, #12301f 100%);
+}
+.mj-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.mj-board { width: 100%; height: 100%; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.mj-tile { transition: opacity 0.2s, transform 0.2s; }
+.mj-tile .mj-hl { fill: transparent; stroke: none; pointer-events: none; }
+.mj-blocked .mj-hl { fill: rgba(20, 30, 20, 0.28); }
+.mj-can { cursor: pointer; }
+.mj-can:hover .mj-hl { fill: rgba(255, 230, 140, 0.18); }
+.mj-sel .mj-hl { fill: rgba(255, 196, 40, 0.32); stroke: #ffb400; stroke-width: 3.5; }
+.mj-hint .mj-hl { stroke: #4fd1ff; stroke-width: 4; animation: mj-pulse 0.6s ease-in-out infinite alternate; }
+@keyframes mj-pulse { from { fill: rgba(80, 200, 255, 0.05); } to { fill: rgba(80, 200, 255, 0.35); } }
+.mj-tile.mj-gone { opacity: 0; transform-box: fill-box; }
+.mj-shake { animation: mj-shake 0.3s; }
+@keyframes mj-shake { 25% { translate: -3px 0; } 75% { translate: 3px 0; } }
+.mj-shuffling { opacity: 0.25; transition: opacity 0.2s; }
+.mj-link { fill: none; stroke: #ffd24a; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(255, 200, 60, 0.9)); }
+.mj-banner { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(14, 30, 20, 0.9); border: 2px solid #e0c070; border-radius: 14px; padding: 16px 28px; color: #f6e8b8; text-align: center; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.mj-banner b { font: 700 30px 'PT Serif', Georgia, serif; }
+.mj-controls { display: flex; flex-direction: column; gap: 8px; }
+.mj-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.mj-stats div { display: flex; flex-direction: column; }
+.mj-stats span { font-size: 12px; opacity: 0.7; }
+.mj-btns { display: flex; flex-direction: column; gap: 6px; }
+.mj-btns .btn { width: 100%; }
+.mj-records table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mj-records td, .mj-records th { padding: 3px 6px; text-align: left; }
+.thumb-board .mj-wrap { background: radial-gradient(ellipse at 50% 35%, #2f6b48 0%, #1d4a31 55%, #12301f 100%); }
