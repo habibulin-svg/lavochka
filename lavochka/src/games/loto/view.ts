@@ -7,10 +7,10 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { cardNums, fullRows, ownerOf, picsOf, STAGES, type Card, type Event, type View } from './engine';
 import { barrelCall } from './names';
-import { WORLD_A, WORLD_Q, WORLD_SHEETS } from './world-data';
+import { edition } from './world-data';
 import './loto.css';
 
-const PIC = `${import.meta.env.BASE_URL}loto/world/`;
+const PIC = `${import.meta.env.BASE_URL}loto/`;
 const TINTS = ['yellow', 'pink', 'blue', 'green', 'orange'];
 
 class LotoView implements GameView<View, Event> {
@@ -164,24 +164,25 @@ class LotoView implements GameView<View, Event> {
   private sheetHTML(id: number, seat: number, big: boolean, v: View) {
     const can = big && !this.ctx.demo && this.toAct.includes(seat) && this.interactive.includes(seat) && !(seat in v.answers);
     const picked = v.answers[seat];
-    const pics = WORLD_SHEETS[id]
+    const ed = edition(v.cfg.edition);
+    const pics = ed.sheets[id]
       .map((n) => {
         const cov = v.covered.includes(n);
         const rv = this.reveal && this.reveal.pic === n ? (this.reveal.ok ? ' right' : ' wrong') : '';
         const sel = picked === n ? ' picked' : '';
         const act = can && !cov ? `data-do="pic" data-seat="${seat}" data-pic="${n}"` : '';
-        return `<figure class="lt-pic${cov ? ' cov' : ''}${rv}${sel}${act ? ' can' : ''}" ${act}><img src="${PIC}p${n}.webp" alt="" loading="lazy" draggable="false">${
+        return `<figure class="lt-pic${cov ? ' cov' : ''}${rv}${sel}${act ? ' can' : ''}" ${act}><img src="${PIC}${ed.dir}/p${n}.webp" alt="" loading="lazy" draggable="false">${
           cov ? `<div class="lt-qcard mini"><b>${n}</b></div>` : ''
-        }<figcaption>${esc(WORLD_A[n])}</figcaption></figure>`;
+        }<figcaption>${esc(ed.a[n] ?? '')}</figcaption></figure>`;
       })
       .join('');
-    const hint = big && v.cfg.hint && v.current != null && WORLD_SHEETS[id].includes(v.current) && !v.covered.includes(v.current) ? ' hint' : '';
-    return `<div class="lt-sheet${big ? ' big' : ''}${hint}">${pics}</div>`;
+    const hint = big && v.cfg.hint && v.current != null && ed.sheets[id].includes(v.current) && !v.covered.includes(v.current) ? ' hint' : '';
+    return `<div class="lt-sheet c${ed.cols}${big ? ' big' : ''}${hint}">${pics}</div>`;
   }
 
-  private qcard(n: number | null) {
+  private qcard(n: number | null, v: View) {
     if (n == null) return '<div class="lt-qcard empty"></div>';
-    return `<div class="lt-qcard"><b>${n}</b><p>${esc(WORLD_Q[n] ?? '')}</p></div>`;
+    return `<div class="lt-qcard"><b>${n}</b><p>${esc(edition(v.cfg.edition).q[n] ?? '')}</p></div>`;
   }
 
   private drawWorld(v: View) {
@@ -196,7 +197,7 @@ class LotoView implements GameView<View, Event> {
     const reader = v.seats[v.turn];
     this.root.innerHTML = `<div class="lt-cloth world">
       <div class="lt-ask">
-        ${this.qcard(v.current)}
+        ${this.qcard(v.current, v)}
         <div class="lt-asknote">${v.current != null ? `Читает ${this.ctx.name(reader)}` : ''}<br><small>в колоде: ${v.deckLeft}</small></div>
       </div>
       ${this.banner ? `<div class="lt-banner">${this.banner}</div>` : ''}
@@ -275,8 +276,8 @@ class LotoView implements GameView<View, Event> {
         this.reveal = { pic: ev.card, ok: ev.type === 'take' };
         this.banner =
           ev.type === 'take'
-            ? `${this.plain(ev.seat)}: «${esc(WORLD_A[ev.card])}» — верно!`
-            : `Это «${esc(WORLD_A[ev.card])}»${owner != null ? ` — у ${esc(this.plain(owner))}` : ''}. ${ev.lost ? 'Карточка уходит в коробку.' : 'Под низ колоды.'}`;
+            ? `${this.plain(ev.seat)}: «${esc(ev.text)}» — верно!`
+            : `Это «${esc(ev.text)}»${owner != null ? ` — у ${esc(this.plain(owner))}` : ''}. ${ev.lost ? 'Карточка уходит в коробку.' : 'Под низ колоды.'}`;
         this.draw();
         if (ev.type === 'take' && this.ctx.mySeats.includes(ev.seat)) Sound.win();
         else Sound.ui();

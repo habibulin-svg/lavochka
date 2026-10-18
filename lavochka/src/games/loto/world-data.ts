@@ -1,11 +1,26 @@
 /* Географическое лото «Вокруг света» (автор О. Н. Мамаева, художники И. И. Васильев и А. К. Крутцова; 1972, Ленинград).
  * Тексты карточек и подписи картинок — с комплекта на samoe-vazhnoe.blogspot.com (картинки — public/loto/world/p<N>.webp,
- * вырезаны tools/loto/cut.py). Большой карты с картинками 121–128 в сканах нет — играем 15 картами (120 картинок).
+ * вырезаны tools/loto/cut.py). Большой карты с картинками 121–128 в сканах нет — играем 15 картами (120 картинок);
+ * карточки 121–128 перешли в издание 1980 года (world-80.ts).
  * Где под картинкой подписи нет (топографические знаки) — ответ по тексту карточки. */
 
-/** Большие карты: по 8 картинок подряд. */
+import { build80, ED80_SHEETS } from './world-80';
+
+/** Издание лото: большие карты (номера картинок), подписи, тексты карточек, папка с картинками. */
+export interface Edition {
+  id: string;
+  title: string;
+  sheets: number[][];
+  a: Record<number, string>;
+  q: Record<number, string>;
+  /** Папка картинок в public/loto/. */
+  dir: string;
+  /** Картинок в ряду на большой карте. */
+  cols: number;
+}
+
+/** Большие карты 1972 года: по 8 картинок подряд. */
 export const WORLD_SHEETS: number[][] = Array.from({ length: 15 }, (_, i) => Array.from({ length: 8 }, (_, j) => i * 8 + j + 1));
-export const WORLD_COUNT = 120;
 
 /** Подписи картинок — ответы. */
 export const WORLD_A: Record<number, string> = {
@@ -149,3 +164,11 @@ export const WORLD_Q: Record<number, string> = {
   119: 'Величайшее в мире дерево.',
   120: 'Государство, которому принадлежит южный берег Каспийского моря.',
 };
+
+const ED80 = build80(WORLD_A, WORLD_Q);
+
+export const EDITIONS: Record<string, Edition> = {
+  '72': { id: '72', title: '1972 (Васильев, Крутцова)', sheets: WORLD_SHEETS, a: WORLD_A, q: WORLD_Q, dir: 'world', cols: 4 },
+  '80': { id: '80', title: '1980 (Флоренская, Никеев)', sheets: ED80_SHEETS, a: ED80.a, q: ED80.q, dir: 'world80', cols: 3 },
+};
+export const edition = (id: unknown): Edition => EDITIONS[String(id)] ?? EDITIONS['72'];

@@ -1,7 +1,7 @@
 /* Лото: русское (бочонки 1–90, карточки 3×9) и географическое «Вокруг света» (большие карты с картинками,
  * ведущий читает карточку — у кого картинка, тот узнаёт её и закрывает). Без DOM. */
 import type { Options, Rng, SeatSpec } from '../../core/types';
-import { WORLD_COUNT, WORLD_SHEETS } from './world-data';
+import { edition } from './world-data';
 
 export type Mode = 'russian' | 'world';
 export type Goal = 'row' | 'card' | 'stages';
@@ -15,6 +15,8 @@ export interface Cfg {
   auto: boolean;
   /** «Вокруг света»: подсказка, что ответ — на твоей карте. */
   hint: boolean;
+  /** «Вокруг света»: издание (1972 или 1980). */
+  edition: string;
 }
 
 export function cfgFrom(o: Options): Cfg {
@@ -24,6 +26,7 @@ export function cfgFrom(o: Options): Cfg {
     goal: o.goal === 'row' || o.goal === 'card' ? o.goal : 'stages',
     auto: o.auto === true,
     hint: o.hint === true,
+    edition: edition(o.edition).id,
   };
 }
 
@@ -92,9 +95,9 @@ export type Event =
   | { type: 'prize'; seat: number; card: number; stage: number; shared: boolean }
   | { type: 'read'; seat: number; card: number; again: boolean; left: number }
   | { type: 'answer'; seat: number; pic: number }
-  | { type: 'take'; seat: number; card: number }
-  | { type: 'wrong'; seat: number; card: number; pic: number }
-  | { type: 'unknown'; card: number; lost: boolean }
+  | { type: 'take'; seat: number; card: number; text: string }
+  | { type: 'wrong'; seat: number; card: number; pic: number; text: string }
+  | { type: 'unknown'; card: number; lost: boolean; text: string }
   | { type: 'end'; winners: number[] };
 
 // ---------------------------------------------------------------- карточки русского лото
@@ -192,15 +195,15 @@ export function setup(seats: SeatSpec[], opts: Options, rng: Rng): State {
     for (let n = 1; n <= 90; n++) s.bag.push(n);
   } else {
     // 16 больших карт — поровну, лишние остаются в коробке
+    const ed = edition(cfg.edition);
     const ids = shuffle(
-      Array.from({ length: WORLD_SHEETS.length }, (_, i) => i),
+      Array.from({ length: ed.sheets.length }, (_, i) => i),
       rng
     );
     const per = Math.floor(ids.length / order.length);
     order.forEach((p, i) => (s.sheets[p] = ids.slice(i * per, (i + 1) * per).sort((a, b) => a - b)));
-    const inPlay = new Set(order.flatMap((p) => s.sheets[p].flatMap((id) => WORLD_SHEETS[id])));
     s.deck = shuffle(
-      Array.from({ length: WORLD_COUNT }, (_, i) => i + 1).filter((n) => inPlay.has(n)),
+      order.flatMap((p) => s.sheets[p].flatMap((id) => ed.sheets[id])),
       rng
     );
     readNext(s, []);
@@ -231,8 +234,8 @@ export function free(s: State, _seat: number, a: Action): boolean {
 const clone = (s: State): State => JSON.parse(JSON.stringify(s));
 
 /** Чья картинка (у кого на карте). */
-export function ownerOf(s: Pick<State, 'seats' | 'sheets'>, pic: number): number | null {
-  for (const p of s.seats) if (s.sheets[p]?.some((id) => WORLD_SHEETS[id].includes(pic))) return p;
+export function ownerOf(s: Pick<State, 'seats' | 'sheets' | 'cfg'>, pic: number): number | null {
+  for (const p of s.seats) if (picsOf(s, p).includes(pic)) return p;
   return null;
 }
 
@@ -287,28 +290,29 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   }
   // ---- «Вокруг света»
   if (a.type !== 'answer' || s.current == null || seat in s.answers || !s.seats.includes(seat)) return null;
-  if (a.pic !== 0 && !s.sheets[seat].some((id) => WORLD_SHEETS[id].includes(a.pic))) return null;
+  if (a.pic !== 0 && !picsOf(s, seat).includes(a.pic)) return null;
   if (a.pic !== 0 && s.covered.includes(a.pic)) return null;
   s.answers[seat] = a.pic;
   ev.push({ type: 'answer', seat, pic: a.pic });
   if (s.seats.some((p) => !(p in s.answers))) return { state: s, events: ev };
   // все ответили — разбираем
   const card = s.current;
+  const ed = edition(s.cfg.edition);
   const owner = ownerOf(s, card);
   for (const p of s.seats) {
     const pic = s.answers[p];
-    if (pic && pic !== card) ev.push({ type: 'wrong', seat: p, card, pic });
+    if (pic && pic !== card) ev.push({ type: 'wrong', seat: p, card, pic, text: ed.a[pic] ?? String(pic) });
   }
   if (owner != null && s.answers[owner] === card) {
     s.covered.push(card);
-    ev.push({ type: 'take', seat: owner, card });
+    ev.push({ type: 'take', seat: owner, card, text: ed.a[card] ?? String(card) });
   } else {
     const m = (s.misses[card] ?? 0) + 1;
     s.misses[card] = m;
     const lost = m >= 2;
     if (lost) s.lost.push(card);
     else s.deck.push(card);
-    ev.push({ type: 'unknown', card, lost });
+    ev.push({ type: 'unknown', card, lost, text: ed.a[card] ?? String(card) });
   }
   const done = s.seats.filter((p) => picsOf(s, p).every((x) => s.covered.includes(x)));
   if (done.length) {
@@ -323,8 +327,9 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
 }
 
 /** Картинки на картах игрока. */
-export function picsOf(s: Pick<State, 'sheets'>, p: number): number[] {
-  return (s.sheets[p] ?? []).flatMap((id) => WORLD_SHEETS[id]);
+export function picsOf(s: Pick<State, 'sheets' | 'cfg'>, p: number): number[] {
+  const ed = edition(s.cfg.edition);
+  return (s.sheets[p] ?? []).flatMap((id) => ed.sheets[id] ?? []);
 }
 
 function readNext(s: State, ev: Event[]) {

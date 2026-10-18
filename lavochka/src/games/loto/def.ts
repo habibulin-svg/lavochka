@@ -4,7 +4,7 @@ import type { DemoStep, GameDef, SeatSpec } from '../../core/types';
 import { apply, cardNums, free, makeView, ownerOf, picsOf, score, setup, STAGES, toAct, type Action, type Card, type Event, type State, type View } from './engine';
 import { SeededRng } from '../../core/rng';
 import { barrelCall } from './names';
-import { WORLD_A, WORLD_SHEETS } from './world-data';
+import { WORLD_SHEETS } from './world-data';
 
 export const SEATS = [
   { name: 'Бабушка', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -26,11 +26,11 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'read':
       return `${name(ev.seat)} читает карточку${ev.again ? ' (второй раз)' : ''}.`;
     case 'take':
-      return `${name(ev.seat)}: «${WORLD_A[ev.card] ?? ev.card}!» — верно, закрывает.`;
+      return `${name(ev.seat)}: «${ev.text}!» — верно, закрывает.`;
     case 'wrong':
-      return `${name(ev.seat)}: «${WORLD_A[ev.pic] ?? ev.pic}?» — нет.`;
+      return `${name(ev.seat)}: «${ev.text}?» — нет.`;
     case 'unknown':
-      return ev.lost ? `Никто не узнал «${WORLD_A[ev.card]}» — карточка уходит в коробку.` : 'Никто не узнал — карточка уходит под низ колоды.';
+      return ev.lost ? `Никто не узнал «${ev.text}» — карточка уходит в коробку.` : 'Никто не узнал — карточка уходит под низ колоды.';
     case 'end':
       return '🏁 Партия окончена.';
   }
@@ -157,13 +157,26 @@ export const def: GameDef<State, Action, Event, View> = {
       showIf: (o) => o.mode !== 'world',
     },
     { key: 'auto', label: 'Фишки кладутся сами', type: 'toggle', default: false, hint: 'Иначе вышедшие числа закрываешь сам — прозевал, сам виноват.', showIf: (o) => o.mode !== 'world' },
+    {
+      key: 'edition',
+      label: 'Издание',
+      type: 'select',
+      choices: [
+        { value: '72', label: '1972: 16 карт по 8 картинок' },
+        { value: '80', label: '1980: 20 карт по 6 картинок' },
+      ],
+      default: '72',
+      hint: 'Вопросы почти те же, рисунки другие: в 1972-м — Васильев и Крутцова, в 1980-м — Флоренская и Никеев.',
+      showIf: (o) => o.mode === 'world',
+    },
     { key: 'hint', label: 'Подсказка «это у тебя»', type: 'toggle', default: false, hint: 'Для малышей: карта мигает, если ответ на ней.', showIf: (o) => o.mode === 'world' },
   ],
   presets: [
     { id: 'russian', label: 'Русское лото', hint: 'Бочонки с присказками, ряд → два ряда → карточка', options: { mode: 'russian', cards: 2, goal: 'stages', auto: false } },
     { id: 'short', label: 'Короткое', hint: 'Кто первым закроет ряд', options: { mode: 'russian', cards: 2, goal: 'row', auto: false } },
     { id: 'long', label: 'Длинное', hint: 'Кто первым закроет всю карточку', options: { mode: 'russian', cards: 3, goal: 'card', auto: false } },
-    { id: 'world', label: 'Вокруг света', hint: 'Географическое лото 1972 года: узнай картинку по описанию', options: { mode: 'world', hint: false } },
+    { id: 'world', label: 'Вокруг света', hint: 'Географическое лото 1972 года: узнай картинку по описанию', options: { mode: 'world', edition: '72', hint: false } },
+    { id: 'world80', label: 'Вокруг света-80', hint: 'Издание 1980 года в жёлтой коробке с птицей: 20 карт по 6 картинок', options: { mode: 'world', edition: '80', hint: false } },
   ],
 
   setup: (seats, opts, rng) => setup(seats, opts, rng),
@@ -221,8 +234,9 @@ export const def: GameDef<State, Action, Event, View> = {
       },
       {
         title: '«Вокруг света»',
-        html: `<p>Географическое лото 1972 года (автор О. Н. Мамаева, художники И. И. Васильев и А. К. Крутцова). 16 больших карт по 8 картинок
-          и 128 маленьких карточек с описаниями. Большие карты раздают поровну.</p>
+        html: `<p>Географическое лото О. Н. Мамаевой. Два издания: 1972 года (художники И. И. Васильев и А. К. Крутцова, 16 больших карт
+          по 8 картинок; у нас 15 — шестнадцатая не сохранилась) и 1980 года в жёлтой коробке с птицей (Н. А. Флоренская и Г. Г. Никеев,
+          20 карт по 6 картинок, 120 карточек). Большие карты раздают поровну.</p>
           <p>Ведущий читает карточку: «Самая длинная параллель». У кого на карте подходящая картинка — узнаёт её и называет (нажми на картинку).
           Угадал — получает карточку и закрывает картинку. Не у тебя — «Не у меня». Никто не узнал — карточка уходит под низ, а со второго
           раза — в коробку. Выигрывает тот, кто первым закроет все свои картинки.</p>`,
