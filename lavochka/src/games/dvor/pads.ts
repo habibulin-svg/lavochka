@@ -6,6 +6,10 @@ import { spansOf, type HashiData } from './kinds/hashi';
 import type { HidatoData } from './kinds/hidato';
 import type { KazakiData, OknoData } from './kinds/liars';
 import type { ZebraData } from './kinds/zebra';
+import type { BullsData } from './kinds/bulls';
+import { fant, gen as genOf, type ChainData } from './kinds/chain';
+import { OP_SIGN, type KenkenData } from './kinds/kenken';
+import type { StopkiData } from './kinds/stopki';
 
 export interface Pad {
   el: HTMLElement;
@@ -428,6 +432,197 @@ function kazakiPad(d: KazakiData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- клетки с цифрой (общие для быков, стопок, квадрата)
+
+function digitCell(max: number, changed: Changed, cls = 'cell'): HTMLInputElement {
+  const inp = h<HTMLInputElement>(`<input class="${cls}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="цифра">`);
+  inp.oninput = () => {
+    const v = inp.value.replace(/\D/g, '').slice(-1);
+    inp.value = v !== '' && Number(v) <= max ? v : '';
+    inp.dataset.v = inp.value;
+    changed();
+  };
+  // стрелки — по соседним клеткам
+  inp.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) return;
+    const grid = inp.closest('[data-grid]') as HTMLElement | null;
+    const all = [...(grid?.querySelectorAll('input') ?? [])] as HTMLInputElement[];
+    const cols = Number(grid?.dataset.grid || all.length);
+    const i = all.indexOf(inp);
+    const j = k === 'ArrowLeft' ? i - 1 : k === 'ArrowRight' ? i + 1 : k === 'ArrowUp' ? i - cols : i + cols;
+    if (all[j]) {
+      all[j].focus();
+      e.preventDefault();
+    }
+  });
+  return inp;
+}
+
+function setCell(inp: HTMLInputElement, v: number, cls: 'fixed' | 'shown') {
+  inp.value = String(v);
+  inp.dataset.v = inp.value;
+  inp.classList.add(cls);
+  if (cls === 'fixed') inp.readOnly = true;
+}
+
+// ---------------------------------------------------------------- быки и коровы
+
+function bullsPad(d: BullsData, changed: Changed): Pad {
+  const el = h(`<div class="dv-bulls"></div>`);
+  const tab = h(`<table class="dv-btab"><tr><th>Попытка</th><th>Быки</th><th>Коровы</th></tr></table>`);
+  for (const q of d.guesses)
+    tab.appendChild(
+      h(`<tr><td class="code">${q.g.map((x) => `<i>${x}</i>`).join('')}</td><td>${'🐂'.repeat(q.b)}<b>${q.b}</b></td><td>${'🐄'.repeat(q.c)}<b>${q.c}</b></td></tr>`),
+    );
+  el.appendChild(tab);
+  const row = h(`<div class="dv-bans" data-grid="${d.len}"><b>Код:</b></div>`);
+  const inputs = Array.from({ length: d.len }, () => row.appendChild(digitCell(9, changed)));
+  el.appendChild(row);
+  el.appendChild(h(`<p class="dv-known">Цифры в коде не повторяются.</p>`));
+  return {
+    el,
+    answer: () => (inputs.every((i) => i.value !== '') ? inputs.map((i) => Number(i.value)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (r) setCell(inputs[r.i], r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => Number(inputs[i].value) !== v && setCell(inputs[i], v, 'shown'));
+    },
+    lock() {
+      inputs.forEach((i) => (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- стопки
+
+function stopkiPad(d: StopkiData, changed: Changed): Pad {
+  const { n } = d;
+  const el = h(`<div class="dv-stopki" data-grid="${n}" style="--n:${n + 2}"></div>`);
+  const inputs: (HTMLInputElement | null)[] = [];
+  const clue = (v: number, side: string) => el.appendChild(h(`<div class="clue ${side}">${v || ''}</div>`));
+  const corner = () => el.appendChild(h(`<div></div>`));
+  corner();
+  d.top.forEach((v) => clue(v, 'top'));
+  corner();
+  for (let r = 0; r < n; r++) {
+    clue(d.left[r], 'left');
+    for (let c = 0; c < n; c++) {
+      const g = d.given[r * n + c];
+      if (g) {
+        el.appendChild(h(`<div class="given" data-v="${g}">${g}</div>`));
+        inputs.push(null);
+      } else inputs.push(el.appendChild(digitCell(n, changed)));
+    }
+    clue(d.right[r], 'right');
+  }
+  corner();
+  d.bottom.forEach((v) => clue(v, 'bottom'));
+  corner();
+  return {
+    el,
+    answer() {
+      const out = d.given.map((g, i) => g || Number(inputs[i]!.value || 0));
+      return out.some((v) => !v) ? null : out;
+    },
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        const inp = r && inputs[r.i];
+        if (inp) setCell(inp, r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        const inp = inputs[i];
+        if (inp && Number(inp.value) !== v) setCell(inp, v, 'shown');
+      });
+    },
+    lock() {
+      inputs.forEach((i) => i && (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- квадрат
+
+function kenkenPad(d: KenkenData, changed: Changed): Pad {
+  const { n } = d;
+  const cageOf = new Array(n * n).fill(-1);
+  d.cages.forEach((c, k) => c.cells.forEach((i) => (cageOf[i] = k)));
+  const el = h(`<div class="dv-kenken" data-grid="${n}" style="--n:${n}"></div>`);
+  const inputs: HTMLInputElement[] = [];
+  for (let i = 0; i < n * n; i++) {
+    const r = (i / n) | 0;
+    const c = i % n;
+    const k = cageOf[i];
+    const cage = d.cages[k];
+    // жирная линия — граница загона
+    const b = [r === 0 || cageOf[i - n] !== k, c === n - 1 || cageOf[i + 1] !== k, r === n - 1 || cageOf[i + n] !== k, c === 0 || cageOf[i - 1] !== k];
+    const box = h(`<div class="kk" style="border-width:${b.map((x) => (x ? '3px' : '1px')).join(' ')}"></div>`);
+    if (cage.cells[0] === i) box.appendChild(h(`<span class="lab">${cage.v}${OP_SIGN[cage.op]}</span>`));
+    inputs.push(box.appendChild(digitCell(n, changed)));
+    el.appendChild(box);
+  }
+  return {
+    el,
+    answer: () => (inputs.every((i) => i.value !== '') ? inputs.map((i) => Number(i.value)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (r) setCell(inputs[r.i], r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => Number(inputs[i].value) !== v && setCell(inputs[i], v, 'shown'));
+    },
+    lock() {
+      inputs.forEach((i) => (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- фантики
+
+function chainPad(d: ChainData, changed: Changed): Pad {
+  const el = h(`<div class="dv-chain"></div>`);
+  el.appendChild(h(`<p>У ${esc(genOf(d.hero))} было <b>${fant(d.start)}</b>.</p>`));
+  const ol = h(`<ol>${d.steps.map((s) => `<li>${esc(s.text)}<em></em></li>`).join('')}</ol>`);
+  el.appendChild(ol);
+  const ask = h(`<label class="dv-cask">${esc(d.ask)} <input class="cell wide" inputmode="numeric" maxlength="3" autocomplete="off" aria-label="ответ"></label>`);
+  const inp = ask.querySelector('input') as HTMLInputElement;
+  inp.oninput = () => {
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 3);
+    changed();
+  };
+  el.appendChild(ask);
+  const lis = [...ol.querySelectorAll('li')];
+  return {
+    el,
+    answer: () => (inp.value ? Number(inp.value) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { at: number; v: number } | undefined;
+        const em = r && lis[r.at - 1]?.querySelector('em');
+        if (em) em.textContent = ` → ${fant(r.v)}`;
+      }
+    },
+    solution(sol) {
+      if (Number(inp.value) !== sol) {
+        inp.value = String(sol);
+        inp.classList.add('shown');
+      }
+    },
+    lock() {
+      inp.readOnly = true;
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -440,6 +635,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return oknoPad(data as OknoData, changed);
     case 'kazaki':
       return kazakiPad(data as KazakiData, changed);
+    case 'bulls':
+      return bullsPad(data as BullsData, changed);
+    case 'stopki':
+      return stopkiPad(data as StopkiData, changed);
+    case 'kenken':
+      return kenkenPad(data as KenkenData, changed);
+    case 'chain':
+      return chainPad(data as ChainData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }

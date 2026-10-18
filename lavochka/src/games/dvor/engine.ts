@@ -130,7 +130,8 @@ export function makeList(c: Cfg, rng: Rng): Puzzle[] {
     for (let k = 0; k < n; k++) plan.push({ kind: c.kind, stage: (st.length ? st[rng.int(st.length)] : STAGES[0]).id });
   } else {
     const stages = shuffle(STAGES, rng).slice(0, c.len);
-    for (const st of stages) for (const kind of st.kinds.slice(0, 2)) plan.push({ kind, stage: st.id });
+    // на этапе — две задачи разных типов из тех, что ему подходят
+    for (const st of stages) for (const kind of shuffle(st.kinds, rng).slice(0, 2)) plan.push({ kind, stage: st.id });
   }
   return plan.map((p, k) => {
     const level = levelAt(c, k, n);

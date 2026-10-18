@@ -1,10 +1,14 @@
 /* Все типы задач «А у нас во дворе». Без DOM. */
 import { shuffle, SeededRng } from '../../../core/rng';
 import { stageOf } from '../stages';
+import { checkBulls, genBulls, solveBulls, type BullsData } from './bulls';
+import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkKenken, genKenken, solveKenken, type KenkenData } from './kenken';
 import { genKazaki, genOkno, solveKazaki, solveOkno, type KazakiData, type OknoData } from './liars';
+import { checkStopki, genStopki, solveStopki, type StopkiData } from './stopki';
 import { checkZebra, genZebra, solveZebra, type ZebraData } from './zebra';
 
 export type { Hint, Kind } from './kind';
@@ -106,5 +110,75 @@ const kazaki: Kind<KazakiData, boolean[], boolean[]> = {
   solve: (d) => solveKazaki(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki };
+const bulls: Kind<BullsData, number[], number[]> = {
+  id: 'bulls',
+  title: 'Быки и коровы',
+  how: 'Загадан код из разных цифр. «Бык» — цифра угадана и стоит на своём месте, «корова» — цифра есть в коде, но на другом месте. Найди код.',
+  par: [90, 180, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genBulls(lv, rng),
+  check: (d, _s, a) => checkBulls(d, a),
+  hint(d, sol, k) {
+    if (k > 1) return null;
+    const i = nth([...Array(d.len).keys()], k, d.len * 23 + d.guesses.length);
+    if (i == null) return null;
+    return { text: `${i + 1}-я цифра кода — ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveBulls(d),
+};
+
+const stopki: Kind<StopkiData, number[], number[]> = {
+  id: 'stopki',
+  title: 'Стопки',
+  how: 'В каждой строке и каждом столбце — стопки высотой от 1 кирпича до размера поля, по одной каждой высоты. Число с края — сколько стопок видно оттуда: высокая загораживает те, что ниже, за ней.',
+  par: [90, 180, 360],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genStopki(lv, rng),
+  check: (d, _s, a) => checkStopki(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const empty = d.given.map((g, i) => (g ? -1 : i)).filter((i) => i >= 0);
+    const i = nth(empty, k, d.n * 29 + empty.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке стопка из ${sol[i]} ${sol[i] === 1 ? 'кирпича' : 'кирпичей'}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveStopki(d),
+};
+
+const kenken: Kind<KenkenData, number[], number[]> = {
+  id: 'kenken',
+  title: 'Квадрат',
+  how: 'В каждой строке и каждом столбце — все числа от 1 до размера квадрата, по разу. В углу загона — что получится, если сложить (+), вычесть (−), перемножить (×) или разделить (:) его числа.',
+  par: [120, 240, 420],
+  pts: [2, 4, 5],
+  gen: (lv, rng) => genKenken(lv, rng),
+  check: (d, _s, a) => checkKenken(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const cells = d.cages.filter((c) => c.op !== '=').flatMap((c) => c.cells);
+    const i = nth(cells, k, d.n * 37 + d.cages.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке — ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveKenken(d),
+};
+
+const chain: Kind<ChainData, number, number> = {
+  id: 'chain',
+  title: 'Фантики',
+  how: 'Считай по цепочке, сколько фантиков осталось. Можно на бумажке.',
+  par: [45, 90, 150],
+  pts: [1, 2, 3],
+  gen: (lv, rng, ctx) => genChain(lv, ctx.names, rng),
+  check: (_d, sol, a) => Number(a) === sol,
+  hint(d, _sol, k) {
+    // промежуточные итоги: на середине, потом за шаг до конца
+    const at = [Math.ceil(d.steps.length / 2), d.steps.length - 1][k];
+    if (at == null) return null;
+    return { text: `После ${at}-го шага было ${run(d, at)}.`, reveal: { at, v: run(d, at) } };
+  },
+  solve: (d) => solveChain(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain };
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;
