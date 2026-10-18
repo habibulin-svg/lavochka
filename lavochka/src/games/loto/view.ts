@@ -5,7 +5,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { cardNums, fullRows, ownerOf, picsOf, STAGES, type Card, type Event, type View } from './engine';
+import { cardNums, fullRows, lastCalled, ownerOf, picsOf, STAGES, type Card, type Event, type View } from './engine';
 import { barrelCall } from './names';
 import { edition, type Edition } from './world-data';
 import './loto.css';
@@ -63,7 +63,9 @@ class LotoView implements GameView<View, Event> {
       if (!this.ctx.mySeats.includes(seat)) return;
       const c = v.cards[seat][Number(el.dataset.card)];
       if (c.marked.includes(n)) return;
-      if (!v.called.includes(n)) {
+      // «каждый бочонок»: закрыть можно только последний и только пока ждут твоего ответа
+      const turnBad = v.cfg.mark === 'turn' && (!v.pending.includes(seat) || n !== lastCalled(v));
+      if (!v.called.includes(n) || turnBad) {
         el.classList.remove('shake');
         void el.offsetWidth;
         el.classList.add('shake');
@@ -76,6 +78,13 @@ class LotoView implements GameView<View, Event> {
       Sound.place();
       this.draw();
       this.ctx.act(seat, { type: 'mark', card: Number(el.dataset.card), n });
+    } else if (d === 'nope') {
+      const seat = Number(el.dataset.seat);
+      if (!v.pending.includes(seat) || !this.ctx.mySeats.includes(seat)) return;
+      Sound.ui();
+      v.pending = v.pending.filter((p) => p !== seat);
+      this.draw();
+      this.ctx.act(seat, { type: 'pass' });
     } else if (d === 'pic' || d === 'pass') {
       const seat = Number(el.dataset.seat ?? this.answering());
       if (!this.toAct.includes(seat) || !this.interactive.includes(seat)) return;
@@ -156,9 +165,15 @@ class LotoView implements GameView<View, Event> {
       ${myCards}
       <div class="lt-others">${small}</div>
     </div>`;
-    const myTurn = this.toAct.some((p) => this.interactive.includes(p)) && !v.over && !this.ctx.demo;
+    const live = !v.over && !this.ctx.demo;
+    const asked = live ? v.pending.find((p) => this.interactive.includes(p) && this.ctx.mySeats.includes(p)) : undefined;
+    const myTurn = live && !v.pending.length && this.toAct.some((p) => this.interactive.includes(p));
     const board = Array.from({ length: 90 }, (_, i) => `<i class="${called.has(i + 1) ? 'on' : ''}${i + 1 === last ? ' last' : ''}">${i + 1}</i>`).join('');
-    this.panel.innerHTML = `${myTurn ? '<button class="btn primary lt-draw" data-do="draw" data-tap>Тянуть бочонок</button>' : ''}
+    const ask =
+      asked != null
+        ? `<p class="lt-tip">${mine.length > 1 ? `${this.ctx.name(asked)}: е` : 'Е'}сть <b>${last}</b>? Закройте на карточке или:</p><button class="btn lt-nope" data-do="nope" data-seat="${asked}">Нет у меня</button>`
+        : '';
+    this.panel.innerHTML = `${myTurn ? '<button class="btn primary lt-draw" data-do="draw" data-tap>Тянуть бочонок</button>' : ''}${ask}
       <div class="lt-board" title="Вышедшие бочонки">${board}</div>`;
   }
 
@@ -259,6 +274,15 @@ class LotoView implements GameView<View, Event> {
         this.root.querySelector('.lt-barrel.big')?.classList.add('fresh');
         Sound.diceRoll(0.25);
         await sleep(1300 / speed);
+      } else if (ev.type === 'pass') {
+        if (ev.missed) {
+          this.v = { ...v };
+          this.banner = `${esc(this.plain(ev.seat))}: ${ev.n} было — прозевано!`;
+          this.draw();
+          Sound.nomove();
+          await sleep(1200 / speed);
+          this.banner = '';
+        }
       } else if (ev.type === 'prize') {
         this.v = { ...v };
         this.banner = `🎉 ${this.plain(ev.seat)}: ${ev.stage === 2 ? 'вся карточка!' : STAGES[ev.stage] + '!'}`;
@@ -309,6 +333,10 @@ class LotoView implements GameView<View, Event> {
   status(v: View, toAct: number[], interactive: number[]) {
     if (v.over) return 'Партия окончена';
     if (v.cfg.mode === 'world') return toAct.some((p) => interactive.includes(p)) ? 'Узнали? Нажмите на картинку или «Не у меня»' : 'Ждём ответов…';
+    if (v.pending.length) {
+      const me = v.pending.filter((p) => interactive.includes(p));
+      return me.length ? `Есть ${lastCalled(v)}? Закройте или «Нет у меня»` : `Ждём: ${v.pending.map((p) => this.ctx.name(p)).join(', ')}…`;
+    }
     return interactive.includes(toAct[0]) ? 'Ваша очередь тянуть бочонок' : `Тянет ${this.ctx.name(toAct[0])}…`;
   }
 

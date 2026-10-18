@@ -1,7 +1,7 @@
 /* Лото — описание игры для сборника: русское лото (бочонки, присказки, ряд → два ряда → вся карточка)
  * и географическое «Вокруг света» (1972). Боты, правила с показом. Без DOM. */
 import type { DemoStep, GameDef, SeatSpec } from '../../core/types';
-import { apply, cardNums, free, makeView, ownerOf, picsOf, score, setup, STAGES, toAct, type Action, type Card, type Event, type State, type View } from './engine';
+import { apply, cardNums, free, lastCalled, makeView, openWith, ownerOf, picsOf, score, setup, STAGES, toAct, type Action, type Card, type Event, type State, type View } from './engine';
 import { SeededRng } from '../../core/rng';
 import { barrelCall } from './names';
 import { WORLD_SHEETS } from './world-data';
@@ -21,6 +21,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
     case 'draw':
       return `${name(ev.seat)}: «${barrelCall(ev.n, ev.k)}»`;
+    case 'pass':
+      return ev.missed ? `${name(ev.seat)}: «Нет у меня» — а ${ev.n} на карточке было! Прозевано.` : null;
     case 'prize':
       return `🎉 ${name(ev.seat)} закрыл${STAGES[ev.stage] === 'вся карточка' ? ' всю карточку' : ` ${STAGES[ev.stage]}`}${ev.shared ? ' — делят на том же бочонке' : ''}!`;
     case 'read':
@@ -40,7 +42,16 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 // ---------------------------------------------------------------- боты
 
 function choose(v: View, seat: number, level: number, rng: { next(): number; int(n: number): number }): Action | null {
-  if (v.cfg.mode === 'russian') return v.over || v.seats[v.turn] !== seat ? null : { type: 'draw' };
+  if (v.cfg.mode === 'russian') {
+    if (v.over) return null;
+    // за отключившегося человека: ответить на бочонок
+    if (v.pending.includes(seat)) {
+      const n = lastCalled(v);
+      const c = openWith(v, seat, n)[0];
+      return c != null ? { type: 'mark', card: c, n } : { type: 'pass' };
+    }
+    return v.seats[v.turn] === seat ? { type: 'draw' } : null;
+  }
   if (v.current == null || seat in v.answers) return null;
   const mine = picsOf(v, seat).filter((x) => !v.covered.includes(x));
   const owner = ownerOf(v, v.current);
@@ -156,7 +167,19 @@ export const def: GameDef<State, Action, Event, View> = {
       default: 'stages',
       showIf: (o) => o.mode !== 'world',
     },
-    { key: 'auto', label: 'Фишки кладутся сами', type: 'toggle', default: false, hint: 'Иначе вышедшие числа закрываешь сам — прозевал, сам виноват.', showIf: (o) => o.mode !== 'world' },
+    {
+      key: 'mark',
+      label: 'Как закрываем',
+      type: 'select',
+      choices: [
+        { value: 'turn', label: 'каждый бочонок: «есть» или «нет у меня»' },
+        { value: 'race', label: 'как за столом: мешок не ждёт' },
+        { value: 'auto', label: 'фишки кладутся сами' },
+      ],
+      default: 'turn',
+      hint: 'После каждого бочонка мешок ждёт, пока каждый закроет число или скажет «Нет у меня» (сказал «нет», а число было, — прозевал). «Как за столом» — закрывай, когда успеешь.',
+      showIf: (o) => o.mode !== 'world',
+    },
     {
       key: 'edition',
       label: 'Издание',
@@ -172,9 +195,9 @@ export const def: GameDef<State, Action, Event, View> = {
     { key: 'hint', label: 'Подсказка «это у тебя»', type: 'toggle', default: false, hint: 'Для малышей: карта мигает, если ответ на ней.', showIf: (o) => o.mode === 'world' },
   ],
   presets: [
-    { id: 'russian', label: 'Русское лото', hint: 'Бочонки с присказками, ряд → два ряда → карточка', options: { mode: 'russian', cards: 2, goal: 'stages', auto: false } },
-    { id: 'short', label: 'Короткое', hint: 'Кто первым закроет ряд', options: { mode: 'russian', cards: 2, goal: 'row', auto: false } },
-    { id: 'long', label: 'Длинное', hint: 'Кто первым закроет всю карточку', options: { mode: 'russian', cards: 3, goal: 'card', auto: false } },
+    { id: 'russian', label: 'Русское лото', hint: 'Бочонки с присказками, ряд → два ряда → карточка', options: { mode: 'russian', cards: 2, goal: 'stages', mark: 'turn' } },
+    { id: 'short', label: 'Короткое', hint: 'Кто первым закроет ряд', options: { mode: 'russian', cards: 2, goal: 'row', mark: 'turn' } },
+    { id: 'long', label: 'Длинное', hint: 'Кто первым закроет всю карточку', options: { mode: 'russian', cards: 3, goal: 'card', mark: 'turn' } },
     { id: 'world', label: 'Вокруг света', hint: 'Географическое лото 1972 года: узнай картинку по описанию', options: { mode: 'world', edition: '72', hint: false } },
     { id: 'world80', label: 'Вокруг света-80', hint: 'Издание 1980 года в жёлтой коробке с птицей: 20 карт по 6 картинок', options: { mode: 'world', edition: '80', hint: false } },
   ],
@@ -214,12 +237,18 @@ export const def: GameDef<State, Action, Event, View> = {
         title: 'Бочонки и карточки',
         html: `<p>В мешке 90 бочонков с числами от 1 до 90. У каждого — карточки: три ряда по пять чисел. Мешок ходит по кругу: кто тянет, тот
           выкрикивает номер — по-дворовому, с присказкой: «11 — барабанные палочки!», «90 — дедушка!».</p>
-          <p>Вышло число, которое есть на твоей карточке, — <b>закрой его фишкой сам</b> (нажми на число). Прозевал — никто не подскажет.
-          Если лень следить — включи «Фишки кладутся сами».</p>`,
+          <p>После каждого бочонка мешок ждёт ответа от каждого: есть число на карточке — <b>закрой его фишкой сам</b> (нажми на число),
+          нет — «Нет у меня». Сказал «нет», а число было, — прозевал, закрыть его уже нельзя.</p>
+          <p>Можно и «как за столом»: мешок не ждёт, закрываешь, когда успеешь, — или «фишки кладутся сами» (настройка «Как закрываем»).</p>`,
         demo: { seats: demoSeats, setup: () => demoRussian, intro: 'Мешок пошёл по кругу.', steps: [
-            ...draws(demoRussian, [11, 90, 47], ['Бабушка тянет: «11 — барабанные палочки!» У неё на карточке есть 11.', 'Дед: «90 — дедушка!» — у Деда в нижнем ряду.', 'Серёга: «47 — баба ягодка совсем!»']),
-            { seat: 0, action: { type: 'mark', card: 0, n: 11 }, caption: 'Бабушка закрывает 11 фишкой…' },
-            { seat: 0, action: { type: 'mark', card: 0, n: 47 }, caption: '…и 47. Боты закрывают свои числа сами.' },
+            ...((d) => [
+              d[0],
+              { seat: 0, action: { type: 'mark', card: 0, n: 11 }, caption: 'Бабушка закрывает 11 фишкой — ответила, мешок идёт дальше.' },
+              d[1],
+              { seat: 0, action: { type: 'pass' }, caption: 'У Бабушки 90 нет: «Нет у меня». Боты закрывают свои числа сами.' },
+              d[2],
+              { seat: 0, action: { type: 'mark', card: 0, n: 47 }, caption: 'А 47 есть — закрыла.' },
+            ])(draws(demoRussian, [11, 90, 47], ['Бабушка тянет: «11 — барабанные палочки!» У неё на карточке есть 11.', 'Дед: «90 — дедушка!» — у Деда в нижнем ряду.', 'Серёга: «47 — баба ягодка совсем!»'])),
           ] },
       },
       {

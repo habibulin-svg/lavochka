@@ -104,7 +104,7 @@ b.lt-cell.can:hover { box-shadow: 0 0 0 2px #b3322a; }
 .lt-board i.on { color: #fff; background: #2e6b52; }
 .lt-board i.last { background: #b3322a; }
 .lt-tip { margin: 0; font-size: 14px; }
-.lt-pass { width: 100%; }
+.lt-pass, .lt-nope { width: 100%; }
 
 /* ---- «Вокруг света» */
 .lt-ask { display: flex; align-items: center; gap: 14px; }

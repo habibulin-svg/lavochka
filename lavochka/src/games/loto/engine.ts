@@ -4,6 +4,9 @@ import type { Options, Rng, SeatSpec } from '../../core/types';
 import { edition } from './world-data';
 
 export type Mode = 'russian' | 'world';
+/** Как закрываем числа: turn — после каждого бочонка каждый отвечает сам (закрыл или «Нет у меня»), игра ждёт;
+ * race — как за столом: закрывай когда успеешь, мешок не ждёт; auto — фишки кладутся сами. */
+export type MarkMode = 'turn' | 'race' | 'auto';
 export type Goal = 'row' | 'card' | 'stages';
 
 export interface Cfg {
@@ -11,8 +14,7 @@ export interface Cfg {
   /** Карточек у каждого (русское). */
   cards: number;
   goal: Goal;
-  /** Сами закрываем числа (как за столом) или фишки кладутся сами. */
-  auto: boolean;
+  mark: MarkMode;
   /** «Вокруг света»: подсказка, что ответ — на твоей карте. */
   hint: boolean;
   /** «Вокруг света»: издание (1972 или 1980). */
@@ -24,7 +26,7 @@ export function cfgFrom(o: Options): Cfg {
     mode: o.mode === 'world' ? 'world' : 'russian',
     cards: Math.min(3, Math.max(1, Number(o.cards ?? 2) || 2)),
     goal: o.goal === 'row' || o.goal === 'card' ? o.goal : 'stages',
-    auto: o.auto === true,
+    mark: o.mark === 'race' || o.mark === 'auto' ? o.mark : o.auto === true ? 'auto' : 'turn',
     hint: o.hint === true,
     edition: edition(o.edition).id,
   };
@@ -52,6 +54,8 @@ export interface State {
   seats: number[];
   /** Уровни ботов (у людей — нет): бот иногда зевает. */
   bots: Record<number, number>;
+  /** Режим turn: кто из людей ещё не ответил на последний бочонок (мешок ждёт). */
+  pending: number[];
   /** Чья очередь тянуть бочонок / читать карточку (индекс в seats). */
   turn: number;
   over: boolean;
@@ -87,11 +91,13 @@ export interface State {
 export type Action =
   | { type: 'draw' }
   | { type: 'mark'; card: number; n: number }
+  | { type: 'pass' }
   | { type: 'answer'; pic: number };
 
 export type Event =
   | { type: 'draw'; seat: number; n: number; k: number; left: number }
   | { type: 'mark'; seat: number; card: number; n: number }
+  | { type: 'pass'; seat: number; n: number; missed: boolean }
   | { type: 'prize'; seat: number; card: number; stage: number; shared: boolean }
   | { type: 'read'; seat: number; card: number; again: boolean; left: number }
   | { type: 'answer'; seat: number; pic: number }
@@ -172,6 +178,7 @@ export function setup(seats: SeatSpec[], opts: Options, rng: Rng): State {
     cfg,
     seats: order,
     bots,
+    pending: [],
     turn: 0,
     over: false,
     cards: {},
@@ -221,15 +228,22 @@ function shuffle<T>(a: T[], rng: Rng): T[] {
 
 export function toAct(s: State): number[] {
   if (s.over) return [];
-  if (s.cfg.mode === 'russian') return [s.seats[s.turn]];
+  if (s.cfg.mode === 'russian') return s.pending.length ? s.pending.slice() : [s.seats[s.turn]];
   if (s.current == null) return [];
   return s.seats.filter((p) => !(p in s.answers));
 }
 
-/** Закрыть — вне очереди, в любой момент (как за столом). */
+/** «Как за столом»: закрыть — вне очереди, в любой момент. */
 export function free(s: State, _seat: number, a: Action): boolean {
-  return a.type === 'mark' && s.cfg.mode === 'russian' && !s.over;
+  return a.type === 'mark' && s.cfg.mode === 'russian' && s.cfg.mark === 'race' && !s.over;
 }
+
+/** Последний вышедший бочонок. */
+export const lastCalled = (s: Pick<State, 'called'>) => s.called[s.called.length - 1];
+
+/** Карточки места, где есть число n и оно ещё не закрыто. */
+export const openWith = (s: Pick<State, 'cards'>, seat: number, n: number) =>
+  (s.cards[seat] ?? []).map((c, i) => (cardNums(c).includes(n) && !c.marked.includes(n) ? i : -1)).filter((i) => i >= 0);
 
 const clone = (s: State): State => JSON.parse(JSON.stringify(s));
 
@@ -248,7 +262,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   const ev: Event[] = [];
   if (s.cfg.mode === 'russian') {
     if (a.type === 'draw') {
-      if (s.seats[s.turn] !== seat || !s.bag.length) return null;
+      if (s.seats[s.turn] !== seat || !s.bag.length || s.pending.length) return null;
       // приз, взятый на прошлом бочонке, закрыт — разыгрываем следующий
       if (s.stageAt != null) {
         s.stage++;
@@ -263,7 +277,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       const called = new Set(s.called);
       for (const p of s.seats) {
         const bot = p in s.bots;
-        if (!bot && !s.cfg.auto) continue;
+        if (!bot && s.cfg.mark !== 'auto') continue;
         const eye = bot ? BOT_EYE[s.bots[p]] ?? 1 : 1;
         s.cards[p].forEach((c, ci) => {
           for (const x of cardNums(c)) {
@@ -275,15 +289,27 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         });
       }
       claim(s, ev);
-      if (!s.over && !s.bag.length) finish(s, ev);
+      // «Отвечают все»: мешок ждёт каждого человека
+      if (!s.over && s.cfg.mark === 'turn') s.pending = s.seats.filter((p) => !(p in s.bots));
+      if (!s.over && !s.bag.length && !s.pending.length) finish(s, ev);
       return { state: s, events: ev };
     }
     if (a.type === 'mark') {
       const c = s.cards[seat]?.[a.card];
       if (!c || !cardNums(c).includes(a.n) || c.marked.includes(a.n) || !s.called.includes(a.n)) return null;
+      // по очереди — только последний бочонок и только пока ждут твоего ответа
+      if (s.cfg.mark === 'turn' && (!s.pending.includes(seat) || a.n !== lastCalled(s))) return null;
       c.marked.push(a.n);
       ev.push({ type: 'mark', seat, card: a.card, n: a.n });
       claim(s, ev);
+      if (s.cfg.mark === 'turn' && !openWith(s, seat, a.n).length) answered(s, seat, ev);
+      return { state: s, events: ev };
+    }
+    if (a.type === 'pass') {
+      if (s.cfg.mark !== 'turn' || !s.pending.includes(seat)) return null;
+      const n = lastCalled(s);
+      ev.push({ type: 'pass', seat, n, missed: openWith(s, seat, n).length > 0 });
+      answered(s, seat, ev);
       return { state: s, events: ev };
     }
     return null;
@@ -376,8 +402,16 @@ function claim(s: State, ev: Event[]) {
   }
 }
 
+/** Место ответило на бочонок; все ответили, а мешок пуст — конец. */
+function answered(s: State, seat: number, ev: Event[]) {
+  s.pending = s.pending.filter((p) => p !== seat);
+  if (s.over) s.pending = [];
+  else if (!s.pending.length && !s.bag.length) finish(s, ev);
+}
+
 function finish(s: State, ev: Event[]) {
   s.over = true;
+  s.pending = [];
   const last = Math.max(...s.prizes.map((x) => x.stage), -1);
   const w = [...new Set(s.prizes.filter((x) => x.stage === last).map((x) => x.seat))];
   ev.push({ type: 'end', winners: w });
