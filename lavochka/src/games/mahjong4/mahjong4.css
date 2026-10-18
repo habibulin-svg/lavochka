@@ -1,0 +1,48 @@
+/* Маджонг вчетвером: квадратный стол, дерево и сукно. */
+.m4-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.m4-board { width: 100%; height: 100%; max-width: 100%; max-height: 100%; aspect-ratio: 1 / 1; user-select: none; -webkit-user-select: none; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)); }
+.m4-center { fill: rgba(10, 30, 18, 0.55); stroke: rgba(240, 220, 160, 0.35); stroke-width: 2; }
+.m4-round { font: 700 30px 'PT Serif', Georgia, serif; fill: #f6e8b8; text-anchor: middle; }
+.m4-small { font: 400 15px 'PT Sans', Arial, sans-serif; fill: #d8cca0; text-anchor: middle; }
+.m4-wall { font: 700 18px 'PT Sans', Arial, sans-serif; fill: #f0e6c8; text-anchor: middle; }
+.m4-seat { font: 700 17px 'PT Sans', Arial, sans-serif; fill: #e8dcb0; text-anchor: middle; }
+.m4-seat.m4-turn { fill: #ffd24a; }
+.m4-wind { font-weight: 700; fill: #9fd0ff; }
+.m4-wind.m4-dealer { fill: #ff8a6a; }
+.m4-stick { fill: #fafafa; stroke: #888; stroke-width: 1; }
+.m4-missing { font: 700 15px 'PT Sans', Arial, sans-serif; fill: #ffb0a0; text-anchor: middle; }
+.m4-wonmark { font: 700 20px 'PT Serif', Georgia, serif; fill: #ffd24a; text-anchor: middle; }
+.m4-own { transition: transform 0.12s; }
+.m4-can { cursor: pointer; }
+.m4-can:hover .mj-hl { fill: rgba(255, 230, 140, 0.18); }
+.m4-no .mj-hl { fill: rgba(20, 30, 20, 0.35); }
+.m4-sel .mj-hl { fill: rgba(255, 196, 40, 0.25); stroke: #ffb400; stroke-width: 3.5; }
+.m4-riichi .mj-hl { stroke: #ff6a4a; stroke-width: 2.5; }
+.m4-taken { opacity: 0.35; }
+.m4-last .mj-hl { stroke: #ffd24a; stroke-width: 3; animation: mj-pulse 0.6s ease-in-out infinite alternate; }
+.m4-wintile .mj-hl { stroke: #ff7a3a; stroke-width: 3; }
+.m4-call rect { fill: rgba(20, 14, 6, 0.85); stroke: #e0c070; stroke-width: 3; }
+.m4-call text { font: 700 38px 'PT Serif', Georgia, serif; fill: #ffd24a; text-anchor: middle; dominant-baseline: central; }
+.m4-over { position: absolute; inset: 6% 8%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.m4-res { pointer-events: auto; max-height: 100%; overflow: auto; background: rgba(250, 242, 222, 0.97); color: #2a1a06; border: 3px solid #b08a3a; border-radius: 14px; padding: 14px 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 10px; min-width: min(420px, 100%); }
+.m4-res-t { font: 700 20px 'PT Serif', Georgia, serif; }
+.m4-res-scroll { overflow-x: auto; }
+.m4-res-hand { max-width: 100%; height: auto; display: block; }
+.m4-items { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 2px; font-size: 14px; }
+.m4-items li { display: flex; justify-content: space-between; gap: 14px; border-bottom: 1px dotted rgba(80, 60, 20, 0.3); }
+.m4-total { font-weight: 700; font-size: 17px; }
+.m4-deltas { border-collapse: collapse; font-size: 15px; }
+.m4-deltas td { padding: 2px 10px; }
+.m4-deltas .pos { color: #2a7a3a; font-weight: 700; }
+.m4-deltas .neg { color: #b3322a; font-weight: 700; }
+.m4-wait { font-size: 14px; opacity: 0.8; }
+.m4-cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(14, 20, 12, 0.92); border-radius: 18px; z-index: 5; }
+.m4-cover-box { text-align: center; color: #f0e6c8; font-size: 20px; display: flex; flex-direction: column; gap: 14px; }
+.m4-controls { display: flex; flex-direction: column; gap: 8px; }
+.m4-btns { display: flex; flex-direction: column; gap: 6px; }
+.m4-btns .btn { width: 100%; }
+.m4-btns .m4-ron { font-size: 17px; }
+.m4-ask { font-weight: 700; }
+.m4-hint { font-size: 14px; }
+.m4-rules { font-size: 13px; opacity: 0.75; }
+.m4-wall-t { fill: url(#m4Back); stroke: rgba(0, 0, 0, 0.45); stroke-width: 1; }

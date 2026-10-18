@@ -25,8 +25,7 @@ export function matches(a: number, b: number) {
   return (isFlower(a) && isFlower(b)) || (isSeason(a) && isSeason(b));
 }
 
-const SUIT_GEN = ['медяков', 'бамбуков', 'тем'];
-const SUIT_SHORT = ['м', 'б', 'т'];
+const SUIT_SHORT = ['мед', 'бам', 'тьм'];
 const WIND = ['Восток', 'Юг', 'Запад', 'Север'];
 const DRAGON = ['Белый дракон', 'Зелёный дракон', 'Красный дракон'];
 const FLOWER = ['Слива', 'Орхидея', 'Хризантема', 'Бамбук-цветок'];
@@ -36,8 +35,12 @@ const SEASON = ['Весна', 'Лето', 'Осень', 'Зима'];
 export function kindName(k: number): string {
   if (k < 27) {
     const n = rankOf(k);
-    const w = ['один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'][n - 1];
-    return `${w} ${SUIT_GEN[suitOf(k)]}`;
+    const forms = [
+      ['медяк', 'медяка', 'медяков'],
+      ['бамбук', 'бамбука', 'бамбуков'],
+      ['тьма', 'тьмы', 'тем'],
+    ][suitOf(k)];
+    return `${n} ${forms[n === 1 ? 0 : n <= 4 ? 1 : 2]}`;
   }
   if (k <= 30) return WIND[k - 27];
   if (k <= 33) return DRAGON[k - 31];
@@ -45,11 +48,11 @@ export function kindName(k: number): string {
   return SEASON[k - 38];
 }
 
-/** Короткая запись для журнала: 5м, 7б, В, Кр. */
+/** Короткая запись: «5 мед», «7 бам», «Восток», «красный». */
 export function kindShort(k: number): string {
-  if (k < 27) return `${rankOf(k)}${SUIT_SHORT[suitOf(k)]}`;
-  if (k <= 30) return ['В', 'Ю', 'З', 'С'][k - 27];
-  if (k <= 33) return ['Бел', 'Зел', 'Кр'][k - 31];
+  if (k < 27) return `${rankOf(k)} ${SUIT_SHORT[suitOf(k)]}`;
+  if (k <= 30) return WIND[k - 27];
+  if (k <= 33) return ['белый', 'зелёный', 'красный'][k - 31];
   if (k <= 37) return FLOWER[k - 34];
   return SEASON[k - 38];
 }

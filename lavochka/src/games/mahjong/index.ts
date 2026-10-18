@@ -2,7 +2,7 @@ import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import type { GameModule } from '../../core/view';
 import { def } from './def';
-import { BACK_CHOICES, PREF_BACK, PREF_SET, SET_CHOICES } from './draw';
+import { MJ_PREFS } from './draw';
 import { createView, PREF_DIM, RECORDS, type Record_ } from './view';
 
 const fmt = (t: number) => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
@@ -21,10 +21,6 @@ function home(box: HTMLElement) {
   );
 }
 
-export const MJ_PREFS = [
-  { key: PREF_SET, label: 'Кости', choices: SET_CHOICES, default: 'jp' },
-  { key: PREF_BACK, label: 'Рубашка', choices: BACK_CHOICES, default: 'green' },
-];
 
 const mod: GameModule = {
   def,

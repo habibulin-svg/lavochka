@@ -16,6 +16,12 @@ export const BACK_CHOICES = [
   { value: 'amber', label: 'янтарная' },
 ];
 
+/** Настройки вида на экране игры — общие для пасьянса и игры вчетвером. */
+export const MJ_PREFS = [
+  { key: PREF_SET, label: 'Кости', choices: SET_CHOICES, default: 'jp' },
+  { key: PREF_BACK, label: 'Рубашка', choices: BACK_CHOICES, default: 'green' },
+];
+
 const BASE = import.meta.env.BASE_URL;
 export const tileSet = (): TileSet => (store.get<string>(PREF_SET, 'jp') === 'hk' ? 'hk' : 'jp');
 const backOf = () => {
