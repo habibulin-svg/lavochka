@@ -25,9 +25,9 @@ export interface Ctx {
 const STORY_MAX = 400;
 
 export function story(c: Ctx, e: Entry): void {
-  c.s.story.push({ ...e, day: c.s.world.day });
-  if (c.s.story.length > STORY_MAX) c.s.story.splice(0, c.s.story.length - STORY_MAX);
   c.s.seq++;
+  c.s.story.push({ ...e, day: c.s.world.day, n: c.s.seq });
+  if (c.s.story.length > STORY_MAX) c.s.story.splice(0, c.s.story.length - STORY_MAX);
 }
 export const say = (c: Ctx, text: string, img?: string) => story(c, { k: 'say', text, ...(img ? { img } : {}) });
 export const sys = (c: Ctx, text: string) => story(c, { k: 'sys', text });
@@ -205,6 +205,11 @@ export function applyGive(c: Ctx, g: Give, heroes: Hero[], split: boolean): void
       const n = g.xp === 'level' ? Math.max(0, (h.cls ? CLASSES[h.cls].xp[h.level] ?? h.xp : h.xp) - h.xp) : qty(g.xp, c.rng);
       if (n) sys(c, `${h.name}: +${n} ИО.`);
       addXp(c, h, n);
+    }
+    if (g.ward === 'stunned') h.stunNext = true;
+    if (g.ward === 'firstHit') {
+      h.wardFirst = true;
+      sys(c, `${h.name} под оберегом: первое попадание не причинит вреда.`);
     }
     if (g.doubleGold) {
       const got = addGold(c, h, h.gold);

@@ -51,6 +51,8 @@ export type Action =
   | { t: 'attack'; target: number }
   | { t: 'shoot'; i: number; target: number }
   | { t: 'flee' }
+  /** Следующий бросок начатого удара: урон или ещё стрела. */
+  | { t: 'strike' }
   | { t: 'turn' }
   | { t: 'repel'; id: 'holy_water' | 'aconite' }
   | { t: 'stake'; target: number }
@@ -265,7 +267,7 @@ function act(c: Ctx, seat: number, a: Action): boolean {
       return ha.unequip(h, a.slot);
     case 'drink':
       if (s.combat) {
-        if (!cb.canAct(c, seat) || !ha.drink(c, h, a.bottle)) return false;
+        if (!cb.canAct(c, seat) || cb.striking(c, seat) || !ha.drink(c, h, a.bottle)) return false;
         cb.heroDone(c, seat);
         return true;
       }
@@ -280,7 +282,7 @@ function act(c: Ctx, seat: number, a: Action): boolean {
       return ha.levelSpell(c, h, a.id);
     case 'cast':
       if (s.combat) {
-        if (!cb.canAct(c, seat)) return false;
+        if (!cb.canAct(c, seat) || cb.striking(c, seat)) return false;
         if (s.combat.phase === 'init') return SPELL[a.id]?.kind === 'initiative' && cb.rollInit(c, seat, true);
         if (!cb.castInCombat(c, h, a.id, a.target)) return false;
         cb.heroDone(c, seat);
@@ -293,6 +295,8 @@ function act(c: Ctx, seat: number, a: Action): boolean {
   const cm = s.combat;
   if (cm) {
     if (!cb.canAct(c, seat)) return false;
+    // удар начат — сначала его броски (урон, следующая стрела)
+    if (cb.striking(c, seat) && a.t !== 'strike') return false;
     switch (a.t) {
       case 'init':
         return cm.phase === 'init' && cb.rollInit(c, seat, a.spell);
@@ -300,15 +304,19 @@ function act(c: Ctx, seat: number, a: Action): boolean {
         return cm.phase === 'saves' && cb.combatSave(c, seat);
       case 'attack':
         if (cm.phase !== 'party' || !cb.heroAttack(c, h, meleeAttack(h), a.target)) return false;
-        cb.heroDone(c, seat);
+        if (!cb.striking(c, seat)) cb.heroDone(c, seat);
         return true;
       case 'shoot': {
         if (cm.phase !== 'party' && cm.phase !== 'volley') return false;
         const atk = missileAttacks(h)[a.i];
         if (!atk || !cb.heroAttack(c, h, atk, a.target)) return false;
-        cb.heroDone(c, seat);
+        if (!cb.striking(c, seat)) cb.heroDone(c, seat);
         return true;
       }
+      case 'strike':
+        if (!cb.strikeNext(c, h)) return false;
+        if (!cb.striking(c, seat)) cb.heroDone(c, seat);
+        return true;
       case 'flee':
         if (cm.phase !== 'party' || !cb.tryFlee(c, h)) return false;
         cb.heroDone(c, seat);

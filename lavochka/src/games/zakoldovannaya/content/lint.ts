@@ -69,6 +69,7 @@ function walk(steps: Step[] | undefined, sc: Scene, site: Site | undefined, plan
       if (g.spell && !SPELL[g.spell]) out.push(`${at}: нет заклинания «${g.spell}»`);
     }
     if ('take' in st && st.take.item && !TAKE_SPECIAL.has(st.take.item) && !itemOk(st.take.item)) out.push(`${at}: нет вещи «${st.take.item}» (take)`);
+    if ('later' in st) walk(st.do, sc, site, plan, `${at}.later`, out);
     if ('each' in st) walk(st.each, sc, site, plan, `${at}.each`, out);
     if ('random' in st) st.random.forEach((b, k) => walk(b, sc, site, plan, `${at}.random[${k}]`, out));
     if ('aggression' in st) st.aggression.forEach((b, k) => walk(b, sc, site, plan, `${at}.aggression[${k}]`, out));

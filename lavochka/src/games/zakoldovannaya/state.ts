@@ -1,5 +1,5 @@
 /* Состояние партии «Заколдованной страны»: отряд, мир (карта, замки, флаги), сцена, бой, рассказ. */
-import type { Buffs, Hero } from './hero';
+import type { Attack, Buffs, Hero } from './hero';
 import type { FlagVal, Step } from './script';
 
 /** Место 0 — ведущий, 1…5 — герои. */
@@ -90,6 +90,8 @@ export interface Combat {
   bound: number[];
   /** Броски удачи, которые ждут героев после ударов опасностей. */
   saves: PendingRoll[];
+  /** Удар героя в процессе: ждём его следующего броска — попадания (ещё стрела) или урона. */
+  strike?: { seat: number; uid: number; atk: Attack; left: number; stage: 'hit' | 'dmg'; v?: number };
   /** Ветки сцены по исходу боя: путь к спискам шагов. */
   ret: { win?: Path; fled?: Path; routed?: Path; lost?: Path };
   /** Счётчик uid. */
@@ -163,6 +165,8 @@ export interface Entry {
   /** Видно только ведущему. */
   gmOnly?: boolean;
   day?: number;
+  /** Номер записи (seq на момент записи) — для озвучки новых. */
+  n?: number;
 }
 
 export type Where =
@@ -188,6 +192,8 @@ export interface World {
   /** Переходов с начала дня. */
   steps: number;
   night: boolean;
+  /** Отложенные шаги сцен «в первую ночь»: ключ сцены, путь к шагам, герой ветки. */
+  later?: { key: string; path: Path; subj?: number }[];
   /** Дневник кампании. */
   quests: { id: string; text: string; done?: boolean }[];
 }

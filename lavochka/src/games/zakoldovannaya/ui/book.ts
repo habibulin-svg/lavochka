@@ -77,7 +77,7 @@ export function renderActions(el: HTMLElement, v: View, seats: number[], act: Ac
     // уровень
     for (const p of h.pending.slice(0, 1)) {
       add(who(seat));
-      if (p.kind === 'hp') btn(`★ Новый уровень — бросить жизненный кубик`, seat, { t: 'lvl-hp' }, 'primary');
+      if (p.kind === 'hp') btn(`★ Новый уровень — бросить жизненный кубик`, seat, { t: 'lvl-hp' }, 'primary').dataset.tap = '';
       else {
         add(`<div class="zs-prompt">★ Заклинание ${p.level}-го уровня — выберите:</div>`);
         for (const sp of spellsOfLevel(p.level)) btn(`${esc(sp.name)}${sp.uses ? ` <small>(${sp.uses} раз)</small>` : ''}`, seat, { t: 'lvl-spell', id: sp.id }).title = sp.text;
@@ -90,7 +90,7 @@ export function renderActions(el: HTMLElement, v: View, seats: number[], act: Ac
     } else if (wt?.k === 'roll' && wt.roll.seat === seat) {
       const need = Array.isArray(wt.roll.need) ? `нужно ${wt.roll.need.join(', ')}` : wt.roll.kind === 'dice4' ? 'больше соперника' : `нужно ${wt.roll.need}+`;
       add(who(seat));
-      btn(`🎲 ${esc(wt.roll.label)} <small>(${need})</small>`, seat, { t: 'roll' }, 'primary');
+      btn(`🎲 ${esc(wt.roll.label)} <small>(${need})</small>`, seat, { t: 'roll' }, 'primary').dataset.tap = '';
     } else if (wt?.k === 'shop' && !wt.done.includes(seat)) {
       shopPanel(el, v, h, act, seats.length > 1 ? nameOf(seat) : '');
     } else if (wt?.k === 'gamble' && !wt.game.done?.includes(seat)) {

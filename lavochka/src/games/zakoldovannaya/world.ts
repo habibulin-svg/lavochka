@@ -7,7 +7,7 @@ import mapJson from './data/map.json';
 import plansJson from './data/plans.json';
 import { alive } from './hero';
 import { MONSTERS } from './monsters';
-import { restoreSpells, startScene } from './interp';
+import { restoreSpells, startScene, startSceneAt } from './interp';
 import { GM, type State } from './state';
 
 // ---------- карта
@@ -241,6 +241,9 @@ export function nightfall(c: Ctx): void {
   say(c, 'Темнеет. Отряд разводит костёр у дороги.');
   const w = c.s.where;
   const node = w.k === 'map' ? w.node : w.node;
+  // отложенное «в первую же ночь»
+  const later = c.s.world.later?.shift();
+  if (later && startSceneAt(c, later.key, later.path, later.subj)) return;
   // ночная встреча: утро наступит после сцены (afterScene); не было — сразу утро
   if (roadEncounter(c, { bridge: false, node, night: true })) return;
   morning(c);

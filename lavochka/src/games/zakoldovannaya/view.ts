@@ -19,6 +19,7 @@ import { Music, moodOf } from './ui/music';
 import { PlanView } from './ui/plan';
 import { openSaveDialog } from './ui/saves';
 import { openSheet } from './ui/sheet';
+import { Narrator, openVoiceDialog } from './ui/tts';
 import { siteTitle } from './world';
 
 export function createView(): GameView<View, Ev> {
@@ -36,6 +37,7 @@ export function createView(): GameView<View, Ev> {
   let combat: CombatView;
   let create: CreateView;
   const music = new Music();
+  const voice = new Narrator();
   let v: View | null = null;
   let interactive: number[] = [];
   let toAct: number[] = [];
@@ -66,7 +68,7 @@ export function createView(): GameView<View, Ev> {
     // шапка книги
     const where = v.phase === 'create' ? 'Оформление героев' : v.where.k === 'site' ? siteTitle(v as never, v.where.site) : v.world.night ? 'Ночь в пути' : 'В пути';
     head.innerHTML = `<div class="zs-where"><b>${esc(where)}</b><span>день ${v.world.day}${v.world.night ? ' · ночь' : ''}</span></div>
-      <div class="zs-tools"><button data-t="look" title="Вид: цветной / как в 1990-м">${look() === 'color' ? '🎨' : '📰'}</button><button data-t="music" title="Музыка">${music.on() ? '🎵' : '🔇'}</button><button data-t="save" title="Сохранить">💾</button>${ctx.mySeats.includes(GM) ? '<button data-t="gm" title="Пульт ведущего">📜</button>' : ''}</div>`;
+      <div class="zs-tools"><button data-t="look" title="Вид: цветной / как в 1990-м">${look() === 'color' ? '🎨' : '📰'}</button><button data-t="music" title="Музыка">${music.on() ? '🎵' : '🔇'}</button><button data-t="voice" title="Голос ведущего: читать рассказ вслух">${voice.on() ? '🗣' : '🤐'}</button><button data-t="save" title="Сохранить">💾</button>${ctx.mySeats.includes(GM) ? '<button data-t="gm" title="Пульт ведущего">📜</button>' : ''}</div>`;
     head.querySelectorAll<HTMLButtonElement>('[data-t]').forEach((b) => {
       b.onclick = () => {
         const t = b.dataset.t;
@@ -76,6 +78,7 @@ export function createView(): GameView<View, Ev> {
         } else if (t === 'music') music.toggle();
         else if (t === 'gm') gmBox.hidden = !gmBox.hidden;
         else if (t === 'save') openSaveDialog(root);
+        else if (t === 'voice') openVoiceDialog(root, voice, render);
         render();
       };
     });
@@ -87,7 +90,10 @@ export function createView(): GameView<View, Ev> {
     renderFeed(feed, v, nameOf);
     renderActions(acts, v, ctx.demo ? [] : interactive, act, nameOf, { sheet: () => {}, gm: () => {} });
     if (ctx.mySeats.includes(GM) && !gmBox.hidden) gmPanel(gmBox, v, act);
-    if (!ctx.demo) music.set(moodOf(v));
+    if (!ctx.demo) {
+      music.set(moodOf(v));
+      voice.feed(v.story);
+    }
   }
 
   function rebuildPlan(): PlanView {
@@ -176,6 +182,7 @@ export function createView(): GameView<View, Ev> {
     },
     destroy() {
       music.stop();
+      voice.stop();
     },
   };
 }

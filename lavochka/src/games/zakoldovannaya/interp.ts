@@ -33,6 +33,16 @@ export function stepAt(sc: Scene, path: Path): any {
   return x;
 }
 
+/** Сыграть кусок сцены с указанного места (отложенные «в первую ночь»). */
+export function startSceneAt(c: Ctx, key: string, path: Path, subj?: number): boolean {
+  const sc = sceneByKey(key, c.s.mode, c.s.custom);
+  if (!sc || !stepsAt(sc, path).length) return false;
+  c.s.scene = { key, stack: [{ path, i: 0, ...(subj != null ? { subj } : {}) }], ended: 'repeat' };
+  c.s.phase = 'scene';
+  run(c);
+  return true;
+}
+
 export function startScene(c: Ctx, key: string, subj?: number): boolean {
   const sc = sceneByKey(key, c.s.mode, c.s.custom);
   if (!sc) return false;
@@ -111,6 +121,10 @@ function exec(c: Ctx, sc: Scene, step: Step, path: Path, fr: Frame): void {
     const ok = evalCond(c, step.if, subj);
     if (ok) push(c, [...path, 'then'], subj);
     else if (step.else) push(c, [...path, 'else'], subj);
+    return;
+  }
+  if ('later' in step) {
+    (c.s.world.later ??= []).push({ key: c.s.scene!.key, path: [...path, 'do'], ...(subj != null ? { subj } : {}) });
     return;
   }
   if ('each' in step) {

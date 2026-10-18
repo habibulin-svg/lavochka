@@ -75,12 +75,19 @@ export class CombatView {
     const b = (label: string, a: Parameters<Act>[1], cls = '', title = '') => {
       const x = document.createElement('button');
       x.className = `btn ${cls}`;
+      if (cls === 'primary') x.dataset.tap = '';
       x.innerHTML = label;
       if (title) x.title = title;
       x.onclick = () => act(h.seat, a);
       row.append(x);
     };
-    if (cm.phase === 'init') {
+    const st = cm.strike?.seat === h.seat ? cm.strike : undefined;
+    if (st) {
+      const f = cm.foes.find((x) => x.uid === st.uid);
+      const dmg = st.atk.dmg;
+      if (st.stage === 'dmg') b(`🎲 Бросить урон — ${esc(f?.name ?? '')} <small>(${dmg[0]}–${dmg[dmg.length - 1]}${st.atk.extra ? ` +${st.atk.extra}` : ''})</small>`, { t: 'strike' }, 'primary');
+      else b(`🎲 ${st.atk.missile ? 'Следующая стрела' : 'Следующий удар'} — ${esc(f?.name ?? '')} <small>(осталось ${st.left})</small>`, { t: 'strike' }, 'primary');
+    } else if (cm.phase === 'init') {
       b('🎲 Кто бьёт первым — бросить d6', { t: 'init' }, 'primary');
       if (h.spells.some((s) => s.id === 'iniciativa' && (s.left ?? 1) > 0)) b('✨ «Инициатива»', { t: 'init', spell: true });
     } else if (cm.phase === 'saves') {

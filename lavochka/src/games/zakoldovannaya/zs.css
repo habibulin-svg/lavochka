@@ -198,3 +198,11 @@
 .rules-table td, .rules-table th { border: 1px solid #9a8a6a; padding: 2px 6px; text-align: center; }
 
 .zs-root.night .zs-map-board { filter: brightness(.62) saturate(.8) hue-rotate(-12deg); transition: filter 1.2s; }
+.zs-tts { position: relative; max-width: 560px; }
+.zs-tts .zs-tts-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.zs-tts select { max-width: 100%; flex: 1; min-width: 0; }
+.zs-tts .zs-tts-warn { color: #8a1f1f; }
+.zs-tts h4 { margin: 14px 0 4px; font: 16px 'Ruslan Display', serif; }
+.zs-tts details { margin: 4px 0; }
+.zs-tts summary { cursor: pointer; font-weight: bold; }
+.zs-tts code { font-size: 12px; word-break: break-all; }

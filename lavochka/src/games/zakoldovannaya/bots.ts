@@ -7,6 +7,7 @@ import type { Action, View } from './engine';
 import { autoCreate } from './engine';
 import { meleeAttack, missileAttacks, type Hero } from './hero';
 import { spellsOfLevel } from './heroact';
+import { MONSTER, special } from './monsters';
 import { GM } from './state';
 import { ADJ, MAP, nodeOfSite, planOf, route } from './world';
 
@@ -86,8 +87,24 @@ function combatBot(v: View, h: Hero, level: number, rng: Rng): Action {
   const cm = v.combat!;
   if (cm.phase === 'init') return { t: 'init' };
   if (cm.phase === 'saves') return { t: 'save' };
-  const foes = cm.foes.filter((f) => !f.dead && !f.fled);
-  if (!foes.length) return { t: 'pass' };
+  if (cm.strike?.seat === h.seat) return { t: 'strike' };
+  const all = cm.foes.filter((f) => !f.dead && !f.fled);
+  if (!all.length) return { t: 'pass' };
+  // оружие не берёт (только заклинанием, неуязвим к мечу/топору) — таких не бьём; одни такие — уходим
+  const wid = meleeAttack(h).id;
+  const foes = all.filter((f) => {
+    const m = MONSTER[f.m];
+    if (special(m, 'spellOnly')) return false;
+    const im = special(m, 'weaponImmune');
+    return !im?.weapons?.some((w) => (w.includes('меч') && /sword/.test(wid)) || (w.includes('топор') && /axe/.test(wid)));
+  });
+  if (!foes.length) {
+    const sp = h.spells.find((s) => /^(kill|escape|repel|fear|fireball)/.test(SPELL[s.id]?.kind ?? '') && (s.left ?? 1) > 0);
+    if (sp) return { t: 'cast', id: sp.id, target: all[0].uid };
+    const shootable = all.find((f) => !special(MONSTER[f.m], 'spellOnly'));
+    if (shootable && missileAttacks(h).length) return { t: 'shoot', i: 0, target: shootable.uid };
+    return cm.noFlee || cm.phase === 'volley' ? { t: 'pass' } : { t: 'flee' };
+  }
   // слабейший (по ранам) — добить
   const target = level >= 1 ? [...foes].sort((a, b) => b.hurt - a.hurt || (a.hp ?? 0) - (b.hp ?? 0))[0] : foes[rng.int(foes.length)];
   const miss = missileAttacks(h);

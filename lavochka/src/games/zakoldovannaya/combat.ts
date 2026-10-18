@@ -155,28 +155,53 @@ function endSide(c: Ctx): void {
 
 // ---------- удары героев
 
+/** Герой начинает удар (выстрел): этот щелчок — его бросок на попадание. Урон и следующие стрелы — отдельными
+ * бросками героя (strikeNext). Вернёт false — нельзя; иначе удар начат (он может сразу и закончиться). */
 export function heroAttack(c: Ctx, h: Hero, atk: Attack, uid: number): boolean {
   const cb = c.s.combat!;
   const f = cb.foes.find((x) => x.uid === uid && !x.dead && !x.fled && !x.gone);
-  if (!f) return false;
-  const b = cb.buffs[h.seat];
-  const need = heroNeed(h, atk, foeKd(f), b);
-  const m = MONSTER[f.m];
+  if (!f || cb.strike) return false;
+  if (heroNeed(h, atk, foeKd(f), cb.buffs[h.seat]) == null) {
+    sys(c, `${h.name}: ${f.name} — убиваем только заклинанием.`);
+    return true;
+  }
   if (atk.ammo) {
     const it = h.items.find((x) => x.id === atk.ammo);
     if (it) removeItem(h, atk.ammo, 1);
   }
-  for (let shot = 0; shot < atk.shots; shot++) {
-    if (f.dead || f.fled) break;
-    if (need == null) {
-      sys(c, `${h.name}: ${f.name} — убиваем только заклинанием.`);
-      return true;
-    }
+  cb.strike = { seat: h.seat, uid, atk, left: atk.shots, stage: 'hit' };
+  strikeNext(c, h);
+  return true;
+}
+
+/** Ждёт ли бой следующего броска этого героя (урон или ещё стрела). */
+export const striking = (c: Ctx, seat: number) => c.s.combat?.strike?.seat === seat;
+
+/** Следующий бросок удара: на попадание или на урон. */
+export function strikeNext(c: Ctx, h: Hero): boolean {
+  const cb = c.s.combat;
+  const st = cb?.strike;
+  if (!cb || !st || st.seat !== h.seat) return false;
+  const f = cb.foes.find((x) => x.uid === st.uid);
+  const atk = st.atk;
+  const over = () => {
+    st.left--;
+    if (st.left > 0 && f && !f.dead && !f.fled && !f.gone) st.stage = 'hit';
+    else delete cb.strike;
+  };
+  if (!f || f.dead || f.fled || f.gone) {
+    delete cb.strike;
+    return true;
+  }
+  const m = MONSTER[f.m];
+  if (st.stage === 'hit') {
+    const need = heroNeed(h, atk, foeKd(f), cb.buffs[h.seat]) ?? 18;
     const r = rollMain(c, h.seat, `${h.name}: ${atk.missile ? 'выстрел' : 'удар'} — ${f.name}`, need);
     if (!r.ok) {
       c.ev.push({ k: 'miss', from: h.name, to: f.name });
       sys(c, `${h.name} промахивается (${r.v}, нужно ${need}+).`);
-      continue;
+      over();
+      return true;
     }
     if (f.asleep) {
       f.sleepHits = (f.sleepHits ?? 0) + 1;
@@ -185,36 +210,53 @@ export function heroAttack(c: Ctx, h: Hero, atk: Attack, uid: number): boolean {
         say(c, `${f.name} просыпается!`);
       }
     }
-    // сразить серебром / колом
+    // сразить серебром
     const silver = special(m, 'silver');
     if (silver?.on && atk.id === 'dagger_silver' && r.v >= silver.on) {
       sys(c, `Серебряный кинжал сражает оборотня (${r.v}).`);
       killFoe(c, f, h.seat);
-      continue;
+      over();
+      return true;
     }
     if (special(m, 'spellOnly')) {
       sys(c, `${f.name}: оружие не берёт — убиваем только заклинанием.`);
-      continue;
+      over();
+      return true;
     }
     const immune = special(m, 'weaponImmune');
     if (immune?.weapons?.some((w) => (w.includes('меч') && /sword/.test(atk.id)) || (w.includes('топор') && /axe/.test(atk.id)))) {
       sys(c, `${atk.name} против ${f.name.toLowerCase()} бессилен.`);
-      continue;
-    }
-    let dmg = pick(atk.dmg, c.rng).v + atk.extra + (h.cls ? CLASSES[h.cls].dmgBonus : 0);
-    const gb = special(m, 'goldBonus');
-    if (gb?.bonus && /gold/.test(atk.id)) dmg += gb.bonus;
-    const sb = special(m, 'silverBonus');
-    if (sb?.bonus && /silver/.test(atk.id)) dmg += sb.bonus;
-    if (f.m === 'chelyust' && atk.id === 'spear') dmg += 2;
-    hitFoe(c, f, dmg, h.seat, h.name);
-    if (cb.untilHit) {
-      say(c, 'После первого же попадания противники исчезают.');
-      for (const x of cb.foes) x.gone = true;
+      over();
       return true;
     }
+    sys(c, `${h.name} попадает (${r.v}) — бросок на урон.`);
+    st.stage = 'dmg';
+    return true;
   }
+  // урон
+  const p = pick(atk.dmg, c.rng);
+  rollEv(c, h.seat, `${h.name}: урон — ${f.name}`, p);
+  let dmg = p.v + atk.extra + (h.cls ? CLASSES[h.cls].dmgBonus : 0);
+  const gb = special(m, 'goldBonus');
+  if (gb?.bonus && /gold/.test(atk.id)) dmg += gb.bonus;
+  const sb = special(m, 'silverBonus');
+  if (sb?.bonus && /silver/.test(atk.id)) dmg += sb.bonus;
+  if (f.m === 'chelyust' && atk.id === 'spear') dmg += 2;
+  hitFoe(c, f, dmg, h.seat, h.name);
+  if (cb.untilHit) {
+    say(c, 'После первого же попадания противники исчезают.');
+    for (const x of cb.foes) x.gone = true;
+    delete cb.strike;
+    return true;
+  }
+  over();
   return true;
+}
+
+/** Показать на экране бросок из pick (d6, d3 или основной). */
+function rollEv(c: Ctx, seat: number, label: string, p: { v: number; die: string; face: number }): void {
+  if (p.die === 'd6' || p.die === 'd3') c.ev.push({ k: 'roll', seat, label, dice: [{ die: p.die, face: p.face }], v: p.v });
+  else if (p.die === '3d') c.ev.push({ k: 'roll', seat, label, dice: [{ die: 'd3', face: Math.floor((p.face - 1) / 6) + 1 }, { die: 'd6', face: ((p.face - 1) % 6) + 1 }], v: p.v });
 }
 
 function hitFoe(c: Ctx, f: FoeInst, dmg: number, by: number, byName: string): void {
@@ -386,6 +428,12 @@ function foeStrike(c: Ctx, f: FoeInst, a: FoeInst['attacks'][number], t: Target)
     sys(c, `${f.name} не может достать ${tName}.`);
     return;
   }
+  // порча кувшина: герой без чувств — противник раз попадает точно
+  if (t.kind === 'hero' && t.h.stunNext) {
+    delete t.h.stunNext;
+    say(c, `${t.h.name} вдруг падает без чувств — ${f.name} бьёт наверняка!`);
+    need = 1;
+  }
   const r = mainRoll(c.rng);
   c.ev.push({ k: 'roll', seat: GM, label: `${f.name} → ${tName}${a.name ? ` (${a.name})` : ''}`, dice: [{ die: 'd3', face: Math.floor((r.v - 1) / 6) + 1 }, { die: 'd6', face: ((r.v - 1) % 6) + 1 }], v: r.v, need, ok: r.v >= need });
   if (r.v < need) {
@@ -398,6 +446,11 @@ function foeStrike(c: Ctx, f: FoeInst, a: FoeInst['attacks'][number], t: Target)
     return;
   }
   const h = t.h;
+  if (h.wardFirst) {
+    delete h.wardFirst;
+    say(c, `${f.name} попадает в ${h.name} — но удар соскальзывает: оберег волшебной воды!`);
+    return;
+  }
   if (cb.capture) {
     if (!cb.bound.includes(h.seat)) cb.bound.push(h.seat);
     say(c, `${h.name} схвачен и связан.`);
@@ -499,7 +552,7 @@ export function combatSave(c: Ctx, seat: number): boolean {
     else if (sv.fail === 'stone') {
       h.stone = true;
       story(c, { k: 'sys', text: `🗿 ${h.name} окаменел.` });
-    } else hurt(c, h, mainRoll(c.rng).v, sv.label.replace('БУ: ', ''));
+    } else hurt(c, h, rollMain(c, GM, `${sv.label.replace('БУ: ', '')}: сколько ОР`).v, sv.label.replace('БУ: ', ''));
   }
   cb.queue = [...new Set(cb.saves.map((s) => s.seat))].filter((s) => alive(hero(c, s)!));
   cb.saves = cb.saves.filter((s) => alive(hero(c, s.seat)!));
@@ -670,7 +723,7 @@ export function castInCombat(c: Ctx, h: Hero, id: string, target?: number): bool
     case 'fireball':
     case 'blind': {
       use();
-      const n = kind === 'fear' ? Number(a) : kind === 'fireball' ? mainRoll(c.rng).v : 10;
+      const n = kind === 'fear' ? Number(a) : kind === 'fireball' ? rollMain(c, h.seat, `${h.name}: «${sp.name}» — сколько опасностей накроет`).v : 10;
       for (const f of activeFoes(cb).slice(0, n)) {
         if (foeSaves(f)) continue;
         if (kind === 'fear') f.gone = true;
