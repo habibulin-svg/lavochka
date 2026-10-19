@@ -3,7 +3,7 @@
 import { SITE_URL } from './routes';
 
 /** Номер счётчика из metrika.yandex.ru (0 — Метрика выключена). */
-export const YM_ID = 0;
+export const YM_ID = 113675275;
 
 type Ym = ((id: number, method: string, ...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
 const w = window as unknown as { ym?: Ym };
@@ -17,9 +17,9 @@ export function startMetrika() {
   w.ym = ym;
   const s = document.createElement('script');
   s.async = true;
-  s.src = 'https://mc.yandex.ru/metrika/tag.js';
+  s.src = 'https://mc.yandex.ru/metrika/tag.js?id=' + YM_ID;
   document.head.appendChild(s);
-  ym(YM_ID, 'init', { defer: true, clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
+  ym(YM_ID, 'init', { ssr: true, defer: true, clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
   metrikaHit();
 }
 
