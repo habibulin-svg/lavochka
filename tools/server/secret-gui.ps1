@@ -13,8 +13,11 @@ $keys = @(
   @{ n = 'VK_CLIENT_SECRET';     f = $main;   d = 'VK ID — защищённый ключ' },
   @{ n = 'VK_SERVICE_KEY';       f = $main;   d = 'VK ID — сервисный ключ доступа' },
   @{ n = 'UNISENDER_API_KEY';    f = $main;   d = 'Unisender Go — API-ключ' },
-  @{ n = 'CP_PUBLIC_ID';         f = $main;   d = 'CloudPayments — Public ID' },
-  @{ n = 'CP_API_SECRET';        f = $main;   d = 'CloudPayments — пароль для API' },
+  @{ n = 'ROBOKASSA_LOGIN';      f = $main;   d = 'Robokassa — идентификатор магазина (lavochka-games)' },
+  @{ n = 'ROBOKASSA_PASS1';      f = $main;   d = 'Robokassa — Пароль #1 (в тесте — тестовый)' },
+  @{ n = 'ROBOKASSA_PASS2';      f = $main;   d = 'Robokassa — Пароль #2 (в тесте — тестовый)' },
+  @{ n = 'ROBOKASSA_HASH';       f = $main;   d = 'Robokassa — алгоритм хеша: md5 или sha256' },
+  @{ n = 'ROBOKASSA_TEST';       f = $main;   d = 'Robokassa — тестовый режим: 1 — тест, 0 — боевой' },
   @{ n = 'YADISK_TOKEN';         f = $backup; d = 'Яндекс Диск — токен (бэкапы)' }
 )
 
