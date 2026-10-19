@@ -290,11 +290,12 @@ export const yard = {
           </div>
         </header>
         <div class="yard-spacer"></div>
-        <form class="search-form" role="search" action="/poisk/"><input type="search" name="q" placeholder="${esc(SEARCH_HINT)}" autocomplete="off" spellcheck="false" aria-label="Поиск игры"></form>
-        <div class="cats-row"><nav class="cats"></nav>
+        <div class="search-row">
+          <form class="search-form" role="search" action="/poisk/"><input type="search" name="q" placeholder="${esc(SEARCH_HINT)}" autocomplete="off" spellcheck="false" aria-label="Поиск игры"></form>
           <label class="yard-sort" title="Порядок карточек"><span>Порядок:</span><select>
             <option value="">как обычно</option><option value="new">сначала новые</option><option value="popular">популярные</option>
           </select></label></div>
+        <nav class="cats"></nav>
         <div class="cards"></div>
         <footer class="yard-foot">Играть можно за одним экраном, с ботами или с друзьями по коду комнаты.</footer>
       </div>
