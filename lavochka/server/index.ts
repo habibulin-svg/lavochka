@@ -326,6 +326,11 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
 
 const server = createServer((req, res) => {
   const path = (req.url || '/').split('?')[0];
+  // старый адрес на Render — насовсем на свой домен (проверку здоровья Render оставляем)
+  if (/\.onrender\.com$/i.test(String(req.headers.host || '').split(':')[0]) && path !== '/api/health') {
+    res.writeHead(301, { location: 'https://lavochka-games.ru' + (req.url || '/') });
+    return res.end();
+  }
   if (path.startsWith('/api/')) {
     api(req, res, path).catch(() => json(res, 500, { error: 'internal' }));
     return;
