@@ -5,7 +5,7 @@
 # Сборка не удалась — откатываемся на прежний коммит и собираем его, чтобы сайт не остался без dist/.
 set -e
 cd /srv/lavochka/app
-PREV=$(git rev-parse HEAD)
+PREV=$(sudo -u lavochka git rev-parse HEAD)
 sudo -u lavochka git pull -q --ff-only
 cd lavochka
 build() {
