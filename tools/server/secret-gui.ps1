@@ -11,6 +11,7 @@ $keys = @(
   @{ n = 'YANDEX_CLIENT_SECRET'; f = $main;   d = 'Яндекс ID — Client secret' },
   @{ n = 'VK_APP_ID';            f = $main;   d = 'VK ID — ID приложения' },
   @{ n = 'VK_CLIENT_SECRET';     f = $main;   d = 'VK ID — защищённый ключ' },
+  @{ n = 'VK_SERVICE_KEY';       f = $main;   d = 'VK ID — сервисный ключ доступа' },
   @{ n = 'UNISENDER_API_KEY';    f = $main;   d = 'Unisender Go — API-ключ' },
   @{ n = 'CP_PUBLIC_ID';         f = $main;   d = 'CloudPayments — Public ID' },
   @{ n = 'CP_API_SECRET';        f = $main;   d = 'CloudPayments — пароль для API' },
