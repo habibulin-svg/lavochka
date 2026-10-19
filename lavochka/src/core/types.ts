@@ -1,4 +1,5 @@
 /* Общие типы сборника. Всё в этом файле — без DOM: движки игр работают и в браузере, и на сервере. */
+import type { RecordsDef } from './records';
 
 export type SeatKind = 'human' | 'bot' | 'remote';
 
@@ -165,4 +166,6 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   showcase?(): S;
   /** Игра в реальном времени: apply не используется, комната гоняет tick. */
   realtime?: RealtimeDef<S, any, E, V>;
+  /** Таблицы рекордов (одиночные партии): что и как сравнивать. Сервер переигрывает запись партии этим же def. */
+  records?: RecordsDef<S>;
 }

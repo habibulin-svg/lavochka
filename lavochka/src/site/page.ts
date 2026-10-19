@@ -52,5 +52,15 @@ export async function attachSeo(host: Element | null, path = location.pathname):
   // карточки страницы двора уже показывает сам двор — в тексте они для поисковика и для чтения без скриптов
   if (host.closest('[data-screen=yard]')) el.querySelectorAll('.seo-cards[data-yard]').forEach((c) => c.remove());
   host.appendChild(el);
+  // рекорды: сервер вписал свежие строками для поисковика, в браузере — живая таблица с разделами
+  el.querySelectorAll<HTMLElement>('.seo-records[data-records]').forEach((sec) => {
+    const game = sec.dataset.records!;
+    void import('../core/records-ui').then(({ recordsBox }) => {
+      const head = sec.querySelector('h2');
+      sec.innerHTML = '';
+      if (head) sec.appendChild(head);
+      sec.appendChild(recordsBox(game, { rows: 10 }));
+    });
+  });
   return true;
 }

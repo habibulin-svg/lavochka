@@ -1,7 +1,8 @@
 /* «Сапёр» — как в Windows: Новичок / Любитель / Профессионал / Особое поле, флажки и «?», щелчок по числу.
  * Вариации: поле-тор, соседи ходом коня, первая клетка — поляна или поле без угадывания; режимы «наперегонки» и «охота на мины». */
 import { SeededRng } from '../../core/rng';
-import type { DemoScript, GameDef, Rng, SeatSpec } from '../../core/types';
+import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { choose } from './bot';
 import { apply, MODE_LABEL, nbrOf, preArm, result, setup, SIZES, toAct, view, type Action, type Event, type State } from './engine';
 import { deduceAll } from './solver';
@@ -95,6 +96,16 @@ function flagsSteps(s: State): Step[] {
   ];
 }
 
+/** Таблица рекордов: поле и правила первой клетки, тор, ход конём (своё поле — без рекордов). */
+function recTable(o: Options): RecordTable | null {
+  const sz = SIZES[String(o.size)];
+  if (o.mode !== 'solo' || !sz) return null;
+  const start = o.start === 'noguess' ? 'ng' : o.start === 'zero' ? 'z' : '';
+  const id = [o.size, start, o.torus ? 't' : '', o.knight ? 'k' : ''].filter(Boolean).join('.');
+  const extra = [o.start === 'noguess' ? 'без угадывания' : o.start === 'zero' ? 'с поляны' : '', o.torus ? 'тор' : '', o.knight ? 'ход конём' : ''].filter(Boolean);
+  return { id, label: [sz.label, ...extra].join(', ') };
+}
+
 export const def: GameDef<State, Action, Event, State> = {
   id: 'saper',
   title: 'Сапёр',
@@ -159,6 +170,14 @@ export const def: GameDef<State, Action, Event, State> = {
   result,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
   describe,
+  records: {
+    columns: [{ key: 'ms', label: 'Время', sort: 'asc', format: 'time' }],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    // время — от первого щелчка до последней клетки, как на табло
+    score: (s) => (s.cfg.mode === 'solo' && s.boards[0]?.st === 'won' ? { values: { ms: s.boards[0].t1 - s.boards[0].t0 } } : null),
+    minMs: () => 300,
+  },
 
   // превью: «Профессионал» посреди партии — поляны, числа и флажки
   showcase: () => {

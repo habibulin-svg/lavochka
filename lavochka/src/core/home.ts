@@ -1,5 +1,6 @@
 /* Экран игры: правила, продолжение, настройка мест и вариантов правил, запуск. */
 import { Sound } from './audio';
+import { openRecords } from './records-ui';
 import { openRules, defaultOptions } from './rules';
 import { dropSave, hostGame, loadSave, startLocal } from './session';
 import { settings, store } from './settings';
@@ -57,7 +58,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     <header class="home-top">
       <button class="btn back" data-a="back">← Во двор</button>
       <div class="home-title"><h1>${esc(def.title)}</h1><p>${def.rules.goal}</p></div>
-      <button class="btn" data-a="rules">Правила и показ</button>
+      <div class="home-top-btns">${def.records ? '<button class="btn" data-a="records">🏆 Рекорды</button>' : ''}<button class="btn" data-a="rules">Правила и показ</button></div>
     </header>
     <div class="home-cols">
       <div class="sheet home-card">
@@ -94,6 +95,15 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     }).observe(document.body, { childList: true });
   };
   q('[data-a=rules]').onclick = showRules;
+  const recBtn = el.querySelector('[data-a=records]') as HTMLElement | null;
+  if (recBtn && def.records) {
+    const rec = def.records;
+    recBtn.onclick = () => {
+      Sound.ui();
+      const t = rec.table(draft.options);
+      openRecords(def.id, def.title, { table: t?.id, label: t?.label, columns: rec.columns });
+    };
+  }
 
   // ---------- продолжение сохранённой партии
   const resume = q('.resume');

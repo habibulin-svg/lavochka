@@ -1,5 +1,6 @@
 /* «2048» — одна карточка: поле 3 × 3 … 6 × 6, цель 2048 (или другая, или без конца), камни, отмена хода; вдвоём и больше — наперегонки. */
-import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
+import type { DemoScript, GameDef, Options, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { choose } from './bot';
 import { apply, DIR_NAME, result, setup, toAct, view, type Action, type Event, type State } from './engine';
 
@@ -45,6 +46,14 @@ function demo(cells: number[], options: Record<string, number | boolean>, steps:
   };
 }
 
+/** Таблица рекордов: размер поля, цель, камни. Партии с отменой хода — в свою таблицу «с подсказками». */
+function recTable(o: Options): RecordTable | null {
+  const n = Number(o.n) || 4;
+  const t = Number(o.target) || 0;
+  const k = Number(o.stones) || 0;
+  return { id: `${n}x${n}.${t || 'inf'}${k ? `.s${k}` : ''}`, label: `${n} × ${n}, ${t ? `до ${t}` : 'без конца'}${k ? `, камней: ${k}` : ''}` };
+}
+
 export const def: GameDef<State, Action, Event, State> = {
   id: 'g2048',
   title: '2048',
@@ -83,6 +92,20 @@ export const def: GameDef<State, Action, Event, State> = {
   view,
   result,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
+  records: {
+    columns: [
+      { key: 'score', label: 'Очки', sort: 'desc', format: 'score' },
+      { key: 'top', label: 'Плитка', sort: 'desc', format: 'score' },
+    ],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    score: (s, { actions }) => {
+      const b = s.boards[0];
+      if (!b || b.score <= 0) return null;
+      return { values: { score: b.score, top: b.top }, help: actions.some((a) => (a as Action).type === 'undo') };
+    },
+    help: true,
+  },
   describe,
 
   showcase: () => {

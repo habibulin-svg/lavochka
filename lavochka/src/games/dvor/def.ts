@@ -1,6 +1,7 @@
 /* «А у нас во дворе» — дворовая олимпиада головоломок: прятки, классики, казаки-разбойники… — повод для задач.
  * Олимпиада (по этапам) или тренировка одного типа; одному или наперегонки. Без DOM. */
-import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
+import type { DemoScript, GameDef, Options, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { SeededRng } from '../../core/rng';
 import { esc } from '../../core/util';
 import { apply, cfgOf, newState, redact, result, toAct, view, type Action, type Event, type State, type View } from './engine';
@@ -89,6 +90,15 @@ function kindDemo(kind: string, seed: number, intro: string, caps: string[]): De
 
 const KIND_CHOICES = Object.values(KINDS).map((k) => ({ value: k.id, label: k.title }));
 
+const LVL_LABEL: Record<number, string> = { [-1]: 'трудность растёт', 0: 'лёгкие', 1: 'средние', 2: 'трудные' };
+
+/** Таблица рекордов: олимпиада (этапов, трудность) или тренировка (тип задач, сколько, трудность). */
+function recTable(o: Options): RecordTable | null {
+  const c = cfgOf(o);
+  if (c.mode === 'train') return { id: `train.${c.kind}.${c.len}.${c.lvl}`, label: `Тренировка: ${KINDS[c.kind].title}, задач: ${c.len}, ${LVL_LABEL[c.lvl]}` };
+  return { id: `olymp.${c.len}.${c.lvl}`, label: `Олимпиада: этапов ${c.len}, ${LVL_LABEL[c.lvl]}` };
+}
+
 export const def: GameDef<State, Action, Event, View> = {
   id: 'dvor',
   title: 'А у нас во дворе',
@@ -158,6 +168,20 @@ export const def: GameDef<State, Action, Event, View> = {
   result,
   describe,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: botChoose },
+  records: {
+    columns: [
+      { key: 'score', label: 'Очки', sort: 'desc', format: 'score' },
+      { key: 'ms', label: 'Время', sort: 'asc', format: 'time' },
+    ],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    // подсказки и ошибки уже снимают очки — отдельной таблицы не нужно
+    score: (s, { ms }) => {
+      const b = s.boards[s.seats[0]];
+      return b && b.score > 0 ? { values: { score: b.score, ms } } : null;
+    },
+    minMs: () => 5000,
+  },
   showcase() {
     // «Кто где» с открытыми подсказками: видно рукописную сетку с галочками
     let s = newState(cfgOf({ mode: 'olymp', stages: 2, lvl: 0 }), [0], new SeededRng(2026));

@@ -1,9 +1,10 @@
 /* «Головоломки» — одна карточка: судоку, пикросс, кроссворд, сканворд. Решают вместе: все вписывают в одну сетку.
  * Без DOM. Движок — engine.ts, генераторы — sudoku.ts / picross.ts / crossword.ts / scanword.ts, боты-помощники — bot.ts.
  * Кроссворду и сканворду нужна база вопросов (words/clues.ts) — её грузит defs.ts / каталог до начала партии. */
-import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
+import type { DemoScript, GameDef, Options, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { choose } from './bot';
-import { apply, CROSS_SIZES, type Kind, type WordData, KIND_LABEL, newState, PICROSS_LEVELS, PICROSS_SIZES, SCAN_SIZES, setup, SUDOKU_LEVELS, toAct, view, WORD_LEVELS, type Action, type Event, type State } from './engine';
+import { apply, paramsOf, CROSS_SIZES, type Kind, type WordData, KIND_LABEL, newState, PICROSS_LEVELS, PICROSS_SIZES, SCAN_SIZES, setup, SUDOKU_LEVELS, toAct, view, WORD_LEVELS, type Action, type Event, type State } from './engine';
 
 export const SEATS = [
   { name: 'Вовка', color: '#c0281e', light: '#e86a5a', dark: '#7a140e' },
@@ -79,6 +80,14 @@ function picrossSteps(s: State) {
   ];
 }
 
+/** Таблица рекордов: вид головоломки, размер, сложность. */
+function recTable(o: Options): RecordTable | null {
+  const { kind, level, size } = paramsOf(o);
+  const sizeLabel = kind === 'crossword' ? CROSS_SIZES[size].label : kind === 'scanword' ? SCAN_SIZES[size].label : kind === 'picross' ? size.replace('x', ' × ') : '';
+  const lv = (kind === 'sudoku' ? SUDOKU_LEVELS : kind === 'picross' ? PICROSS_LEVELS : WORD_LEVELS)[level - 1];
+  return { id: `${kind}.${size}.${level}`, label: [KIND_LABEL[kind], sizeLabel, lv.toLowerCase()].filter(Boolean).join(', ') };
+}
+
 export const def: GameDef<State, Action, Event, State> = {
   id: 'puzzles',
   title: 'Кроссворды и судоку',
@@ -133,6 +142,19 @@ export const def: GameDef<State, Action, Event, State> = {
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
   describe,
+  records: {
+    columns: [{ key: 'ms', label: 'Время', sort: 'asc', format: 'time' }],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    // продолженная из сохранения (уже вписанное) — не рекорд; подсказка, проверка или известный сид — «с подсказками»
+    score: (s, { ms, actions, opts }) => {
+      if (!s.done || typeof opts.fill === 'string') return null;
+      const help = Number(opts.seed) > 0 || actions.some((a) => (a as Action).type === 'hint' || (a as Action).type === 'check');
+      return { values: { ms }, help };
+    },
+    minMs: () => 10_000,
+    help: true,
+  },
 
   // превью: сканворд с картинкой, наполовину решённый двумя игроками
   showcase: () => {

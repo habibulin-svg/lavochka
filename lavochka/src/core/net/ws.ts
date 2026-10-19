@@ -84,26 +84,3 @@ export async function wsJoin(code: string) {
   const { link } = await handshake(ws, { t: 'join', code: code.trim().toUpperCase() });
   return link;
 }
-
-/** Таблица рекордов на сервере. Без сервера — пустой список. */
-export async function fetchRecords(game: string): Promise<{ name: string; score: number; at: number }[]> {
-  try {
-    const r = await fetch(serverBase() + '/api/records/' + encodeURIComponent(game));
-    if (!r.ok) return [];
-    return await r.json();
-  } catch {
-    return [];
-  }
-}
-
-export async function postRecord(game: string, name: string, score: number) {
-  try {
-    await fetch(serverBase() + '/api/records/' + encodeURIComponent(game), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name, score }),
-    });
-  } catch {
-    /* нет сервера — рекорд остаётся только локальным */
-  }
-}

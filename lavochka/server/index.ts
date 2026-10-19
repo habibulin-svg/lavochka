@@ -1,6 +1,6 @@
 /*
  * Сервер «Вечером на лавочке»: раздаёт собранный сайт (dist/), держит комнаты (WebSocket /ws)
- * и таблицы рекордов (/api/records/:game). Комнаты — тот же код Room, что и в браузере, только партию ведёт сервер.
+ * и таблицы рекордов (/api/records, server/records.ts). Комнаты — тот же код Room, что и в браузере, только партию ведёт сервер.
  *
  *   PORT      — порт (по умолчанию 8787)
  *   DATA_DIR  — куда писать рекорды (по умолчанию ./data)
@@ -19,6 +19,9 @@ import type { Link } from '../src/core/protocol';
 import { Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
+import type { GameDef } from '../src/core/types';
+import { FileRecordStore, mayPost, Records } from './records';
+import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
 import { MOVED, SLUGS } from '../src/site/routes';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -129,30 +132,20 @@ function attach(ws: WebSocket, room: Room): Link {
 
 // ------------------------------------------------------------------ рекорды
 
-interface Rec {
-  name: string;
-  score: number;
-  at: number;
-}
-const RECORDS_FILE = join(DATA, 'records.json');
-let records: Record<string, Rec[]> = {};
-try {
-  records = JSON.parse(readFileSync(RECORDS_FILE, 'utf8'));
-} catch {
-  records = {};
-}
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
-function saveRecords() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      mkdirSync(DATA, { recursive: true });
-      writeFileSync(RECORDS_FILE, JSON.stringify(records));
-    } catch (e) {
-      log('не удалось сохранить рекорды: ' + e);
-    }
-  }, 1000);
-}
+// Хранение, проверка и выдача — server/records.ts; старый records.json аркад переносится при первом запуске.
+const recordStore = new FileRecordStore(DATA, log);
+const recordDefs: Record<string, GameDef> = {};
+const records = new Records(
+  recordStore,
+  recordDefs,
+  Promise.all(RECORD_GAMES.map((id) => DEFS[id]().then((d) => (recordDefs[id] = d)))).catch((e) => log('рекорды: не загрузились игры: ' + e))
+);
+// перезапуск при выкладке: записать рекорды, пришедшие в последнюю секунду
+for (const sig of ['SIGTERM', 'SIGINT'] as const)
+  process.once(sig, () => {
+    recordStore.flush();
+    process.exit(0);
+  });
 
 // ------------------------------------------------------------------ счётчики: онлайн и начатые партии
 // Онлайн — сколько вкладок отметилось за последние 3 минуты (сайт отмечается раз в минуту, пока вкладка видна).
@@ -338,22 +331,37 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     return res.end(JSON.stringify({ iceServers: servers, turn: servers.some((s) => [s.urls].flat().some((u) => /^turns?:/.test(u))) }));
   }
-  const m = path.match(/^\/api\/records\/([\w-]{1,40})$/);
-  if (m) {
-    const game = m[1];
-    if (req.method === 'GET') return json(res, 200, (records[game] || []).slice(0, 20));
+  if (path === '/api/records') {
+    if (req.method === 'GET') {
+      const q = new URL(req.url || '', 'http://x').searchParams;
+      const game = q.get('game') || '';
+      const period = (PERIODS.some((p) => p.id === q.get('period')) ? q.get('period') : 'all') as RecordPeriod;
+      const device = q.get('device') || undefined;
+      const tables = records.tablesOf(game);
+      const table = q.get('table') || tables[0]?.id || '';
+      const r = table ? records.list(game, table, period, device) : null;
+      return json(res, 200, { table, tables, columns: r?.columns ?? [], rows: r?.rows ?? [] });
+    }
     if (req.method === 'POST') {
+      if (!mayPost(clientIp(req))) return json(res, 429, { error: 'often' });
+      try {
+        const r = await records.add(JSON.parse(await readBody(req, 512 * 1024)));
+        return json(res, r.ok ? 200 : 400, r);
+      } catch {
+        return json(res, 400, { error: 'bad body' });
+      }
+    }
+  }
+  // старый адрес аркад (вкладки, открытые до обновления): /api/records/<аркада>-<режим>
+  const m = path.match(/^\/api\/records\/([a-z]\w*)-([\w.-]{1,40})$/);
+  if (m) {
+    if (req.method === 'GET') return json(res, 200, (records.list(m[1], m[2], 'all')?.rows ?? []).map((r) => ({ name: r.name, score: r.values.score, at: r.at })));
+    if (req.method === 'POST') {
+      if (!mayPost(clientIp(req))) return json(res, 429, { error: 'often' });
       try {
         const b = JSON.parse(await readBody(req));
-        const name = String(b.name || '').trim().slice(0, 16) || 'Аноним';
-        const score = Math.floor(Number(b.score));
-        if (!Number.isFinite(score) || score < 0 || score > 1e9) return json(res, 400, { error: 'score' });
-        const list = (records[game] ||= []);
-        list.push({ name, score, at: Date.now() });
-        list.sort((a, c) => c.score - a.score);
-        list.length = Math.min(list.length, 100);
-        saveRecords();
-        return json(res, 200, { ok: true, place: list.findIndex((r) => r.name === name && r.score === score) + 1 });
+        const r = await records.add({ game: m[1], table: m[2], name: b.name, values: { score: Number(b.score) } });
+        return json(res, r.ok ? 200 : 400, r);
       } catch {
         return json(res, 400, { error: 'bad body' });
       }
@@ -411,7 +419,10 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
   const ext = extname(file);
   const immutable = file.includes(join(DIST, 'assets'));
   res.writeHead(status, { 'content-type': MIME[ext] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', ...headers });
-  res.end(readFileSync(file));
+  let body: Buffer | string = readFileSync(file);
+  // страница игры: пререндер оставил место под рекорды — вписываем свежие (живой текст для поисковиков)
+  if (ext === '.html' && body.includes('<!--records:')) body = body.toString('utf8').replace(/<!--records:([a-z]\w*)-->/g, (_, g: string) => records.html(g));
+  res.end(body);
 }
 
 const server = createServer((req, res) => {

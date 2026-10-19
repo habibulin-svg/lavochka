@@ -5,6 +5,7 @@
 import { cardName } from '../../cards/deck';
 import { SeededRng, shuffle } from '../../core/rng';
 import type { DemoScript, DemoStep, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { autoFinish, ctxOf, play, undo, type Board, type Cfg, type Ctx, type GameId, type Move } from './engine';
 import { GAMES, GAME_IDS } from './games';
 import { bestMove, botMove } from './solver';
@@ -77,7 +78,8 @@ export interface View {
   order: number[];
 }
 
-export type Action = Move | { t: 'undo' } | { t: 'auto' } | { t: 'giveup' } | { t: 'think' };
+/** hint — игрок посмотрел подсказку: доска не меняется, но партия идёт в таблицу рекордов «с подсказками». */
+export type Action = Move | { t: 'undo' } | { t: 'auto' } | { t: 'giveup' } | { t: 'think' } | { t: 'hint' };
 
 export type Event =
   | { type: 'move'; seat: number; m: Move }
@@ -190,6 +192,7 @@ function apply(s0: State, seat: number, a: Action): { state: State; events: Even
   const ev: Event[] = [];
   switch (a.t) {
     case 'think':
+    case 'hint':
       b = b0;
       break;
     case 'mv':
@@ -312,6 +315,20 @@ function demo(game: GameId, opts: Options, seed: number, n: number, intro: strin
 
 const opt = (game: GameId) => (o: Options) => o.game === game;
 
+/** Таблица рекордов: пасьянс с правилами, меняющими решаемость, и уровень раздачи. */
+function recTable(o: Options): RecordTable | null {
+  const game = (GAME_IDS.includes(o.game as GameId) ? o.game : 'klondike') as GameId;
+  const c = cfgOf({ ...o, game });
+  const lv = hasLevels(game, c) ? (LEVELS.find((l) => l.id === o.level) ?? LEVELS[0]) : LEVELS[3];
+  const rules: string[] = [];
+  if (game === 'klondike') rules.push(c.draw === 3 ? 'по три' : 'по одной', ...(c.vegas ? ['Вегас'] : c.passes ? [`проходов: ${c.passes}`] : []));
+  if (game === 'spider') rules.push(c.suits === 1 ? 'одна масть' : c.suits === 2 ? 'две масти' : 'четыре масти');
+  if (game === 'freecell') rules.push(`ячеек: ${c.cells}`, ...(c.baker ? ['Бейкер'] : []));
+  if (game === 'pyramid') rules.push(c.passes ? `проходов: ${c.passes}` : 'без ограничения');
+  if ((game === 'tripeaks' || game === 'golf') && c.wrap) rules.push('по кругу');
+  return { id: `${seedKey(game, c)}${c.vegas ? '-vegas' : ''}.${lv.id}`, label: `${GAME_LABEL[game]}${rules.length ? ` (${rules.join(', ')})` : ''}, раздача: ${lv.label.toLowerCase()}` };
+}
+
 export const def: GameDef<State, Action, Event, View> = {
   id: 'solitaire',
   title: 'Пасьянсы',
@@ -370,6 +387,23 @@ export const def: GameDef<State, Action, Event, View> = {
     return seats === 'all' || seats.includes(ev.seat) ? ev : null;
   },
   result,
+  records: {
+    columns: [
+      { key: 'ms', label: 'Время', sort: 'asc', format: 'time' },
+      { key: 'moves', label: 'Ходов', sort: 'asc', format: 'score' },
+    ],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    // отмена, подсказка или заранее заданная раздача («сыграть эту же») — таблица «с подсказками»
+    score: (s, { ms, actions, opts }) => {
+      const b = s.boards[s.seats[0]];
+      if (b?.end !== 1) return null;
+      const help = Number(opts.seed) > 0 || actions.some((a) => (a as Action).t === 'undo' || (a as Action).t === 'hint');
+      return { values: { ms, moves: b.moves }, help };
+    },
+    minMs: () => 5000,
+    help: true,
+  },
   bot: {
     levels: ['Лёгкий', 'Средний', 'Сложный'],
     choose(v, seat, level, rng) {

@@ -65,3 +65,8 @@ body > .seo-page { margin: 24px auto; }
 .post-pic { margin: 12px 0; }
 .post-pic img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
 .post-pic figcaption { font-size: 13px; opacity: 0.7; margin-top: 6px; }
+/* рекорды на странице игры: без скриптов — строки от сервера, со скриптами — таблица из core/records-ui */
+.seo-records { max-width: 640px; }
+.seo-records .rec-list { margin: 0 0 10px; padding-left: 1.6em; }
+.seo-records .rec-list b { margin-left: 8px; }
+.seo-records .recs { color: var(--ink); }

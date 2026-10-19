@@ -1,6 +1,7 @@
 /* «Водопроводчик» — одна карточка: поле 5 × 5 … 15 × 15, тор, крестовины, номер уровня (сид генератора). Вместе — одно поле на всех; наперегонки — у каждого своё. */
 import { SeededRng } from '../../core/rng';
-import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
+import type { DemoScript, GameDef, Options, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { choose } from './bot';
 import { apply, result, rotCCW, rotCW, setup, SIZES, toAct, type Action, type Event, type State } from './engine';
 import { solve } from './solver';
@@ -57,6 +58,12 @@ function demo(options: Record<string, number | boolean | string>, count: number,
 
 const dist = (s: State, i: number) => Math.abs((i % s.cfg.w) - (s.src % s.cfg.w)) + Math.abs(Math.floor(i / s.cfg.w) - Math.floor(s.src / s.cfg.w));
 
+/** Таблица рекордов: размер поля, тор, крестовины (уровни внутри таблицы — разные сети одного размера). */
+function recTable(o: Options): RecordTable | null {
+  const n = Number(o.size) || 7;
+  return { id: `${n}${o.wrap ? '.t' : ''}${o.cross ? '.x' : ''}`, label: `${n} × ${n}${o.wrap ? ', тор' : ''}${o.cross ? ', крестовины' : ''}` };
+}
+
 export const def: GameDef<State, Action, Event, State> = {
   id: 'pipes',
   title: 'Водопроводчик',
@@ -102,6 +109,18 @@ export const def: GameDef<State, Action, Event, State> = {
   result,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
   describe,
+  records: {
+    columns: [
+      { key: 'ms', label: 'Время', sort: 'asc', format: 'time' },
+      { key: 'turns', label: 'Поворотов', sort: 'asc', format: 'score' },
+    ],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    score: (s) => {
+      const b = s.boards[0];
+      return b?.done ? { values: { ms: b.t1 - b.t0, turns: b.turns } } : null;
+    },
+  },
 
   // превью: 7 × 7, сеть почти собрана, вода дошла до половины кранов
   showcase: () => {

@@ -3,6 +3,7 @@
  *  - «Наперегонки» — у каждого своё поле с одинаковыми минами и общей стартовой поляной; кто первым разминирует;
  *  - «Охота на мины» — одно поле, ходят по очереди, найденная мина — очко и ещё ход (как Minesweeper Flags).
  * Мины лежат только в состоянии комнаты: view их не отдаёт, пока поле не кончилось. */
+import { gameNow } from '../../core/clock';
 import type { Options, Rng } from '../../core/types';
 import { countNums, flood, neighbours, solvable } from './solver';
 
@@ -160,7 +161,7 @@ function arm(b: Board, c: Cfg, mine: boolean[], now: number) {
   b.left = c.w * c.h - mine.filter(Boolean).length;
 }
 
-export function setup(seats: number[], o: Options, rng: Rng, now = Date.now()): State {
+export function setup(seats: number[], o: Options, rng: Rng, now = gameNow()): State {
   const c = cfgOf(o);
   const n = c.w * c.h;
   const top = Math.max(4, ...seats) + 1;
@@ -195,7 +196,7 @@ export function setup(seats: number[], o: Options, rng: Rng, now = Date.now()): 
 }
 
 /** Разложить мины заранее, как будто первый щелчок будет в клетку i (показ правил: шаги считаются по известной раскладке). */
-export function preArm(s: State, i: number, rng: Rng, now = Date.now()): State {
+export function preArm(s: State, i: number, rng: Rng, now = gameNow()): State {
   const c = s.cfg;
   const b = cloneBoard(s.boards[0]);
   arm(b, c, placeMines(c, rng, excludeFor(c, i, c.start), i, c.start === 'noguess'), now);
@@ -274,7 +275,7 @@ function openCell(s: State, b: Board, bi: number, seat: number, i: number, ev: E
   }
 }
 
-export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
+export function apply(s0: State, seat: number, a: Action, rng: Rng, now = gameNow()): { state: State; events: Event[] } | null {
   if (s0.done || !s0.seats.includes(seat) || !toAct(s0).includes(seat)) return null;
   const c = s0.cfg;
   const n = c.w * c.h;

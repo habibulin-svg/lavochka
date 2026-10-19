@@ -2,10 +2,11 @@
 import { Sound } from './audio';
 import type { RoomClient } from './client';
 import type { RoomMsg, SeatStatus } from './protocol';
+import { offerBlock, openRecords, type Offer } from './records-ui';
 import { openRules } from './rules';
 import { openSettings } from './settings-ui';
 import { saveSettings, settings } from './settings';
-import type { GameResult } from './types';
+import type { GameResult, Options } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
 import { esc, h, sleep } from './util';
 import type { GameModule, GameView, ViewCtx } from './view';
@@ -23,6 +24,10 @@ export interface TableOpts {
   onLeave(): void;
   /** Переподключиться после обрыва (только для гостя). */
   onReconnect?(): void;
+  /** Локальная партия: итог для таблицы рекордов (если партия одиночная и честно доиграна). */
+  record?(): Offer | null;
+  /** Настройки партии (для таблицы рекордов в меню). */
+  options?(): Options;
 }
 
 type StepMsg = Extract<RoomMsg, { t: 'step' }>;
@@ -608,11 +613,11 @@ export class Table {
     const btns = [{ text: 'В меню', action: () => this.leave() }];
     if (this.o.owner) btns.push({ text: 'Сыграть ещё', primary: true, action: () => this.o.client.restart() } as any);
     else btns.push({ text: 'Ждать реванша', primary: true } as any);
-    modal(
-      `<div class="win-box"><div class="win-chip" style="--c:${look?.color};--d:${look?.dark}"></div>
-       <h2>${r.winners.length > 1 ? 'Победители' : 'Победа!'}</h2><p><b>${names}</b> — ${esc(r.text)}.</p></div>`,
-      btns
-    );
+    const body = h(`<div><div class="win-box"><div class="win-chip" style="--c:${look?.color};--d:${look?.dark}"></div>
+       <h2>${r.winners.length > 1 ? 'Победители' : r.winners.length ? 'Победа!' : 'Партия окончена'}</h2><p>${names ? `<b>${names}</b> — ` : ''}${esc(r.text)}.</p></div></div>`);
+    const offer = this.o.record?.();
+    if (offer) body.appendChild(offerBlock(offer));
+    modal(body, btns, offer ? { cls: 'recs-modal' } : {});
   }
 
   private menu() {
@@ -621,11 +626,20 @@ export class Table {
       `<h2>Пауза</h2><p>${net ? 'Пока вы в меню, партия идёт дальше.' : 'Партия сохраняется автоматически — её можно продолжить позже.'}</p>`,
       [
         { text: 'Правила', action: () => void openRules(this.o.mod) },
+        ...(this.o.mod.def.records ? [{ text: 'Рекорды', action: () => openRecords(this.o.mod.def.id, this.o.mod.def.title, this.recTable()) }] : []),
         { text: 'Настройки', action: () => openSettings() },
         { text: 'Выйти', action: () => this.confirmLeave() },
         { text: 'Продолжить', primary: true },
       ]
     );
+  }
+
+  /** Таблица рекордов для текущих настроек партии (если известны). */
+  private recTable(): { table?: string; label?: string; columns?: Offer['columns'] } {
+    const rec = this.o.mod.def.records;
+    const o = this.o.options?.();
+    const t = rec && o ? rec.table(o) : null;
+    return { table: t?.id, label: t?.label, columns: rec?.columns };
   }
 
   confirmLeave() {

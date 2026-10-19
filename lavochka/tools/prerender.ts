@@ -216,6 +216,16 @@ function presetList(g: CatalogEntry, def: GameDef, skip?: string): string {
 
 // ------------------------------------------------------------------ страницы
 
+/** Место под таблицы рекордов: сервер вписывает свежие при каждой выдаче страницы (<!--records:игра-->), браузер их оживляет. */
+function recordsBlock(def: GameDef | null, name: string): string {
+  if (!def?.records) return '';
+  return `<section class="seo-records" data-records="${def.id}">
+<h2>Рекорды: ${esc(name)}</h2>
+<!--records:${def.id}-->
+</section>
+`;
+}
+
 async function gamePages(g: CatalogEntry) {
   const target = g.of ? CATALOG.find((x) => x.id === g.of)! : g;
   const def = await loadDef(target.id);
@@ -241,7 +251,7 @@ async function gamePages(g: CatalogEntry) {
     image,
     priority: 0.9,
     jsonld: [gameLd(g, name, path, description), cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${recordsBlock(def, name)}${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
   });
 
   modePages(g, path, image);

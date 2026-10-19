@@ -2,7 +2,8 @@
  * У них нет пошагового стола: модуль сам рисует устройство и крутит игру, а этот экран даёт рамку как у стола —
  * игра слева, карточка справа: меню, звук, «Старт»/«Пауза», режимы, управление, рекорды (свои и общие на сервере). */
 import { Sound } from './audio';
-import { fetchRecords, postRecord } from './net/ws';
+import { SCORE_COLUMNS } from './records';
+import { postClaim, recordsBox } from './records-ui';
 import { saveSettings, settings, store } from './settings';
 import { openSettings } from './settings-ui';
 import { mountScreen, modal, showScreen } from './ui';
@@ -54,26 +55,6 @@ export interface ArcadeModule {
 
 export const isArcade = (m: unknown): m is ArcadeModule => !!m && (m as ArcadeModule).kind === 'arcade';
 
-interface Rec {
-  name: string;
-  score: number;
-  at: number;
-  mode?: string;
-}
-
-const localKey = (id: string, mode: string) => `records.${id}.${mode}`;
-
-export function localRecords(id: string, mode: string): Rec[] {
-  return store.get<Rec[]>(localKey(id, mode), []);
-}
-
-/** Добавить рекорд на этом устройстве (держим десять лучших). Возвращает место (0…9) или -1. */
-export function addLocalRecord(id: string, mode: string, rec: Rec): number {
-  const list = [...localRecords(id, mode), rec].sort((a, b) => b.score - a.score || a.at - b.at).slice(0, 10);
-  store.set(localKey(id, mode), list);
-  return list.indexOf(rec);
-}
-
 /** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
 /** `at.mode` — открыть сразу эту игру серии (адрес страницы игры); `at.onMode` — игрок выбрал другую. */
 export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void } = {}): () => void {
@@ -108,14 +89,11 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
   const modes = q('.arcade-modes');
   const veil = h(`<button class="arcade-veil" hidden><b>Пауза</b><span>нажмите, чтобы продолжить</span></button>`);
 
-  const drawRecords = async () => {
+  const modeLabel = () => mod.modes.find((m) => m.id === mode)?.label ?? mode;
+  const drawRecords = (period?: 'all' | 'mine') => {
     if (!recs) return;
-    const mine = localRecords(mod.id, mode);
-    const row = (r: Rec, i: number) => `<li><span>${i + 1}.</span> ${esc(r.name)} <b>${r.score}</b></li>`;
-    recs.innerHTML = `<div class="arcade-rec-t">На этом устройстве</div><ol>${mine.map(row).join('') || '<li class="empty">пока пусто</li>'}</ol><div class="arcade-rec-t">Во дворе (на сервере)</div><ol class="srv"><li class="empty">…</li></ol>`;
-    const srv = (await fetchRecords(`${mod.id}-${mode}`)) as Rec[];
-    const ol = recs.querySelector('.srv') as HTMLElement;
-    if (ol) ol.innerHTML = srv.map(row).join('') || '<li class="empty">нет связи или рекордов</li>';
+    recs.innerHTML = '';
+    recs.appendChild(recordsBox(mod.id, { table: mode, label: modeLabel(), columns: SCORE_COLUMNS, rows: 10, period }));
   };
 
   // ---- «Старт» / «Пауза»
@@ -159,19 +137,17 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
     stage.appendChild(veil);
     inst = mod.mount(stage, {
       mode,
-      onScore: (score) => void finished(score),
+      onScore: (score) => finished(score),
       panel,
     });
     run.hidden = !inst.pause && !mod.starts?.length;
     pauseBtn.hidden = !inst.pause;
     setPaused(!!inst.resumed);
   };
-  const finished = async (score: number) => {
-    if (score <= 0) return;
-    const mine = localRecords(mod.id, mode);
-    if (mine.length >= 10 && score <= mine[mine.length - 1].score) return;
-    // новый рекорд: спрашиваем имя
-    const body = h(`<div><p>Новый рекорд: <b>${score}</b>!</p><input class="arcade-name" maxlength="16" placeholder="Ваше имя" value="${esc(settings.name || '')}"></div>`);
+  const finished = (score: number) => {
+    if (score <= 0 || !recs) return;
+    // рекорд: спрашиваем имя и пишем в общую таблицу (сервер держит лучшие за всё время, месяц, неделю и свои)
+    const body = h(`<div><p>Счёт: <b>${score}</b>! Записать в таблицу рекордов?</p><input class="arcade-name recs-input" maxlength="16" placeholder="Ваше имя" value="${esc(settings.name || '')}"></div>`);
     const input = body.querySelector('input') as HTMLInputElement;
     modal(body, [
       {
@@ -180,9 +156,8 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
         action: () => {
           const name = input.value.trim() || 'Аноним';
           settings.name = name;
-          addLocalRecord(mod.id, mode, { name, score, at: Date.now(), mode });
-          void postRecord(`${mod.id}-${mode}`, name, score).then(drawRecords);
-          void drawRecords();
+          saveSettings();
+          void postClaim({ game: mod.id, name, table: mode, label: modeLabel(), values: { score } }).then((r) => drawRecords(r?.place ? 'all' : 'mine'));
         },
       },
       { text: 'Не надо' },
@@ -200,7 +175,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
       store.set(`arcade.${mod.id}.mode`, mode);
       at.onMode?.(mode);
       modes.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-      void drawRecords();
+      drawRecords();
       start();
     };
     modes.appendChild(b);
@@ -236,6 +211,6 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
   };
   showScreen('arcade');
   start();
-  void drawRecords();
+  drawRecords();
   return stop;
 }

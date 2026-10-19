@@ -2,6 +2,7 @@
  * Один игрок — обычный пасьянс; несколько — дуэль: у каждого своя доска с одной и той же раздачей, кто первым разобрал. */
 import { SeededRng } from '../../core/rng';
 import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { canPair, geoOf, isFree, left, pairScore, pairsOf, reshuffle, solvableDeal, solve, tileSet, type Geo } from './engine';
 import { layoutOf, LAYOUTS, type Layout } from './layouts';
 import { kindName, kindOf, TILE_CREDITS } from './tiles';
@@ -242,6 +243,14 @@ const side = (s: State, i: number) => {
 };
 
 
+/** Таблица рекордов: раскладка; «как ляжет» и «без перемешиваний» — отдельно. */
+function recTable(o: Options): RecordTable | null {
+  const c = cfgOf(o);
+  const l = layoutOf(c.layout);
+  const extra = [c.solvable ? '' : 'как ляжет', c.shuffles === 0 ? 'без перемешиваний' : ''].filter(Boolean);
+  return { id: `${l.id}${c.solvable ? '' : '-rnd'}${c.shuffles === 0 ? '-nosh' : ''}`, label: [l.label, ...extra].join(', ') };
+}
+
 export const def: GameDef<State, Action, Event, View> = {
   id: 'mahjong',
   title: 'Маджонг',
@@ -290,6 +299,14 @@ export const def: GameDef<State, Action, Event, View> = {
     return seats === 'all' || seats.includes(ev.seat) ? ev : null;
   },
   result,
+  records: {
+    columns: [{ key: 'ms', label: 'Время', sort: 'asc', format: 'time' }],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    score: (s, { ms, actions }) => (s.boards[s.seats[0]]?.end === 1 ? { values: { ms }, help: actions.some((a) => (a as Action).t === 'undo') } : null),
+    minMs: () => 10_000,
+    help: true,
+  },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: botChoose },
   describe(ev, name) {
     if (ev.type === 'won') return `🏁 ${name(ev.seat)}: раскладка разобрана за ${ev.moves} ходов${ev.place > 1 ? ` (${ev.place}-е место)` : ''}`;

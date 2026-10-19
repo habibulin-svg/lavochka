@@ -6,6 +6,7 @@ import { RoomClient } from './client';
 import { p2pHost, p2pJoin, P2P_CODE_LEN, type P2PHost } from './net/p2p';
 import { SERVER_CODE_LEN, wsCreate, wsJoin } from './net/ws';
 import { localPair, type RoomMsg, type SeatStatus } from './protocol';
+import { offerFrom } from './records-ui';
 import { Room } from './room';
 import { settings, store } from './settings';
 import { Table, type NetMode } from './table';
@@ -143,6 +144,8 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
     mode: 'local',
     code: null,
     owner: true,
+    record: () => (room.auth ? offerFrom(room.auth) : null),
+    options: () => room.auth?.options ?? room.options,
     onLeave: () => {
       closeActive();
       nav.home(def.id);

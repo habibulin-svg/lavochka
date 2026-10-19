@@ -1,6 +1,7 @@
 /* «А у нас во дворе» — движок. Все решают одну и ту же цепочку задач, каждый в своём темпе; очки за решение,
  * минус за подсказки и ошибки, плюс за норматив и за то, что решил первым. Решения задач живут только в состоянии
  * (на сервере / у хоста); игрок получает решение задачи, только когда сам её закрыл. Без DOM. */
+import { gameNow } from '../../core/clock';
 import type { Options, Rng } from '../../core/types';
 import { shuffle } from '../../core/rng';
 import { kindOf, KINDS, type Hint } from './kinds';
@@ -140,7 +141,7 @@ export function makeList(c: Cfg, rng: Rng): Puzzle[] {
   });
 }
 
-export function newState(c: Cfg, seats: number[], rng: Rng, now = Date.now()): State {
+export function newState(c: Cfg, seats: number[], rng: Rng, now = gameNow()): State {
   const list = makeList(c, rng);
   const boards: Record<number, Board> = {};
   for (const s of seats) boards[s] = { i: 0, t0: now, phase: 'solve', hints: [], wrong: 0, score: 0, marks: [] };
@@ -164,7 +165,7 @@ export function maxScore(s: { list: { kind: string; level: number }[] }, multi: 
   return s.list.reduce((t, p) => t + kindOf(p.kind).pts[p.level] + 1 + (multi ? 1 : 0), 0);
 }
 
-export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
+export function apply(s0: State, seat: number, a: Action, rng: Rng, now = gameNow()): { state: State; events: Event[] } | null {
   const b0 = s0.boards[seat];
   if (!b0 || b0.i >= s0.list.length || !a || typeof a !== 'object') return null;
   const p = s0.list[b0.i];

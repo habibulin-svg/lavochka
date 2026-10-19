@@ -240,7 +240,7 @@ class SolitaireView implements GameView<View, Event> {
     this.v = v;
     this.chooseSeat(v);
     this.sel = null;
-    this.hintOn = null;
+    if (events.length) this.hintOn = null; // пустой шаг — ответ на «подсказку», её подсветку не трогаем
     let wait = 0;
     for (const ev of events) {
       if (ev.seat !== this.seat) continue;
@@ -350,6 +350,7 @@ class SolitaireView implements GameView<View, Event> {
       void this.showBanner('Ходов нет — отмените ход или сдайтесь', 1400);
       return;
     }
+    this.send({ t: 'hint' }); // партия уходит в таблицу рекордов «с подсказками»
     if (m.t === 'stock') this.hintOn = { from: this.c().kinds.indexOf('stock'), n: 1, to: null };
     else this.hintOn = { from: m.f, n: m.n, to: m.to };
     this.draw();

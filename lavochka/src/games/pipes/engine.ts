@@ -2,6 +2,7 @@
  * Поворачивая куски, нужно соединить все трубы в одну сеть без открытых концов, чтобы вода дошла до каждого крана.
  * Уровень задаётся номером: он и есть сид генератора, «Сыграть ещё» ведёт на следующий. Без DOM. */
 import { SeededRng } from '../../core/rng';
+import { gameNow } from '../../core/clock';
 import type { Options, Rng } from '../../core/types';
 
 /** Биты сторон: вверх 1, вправо 2, вниз 4, влево 8. */
@@ -154,7 +155,7 @@ export function solved(c: { w: number; h: number; wrap: boolean }, tile: number[
   return watered(c, tile, src).every(Boolean);
 }
 
-export function setup(seats: number[], o: Options, rng: Rng, now = Date.now()): State {
+export function setup(seats: number[], o: Options, rng: Rng, now = gameNow()): State {
   const cfg = cfgOf(o, seats.length);
   const { tiles, src } = generate(cfg);
   // перемешать повороты (кусок-крестовину и прямую на 180° поворачивать без толку — им всё равно)
@@ -179,7 +180,7 @@ export function toAct(s: State): number[] {
   return [...s.seats.slice(k), ...s.seats.slice(0, k)];
 }
 
-export function apply(s0: State, seat: number, a: Action, _rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
+export function apply(s0: State, seat: number, a: Action, _rng: Rng, now = gameNow()): { state: State; events: Event[] } | null {
   if (s0.done || !s0.seats.includes(seat)) return null;
   if (a?.type === 'think') return { state: { ...s0, moves: s0.moves + 1 }, events: [] };
   const n = s0.cfg.w * s0.cfg.h;

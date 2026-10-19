@@ -2,6 +2,7 @@
  * регионы крупных стран, непризнанные и зависимые территории. Отвечают все сразу; вопрос закрывается, когда ответили все.
  * Без DOM: карта рисуется в view.ts по контурам из public/geo. */
 import type { DemoScript, GameDef, Options, Rng, SeatSpec } from '../../core/types';
+import { presetTables, type RecordTable } from '../../core/records';
 import { BY_ID, ent, type Entity, type Face, FACE_LABEL, fullName, hasFace, members, OFF_MAP, REGION_COUNTRIES, SETS, setTitle } from './data';
 
 export const SEATS = [
@@ -285,6 +286,16 @@ function demo(opt: Options, ids: string[], steps: (s: State) => { seat: number; 
 
 const wrongOpt = (s: State, k: number) => s.qs[k].opts!.find((x) => x !== answerOf(s, s.qs[k]))!;
 
+/** Таблица рекордов: набор, что спрашивают и чем отвечают, сколько вопросов, время на вопрос. */
+function recTable(raw: Options): RecordTable | null {
+  const o = optsOf(raw);
+  const set = `${o.set}${o.country !== 'all' ? '-' + o.country : ''}${o.hard ? '+' : ''}`;
+  const q = o.mode === 'map' ? o.ask : `${o.ask}-${o.pick}`;
+  const how = o.mode === 'map' ? `на карте, подсказка — ${FACE_LABEL[o.ask]}` : `${FACE_LABEL[o.ask]} → ${FACE_LABEL[o.pick]}`;
+  const extra = [o.hard ? 'с непризнанными' : '', `вопросов: ${o.count || 'все'}`, o.time ? `${o.time} с на вопрос` : ''].filter(Boolean);
+  return { id: `${o.mode}.${set}.${q}.${o.count}${o.time ? `.t${o.time}` : ''}`, label: `${setTitle(o)}: ${how}, ${extra.join(', ')}` };
+}
+
 export const def: GameDef<State, Action, Event, State> = {
   id: 'geo',
   title: 'География',
@@ -360,6 +371,19 @@ export const def: GameDef<State, Action, Event, State> = {
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
   describe,
+  records: {
+    columns: [
+      { key: 'score', label: 'Очки', sort: 'desc', format: 'score' },
+      { key: 'ms', label: 'Время', sort: 'asc', format: 'time' },
+    ],
+    table: recTable,
+    tables: () => presetTables(def, recTable),
+    score: (s, { ms }) => {
+      const x = s.seats[0];
+      return s.score[x] > 0 ? { values: { score: s.score[x], ms } } : null;
+    },
+    minMs: () => 3000,
+  },
 
   // превью: Европа, флаг на карте, двое уже промахнулись
   showcase: () => {
