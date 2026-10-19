@@ -28,6 +28,7 @@
 .don-own input { width: 120px; }
 .don input:focus, .don textarea:focus { outline: none; border-color: var(--red-d); box-shadow: 0 0 0 3px rgba(181, 72, 42, 0.25); }
 .don-note { font-size: 13px; opacity: 0.75; margin: 12px 0 4px; }
+.don-note a { color: inherit; }
 .don .don-btns { justify-content: flex-end; margin-top: 14px; }
 .don fieldset { border: 1px solid rgba(42, 18, 6, 0.25); border-radius: 8px; margin: 12px 0 0; padding: 4px 12px 10px; }
 .don legend { font-weight: 700; padding: 0 4px; }

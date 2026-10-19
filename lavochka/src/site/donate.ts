@@ -73,7 +73,7 @@ export async function openDonate(): Promise<void> {
       <label class="don-own">Своя сумма<span><input name="own" type="number" inputmode="numeric" min="${DONATE_MIN}" max="${DONATE_MAX}" step="1" placeholder="от ${DONATE_MIN}"> ₽</span></label>
       <p class="don-note">${
         info.enabled
-          ? 'Оплата картой или через СБП на защищённой странице Robokassa. Данные карты сайт не получает. Это добровольный платёж — он не открывает платных функций.'
+          ? 'Оплата картой или через СБП на защищённой странице Robokassa. Данные карты сайт не получает. Это добровольный платёж — он не открывает платных функций (<a href="/oferta/" target="_blank">оферта</a>, раздел 5).'
           : 'Приём платежей скоро откроется — спасибо, что заглянули!'
       }</p>
       <p class="err" role="alert"></p>

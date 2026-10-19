@@ -4,7 +4,8 @@
 - Надпись и цель меняет Мастер: профиль → «♥ Поддержка проекта» (админки сайта ещё нет — это её первый кусок). Настройки и донаты — в базе (миграция 2: `site_settings`, `donations`); засчитывается только уведомление с верной подписью Паролем #2 и той же суммой, повтор не засчитывается.
 - Тесты `tests/donate.test.ts`; в превью проверены кнопка, окно (выключено и с целью), админка, телефон, возврат.
 - **Не проверено вживую:** Robokassa — расхождения в документации (кодирование Receipt, GET/POST уведомлений) сделаны по официальному примеру PHP; проверить тестовым платежом.
-- **Ждёт пользователя:** в магазине Robokassa указать Result URL `https://lavochka-games.ru/api/pay/robokassa/result` (POST), Success URL `…/api/pay/robokassa/success`, Fail URL `…/api/pay/robokassa/fail`; ввести ключи `ssh -t lavochka lavochka-secret ROBOKASSA_LOGIN` (и `ROBOKASSA_PASS1`, `ROBOKASSA_PASS2`, сначала `ROBOKASSA_TEST=1` с тестовыми паролями); тестовый платёж; решить, нужен ли в оферте пункт про добровольные платежи.
+- **Ждёт пользователя:** в магазине Robokassa указать Result URL `https://lavochka-games.ru/api/pay/robokassa/result` (POST), Success URL `…/api/pay/robokassa/success`, Fail URL `…/api/pay/robokassa/fail`; ввести ключи `ssh -t lavochka lavochka-secret ROBOKASSA_LOGIN` (и `ROBOKASSA_PASS1`, `ROBOKASSA_PASS2`, сначала `ROBOKASSA_TEST=1` с тестовыми паролями); тестовый платёж.
+- **Оферта** дополнена разделом 5 «Добровольная поддержка Сайта» (не оплата услуг, 10–50 000 ₽, чек НПД, возврат только ошибочных — в 14 дней); акцепт — и внесением платежа; в окне доната — ссылка на оферту.
 
 # Сайт, этап 3а — аккаунты: база, вход, права, Мастер (2026-10-20, по просьбе пользователя — в основной сессии)
 
