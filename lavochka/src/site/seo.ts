@@ -25,6 +25,8 @@ export interface GameSeo extends PageText {
   variants?: Record<string, PageText>;
   /** Страница правил /<игра>/pravila/. */
   rules?: PageText;
+  /** Статьи при игре (ключ — slug из routes.ts ARTICLES): body — сам текст статьи (HTML). */
+  articles?: Record<string, PageText & { body: string }>;
 }
 
 /** Обрезать описание по слову до n знаков. */

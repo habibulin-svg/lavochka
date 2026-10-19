@@ -2,13 +2,16 @@
  * плюс sitemap.xml и robots.txt. Поисковик видит текст без JS; в браузере поверх монтируется сама игра,
  * а текст страницы (article#seo) встаёт под экран игры (src/site/page.ts).
  * Запуск: npx tsx tools/prerender.ts  (входит в npm run build). Адрес сайта — SITE_URL (по умолчанию из routes.ts). */
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CATALOG, CATEGORIES, membersOf, SHOWN, type CatalogEntry } from '../src/games/catalog';
 import { DEFS } from '../src/games/defs';
 import type { GameDef, Preset } from '../src/core/types';
-import { gamePath, rulesPath, sectionPath, SITE_NAME, SITE_URL, VARIANTS } from '../src/site/routes';
+import { GAMES as ELEKTRONIKA } from '../src/games/elektronika/games';
+import { GAMES as AVTOMATY } from '../src/games/avtomaty/games';
+import { ARTICLES, MODE_PAGES, gamePath, rulesPath, sectionPath, SITE_NAME, SITE_URL, VARIANTS } from '../src/site/routes';
 import { cardMarkup } from '../src/site/card';
 import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
@@ -125,10 +128,16 @@ function akaBlock(id: string): string {
 }
 
 /** Снимок игры рядом с вводным текстом. */
-function shot(g: CatalogEntry, caption: string): string {
+function shot(g: CatalogEntry, caption: string, src?: string): string {
   const t = g.thumb ?? (g.of ? CATALOG.find((x) => x.id === g.of)?.thumb : undefined);
-  if (!t) return '';
-  return `<figure class="seo-shot"><img src="/thumbs/${esc(t)}" alt="${esc(caption)}" width="480" height="300"><figcaption>${esc(caption)}</figcaption></figure>`;
+  if (!src && !t) return '';
+  return `<figure class="seo-shot"><img src="${esc(src ?? '/thumbs/' + t)}" alt="${esc(caption)}" width="480" height="300"><figcaption>${esc(caption)}</figcaption></figure>`;
+}
+
+/** Свой снимок варианта (public/thumbs/v/<адрес через дефис>.webp), если он снят. */
+function variantThumb(path: string): string | undefined {
+  const name = `thumbs/v/${path.replace(/\//g, '-')}.webp`;
+  return existsSync(join(ROOT, 'public', name)) ? '/' + name : undefined;
 }
 
 const crumbs = (list: [string, string][]) => ({
@@ -226,6 +235,7 @@ async function gamePages(g: CatalogEntry) {
     body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${faq.html}\n${similar(g)}`,
   });
 
+  modePages(g, path, image);
   if (!def || g.of) return;
 
   // --- страницы вариантов
@@ -237,14 +247,15 @@ async function gamePages(g: CatalogEntry) {
     const vdesc = vt.description ?? clip(`${vname} онлайн бесплатно и без регистрации. ${p.hint ? p.hint + '. ' : ''}С ботами трёх уровней и с друзьями по ссылке, правила с показом на доске.`);
     const vcr = crumbs([...trail(g), [vname, vpath]]);
     const vfaq = faqBlock(vt.faq);
+    const vimage = variantThumb(v.path);
     pages.push({
       path: vpath,
       title: vt.title ?? titleFor(vname),
       description: vdesc,
-      image,
+      image: vimage ?? image,
       priority: 0.8,
       jsonld: [gameLd(g, vname, vpath, vdesc), vcr.ld, ...(vfaq.ld ? [vfaq.ld] : [])],
-      body: `${vcr.html}\n<h1>${esc(vt.h1 ?? `${vname} онлайн`)}</h1>\n${shot(g, vname)}${vt.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${vfaq.html}\n${similar(g)}`,
+      body: `${vcr.html}\n<h1>${esc(vt.h1 ?? `${vname} онлайн`)}</h1>\n${shot(g, vname, vimage)}${vt.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${vfaq.html}\n${similar(g)}`,
     });
   }
 
@@ -263,6 +274,80 @@ async function gamePages(g: CatalogEntry) {
     jsonld: [rcr.ld, ...(rfaq.ld ? [rfaq.ld] : [])],
     body: `${rcr.html}\n<h1>${esc(rname)}</h1>\n${rt.intro ?? ''}\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n${def.rules.sections.map((s) => `<h2>${esc(s.title)}</h2>\n${s.html}`).join('\n')}\n${rfaq.html}\n<p><a href="${path}">Играть в «${esc(def.title)}» онлайн</a></p>`,
   });
+
+  // --- статьи при игре (комбинации покера)
+  for (const a of ARTICLES.filter((x) => x.game === g.id)) {
+    const at = seo.articles?.[a.slug];
+    if (!at) throw new Error(`нет текста статьи ${a.path} в src/games/${g.id}/seo.ts`);
+    const apath = `/${a.path}/`;
+    const acr = crumbs([...trail(g), [at.h1 ?? a.slug, apath]]);
+    const afaq = faqBlock(at.faq);
+    pages.push({
+      path: apath,
+      title: at.title ?? titleFor(at.h1 ?? name),
+      description: at.description ?? clip(plain(at.intro ?? at.body)),
+      image,
+      priority: 0.7,
+      jsonld: [
+        { '@context': 'https://schema.org', '@type': 'Article', headline: at.h1, url: abs(apath), inLanguage: 'ru', ...(image ? { image: abs(image) } : {}) },
+        acr.ld,
+        ...(afaq.ld ? [afaq.ld] : []),
+      ],
+      body: `${acr.html}
+<h1>${esc(at.h1 ?? name)}</h1>
+${at.intro ?? ''}
+${at.body}
+${afaq.html}
+<p><a href="${path}">Играть в «${esc(name)}» онлайн</a> · <a href="${rulesPath(g.id)}">Правила игры</a></p>`,
+    });
+  }
+}
+
+/** Игры серии у аркад: страница на каждую игру «Электроники ИМ» и каждый автомат. */
+function modePages(g: CatalogEntry, path: string, image?: string) {
+  const list = MODE_PAGES.filter((m) => m.game === g.id);
+  if (!list.length) return;
+  const games: { id: string; title: string; about: string; note: string; board?: string }[] =
+    g.id === 'elektronika'
+      ? ELEKTRONIKA.map((x) => ({ id: x.id, title: x.title, about: x.about, note: `«Электроника ${x.model}»` }))
+      : AVTOMATY.map((x) => ({ id: x.id, title: x.title, about: x.about, note: `автомат, ${x.board}`, board: x.board }));
+  const href = (id: string) => `/${list.find((m) => m.mode === id)!.path}/`;
+  for (const m of list) {
+    const x = games.find((y) => y.id === m.mode);
+    if (!x) throw new Error(`нет игры ${m.mode} в списке ${g.id}`);
+    const mpath = `/${m.path}/`;
+    const elk = g.id === 'elektronika';
+    const name = elk ? `${x.title} — «Электроника»` : `${x.title} — игровой автомат`;
+    const description = clip(
+      elk
+        ? `${x.title} онлайн: советская ЖК-игра ${x.note} как настоящая — корпус, кнопки и сегменты экрана оригинала. ${x.about} Бесплатно, без регистрации.`
+        : `${x.title} онлайн: советский игровой автомат за 15 копеек (${x.board ?? ""}) — эмуляция настоящей платы. ${x.about} Бесплатно, без регистрации.`
+    );
+    const cr = crumbs([...trail(g), [x.title, mpath]]);
+    const others = games.filter((y) => y.id !== x.id && list.some((l) => l.mode === y.id));
+    const intro = elk
+      ? `<p>«${esc(x.title)}» — игра серии «Электроника ИМ» (${esc(x.note.replace(/[«»]/g, ''))}). ${esc(x.about)}</p>
+<p>Прибор здесь — как настоящий: корпус, кнопки «Игра А», «Игра Б» и «Время», сегментный экран и писк. «Игра Б» быстрее и труднее.
+Управлять можно мышкой и пальцем по кнопкам прибора или с клавиатуры. Рекорды записываются на этом устройстве и в общую таблицу двора.</p>`
+      : `<p>«${esc(x.title)}» — советский игровой автомат (${esc(x.board ?? "")}). ${esc(x.about)}</p>
+<p>Автомат запускается прямо на странице: опустите пятнадцатикопеечную монету и играйте с клавиатуры, мышкой или пальцем.
+Рекорды записываются на этом устройстве и в общую таблицу двора.</p>`;
+    pages.push({
+      path: mpath,
+      title: titleFor(elk ? `${x.title} — Электроника ${x.note.replace(/.*Электроника |»/g, '')}` : `${x.title} — автомат 15 копеек`),
+      description,
+      image,
+      priority: 0.6,
+      jsonld: [gameLd(g, name, mpath, description), cr.ld],
+      body: `${cr.html}
+<h1>${esc(elk ? `${x.title} — «Электроника» онлайн` : `${x.title} — игровой автомат онлайн`)}</h1>
+${shot(g, name)}${intro}
+<h2>${elk ? 'Другие игры «Электроники»' : 'Другие автоматы'}</h2>
+<ul class="seo-links">${others.map((y) => `<li><a href="${href(y.id)}">${esc(y.title)}</a> — ${esc(y.note)}</li>`).join('')}</ul>
+<p><a href="${path}">${esc(g.title)} — все игры</a></p>
+${similar(g)}`,
+    });
+  }
 }
 
 function groupPage(g: CatalogEntry) {
@@ -357,6 +442,11 @@ writeFileSync(
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages
     .map((p) => `  <url><loc>${esc(abs(p.path))}</loc><lastmod>${today}</lastmod><priority>${p.priority.toFixed(1)}</priority></url>`)
     .join('\n')}\n</urlset>\n`
+);
+// отпечатки страниц: по ним tools/indexnow.mjs после выкладки находит изменившиеся страницы и ставит lastmod
+writeFileSync(
+  join(DIST, 'pages.json'),
+  JSON.stringify(pages.map((p) => ({ path: p.path, hash: createHash('sha1').update(JSON.stringify([p.title, p.description, p.image, p.jsonld, p.body])).digest('hex').slice(0, 16) })))
 );
 writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nDisallow: /stol/\nDisallow: /poisk\nDisallow: /api/\nDisallow: /*?igra\nDisallow: /*?thumb\n\nSitemap: ${abs('/sitemap.xml')}\n`);
 

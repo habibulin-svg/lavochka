@@ -6,7 +6,7 @@ import { isArcade, openArcade } from './core/arcade';
 import { currentTable, nav, offerResume, resumeTable } from './core/session';
 import { closeAllModals, modal } from './core/ui';
 import type { GameModule } from './core/view';
-import { gamePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
+import { gamePath, modePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { metrikaHit, startMetrika } from './site/metrika';
@@ -15,6 +15,10 @@ import { byId, type CatalogEntry, type Category } from './games/catalog';
 import { yard } from './launcher/yard';
 import { cardHTML, DECK_STYLES } from './cards/render';
 import { makeDeck } from './cards/deck';
+import { Authority } from './core/authority';
+import { SeededRng } from './core/rng';
+import { defaultOptions } from './core/rules';
+import type { GameDef } from './core/types';
 
 /* ------------------------------------------------------------------ адреса
  * Каждый экран — свой адрес: двор «/», группа «/priklyucheniya/», игра «/nardy/» (вариант «/nardy/dlinnye/»),
@@ -44,7 +48,7 @@ function presetOpts(mod: GameModule, preset?: string) {
   return preset ? mod.def.presets?.find((p) => p.id === preset)?.options : undefined;
 }
 
-async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean } = {}) {
+async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string } = {}) {
   // ярлык (например, «Шёл солдат» — поле кинь-двинь): открываем игру с заранее выбранными вариантами
   const g = entry.of ? byId(entry.of) : entry;
   if (!g?.load) return;
@@ -53,7 +57,7 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     const mod = (await g.load()).default;
     if (my !== navSeq) return; // пока грузилось, ушли на другой экран
     if (isArcade(mod)) {
-      stopArcade = openArcade(mod, toYard);
+      stopArcade = openArcade(mod, toYard, { mode: r.mode, onMode: (m) => go(modePath(mod.id, m), true) });
       return;
     }
     const fixed = presetOpts(mod, r.preset) ?? entry.opts;
@@ -75,7 +79,9 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
       },
     });
     homeEl()?.prepend(siteBar(searchFromBar));
-    void attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
+    const seo = attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
+    // статья при игре (комбинации покера): пришли читать — сразу к тексту, игра выше
+    if (r.article) void seo.then(() => document.querySelector('#app .seo-page')?.scrollIntoView());
   } catch (e: any) {
     modal(`<h2>Не загрузилось</h2><p>${esc(e?.message || e)}</p>`, [{ text: 'Ок', primary: true }]);
   }
@@ -240,8 +246,43 @@ async function thumbMode(id: string) {
   }
   const view = mod.createView();
   view.mount(board, { act() {}, mySeats: [], demo: true, controls, name: (s) => mod.def.seats[s]?.name ?? String(s), speed: () => 1, autoSingle: () => false });
-  const st = mod.def.showcase ? mod.def.showcase() : null;
+  const preset = params.get('preset');
+  const st = preset ? await variantShot(mod.def, preset) : mod.def.showcase ? mod.def.showcase() : null;
   if (st) view.setView(mod.def.view(st, 'all'));
+}
+
+/**
+ * ?thumb=<игра>&preset=<вариант>[&steps=N][&n=игроков][&seed=S] — позиция варианта для снимка страницы варианта:
+ * расстановка с настройками пресета и N ходов ботов (по умолчанию 20; если партия кончилась — на ход раньше).
+ */
+async function variantShot(def: GameDef, presetId: string) {
+  const p = def.presets?.find((x) => x.id === presetId);
+  if (!p) return null;
+  const opts = { ...defaultOptions(def), ...p.options };
+  const counts = def.countsFor?.(opts) ?? [];
+  const want = Number(params.get('n')) || def.players.default;
+  const n = counts.length && !counts.includes(want) ? counts[0] : want;
+  const places = def.seatsFor ? def.seatsFor(n) : Array.from({ length: n }, (_, i) => i);
+  const seats = places.map((seat) => ({ seat, kind: 'bot' as const, name: def.seats[seat].name, level: def.bot.levels.length - 1 }));
+  const seed = Number(params.get('seed')) || 7;
+  const a = new Authority(def, seats, opts);
+  a.rng = new SeededRng(seed);
+  a.state = def.setup(seats, opts, a.rng);
+  const rng = new SeededRng(seed ^ 0x5bd1e995);
+  const steps = Number(params.get('steps') ?? 20);
+  for (let i = 0; i < steps && !def.realtime; i++) {
+    const seat = a.toAct()[0];
+    if (seat == null) break;
+    const action = await def.bot.choose(a.viewFor([seat]), seat, seats.find((s) => s.seat === seat)?.level ?? 0, rng);
+    if (action == null) break;
+    const before = a.state;
+    if (!a.act(seat, action)) break;
+    if (a.result) {
+      a.state = before;
+      break;
+    }
+  }
+  return a.state;
 }
 
 /** ?cards — служебный режим: вся колода во всех трёх стилях (проверка рисунков). */

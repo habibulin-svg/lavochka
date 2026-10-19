@@ -23,4 +23,6 @@ fi
 systemctl restart lavochka
 sleep 2
 curl -fsS http://127.0.0.1:8787/api/health && echo
+# IndexNow: сообщить поисковикам изменившиеся страницы, lastmod в sitemap.xml (не вышло — не беда)
+sudo -u lavochka node tools/indexnow.mjs /srv/lavochka/data || true
 sudo -u lavochka git log -1 --oneline

@@ -175,19 +175,68 @@ export const VARIANTS: VariantPage[] = [
   { path: 'menedzher/biznesmen', game: 'manager', preset: 'biznesmen' },
 ];
 
+/** Статьи при игре (справочные страницы с большим спросом): экран игры, под ним — текст статьи.
+ * Текст — в src/games/<игра>/seo.ts, поле `articles[slug]`. */
+export interface ArticlePage {
+  path: string;
+  game: string;
+  slug: string;
+}
+
+export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'holdem', slug: 'kombinacii' }];
+
+/** Игры серии у аркад («Электроника ИМ», автоматы): своя страница на каждую, адрес открывает прибор сразу на ней. */
+export interface ModePage {
+  path: string;
+  game: string;
+  mode: string;
+}
+
+export const MODE_PAGES: ModePage[] = [
+  { path: 'elektronika/nu-pogodi', game: 'elektronika', mode: 'nupogodi' },
+  { path: 'elektronika/tayny-okeana', game: 'elektronika', mode: 'taynyoke' },
+  { path: 'elektronika/vesyolyy-povar', game: 'elektronika', mode: 'vespovar' },
+  { path: 'elektronika/kosmicheskiy-most', game: 'elektronika', mode: 'kosmicmt' },
+  { path: 'elektronika/hokkey', game: 'elektronika', mode: 'ehockey' },
+  { path: 'elektronika/razvedchiki-kosmosa', game: 'elektronika', mode: 'rkosmosa' },
+  { path: 'elektronika/ohota', game: 'elektronika', mode: 'okhota' },
+  { path: 'elektronika/biatlon', game: 'elektronika', mode: 'biathlon' },
+  { path: 'elektronika/vesyolye-futbolisty', game: 'elektronika', mode: 'vfutbol' },
+  { path: 'elektronika/avtoslalom', game: 'elektronika', mode: 'auslalom' },
+  { path: 'elektronika/kot-rybolov', game: 'elektronika', mode: 'krybolov' },
+  { path: 'elektronika/kvaka-zadavaka', game: 'elektronika', mode: 'kvakazad' },
+  { path: 'elektronika/kosmicheskiy-polyot', game: 'elektronika', mode: 'kosmicpt' },
+  { path: 'elektronika/ataka-asteroidov', game: 'elektronika', mode: 'atakaast' },
+  { path: 'avtomaty/morskoy-boy', game: 'avtomaty', mode: 'morboy' },
+  { path: 'avtomaty/magistral', game: 'avtomaty', mode: 'magistral' },
+  { path: 'avtomaty/konyok-gorbunok', game: 'avtomaty', mode: 'konek' },
+  { path: 'avtomaty/sos', game: 'avtomaty', mode: 'sosterm' },
+  { path: 'avtomaty/snezhnaya-koroleva', game: 'avtomaty', mode: 'koroleva' },
+  { path: 'avtomaty/bilyard', game: 'avtomaty', mode: 'bilyard' },
+  { path: 'avtomaty/gorodki', game: 'avtomaty', mode: 'gorodki' },
+  { path: 'avtomaty/kot-rybolov', game: 'avtomaty', mode: 'kot' },
+  { path: 'avtomaty/tetris', game: 'avtomaty', mode: 'phtetris' },
+  { path: 'avtomaty/piton', game: 'avtomaty', mode: 'phpython' },
+  { path: 'avtomaty/klad', game: 'avtomaty', mode: 'phklad' },
+  { path: 'avtomaty/chyornyy-korabl', game: 'avtomaty', mode: 'black' },
+  { path: 'avtomaty/brodyaga', game: 'avtomaty', mode: 'brod' },
+];
+
 /** Занятые слова: разделы сайта и служебные папки — адрес игры не может начинаться с них. */
 export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
 
 export type Route =
   | { kind: 'yard'; cat?: string }
-  | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean }
+  | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string }
   | { kind: 'table'; code: string }
   | { kind: 'search'; q: string }
   | { kind: 'missing'; path: string };
 
-const BY_PATH = new Map<string, { id: string; preset?: string }>();
+const BY_PATH = new Map<string, { id: string; preset?: string; article?: boolean; mode?: string }>();
 for (const [id, p] of Object.entries(SLUGS)) BY_PATH.set(p, { id });
 for (const v of VARIANTS) BY_PATH.set(v.path, { id: v.game, preset: v.preset });
+for (const a of ARTICLES) BY_PATH.set(a.path, { id: a.game, article: true });
+for (const m of MODE_PAGES) BY_PATH.set(m.path, { id: m.game, mode: m.mode });
 const BY_SECTION = new Map(Object.entries(SECTION_SLUGS).map(([id, p]) => [p, id]));
 
 const trim = (p: string) => p.replace(/^\/+|\/+$/g, '');
@@ -209,7 +258,8 @@ export function parseRoute(pathname: string, search = ''): Route {
   const rules = p.endsWith('/pravila');
   const hit = BY_PATH.get(rules ? p.slice(0, -'/pravila'.length) : p);
   if (!hit) return { kind: 'missing', path: p };
-  return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined };
+  if (rules && (hit.article || hit.mode)) return { kind: 'missing', path: p };
+  return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined, article: hit.article, mode: hit.mode };
 }
 
 /** Адрес экрана игры: у варианта со своей страницей — её адрес, иначе — адрес игры. */
@@ -217,6 +267,12 @@ export function gamePath(id: string, preset?: string | null): string {
   const v = preset ? VARIANTS.find((x) => x.game === id && x.preset === preset) : undefined;
   const p = v?.path ?? SLUGS[id];
   return p ? `/${p}/` : '/';
+}
+
+/** Адрес игры серии у аркады (без своей страницы — адрес самой аркады). */
+export function modePath(id: string, mode: string): string {
+  const m = MODE_PAGES.find((x) => x.game === id && x.mode === mode);
+  return m ? `/${m.path}/` : gamePath(id);
 }
 
 /** Адрес раздела двора («все игры» — главная). */

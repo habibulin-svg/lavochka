@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CATALOG, CATEGORIES } from '../src/games/catalog';
 import { DEFS } from '../src/games/defs';
-import { gamePath, parseRoute, RESERVED, rulesPath, SECTION_SLUGS, sectionPath, SLUGS, VARIANTS } from '../src/site/routes';
+import { ARTICLES, gamePath, MODE_PAGES, modePath, parseRoute, RESERVED, rulesPath, SECTION_SLUGS, sectionPath, SLUGS, VARIANTS } from '../src/site/routes';
 import type { GameSeo } from '../src/site/seo';
 
 describe('адреса сайта', () => {
@@ -14,13 +14,30 @@ describe('адреса сайта', () => {
   });
 
   it('адреса не повторяются и не заняты разделами сайта', () => {
-    const all = [...Object.values(SLUGS), ...VARIANTS.map((v) => v.path), ...Object.values(SECTION_SLUGS)];
+    const all = [...Object.values(SLUGS), ...VARIANTS.map((v) => v.path), ...ARTICLES.map((a) => a.path), ...MODE_PAGES.map((m) => m.path), ...Object.values(SECTION_SLUGS)];
     expect(new Set(all).size, 'повтор адреса').toBe(all.length);
     for (const p of all) {
       expect(p, p).toMatch(/^[a-z0-9-]+(\/[a-z0-9-]+)*$/);
       expect(RESERVED, p).not.toContain(p.split('/')[0]);
       expect(p.split('/'), p).not.toContain('pravila');
     }
+  });
+
+  it('статьи и игры серии разбираются в свою игру', () => {
+    for (const a of ARTICLES) expect(parseRoute(`/${a.path}/`), a.path).toMatchObject({ kind: 'game', id: a.game, article: true });
+    for (const m of MODE_PAGES) {
+      expect(parseRoute(`/${m.path}/`), m.path).toMatchObject({ kind: 'game', id: m.game, mode: m.mode });
+      expect(modePath(m.game, m.mode)).toBe(`/${m.path}/`);
+    }
+    expect(parseRoute('/poker/kombinacii/pravila/').kind).toBe('missing');
+  });
+
+  it('у страницы игры серии — настоящая игра аркады', async () => {
+    const lists: Record<string, { id: string }[]> = {
+      elektronika: (await import('../src/games/elektronika/games')).GAMES,
+      avtomaty: (await import('../src/games/avtomaty/games')).GAMES,
+    };
+    for (const m of MODE_PAGES) expect(lists[m.game]?.map((g) => g.id), m.path).toContain(m.mode);
   });
 
   it('страница варианта указывает на настоящий пресет игры', async () => {

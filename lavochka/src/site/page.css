@@ -32,3 +32,17 @@ body > .seo-page { margin: 24px auto; }
   .seo-page { margin-top: 28px; padding: 16px 16px 18px; font-size: 15px; }
   .seo-page h1 { font-size: 22px; }
 }
+/* Карты строкой в тексте (комбинации покера) */
+.pc-hand { display: inline-flex; gap: 3px; vertical-align: middle; flex-wrap: nowrap; }
+.pc { display: inline-block; min-width: 1.9em; padding: 2px 3px; border: 1px solid rgba(40, 30, 20, 0.35); border-radius: 4px; background: #fffdf6; color: #1b1612; font-weight: 700; font-size: 0.92em; line-height: 1.2; text-align: center; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+.pc.r { color: #b3221a; }
+.seo-page h3 { font-size: 17px; margin: 16px 0 6px; }
+.seo-table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 15px; }
+.seo-table th, .seo-table td { padding: 6px 8px; border-bottom: 1px solid rgba(80, 50, 20, 0.2); text-align: left; vertical-align: middle; }
+.seo-table th { font-size: 13.5px; opacity: 0.8; }
+@media (max-width: 560px) {
+  .seo-table { font-size: 13px; }
+  .seo-table th, .seo-table td { padding: 5px 4px; }
+  .seo-table td:nth-child(5), .seo-table th:nth-child(5) { display: none; }
+  .pc { min-width: 1.6em; padding: 1px 2px; }
+}

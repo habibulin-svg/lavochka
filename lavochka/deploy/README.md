@@ -25,3 +25,5 @@ ssh lavochka sh /srv/lavochka/app/lavochka/deploy/deploy.sh
 ## Яндекс
 
 Метрика — номер счётчика в `src/site/metrika.ts` (`YM_ID`; 0 — выключена), работает только на `https://lavochka-games.ru`. Просмотры шлёт сам сайт на каждый новый адрес (одностраничник).
+
+**IndexNow** — после каждой выкладки `deploy.sh` запускает `tools/indexnow.mjs /srv/lavochka/data`: сравнивает отпечатки страниц (`dist/pages.json`, пишет пререндер) с прошлыми (`/srv/lavochka/data/pages.json`), шлёт изменившиеся адреса в Яндекс и api.indexnow.org и ставит в `sitemap.xml` дату последнего изменения каждой страницы. Ключ — `public/<ключ>.txt` и константа `KEY` в скрипте. Проверить без отправки: `node tools/indexnow.mjs <папка> --dry`.

@@ -74,8 +74,9 @@ export function addLocalRecord(id: string, mode: string, rec: Rec): number {
 }
 
 /** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
-export function openArcade(mod: ArcadeModule, onBack: () => void): () => void {
-  let mode = store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
+/** `at.mode` — открыть сразу эту игру серии (адрес страницы игры); `at.onMode` — игрок выбрал другую. */
+export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void } = {}): () => void {
+  let mode = at.mode ?? store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
   let paused = false;
@@ -195,6 +196,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void): () => void {
       b.blur(); // пробел в аркадах — игровая клавиша (монета, прыжок): не должен снова жать кнопку списка
       mode = m.id;
       store.set(`arcade.${mod.id}.mode`, mode);
+      at.onMode?.(mode);
       modes.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
       void drawRecords();
       start();
