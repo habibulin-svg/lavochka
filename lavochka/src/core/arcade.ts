@@ -7,6 +7,7 @@ import { saveSettings, settings, store } from './settings';
 import { openSettings } from './settings-ui';
 import { mountScreen, modal, showScreen } from './ui';
 import { esc, h } from './util';
+import { countPlay } from '../site/stats';
 
 export interface ArcadeMode {
   id: string;
@@ -151,6 +152,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
   document.addEventListener('visibilitychange', onHide);
 
   const start = () => {
+    countPlay(mod.id);
     inst?.destroy();
     stage.innerHTML = '';
     panel.innerHTML = '';

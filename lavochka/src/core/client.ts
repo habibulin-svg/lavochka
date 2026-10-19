@@ -101,10 +101,14 @@ export class RoomClient {
   hold(ms: number) {
     this.send({ t: 'hold', ms });
   }
+  /** Начали партию (кнопки «Начать», «Сыграть ещё») — счётчик партий двора. */
+  onBegin: (() => void) | null = null;
   start(fillBots: boolean) {
+    this.onBegin?.();
     this.send({ t: 'start', fillBots });
   }
   restart() {
+    this.onBegin?.();
     this.send({ t: 'restart' });
   }
   sync() {

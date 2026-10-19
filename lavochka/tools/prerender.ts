@@ -16,6 +16,7 @@ import { cardMarkup } from '../src/site/card';
 import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
 import { clip, plain, type Faq, type GameSeo, type PageText } from '../src/site/seo';
+import { KINDS, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -28,6 +29,11 @@ const abs = (p: string) => SITE + p;
 
 const ready = (g: CatalogEntry) => !g.shelved && (!!g.load || !!g.of || membersOf(g).length > 0);
 const catTitle = (g: CatalogEntry) => CATEGORIES.find((c) => c.id === g.cat)?.title ?? '';
+
+// новости и блог (content/*.md), свежие сначала
+const POSTS: Record<Kind, Post[]> = { news: loadPosts('news'), blog: loadPosts('blog') };
+const ALL_POSTS = [...POSTS.news, ...POSTS.blog].sort((a, b) => b.date.localeCompare(a.date));
+for (const p of ALL_POSTS) for (const id of p.games) if (!CATALOG.some((g) => g.id === id)) throw new Error(`${KINDS[p.kind].dir}/${p.file}: нет игры ${id} в каталоге`);
 
 async function loadDef(id: string): Promise<GameDef | null> {
   const f = (DEFS as Record<string, (() => Promise<GameDef>) | undefined>)[id];
@@ -77,6 +83,8 @@ interface Page {
   jsonld?: object[];
   /** В sitemap: 1.0 главная, 0.9 игры, 0.8 варианты, 0.6 правила. */
   priority: number;
+  /** Запись новостей/блога: og:type article и дата. */
+  published?: string;
 }
 
 const pages: Page[] = [];
@@ -84,7 +92,8 @@ const pages: Page[] = [];
 function html(p: Page): string {
   const head = [
     `<link rel="canonical" href="${esc(abs(p.path))}">`,
-    `<meta property="og:type" content="website">`,
+    `<meta property="og:type" content="${p.published ? 'article' : 'website'}">`,
+    p.published ? `<meta property="article:published_time" content="${p.published}">` : '',
     `<meta property="og:site_name" content="${esc(SITE_NAME)}">`,
     `<meta property="og:title" content="${esc(p.title)}">`,
     `<meta property="og:description" content="${esc(p.description)}">`,
@@ -232,7 +241,7 @@ async function gamePages(g: CatalogEntry) {
     image,
     priority: 0.9,
     jsonld: [gameLd(g, name, path, description), cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${faq.html}\n${similar(g)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
   });
 
   modePages(g, path, image);
@@ -350,6 +359,117 @@ ${similar(g)}`,
   }
 }
 
+/** Статьи блога и новости, где игра упомянута в шапке записи (games). */
+function postsAbout(id: string): string {
+  const list = ALL_POSTS.filter((p) => p.games.includes(id)).slice(0, 5);
+  if (!list.length) return '';
+  return `<h2>Статьи об игре</h2>\n<ul class="seo-links">${list.map((p) => `<li><a href="${p.path}">${esc(p.h1)}</a> — ${esc(p.description)}</li>`).join('')}</ul>`;
+}
+
+const postItem = (p: Post) =>
+  `<li><a class="pl-t" href="${p.path}">${esc(p.h1)}</a><time datetime="${p.date}">${ruDate(p.date)}</time><p>${esc(p.description)}</p></li>`;
+
+const LIST_TEXT: Record<Kind, { title: string; h1: string; description: string; intro: string }> = {
+  news: {
+    title: `Новости двора — ${SITE_NAME}`,
+    h1: 'Новости двора',
+    description: 'Что нового на сайте «Вечером на лавочке»: новые дворовые игры, варианты правил, режимы и перемены на сайте. Все игры — бесплатно и без регистрации.',
+    intro: '<p>Что нового во дворе: новые игры, варианты правил и перемены на сайте.</p>',
+  },
+  blog: {
+    title: `Блог о дворовых играх — ${SITE_NAME}`,
+    h1: 'Блог о дворовых играх',
+    description: 'Статьи о дворовых, карточных и настольных играх: правила простыми словами, советы новичкам, история игр, в которые играли во дворах 80-х и 90-х.',
+    intro: '<p>Статьи о дворовых играх: правила простыми словами, советы новичкам и история игр, в которые играли во дворах. Под каждой статьёй — сами игры: можно сразу сыграть.</p>',
+  },
+};
+
+/** Раздел новостей или блога: списки с постраничной навигацией и страницы записей. */
+function postPages(kind: Kind) {
+  const k = KINDS[kind];
+  const t = LIST_TEXT[kind];
+  const list = POSTS[kind];
+  const base = `/${k.slug}/`;
+  const pageAt = (n: number) => (n === 1 ? base : `${base}stranica-${n}/`);
+  const total = Math.max(1, Math.ceil(list.length / PER_PAGE));
+  for (let n = 1; n <= total; n++) {
+    const path = pageAt(n);
+    const chunk = list.slice((n - 1) * PER_PAGE, n * PER_PAGE);
+    const cr = crumbs([[SITE_NAME, '/'], [k.title, base], ...(n > 1 ? [[`Страница ${n}`, path] as [string, string]] : [])]);
+    const pager =
+      total > 1
+        ? `<nav class="pager" aria-label="Страницы">${Array.from({ length: total }, (_, i) => i + 1)
+            .map((i) => (i === n ? `<span class="on">${i}</span>` : `<a href="${pageAt(i)}">${i}</a>`))
+            .join('')}</nav>`
+        : '';
+    pages.push({
+      path,
+      title: n === 1 ? t.title : `${t.h1}, страница ${n} — ${SITE_NAME}`,
+      description: n === 1 ? t.description : clip(`${t.h1}, страница ${n}: ${chunk.map((p) => p.h1).join('; ')}.`),
+      priority: n === 1 ? 0.6 : 0.3,
+      jsonld: [
+        cr.ld,
+        {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: t.h1,
+          itemListElement: chunk.map((p, i) => ({ '@type': 'ListItem', position: (n - 1) * PER_PAGE + i + 1, name: p.h1, url: abs(p.path) })),
+        },
+      ],
+      body: `${cr.html}\n<h1>${esc(t.h1)}${n > 1 ? `, страница ${n}` : ''}</h1>\n${n === 1 ? t.intro : ''}\n${
+        chunk.length ? `<ul class="post-list">${chunk.map(postItem).join('')}</ul>` : '<p>Записей пока нет.</p>'
+      }\n${pager}\n<p class="seo-chips"><a href="/">Во двор, к играм</a><a href="${kind === 'news' ? '/blog/' : '/novosti/'}">${kind === 'news' ? 'Блог' : 'Новости'}</a></p>`,
+    });
+  }
+  for (const p of list) {
+    const games = p.games.map((id) => CATALOG.find((g) => g.id === id)!).filter(ready);
+    const thumb = games.find((g) => g.thumb)?.thumb;
+    const image = p.image ?? (thumb ? '/thumbs/' + thumb : undefined);
+    const cr = crumbs([[SITE_NAME, '/'], [k.title, base], [p.h1, p.path]]);
+    const others = list.filter((x) => x !== p).slice(0, 4);
+    const org = { '@type': 'Organization', name: SITE_NAME, url: abs('/') };
+    pages.push({
+      path: p.path,
+      title: p.title,
+      description: p.description,
+      image,
+      published: p.date,
+      priority: kind === 'blog' ? 0.7 : 0.5,
+      jsonld: [
+        {
+          '@context': 'https://schema.org',
+          '@type': kind === 'news' ? 'NewsArticle' : 'BlogPosting',
+          headline: p.h1,
+          description: p.description,
+          datePublished: p.date,
+          dateModified: p.updated ?? p.date,
+          inLanguage: 'ru',
+          url: abs(p.path),
+          mainEntityOfPage: abs(p.path),
+          ...(image ? { image: abs(image) } : {}),
+          author: org,
+          publisher: org,
+        },
+        cr.ld,
+      ],
+      body: `${cr.html}
+<h1>${esc(p.h1)}</h1>
+<p class="post-meta"><time datetime="${p.date}">${ruDate(p.date)}</time>${p.updated ? ` · обновлено ${ruDate(p.updated)}` : ''} · ${k.one.toLowerCase()}</p>
+${p.html}
+${games.length ? `<h2>Сыграть</h2>\n${cards(games)}` : ''}
+${others.length ? `<h2>${kind === 'blog' ? 'Ещё в блоге' : 'Другие новости'}</h2>\n<ul class="post-list">${others.map(postItem).join('')}</ul>` : ''}
+<p><a href="${base}">${kind === 'blog' ? 'Все статьи блога' : 'Все новости'}</a> · <a href="/">Во двор, к играм</a></p>`,
+    });
+  }
+}
+
+/** Свежие записи на главной. */
+function latestPosts(): string {
+  const block = (kind: Kind, title: string) =>
+    POSTS[kind].length ? `<h2><a href="/${KINDS[kind].slug}/">${title}</a></h2>\n<ul class="post-list">${POSTS[kind].slice(0, 3).map(postItem).join('')}</ul>` : '';
+  return block('news', 'Новости двора') + '\n' + block('blog', 'Из блога');
+}
+
 function groupPage(g: CatalogEntry) {
   const path = gamePath(g.id);
   const t = GROUPS[g.id] ?? {};
@@ -416,7 +536,7 @@ function homePage() {
     description: HOME.description!,
     priority: 1,
     jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: abs('/'), inLanguage: 'ru' }],
-    body: `<h1>${esc(HOME.h1!)}</h1>\n${HOME.intro}\n${cards(SHOWN.filter(ready), true)}\n${sections}`,
+    body: `<h1>${esc(HOME.h1!)}</h1>\n${HOME.intro}\n${cards(SHOWN.filter(ready), true)}\n${sections}\n${latestPosts()}`,
   });
 }
 
@@ -424,6 +544,8 @@ function homePage() {
 
 homePage();
 for (const c of CATEGORIES) sectionPage(c);
+postPages('news');
+postPages('blog');
 for (const g of CATALOG) {
   if (!ready(g)) continue;
   if (g.members) groupPage(g);

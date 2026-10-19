@@ -230,6 +230,8 @@ export type Route =
   | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string }
   | { kind: 'table'; code: string }
   | { kind: 'search'; q: string }
+  /** Новости и блог: список (/novosti/, /novosti/stranica-2/) или запись (/blog/<адрес>/) — готовый текст с сервера. */
+  | { kind: 'page'; tab: 'news' | 'blog'; path: string }
   | { kind: 'missing'; path: string };
 
 const BY_PATH = new Map<string, { id: string; preset?: string; article?: boolean; mode?: string }>();
@@ -253,6 +255,8 @@ export function parseRoute(pathname: string, search = ''): Route {
   if (!p) return { kind: 'yard' };
   if (p.startsWith('stol/')) return { kind: 'table', code: p.slice(5).toUpperCase() };
   if (p === 'poisk') return { kind: 'search', q: q.get('q') ?? '' };
+  const top = p.split('/')[0];
+  if (top === 'novosti' || top === 'blog') return { kind: 'page', tab: top === 'blog' ? 'blog' : 'news', path: `/${p}/` };
   const sec = BY_SECTION.get(p);
   if (sec) return { kind: 'yard', cat: sec };
   const rules = p.endsWith('/pravila');

@@ -99,6 +99,11 @@ export class Room {
     return !!this.auth;
   }
 
+  /** Сколько вкладок подключено (счётчик онлайна на сервере). */
+  get clientCount() {
+    return new Set([...this.conns].map((c) => c.clientId).filter(Boolean)).size;
+  }
+
   // ---------------------------------------------------------------- соединения
 
   connect(link: Link) {

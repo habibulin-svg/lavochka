@@ -10,6 +10,7 @@ import { SHOWN, CATEGORIES, membersOf, type CatalogEntry, type Category } from '
 import { cardMarkup, isReady } from '../site/card';
 import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
+import { loadStats, onStats } from '../site/stats';
 import './yard.css';
 
 const WAVE_NAMES: Record<number, string> = {
@@ -235,6 +236,26 @@ export function wireSettings(btn: HTMLButtonElement) {
 
 export const SEARCH_HINT = 'Найти игру: нарды, косынка, tetris…';
 
+// ------------------------------------------------------------------ порядок карточек
+
+export type YardSort = '' | 'new' | 'popular';
+/** Начатые партии по играм (с сервера); пока не пришли — null. */
+let played: Record<string, number> | null = null;
+
+/** Дата появления: у группы — самой новой из её игр. */
+const addedOf = (g: CatalogEntry): string => (g.members ? membersOf(g).reduce((d, m) => (addedOf(m) > d ? addedOf(m) : d), g.added) : g.added);
+/** Партий сыграно: у группы — сумма по её играм. */
+const playedOf = (g: CatalogEntry): number => (g.members ? membersOf(g).reduce((n, m) => n + playedOf(m), 0) : (played?.[g.id] ?? 0));
+
+/** Готовые — первыми; дальше — как выбрано (при равенстве — порядок каталога). */
+function sorted(list: CatalogEntry[], how: YardSort): CatalogEntry[] {
+  const key = (g: CatalogEntry) => (how === 'new' ? addedOf(g) : how === 'popular' ? playedOf(g) : 0);
+  return list
+    .map((g, i) => ({ g, i, k: key(g) }))
+    .sort((a, b) => Number(isReady(b.g)) - Number(isReady(a.g)) || (b.k > a.k ? 1 : b.k < a.k ? -1 : 0) || a.i - b.i)
+    .map((x) => x.g);
+}
+
 export const yard = {
   /** Назначается в main.ts: открыть экран игры. */
   openGame: (_g: CatalogEntry) => {},
@@ -244,7 +265,14 @@ export const yard = {
   onCat: (_cat: Category | 'all') => {},
   /** Назначается в main.ts: изменился запрос поиска (адрес /poisk/?q=…). */
   onSearch: (_q: string) => {},
+  /** Назначается в main.ts: шапка сайта для двора. */
+  makeBar: (): HTMLElement => document.createElement('div'),
   el: null as HTMLElement | null,
+  /** Порядок карточек (запоминается). */
+  sort: (() => {
+    const v = store.get<string>('yard.sort', '');
+    return (v === 'new' || v === 'popular' ? v : '') as YardSort;
+  })(),
   /** Раздел, который сейчас показан (его задаёт адрес). */
   cat: 'all' as Category | 'all',
   /** Запрос поиска: пока он не пуст, двор показывает найденное. */
@@ -260,26 +288,38 @@ export const yard = {
             <h1>Вечером на лавочке</h1>
             <p>сборник дворовых игр</p>
           </div>
-          <div class="yard-actions">
-            <form class="join-form" title="Код комнаты от друга">
-              <input class="code-input" maxlength="6" placeholder="КОД" autocomplete="off" spellcheck="false">
-              <button class="btn primary">Войти</button>
-            </form>
-            <button class="btn" data-a="settings" title="Настройки">⚙ <span class="who"></span></button>
-          </div>
         </header>
         <div class="yard-spacer"></div>
         <form class="search-form" role="search" action="/poisk/"><input type="search" name="q" placeholder="${esc(SEARCH_HINT)}" autocomplete="off" spellcheck="false" aria-label="Поиск игры"></form>
-        <nav class="cats"></nav>
+        <div class="cats-row"><nav class="cats"></nav>
+          <label class="yard-sort" title="Порядок карточек"><span>Порядок:</span><select>
+            <option value="">как обычно</option><option value="new">сначала новые</option><option value="popular">популярные</option>
+          </select></label></div>
         <div class="cards"></div>
         <footer class="yard-foot">Играть можно за одним экраном, с ботами или с друзьями по коду комнаты.</footer>
       </div>
     </section>`);
     this.el = el;
+    // шапка сайта (её собирает main.ts: там же решается, куда ведёт поиск)
+    el.prepend(this.makeBar());
     mountScreen('yard', el);
 
-    wireSettings(el.querySelector('[data-a=settings]') as HTMLButtonElement);
-    wireJoin(el.querySelector('.join-form') as HTMLFormElement);
+    const sort = el.querySelector('.yard-sort select') as HTMLSelectElement;
+    sort.value = this.sort;
+    sort.onchange = () => {
+      Sound.ui();
+      this.sort = sort.value as YardSort;
+      store.set('yard.sort', this.sort);
+      if (this.sort === 'popular' && !played) void loadStats().then((st) => (st ? this.renderCards() : toast('Нет связи с сервером — счётчики партий недоступны.')));
+      this.renderCards();
+    };
+    // счётчики партий пришли или обновились — пересобрать популярное
+    onStats((st) => {
+      const first = !played;
+      played = st.played;
+      if (first && this.sort === 'popular' && this.el?.classList.contains('active')) this.renderCards();
+    });
+    if (this.sort === 'popular') void loadStats();
 
     const sf = el.querySelector('.search-form') as HTMLFormElement;
     const si = sf.querySelector('input') as HTMLInputElement;
@@ -358,12 +398,11 @@ export const yard = {
         this.renderCards();
       };
       box.appendChild(head);
-      for (const m of membersOf(g).sort((a, b) => Number(isReady(b)) - Number(isReady(a)))) box.appendChild(card(m));
+      for (const m of sorted(membersOf(g), this.sort)) box.appendChild(card(m));
       return;
     }
     const cat = this.cat;
-    const list = SHOWN.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(isReady(b)) - Number(isReady(a)));
-    for (const g of list) box.appendChild(card(g));
+    for (const g of sorted(SHOWN.filter((g) => cat === 'all' || g.cat === cat), this.sort)) box.appendChild(card(g));
   },
 
   /** Показать двор: раздел (по адресу) или найденное по запросу. */

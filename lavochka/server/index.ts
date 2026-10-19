@@ -19,7 +19,7 @@ import type { Link } from '../src/core/protocol';
 import { Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
-import { MOVED } from '../src/site/routes';
+import { MOVED, SLUGS } from '../src/site/routes';
 
 const PORT = Number(process.env.PORT) || 8787;
 const here = dirname(fileURLToPath(import.meta.url));
@@ -154,6 +154,60 @@ function saveRecords() {
   }, 1000);
 }
 
+// ------------------------------------------------------------------ счётчики: онлайн и начатые партии
+// Онлайн — сколько вкладок отметилось за последние 3 минуты (сайт отмечается раз в минуту, пока вкладка видна).
+// Партии — сколько раз начинали каждую игру (клиент сообщает при «Начать игру» и «Сыграть ещё»); ответ кэшируется на минуту.
+
+const ONLINE_MS = 3 * 60_000;
+const seen = new Map<string, number>();
+const PLAYED_FILE = join(DATA, 'played.json');
+let played: Record<string, number> = {};
+try {
+  played = JSON.parse(readFileSync(PLAYED_FILE, 'utf8'));
+} catch {
+  played = {};
+}
+let playedTimer: ReturnType<typeof setTimeout> | undefined;
+function savePlayed() {
+  clearTimeout(playedTimer);
+  playedTimer = setTimeout(() => {
+    try {
+      mkdirSync(DATA, { recursive: true });
+      writeFileSync(PLAYED_FILE, JSON.stringify(played));
+    } catch (e) {
+      log('не удалось сохранить счётчик партий: ' + e);
+    }
+  }, 5000);
+}
+/** Защита от накрутки: с одного адреса — не чаще раза в 15 с на игру и не больше 300 партий в сутки. */
+const playLimit = new Map<string, { day: number; n: number; last: Record<string, number> }>();
+function mayCount(ip: string, game: string): boolean {
+  const now = Date.now();
+  const day = Math.floor(now / 86_400_000);
+  let l = playLimit.get(ip);
+  if (!l || l.day !== day) playLimit.set(ip, (l = { day, n: 0, last: {} }));
+  if (l.n >= 300 || now - (l.last[game] ?? 0) < 15_000) return false;
+  l.n++;
+  l.last[game] = now;
+  return true;
+}
+let statsCache: { at: number; body: string } | null = null;
+function statsBody(): string {
+  const now = Date.now();
+  if (statsCache && now - statsCache.at < 60_000) return statsCache.body;
+  for (const [id, t] of seen) if (now - t > ONLINE_MS) seen.delete(id);
+  // онлайн — не меньше, чем людей за сетевыми столами сервера
+  const online = Math.max(seen.size, [...rooms.values()].reduce((n, r) => n + r.clientCount, 0));
+  statsCache = { at: now, body: JSON.stringify({ online, played }) };
+  return statsCache.body;
+}
+setInterval(() => {
+  if (playLimit.size > 5000) playLimit.clear();
+}, 3600_000).unref();
+
+// nginx дописывает настоящий адрес в конец X-Forwarded-For (начало может подделать сам клиент)
+const clientIp = (req: IncomingMessage) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',').pop()!.trim();
+
 // ------------------------------------------------------------------ HTTP
 
 const MIME: Record<string, string> = {
@@ -258,6 +312,26 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     return res.end();
   }
   if (path === '/api/health') return json(res, 200, { ok: true, rooms: rooms.size });
+  if (path === '/api/stats') {
+    // ?v=<метка вкладки> — вкладка отмечается «во дворе»
+    const v = new URL(req.url || '', 'http://x').searchParams.get('v');
+    if (v && /^[\w-]{6,40}$/.test(v) && (seen.has(v) || seen.size < 100_000)) seen.set(v, Date.now());
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    return res.end(statsBody());
+  }
+  if (path === '/api/played' && req.method === 'POST') {
+    try {
+      const game = String(JSON.parse(await readBody(req, 256)).game || '');
+      if (!Object.hasOwn(SLUGS, game)) return json(res, 400, { error: 'game' });
+      if (mayCount(clientIp(req), game)) {
+        played[game] = (played[game] || 0) + 1;
+        savePlayed();
+      }
+      return json(res, 200, { ok: true });
+    } catch {
+      return json(res, 400, { error: 'bad body' });
+    }
+  }
   if (path === '/api/ice') {
     // логины TURN — только своему сайту (без access-control-allow-origin)
     const servers = await iceServers();

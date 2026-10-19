@@ -36,13 +36,15 @@ async function textFor(path: string): Promise<Text | null> {
 
 let gen = 0;
 
-/** Поставить текст страницы `path` в конец экрана `host` (прежний — убрать) и заголовок вкладки той страницы. */
-export async function attachSeo(host: Element | null, path = location.pathname) {
+/** Поставить текст страницы `path` в конец экрана `host` (прежний — убрать) и заголовок вкладки той страницы.
+ * Вернёт false, если текста у адреса нет. */
+export async function attachSeo(host: Element | null, path = location.pathname): Promise<boolean> {
   const my = ++gen;
   document.querySelectorAll('#app .seo-page').forEach((e) => e.remove());
-  if (!host) return;
+  if (!host) return false;
   const t = await textFor(path);
-  if (my !== gen || !t || !host.isConnected) return;
+  if (my !== gen || !host.isConnected) return true;
+  if (!t) return false;
   document.title = t.title;
   const el = document.createElement('article');
   el.className = 'seo-page';
@@ -50,4 +52,5 @@ export async function attachSeo(host: Element | null, path = location.pathname) 
   // карточки страницы двора уже показывает сам двор — в тексте они для поисковика и для чтения без скриптов
   if (host.closest('[data-screen=yard]')) el.querySelectorAll('.seo-cards[data-yard]').forEach((c) => c.remove());
   host.appendChild(el);
+  return true;
 }

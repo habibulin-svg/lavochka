@@ -29,7 +29,19 @@
 .join-form { display: flex; gap: 6px; }
 .join-form .code-input { width: 112px; font-size: 18px; letter-spacing: 4px; text-align: center; text-transform: uppercase; font-weight: 700; }
 
-.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.cats-row { display: flex; align-items: flex-start; gap: 8px 14px; margin: 12px 0 16px; }
+.cats { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.yard-sort { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 14px 'PT Sans', sans-serif; color: #e8dcc0; }
+.yard-sort select {
+  font: 600 14px 'PT Sans', sans-serif; color: #f1ead8; padding: 6px 10px; border-radius: 999px; cursor: pointer; outline: none;
+  border: 1px solid rgba(255, 240, 210, 0.35); background: rgba(20, 16, 30, 0.7);
+}
+.yard-sort select:focus { border-color: #ffd27a; }
+.yard-sort option { color: #241c14; background: #f6eedb; }
+@media (max-width: 760px) {
+  .cats-row { flex-direction: column; }
+  .yard-sort { align-self: flex-end; }
+}
 .cats a { text-decoration: none; }
 .search-form { margin-top: 18px; max-width: 520px; }
 .search-form input {

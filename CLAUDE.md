@@ -42,6 +42,8 @@ Node установлен в `C:\Program Files\nodejs`; в Bash сначала `
   - вариант с собственным спросом — `VARIANTS` в `routes.ts` плюс текст `seo.ts` → `variants[preset]` (тест требует) и снимок `python tools/thumbs/variant.py <адрес> <игра> <пресет>` → `public/thumbs/v/`;
   - аркада с серией игр — `MODE_PAGES`; справочная статья с большим спросом («комбинации покера») — `ARTICLES` + `seo.ts` → `articles`;
   - новый раздел двора — `SECTION_SLUGS` + текст в `src/site/sections.ts`;
+  - карточка в каталоге — с датой появления `added: 'ГГГГ-ММ-ДД'` (сортировка «сначала новые»);
+  - новость о новой игре и статьи блога — Markdown в `lavochka/content/news/`, `lavochka/content/blog/` (формат — `tools/posts.ts`; `games:` в шапке записи ставит её в «Статьи об игре»);
   - проверка — `npm run build`, затем адрес на `:8787` (`lavochka-server`): текст под игрой, заголовок вкладки. В `npm run dev` текста страниц нет. Sitemap и IndexNow обновляются сами при выкладке;
   - временное (безголовый Chrome, логи) — только на D: `TEMP=D:/temp TMP=D:/temp`, на C места нет.
 - Стилизация под тему — где уместно (двор, 90-е, советские коробки), но не в ущерб читаемости.

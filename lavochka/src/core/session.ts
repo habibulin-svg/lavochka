@@ -13,6 +13,7 @@ import type { Options, SeatSpec } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
 import { esc, h, uid } from './util';
 import type { GameModule } from './view';
+import { countPlay } from '../site/stats';
 
 const saveKey = (id: string) => 'save.' + id;
 
@@ -133,6 +134,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
   const [a, b] = localPair();
   room.connect(a);
   const client = new RoomClient(b, { name: myName(), ownerKey });
+  client.onBegin = () => countPlay(def.id);
   active = { close: () => room.close() };
   nav.table(null, def.id);
   table = new Table({
@@ -242,6 +244,7 @@ function attach(mod: GameModule, client: RoomClient, mode: NetMode, code: string
     else nav.yard();
   };
   nav.table(code, def.id);
+  if (owner) client.onBegin = () => countPlay(def.id);
   table = new Table({ mod, client, mode, code, owner, onLeave: back, onReconnect: reconnect });
   const lobby = buildLobby(mod, client, mode, code, owner, back);
   client.on((m) => {

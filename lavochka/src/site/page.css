@@ -46,3 +46,22 @@ body > .seo-page { margin: 24px auto; }
   .seo-table td:nth-child(5), .seo-table th:nth-child(5) { display: none; }
   .pc { min-width: 1.6em; padding: 1px 2px; }
 }
+/* Экран новостей и блога: шапка сайта и текст страницы */
+.page-screen.active { background: radial-gradient(ellipse at 50% 0%, #4a3a5a, #17141f 70%); padding: 18px 16px 40px; }
+.page-screen .seo-page { margin-top: 8px; }
+.post-meta { font-size: 14px; opacity: 0.7; margin: -6px 0 14px; }
+.post-list { list-style: none; margin: 0; padding: 0; }
+.post-list li { padding: 12px 0; border-bottom: 1px dashed rgba(80, 50, 20, 0.3); }
+.post-list li:last-child { border-bottom: 0; }
+.post-list .pl-t { font-size: 18px; font-weight: 700; }
+.post-list time { display: block; font-size: 13px; opacity: 0.65; margin: 2px 0 4px; }
+.post-list p { margin: 0; }
+.pager { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 4px; }
+.pager a, .pager span { min-width: 34px; text-align: center; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(80, 50, 20, 0.35); text-decoration: none; background: rgba(255, 255, 255, 0.45); color: #241c14; }
+.pager span.on { background: #7a2a1d; color: #fff; border-color: #7a2a1d; }
+.seo-page blockquote { margin: 10px 0; padding: 8px 14px; border-left: 3px solid #b3322a; background: rgba(255, 255, 255, 0.35); border-radius: 0 6px 6px 0; }
+.seo-page ul, .seo-page ol { padding-left: 22px; margin: 0 0 10px; }
+.seo-page li { margin: 3px 0; }
+.post-pic { margin: 12px 0; }
+.post-pic img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
+.post-pic figcaption { font-size: 13px; opacity: 0.7; margin-top: 6px; }

@@ -4,13 +4,14 @@ import { Sound } from './core/audio';
 import { openHome } from './core/home';
 import { isArcade, openArcade } from './core/arcade';
 import { currentTable, nav, offerResume, resumeTable } from './core/session';
-import { closeAllModals, modal } from './core/ui';
+import { closeAllModals, modal, mountScreen, showScreen } from './core/ui';
 import type { GameModule } from './core/view';
 import { gamePath, modePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { metrikaHit, startMetrika } from './site/metrika';
-import { esc } from './core/util';
+import { startPresence } from './site/stats';
+import { esc, h } from './core/util';
 import { byId, type CatalogEntry, type Category } from './games/catalog';
 import { yard } from './launcher/yard';
 import { cardHTML, DECK_STYLES } from './cards/render';
@@ -78,7 +79,7 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
         rulesByUrl = false;
       },
     });
-    homeEl()?.prepend(siteBar(searchFromBar));
+    homeEl()?.prepend(siteBar({ onSearch: searchFromBar }));
     const seo = attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
     // статья при игре (комбинации покера): пришли читать — сразу к тексту, игра выше
     if (r.article) void seo.then(() => document.querySelector('#app .seo-page')?.scrollIntoView());
@@ -119,6 +120,7 @@ function toYard() {
   showYard(yard.cat);
 }
 
+yard.makeBar = () => siteBar({ onSearch: searchFromBar, yard: true });
 yard.openGame = (g) => {
   go(gamePath(g.id));
   void openGame(g);
@@ -163,12 +165,30 @@ nav.table = (code) => {
   go(code ? tablePath(code) : location.pathname + '?igra', here, here ? history.state : { table: 1 });
 };
 
+/** Новости и блог: шапка сайта и готовый текст страницы (его пишет пререндер из content/*.md). */
+function openPage(r: Extract<Route, { kind: 'page' }>) {
+  const el = h(`<section class="page-screen"><div class="page-body"></div></section>`);
+  el.prepend(siteBar({ onSearch: searchFromBar, tab: r.tab }));
+  mountScreen('page', el);
+  showScreen('page');
+  const body = el.querySelector('.page-body') as HTMLElement;
+  void attachSeo(body, r.path).then((ok) => {
+    if (ok || !body.isConnected) return;
+    const list = r.tab === 'blog' ? ['/blog/', 'Все статьи блога'] : ['/novosti/', 'Все новости'];
+    document.title = 'Страница не найдена — Вечером на лавочке';
+    body.innerHTML = `<article class="seo-page"><h1>Такой страницы нет</h1><p>${
+      import.meta.env.PROD ? 'Возможно, запись переехала или адрес набран с ошибкой.' : 'В разработке страниц новостей и блога нет: они собираются при сборке (npm run build, сервер :8787).'
+    }</p><p><a href="${list[0]}">${list[1]}</a> · <a href="/">Во двор, к играм</a></p></article>`;
+  });
+}
+
 /** Показать экран по адресу. */
 function render(r: Route) {
   navSeq++;
   leaveArcade();
   closeAllModals();
   if (r.kind === 'table') return resumeTable(r.code);
+  if (r.kind === 'page') return openPage(r);
   if (r.kind === 'game') {
     const g = byId(r.id);
     if (g?.members) {
@@ -307,4 +327,5 @@ else {
   render(parseRoute(location.pathname, location.search));
   offerResume();
   setTimeout(startMetrika);
+  startPresence();
 }
