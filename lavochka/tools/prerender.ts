@@ -89,6 +89,9 @@ interface Page {
 
 const pages: Page[] = [];
 
+/** Подвал каждой страницы: документы для покупателей (требование платёжного сервиса), реквизиты, копирайт. */
+const FOOTER = `<footer class="site-foot"><nav aria-label="Документы"><a href="/podpiska/">Подписка</a><a href="/oferta/">Оферта</a><a href="/kontakty/">Контакты и реквизиты</a><a href="/usloviya/">Условия использования</a><a href="/politika/">Политика конфиденциальности</a></nav><p>© ${new Date().getFullYear()} «${SITE_NAME}». Хабибулин А. М., самозанятый, ИНН 540363209100 · habibulin@gmail.com</p></footer>`;
+
 function html(p: Page): string {
   const head = [
     `<link rel="canonical" href="${esc(abs(p.path))}">`,
@@ -110,7 +113,7 @@ function html(p: Page): string {
     `<meta name="description" content="${esc(p.description)}">`
   );
   out = out.replace('</head>', head + '\n</head>');
-  out = out.replace('<div id="app"></div>', `<div id="app"></div>\n<article id="seo" class="seo-page" data-path="${esc(p.path)}">\n${p.body}\n</article>`);
+  out = out.replace('<div id="app"></div>', `<div id="app"></div>\n<article id="seo" class="seo-page" data-path="${esc(p.path)}">\n${p.body}\n${FOOTER}\n</article>`);
   return out;
 }
 

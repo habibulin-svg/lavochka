@@ -223,7 +223,7 @@ export const MODE_PAGES: ModePage[] = [
 ];
 
 /** Занятые слова: разделы сайта и служебные папки — адрес игры не может начинаться с них. */
-export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'politika', 'usloviya', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
+export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'politika', 'usloviya', 'oferta', 'podpiska', 'kontakty', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
 
 export type Route =
   | { kind: 'yard'; cat?: string }
@@ -237,7 +237,7 @@ export type Route =
   | { kind: 'missing'; path: string };
 
 /** Справочные страницы в корне (content/pages/*.md). */
-export const DOC_PAGES = ['politika', 'usloviya'];
+export const DOC_PAGES = ['politika', 'usloviya', 'oferta', 'podpiska', 'kontakty'];
 
 const BY_PATH = new Map<string, { id: string; preset?: string; article?: boolean; mode?: string }>();
 for (const [id, p] of Object.entries(SLUGS)) BY_PATH.set(p, { id });
