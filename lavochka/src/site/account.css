@@ -22,3 +22,21 @@
 .auth-rights { margin: 4px 0 8px; padding-left: 20px; }
 .auth .auth-totp[hidden] { display: none; }
 .auth .auth-btns { justify-content: flex-end; margin-top: 18px; }
+
+/* вход через сервисы */
+.auth-soc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 4px; }
+.auth-soc .soc {
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 10px; border-radius: 8px; text-decoration: none;
+  font: 700 15px 'PT Sans', sans-serif; color: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.auth-soc .soc:only-child { grid-column: 1 / -1; }
+.auth-soc .soc:hover { filter: brightness(1.08); }
+.auth-soc .soc i { font-style: normal; font-weight: 800; font-size: 12px; min-width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; background: rgba(255, 255, 255, 0.22); }
+.auth-soc .soc-ya { background: #fc3f1d; }
+.auth-soc .soc-vk { background: #0077ff; }
+.auth-or { display: flex; align-items: center; gap: 10px; font-size: 13px; opacity: 0.7; margin: 10px 0 2px; }
+.auth-or::before, .auth-or::after { content: ''; flex: 1; border-top: 1px solid rgba(42, 18, 6, 0.3); }
+.auth-soc-note { font-size: 12.5px; opacity: 0.75; margin: 4px 0 0; }
+.auth-links { list-style: none; margin: 4px 0 8px; padding: 0; }
+.auth-links li { margin: 4px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.auth-links .btn.small { text-decoration: none; }

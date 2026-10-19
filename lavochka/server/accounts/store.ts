@@ -71,6 +71,9 @@ export interface AccountStore {
   /** Вход через Яндекс ID / VK ID (этап 3б). */
   userByExternal(provider: string, subject: string): Promise<User | null>;
   linkExternal(provider: string, subject: string, userId: number, email: string | null): Promise<void>;
+  /** Какие входы привязаны к игроку. */
+  externalOf(userId: number): Promise<string[]>;
+  unlinkExternal(provider: string, userId: number): Promise<void>;
 
   /** Настройки сайта, которые меняет Мастер (надпись кнопки «Поддержать», цель сбора). */
   settings(): Promise<Record<string, string>>;
@@ -197,6 +200,14 @@ export class MemoryAccountStore implements AccountStore {
 
   async linkExternal(provider: string, subject: string, userId: number) {
     this.external.set(provider + ':' + subject, userId);
+  }
+
+  async externalOf(userId: number) {
+    return [...new Set([...this.external].filter(([, id]) => id === userId).map(([k]) => k.split(':')[0]))].sort();
+  }
+
+  async unlinkExternal(provider: string, userId: number) {
+    for (const [k, id] of this.external) if (id === userId && k.startsWith(provider + ':')) this.external.delete(k);
   }
 
   async settings() {

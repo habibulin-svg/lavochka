@@ -214,6 +214,15 @@ export class PgAccountStore implements AccountStore {
     );
   }
 
+  async externalOf(userId: number) {
+    const r = await this.pool.query('select distinct provider from external_logins where user_id = $1 order by provider', [userId]);
+    return r.rows.map((x) => x.provider as string);
+  }
+
+  async unlinkExternal(provider: string, userId: number) {
+    await this.pool.query('delete from external_logins where provider = $1 and user_id = $2', [provider, userId]);
+  }
+
   async settings() {
     const r = await this.pool.query('select key, value from site_settings');
     return Object.fromEntries(r.rows.map((x) => [x.key, x.value]));

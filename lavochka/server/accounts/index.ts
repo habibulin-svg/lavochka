@@ -6,6 +6,7 @@ import { MemoryAccountStore, type AccountStore } from './store';
 
 export { Accounts } from './accounts';
 export { authApi } from './http';
+export { OAuth, oauthApi, providersFromEnv } from './oauth';
 
 export function storeFromEnv(log: (s: string) => void): AccountStore {
   if (process.env.PGDATABASE || process.env.DATABASE_URL) return new PgAccountStore();

@@ -23,7 +23,7 @@ import type { GameDef } from '../src/core/types';
 import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
 import { MOVED, SLUGS } from '../src/site/routes';
-import { accountsFromEnv, authApi } from './accounts';
+import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './accounts';
 import { Donate, donateApi } from './donate';
 import { robokassaFromEnv } from './pay/robokassa';
 
@@ -166,6 +166,10 @@ async function initAccounts() {
   }
 }
 void initAccounts();
+// вход через Яндекс ID и VK ID (server/accounts/oauth.ts): включается по ключам
+const oauth = new OAuth(accounts, providersFromEnv(), fetch, log);
+accounts.loginWith = oauth.enabled;
+log('вход через сервисы: ' + (oauth.enabled.join(', ') || 'нет ключей'));
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
@@ -334,6 +338,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
       res.writeHead(503, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       return res.end(JSON.stringify({ error: 'down', message: 'Вход временно недоступен. Играть можно и без него.' }));
     }
+    if (await oauthApi(oauth, req, res, new URL(req.url || '/', 'http://x'), clientIp(req))) return;
     if (await authApi(accounts, req, res, path, clientIp(req), readBody)) return;
   }
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {

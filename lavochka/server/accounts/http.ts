@@ -22,14 +22,14 @@ export function siteOf(req: IncomingMessage): string {
   return `${isHttps(req) ? 'https' : 'http'}://${String(req.headers.host || 'localhost')}`;
 }
 
-function setCookie(req: IncomingMessage, sid: string | null): string {
+export function sessionCookie(req: IncomingMessage, sid: string | null): string {
   const base = `${COOKIE}=${sid ?? ''}; Path=/; HttpOnly; SameSite=Lax${isHttps(req) ? '; Secure' : ''}`;
   return sid ? `${base}; Max-Age=${SESSION_DAYS * 86400}` : `${base}; Max-Age=0`;
 }
 
 export function send(req: IncomingMessage, res: ServerResponse, r: Reply) {
   const headers: Record<string, string> = { 'content-type': 'application/json', 'cache-control': 'no-store' };
-  if (r.sid !== undefined) headers['set-cookie'] = setCookie(req, r.sid);
+  if (r.sid !== undefined) headers['set-cookie'] = sessionCookie(req, r.sid);
   res.writeHead(r.code, headers);
   res.end(JSON.stringify(r.body));
 }
@@ -86,6 +86,7 @@ export async function authApi(
     forgot: () => acc.forgot(b, ctx),
     reset: () => acc.reset(b, ctx),
     profile: () => acc.profile(b, ctx),
+    unlink: () => acc.unlink(b, ctx),
   };
   const f = act[action];
   send(req, res, f ? await f() : { code: 404, body: { error: 'not found' } });

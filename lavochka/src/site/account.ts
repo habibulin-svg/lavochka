@@ -13,10 +13,16 @@ export interface Me {
   email: string | null;
   verified: boolean;
   rights: RightGrant[];
+  /** Привязанные входы: yandex, vk. */
+  providers: string[];
+  /** Есть ли пароль. */
+  password: boolean;
 }
 
 let me: Me | null = null;
 let mailOn = false;
+/** Какие входы через сервисы включены на сервере. */
+let loginWith: string[] = [];
 let loaded: Promise<void> | null = null;
 const subs = new Set<(m: Me | null) => void>();
 
@@ -43,6 +49,7 @@ export function loadAccount(force = false): Promise<void> {
     .then((b) => {
       if (!b) return;
       mailOn = !!b.mail;
+      loginWith = Array.isArray(b.loginWith) ? b.loginWith : [];
       setMe(b.user ?? null);
     })
     .catch(() => {});
@@ -66,6 +73,47 @@ async function post(action: string, body: object = {}): Promise<ApiReply> {
 }
 
 const errText = (r: ApiReply) => r.body?.message || (r.status === 503 ? 'Вход временно недоступен. Играть можно и без него.' : 'Что-то пошло не так. Попробуйте ещё раз.');
+
+// ------------------------------------------------------------------ вход через Яндекс ID и VK ID
+
+export const PROVIDERS: Record<string, string> = { yandex: 'Яндекс ID', vk: 'VK ID' };
+
+/** Адрес начала входа через сервис (сервер уведёт на его страницу и вернёт сюда же). */
+const startUrl = (p: string) => `/api/auth/${p}/start?` + new URLSearchParams({ back: location.pathname + location.search });
+
+function socialHtml(): string {
+  if (!loginWith.length) return '';
+  const b: string[] = [];
+  if (loginWith.includes('yandex')) b.push(`<a class="soc soc-ya" href="${startUrl('yandex')}"><i>Я</i>Яндекс ID</a>`);
+  if (loginWith.includes('vk')) b.push(`<a class="soc soc-vk" href="${startUrl('vk')}" title="ВКонтакте, Одноклассники, Mail"><i>VK</i>VK ID</a>`);
+  return `<div class="auth-soc">${b.join('')}</div><p class="auth-or"><span>или по почте</span></p>`;
+}
+
+const OAUTH_ERRORS: Record<string, string> = {
+  otmena: 'Вход отменён.',
+  ustarelo: 'Вход устарел — попробуйте ещё раз.',
+  servis: 'Сервис входа не ответил. Попробуйте ещё раз или войдите по почте.',
+  master: 'Мастер входит только по почте, паролю и коду из приложения.',
+  linked: 'Этот вход уже привязан к другому аккаунту.',
+  banned: 'Вход для этого аккаунта закрыт.',
+  often: 'Слишком много регистраций с этого адреса. Попробуйте через час.',
+  'net-vhoda': 'Этот способ входа пока не подключён.',
+};
+
+/** Вернулись со страницы сервиса: ?voshel=… / ?privyazan=… — сказать и убрать из адреса. */
+export function handleOAuthReturn(): void {
+  const q = new URLSearchParams(location.search);
+  const p = q.get('voshel') ?? q.get('privyazan');
+  if (!p) return;
+  const linked = q.has('privyazan');
+  q.delete('voshel');
+  q.delete('privyazan');
+  history.replaceState(history.state, '', location.pathname + (q.size ? '?' + q : '') + location.hash);
+  void loadAccount(true).then(() => {
+    if (linked) toast(`${PROVIDERS[p] ?? p} привязан к аккаунту`);
+    else if (me) toast(`Вы вошли как ${me.name}`);
+  });
+}
 
 // ------------------------------------------------------------------ окно входа
 
@@ -98,6 +146,11 @@ function render(box: HTMLElement, view: View, email = '') {
     box.innerHTML = `${tabs}
       <h2>${reg ? 'Регистрация' : 'Вход'}</h2>
       <p class="hint">${reg ? 'Аккаунт хранит рекорды, партии и настройки. Играть можно и без него.' : 'Войдите, чтобы ваши рекорды и настройки были с вами на любом устройстве.'}</p>
+      ${socialHtml()}${
+        reg && loginWith.length
+          ? '<p class="auth-soc-note">Входя через сервис, вы соглашаетесь с <a href="/usloviya/" target="_blank">условиями</a> и <a href="/politika/" target="_blank">политикой конфиденциальности</a>.</p>'
+          : ''
+      }
       <form>
         ${reg ? `<label class="field">Имя за столом<input name="name" autocomplete="nickname" maxlength="24" placeholder="как вас звать во дворе"></label>` : ''}
         ${emailField}
@@ -179,6 +232,17 @@ export function openProfile(): void {
     <p><span class="lbl">Почта:</span> ${esc(u.email ?? '—')} ${
       u.email ? (u.verified ? '<span class="auth-ok">✔ подтверждена</span>' : `<span class="auth-no">не подтверждена</span>${mailOn ? ' <button type="button" class="btn small" data-a="resend">Прислать письмо ещё раз</button>' : ''}`) : ''
     }</p>
+    ${
+      loginWith.length || u.providers.length
+        ? `<p class="lbl">Вход через сервисы</p><ul class="auth-links">${[...new Set([...loginWith, ...u.providers])]
+            .map((p) =>
+              u.providers.includes(p)
+                ? `<li>${PROVIDERS[p] ?? p} <span class="auth-ok">✔ привязан</span> <button type="button" class="btn small" data-unlink="${p}">Отвязать</button></li>`
+                : `<li>${PROVIDERS[p] ?? p} <a class="btn small" href="${startUrl(p)}">Привязать</a></li>`
+            )
+            .join('')}</ul>`
+        : ''
+    }
     ${u.rights.length ? `<p class="lbl">Права</p><ul class="auth-rights">${u.rights.map((g) => `<li>${esc(RIGHTS[g.right as keyof typeof RIGHTS] ?? g.right)}${until(g)}</li>`).join('')}</ul>` : ''}
     ${u.rights.some((g) => g.right === 'master') ? `<p><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button></p>` : ''}
     <p class="err" role="alert"></p>
@@ -208,6 +272,16 @@ export function openProfile(): void {
     open?.close();
     toast('Вы вышли. Играть можно и без входа.');
   });
+  box.querySelectorAll<HTMLButtonElement>('[data-unlink]').forEach(
+    (b) =>
+      (b.onclick = async () => {
+        const r = await post('unlink', { provider: b.dataset.unlink });
+        if (!r.ok) return void (errEl.textContent = errText(r));
+        setMe(r.body.user);
+        openProfile();
+        toast('Вход отвязан');
+      })
+  );
   act('resend', async () => {
     const r = await post('resend');
     if (!r.ok) return void (errEl.textContent = errText(r));
@@ -218,8 +292,14 @@ export function openProfile(): void {
 // ------------------------------------------------------------------ ссылки из писем
 
 /** /vhod/?podtverdit=… — подтвердить почту; /vhod/?sbros=… — окно нового пароля; просто /vhod/ — окно входа. */
-export async function handleAuthRoute(r: { confirm?: string; reset?: string }) {
+export async function handleAuthRoute(r: { confirm?: string; reset?: string; error?: string }) {
   await loadAccount();
+  if (r.error) {
+    openAuth();
+    const e = document.querySelector('.auth .err');
+    if (e) e.textContent = OAUTH_ERRORS[r.error] ?? 'Не получилось войти через сервис. Попробуйте ещё раз.';
+    return;
+  }
   if (r.confirm) {
     const res = await post('confirm', { token: r.confirm });
     if (res.ok) {

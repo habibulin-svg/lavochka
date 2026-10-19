@@ -34,6 +34,19 @@ export interface PublicUser {
   email: string | null;
   verified: boolean;
   rights: RightGrant[];
+  /** Привязанные входы: yandex, vk. */
+  providers: string[];
+  /** Есть ли пароль (вход только через Яндекс/VK — нет). */
+  password: boolean;
+}
+
+/** Кто пришёл через Яндекс ID / VK ID (после обмена кода на сервере). */
+export interface ExternalProfile {
+  provider: 'yandex' | 'vk';
+  subject: string;
+  /** Почта, подтверждённая сервисом входа (иначе null). */
+  email: string | null;
+  name: string;
 }
 
 /** Ограничитель частоты: не больше max событий на ключ за окно. */
@@ -88,6 +101,9 @@ export class Accounts {
   private mailDay = new Limiter(5, DAY);
   private mailByIp = new Limiter(15, DAY);
 
+  /** Какие внешние входы включены (ставит сервер по ключам: yandex, vk). */
+  loginWith: string[] = [];
+
   constructor(
     readonly store: AccountStore,
     private mail: Mailer,
@@ -95,7 +111,15 @@ export class Accounts {
   ) {}
 
   async publicUser(u: User, now = Date.now()): Promise<PublicUser> {
-    return { id: u.id, name: u.name, email: u.email, verified: u.emailVerified, rights: await this.store.rights(u.id, now) };
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      verified: u.emailVerified,
+      rights: await this.store.rights(u.id, now),
+      providers: await this.store.externalOf(u.id),
+      password: !!u.passwordHash,
+    };
   }
 
   /** Пользователь по cookie. */
@@ -116,7 +140,7 @@ export class Accounts {
 
   async me(ctx: Ctx): Promise<Reply> {
     const u = await this.current(ctx);
-    return { code: 200, body: { user: u ? await this.publicUser(u, ctx.now) : null, mail: this.mail.enabled } };
+    return { code: 200, body: { user: u ? await this.publicUser(u, ctx.now) : null, mail: this.mail.enabled, loginWith: this.loginWith } };
   }
 
   async register(b: any, ctx: Ctx): Promise<Reply> {
@@ -254,6 +278,59 @@ export class Accounts {
     if (!name) return err(400, 'name', 'Имя — от 2 до 24 знаков.');
     await this.store.updateUser(u.id, { name });
     return { code: 200, body: { user: await this.publicUser({ ...u, name }, ctx.now) } };
+  }
+
+  /** Вход через Яндекс ID / VK ID. Уже вошедшему — привязать вход к его аккаунту.
+   * Аккаунт ищется по привязке, затем по почте (сервис входа её подтвердил — значит, почта настоящая: неподтверждённый
+   * аккаунт с той же почтой забираем себе, сбросив чужой пароль и сессии). Мастеру этот вход закрыт: только пароль и код. */
+  async externalLogin(p: ExternalProfile, ctx: Ctx): Promise<Reply> {
+    const now = ctx.now ?? Date.now();
+    const isMaster = async (u: User) => !!u.totpSecret || (await this.store.rights(u.id, now)).some((r) => r.right === 'master');
+    const masterErr = err(403, 'master', 'Мастер входит только по почте, паролю и коду из приложения.');
+    const email = p.email && validEmail(normEmail(p.email)) ? normEmail(p.email) : null;
+    const linked = await this.store.userByExternal(p.provider, p.subject);
+    const cur = await this.current(ctx);
+    if (cur) {
+      // привязка к своему аккаунту из профиля
+      if (linked && linked.id !== cur.id) return err(409, 'linked', 'Этот вход уже привязан к другому аккаунту.');
+      await this.store.linkExternal(p.provider, p.subject, cur.id, email);
+      return { code: 200, body: { user: await this.publicUser(cur, now), linked: true } };
+    }
+    let u = linked;
+    if (!u && email) {
+      const same = await this.store.userByEmail(email);
+      if (same) {
+        if (await isMaster(same)) return masterErr;
+        if (!same.emailVerified) {
+          await this.store.updateUser(same.id, { passwordHash: null, emailVerified: true });
+          await this.store.deleteUserSessions(same.id);
+          this.log(`аккаунт #${same.id}: почту подтвердил вход ${p.provider}, прежний пароль сброшен`);
+        }
+        u = (await this.store.userById(same.id))!;
+      }
+    }
+    if (!u) {
+      if (!this.registerByIp.take(ctx.ip, ctx.now)) return err(429, 'often', 'Слишком много регистраций с этого адреса. Попробуйте через час.');
+      u = await this.store.createUser({ email, name: cleanName(p.name) ?? 'Игрок', passwordHash: null, emailVerified: !!email });
+      this.log(`аккаунт: новый игрок #${u.id} через ${p.provider}`);
+    }
+    if (await isMaster(u)) return masterErr;
+    if (u.bannedUntil && u.bannedUntil > now) return err(403, 'banned', 'Вход закрыт до ' + new Date(u.bannedUntil).toLocaleDateString('ru-RU') + '.');
+    await this.store.linkExternal(p.provider, p.subject, u.id, email);
+    const sid = await this.openSession(u, ctx);
+    return { code: 200, body: { user: await this.publicUser(u, now), created: !linked }, sid };
+  }
+
+  /** Отвязать вход; последний способ войти отвязать нельзя. */
+  async unlink(b: any, ctx: Ctx): Promise<Reply> {
+    const u = await this.current(ctx);
+    if (!u) return err(401, 'auth', 'Войдите заново.');
+    const provider = String(b?.provider ?? '');
+    const have = await this.store.externalOf(u.id);
+    if (!have.includes(provider)) return err(400, 'provider', 'Этот вход не привязан.');
+    if (have.length === 1 && !u.passwordHash) return err(400, 'last', 'Это единственный способ войти. Сначала задайте пароль через «Забыли пароль?».');
+    await this.store.unlinkExternal(provider, u.id);
+    return { code: 200, body: { user: await this.publicUser(u, ctx.now) } };
   }
 
   /** Выдать право на срок (дней; 0/undefined — бессрочно). Для админки и команды на сервере. */
