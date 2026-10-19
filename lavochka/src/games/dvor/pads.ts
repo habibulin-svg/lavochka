@@ -14,6 +14,7 @@ import { ABC, type ClockData } from './kinds/clock';
 import type { OstatkiData } from './kinds/ostatki';
 import { GOODS, type ShopData } from './kinds/shop';
 import type { ZadachkaData } from './kinds/zadachki';
+import type { FutoData, KakurasuData, KriptData, OcheredData } from './kinds/order';
 import type { KakuroData, KratData, MirrorData, RaskData } from './kinds/paint';
 import type { GearsAns, GearsData, TurnirData, ZemData } from './kinds/mech';
 import { COLORS, type Fig, type KartinkaData, type MatrixData, type OdinData, type VennData } from './kinds/misc';
@@ -1904,6 +1905,196 @@ function kakuroPad(d: KakuroData, changed: Changed): Pad {
   };
 }
 
+// ---------------------------------------------------------------- очередь
+
+function ocheredPad(d: OcheredData, changed: Changed): Pad {
+  const n = d.names.length;
+  const el = h(`<div class="dv-och"><ol class="dv-clues">${d.texts.map((t) => `<li>${esc(t)}</li>`).join('')}</ol><div class="slots"></div></div>`);
+  el.querySelector('.dv-clues')!.addEventListener('click', (e) => (e.target as HTMLElement).closest('li')?.classList.toggle('used'));
+  const slots = el.querySelector('.slots') as HTMLElement;
+  const sels: HTMLSelectElement[] = [];
+  for (let p = 0; p < n; p++) {
+    const row = h(`<label class="slot"><b>${p + 1}.</b> <select><option value="-1">…</option>${d.names.map((nm, i) => `<option value="${i}">${esc(nm)}</option>`).join('')}</select></label>`);
+    const sel = row.querySelector('select') as HTMLSelectElement;
+    sel.onchange = () => changed();
+    sels.push(sel);
+    slots.appendChild(row);
+  }
+  slots.insertBefore(h(`<div class="ice">🍦 ларёк «Мороженое»</div>`), slots.firstChild);
+  return {
+    el,
+    answer: () => {
+      const a = sels.map((s) => Number(s.value));
+      return a.some((v) => v < 0) ? null : a;
+    },
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { p: number; v: number } | undefined;
+        if (!r) continue;
+        sels[r.p].value = String(r.v);
+        sels[r.p].disabled = true;
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, p) => (sels[p].value = String(v)));
+    },
+    lock() {
+      sels.forEach((s) => (s.disabled = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- кто выше (футоси)
+
+function futoPad(d: FutoData, changed: Changed): Pad {
+  const { n } = d;
+  const m = 2 * n - 1;
+  const el = h(`<div class="dv-futo" data-grid="${n}" style="--m:${m}"></div>`);
+  const sign = new Map(d.signs.map(([a, b, s]) => [`${a}-${b}`, s]));
+  const inputs: (HTMLInputElement | null)[] = [];
+  for (let R = 0; R < m; R++)
+    for (let C = 0; C < m; C++) {
+      if (R % 2 === 0 && C % 2 === 0) {
+        const i = (R / 2) * n + C / 2;
+        if (d.given[i]) {
+          el.appendChild(h(`<div class="fg">${d.given[i]}</div>`));
+          inputs[i] = null;
+        } else inputs[i] = el.appendChild(digitCell(n, changed));
+      } else if (R % 2 === 0) {
+        const a = (R / 2) * n + (C - 1) / 2;
+        const s = sign.get(`${a}-${a + 1}`);
+        el.appendChild(h(`<div class="fs">${s == null ? '' : s > 0 ? '>' : '<'}</div>`));
+      } else if (C % 2 === 0) {
+        const a = ((R - 1) / 2) * n + C / 2;
+        const s = sign.get(`${a}-${a + n}`);
+        el.appendChild(h(`<div class="fs">${s == null ? '' : s > 0 ? '∨' : '∧'}</div>`));
+      } else el.appendChild(h(`<div></div>`));
+    }
+  return {
+    el,
+    answer() {
+      const out = d.given.map((g, i) => g || Number(inputs[i]!.value || 0));
+      return out.some((v) => !v) ? null : out;
+    },
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        const inp = r && inputs[r.i];
+        if (inp) setCell(inp, r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        const inp = inputs[i];
+        if (inp && Number(inp.value) !== v) setCell(inp, v, 'shown');
+      });
+    },
+    lock() {
+      inputs.forEach((i) => i && (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- шифровка (криптарифм)
+
+function kriptPad(d: KriptData, changed: Changed): Pad {
+  const w = Math.max(d.a.length, d.b.length, d.c.length);
+  const pad = (s: string) => ' '.repeat(w - s.length) + s;
+  const line = (s: string, sign = '') => `<div class="kl"><i>${sign}</i>${[...pad(s)].map((ch) => `<span>${ch === ' ' ? '' : ch}</span>`).join('')}</div>`;
+  const el = h(`<div class="dv-kript"><div class="sum">${line(d.a)}${line(d.b, '+')}<hr>${line(d.c)}</div>
+    <p class="dv-known">Одинаковые буквы — одинаковые цифры, разные — разные. Число не начинается с нуля.</p><div class="keys" data-grid="${d.letters.length}"></div></div>`);
+  const keys = el.querySelector('.keys') as HTMLElement;
+  const inputs = d.letters.map((l) => {
+    const k = h(`<label class="key"><b>${l}</b></label>`);
+    const inp = digitCell(9, changed);
+    k.appendChild(inp);
+    keys.appendChild(k);
+    return inp;
+  });
+  d.known.forEach(([i, v]) => setCell(inputs[i], v, 'fixed'));
+  return {
+    el,
+    answer: () => (inputs.every((i) => i.value !== '') ? inputs.map((i) => Number(i.value)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number; v: number } | undefined;
+        if (r) setCell(inputs[r.i], r.v, 'fixed');
+      }
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => Number(inputs[i].value) !== v && setCell(inputs[i], v, 'shown'));
+    },
+    lock() {
+      inputs.forEach((i) => (i.readOnly = true));
+    },
+  };
+}
+
+// ---------------------------------------------------------------- какурасу
+
+function kakurasuPad(d: KakurasuData, changed: Changed): Pad {
+  const { n } = d;
+  const g = new Array(n * n).fill(0); // 1 — закрашено, 2 — крестик
+  const el = h(`<div class="dv-kks" style="--n:${n + 2}"></div>`);
+  const boxes: HTMLElement[] = [];
+  const rowEls: HTMLElement[] = [];
+  const colEls: HTMLElement[] = [];
+  let off = false;
+  const sums = () => {
+    for (let r = 0; r < n; r++) rowEls[r].classList.toggle('ok', g.slice(r * n, r * n + n).reduce((t, v, c) => t + (v === 1 ? c + 1 : 0), 0) === d.rows[r]);
+    for (let c = 0; c < n; c++) colEls[c].classList.toggle('ok', Array.from({ length: n }, (_, r) => (g[r * n + c] === 1 ? r + 1 : 0)).reduce((t, v) => t + v, 0) === d.cols[c]);
+  };
+  el.appendChild(h(`<div></div>`));
+  for (let c = 0; c < n; c++) el.appendChild(h(`<div class="ix">${c + 1}</div>`));
+  el.appendChild(h(`<div></div>`));
+  for (let r = 0; r < n; r++) {
+    el.appendChild(h(`<div class="ix">${r + 1}</div>`));
+    for (let c = 0; c < n; c++) {
+      const i = r * n + c;
+      const b = h(`<div class="kc"></div>`);
+      b.addEventListener('click', () => {
+        if (off) return;
+        g[i] = (g[i] + 1) % 3;
+        b.className = `kc${g[i] === 1 ? ' on' : g[i] === 2 ? ' x' : ''}`;
+        sums();
+        changed();
+      });
+      boxes.push(b);
+      el.appendChild(b);
+    }
+    rowEls.push(el.appendChild(h(`<div class="cnt">${d.rows[r]}</div>`)));
+  }
+  el.appendChild(h(`<div></div>`));
+  for (let c = 0; c < n; c++) colEls.push(el.appendChild(h(`<div class="cnt">${d.cols[c]}</div>`)));
+  el.appendChild(h(`<div></div>`));
+  sums();
+  const wrap = h(`<div class="dv-morboyw"></div>`);
+  wrap.append(el, h(`<p class="dv-known small">Нажатие: закрасить → крестик → пусто. Справа — сумма номеров столбцов закрашенных клеток строки, внизу — сумма номеров строк.</p>`));
+  return {
+    el: wrap,
+    answer: () => (g.some((v) => v === 1) ? g.map((v) => (v === 1 ? 1 : 0)) : null),
+    hints(hs) {
+      for (const hnt of hs) {
+        const r = hnt.reveal as { i: number } | undefined;
+        if (!r) continue;
+        g[r.i] = 1;
+        boxes[r.i].className = 'kc on fixed';
+      }
+      sums();
+    },
+    solution(sol) {
+      (sol as number[]).forEach((v, i) => {
+        g[i] = v ? 1 : 2;
+        boxes[i].className = `kc${v ? ' on' : ' x'}`;
+      });
+      sums();
+    },
+    lock() {
+      off = true;
+    },
+  };
+}
+
 export function makePad(kind: string, data: unknown, changed: Changed): Pad {
   switch (kind) {
     case 'zebra':
@@ -1970,6 +2161,14 @@ export function makePad(kind: string, data: unknown, changed: Changed): Pad {
       return raskPad(data as RaskData, changed);
     case 'kakuro':
       return kakuroPad(data as KakuroData, changed);
+    case 'ochered':
+      return ocheredPad(data as OcheredData, changed);
+    case 'futo':
+      return futoPad(data as FutoData, changed);
+    case 'kript':
+      return kriptPad(data as KriptData, changed);
+    case 'kakurasu':
+      return kakurasuPad(data as KakurasuData, changed);
   }
   return { el: h(`<div>?</div>`), answer: () => null, hints() {}, solution() {}, lock() {} };
 }

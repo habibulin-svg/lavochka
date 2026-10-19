@@ -390,3 +390,41 @@
 .dv-kak .kg { display: flex; align-items: center; justify-content: center; background: #efe9d6; font: 700 calc(var(--u) * 0.55) 'Caveat', cursive; }
 .dv-kak .cell { border-radius: 0; font-size: calc(var(--u) * 0.55); text-align: center; color: var(--ink); background: #fff; outline: none; padding: 0; font-family: 'Caveat', cursive; font-weight: 700; }
 .dv-kak .cell:focus { box-shadow: inset 0 0 0 2px #2a5ab8; }
+
+/* очередь */
+.dv-och { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.dv-och .slots { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.dv-och .ice { font: 700 20px 'Caveat', cursive; color: #a3261f; }
+.dv-och .slot { font: 700 22px 'Caveat', cursive; color: #23408f; display: flex; align-items: center; gap: 6px; }
+.dv-och select { font: inherit; color: #23408f; background: rgba(255, 255, 255, 0.85); border: 1.5px solid rgba(35, 64, 143, 0.6); border-radius: 4px; padding: 0 6px; min-width: 130px; }
+
+/* кто выше */
+.dv-futo { display: grid; grid-template-columns: repeat(var(--m), auto); align-items: center; justify-items: center; --u: min(50px, calc((100vw - 120px) / (var(--m) * 0.75))); }
+.dv-futo .cell, .dv-futo .fg { width: var(--u); height: var(--u); }
+.dv-futo .fg { display: flex; align-items: center; justify-content: center; border: 2px solid #555; border-radius: 3px; background: #efe9d6; font: 700 calc(var(--u) * 0.55) 'Caveat', cursive; box-sizing: border-box; }
+.dv-futo .cell { box-sizing: border-box; text-align: center; font: 700 calc(var(--u) * 0.55) 'Caveat', cursive; color: var(--ink); border: 2px solid #555; border-radius: 3px; background: #fff; outline: none; padding: 0; }
+.dv-futo .fs { font: 700 calc(var(--u) * 0.45) 'PT Sans', sans-serif; color: #a3261f; min-width: calc(var(--u) * 0.45); min-height: calc(var(--u) * 0.45); display: flex; align-items: center; justify-content: center; }
+
+/* шифровка */
+.dv-kript { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dv-kript .sum { font: 700 40px/1.1 'Caveat', cursive; color: #23408f; }
+.dv-kript .kl { display: flex; gap: 2px; }
+.dv-kript .kl i { width: 26px; font-style: normal; color: #a3261f; }
+.dv-kript .kl span { width: 30px; text-align: center; }
+.dv-kript hr { border: none; border-top: 3px solid #23408f; margin: 2px 0 2px 28px; }
+.dv-kript .keys { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.dv-kript .key { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 700 24px 'Caveat', cursive; color: #23408f; }
+.dv-kript .key .cell { width: 42px; height: 46px; }
+
+/* какурасу */
+.dv-kks { display: grid; grid-template-columns: repeat(var(--n), var(--u)); --u: min(46px, calc((100vw - 90px) / var(--n))); }
+.dv-kks > div { width: var(--u); height: var(--u); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.dv-kks .ix { font: 13px 'PT Sans', sans-serif; color: #888; }
+.dv-kks .kc { border: 1px solid rgba(35, 64, 143, 0.5); background: #fff; cursor: pointer; }
+.dv-kks .kc.on { background: #23408f; }
+.dv-kks .kc.fixed { background: #2a7a3a; }
+.dv-kks .kc.x::after { content: '×'; color: #b3322a; font-size: calc(var(--u) * 0.6); }
+.dv-kks .cnt { font: 700 calc(var(--u) * 0.55) 'Caveat', cursive; color: #a3261f; }
+.dv-kks .cnt.ok { color: #2a7a3a; }
+.dv-kript .cell { box-sizing: border-box; padding: 0; text-align: center; outline: none; color: var(--ink); font: 700 26px/1 'Caveat', cursive; background: rgba(255, 255, 255, 0.92); border: 2px solid #555; border-radius: 3px; }
+.dv-kript .cell:focus { border-color: #2a5ab8; box-shadow: 0 0 0 2px rgba(42, 90, 184, 0.3); }

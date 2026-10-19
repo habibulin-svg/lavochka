@@ -7,6 +7,7 @@ import { genChain, run, solveChain, type ChainData } from './chain';
 import { checkHashi, genHashi, solveHashi, spansOf, type HashiData } from './hashi';
 import { checkHidato, genHidato, solveHidato, type HidatoData } from './hidato';
 import type { Kind } from './kind';
+import { checkFuto, checkKakurasu, checkKript, checkOchered, genFuto, genKakurasu, genKript, genOchered, solveFuto, solveKakurasu, solveKript, solveOchered, type FutoData, type KakurasuData, type KriptData, type OcheredData } from './order';
 import { checkKakuro, checkKrat, checkMirror, checkRask, genKakuro, genKrat, genMirror, genRask, solveKakuro, solveKrat, solveMirror, solveRask, type KakuroData, type KratData, type MirrorData, type RaskData } from './paint';
 import { checkGears, checkZem, genGears, genTurnir, genZem, solveGears, solveTurnir, solveZem, type GearsAns, type GearsData, type TurnirData, type ZemData } from './mech';
 import { checkKartinka, genKartinka, genMatrix, genOdin, genVenn, solveKartinka, solveMatrix, solveOdin, solveVenn, type KartinkaData, type MatrixData, type OdinData, type VennData } from './misc';
@@ -595,6 +596,80 @@ const kakuro: Kind<KakuroData, number[], number[]> = {
   solve: (d) => solveKakuro(d),
 };
 
-export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn, gears, turnir, zem, krat, mirror, rask, kakuro };
+const ochered: Kind<OcheredData, number[], number[]> = {
+  id: 'ochered',
+  title: 'Очередь',
+  how: 'Ребята стоят в очереди за мороженым. По подсказкам расставь всех по местам — от ларька.',
+  par: [60, 120, 200],
+  pts: [1, 2, 4],
+  gen: (lv, rng, ctx) => genOchered(lv, ctx.names, rng),
+  check: (d, _s, a) => checkOchered(d, a),
+  hint(d, sol, k) {
+    if (k > 1) return null;
+    const p = nth([...sol.keys()], k, d.names.length * 101 + d.clues.length);
+    if (p == null) return null;
+    return { text: `${p + 1}-м стоит ${d.names[sol[p]]}.`, reveal: { p, v: sol[p] } };
+  },
+  solve: (d) => solveOchered(d),
+};
+
+const futo: Kind<FutoData, number[], number[]> = {
+  id: 'futo',
+  title: 'Кто выше',
+  how: 'В каждой строке и каждом столбце — числа от 1 до размера поля по разу. Знаки между клетками говорят, где больше: открытая сторона — к большему.',
+  par: [90, 180, 330],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genFuto(lv, rng),
+  check: (d, _s, a) => checkFuto(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const empty = d.given.map((g, i) => (g ? -1 : i)).filter((i) => i >= 0);
+    const i = nth(empty, k, d.n * 103 + empty.length);
+    if (i == null) return null;
+    return { text: `В отмеченной клетке — ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveFuto(d),
+};
+
+const kript: Kind<KriptData, number[], number[]> = {
+  id: 'kript',
+  title: 'Шифровка',
+  how: 'Пример на сложение, где цифры заменены буквами. Одинаковые буквы — одинаковые цифры, разные — разные. Найди, какая буква что значит.',
+  par: [90, 180, 330],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genKript(lv, rng),
+  check: (d, _s, a) => checkKript(d, a),
+  hint(d, sol, k) {
+    if (k === 0) {
+      const longer = d.c.length > Math.max(d.a.length, d.b.length);
+      return { text: longer ? `Сумма длиннее слагаемых — значит, первая буква суммы «${d.c[0]}» равна 1.` : 'Начни с правого столбца: последняя цифра суммы — это последняя цифра сложения двух букв над ней.' };
+    }
+    if (k > 2) return null;
+    const i = nth([...d.letters.keys()], k - 1, d.letters.length * 107);
+    if (i == null) return null;
+    return { text: `${d.letters[i]} = ${sol[i]}.`, reveal: { i, v: sol[i] } };
+  },
+  solve: (d) => solveKript(d),
+};
+
+const kakurasu: Kind<KakurasuData, number[], number[]> = {
+  id: 'kakurasu',
+  title: 'Какурасу',
+  how: 'Закрась клетки. Число справа от строки — сумма номеров столбцов её закрашенных клеток; число под столбцом — сумма номеров строк.',
+  par: [90, 180, 300],
+  pts: [2, 3, 5],
+  gen: (lv, rng) => genKakurasu(lv, rng),
+  check: (d, _s, a) => checkKakurasu(d, a),
+  hint(d, sol, k) {
+    if (k > 2) return null;
+    const on = sol.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
+    const i = nth(on, k, d.n * 109 + on.length);
+    if (i == null) return null;
+    return { text: 'Отмеченная клетка закрашена.', reveal: { i } };
+  },
+  solve: (d) => solveKakurasu(d),
+};
+
+export const KINDS: Record<string, Kind> = { zebra, hidato, hashi, okno, kazaki, bulls, stopki, kenken, chain, clock, shop, ostatki, zadachka, labirint, strelki, saper, morboy, shikaku, palatki, fonari, gryadki, kartinka, odin, matrix, venn, gears, turnir, zem, krat, mirror, rask, kakuro, ochered, futo, kript, kakurasu };
 
 export const kindOf = (id: string): Kind => KINDS[id] ?? zebra;
