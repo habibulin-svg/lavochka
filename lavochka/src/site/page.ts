@@ -40,7 +40,7 @@ let gen = 0;
  * Вернёт false, если текста у адреса нет. */
 export async function attachSeo(host: Element | null, path = location.pathname): Promise<boolean> {
   const my = ++gen;
-  document.querySelectorAll('#app .seo-page').forEach((e) => e.remove());
+  document.querySelectorAll('#app .seo-page, #app .site-foot').forEach((e) => e.remove());
   if (!host) return false;
   const t = await textFor(path);
   if (my !== gen || !host.isConnected) return true;
@@ -52,6 +52,9 @@ export async function attachSeo(host: Element | null, path = location.pathname):
   // карточки страницы двора уже показывает сам двор — в тексте они для поисковика и для чтения без скриптов
   if (host.closest('[data-screen=yard]')) el.querySelectorAll('.seo-cards[data-yard]').forEach((c) => c.remove());
   host.appendChild(el);
+  // подвал — не на листе, а под ним, на тёмном фоне экрана: не отвлекает от текста
+  const foot = el.querySelector('.site-foot');
+  if (foot) host.appendChild(foot);
   // рекорды: сервер вписал свежие строками для поисковика, в браузере — живая таблица с разделами
   el.querySelectorAll<HTMLElement>('.seo-records[data-records]').forEach((sec) => {
     const game = sec.dataset.records!;
