@@ -24,7 +24,7 @@ API=https://cloud-api.yandex.net/v1/disk/resources
 O=$D/data-$(date +%F).tar.gz
 tar -czf "$O" -C / srv/lavochka/data $(cd / && ls -d var/backups/lavochka/pg-*.sql.gz 2>/dev/null | tail -1)
 ya() { curl -4 -s -m 300 -H "Authorization: OAuth $YADISK_TOKEN" "$@"; }
-href=$(ya "$API/upload?path=app:/$(basename "$O")&overwrite=true" | sed -n 's/.*"href":"\([^"]*\)".*//p')
+href=$(ya "$API/upload?path=app:/$(basename "$O")&overwrite=true" | sed -n 's/.*"href":"\([^"]*\)".*/\1/p')
 code=000
 [ -n "$href" ] && code=$(curl -4 -s -m 300 -o /dev/null -w '%{http_code}' -T "$O" "$href")
 rm -f "$O"
