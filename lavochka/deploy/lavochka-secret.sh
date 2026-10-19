@@ -12,6 +12,8 @@ stty -echo 2>/dev/null || true
 IFS= read -r value
 stty echo 2>/dev/null || true
 echo
+# вставка из буфера: без BOM, \r и пробелов по краям
+value="$(printf '%s' "$value" | tr -d '\r' | sed 's/^\xEF\xBB\xBF//; s/^[[:space:]]*//; s/[[:space:]]*$//')"
 [ -n "$value" ] || { echo "пусто — ничего не записано" >&2; exit 1; }
 touch "$file"; chmod 600 "$file"
 tmp="$(mktemp)"
