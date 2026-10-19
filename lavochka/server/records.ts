@@ -230,6 +230,25 @@ export class Records {
     };
   }
 
+  /** Лучшие результаты игрока-аккаунта во всех таблицах: игра, таблица, значения, место за всё время (0 — вне таблицы). */
+  async ofPlayer(player: string) {
+    await this.ready;
+    const out: { game: string; table: string; label: string; columns: RecordColumn[]; values: Record<string, number>; at: number; place: number }[] = [];
+    for (const b of this.store.boards()) {
+      const i = b.indexOf('/');
+      const game = b.slice(0, i);
+      const table = b.slice(i + 1);
+      const columns = columnsFor(game, this.defs);
+      if (!columns) continue;
+      const list = this.store.get(b);
+      const best = ranked(list, columns, 'mine', { player }, Date.now(), 1)[0];
+      if (!best) continue;
+      const label = this.tablesOf(game).find((t) => t.id === table)?.label ?? table;
+      out.push({ game, table, label, columns, values: best.values, at: best.at, place: placeOf(list, columns, best) });
+    }
+    return out.sort((a, b) => a.game.localeCompare(b.game) || a.label.localeCompare(b.label));
+  }
+
   /** Кусок HTML для страницы игры (пререндер оставляет место, сервер вписывает свежие таблицы). */
   html(game: string, max = 3, rows = 5): string {
     const columns = columnsFor(game, this.defs);

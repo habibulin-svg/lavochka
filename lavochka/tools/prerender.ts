@@ -229,11 +229,25 @@ function recordsBlock(def: GameDef | null, name: string): string {
 `;
 }
 
+/** Ссылки на справочные статьи игры (комбинации покера) — на странице игры, вариантов и правил. */
+async function articleLinks(id: string): Promise<string> {
+  const list = ARTICLES.filter((a) => a.game === id || a.also?.includes(id));
+  if (!list.length) return '';
+  const links = await Promise.all(
+    list.map(async (a) => {
+      const at = (await loadSeo(a.game)).articles?.[a.slug];
+      return `<a href="/${a.path}/">${esc(at?.h1 ?? a.slug)}</a>`;
+    })
+  );
+  return `<p class="seo-aka">📖 Справка: ${links.join(' · ')}</p>\n`;
+}
+
 async function gamePages(g: CatalogEntry) {
   const target = g.of ? CATALOG.find((x) => x.id === g.of)! : g;
   const def = await loadDef(target.id);
   const seo = await loadSeo(g.id);
   const path = gamePath(g.id);
+  const refs = await articleLinks(g.of ?? g.id);
   const name = g.title;
   const image = g.thumb ? '/thumbs/' + g.thumb : undefined;
 
@@ -254,7 +268,7 @@ async function gamePages(g: CatalogEntry) {
     image,
     priority: 0.9,
     jsonld: [gameLd(g, name, path, description), cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${recordsBlock(def, name)}${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${refs}${recordsBlock(def, name)}${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
   });
 
   modePages(g, path, image);
@@ -277,7 +291,7 @@ async function gamePages(g: CatalogEntry) {
       image: vimage ?? image,
       priority: 0.8,
       jsonld: [gameLd(g, vname, vpath, vdesc), vcr.ld, ...(vfaq.ld ? [vfaq.ld] : [])],
-      body: `${vcr.html}\n<h1>${esc(vt.h1 ?? `${vname} онлайн`)}</h1>\n${shot(g, vname, vimage)}${vt.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${vfaq.html}\n${similar(g)}`,
+      body: `${vcr.html}\n<h1>${esc(vt.h1 ?? `${vname} онлайн`)}</h1>\n${shot(g, vname, vimage)}${vt.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${refs}${vfaq.html}\n${similar(g)}`,
     });
   }
 
@@ -294,7 +308,7 @@ async function gamePages(g: CatalogEntry) {
     image,
     priority: 0.6,
     jsonld: [rcr.ld, ...(rfaq.ld ? [rfaq.ld] : [])],
-    body: `${rcr.html}\n<h1>${esc(rname)}</h1>\n${rt.intro ?? ''}\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n${def.rules.sections.map((s) => `<h2>${esc(s.title)}</h2>\n${s.html}`).join('\n')}\n${rfaq.html}\n<p><a href="${path}">Играть в «${esc(def.title)}» онлайн</a></p>`,
+    body: `${rcr.html}\n<h1>${esc(rname)}</h1>\n${rt.intro ?? ''}\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n${def.rules.sections.map((s) => `<h2>${esc(s.title)}</h2>\n${s.html}`).join('\n')}\n${refs}${rfaq.html}\n<p><a href="${path}">Играть в «${esc(def.title)}» онлайн</a></p>`,
   });
 
   // --- статьи при игре (комбинации покера)
@@ -483,8 +497,9 @@ function latestPosts(): string {
   return block('news', 'Новости двора') + '\n' + block('blog', 'Из блога');
 }
 
-function groupPage(g: CatalogEntry) {
+async function groupPage(g: CatalogEntry) {
   const path = gamePath(g.id);
+  const refs = await articleLinks(g.id);
   const t = GROUPS[g.id] ?? {};
   const cr = crumbs(trail(g));
   const list = membersOf(g).filter(ready);
@@ -497,7 +512,7 @@ function groupPage(g: CatalogEntry) {
     image: g.thumb ? '/thumbs/' + g.thumb : undefined,
     priority: 0.8,
     jsonld: [cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? g.title)}</h1>\n${t.intro ?? `<p>${esc(g.sub)}.</p>`}\n${akaBlock(g.id)}\n${cards(list, true)}\n${faq.html}\n${otherSections(g.cat)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1 ?? g.title)}</h1>\n${t.intro ?? `<p>${esc(g.sub)}.</p>`}\n${akaBlock(g.id)}\n${refs}${cards(list, true)}\n${faq.html}\n${otherSections(g.cat)}`,
   });
 }
 
@@ -574,7 +589,7 @@ ${d.html}`,
   });
 for (const g of CATALOG) {
   if (!ready(g)) continue;
-  if (g.members) groupPage(g);
+  if (g.members) await groupPage(g);
   else await gamePages(g);
 }
 

@@ -181,9 +181,11 @@ export interface ArticlePage {
   path: string;
   game: string;
   slug: string;
+  /** Другие игры, на чьих страницах тоже ставим ссылку на статью. */
+  also?: string[];
 }
 
-export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'holdem', slug: 'kombinacii' }];
+export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'holdem', slug: 'kombinacii', also: ['poker', 'pokers'] }];
 
 /** Игры серии у аркад («Электроника ИМ», автоматы): своя страница на каждую, адрес открывает прибор сразу на ней. */
 export interface ModePage {

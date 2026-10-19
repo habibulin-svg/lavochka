@@ -393,6 +393,12 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/records') {
     if (req.method === 'GET') {
       const q = new URL(req.url || '', 'http://x').searchParams;
+      // свои рекорды во всех играх (профиль)
+      if (q.get('mine') === '1') {
+        const u = await userOf(req);
+        if (!u) return json(res, 401, { error: 'auth' });
+        return json(res, 200, { rows: await records.ofPlayer(String(u.id)) });
+      }
       const game = q.get('game') || '';
       const period = (PERIODS.some((p) => p.id === q.get('period')) ? q.get('period') : 'all') as RecordPeriod;
       const device = q.get('device') || undefined;
