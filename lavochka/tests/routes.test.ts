@@ -2,9 +2,9 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CATALOG } from '../src/games/catalog';
+import { CATALOG, CATEGORIES } from '../src/games/catalog';
 import { DEFS } from '../src/games/defs';
-import { gamePath, parseRoute, RESERVED, rulesPath, SLUGS, VARIANTS } from '../src/site/routes';
+import { gamePath, parseRoute, RESERVED, rulesPath, SECTION_SLUGS, sectionPath, SLUGS, VARIANTS } from '../src/site/routes';
 import type { GameSeo } from '../src/site/seo';
 
 describe('адреса сайта', () => {
@@ -14,7 +14,7 @@ describe('адреса сайта', () => {
   });
 
   it('адреса не повторяются и не заняты разделами сайта', () => {
-    const all = [...Object.values(SLUGS), ...VARIANTS.map((v) => v.path)];
+    const all = [...Object.values(SLUGS), ...VARIANTS.map((v) => v.path), ...Object.values(SECTION_SLUGS)];
     expect(new Set(all).size, 'повтор адреса').toBe(all.length);
     for (const p of all) {
       expect(p, p).toMatch(/^[a-z0-9-]+(\/[a-z0-9-]+)*$/);
@@ -62,6 +62,7 @@ describe('адреса сайта', () => {
       expect(parseRoute(`/${v.path}/`, '?igra')).toMatchObject({ kind: 'game', id: v.game, preset: v.preset, play: true });
     }
     expect(parseRoute('/')).toEqual({ kind: 'yard' });
+    for (const c of CATEGORIES) expect(parseRoute(sectionPath(c.id)), c.id).toEqual({ kind: 'yard', cat: c.id });
     expect(parseRoute('/stol/ab12cd')).toEqual({ kind: 'table', code: 'AB12CD' });
     expect(parseRoute('/nichego-net/')).toEqual({ kind: 'missing', path: 'nichego-net' });
     // вариант без своей страницы — адрес игры

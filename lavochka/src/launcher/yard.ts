@@ -6,8 +6,10 @@ import { onSettings, settings, store } from '../core/settings';
 import { modal, mountScreen, showScreen, toast } from '../core/ui';
 import { esc, h } from '../core/util';
 import { SeededRng } from '../core/rng';
-import { SHOWN, CATEGORIES, membersOf, byId, type CatalogEntry, type Category } from '../games/catalog';
-import { gamePath } from '../site/routes';
+import { SHOWN, CATEGORIES, membersOf, type CatalogEntry, type Category } from '../games/catalog';
+import { cardMarkup, isReady } from '../site/card';
+import { sectionPath } from '../site/routes';
+import { searchGames } from '../site/search';
 import './yard.css';
 
 const WAVE_NAMES: Record<number, string> = {
@@ -22,7 +24,7 @@ const WAVE_NAMES: Record<number, string> = {
 
 // ------------------------------------------------------------------ фон
 
-function scene(): string {
+export function scene(): string {
   const rng = new SeededRng(1993);
   const r = () => rng.next();
   let s = `<svg class="yard-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
@@ -182,28 +184,13 @@ function scene(): string {
 
 // ------------------------------------------------------------------ карточки
 
-/** Готова ли карточка: своя игра, ярлык на готовую игру или группа, где есть готовое. */
-const isReady = (g: CatalogEntry): boolean => !!g.load || (!!g.of && !!byId(g.of)?.load) || membersOf(g).some(isReady);
 /** Сохранённая партия: у игры, ярлык — по игре, у группы — по любой из её игр. */
 const hasSave = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(hasSave) : !!g.load && !!loadSave(g.id));
 
 function card(g: CatalogEntry): HTMLElement {
   const ready = isReady(g);
-  const save = ready && hasSave(g);
   // ссылка, а не кнопка: открывается в новой вкладке, и поисковик видит адреса игр
-  const el = h<HTMLAnchorElement>(`<a class="game-card${ready ? ' ready' : ''}${g.members ? ' group' : ''}" href="${ready ? gamePath(g.id) : '#'}" style="--tint:${g.tint}">
-      <span class="gc-pic">${
-        g.thumb
-          ? `<img src="${import.meta.env.BASE_URL}thumbs/${esc(g.thumb)}" alt="" loading="lazy">`
-          : `<span class="gc-glyph">${esc(g.icon)}</span>`
-      }</span>
-      <span class="gc-icon">${esc(g.icon)}</span>
-      <span class="gc-title">${esc(g.title)}</span>
-      <span class="gc-sub">${esc(g.sub)}</span>
-      ${g.variants?.length ? `<span class="gc-vars">${g.variants.map(esc).join(' · ')}</span>` : ''}
-      <span class="gc-meta"><span class="gc-players">👥 ${esc(g.players)}</span>${g.members ? `<span class="gc-count">${membersOf(g).length} игр</span>` : ''}${save ? '<span class="gc-save">▶ партия</span>' : ''}</span>
-      ${ready ? '' : `<span class="stamp">${esc(WAVE_NAMES[g.wave] ?? 'в планах')}</span>`}
-    </a>`);
+  const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах' }));
   el.onclick = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
@@ -219,12 +206,49 @@ function card(g: CatalogEntry): HTMLElement {
   return el;
 }
 
+/** Форма входа по коду комнаты (двор и шапка страниц игр). */
+export function wireJoin(form: HTMLFormElement) {
+  const code = form.querySelector('input') as HTMLInputElement;
+  code.value = store.get('lastCode', '');
+  code.oninput = () => (code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    Sound.unlock();
+    if (!codeKind(code.value)) return toast('Код комнаты — 5 или 6 знаков.');
+    if (!settings.name) {
+      openSettings();
+      toast('Сначала скажите, как вас зовут.');
+      return;
+    }
+    void joinGame(code.value);
+  };
+}
+
+/** Кнопка настроек с именем игрока. */
+export function wireSettings(btn: HTMLButtonElement) {
+  const who = btn.querySelector('.who') as HTMLElement;
+  const upd = () => (who.textContent = settings.name || 'Настройки');
+  upd();
+  onSettings(upd);
+  btn.onclick = () => openSettings();
+}
+
+export const SEARCH_HINT = 'Найти игру: нарды, косынка, tetris…';
+
 export const yard = {
   /** Назначается в main.ts: открыть экран игры. */
   openGame: (_g: CatalogEntry) => {},
   /** Назначается в main.ts: открыли или закрыли группу (адрес в строке браузера). */
   onGroup: (_g: CatalogEntry | null) => {},
+  /** Назначается в main.ts: выбрали раздел (адрес раздела). */
+  onCat: (_cat: Category | 'all') => {},
+  /** Назначается в main.ts: изменился запрос поиска (адрес /poisk/?q=…). */
+  onSearch: (_q: string) => {},
   el: null as HTMLElement | null,
+  /** Раздел, который сейчас показан (его задаёт адрес). */
+  cat: 'all' as Category | 'all',
+  /** Запрос поиска: пока он не пуст, двор показывает найденное. */
+  query: '',
 
   mount() {
     const el = h(`<section class="yard">
@@ -245,6 +269,7 @@ export const yard = {
           </div>
         </header>
         <div class="yard-spacer"></div>
+        <form class="search-form" role="search" action="/poisk/"><input type="search" name="q" placeholder="${esc(SEARCH_HINT)}" autocomplete="off" spellcheck="false" aria-label="Поиск игры"></form>
         <nav class="cats"></nav>
         <div class="cards"></div>
         <footer class="yard-foot">Играть можно за одним экраном, с ботами или с друзьями по коду комнаты.</footer>
@@ -253,47 +278,49 @@ export const yard = {
     this.el = el;
     mountScreen('yard', el);
 
-    const who = el.querySelector('.who') as HTMLElement;
-    const upd = () => (who.textContent = settings.name || 'Настройки');
-    upd();
-    onSettings(upd);
-    (el.querySelector('[data-a=settings]') as HTMLButtonElement).onclick = () => openSettings();
+    wireSettings(el.querySelector('[data-a=settings]') as HTMLButtonElement);
+    wireJoin(el.querySelector('.join-form') as HTMLFormElement);
 
-    const form = el.querySelector('.join-form') as HTMLFormElement;
-    const code = form.querySelector('input') as HTMLInputElement;
-    code.value = store.get('lastCode', '');
-    code.oninput = () => (code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
-    form.onsubmit = (e) => {
+    const sf = el.querySelector('.search-form') as HTMLFormElement;
+    const si = sf.querySelector('input') as HTMLInputElement;
+    sf.onsubmit = (e) => {
       e.preventDefault();
-      Sound.unlock();
-      if (!codeKind(code.value)) return toast('Код комнаты — 5 или 6 знаков.');
-      if (!settings.name) {
-        const m = openSettings();
-        toast('Сначала скажите, как вас зовут.');
-        void m;
-        return;
-      }
-      void joinGame(code.value);
+      si.blur();
+    };
+    si.oninput = () => {
+      this.query = si.value.trim();
+      this.group = null;
+      this.onSearch(this.query);
+      this.renderCards();
     };
 
     const cats = el.querySelector('.cats') as HTMLElement;
     // Раздел, где не осталось карточек (все отложены), не показываем.
     const cats_ = CATEGORIES.filter((c) => SHOWN.some((g) => g.cat === c.id));
-    const saved = store.get<Category | 'all'>('cat', 'all');
-    const sel = saved === 'all' || cats_.some((c) => c.id === saved) ? saved : 'all';
-    const mk = (id: string, title: string) => {
-      const b = h<HTMLButtonElement>(`<button data-cat="${id}">${esc(title)}</button>`);
-      b.onclick = () => {
-        store.set('cat', id);
-        if (this.group) this.onGroup(null);
+    const mk = (id: Category | 'all', title: string) => {
+      // ссылка на страницу раздела: у раздела свой адрес и свой текст
+      const b = h<HTMLAnchorElement>(`<a data-cat="${id}" href="${sectionPath(id === 'all' ? null : id)}">${esc(title)}</a>`);
+      b.onclick = (e) => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        Sound.ui();
         this.group = null;
-        this.renderCards(id as any);
+        this.setQuery('');
+        this.cat = id;
+        store.set('cat', id);
+        this.onCat(id);
+        this.renderCards();
       };
       cats.appendChild(b);
     };
     mk('all', 'Все игры');
     for (const c of cats_) mk(c.id, c.title);
-    this.renderCards(sel);
+  },
+
+  setQuery(q: string) {
+    this.query = q;
+    const si = this.el?.querySelector('.search-form input') as HTMLInputElement | null;
+    if (si && si.value.trim() !== q) si.value = q;
   },
 
   /** Открытая группа (карточка «Приключения» и т. п.): двор показывает её игры, пока не нажали «назад». */
@@ -301,37 +328,50 @@ export const yard = {
 
   openGroup(g: CatalogEntry) {
     this.group = g;
+    this.setQuery('');
     this.onGroup(g);
-    this.renderCards(store.get<Category | 'all'>('cat', 'all'));
+    this.renderCards();
   },
 
-  renderCards(cat: Category | 'all') {
+  renderCards() {
     const el = this.el!;
+    const box = el.querySelector('.cards') as HTMLElement;
+    box.innerHTML = '';
+    el.querySelectorAll<HTMLElement>('.cats a').forEach((b) => b.classList.toggle('on', !this.group && !this.query && b.dataset.cat === this.cat));
+    if (this.query) {
+      const found = searchGames(this.query);
+      box.appendChild(
+        h(`<div class="group-head"><h2>${found.length ? `Нашлось: ${found.length}` : 'Ничего не нашлось'}</h2><p>${
+          found.length ? `по запросу «${esc(this.query)}»` : `По запросу «${esc(this.query)}» игр нет. Попробуйте иначе: «нарды», «косынка», «тетрис», «backgammon».`
+        }</p></div>`)
+      );
+      for (const g of found) box.appendChild(card(g));
+      return;
+    }
     if (this.group) {
       const g = this.group;
-      const box = el.querySelector('.cards') as HTMLElement;
-      box.innerHTML = '';
       const head = h(`<div class="group-head"><button class="btn back">← Все игры</button><h2>${esc(g.icon)} ${esc(g.title)}</h2><p>${esc(g.sub)}</p></div>`);
       (head.querySelector('button') as HTMLButtonElement).onclick = () => {
         Sound.ui();
         this.group = null;
         this.onGroup(null);
-        this.renderCards(store.get<Category | 'all'>('cat', 'all'));
+        this.renderCards();
       };
       box.appendChild(head);
       for (const m of membersOf(g).sort((a, b) => Number(isReady(b)) - Number(isReady(a)))) box.appendChild(card(m));
       return;
     }
-    el.querySelectorAll<HTMLButtonElement>('.cats button').forEach((b) => b.classList.toggle('on', b.dataset.cat === cat));
-    const box = el.querySelector('.cards') as HTMLElement;
-    box.innerHTML = '';
+    const cat = this.cat;
     const list = SHOWN.filter((g) => cat === 'all' || g.cat === cat).sort((a, b) => Number(isReady(b)) - Number(isReady(a)));
     for (const g of list) box.appendChild(card(g));
   },
 
-  show() {
+  /** Показать двор: раздел (по адресу) или найденное по запросу. */
+  show(cat: Category | 'all' = 'all', query = '') {
     if (!this.el) this.mount();
-    else this.renderCards(store.get<Category | 'all'>('cat', 'all'));
+    this.cat = cat;
+    this.setQuery(query);
+    this.renderCards();
     showScreen('yard');
   },
 };

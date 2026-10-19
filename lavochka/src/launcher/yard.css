@@ -29,14 +29,23 @@
 .join-form { display: flex; gap: 6px; }
 .join-form .code-input { width: 112px; font-size: 18px; letter-spacing: 4px; text-align: center; text-transform: uppercase; font-weight: 700; }
 
-.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 16px; }
-.cats button {
+.cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.cats a { text-decoration: none; }
+.search-form { margin-top: 18px; max-width: 520px; }
+.search-form input {
+  width: 100%; box-sizing: border-box; font: 16px 'PT Sans', sans-serif; padding: 10px 16px 10px 40px; border-radius: 999px;
+  color: #241c14; border: 1px solid rgba(255, 240, 210, 0.55); outline: none;
+  background: #f6eedb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23705a40' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5 21 21'/%3E%3C/svg%3E") no-repeat 14px 50%;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.search-form input:focus { border-color: #ffd27a; box-shadow: 0 0 0 3px rgba(255, 210, 122, 0.45), 0 6px 16px rgba(0, 0, 0, 0.35); }
+.cats a {
   font: 600 15px 'PT Sans', sans-serif; color: #f1ead8; cursor: pointer;
   padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255, 240, 210, 0.35);
   background: rgba(20, 16, 30, 0.55); backdrop-filter: blur(4px);
 }
-.cats button:hover { background: rgba(60, 50, 80, 0.7); }
-.cats button.on { background: #f1ead8; color: #241c14; border-color: #f1ead8; }
+.cats a:hover { background: rgba(60, 50, 80, 0.7); }
+.cats a.on { background: #f1ead8; color: #241c14; border-color: #f1ead8; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
 .game-card {

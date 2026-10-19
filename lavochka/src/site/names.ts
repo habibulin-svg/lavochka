@@ -1,0 +1,110 @@
+/* Другие названия игр — по-русски и по-английски (без DOM). Люди ищут по-разному: «шеш-беш», «бэкгаммон», «backgammon».
+ * Их показывает страница игры («Как ещё называют»), пишет в разметку (alternateName) и ищет поиск по сайту.
+ * Сверено с Википедией и выдачей Wordstat (docs/seo/games.json). Ключ — id карточки каталога. */
+
+export interface Names {
+  /** Другие русские названия, разговорные и местные, в том числе написания с ошибками, которые часто ищут. */
+  ru?: string[];
+  /** Английские и международные названия. */
+  en?: string[];
+}
+
+export const NAMES: Record<string, Names> = {
+  // — доска и кости —
+  shishbesh: { ru: ['людо', 'парчис', 'пачиси', 'парчиси', 'не сердись', 'не сердись, человек'], en: ['Ludo', 'Parcheesi', 'Pachisi', 'Parchís', 'Mensch ärgere Dich nicht', 'Uckers'] },
+  nardy: { ru: ['длинные нарды', 'короткие нарды', 'шеш-беш', 'шешбеш', 'бэкгаммон', 'тавла', 'тавлеи', 'гюльбара', 'нардишир'], en: ['Backgammon', 'Long Nardy', 'Narde', 'Tavla', 'Tavli', 'Portes', 'Plakoto', 'Fevga', 'Gul bara'] },
+  chess: { ru: ['шахматы с компьютером', 'шахматы Фишера', 'шахматы 960', 'блиц', 'шахматы вдвоём'], en: ['Chess', 'Chess960', 'Fischer Random Chess', 'Blitz chess'] },
+  checkers: { ru: ['русские шашки', 'международные шашки', 'поддавки', 'уголки', 'столбовые шашки', 'башни', 'ласка', 'турецкие шашки', 'бразильские шашки', 'фук'], en: ['Checkers', 'Draughts', 'Russian draughts', 'International draughts', 'Giveaway checkers', 'Antidraughts', 'Ugolki', 'Corners', 'Halma', 'Lasca', 'Bashni', 'Turkish draughts'] },
+  go: { ru: ['игра го', 'вэйци', 'бадук', 'иго', 'японские шашки'], en: ['Go', 'Weiqi', 'Baduk', 'Igo'] },
+  renju: { ru: ['рендзю', 'гомоку', 'пять в ряд', 'пятёрки', 'крестики-нолики на большом поле', 'японские крестики-нолики'], en: ['Renju', 'Gomoku', 'Five in a Row', 'Gobang', 'Omok'] },
+  mancala: { ru: ['калах', 'калаха', 'оваре', 'авари', 'тогыз кумалак', 'тогуз коргоол', 'лунки и камни'], en: ['Mancala', 'Kalah', 'Kalaha', 'Oware', 'Awari', 'Ayo', 'Toguz Kumalak', 'Toguz Korgool', 'Sowing game'] },
+  domino: { ru: ['козёл', 'козел', 'забить козла', 'морской козёл', 'телефон', 'генерал', 'осёл', 'маггинс', 'мексиканский поезд', 'рыба', 'доминошки'], en: ['Dominoes', 'Domino', 'Block dominoes', 'Draw dominoes', 'Muggins', 'All Fives', 'Mexican Train'] },
+  mahjong: { ru: ['маджонг пасьянс', 'маджонг черепаха', 'маджонг коннект', 'маджонг соединялка', 'шисен-сё', 'мадзян', 'маджонг бесплатно'], en: ['Mahjong Solitaire', 'Mahjongg', 'Shanghai', 'Taipei', 'Mahjong Titans', 'Shisen-Sho', 'Mahjong Connect', 'Onet'] },
+  mahjong4: { ru: ['маджонг на четверых', 'китайский маджонг', 'японский маджонг', 'риичи', 'риичи маджонг', 'гонконгский маджонг', 'мацзян', 'мадзян'], en: ['Mahjong', 'Mah-jongg', 'Riichi Mahjong', 'Japanese Mahjong', 'Hong Kong Mahjong', 'Majiang', 'Sichuan Mahjong', 'Taiwanese Mahjong'] },
+  yahtzee: { ru: ['яцзы', 'ятзи', 'яхтзе', 'генерал', 'покер на костях', 'покер на кубиках', 'кости', 'книффель'], en: ['Yahtzee', 'Yatzy', 'Yacht', 'Generala', 'Poker dice', 'Kniffel'] },
+  loto: { ru: ['русское лото', 'бочонки', 'лото с бочонками', 'Вокруг света', 'географическое лото', 'лото онлайн'], en: ['Russian Lotto', 'Lotto', 'Bingo', 'Tombola'] },
+  perudo: { ru: ['лжец на костях', 'кости лжеца', 'дудо', 'блеф на костях', 'кости в стакане'], en: ['Perudo', "Liar's Dice", 'Dudo', "Pirate's Dice", 'Bluff dice'] },
+  // — карты —
+  durak: { ru: ['подкидной дурак', 'переводной дурак', 'дурачок', 'погоны', 'японский дурак', 'дурак в карты'], en: ['Durak', 'Fool', 'Russian Fool', 'Podkidnoy', 'Perevodnoy'] },
+  thousand: { ru: ['1000', 'тыща', 'тысяча в карты', 'марьяж', '1001'], en: ['Thousand', '1000 card game', 'Tysiacha', 'Tysiąc', 'Marriage'] },
+  '101': { ru: ['сто одно', 'сто один', '101 очко', 'уно на обычных картах', 'мау-мау'], en: ['101 card game', 'Crazy Eights', 'Mau-Mau', 'Uno with playing cards'] },
+  bura: { ru: ['бура в карты', 'буркозёл', 'буркозел', 'бура с москвой', '31 очко'], en: ['Bura', 'Burkozel'] },
+  preferans: { ru: ['преф', 'пуля', 'сочинка', 'сочи', 'ленинградка', 'ростовский преферанс', 'классический преферанс'], en: ['Preference', 'Preferans', 'Russian Preference'] },
+  bridge: { ru: ['контрактный бридж', 'роббер', 'спортивный бридж', 'Чикаго', 'мини-бридж'], en: ['Bridge', 'Contract bridge', 'Rubber bridge', 'Chicago bridge', 'Duplicate bridge', 'Minibridge'] },
+  pokers: { ru: ['техасский холдем', 'холдем', 'омаха', 'стад', 'дро-покер', 'покер на фантики'], en: ['Poker', "Texas Hold'em", 'Omaha', 'Stud', 'Draw poker'] },
+  holdem: { ru: ['холдем', 'техасский покер', 'покер без денег', 'покер на фишки', '3D покер'], en: ["Texas Hold'em", 'Holdem', "No-Limit Hold'em", 'Poker'] },
+  poker: { ru: ['омаха', 'омаха хай-лоу', 'семикарточный стад', 'пятикарточный дро', 'лоуболл', 'бадуги', 'разз', 'хорс'], en: ['Omaha', 'PLO', 'Omaha Hi-Lo', 'Seven-card stud', 'Five-card draw', 'Lowball', '2-7 Triple Draw', 'Badugi', 'Razz', 'HORSE'] },
+  drunkard: { ru: ['пьяница в карты', 'война', 'карточная война', 'в пьяницу'], en: ['War', 'Battle', 'Beggar-my-neighbour'] },
+  bluff: { ru: ['верю не верю', 'сомневаюсь', 'чит', 'блеф', 'обманщик'], en: ['Cheat', 'I Doubt It', 'Bluff', 'Bullshit', 'BS'] },
+  sunduchok: { ru: ['сундучки', 'дай тузов', 'четвёрки', 'рыбалка'], en: ['Go Fish', 'Authors', 'Happy Families'] },
+  akulina: { ru: ['пиковая дама', 'зассыха', 'чёрная дама', 'старая дева', 'ведьма', 'Чёрный Пётр'], en: ['Old Maid', 'Black Peter', 'Schwarzer Peter'] },
+  devyatka: { ru: ['семёрка', 'домино на картах', 'девятка в карты', 'ряды'], en: ['Sevens', 'Fan Tan', 'Parliament', 'Card dominoes'] },
+  hearts: { ru: ['червы', 'червушки', 'черви в карты', 'чёрная дама', 'Hearts'], en: ['Hearts', 'Black Lady', 'Black Maria', 'Omnibus Hearts'] },
+  king: { ru: ['кинг в карты', 'дамский преферанс', 'барбу'], en: ['King', 'Barbu'] },
+  raspisnoy: { ru: ['расписной', 'расписуха', 'кинг-покер', 'покер на взятки'], en: ['Oh Hell', 'Up and Down the River', 'Contract Whist', 'Nomination Whist', 'Wizard'] },
+  kozel: { ru: ['козел', 'козёл в карты', 'козлы', 'карточный козёл'], en: ['Kozel', 'Goat', 'Schafkopf'] },
+  khrap: { ru: ['рамс', 'горб', 'храпка', 'храп в карты'], en: ['Rams', 'Khrap', 'Loo'] },
+  ochko: { ru: ['21', 'двадцать одно', 'блэкджек', 'блекджек', 'очко в карты', 'золотое очко'], en: ['Blackjack', 'Twenty-One', 'Vingt-et-un', 'Pontoon', 'Ochko'] },
+  seka: { ru: ['свара', 'трынка', 'три листа', 'сека в карты'], en: ['Seka', 'Svara', 'Three-card brag', 'Trynka'] },
+  govno: { ru: ['говно', 'ложки', 'свинья', 'четыре одинаковых', 'хлопушка'], en: ['Spoons', 'Pig', 'Donkey'] },
+  solitaire: { ru: ['косынка', 'паук', 'солитёр', 'солитер', 'свободная ячейка', 'клондайк', 'скорпион', 'пирамида', 'пасьянсы бесплатно'], en: ['Solitaire', 'Klondike', 'Spider Solitaire', 'FreeCell', 'Scorpion', 'Pyramid', 'Patience'] },
+  // — компанией —
+  spy: { ru: ['находка для шпиона', 'кто шпион', 'шпион онлайн', 'локации'], en: ['Spyfall', 'Spy', 'Who is the spy'] },
+  whoami: { ru: ['угадай кто я', 'кто я такой', 'бумажка на лбу', 'стикер на лбу', 'угадай персонажа'], en: ['Who Am I', 'Headbanz', 'Hedbanz', 'Celebrity Heads', 'Post-it game'] },
+  danetki: { ru: ['да-нет-ки', 'данетка', 'ситуации', 'загадки да или нет', 'чёрные истории', 'нестандартные загадки'], en: ['Situation puzzles', 'Lateral thinking puzzles', 'Yes or No puzzles', 'Black Stories'] },
+  hat: { ru: ['элиас', 'алиас', 'объясни слово', 'скажи иначе', 'игра в шляпу'], en: ['Hat', 'Alias', 'Taboo', 'Fishbowl', 'Salad Bowl', 'Time’s Up'] },
+  crocodile: { ru: ['шарады', 'покажи слово', 'пантомима', 'крокодил онлайн'], en: ['Charades', 'Crocodile', 'Pantomime'] },
+  'secret-hitler': { ru: ['секретный гитлер', 'либералы и фашисты', 'тайный гитлер онлайн'], en: ['Secret Hitler'] },
+  cah: { ru: ['карты против всех', 'карты против человечности', 'КПЧ', 'карты против человечества онлайн'], en: ['Cards Against Humanity', 'CAH', 'Apples to Apples'] },
+  mafia: { ru: ['мафия онлайн', 'город засыпает', 'мафия с ведущим', 'спортивная мафия', 'мафия с ботами'], en: ['Mafia', 'Werewolf', 'Lupus in Tabula'] },
+  // — на бумаге —
+  seabattle: { ru: ['морской бой на бумаге', 'морской бой с компьютером', 'морской бой в клетку', 'кораблики'], en: ['Battleship', 'Battleships', 'Sea Battle', 'Salvo'] },
+  dots: { ru: ['точки на бумаге', 'точки онлайн', 'окружение', 'точки в клетку'], en: ['Dots', 'Points', 'Kropki'] },
+  ttt: { ru: ['крестики нолики', 'ультимативные крестики-нолики', 'крестики-нолики 3 на 3', 'крестики-нолики с компьютером'], en: ['Tic-tac-toe', 'Noughts and Crosses', 'Xs and Os', 'Ultimate Tic-tac-toe'] },
+  hangman: { ru: ['виселица слова', 'угадай слово', 'висельник', 'виселица онлайн'], en: ['Hangman', 'Gallows'] },
+  paperball: { ru: ['бумажный футбол', 'футбол в клеточку', 'футбол на листочке', 'футбол ручкой'], en: ['Paper Soccer', 'Paper Football', 'Pencil Football'] },
+  balda: { ru: ['балда онлайн', 'слова из букв', 'игра в слова 5 на 5', 'балда с компьютером'], en: ['Balda'] },
+  // — головоломки —
+  geo: { ru: ['угадай страну', 'угадай флаг', 'флаги стран', 'столицы мира', 'гербы стран', 'контурные карты', 'викторина по географии'], en: ['Geography quiz', 'Flag quiz', 'Guess the country', 'Capitals quiz', 'Seterra'] },
+  dvor: { ru: ['дворовая олимпиада', 'головоломки про двор', 'дворовые игры 90-х', 'ностальгия 90-е'], en: ['Puzzle collection', 'Logic puzzles'] },
+  puzzles: { ru: ['судоку', 'кроссворды', 'сканворды', 'японские кроссворды', 'нонограммы', 'кроссворды онлайн'], en: ['Sudoku', 'Crossword', 'Scanword', 'Arrowword', 'Nonogram', 'Picross', 'Griddlers', 'Hanjie'] },
+  saper: { ru: ['сапер', 'сапёр Windows', 'минёр', 'мины', 'сапёр онлайн'], en: ['Minesweeper', 'Mines', 'Minesweeper Flags'] },
+  g2048: { ru: ['2048 игра', 'плитки 2048', 'игра 2048 онлайн', 'цифры 2048'], en: ['2048', '2048 game', 'Threes'] },
+  pipes: { ru: ['трубы', 'соедини трубы', 'водопровод', 'поворотка', 'головоломка с трубами', 'сантехник'], en: ['Pipes', 'Net', 'NetWalk', 'Pipe puzzle', 'Plumber puzzle', 'Pipe Mania'] },
+  detektiv: { ru: ['детективные загадки', 'инспектор Варнике', 'загадки инспектора Варнике', 'Анискин', 'найди преступника', 'логические задачи'], en: ['Detective puzzles', 'Whodunit', 'Murder mystery', 'Inspector Warnicke'] },
+  // — настолки —
+  erudit: { ru: ['скрэббл', 'скрабл', 'скрабл на русском', 'эрудит онлайн', 'слова из фишек'], en: ['Scrabble', 'Erudite', 'Words with Friends'] },
+  adventures: { ru: ['бродилки', 'ходилки', 'настольные бродилки', 'советские настольные игры', 'игры с кубиком и фишками'], en: ['Roll and move', 'Race games', 'Board games'] },
+  hodilki: { ru: ['ходилки', 'бродилки', 'настольная ходилка', 'игра с фишками и кубиком', 'Кругосветное путешествие', 'Затерянный мир', 'Неукротимая планета'], en: ['Roll and move', 'Race game', 'Snakes and Ladders', 'Game of the Goose'] },
+  shel: { ru: ['шёл солдат', 'солдат со службы', 'игра Шумова', 'сказочная ходилка'] },
+  star: { ru: ['звезда африки настольная игра', 'Африканская звезда', 'поиск алмаза'], en: ['Afrikan tähti', 'The Star of Africa', 'Star of Africa'] },
+  korona: { ru: ['корона амбера', 'Эмбер', 'Хроники Эмбера', 'Амбер настольная игра'], en: ['Crown of Amber', 'Amber board game'] },
+  magiya: { ru: ['магия настольная игра', 'лабиринт мага', 'посвящение в маги'], en: ['Magic board game'] },
+  djio: { ru: ['Джио-Джанги', 'чудовище Джио Джанги', 'экспедиция', 'Джунгли'], en: ['Dzhio-Dzhangi'] },
+  astro: { ru: ['астронавты настольная игра', 'звёздная карта', 'созвездия'], en: ['Astronauts board game'] },
+  beglye: { ru: ['беглые настольная игра', 'побег из монастыря'] },
+  kupi: { ru: ['экономические игры', 'монополия по-советски', 'советская монополия', 'игры про бизнес'], en: ['Economic board games', 'Monopoly-like games'] },
+  manager: { ru: ['менеджер настольная игра', 'Одесса', 'Бизнесмен', 'Космос 2000', 'советская монополия', 'ДЛТ'], en: ['Manager board game', 'Soviet Monopoly'] },
+  vorona: { ru: ['белая ворона настольная игра', 'зарплата и счета', 'экономическая игра'] },
+  western: { ru: ['вестерн настольная игра', 'биржа и акции'], en: ['Western board game'] },
+  akcii: { ru: ['акционеры настольная игра', 'биржа', 'патенты и фирмы'] },
+  sea: { ru: ['пираты', 'колонизаторы', 'Швамбрания', 'морская стратегия', 'вертушка и компас'], en: ['Pirates board game', 'Naval strategy'] },
+  zakoldovannaya: { ru: ['заколдованная страна настольная игра', 'советская ролевая игра', 'советская RPG', 'игра 1990 года'], en: ['Enchanted Land', 'Soviet RPG'] },
+  // — настольный спорт —
+  billiards: { ru: ['бильярд онлайн', 'русский бильярд', 'пирамида', 'московская пирамида', 'невская пирамида', 'американка', 'пул', 'восьмёрка', 'снукер'], en: ['Billiards', 'Russian pyramid', 'Pool', '8-ball', '9-ball', 'Snooker'] },
+  hockey: { ru: ['хоккей настольный', 'хоккей на штангах', 'советский настольный хоккей', 'хоккей с ручками'], en: ['Table hockey', 'Rod hockey', 'Stiga hockey'] },
+  football: { ru: ['футбол настольный', 'футбол на пружинках', 'кнопочный футбол', 'советский настольный футбол'], en: ['Table football', 'Flick football', 'Table soccer'] },
+  basketball: { ru: ['баскетбол настольный', 'кнопочный баскетбол', 'советский настольный баскетбол'], en: ['Table basketball', 'Finger basketball'] },
+  zarulem: { ru: ['за рулём игрушка', 'советская игрушка руль', 'гонки', 'автотрек'], en: ['Racing toy', 'Steering wheel toy'] },
+  // — электроника —
+  elektronika: { ru: ['ну погоди', 'ну, погоди! игра', 'волк ловит яйца', 'электроника ИМ-02', 'тайны океана', 'весёлый повар', 'советские электронные игры'], en: ['Nu, pogodi!', 'Elektronika IM-02', 'Game & Watch', 'LCD game'] },
+  brick: { ru: ['тетрис', 'брик гейм', 'тетрис 9999 в 1', 'тетрис 90-х'], en: ['Brick Game', 'Tetris', 'Brick Game 9999 in 1', 'E-23'] },
+  avtomaty: { ru: ['советские игровые автоматы', 'автоматы за 15 копеек', 'морской бой автомат', 'конёк-горбунок автомат', 'игровые автоматы СССР'], en: ['Soviet arcade machines', 'Soviet arcade', 'Arcade emulator'] },
+  treasures: { ru: ['три в ряд', 'клад три в ряд'], en: ['Match 3', 'Treasure match'] },
+  shariki: { ru: ['зума', 'шарики зума', 'лягушка шарики'], en: ['Zuma', 'Marble shooter'] },
+  eggs: { ru: ['лопни шарики', 'пузыри'], en: ['Bubble shooter', 'Puzzle Bobble'] },
+  gops: { ru: ['гопники', 'стенка на стенку'], en: ['Beat em up'] },
+};
+
+/** Все названия игры одной строкой — для поиска. */
+export const namesOf = (id: string): string[] => [...(NAMES[id]?.ru ?? []), ...(NAMES[id]?.en ?? [])];

@@ -19,6 +19,7 @@ import type { Link } from '../src/core/protocol';
 import { Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
+import { MOVED } from '../src/site/routes';
 
 const PORT = Number(process.env.PORT) || 8787;
 const here = dirname(fileURLToPath(import.meta.url));
@@ -306,6 +307,12 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
   const headers: Record<string, string> = {};
   // старый адрес на Render не индексируем: сайт переезжает на свой домен
   if (/\.onrender\.com$/i.test(String(req.headers.host || '').split(':')[0])) headers['x-robots-tag'] = 'noindex';
+  // переехавший адрес — насовсем на новый
+  const moved = MOVED[path.replace(/^\/+|\/+$/g, '')];
+  if (moved) {
+    res.writeHead(301, { location: `/${moved}/` + (req.url || '').slice(path.length), ...headers });
+    return res.end();
+  }
   let status = 200;
   const isDir = existsSync(file) && statSync(file).isDirectory();
   if (isDir && existsSync(join(file, 'index.html'))) {

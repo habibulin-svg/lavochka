@@ -6,11 +6,12 @@ import { isArcade, openArcade } from './core/arcade';
 import { currentTable, nav, offerResume, resumeTable } from './core/session';
 import { closeAllModals, modal } from './core/ui';
 import type { GameModule } from './core/view';
-import { gamePath, parseRoute, tablePath, type Route } from './site/routes';
+import { gamePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
+import { siteBar } from './site/bar';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { esc } from './core/util';
-import { byId, type CatalogEntry } from './games/catalog';
+import { byId, type CatalogEntry, type Category } from './games/catalog';
 import { yard } from './launcher/yard';
 import { cardHTML, DECK_STYLES } from './cards/render';
 import { makeDeck } from './cards/deck';
@@ -73,17 +74,26 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
         rulesByUrl = false;
       },
     });
+    homeEl()?.prepend(siteBar(searchFromBar));
     void attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
   } catch (e: any) {
     modal(`<h2>Не загрузилось</h2><p>${esc(e?.message || e)}</p>`, [{ text: 'Ок', primary: true }]);
   }
 }
 
+/** Поиск из шапки страницы игры — во двор, на найденное. */
+function searchFromBar(q: string) {
+  go(searchPath(q));
+  render({ kind: 'search', q });
+  window.scrollTo(0, 0);
+}
+
 const homeEl = () => document.querySelector('[data-screen=home]');
-/** Двор с текстом страницы (главная или группа). */
-function showYard() {
-  yard.show();
-  void attachSeo(document.querySelector('[data-screen=yard] .yard-content'), location.pathname);
+const yardEl = () => document.querySelector('[data-screen=yard] .yard-content');
+/** Двор с текстом страницы (главная, раздел или группа). */
+function showYard(cat: Category | 'all' = 'all') {
+  yard.show(cat);
+  void attachSeo(yardEl(), location.pathname);
 }
 
 /** Номер перехода: игра, догрузившаяся после ухода на другой экран, не открывается. */
@@ -95,11 +105,12 @@ function leaveArcade() {
   stopArcade = null;
 }
 
+/** «Во двор» — в тот раздел, откуда пришли. */
 function toYard() {
   navSeq++;
-  go('/');
+  go(sectionPath(yard.cat === 'all' ? null : yard.cat));
   yard.group = null;
-  showYard();
+  showYard(yard.cat);
 }
 
 yard.openGame = (g) => {
@@ -107,8 +118,24 @@ yard.openGame = (g) => {
   void openGame(g);
 };
 yard.onGroup = (g) => {
-  go(g ? gamePath(g.id) : '/');
-  void attachSeo(document.querySelector('[data-screen=yard] .yard-content'), location.pathname);
+  go(g ? gamePath(g.id) : sectionPath(yard.cat === 'all' ? null : yard.cat));
+  void attachSeo(yardEl(), location.pathname);
+};
+yard.onCat = (cat) => {
+  go(sectionPath(cat === 'all' ? null : cat));
+  void attachSeo(yardEl(), location.pathname);
+};
+// поиск: адрес /poisk/?q=… меняется на месте, пока печатают; стёрли запрос — обратно в раздел
+yard.onSearch = (q) => {
+  const onSearch = location.pathname.startsWith('/poisk');
+  if (q) {
+    go(searchPath(q), onSearch);
+    void attachSeo(null);
+    document.title = `Поиск: ${q} — Вечером на лавочке`;
+  } else {
+    go(sectionPath(yard.cat === 'all' ? null : yard.cat), onSearch);
+    void attachSeo(yardEl(), location.pathname);
+  }
 };
 // возвращение со стола или из ошибки лобби — на место прежнего экрана, без лишней записи в истории
 nav.yard = () => {
@@ -144,10 +171,16 @@ function render(r: Route) {
     }
     if (g && (g.load || g.of)) return void openGame(g, r);
   }
-  // неизвестный адрес и поиск (пока) — во двор
-  if (r.kind !== 'yard') history.replaceState(null, '', '/');
   yard.group = null;
-  showYard();
+  if (r.kind === 'search' && r.q.trim()) {
+    yard.show('all', r.q.trim());
+    void attachSeo(null);
+    document.title = `Поиск: ${r.q.trim()} — Вечером на лавочке`;
+    return;
+  }
+  // неизвестный адрес и пустой поиск — во двор
+  if (r.kind !== 'yard') history.replaceState(null, '', '/');
+  showYard(r.kind === 'yard' ? ((r.cat as Category | undefined) ?? 'all') : 'all');
 }
 
 // ссылки внутри сайта (текст под игрой) — без перезагрузки страницы

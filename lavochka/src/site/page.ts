@@ -47,5 +47,7 @@ export async function attachSeo(host: Element | null, path = location.pathname) 
   const el = document.createElement('article');
   el.className = 'seo-page';
   el.innerHTML = t.html;
+  // карточки страницы двора уже показывает сам двор — в тексте они для поисковика и для чтения без скриптов
+  if (host.closest('[data-screen=yard]')) el.querySelectorAll('.seo-cards[data-yard]').forEach((c) => c.remove());
   host.appendChild(el);
 }

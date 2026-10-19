@@ -65,7 +65,7 @@ export const SLUGS: Record<string, string> = {
   // головоломки
   geo: 'geografiya',
   dvor: 'a-u-nas-vo-dvore',
-  puzzles: 'golovolomki',
+  puzzles: 'krossvordy-i-sudoku',
   saper: 'saper',
   g2048: '2048',
   pipes: 'vodoprovodchik',
@@ -101,6 +101,23 @@ export const SLUGS: Record<string, string> = {
   shariki: 'shariki',
   eggs: 'yayca-dinozavrov',
   gops: 'gops',
+};
+
+/** Разделы двора — свои страницы со своим текстом (src/site/sections.ts); во дворе — кнопки над карточками. */
+export const SECTION_SLUGS: Record<string, string> = {
+  board: 'doska-i-kosti',
+  cards: 'kartochnye-igry',
+  company: 'igry-dlya-kompanii',
+  paper: 'igry-na-bumage',
+  puzzles: 'golovolomki',
+  tabletop: 'nastolnye-igry',
+  sport: 'nastolnyy-sport',
+  electronics: 'elektronnye-igry',
+};
+
+/** Переехавшие адреса → новые (сервер отвечает 301). */
+export const MOVED: Record<string, string> = {
+  'golovolomki/pravila': 'krossvordy-i-sudoku/pravila',
 };
 
 /** Отдельная страница варианта — только там, где у него свой спрос (docs/seo/plan.md); остальные варианты — разделом на странице игры. */
@@ -162,7 +179,7 @@ export const VARIANTS: VariantPage[] = [
 export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
 
 export type Route =
-  | { kind: 'yard' }
+  | { kind: 'yard'; cat?: string }
   | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean }
   | { kind: 'table'; code: string }
   | { kind: 'search'; q: string }
@@ -171,6 +188,7 @@ export type Route =
 const BY_PATH = new Map<string, { id: string; preset?: string }>();
 for (const [id, p] of Object.entries(SLUGS)) BY_PATH.set(p, { id });
 for (const v of VARIANTS) BY_PATH.set(v.path, { id: v.game, preset: v.preset });
+const BY_SECTION = new Map(Object.entries(SECTION_SLUGS).map(([id, p]) => [p, id]));
 
 const trim = (p: string) => p.replace(/^\/+|\/+$/g, '');
 
@@ -186,6 +204,8 @@ export function parseRoute(pathname: string, search = ''): Route {
   if (!p) return { kind: 'yard' };
   if (p.startsWith('stol/')) return { kind: 'table', code: p.slice(5).toUpperCase() };
   if (p === 'poisk') return { kind: 'search', q: q.get('q') ?? '' };
+  const sec = BY_SECTION.get(p);
+  if (sec) return { kind: 'yard', cat: sec };
   const rules = p.endsWith('/pravila');
   const hit = BY_PATH.get(rules ? p.slice(0, -'/pravila'.length) : p);
   if (!hit) return { kind: 'missing', path: p };
@@ -199,5 +219,8 @@ export function gamePath(id: string, preset?: string | null): string {
   return p ? `/${p}/` : '/';
 }
 
+/** Адрес раздела двора («все игры» — главная). */
+export const sectionPath = (cat?: string | null) => (cat && SECTION_SLUGS[cat] ? `/${SECTION_SLUGS[cat]}/` : '/');
+export const searchPath = (q: string) => `/poisk/?q=${encodeURIComponent(q)}`;
 export const rulesPath = (id: string) => (SLUGS[id] ? `/${SLUGS[id]}/pravila/` : '/');
 export const tablePath = (code: string) => `/stol/${code}`;
