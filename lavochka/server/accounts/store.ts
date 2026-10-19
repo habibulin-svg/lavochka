@@ -43,6 +43,23 @@ export interface Donation {
   paidAt: number | null;
 }
 
+/** Сыгранная партия в истории игрока. */
+export interface PlayRecord {
+  game: string;
+  preset: string | null;
+  /** Чем кончилось для игрока. */
+  result: 'win' | 'lose' | 'draw' | 'done';
+  /** Место (если в игре есть места). */
+  place: number | null;
+  players: number;
+  bots: number;
+  network: boolean;
+  /** Счёт строкой, как показала игра («3 : 1», «120 очков»). */
+  score: string | null;
+  seconds: number | null;
+  endedAt: number;
+}
+
 export interface AccountStore {
   /** Подготовить хранилище (миграции). */
   init(): Promise<void>;
@@ -90,6 +107,17 @@ export interface AccountStore {
   /** Последние оплаченные — для админки. */
   recentDonations(limit: number): Promise<(Donation & { userName: string | null })[]>;
 
+  /** Лайк игре (on=false — снять). */
+  setLike(userId: number, game: string, on: boolean): Promise<void>;
+  /** Игры, которым игрок поставил лайк. */
+  likesOf(userId: number): Promise<string[]>;
+  /** Сколько лайков у каждой игры. */
+  likeCounts(): Promise<Record<string, number>>;
+
+  addHistory(userId: number, p: PlayRecord): Promise<void>;
+  /** Последние партии игрока (новые первыми). */
+  history(userId: number, limit: number): Promise<PlayRecord[]>;
+
   /** Убрать просроченные сессии и ссылки. */
   cleanup(now: number): Promise<void>;
   close(): Promise<void>;
@@ -110,6 +138,8 @@ export class MemoryAccountStore implements AccountStore {
   private donations = new Map<number, Donation>();
   private seq = 0;
   private donSeq = 0;
+  private likes = new Map<number, Set<string>>();
+  private plays = new Map<number, PlayRecord[]>();
 
   async init() {}
 
@@ -208,6 +238,31 @@ export class MemoryAccountStore implements AccountStore {
 
   async unlinkExternal(provider: string, userId: number) {
     for (const [k, id] of this.external) if (id === userId && k.startsWith(provider + ':')) this.external.delete(k);
+  }
+
+  async setLike(userId: number, game: string, on: boolean) {
+    if (!this.likes.has(userId)) this.likes.set(userId, new Set());
+    if (on) this.likes.get(userId)!.add(game);
+    else this.likes.get(userId)!.delete(game);
+  }
+
+  async likesOf(userId: number) {
+    return [...(this.likes.get(userId) ?? [])].sort();
+  }
+
+  async likeCounts() {
+    const c: Record<string, number> = {};
+    for (const set of this.likes.values()) for (const g of set) c[g] = (c[g] ?? 0) + 1;
+    return c;
+  }
+
+  async addHistory(userId: number, p: PlayRecord) {
+    if (!this.plays.has(userId)) this.plays.set(userId, []);
+    this.plays.get(userId)!.push({ ...p });
+  }
+
+  async history(userId: number, limit: number) {
+    return [...(this.plays.get(userId) ?? [])].sort((a, b) => b.endedAt - a.endedAt).slice(0, limit);
   }
 
   async settings() {

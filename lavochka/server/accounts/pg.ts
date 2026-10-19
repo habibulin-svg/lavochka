@@ -2,7 +2,7 @@
  * вход от имени системного пользователя lavochka, без пароля). Схема — миграции ниже, по порядку, каждая один раз
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
-import { ExistsError, type AccountStore, type Donation, type Right, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -66,6 +66,29 @@ export const MIGRATIONS: string[] = [
      paid_at timestamptz
    );
    create index donations_paid on donations (paid_at) where paid_at is not null;`,
+  // 3 — лайки игр и история партий
+  `create table game_likes (
+     user_id bigint not null references users on delete cascade,
+     game text not null,
+     created_at timestamptz not null default now(),
+     primary key (user_id, game)
+   );
+   create index game_likes_game on game_likes (game);
+   create table game_history (
+     id bigserial primary key,
+     user_id bigint not null references users on delete cascade,
+     game text not null,
+     preset text,
+     result text not null,
+     place int,
+     players int not null,
+     bots int not null default 0,
+     network boolean not null default false,
+     score text,
+     seconds int,
+     ended_at timestamptz not null default now()
+   );
+   create index game_history_user on game_history (user_id, ended_at desc);`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -221,6 +244,47 @@ export class PgAccountStore implements AccountStore {
 
   async unlinkExternal(provider: string, userId: number) {
     await this.pool.query('delete from external_logins where provider = $1 and user_id = $2', [provider, userId]);
+  }
+
+  async setLike(userId: number, game: string, on: boolean) {
+    if (on) await this.pool.query('insert into game_likes (user_id, game) values ($1, $2) on conflict do nothing', [userId, game]);
+    else await this.pool.query('delete from game_likes where user_id = $1 and game = $2', [userId, game]);
+  }
+
+  async likesOf(userId: number) {
+    const r = await this.pool.query('select game from game_likes where user_id = $1 order by game', [userId]);
+    return r.rows.map((x) => x.game as string);
+  }
+
+  async likeCounts() {
+    const r = await this.pool.query('select game, count(*)::int as n from game_likes group by game');
+    return Object.fromEntries(r.rows.map((x) => [x.game, x.n]));
+  }
+
+  async addHistory(userId: number, p: PlayRecord) {
+    await this.pool.query(
+      `insert into game_history (user_id, game, preset, result, place, players, bots, network, score, seconds, ended_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [userId, p.game, p.preset, p.result, p.place, p.players, p.bots, p.network, p.score, p.seconds, date(p.endedAt)]
+    );
+  }
+
+  async history(userId: number, limit: number) {
+    const r = await this.pool.query('select * from game_history where user_id = $1 order by ended_at desc limit $2', [userId, limit]);
+    return r.rows.map(
+      (x): PlayRecord => ({
+        game: x.game,
+        preset: x.preset,
+        result: x.result,
+        place: x.place,
+        players: x.players,
+        bots: x.bots,
+        network: x.network,
+        score: x.score,
+        seconds: x.seconds,
+        endedAt: ms(x.ended_at)!,
+      })
+    );
   }
 
   async settings() {

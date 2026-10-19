@@ -11,6 +11,8 @@ import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { handleAuthRoute, handleOAuthReturn } from './site/account';
 import { handleDonateReturn, loadDonate } from './site/donate';
+import { likeButton } from './site/likes';
+import './site/history';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
 import { esc, h } from './core/util';
@@ -68,6 +70,7 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     openHome(mod, toYard, fixed, {
       rules: r.rules,
       resume: r.play,
+      topExtra: likeButton(mod.def.id),
       onPreset: (p) => {
         go(gamePath(mod.def.id, p), true);
         void attachSeo(homeEl(), location.pathname);

@@ -32,6 +32,22 @@ export interface TableOpts {
 
 type StepMsg = Extract<RoomMsg, { t: 'step' }>;
 
+/** Партия доиграна у этого экрана (для истории партий игрока). */
+export interface Finished {
+  game: string;
+  options: Options | null;
+  /** Пресеты игры — чтобы назвать вариант правил. */
+  presets: { id: string; options: Options }[];
+  result: GameResult;
+  mySeats: number[];
+  seats: SeatStatus[];
+  network: boolean;
+  seconds: number;
+}
+
+/** Крючки для сайта (история партий): ядро стола о сайте не знает. */
+export const tableHooks: { finished?: (f: Finished) => void } = {};
+
 export class Table {
   el: HTMLElement;
   private view: GameView;
@@ -42,6 +58,8 @@ export class Table {
   private seq = 0;
   private result: GameResult | null = null;
   private resultShown = false;
+  /** Когда началась партия, которую этот экран видел с начала (вернулись к доигранной — null: в историю не пишем). */
+  private liveSince: number | null = null;
   private queue: Promise<void> = Promise.resolve();
   /** Игра попросила «пропустить» — боты без пауз. */
   private fast = false;
@@ -402,6 +420,7 @@ export class Table {
     this.seq = m.seq;
     this.result = m.result;
     this.resultShown = false;
+    if (!m.resync) this.liveSince = m.result ? null : Date.now();
     this.lastTurnKey = '';
     if (!m.resync) {
       closeAllModals();
@@ -475,6 +494,24 @@ export class Table {
     this.lastTurnKey = key;
     if (this.result && !this.resultShown) {
       this.resultShown = true;
+      if (this.liveSince != null) {
+        const f: Finished = {
+          game: this.o.mod.def.id,
+          options: this.o.options?.() ?? null,
+          presets: this.o.mod.def.presets ?? [],
+          result: this.result,
+          mySeats: [...this.mySeats],
+          seats: this.seats,
+          network: this.o.mode !== 'local',
+          seconds: Math.round((Date.now() - this.liveSince) / 1000),
+        };
+        this.liveSince = null;
+        try {
+          tableHooks.finished?.(f);
+        } catch (e) {
+          console.warn(e);
+        }
+      }
       Sound.win();
       setTimeout(() => this.showResult(this.result!), 500);
     }

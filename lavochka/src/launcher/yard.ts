@@ -8,6 +8,7 @@ import { esc, h } from '../core/util';
 import { SeededRng } from '../core/rng';
 import { SHOWN, CATEGORIES, membersOf, type CatalogEntry, type Category } from '../games/catalog';
 import { cardMarkup, isReady } from '../site/card';
+import { likeCount, onLikes } from '../site/likes';
 import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
 import { loadStats, onStats } from '../site/stats';
@@ -191,7 +192,7 @@ const hasSave = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(has
 function card(g: CatalogEntry): HTMLElement {
   const ready = isReady(g);
   // ссылка, а не кнопка: открывается в новой вкладке, и поисковик видит адреса игр
-  const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах' }));
+  const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах', likes: ready ? likesOfCard(g) : 0 }));
   el.onclick = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
@@ -238,7 +239,7 @@ export const SEARCH_HINT = 'Найти игру: нарды, косынка, tet
 
 // ------------------------------------------------------------------ порядок карточек
 
-export type YardSort = '' | 'new' | 'popular';
+export type YardSort = '' | 'new' | 'popular' | 'liked';
 /** Начатые партии по играм (с сервера); пока не пришли — null. */
 let played: Record<string, number> | null = null;
 
@@ -247,9 +248,12 @@ const addedOf = (g: CatalogEntry): string => (g.members ? membersOf(g).reduce((d
 /** Партий сыграно: у группы — сумма по её играм. */
 const playedOf = (g: CatalogEntry): number => (g.members ? membersOf(g).reduce((n, m) => n + playedOf(m), 0) : (played?.[g.id] ?? 0));
 
+/** Лайков: у ярлыка — у его игры, у группы — сумма по её играм. */
+const likesOfCard = (g: CatalogEntry): number => (g.members ? membersOf(g).reduce((n, m) => n + likesOfCard(m), 0) : likeCount(g.of ?? g.id));
+
 /** Готовые — первыми; дальше — как выбрано (при равенстве — порядок каталога). */
 function sorted(list: CatalogEntry[], how: YardSort): CatalogEntry[] {
-  const key = (g: CatalogEntry) => (how === 'new' ? addedOf(g) : how === 'popular' ? playedOf(g) : 0);
+  const key = (g: CatalogEntry) => (how === 'new' ? addedOf(g) : how === 'popular' ? playedOf(g) : how === 'liked' ? likesOfCard(g) : 0);
   return list
     .map((g, i) => ({ g, i, k: key(g) }))
     .sort((a, b) => Number(isReady(b.g)) - Number(isReady(a.g)) || (b.k > a.k ? 1 : b.k < a.k ? -1 : 0) || a.i - b.i)
@@ -271,7 +275,7 @@ export const yard = {
   /** Порядок карточек (запоминается). */
   sort: (() => {
     const v = store.get<string>('yard.sort', '');
-    return (v === 'new' || v === 'popular' ? v : '') as YardSort;
+    return (v === 'new' || v === 'popular' || v === 'liked' ? v : '') as YardSort;
   })(),
   /** Раздел, который сейчас показан (его задаёт адрес). */
   cat: 'all' as Category | 'all',
@@ -293,7 +297,7 @@ export const yard = {
         <div class="search-row">
           <form class="search-form" role="search" action="/poisk/"><input type="search" name="q" placeholder="${esc(SEARCH_HINT)}" autocomplete="off" spellcheck="false" aria-label="Поиск игры"></form>
           <label class="yard-sort" title="Порядок карточек"><span>Порядок:</span><select>
-            <option value="">как обычно</option><option value="new">сначала новые</option><option value="popular">популярные</option>
+            <option value="">как обычно</option><option value="new">сначала новые</option><option value="popular">популярные</option><option value="liked">любимые (♥)</option>
           </select></label></div>
         <nav class="cats"></nav>
         <div class="cards"></div>
@@ -311,6 +315,7 @@ export const yard = {
       Sound.ui();
       this.sort = sort.value as YardSort;
       store.set('yard.sort', this.sort);
+      if (this.sort === 'liked') void loadStats();
       if (this.sort === 'popular' && !played) void loadStats().then((st) => (st ? this.renderCards() : toast('Нет связи с сервером — счётчики партий недоступны.')));
       this.renderCards();
     };
@@ -320,7 +325,13 @@ export const yard = {
       played = st.played;
       if (first && this.sort === 'popular' && this.el?.classList.contains('active')) this.renderCards();
     });
-    if (this.sort === 'popular') void loadStats();
+    if (this.sort === 'popular' || this.sort === 'liked') void loadStats();
+    // лайки пришли или изменились — пересобрать карточки (счётчики на них и порядок «любимые»)
+    let likeTimer = 0;
+    onLikes(() => {
+      clearTimeout(likeTimer);
+      likeTimer = window.setTimeout(() => this.el?.classList.contains('active') && this.renderCards(), 200);
+    });
 
     const sf = el.querySelector('.search-form') as HTMLFormElement;
     const si = sf.querySelector('input') as HTMLInputElement;

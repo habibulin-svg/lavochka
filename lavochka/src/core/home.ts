@@ -33,6 +33,8 @@ export interface HomeOpts {
   onRules?: (open: boolean) => void;
   /** Вернуться в незаконченную партию (обновили страницу посреди партии). */
   resume?: boolean;
+  /** Своя кнопка в шапке экрана (лайк — её даёт сайт). */
+  topExtra?: HTMLElement;
 }
 
 export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<string, unknown>, o: HomeOpts = {}) {
@@ -79,6 +81,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
       </div>
     </div>
   </section>`);
+  if (o.topExtra) el.querySelector('.home-top-btns')!.prepend(o.topExtra);
   mountScreen('home', el);
   const q = <T extends HTMLElement = HTMLElement>(s: string) => el.querySelector(s) as T;
   q('[data-a=back]').onclick = () => {

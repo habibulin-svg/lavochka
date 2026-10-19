@@ -6,6 +6,8 @@ import { uid } from '../core/util';
 export interface Stats {
   online: number;
   played: Record<string, number>;
+  /** Лайки по играм (этап 3б; старый сервер их не шлёт). */
+  likes?: Record<string, number>;
 }
 
 let last: Stats | null = null;

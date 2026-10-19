@@ -26,6 +26,7 @@ import { MOVED, SLUGS } from '../src/site/routes';
 import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './accounts';
 import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
+import { Player, playerApi } from './player';
 import { robokassaFromEnv } from './pay/robokassa';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -161,6 +162,7 @@ async function initAccounts() {
     await accounts.store.init();
     accountsReady = true;
     log('аккаунты: база готова');
+    await player.refresh().catch(() => {});
   } catch (e) {
     log('аккаунты: база недоступна — ' + (e as Error).message);
     setTimeout(initAccounts, 60_000).unref();
@@ -180,6 +182,9 @@ async function userOf(req: IncomingMessage) {
     return null;
   }
 }
+// лайки и история партий (server/player.ts)
+const player = new Player(accounts, (g) => Object.hasOwn(SLUGS, g));
+setInterval(() => accountsReady && player.refresh().catch(() => {}), 600_000).unref();
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
@@ -229,7 +234,7 @@ function statsBody(): string {
   for (const [id, t] of seen) if (now - t > ONLINE_MS) seen.delete(id);
   // онлайн — не меньше, чем людей за сетевыми столами сервера
   const online = Math.max(seen.size, [...rooms.values()].reduce((n, r) => n + r.clientCount, 0));
-  statsCache = { at: now, body: JSON.stringify({ online, played }) };
+  statsCache = { at: now, body: JSON.stringify({ online, played, likes: player.likeCounts() }) };
   return statsCache.body;
 }
 setInterval(() => {
@@ -350,6 +355,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     }
     if (await oauthApi(oauth, req, res, new URL(req.url || '/', 'http://x'), clientIp(req))) return;
     if (await authApi(accounts, req, res, path, clientIp(req), readBody)) return;
+  }
+  if (path === '/api/likes' || path === '/api/history') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await playerApi(player, req, res, path, clientIp(req), readBody)) return;
   }
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
