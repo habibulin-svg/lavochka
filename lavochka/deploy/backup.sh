@@ -11,3 +11,23 @@ tar -czf "$F.part" --ignore-failed-read \
 mv "$F.part" "$F"
 find $D -name 'lavochka-*.tar.gz' -mtime +30 -delete
 echo "бэкап $F $(du -h "$F" | cut -f1)"
+
+# Копия вне сервера — Яндекс Диск через REST API (WebDAV на бесплатном тарифе закрыт — 402).
+# Токен OAuth с доступом только к папке приложения («Приложения/…» на Диске) — YADISK_TOKEN в
+# /etc/lavochka-backup.env (`lavochka-secret YADISK_TOKEN /etc/lavochka-backup.env`), живёт год.
+# Туда — только данные, без секретов: ключи и сертификаты в чужое хранилище не отдаём
+# (их вводят заново / выпускают заново), конфиги — в git.
+[ -f /etc/lavochka-backup.env ] || exit 0
+. /etc/lavochka-backup.env
+[ -n "${YADISK_TOKEN:-}" ] || exit 0
+API=https://cloud-api.yandex.net/v1/disk/resources
+O=$D/data-$(date +%F).tar.gz
+tar -czf "$O" -C / srv/lavochka/data $(cd / && ls -d var/backups/lavochka/pg-*.sql.gz 2>/dev/null | tail -1)
+ya() { curl -4 -s -m 300 -H "Authorization: OAuth $YADISK_TOKEN" "$@"; }
+href=$(ya "$API/upload?path=app:/$(basename "$O")&overwrite=true" | sed -n 's/.*"href":"\([^"]*\)".*//p')
+code=000
+[ -n "$href" ] && code=$(curl -4 -s -m 300 -o /dev/null -w '%{http_code}' -T "$O" "$href")
+rm -f "$O"
+case $code in 2*) echo "копия на Яндекс Диск: $(basename "$O")";; *) echo "Яндекс Диск: ошибка ${code} (токен YADISK_TOKEN?)" >&2; exit 1;; esac
+# на Диске храним 30 дней: стираем копии 31–45-дневной давности (пропуски ночей не копят мусор)
+for n in $(seq 31 45); do ya -o /dev/null -X DELETE "$API?path=app:/data-$(date -d "$n days ago" +%F).tar.gz&permanently=true" || true; done

@@ -15,8 +15,7 @@ $keys = @(
   @{ n = 'UNISENDER_API_KEY';    f = $main;   d = 'Unisender Go — API-ключ' },
   @{ n = 'CP_PUBLIC_ID';         f = $main;   d = 'CloudPayments — Public ID' },
   @{ n = 'CP_API_SECRET';        f = $main;   d = 'CloudPayments — пароль для API' },
-  @{ n = 'YADISK_USER';          f = $backup; d = 'Яндекс Диск — логин (бэкапы)' },
-  @{ n = 'YADISK_PASSWORD';      f = $backup; d = 'Яндекс Диск — пароль приложения' }
+  @{ n = 'YADISK_TOKEN';         f = $backup; d = 'Яндекс Диск — токен (бэкапы)' }
 )
 
 function Invoke-Ssh([string]$cmd, [string]$stdin) {
