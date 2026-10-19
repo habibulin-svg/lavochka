@@ -2,7 +2,7 @@
  * вход от имени системного пользователя lavochka, без пароля). Схема — миграции ниже, по порядку, каждая один раз
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
-import { ExistsError, type AccountStore, type Right, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, type AccountStore, type Donation, type Right, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -50,6 +50,22 @@ export const MIGRATIONS: string[] = [
      created_at timestamptz not null default now(),
      primary key (provider, subject)
    );`,
+  // 2 — настройки сайта (меняет Мастер) и донаты; суммы — в копейках
+  `create table site_settings (
+     key text primary key,
+     value text not null,
+     updated_at timestamptz not null default now(),
+     updated_by bigint references users on delete set null
+   );
+   create table donations (
+     id bigserial primary key,
+     user_id bigint references users on delete set null,
+     amount_kop bigint not null,
+     provider text not null default 'robokassa',
+     created_at timestamptz not null default now(),
+     paid_at timestamptz
+   );
+   create index donations_paid on donations (paid_at) where paid_at is not null;`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -67,6 +83,10 @@ function toUser(r: any): User {
     lastLoginAt: ms(r.last_login_at),
     bannedUntil: ms(r.banned_until),
   };
+}
+
+function toDonation(r: any): Donation {
+  return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at) };
 }
 
 export class PgAccountStore implements AccountStore {
@@ -192,6 +212,49 @@ export class PgAccountStore implements AccountStore {
       'insert into external_logins (provider, subject, user_id, email) values ($1, $2, $3, $4) on conflict (provider, subject) do update set user_id = excluded.user_id, email = excluded.email',
       [provider, subject, userId, email]
     );
+  }
+
+  async settings() {
+    const r = await this.pool.query('select key, value from site_settings');
+    return Object.fromEntries(r.rows.map((x) => [x.key, x.value]));
+  }
+
+  async setSetting(key: string, value: string | null, by: number | null) {
+    if (value == null) await this.pool.query('delete from site_settings where key = $1', [key]);
+    else
+      await this.pool.query(
+        `insert into site_settings (key, value, updated_by) values ($1, $2, $3)
+         on conflict (key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = now()`,
+        [key, value, by]
+      );
+  }
+
+  async createDonation(d: { userId: number | null; amount: number }) {
+    const r = await this.pool.query('insert into donations (user_id, amount_kop) values ($1, $2) returning id', [d.userId, d.amount]);
+    return Number(r.rows[0].id);
+  }
+
+  async donation(id: number) {
+    const r = await this.pool.query('select * from donations where id = $1', [id]);
+    return r.rows[0] ? toDonation(r.rows[0]) : null;
+  }
+
+  async markDonationPaid(id: number, now: number) {
+    const r = await this.pool.query('update donations set paid_at = $2 where id = $1 and paid_at is null', [id, date(now)]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async donatedSince(since: number) {
+    const r = await this.pool.query('select coalesce(sum(amount_kop), 0) as s from donations where paid_at >= $1', [date(since)]);
+    return Number(r.rows[0].s);
+  }
+
+  async recentDonations(limit: number) {
+    const r = await this.pool.query(
+      'select d.*, u.name as user_name from donations d left join users u on u.id = d.user_id where d.paid_at is not null order by d.paid_at desc limit $1',
+      [limit]
+    );
+    return r.rows.map((x) => ({ ...toDonation(x), userName: x.user_name ?? null }));
   }
 
   async cleanup(now: number) {

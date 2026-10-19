@@ -24,6 +24,8 @@ import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
 import { MOVED, SLUGS } from '../src/site/routes';
 import { accountsFromEnv, authApi } from './accounts';
+import { Donate, donateApi } from './donate';
+import { robokassaFromEnv } from './pay/robokassa';
 
 const PORT = Number(process.env.PORT) || 8787;
 const here = dirname(fileURLToPath(import.meta.url));
@@ -164,6 +166,9 @@ async function initAccounts() {
   }
 }
 void initAccounts();
+// донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
+const donate = new Donate(accounts, robokassaFromEnv(), log);
+if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
 
 // ------------------------------------------------------------------ счётчики: онлайн и начатые партии
@@ -330,6 +335,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
       return res.end(JSON.stringify({ error: 'down', message: 'Вход временно недоступен. Играть можно и без него.' }));
     }
     if (await authApi(accounts, req, res, path, clientIp(req), readBody)) return;
+  }
+  if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/stats') {
     // ?v=<метка вкладки> — вкладка отмечается «во дворе»

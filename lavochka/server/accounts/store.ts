@@ -34,6 +34,15 @@ export interface UserPatch {
   bannedUntil?: number | null;
 }
 
+/** Пожертвование (донат): создаётся до оплаты, оплаченным его отмечает уведомление платёжного сервиса. Суммы — в копейках. */
+export interface Donation {
+  id: number;
+  userId: number | null;
+  amount: number;
+  createdAt: number;
+  paidAt: number | null;
+}
+
 export interface AccountStore {
   /** Подготовить хранилище (миграции). */
   init(): Promise<void>;
@@ -63,6 +72,21 @@ export interface AccountStore {
   userByExternal(provider: string, subject: string): Promise<User | null>;
   linkExternal(provider: string, subject: string, userId: number, email: string | null): Promise<void>;
 
+  /** Настройки сайта, которые меняет Мастер (надпись кнопки «Поддержать», цель сбора). */
+  settings(): Promise<Record<string, string>>;
+  /** Записать настройку; null — удалить. */
+  setSetting(key: string, value: string | null, by: number | null): Promise<void>;
+
+  /** Новый донат (ещё не оплачен) — его номер уходит в платёжный сервис. */
+  createDonation(d: { userId: number | null; amount: number }): Promise<number>;
+  donation(id: number): Promise<Donation | null>;
+  /** Отметить оплаченным; false — уже был отмечен (повторное уведомление) или его нет. */
+  markDonationPaid(id: number, now: number): Promise<boolean>;
+  /** Сколько оплачено (копейки) начиная с момента since. */
+  donatedSince(since: number): Promise<number>;
+  /** Последние оплаченные — для админки. */
+  recentDonations(limit: number): Promise<(Donation & { userName: string | null })[]>;
+
   /** Убрать просроченные сессии и ссылки. */
   cleanup(now: number): Promise<void>;
   close(): Promise<void>;
@@ -79,7 +103,10 @@ export class MemoryAccountStore implements AccountStore {
   private tokens = new Map<string, { userId: number; kind: TokenKind; expiresAt: number; used: boolean }>();
   private rightsBy = new Map<number, Map<string, number | null>>();
   private external = new Map<string, number>();
+  private site = new Map<string, string>();
+  private donations = new Map<number, Donation>();
   private seq = 0;
+  private donSeq = 0;
 
   async init() {}
 
@@ -170,6 +197,47 @@ export class MemoryAccountStore implements AccountStore {
 
   async linkExternal(provider: string, subject: string, userId: number) {
     this.external.set(provider + ':' + subject, userId);
+  }
+
+  async settings() {
+    return Object.fromEntries(this.site);
+  }
+
+  async setSetting(key: string, value: string | null) {
+    if (value == null) this.site.delete(key);
+    else this.site.set(key, value);
+  }
+
+  async createDonation(d: { userId: number | null; amount: number }) {
+    const id = ++this.donSeq;
+    this.donations.set(id, { id, userId: d.userId, amount: d.amount, createdAt: Date.now(), paidAt: null });
+    return id;
+  }
+
+  async donation(id: number) {
+    const d = this.donations.get(id);
+    return d ? { ...d } : null;
+  }
+
+  async markDonationPaid(id: number, now: number) {
+    const d = this.donations.get(id);
+    if (!d || d.paidAt != null) return false;
+    d.paidAt = now;
+    return true;
+  }
+
+  async donatedSince(since: number) {
+    let sum = 0;
+    for (const d of this.donations.values()) if (d.paidAt != null && d.paidAt >= since) sum += d.amount;
+    return sum;
+  }
+
+  async recentDonations(limit: number) {
+    return [...this.donations.values()]
+      .filter((d) => d.paidAt != null)
+      .sort((a, b) => b.paidAt! - a.paidAt!)
+      .slice(0, limit)
+      .map((d) => ({ ...d, userName: d.userId == null ? null : this.users.get(d.userId)?.name ?? null }));
   }
 
   async cleanup(now: number) {

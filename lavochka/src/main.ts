@@ -10,6 +10,7 @@ import { gamePath, modePath, parseRoute, searchPath, sectionPath, tablePath, typ
 import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { handleAuthRoute } from './site/account';
+import { handleDonateReturn, loadDonate } from './site/donate';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
 import { esc, h } from './core/util';
@@ -335,4 +336,6 @@ else {
   offerResume();
   setTimeout(startMetrika);
   startPresence();
+  // вернулись со страницы оплаты — «спасибо» (после первого показа экрана: он закрывает окна)
+  if (params.has('donate')) setTimeout(() => void loadDonate().then(handleDonateReturn));
 }

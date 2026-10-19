@@ -1,0 +1,38 @@
+/* Кнопка «Поддержать проект» в шапке и окно с суммами. */
+.bar-donate { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.site-bar .bar-donate { background: linear-gradient(180deg, #e8b04a, #c98a22); color: #2a1606; border-color: #8a5a12; }
+.site-bar .bar-donate:hover { filter: brightness(1.08); }
+.bar-donate .di { color: #a8241a; }
+.site-bar .bar-menu-row .btn.bar-donate { max-width: none; flex: 1 1 100%; }
+
+.don-modal .modal-body { width: min(460px, 100%); }
+.don h2 { margin: 6px 0 6px; }
+.don .hint { font-size: 14.5px; opacity: 0.85; }
+.don-goal { margin: 10px 0 12px; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #c98a22; background: rgba(255, 255, 255, 0.4); }
+.don-goal p { margin: 4px 0 6px; font-size: 14.5px; }
+.don-goal small { font-size: 13px; opacity: 0.8; }
+.don-bar { height: 10px; border-radius: 999px; background: rgba(42, 18, 6, 0.15); overflow: hidden; margin: 6px 0 4px; }
+.don-bar i { display: block; height: 100%; background: linear-gradient(90deg, #c98a22, #e8b04a); border-radius: inherit; }
+.don-sums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 10px; }
+.don-sums button {
+  font: 700 16px 'PT Sans', sans-serif; padding: 10px 4px; border-radius: 8px; cursor: pointer; color: var(--ink);
+  border: 1px solid rgba(42, 18, 6, 0.45); background: rgba(255, 250, 238, 0.85);
+}
+.don-sums button.on { background: var(--brown); color: #fbf1dc; border-color: var(--brown); }
+.don-own { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; }
+.don-own span { display: inline-flex; align-items: center; gap: 6px; }
+.don input:not([type='checkbox']), .don textarea {
+  font: inherit; font-size: 16px; color: var(--ink); width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 7px; border: 1px solid rgba(42, 18, 6, 0.55); background: rgba(255, 250, 238, 0.9);
+}
+.don-own input { width: 120px; }
+.don input:focus, .don textarea:focus { outline: none; border-color: var(--red-d); box-shadow: 0 0 0 3px rgba(181, 72, 42, 0.25); }
+.don-note { font-size: 13px; opacity: 0.75; margin: 12px 0 4px; }
+.don .don-btns { justify-content: flex-end; margin-top: 14px; }
+.don fieldset { border: 1px solid rgba(42, 18, 6, 0.25); border-radius: 8px; margin: 12px 0 0; padding: 4px 12px 10px; }
+.don legend { font-weight: 700; padding: 0 4px; }
+.don-check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 10px; cursor: pointer; }
+.don-recent { margin: 4px 0 0; padding-left: 20px; font-size: 14px; max-height: 180px; overflow: auto; }
+@media (max-width: 420px) {
+  .don-sums { grid-template-columns: repeat(2, 1fr); }
+}

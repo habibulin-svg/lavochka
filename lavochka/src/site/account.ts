@@ -180,6 +180,7 @@ export function openProfile(): void {
       u.email ? (u.verified ? '<span class="auth-ok">✔ подтверждена</span>' : `<span class="auth-no">не подтверждена</span>${mailOn ? ' <button type="button" class="btn small" data-a="resend">Прислать письмо ещё раз</button>' : ''}`) : ''
     }</p>
     ${u.rights.length ? `<p class="lbl">Права</p><ul class="auth-rights">${u.rights.map((g) => `<li>${esc(RIGHTS[g.right as keyof typeof RIGHTS] ?? g.right)}${until(g)}</li>`).join('')}</ul>` : ''}
+    ${u.rights.some((g) => g.right === 'master') ? `<p><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button></p>` : ''}
     <p class="err" role="alert"></p>
     <div class="row auth-btns"><button type="button" class="btn" data-a="logout">Выйти</button><button type="button" class="btn primary" data-a="close">Закрыть</button></div>`;
   open = modal(box, [], { cls: 'auth-modal' });
@@ -197,6 +198,10 @@ export function openProfile(): void {
     if (b) b.onclick = f;
   };
   act('close', () => open?.close());
+  act('donate', () => {
+    open?.close();
+    void import('./donate').then((d) => d.openDonateAdmin());
+  });
   act('logout', async () => {
     await post('logout');
     setMe(null);

@@ -7,6 +7,7 @@ import { Sound } from '../core/audio';
 import { scene, SEARCH_HINT, wireJoin, wireSettings } from '../launcher/yard';
 import { loadStats, onStats } from './stats';
 import { loadAccount, onAccount, openAuth, type Me } from './account';
+import { donateButton } from './donate';
 import './bar.css';
 
 export type Tab = 'games' | 'lobby' | 'tourneys' | 'chat' | 'news' | 'blog';
@@ -95,6 +96,9 @@ export function siteBar(o: BarOpts): HTMLElement {
       </div>
     </div>
   </header>`);
+  // «Поддержать проект» — левее кода стола; на телефоне — в меню
+  (el.querySelector('.bar-actions') as HTMLElement).prepend(donateButton());
+  (el.querySelector('.bar-menu-row') as HTMLElement).prepend(donateButton('btn bar-donate'));
   el.querySelectorAll<HTMLFormElement>('.join-form').forEach(wireJoin);
   el.querySelectorAll<HTMLButtonElement>('[data-a=settings]').forEach(wireSettings);
   el.querySelectorAll<HTMLElement>('.bar-online').forEach(showOnline);

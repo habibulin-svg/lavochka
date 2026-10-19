@@ -27,7 +27,7 @@ function setCookie(req: IncomingMessage, sid: string | null): string {
   return sid ? `${base}; Max-Age=${SESSION_DAYS * 86400}` : `${base}; Max-Age=0`;
 }
 
-function send(req: IncomingMessage, res: ServerResponse, r: Reply) {
+export function send(req: IncomingMessage, res: ServerResponse, r: Reply) {
   const headers: Record<string, string> = { 'content-type': 'application/json', 'cache-control': 'no-store' };
   if (r.sid !== undefined) headers['set-cookie'] = setCookie(req, r.sid);
   res.writeHead(r.code, headers);
@@ -35,7 +35,7 @@ function send(req: IncomingMessage, res: ServerResponse, r: Reply) {
 }
 
 /** Запрос со своего сайта? (браузер всегда шлёт Origin у POST через fetch) */
-function sameOrigin(req: IncomingMessage): boolean {
+export function sameOrigin(req: IncomingMessage): boolean {
   const o = req.headers.origin;
   if (!o) return true;
   try {
