@@ -23,7 +23,18 @@ interface SetupDraft {
 
 const KIND_LABEL: Record<string, string> = { human: 'Человек', bot: 'Бот', remote: 'Сеть' };
 
-export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<string, unknown>) {
+export interface HomeOpts {
+  /** Пользователь сменил вариант правил (для адреса в строке браузера). */
+  onPreset?: (preset: string | null) => void;
+  /** Открыть сразу правила (адрес /<игра>/pravila/). */
+  rules?: boolean;
+  /** Окно правил открыли или закрыли (для адреса в строке браузера). */
+  onRules?: (open: boolean) => void;
+  /** Вернуться в незаконченную партию (обновили страницу посреди партии). */
+  resume?: boolean;
+}
+
+export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<string, unknown>, o: HomeOpts = {}) {
   const def = mod.def;
   const seatsFor = (n: number) => (def.seatsFor ? def.seatsFor(n) : Array.from({ length: n }, (_, i) => i));
   const allSeats = seatsFor(def.players.max);
@@ -39,6 +50,8 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     draft.preset = def.presets?.find((p) => Object.entries(fixed).every(([k, v]) => p.options[k] === v))?.id ?? null;
   }
   const persist = () => store.set('setup.' + def.id, draft);
+  /** Экран собран: дальше смена варианта — дело рук пользователя. */
+  let ready = false;
 
   const el = h(`<section class="home-screen">
     <header class="home-top">
@@ -71,7 +84,16 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     Sound.ui();
     onBack();
   };
-  q('[data-a=rules]').onclick = () => openRules(mod);
+  const showRules = () => {
+    const m = openRules(mod);
+    o.onRules?.(true);
+    new MutationObserver((_r, obs) => {
+      if (m.el.isConnected) return;
+      obs.disconnect();
+      o.onRules?.(false);
+    }).observe(document.body, { childList: true });
+  };
+  q('[data-a=rules]').onclick = showRules;
 
   // ---------- продолжение сохранённой партии
   const resume = q('.resume');
@@ -208,7 +230,6 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
       for (const p of def.presets) {
         const b = h<HTMLButtonElement>(`<button class="preset" data-id="${p.id}" title="${esc(p.hint || '')}">${esc(p.label)}</button>`);
         b.onclick = () => {
-          draft.preset = p.id;
           Object.assign(draft.options, p.options);
           renderOpts();
         };
@@ -254,7 +275,9 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   }
 
   function renderOpts() {
+    const was = draft.preset;
     draft.preset = matchPreset();
+    if (ready && draft.preset !== was) o.onPreset?.(draft.preset);
     presetsBox.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.classList.toggle('on', b.dataset.id === draft.preset));
     optsBox.innerHTML = '';
     for (const o of def.options || []) if (!o.showIf || o.showIf(draft.options)) optsBox.appendChild(optControl(o));
@@ -291,4 +314,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   renderOpts();
   renderCounts();
   showScreen('home');
+  ready = true;
+  if (o.resume && snap) startLocal(mod, snap.seats, snap.options, snap);
+  else if (o.rules) showRules();
 }

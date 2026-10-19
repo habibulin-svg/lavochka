@@ -94,13 +94,26 @@ describe('комната', () => {
     await until(() => owner.log.some((m) => m.t === 'start' && m.resync), 5000, 'стол заново');
   }, 30_000);
 
-  it('если хозяин ушёл из лобби — комната закрывается у всех', async () => {
+  it('если хозяин вышел из лобби — комната закрывается у всех', async () => {
+    const { join } = await setup();
+    const o = join('Хозяин', 'key', 1);
+    const guest = join('Гость', undefined, 2).client;
+    await until(() => guest.has('lobby'));
+    o.client.client.leave();
+    await until(() => guest.has('closed'), 5000, 'гостю пришло закрытие');
+  });
+
+  it('хозяин потерял связь в лобби (обновил страницу) — комната ждёт, он возвращается по ключу', async () => {
     const { join } = await setup();
     const o = join('Хозяин', 'key', 1);
     const guest = join('Гость', undefined, 2).client;
     await until(() => guest.has('lobby'));
     o.link.close();
-    await until(() => guest.has('closed'), 5000, 'гостю пришло закрытие');
+    await until(() => guest.log.some((m) => m.t === 'info' && /ждём минуту/.test(m.text)), 5000, 'гостю сказали, что ждём');
+    const back = join('Хозяин', 'key', 1).client;
+    await until(() => back.has('welcome'), 5000, 'хозяин вернулся');
+    expect(back.log.find((m) => m.t === 'welcome')).toMatchObject({ owner: true });
+    expect(guest.has('closed')).toBe(false);
   });
 
   it('партия из сохранения на ходу бота: бот ходит, когда хозяин вернулся', async () => {

@@ -15,6 +15,8 @@ import type { GameDef, Options, SeatSpec } from './types';
 
 const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
+/** Сколько лобби ждёт хозяина, потерявшего связь (обновил страницу). */
+const OWNER_WAIT_MS = 60000;
 /** Сколько ждать, пока клиенты доиграют анимацию, прежде чем ходит бот. */
 const PACE_TIMEOUT_MS = 6000;
 /** Сколько самое большее ждать клиента, у которого грузится стол. */
@@ -72,6 +74,8 @@ export class Room {
   /** Место → когда его игрок отключился (пока ждём, бот за него не ходит). */
   private offSince = new Map<number, number>();
   private graceTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Хозяин потерял связь в лобби (обновил страницу): ждём его, прежде чем закрыть комнату. */
+  private ownerTimer: ReturnType<typeof setTimeout> | undefined;
   // игра реального времени: таймер шагов, последний ввод мест, память ботов, события до ближайшего снимка
   private rtTimer: ReturnType<typeof setInterval> | undefined;
   private rtLast = 0;
@@ -152,7 +156,7 @@ export class Room {
         if (conn.owner && this.auth && this.auth.result) this.restart();
         return;
       case 'bye':
-        return this.drop(conn);
+        return this.drop(conn, true);
       case 'sync':
         if (this.auth && conn.clientId) this.sendStart(conn, true);
         return;
@@ -197,6 +201,8 @@ export class Room {
     if (m.ownerKey && m.ownerKey === this.cfg.ownerKey) {
       // владелец (в т.ч. вернувшийся после обрыва): старое соединение владельца закрываем
       for (const c of this.conns) if (c !== conn && c.owner) this.kick(c);
+      clearTimeout(this.ownerTimer);
+      this.ownerTimer = undefined;
       conn.owner = true;
       conn.seats = this.seats.filter((s) => s.kind === 'human').map((s) => s.seat);
     } else {
@@ -253,7 +259,7 @@ export class Room {
     }
   }
 
-  private drop(conn: Conn) {
+  private drop(conn: Conn, bye = false) {
     if (!this.conns.has(conn)) return;
     this.conns.delete(conn);
     if (conn.voice) this.voiceList();
@@ -265,9 +271,18 @@ export class Room {
     }
     if (this.closed) return;
     if (!this.auth && conn.owner) {
-      // хозяин ушёл до начала партии — ждать больше некого
-      this.close('Хозяин стола закрыл комнату.');
-      this.cfg.onEmpty?.();
+      // хозяин вышел до начала партии — ждать больше некого
+      const gone = () => {
+        this.close('Хозяин стола закрыл комнату.');
+        this.cfg.onEmpty?.();
+      };
+      if (bye) return gone();
+      // а связь оборвалась (обновил страницу) — ждём его минуту: вернётся по своему ключу
+      clearTimeout(this.ownerTimer);
+      this.ownerTimer = setTimeout(() => {
+        if (![...this.conns].some((c) => c.owner)) gone();
+      }, OWNER_WAIT_MS);
+      this.broadcast({ t: 'info', text: 'Хозяин стола потерял связь — ждём минуту.' });
       return;
     }
     if (!this.auth) {
@@ -573,6 +588,7 @@ export class Room {
     this.botToken++;
     clearInterval(this.heartbeat);
     clearTimeout(this.graceTimer);
+    clearTimeout(this.ownerTimer);
     this.rtStop();
     const conns = [...this.conns];
     this.conns.clear();

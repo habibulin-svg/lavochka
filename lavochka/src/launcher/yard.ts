@@ -7,6 +7,7 @@ import { modal, mountScreen, showScreen, toast } from '../core/ui';
 import { esc, h } from '../core/util';
 import { SeededRng } from '../core/rng';
 import { SHOWN, CATEGORIES, membersOf, byId, type CatalogEntry, type Category } from '../games/catalog';
+import { gamePath } from '../site/routes';
 import './yard.css';
 
 const WAVE_NAMES: Record<number, string> = {
@@ -189,7 +190,8 @@ const hasSave = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(has
 function card(g: CatalogEntry): HTMLElement {
   const ready = isReady(g);
   const save = ready && hasSave(g);
-  const el = h(`<button class="game-card${ready ? ' ready' : ''}${g.members ? ' group' : ''}" style="--tint:${g.tint}">
+  // ссылка, а не кнопка: открывается в новой вкладке, и поисковик видит адреса игр
+  const el = h<HTMLAnchorElement>(`<a class="game-card${ready ? ' ready' : ''}${g.members ? ' group' : ''}" href="${ready ? gamePath(g.id) : '#'}" style="--tint:${g.tint}">
       <span class="gc-pic">${
         g.thumb
           ? `<img src="${import.meta.env.BASE_URL}thumbs/${esc(g.thumb)}" alt="" loading="lazy">`
@@ -201,8 +203,10 @@ function card(g: CatalogEntry): HTMLElement {
       ${g.variants?.length ? `<span class="gc-vars">${g.variants.map(esc).join(' · ')}</span>` : ''}
       <span class="gc-meta"><span class="gc-players">👥 ${esc(g.players)}</span>${g.members ? `<span class="gc-count">${membersOf(g).length} игр</span>` : ''}${save ? '<span class="gc-save">▶ партия</span>' : ''}</span>
       ${ready ? '' : `<span class="stamp">${esc(WAVE_NAMES[g.wave] ?? 'в планах')}</span>`}
-    </button>`);
-  el.onclick = () => {
+    </a>`);
+  el.onclick = (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
     Sound.ui();
     if (g.members) yard.openGroup(g);
     else if (ready) yard.openGame(g);
@@ -218,6 +222,8 @@ function card(g: CatalogEntry): HTMLElement {
 export const yard = {
   /** Назначается в main.ts: открыть экран игры. */
   openGame: (_g: CatalogEntry) => {},
+  /** Назначается в main.ts: открыли или закрыли группу (адрес в строке браузера). */
+  onGroup: (_g: CatalogEntry | null) => {},
   el: null as HTMLElement | null,
 
   mount() {
@@ -279,6 +285,7 @@ export const yard = {
       const b = h<HTMLButtonElement>(`<button data-cat="${id}">${esc(title)}</button>`);
       b.onclick = () => {
         store.set('cat', id);
+        if (this.group) this.onGroup(null);
         this.group = null;
         this.renderCards(id as any);
       };
@@ -294,6 +301,7 @@ export const yard = {
 
   openGroup(g: CatalogEntry) {
     this.group = g;
+    this.onGroup(g);
     this.renderCards(store.get<Category | 'all'>('cat', 'all'));
   },
 
@@ -307,6 +315,7 @@ export const yard = {
       (head.querySelector('button') as HTMLButtonElement).onclick = () => {
         Sound.ui();
         this.group = null;
+        this.onGroup(null);
         this.renderCards(store.get<Category | 'all'>('cat', 'all'));
       };
       box.appendChild(head);

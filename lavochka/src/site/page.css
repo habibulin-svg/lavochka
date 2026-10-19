@@ -1,0 +1,22 @@
+/* Текст страницы под игрой: тетрадный лист, спокойный и читаемый. */
+.seo-page {
+  max-width: 900px; margin: 40px auto 0; padding: 22px 26px 26px; border-radius: 10px;
+  background: repeating-linear-gradient(0deg, rgba(120, 90, 50, 0.05) 0 2px, transparent 2px 5px), linear-gradient(170deg, #f6eedb, #e6d6b4);
+  color: #261c12; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45); font-size: 16px; line-height: 1.55;
+}
+.seo-page h1 { font-size: 26px; margin: 6px 0 12px; line-height: 1.2; }
+.seo-page h2 { font-size: 20px; margin: 22px 0 8px; }
+.seo-page p { margin: 0 0 10px; }
+.seo-page a { color: #7a2a1d; }
+.seo-crumbs { font-size: 13.5px; opacity: 0.75; }
+.seo-crumbs a { color: inherit; }
+.seo-links { margin: 0; padding-left: 20px; }
+.seo-links li { margin: 3px 0; }
+.seo-faq dt { font-weight: 700; margin-top: 10px; }
+.seo-faq dd { margin: 2px 0 0; }
+/* без JS (поисковик, читалка) текст стоит сам по себе */
+body > .seo-page { margin: 24px auto; }
+@media (max-width: 560px) {
+  .seo-page { margin-top: 28px; padding: 16px 16px 18px; font-size: 15px; }
+  .seo-page h1 { font-size: 22px; }
+}

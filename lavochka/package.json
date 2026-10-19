@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "tsx watch server/index.ts",
-    "build": "tsc --noEmit && vite build && npm run build:server",
+    "build": "tsc --noEmit && vite build && tsx tools/prerender.ts && npm run build:server",
+    "prerender": "tsx tools/prerender.ts",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist-server/index.js --packages=external",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit",

@@ -42,7 +42,7 @@
 .game-card {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px;
   min-height: 180px; padding: 16px 16px 14px; border-radius: 10px; cursor: pointer; overflow: hidden;
-  font: inherit; color: #261c12; border: 0;
+  font: inherit; color: #261c12; border: 0; text-decoration: none;
   background:
     repeating-linear-gradient(0deg, rgba(120, 90, 50, 0.05) 0 2px, transparent 2px 5px),
     linear-gradient(170deg, #f6eedb, #e6d6b4);

@@ -166,6 +166,11 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
   '.mp3': 'audio/mpeg',
   '.ico': 'image/x-icon',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.mp4': 'video/mp4',
+  '.ogg': 'audio/ogg',
+  '.glb': 'model/gltf-binary',
 };
 
 function json(res: ServerResponse, code: number, body: unknown) {
@@ -278,17 +283,45 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
     return res.end('Сервер «Вечером на лавочке» работает. Сайт не собран (нет dist/) — запустите npm run build.');
   }
-  let file = normalize(join(DIST, decodeURIComponent(path)));
+  let file: string;
+  try {
+    file = normalize(join(DIST, decodeURIComponent(path)));
+  } catch {
+    res.writeHead(400);
+    return res.end();
+  }
   if (!file.startsWith(DIST)) {
     res.writeHead(403);
     return res.end();
   }
-  if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html');
+  const headers: Record<string, string> = {};
+  // старый адрес на Render не индексируем: сайт переезжает на свой домен
+  if (/\.onrender\.com$/i.test(String(req.headers.host || '').split(':')[0])) headers['x-robots-tag'] = 'noindex';
+  let status = 200;
+  const isDir = existsSync(file) && statSync(file).isDirectory();
+  if (isDir && existsSync(join(file, 'index.html'))) {
+    // страница игры (пререндер): /nardy → /nardy/
+    if (!path.endsWith('/')) {
+      const q = (req.url || '').slice(path.length);
+      res.writeHead(301, { location: path + '/' + q, ...headers });
+      return res.end();
+    }
+    file = join(file, 'index.html');
+  } else if (!existsSync(file) || isDir) {
+    // адреса без своей страницы — оболочка сайта: стол /stol/<код> и поиск — экраны, остальное — 404 (роутер покажет двор)
+    if (extname(path)) {
+      res.writeHead(404, headers);
+      return res.end();
+    }
+    const spa = join(DIST, '_spa.html');
+    file = existsSync(spa) ? spa : join(DIST, 'index.html');
+    headers['x-robots-tag'] = 'noindex';
+    if (!/^\/(stol\/[\w-]+|poisk)\/?$/.test(path)) status = 404;
+  }
   const ext = extname(file);
   const immutable = file.includes(join(DIST, 'assets'));
-  res.writeHead(200, { 'content-type': MIME[ext] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache' });
+  res.writeHead(status, { 'content-type': MIME[ext] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', ...headers });
   res.end(readFileSync(file));
-  void req;
 }
 
 const server = createServer((req, res) => {

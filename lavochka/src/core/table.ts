@@ -45,7 +45,7 @@ export class Table {
   private lastTurnKey = '';
   private started = false;
   private unsub: () => void;
-  private closed = false;
+  closed = false;
   private voice: Voice | null = null;
   private voiceEls = new Map<string, HTMLElement>();
   /** Крупное видео главного игрока (GameView.spotlight). */
@@ -53,6 +53,14 @@ export class Table {
   /** Сторож хода: свой ход отправлен, а стол не сдвинулся — попросить комнату прислать его заново. */
   private actTimer: ReturnType<typeof setTimeout> | undefined;
   private actTries = 0;
+
+  /** Как сидим: за этим экраном, напрямую или через сервер. */
+  get netMode() {
+    return this.o.mode;
+  }
+  get roomCode() {
+    return this.o.code;
+  }
 
   constructor(private o: TableOpts) {
     const def = o.mod.def;
@@ -620,7 +628,7 @@ export class Table {
     );
   }
 
-  private confirmLeave() {
+  confirmLeave() {
     if (this.o.mode === 'local' || this.result) return this.leave();
     const txt = this.o.owner && this.o.mode === 'p2p' ? 'Вы хозяин стола: если выйти, партия закончится у всех.' : 'Ваше место займёт бот. Вернуться можно по тому же коду.';
     modal(`<h2>Выйти из партии?</h2><p>${txt}</p>`, [{ text: 'Остаться' }, { text: 'Выйти', primary: true, action: () => this.leave() }]);

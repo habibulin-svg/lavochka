@@ -1,0 +1,203 @@
+/* Адреса сайта (без DOM: их читают роутер в браузере, пререндер при сборке, сервер и тесты).
+ * Игры — в корне, транслитом: /nardy/, вариант со своим спросом — /nardy/dlinnye/, правила — /nardy/pravila/.
+ * Сетевой стол — /stol/<код>, локальная партия — адрес игры с ?igra (оба noindex). */
+
+export const SITE_URL = 'https://lavochka-games.ru';
+export const SITE_NAME = 'Вечером на лавочке';
+
+/** Адрес карточки каталога (id → путь без слэшей по краям). Каждая карточка каталога должна быть здесь. */
+export const SLUGS: Record<string, string> = {
+  // доска и кости
+  shishbesh: 'shish-besh',
+  nardy: 'nardy',
+  chess: 'shahmaty',
+  checkers: 'shashki',
+  go: 'go',
+  renju: 'rendzyu',
+  mancala: 'mankala',
+  domino: 'domino',
+  mahjong: 'madzhong',
+  mahjong4: 'madzhong-vchetverom',
+  yahtzee: 'yahtzi',
+  loto: 'loto',
+  perudo: 'perudo',
+  // карты
+  durak: 'durak',
+  thousand: 'tysyacha',
+  '101': '101',
+  bura: 'bura',
+  preferans: 'preferans',
+  bridge: 'bridzh',
+  pokers: 'poker',
+  holdem: 'poker/tehasskiy-holdem',
+  poker: 'poker/omaha',
+  drunkard: 'pyanica',
+  bluff: 'verju-ne-verju',
+  sunduchok: 'sunduchok',
+  akulina: 'akulina',
+  devyatka: 'devyatka',
+  hearts: 'chervi',
+  king: 'king',
+  raspisnoy: 'raspisnoy-poker',
+  kozel: 'kozel',
+  khrap: 'hrap',
+  ochko: 'ochko',
+  seka: 'seka',
+  govno: 'govno',
+  solitaire: 'pasyans',
+  // компанией
+  spy: 'shpion',
+  whoami: 'kto-ya',
+  danetki: 'danetki',
+  hat: 'shlyapa',
+  crocodile: 'krokodil',
+  'secret-hitler': 'taynyy-gitler',
+  cah: 'karty-protiv-chelovechestva',
+  mafia: 'mafiya',
+  // на бумаге
+  seabattle: 'morskoy-boy',
+  dots: 'tochki',
+  ttt: 'krestiki-noliki',
+  hangman: 'viselica',
+  paperball: 'futbol-na-bumage',
+  balda: 'balda',
+  erudit: 'erudit',
+  // головоломки
+  geo: 'geografiya',
+  dvor: 'a-u-nas-vo-dvore',
+  puzzles: 'golovolomki',
+  saper: 'saper',
+  g2048: '2048',
+  pipes: 'vodoprovodchik',
+  detektiv: 'detektivy',
+  // настолки
+  adventures: 'priklyucheniya',
+  hodilki: 'kin-dvin',
+  shel: 'shel-soldat',
+  star: 'zvezda-afriki',
+  korona: 'korona-embera',
+  magiya: 'magiya',
+  djio: 'dzhio-dzhangi',
+  astro: 'astronavty',
+  beglye: 'beglye',
+  kupi: 'kupi-prodai',
+  manager: 'menedzher',
+  vorona: 'belaya-vorona',
+  western: 'vestern',
+  akcii: 'akcionery',
+  sea: 'morskie-strategii',
+  zakoldovannaya: 'zakoldovannaya-strana',
+  // настольный спорт
+  billiards: 'bilyard',
+  hockey: 'nastolnyy-hokkey',
+  football: 'nastolnyy-futbol',
+  basketball: 'nastolnyy-basketbol',
+  zarulem: 'za-rulem',
+  // электроника
+  elektronika: 'elektronika',
+  brick: 'brick-game',
+  avtomaty: 'avtomaty',
+  treasures: 'klad',
+  shariki: 'shariki',
+  eggs: 'yayca-dinozavrov',
+  gops: 'gops',
+};
+
+/** Отдельная страница варианта — только там, где у него свой спрос (docs/seo/plan.md); остальные варианты — разделом на странице игры. */
+export interface VariantPage {
+  path: string;
+  game: string;
+  preset: string;
+}
+
+export const VARIANTS: VariantPage[] = [
+  { path: 'nardy/dlinnye', game: 'nardy', preset: 'long' },
+  { path: 'nardy/korotkie', game: 'nardy', preset: 'short' },
+  { path: 'durak/perevodnoy', game: 'durak', preset: 'perevodnoy' },
+  { path: 'durak/podkidnoy', game: 'durak', preset: 'podkidnoy' },
+  { path: 'shashki/russkie', game: 'checkers', preset: 'russian' },
+  { path: 'shashki/ugolki', game: 'checkers', preset: 'ugolki' },
+  { path: 'shashki/poddavki', game: 'checkers', preset: 'giveaway' },
+  { path: 'shahmaty/blic', game: 'chess', preset: 'blitz' },
+  { path: 'pasyans/kosynka', game: 'solitaire', preset: 'klondike' },
+  { path: 'pasyans/kosynka-po-tri', game: 'solitaire', preset: 'klondike3' },
+  { path: 'pasyans/pauk', game: 'solitaire', preset: 'spider1' },
+  { path: 'pasyans/soliter', game: 'solitaire', preset: 'freecell' },
+  { path: 'pasyans/skorpion', game: 'solitaire', preset: 'scorpion' },
+  { path: 'pasyans/piramida', game: 'solitaire', preset: 'pyramid' },
+  { path: 'domino/kozel', game: 'domino', preset: 'kozel' },
+  { path: 'bilyard/russkiy', game: 'billiards', preset: 'moscow' },
+  { path: 'bilyard/pul', game: 'billiards', preset: 'pool8' },
+  { path: 'bilyard/snuker', game: 'billiards', preset: 'snooker' },
+  { path: 'bura/burkozel', game: 'bura', preset: 'burkozel' },
+  { path: 'loto/vokrug-sveta', game: 'loto', preset: 'world' },
+  { path: 'ochko/blekdzhek', game: 'ochko', preset: 'bj' },
+  { path: 'seka/svara', game: 'seka', preset: 'svara' },
+  { path: 'hrap/rams', game: 'khrap', preset: 'rams' },
+  // головоломки: у каждой свой спрос — отдельные страницы в корне
+  { path: 'sudoku', game: 'puzzles', preset: 'sudoku' },
+  { path: 'krossvordy', game: 'puzzles', preset: 'crossword' },
+  { path: 'skanvordy', game: 'puzzles', preset: 'scanword' },
+  { path: 'yaponskie-krossvordy', game: 'puzzles', preset: 'picross' },
+  { path: 'kalah', game: 'mancala', preset: 'kalah' },
+  { path: 'gomoku', game: 'renju', preset: 'free' },
+  // поля кинь-двинь — ностальгия с пустой выдачей: по странице на поле
+  { path: 'kin-dvin/krugosvetnoe-puteshestvie', game: 'hodilki', preset: 'krugosvet' },
+  { path: 'kin-dvin/kosmicheskoe-puteshestvie', game: 'hodilki', preset: 'kosmos' },
+  { path: 'kin-dvin/puteshestvie', game: 'hodilki', preset: 'put' },
+  { path: 'kin-dvin/zateryannyy-mir', game: 'hodilki', preset: 'zatmir' },
+  { path: 'kin-dvin/neukrotimaya-planeta', game: 'hodilki', preset: 'planeta' },
+  { path: 'kin-dvin/konnye-varvary', game: 'hodilki', preset: 'varvary' },
+  { path: 'kin-dvin/podveski-korolevy', game: 'hodilki', preset: 'podveski' },
+  { path: 'kin-dvin/strana-mepl-uayta', game: 'hodilki', preset: 'mepl' },
+  { path: 'kin-dvin/s-utra-do-vechera', game: 'hodilki', preset: 'sutra' },
+  { path: 'kin-dvin/shayba', game: 'hodilki', preset: 'shayba' },
+  { path: 'kin-dvin/v-put-druzya', game: 'hodilki', preset: 'vput' },
+  { path: 'kin-dvin/lukomorye', game: 'hodilki', preset: 'luk' },
+  { path: 'menedzher/odessa', game: 'manager', preset: 'odessa' },
+  { path: 'menedzher/biznesmen', game: 'manager', preset: 'biznesmen' },
+];
+
+/** Занятые слова: разделы сайта и служебные папки — адрес игры не может начинаться с них. */
+export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
+
+export type Route =
+  | { kind: 'yard' }
+  | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean }
+  | { kind: 'table'; code: string }
+  | { kind: 'search'; q: string }
+  | { kind: 'missing'; path: string };
+
+const BY_PATH = new Map<string, { id: string; preset?: string }>();
+for (const [id, p] of Object.entries(SLUGS)) BY_PATH.set(p, { id });
+for (const v of VARIANTS) BY_PATH.set(v.path, { id: v.game, preset: v.preset });
+
+const trim = (p: string) => p.replace(/^\/+|\/+$/g, '');
+
+/** Разобрать адрес (pathname + search) в экран. */
+export function parseRoute(pathname: string, search = ''): Route {
+  let p: string;
+  try {
+    p = trim(decodeURI(pathname)).toLowerCase();
+  } catch {
+    p = trim(pathname).toLowerCase();
+  }
+  const q = new URLSearchParams(search);
+  if (!p) return { kind: 'yard' };
+  if (p.startsWith('stol/')) return { kind: 'table', code: p.slice(5).toUpperCase() };
+  if (p === 'poisk') return { kind: 'search', q: q.get('q') ?? '' };
+  const rules = p.endsWith('/pravila');
+  const hit = BY_PATH.get(rules ? p.slice(0, -'/pravila'.length) : p);
+  if (!hit) return { kind: 'missing', path: p };
+  return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined };
+}
+
+/** Адрес экрана игры: у варианта со своей страницей — её адрес, иначе — адрес игры. */
+export function gamePath(id: string, preset?: string | null): string {
+  const v = preset ? VARIANTS.find((x) => x.game === id && x.preset === preset) : undefined;
+  const p = v?.path ?? SLUGS[id];
+  return p ? `/${p}/` : '/';
+}
+
+export const rulesPath = (id: string) => (SLUGS[id] ? `/${SLUGS[id]}/pravila/` : '/');
+export const tablePath = (code: string) => `/stol/${code}`;

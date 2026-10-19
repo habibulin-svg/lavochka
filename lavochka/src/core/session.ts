@@ -43,11 +43,19 @@ function readMemo(): RoomMemo | null {
 export function offerResume() {
   const m = readMemo();
   if (!m) return;
+  if (location.pathname.startsWith('/stol/')) return; // адрес стола сам вернёт за стол (resumeTable)
   const g = byId(m.game);
   modal(`<h2>Вернуться за стол?</h2><p>Вы были в комнате <b>${esc(m.code)}</b>${g ? ` (${esc(g.title)})` : ''}. Место за вами ещё держат — пока за вас ходит бот.</p>`, [
     { text: 'Нет', action: () => memo(null) },
     { text: 'Вернуться', primary: true, action: () => void (m.ownerKey ? rejoinOwner(m) : joinGame(m.code)) },
   ]);
+}
+
+/** Открыли адрес стола (/stol/<код>) — обновили страницу или пришли по ссылке: хозяин возвращается по своему ключу, остальные — по коду. */
+export function resumeTable(code: string) {
+  const m = readMemo();
+  if (m?.code === code && m.ownerKey) void rejoinOwner(m);
+  else void joinGame(code);
 }
 
 async function rejoinOwner(m: RoomMemo) {
@@ -81,7 +89,13 @@ export function dropSave(id: string) {
 export const nav = {
   home: (_id: string) => {},
   yard: () => {},
+  /** Вкладка села за стол: code — сетевой стол, null — партия за этим экраном (для адреса в строке браузера). */
+  table: (_code: string | null, _game: string) => {},
 };
+
+let table: Table | null = null;
+/** Стол, за которым сидит вкладка (для «назад» в браузере). */
+export const currentTable = () => (table && !table.closed ? table : null);
 
 interface Active {
   close(): void;
@@ -120,7 +134,8 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
   room.connect(a);
   const client = new RoomClient(b, { name: myName(), ownerKey });
   active = { close: () => room.close() };
-  new Table({
+  nav.table(null, def.id);
+  table = new Table({
     mod,
     client,
     mode: 'local',
@@ -222,10 +237,12 @@ function attach(mod: GameModule, client: RoomClient, mode: NetMode, code: string
   const back = () => {
     memo(null);
     closeActive();
+    currentTable()?.destroy(); // ушли из лобби — стол под ним тоже убрать
     if (owner) nav.home(def.id);
     else nav.yard();
   };
-  new Table({ mod, client, mode, code, owner, onLeave: back, onReconnect: reconnect });
+  nav.table(code, def.id);
+  table = new Table({ mod, client, mode, code, owner, onLeave: back, onReconnect: reconnect });
   const lobby = buildLobby(mod, client, mode, code, owner, back);
   client.on((m) => {
     if (m.t === 'lobby') lobby.update(m.seats);

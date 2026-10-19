@@ -73,7 +73,8 @@ export function addLocalRecord(id: string, mode: string, rec: Rec): number {
   return list.indexOf(rec);
 }
 
-export function openArcade(mod: ArcadeModule, onBack: () => void) {
+/** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
+export function openArcade(mod: ArcadeModule, onBack: () => void): () => void {
   let mode = store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
@@ -202,10 +203,13 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   }
   modes.hidden = mod.modes.length < 2;
 
-  const leave = () => {
+  const stop = () => {
     document.removeEventListener('visibilitychange', onHide);
     inst?.destroy();
     inst = null;
+  };
+  const leave = () => {
+    stop();
     onBack();
   };
   q('[data-a=menu]').onclick = () => {
@@ -229,4 +233,5 @@ export function openArcade(mod: ArcadeModule, onBack: () => void) {
   showScreen('arcade');
   start();
   void drawRecords();
+  return stop;
 }
