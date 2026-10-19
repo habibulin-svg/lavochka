@@ -4,11 +4,12 @@
  *
  *   PORT      — порт (по умолчанию 8787)
  *   DATA_DIR  — куда писать рекорды (по умолчанию ./data)
- *   TURN для голосового чата (/api/ice), одно из двух:
+ *   TURN для голосового чата (/api/ice), одно из трёх:
+ *     TURN_URLS + TURN_SECRET                     — свой coturn (use-auth-secret): временные логины на сутки
  *     CF_TURN_KEY_ID + CF_TURN_API_TOKEN          — Cloudflare Realtime TURN (временные логины)
  *     TURN_URLS + TURN_USERNAME + TURN_CREDENTIAL — любой TURN с постоянным логином (адреса через запятую)
  */
-import { randomBytes } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { dirname, extname, join, normalize, resolve } from 'node:path';
@@ -180,8 +181,8 @@ function json(res: ServerResponse, code: number, body: unknown) {
 
 // ------------------------------------------------------------------ ICE (голосовой чат)
 // Без TURN-сервера браузеры за строгим NAT (мобильный интернет, офисы) не соединяются напрямую.
-// На Render свой TURN не поднять (нет UDP), поэтому — внешний: Cloudflare (ключ из Realtime → TURN)
-// или любой другой с постоянным логином.
+// На своём сервере — coturn рядом (deploy/coturn); на Render свой TURN не поднять (нет UDP),
+// там — внешний: Cloudflare (ключ из Realtime → TURN) или любой другой с постоянным логином.
 
 const STUN: RTCIceServerLike[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
 let iceCache: { at: number; servers: RTCIceServerLike[] } | null = null;
@@ -194,13 +195,21 @@ interface RTCIceServerLike {
 
 async function iceServers(): Promise<RTCIceServerLike[]> {
   const env = process.env;
-  if (env.TURN_URLS && env.TURN_USERNAME && env.TURN_CREDENTIAL) {
-    // адрес без схемы («free.expressturn.com:3478») браузер не примет — дописываем turn:
-    const urls = env.TURN_URLS.split(',')
+  // адрес без схемы («free.expressturn.com:3478») браузер не примет — дописываем turn:
+  const turnUrls = () =>
+    (env.TURN_URLS || '')
+      .split(',')
       .map((s) => s.trim())
       .filter(Boolean)
       .map((u) => (/^(turns?|stun):/i.test(u) ? u : 'turn:' + u));
-    return [...STUN, { urls, username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
+  if (env.TURN_URLS && env.TURN_SECRET) {
+    // TURN REST API: имя «срок:метка», пароль — base64(HMAC-SHA1(секрет, имя)); coturn проверяет сам
+    const username = Math.floor(Date.now() / 1000 + 86400) + ':lavochka';
+    const credential = createHmac('sha1', env.TURN_SECRET).update(username).digest('base64');
+    return [...STUN, { urls: turnUrls(), username, credential }];
+  }
+  if (env.TURN_URLS && env.TURN_USERNAME && env.TURN_CREDENTIAL) {
+    return [...STUN, { urls: turnUrls(), username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
   }
   if (env.CF_TURN_KEY_ID && env.CF_TURN_API_TOKEN) {
     // временные логины на сутки, раздаём из кэша полдня

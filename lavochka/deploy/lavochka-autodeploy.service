@@ -1,0 +1,8 @@
+[Unit]
+Description=Вечером на лавочке: выкладка нового main
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /srv/lavochka/app/lavochka/deploy/autodeploy.sh
+TimeoutStartSec=15min

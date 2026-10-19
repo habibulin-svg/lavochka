@@ -8,6 +8,7 @@ import { closeAllModals, modal } from './core/ui';
 import type { GameModule } from './core/view';
 import { gamePath, parseRoute, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
+import { metrikaHit, startMetrika } from './site/metrika';
 import { esc } from './core/util';
 import { byId, type CatalogEntry } from './games/catalog';
 import { yard } from './launcher/yard';
@@ -26,6 +27,8 @@ function go(path: string, replace = false, state: object | null = null) {
   if (popping || location.pathname + location.search === path) return;
   if (replace) history.replaceState(state, '', path);
   else history.pushState(state, '', path);
+  // заголовок вкладки меняет экран следом — даём ему отрисоваться
+  setTimeout(metrikaHit);
 }
 
 /** Встали из-за стола, на который сели с этой же вкладки: шаг назад по истории (popstate покажет прежний экран). */
@@ -160,6 +163,7 @@ document.addEventListener('click', (e) => {
 });
 
 window.addEventListener('popstate', () => {
+  setTimeout(metrikaHit);
   const r = parseRoute(location.pathname, location.search);
   const t = currentTable();
   if (t) {
@@ -228,4 +232,5 @@ else {
   document.addEventListener('pointerdown', () => Sound.unlock(), { once: true });
   render(parseRoute(location.pathname, location.search));
   offerResume();
+  setTimeout(startMetrika);
 }

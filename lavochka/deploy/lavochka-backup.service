@@ -1,0 +1,6 @@
+[Unit]
+Description=Вечером на лавочке: ночной бэкап
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /srv/lavochka/app/lavochka/deploy/backup.sh
