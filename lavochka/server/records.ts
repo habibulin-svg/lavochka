@@ -175,8 +175,8 @@ export function accept(claim: Claim, defs: Record<string, GameDef>, now = Date.n
 
 // ------------------------------------------------------------------ выдача
 
-export function publicRows(list: RecordEntry[], me?: string) {
-  return list.map((e) => ({ name: e.name, values: e.values, at: e.at, ...(me && e.device === me ? { me: true } : {}) }));
+export function publicRows(list: RecordEntry[], me?: string, player?: string) {
+  return list.map((e) => ({ name: e.name, values: e.values, at: e.at, ...((me && e.device === me) || (player && e.player === player) ? { me: true } : {}) }));
 }
 
 export class Records {
@@ -205,17 +205,20 @@ export class Records {
     return ids.sort((a, b) => order(a) - order(b) || a.localeCompare(b)).map((id) => ({ id, label: label(id), n: this.store.get(boardKey(game, id)).length }));
   }
 
-  list(game: string, table: string, period: RecordPeriod, device?: string, limit = 20) {
+  /** player — вошедший игрок (номер аккаунта): его строки — «мои» на любом устройстве. */
+  list(game: string, table: string, period: RecordPeriod, device?: string, limit = 20, player?: string) {
     const columns = columnsFor(game, this.defs);
     if (!columns || !TABLE_RE.test(table)) return null;
-    const rows = ranked(this.store.get(boardKey(game, table)), columns, period, { device }, Date.now(), limit);
-    return { columns, rows: publicRows(rows, device) };
+    const rows = ranked(this.store.get(boardKey(game, table)), columns, period, { device, player }, Date.now(), limit);
+    return { columns, rows: publicRows(rows, device, player) };
   }
 
-  async add(claim: Claim) {
+  /** who — вошедший игрок: рекорд записывается на него и под его именем. */
+  async add(claim: Claim, who?: { id: string; name: string }) {
     await this.ready;
     const r = accept(claim, this.defs);
     if (typeof r === 'string') return { ok: false as const, error: r };
+    if (who) Object.assign(r.entry, { player: who.id, name: who.name });
     const list = prune([...this.store.get(r.board), r.entry], r.columns);
     this.store.put(r.board, list, r.label);
     return {

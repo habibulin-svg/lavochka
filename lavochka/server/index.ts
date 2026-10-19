@@ -24,6 +24,7 @@ import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
 import { MOVED, SLUGS } from '../src/site/routes';
 import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './accounts';
+import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
 import { robokassaFromEnv } from './pay/robokassa';
 
@@ -170,6 +171,15 @@ void initAccounts();
 const oauth = new OAuth(accounts, providersFromEnv(), fetch, log);
 accounts.loginWith = oauth.enabled;
 log('вход через сервисы: ' + (oauth.enabled.join(', ') || 'нет ключей'));
+/** Вошедший игрок по cookie (null — гость или база недоступна). */
+async function userOf(req: IncomingMessage) {
+  if (!accountsReady) return null;
+  try {
+    return await accounts.current({ sid: cookieOf(req), ip: clientIp(req), ua: '', site: '' });
+  } catch {
+    return null;
+  }
+}
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
@@ -379,13 +389,15 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
       const device = q.get('device') || undefined;
       const tables = records.tablesOf(game);
       const table = q.get('table') || tables[0]?.id || '';
-      const r = table ? records.list(game, table, period, device) : null;
+      const u = await userOf(req);
+      const r = table ? records.list(game, table, period, device, 20, u ? String(u.id) : undefined) : null;
       return json(res, 200, { table, tables, columns: r?.columns ?? [], rows: r?.rows ?? [] });
     }
     if (req.method === 'POST') {
       if (!mayPost(clientIp(req))) return json(res, 429, { error: 'often' });
       try {
-        const r = await records.add(JSON.parse(await readBody(req, 512 * 1024)));
+        const u = await userOf(req);
+        const r = await records.add(JSON.parse(await readBody(req, 512 * 1024)), u ? { id: String(u.id), name: u.name } : undefined);
         return json(res, r.ok ? 200 : 400, r);
       } catch {
         return json(res, 400, { error: 'bad body' });

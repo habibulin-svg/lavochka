@@ -5,6 +5,7 @@ import { esc } from '../core/util';
 import { modal, toast, type ModalHandle } from '../core/ui';
 import { Sound } from '../core/audio';
 import { RIGHTS, type RightGrant } from '../core/rights';
+import { onSettings, saveSettings, settings } from '../core/settings';
 import './account.css';
 
 export interface Me {
@@ -38,8 +39,26 @@ export function onAccount(f: (m: Me | null) => void): () => void {
 
 function setMe(m: Me | null) {
   me = m;
+  // имя за столом — из аккаунта
+  if (me && settings.name !== me.name) {
+    settings.name = me.name;
+    saveSettings();
+  }
   subs.forEach((f) => f(me));
 }
+
+// имя сменили в настройках — сохранить и в аккаунте (с паузой: поле сохраняется на каждый знак)
+let nameTimer = 0;
+onSettings(() => {
+  clearTimeout(nameTimer);
+  if (!me || settings.name === me.name) return;
+  nameTimer = window.setTimeout(async () => {
+    const name = settings.name;
+    if (!me || name === me.name || name.length < 2 || name.length > 24) return;
+    const r = await post('profile', { name });
+    if (r.ok) setMe(r.body.user);
+  }, 1200);
+});
 
 /** Узнать у сервера, кто вошёл (один раз за загрузку страницы; force — заново). */
 export function loadAccount(force = false): Promise<void> {

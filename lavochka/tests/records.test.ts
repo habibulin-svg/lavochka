@@ -80,6 +80,18 @@ describe('хранение', () => {
     expect(html).toContain('Сто уровней');
     expect(html).not.toContain('<b>Вовка');
   });
+
+  it('вошедший игрок: рекорд под именем аккаунта, «мои» — с любого устройства', async () => {
+    const recs = new Records(new FileRecordStore(mkdtempSync(join(tmpdir(), 'recs-')), () => {}), {});
+    await recs.add({ game: 'eggs', name: 'Кто-то', device: 'phone-1', table: 'A', values: { score: 50 } }, { id: '7', name: 'Петя' });
+    await recs.add({ game: 'eggs', name: 'Гость', device: 'pc-2', table: 'A', values: { score: 70 } });
+    const all = recs.list('eggs', 'A', 'all', 'pc-9', 20, '7')!.rows;
+    expect(all.map((r) => [r.name, !!r.me])).toEqual([
+      ['Гость', false],
+      ['Петя', true],
+    ]);
+    expect(recs.list('eggs', 'A', 'mine', 'pc-9', 20, '7')!.rows.map((r) => r.name)).toEqual(['Петя']);
+  });
 });
 
 // ------------------------------------------------------------------ переигрывание
