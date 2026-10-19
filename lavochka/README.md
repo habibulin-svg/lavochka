@@ -137,6 +137,14 @@ IndexNow и даты в sitemap — `tools/indexnow.mjs`, его запуска�
 - Политика конфиденциальности и условия — `content/pages/politika.md`, `usloviya.md` → `/politika/`, `/usloviya/` (пререндер).
 - Команды на сервере — `server/admin.ts` (собирается в `dist-server/admin.js`), обёртка `deploy/lavochka-admin.sh`.
 
+## Аккаунты, этап 3б: вход через сервисы, лайки, история
+
+- **Яндекс ID и VK ID** — `server/accounts/oauth.ts`: `/api/auth/<yandex|vk>/start?back=…` → сервис (код + PKCE S256, state в памяти + cookie `lv_oa`) → `/api/auth/<…>/callback` → обмен кода и данные игрока на сервере → сессия и назад с `?voshel=…`. Ошибки — `/vhod/?oshibka=<код>`. Ключи: `YANDEX_CLIENT_ID/SECRET`, `VK_APP_ID` (+ `VK_CLIENT_SECRET`); без ключей кнопок нет (`/api/auth/me` → `loginWith`).
+- Аккаунт для входа через сервис (`Accounts.externalLogin`): по привязке → по почте (неподтверждённый аккаунт с той же почтой забирается: чужой пароль и сессии сбрасываются) → новый. Мастеру вход через сервис закрыт. Вошедший привязывает вход из профиля, отвязать (`/api/auth/unlink`) можно не последний способ входа.
+- Имя за столом у вошедшего — имя аккаунта (`site/account.ts` синхронизирует с настройками в обе стороны). Рекорды вошедшего пишутся на него (`player`), «мои» — с любого устройства.
+- **Лайки и история** — `server/player.ts`: `/api/likes` (свои; счётчики всех игр — в `/api/stats` → `likes`), `/api/history`. Клиент: `site/likes.ts` (кнопка ♥ на экране игры через `HomeOpts.topExtra`, счётчик на карточке, порядок «любимые»), `site/history.ts` («Мои партии» в профиле; конец партии ловит `tableHooks.finished` в `core/table.ts`, что записать — `core/history.ts`). Миграция 3: `game_likes`, `game_history`.
+- Проверять POST-запросы надо на собранном сайте на :8787: через dev-прокси на :5174 сервер отклоняет их по Origin.
+
 ## Поддержка проекта (донат)
 
 - Кнопка в шапке левее кода стола (на телефоне — в меню), окно с суммами 100/300/500/1000 ₽ и своей (10–50 000 ₽) — `src/site/donate.ts`, общее — `src/core/donate.ts`.
