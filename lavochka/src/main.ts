@@ -225,7 +225,8 @@ document.addEventListener('click', (e) => {
   const a = (e.target as Element | null)?.closest?.('a[href^="/"]') as HTMLAnchorElement | null;
   if (!a || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || a.target) return;
   const url = new URL(a.href);
-  if (url.origin !== location.origin || /\.\w+$/.test(url.pathname)) return;
+  // файлы и адреса сервера (вход через Яндекс/VK и т. п.) — обычным переходом
+  if (url.origin !== location.origin || /\.\w+$/.test(url.pathname) || url.pathname.startsWith('/api/')) return;
   e.preventDefault();
   go(url.pathname + url.search);
   render(parseRoute(url.pathname, url.search));
