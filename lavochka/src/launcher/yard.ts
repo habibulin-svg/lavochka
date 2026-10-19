@@ -9,6 +9,7 @@ import { SeededRng } from '../core/rng';
 import { SHOWN, CATEGORIES, membersOf, type CatalogEntry, type Category } from '../games/catalog';
 import { cardMarkup, isReady } from '../site/card';
 import { likeCount, onLikes } from '../site/likes';
+import { masterNote } from '../site/master';
 import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
 import { loadStats, onStats } from '../site/stats';
@@ -307,6 +308,7 @@ export const yard = {
     this.el = el;
     // шапка сайта (её собирает main.ts: там же решается, куда ведёт поиск)
     el.prepend(this.makeBar());
+    (el.querySelector('.yard-top') as HTMLElement).appendChild(masterNote());
     mountScreen('yard', el);
 
     const sort = el.querySelector('.yard-sort select') as HTMLSelectElement;

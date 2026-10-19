@@ -1,0 +1,41 @@
+/* «Слово Мастера»: записка на дворе и письмо на тетрадном листе. */
+.mw-note {
+  position: relative; display: block; width: min(330px, 86vw); margin: 10px 24px 0 auto; padding: 14px 16px 10px; text-align: left; cursor: pointer;
+  border: 0; border-radius: 2px; color: #2b2116; transform: rotate(1.8deg);
+  background: repeating-linear-gradient(0deg, transparent 0 23px, rgba(70, 110, 170, 0.18) 23px 24px), linear-gradient(170deg, #fbf3df, #ecdcb8);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.mw-note:hover, .mw-note:focus-visible { transform: rotate(0.6deg) translateY(-2px); box-shadow: 0 14px 26px rgba(0, 0, 0, 0.55); outline: none; }
+.mw-pin { position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a7a, #b3221a 60%, #6e100b); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5); }
+.mw-n-head { display: block; font: 700 25px/1 'Caveat', cursive; color: #8a2a1b; margin-bottom: 4px; }
+.mw-n-text { display: block; font: 19px/24px 'Caveat', cursive; }
+.mw-n-more { display: block; margin-top: 4px; text-align: right; font: 700 18px/24px 'Caveat', cursive; color: #8a2a1b; }
+/* прочитано — только заголовок и «перечитать» */
+.mw-n-again { display: none; }
+.mw-note.read { width: auto; padding: 10px 14px 6px; }
+.mw-note.read .mw-n-text, .mw-note.read .mw-n-more { display: none; }
+.mw-note.read .mw-n-head { display: inline; font-size: 22px; margin: 0 10px 0 0; }
+.mw-note.read .mw-n-again { display: inline; font: 700 18px/24px 'Caveat', cursive; color: #8a2a1b; }
+
+.mw-modal .modal-body { width: min(640px, 100%); }
+.mw-modal .sheet {
+  background: repeating-linear-gradient(0deg, transparent 0 27px, rgba(70, 110, 170, 0.16) 27px 28px), linear-gradient(170deg, #fbf3df, #ecdcb8);
+}
+.mw-letter { font: 23px/28px 'Caveat', cursive; color: #2b2116; }
+.mw-letter p { margin: 0 0 10px; text-indent: 1.4em; }
+.mw-letter .mw-title { margin: 0 0 6px; font: 700 34px/1.1 'Caveat', cursive; color: #8a2a1b; text-align: center; }
+.mw-letter .mw-hello { text-align: center; text-indent: 0; font: 700 28px/1.2 'Caveat', cursive; margin: 4px 0 12px; }
+.mw-letter .mw-but { text-indent: 0; font-style: italic; }
+.mw-letter .mw-sign { text-align: right; text-indent: 0; font: 700 28px/1.2 'Caveat', cursive; margin: 14px 0 12px; }
+.mw-letter .mw-ps { font-size: 21px; line-height: 28px; text-indent: 0; padding-top: 8px; border-top: 1px dashed rgba(80, 50, 20, 0.35); }
+.mw-letter a { color: #8a2a1b; text-decoration: underline; text-decoration-color: rgba(138, 42, 27, 0.4); text-underline-offset: 3px; }
+.mw-letter a:hover { text-decoration-color: currentColor; }
+/* узко — под заголовком, слева */
+@media (max-width: 760px) {
+  .mw-note { margin: 4px 0 0 10px; transform: rotate(-1.4deg); }
+  .mw-note:hover, .mw-note:focus-visible { transform: rotate(-0.6deg) translateY(-2px); }
+}
+@media (max-width: 560px) {
+  .mw-letter { font-size: 21px; }
+}

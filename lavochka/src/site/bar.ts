@@ -6,7 +6,7 @@ import { h } from '../core/util';
 import { Sound } from '../core/audio';
 import { scene, SEARCH_HINT, wireJoin, wireSettings } from '../launcher/yard';
 import { loadStats, onStats } from './stats';
-import { loadAccount, onAccount, openAuth, type Me } from './account';
+import { loadAccount, logout, onAccount, openAuth, type Me } from './account';
 import { donateButton } from './donate';
 import './bar.css';
 
@@ -35,6 +35,7 @@ let who: Me | null = null;
 onAccount((m) => {
   who = m;
   document.querySelectorAll<HTMLButtonElement>('.site-bar .bar-login, .site-bar [data-a=login]').forEach(showLogin);
+  document.querySelectorAll<HTMLElement>('.site-bar .bar-logout').forEach((b) => (b.hidden = !who));
 });
 function showLogin(b: HTMLButtonElement) {
   (b.querySelector('.lt') as HTMLElement).textContent = who ? who.name : 'Вход';
@@ -79,6 +80,7 @@ export function siteBar(o: BarOpts): HTMLElement {
           <button class="btn" data-a="settings" title="Настройки">⚙ <span class="who"></span></button>
         </div>
         <button class="bar-login" type="button" title="Вход и профиль"><span class="li">👤</span><span class="lt">Вход</span></button>
+        <button class="bar-logout" type="button" title="Выйти из аккаунта" hidden>Выйти</button>
         <button class="bar-burger" type="button" aria-expanded="false" aria-label="Меню"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -93,6 +95,7 @@ export function siteBar(o: BarOpts): HTMLElement {
       <div class="bar-menu-row">
         <button class="btn" data-a="settings">⚙ <span class="who"></span></button>
         <button class="btn" data-a="login">👤 <span class="lt">Вход</span></button>
+        <button class="btn bar-logout" data-a="logout" hidden>Выйти</button>
       </div>
     </div>
   </header>`);
@@ -143,6 +146,14 @@ export function siteBar(o: BarOpts): HTMLElement {
       })
   );
   logins.forEach(showLogin);
+  el.querySelectorAll<HTMLButtonElement>('.bar-logout').forEach((b) => {
+    b.hidden = !who;
+    b.onclick = () => {
+      Sound.ui();
+      setMenu(false);
+      void logout();
+    };
+  });
   void loadAccount();
   return el;
 }

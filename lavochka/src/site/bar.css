@@ -107,3 +107,11 @@ a.bar-tab:hover { background: linear-gradient(180deg, #74638a, #4a3e5a); }
 .bar-login.in { border-style: solid; color: #fff3d6; }
 .bar-login.in .li { filter: none; }
 .bar-login .lt { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+/* выход рядом с именем */
+.bar-logout:not(.btn) {
+  font: 600 13px 'PT Sans', sans-serif; color: #d9cfb8; cursor: pointer; white-space: nowrap;
+  padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255, 240, 210, 0.3); background: rgba(0, 0, 0, 0.3);
+}
+.bar-logout:not(.btn):hover { color: #fff3d6; background: rgba(0, 0, 0, 0.5); }
+.bar-logout[hidden] { display: none; }
+@media (max-width: 760px) { .bar-in > .bar-logout { display: none; } }

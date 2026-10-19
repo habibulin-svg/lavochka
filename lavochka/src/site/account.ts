@@ -290,11 +290,9 @@ export function openProfile(): void {
     open?.close();
     void import('./donate').then((d) => d.openDonateAdmin());
   });
-  act('logout', async () => {
-    await post('logout');
-    setMe(null);
+  act('logout', () => {
     open?.close();
-    toast('Вы вышли. Играть можно и без входа.');
+    void logout();
   });
   box.querySelectorAll<HTMLButtonElement>('[data-unlink]').forEach(
     (b) =>
@@ -311,6 +309,13 @@ export function openProfile(): void {
     if (!r.ok) return void (errEl.textContent = errText(r));
     toast('Письмо отправлено — загляните в почту');
   });
+}
+
+/** Выйти из аккаунта (кнопка в шапке и в профиле). */
+export async function logout(): Promise<void> {
+  await post('logout');
+  setMe(null);
+  toast('Вы вышли. Играть можно и без входа.');
 }
 
 // ------------------------------------------------------------------ ссылки из писем
