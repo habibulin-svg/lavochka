@@ -127,6 +127,16 @@ IndexNow и даты в sitemap — `tools/indexnow.mjs`, его запуска�
 по играм (`/api/played` при «Начать»/«Сыграть ещё», у аркад — при запуске игры; лимит с одного адреса, `data/played.json`),
 ответ кэшируется на минуту. Порядок карточек во дворе: как обычно / сначала новые (поле `added` в каталоге) / популярные.
 
+## Аккаунты (этап 3а)
+
+- Сервер: `server/accounts/` — `accounts.ts` (регистрация, вход, сессии, письма, права; без HTTP), `http.ts` (`/api/auth/me|register|login|logout|confirm|resend|forgot|reset|profile`), `store.ts` (интерфейс и хранилище в памяти), `pg.ts` (PostgreSQL и миграции), `crypto.ts` (scrypt, токены, TOTP), `mail.ts` (Unisender Go). Хранилище — PostgreSQL, если задан `PGDATABASE`, иначе в памяти (разработка, тесты).
+- Сессия — httpOnly-cookie `lv_sid` на 90 дней; в базе — только хеши сессий и ссылок из писем. POST только с JSON и со своего Origin.
+- Почта: `UNISENDER_API_KEY` + `UNISENDER_HOST`; без ключа писем нет, регистрация и вход работают. Свой предел — 90 писем в сутки (тариф 100), частота писем на игрока и на адрес ограничена.
+- Права — `src/core/rights.ts` (`video`, `early_access`, `ai`, `cosmetics`, `lobby_host`, `moderator`, `master`) с датой окончания; голос — бесплатный всем. Мастер (`master`) заводится командой на сервере и входит только с кодом из приложения (TOTP).
+- Сайт: `src/site/account.ts` — кто вошёл, окно входа/регистрации, профиль; кнопка в шапке. Ссылки из писем — `/vhod/?podtverdit=…`, `/vhod/?sbros=…`.
+- Политика конфиденциальности и условия — `content/pages/politika.md`, `usloviya.md` → `/politika/`, `/usloviya/` (пререндер).
+- Команды на сервере — `server/admin.ts` (собирается в `dist-server/admin.js`), обёртка `deploy/lavochka-admin.sh`.
+
 ## Чужие материалы (все — CC0 или общественное достояние)
 
 «Электроника ИМ» и Brick Game — эмуляция настоящих прошивок (решение пользователя: советское наследие, игры публичные):

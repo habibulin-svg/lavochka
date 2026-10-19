@@ -23,6 +23,7 @@ import type { GameDef } from '../src/core/types';
 import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
 import { MOVED, SLUGS } from '../src/site/routes';
+import { accountsFromEnv, authApi } from './accounts';
 
 const PORT = Number(process.env.PORT) || 8787;
 const here = dirname(fileURLToPath(import.meta.url));
@@ -146,6 +147,24 @@ for (const sig of ['SIGTERM', 'SIGINT'] as const)
     recordStore.flush();
     process.exit(0);
   });
+
+// ------------------------------------------------------------------ аккаунты (server/accounts)
+// База не поднялась — сайт и игры работают, вход отвечает «временно недоступен»; пробуем снова раз в минуту.
+
+const accounts = accountsFromEnv(log);
+let accountsReady = false;
+async function initAccounts() {
+  try {
+    await accounts.store.init();
+    accountsReady = true;
+    log('аккаунты: база готова');
+  } catch (e) {
+    log('аккаунты: база недоступна — ' + (e as Error).message);
+    setTimeout(initAccounts, 60_000).unref();
+  }
+}
+void initAccounts();
+setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
 
 // ------------------------------------------------------------------ счётчики: онлайн и начатые партии
 // Онлайн — сколько вкладок отметилось за последние 3 минуты (сайт отмечается раз в минуту, пока вкладка видна).
@@ -304,7 +323,14 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     res.writeHead(204, { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST', 'access-control-allow-headers': 'content-type' });
     return res.end();
   }
-  if (path === '/api/health') return json(res, 200, { ok: true, rooms: rooms.size });
+  if (path === '/api/health') return json(res, 200, { ok: true, rooms: rooms.size, accounts: accountsReady });
+  if (path.startsWith('/api/auth/')) {
+    if (!accountsReady) {
+      res.writeHead(503, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      return res.end(JSON.stringify({ error: 'down', message: 'Вход временно недоступен. Играть можно и без него.' }));
+    }
+    if (await authApi(accounts, req, res, path, clientIp(req), readBody)) return;
+  }
   if (path === '/api/stats') {
     // ?v=<метка вкладки> — вкладка отмечается «во дворе»
     const v = new URL(req.url || '', 'http://x').searchParams.get('v');
@@ -414,7 +440,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
     const spa = join(DIST, '_spa.html');
     file = existsSync(spa) ? spa : join(DIST, 'index.html');
     headers['x-robots-tag'] = 'noindex';
-    if (!/^\/(stol\/[\w-]+|poisk)\/?$/.test(path)) status = 404;
+    if (!/^\/(stol\/[\w-]+|poisk|vhod)\/?$/.test(path)) status = 404;
   }
   const ext = extname(file);
   const immutable = file.includes(join(DIST, 'assets'));

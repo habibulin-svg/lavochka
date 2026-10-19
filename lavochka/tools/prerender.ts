@@ -16,7 +16,7 @@ import { cardMarkup } from '../src/site/card';
 import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
 import { clip, plain, type Faq, type GameSeo, type PageText } from '../src/site/seo';
-import { KINDS, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
+import { KINDS, loadDocs, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -556,6 +556,19 @@ homePage();
 for (const c of CATEGORIES) sectionPage(c);
 postPages('news');
 postPages('blog');
+// политика конфиденциальности и условия — простые страницы из content/pages/*.md
+for (const d of loadDocs())
+  pages.push({
+    path: d.path,
+    title: d.title,
+    description: d.description,
+    priority: 0.2,
+    jsonld: [crumbs([[SITE_NAME, '/'], [d.h1, d.path]]).ld],
+    body: `${crumbs([[SITE_NAME, '/'], [d.h1, d.path]]).html}
+<h1>${esc(d.h1)}</h1>
+<p class="post-meta">Редакция от ${ruDate(d.updated)}</p>
+${d.html}`,
+  });
 for (const g of CATALOG) {
   if (!ready(g)) continue;
   if (g.members) groupPage(g);

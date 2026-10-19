@@ -103,3 +103,7 @@ a.bar-tab:hover { background: linear-gradient(180deg, #74638a, #4a3e5a); }
   .bar-in > .bar-online { display: none; }
 }
 .bar-menu > .bar-online { margin: 2px 0 6px; }
+/* вошедший игрок: имя вместо «Вход», рамка сплошная */
+.bar-login.in { border-style: solid; color: #fff3d6; }
+.bar-login.in .li { filter: none; }
+.bar-login .lt { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }

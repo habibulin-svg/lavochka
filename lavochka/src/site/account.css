@@ -1,0 +1,24 @@
+/* Окно входа, регистрации и профиля. */
+.auth-modal .modal-body { width: min(440px, 100%); }
+.auth h2 { margin: 6px 0 4px; }
+.auth-tabs { margin-bottom: 8px; }
+.auth input[type='email'],
+.auth input[type='password'],
+.auth input[name='name'],
+.auth input[name='totp'] {
+  font: inherit; font-size: 16px; font-weight: 400; color: var(--ink); width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 7px; border: 1px solid rgba(42, 18, 6, 0.55); background: rgba(255, 250, 238, 0.9);
+}
+.auth input:focus { outline: none; border-color: var(--red-d); box-shadow: 0 0 0 3px rgba(181, 72, 42, 0.25); }
+.auth .field .row { margin: 0; flex-wrap: nowrap; }
+.auth .field .row input { flex: 1; }
+.auth-consent { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; margin: 12px 0 4px; cursor: pointer; }
+.auth-consent input { margin-top: 3px; flex: none; width: 17px; height: 17px; accent-color: var(--red-d); }
+.auth-forgot { margin: 4px 0; font-size: 14px; }
+.auth a { color: var(--red-d); }
+.auth-ok { color: #2f6b22; font-weight: 700; }
+.auth-no { color: #8b1a10; font-weight: 700; }
+.auth .btn.small { font-size: 13px; padding: 3px 9px; }
+.auth-rights { margin: 4px 0 8px; padding-left: 20px; }
+.auth .auth-totp[hidden] { display: none; }
+.auth .auth-btns { justify-content: flex-end; margin-top: 18px; }

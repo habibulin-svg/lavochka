@@ -8,7 +8,10 @@ FirstVDS VDS-KVM-NVMe-Старт, Ubuntu 24.04, IP `82.146.38.203` (`habibulin.f
 - Сертификат Let's Encrypt `lavochka` на все шесть имён, продлевает `certbot.timer`, после продления — `reload nginx`.
 
 - **TURN для голоса и камеры** — coturn здесь же (`coturn/turnserver.conf` → `/etc/turnserver.conf`): 3478 udp/tcp, TLS 5349 (сертификат копирует хук `coturn/certbot-coturn.sh` → `/etc/letsencrypt/renewal-hooks/deploy/coturn.sh`), ретрансляция 49152–49999/udp. Логины временные (`use-auth-secret`): `/api/ice` выдаёт имя «срок:lavochka» и HMAC от `TURN_SECRET` из `/etc/lavochka.env` — секрет тот же, что `static-auth-secret` в конфиге coturn. Логи: `journalctl -u coturn`.
-- **Бэкапы** — `backup.sh`, таймер `lavochka-backup.timer` в 04:20: рекорды и настройки (env, coturn, nginx, службы, сертификаты) → `/var/backups/lavochka/lavochka-ДАТА.tar.gz`, хранятся 30 дней. Копия к себе: `sh tools/server/pull-backups.sh` (в `D:/backup/lavochka`). Код в бэкап не входит — он в git.
+- **Бэкапы** — `backup.sh`, таймер `lavochka-backup.timer` в 04:20: рекорды и настройки (env, coturn, nginx, службы, сертификаты) → `/var/backups/lavochka/lavochka-ДАТА.tar.gz`, дамп базы → `pg-ДАТА.sql.gz`, хранятся 30 дней. **Копия вне сервера** — Яндекс Диск через REST API (бесплатный тариф WebDAV не пускает, 402): только данные и дамп базы, без ключей и сертификатов, токен `YADISK_TOKEN` в `/etc/lavochka-backup.env` (живёт год — потом получить заново), на Диске — 30 дней. Копия к себе: `sh tools/server/pull-backups.sh` (в `D:/backup/lavochka`). Код в бэкап не входит — он в git.
+- **База** — PostgreSQL 16 здесь же, только localhost; база и роль `lavochka`, служба входит по сокету без пароля (`PGHOST`, `PGUSER`, `PGDATABASE` в `/etc/lavochka.env`). Схема — миграции в `server/accounts/pg.ts`, применяются при старте службы. Посмотреть: `ssh lavochka sudo -u lavochka psql`.
+- **Секреты** вводит владелец сам: `tools/server/secret-gui.cmd` (окно) или `ssh -t lavochka lavochka-secret ИМЯ [ФАЙЛ]` (`deploy/lavochka-secret.sh` → `/usr/local/bin`).
+- **Аккаунты из терминала** — `deploy/lavochka-admin.sh` → `/usr/local/bin/lavochka-admin`: `ssh -t lavochka lavochka-admin create-master <почта> [имя]` (Мастер с паролем и вторым фактором), `grant <почта> <право> [дней]`, `revoke`, `user`.
 
 ## Выкладка
 

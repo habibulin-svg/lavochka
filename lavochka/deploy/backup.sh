@@ -12,6 +12,15 @@ mv "$F.part" "$F"
 find $D -name 'lavochka-*.tar.gz' -mtime +30 -delete
 echo "бэкап $F $(du -h "$F" | cut -f1)"
 
+# база аккаунтов (PostgreSQL) — дамп рядом, 30 дней
+if command -v pg_dump >/dev/null && sudo -u postgres psql -Atqc "select 1 from pg_database where datname = 'lavochka'" | grep -q 1; then
+  P=$D/pg-$(date +%F).sql.gz
+  sudo -u postgres pg_dump --no-owner lavochka | gzip > "$P.part" && mv "$P.part" "$P"
+  chmod 600 "$P"
+  find $D -name 'pg-*.sql.gz' -mtime +30 -delete
+  echo "база $P $(du -h "$P" | cut -f1)"
+fi
+
 # Копия вне сервера — Яндекс Диск через REST API (WebDAV на бесплатном тарифе закрыт — 402).
 # Токен OAuth с доступом только к папке приложения («Приложения/…» на Диске) — YADISK_TOKEN в
 # /etc/lavochka-backup.env (`lavochka-secret YADISK_TOKEN /etc/lavochka-backup.env`), живёт год.

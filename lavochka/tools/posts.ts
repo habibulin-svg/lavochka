@@ -158,3 +158,26 @@ export const ruDate = (d: string) => {
   const [y, mo, da] = d.split('-').map(Number);
   return `${da} ${MONTHS[mo - 1]} ${y}`;
 };
+
+/** Справочная страница сайта (политика конфиденциальности, условия): content/pages/<адрес>.md, адрес — в корне сайта.
+ * Шапка: title, description, updated (ГГГГ-ММ-ДД), необязательный h1. */
+export interface Doc {
+  slug: string;
+  path: string;
+  title: string;
+  h1: string;
+  description: string;
+  updated: string;
+  html: string;
+}
+
+export function loadDocs(): Doc[] {
+  const dir = join(ROOT, 'content/pages');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
+    .map((f) => {
+      const p = parsePost('news', f, readFileSync(join(dir, f), 'utf8').replace(/^(---\r?\n[\s\S]*?)updated:/m, '$1date:'));
+      return { slug: p.slug, path: `/${p.slug}/`, title: p.title, h1: p.h1, description: p.description, updated: p.date, html: p.html };
+    });
+}

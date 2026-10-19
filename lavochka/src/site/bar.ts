@@ -3,10 +3,10 @@
  * На телефоне: название, профиль значком и кнопка «меню» с теми же разделами крупным списком; поиск — строкой ниже.
  * Одна шапка на двор, экран игры и страницы новостей/блога; за столом с партией её нет. */
 import { h } from '../core/util';
-import { toast } from '../core/ui';
 import { Sound } from '../core/audio';
 import { scene, SEARCH_HINT, wireJoin, wireSettings } from '../launcher/yard';
 import { loadStats, onStats } from './stats';
+import { loadAccount, onAccount, openAuth, type Me } from './account';
 import './bar.css';
 
 export type Tab = 'games' | 'lobby' | 'tourneys' | 'chat' | 'news' | 'blog';
@@ -29,6 +29,17 @@ onStats((s) => {
   online = s.online;
   document.querySelectorAll<HTMLElement>('.bar-online').forEach(showOnline);
 });
+// вход: гость — «Вход», вошедший — своё имя (во всех шапках сразу)
+let who: Me | null = null;
+onAccount((m) => {
+  who = m;
+  document.querySelectorAll<HTMLButtonElement>('.site-bar .bar-login, .site-bar [data-a=login]').forEach(showLogin);
+});
+function showLogin(b: HTMLButtonElement) {
+  (b.querySelector('.lt') as HTMLElement).textContent = who ? who.name : 'Вход';
+  b.classList.toggle('in', !!who);
+  b.title = who ? 'Профиль: ' + who.name : 'Вход и регистрация';
+}
 function showOnline(el: HTMLElement) {
   el.hidden = online == null;
   (el.querySelector('b') as HTMLElement).textContent = String(online ?? '');
@@ -62,11 +73,11 @@ export function siteBar(o: BarOpts): HTMLElement {
         <div class="bar-actions">
           <form class="join-form" title="Код комнаты от друга">
             <input class="code-input" maxlength="6" placeholder="КОД" autocomplete="off" spellcheck="false">
-            <button class="btn primary">Войти</button>
+            <button class="btn primary" title="Сесть за стол друга по коду">За стол</button>
           </form>
           <button class="btn" data-a="settings" title="Настройки">⚙ <span class="who"></span></button>
         </div>
-        <button class="bar-login" type="button" title="Вход и профиль — скоро" aria-disabled="true"><span class="li">👤</span><span class="lt">Вход</span></button>
+        <button class="bar-login" type="button" title="Вход и профиль"><span class="li">👤</span><span class="lt">Вход</span></button>
         <button class="bar-burger" type="button" aria-expanded="false" aria-label="Меню"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -76,11 +87,11 @@ export function siteBar(o: BarOpts): HTMLElement {
       <nav class="bar-menu-list">${TABS.map((t) => tabLink(t, t.id === tab, 'bar-mi')).join('')}</nav>
       <form class="join-form bar-menu-join" title="Код комнаты от друга">
         <input class="code-input" maxlength="6" placeholder="КОД" autocomplete="off" spellcheck="false">
-        <button class="btn primary">Войти в комнату</button>
+        <button class="btn primary">За стол по коду</button>
       </form>
       <div class="bar-menu-row">
         <button class="btn" data-a="settings">⚙ <span class="who"></span></button>
-        <button class="btn" data-a="login" disabled title="Вход и профиль — скоро">👤 Вход — скоро</button>
+        <button class="btn" data-a="login">👤 <span class="lt">Вход</span></button>
       </div>
     </div>
   </header>`);
@@ -117,6 +128,17 @@ export function siteBar(o: BarOpts): HTMLElement {
   menu.addEventListener('click', (e) => {
     if ((e.target as Element).closest('a')) setMenu(false);
   });
-  (el.querySelector('.bar-login') as HTMLButtonElement).onclick = () => toast('Вход и профиль игрока появятся совсем скоро.');
+  // вход и профиль: гость — «Вход», вошедший — своё имя
+  const logins = el.querySelectorAll<HTMLButtonElement>('.bar-login, [data-a=login]');
+  logins.forEach(
+    (b) =>
+      (b.onclick = () => {
+        Sound.ui();
+        setMenu(false);
+        openAuth();
+      })
+  );
+  logins.forEach(showLogin);
+  void loadAccount();
   return el;
 }

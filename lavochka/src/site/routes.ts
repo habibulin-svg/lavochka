@@ -223,7 +223,7 @@ export const MODE_PAGES: ModePage[] = [
 ];
 
 /** Занятые слова: разделы сайта и служебные папки — адрес игры не может начинаться с них. */
-export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
+export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry', 'poisk', 'vhod', 'profil', 'politika', 'usloviya', 'admin', 'stol', 'pravila', 'api', 'ws', 'assets', 'thumbs', 'cards', 'tex', 'models', 'video', 'dict', 'scan', 'sitemap.xml', 'robots.txt'];
 
 export type Route =
   | { kind: 'yard'; cat?: string }
@@ -231,8 +231,13 @@ export type Route =
   | { kind: 'table'; code: string }
   | { kind: 'search'; q: string }
   /** Новости и блог: список (/novosti/, /novosti/stranica-2/) или запись (/blog/<адрес>/) — готовый текст с сервера. */
-  | { kind: 'page'; tab: 'news' | 'blog'; path: string }
+  | { kind: 'page'; tab: 'news' | 'blog' | 'doc'; path: string }
+  /** Вход: окно поверх двора; из письма — ссылка подтверждения почты или сброса пароля. */
+  | { kind: 'auth'; confirm?: string; reset?: string }
   | { kind: 'missing'; path: string };
+
+/** Справочные страницы в корне (content/pages/*.md). */
+export const DOC_PAGES = ['politika', 'usloviya'];
 
 const BY_PATH = new Map<string, { id: string; preset?: string; article?: boolean; mode?: string }>();
 for (const [id, p] of Object.entries(SLUGS)) BY_PATH.set(p, { id });
@@ -257,6 +262,8 @@ export function parseRoute(pathname: string, search = ''): Route {
   if (p === 'poisk') return { kind: 'search', q: q.get('q') ?? '' };
   const top = p.split('/')[0];
   if (top === 'novosti' || top === 'blog') return { kind: 'page', tab: top === 'blog' ? 'blog' : 'news', path: `/${p}/` };
+  if (DOC_PAGES.includes(p)) return { kind: 'page', tab: 'doc', path: `/${p}/` };
+  if (p === 'vhod') return { kind: 'auth', confirm: q.get('podtverdit') ?? undefined, reset: q.get('sbros') ?? undefined };
   const sec = BY_SECTION.get(p);
   if (sec) return { kind: 'yard', cat: sec };
   const rules = p.endsWith('/pravila');

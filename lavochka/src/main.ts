@@ -9,6 +9,7 @@ import type { GameModule } from './core/view';
 import { gamePath, modePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
+import { handleAuthRoute } from './site/account';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
 import { esc, h } from './core/util';
@@ -168,7 +169,7 @@ nav.table = (code) => {
 /** Новости и блог: шапка сайта и готовый текст страницы (его пишет пререндер из content/*.md). */
 function openPage(r: Extract<Route, { kind: 'page' }>) {
   const el = h(`<section class="page-screen"><div class="page-body"></div></section>`);
-  el.prepend(siteBar({ onSearch: searchFromBar, tab: r.tab }));
+  el.prepend(siteBar({ onSearch: searchFromBar, tab: r.tab === 'doc' ? undefined : r.tab }));
   mountScreen('page', el);
   showScreen('page');
   const body = el.querySelector('.page-body') as HTMLElement;
@@ -189,6 +190,12 @@ function render(r: Route) {
   closeAllModals();
   if (r.kind === 'table') return resumeTable(r.code);
   if (r.kind === 'page') return openPage(r);
+  if (r.kind === 'auth') {
+    // вход и ссылки из писем — окно поверх двора; адрес — снова двор, чтобы токен не остался в истории
+    history.replaceState(null, '', '/');
+    showYard('all');
+    return void handleAuthRoute(r);
+  }
   if (r.kind === 'game') {
     const g = byId(r.id);
     if (g?.members) {
