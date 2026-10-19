@@ -58,6 +58,7 @@ export function yandexProvider(id: string, secret: string): Provider {
         // почта аккаунта Яндекса подтверждена самим Яндексом
         email: me.default_email || null,
         name: me.display_name || me.first_name || me.real_name || me.login || 'Игрок',
+        photo: me.default_avatar_id && !me.is_avatar_empty ? `https://avatars.yandex.net/get-yapic/${me.default_avatar_id}/islands-200` : null,
       };
     },
   };
@@ -109,6 +110,7 @@ export function vkProvider(appId: string, secret?: string): Provider {
         subject,
         email: u.email || tok.email || null,
         name: [u.first_name, u.last_name ? u.last_name[0] + '.' : ''].filter(Boolean).join(' ') || 'Игрок',
+        photo: typeof u.avatar === 'string' ? u.avatar : null,
       };
     },
   };

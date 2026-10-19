@@ -6,6 +6,7 @@ import { modal, toast, type ModalHandle } from '../core/ui';
 import { Sound } from '../core/audio';
 import { RIGHTS, type RightGrant } from '../core/rights';
 import { onSettings, saveSettings, settings } from '../core/settings';
+import { AVATARS, avatarHtml } from '../core/avatars';
 import './account.css';
 
 export interface Me {
@@ -18,6 +19,10 @@ export interface Me {
   providers: string[];
   /** Есть ли пароль. */
   password: boolean;
+  /** Аватар: значок или адрес фото. */
+  avatar: string | null;
+  /** Есть фото из Яндекса/VK. */
+  photo: boolean;
 }
 
 let me: Me | null = null;
@@ -247,6 +252,9 @@ export function openProfile(): void {
   const box = document.createElement('div');
   box.className = 'auth';
   box.innerHTML = `<h2>Профиль</h2>
+    <div class="auth-ava">${avatarHtml(u.avatar, 'ava ava-big')}<div class="ava-pick" role="radiogroup" aria-label="Аватар">${
+      u.photo ? `<button type="button" data-ava="photo" title="Фото из Яндекса/VK" class="${u.avatar?.startsWith('https://') ? 'on' : ''}">📷</button>` : ''
+    }${AVATARS.map((a) => `<button type="button" data-ava="${a}" class="${u.avatar === a ? 'on' : ''}">${a}</button>`).join('')}</div></div>
     <form class="auth-name"><label class="field">Имя за столом<span class="row"><input name="name" maxlength="24" value="${esc(u.name)}"><button class="btn">Сохранить</button></span></label></form>
     <p><span class="lbl">Почта:</span> ${esc(u.email ?? '—')} ${
       u.email ? (u.verified ? '<span class="auth-ok">✔ подтверждена</span>' : `<span class="auth-no">не подтверждена</span>${mailOn ? ' <button type="button" class="btn small" data-a="resend">Прислать письмо ещё раз</button>' : ''}`) : ''
@@ -294,6 +302,16 @@ export function openProfile(): void {
     open?.close();
     void logout();
   });
+  box.querySelectorAll<HTMLButtonElement>('[data-ava]').forEach(
+    (b) =>
+      (b.onclick = async () => {
+        Sound.ui();
+        const r = await post('profile', { avatar: b.dataset.ava });
+        if (!r.ok) return void (errEl.textContent = errText(r));
+        setMe(r.body.user);
+        openProfile();
+      })
+  );
   box.querySelectorAll<HTMLButtonElement>('[data-unlink]').forEach(
     (b) =>
       (b.onclick = async () => {

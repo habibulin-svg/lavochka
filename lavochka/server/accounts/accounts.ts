@@ -2,6 +2,7 @@
  * Без HTTP: методы получают разобранный запрос и «контекст» (cookie-сессия, адрес, браузер) и отвечают
  * кодом, телом и, если надо, новой сессией для cookie. HTTP-обвязка — http.ts, тесты — tests/accounts.test.ts. */
 import { RIGHTS, type RightGrant } from '../../src/core/rights';
+import { AVATARS, PHOTO_RE, avatarOf } from '../../src/core/avatars';
 import { checkPassword, checkTotp, hashPassword, newToken, tokenHash } from './crypto';
 import type { Mailer } from './mail';
 import type { AccountStore, User } from './store';
@@ -38,6 +39,10 @@ export interface PublicUser {
   providers: string[];
   /** Есть ли пароль (вход только через Яндекс/VK — нет). */
   password: boolean;
+  /** Аватар: значок или адрес фото; null — нет. */
+  avatar: string | null;
+  /** Есть фото из сервиса входа (можно выбрать его). */
+  photo: boolean;
 }
 
 /** Кто пришёл через Яндекс ID / VK ID (после обмена кода на сервере). */
@@ -47,6 +52,8 @@ export interface ExternalProfile {
   /** Почта, подтверждённая сервисом входа (иначе null). */
   email: string | null;
   name: string;
+  /** Фото профиля в сервисе (адрес). */
+  photo?: string | null;
 }
 
 /** Ограничитель частоты: не больше max событий на ключ за окно. */
@@ -119,6 +126,8 @@ export class Accounts {
       rights: await this.store.rights(u.id, now),
       providers: await this.store.externalOf(u.id),
       password: !!u.passwordHash,
+      avatar: avatarOf(u.avatar, u.photo),
+      photo: !!u.photo && PHOTO_RE.test(u.photo),
     };
   }
 
@@ -274,10 +283,20 @@ export class Accounts {
   async profile(b: any, ctx: Ctx): Promise<Reply> {
     const u = await this.current(ctx);
     if (!u) return err(401, 'auth', 'Войдите заново.');
-    const name = cleanName(b?.name);
-    if (!name) return err(400, 'name', 'Имя — от 2 до 24 знаков.');
-    await this.store.updateUser(u.id, { name });
-    return { code: 200, body: { user: await this.publicUser({ ...u, name }, ctx.now) } };
+    const patch: { name?: string; avatar?: string | null } = {};
+    if (b?.name !== undefined) {
+      const name = cleanName(b.name);
+      if (!name) return err(400, 'name', 'Имя — от 2 до 24 знаков.');
+      patch.name = name;
+    }
+    if (b?.avatar !== undefined) {
+      const a = b.avatar === null ? null : String(b.avatar);
+      if (a !== null && a !== 'photo' && !AVATARS.includes(a)) return err(400, 'avatar', 'Нет такого значка.');
+      if (a === 'photo' && !u.photo) return err(400, 'avatar', 'Фото нет — войдите через Яндекс или VK.');
+      patch.avatar = a;
+    }
+    await this.store.updateUser(u.id, patch);
+    return { code: 200, body: { user: await this.publicUser({ ...u, ...patch }, ctx.now) } };
   }
 
   /** Вход через Яндекс ID / VK ID. Уже вошедшему — привязать вход к его аккаунту.
@@ -317,6 +336,11 @@ export class Accounts {
     if (await isMaster(u)) return masterErr;
     if (u.bannedUntil && u.bannedUntil > now) return err(403, 'banned', 'Вход закрыт до ' + new Date(u.bannedUntil).toLocaleDateString('ru-RU') + '.');
     await this.store.linkExternal(p.provider, p.subject, u.id, email);
+    // фото из сервиса: запомнить; аватара ещё нет — сразу им
+    if (p.photo && PHOTO_RE.test(p.photo) && p.photo !== u.photo) {
+      await this.store.updateUser(u.id, { photo: p.photo, ...(u.avatar ? {} : { avatar: 'photo' }) });
+      u = (await this.store.userById(u.id))!;
+    }
     const sid = await this.openSession(u, ctx);
     return { code: 200, body: { user: await this.publicUser(u, now), created: !linked }, sid };
   }

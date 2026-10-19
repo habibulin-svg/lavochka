@@ -14,6 +14,10 @@ export interface User {
   createdAt: number;
   lastLoginAt: number | null;
   bannedUntil: number | null;
+  /** Аватар: значок из src/core/avatars.ts или 'photo' (фото из сервиса входа). */
+  avatar: string | null;
+  /** Фото из Яндекса/VK (адрес). */
+  photo: string | null;
 }
 
 /** Право (entitlement) с датой окончания; null — бессрочно. */
@@ -32,6 +36,8 @@ export interface UserPatch {
   totpSecret?: string | null;
   lastLoginAt?: number;
   bannedUntil?: number | null;
+  avatar?: string | null;
+  photo?: string | null;
 }
 
 /** Пожертвование (донат): создаётся до оплаты, оплаченным его отмечает уведомление платёжного сервиса. Суммы — в копейках. */
@@ -174,6 +180,8 @@ export class MemoryAccountStore implements AccountStore {
       createdAt: Date.now(),
       lastLoginAt: null,
       bannedUntil: null,
+      avatar: null,
+      photo: null,
     };
     this.users.set(user.id, user);
     return { ...user };

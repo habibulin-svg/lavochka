@@ -90,7 +90,9 @@ export const MIGRATIONS: string[] = [
    );
    create index game_history_user on game_history (user_id, ended_at desc);`,
   // 4 — сохранённые партии (снимок JSON строкой; null — партия закончена или удалена в это время)
-  `create table game_saves (
+  `alter table users add column avatar text;
+   alter table users add column photo text;
+   create table game_saves (
      user_id bigint not null references users on delete cascade,
      game text not null,
      data text,
@@ -113,6 +115,8 @@ function toUser(r: any): User {
     createdAt: ms(r.created_at)!,
     lastLoginAt: ms(r.last_login_at),
     bannedUntil: ms(r.banned_until),
+    avatar: r.avatar ?? null,
+    photo: r.photo ?? null,
   };
 }
 
@@ -180,6 +184,8 @@ export class PgAccountStore implements AccountStore {
     if (p.totpSecret !== undefined) cols.push(['totp_secret', p.totpSecret]);
     if (p.lastLoginAt !== undefined) cols.push(['last_login_at', date(p.lastLoginAt)]);
     if (p.bannedUntil !== undefined) cols.push(['banned_until', date(p.bannedUntil)]);
+    if (p.avatar !== undefined) cols.push(['avatar', p.avatar]);
+    if (p.photo !== undefined) cols.push(['photo', p.photo]);
     if (!cols.length) return;
     try {
       await this.pool.query(`update users set ${cols.map(([c], i) => `${c} = $${i + 2}`).join(', ')} where id = $1`, [id, ...cols.map(([, v]) => v)]);

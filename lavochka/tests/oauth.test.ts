@@ -123,3 +123,21 @@ describe('вход через сервисы', () => {
     expect(body.get('grant_type')).toBe('authorization_code');
   });
 });
+
+describe('аватар', () => {
+  it('фото из Яндекса — сразу аватаром; выбор значка; чужое и несуществующее — отказ', async () => {
+    const { login, acc } = setup({ id: '5', default_email: 'ava@yandex.ru', display_name: 'Ава', default_avatar_id: '12/abc', is_avatar_empty: false });
+    const sid = (await login('yandex')).res.sid as string;
+    const me = async () => (await acc.me(ctx(sid))).body.user as any;
+    expect(await me()).toMatchObject({ avatar: 'https://avatars.yandex.net/get-yapic/12/abc/islands-200', photo: true });
+    expect((await acc.profile({ avatar: '🦊' }, ctx(sid))).code).toBe(200);
+    expect((await me()).avatar).toBe('🦊');
+    expect((await acc.profile({ avatar: '<img>' }, ctx(sid))).code).toBe(400);
+    expect((await acc.profile({ avatar: 'photo' }, ctx(sid))).code).toBe(200);
+    expect((await me()).avatar).toMatch(/^https:\/\/avatars\.yandex\.net\//);
+    // игрок без фото не может выбрать «фото»
+    const r = await acc.register({ email: 'plain@x.ru', password: 'пароль-игрока', consent: true }, ctx());
+    expect((await acc.profile({ avatar: 'photo' }, ctx(r.sid as string))).code).toBe(400);
+    expect(((await acc.me(ctx(r.sid as string))).body.user as any).avatar).toBeNull();
+  });
+});

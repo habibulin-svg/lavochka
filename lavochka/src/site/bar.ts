@@ -8,6 +8,7 @@ import { scene, SEARCH_HINT, wireJoin, wireSettings } from '../launcher/yard';
 import { loadStats, onStats } from './stats';
 import { loadAccount, logout, onAccount, openAuth, type Me } from './account';
 import { donateButton } from './donate';
+import { avatarHtml } from '../core/avatars';
 import './bar.css';
 
 export type Tab = 'games' | 'lobby' | 'tourneys' | 'chat' | 'news' | 'blog';
@@ -39,6 +40,8 @@ onAccount((m) => {
 });
 function showLogin(b: HTMLButtonElement) {
   (b.querySelector('.lt') as HTMLElement).textContent = who ? who.name : 'Вход';
+  const li = b.querySelector('.li') as HTMLElement | null;
+  if (li) li.outerHTML = who?.avatar ? avatarHtml(who.avatar, 'li') : '<span class="li">👤</span>';
   b.classList.toggle('in', !!who);
   b.title = who ? 'Профиль: ' + who.name : 'Вход и регистрация';
 }
