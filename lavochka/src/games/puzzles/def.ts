@@ -81,7 +81,7 @@ function picrossSteps(s: State) {
 
 export const def: GameDef<State, Action, Event, State> = {
   id: 'puzzles',
-  title: 'Головоломки',
+  title: 'Кроссворды и судоку',
   players: { min: 1, max: 6, default: 1 },
   seats: SEATS,
   options: [

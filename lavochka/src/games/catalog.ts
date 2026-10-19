@@ -8,17 +8,17 @@ import { loadClues } from '../words/clues';
 const withDict = <T>(m: Promise<T>) => Promise.all([m, loadDict()]).then(([x]) => x);
 const withClues = <T>(m: Promise<T>) => Promise.all([m, loadClues()]).then(([x]) => x);
 
-export type Category = 'board' | 'cards' | 'company' | 'paper' | 'tabletop' | 'sport' | 'electronics' | 'arcade';
+export type Category = 'board' | 'cards' | 'company' | 'paper' | 'puzzles' | 'tabletop' | 'sport' | 'electronics';
 
 export const CATEGORIES: { id: Category; title: string }[] = [
   { id: 'board', title: 'Доска и кости' },
   { id: 'cards', title: 'Карты' },
   { id: 'company', title: 'Компанией' },
   { id: 'paper', title: 'На бумаге' },
+  { id: 'puzzles', title: 'Головоломки' },
   { id: 'tabletop', title: 'Настолки' },
   { id: 'sport', title: 'Настольный спорт' },
   { id: 'electronics', title: 'Электроника' },
-  { id: 'arcade', title: 'Аркады' },
 ];
 
 export interface CatalogEntry {
@@ -91,7 +91,6 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'govno', title: 'Г*вно', sub: 'собери четвёрку и хлопни — последний проиграл', cat: 'cards', players: '3–6', wave: 8, icon: '🖐', tint: '#6b4a2a', thumb: 'govno.webp', load: () => import('./govno'), variants: ['дворовое', 'тихое', 'быстрое', 'для начала'] },
   { id: 'solitaire', title: 'Пасьянсы', sub: 'косынка, паук, солитёр и ещё шесть', cat: 'cards', players: '1–4', wave: 11, icon: '🂮', tint: '#1f5a34', thumb: 'solitaire.webp', load: () => import('./solitaire'), variants: ['косынка', 'паук', 'солитёр', 'пирамида', 'три вершины', 'гольф', 'сорок воров', 'скорпион', 'колодец'] },
   // — компанией —
-  { id: 'geo', title: 'География', sub: 'флаги, гербы, столицы и карта мира', cat: 'company', players: '1–6', wave: 16, icon: '🌍', tint: '#2a6a8a', thumb: 'geo.webp', load: () => import('./geo'), variants: ['где на карте', 'флаги', 'гербы', 'контуры', 'столицы', 'регионы РФ и штаты США', 'чей регион', 'справочник'] },
   { id: 'spy', title: 'Шпион', sub: 'все знают, где мы, — кроме одного', cat: 'company', players: '3–10', wave: 17, icon: '🕵', tint: '#2a2e3a', thumb: 'spy.webp', load: () => import('./spy'), variants: ['локации', 'кино', 'мультфильмы', 'музыка', 'книги', 'компьютерные игры', 'живопись', 'география', 'история', 'всё вперемешку'] },
   { id: 'whoami', title: 'Кто я?', sub: 'персонаж на лбу — все видят, кроме тебя', cat: 'company', players: '3–10', wave: 17, icon: '🙋', tint: '#3a3420', thumb: 'whoami.webp', load: () => import('./whoami'), variants: ['все подряд', 'знаменитости', 'герои', 'наши'] },
   { id: 'danetki', title: 'Данетки', sub: 'странные истории: спрашивай — «да», «нет», «неважно»', cat: 'company', players: '1–8', wave: 17, icon: '❓', tint: '#7a4a14', thumb: 'danetki.webp', load: () => import('./danetki'), variants: ['по правилам', 'без правил', 'детские'] },
@@ -106,9 +105,14 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'ttt', title: 'Крестики-нолики', sub: 'три в ряд — и ультимативные на девяти полях', cat: 'paper', players: '2', wave: 8, icon: '✕', tint: '#1f3a8f', thumb: 'ttt.webp', load: () => import('./ttt'), variants: ['классические 3×3', 'ультимативные', 'серия партий'] },
   { id: 'hangman', title: 'Виселица', sub: 'угадай слово, пока не дорисовали человечка', cat: 'paper', players: '1–6', wave: 8, icon: '☖', tint: '#2a3a6a', thumb: 'hangman.webp', load: () => Promise.all([import('./hangman'), loadDict(), loadClues()]).then(([m]) => m), variants: ['обычная', 'командная', 'обратная', 'аукцион'] },
   { id: 'paperball', title: 'Футбол на бумаге', sub: 'ломаной по клеткам — в ворота соседа', cat: 'paper', players: '2', wave: 8, icon: '⚽', tint: '#1f3a8f', thumb: 'paperball.webp', load: () => import('./paperball'), variants: ['русский: три отрезка и штрафной', 'с отскоками', 'хоккей'] },
-  { id: 'dvor', title: 'А у нас во дворе', sub: 'дворовая олимпиада: 36 видов головоломок на 23 дворовых играх — от пряток до вкладышей', cat: 'paper', players: '1–6', wave: 18, icon: '🏅', tint: '#2a5a8a', thumb: 'dvor.webp', load: () => import('./dvor'), variants: ['олимпиада', 'большая олимпиада', 'разминка', 'тренировка'] },
-  { id: 'puzzles', title: 'Головоломки', sub: 'кроссворды, сканворды, судоку — одному или всем двором', cat: 'paper', players: '1–6', wave: 16, icon: '✎', tint: '#5a4a2a', thumb: 'puzzles.webp', load: () => withClues(import('./puzzles')), variants: ['кроссворд', 'сканворд', 'судоку', 'пикросс'] },
   { id: 'balda', title: 'Балда', sub: 'слова на поле 5×5', cat: 'paper', players: '2–4', wave: 2, icon: 'Б', tint: '#4a3a8a', thumb: 'balda.webp', load: () => withDict(import('./balda')), variants: ['5×5', '6×6 и 7×7', 'с диагоналями'] },
+  // — головоломки —
+  { id: 'geo', title: 'География', sub: 'флаги, гербы, столицы и карта мира', cat: 'puzzles', players: '1–6', wave: 16, icon: '🌍', tint: '#2a6a8a', thumb: 'geo.webp', load: () => import('./geo'), variants: ['где на карте', 'флаги', 'гербы', 'контуры', 'столицы', 'регионы РФ и штаты США', 'чей регион', 'справочник'] },
+  { id: 'dvor', title: 'А у нас во дворе', sub: 'дворовая олимпиада: 36 видов головоломок на 23 дворовых играх — от пряток до вкладышей', cat: 'puzzles', players: '1–6', wave: 18, icon: '🏅', tint: '#2a5a8a', thumb: 'dvor.webp', load: () => import('./dvor'), variants: ['олимпиада', 'большая олимпиада', 'разминка', 'тренировка'] },
+  { id: 'puzzles', title: 'Кроссворды и судоку', sub: 'кроссворды, сканворды, судоку — одному или всем двором', cat: 'puzzles', players: '1–6', wave: 16, icon: '✎', tint: '#5a4a2a', thumb: 'puzzles.webp', load: () => withClues(import('./puzzles')), variants: ['кроссворд', 'сканворд', 'судоку', 'пикросс'] },
+  { id: 'saper', title: 'Сапёр', sub: 'как в Windows: флажки, рожица и табло; наперегонки и охота на мины', cat: 'puzzles', players: '1–4', wave: 18, icon: '💣', tint: '#008080', thumb: 'saper.webp', load: () => import('./saper'), variants: ['новичок', 'любитель', 'профессионал', 'без угадывания', 'тор', 'ход конём', 'наперегонки', 'охота на мины'] },
+  { id: 'g2048', title: '2048', sub: 'двигай плитки, складывай пары — до 2048 и дальше', cat: 'puzzles', players: '1–4', wave: 18, icon: '⁂', tint: '#8a6a3a', thumb: 'g2048.webp', load: () => import('./g2048'), variants: ['4 × 4', '3 × 3, 5 × 5, 6 × 6', 'до 4096 и без конца', 'с камнями', 'наперегонки'] },
+  { id: 'pipes', title: 'Водопроводчик', sub: 'поверни трубы — пусти воду до каждого крана', cat: 'puzzles', players: '1–4', wave: 18, icon: '🚰', tint: '#2a6a8a', thumb: 'pipes.webp', load: () => import('./pipes'), variants: ['уровни без конца', '5 × 5 … 15 × 15', 'тор', 'крестовины', 'вместе и наперегонки'] },
   // — настолки —
   { id: 'erudit', title: 'Эрудит', sub: 'та самая коробка', cat: 'tabletop', players: '2–4', wave: 2, icon: 'Э', tint: '#7a5a12', thumb: 'erudit.webp', load: () => withDict(import('./erudit')), variants: ['эрудит', 'скрэббл', 'до 200 очков'] },
   { id: 'hodilki', title: 'Кинь-двинь', sub: 'ходилки на советских полях', cat: 'tabletop', group: 'adventures', players: '2–10', wave: 7, icon: '🎲', tint: '#1d6a7a', thumb: 'hodilki.webp', load: () => import('./hodilki'), variants: ['Кругосветное путешествие', 'Затерянный мир', 'Шайба — хоккей с голами', 'Лукоморье — 4 части', 'и ещё 8 полей'] },
@@ -137,12 +141,11 @@ export const CATALOG: CatalogEntry[] = [
   // — электроника —
   { id: 'elektronika', title: 'Электроника ИМ', sub: 'настоящие советские ЖК-игры', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', thumb: 'elektronika.webp', arcade: true, load: () => import('./elektronika'), variants: ['Ну, погоди!', 'Тайны океана', 'Весёлый повар', 'Космический мост', 'Хоккей', 'Автослалом', 'Кот-рыболов', 'и ещё 7'] },
   { id: 'brick', title: 'Brick Game', sub: 'E-23 «96 in 1», настоящая прошивка', cat: 'electronics', players: '1', wave: 5, icon: '▦', tint: '#5d6b4f', thumb: 'brick.webp', arcade: true, load: () => import('./brick'), variants: ['тетрис', 'чудные фигуры', 'мяч и ракетка', 'сбей стену', 'ряды сверху'] },
-  // — аркады —
-  { id: 'avtomaty', title: 'Игровые автоматы', sub: 'советские 15 копеек, настоящие платы', cat: 'arcade', players: '1', wave: 6, icon: '🕹', tint: '#3e5a70', thumb: 'avtomaty.webp', arcade: true, load: () => import('./avtomaty'), variants: ['Конёк-Горбунок', 'S.O.S.', 'Снежная королева', 'Городки', 'Кот-рыболов', 'Тетрис', 'Чёрный корабль', 'и ещё 4'] },
-  { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, shelved: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'лопата, динамит, самородок'] },
-  { id: 'shariki', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '🐸', tint: '#4a7a10', arcade: true, shelved: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'спираль, петля'] },
-  { id: 'eggs', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'arcade', players: '1', wave: 6, icon: '🦕', tint: '#7a5a10', arcade: true, shelved: true, load: () => import('./eggs'), variants: ['сто уровней', 'потолок опускается', 'отскоки от стенок'] },
-  { id: 'gops', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'arcade', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
+  { id: 'avtomaty', title: 'Игровые автоматы', sub: 'советские 15 копеек, настоящие платы', cat: 'electronics', players: '1', wave: 6, icon: '🕹', tint: '#3e5a70', thumb: 'avtomaty.webp', arcade: true, load: () => import('./avtomaty'), variants: ['Конёк-Горбунок', 'S.O.S.', 'Снежная королева', 'Городки', 'Кот-рыболов', 'Тетрис', 'Чёрный корабль', 'и ещё 4'] },
+  { id: 'treasures', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, shelved: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'лопата, динамит, самородок'] },
+  { id: 'shariki', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '🐸', tint: '#4a7a10', arcade: true, shelved: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'спираль, петля'] },
+  { id: 'eggs', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '🦕', tint: '#7a5a10', arcade: true, shelved: true, load: () => import('./eggs'), variants: ['сто уровней', 'потолок опускается', 'отскоки от стенок'] },
+  { id: 'gops', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'electronics', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
 ];
 
 /** Карточки лаунчера — без отложенных и без тех, что живут внутри групп. */

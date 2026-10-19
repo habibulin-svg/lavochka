@@ -1,0 +1,48 @@
+/* «Водопроводчик» — подвал с кафелем: стальные трубы, латунные краны, эмалированный бак. */
+.table--pipes {
+  --table-bg: radial-gradient(ellipse at 50% 20%, #4a5a66, #2c363e 60%, #1c2329);
+}
+.pp-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.pp-board { width: 100%; height: 100%; user-select: none; touch-action: manipulation; filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.5)); }
+.pp-frame { fill: #6b5a48; stroke: #3e3328; stroke-width: 3; }
+.pp-wall { fill: #9fb3bd; }
+.pp-tile { fill: #e9f1f3; stroke: #c7d6dc; stroke-width: 1; }
+.pp-board [data-i] { cursor: default; }
+.pp-board [data-i].can { cursor: pointer; }
+.pp-board [data-i].can:hover .pp-tile-hover { opacity: 1; }
+.pp-rot { transform-origin: 50px 50px; transition: transform 0.18s ease-out; }
+/* труба: кромка, сталь, блик и вода внутри */
+.pp-edge, .pp-steel, .pp-shine, .pp-water { fill: none; stroke-linecap: butt; }
+.pp-edge { stroke: #3c434b; stroke-width: 27; }
+.pp-steel { stroke: #8e98a3; stroke-width: 22; }
+.pp-shine { stroke: #d9e1e8; stroke-width: 7; opacity: 0.85; }
+.pp-water { stroke: #2aa8f0; stroke-width: 9; stroke-dasharray: 10 8; opacity: 0; }
+.wet .pp-steel { stroke: #7f9cb0; }
+.wet .pp-shine { stroke: #e6f6ff; opacity: 0.55; stroke-width: 4; }
+.wet .pp-water { opacity: 1; animation: pp-flow 0.7s linear infinite; }
+@keyframes pp-flow { to { stroke-dashoffset: -18; } }
+.pp-coupling { fill: #5d6670; stroke: #2e343a; stroke-width: 1.5; }
+.pp-coupling-hi { fill: #c3ccd5; opacity: 0.7; }
+.pp-fitting { fill: #6f7883; stroke: #2e343a; stroke-width: 2; }
+.pp-fitting-hi { fill: none; stroke: #c9d2da; stroke-width: 3; stroke-dasharray: 30 200; stroke-dashoffset: -60; }
+.pp-bolt { fill: #4a525b; }
+.wet .pp-fitting { fill: #6d8496; }
+/* кран */
+.pp-brass { fill: #b8862e; stroke: #5e4214; stroke-width: 2; }
+.pp-brass-hi { fill: none; stroke: #f3d27a; stroke-width: 3; stroke-dasharray: 26 200; stroke-dashoffset: -66; }
+.pp-wheel { fill: #a0281e; stroke: #5a120c; stroke-width: 1.5; }
+.wet .pp-wheel { fill: #1e6fb8; stroke: #0c3460; }
+.pp-drop { fill: #3ab4ff; opacity: 0; }
+.wet .pp-drop { animation: pp-drip 1.6s ease-in infinite; }
+@keyframes pp-drip { 0% { opacity: 0; transform: translateY(-4px); } 30% { opacity: 1; } 90% { opacity: 1; transform: translateY(12px); } 100% { opacity: 0; transform: translateY(14px); } }
+/* бак */
+.pp-tank-rim { fill: #1f5c8a; stroke: #0d2f4a; stroke-width: 3; }
+.pp-tank-water { fill: #4fb7f0; }
+.pp-wave { fill: #2a8fd0; animation: pp-wave 2.4s ease-in-out infinite alternate; }
+@keyframes pp-wave { to { transform: translateX(-6px); } }
+.pp-rivet { fill: #c9d6e0; stroke: #0d2f4a; stroke-width: 0.8; }
+/* закреплённый кусок */
+.pp-lock { display: none; fill: #3a2a18; stroke: #3a2a18; }
+.locked .pp-lock { display: inline; }
+.locked .pp-steel { stroke: #7c8590; }
+.pp-board.solved .wet .pp-water { stroke: #44c8ff; }
