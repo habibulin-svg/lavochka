@@ -72,3 +72,24 @@ describe('история партий', () => {
     expect(playOf({ ...base, mySeats: [0, 1, 2] }).result).toBe('done');
   });
 });
+
+describe('сохранения в базе', () => {
+  it('новее — записывается, старее — нет; null — партии больше нет; список; чужому и гостю нельзя', async () => {
+    const { pl, a, b } = await setup();
+    const now = 1_800_000_000_000;
+    const c = (sid?: string) => ({ ...ctx(sid), now });
+    const q = (game?: string) => new URLSearchParams(game ? { game } : {});
+    expect((await pl.putSave({ game: 'durak', at: now - 1000, snap: { seq: 5 } }, c())).code).toBe(401);
+    expect((await pl.putSave({ game: 'durak', at: now - 1000, snap: { seq: 5 } }, c(a))).body.ok).toBe(true);
+    expect((await pl.putSave({ game: 'durak', at: now - 2000, snap: { seq: 3 } }, c(a))).body.ok).toBe(false);
+    expect((await pl.saves(q('durak'), c(a))).body).toEqual({ at: now - 1000, snap: { seq: 5 } });
+    expect((await pl.saves(q('durak'), c(b))).body).toEqual({ at: 0, snap: null });
+    // из будущего и неизвестная игра — отказ
+    expect((await pl.putSave({ game: 'durak', at: now + 3600_000, snap: {} }, c(a))).code).toBe(400);
+    expect((await pl.putSave({ game: 'nosuch', at: now, snap: {} }, c(a))).code).toBe(400);
+    // слишком большая партия
+    expect((await pl.putSave({ game: 'nardy', at: now, snap: { x: 'я'.repeat(500_000) } }, c(a))).code).toBe(413);
+    await pl.putSave({ game: 'durak', at: now, snap: null }, c(a));
+    expect((await pl.saves(q(), c(a))).body.saves).toEqual([{ game: 'durak', at: now, has: false }]);
+  });
+});

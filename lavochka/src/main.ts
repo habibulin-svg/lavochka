@@ -13,6 +13,7 @@ import { handleAuthRoute, handleOAuthReturn } from './site/account';
 import { handleDonateReturn, loadDonate } from './site/donate';
 import { likeButton } from './site/likes';
 import './site/history';
+import { syncSave } from './site/saves';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
 import { esc, h } from './core/util';
@@ -64,6 +65,11 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     if (isArcade(mod)) {
       stopArcade = openArcade(mod, toYard, { mode: r.mode, onMode: (m) => go(modePath(mod.id, m), true) });
       return;
+    }
+    // вошедшему — сохранение из базы, если там новее (продолжить партию с другого устройства)
+    if (!mod.ownSaves) {
+      await syncSave(mod.def.id);
+      if (my !== navSeq) return;
     }
     const fixed = presetOpts(mod, r.preset) ?? entry.opts;
     let rulesByUrl = !!r.rules; // правила открыли адресом: закрыли — меняем адрес на месте, а не шагаем назад

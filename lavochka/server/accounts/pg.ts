@@ -89,6 +89,14 @@ export const MIGRATIONS: string[] = [
      ended_at timestamptz not null default now()
    );
    create index game_history_user on game_history (user_id, ended_at desc);`,
+  // 4 — сохранённые партии (снимок JSON строкой; null — партия закончена или удалена в это время)
+  `create table game_saves (
+     user_id bigint not null references users on delete cascade,
+     game text not null,
+     data text,
+     at timestamptz not null,
+     primary key (user_id, game)
+   );`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -259,6 +267,25 @@ export class PgAccountStore implements AccountStore {
   async likeCounts() {
     const r = await this.pool.query('select game, count(*)::int as n from game_likes group by game');
     return Object.fromEntries(r.rows.map((x) => [x.game, x.n]));
+  }
+
+  async getSave(userId: number, game: string) {
+    const r = await this.pool.query('select data, at from game_saves where user_id = $1 and game = $2', [userId, game]);
+    return r.rows[0] ? { at: ms(r.rows[0].at)!, data: r.rows[0].data as string | null } : null;
+  }
+
+  async putSave(userId: number, game: string, at: number, data: string | null) {
+    const r = await this.pool.query(
+      `insert into game_saves (user_id, game, data, at) values ($1, $2, $3, $4)
+       on conflict (user_id, game) do update set data = excluded.data, at = excluded.at where game_saves.at < excluded.at`,
+      [userId, game, data, date(at)]
+    );
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async listSaves(userId: number) {
+    const r = await this.pool.query('select game, at, data is not null as has from game_saves where user_id = $1', [userId]);
+    return r.rows.map((x) => ({ game: x.game as string, at: ms(x.at)!, has: !!x.has }));
   }
 
   async addHistory(userId: number, p: PlayRecord) {

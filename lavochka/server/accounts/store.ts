@@ -114,6 +114,13 @@ export interface AccountStore {
   /** Сколько лайков у каждой игры. */
   likeCounts(): Promise<Record<string, number>>;
 
+  /** Сохранённая партия игрока (data — снимок JSON строкой; null — партии нет, удалена в это время). */
+  getSave(userId: number, game: string): Promise<{ at: number; data: string | null } | null>;
+  /** Записать, если at новее записанного; true — записано. */
+  putSave(userId: number, game: string, at: number, data: string | null): Promise<boolean>;
+  /** Все сохранения игрока: игра, время, есть ли партия. */
+  listSaves(userId: number): Promise<{ game: string; at: number; has: boolean }[]>;
+
   addHistory(userId: number, p: PlayRecord): Promise<void>;
   /** Последние партии игрока (новые первыми). */
   history(userId: number, limit: number): Promise<PlayRecord[]>;
@@ -140,6 +147,7 @@ export class MemoryAccountStore implements AccountStore {
   private donSeq = 0;
   private likes = new Map<number, Set<string>>();
   private plays = new Map<number, PlayRecord[]>();
+  private saves = new Map<string, { at: number; data: string | null }>();
 
   async init() {}
 
@@ -254,6 +262,24 @@ export class MemoryAccountStore implements AccountStore {
     const c: Record<string, number> = {};
     for (const set of this.likes.values()) for (const g of set) c[g] = (c[g] ?? 0) + 1;
     return c;
+  }
+
+  async getSave(userId: number, game: string) {
+    const s = this.saves.get(userId + ':' + game);
+    return s ? { ...s } : null;
+  }
+
+  async putSave(userId: number, game: string, at: number, data: string | null) {
+    const k = userId + ':' + game;
+    const old = this.saves.get(k);
+    if (old && old.at >= at) return false;
+    this.saves.set(k, { at, data });
+    return true;
+  }
+
+  async listSaves(userId: number) {
+    const p = userId + ':';
+    return [...this.saves].filter(([k]) => k.startsWith(p)).map(([k, v]) => ({ game: k.slice(p.length), at: v.at, has: v.data != null }));
   }
 
   async addHistory(userId: number, p: PlayRecord) {

@@ -356,7 +356,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (await oauthApi(oauth, req, res, new URL(req.url || '/', 'http://x'), clientIp(req))) return;
     if (await authApi(accounts, req, res, path, clientIp(req), readBody)) return;
   }
-  if (path === '/api/likes' || path === '/api/history') {
+  if (path === '/api/likes' || path === '/api/history' || path === '/api/saves') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await playerApi(player, req, res, path, clientIp(req), readBody)) return;
   }

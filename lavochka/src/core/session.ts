@@ -17,6 +17,26 @@ import type { GameModule } from './view';
 import { countPlay } from '../site/stats';
 
 const saveKey = (id: string) => 'save.' + id;
+const saveAtKey = (id: string) => 'save-at.' + id;
+
+/** Крючки для сайта: сохранение партии изменилось (вошедшему — копия в базе). Ядро о сайте не знает. */
+export const saveHooks: { changed?: (game: string, snap: Snapshot | null, at: number) => void } = {};
+
+/** Когда сохранение этой игры менялось в последний раз (0 — неизвестно). */
+export const saveAt = (id: string) => store.get<number>(saveAtKey(id), 0);
+
+/** Записать сохранение, пришедшее из базы (без отправки обратно). */
+export function putSave(id: string, snap: Snapshot | null, at: number) {
+  if (snap) store.set(saveKey(id), snap);
+  else store.remove(saveKey(id));
+  store.set(saveAtKey(id), at);
+}
+
+function writeSave(id: string, snap: Snapshot | null) {
+  const at = Date.now();
+  putSave(id, snap, at);
+  saveHooks.changed?.(id, snap, at);
+}
 
 /** Комната, в которой сидит эта вкладка: после перезагрузки страницы можно вернуться. */
 interface RoomMemo {
@@ -84,7 +104,7 @@ export function loadSave(id: string): Snapshot | null {
   return store.get<Snapshot | null>(saveKey(id), null);
 }
 export function dropSave(id: string) {
-  store.remove(saveKey(id));
+  writeSave(id, null);
 }
 
 /** Куда возвращаться после партии. Назначает main.ts. */
@@ -130,7 +150,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
     code: 'LOCAL',
     ownerKey,
     snapshot,
-    onSnapshot: (snap) => (mod.ownSaves ? undefined : snap ? store.set(saveKey(def.id), snap) : dropSave(def.id)),
+    onSnapshot: (snap) => (mod.ownSaves ? undefined : writeSave(def.id, snap)),
   });
   const [a, b] = localPair();
   room.connect(a);
