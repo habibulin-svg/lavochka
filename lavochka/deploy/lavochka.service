@@ -1,0 +1,17 @@
+[Unit]
+Description=Вечером на лавочке (сайт и сервер комнат)
+After=network.target
+
+[Service]
+User=lavochka
+WorkingDirectory=/srv/lavochka/app/lavochka
+EnvironmentFile=/etc/lavochka.env
+ExecStart=/usr/bin/node dist-server/index.js
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
