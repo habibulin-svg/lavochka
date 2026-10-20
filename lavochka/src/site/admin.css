@@ -65,3 +65,30 @@ a.adm-tile:hover { filter: brightness(1.05); }
 .adm-pre { white-space: pre-wrap; word-break: break-all; font-size: 11.5px; max-height: 260px; overflow: auto; background: rgba(255, 255, 255, 0.5); padding: 6px; border-radius: 6px; }
 .adm-table code { font-size: 11.5px; word-break: break-all; }
 .adm-tickets .sup-list { margin: 0; }
+
+/* тексты: список и редактор */
+.adm-link { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.adm-link:hover b { text-decoration: underline; }
+.adm-ed { display: flex; flex-direction: column; gap: 10px; }
+.adm-ed-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 14px; }
+.adm-ed-meta label { display: flex; flex-direction: column; gap: 3px; font-weight: 700; font-size: 13.5px; }
+.adm-ed-meta label small { font-weight: normal; opacity: 0.7; }
+.adm-ed-meta .wide { grid-column: 1 / -1; }
+.adm-ed-meta input, .adm-ed-meta textarea { width: 100%; font-weight: normal; }
+.adm-ed-meta .adm-row input { flex: 1; }
+.adm-tools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; position: sticky; top: 0; z-index: 2; padding: 4px 0; background: inherit; }
+.adm-tools button { border: 1px solid rgba(60, 40, 20, 0.35); background: rgba(255, 250, 235, 0.8); border-radius: 6px; padding: 4px 9px; font: 14px 'PT Sans', sans-serif; cursor: pointer; color: var(--ink); }
+.adm-tools button:hover { background: #fff3cf; }
+.adm-ed-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+.adm-src { width: 100%; min-height: 520px; resize: vertical; font: 14.5px/1.5 ui-monospace, 'Consolas', monospace; padding: 10px; border-radius: 8px; border: 1px solid rgba(60, 40, 20, 0.4); }
+.adm-prev.seo-page { margin: 0; max-height: 75vh; overflow: auto; }
+.adm-pick { width: min(560px, 100%); }
+.adm-pick-q { width: 100%; margin-bottom: 8px; }
+.adm-pick-list { max-height: 50vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.adm-pick-list label { display: block; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.adm-pick-list label:hover { background: rgba(255, 220, 140, 0.4); }
+.adm-pick-list small { opacity: 0.65; }
+@media (max-width: 900px) {
+  .adm-ed-split { grid-template-columns: 1fr; }
+  .adm-src { min-height: 320px; }
+}

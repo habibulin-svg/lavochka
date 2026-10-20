@@ -17,6 +17,7 @@ const TABS: [string, string][] = [
   ['igroki', '👥 Игроки'],
   ['oshibki', '🐞 Ошибки'],
   ['obrashcheniya', '📮 Обращения'],
+  ['teksty', '✍ Тексты'],
 ];
 
 const num = (n: number) => n.toLocaleString('ru-RU');
@@ -48,7 +49,8 @@ export async function openAdmin(tab: string, bar: HTMLElement): Promise<void> {
       body.innerHTML = `<div class="adm-card"><p>Только для Мастера.</p><p><a href="/">Во двор, к играм</a></p></div>`;
       return;
     }
-    if (tab === 'igroki' || tab === 'oshibki' || tab === 'obrashcheniya') void import('./admin-more').then((m) => m.drawTab(tab, body));
+    if (tab === 'teksty') void import('./admin-texts').then((m) => m.drawTexts(body));
+    else if (tab === 'igroki' || tab === 'oshibki' || tab === 'obrashcheniya') void import('./admin-more').then((m) => m.drawTab(tab, body));
     else void drawDash(body);
   };
   unsub?.();

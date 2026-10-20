@@ -35,11 +35,11 @@ describe('тексты из админки', () => {
     const f = files.find((p) => p.kind === 'blog')!;
     expect((await c.list(q(), ctx(vasya))).code).toBe(403);
     let r = await c.list(q(`kind=blog&slug=${f.slug}`), ctx(boss));
-    expect(r.body.post).toMatchObject({ source: 'file', title: f.title });
-    expect(r.body.post.body).toContain('##');
+    expect((r.body as any).post).toMatchObject({ source: 'file', title: f.title });
+    expect((r.body as any).post.body).toContain('##');
     expect((await c.save({ kind: 'blog', slug: f.slug, title: 'Правка', description: 'о', date: '2026-10-20', body: '## Раз\n\n[[игра:durak]]' }, ctx(boss))).code).toBe(200);
     r = await c.list(q(), ctx(boss));
-    expect(r.body.posts.find((p: any) => p.slug === f.slug)).toMatchObject({ source: 'both', title: 'Правка' });
+    expect((r.body as any).posts.find((p: any) => p.slug === f.slug)).toMatchObject({ source: 'both', title: 'Правка' });
     await wait(1700);
     expect(builds()).toBe(1);
     const out = JSON.parse(readFileSync(join(data, 'posts.json'), 'utf8'));
@@ -47,7 +47,7 @@ describe('тексты из админки', () => {
     // убрать правку — запись снова из файла
     await c.save({ kind: 'blog', slug: f.slug, remove: true }, ctx(boss));
     r = await c.list(q(`kind=blog&slug=${f.slug}`), ctx(boss));
-    expect(r.body.post.source).toBe('file');
+    expect((r.body as any).post.source).toBe('file');
   });
 
   it('новая запись, проверки, переименование файловой снимает старый адрес', async () => {
