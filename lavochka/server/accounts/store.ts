@@ -121,6 +121,24 @@ export interface ErrorRow extends ErrorReport {
   status: ErrorStatus;
 }
 
+/** Запись из админки: новость, статья блога или «Слово Мастера» (kind 'master'). Текст — Markdown (src/core/markdown.ts). */
+export interface PostRow {
+  kind: string;
+  slug: string;
+  title: string;
+  h1: string | null;
+  description: string;
+  /** Дата записи ГГГГ-ММ-ДД. */
+  date: string;
+  image: string | null;
+  games: string[];
+  body: string;
+  /** Снята с сайта (у записи из файла — файл не показывается). */
+  hidden: boolean;
+  updatedAt: number;
+  updatedBy: number | null;
+}
+
 export interface AccountStore {
   /** Подготовить хранилище (миграции). */
   init(): Promise<void>;
@@ -220,6 +238,11 @@ export interface AccountStore {
   countUsers(since?: number): Promise<number>;
   /** Регистрации по дням (по Москве) начиная с since: 'ГГГГ-ММ-ДД' → сколько. */
   signupsByDay(since: number): Promise<Record<string, number>>;
+
+  /** Записи админки (все). */
+  posts(): Promise<PostRow[]>;
+  savePost(p: PostRow): Promise<void>;
+  deletePost(kind: string, slug: string): Promise<void>;
 
   /** Убрать просроченные сессии и ссылки. */
   cleanup(now: number): Promise<void>;
@@ -474,6 +497,20 @@ export class MemoryAccountStore implements AccountStore {
 
   async newTickets() {
     return [...this.ticketsBy.values()].filter((t) => t.status === 'new').length;
+  }
+
+  private postsBy = new Map<string, PostRow>();
+
+  async posts() {
+    return [...this.postsBy.values()].map((p) => ({ ...p, games: [...p.games] }));
+  }
+
+  async savePost(p: PostRow) {
+    this.postsBy.set(p.kind + '/' + p.slug, { ...p, games: [...p.games] });
+  }
+
+  async deletePost(kind: string, slug: string) {
+    this.postsBy.delete(kind + '/' + slug);
   }
 
   private statMap = new Map<string, StatRow>();

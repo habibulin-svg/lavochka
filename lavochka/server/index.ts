@@ -29,6 +29,7 @@ import { Donate, donateApi } from './donate';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
 import { Backoffice, backofficeApi } from './backoffice';
+import { Content, contentApi, prerenderProcess } from './content';
 import { robokassaFromEnv } from './pay/robokassa';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -197,6 +198,8 @@ setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() =
 const backoffice = new Backoffice(accounts, () => ({ online: onlineNow(), rooms: rooms.size, players: [...rooms.values()].reduce((n, r) => n + r.clientCount, 0) }), log);
 setInterval(() => accountsReady && backoffice.sample().catch(() => {}), 5 * 60_000).unref();
 setTimeout(() => accountsReady && backoffice.sample().catch(() => {}), 30_000).unref();
+// тексты из админки (server/content.ts): новости, блог, «Слово Мастера», картинки; после правки — пререндер страниц
+const content = new Content(accounts, ROOT, DATA, existsSync(DIST) ? prerenderProcess(ROOT, DATA, existsSync('/srv/lavochka')) : null, log);
 setRoomErrorHook((e, where, game) => accountsReady && backoffice.serverError(e, where, game));
 process.on('unhandledRejection', (e) => {
   log('необработанная ошибка: ' + e);
@@ -387,6 +390,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });
     if (await supportApi(support, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
+  if (path === '/api/master-word' || path === '/api/admin/posts' || path === '/api/admin/upload') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await contentApi(content, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
+  }
   if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await backofficeApi(backoffice, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
@@ -470,6 +477,17 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
 }
 
 function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
+  // картинки записей из админки (DATA_DIR/uploads): имя — отпечаток содержимого, поэтому кэш навсегда
+  const up = path.match(/^\/uploads\/([0-9a-f]{16}\.(webp|png|jpg|gif))$/);
+  if (up) {
+    const f = join(DATA, 'uploads', up[1]);
+    if (!existsSync(f)) {
+      res.writeHead(404);
+      return res.end();
+    }
+    res.writeHead(200, { 'content-type': up[2] === 'jpg' ? 'image/jpeg' : 'image/' + up[2], 'cache-control': 'public, max-age=31536000, immutable' });
+    return res.end(readFileSync(f));
+  }
   if (!existsSync(DIST)) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
     return res.end('Сервер «Вечером на лавочке» работает. Сайт не собран (нет dist/) — запустите npm run build.');

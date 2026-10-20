@@ -3,7 +3,7 @@
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
 import type { TicketStatus } from '../../src/core/support';
-import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PostRow, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -149,6 +149,22 @@ export const MIGRATIONS: string[] = [
      status text not null default 'new'
    );
    create index errors_last on errors (last_at desc);`,
+  // 7 — записи из админки: новости, блог, «Слово Мастера»
+  `create table posts (
+     kind text not null,
+     slug text not null,
+     title text not null,
+     h1 text,
+     description text not null default '',
+     day date not null,
+     image text,
+     games text not null default '',
+     body text not null default '',
+     hidden boolean not null default false,
+     updated_at timestamptz not null default now(),
+     updated_by bigint references users on delete set null,
+     primary key (kind, slug)
+   );`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -507,6 +523,38 @@ export class PgAccountStore implements AccountStore {
   async newTickets() {
     const r = await this.pool.query("select count(*) as n from tickets where status = 'new'");
     return Number(r.rows[0].n);
+  }
+
+  async posts() {
+    const r = await this.pool.query("select *, to_char(day, 'YYYY-MM-DD') as d from posts");
+    return r.rows.map(
+      (x): PostRow => ({
+        kind: x.kind,
+        slug: x.slug,
+        title: x.title,
+        h1: x.h1,
+        description: x.description,
+        date: x.d,
+        image: x.image,
+        games: x.games ? String(x.games).split(',') : [],
+        body: x.body,
+        hidden: x.hidden,
+        updatedAt: ms(x.updated_at)!,
+        updatedBy: x.updated_by == null ? null : Number(x.updated_by),
+      })
+    );
+  }
+
+  async savePost(p: PostRow) {
+    await this.pool.query(
+      `insert into posts (kind, slug, title, h1, description, day, image, games, body, hidden, updated_at, updated_by) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       on conflict (kind, slug) do update set title = $3, h1 = $4, description = $5, day = $6, image = $7, games = $8, body = $9, hidden = $10, updated_at = $11, updated_by = $12`,
+      [p.kind, p.slug, p.title, p.h1, p.description, p.date, p.image, p.games.join(','), p.body, p.hidden, date(p.updatedAt), p.updatedBy]
+    );
+  }
+
+  async deletePost(kind: string, slug: string) {
+    await this.pool.query('delete from posts where kind = $1 and slug = $2', [kind, slug]);
   }
 
   async bumpStat(day: string, metric: string, key: string, delta: number) {
