@@ -95,3 +95,12 @@ a.adm-chip:hover { background: rgba(60, 40, 20, 0.22); }
   .adm-src { min-height: 320px; }
 }
 .adm-games-t input[type='number'] { width: 64px; }
+/* тексты страниц сайта (admin-pages.ts) */
+.adm-html { width: 100%; font: 13.5px/1.45 ui-monospace, 'Consolas', monospace; }
+.adm-faq { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.adm-faq-row { display: grid; grid-template-columns: 1fr auto; gap: 4px; padding: 6px; border-radius: 8px; background: rgba(60, 40, 20, 0.06); }
+.adm-faq-row input, .adm-faq-row textarea { grid-column: 1; width: 100%; }
+.adm-faq-row textarea { font: 13.5px/1.45 ui-monospace, 'Consolas', monospace; }
+.adm-faq-row button { grid-column: 2; grid-row: 1 / 3; align-self: start; }
+.adm-changed > small:first-of-type::before { content: '✎ правлено · '; color: #b3322a; font-weight: 700; }
+.adm-undo { border: 0; background: none; color: #2a5db3; cursor: pointer; font: 12.5px 'PT Sans', sans-serif; padding: 0 4px; text-decoration: underline; }

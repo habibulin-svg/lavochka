@@ -5,7 +5,12 @@
  *   GET  /api/admin/posts[?kind=&slug=]         — Мастеру: список записей / одна с текстом
  *   POST /api/admin/posts {kind, slug, …, oldSlug?} — сохранить (переименование файловой записи снимает старый адрес)
  *   POST /api/admin/posts {kind, slug, remove: true} — убрать правку из базы (файловая запись вернётся как была)
- *   POST /api/admin/upload (тело — картинка)    — Мастеру: картинка в DATA_DIR/uploads → {url: '/uploads/<имя>'} */
+ *   POST /api/admin/upload (тело — картинка)    — Мастеру: картинка в DATA_DIR/uploads → {url: '/uploads/<имя>'}
+ * Тексты страниц сайта (игры, варианты, правила, разделы, главная, документы): исходные пререндер пишет в dist/texts.json,
+ * правка Мастера — запись kind 'page' (slug — адрес страницы, в body — JSON {intro, faq, body, short}); после правки они
+ * выгружаются в DATA_DIR/pages.json ({адрес: изменённые поля}), и пререндер кладёт их поверх исходных.
+ *   GET  /api/admin/pages[?path=]               — Мастеру: список страниц / одна страница: исходное и правка
+ *   POST /api/admin/pages {path, title, …}      — сохранить (поля, совпавшие с исходным, не хранятся); {path, remove: true} — вернуть исходное */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -80,6 +85,19 @@ export function readFilePosts(root: string): FilePost[] {
   return out;
 }
 
+/** Тексты страницы, которые правятся в админке (как Editable в tools/prerender.ts). */
+export interface PageTexts {
+  title: string;
+  description: string;
+  h1: string;
+  intro: string;
+  faq: { q: string; a: string }[];
+  body?: string;
+  short?: string;
+}
+const PATH_RE = /^\/([a-z0-9-]+\/)*$/;
+const HTML_FIELDS = ['intro', 'body', 'short'] as const;
+
 export interface RebuildState {
   running: boolean;
   at: number | null;
@@ -115,7 +133,7 @@ export class Content {
 
   async list(q: URLSearchParams, ctx: Ctx): Promise<Reply> {
     if (!(await this.master(ctx))) return err(403, 'master', 'Только для Мастера.');
-    const db = await this.acc.store.posts();
+    const db = (await this.acc.store.posts()).filter((p) => p.kind !== 'page');
     const files = readFilePosts(this.root);
     const kind = q.get('kind');
     const slug = q.get('slug');
@@ -187,6 +205,119 @@ export class Content {
     return { code: 200, body: { ok: true, slug } };
   }
 
+  /** Исходные тексты страниц из последней сборки (dist/texts.json). */
+  private defaults(): (PageTexts & { path: string; label: string })[] {
+    const f = join(this.root, 'dist', 'texts.json');
+    if (!existsSync(f)) return [];
+    try {
+      return JSON.parse(readFileSync(f, 'utf8'));
+    } catch {
+      return [];
+    }
+  }
+
+  private static unpack(p: PostRow): Partial<PageTexts> {
+    let out: Partial<PageTexts> = {};
+    try {
+      out = JSON.parse(p.body || '{}');
+    } catch {}
+    if (p.title) out.title = p.title;
+    if (p.h1) out.h1 = p.h1;
+    if (p.description) out.description = p.description;
+    return out;
+  }
+
+  async pages(q: URLSearchParams, ctx: Ctx): Promise<Reply> {
+    if (!(await this.master(ctx))) return err(403, 'master', 'Только для Мастера.');
+    const db = new Map((await this.acc.store.posts()).filter((p) => p.kind === 'page').map((p) => [p.slug, p]));
+    const defs = this.defaults();
+    const path = q.get('path');
+    if (path) {
+      const d = defs.find((x) => x.path === path);
+      const o = db.get(path);
+      if (!d && !o) return err(404, 'page', 'Нет такой страницы (или сайт ещё не собран).');
+      return { code: 200, body: { page: { path, label: d?.label ?? path, base: d ?? null, edit: o ? Content.unpack(o) : null, updatedAt: o?.updatedAt ?? null } } };
+    }
+    const pages = defs.map((d) => {
+      const o = db.get(d.path);
+      return { path: d.path, label: d.label, title: (o && Content.unpack(o).title) || d.title, edited: !!o };
+    });
+    // правки страниц, которых в сборке уже нет (игру убрали, адрес сменился)
+    for (const [path, o] of db) if (!defs.some((d) => d.path === path)) pages.push({ path, label: path, title: o.title, edited: true });
+    return { code: 200, body: { pages, built: defs.length > 0, rebuild: this.rebuild } };
+  }
+
+  async savePage(b: any, ctx: Ctx): Promise<Reply> {
+    const me = await this.master(ctx);
+    if (!me) return err(403, 'master', 'Только для Мастера.');
+    const path = String(b?.path ?? '');
+    if (!PATH_RE.test(path) || path.length > 200) return err(400, 'path', 'Неверный адрес страницы.');
+    const st = this.acc.store;
+    if (b?.remove) {
+      await st.deletePost('page', path);
+      this.log(`тексты: ${me.name} вернул исходный текст ${path}`);
+      this.schedule();
+      return { code: 200, body: { ok: true } };
+    }
+    const defs = this.defaults();
+    const base = defs.find((d) => d.path === path);
+    if (defs.length && !base) return err(404, 'page', 'Нет такой страницы на сайте.');
+    const title = line(b?.title, 200);
+    const description = line(b?.description, 400);
+    const h1 = line(b?.h1, 200);
+    if (!title) return err(400, 'title', 'Нужен заголовок вкладки.');
+    if (!description) return err(400, 'description', 'Нужно описание для поисковиков.');
+    if (!h1) return err(400, 'h1', 'Нужен заголовок страницы.');
+    const extra: Partial<PageTexts> = {};
+    for (const k of HTML_FIELDS) {
+      if (b?.[k] == null) continue;
+      if (base && base[k] == null) continue; // у страницы нет такого поля
+      const v = String(b[k]).replace(/\r\n?/g, '\n').slice(0, k === 'body' ? 300_000 : 30_000);
+      if (!base || v !== base[k]) extra[k] = v;
+    }
+    if (Array.isArray(b?.faq)) {
+      const faq = b.faq
+        .map((f: any) => ({ q: line(f?.q, 300), a: String(f?.a ?? '').replace(/\r\n?/g, '\n').trim().slice(0, 5000) }))
+        .filter((f: { q: string; a: string }) => f.q && f.a)
+        .slice(0, 30);
+      if (!base || JSON.stringify(faq) !== JSON.stringify(base.faq)) extra.faq = faq;
+    }
+    const changed = (k: 'title' | 'h1' | 'description', v: string) => (!base || v !== base[k] ? v : '');
+    const now = ctx.now ?? Date.now();
+    const p: PostRow = {
+      kind: 'page',
+      slug: path,
+      title: changed('title', title),
+      h1: changed('h1', h1) || null,
+      description: changed('description', description),
+      date: new Date(now + 3 * 3600_000).toISOString().slice(0, 10),
+      image: null,
+      games: [],
+      body: JSON.stringify(extra),
+      hidden: false,
+      updatedAt: now,
+      updatedBy: me.id,
+    };
+    if (!p.title && !p.h1 && !p.description && !Object.keys(extra).length) {
+      await st.deletePost('page', path);
+      this.log(`тексты: ${me.name} сохранил ${path} без отличий — правка убрана`);
+    } else {
+      await st.savePost(p);
+      this.log(`тексты: ${me.name} поправил страницу ${path}`);
+    }
+    this.schedule();
+    return { code: 200, body: { ok: true, edited: !!(p.title || p.h1 || p.description || Object.keys(extra).length) } };
+  }
+
+  /** Выгрузить правки страниц для пререндера: {адрес: изменённые поля}. */
+  async exportPages() {
+    const out: Record<string, Partial<PageTexts>> = {};
+    for (const p of await this.acc.store.posts()) if (p.kind === 'page') out[p.slug] = Content.unpack(p);
+    mkdirSync(this.data, { recursive: true });
+    writeFileSync(join(this.data, 'pages.json'), JSON.stringify(out));
+    return Object.keys(out).length;
+  }
+
   /** Картинка к записи. */
   async upload(buf: Buffer, ctx: Ctx): Promise<Reply> {
     if (!(await this.master(ctx))) return err(403, 'master', 'Только для Мастера.');
@@ -224,6 +355,7 @@ export class Content {
     this.rebuild = { ...this.rebuild, running: true };
     try {
       await this.exportPosts();
+      await this.exportPages();
       const msg = await this.runPrerender!();
       this.rebuild = { running: false, at: Date.now(), ok: true, message: msg };
       this.log('тексты: страницы пересобраны — ' + msg);
@@ -271,10 +403,20 @@ export async function contentApi(
   readRaw: (req: IncomingMessage, limit: number) => Promise<Buffer>
 ): Promise<boolean> {
   const path = url.pathname;
-  if (path !== '/api/master-word' && path !== '/api/admin/posts' && path !== '/api/admin/upload') return false;
+  if (path !== '/api/master-word' && path !== '/api/admin/posts' && path !== '/api/admin/pages' && path !== '/api/admin/upload') return false;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
   if (req.method === 'GET') {
-    send(req, res, path === '/api/master-word' ? await c.masterWord() : path === '/api/admin/posts' ? await c.list(url.searchParams, ctx) : { code: 405, body: { error: 'method' } });
+    send(
+      req,
+      res,
+      path === '/api/master-word'
+        ? await c.masterWord()
+        : path === '/api/admin/posts'
+          ? await c.list(url.searchParams, ctx)
+          : path === '/api/admin/pages'
+            ? await c.pages(url.searchParams, ctx)
+            : { code: 405, body: { error: 'method' } }
+    );
     return true;
   }
   if (req.method !== 'POST' || path === '/api/master-word') {
@@ -302,11 +444,11 @@ export async function contentApi(
   }
   let b: any;
   try {
-    b = JSON.parse((await readBody(req, 200_000)) || '{}');
+    b = JSON.parse((await readBody(req, 400_000)) || '{}');
   } catch {
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, await c.save(b, ctx));
+  send(req, res, path === '/api/admin/pages' ? await c.savePage(b, ctx) : await c.save(b, ctx));
   return true;
 }

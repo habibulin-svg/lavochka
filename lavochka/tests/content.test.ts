@@ -1,5 +1,5 @@
 // Тексты из админки без сети: записи поверх файловых, переименование, «Слово Мастера», картинки, выгрузка для пререндера.
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -83,5 +83,41 @@ describe('тексты из админки', () => {
     expect(r.body.url).toMatch(/^\/uploads\/[0-9a-f]{16}\.png$/);
     expect(existsSync(join(data, r.body.url as string))).toBe(true);
     expect((await c.upload(png, ctx(boss))).body.url).toBe(r.body.url);
+  });
+
+  it('тексты страниц: хранятся только отличия от исходного, выгрузка для пререндера, возврат', async () => {
+    const { acc, ctx, boss, vasya, data } = await setup();
+    // своя «сборка» с dist/texts.json
+    const root = mkdtempSync(join(process.env.TEMP || tmpdir(), 'lav-root-'));
+    mkdirSync(join(root, 'dist'));
+    const base = { path: '/nardy/', label: 'Нарды', title: 'Нарды онлайн', description: 'Играть в нарды.', h1: 'Нарды онлайн', intro: '<p>Нарды.</p>', faq: [{ q: 'Как?', a: 'Так.' }] };
+    writeFileSync(join(root, 'dist', 'texts.json'), JSON.stringify([base, { ...base, path: '/oferta/', label: 'Оферта', faq: [], body: '<p>Текст</p>' }]));
+    let builds = 0;
+    const c = new Content(acc, root, data, async () => (builds++, 'ok'));
+    expect((await c.pages(q(), ctx(vasya))).code).toBe(403);
+    let r = await c.pages(q(), ctx(boss));
+    expect((r.body as any).pages).toHaveLength(2);
+    expect((await c.savePage({ ...base, path: '/net-takoy/' }, ctx(boss))).code).toBe(404);
+    expect((await c.savePage({ ...base, path: '../x' }, ctx(boss))).code).toBe(400);
+    expect((await c.savePage({ ...base, title: '' }, ctx(boss))).code).toBe(400);
+    // меняем заголовок и вопросы; остальное как было — не хранится
+    r = await c.savePage({ ...base, title: 'Нарды — новое', faq: [{ q: 'Как?', a: 'Иначе.' }, { q: '', a: 'пусто' }], body: 'чужое поле' }, ctx(boss));
+    expect(r.code).toBe(200);
+    r = await c.pages(q('path=/nardy/'), ctx(boss));
+    expect((r.body as any).page.edit).toEqual({ title: 'Нарды — новое', faq: [{ q: 'Как?', a: 'Иначе.' }] });
+    expect((r.body as any).page.base.title).toBe('Нарды онлайн');
+    expect(((await c.pages(q(), ctx(boss))).body as any).pages.find((p: any) => p.path === '/nardy/')).toMatchObject({ edited: true, title: 'Нарды — новое' });
+    // правки страниц не попадают в список новостей и блога
+    expect(((await c.list(q(), ctx(boss))).body as any).posts.some((p: any) => p.kind === 'page')).toBe(false);
+    await wait(1700);
+    expect(builds).toBe(1);
+    expect(JSON.parse(readFileSync(join(data, 'pages.json'), 'utf8'))).toEqual({ '/nardy/': { title: 'Нарды — новое', faq: [{ q: 'Как?', a: 'Иначе.' }] } });
+    // сохранили как было — правка убирается сама; «вернуть исходное» — тоже
+    await c.savePage(base, ctx(boss));
+    expect(((await c.pages(q('path=/nardy/'), ctx(boss))).body as any).page.edit).toBeNull();
+    await c.savePage({ ...base, path: '/oferta/', faq: [], body: '<p>Новый текст</p>' }, ctx(boss));
+    expect(((await c.pages(q('path=/oferta/'), ctx(boss))).body as any).page.edit).toEqual({ body: '<p>Новый текст</p>' });
+    await c.savePage({ path: '/oferta/', remove: true }, ctx(boss));
+    expect(((await c.pages(q('path=/oferta/'), ctx(boss))).body as any).page.edit).toBeNull();
   });
 });

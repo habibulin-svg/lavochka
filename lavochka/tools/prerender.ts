@@ -15,8 +15,8 @@ import { ARTICLES, MODE_PAGES, gamePath, rulesPath, sectionPath, SITE_NAME, SITE
 import { cardMarkup } from '../src/site/card';
 import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
-import { clip, plain, type Faq, type GameSeo, type PageText } from '../src/site/seo';
-import { KINDS, loadDocs, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
+import { clip, plain, type Faq, type GameSeo } from '../src/site/seo';
+import { dataDir, KINDS, loadDocs, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -89,6 +89,43 @@ interface Page {
 
 const pages: Page[] = [];
 
+/** Тексты страницы, которые Мастер правит в админке (server/content.ts → DATA_DIR/pages.json): чего нет в правке — исходное. */
+interface Editable {
+  title: string;
+  description: string;
+  h1: string;
+  /** Вводный текст (HTML). */
+  intro: string;
+  faq: Faq[];
+  /** Сам текст статьи или документа (HTML) — только у таких страниц. */
+  body?: string;
+  /** Абзац раздела на главной (HTML) — только у разделов. */
+  short?: string;
+}
+
+function loadOverrides(): Record<string, Partial<Editable>> {
+  const f = join(dataDir(), 'pages.json');
+  if (!existsSync(f)) return {};
+  try {
+    return JSON.parse(readFileSync(f, 'utf8')) ?? {};
+  } catch (e) {
+    console.warn('pages.json не читается: ' + e);
+    return {};
+  }
+}
+const OVERRIDES = loadOverrides();
+/** Исходные тексты всех страниц — в dist/texts.json, по нему админка показывает список и «как было». */
+const TEXTS: (Editable & { path: string; label: string })[] = [];
+
+/** Тексты страницы с правкой из админки поверх исходных. */
+function editable(path: string, label: string, base: Editable): Editable {
+  TEXTS.push({ path, label, ...base });
+  const o = OVERRIDES[path] ?? {};
+  const out = { ...base };
+  for (const k of Object.keys(base) as (keyof Editable)[]) if (o[k] != null) (out as any)[k] = o[k];
+  return out;
+}
+
 /** Подвал каждой страницы: документы для покупателей (требование платёжного сервиса), реквизиты, копирайт. */
 const FOOTER = `<footer class="site-foot"><nav aria-label="Документы"><a href="/podpiska/">Подписка</a><a href="/oferta/">Оферта</a><a href="/kontakty/#napisat">Написать нам</a><a href="/kontakty/">Контакты и реквизиты</a><a href="/usloviya/">Условия использования</a><a href="/politika/">Политика конфиденциальности</a></nav><p>© ${new Date().getFullYear()} «${SITE_NAME}». Хабибулин А. М., самозанятый, ИНН 540363209100 · support@lavochka-games.ru</p></footer>`;
 
@@ -160,6 +197,9 @@ const crumbs = (list: [string, string][]) => ({
     itemListElement: list.map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: abs(path) })),
   },
 });
+
+/** Необязательный блок отдельной строкой (пустой — без пустой строки). */
+const opt = (s: string) => (s ? s + '\n' : '');
 
 function faqBlock(faq?: Faq[]) {
   if (!faq?.length) return { html: '', ld: null };
@@ -252,23 +292,29 @@ async function gamePages(g: CatalogEntry) {
   const image = g.thumb ? '/thumbs/' + g.thumb : undefined;
 
   // --- страница игры
-  const t: PageText = seo;
-  const description = t.description ?? clip(`${name} онлайн бесплатно и без регистрации: ${g.sub}. ${g.variants?.length ? `Варианты: ${g.variants.slice(0, 5).join(', ')}. ` : ''}С ботами и с друзьями по ссылке, правила с показом.`);
+  const t = editable(path, name, {
+    title: seo.title ?? titleFor(name),
+    description: seo.description ?? clip(`${name} онлайн бесплатно и без регистрации: ${g.sub}. ${g.variants?.length ? `Варианты: ${g.variants.slice(0, 5).join(', ')}. ` : ''}С ботами и с друзьями по ссылке, правила с показом.`),
+    h1: seo.h1 ?? `${name} онлайн`,
+    intro: seo.intro ?? `<p>«${esc(name)}» — ${esc(g.sub)}. ${howToPlay(g, def)}</p>`,
+    faq: seo.faq ?? [],
+  });
+  const description = t.description;
   const cr = crumbs(trail(g));
   const faq = faqBlock(t.faq);
-  const intro = shot(g, `${name} — ${g.sub}`) + (t.intro ?? `<p>«${esc(name)}» — ${esc(g.sub)}. ${howToPlay(g, def)}</p>`) + akaBlock(g.id);
+  const intro = shot(g, `${name} — ${g.sub}`) + t.intro + akaBlock(g.id);
   const variantsHtml = def && !g.of ? presetList(g, def) : g.variants?.length ? `<h2>Варианты</h2>\n<ul class="seo-links">${g.variants.map((v) => `<li>${esc(v)}</li>`).join('')}</ul>` : '';
   const rulesHtml = def
     ? `<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p>${def.rules.sections.map((s) => esc(s.title)).join(' · ')}</p>\n<p><a href="${rulesPath(g.of ?? g.id)}">Правила игры «${esc(def.title)}» полностью — с показом на доске</a></p>`
     : '';
   pages.push({
     path,
-    title: t.title ?? titleFor(name),
+    title: t.title,
     description,
     image,
     priority: 0.9,
     jsonld: [gameLd(g, name, path, description), cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? `${name} онлайн`)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${refs}${recordsBlock(def, name)}${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1)}</h1>\n${intro}\n${variantsHtml}\n${rulesHtml}\n${refs}${recordsBlock(def, name)}${faq.html}\n${postsAbout(g.id)}\n${similar(g)}`,
   });
 
   modePages(g, path, image);
@@ -277,51 +323,74 @@ async function gamePages(g: CatalogEntry) {
   // --- страницы вариантов
   for (const v of VARIANTS.filter((x) => x.game === g.id)) {
     const p = def.presets!.find((x) => x.id === v.preset)!;
-    const vt = seo.variants?.[v.preset] ?? {};
-    const vname = vt.h1?.replace(/ онлайн$/, '') ?? `${name}: ${p.label}`;
+    const vs = seo.variants?.[v.preset] ?? {};
+    const vname = vs.h1?.replace(/ онлайн$/, '') ?? `${name}: ${p.label}`;
     const vpath = `/${v.path}/`;
-    const vdesc = vt.description ?? clip(`${vname} онлайн бесплатно и без регистрации. ${p.hint ? p.hint + '. ' : ''}С ботами трёх уровней и с друзьями по ссылке, правила с показом на доске.`);
+    const vt = editable(vpath, vname, {
+      title: vs.title ?? titleFor(vname),
+      description: vs.description ?? clip(`${vname} онлайн бесплатно и без регистрации. ${p.hint ? p.hint + '. ' : ''}С ботами трёх уровней и с друзьями по ссылке, правила с показом на доске.`),
+      h1: vs.h1 ?? `${vname} онлайн`,
+      intro: vs.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`,
+      faq: vs.faq ?? [],
+    });
+    const vdesc = vt.description;
     const vcr = crumbs([...trail(g), [vname, vpath]]);
     const vfaq = faqBlock(vt.faq);
     const vimage = variantThumb(v.path);
     pages.push({
       path: vpath,
-      title: vt.title ?? titleFor(vname),
+      title: vt.title,
       description: vdesc,
       image: vimage ?? image,
       priority: 0.8,
       jsonld: [gameLd(g, vname, vpath, vdesc), vcr.ld, ...(vfaq.ld ? [vfaq.ld] : [])],
-      body: `${vcr.html}\n<h1>${esc(vt.h1 ?? `${vname} онлайн`)}</h1>\n${shot(g, vname, vimage)}${vt.intro ?? `<p>${esc(vname)}${p.hint ? ' — ' + esc(p.hint.charAt(0).toLowerCase() + p.hint.slice(1)) : ''}. ${howToPlay(g, def)}</p>`}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${refs}${vfaq.html}\n${similar(g)}`,
+      body: `${vcr.html}\n<h1>${esc(vt.h1)}</h1>\n${shot(g, vname, vimage)}${vt.intro}\n${presetList(g, def, v.preset)}\n<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p><a href="${rulesPath(g.id)}">Правила игры «${esc(def.title)}» полностью</a></p>\n${refs}${vfaq.html}\n${similar(g)}`,
     });
   }
 
   // --- страница правил
-  const rt = seo.rules ?? {};
+  const rs = seo.rules ?? {};
   const rpath = rulesPath(g.id);
-  const rname = rt.h1 ?? `Правила игры «${def.title}»`;
+  const rbase = rs.h1 ?? `Правила игры «${def.title}»`;
+  const rt = editable(rpath, rbase, {
+    title: rs.title ?? clip(`${rbase}: как играть — с примерами на доске`, 65),
+    description: rs.description ?? clip(`${rbase}: ${plain(def.rules.goal)} ${def.rules.sections.map((s) => s.title).join(', ')}.`),
+    h1: rbase,
+    intro: rs.intro ?? '',
+    faq: rs.faq ?? [],
+  });
+  const rname = rt.h1;
   const rcr = crumbs([...trail(g), ['Правила', rpath]]);
   const rfaq = faqBlock(rt.faq);
   pages.push({
     path: rpath,
-    title: rt.title ?? clip(`${rname}: как играть — с примерами на доске`, 65),
-    description: rt.description ?? clip(`${rname}: ${plain(def.rules.goal)} ${def.rules.sections.map((s) => s.title).join(', ')}.`),
+    title: rt.title,
+    description: rt.description,
     image,
     priority: 0.6,
     jsonld: [rcr.ld, ...(rfaq.ld ? [rfaq.ld] : [])],
-    body: `${rcr.html}\n<h1>${esc(rname)}</h1>\n${rt.intro ?? ''}\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n${def.rules.sections.map((s) => `<h2>${esc(s.title)}</h2>\n${s.html}`).join('\n')}\n${refs}${rfaq.html}\n<p><a href="${path}">Играть в «${esc(def.title)}» онлайн</a></p>`,
+    body: `${rcr.html}\n<h1>${esc(rname)}</h1>\n${rt.intro}\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n${def.rules.sections.map((s) => `<h2>${esc(s.title)}</h2>\n${s.html}`).join('\n')}\n${refs}${rfaq.html}\n<p><a href="${path}">Играть в «${esc(def.title)}» онлайн</a></p>`,
   });
 
   // --- статьи при игре (комбинации покера)
   for (const a of ARTICLES.filter((x) => x.game === g.id)) {
-    const at = seo.articles?.[a.slug];
-    if (!at) throw new Error(`нет текста статьи ${a.path} в src/games/${g.id}/seo.ts`);
+    const as = seo.articles?.[a.slug];
+    if (!as) throw new Error(`нет текста статьи ${a.path} в src/games/${g.id}/seo.ts`);
     const apath = `/${a.path}/`;
-    const acr = crumbs([...trail(g), [at.h1 ?? a.slug, apath]]);
+    const at = editable(apath, as.h1 ?? a.slug, {
+      title: as.title ?? titleFor(as.h1 ?? name),
+      description: as.description ?? clip(plain(as.intro ?? as.body)),
+      h1: as.h1 ?? name,
+      intro: as.intro ?? '',
+      faq: as.faq ?? [],
+      body: as.body,
+    });
+    const acr = crumbs([...trail(g), [as.h1 ?? a.slug, apath]]);
     const afaq = faqBlock(at.faq);
     pages.push({
       path: apath,
-      title: at.title ?? titleFor(at.h1 ?? name),
-      description: at.description ?? clip(plain(at.intro ?? at.body)),
+      title: at.title,
+      description: at.description,
       image,
       priority: 0.7,
       jsonld: [
@@ -330,8 +399,8 @@ async function gamePages(g: CatalogEntry) {
         ...(afaq.ld ? [afaq.ld] : []),
       ],
       body: `${acr.html}
-<h1>${esc(at.h1 ?? name)}</h1>
-${at.intro ?? ''}
+<h1>${esc(at.h1)}</h1>
+${at.intro}
 ${at.body}
 ${afaq.html}
 <p><a href="${path}">Играть в «${esc(name)}» онлайн</a> · <a href="${rulesPath(g.id)}">Правила игры</a></p>`,
@@ -354,31 +423,40 @@ function modePages(g: CatalogEntry, path: string, image?: string) {
     const mpath = `/${m.path}/`;
     const elk = g.id === 'elektronika';
     const name = elk ? `${x.title} — «Электроника»` : `${x.title} — игровой автомат`;
-    const description = clip(
+    const description0 = clip(
       elk
         ? `${x.title} онлайн: советская ЖК-игра ${x.note} как настоящая — корпус, кнопки и сегменты экрана оригинала. ${x.about} Бесплатно, без регистрации.`
         : `${x.title} онлайн: советский игровой автомат за 15 копеек (${x.board ?? ""}) — эмуляция настоящей платы. ${x.about} Бесплатно, без регистрации.`
     );
     const cr = crumbs([...trail(g), [x.title, mpath]]);
     const others = games.filter((y) => y.id !== x.id && list.some((l) => l.mode === y.id));
-    const intro = elk
+    const intro0 = elk
       ? `<p>«${esc(x.title)}» — игра серии «Электроника ИМ» (${esc(x.note.replace(/[«»]/g, ''))}). ${esc(x.about)}</p>
 <p>Прибор здесь — как настоящий: корпус, кнопки «Игра А», «Игра Б» и «Время», сегментный экран и писк. «Игра Б» быстрее и труднее.
 Управлять можно мышкой и пальцем по кнопкам прибора или с клавиатуры. Рекорды записываются на этом устройстве и в общую таблицу двора.</p>`
       : `<p>«${esc(x.title)}» — советский игровой автомат (${esc(x.board ?? "")}). ${esc(x.about)}</p>
 <p>Автомат запускается прямо на странице: опустите пятнадцатикопеечную монету и играйте с клавиатуры, мышкой или пальцем.
 Рекорды записываются на этом устройстве и в общую таблицу двора.</p>`;
+    const mt = editable(mpath, name, {
+      title: titleFor(elk ? `${x.title} — Электроника ${x.note.replace(/.*Электроника |»/g, '')}` : `${x.title} — автомат 15 копеек`),
+      description: description0,
+      h1: elk ? `${x.title} — «Электроника» онлайн` : `${x.title} — игровой автомат онлайн`,
+      intro: intro0,
+      faq: [],
+    });
+    const description = mt.description;
+    const mfaq = faqBlock(mt.faq);
     pages.push({
       path: mpath,
-      title: titleFor(elk ? `${x.title} — Электроника ${x.note.replace(/.*Электроника |»/g, '')}` : `${x.title} — автомат 15 копеек`),
+      title: mt.title,
       description,
       image,
       priority: 0.6,
-      jsonld: [gameLd(g, name, mpath, description), cr.ld],
+      jsonld: [gameLd(g, name, mpath, description), cr.ld, ...(mfaq.ld ? [mfaq.ld] : [])],
       body: `${cr.html}
-<h1>${esc(elk ? `${x.title} — «Электроника» онлайн` : `${x.title} — игровой автомат онлайн`)}</h1>
-${shot(g, name)}${intro}
-<h2>${elk ? 'Другие игры «Электроники»' : 'Другие автоматы'}</h2>
+<h1>${esc(mt.h1)}</h1>
+${shot(g, name)}${mt.intro}
+${opt(mfaq.html)}<h2>${elk ? 'Другие игры «Электроники»' : 'Другие автоматы'}</h2>
 <ul class="seo-links">${others.map((y) => `<li><a href="${href(y.id)}">${esc(y.title)}</a> — ${esc(y.note)}</li>`).join('')}</ul>
 <p><a href="${path}">${esc(g.title)} — все игры</a></p>
 ${similar(g)}`,
@@ -414,9 +492,10 @@ const LIST_TEXT: Record<Kind, { title: string; h1: string; description: string; 
 /** Раздел новостей или блога: списки с постраничной навигацией и страницы записей. */
 function postPages(kind: Kind) {
   const k = KINDS[kind];
-  const t = LIST_TEXT[kind];
   const list = POSTS[kind];
   const base = `/${k.slug}/`;
+  const t = editable(base, k.title, { ...LIST_TEXT[kind], faq: [] });
+  const lfaq = faqBlock(t.faq);
   const pageAt = (n: number) => (n === 1 ? base : `${base}stranica-${n}/`);
   const total = Math.max(1, Math.ceil(list.length / PER_PAGE));
   for (let n = 1; n <= total; n++) {
@@ -435,6 +514,7 @@ function postPages(kind: Kind) {
       description: n === 1 ? t.description : clip(`${t.h1}, страница ${n}: ${chunk.map((p) => p.h1).join('; ')}.`),
       priority: n === 1 ? 0.6 : 0.3,
       jsonld: [
+        ...(n === 1 && lfaq.ld ? [lfaq.ld] : []),
         cr.ld,
         {
           '@context': 'https://schema.org',
@@ -445,7 +525,7 @@ function postPages(kind: Kind) {
       ],
       body: `${cr.html}\n<h1>${esc(t.h1)}${n > 1 ? `, страница ${n}` : ''}</h1>\n${n === 1 ? t.intro : ''}\n${
         chunk.length ? `<ul class="post-list">${chunk.map(postItem).join('')}</ul>` : '<p>Записей пока нет.</p>'
-      }\n${pager}\n<p class="seo-chips"><a href="/">Во двор, к играм</a><a href="${kind === 'news' ? '/blog/' : '/novosti/'}">${kind === 'news' ? 'Блог' : 'Новости'}</a></p>`,
+      }\n${pager}\n${n === 1 ? opt(lfaq.html) : ''}<p class="seo-chips"><a href="/">Во двор, к играм</a><a href="${kind === 'news' ? '/blog/' : '/novosti/'}">${kind === 'news' ? 'Блог' : 'Новости'}</a></p>`,
     });
   }
   for (const p of list) {
@@ -500,19 +580,26 @@ function latestPosts(): string {
 async function groupPage(g: CatalogEntry) {
   const path = gamePath(g.id);
   const refs = await articleLinks(g.id);
-  const t = GROUPS[g.id] ?? {};
+  const gt = GROUPS[g.id] ?? {};
   const cr = crumbs(trail(g));
   const list = membersOf(g).filter(ready);
-  const description = t.description ?? clip(`${g.title}: ${g.sub}. ${list.map((m) => m.title).join(', ')} — играть онлайн бесплатно, с ботами и с друзьями.`);
+  const t = editable(path, g.title, {
+    title: gt.title ?? titleFor(g.title, 'настольные игры'),
+    description: gt.description ?? clip(`${g.title}: ${g.sub}. ${list.map((m) => m.title).join(', ')} — играть онлайн бесплатно, с ботами и с друзьями.`),
+    h1: gt.h1 ?? g.title,
+    intro: gt.intro ?? `<p>${esc(g.sub)}.</p>`,
+    faq: gt.faq ?? [],
+  });
+  const description = t.description;
   const faq = faqBlock(t.faq);
   pages.push({
     path,
-    title: t.title ?? titleFor(g.title, 'настольные игры'),
+    title: t.title,
     description,
     image: g.thumb ? '/thumbs/' + g.thumb : undefined,
     priority: 0.8,
     jsonld: [cr.ld, ...(faq.ld ? [faq.ld] : [])],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? g.title)}</h1>\n${t.intro ?? `<p>${esc(g.sub)}.</p>`}\n${akaBlock(g.id)}\n${refs}${cards(list, true)}\n${faq.html}\n${otherSections(g.cat)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1)}</h1>\n${t.intro}\n${akaBlock(g.id)}\n${refs}${cards(list, true)}\n${faq.html}\n${otherSections(g.cat)}`,
   });
 }
 
@@ -522,11 +609,23 @@ function otherSections(skip?: string): string {
   return `<h2>${skip ? 'Другие разделы' : 'Разделы'}</h2>\n<p class="seo-chips">${list.map((c) => `<a href="${sectionPath(c.id)}">${esc(c.title)}</a>`).join(' ')}</p>`;
 }
 
+/** Тексты разделов с правкой из админки (их абзац `short` показывает и главная). */
+const sectionTexts = new Map<string, Editable>();
+
 function sectionPage(cat: (typeof CATEGORIES)[number]) {
-  const t = SECTIONS[cat.id];
+  const st = SECTIONS[cat.id];
   const list = SHOWN.filter((g) => g.cat === cat.id && ready(g));
-  if (!t || !list.length) return;
+  if (!st || !list.length) return;
   const path = sectionPath(cat.id);
+  const t = editable(path, cat.title, {
+    title: st.title ?? titleFor(cat.title, 'играть бесплатно'),
+    description: st.description ?? clip(plain(st.short)),
+    h1: st.h1 ?? cat.title,
+    intro: st.intro ?? st.short,
+    faq: st.faq ?? [],
+    short: st.short,
+  });
+  sectionTexts.set(cat.id, t);
   const cr = crumbs([
     [SITE_NAME, '/'],
     [cat.title, path],
@@ -534,8 +633,8 @@ function sectionPage(cat: (typeof CATEGORIES)[number]) {
   const faq = faqBlock(t.faq);
   pages.push({
     path,
-    title: t.title ?? titleFor(cat.title, 'играть бесплатно'),
-    description: t.description ?? clip(plain(t.short)),
+    title: t.title,
+    description: t.description,
     image: list[0].thumb ? '/thumbs/' + list[0].thumb : undefined,
     priority: 0.9,
     jsonld: [
@@ -543,50 +642,54 @@ function sectionPage(cat: (typeof CATEGORIES)[number]) {
       {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
-        name: t.h1 ?? cat.title,
+        name: t.h1,
         itemListElement: list.map((g, i) => ({ '@type': 'ListItem', position: i + 1, name: g.title, url: abs(gamePath(g.id)) })),
       },
       ...(faq.ld ? [faq.ld] : []),
     ],
-    body: `${cr.html}\n<h1>${esc(t.h1 ?? cat.title)}</h1>\n${t.intro ?? t.short}\n${cards(list, true)}\n${faq.html}\n${otherSections(cat.id)}`,
+    body: `${cr.html}\n<h1>${esc(t.h1)}</h1>\n${t.intro}\n${cards(list, true)}\n${faq.html}\n${otherSections(cat.id)}`,
   });
 }
 
 function homePage() {
   const sections = CATEGORIES.map((c) => {
-    const t = SECTIONS[c.id];
-    if (!t || !SHOWN.some((g) => g.cat === c.id && ready(g))) return '';
+    const t = sectionTexts.get(c.id);
+    if (!t) return '';
     return `<h2><a href="${sectionPath(c.id)}">${esc(c.title)}</a></h2>\n${t.short}`;
   }).join('\n');
+  const t = editable('/', 'Главная', { title: HOME.title!, description: HOME.description!, h1: HOME.h1!, intro: HOME.intro!, faq: HOME.faq ?? [] });
+  const faq = faqBlock(t.faq);
   pages.push({
     path: '/',
-    title: HOME.title!,
-    description: HOME.description!,
+    title: t.title,
+    description: t.description,
     priority: 1,
-    jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: abs('/'), inLanguage: 'ru' }],
-    body: `<h1>${esc(HOME.h1!)}</h1>\n${HOME.intro}\n${cards(SHOWN.filter(ready), true)}\n${sections}\n${latestPosts()}`,
+    jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: abs('/'), inLanguage: 'ru' }, ...(faq.ld ? [faq.ld] : [])],
+    body: `<h1>${esc(t.h1)}</h1>\n${t.intro}\n${cards(SHOWN.filter(ready), true)}\n${sections}\n${opt(faq.html)}${latestPosts()}`,
   });
 }
 
 // ------------------------------------------------------------------ сборка
 
-homePage();
 for (const c of CATEGORIES) sectionPage(c);
+homePage();
 postPages('news');
 postPages('blog');
 // политика конфиденциальности и условия — простые страницы из content/pages/*.md
-for (const d of loadDocs())
+for (const d of loadDocs()) {
+  const t = editable(d.path, d.h1, { title: d.title, description: d.description, h1: d.h1, intro: '', faq: [], body: d.html });
   pages.push({
     path: d.path,
-    title: d.title,
-    description: d.description,
+    title: t.title,
+    description: t.description,
     priority: 0.2,
     jsonld: [crumbs([[SITE_NAME, '/'], [d.h1, d.path]]).ld],
     body: `${crumbs([[SITE_NAME, '/'], [d.h1, d.path]]).html}
-<h1>${esc(d.h1)}</h1>
+<h1>${esc(t.h1)}</h1>
 <p class="post-meta">Редакция от ${ruDate(d.updated)}</p>
-${d.html}`,
+${opt(t.intro)}${t.body}`,
   });
+}
 for (const g of CATALOG) {
   if (!ready(g)) continue;
   if (g.members) await groupPage(g);
@@ -611,6 +714,7 @@ writeFileSync(
   join(DIST, 'pages.json'),
   JSON.stringify(pages.map((p) => ({ path: p.path, hash: createHash('sha1').update(JSON.stringify([p.title, p.description, p.image, p.jsonld, p.body])).digest('hex').slice(0, 16) })))
 );
+writeFileSync(join(DIST, 'texts.json'), JSON.stringify(TEXTS));
 writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nDisallow: /stol/\nDisallow: /poisk\nDisallow: /api/\nDisallow: /*?igra\nDisallow: /*?thumb\n\nSitemap: ${abs('/sitemap.xml')}\n`);
 
-console.log(`пререндер: ${pages.length} страниц, sitemap.xml, robots.txt → ${SITE}`);
+console.log(`пререндер: ${pages.length} страниц${Object.keys(OVERRIDES).length ? ` (правлено в админке: ${Object.keys(OVERRIDES).length})` : ''}, sitemap.xml, robots.txt → ${SITE}`);

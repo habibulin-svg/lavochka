@@ -400,7 +400,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });
     if (await supportApi(support, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
-  if (path === '/api/master-word' || path === '/api/admin/posts' || path === '/api/admin/upload') {
+  if (path === '/api/master-word' || path === '/api/admin/posts' || path === '/api/admin/pages' || path === '/api/admin/upload') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await contentApi(content, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }

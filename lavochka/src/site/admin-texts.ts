@@ -1,4 +1,4 @@
-/* Админка → «Тексты»: новости, блог и «Слово Мастера». Редактор Markdown с кнопками (жирный, заголовки, списки, ссылка),
+/* Админка → «Тексты»: новости, блог и «Слово Мастера» (тексты страниц сайта — admin-pages.ts). Редактор Markdown с кнопками (жирный, заголовки, списки, ссылка),
  * картинками (кнопка, вставка из буфера, перетаскивание — загрузка на сервер) и карточками игр [[игра:id]], предпросмотр рядом.
  * Сервер — server/content.ts: записи в базе; новости и блог после сохранения пересобираются в статичные страницы. */
 import { esc } from '../core/util';
@@ -51,12 +51,15 @@ export async function drawTexts(body: HTMLElement, open?: { kind: string; slug: 
   const master = posts.find((p) => p.kind === 'master');
   body.innerHTML = `<div class="adm-head"><h1>Тексты</h1></div>
     <div class="adm-card adm-row"><b>✉ Слово Мастера</b><span class="adm-muted">${master ? 'правлено в админке' : 'встроенный текст'}</span><button class="btn small" data-kind="master" data-slug="slovo">Править</button></div>
+    <div class="adm-card" data-pages><p class="adm-muted">Страницы сайта загружаются…</p></div>
     ${group('news', 'Новости')}${group('blog', 'Блог')}
     <p class="adm-muted">После сохранения новости и статьи пересобираются в страницы сайта (несколько секунд).${
       rb?.at ? ` Последняя сборка: ${new Date(rb.at).toLocaleTimeString('ru-RU')} — ${rb.ok ? 'готово' : '<b>не удалась</b>: ' + esc(rb.message)}.` : ''
     }${rb?.running ? ' Сейчас собирается…' : ''}</p>`;
   body.querySelectorAll<HTMLButtonElement>('[data-slug]').forEach((b) => (b.onclick = () => void editPost(body, b.dataset.kind as Kind, b.dataset.slug!)));
   body.querySelectorAll<HTMLButtonElement>('[data-new]').forEach((b) => (b.onclick = () => void editPost(body, b.dataset.new as Kind, '')));
+  const { pagesCard, editPage } = await import('./admin-pages');
+  await pagesCard(body.querySelector('[data-pages]') as HTMLElement, (path) => void editPage(body, path, () => void drawTexts(body)));
 }
 
 async function editPost(body: HTMLElement, kind: Kind, slug: string) {
