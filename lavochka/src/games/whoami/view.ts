@@ -1,7 +1,7 @@
 /* Кто я? — отрисовка: вечерний двор, игроки кругом, над каждым кружком — стикер с персонажем (у себя — «?»).
  * В центре — листок: чей ход, вопрос и ответы. В панели — что уже известно про себя, вопросы, ответы, догадка; выбор персонажа соседу. */
 import { Sound } from '../../core/audio';
-import { esc, h, sleep } from '../../core/util';
+import { esc, h, sleep, keepDrafts } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { ANS_TEXT, SEATS } from './def';
 import { CHAR, poolOf, QUESTIONS, type Ans } from './chars';
@@ -103,6 +103,10 @@ class WhoView implements GameView<View, Event> {
   }
 
   private renderPanel() {
+    keepDrafts(this.panel, () => this.drawPanel());
+  }
+
+  private drawPanel() {
     const v = this.v;
     if (!v) return;
     this.panel.innerHTML = '';

@@ -1,7 +1,7 @@
 /* Данетки — отрисовка: вечерний двор, игроки кругом (ведущий — с лампой), в центре — карточка данетки с историей и подсказками.
  * В панели — блокнот «что выяснили», вопросы (готовые — с ботом-ведущим, свои — с живым), разгадка; живому ведущему — разгадка и кнопки «да/нет/неважно». */
 import { Sound } from '../../core/audio';
-import { esc, h, sleep } from '../../core/util';
+import { esc, h, keepDrafts, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { ANS, LEVEL, SEATS } from './def';
 import { danetka } from './data';
@@ -26,6 +26,8 @@ class DanetkiView implements GameView<View, Event> {
   private v: View | null = null;
   private interactive: number[] = [];
   private showSecret = false;
+  /** Открыта форма «Знаю разгадку!» — переживает перерисовку панели (ход того же игрока). */
+  private guessOpen = -1;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -49,6 +51,7 @@ class DanetkiView implements GameView<View, Event> {
   }
   private send(seat: number, a: unknown) {
     this.sheet.hidden = true;
+    this.guessOpen = -1;
     this.ctx.act(seat, a);
   }
 
@@ -115,6 +118,10 @@ class DanetkiView implements GameView<View, Event> {
   }
 
   private renderPanel() {
+    keepDrafts(this.panel, () => this.drawPanel());
+  }
+
+  private drawPanel() {
     const v = this.v;
     if (!v) return;
     this.panel.innerHTML = '';
@@ -179,9 +186,16 @@ class DanetkiView implements GameView<View, Event> {
       add(`<div class="dn-ask">${mine.length > 1 ? esc(this.plain(me)) + ', ваш' : 'Ваш'} вопрос${v.rules ? ` (круг ${v.circle} из ${v.circles})` : ''}</div>`);
       if (live(v)) {
         this.panel.appendChild(this.textRow('Вопрос, на который можно ответить «да» или «нет»…', 'Спросить', (text) => this.send(me, { type: 'ask', text }), 'Спросил голосом', () => this.send(me, { type: 'ask', text: '' })));
-        const g = btn('💡 Знаю разгадку!', () => {
-          g.replaceWith(this.textRow('Что случилось?', 'Сказать', (text) => this.send(me, { type: 'guess', text }), 'Сказал голосом', () => this.send(me, { type: 'guess', text: '' })));
-        }, 'btn dn-guess');
+        const guess = () => this.textRow('Что случилось?', 'Сказать', (text) => this.send(me, { type: 'guess', text }), 'Сказал голосом', () => this.send(me, { type: 'guess', text: '' }));
+        if (this.guessOpen === me) this.panel.appendChild(guess());
+        else {
+          const g = btn('💡 Знаю разгадку!', () => {
+            this.guessOpen = me;
+            const row = guess();
+            g.replaceWith(row);
+            (row.querySelector('textarea') as HTMLTextAreaElement).focus();
+          }, 'btn dn-guess');
+        }
       } else {
         const asked = new Set(v.log.filter((e) => e.q != null).map((e) => e.q!));
         const qs = h('<div class="dn-qs"></div>');
@@ -242,6 +256,7 @@ class DanetkiView implements GameView<View, Event> {
     for (const ev of events) {
       if (ev.type === 'start') {
         this.showSecret = false;
+        this.guessOpen = -1;
         Sound.card();
       } else if (ev.type === 'entry') {
         Sound.chat();

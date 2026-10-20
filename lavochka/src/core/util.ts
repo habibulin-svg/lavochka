@@ -19,6 +19,26 @@ export function h<T extends HTMLElement = HTMLElement>(html: string): T {
   return t.content.firstElementChild as T;
 }
 
+/** Перерисовать панель, не теряя набранного: текст полей (по placeholder), фокус и курсор переживают render(). */
+export function keepDrafts(root: HTMLElement, render: () => void) {
+  const fields = (el: HTMLElement) => [...el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input[type=text], input:not([type])')];
+  const drafts = new Map<string, string>();
+  for (const f of fields(root)) if (f.value) drafts.set(f.placeholder, f.value);
+  const act = document.activeElement as HTMLInputElement | null;
+  const focus = act && root.contains(act) && fields(root).includes(act) ? { ph: act.placeholder, a: act.selectionStart, b: act.selectionEnd } : null;
+  render();
+  for (const f of fields(root)) {
+    const d = drafts.get(f.placeholder);
+    if (d != null && !f.value) f.value = d;
+    if (focus && f.placeholder === focus.ph) {
+      f.focus();
+      try {
+        f.setSelectionRange(focus.a, focus.b);
+      } catch {}
+    }
+  }
+}
+
 export function uid(): string {
   const a = new Uint8Array(12);
   crypto.getRandomValues(a);

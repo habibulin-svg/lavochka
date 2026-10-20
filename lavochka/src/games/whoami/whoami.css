@@ -58,7 +58,7 @@
 .wh-vote .btn { flex: 1; width: auto; }
 .wh-b-y { background: #2f7a3e; color: #fff; }
 .wh-b-n { background: #b3322a; color: #fff; }
-.wh-guess { background: #fff59a; font-weight: 700; }
+.wh-guess { background: #fff59a; color: #2a2014; font-weight: 700; }
 .wh-known { font-size: 13px; background: rgba(255, 255, 255, 0.45); border-radius: 6px; padding: 6px 8px; }
 @media (max-width: 700px) {
   .wh-seat { width: 92px; }

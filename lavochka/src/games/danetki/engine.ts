@@ -284,7 +284,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       if (s.phase !== 'play' || s.pending != null || seat !== s.turn) return null;
       const opt = a.opt != null && Number.isInteger(a.opt) && a.opt >= 0 && a.opt < 4 ? a.opt : undefined;
       const text = opt != null ? d.options[s.optOrder[opt]] : String(a.text ?? '').trim().slice(0, 300);
-      if (opt == null && (!live || !text)) return null;
+      // живому ведущему разгадку можно сказать голосом — тогда текста нет
+      if (opt == null && !live) return null;
       if (opt != null && s.wrongOpts.includes(opt)) return null;
       const entry: Entry = { seat, text, guess: true, ...(opt != null ? { opt } : {}) };
       s.log.push(entry);
