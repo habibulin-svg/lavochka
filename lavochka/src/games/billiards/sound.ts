@@ -1,4 +1,6 @@
-/* Бильярд — звуки, синтез Web Audio (без файлов). Всё зависит от силы соударения и места на столе (панорама).
+/* Бильярд — звуки. Удары — настоящие записи (public/billiards/*.mp3, пак «Pool And Billiards SFX», Suraj Kispotta, CC0):
+ * запись выбирается случайно, слабый удар глуше (фильтр по силе) и тише; пока записи не загрузились — синтез Web Audio.
+ * Всё зависит от силы соударения и места на столе (панорама).
  * Шар о шар — сухой «щелчок» фенольной смолы: короткий импульс + несколько быстро гаснущих мод 2,5–9 кГц, на сильных — ярче;
  * кий — кожаная наклейка: глуше, с «телом»; борт — резина: низкий глухой удар, на сильных — стук дерева рамы;
  * луза — удар в сетку (русский, снукер) или в резиновый карман и катание по жёлобу (пул); качение — тихий шорох по сукну.
@@ -11,8 +13,79 @@ interface Bus {
   rev: ConvolverNode;
   noise: AudioBuffer;
   roll: { src: AudioBufferSourceNode; gain: GainNode } | null;
+  /** Записи по видам; пусто, пока не загрузились. */
+  rec: Partial<Record<Kind, AudioBuffer[]>>;
 }
 let bus: Bus | null = null;
+
+type Kind = 'ball' | 'cue' | 'rail' | 'drop' | 'gully';
+const FILES: Record<Kind, string[]> = {
+  ball: ['ball1', 'ball2', 'ball3', 'ball4', 'ball5'],
+  cue: ['cue1', 'cue2', 'cue3', 'cue4'],
+  rail: ['rail1', 'rail2', 'rail3'],
+  drop: ['drop'],
+  gully: ['gully'],
+};
+
+/** Обрезать тишину в начале (задержка декодера mp3), чтобы удар звучал точно в срок. */
+function trimLead(ctx: AudioContext, b: AudioBuffer): AudioBuffer {
+  const d = b.getChannelData(0);
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  let i0 = 0;
+  while (i0 < d.length && Math.abs(d[i0]) < peak * 0.02) i0++;
+  i0 = Math.max(0, i0 - 16);
+  if (i0 === 0) return b;
+  const r = ctx.createBuffer(1, b.length - i0, b.sampleRate);
+  r.copyToChannel(d.subarray(i0), 0);
+  return r;
+}
+
+function load(b: Bus) {
+  for (const k of Object.keys(FILES) as Kind[]) {
+    Promise.all(
+      FILES[k].map((f) =>
+        fetch(`${import.meta.env.BASE_URL}billiards/${f}.mp3`)
+          .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+          .then((a) => b.ctx.decodeAudioData(a))
+          .then((buf) => trimLead(b.ctx, buf)),
+      ),
+    )
+      .then((list) => (b.rec[k] = list))
+      .catch(() => {}); // не загрузились — остаётся синтез
+  }
+}
+
+const last: Partial<Record<Kind, number>> = {};
+/** Запись вида k (без повтора подряд) или null, если не загрузилась. */
+function pick(b: Bus, k: Kind): AudioBuffer | null {
+  const l = b.rec[k];
+  if (!l?.length) return null;
+  let i = Math.floor(Math.random() * l.length);
+  if (l.length > 1 && i === last[k]) i = (i + 1) % l.length;
+  last[k] = i;
+  return l[i];
+}
+
+/** Проиграть запись: громкость, высота (rate), фильтр «мягкости» (lp, Гц — слабый удар глуше). */
+function play(b: Bus, dst: AudioNode, t: number, buf: AudioBuffer, gain: number, rate = 1, lp = 0) {
+  const s = b.ctx.createBufferSource();
+  s.buffer = buf;
+  s.playbackRate.value = rate;
+  const g = b.ctx.createGain();
+  g.gain.value = gain;
+  let n: AudioNode = s;
+  if (lp) {
+    const f = b.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = lp;
+    f.Q.value = 0.5;
+    n = n.connect(f);
+  }
+  n.connect(g).connect(dst);
+  s.start(t);
+  return { s, g };
+}
 
 function impulse(ctx: AudioContext, sec: number, decay: number): AudioBuffer {
   const n = Math.round(ctx.sampleRate * sec);
@@ -42,7 +115,8 @@ function get(): Bus | null {
     const wet = ctx.createGain();
     wet.gain.value = 0.22;
     rev.connect(wet).connect(o.out);
-    bus = { ctx, dry, rev, noise: o.noise, roll: null };
+    bus = { ctx, dry, rev, noise: o.noise, roll: null, rec: {} };
+    load(bus);
   }
   return bus;
 }
@@ -111,6 +185,11 @@ export function ballClick(v: number, o: HitOpts = {}) {
   const a = level(v, 4.5);
   if (a < 0.01) return;
   const dst = out(b, o.pan ?? 0, 0.8);
+  const rec = pick(b, 'ball');
+  if (rec) {
+    play(b, dst, t, rec, 0.95 * a, rnd(0.04), 3000 + 17000 * a * a);
+    return;
+  }
   const bright = 0.45 + 0.55 * a;
   const p = rnd(0.05);
   burst(b, dst, t, 'highpass', 2600, 0.7, 0.55 * a, 0.0018);
@@ -128,6 +207,11 @@ export function cueStrike(v: number, o: HitOpts = {}) {
   const t = when(b, o.at);
   const a = level(v, 7);
   const dst = out(b, o.pan ?? 0, 0.6);
+  const rec = pick(b, 'cue');
+  if (rec) {
+    play(b, dst, t, rec, 0.75 * a + 0.12, rnd(0.03), 2500 + 9000 * a);
+    return;
+  }
   burst(b, dst, t, 'bandpass', 1500, 0.9, 0.5 * a + 0.08, 0.004);
   mode(b, dst, t, 470 * rnd(0.04), 0.3 * a + 0.05, 0.022, 380);
   // отклик самого шара — тише и глуше щелчка о шар
@@ -143,6 +227,11 @@ export function cushionThud(v: number, o: HitOpts = {}) {
   const a = level(v, 3.5);
   if (a < 0.02) return;
   const dst = out(b, o.pan ?? 0, 0.7);
+  const rec = pick(b, 'rail');
+  if (rec) {
+    play(b, dst, t, rec, 0.9 * a, rnd(0.05), 1200 + 9000 * a);
+    return;
+  }
   mode(b, dst, t, 150 * rnd(0.06), 0.55 * a, 0.035, 90);
   burst(b, dst, t, 'lowpass', 700, 0.7, 0.35 * a, 0.012);
   // сильный удар — отзывается деревянная рама
@@ -166,11 +255,23 @@ export function pocketDrop(v: number, net: boolean, full: boolean, o: HitOpts = 
     if (full) {
       // стук о шары, что уже в сетке
       const tt = t + 0.07;
-      mode(b, dst, tt, 2500 * rnd(0.05), 0.18 * a, 0.01);
-      mode(b, dst, tt, 4000 * rnd(0.05), 0.1 * a, 0.006);
+      const rec = pick(b, 'ball');
+      if (rec) play(b, dst, tt, rec, 0.25 * a, rnd(0.05) * 0.9, 4000);
+      else {
+        mode(b, dst, tt, 2500 * rnd(0.05), 0.18 * a, 0.01);
+        mode(b, dst, tt, 4000 * rnd(0.05), 0.1 * a, 0.006);
+      }
     }
   } else {
-    // карман и жёлоб под столом: глухой удар и укатывание со стуками
+    // карман и жёлоб под столом: записи удара в карман и укатывания
+    const drop = pick(b, 'drop');
+    if (drop) {
+      play(b, dst, t, drop, 0.6 * a, rnd(0.03));
+      const gully = pick(b, 'gully');
+      if (gully) play(b, dst, t + 0.35, gully, 0.45 * a, rnd(0.03), 3000);
+      return;
+    }
+    // глухой удар и укатывание со стуками
     mode(b, dst, t + 0.05, 85, 0.5 * a, 0.07, 60);
     burst(b, dst, t + 0.05, 'lowpass', 400, 0.8, 0.25 * a, 0.05);
     const rs = b.ctx.createBufferSource();
