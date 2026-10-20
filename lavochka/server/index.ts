@@ -166,6 +166,8 @@ async function initAccounts() {
     accountsReady = true;
     log('аккаунты: база готова');
     await player.refresh().catch(() => {});
+    await backoffice.loadRelease();
+    statsCache = null;
   } catch (e) {
     log('аккаунты: база недоступна — ' + (e as Error).message);
     setTimeout(initAccounts, 60_000).unref();
@@ -195,7 +197,7 @@ if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_L
 const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
 // админка (server/backoffice.ts): статистика по дням, автоошибки, игроки и права
-const backoffice = new Backoffice(accounts, () => ({ online: onlineNow(), rooms: rooms.size, players: [...rooms.values()].reduce((n, r) => n + r.clientCount, 0) }), log);
+const backoffice = new Backoffice(accounts, () => ({ online: onlineNow(), rooms: rooms.size, players: [...rooms.values()].reduce((n, r) => n + r.clientCount, 0) }), log, (g) => Object.hasOwn(SLUGS, g));
 setInterval(() => accountsReady && backoffice.sample().catch(() => {}), 5 * 60_000).unref();
 setTimeout(() => accountsReady && backoffice.sample().catch(() => {}), 30_000).unref();
 // тексты из админки (server/content.ts): новости, блог, «Слово Мастера», картинки; после правки — пререндер страниц
@@ -252,7 +254,7 @@ let statsCache: { at: number; body: string } | null = null;
 function statsBody(): string {
   const now = Date.now();
   if (statsCache && now - statsCache.at < 60_000) return statsCache.body;
-  statsCache = { at: now, body: JSON.stringify({ online: onlineNow(now), played, likes: player.likeCounts() }) };
+  statsCache = { at: now, body: JSON.stringify({ online: onlineNow(now), played, likes: player.likeCounts(), release: backoffice.release }) };
   return statsCache.body;
 }
 setInterval(() => {
@@ -394,9 +396,12 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await contentApi(content, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
-  if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors') {
+  if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors' || path === '/api/admin/games') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
-    if (await backofficeApi(backoffice, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+    if (await backofficeApi(backoffice, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) {
+      if (path === '/api/admin/games') statsCache = null; // выход игр — всем сразу
+      return;
+    }
   }
   if (path === '/api/stats') {
     // ?v=<метка вкладки> — вкладка отмечается «во дворе»

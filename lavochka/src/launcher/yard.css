@@ -115,3 +115,8 @@
 /* лайки на карточке */
 .gc-likes { margin-left: auto; color: #b3322a; font-weight: 700; white-space: nowrap; }
 .gc-save + .gc-likes { margin-left: 6px; }
+/* метки выхода из админки */
+.gc-badge { position: absolute; left: 10px; top: 10px; font: 700 11px 'Russo One', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 6px; color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.gc-b-new { background: #2f7a3e; }
+.gc-b-early { background: #7a4a9a; }
+.gc-b-hid { background: #555; }

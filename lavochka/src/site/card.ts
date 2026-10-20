@@ -17,6 +17,8 @@ export interface CardOpts {
   lazy?: boolean;
   /** Лайков (во дворе, с сервера). */
   likes?: number;
+  /** Метка выхода из админки: «новинка», «ранний доступ», «скрыта». */
+  badge?: string;
 }
 
 export function cardMarkup(g: CatalogEntry, o: CardOpts = {}): string {
@@ -35,5 +37,6 @@ export function cardMarkup(g: CatalogEntry, o: CardOpts = {}): string {
       ${g.variants?.length ? `<span class="gc-vars">${g.variants.map(esc).join(' · ')}</span>` : ''}
       <span class="gc-meta"><span class="gc-players">👥 ${esc(g.players)}</span>${g.members ? `<span class="gc-count">${membersOf(g).length} игр</span>` : ''}${o.save ? '<span class="gc-save">▶ партия</span>' : ''}${o.likes ? `<span class="gc-likes" title="Лайков">♥ ${o.likes}</span>` : ''}</span>
       ${ready || !o.stamp ? '' : `<span class="stamp">${esc(o.stamp)}</span>`}
+      ${ready && o.badge ? `<span class="gc-badge gc-b-${o.badge === 'новинка' ? 'new' : o.badge === 'скрыта' ? 'hid' : 'early'}">${esc(o.badge)}</span>` : ''}
     </a>`;
 }

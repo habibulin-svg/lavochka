@@ -2,7 +2,9 @@
  * «Обращения» (список; переписка — окном из src/site/support.ts). Открывает src/site/admin.ts по адресу. */
 import { esc } from '../core/util';
 import { toast } from '../core/ui';
-import { byId } from '../games/catalog';
+import { byId, CATALOG, CATEGORIES } from '../games/catalog';
+import { isReady } from './card';
+import { RELEASE_STATE, type Release } from '../core/release';
 import { call } from './admin';
 import { list as ticketList, openTicket } from './support';
 
@@ -15,6 +17,7 @@ const fail = (body: HTMLElement, r: { body: any }) => {
 export async function drawTab(tab: string, body: HTMLElement): Promise<void> {
   if (tab === 'igroki') return drawUsers(body);
   if (tab === 'oshibki') return drawErrors(body);
+  if (tab === 'igry') return drawGames(body);
   return drawTickets(body);
 }
 
@@ -159,4 +162,44 @@ async function drawTickets(body: HTMLElement) {
     ${r.body.mail ? '' : '<p class="adm-muted">Почта сайта выключена — ответы письмами не уйдут.</p>'}`;
   body.querySelectorAll<HTMLButtonElement>('[data-f]').forEach((b) => (b.onclick = () => ((ticketFilter = b.dataset.f!), void drawTickets(body))));
   body.querySelectorAll<HTMLButtonElement>('[data-id]').forEach((b) => (b.onclick = () => void openTicket(Number(b.dataset.id), true, () => void drawTickets(body))));
+}
+
+// ---------------------------------------------------------------- выход игр
+
+async function drawGames(body: HTMLElement) {
+  const st = await fetch('/api/stats', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  if (!st) return fail(body, { body: { message: 'Нет связи с сервером.' } });
+  let rel: Release = st.release ?? {};
+  const played: Record<string, number> = st.played ?? {};
+  const games = CATALOG.filter((g) => !g.members && !g.of && !g.shelved && isReady(g));
+  const cat = (id: string) => CATEGORIES.find((c) => c.id === id)?.title ?? id;
+  body.innerHTML = `<div class="adm-head"><h1>Выход игр</h1><span class="adm-muted">${games.length} игр</span></div>
+    <div class="adm-card"><table class="adm-table adm-games-t"><thead><tr><th>Игра</th><th>Состояние</th><th>Новинка</th><th title="Место на дворе: меньше — выше; пусто — как в каталоге">Место</th><th>Партий</th></tr></thead><tbody>${games
+      .map((g) => {
+        const r = rel[g.id] ?? {};
+        return `<tr data-id="${g.id}"><td><b>${esc(g.icon)} ${esc(g.title)}</b><br><small>${esc(cat(g.cat))} · с ${esc(g.added)}</small></td>
+          <td><select name="state">${Object.entries(RELEASE_STATE).map(([k, t]) => `<option value="${k}"${(r.state ?? 'all') === k ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
+          <td><input type="checkbox" name="new"${r.new ? ' checked' : ''}></td>
+          <td><input type="number" name="order" min="1" max="999" value="${r.order ?? ''}" placeholder="—"></td>
+          <td>${played[g.id] ?? 0}</td></tr>`;
+      })
+      .join('')}</tbody></table></div>
+    <p class="adm-muted">Скрытая игра видна только Мастеру (страница игры для поисковиков остаётся). Ранний доступ — играют те, у кого право «Ранний доступ» (выдаётся в «Игроки», позже — подпиской); остальные видят карточку с меткой. «Место» — порядок на дворе при сортировке «как сейчас». Изменения сразу видят все.</p>`;
+  body.querySelectorAll<HTMLTableRowElement>('tr[data-id]').forEach((tr) => {
+    const save = async () => {
+      const state = (tr.querySelector('[name=state]') as HTMLSelectElement).value;
+      const res = await call('/api/admin/games', {
+        id: tr.dataset.id,
+        state: state === 'all' ? undefined : state,
+        new: (tr.querySelector('[name=new]') as HTMLInputElement).checked,
+        order: (tr.querySelector('[name=order]') as HTMLInputElement).value,
+      });
+      if (!res.ok) return toast(res.body.message || 'Не сохранилось.');
+      rel = res.body.release;
+      toast('Сохранено.');
+    };
+    tr.querySelectorAll<HTMLInputElement | HTMLSelectElement>('select, input').forEach((x) => (x.onchange = () => void save()));
+  });
 }

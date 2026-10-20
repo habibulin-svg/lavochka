@@ -8,6 +8,8 @@ export interface Stats {
   played: Record<string, number>;
   /** Лайки по играм (этап 3б; старый сервер их не шлёт). */
   likes?: Record<string, number>;
+  /** Выход игр из админки (src/core/release.ts). */
+  release?: import('../core/release').Release;
 }
 
 let last: Stats | null = null;

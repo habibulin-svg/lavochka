@@ -12,6 +12,7 @@ import { likeCount, onLikes } from '../site/likes';
 import { masterNote } from '../site/master';
 import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
+import { canPlay, canSee, onRelease, releaseBadge, releaseOf } from '../site/release';
 import { loadStats, onStats } from '../site/stats';
 import './yard.css';
 
@@ -193,12 +194,14 @@ const hasSave = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(has
 function card(g: CatalogEntry): HTMLElement {
   const ready = isReady(g);
   // ссылка, а не кнопка: открывается в новой вкладке, и поисковик видит адреса игр
-  const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах', likes: ready ? likesOfCard(g) : 0 }));
+  const id = g.of ?? g.id;
+  const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах', likes: ready ? likesOfCard(g) : 0, badge: g.members ? '' : releaseBadge(id) }));
   el.onclick = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     Sound.ui();
     if (g.members) yard.openGroup(g);
+    else if (ready && !canPlay(id)) earlyNote(g);
     else if (ready) yard.openGame(g);
     else
       modal(
@@ -208,6 +211,19 @@ function card(g: CatalogEntry): HTMLElement {
   };
   return el;
 }
+
+/** Игра в раннем доступе, а права нет. */
+export function earlyNote(g: CatalogEntry) {
+  modal(
+    `<h2>${esc(g.title)}</h2><p>${esc(g.sub)}.</p><p>Эта игра пока в <b>раннем доступе</b> — её первыми пробуют подписчики. Для всех она откроется совсем скоро.</p>`,
+    [{ text: 'Ладно', primary: true }]
+  );
+}
+
+/** Видна ли карточка: у группы — если видна хоть одна её игра. */
+const visible = (g: CatalogEntry): boolean => (g.members ? membersOf(g).some(visible) : canSee(g.of ?? g.id));
+/** Место из админки: у группы — самое высокое из её игр. */
+const orderOf = (g: CatalogEntry): number => (g.members ? Math.min(...membersOf(g).map(orderOf)) : (releaseOf(g.of ?? g.id).order ?? 1e9));
 
 /** Форма входа по коду комнаты (двор и шапка страниц игр). */
 export function wireJoin(form: HTMLFormElement) {
@@ -254,8 +270,10 @@ const likesOfCard = (g: CatalogEntry): number => (g.members ? membersOf(g).reduc
 
 /** Готовые — первыми; дальше — как выбрано (при равенстве — порядок каталога). */
 function sorted(list: CatalogEntry[], how: YardSort): CatalogEntry[] {
-  const key = (g: CatalogEntry) => (how === 'new' ? addedOf(g) : how === 'popular' ? playedOf(g) : how === 'liked' ? likesOfCard(g) : 0);
+  // «как сейчас» — порядок из админки (у кого он задан — первыми), дальше каталог
+  const key = (g: CatalogEntry) => (how === 'new' ? addedOf(g) : how === 'popular' ? playedOf(g) : how === 'liked' ? likesOfCard(g) : -orderOf(g));
   return list
+    .filter(visible)
     .map((g, i) => ({ g, i, k: key(g) }))
     .sort((a, b) => Number(isReady(b.g)) - Number(isReady(a.g)) || (b.k > a.k ? 1 : b.k < a.k ? -1 : 0) || a.i - b.i)
     .map((x) => x.g);
@@ -328,6 +346,8 @@ export const yard = {
       if (first && this.sort === 'popular' && this.el?.classList.contains('active')) this.renderCards();
     });
     if (this.sort === 'popular' || this.sort === 'liked') void loadStats();
+    // выход игр из админки пришёл или вошёл другой игрок — пересобрать карточки
+    onRelease(() => this.el?.classList.contains('active') && this.renderCards());
     // лайки пришли или изменились — пересобрать карточки (счётчики на них и порядок «любимые»)
     let likeTimer = 0;
     onLikes(() => {
@@ -399,7 +419,7 @@ export const yard = {
           found.length ? `по запросу «${esc(this.query)}»` : `По запросу «${esc(this.query)}» игр нет. Попробуйте иначе: «нарды», «косынка», «тетрис», «backgammon».`
         }</p></div>`)
       );
-      for (const g of found) box.appendChild(card(g));
+      for (const g of found.filter(visible)) box.appendChild(card(g));
       return;
     }
     if (this.group) {

@@ -92,3 +92,4 @@ a.adm-tile:hover { filter: brightness(1.05); }
   .adm-ed-split { grid-template-columns: 1fr; }
   .adm-src { min-height: 320px; }
 }
+.adm-games-t input[type='number'] { width: 64px; }

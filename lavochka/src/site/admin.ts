@@ -18,6 +18,7 @@ const TABS: [string, string][] = [
   ['oshibki', '🐞 Ошибки'],
   ['obrashcheniya', '📮 Обращения'],
   ['teksty', '✍ Тексты'],
+  ['igry', '🎲 Игры'],
 ];
 
 const num = (n: number) => n.toLocaleString('ru-RU');
@@ -50,7 +51,7 @@ export async function openAdmin(tab: string, bar: HTMLElement): Promise<void> {
       return;
     }
     if (tab === 'teksty') void import('./admin-texts').then((m) => m.drawTexts(body));
-    else if (tab === 'igroki' || tab === 'oshibki' || tab === 'obrashcheniya') void import('./admin-more').then((m) => m.drawTab(tab, body));
+    else if (tab === 'igroki' || tab === 'oshibki' || tab === 'obrashcheniya' || tab === 'igry') void import('./admin-more').then((m) => m.drawTab(tab, body));
     else void drawDash(body);
   };
   unsub?.();

@@ -9,7 +9,7 @@ import type { GameModule } from './core/view';
 import { gamePath, modePath, parseRoute, searchPath, sectionPath, tablePath, type Route } from './site/routes';
 import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
-import { handleAuthRoute, handleOAuthReturn } from './site/account';
+import { handleAuthRoute, handleOAuthReturn, loadAccount } from './site/account';
 import { handleDonateReturn, loadDonate } from './site/donate';
 import { wireSupportLinks } from './site/support';
 import { likeButton } from './site/likes';
@@ -18,9 +18,10 @@ import { syncSave } from './site/saves';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
 import { startErrorReports } from './site/errors';
+import { canPlay, releaseOf, releaseReady } from './site/release';
 import { esc, h } from './core/util';
 import { byId, type CatalogEntry, type Category } from './games/catalog';
-import { yard } from './launcher/yard';
+import { earlyNote, yard } from './launcher/yard';
 import { cardHTML, DECK_STYLES } from './cards/render';
 import { makeDeck } from './cards/deck';
 import { Authority } from './core/authority';
@@ -61,6 +62,16 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
   const g = entry.of ? byId(entry.of) : entry;
   if (!g?.load) return;
   const my = ++navSeq;
+  // выход игр из админки: скрытая — только Мастеру, ранний доступ — по праву
+  await releaseReady();
+  if (releaseOf(g.id).state) await loadAccount();
+  if (my !== navSeq) return;
+  if (!canPlay(g.id)) {
+    showYard('all');
+    history.replaceState(null, '', '/');
+    if (releaseOf(g.id).state === 'early') earlyNote(g);
+    return;
+  }
   try {
     const mod = (await g.load()).default;
     if (my !== navSeq) return; // пока грузилось, ушли на другой экран

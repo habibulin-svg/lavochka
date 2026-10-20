@@ -113,4 +113,21 @@ describe('админка', () => {
     u = ((await bo.users(q('q=' + vasya.id), ctx(boss.sid))).body.users as any[])[0];
     expect(u.bannedUntil).toBeNull();
   });
+
+  it('выход игр: только Мастеру, чистка, сохраняется в настройках', async () => {
+    const { acc, ctx } = setup();
+    const bo = new Backoffice(acc, () => ({ online: 0, rooms: 0, players: 0 }), () => {}, (g) => ['durak', 'nardy'].includes(g));
+    const boss = await user(acc, ctx, 'boss@x.ru', true);
+    const vasya = await user(acc, ctx, 'vasya@x.ru');
+    expect((await bo.gamePost({ id: 'durak', state: 'hidden' }, ctx(vasya.sid))).code).toBe(403);
+    expect((await bo.gamePost({ id: 'нет', state: 'hidden' }, ctx(boss.sid))).code).toBe(400);
+    await bo.gamePost({ id: 'durak', state: 'early', new: true, order: '3' }, ctx(boss.sid));
+    await bo.gamePost({ id: 'nardy', state: 'чушь', order: 5000 }, ctx(boss.sid));
+    expect(bo.release).toEqual({ durak: { state: 'early', new: true, order: 3 } });
+    const again = new Backoffice(acc, () => ({ online: 0, rooms: 0, players: 0 }), () => {}, (g) => ['durak', 'nardy'].includes(g));
+    await again.loadRelease();
+    expect(again.release).toEqual(bo.release);
+    await bo.gamePost({ id: 'durak' }, ctx(boss.sid));
+    expect(bo.release).toEqual({});
+  });
 });

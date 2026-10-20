@@ -7,10 +7,12 @@
  *                                                                 забрать, закрыть вход на ban дней (0 — открыть)
  *   GET  /api/admin/errors[?status=new][&format=md]             — Мастеру: ошибки (md — выгрузка пачкой для разбора)
  *   POST /api/admin/errors {id, status}                         — Мастеру: состояние ошибки
+ *   POST /api/admin/games {id, state?, new?, order?}             — Мастеру: выход игры (src/core/release.ts); всем — в /api/stats
  * Счётчики пишет сервер сам: партии (countPlay в браузере → /api/played), пик онлайна и посетители за день; регистрации — из таблицы игроков. */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
 import { RIGHTS } from '../src/core/rights';
+import { cleanRelease, type Release } from '../src/core/release';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 import type { ErrorReport, ErrorRow, ErrorStatus, StatRow, User } from './accounts/store';
@@ -69,11 +71,37 @@ export class Backoffice {
   /** Вкладки, заходившие сегодня (посетители дня). */
   private visitors = { day: '', tabs: new Set<string>() };
 
+  /** Выход игр — в памяти (берётся из настроек при старте), отдаётся всем в /api/stats. */
+  release: Release = {};
+
   constructor(
     private acc: Accounts,
     private live: () => Live,
-    private log: (s: string) => void = () => {}
+    private log: (s: string) => void = () => {},
+    /** Есть ли такая игра (адреса из src/site/routes.ts). */
+    private known: (id: string) => boolean = () => true
   ) {}
+
+  /** Прочитать выход игр из настроек (при старте, когда база готова). */
+  async loadRelease() {
+    try {
+      this.release = cleanRelease(JSON.parse((await this.acc.store.settings()).games || '{}'), this.known);
+    } catch {
+      this.release = {};
+    }
+  }
+
+  async gamePost(b: any, ctx: Ctx): Promise<Reply> {
+    const me = await this.master(ctx);
+    if (!me) return err(403, 'master', 'Только для Мастера.');
+    const id = String(b?.id ?? '');
+    if (!this.known(id)) return err(400, 'game', 'Нет такой игры.');
+    const next = { ...this.release, [id]: { state: b?.state, new: b?.new, order: b?.order } };
+    this.release = cleanRelease(next, this.known);
+    await this.acc.store.setSetting('games', JSON.stringify(this.release), me.id);
+    this.log(`админка: ${me.name} — выход ${id}: ${JSON.stringify(this.release[id] ?? 'для всех')}`);
+    return { code: 200, body: { ok: true, release: this.release } };
+  }
 
   private async master(ctx: Ctx): Promise<User | null> {
     const u = await this.acc.current(ctx);
@@ -281,7 +309,7 @@ export async function backofficeApi(
 ): Promise<boolean> {
   const path = url.pathname;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
-  const routes = ['/api/errors', '/api/admin/dash', '/api/admin/users', '/api/admin/errors'];
+  const routes = ['/api/errors', '/api/admin/dash', '/api/admin/users', '/api/admin/errors', '/api/admin/games'];
   if (!routes.includes(path)) return false;
   if (req.method === 'GET') {
     const r =
@@ -305,6 +333,6 @@ export async function backofficeApi(
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, path === '/api/errors' ? await bo.clientError(b, ctx) : path === '/api/admin/users' ? await bo.userPost(b, ctx) : await bo.errorPost(b, ctx));
+  send(req, res, path === '/api/errors' ? await bo.clientError(b, ctx) : path === '/api/admin/users' ? await bo.userPost(b, ctx) : path === '/api/admin/games' ? await bo.gamePost(b, ctx) : await bo.errorPost(b, ctx));
   return true;
 }
