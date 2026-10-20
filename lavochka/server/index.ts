@@ -27,6 +27,7 @@ import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './a
 import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
 import { Player, playerApi } from './player';
+import { Support, supportApi } from './support';
 import { robokassaFromEnv } from './pay/robokassa';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -188,6 +189,8 @@ setInterval(() => accountsReady && player.refresh().catch(() => {}), 600_000).un
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
+// обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
+const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
 
 // ------------------------------------------------------------------ счётчики: онлайн и начатые партии
@@ -326,6 +329,10 @@ async function iceServers(): Promise<RTCIceServerLike[]> {
 }
 
 function readBody(req: IncomingMessage, limit = 4096): Promise<string> {
+  return readRaw(req, limit).then((b) => b.toString('utf8'));
+}
+
+function readRaw(req: IncomingMessage, limit: number): Promise<Buffer> {
   return new Promise((ok, bad) => {
     const parts: Buffer[] = [];
     let size = 0;
@@ -337,7 +344,7 @@ function readBody(req: IncomingMessage, limit = 4096): Promise<string> {
         req.destroy();
       }
     });
-    req.on('end', () => ok(Buffer.concat(parts).toString('utf8')));
+    req.on('end', () => ok(Buffer.concat(parts)));
     req.on('error', bad);
   });
 }
@@ -363,6 +370,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+  }
+  if (path === '/api/support' || path === '/api/support/reply' || path === '/api/admin/support' || path === '/api/mail/in') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });
+    if (await supportApi(support, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
   if (path === '/api/stats') {
     // ?v=<метка вкладки> — вкладка отмечается «во дворе»

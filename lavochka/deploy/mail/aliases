@@ -1,0 +1,13 @@
+# Ящики домена lavochka-games.ru → /etc/aliases. Других адресов нет: Postfix отказывает ещё при приёме.
+# Вид обращения по ящику — MAILBOXES в server/support.ts.
+support:    "|/usr/local/bin/lavochka-mailin support"
+bugs:       "|/usr/local/bin/lavochka-mailin bugs"
+admin:      "|/usr/local/bin/lavochka-mailin admin"
+abuse:      "|/usr/local/bin/lavochka-mailin abuse"
+postmaster: "|/usr/local/bin/lavochka-mailin postmaster"
+privacy:    "|/usr/local/bin/lavochka-mailin privacy"
+pay:        "|/usr/local/bin/lavochka-mailin pay"
+# служебная почта самого сервера (cron и т. п.) — тоже обращением в admin
+root:       "|/usr/local/bin/lavochka-mailin admin"
+# с noreply@ уходят письма сайта (через Unisender); ответы и отбойники на него — в никуда
+noreply:    /dev/null

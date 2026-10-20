@@ -113,7 +113,7 @@ export class Accounts {
 
   constructor(
     readonly store: AccountStore,
-    private mail: Mailer,
+    readonly mail: Mailer,
     private log: (s: string) => void = () => {}
   ) {}
 

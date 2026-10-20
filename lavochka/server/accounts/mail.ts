@@ -8,6 +8,12 @@ export interface Mail {
   subject: string;
   html: string;
   text: string;
+  /** Отправитель (по умолчанию noreply@); адрес — только на нашем домене (его подтвердил Unisender). */
+  from?: { email: string; name: string };
+  /** Куда отвечать. */
+  replyTo?: string;
+  /** Метка для статистики Unisender (по умолчанию account). */
+  tag?: string;
 }
 
 export interface Mailer {
@@ -58,11 +64,12 @@ export class UnisenderMailer implements Mailer {
             recipients: [{ email: m.to }],
             subject: m.subject,
             body: { html: m.html, plaintext: m.text },
-            from_email: this.from.email,
-            from_name: this.from.name,
+            from_email: (m.from ?? this.from).email,
+            from_name: (m.from ?? this.from).name,
+            ...(m.replyTo ? { reply_to: m.replyTo } : {}),
             track_links: 0,
             track_read: 0,
-            tags: ['account'],
+            tags: [m.tag ?? 'account'],
           },
         }),
         signal: AbortSignal.timeout(10_000),

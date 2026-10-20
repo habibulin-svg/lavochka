@@ -1,6 +1,7 @@
 /* Хранилище аккаунтов: интерфейс и вариант в памяти (тесты и разработка без базы).
  * На сервере — PostgreSQL (pg.ts); выбор — в accounts/index.ts по переменной PGDATABASE.
  * Времена — миллисекунды (Date.now()); null у «до» — бессрочно. */
+import type { TicketKind, TicketStatus } from '../../src/core/support';
 
 export interface User {
   id: number;
@@ -47,6 +48,29 @@ export interface Donation {
   amount: number;
   createdAt: number;
   paidAt: number | null;
+}
+
+/** Обращение в поддержку (src/core/support.ts). */
+export interface Ticket {
+  id: number;
+  kind: TicketKind;
+  status: TicketStatus;
+  subject: string;
+  userId: number | null;
+  /** Куда отвечать (null — только в профиле). */
+  email: string | null;
+  name: string | null;
+  context: string | null;
+  source: 'site' | 'mail';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TicketMsg {
+  staff: boolean;
+  author: string;
+  text: string;
+  at: number;
 }
 
 /** Сыгранная партия в истории игрока. */
@@ -131,6 +155,20 @@ export interface AccountStore {
   /** Последние партии игрока (новые первыми). */
   history(userId: number, limit: number): Promise<PlayRecord[]>;
 
+  /** Игроки с действующим правом (почты Мастеров — для уведомлений). */
+  usersWithRight(right: string, now: number): Promise<User[]>;
+
+  /** Обращения: новое (с первым сообщением) — номер. */
+  createTicket(t: Omit<Ticket, 'id' | 'status' | 'createdAt' | 'updatedAt'>, first: TicketMsg): Promise<number>;
+  ticket(id: number): Promise<(Ticket & { messages: TicketMsg[] }) | null>;
+  /** Дописать сообщение; status — новое состояние обращения. */
+  addTicketMessage(id: number, m: TicketMsg, status: TicketStatus): Promise<void>;
+  setTicketStatus(id: number, status: TicketStatus, now: number): Promise<void>;
+  /** Последние обращения (status — только такие; userId — только этого игрока), обновлённые первыми. */
+  tickets(q: { status?: TicketStatus; userId?: number; limit: number }): Promise<Ticket[]>;
+  /** Сколько обращений ждут ответа. */
+  newTickets(): Promise<number>;
+
   /** Убрать просроченные сессии и ссылки. */
   cleanup(now: number): Promise<void>;
   close(): Promise<void>;
@@ -154,6 +192,7 @@ export class MemoryAccountStore implements AccountStore {
   private likes = new Map<number, Set<string>>();
   private plays = new Map<number, PlayRecord[]>();
   private saves = new Map<string, { at: number; data: string | null }>();
+  private ticketsBy = new Map<number, Ticket & { messages: TicketMsg[] }>();
 
   async init() {}
 
@@ -338,6 +377,51 @@ export class MemoryAccountStore implements AccountStore {
       .sort((a, b) => b.paidAt! - a.paidAt!)
       .slice(0, limit)
       .map((d) => ({ ...d, userName: d.userId == null ? null : this.users.get(d.userId)?.name ?? null }));
+  }
+
+  async usersWithRight(right: string, now: number) {
+    const out: User[] = [];
+    for (const [id, m] of this.rightsBy) {
+      const until = m.get(right);
+      if (until !== undefined && (until == null || until > now) && this.users.has(id)) out.push({ ...this.users.get(id)! });
+    }
+    return out;
+  }
+
+  async createTicket(t: Omit<Ticket, 'id' | 'status' | 'createdAt' | 'updatedAt'>, first: TicketMsg) {
+    const id = this.ticketsBy.size + 1;
+    this.ticketsBy.set(id, { ...t, id, status: 'new', createdAt: first.at, updatedAt: first.at, messages: [{ ...first }] });
+    return id;
+  }
+
+  async ticket(id: number) {
+    const t = this.ticketsBy.get(id);
+    return t ? { ...t, messages: t.messages.map((m) => ({ ...m })) } : null;
+  }
+
+  async addTicketMessage(id: number, m: TicketMsg, status: TicketStatus) {
+    const t = this.ticketsBy.get(id);
+    if (!t) return;
+    t.messages.push({ ...m });
+    t.status = status;
+    t.updatedAt = m.at;
+  }
+
+  async setTicketStatus(id: number, status: TicketStatus, now: number) {
+    const t = this.ticketsBy.get(id);
+    if (t) Object.assign(t, { status, updatedAt: now });
+  }
+
+  async tickets(q: { status?: TicketStatus; userId?: number; limit: number }) {
+    return [...this.ticketsBy.values()]
+      .filter((t) => (!q.status || t.status === q.status) && (q.userId == null || t.userId === q.userId))
+      .sort((a, b) => b.updatedAt - a.updatedAt || b.id - a.id)
+      .slice(0, q.limit)
+      .map(({ messages: _, ...t }) => ({ ...t }));
+  }
+
+  async newTickets() {
+    return [...this.ticketsBy.values()].filter((t) => t.status === 'new').length;
   }
 
   async cleanup(now: number) {

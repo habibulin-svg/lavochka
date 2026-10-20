@@ -271,8 +271,8 @@ export function openProfile(): void {
         : ''
     }
     ${u.rights.length ? `<p class="lbl">Права</p><ul class="auth-rights">${u.rights.map((g) => `<li>${esc(RIGHTS[g.right as keyof typeof RIGHTS] ?? g.right)}${until(g)}</li>`).join('')}</ul>` : ''}
-    <p class="row"><button type="button" class="btn small" data-a="history">📜 Мои партии</button><button type="button" class="btn small" data-a="records">🏆 Мои рекорды</button></p>
-    ${u.rights.some((g) => g.right === 'master') ? `<p><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button></p>` : ''}
+    <p class="row"><button type="button" class="btn small" data-a="history">📜 Мои партии</button><button type="button" class="btn small" data-a="records">🏆 Мои рекорды</button><button type="button" class="btn small" data-a="tickets">✉ Мои обращения</button></p>
+    ${u.rights.some((g) => g.right === 'master') ? `<p class="row"><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button><button type="button" class="btn small" data-a="support">📮 Обращения</button></p>` : ''}
     <p class="err" role="alert"></p>
     <div class="row auth-btns"><button type="button" class="btn" data-a="logout">Выйти</button><button type="button" class="btn primary" data-a="close">Закрыть</button></div>`;
   open = modal(box, [], { cls: 'auth-modal' });
@@ -301,6 +301,14 @@ export function openProfile(): void {
   act('donate', () => {
     open?.close();
     void import('./donate').then((d) => d.openDonateAdmin());
+  });
+  act('tickets', () => {
+    open?.close();
+    void import('./support').then((s) => s.openMyTickets());
+  });
+  act('support', () => {
+    open?.close();
+    void import('./support').then((s) => s.openSupportAdmin());
   });
   act('logout', () => {
     open?.close();

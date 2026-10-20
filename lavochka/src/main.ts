@@ -11,6 +11,7 @@ import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { handleAuthRoute, handleOAuthReturn } from './site/account';
 import { handleDonateReturn, loadDonate } from './site/donate';
+import { wireSupportLinks } from './site/support';
 import { likeButton } from './site/likes';
 import './site/history';
 import { syncSave } from './site/saves';
@@ -349,4 +350,7 @@ else {
   // вернулись со страницы оплаты — «спасибо» (после первого показа экрана: он закрывает окна)
   if (params.has('voshel') || params.has('privyazan')) setTimeout(handleOAuthReturn);
   if (params.has('donate')) setTimeout(() => void loadDonate().then(handleDonateReturn));
+  // ссылка из письма поддержки
+  if (params.has('obrashenie')) setTimeout(() => void import('./site/support').then((s) => s.handleTicketLink()));
+  wireSupportLinks();
 }

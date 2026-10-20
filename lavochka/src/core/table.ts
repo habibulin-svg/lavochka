@@ -665,9 +665,22 @@ export class Table {
         { text: 'Правила', action: () => void openRules(this.o.mod) },
         ...(this.o.mod.def.records ? [{ text: 'Рекорды', action: () => openRecords(this.o.mod.def.id, this.o.mod.def.title, this.recTable()) }] : []),
         { text: 'Настройки', action: () => openSettings() },
+        { text: 'Ошибка?', action: () => this.reportBug() },
         { text: 'Выйти', action: () => this.confirmLeave() },
         { text: 'Продолжить', primary: true },
       ]
+    );
+  }
+
+  /** «Сообщить об ошибке» из меню стола: приложить игру, режим, настройки партии. */
+  private reportBug() {
+    const def = this.o.mod.def;
+    let opts = '';
+    try {
+      opts = JSON.stringify(this.o.options?.() ?? null).slice(0, 300);
+    } catch {}
+    void import('../site/support').then((s) =>
+      s.openSupport({ kind: 'bug', context: { игра: `${def.title} (${def.id})`, режим: this.o.mode + (this.o.code ? ' ' + this.o.code : ''), ...(opts && opts !== 'null' ? { настройки: opts } : {}) } })
     );
   }
 

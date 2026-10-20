@@ -90,7 +90,7 @@ interface Page {
 const pages: Page[] = [];
 
 /** Подвал каждой страницы: документы для покупателей (требование платёжного сервиса), реквизиты, копирайт. */
-const FOOTER = `<footer class="site-foot"><nav aria-label="Документы"><a href="/podpiska/">Подписка</a><a href="/oferta/">Оферта</a><a href="/kontakty/">Контакты и реквизиты</a><a href="/usloviya/">Условия использования</a><a href="/politika/">Политика конфиденциальности</a></nav><p>© ${new Date().getFullYear()} «${SITE_NAME}». Хабибулин А. М., самозанятый, ИНН 540363209100 · habibulin@gmail.com</p></footer>`;
+const FOOTER = `<footer class="site-foot"><nav aria-label="Документы"><a href="/podpiska/">Подписка</a><a href="/oferta/">Оферта</a><a href="/kontakty/#napisat">Написать нам</a><a href="/kontakty/">Контакты и реквизиты</a><a href="/usloviya/">Условия использования</a><a href="/politika/">Политика конфиденциальности</a></nav><p>© ${new Date().getFullYear()} «${SITE_NAME}». Хабибулин А. М., самозанятый, ИНН 540363209100 · support@lavochka-games.ru</p></footer>`;
 
 function html(p: Page): string {
   const head = [

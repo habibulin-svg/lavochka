@@ -2,7 +2,8 @@
  * вход от имени системного пользователя lavochka, без пароля). Схема — миграции ниже, по порядку, каждая один раз
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
-import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type TokenKind, type User, type UserPatch } from './store';
+import type { TicketStatus } from '../../src/core/support';
+import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -99,6 +100,31 @@ export const MIGRATIONS: string[] = [
      at timestamptz not null,
      primary key (user_id, game)
    );`,
+  // 5 — обращения в поддержку (src/core/support.ts) и переписка по ним
+  `create table tickets (
+     id bigserial primary key,
+     kind text not null,
+     status text not null default 'new',
+     subject text not null,
+     user_id bigint references users on delete set null,
+     email text,
+     name text,
+     context text,
+     source text not null,
+     created_at timestamptz not null default now(),
+     updated_at timestamptz not null default now()
+   );
+   create index tickets_updated on tickets (updated_at desc);
+   create index tickets_user on tickets (user_id);
+   create table ticket_messages (
+     id bigserial primary key,
+     ticket_id bigint not null references tickets on delete cascade,
+     staff boolean not null default false,
+     author text not null,
+     body text not null,
+     at timestamptz not null default now()
+   );
+   create index ticket_messages_ticket on ticket_messages (ticket_id, id);`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -122,6 +148,22 @@ function toUser(r: any): User {
 
 function toDonation(r: any): Donation {
   return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at) };
+}
+
+function toTicket(r: any): Ticket {
+  return {
+    id: Number(r.id),
+    kind: r.kind,
+    status: r.status,
+    subject: r.subject,
+    userId: r.user_id == null ? null : Number(r.user_id),
+    email: r.email,
+    name: r.name,
+    context: r.context,
+    source: r.source,
+    createdAt: ms(r.created_at)!,
+    updatedAt: ms(r.updated_at)!,
+  };
 }
 
 export class PgAccountStore implements AccountStore {
@@ -361,6 +403,68 @@ export class PgAccountStore implements AccountStore {
       [limit]
     );
     return r.rows.map((x) => ({ ...toDonation(x), userName: x.user_name ?? null }));
+  }
+
+  async usersWithRight(right: string, now: number) {
+    const r = await this.pool.query(
+      'select u.* from users u join user_rights r on r.user_id = u.id where r.right_id = $1 and (r.until is null or r.until > $2)',
+      [right, date(now)]
+    );
+    return r.rows.map(toUser);
+  }
+
+  async createTicket(t: Omit<Ticket, 'id' | 'status' | 'createdAt' | 'updatedAt'>, first: TicketMsg) {
+    const c = await this.pool.connect();
+    try {
+      await c.query('begin');
+      const r = await c.query(
+        `insert into tickets (kind, subject, user_id, email, name, context, source, created_at, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $8) returning id`,
+        [t.kind, t.subject, t.userId, t.email, t.name, t.context, t.source, date(first.at)]
+      );
+      const id = Number(r.rows[0].id);
+      await c.query('insert into ticket_messages (ticket_id, staff, author, body, at) values ($1, $2, $3, $4, $5)', [id, first.staff, first.author, first.text, date(first.at)]);
+      await c.query('commit');
+      return id;
+    } catch (e) {
+      await c.query('rollback').catch(() => {});
+      throw e;
+    } finally {
+      c.release();
+    }
+  }
+
+  async ticket(id: number) {
+    const r = await this.pool.query('select * from tickets where id = $1', [id]);
+    if (!r.rows[0]) return null;
+    const m = await this.pool.query('select staff, author, body, at from ticket_messages where ticket_id = $1 order by id', [id]);
+    return { ...toTicket(r.rows[0]), messages: m.rows.map((x) => ({ staff: x.staff, author: x.author, text: x.body, at: ms(x.at)! })) };
+  }
+
+  async addTicketMessage(id: number, m: TicketMsg, status: TicketStatus) {
+    await this.pool.query('insert into ticket_messages (ticket_id, staff, author, body, at) values ($1, $2, $3, $4, $5)', [id, m.staff, m.author, m.text, date(m.at)]);
+    await this.pool.query('update tickets set status = $2, updated_at = $3 where id = $1', [id, status, date(m.at)]);
+  }
+
+  async setTicketStatus(id: number, status: TicketStatus, now: number) {
+    await this.pool.query('update tickets set status = $2, updated_at = $3 where id = $1', [id, status, date(now)]);
+  }
+
+  async tickets(q: { status?: TicketStatus; userId?: number; limit: number }) {
+    const where: string[] = [];
+    const args: unknown[] = [];
+    if (q.status) where.push(`status = $${args.push(q.status)}`);
+    if (q.userId != null) where.push(`user_id = $${args.push(q.userId)}`);
+    const r = await this.pool.query(
+      `select * from tickets ${where.length ? 'where ' + where.join(' and ') : ''} order by updated_at desc, id desc limit $${args.push(q.limit)}`,
+      args
+    );
+    return r.rows.map(toTicket);
+  }
+
+  async newTickets() {
+    const r = await this.pool.query("select count(*) as n from tickets where status = 'new'");
+    return Number(r.rows[0].n);
   }
 
   async cleanup(now: number) {
