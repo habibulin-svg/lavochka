@@ -196,6 +196,7 @@ setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() =
 // админка (server/backoffice.ts): статистика по дням, автоошибки, игроки и права
 const backoffice = new Backoffice(accounts, () => ({ online: onlineNow(), rooms: rooms.size, players: [...rooms.values()].reduce((n, r) => n + r.clientCount, 0) }), log);
 setInterval(() => accountsReady && backoffice.sample().catch(() => {}), 5 * 60_000).unref();
+setTimeout(() => accountsReady && backoffice.sample().catch(() => {}), 30_000).unref();
 setRoomErrorHook((e, where, game) => accountsReady && backoffice.serverError(e, where, game));
 process.on('unhandledRejection', (e) => {
   log('необработанная ошибка: ' + e);
@@ -512,7 +513,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
     const spa = join(DIST, '_spa.html');
     file = existsSync(spa) ? spa : join(DIST, 'index.html');
     headers['x-robots-tag'] = 'noindex';
-    if (!/^\/(stol\/[\w-]+|poisk|vhod)\/?$/.test(path)) status = 404;
+    if (!/^\/(stol\/[\w-]+|poisk|vhod|admin(\/[\w-]+)?)\/?$/.test(path)) status = 404;
   }
   const ext = extname(file);
   const immutable = file.includes(join(DIST, 'assets'));

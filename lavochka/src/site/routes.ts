@@ -236,6 +236,8 @@ export type Route =
   | { kind: 'page'; tab: 'news' | 'blog' | 'doc'; path: string }
   /** Вход: окно поверх двора; из письма — ссылка подтверждения почты или сброса пароля. */
   | { kind: 'auth'; confirm?: string; reset?: string; error?: string }
+  /** Админка Мастера (/admin/, /admin/<раздел>/) — не для поисковиков. */
+  | { kind: 'admin'; tab: string }
   | { kind: 'missing'; path: string };
 
 /** Справочные страницы в корне (content/pages/*.md). */
@@ -265,6 +267,7 @@ export function parseRoute(pathname: string, search = ''): Route {
   const top = p.split('/')[0];
   if (top === 'novosti' || top === 'blog') return { kind: 'page', tab: top === 'blog' ? 'blog' : 'news', path: `/${p}/` };
   if (DOC_PAGES.includes(p)) return { kind: 'page', tab: 'doc', path: `/${p}/` };
+  if (p === 'admin' || p.startsWith('admin/')) return { kind: 'admin', tab: p.split('/')[1] ?? '' };
   if (p === 'vhod') return { kind: 'auth', confirm: q.get('podtverdit') ?? undefined, reset: q.get('sbros') ?? undefined, error: q.get('oshibka') ?? undefined };
   const sec = BY_SECTION.get(p);
   if (sec) return { kind: 'yard', cat: sec };

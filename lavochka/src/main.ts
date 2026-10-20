@@ -202,6 +202,7 @@ function render(r: Route) {
   closeAllModals();
   if (r.kind === 'table') return resumeTable(r.code);
   if (r.kind === 'page') return openPage(r);
+  if (r.kind === 'admin') return void import('./site/admin').then((a) => a.openAdmin(r.tab, siteBar({ onSearch: searchFromBar })));
   if (r.kind === 'auth') {
     // вход и ссылки из писем — окно поверх двора; адрес — снова двор, чтобы токен не остался в истории
     history.replaceState(null, '', '/');
