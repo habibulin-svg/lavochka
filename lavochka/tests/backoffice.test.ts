@@ -4,6 +4,7 @@ import { Accounts } from '../server/accounts/accounts';
 import { MemoryMailer } from '../server/accounts/mail';
 import { MemoryAccountStore } from '../server/accounts/store';
 import { Backoffice, fingerprint, mskDay, placeOf } from '../server/backoffice';
+import { mayPlay } from '../src/core/release';
 
 let ipN = 0;
 function setup() {
@@ -127,7 +128,56 @@ describe('админка', () => {
     const again = new Backoffice(acc, () => ({ online: 0, rooms: 0, players: 0 }), () => {}, (g) => ['durak', 'nardy'].includes(g));
     await again.loadRelease();
     expect(again.release).toEqual(bo.release);
+    // кто может играть (и сервер — при создании сетевой комнаты)
+    expect(mayPlay(bo.release, 'durak', [])).toBe(false);
+    expect(mayPlay(bo.release, 'durak', [{ right: 'early_access', until: null, group: 'Тестировщики' }])).toBe(true);
+    expect(mayPlay(bo.release, 'durak', [{ right: 'early_access', until: 1 }])).toBe(false);
+    expect(mayPlay({ nardy: { state: 'hidden' } }, 'nardy', [{ right: 'early_access', until: null }])).toBe(false);
+    expect(mayPlay({ nardy: { state: 'hidden' } }, 'nardy', [{ right: 'master', until: null }])).toBe(true);
+    expect(mayPlay(bo.release, 'nardy', [])).toBe(true);
     await bo.gamePost({ id: 'durak' }, ctx(boss.sid));
     expect(bo.release).toEqual({});
+  });
+
+  it('группы: права группы — у каждого участника, со сроком; убрали из группы — права нет', async () => {
+    const { acc, bo, ctx } = setup();
+    const boss = await user(acc, ctx, 'boss@x.ru', true);
+    const vasya = await user(acc, ctx, 'vasya@x.ru');
+    const petya = await user(acc, ctx, 'petya@x.ru');
+    expect((await bo.groupPost({ name: 'Тестировщики' }, ctx(vasya.sid))).code).toBe(403);
+    const made = await bo.groupPost({ name: 'Тестировщики', note: 'ранний доступ' }, ctx(boss.sid));
+    expect(made.code).toBe(200);
+    const id = made.body.id as number;
+    expect((await bo.groupPost({ name: 'тестировщики' }, ctx(boss.sid))).code).toBe(400);
+    expect((await bo.groupPost({ id, grant: 'master' }, ctx(boss.sid))).code).toBe(400);
+    expect((await bo.groupPost({ id, add: 'nobody@x.ru' }, ctx(boss.sid))).code).toBe(404);
+    await bo.groupPost({ id, add: 'VASYA@x.ru' }, ctx(boss.sid));
+    await bo.groupPost({ id, add: String(petya.id) }, ctx(boss.sid));
+    const now = Date.now();
+    await bo.groupPost({ id, grant: 'early_access', days: 30 }, ctx(boss.sid));
+    await bo.groupPost({ id, grant: 'video' }, ctx(boss.sid));
+    // личное право дольше группового — остаётся личным
+    await acc.store.grant(petya.id, 'video', null, null);
+    await acc.store.grant(petya.id, 'early_access', now + 3 * 86_400_000, null);
+    const vr = await acc.store.rights(vasya.id, now);
+    expect(vr.find((r) => r.right === 'early_access')).toMatchObject({ group: 'Тестировщики' });
+    expect(vr.find((r) => r.right === 'early_access')!.until).toBeGreaterThan(now + 29 * 86_400_000);
+    const pr = await acc.store.rights(petya.id, now);
+    expect(pr.filter((r) => r.right === 'video')).toEqual([{ right: 'video', until: null }]);
+    expect(pr.find((r) => r.right === 'early_access')!.group).toBe('Тестировщики');
+    // срок вышел
+    expect(await acc.store.rights(vasya.id, now + 40 * 86_400_000)).toEqual([{ right: 'video', until: null, group: 'Тестировщики' }]);
+    const list = (await bo.groups(ctx(boss.sid))).body as any;
+    expect(list.groups).toHaveLength(1);
+    expect(list.groups[0]).toMatchObject({ name: 'Тестировщики', members: 2 });
+    expect(((await bo.users(q('vasya'), ctx(boss.sid))).body as any).users[0].groups).toEqual([{ id, name: 'Тестировщики' }]);
+    await bo.groupPost({ id, remove: vasya.id }, ctx(boss.sid));
+    expect(await acc.store.rights(vasya.id, now)).toEqual([]);
+    await bo.groupPost({ id, revoke: 'video' }, ctx(boss.sid));
+    await bo.groupPost({ id, name: 'Друзья' }, ctx(boss.sid));
+    expect((await acc.store.rights(petya.id, now)).find((r) => r.right === 'early_access')!.group).toBe('Друзья');
+    await bo.groupPost({ id, del: true }, ctx(boss.sid));
+    expect((await bo.groups(ctx(boss.sid))).body.groups).toEqual([]);
+    expect((await acc.store.rights(petya.id, now)).map((r) => r.right).sort()).toEqual(['early_access', 'video']);
   });
 });

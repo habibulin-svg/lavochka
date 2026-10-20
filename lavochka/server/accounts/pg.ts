@@ -3,7 +3,7 @@
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
 import type { TicketStatus } from '../../src/core/support';
-import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PostRow, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, mergeRights, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PostRow, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -165,6 +165,29 @@ export const MIGRATIONS: string[] = [
      updated_by bigint references users on delete set null,
      primary key (kind, slug)
    );`,
+  // 8 — группы игроков: права группы действуют у каждого участника
+  `create table user_groups (
+     id bigserial primary key,
+     name text not null,
+     note text not null default '',
+     created_at timestamptz not null default now()
+   );
+   create unique index user_groups_name on user_groups (lower(name));
+   create table group_members (
+     group_id bigint not null references user_groups on delete cascade,
+     user_id bigint not null references users on delete cascade,
+     added_at timestamptz not null default now(),
+     primary key (group_id, user_id)
+   );
+   create index group_members_user on group_members (user_id);
+   create table group_rights (
+     group_id bigint not null references user_groups on delete cascade,
+     right_id text not null,
+     until timestamptz,
+     granted_by bigint references users on delete set null,
+     granted_at timestamptz not null default now(),
+     primary key (group_id, right_id)
+   );`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -324,8 +347,72 @@ export class PgAccountStore implements AccountStore {
   }
 
   async rights(userId: number, now: number): Promise<Right[]> {
-    const r = await this.pool.query('select right_id, until from user_rights where user_id = $1 and (until is null or until > $2)', [userId, date(now)]);
-    return r.rows.map((x) => ({ right: x.right_id, until: ms(x.until) }));
+    const r = await this.pool.query(
+      `select right_id, until, null as grp from user_rights where user_id = $1 and (until is null or until > $2)
+       union all
+       select r.right_id, r.until, g.name from group_rights r join group_members m on m.group_id = r.group_id join user_groups g on g.id = r.group_id
+        where m.user_id = $1 and (r.until is null or r.until > $2)`,
+      [userId, date(now)]
+    );
+    return mergeRights(r.rows.map((x) => (x.grp == null ? { right: x.right_id, until: ms(x.until) } : { right: x.right_id, until: ms(x.until), group: x.grp })));
+  }
+
+  async groups(now: number) {
+    const g = await this.pool.query('select g.*, (select count(*) from group_members m where m.group_id = g.id) as n from user_groups g order by lower(g.name)');
+    const r = await this.pool.query('select group_id, right_id, until from group_rights where until is null or until > $1 order by right_id', [date(now)]);
+    return g.rows.map((x) => ({
+      id: Number(x.id),
+      name: x.name,
+      note: x.note,
+      createdAt: ms(x.created_at)!,
+      members: Number(x.n),
+      rights: r.rows.filter((y) => Number(y.group_id) === Number(x.id)).map((y) => ({ right: y.right_id, until: ms(y.until) })),
+    }));
+  }
+
+  async saveGroup(g: { id?: number; name: string; note: string }) {
+    try {
+      if (g.id != null) {
+        await this.pool.query('update user_groups set name = $2, note = $3 where id = $1', [g.id, g.name, g.note]);
+        return g.id;
+      }
+      const r = await this.pool.query('insert into user_groups (name, note) values ($1, $2) returning id', [g.name, g.note]);
+      return Number(r.rows[0].id);
+    } catch (e: any) {
+      if (e?.code === '23505') throw new ExistsError('exists');
+      throw e;
+    }
+  }
+
+  async deleteGroup(id: number) {
+    await this.pool.query('delete from user_groups where id = $1', [id]);
+  }
+
+  async groupMembers(id: number) {
+    const r = await this.pool.query('select u.* from group_members m join users u on u.id = m.user_id where m.group_id = $1 order by m.added_at', [id]);
+    return r.rows.map(toUser);
+  }
+
+  async setGroupMember(groupId: number, userId: number, on: boolean) {
+    if (on) await this.pool.query('insert into group_members (group_id, user_id) values ($1, $2) on conflict do nothing', [groupId, userId]);
+    else await this.pool.query('delete from group_members where group_id = $1 and user_id = $2', [groupId, userId]);
+  }
+
+  async groupsOf(userId: number) {
+    const r = await this.pool.query('select g.id, g.name from group_members m join user_groups g on g.id = m.group_id where m.user_id = $1 order by lower(g.name)', [userId]);
+    return r.rows.map((x) => ({ id: Number(x.id), name: x.name }));
+  }
+
+  async groupGrant(groupId: number, right: string, until: number | null, by: number | null) {
+    await this.pool.query(
+      `insert into group_rights (group_id, right_id, until, granted_by) values ($1, $2, $3, $4)
+       on conflict (group_id, right_id) do update set until = excluded.until, granted_by = excluded.granted_by, granted_at = now()`,
+      [groupId, right, date(until), by]
+    );
+  }
+
+  async groupRevoke(groupId: number, right: string) {
+    await this.pool.query('delete from group_rights where group_id = $1 and right_id = $2', [groupId, right]);
   }
 
   async grant(userId: number, right: string, until: number | null, by: number | null) {

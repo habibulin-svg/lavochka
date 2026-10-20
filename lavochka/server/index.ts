@@ -29,6 +29,7 @@ import { Donate, donateApi } from './donate';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
 import { Backoffice, backofficeApi } from './backoffice';
+import { mayPlay } from '../src/core/release';
 import { Content, contentApi, prerenderProcess } from './content';
 import { robokassaFromEnv } from './pay/robokassa';
 
@@ -92,7 +93,7 @@ function scheduleEmpty(code: string) {
   );
 }
 
-async function handleFirst(ws: WebSocket, msg: any): Promise<Link | null> {
+async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promise<Link | null> {
   const fail = (text: string) => {
     ws.send(JSON.stringify({ t: 'error', text }));
     ws.close();
@@ -101,6 +102,13 @@ async function handleFirst(ws: WebSocket, msg: any): Promise<Link | null> {
   if (msg?.t === 'create') {
     const load = DEFS[String(msg.game)];
     if (!load) return fail('Сервер не знает эту игру — возможно, он старее сайта.');
+    // выход игр (админка → «Игры»): скрытую открывает только Мастер, раннюю — с правом; гостей по коду хозяин зовёт сам
+    if (backoffice.release[String(msg.game)]) {
+      const u = await userOf(req);
+      const rights = u ? await accounts.store.rights(u.id, Date.now()).catch(() => []) : [];
+      if (!mayPlay(backoffice.release, String(msg.game), rights))
+        return fail(backoffice.release[String(msg.game)].state === 'hidden' ? 'Эта игра пока скрыта.' : 'Эта игра пока в раннем доступе — для тех, у кого он есть.');
+    }
     const def = await load();
     const seats = sanitizeSeats(msg.seats, def.seats.length);
     if (!seats || seats.length < def.players.min || seats.length > def.players.max) return fail('Неверная рассадка.');
@@ -396,7 +404,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await contentApi(content, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
-  if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors' || path === '/api/admin/games') {
+  if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors' || path === '/api/admin/games' || path === '/api/admin/groups') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await backofficeApi(backoffice, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) {
       if (path === '/api/admin/games') statsCache = null; // выход игр — всем сразу
@@ -567,7 +575,7 @@ const server = createServer((req, res) => {
 // ------------------------------------------------------------------ WebSocket
 
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 64 * 1024 });
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   let link: Link | null = null;
   let pending = true;
   ws.on('message', (data) => {
@@ -580,7 +588,7 @@ wss.on('connection', (ws) => {
     if (link) return link.onMessage?.(msg);
     if (!pending) return;
     pending = false;
-    handleFirst(ws, msg)
+    handleFirst(ws, msg, req)
       .then((l) => (link = l))
       .catch((e) => {
         log('ошибка: ' + e);

@@ -25,6 +25,27 @@ export interface User {
 export interface Right {
   right: string;
   until: number | null;
+  /** Право пришло от группы (её название) — забирают его у группы, а не у игрока. */
+  group?: string;
+}
+
+/** Группа игроков: права, выданные группе, действуют у каждого её участника (админка → «Группы»). */
+export interface Group {
+  id: number;
+  name: string;
+  note: string;
+  createdAt: number;
+}
+
+/** Свести личные права и права групп: одно право — один раз, с самым долгим сроком (личное при равенстве). */
+export function mergeRights(list: Right[]): Right[] {
+  const best = new Map<string, Right>();
+  const longer = (a: Right, b: Right) => (a.until == null ? b.until != null : b.until != null && a.until > b.until);
+  for (const r of list) {
+    const was = best.get(r.right);
+    if (!was || longer(r, was)) best.set(r.right, r);
+  }
+  return [...best.values()].map((r) => (r.group ? r : { right: r.right, until: r.until }));
 }
 
 export type TokenKind = 'verify' | 'reset';
@@ -159,10 +180,22 @@ export interface AccountStore {
   /** Погасить одноразовую ссылку из письма: вернуть владельца или null (нет, просрочена, уже использована). */
   useToken(hash: string, kind: TokenKind, now: number): Promise<number | null>;
 
-  /** Действующие права. */
+  /** Действующие права — личные и от групп (mergeRights). */
   rights(userId: number, now: number): Promise<Right[]>;
   grant(userId: number, right: string, until: number | null, by: number | null): Promise<void>;
   revoke(userId: number, right: string): Promise<void>;
+
+  /** Группы с числом участников и действующими правами. */
+  groups(now: number): Promise<(Group & { members: number; rights: Right[] })[]>;
+  /** Новая группа (без id) или правка; название занято — ExistsError. Возвращает номер. */
+  saveGroup(g: { id?: number; name: string; note: string }): Promise<number>;
+  deleteGroup(id: number): Promise<void>;
+  groupMembers(id: number): Promise<User[]>;
+  setGroupMember(groupId: number, userId: number, on: boolean): Promise<void>;
+  /** В каких группах игрок. */
+  groupsOf(userId: number): Promise<{ id: number; name: string }[]>;
+  groupGrant(groupId: number, right: string, until: number | null, by: number | null): Promise<void>;
+  groupRevoke(groupId: number, right: string): Promise<void>;
 
   /** Вход через Яндекс ID / VK ID (этап 3б). */
   userByExternal(provider: string, subject: string): Promise<User | null>;
@@ -268,6 +301,8 @@ export class MemoryAccountStore implements AccountStore {
   private plays = new Map<number, PlayRecord[]>();
   private saves = new Map<string, { at: number; data: string | null }>();
   private ticketsBy = new Map<number, Ticket & { messages: TicketMsg[] }>();
+  private groupsBy = new Map<number, Group & { users: Set<number>; rights: Map<string, number | null> }>();
+  private groupSeq = 0;
 
   async init() {}
 
@@ -339,9 +374,64 @@ export class MemoryAccountStore implements AccountStore {
   }
 
   async rights(userId: number, now: number) {
-    const m = this.rightsBy.get(userId);
-    if (!m) return [];
-    return [...m].filter(([, until]) => until == null || until > now).map(([right, until]) => ({ right, until }));
+    const live = ([, until]: [string, number | null]) => until == null || until > now;
+    const own: Right[] = [...(this.rightsBy.get(userId) ?? [])].filter(live).map(([right, until]) => ({ right, until }));
+    for (const g of this.groupsBy.values()) if (g.users.has(userId)) own.push(...[...g.rights].filter(live).map(([right, until]) => ({ right, until, group: g.name })));
+    return mergeRights(own);
+  }
+
+  async groups(now: number) {
+    return [...this.groupsBy.values()]
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        note: g.note,
+        createdAt: g.createdAt,
+        members: g.users.size,
+        rights: [...g.rights].filter(([, until]) => until == null || until > now).map(([right, until]) => ({ right, until })),
+      }));
+  }
+
+  async saveGroup(g: { id?: number; name: string; note: string }) {
+    if ([...this.groupsBy.values()].some((x) => x.name.toLowerCase() === g.name.toLowerCase() && x.id !== g.id)) throw new ExistsError('exists');
+    if (g.id != null) {
+      const was = this.groupsBy.get(g.id);
+      if (was) Object.assign(was, { name: g.name, note: g.note });
+      return g.id;
+    }
+    const id = ++this.groupSeq;
+    this.groupsBy.set(id, { id, name: g.name, note: g.note, createdAt: Date.now(), users: new Set(), rights: new Map() });
+    return id;
+  }
+
+  async deleteGroup(id: number) {
+    this.groupsBy.delete(id);
+  }
+
+  async groupMembers(id: number) {
+    return [...(this.groupsBy.get(id)?.users ?? [])]
+      .map((u) => this.users.get(u))
+      .filter((u): u is User => !!u)
+      .map((u) => ({ ...u }));
+  }
+
+  async setGroupMember(groupId: number, userId: number, on: boolean) {
+    const g = this.groupsBy.get(groupId);
+    if (g && on) g.users.add(userId);
+    else g?.users.delete(userId);
+  }
+
+  async groupsOf(userId: number) {
+    return [...this.groupsBy.values()].filter((g) => g.users.has(userId)).map((g) => ({ id: g.id, name: g.name }));
+  }
+
+  async groupGrant(groupId: number, right: string, until: number | null) {
+    this.groupsBy.get(groupId)?.rights.set(right, until);
+  }
+
+  async groupRevoke(groupId: number, right: string) {
+    this.groupsBy.get(groupId)?.rights.delete(right);
   }
 
   async grant(userId: number, right: string, until: number | null) {

@@ -52,6 +52,8 @@ a.adm-tile:hover { filter: brightness(1.05); }
 .adm-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .adm-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; background: rgba(60, 40, 20, 0.12); font-size: 12.5px; margin: 1px 2px 1px 0; }
 .adm-chip.off { background: #b3322a; color: #fff; }
+a.adm-chip { color: inherit; text-decoration: none; }
+a.adm-chip:hover { background: rgba(60, 40, 20, 0.22); }
 .adm-chip button { border: 0; background: none; cursor: pointer; padding: 0 0 0 4px; color: inherit; font: inherit; }
 
 @media (max-width: 640px) {

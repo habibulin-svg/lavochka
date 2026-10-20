@@ -146,7 +146,8 @@ async function editPost(body: HTMLElement, kind: Kind, slug: string) {
     ta.focus();
     render();
   };
-  const upload = async (file: File): Promise<string | null> => {
+  const upload = async (original: File): Promise<string | null> => {
+    const file = await shrink(original);
     if (file.size > 5 * 1024 * 1024) return (toast('Картинка больше 5 МБ — уменьшите.'), null);
     const r = await fetch('/api/admin/upload', { method: 'POST', body: file }).catch(() => null);
     const b = r ? await r.json().catch(() => ({})) : { message: 'Нет связи.' };
@@ -264,4 +265,23 @@ function pickGames(done: (ids: string[]) => void) {
     },
   ]);
   setTimeout(() => q.focus(), 50);
+}
+
+/** Ужать картинку перед загрузкой: не шире 1600 px, webp. Анимированный gif и то, что не стало меньше, — как есть. */
+async function shrink(file: File): Promise<Blob> {
+  if (file.type === 'image/gif' || typeof createImageBitmap !== 'function') return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k);
+    c.height = Math.round(bmp.height * k);
+    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close();
+    const out = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/webp', 0.85));
+    // браузер без webp отдаёт png — тогда лучше исходник
+    return out && out.type === 'image/webp' && (out.size < file.size || k < 1) ? out : file;
+  } catch {
+    return file;
+  }
 }

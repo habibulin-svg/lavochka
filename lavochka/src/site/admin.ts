@@ -15,6 +15,7 @@ export async function call(url: string, body?: unknown): Promise<{ ok: boolean; 
 const TABS: [string, string][] = [
   ['', '📊 Сводка'],
   ['igroki', '👥 Игроки'],
+  ['gruppy', '👪 Группы'],
   ['oshibki', '🐞 Ошибки'],
   ['obrashcheniya', '📮 Обращения'],
   ['teksty', '✍ Тексты'],
@@ -51,7 +52,7 @@ export async function openAdmin(tab: string, bar: HTMLElement): Promise<void> {
       return;
     }
     if (tab === 'teksty') void import('./admin-texts').then((m) => m.drawTexts(body));
-    else if (tab === 'igroki' || tab === 'oshibki' || tab === 'obrashcheniya' || tab === 'igry') void import('./admin-more').then((m) => m.drawTab(tab, body));
+    else if (tab === 'igroki' || tab === 'gruppy' || tab === 'oshibki' || tab === 'obrashcheniya' || tab === 'igry') void import('./admin-more').then((m) => m.drawTab(tab, body));
     else void drawDash(body);
   };
   unsub?.();

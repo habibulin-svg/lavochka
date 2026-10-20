@@ -1,5 +1,7 @@
 /* Выход игр (админка → «Игры»): скрыта (видит только Мастер), ранний доступ (право early_access), «новинка», порядок на дворе.
  * Хранится в настройках сайта (site_settings 'games'), всем приходит вместе со счётчиками (/api/stats). Без записи — игра для всех. */
+import { hasRight, type RightGrant } from './rights';
+
 export type ReleaseState = 'all' | 'early' | 'hidden';
 
 export interface GameRelease {
@@ -28,4 +30,12 @@ export function cleanRelease(x: unknown, known: (id: string) => boolean): Releas
     if (Object.keys(r).length) out[id] = r;
   }
   return out;
+}
+
+/** Можно ли играть в игру с такими правами: скрытая — только Мастеру, ранний доступ — с правом early_access. */
+export function mayPlay(rel: Release, id: string, rights: RightGrant[], now = Date.now()): boolean {
+  const st = rel[id]?.state;
+  if (st === 'hidden') return hasRight(rights, 'master', now);
+  if (st === 'early') return hasRight(rights, 'early_access', now);
+  return true;
 }

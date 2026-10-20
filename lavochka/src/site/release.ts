@@ -1,7 +1,7 @@
 /* Выход игр на этом экране: что скрыто, что в раннем доступе, что новинка и в каком порядке (src/core/release.ts).
  * Приходит со счётчиками (/api/stats); нет связи — все игры для всех. Мастер видит и скрытые. */
 import { hasRight } from '../core/rights';
-import type { GameRelease, Release } from '../core/release';
+import { mayPlay, type GameRelease, type Release } from '../core/release';
 import { currentUser, onAccount } from './account';
 import { loadStats, onStats } from './stats';
 
@@ -29,12 +29,7 @@ export const isMaster = () => hasRight(rights(), 'master');
 export const canSee = (id: string) => releaseOf(id).state !== 'hidden' || isMaster();
 
 /** Можно ли открыть игру. */
-export function canPlay(id: string): boolean {
-  const st = releaseOf(id).state;
-  if (st === 'hidden') return isMaster();
-  if (st === 'early') return hasRight(rights(), 'early_access');
-  return true;
-}
+export const canPlay = (id: string): boolean => mayPlay(rel, id, rights());
 
 /** Метка на карточке. */
 export function releaseBadge(id: string): string {

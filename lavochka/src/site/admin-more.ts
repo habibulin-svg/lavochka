@@ -1,4 +1,4 @@
-/* Админка: разделы «Игроки» (права на срок, закрыть вход), «Ошибки» (автоошибки браузера и сервера, выгрузка пачкой),
+/* Админка: разделы «Игроки» (права на срок, закрыть вход), «Группы» (права группе — у каждого участника), «Ошибки» (автоошибки браузера и сервера, выгрузка пачкой),
  * «Обращения» (список; переписка — окном из src/site/support.ts). Открывает src/site/admin.ts по адресу. */
 import { esc } from '../core/util';
 import { toast } from '../core/ui';
@@ -16,6 +16,7 @@ const fail = (body: HTMLElement, r: { body: any }) => {
 
 export async function drawTab(tab: string, body: HTMLElement): Promise<void> {
   if (tab === 'igroki') return drawUsers(body);
+  if (tab === 'gruppy') return drawGroups(body);
   if (tab === 'oshibki') return drawErrors(body);
   if (tab === 'igry') return drawGames(body);
   return drawTickets(body);
@@ -30,27 +31,25 @@ async function drawUsers(body: HTMLElement) {
   if (!r.ok) return fail(body, r);
   const RIGHTS = r.body.rights as Record<string, string>;
   const users = r.body.users as any[];
-  const opts = Object.entries(RIGHTS)
-    .filter(([k]) => k !== 'master')
-    .map(([k, t]) => `<option value="${k}">${esc(t)}</option>`)
-    .join('');
+  const opts = rightOptions(RIGHTS);
   body.innerHTML = `<div class="adm-head"><h1>Игроки</h1></div>
     <form class="adm-card adm-row adm-search"><input name="q" placeholder="Почта, имя или номер" value="${esc(userQ)}" autocomplete="off"><button class="btn small">Найти</button>
       <span class="adm-muted">${userQ ? `найдено ${users.length}` : 'последние 50 зарегистрированных'}</span></form>
     <div class="adm-card"><table class="adm-table"><thead><tr><th>№</th><th>Игрок</th><th>С нами</th><th>Права</th><th></th></tr></thead><tbody>${
       users
         .map((u) => {
-          const rights = (u.rights as { right: string; until: number | null }[])
+          const rights = (u.rights as { right: string; until: number | null; group?: string }[])
             .map(
               (g) =>
-                `<span class="adm-chip" title="${esc(RIGHTS[g.right] ?? g.right)}">${esc(g.right)}${g.until ? ` до ${date(g.until)}` : ''}${g.right === 'master' ? '' : `<button data-revoke="${esc(g.right)}" data-id="${u.id}" title="Забрать">✕</button>`}</span>`
+                `<span class="adm-chip" title="${esc(RIGHTS[g.right] ?? g.right)}${g.group ? ` — от группы «${esc(g.group)}»` : ''}">${esc(g.right)}${g.until ? ` до ${date(g.until)}` : ''}${g.group ? ` · 👪 ${esc(g.group)}` : g.right === 'master' ? '' : `<button data-revoke="${esc(g.right)}" data-id="${u.id}" title="Забрать">✕</button>`}</span>`
             )
             .join('');
+          const groups = (u.groups as { id: number; name: string }[]).map((g) => `<a class="adm-chip" href="/admin/gruppy/#g${g.id}">👪 ${esc(g.name)}</a>`).join('');
           return `<tr><td>${u.id}</td>
             <td><b>${esc(u.name)}</b><br><small>${u.email ? esc(u.email) + (u.verified ? '' : ' (не подтв.)') : 'без почты'}${u.logins.length ? ' · ' + esc(u.logins.join(', ')) : ''}</small></td>
             <td><small>с ${date(u.createdAt)}<br>вход: ${when(u.lastLoginAt)}</small></td>
-            <td>${rights || '<small class="adm-muted">—</small>'}${u.bannedUntil ? `<span class="adm-chip off">вход закрыт до ${date(u.bannedUntil)}</span>` : ''}</td>
-            <td><div class="adm-row"><select data-right="${u.id}"><option value="">выдать право…</option>${opts}</select><select data-days="${u.id}" title="Срок"><option value="">бессрочно</option><option value="7">7 дн.</option><option value="30" selected>30 дн.</option><option value="90">90 дн.</option><option value="365">год</option></select><button class="btn small" data-grant="${u.id}">Выдать</button>
+            <td>${rights || '<small class="adm-muted">—</small>'}${groups}${u.bannedUntil ? `<span class="adm-chip off">вход закрыт до ${date(u.bannedUntil)}</span>` : ''}</td>
+            <td><div class="adm-row"><select data-right="${u.id}"><option value="">выдать право…</option>${opts}</select><select data-days="${u.id}" title="Срок">${DAYS}</select><button class="btn small" data-grant="${u.id}">Выдать</button>
               ${u.bannedUntil ? `<button class="btn small" data-unban="${u.id}">Открыть вход</button>` : `<button class="btn small" data-ban="${u.id}">Закрыть вход…</button>`}</div></td></tr>`;
         })
         .join('') || '<tr><td colspan="5" class="adm-muted">Никого.</td></tr>'
@@ -88,6 +87,88 @@ async function drawUsers(body: HTMLElement) {
       })
   );
   body.querySelectorAll<HTMLButtonElement>('[data-unban]').forEach((b) => (b.onclick = () => void act({ id: Number(b.dataset.unban), ban: 0 }, 'Вход открыт.')));
+}
+
+const rightOptions = (RIGHTS: Record<string, string>) =>
+  Object.entries(RIGHTS)
+    .filter(([k]) => k !== 'master')
+    .map(([k, t]) => `<option value="${k}">${esc(t)}</option>`)
+    .join('');
+const DAYS = '<option value="">бессрочно</option><option value="7">7 дн.</option><option value="30" selected>30 дн.</option><option value="90">90 дн.</option><option value="365">год</option>';
+const plural = (n: number, one: string, few: string, many: string) =>
+  n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
+
+// ---------------------------------------------------------------- группы
+
+async function drawGroups(body: HTMLElement) {
+  const r = await call('/api/admin/groups');
+  if (!r.ok) return fail(body, r);
+  const RIGHTS = r.body.rights as Record<string, string>;
+  const groups = r.body.groups as any[];
+  const opts = rightOptions(RIGHTS);
+  body.innerHTML = `<div class="adm-head"><h1>Группы</h1></div>
+    <form class="adm-card adm-row adm-search" data-new><input name="name" placeholder="Название новой группы" maxlength="60" autocomplete="off" required><input name="note" placeholder="Для чего (необязательно)" maxlength="300" autocomplete="off"><button class="btn small">Завести</button></form>
+    ${
+      groups
+        .map(
+          (g) => `<div class="adm-card" id="g${g.id}" data-g="${g.id}">
+        <div class="adm-row"><b>👪 ${esc(g.name)}</b><span class="adm-muted">${g.members} ${plural(g.members, 'участник', 'участника', 'участников')}${g.note ? ' · ' + esc(g.note) : ''}</span>
+          <button class="btn small" data-rename>Переименовать…</button><button class="btn small" data-del>Удалить</button></div>
+        <p>${
+          (g.rights as { right: string; until: number | null }[])
+            .map((x) => `<span class="adm-chip" title="${esc(RIGHTS[x.right] ?? x.right)}">${esc(x.right)}${x.until ? ` до ${date(x.until)}` : ''}<button data-revoke="${esc(x.right)}" title="Забрать у группы">✕</button></span>`)
+            .join('') || '<small class="adm-muted">прав нет</small>'
+        }</p>
+        <div class="adm-row"><select data-right><option value="">выдать право группе…</option>${opts}</select><select data-days title="Срок">${DAYS}</select><button class="btn small" data-grant>Выдать</button></div>
+        <p>${
+          (g.users as { id: number; name: string; email: string | null }[])
+            .map((u) => `<span class="adm-chip" title="${esc(u.email ?? 'без почты')}">№${u.id} ${esc(u.name)}<button data-remove="${u.id}" title="Убрать из группы">✕</button></span>`)
+            .join('') || '<small class="adm-muted">участников нет</small>'
+        }</p>
+        <form class="adm-row" data-add><input name="who" placeholder="Номер игрока или почта" autocomplete="off" required><button class="btn small">Добавить</button></form>
+      </div>`
+        )
+        .join('') || '<div class="adm-card adm-muted">Групп пока нет. Например: «Тестировщики» — ранний доступ, «Друзья проекта» — видео за столом.</div>'
+    }
+    <p class="adm-muted">Право, выданное группе, действует у каждого её участника на тот же срок; убрали из группы — право пропало. В «Игроки» такие права подписаны названием группы. Право Мастера группе не выдаётся.</p>`;
+  const act = async (b: unknown, ok: string) => {
+    const res = await call('/api/admin/groups', b);
+    toast(res.ok ? ok : res.body.message || 'Не вышло.');
+    if (res.ok) void drawGroups(body);
+  };
+  const nf = body.querySelector('[data-new]') as HTMLFormElement;
+  nf.onsubmit = (e) => {
+    e.preventDefault();
+    const f = new FormData(nf);
+    void act({ name: f.get('name'), note: f.get('note') }, 'Группа заведена.');
+  };
+  body.querySelectorAll<HTMLElement>('[data-g]').forEach((card) => {
+    const id = Number(card.dataset.g);
+    const g = groups.find((x) => x.id === id);
+    (card.querySelector('[data-rename]') as HTMLButtonElement).onclick = () => {
+      const name = prompt('Название группы', g.name);
+      if (name == null) return;
+      const note = prompt('Для чего (можно пусто)', g.note);
+      void act({ id, name, note: note ?? g.note }, 'Сохранено.');
+    };
+    (card.querySelector('[data-del]') as HTMLButtonElement).onclick = () =>
+      confirm(`Удалить группу «${g.name}»? Её права пропадут у всех участников.`) && void act({ id, del: true }, 'Группа удалена.');
+    (card.querySelector('[data-grant]') as HTMLButtonElement).onclick = () => {
+      const right = (card.querySelector('[data-right]') as HTMLSelectElement).value;
+      if (!right) return toast('Выберите право.');
+      void act({ id, grant: right, days: Number((card.querySelector('[data-days]') as HTMLSelectElement).value) || null }, 'Право выдано группе.');
+    };
+    card.querySelectorAll<HTMLButtonElement>('[data-revoke]').forEach(
+      (b) => (b.onclick = () => confirm(`Забрать ${b.dataset.revoke} у группы «${g.name}»?`) && void act({ id, revoke: b.dataset.revoke }, 'Право забрано.'))
+    );
+    card.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((b) => (b.onclick = () => void act({ id, remove: Number(b.dataset.remove) }, 'Убран из группы.')));
+    const add = card.querySelector('[data-add]') as HTMLFormElement;
+    add.onsubmit = (e) => {
+      e.preventDefault();
+      void act({ id, add: String(new FormData(add).get('who') ?? '').trim() }, 'Добавлен в группу.');
+    };
+  });
+  if (location.hash) body.querySelector('#' + CSS.escape(location.hash.slice(1)))?.scrollIntoView({ block: 'center' });
 }
 
 // ---------------------------------------------------------------- ошибки

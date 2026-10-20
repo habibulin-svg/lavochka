@@ -8,11 +8,16 @@
  *   GET  /api/admin/errors[?status=new][&format=md]             — Мастеру: ошибки (md — выгрузка пачкой для разбора)
  *   POST /api/admin/errors {id, status}                         — Мастеру: состояние ошибки
  *   POST /api/admin/games {id, state?, new?, order?}             — Мастеру: выход игры (src/core/release.ts); всем — в /api/stats
+ *   GET  /api/admin/groups                                      — Мастеру: группы игроков с участниками и правами
+ *   POST /api/admin/groups {id?, name?, note?, del?, add?, remove?, grant?, days?, revoke?}
+ *                                                               — Мастеру: создать/переименовать/удалить группу, добавить
+ *                                                                 участника (add — номер или почта), убрать, право группе
  * Счётчики пишет сервер сам: партии (countPlay в браузере → /api/played), пик онлайна и посетители за день; регистрации — из таблицы игроков. */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
 import { RIGHTS } from '../src/core/rights';
 import { cleanRelease, type Release } from '../src/core/release';
+import { ExistsError } from './accounts/store';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 import type { ErrorReport, ErrorRow, ErrorStatus, StatRow, User } from './accounts/store';
@@ -224,6 +229,7 @@ export class Backoffice {
         verified: u.emailVerified,
         logins: await this.acc.store.externalOf(u.id),
         rights: await this.acc.store.rights(u.id, now),
+        groups: await this.acc.store.groupsOf(u.id),
       }))
     );
     return { code: 200, body: { users: out, rights: RIGHTS } };
@@ -261,6 +267,75 @@ export class Backoffice {
       this.log(`админка: ${me.name} ${d ? `закрыл вход игроку №${u.id} на ${d} дн.` : `открыл вход игроку №${u.id}`}`);
     }
     return { code: 200, body: { ok: true } };
+  }
+
+  // ---------------------------------------------------------------- группы
+
+  async groups(ctx: Ctx): Promise<Reply> {
+    if (!(await this.master(ctx))) return err(403, 'master', 'Только для Мастера.');
+    const st = this.acc.store;
+    const list = await st.groups(ctx.now ?? Date.now());
+    const out = await Promise.all(
+      list.map(async (g) => ({ ...g, users: (await st.groupMembers(g.id)).slice(0, 500).map((u) => ({ id: u.id, name: u.name, email: u.email })) }))
+    );
+    return { code: 200, body: { groups: out, rights: RIGHTS } };
+  }
+
+  async groupPost(b: any, ctx: Ctx): Promise<Reply> {
+    const me = await this.master(ctx);
+    if (!me) return err(403, 'master', 'Только для Мастера.');
+    const now = ctx.now ?? Date.now();
+    const st = this.acc.store;
+    const name = line(b?.name, 60);
+    const note = line(b?.note, 300);
+    if (b?.id == null) {
+      if (!name) return err(400, 'name', 'Назовите группу.');
+      try {
+        const id = await st.saveGroup({ name, note });
+        this.log(`админка: ${me.name} завёл группу «${name}»`);
+        return { code: 200, body: { ok: true, id } };
+      } catch (e) {
+        if (e instanceof ExistsError) return err(400, 'exists', 'Группа с таким названием уже есть.');
+        throw e;
+      }
+    }
+    const g = (await st.groups(now)).find((x) => x.id === Number(b.id));
+    if (!g) return err(404, 'group', 'Нет такой группы.');
+    if (b.del) {
+      await st.deleteGroup(g.id);
+      this.log(`админка: ${me.name} удалил группу «${g.name}»`);
+      return { code: 200, body: { ok: true } };
+    }
+    if (b.name != null || b.note != null) {
+      if (!name) return err(400, 'name', 'Назовите группу.');
+      try {
+        await st.saveGroup({ id: g.id, name, note: b.note == null ? g.note : note });
+      } catch (e) {
+        if (e instanceof ExistsError) return err(400, 'exists', 'Группа с таким названием уже есть.');
+        throw e;
+      }
+    }
+    if (b.add != null) {
+      const q = line(b.add, 200).toLowerCase();
+      const u = /^\d{1,15}$/.test(q) ? await st.userById(Number(q)) : q.includes('@') ? await st.userByEmail(q) : null;
+      if (!u) return err(404, 'user', 'Нет игрока с таким номером или почтой.');
+      await st.setGroupMember(g.id, u.id, true);
+      this.log(`админка: ${me.name} добавил игрока №${u.id} в группу «${g.name}»`);
+    }
+    if (b.remove != null) await st.setGroupMember(g.id, Number(b.remove), false);
+    if (b.grant != null) {
+      if (!Object.hasOwn(RIGHTS, b.grant)) return err(400, 'right', 'Нет такого права.');
+      if (b.grant === 'master') return err(400, 'master', 'Право Мастера группе не выдаётся.');
+      const n = Number(b.days);
+      const d = Number.isFinite(n) && n > 0 ? Math.min(n, 36500) : null;
+      await st.groupGrant(g.id, b.grant, d == null ? null : now + d * DAY, me.id);
+      this.log(`админка: ${me.name} выдал ${b.grant} группе «${g.name}»${d ? ` на ${d} дн.` : ''}`);
+    }
+    if (b.revoke != null) {
+      await st.groupRevoke(g.id, String(b.revoke));
+      this.log(`админка: ${me.name} забрал ${b.revoke} у группы «${g.name}»`);
+    }
+    return { code: 200, body: { ok: true, id: g.id } };
   }
 
   async errors(q: URLSearchParams, ctx: Ctx): Promise<Reply> {
@@ -309,11 +384,11 @@ export async function backofficeApi(
 ): Promise<boolean> {
   const path = url.pathname;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
-  const routes = ['/api/errors', '/api/admin/dash', '/api/admin/users', '/api/admin/errors', '/api/admin/games'];
+  const routes = ['/api/errors', '/api/admin/dash', '/api/admin/users', '/api/admin/errors', '/api/admin/games', '/api/admin/groups'];
   if (!routes.includes(path)) return false;
   if (req.method === 'GET') {
     const r =
-      path === '/api/admin/dash' ? await bo.dash(url.searchParams, ctx) : path === '/api/admin/users' ? await bo.users(url.searchParams, ctx) : path === '/api/admin/errors' ? await bo.errors(url.searchParams, ctx) : { code: 405, body: { error: 'method' } };
+      path === '/api/admin/dash' ? await bo.dash(url.searchParams, ctx) : path === '/api/admin/users' ? await bo.users(url.searchParams, ctx) : path === '/api/admin/errors' ? await bo.errors(url.searchParams, ctx) : path === '/api/admin/groups' ? await bo.groups(ctx) : { code: 405, body: { error: 'method' } };
     send(req, res, r);
     return true;
   }
@@ -333,6 +408,6 @@ export async function backofficeApi(
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, path === '/api/errors' ? await bo.clientError(b, ctx) : path === '/api/admin/users' ? await bo.userPost(b, ctx) : path === '/api/admin/games' ? await bo.gamePost(b, ctx) : await bo.errorPost(b, ctx));
+  send(req, res, path === '/api/errors' ? await bo.clientError(b, ctx) : path === '/api/admin/users' ? await bo.userPost(b, ctx) : path === '/api/admin/games' ? await bo.gamePost(b, ctx) : path === '/api/admin/groups' ? await bo.groupPost(b, ctx) : await bo.errorPost(b, ctx));
   return true;
 }

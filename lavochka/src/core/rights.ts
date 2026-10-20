@@ -18,6 +18,8 @@ export interface RightGrant {
   right: string;
   /** Конец срока (мс) или null — бессрочно. */
   until: number | null;
+  /** Право от группы (её название), а не личное. */
+  group?: string;
 }
 
 /** Есть ли право (Мастеру можно всё). */
