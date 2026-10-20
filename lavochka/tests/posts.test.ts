@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../src/games/catalog';
 import { ARTICLES, MODE_PAGES, parseRoute, SECTION_SLUGS, SLUGS, VARIANTS } from '../src/site/routes';
 import { KINDS, loadPosts, markdown, type Kind } from '../tools/posts';
+import { gameCard } from '../src/site/postcard';
 
-const posts = (Object.keys(KINDS) as Kind[]).flatMap((k) => loadPosts(k));
+const posts = (Object.keys(KINDS) as Kind[]).flatMap((k) => loadPosts(k, []));
 
 // адреса сайта, на которые можно ссылаться из записей
 const known = new Set<string>(['/', '/novosti/', '/blog/']);
@@ -44,6 +45,23 @@ describe('разметка записей', () => {
     expect(html).toContain('<ol><li>один</li></ol>');
     expect(html).toContain('<thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody>');
     expect(html).toContain('<blockquote><p>цитата</p></blockquote>');
+  });
+
+  it('карточки игр: подряд — одним рядом, неизвестная — пропуск; записи из админки заменяют и снимают файловые', () => {
+    const html = markdown('Текст\n[[игра:durak]]\n[[игра:nardy|Короткие и длинные]]\n[[игра:нетакой]]\n\nДальше', gameCard);
+    expect(html.match(/class="post-games"/g)).toHaveLength(1);
+    expect(html.match(/class="post-game"/g)).toHaveLength(2);
+    expect(html).toContain('Короткие и длинные');
+    expect(html).toContain('<p>Дальше</p>');
+    expect(html).not.toContain('нетакой');
+    const file = loadPosts('blog', [])[0];
+    const db = loadPosts('blog', [
+      { kind: 'blog', slug: file.slug, title: 'Новый заголовок', description: 'о', date: '2030-01-01', body: '## Раз' },
+      { kind: 'blog', slug: 'svezhaya', title: 'Свежая', description: 'о', date: '2030-01-02', body: 'текст' },
+    ]);
+    expect(db[0].slug).toBe('svezhaya');
+    expect(db.find((p) => p.slug === file.slug)!.title).toBe('Новый заголовок');
+    expect(loadPosts('blog', [{ kind: 'blog', slug: file.slug, title: '', description: '', date: '', body: '', hidden: true }]).some((p) => p.slug === file.slug)).toBe(false);
   });
 });
 

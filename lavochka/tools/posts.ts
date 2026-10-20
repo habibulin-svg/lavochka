@@ -6,6 +6,10 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { markdown } from '../src/core/markdown';
+import { gameCard } from '../src/site/postcard';
+
+export { markdown };
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -32,80 +36,6 @@ export interface Post {
   /** Текст записи (HTML). */
   html: string;
   file: string;
-}
-
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-/** Строчная разметка: экранирование, ссылки, жирный, курсив, код. */
-function inline(s: string): string {
-  let t = esc(s);
-  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, text, href) => `<a href="${href}">${text}</a>`);
-  t = t.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-  t = t.replace(/(^|[\s(«])\*([^*\s][^*]*?)\*(?=[\s).,:;!?»]|$)/g, '$1<i>$2</i>');
-  t = t.replace(/(^|[\s(«])_([^_\s][^_]*?)_(?=[\s).,:;!?»]|$)/g, '$1<i>$2</i>');
-  return t;
-}
-
-/** Markdown → HTML (подмножество, см. шапку файла). */
-export function markdown(src: string): string {
-  const lines = src.replace(/\r/g, '').split('\n');
-  const out: string[] = [];
-  let i = 0;
-  const isBlockStart = (l: string) => /^(#{2,4}\s|[-*]\s|\d+\.\s|>\s?|\||<|!\[)/.test(l) || !l.trim();
-  while (i < lines.length) {
-    const l = lines[i];
-    if (!l.trim()) {
-      i++;
-      continue;
-    }
-    let m: RegExpMatchArray | null;
-    if ((m = l.match(/^(#{2,4})\s+(.*)$/))) {
-      out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);
-      i++;
-    } else if ((m = l.match(/^!\[([^\]]*)\]\(([^)\s]+)\)\s*$/))) {
-      out.push(`<figure class="post-pic"><img src="${esc(m[2])}" alt="${esc(m[1])}" loading="lazy">${m[1] ? `<figcaption>${inline(m[1])}</figcaption>` : ''}</figure>`);
-      i++;
-    } else if (/^[-*]\s/.test(l) || /^\d+\.\s/.test(l)) {
-      const ordered = /^\d+\./.test(l);
-      const items: string[] = [];
-      while (i < lines.length && (ordered ? /^\d+\.\s/ : /^[-*]\s/).test(lines[i])) {
-        let item = lines[i].replace(/^([-*]|\d+\.)\s+/, '');
-        i++;
-        // продолжение пункта — строка с отступом
-        while (i < lines.length && /^\s{2,}\S/.test(lines[i])) item += ' ' + lines[i++].trim();
-        items.push(`<li>${inline(item)}</li>`);
-      }
-      out.push(ordered ? `<ol>${items.join('')}</ol>` : `<ul>${items.join('')}</ul>`);
-    } else if (/^>/.test(l)) {
-      const q: string[] = [];
-      while (i < lines.length && /^>/.test(lines[i])) q.push(lines[i++].replace(/^>\s?/, ''));
-      out.push(`<blockquote>${markdown(q.join('\n'))}</blockquote>`);
-    } else if (/^\|/.test(l)) {
-      const rows: string[][] = [];
-      while (i < lines.length && /^\|/.test(lines[i])) {
-        const cells = lines[i++].trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-        if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue; // строка-разделитель под заголовком
-        rows.push(cells);
-      }
-      const [head, ...body] = rows;
-      out.push(
-        `<table class="seo-table"><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body
-          .map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`)
-          .join('')}</tbody></table>`
-      );
-    } else if (/^</.test(l)) {
-      const raw: string[] = [];
-      while (i < lines.length && lines[i].trim()) raw.push(lines[i++]);
-      out.push(raw.join('\n'));
-    } else {
-      const p: string[] = [l.trim()];
-      i++;
-      while (i < lines.length && !isBlockStart(lines[i])) p.push(lines[i++].trim());
-      out.push(`<p>${inline(p.join(' '))}</p>`);
-    }
-  }
-  return out.join('\n');
 }
 
 /** Разобрать файл записи. */
@@ -137,19 +67,77 @@ export function parsePost(kind: Kind, file: string, text: string): Post {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
-    html: markdown(m[2]),
+    html: markdown(m[2], gameCard),
     file,
   };
 }
 
-/** Все записи раздела, свежие сначала. */
-export function loadPosts(kind: Kind): Post[] {
+/** Записи из админки (server/content.ts выгружает их из базы в DATA_DIR/posts.json): адрес как у файла — заменяет его,
+ * hidden — снимает запись с сайта. */
+export interface DbPost {
+  kind: Kind;
+  slug: string;
+  title: string;
+  h1?: string;
+  description: string;
+  date: string;
+  updated?: string;
+  image?: string;
+  games?: string[];
+  body: string;
+  hidden?: boolean;
+}
+
+/** Папка данных сервера: DATA_DIR, иначе /srv/lavochka/data (прод), иначе lavochka/data. */
+export function dataDir(): string {
+  if (process.env.DATA_DIR) return process.env.DATA_DIR;
+  return existsSync('/srv/lavochka/data') ? '/srv/lavochka/data' : join(ROOT, 'data');
+}
+
+export function loadDbPosts(): DbPost[] {
+  const f = join(dataDir(), 'posts.json');
+  if (!existsSync(f)) return [];
+  try {
+    const list = JSON.parse(readFileSync(f, 'utf8'));
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    console.warn('posts.json не читается: ' + e);
+    return [];
+  }
+}
+
+export function fromDb(p: DbPost): Post {
+  return {
+    kind: p.kind,
+    slug: p.slug,
+    path: `/${KINDS[p.kind].slug}/${p.slug}/`,
+    title: p.title,
+    h1: p.h1 || p.title,
+    description: p.description,
+    date: p.date,
+    updated: p.updated || undefined,
+    image: p.image || undefined,
+    games: p.games ?? [],
+    html: markdown(p.body, gameCard),
+    file: '(админка)',
+  };
+}
+
+/** Все записи раздела (файлы + админка), свежие сначала. */
+export function loadPosts(kind: Kind, db: DbPost[] = loadDbPosts()): Post[] {
   const dir = join(ROOT, KINDS[kind].dir);
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
-    .map((f) => parsePost(kind, f, readFileSync(join(dir, f), 'utf8')))
-    .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+  const files = existsSync(dir)
+    ? readdirSync(dir)
+        .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
+        .map((f) => parsePost(kind, f, readFileSync(join(dir, f), 'utf8')))
+    : [];
+  const mine = db.filter((p) => p.kind === kind);
+  const bySlug = new Map(files.map((p) => [p.slug, p]));
+  for (const p of mine) {
+    if (p.hidden) bySlug.delete(p.slug);
+    else bySlug.set(p.slug, fromDb(p));
+  }
+  return [...bySlug.values()].sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 }
 
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
