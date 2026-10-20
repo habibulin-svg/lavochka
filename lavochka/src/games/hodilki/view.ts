@@ -84,7 +84,7 @@ class HodilkiView implements GameView<State, Event> {
   private shown: number[] = [];
   /** Чьё действие ждём от этого экрана и какое. */
   private actSeat: number | null = null;
-  private phase: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' = 'roll';
+  private phase: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' | 'dice' = 'roll';
   /** Пуговица взята (нажатием) — видны шаги и клетка. */
   private picked = false;
   private busy = false;
@@ -117,7 +117,7 @@ class HodilkiView implements GameView<State, Event> {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     if (e.code === 'Space') {
-      if (this.actSeat == null || this.phase !== 'roll' || this.rollBtn.hidden) return;
+      if (this.actSeat == null || (this.phase !== 'roll' && this.phase !== 'dice') || this.rollBtn.hidden) return;
       e.preventDefault();
       this.roll();
     } else if (e.key === '+' || e.key === '=') this.zoomBy(1.6);
@@ -358,7 +358,7 @@ class HodilkiView implements GameView<State, Event> {
   // ---------- ход ----------
 
   private roll() {
-    if (this.actSeat == null || this.phase !== 'roll' || this.busy) return;
+    if (this.actSeat == null || (this.phase !== 'roll' && this.phase !== 'dice') || this.busy) return;
     const seat = this.actSeat;
     this.actSeat = null;
     this.rollBtn.hidden = true;
@@ -1272,7 +1272,7 @@ class HodilkiView implements GameView<State, Event> {
 
   setTurn(toAct: number[], interactive: number[]) {
     const v = this.v;
-    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose';
+    this.phase = (v?.phase ?? 'roll') as 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' | 'dice';
     this.actSeat = v && v.winner == null ? (interactive.find((x) => x === v.turn) ?? null) : null;
     if (this.actSeat == null) this.picked = false;
     // загадка («Лукоморье»): показываем вопрос и ответы тому, кто ходит
@@ -1298,7 +1298,7 @@ class HodilkiView implements GameView<State, Event> {
         })
       );
     }
-    this.rollBtn.hidden = this.actSeat == null || this.phase !== 'roll';
+    this.rollBtn.hidden = this.actSeat == null || (this.phase !== 'roll' && this.phase !== 'dice');
     this.renderMarket(v);
     this.renderChoice(v);
     // загадка остальным («Лукоморье», поле 4): загадать, ответить или судить
@@ -1465,6 +1465,13 @@ class HodilkiView implements GameView<State, Event> {
     if (ph === 'market') {
       const togo = v.market?.seat ?? v.turn;
       return me ? 'Ярмарка чудес: возьмите волшебные предметы и купите хлеб с огнивом.' : `${this.ctx.name(togo)} на ярмарке чудес…`;
+    }
+    if (ph === 'dice' && v.dice) {
+      const d = v.dice;
+      const what = d.kind === 'extra' ? 'Повезло — сколько дополнительных ходов' : d.kind === 'loss' ? 'Сколько бон отдать' : 'Клад';
+      const k = d.of - d.left + 1;
+      const step = d.of > 1 ? ` — бросок ${k} из ${d.of}${d.sum ? `, пока ${d.sum}` : ''}` : '';
+      return me ? `${what}: бросайте кубик${step}` : `${this.ctx.name(toAct[0])} бросает кубик: ${what.toLowerCase()}${step}…`;
     }
     if (ph === 'choose') {
       return me ? `${v.choose?.title ?? 'Препятствие'}: выберите, чем пройти.` : `${this.ctx.name(toAct[0])} решает, как пройти препятствие…`;

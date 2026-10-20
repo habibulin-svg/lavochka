@@ -127,16 +127,59 @@ function moveRace(s0: State, b: Board, seat: number): { state: State; events: Ev
   return { state: s, events: ev };
 }
 
+/** Бросок пуговице ничего не даёт пройти: стоит на клетке «выход только нужной гранью» не с той гранью
+ * или на последней клетке с условием (Баба Яга) — переставлять нечего. */
+function idle(s: State, b: Board, seat: number): boolean {
+  if (b.race) return false;
+  const at = s.pos[seat];
+  const g = b.cells[at]?.sign;
+  if (g?.k === 'wait' && (s.last ?? 0) !== g.die) return true;
+  if (g?.k === 'need' && at >= finishOf(b)) return true;
+  const hold = b.cells[at]?.hold;
+  if (hold && !hold.free && (s.last ?? 0) !== hold.die) return true;
+  if (hold?.to != null && (s.last ?? 0) === hold.die) return false;
+  return !(loopMove(s, b, seat, s.last ?? 0) ?? walkFor(s, b, seat)).path.length;
+}
+
+/** Бросок за знак (фаза 'dice'): игрок сам бросает кубик столько раз, сколько велит знак; после последнего — итог. */
+function rollBonus(s0: State, seat: number, rng: { int(n: number): number }): { state: State; events: Event[] } | null {
+  const d = s0.dice;
+  if (!d || d.seat !== seat || d.left <= 0) return null;
+  const die = rng.int(6) + 1;
+  const left = d.left - 1;
+  const sum = d.sum + die;
+  const ev: Event[] = [{ type: 'roll', seat, die, bonus: { k: d.of - left, of: d.of, sum, kind: d.kind } }];
+  if (left > 0) return { state: { ...s0, last: die, dice: { ...d, left, sum } }, events: ev };
+  const s: State = { ...s0, last: die, pos: s0.pos.slice(), skip: s0.skip.slice(), dice: null, phase: 'roll', ...bags(s0, s0.pos.length) };
+  if (d.kind === 'extra') {
+    s.extra![seat] = (s.extra![seat] ?? 0) + sum;
+    ev.push({ type: 'extra', seat, n: sum });
+  } else {
+    const delta = d.kind === 'loss' ? -sum : sum;
+    s.coins![seat] = Math.max(0, (s.coins![seat] ?? 0) + delta);
+    ev.push({ type: 'coins', seat, delta, total: s.coins![seat] });
+  }
+  return endTurn(s, seat, ev);
+}
+
 /** Ход в два действия: бросок кубика, потом игрок сам переставляет пуговицу (как фишку в нардах). */
 function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number }): { state: State; events: Event[] } | null {
   if (s0.winner != null || seat !== s0.turn) return null;
   const phase = s0.phase ?? 'roll';
   const board = boardOf(mapOf(s0, seat));
   if (a?.type === 'roll') {
+    if (phase === 'dice') return rollBonus(s0, seat, rng);
     if (phase !== 'roll') return null;
     if (board.race) return rollRace(s0, board, seat, rng);
     const die = rng.int(6) + 1;
-    return { state: { ...s0, last: die, phase: 'move' }, events: [{ type: 'roll', seat, die }] };
+    const st: State = { ...s0, last: die, phase: 'move' };
+    const rolled: Event = { type: 'roll', seat, die };
+    // переставлять нечего (ждёт нужной грани, стоит у Бабы Яги) — ход разбирается сразу, иначе игрок застревает
+    if (idle(st, board, seat)) {
+      const r = apply(st, seat, { type: 'move' }, rng);
+      if (r) return { state: r.state, events: [rolled, ...r.events] };
+    }
+    return { state: st, events: [rolled] };
   }
   // ответ на загадку: пуговица идёт на деление, которое назвал игрок
   if (a?.type === 'pick') {
@@ -324,6 +367,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     ...(s0.extra ? { extra: s0.extra.slice() } : {}),
     ...(s0.cards ? { cards: s0.cards.map((c) => (c ? c.slice() : c)), stock: { ...(s0.stock ?? {}) }, flags: (s0.flags ?? []).map((f) => (f ? f.slice() : f)) } : {}),
     phase: 'roll',
+    dice: null,
   };
   const ev: Event[] = [];
   /** Пуговицу перенесло (прыжок, переход, условие, загадка) — остаток дороги-ветки больше не её:
@@ -491,7 +535,12 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     else if (sign.k === 'again') again = true;
     else if (sign.k === 'start') dest = 0;
     else if (sign.k === 'route') s.route![seat] = sign.cells.slice();
-    else if (sign.k === 'coins') {
+    else if (sign.k === 'coins' && !sign.diff && sign.n == null && sign.dice) {
+      // клад «кубик три раза», разбойники «по кубику»: кубик бросает сам игрок, боны — после последнего броска
+      s.dice = { seat, left: sign.dice, of: sign.dice, sum: 0, kind: sign.loss ? 'loss' : 'coins' };
+      if (sign.skip) s.skip[seat] = sign.skip;
+      if (sign.to != null) dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
+    } else if (sign.k === 'coins') {
       // «разница» (Лукоморье): не число, а остаток очков — сколько не истрачено, пока пуговица дошла до пункта
       const n = sign.diff ? Math.max(0, (s0.last ?? 0) - path.length) : (sign.n ?? diceSum(sign.dice ?? 1));
       const delta = sign.loss ? -n : n;
@@ -540,6 +589,9 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.pos[seat] = to;
       s.phase = 'ask';
       return { state: s, events: ev };
+    } else if (sign.k === 'extra' && sign.n == null && sign.dice) {
+      // «Повезло»: сколько дополнительных ходов — бросает сам игрок
+      s.dice = { seat, left: sign.dice, of: sign.dice, sum: 0, kind: 'extra' };
     } else if (sign.k === 'extra') {
       const n = sign.n ?? diceSum(sign.dice ?? 1);
       s.extra = many(s.extra, 0);
@@ -578,6 +630,11 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     s.pos[seat] = dest;
     if (dest !== to) dropRoute();
     if (dest === finish && !board.winBySign) return win();
+  }
+  // знак ждёт бросков игрока: ход не переходит, пока не брошено всё
+  if (s.dice) {
+    s.phase = 'dice';
+    return { state: s, events: ev };
   }
   if (!again && s.extra?.[seat]) {
     // накопленные дополнительные ходы: игрок бросает ещё раз, ход остаётся у него
@@ -781,7 +838,7 @@ export const def: GameDef<State, Action, Event, State> = {
         const i = (cur?.options ?? []).findIndex((o) => optionOk(boardOf(mapOf(v, seat)), v, seat, o));
         return { type: 'choose', pick: i < 0 ? 0 : i };
       }
-      return { type: phase === 'roll' ? 'roll' : 'move' };
+      return { type: phase === 'roll' || phase === 'dice' ? 'roll' : 'move' };
     },
   },
   describe(ev, name) {
@@ -789,6 +846,10 @@ export const def: GameDef<State, Action, Event, State> = {
       case 'roll':
         if (ev.kind === 'red') return `${name(ev.seat)} бросает: 🔴 красная клюшка, квадратик на <b>${ev.card}</b> — шайба назад.`;
         if (ev.kind === 'green') return `${name(ev.seat)} бросает: 🟢 зелёная клюшка, квадратик на <b>${ev.card}</b> — шайба вперёд.`;
+        if (ev.bonus) {
+          const what = ev.bonus.kind === 'extra' ? 'за дополнительные ходы' : ev.bonus.kind === 'loss' ? 'сколько отдать' : 'за клад';
+          return `🎲 ${name(ev.seat)} бросает ${what}: <b>${ev.die}</b>${ev.bonus.of > 1 ? ` (${ev.bonus.k}-й из ${ev.bonus.of}, всего ${ev.bonus.sum})` : ''}`;
+        }
         return `${name(ev.seat)} бросает: <b>${ev.die}</b>`;
       case 'sign':
         // итог выбора на препятствии («Шёл солдат») — готовая фраза, без имени впереди

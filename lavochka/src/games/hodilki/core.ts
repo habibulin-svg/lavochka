@@ -260,8 +260,11 @@ export interface State {
   turn: number;
   /** 'roll' — бросать кубик, 'move' — кубик брошен, игрок сам переставляет пуговицу, 'pick' — ждём ответа на загадку,
    * 'ask' — загадываем загадку остальным, 'answer' — остальные отвечают, 'judge' — загадавший решает, отгадали ли,
-   * 'market' — игрок на ярмарке чудес, 'choose' — выбирает, чем пройти препятствие. */
-  phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose';
+   * 'market' — игрок на ярмарке чудес, 'choose' — выбирает, чем пройти препятствие,
+   * 'dice' — игрок сам бросает кубик за знак (клад «кубик три раза», разбойники, «Повезло»). */
+  phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' | 'dice';
+  /** Броски за знак (фаза 'dice'): сколько осталось из скольких, сумма и что она даёт. */
+  dice?: { seat: number; left: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' } | null;
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;
@@ -330,7 +333,8 @@ export interface RiddleState {
 }
 
 export type Event =
-  | { type: 'roll'; seat: number; die: number; /** Что выпало: очки или клюшка (гонка с голами). */ kind?: 'pips' | 'red' | 'green'; card?: number; slot?: number }
+  | { type: 'roll'; seat: number; die: number; /** Что выпало: очки или клюшка (гонка с голами). */ kind?: 'pips' | 'red' | 'green'; card?: number; slot?: number;
+      /** Бросок за знак: какой по счёту из скольких и сумма (фаза 'dice'). */ bonus?: { k: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' } }
   | { type: 'move'; seat: number; path: number[] }
   | { type: 'sign'; seat: number; sign: Sign; to: number; /** Текст клетки (что случилось). */ text?: string }
   | { type: 'skip'; seat: number }

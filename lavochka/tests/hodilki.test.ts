@@ -25,8 +25,16 @@ function turn(s: State, seat: number, die: number, rng: RiggedRng) {
   rng.rig([die - 1]);
   const r1 = def.apply(s, seat, { type: 'roll' }, rng)!;
   expect(r1, 'бросок').not.toBeNull();
-  const r2 = def.apply(r1.state, seat, { type: 'move' }, rng)!;
+  // переставлять нечего (ждёт грани, стоит у Бабы Яги) — бросок сразу и ход
+  if (r1.state.phase !== 'move') return r1;
+  let r2 = def.apply(r1.state, seat, { type: 'move' }, rng)!;
   expect(r2, 'ход').not.toBeNull();
+  // клад «кубик три раза»: игрок бросает сам, события бросков копятся к ходу
+  while (r2.state.phase === 'dice') {
+    const r3 = def.apply(r2.state, seat, { type: 'roll' }, rng)!;
+    expect(r3, 'бросок за знак').not.toBeNull();
+    r2 = { state: r3.state, events: [...r2.events, ...r3.events] };
+  }
   return r2;
 }
 
@@ -476,11 +484,17 @@ describe('кинь-двинь: боны, предметы и развилки', 
     const rng = new RiggedRng(new SeededRng(21));
     let s = turn(start(rng, 0), 0, 1, rng).state;
     expect(s.coins![0]).toBe(7);
-    // «бросьте кубик два раза»: сумма двух бросков
+    // «бросьте кубик два раза»: игрок сам бросает дважды, боны — по сумме
     const s2 = start(rng, 4);
-    rng.rig([0, 0, 0]);
+    rng.rig([0]);
     let r = def.apply(s2, 0, { type: 'roll' }, rng)!;
     r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.phase).toBe('dice');
+    rng.rig([0]);
+    r = def.apply(r.state, 0, { type: 'roll' }, rng)!;
+    expect(r.state.phase).toBe('dice');
+    rng.rig([0]);
+    r = def.apply(r.state, 0, { type: 'roll' }, rng)!;
     expect(r.events.some((e) => e.type === 'coins' && e.delta === 2)).toBe(true);
     expect(r.state.coins![0]).toBe(2);
     // отдаёт больше, чем есть — остаётся ноль
@@ -999,6 +1013,36 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(a.state.maps?.[0]).toBe('luk2');
     expect(a.state.pos[0]).toBe(at('luk2', '14'));
     expect(a.state.winner).toBeNull();
+  });
+
+  it('поле 1: у Бабы Яги переставлять нечего — бросок сразу ведёт во вторую часть (игрок не застревает)', () => {
+    const rng = new RiggedRng(new SeededRng(31));
+    rng.rig([2]);
+    const r = def.apply(stand('luk1', at('luk1', '13'), { coins: 25 }), 0, { type: 'roll' }, rng)!;
+    expect(r.state.phase).toBe('roll');
+    expect(r.state.maps?.[0]).toBe('luk2');
+    expect(r.state.coins![0]).toBe(5);
+  });
+
+  it('поле 1: огромный клад (7а) — игрок сам бросает кубик три раза', () => {
+    const rng = new RiggedRng(new SeededRng(31));
+    const klad = at('luk1', '7а');
+    rng.rig([0]);
+    let r = def.apply(stand('luk1', klad - 1, { coins: 0 }), 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.pos[0]).toBe(klad);
+    expect(r.state.phase).toBe('dice');
+    expect(r.state.turn).toBe(0);
+    for (const [i, die] of [4, 5, 6].entries()) {
+      expect(r.state.coins![0], 'боны — только после последнего броска').toBe(0);
+      expect(def.bot.choose(r.state, 0, 1, rng)).toEqual({ type: 'roll' });
+      rng.rig([die - 1]);
+      r = def.apply(r.state, 0, { type: 'roll' }, rng)!;
+      expect(r.events[0]).toMatchObject({ type: 'roll', die, bonus: { k: i + 1, of: 3 } });
+    }
+    expect(r.state.coins![0]).toBe(15);
+    expect(r.state.phase).toBe('roll');
+    expect(r.state.turn).toBe(1);
   });
 
   it('серия «Лукоморье» — одна игра из четырёх частей, начиная с любой', () => {
