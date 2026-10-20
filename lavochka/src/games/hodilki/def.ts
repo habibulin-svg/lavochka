@@ -12,6 +12,7 @@ import { shelBoard } from './shel';
 import { shaybaBoard } from './shayba';
 import { vputBoard } from './vput';
 import { LUKOMORIE } from './luk';
+import { alternate } from '../../core/teams';
 
 export const BOARDS: Board[] = [krugosvet, kosmos, put, ...NASTOLKI, shelBoard, shaybaBoard, vputBoard, ...LUKOMORIE];
 export const boardOf = (map: string) => BOARDS.find((b) => b.id === map) ?? BOARDS[0];
@@ -632,6 +633,7 @@ export const def: GameDef<State, Action, Event, State> = {
   id: 'hodilki',
   title: 'Кинь-двинь',
   players: { min: 2, max: 10, default: 3 },
+  teams: (o, seats) => (boardOf(String(o.map ?? BOARDS[0].id)).race && seats.length >= 4 ? alternate(seats) : null),
   /** «Шайба» — игра на двоих или командами: 2 (дуэль), 4 (2 на 2) или 6 (3 на 3); остальные поля — 2–10. */
   countsFor: (opts) => {
     if (boardOf(String(opts.map ?? BOARDS[0].id)).race) return [2, 4, 6];

@@ -16,7 +16,7 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { Link } from '../src/core/protocol';
-import { Room } from '../src/core/room';
+import { cleanLook, Room } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
 import type { GameDef } from '../src/core/types';
@@ -63,7 +63,7 @@ function sanitizeSeats(raw: unknown, maxSeats: number): SeatSpec[] | null {
     if (!Number.isInteger(seat) || seat < 0 || seat >= maxSeats || seen.has(seat)) return null;
     if (kind !== 'human' && kind !== 'bot' && kind !== 'remote') return null;
     seen.add(seat);
-    out.push({ seat, kind, level: Math.max(0, Math.min(9, Number((s as any).level) || 0)), name: String((s as any).name ?? '').slice(0, 16) });
+    out.push({ seat, kind, level: Math.max(0, Math.min(9, Number((s as any).level) || 0)), name: String((s as any).name ?? '').slice(0, 16), look: cleanLook((s as any).look) });
   }
   return out;
 }

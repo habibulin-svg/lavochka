@@ -152,6 +152,7 @@ class HoldemView implements GameView<View, Event> {
             return;
           }
           this.gl = new m.Table3D(this.glHost, settings.deck, () => this.ctx.hold?.(0));
+          this.gl.lookOf = (seat) => this.ctx.look?.(seat) ?? null;
           this.draw();
         })
         .catch((e) => {

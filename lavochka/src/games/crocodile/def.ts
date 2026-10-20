@@ -6,7 +6,7 @@ import type { GameDef, Rng, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
 import { LEVELS, WORDS } from '../hat/words';
 import { choose } from './ai';
-import { apply, makeView, redact, setup, teamScore, toAct, total, type Action, type Event, type State, type View } from './engine';
+import { apply, makeView, redact, setup, teamScore, teamsOf, toAct, total, type Action, type Event, type State, type View } from './engine';
 import { FILMS, PROVERBS } from './phrases';
 import { cardText, EMOJI, KIND_NAME, THEMES, type Item } from './words';
 
@@ -67,6 +67,7 @@ export const def: GameDef<State, Action, Event, View> = {
   id: 'crocodile',
   title: 'Крокодил',
   players: { min: 2, max: 10, default: 4 },
+  teams: (o, seats) => (o.mode === 'teams' && seats.length >= 4 ? teamsOf(seats) : null),
   countsFor: (o) => (o.mode === 'teams' ? [4, 5, 6, 7, 8, 9, 10] : [2, 3, 4, 5, 6, 7, 8, 9, 10]),
   countsHint: (o) => (o.mode === 'teams' ? 'две команды — от четырёх' : undefined),
   seats: SEATS,

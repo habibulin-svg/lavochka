@@ -44,9 +44,10 @@ export function onAccount(f: (m: Me | null) => void): () => void {
 
 function setMe(m: Me | null) {
   me = m;
-  // имя за столом — из аккаунта
-  if (me && settings.name !== me.name) {
+  // имя и аватар за столом — из аккаунта
+  if (me && (settings.name !== me.name || (me.avatar && settings.avatar !== me.avatar))) {
     settings.name = me.name;
+    if (me.avatar) settings.avatar = me.avatar;
     saveSettings();
   }
   subs.forEach((f) => f(me));
@@ -55,6 +56,11 @@ function setMe(m: Me | null) {
 // имя сменили в настройках — сохранить и в аккаунте (с паузой: поле сохраняется на каждый знак)
 let nameTimer = 0;
 onSettings(() => {
+  // аватар выбрали за столом — сохранить в профиле (фото из Яндекса/VK — уже там)
+  if (me && settings.avatar !== (me.avatar ?? '') && AVATARS.includes(settings.avatar)) {
+    const avatar = settings.avatar;
+    void post('profile', { avatar }).then((r) => r.ok && setMe(r.body.user));
+  }
   clearTimeout(nameTimer);
   if (!me || settings.name === me.name) return;
   nameTimer = window.setTimeout(async () => {

@@ -79,6 +79,7 @@ export const def: GameDef<State, Action, Event, View> = {
   id: 'bridge',
   title: 'Бридж',
   players: { min: 4, max: 4, default: 4 },
+  teams: (_o, seats) => [seats.filter((s) => s % 2 === 0), seats.filter((s) => s % 2 === 1)],
   seats: SEATS,
   options: [
     {

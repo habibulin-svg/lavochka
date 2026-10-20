@@ -14,6 +14,7 @@ import {
   setup,
   sideOf,
   sideSeats,
+  teams as teamsOn,
   toAct,
   type Action,
   type Bone,
@@ -172,6 +173,8 @@ export const def: GameDef<DState, DAction, DEvent, DView> = {
   id: 'domino',
   title: 'Домино',
   players: { min: 2, max: 4, default: 4 },
+  countsHint: (o) => (o.pairs !== false && ['kozel', 'osel', 'muggins'].includes(String(o.variant ?? 'kozel')) ? 'парами — только вчетвером' : undefined),
+  teams: (o, seats) => (teamsOn({ cfg: cfgFrom(o), seats }) ? [seats.filter((s) => s % 2 === 0), seats.filter((s) => s % 2 === 1)] : null),
   seats: SEATS,
   seatsFor,
   options: [

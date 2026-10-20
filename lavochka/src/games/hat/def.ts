@@ -84,6 +84,7 @@ export const def: GameDef<State, Action, Event, View> = {
   id: 'hat',
   title: 'Шляпа',
   players: { min: 2, max: 10, default: 4 },
+  teams: (o, seats) => (o.pairs === 'teams' && seats.length >= 4 && seats.length % 2 === 0 ? teamsOf(seats) : null),
   countsFor: (o) => (o.pairs === 'teams' ? [4, 6, 8, 10] : [2, 3, 4, 5, 6, 7, 8, 9, 10]),
   countsHint: (o) => (o.pairs === 'teams' ? 'командами по двое — чётное число' : undefined),
   seats: SEATS,

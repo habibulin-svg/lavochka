@@ -31,7 +31,8 @@ export function playOf(f: Finished): Omit<Play, 'endedAt'> {
     if (f.seats.length > 1) place = 1 + Object.values(sc).filter((x) => x > v).length;
   }
   const opts = f.options;
-  const preset = opts ? (f.presets.find((p) => Object.entries(p.options).every(([k, v]) => opts[k] === v))?.id ?? null) : null;
+  // подходят несколько — самый подробный («2 на 2», а не «Подкидной», который молчит про команды)
+  const preset = opts ? ([...f.presets].sort((a, b) => Object.keys(b.options).length - Object.keys(a.options).length).find((p) => Object.entries(p.options).every(([k, v]) => opts[k] === v))?.id ?? null) : null;
   return { game: f.game, preset, result, place, players: f.seats.length, bots: f.seats.length - humans.length, network: f.network, score, seconds: f.seconds };
 }
 

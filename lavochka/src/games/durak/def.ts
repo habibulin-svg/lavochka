@@ -3,7 +3,8 @@ import type { GameDef, OptionDef, Options, SeatSpec } from '../../core/types';
 import { plural } from '../../core/util';
 import { SUIT_NAME, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
-import { apply, DEFAULT_CFG, makeView, newState, setup, toAct, winners, type Action, type Cfg, type Event, type State, type View } from './engine';
+import { alternate } from '../../core/teams';
+import { apply, cfgFrom, DEFAULT_CFG, makeView, newState, setup, teamsOf, toAct, winners, type Action, type Cfg, type Event, type State, type View } from './engine';
 
 export const SEATS = [
   { name: 'Вовка', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -137,6 +138,23 @@ export const def: GameDef<State, Action, Event, View> = {
   id: 'durak',
   title: 'Дурак',
   players: { min: 2, max: 6, default: 3 },
+  /** Длинный — на 2–4 (шестёрок, личных козырей, всего четыре); командами — вчетвером или вшестером. */
+  countsFor: (o) => {
+    const c = cfgFrom(o);
+    if (c.long) return [2, 3, 4];
+    if (c.teams && !c.polish) return [4, 6];
+    return [2, 3, 4, 5, 6];
+  },
+  countsHint: (o) => {
+    const c = cfgFrom(o);
+    if (c.long) return 'длинный — на 2–4 игроков';
+    if (c.teams && !c.polish) return 'командами: 2 на 2 или 3 на 3, напарники через одного';
+    return undefined;
+  },
+  teams: (o, seats) => {
+    const t = teamsOf(cfgFrom(o), seats);
+    return seats.some((x) => t[x] >= 0) ? alternate(seats) : null;
+  },
   seats: SEATS,
 
   options: withPolish([

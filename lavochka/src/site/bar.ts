@@ -62,7 +62,7 @@ export interface BarOpts {
 const tabLink = (t: (typeof TABS)[number], on: boolean, cls: string) =>
   t.href
     ? `<a class="${cls}${on ? ' on' : ''}" href="${t.href}"${on ? ' aria-current="page"' : ''}><span class="ti">${t.icon}</span>${t.title}</a>`
-    : `<span class="${cls} soon" title="Скоро откроется"><span class="ti">${t.icon}</span>${t.title}<small>скоро</small></span>`;
+    : `<span class="${cls} soon" title="Откроется, когда во дворе соберётся народ. А пока — зовите друзей за стол по коду"><span class="ti">${t.icon}</span>${t.title}<small>скоро</small></span>`;
 
 /** Собрать шапку. */
 export function siteBar(o: BarOpts): HTMLElement {

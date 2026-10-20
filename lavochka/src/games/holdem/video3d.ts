@@ -5,11 +5,10 @@
  * через валик на сукно — как в Apple poker. Фон и стол из ролика вырезает шейдер.
  * Ролики грузятся в память (blob) — сначала «ждёт» у всех, потом остальные; не загрузилась реакция — человек просто ждёт дальше. */
 import * as THREE from 'three';
+import { charOf } from './looks';
 import { DEALER, type DealerAct, type Gesture, type People, type PersonPlace } from './people3d';
 
 const BASE = `${import.meta.env.BASE_URL}video/holdem/`;
-/** Кто на каком месте (по порядку SEATS). */
-const CHARS = ['vovka', 'lenka', 'seryoga', 'tanka', 'dimon', 'kolyan', 'svetka', 'zheka', 'mihalych'];
 /** Где в кадре край стола (доля высоты сверху) — по нему ролик стыкуется с нашим бортом. */
 const EDGE: Record<string, number> = { vovka: 0.78, lenka: 0.8, seryoga: 0.81, tanka: 0.81, dimon: 0.8, kolyan: 0.77, svetka: 0.83, zheka: 0.87, mihalych: 0.81, dealer: 0.81 };
 /** Порядок загрузки: сначала то, что нужно в первой же раздаче. */
@@ -243,6 +242,12 @@ class VideoPeople implements People {
     for (const pl of list) {
       seen.add(pl.seat);
       let p = this.list.get(pl.seat);
+      if (p && pl.seat !== DEALER && p.who !== charOf(pl.seat, pl.who)) {
+        // игрок выбрал другого персонажа
+        this.drop(p);
+        this.list.delete(pl.seat);
+        p = undefined;
+      }
       if (!p) p = this.spawn(pl);
       p.place = pl;
       this.placeMesh(p);
@@ -255,7 +260,7 @@ class VideoPeople implements People {
   }
 
   private spawn(pl: PersonPlace): Person {
-    const who = pl.seat === DEALER ? 'dealer' : CHARS[pl.seat % CHARS.length];
+    const who = pl.seat === DEALER ? 'dealer' : charOf(pl.seat, pl.who);
     const edge = EDGE[who] ?? 0.8;
     const decks: [Deck, Deck] = [makeDeck(), makeDeck()];
     const mat = new THREE.ShaderMaterial({

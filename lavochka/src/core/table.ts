@@ -1,4 +1,5 @@
 /* Игровой стол — общий для всех игр: поле игры, панель игроков, статус, журнал и чат. */
+import { avatarHtml } from './avatars';
 import { Sound } from './audio';
 import type { RoomClient } from './client';
 import type { RoomMsg, SeatStatus } from './protocol';
@@ -9,7 +10,7 @@ import { saveSettings, settings } from './settings';
 import type { GameResult, Options } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
 import { esc, h, sleep } from './util';
-import type { GameModule, GameView, ViewCtx } from './view';
+import { assignLooks, type GameModule, type GameView, type ViewCtx } from './view';
 import { Voice, type VoiceTile } from './voice';
 
 export type NetMode = 'local' | 'p2p' | 'server';
@@ -170,6 +171,7 @@ export class Table {
       input: (seat, input) => o.client.input(seat, input),
       online: o.mode !== 'local',
       read: (ms) => this.read(ms),
+      look: (seat) => (o.mod.looks?.length ? assignLooks(o.mod.looks, this.seats).get(seat) ?? null : null),
     };
     const self = this;
     this.view.mount(q('.table-board'), ctx);
@@ -598,7 +600,7 @@ export class Table {
       const stats = this.view.playerStats && this.current ? this.view.playerStats(this.current, s.seat) : '';
       ul.appendChild(
         h(`<li class="player${active ? ' active' : ''}${win ? ' winner' : ''}">
-          <span class="chip" style="--c:${look.color};--d:${look.dark}"></span>
+          <span class="chip" style="--c:${look.color};--d:${look.dark}"></span>${s.avatar ? avatarHtml(s.avatar, 'p-ava') : ''}
           <span class="pinfo"><span class="pname">${esc(s.name)}${me}</span><span class="pkind">${this.kindLabel(s)}${off}</span></span>
           <span class="pstat">${stats}</span></li>`)
       );

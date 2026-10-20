@@ -33,6 +33,8 @@ export type NetMode = 'p2p' | 'server';
 
 export interface Settings {
   name: string;
+  /** Аватар за столом (значок или адрес фото); у вошедшего — из профиля. */
+  avatar: string;
   sound: boolean;
   volume: number;
   speed: number;
@@ -46,6 +48,7 @@ export interface Settings {
 
 const defaults: Settings = {
   name: '',
+  avatar: '',
   sound: true,
   volume: 0.8,
   speed: 1,

@@ -1,5 +1,5 @@
 /* Клиент комнаты: шлёт hello, отвечает на ping, следит за связью и раздаёт сообщения интерфейсу. */
-import { PROTOCOL_VERSION, type ClientMsg, type Link, type RoomMsg } from './protocol';
+import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg } from './protocol';
 import { settings } from './settings';
 
 type Handler = (msg: RoomMsg) => void;
@@ -23,12 +23,12 @@ export class RoomClient {
 
   constructor(
     private link: Link,
-    hello: { name: string; ownerKey?: string; clientId?: string }
+    hello: Me & { ownerKey?: string; clientId?: string }
   ) {
     link.onMessage = (m: RoomMsg) => this.receive(m);
     link.onClose = () => this.lost();
     this.id = hello.clientId ?? settings.clientId;
-    this.send({ t: 'hello', clientId: this.id, name: hello.name, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
+    this.send({ t: 'hello', clientId: this.id, name: hello.name, avatar: hello.avatar ?? null, look: hello.look ?? null, ownerKey: hello.ownerKey, v: PROTOCOL_VERSION });
     if (!link.local) {
       this.watchdog = setInterval(() => {
         if (Date.now() - this.lastSeen > LOST_MS) this.lost();
@@ -49,6 +49,8 @@ export class RoomClient {
       this.welcome = m;
       this.welcomeWaiters.splice(0).forEach((w) => w.ok(m));
     }
+    // хозяин мог сменить варианты или пересадить — welcome держим свежим
+    if (m.t === 'lobby' && this.welcome) this.welcome = { ...this.welcome, options: m.options, mySeats: m.mySeats };
     if (m.t === 'error' && !this.welcome) this.welcomeWaiters.splice(0).forEach((w) => w.fail(new Error(m.text)));
     if (this.held) {
       this.held.push(m);
@@ -113,6 +115,16 @@ export class RoomClient {
   }
   sync() {
     this.send({ t: 'sync' });
+  }
+  /** Сменить имя, аватар, персонажа (в лобби). */
+  me(m: Partial<Me>) {
+    this.send({ t: 'me', ...m } as ClientMsg);
+  }
+  sit(seat: number) {
+    this.send({ t: 'sit', seat });
+  }
+  host(op: HostOp) {
+    this.send({ t: 'host', ...op });
   }
   voice(on: boolean, video = false) {
     this.send({ t: 'voice', on, video });

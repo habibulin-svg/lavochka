@@ -4,6 +4,7 @@
  * выигрыш, «думает» — рука у подбородка) — это движение целей для кистей; голова поворачивается к тому, чей ход.
  * Каждое место — свой персонаж (одежда в духе 90-х: олимпийка, малиновый пиджак, кожанка). */
 import * as THREE from 'three';
+import { CHARS, charOf } from './looks';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -17,6 +18,8 @@ export type DealerAct = 'idle' | 'hello' | 'deal' | 'flop' | 'card' | 'point_fro
 
 export interface PersonPlace {
   seat: number;
+  /** Персонаж (looks.ts); нет — «свой» по номеру места. */
+  who?: string;
   /** Где стоит стул (y не важен). */
   pos: THREE.Vector3;
   /** Поворот вокруг Y: лицом к столу. */
@@ -82,6 +85,7 @@ const BONES: BoneName[] = ['Hips', 'Abdomen', 'Chest', 'Neck', 'Head', 'UpperArm
 
 interface Person {
   seat: number;
+  who: string;
   root: THREE.Group;
   model: THREE.Object3D;
   mixer: THREE.AnimationMixer;
@@ -200,10 +204,16 @@ class PeopleImpl implements People {
     for (const pl of list) {
       seen.add(pl.seat);
       const p = this.list.get(pl.seat);
-      if (p) {
+      if (p && p.who !== charOf(pl.seat, pl.who)) {
+        // игрок выбрал другого персонажа
+        this.group.remove(p.root);
+        this.list.delete(pl.seat);
+      } else if (p) {
         p.place = pl;
         this.placeRoot(p);
-      } else if (!this.loading.has(pl.seat)) this.loading.set(pl.seat, this.spawn(pl.seat));
+        continue;
+      }
+      if (!this.loading.has(pl.seat)) this.loading.set(pl.seat, this.spawn(pl.seat, charOf(pl.seat, pl.who)));
     }
     for (const [k, p] of [...this.list])
       if (!seen.has(k)) {
@@ -212,8 +222,8 @@ class PeopleImpl implements People {
       }
   }
 
-  private async spawn(seat: number) {
-    const look = LOOKS[seat % LOOKS.length];
+  private async spawn(seat: number, who: string) {
+    const look = LOOKS[CHARS.indexOf(who)] ?? LOOKS[seat % LOOKS.length];
     try {
       const g = await this.gltf(look.file);
       if (this.disposed) return;
@@ -277,6 +287,7 @@ class PeopleImpl implements People {
       const hip0 = wpos(bones.Hips).y - root.position.y;
       const p: Person = {
         seat,
+        who,
         root,
         model,
         mixer,

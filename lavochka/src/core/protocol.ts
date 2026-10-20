@@ -1,7 +1,7 @@
 /* Протокол комнаты. Одинаков для локальной игры, P2P (PeerJS) и сервера (WebSocket). */
 import type { GameResult, Options, SeatKind } from './types';
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export interface SeatStatus {
   seat: number;
@@ -12,7 +12,26 @@ export interface SeatStatus {
   filled: boolean;
   /** Игрок на связи. Если нет — за него ходит бот. */
   online: boolean;
+  /** Аватар игрока (значок или адрес фото). */
+  avatar?: string | null;
+  /** Выбранный персонаж (холдем 3D). */
+  look?: string | null;
 }
+
+/** Кто я за столом: имя, аватар, персонаж. */
+export interface Me {
+  name: string;
+  avatar?: string | null;
+  look?: string | null;
+}
+
+/** Хозяин в лобби: пересадить, отдать место боту или сети, выгнать, рассадить случайно, сменить варианты и число мест. */
+export type HostOp =
+  | { op: 'swap'; a: number; b: number }
+  | { op: 'kind'; seat: number; kind: SeatKind; level?: number }
+  | { op: 'kick'; seat: number }
+  | { op: 'shuffle' }
+  | { op: 'setup'; options: Options; count: number };
 
 /** Участник голосового чата (голос и видео идут напрямую между браузерами, комната только пересылает сигналы). */
 export interface VoiceMember {
@@ -23,7 +42,12 @@ export interface VoiceMember {
 }
 
 export type ClientMsg =
-  | { t: 'hello'; clientId: string; name: string; ownerKey?: string; v: number }
+  | { t: 'hello'; clientId: string; name: string; avatar?: string | null; look?: string | null; ownerKey?: string; v: number }
+  /** Сменить имя, аватар, персонажа (в лобби). */
+  | ({ t: 'me' } & Me)
+  /** Гость пересаживается на свободное место (в лобби). */
+  | { t: 'sit'; seat: number }
+  | ({ t: 'host' } & HostOp)
   | { t: 'act'; seat: number; action: unknown }
   /** Игра реального времени: текущее управление места (шлётся, пока меняется). */
   | { t: 'input'; seat: number; input: unknown }
@@ -43,7 +67,8 @@ export type ClientMsg =
 
 export type RoomMsg =
   | { t: 'welcome'; code: string; game: string; options: Options; mySeats: number[]; owner: boolean }
-  | { t: 'lobby'; seats: SeatStatus[] }
+  /** Лобби: места, варианты (хозяин мог сменить) и свои места этого экрана. */
+  | { t: 'lobby'; seats: SeatStatus[]; options: Options; mySeats: number[] }
   | {
       t: 'start';
       seats: SeatStatus[];

@@ -9,9 +9,10 @@
  * первые DROP_GRACE_MS бот не ходит — даём перезагрузиться и вернуться.
  */
 import { Authority, type Snapshot, type StepResult } from './authority';
-import { PROTOCOL_VERSION, type ClientMsg, type Link, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
+import { AVATARS, PHOTO_RE } from './avatars';
+import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
-import type { GameDef, Options, SeatSpec } from './types';
+import type { GameDef, Options, SeatKind, SeatSpec } from './types';
 
 const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
@@ -24,10 +25,35 @@ const HOLD_MAX_MS = 30000;
 /** Сколько ждать отключившегося, прежде чем за него сядет бот. */
 const DROP_GRACE_MS = 45000;
 
+interface Holder {
+  clientId: string;
+  name: string;
+  avatar: string | null;
+  look: string | null;
+}
+
+/** Кто сидит на месте — то, что переезжает при пересадке. */
+interface Occupant {
+  kind: SeatKind;
+  level: number;
+  name: string;
+  avatar: string | null;
+  look: string | null;
+  holder: Holder | null;
+}
+
+/** Аватар из сети: только значок из списка или фото с сервисов входа. */
+export const cleanAvatar = (a: unknown): string | null => (typeof a === 'string' && (AVATARS.includes(a) || PHOTO_RE.test(a)) ? a : null);
+/** Персонаж: короткий id (проверяет сама игра — незнакомый она заменит своим). */
+export const cleanLook = (l: unknown): string | null => (typeof l === 'string' && /^[a-z0-9_-]{1,24}$/i.test(l) ? l : null);
+const cleanName = (n: unknown) => String(n || 'Игрок').trim().slice(0, 16) || 'Игрок';
+
 interface Conn {
   link: Link;
   clientId: string | null;
   name: string;
+  avatar: string | null;
+  look: string | null;
   seats: number[];
   owner: boolean;
   lastSeen: number;
@@ -64,7 +90,9 @@ export class Room {
   auth: Authority | null = null;
   private conns = new Set<Conn>();
   /** remote-место → clientId занявшего. */
-  private holders = new Map<number, { clientId: string; name: string }>();
+  private holders = new Map<number, Holder>();
+  /** Кого хозяин выгнал: за этот стол им больше не сесть. */
+  private banned = new Set<string>();
   private heartbeat: ReturnType<typeof setInterval>;
   private botToken = 0;
   private botRng = new SeededRng(randomSeed());
@@ -108,7 +136,7 @@ export class Room {
 
   connect(link: Link) {
     if (this.closed) return link.close();
-    const conn: Conn = { link, clientId: null, name: '', seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, fast: false, holdUntil: 0, voice: null };
+    const conn: Conn = { link, clientId: null, name: '', avatar: null, look: null, seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, fast: false, holdUntil: 0, voice: null };
     this.conns.add(conn);
     link.onMessage = (m) => this.onMsg(conn, m);
     link.onClose = () => this.drop(conn);
@@ -157,6 +185,15 @@ export class Room {
       case 'start':
         if (conn.owner && !this.auth) this.startGame(!!m.fillBots, conn);
         return;
+      case 'me':
+        if (conn.clientId) this.setMe(conn, m);
+        return;
+      case 'sit':
+        if (conn.clientId && !conn.owner && !this.auth) this.sit(conn, m.seat);
+        return;
+      case 'host':
+        if (conn.owner && !this.auth) this.hostOp(conn, m);
+        return;
       case 'restart':
         if (conn.owner && this.auth && this.auth.result) this.restart();
         return;
@@ -201,7 +238,14 @@ export class Room {
       return;
     }
     conn.clientId = String(m.clientId || '').slice(0, 64) || 'anon';
-    conn.name = String(m.name || 'Игрок').trim().slice(0, 16) || 'Игрок';
+    conn.name = cleanName(m.name);
+    conn.avatar = cleanAvatar(m.avatar);
+    conn.look = cleanLook(m.look);
+    if (this.banned.has(conn.clientId) && m.ownerKey !== this.cfg.ownerKey) {
+      this.send(conn, { t: 'closed', reason: 'Хозяин стола убрал вас из этой комнаты.' });
+      setTimeout(() => this.kick(conn), 200);
+      return;
+    }
 
     if (m.ownerKey && m.ownerKey === this.cfg.ownerKey) {
       // владелец (в т.ч. вернувшийся после обрыва): старое соединение владельца закрываем
@@ -215,7 +259,9 @@ export class Room {
       for (const c of this.conns) if (c !== conn && c.clientId === conn.clientId && !c.owner) this.kick(c);
       const seat = this.pickSeat(conn);
       if (seat != null) {
-        this.holders.set(seat, { clientId: conn.clientId, name: this.auth ? this.holders.get(seat)?.name ?? conn.name : conn.name });
+        const was = this.holders.get(seat);
+        // посреди партии место остаётся под прежним именем (его видели все); в лобби — как игрок себя назвал
+        this.holders.set(seat, this.auth && was ? { ...was, clientId: conn.clientId } : { clientId: conn.clientId, name: conn.name, avatar: conn.avatar, look: conn.look });
         conn.seats = [seat];
       }
     }
@@ -231,7 +277,7 @@ export class Room {
       this.pumpBots();
     } else {
       if (!conn.seats.length && !conn.owner) this.send(conn, { t: 'info', text: 'Свободных мест нет — вы зритель.' });
-      this.broadcast({ t: 'lobby', seats: this.seatStatus() });
+      this.lobbyAll();
     }
   }
 
@@ -293,7 +339,7 @@ export class Room {
     if (!this.auth) {
       // в лобби место освобождается
       for (const s of conn.seats) if (this.holders.get(s)?.clientId === conn.clientId) this.holders.delete(s);
-      this.broadcast({ t: 'lobby', seats: this.seatStatus() });
+      this.lobbyAll();
     } else if (conn.seats.length) {
       if (conn.clientId) this.dropped.add(conn.clientId);
       const who = conn.owner ? conn.name || 'Хозяин стола' : this.seatName(conn.seats[0]);
@@ -355,14 +401,187 @@ export class Room {
   }
 
   seatStatus(): SeatStatus[] {
-    return this.seats.map((s) => ({
-      seat: s.seat,
-      kind: s.kind,
-      level: s.level,
-      name: this.seatName(s.seat),
-      filled: s.kind !== 'remote' || this.holders.has(s.seat),
-      online: this.isOnline(s.seat),
-    }));
+    return this.seats.map((s) => {
+      const o = this.occupant(s.seat);
+      return {
+        seat: s.seat,
+        kind: s.kind,
+        level: s.level,
+        name: this.seatName(s.seat),
+        filled: s.kind !== 'remote' || this.holders.has(s.seat),
+        online: this.isOnline(s.seat),
+        avatar: o.avatar,
+        look: o.look,
+      };
+    });
+  }
+
+  private ownerConn(): Conn | null {
+    return [...this.conns].find((c) => c.owner) ?? null;
+  }
+
+  /** Кто на месте сейчас: в лобби аватар и персонаж — живые (игрок мог сменить), в партии — как записано в месте.
+   * Хозяин за своим экраном один (не хот-сит) — его аватар и персонаж и есть аватар его места. */
+  private occupant(seat: number): Occupant {
+    const spec = this.seats.find((s) => s.seat === seat)!;
+    const holder = spec.kind === 'remote' ? this.holders.get(seat) ?? null : null;
+    let avatar = spec.avatar ?? null;
+    let look = spec.look ?? null;
+    if (!this.auth) {
+      if (holder) ({ avatar, look } = holder);
+      else if (spec.kind === 'human' && this.seats.filter((x) => x.kind === 'human').length === 1) {
+        const oc = this.ownerConn();
+        if (oc) ({ avatar, look } = oc);
+      }
+    }
+    return { kind: spec.kind, level: spec.level, name: spec.name, avatar, look, holder };
+  }
+
+  /** Посадить на место (from — откуда пересел): бот получает имя места, человек хозяина с именем по умолчанию — тоже. */
+  private place(seat: number, o: Occupant, from: number) {
+    const spec = this.seats.find((s) => s.seat === seat)!;
+    const lookName = (n: number) => this.def.seats[n]?.name ?? 'Игрок';
+    spec.kind = o.kind;
+    spec.level = o.level;
+    spec.avatar = o.kind === 'human' ? o.avatar : null;
+    spec.look = o.kind === 'human' ? o.look : null;
+    if (o.kind === 'bot') spec.name = `${lookName(seat)} (бот)`;
+    else if (o.kind === 'human') spec.name = !o.name || o.name === lookName(from) ? lookName(seat) : o.name;
+    else spec.name = '';
+    if (o.kind === 'remote' && o.holder) this.holders.set(seat, o.holder);
+    else this.holders.delete(seat);
+  }
+
+  /** После пересадки: каждый экран — на свои места. */
+  private reseat() {
+    const human = this.seats.filter((s) => s.kind === 'human').map((s) => s.seat);
+    for (const c of this.conns) {
+      if (!c.clientId) continue;
+      const had = c.seats.length > 0;
+      c.seats = c.owner ? human : this.seats.filter((s) => s.kind === 'remote' && this.holders.get(s.seat)?.clientId === c.clientId).map((s) => s.seat);
+      if (!c.owner && had && !c.seats.length) this.send(c, { t: 'info', text: 'Хозяин освободил ваше место — вы зритель. Можно сесть на свободное.' });
+    }
+  }
+
+  /** Лобби — каждому со своими местами. */
+  private lobbyAll() {
+    const seats = this.seatStatus();
+    this.conns.forEach((c) => c.clientId && this.send(c, { t: 'lobby', seats, options: this.options, mySeats: c.seats }));
+  }
+
+  // ---------------------------------------------------------------- лобби: я, пересадка, хозяин
+
+  private setMe(conn: Conn, m: Me) {
+    if (m.name != null && !this.auth) conn.name = cleanName(m.name);
+    if (m.avatar !== undefined) conn.avatar = cleanAvatar(m.avatar);
+    if (m.look !== undefined) conn.look = cleanLook(m.look);
+    if (this.auth) return;
+    for (const [seat, h] of this.holders) if (h.clientId === conn.clientId) this.holders.set(seat, { ...h, name: conn.name, avatar: conn.avatar, look: conn.look });
+    if (conn.owner && m.name != null) {
+      const human = this.seats.filter((s) => s.kind === 'human');
+      if (human.length === 1) human[0].name = conn.name;
+    }
+    this.lobbyAll();
+  }
+
+  private sit(conn: Conn, seat: number) {
+    const spec = this.seats.find((s) => s.seat === seat);
+    if (!spec || spec.kind !== 'remote' || this.holders.has(seat)) return this.send(conn, { t: 'error', text: 'Это место уже занято.' });
+    for (const s of conn.seats) this.holders.delete(s);
+    this.holders.set(seat, { clientId: conn.clientId!, name: conn.name, avatar: conn.avatar, look: conn.look });
+    this.reseat();
+    this.lobbyAll();
+  }
+
+  private hostOp(conn: Conn, m: HostOp) {
+    const has = (seat: number) => this.seats.some((s) => s.seat === seat);
+    const mid = Math.floor((this.def.bot.levels.length - 1) / 2);
+    switch (m.op) {
+      case 'swap': {
+        if (!has(m.a) || !has(m.b) || m.a === m.b) return;
+        const a = this.occupant(m.a);
+        const b = this.occupant(m.b);
+        this.place(m.a, b, m.b);
+        this.place(m.b, a, m.a);
+        break;
+      }
+      case 'shuffle': {
+        const nums = this.seats.map((s) => s.seat);
+        const occ = nums.map((n) => ({ o: this.occupant(n), from: n }));
+        for (let i = occ.length - 1; i > 0; i--) {
+          const j = Math.floor(this.botRng.next() * (i + 1));
+          [occ[i], occ[j]] = [occ[j], occ[i]];
+        }
+        nums.forEach((n, i) => this.place(n, occ[i].o, occ[i].from));
+        break;
+      }
+      case 'kind': {
+        if (!has(m.seat) || !['human', 'bot', 'remote'].includes(m.kind)) return;
+        const cur = this.occupant(m.seat);
+        const level = Math.max(0, Math.min(this.def.bot.levels.length - 1, Math.floor(Number(m.level ?? (cur.kind === 'bot' ? cur.level : mid)) || 0)));
+        if (cur.kind === m.kind && m.kind !== 'bot') return;
+        const humans = this.seats.filter((s) => s.kind === 'human').length;
+        this.place(m.seat, { kind: m.kind, level, name: m.kind === 'human' && !humans ? conn.name : '', avatar: null, look: null, holder: null }, m.seat);
+        break;
+      }
+      case 'kick': {
+        const h = this.holders.get(m.seat);
+        if (!h) return;
+        this.banned.add(h.clientId);
+        this.holders.delete(m.seat);
+        for (const c of [...this.conns])
+          if (c.clientId === h.clientId && !c.owner) {
+            this.send(c, { t: 'closed', reason: 'Хозяин стола убрал вас из этой комнаты.' });
+            this.conns.delete(c);
+            setTimeout(() => this.kick(c), 200);
+          }
+        this.broadcast({ t: 'info', text: `${h.name} больше не за столом.` });
+        break;
+      }
+      case 'setup': {
+        const err = this.setup(m.options, m.count);
+        if (err) return this.send(conn, { t: 'error', text: err });
+        break;
+      }
+      default:
+        return;
+    }
+    this.reseat();
+    this.lobbyAll();
+  }
+
+  /** Сменить варианты и число мест до начала партии. Люди с убранных мест пересаживаются на свободные. */
+  private setup(raw: unknown, count: number): string | null {
+    const def = this.def;
+    const options: Options = { ...this.options };
+    if (raw && typeof raw === 'object')
+      for (const o of def.options ?? []) {
+        const v = (raw as Options)[o.key];
+        if (v !== undefined && typeof v === typeof o.default) options[o.key] = v;
+      }
+    const range = Array.from({ length: def.players.max - def.players.min + 1 }, (_, i) => def.players.min + i);
+    const listed = (def.countsFor?.(options) ?? []).filter((n) => range.includes(n));
+    const allowed = listed.length ? listed : range;
+    if (!allowed.includes(count)) return `При этих правилах играют: ${allowed.join(', ')}.`;
+    const nums = def.seatsFor ? def.seatsFor(count) : Array.from({ length: count }, (_, i) => i);
+    const old = new Map(this.seats.map((s) => [s.seat, this.occupant(s.seat)] as const));
+    const people = [...old].filter(([n, o]) => !nums.includes(n) && (o.kind === 'human' || o.holder));
+    const free = nums.filter((n) => {
+      const o = old.get(n);
+      return !o || o.kind === 'bot' || (o.kind === 'remote' && !o.holder);
+    });
+    if (people.length > free.length) return 'Людей больше, чем мест: сначала уберите кого-нибудь из-за стола.';
+    const mid = Math.floor((def.bot.levels.length - 1) / 2);
+    this.seats = nums.map((seat) => ({ seat, kind: 'remote', level: mid, name: '' }));
+    this.holders.clear();
+    for (const n of nums) {
+      const o = old.get(n);
+      if (o) this.place(n, o, n);
+    }
+    // люди с убранных мест — на первые свободные; новые места ждут игрока по сети
+    people.forEach(([from, o], i) => this.place(free[i], o, from));
+    this.options = options;
+    return null;
   }
 
   // ---------------------------------------------------------------- партия
@@ -379,7 +598,12 @@ export class Room {
       s.level = mid;
       s.name = `${this.def.seats[s.seat]?.name ?? 'Бот'} (бот)`;
     }
-    for (const s of this.seats) if (s.kind === 'remote') s.name = this.seatName(s.seat);
+    for (const s of this.seats) {
+      const o = this.occupant(s.seat);
+      s.avatar = o.avatar;
+      s.look = o.look;
+      if (s.kind === 'remote') s.name = this.seatName(s.seat);
+    }
     this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.options);
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();

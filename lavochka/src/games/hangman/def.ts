@@ -1,6 +1,7 @@
 /* Виселица — описание игры для сборника: четыре режима, загадывает компьютер или игроки по очереди. Без DOM. */
 import type { GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { choose } from './ai';
+import { alternate } from '../../core/teams';
 import { apply, newPuzzle, PTS, redact, setup, toAct, view, type Action, type Event, type State } from './engine';
 
 export const SEATS = [
@@ -55,6 +56,7 @@ export const def: GameDef<State, Action, Event, State> = {
   id: 'hangman',
   title: 'Виселица',
   players: { min: 1, max: 6, default: 2 },
+  teams: (o, seats) => (o.mode === 'team' && seats.length >= 2 ? alternate(seats) : null),
   countsFor,
   countsHint: (o) => (o.mode === 'team' ? 'команды: места по очереди — в первую, во вторую' : undefined),
   seats: SEATS,

@@ -17,7 +17,7 @@ import { bolsterProfile, cardGeometry, sweepEllipse } from './geo3d';
 import { buildRoom, makeChair, onRoomLoad, FLOOR } from './room3d';
 import { buttonTex, cardStandIn, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
 import { LOADING } from './loading';
-import { DEALER, type DealerAct, type People, type Gesture } from './people3d';
+import { DEALER, type DealerAct, type People, type PersonPlace, type Gesture } from './people3d';
 
 export interface Item3D {
   key: string;
@@ -197,6 +197,8 @@ interface SeatPlace {
 }
 
 export class Table3D {
+  /** Персонаж места (выбор игрока в лобби). */
+  lookOf: (seat: number) => string | null = () => null;
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(47, 1.4, 0.1, 80);
@@ -479,7 +481,7 @@ export class Table3D {
 
   private syncPeople() {
     if (!this.people) return;
-    const list = [...this.places.values()].map((p) => ({ seat: p.seat, pos: p.pos, face: p.face, hidden: p.me, out: p.out, curve: railCurve(p.pos, p.face) }));
+    const list: PersonPlace[] = [...this.places.values()].map((p) => ({ seat: p.seat, who: this.lookOf(p.seat) ?? undefined, pos: p.pos, face: p.face, hidden: p.me, out: p.out, curve: railCurve(p.pos, p.face) }));
     if (this.videoPeople && this.places.size) list.push({ ...this.dealerPlace, hidden: false, out: false, curve: railCurve(this.dealerPlace.pos, this.dealerPlace.face) });
     this.people.sync(list, this.lookTarget());
   }

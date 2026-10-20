@@ -25,6 +25,8 @@ export interface ViewCtx<A = any> {
   /** Дать прочитать (карточка, событие клетки): если за экраном человек — ждать его касания, иначе пауза ms.
    * Сам текст игра показывает своей карточкой; в журнал он попадает строкой describe. */
   read?(ms: number): Promise<void>;
+  /** Персонаж места (GameModule.looks): выбранный игроком, а у остальных — свободные по порядку. */
+  look?(seat: number): string | null;
 }
 
 export interface GameView<V = any, E = any> {
@@ -66,4 +68,33 @@ export interface GameModule {
   ownSaves?: boolean;
   /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */
   home?(box: HTMLElement, launch: (options: Options) => void): void;
+  /** Персонажи, которых игрок выбирает себе в лобби (холдем 3D). По умолчанию место i — looks[i]. */
+  looks?: Look[];
+}
+
+export interface Look {
+  id: string;
+  label: string;
+  /** Картинка-превью (адрес). */
+  img?: string;
+}
+
+/** Персонажи за столом: выбранные игроками (кто раньше сел — того и персонаж), остальным — свободные, начиная со «своего» по номеру места. */
+export function assignLooks(looks: Look[], seats: { seat: number; look?: string | null }[]): Map<number, string> {
+  const out = new Map<number, string>();
+  const used = new Set<string>();
+  const ids = looks.map((l) => l.id);
+  for (const s of seats)
+    if (s.look && ids.includes(s.look) && !used.has(s.look)) {
+      out.set(s.seat, s.look);
+      used.add(s.look);
+    }
+  for (const s of seats) {
+    if (out.has(s.seat) || !ids.length) continue;
+    let id = ids[s.seat % ids.length];
+    for (let k = 0; used.has(id) && k < ids.length; k++) id = ids[(s.seat + k + 1) % ids.length];
+    out.set(s.seat, id);
+    used.add(id);
+  }
+  return out;
 }

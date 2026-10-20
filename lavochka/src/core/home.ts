@@ -1,10 +1,11 @@
 /* Экран игры: правила, продолжение, настройка мест и вариантов правил, запуск. */
 import { Sound } from './audio';
 import { openRecords } from './records-ui';
+import { allowedCounts, matchPreset, optionsEditor } from './optsui';
 import { openRules, defaultOptions } from './rules';
 import { dropSave, hostGame, loadSave, startLocal } from './session';
 import { settings, store } from './settings';
-import type { OptionDef, Options, SeatKind, SeatSpec } from './types';
+import type { Options, SeatKind, SeatSpec } from './types';
 import { mountScreen, showScreen } from './ui';
 import { esc, h, plural } from './util';
 import type { GameModule } from './view';
@@ -128,14 +129,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   const seg = q('.count-seg');
 
   /** Допустимые числа игроков при текущих настройках: игра может сузить список («Шайба» — 2, 4, 6). */
-  function counts(): number[] {
-    const list = (def.countsFor?.(draft.options) ?? []).filter((n) => n >= def.players.min && n <= def.players.max);
-    const uniq = [...new Set(list)].sort((a, b) => a - b);
-    if (uniq.length) return uniq;
-    const out: number[] = [];
-    for (let n = def.players.min; n <= def.players.max; n++) out.push(n);
-    return out;
-  }
+  const counts = () => allowedCounts(def, draft.options);
 
   /** Пересобрать кнопки числа игроков; выбранное число, если оно больше не годится, подтянуть к подходящему. */
   function renderCounts() {
@@ -235,65 +229,15 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
 
   // ---------- варианты правил
   const optsCard = q('.opts-card');
-  const optsBox = q('.opts');
-  const presetsBox = q('.presets');
   if (def.options?.length) {
     optsCard.hidden = false;
-    if (def.presets?.length) {
-      for (const p of def.presets) {
-        const b = h<HTMLButtonElement>(`<button class="preset" data-id="${p.id}" title="${esc(p.hint || '')}">${esc(p.label)}</button>`);
-        b.onclick = () => {
-          Object.assign(draft.options, p.options);
-          renderOpts();
-        };
-        presetsBox.appendChild(b);
-      }
-    }
-  }
-
-  function matchPreset(): string | null {
-    for (const p of def.presets || []) if (Object.entries(p.options).every(([k, v]) => draft.options[k] === v)) return p.id;
-    return null;
-  }
-
-  function optControl(o: OptionDef): HTMLElement {
-    const v = draft.options[o.key];
-    let ctl: HTMLElement;
-    if (o.type === 'toggle') {
-      ctl = h(`<label class="opt opt-toggle"><input type="checkbox"> <span>${esc(o.label)}</span></label>`);
-      const i = ctl.querySelector('input') as HTMLInputElement;
-      i.checked = !!v;
-      i.onchange = () => set(o.key, i.checked);
-    } else if (o.type === 'select') {
-      ctl = h(`<label class="opt"><span>${esc(o.label)}</span><select>${(o.choices || []).map((c) => `<option value="${esc(c.value)}">${esc(c.label)}</option>`).join('')}</select></label>`);
-      const sel = ctl.querySelector('select') as HTMLSelectElement;
-      sel.value = String(v);
-      sel.onchange = () => {
-        const ch = (o.choices || []).find((c) => String(c.value) === sel.value);
-        set(o.key, ch ? ch.value : sel.value);
-      };
-    } else {
-      ctl = h(`<label class="opt"><span>${esc(o.label)}</span><input type="number" min="${o.min ?? ''}" max="${o.max ?? ''}" step="${o.step ?? 1}"></label>`);
-      const i = ctl.querySelector('input') as HTMLInputElement;
-      i.value = String(v);
-      i.onchange = () => set(o.key, Math.min(o.max ?? Infinity, Math.max(o.min ?? -Infinity, +i.value || 0)));
-    }
-    if (o.hint) ctl.appendChild(h(`<small class="opt-hint">${esc(o.hint)}</small>`));
-    return ctl;
-  }
-
-  function set(key: string, value: string | number | boolean) {
-    draft.options[key] = value;
-    renderOpts();
+    optionsEditor(def, draft.options, q('.presets'), q('.opts'), renderOpts);
   }
 
   function renderOpts() {
     const was = draft.preset;
-    draft.preset = matchPreset();
+    draft.preset = matchPreset(def, draft.options);
     if (ready && draft.preset !== was) o.onPreset?.(draft.preset);
-    presetsBox.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.classList.toggle('on', b.dataset.id === draft.preset));
-    optsBox.innerHTML = '';
-    for (const o of def.options || []) if (!o.showIf || o.showIf(draft.options)) optsBox.appendChild(optControl(o));
     persist();
     renderCounts();
   }
