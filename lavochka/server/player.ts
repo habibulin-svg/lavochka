@@ -4,7 +4,9 @@
  *   GET  /api/history               — свои последние партии
  *   POST /api/history {game, …}     — партия закончилась (пишет браузер игрока; история личная, проверки — по здравому смыслу)
  *   GET  /api/saves[?game=…]        — список своих сохранений / одно с данными
- *   POST /api/saves {game, at, snap} — сохранить (snap: null — партии больше нет); старее записанного — не пишется */
+ *   POST /api/saves {game, at, snap} — сохранить (snap: null — партии больше нет); старее записанного — не пишется
+ *   GET  /api/seen?game=…           — какие задания (данетки, дела) игрок уже видел: { seen: { номер: минута } }
+ *   POST /api/seen {game, ids}      — открылись разгадки ids (хранится рядом с сохранениями, под игрой «seen:<игра>») */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
@@ -15,6 +17,8 @@ const RESULTS = ['win', 'lose', 'draw', 'done'] as const;
 export const HISTORY_LIMIT = 50;
 /** Предел снимка партии в базе (байт JSON). */
 export const SAVE_MAX = 400_000;
+/** Сколько виденных заданий помним на игру. */
+export const SEEN_KEEP = 3000;
 
 export class Player {
   private counts: Record<string, number> = {};
@@ -67,7 +71,7 @@ export class Player {
     const u = await this.acc.current(ctx);
     if (!u) return err(401, 'auth', 'Войдите заново.');
     const game = q.get('game');
-    if (!game) return { code: 200, body: { saves: await this.acc.store.listSaves(u.id) } };
+    if (!game) return { code: 200, body: { saves: (await this.acc.store.listSaves(u.id)).filter((s) => !s.game.startsWith('seen:')) } };
     if (!this.known(game)) return err(400, 'game', 'Нет такой игры.');
     const s = await this.acc.store.getSave(u.id, game);
     let snap: unknown = null;
@@ -92,6 +96,44 @@ export class Player {
     const data = b?.snap == null ? null : JSON.stringify(b.snap);
     if (data && data.length > SAVE_MAX) return err(413, 'big', 'Партия слишком большая для сохранения на сервере.');
     return { code: 200, body: { ok: await this.acc.store.putSave(u.id, game, at, data) } };
+  }
+
+  private async seenMap(userId: number, game: string): Promise<Record<string, number>> {
+    const s = await this.acc.store.getSave(userId, 'seen:' + game);
+    try {
+      const m = s?.data ? JSON.parse(s.data) : {};
+      return m && typeof m === 'object' && !Array.isArray(m) ? m : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async seen(q: URLSearchParams, ctx: Ctx): Promise<Reply> {
+    const u = await this.acc.current(ctx);
+    if (!u) return err(401, 'auth', 'Войдите заново.');
+    const game = q.get('game') ?? '';
+    if (!this.known(game)) return err(400, 'game', 'Нет такой игры.');
+    return { code: 200, body: { seen: await this.seenMap(u.id, game) } };
+  }
+
+  async addSeen(b: any, ctx: Ctx): Promise<Reply> {
+    const u = await this.acc.current(ctx);
+    if (!u) return err(401, 'auth', 'Войдите заново.');
+    const game = String(b?.game ?? '');
+    if (!this.known(game)) return err(400, 'game', 'Нет такой игры.');
+    const ids = Array.isArray(b?.ids) ? b.ids.slice(0, 50).map(Number).filter((x: number) => Number.isInteger(x) && x >= 0 && x < 1e6) : [];
+    if (!ids.length) return err(400, 'ids', 'Нет заданий.');
+    const now = ctx.now ?? Date.now();
+    if (!this.saveLimit.take(String(u.id), now)) return err(429, 'often', 'Слишком часто.');
+    let m = await this.seenMap(u.id, game);
+    const t = Math.floor(now / 60000);
+    for (const id of ids) m[id] = t;
+    const list = Object.entries(m);
+    if (list.length > SEEN_KEEP) m = Object.fromEntries(list.sort((a, b) => b[1] - a[1]).slice(0, SEEN_KEEP));
+    // время записи — больше прежней, иначе putSave не перезапишет
+    const prev = (await this.acc.store.getSave(u.id, 'seen:' + game))?.at ?? 0;
+    await this.acc.store.putSave(u.id, 'seen:' + game, Math.max(now, prev + 1), JSON.stringify(m));
+    return { code: 200, body: { ok: true } };
   }
 
   async played(b: any, ctx: Ctx): Promise<Reply> {
@@ -128,11 +170,11 @@ export async function playerApi(
   ip: string,
   readBody: (req: IncomingMessage, limit?: number) => Promise<string>
 ): Promise<boolean> {
-  if (path !== '/api/likes' && path !== '/api/history' && path !== '/api/saves') return false;
+  if (path !== '/api/likes' && path !== '/api/history' && path !== '/api/saves' && path !== '/api/seen') return false;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
   if (req.method === 'GET') {
     const q = new URL(req.url || '/', 'http://x').searchParams;
-    send(req, res, path === '/api/likes' ? await pl.mine(ctx) : path === '/api/saves' ? await pl.saves(q, ctx) : await pl.history(ctx));
+    send(req, res, path === '/api/likes' ? await pl.mine(ctx) : path === '/api/saves' ? await pl.saves(q, ctx) : path === '/api/seen' ? await pl.seen(q, ctx) : await pl.history(ctx));
     return true;
   }
   if (req.method !== 'POST') {
@@ -150,6 +192,6 @@ export async function playerApi(
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, path === '/api/likes' ? await pl.like(b, ctx) : path === '/api/saves' ? await pl.putSave(b, ctx) : await pl.played(b, ctx));
+  send(req, res, path === '/api/likes' ? await pl.like(b, ctx) : path === '/api/saves' ? await pl.putSave(b, ctx) : path === '/api/seen' ? await pl.addSeen(b, ctx) : await pl.played(b, ctx));
   return true;
 }

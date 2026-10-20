@@ -60,6 +60,7 @@
 .dn-qs { display: flex; flex-direction: column; gap: 3px; max-height: 320px; overflow: auto; }
 .dn-qbtn { text-align: left; white-space: normal; padding-top: 4px; padding-bottom: 4px; }
 .dn-guess { background: #f3d64a; color: #2a2014; font-weight: 700; }
+.dn-swap { margin-top: 10px; font-size: 13px; opacity: 0.8; }
 .dn-row { display: flex; gap: 6px; }
 .dn-row .btn { flex: 1; width: auto; }
 .dn-b-y { background: #2f7a3e; color: #fff; }

@@ -3,6 +3,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, keepDrafts, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
+import { markSeen, seenList } from '../../core/seen';
 import { ANS, LEVEL, SEATS } from './def';
 import { danetka } from './data';
 import type { Event, View } from './engine';
@@ -28,6 +29,8 @@ class DanetkiView implements GameView<View, Event> {
   private showSecret = false;
   /** Открыта форма «Знаю разгадку!» — переживает перерисовку панели (ход того же игрока). */
   private guessOpen = -1;
+  /** Список виденного столу уже отдали. */
+  private told = false;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -218,6 +221,26 @@ class DanetkiView implements GameView<View, Event> {
       add(`<div class="dn-wait">${v.pending != null ? `Ведущий ${v.host != null ? esc(this.plain(v.host)) + ' ' : ''}думает…` : `Спрашивает ${esc(this.plain(v.turn))}…`}</div>`);
     }
     add(this.notebook(v) || '<div class="dn-note dn-empty">Здесь соберётся всё, что ответили «да».</div>');
+    if (mine.length) {
+      const b = btn('🔄 Уже знаю эту — другую', () => {
+        if (!confirm('Заменить данетку? Если вы её уже разгадывали, возьмём другую — для всех за столом.')) return;
+        markSeen('danetki', [v.id]);
+        this.send(mine[0], { type: 'swap' });
+      }, 'btn dn-swap');
+      b.title = 'Данетка знакомая — заменить на другую';
+    }
+  }
+
+  /** Своё виденное — столу (один раз); открытую разгадку — себе в список. */
+  private seen(v: View) {
+    const mine = this.mine(v);
+    if (!mine.length) return;
+    if (!this.told) {
+      this.told = true;
+      void seenList('danetki').then((ids) => ids.length && this.ctx.act(mine[0], { type: 'seen', ids }));
+    }
+    // разгадку ведущий видит и во время игры, но в список она попадёт, когда её откроют всем
+    if (v.secret && v.phase !== 'play') markSeen('danetki', [v.id]);
   }
 
   private textRow(ph: string, label: string, fn: (t: string) => void, voiceLabel: string, voice: () => void): HTMLElement {
@@ -247,6 +270,7 @@ class DanetkiView implements GameView<View, Event> {
 
   setView(v: View) {
     this.v = v;
+    this.seen(v);
     this.draw();
     this.renderPanel();
   }
@@ -254,7 +278,7 @@ class DanetkiView implements GameView<View, Event> {
   async play(events: Event[], v: View) {
     const speed = this.ctx.speed();
     for (const ev of events) {
-      if (ev.type === 'start') {
+      if (ev.type === 'start' || ev.type === 'swap') {
         this.showSecret = false;
         this.guessOpen = -1;
         Sound.card();
@@ -274,6 +298,7 @@ class DanetkiView implements GameView<View, Event> {
       }
     }
     this.v = v;
+    this.seen(v);
     this.draw();
     this.renderPanel();
   }

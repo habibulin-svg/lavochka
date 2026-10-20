@@ -4,7 +4,7 @@
 import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { esc } from '../../core/util';
-import { apply, BOOKS, cfgOf, keyOf, KEYS, newState, PAR, redact, result, SHARED, toAct, view, type Action, type Event, type State, type View } from './engine';
+import { apply, BOOKS, cfgOf, free, keyOf, KEYS, newState, PAR, redact, result, SHARED, toAct, view, type Action, type Event, type State, type View } from './engine';
 
 export const SEATS = [
   { name: 'Вовка', color: '#c0281e', light: '#e86a5a', dark: '#7a140e' },
@@ -35,6 +35,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)}: дело ${ev.i + 1} не раскрыто`;
     case 'finish':
       return `🏁 Дела закрыты: ${ev.score} очков`;
+    case 'swap':
+      return ev.seat != null ? `🔄 ${name(ev.seat)} уже читал дело ${ev.i + 1} — взяли другое` : `🔄 Дела, которые за столом уже читали, заменены на новые (${ev.n ?? 1})`;
   }
   return null;
 }
@@ -170,6 +172,7 @@ export const def: GameDef<State, Action, Event, View> = {
   ],
   setup: (seats, opts, rng) => newState(cfgOf(opts), seats.map((s) => s.seat), rng),
   toAct,
+  free,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view,
   redact,

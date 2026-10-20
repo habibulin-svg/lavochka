@@ -3,8 +3,9 @@
 import { Sound } from '../../core/audio';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
+import { markSeen, seenList } from '../../core/seen';
 import { fmtSec } from './def';
-import { bookOf, PAR, PTS, rank, SHARED, type BoardView, type Event, type View } from './engine';
+import { bookOf, canSwap, PAR, PTS, rank, SHARED, type BoardView, type Event, type View } from './engine';
 import './detektiv.css';
 
 const BASE = `${import.meta.env.BASE_URL}detektiv/`;
@@ -57,6 +58,8 @@ class DetektivView implements GameView<View, Event> {
   private rkey = '';
   private free: HTMLElement | null = null;
   private freeKey = '';
+  /** Список прочитанного столу уже отдали. */
+  private told = false;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -89,7 +92,8 @@ class DetektivView implements GameView<View, Event> {
     const seat = this.pickSeat(v);
     this.seat = seat;
     const b = this.board(v, seat);
-    const key = `${seat}:${b.i}:${v.total}`;
+    this.seen(v, b);
+    const key = `${seat}:${b.i}:${b.cur?.id}:${v.total}`;
     if (key !== this.key) {
       this.key = key;
       this.draft = '';
@@ -109,6 +113,18 @@ class DetektivView implements GameView<View, Event> {
       }
     }
     this.render();
+  }
+
+  /** Своё прочитанное — столу (один раз); открытую разгадку — себе в список. */
+  private seen(v: View, b: BoardView) {
+    if (this.ctx.demo) return;
+    const mine = this.ctx.mySeats.filter((x) => v.seats.includes(x));
+    if (!mine.length) return;
+    if (!this.told) {
+      this.told = true;
+      void seenList('detektiv').then((ids) => ids.length && this.ctx.act(mine[0], { t: 'seen', ids }));
+    }
+    if (b.cur?.sol) markSeen('detektiv', [b.cur.id]);
   }
 
   async play(events: Event[], v: View) {
@@ -277,7 +293,7 @@ class DetektivView implements GameView<View, Event> {
 
   private controls(v: View) {
     const b = this.board(v, this.seat);
-    const key = `${this.seat}:${b?.i}:${b?.phase}:${b?.hints}:${(b?.out ?? []).join()}:${(b?.ready ?? []).join()}:${!!this.txt}:${this.ctx.mySeats.join(',')}`;
+    const key = `${this.seat}:${b?.i}:${b?.cur?.id}:${b?.phase}:${b?.hints}:${(b?.out ?? []).join()}:${(b?.ready ?? []).join()}:${!!this.txt}:${this.ctx.mySeats.join(',')}`;
     if (key === this.ctlKey) return;
     this.ctlKey = key;
     this.ctl.innerHTML = '';
@@ -329,6 +345,16 @@ class DetektivView implements GameView<View, Event> {
       if (confirm(q)) this.ctx.act(seat, { t: 'skip' });
     };
     this.ctl.append(hint, skip);
+    if (b.cur && canSwap(v, b.i)) {
+      const id = b.cur.id;
+      const swap = h<HTMLButtonElement>(`<button class="btn dk-swap" title="Это дело уже знакомо — взять другое">🔄 Уже читал — другое дело</button>`);
+      swap.onclick = () => {
+        if (!confirm(v.shared || v.seats.length > 1 ? 'Заменить дело? Возьмём другое такой же трудности — для всех за столом.' : 'Заменить дело? Возьмём другое такой же трудности.')) return;
+        markSeen('detektiv', [id]);
+        this.ctx.act(seat, { t: 'swap' });
+      };
+      this.ctl.appendChild(swap);
+    }
   }
 
   private flash(text: string, cls = '') {

@@ -88,6 +88,7 @@
 .dk-stamp.fail { color: #b3261e; }
 .dk-pts { font-size: 14px; margin-bottom: 4px; }
 .dk-ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dk-swap { font-size: 13px; opacity: 0.8; }
 .dk-ctl-t { width: 100%; font-size: 13px; }
 .dk-final { text-align: center; padding: 10px 0; }
 .dk-cert { display: inline-block; padding: 16px 30px; border: 3px double #5a3a12; background: #fffaf0; }

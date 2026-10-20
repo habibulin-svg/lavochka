@@ -2,7 +2,9 @@
  * лежат в public/detektiv (их показывает вид), а какая версия верная, наводки и разгадка — здесь, в ключе (`data/key.ts`),
  * и игрок получает их, только когда взял наводку или закрыл дело. Режимы: «Сыщик» — каждый в своём темпе, звание по
  * очкам; «Следственная бригада» — одно дело на всех, очки общие; «Кто быстрее» — одно дело на всех, очки тому, кто
- * первым назовёт верную версию, ошибся — выбыл из этого дела. Без DOM. */
+ * первым назовёт верную версию, ошибся — выбыл из этого дела. Дела, которые кто-то за столом уже читал (списки присылают
+ * браузеры — действие seen), заменяем на нечитанные; «уже читал» (swap) — заменить текущее. Без DOM. */
+import { addSeen, freshest, type Avoid } from '../../core/fresh';
 import type { Options, Rng } from '../../core/types';
 import { shuffle } from '../../core/rng';
 import KEY from './data/key';
@@ -94,6 +96,10 @@ export interface State {
   /** Очки по местам (в бригаде у всех одинаковые). */
   scores: Record<number, number>;
   turn: number;
+  /** Виденные кем-то за столом: номер дела → минута (core/fresh.ts). */
+  avoid?: Avoid;
+  /** Кто уже прислал свой список (повторно — после переподключения — дела не меняем). */
+  told?: number[];
 }
 
 export type Action =
@@ -103,7 +109,11 @@ export type Action =
   | { t: 'hint' }
   | { t: 'skip' }
   | { t: 'next' }
-  | { t: 'think' };
+  | { t: 'think' }
+  /** Браузер игрока: какие дела он уже читал — [[номер, минута], …] (вне очереди). */
+  | { t: 'seen'; ids: [number, number][] }
+  /** «Уже читал это дело» — заменить текущее. */
+  | { t: 'swap' };
 
 export type Event =
   | { type: 'open'; seat: number; i: number }
@@ -112,7 +122,9 @@ export type Event =
   | { type: 'free'; seat: number; i: number; text: string }
   | { type: 'solved'; seat: number; i: number; mark: Mark }
   | { type: 'skip'; seat: number; i: number }
-  | { type: 'finish'; seat: number; score: number };
+  | { type: 'finish'; seat: number; score: number }
+  /** Дело i заменили: seat — кто сказал «уже читал», null — по спискам прочитанного. */
+  | { type: 'swap'; seat: number | null; i: number; n?: number };
 
 /** Что видно о деле: номер (текст вид берёт из public), сложность, книга; наводки — сколько взято; ключ — когда закрыто. */
 export interface CaseView {
@@ -182,6 +194,52 @@ export function newState(c: Cfg, seats: number[], rng: Rng, now = Date.now()): S
   return { cfg: c, seats, list, boards, scores, turn: 0 };
 }
 
+/** Дело номер j в списке можно заменить, пока ни у кого оно не закрыто (разгадку не видели). */
+export const canSwap = (s: { boards: Record<number, Pick<Board, 'i' | 'phase'>> }, j: number) =>
+  Object.values(s.boards).every((b) => b.i !== j || b.phase === 'solve');
+
+/** Заменить дело j на нечитанное той же трудности (из той же книги); false — заменить нечем. */
+function replace(s: State, j: number, rng: Rng, now: number): boolean {
+  if (!canSwap(s, j)) return false;
+  const lv = keyOf(s.list[j]).lv;
+  const pool = KEYS.filter((k) => (!s.cfg.book || k.book === s.cfg.book) && !s.list.includes(k.id));
+  const same = pool.filter((k) => k.lv === lv);
+  const k = freshest(same.length ? same : pool, (x) => x.id, s.avoid ?? {}, rng);
+  if (!k) return false;
+  s.list = s.list.map((x, n) => (n === j ? k.id : x));
+  const boards = { ...s.boards };
+  for (const [x, b] of Object.entries(boards))
+    if (b.i === j) boards[Number(x)] = { ...b, t0: now, hints: 0, wrongs: [], text: undefined, thinks: 0, out: b.out ? [] : undefined, by: undefined };
+  s.boards = boards;
+  return true;
+}
+
+/** Прочитанное за столом и «уже читал». */
+function seenSwap(s0: State, seat: number, a: Extract<Action, { t: 'seen' } | { t: 'swap' }>, rng: Rng, now: number): { state: State; events: Event[] } | null {
+  const s: State = { ...s0, avoid: { ...(s0.avoid ?? {}) }, told: [...(s0.told ?? [])] };
+  const ev: Event[] = [];
+  if (a.t === 'seen') {
+    const got = new Set(addSeen(s.avoid!, a.ids));
+    if (s.told!.includes(seat)) return { state: s, events: ev };
+    s.told!.push(seat);
+    // впереди и на столе (ещё не закрытые) — меняем прочитанные на свежие
+    const from = Math.min(...Object.values(s.boards).map((b) => b.i));
+    const done: number[] = [];
+    for (let j = Math.max(0, from); j < s.list.length; j++) if (got.has(s.list[j]) && replace(s, j, rng, now)) done.push(j);
+    if (done.length) ev.push({ type: 'swap', seat: null, i: done[0], n: done.length });
+    return { state: s, events: ev };
+  }
+  const b = s.boards[boardKey(s, seat)];
+  if (!b || b.i >= s.list.length || b.phase !== 'solve' || (b.out ?? []).includes(seat)) return null;
+  s.avoid![s.list[b.i]] = Math.max(s.avoid![s.list[b.i]] ?? 0, 1);
+  if (!replace(s, b.i, rng, now)) return null;
+  ev.push({ type: 'swap', seat, i: b.i });
+  return { state: s, events: ev };
+}
+
+/** Вне очереди: прислать прочитанное и «уже читал». */
+export const free = (s: State, seat: number, a: Action) => s.seats.includes(seat) && !!a && (a.t === 'seen' || a.t === 'swap');
+
 const boardKey = (s: State, seat: number) => (s.cfg.mode === 'solo' ? seat : SHARED);
 
 /** Кто может ходить: в «Сыщике» — все, кто не дочитал; в бригаде и гонке — все, пока дела не кончились
@@ -220,8 +278,9 @@ function close(s: State, b: Board, seat: number, ok: boolean, now: number, self?
   return { b: { ...b, phase: 'done', score: b.score + pts, marks: [...b.marks, mark], by: seat, ready: [] }, mark };
 }
 
-export function apply(s0: State, seat: number, a: Action, _rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
+export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
   if (!a || typeof a !== 'object' || !s0.seats.includes(seat)) return null;
+  if (a.t === 'seen' || a.t === 'swap') return seenSwap(s0, seat, a, rng, now);
   const key = boardKey(s0, seat);
   const b0 = s0.boards[key];
   if (!b0 || b0.i >= s0.list.length) return null;

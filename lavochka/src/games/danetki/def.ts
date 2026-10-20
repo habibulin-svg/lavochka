@@ -4,7 +4,7 @@ import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
 import { choose } from './ai';
 import { DANETKI, danetka } from './data';
-import { apply, makeView, setup, toAct, type Action, type Event, type State, type View } from './engine';
+import { apply, free, makeView, setup, toAct, type Action, type Event, type State, type View } from './engine';
 
 export const SEATS = [
   ['Вовка', '#b3322a'], ['Ленка', '#2b5c9e'], ['Серёга', '#2f7a3e'], ['Танька', '#c48a12'],
@@ -35,6 +35,10 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return ev.result.solver != null ? `🏁 Разгадал ${name(ev.result.solver)}${ev.result.gain ? ` (+${ev.result.gain})` : ''}.` : '🏁 Никто не разгадал — ведущий рассказывает ответ.';
     case 'over':
       return '🏆 Игра окончена.';
+    case 'swap': {
+      const d = danetka(ev.id);
+      return `🔄 ${ev.seat != null ? `${name(ev.seat)} уже знает эту данетку` : 'Эту данетку за столом уже разгадывали'} — новая: <b>«${esc(d?.title ?? '')}»</b>.`;
+    }
   }
   return null;
 }
@@ -123,6 +127,7 @@ export const def: GameDef<State, Action, Event, View> = {
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng, seats.filter((x) => x.kind !== 'bot').map((x) => x.seat)),
   toAct,
+  free,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view: (s, seats) => makeView(s, seats),
   result(s) {

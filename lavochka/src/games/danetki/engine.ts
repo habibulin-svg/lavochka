@@ -1,7 +1,9 @@
 /* Данетки — движок. Ведущий читает странную историю, игроки по кругу задают вопросы «да/нет», ведущий отвечает «да», «нет» или «неважно».
  * По правилам: после каждого круга — подсказка (их три), после четвёртого круга время вышло; разгадавший получает 4/5/6 очков (лёгкая/средняя/трудная)
  * минус очко за каждую прочитанную подсказку; ведущий — по очереди. Без правил: спрашивают сколько угодно, подсказки — когда ведущий решит, без очков.
- * Ведущий-бот отвечает по сценарию: игроки выбирают готовые вопросы, разгадку — из четырёх вариантов. Живой ведущий — свободные вопросы и разгадка своими словами. Без DOM. */
+ * Ведущий-бот отвечает по сценарию: игроки выбирают готовые вопросы, разгадку — из четырёх вариантов. Живой ведущий — свободные вопросы и разгадка своими словами.
+ * Данетку подбираем ту, что никто за столом не видел (списки присылают браузеры — действие seen); «уже знаю» (swap) — заменить. Без DOM. */
+import { addSeen, freshest, type Avoid } from '../../core/fresh';
 import type { Options, Rng } from '../../core/types';
 import { DANETKI, danetka, type Ans } from './data';
 
@@ -59,6 +61,10 @@ export interface State {
   last: Result | null;
   history: Result[];
   used: number[];
+  /** Виденные кем-то за столом: номер → минута (core/fresh.ts). */
+  avoid: Avoid;
+  /** Кто уже прислал свой список (повторно — после переподключения — данетку не меняем). */
+  told: number[];
 }
 
 export type Action =
@@ -68,7 +74,11 @@ export type Action =
   | { type: 'judge'; right: boolean }
   | { type: 'hint' }
   | { type: 'giveup' }
-  | { type: 'next' };
+  | { type: 'next' }
+  /** Браузер игрока: какие данетки он уже видел — [[номер, минута], …] (вне очереди). */
+  | { type: 'seen'; ids: [number, number][] }
+  /** «Уже знаю эту» — взять другую (вне очереди, любой за столом). */
+  | { type: 'swap' };
 
 export type Event =
   | { type: 'start'; n: number; id: number; host: number | null }
@@ -77,7 +87,9 @@ export type Event =
   | { type: 'judge'; seat: number; right: boolean }
   | { type: 'hint'; n: number; text: string }
   | { type: 'end'; result: Result; answer: string }
-  | { type: 'over'; scores: Record<number, number> };
+  | { type: 'over'; scores: Record<number, number> }
+  /** Данетку заменили: seat — кто сказал «уже знаю», null — по спискам виденного. */
+  | { type: 'swap'; seat: number | null; id: number };
 
 export interface View {
   seats: number[];
@@ -150,22 +162,42 @@ export function setup(seats: number[], opts: Options, rng: Rng, humans: number[]
     last: null,
     history: [],
     used: [],
+    avoid: {},
+    told: [],
   };
   start(s, rng);
   return s;
 }
 
-function start(s: State, rng: Rng): Event {
-  s.n++;
+/** Взять данетку: не игранную в этой партии и (по возможности) не виденную никем за столом. */
+function pick(s: State, rng: Rng) {
   let list = pool(s.level, s.kids);
   if (!list.length) list = DANETKI;
   let fresh = list.filter((d) => !s.used.includes(d.id));
+  if (!fresh.length) fresh = list.filter((d) => d.id !== s.id);
   if (!fresh.length) fresh = list;
-  const d = fresh[rng.int(fresh.length)];
+  const d = freshest(fresh, (x) => x.id, s.avoid ?? {}, rng)!;
   s.id = d.id;
   s.used.push(d.id);
+}
+
+function start(s: State, rng: Rng): Event {
+  s.n++;
+  pick(s, rng);
   s.host = s.hostSeats ? s.seats[(s.n - 1) % s.seats.length] : null;
-  // спрашивают по кругу, начиная слева от ведущего
+  deal(s, rng);
+  return { type: 'start', n: s.n, id: s.id, host: s.host };
+}
+
+/** Заменить текущую данетку: тот же ведущий, круги и подсказки — заново. */
+function swap(s: State, seat: number | null, rng: Rng): Event[] {
+  pick(s, rng);
+  deal(s, rng);
+  return [{ type: 'swap', seat, id: s.id }];
+}
+
+/** Начать круги по текущей данетке. */
+function deal(s: State, rng: Rng) {  // спрашивают по кругу, начиная слева от ведущего
   const i0 = s.host == null ? 0 : s.seats.indexOf(s.host) + 1;
   s.players = s.seats.map((_, k) => s.seats[(i0 + k) % s.seats.length]).filter((x) => x !== s.host);
   s.turn = s.players[0];
@@ -186,11 +218,13 @@ function start(s: State, rng: Rng): Event {
   s.phase = 'play';
   s.ready = [];
   s.last = null;
-  return { type: 'start', n: s.n, id: s.id, host: s.host };
 }
 
 /** Живой ведущий (человек) — тогда свободные вопросы и разгадка своими словами. */
 export const liveHost = (s: Pick<State, 'host' | 'humans'>) => s.host != null && s.humans.includes(s.host);
+
+/** Вне очереди: прислать виденное и «уже знаю». */
+export const free = (s: State, seat: number, a: Action) => s.seats.includes(seat) && !!a && (a.type === 'seen' || a.type === 'swap');
 
 export function toAct(s: State): number[] {
   if (s.phase === 'over') return [];
@@ -246,9 +280,26 @@ function advance(s: State, ev: Event[]) {
 }
 
 export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
-  if (!a || typeof a !== 'object' || !s0.seats.includes(seat) || !toAct(s0).includes(seat)) return null;
+  if (!a || typeof a !== 'object' || !s0.seats.includes(seat) || (!toAct(s0).includes(seat) && !free(s0, seat, a))) return null;
   const s = clone(s0);
   const ev: Event[] = [];
+  s.avoid ??= {};
+  s.told ??= [];
+  if (a.type === 'seen') {
+    if (s.phase === 'over') return null;
+    const got = addSeen(s.avoid, a.ids);
+    const first = !s.told.includes(seat);
+    if (first) s.told.push(seat);
+    // кто-то пришёл к столу и эту уже видел — сразу берём другую (только по первому списку: переподключение партию не сбивает)
+    if (first && s.phase === 'play' && got.includes(s.id)) ev.push(...swap(s, null, rng));
+    return { state: s, events: ev };
+  }
+  if (a.type === 'swap') {
+    if (s.phase !== 'play') return null;
+    s.avoid[s.id] = Math.max(s.avoid[s.id] ?? 0, 1);
+    ev.push(...swap(s, seat, rng));
+    return { state: s, events: ev };
+  }
   const d = danetka(s.id)!;
   const live = liveHost(s);
   const isHost = seat === s.host;

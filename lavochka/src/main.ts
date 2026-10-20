@@ -15,6 +15,7 @@ import { handlePlusReturn, wirePlusLinks } from './site/plus';
 import { wireSupportLinks } from './site/support';
 import { likeButton } from './site/likes';
 import './site/history';
+import './site/seen';
 import { syncSave } from './site/saves';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
