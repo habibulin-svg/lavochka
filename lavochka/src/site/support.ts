@@ -92,7 +92,7 @@ function thread(t: TicketFull): string {
 
 const badge = (s: TicketBrief['status']) => `<span class="sup-st sup-st-${s}">${TICKET_STATUS[s]}</span>`;
 
-function list(items: TicketBrief[], staff: boolean): string {
+export function list(items: TicketBrief[], staff: boolean): string {
   return items.length
     ? `<ul class="sup-list">${items
         .map(

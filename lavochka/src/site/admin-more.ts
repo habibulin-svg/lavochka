@@ -1,4 +1,162 @@
-/* Админка: разделы «Игроки», «Ошибки», «Обращения» (src/site/admin.ts открывает их по адресу). */
+/* Админка: разделы «Игроки» (права на срок, закрыть вход), «Ошибки» (автоошибки браузера и сервера, выгрузка пачкой),
+ * «Обращения» (список; переписка — окном из src/site/support.ts). Открывает src/site/admin.ts по адресу. */
+import { esc } from '../core/util';
+import { toast } from '../core/ui';
+import { byId } from '../games/catalog';
+import { call } from './admin';
+import { list as ticketList, openTicket } from './support';
+
+const when = (t: number | null) => (t ? new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+const date = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+const fail = (body: HTMLElement, r: { body: any }) => {
+  body.innerHTML = `<div class="adm-card adm-err">${esc(r.body.message ?? 'Не удалось загрузить.')}</div>`;
+};
+
 export async function drawTab(tab: string, body: HTMLElement): Promise<void> {
-  body.innerHTML = `<div class="adm-card"><p>Раздел «${tab}» — скоро.</p></div>`;
+  if (tab === 'igroki') return drawUsers(body);
+  if (tab === 'oshibki') return drawErrors(body);
+  return drawTickets(body);
+}
+
+// ---------------------------------------------------------------- игроки
+
+let userQ = '';
+
+async function drawUsers(body: HTMLElement) {
+  const r = await call('/api/admin/users?q=' + encodeURIComponent(userQ));
+  if (!r.ok) return fail(body, r);
+  const RIGHTS = r.body.rights as Record<string, string>;
+  const users = r.body.users as any[];
+  const opts = Object.entries(RIGHTS)
+    .filter(([k]) => k !== 'master')
+    .map(([k, t]) => `<option value="${k}">${esc(t)}</option>`)
+    .join('');
+  body.innerHTML = `<div class="adm-head"><h1>Игроки</h1></div>
+    <form class="adm-card adm-row adm-search"><input name="q" placeholder="Почта, имя или номер" value="${esc(userQ)}" autocomplete="off"><button class="btn small">Найти</button>
+      <span class="adm-muted">${userQ ? `найдено ${users.length}` : 'последние 50 зарегистрированных'}</span></form>
+    <div class="adm-card"><table class="adm-table"><thead><tr><th>№</th><th>Игрок</th><th>С нами</th><th>Права</th><th></th></tr></thead><tbody>${
+      users
+        .map((u) => {
+          const rights = (u.rights as { right: string; until: number | null }[])
+            .map(
+              (g) =>
+                `<span class="adm-chip" title="${esc(RIGHTS[g.right] ?? g.right)}">${esc(g.right)}${g.until ? ` до ${date(g.until)}` : ''}${g.right === 'master' ? '' : `<button data-revoke="${esc(g.right)}" data-id="${u.id}" title="Забрать">✕</button>`}</span>`
+            )
+            .join('');
+          return `<tr><td>${u.id}</td>
+            <td><b>${esc(u.name)}</b><br><small>${u.email ? esc(u.email) + (u.verified ? '' : ' (не подтв.)') : 'без почты'}${u.logins.length ? ' · ' + esc(u.logins.join(', ')) : ''}</small></td>
+            <td><small>с ${date(u.createdAt)}<br>вход: ${when(u.lastLoginAt)}</small></td>
+            <td>${rights || '<small class="adm-muted">—</small>'}${u.bannedUntil ? `<span class="adm-chip off">вход закрыт до ${date(u.bannedUntil)}</span>` : ''}</td>
+            <td><div class="adm-row"><select data-right="${u.id}"><option value="">выдать право…</option>${opts}</select><select data-days="${u.id}" title="Срок"><option value="">бессрочно</option><option value="7">7 дн.</option><option value="30" selected>30 дн.</option><option value="90">90 дн.</option><option value="365">год</option></select><button class="btn small" data-grant="${u.id}">Выдать</button>
+              ${u.bannedUntil ? `<button class="btn small" data-unban="${u.id}">Открыть вход</button>` : `<button class="btn small" data-ban="${u.id}">Закрыть вход…</button>`}</div></td></tr>`;
+        })
+        .join('') || '<tr><td colspan="5" class="adm-muted">Никого.</td></tr>'
+    }</tbody></table></div>
+    <p class="adm-muted">Право Мастера выдаётся и забирается только командой на сервере (lavochka-admin). Закрытый вход выкидывает игрока из всех сессий.</p>`;
+  const form = body.querySelector('form') as HTMLFormElement;
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    userQ = String(new FormData(form).get('q') ?? '').trim();
+    void drawUsers(body);
+  };
+  const act = async (b: unknown, ok: string) => {
+    const res = await call('/api/admin/users', b);
+    toast(res.ok ? ok : res.body.message || 'Не вышло.');
+    void drawUsers(body);
+  };
+  body.querySelectorAll<HTMLButtonElement>('[data-grant]').forEach(
+    (b) =>
+      (b.onclick = () => {
+        const id = b.dataset.grant!;
+        const right = (body.querySelector(`[data-right="${id}"]`) as HTMLSelectElement).value;
+        const days = Number((body.querySelector(`[data-days="${id}"]`) as HTMLSelectElement).value) || null;
+        if (!right) return toast('Выберите право.');
+        void act({ id: Number(id), grant: right, days }, 'Право выдано.');
+      })
+  );
+  body.querySelectorAll<HTMLButtonElement>('[data-revoke]').forEach(
+    (b) => (b.onclick = () => confirm(`Забрать право ${b.dataset.revoke}?`) && void act({ id: Number(b.dataset.id), revoke: b.dataset.revoke }, 'Право забрано.'))
+  );
+  body.querySelectorAll<HTMLButtonElement>('[data-ban]').forEach(
+    (b) =>
+      (b.onclick = () => {
+        const d = Number(prompt('Закрыть вход на сколько дней?', '7'));
+        if (d > 0) void act({ id: Number(b.dataset.ban), ban: d }, 'Вход закрыт.');
+      })
+  );
+  body.querySelectorAll<HTMLButtonElement>('[data-unban]').forEach((b) => (b.onclick = () => void act({ id: Number(b.dataset.unban), ban: 0 }, 'Вход открыт.')));
+}
+
+// ---------------------------------------------------------------- ошибки
+
+const ERR_ST: Record<string, string> = { new: 'новая', seen: 'смотрю', fixed: 'исправлена', ignored: 'не важно' };
+let errFilter = 'new';
+
+async function drawErrors(body: HTMLElement) {
+  const r = await call('/api/admin/errors' + (errFilter ? '?status=' + errFilter : ''));
+  if (!r.ok) return fail(body, r);
+  const list = r.body.errors as any[];
+  body.innerHTML = `<div class="adm-head"><h1>Ошибки</h1><div class="adm-row">${[
+    ['new', 'Новые'],
+    ['seen', 'Смотрю'],
+    ['', 'Все'],
+  ]
+    .map(([k, t]) => `<button class="btn small${k === errFilter ? ' primary' : ''}" data-f="${k}">${t}</button>`)
+    .join('')}<button class="btn small" data-md>⬇ Выгрузить (Markdown)</button>${list.length && errFilter === 'new' ? '<button class="btn small" data-allseen>Все — «смотрю»</button>' : ''}</div></div>
+    <div class="adm-card">${
+      list.length
+        ? `<table class="adm-table"><thead><tr><th>Ошибка</th><th>Раз</th><th>Когда</th><th></th></tr></thead><tbody>${list
+            .map(
+              (e) => `<tr><td><b>${esc(e.message)}</b><br><small>${e.source === 'client' ? 'браузер' : 'сервер'}${e.game ? ' · ' + esc(byId(e.game)?.title ?? e.game) : ''}${e.url ? ' · ' + esc(e.url) : ''}</small>${
+                e.place ? `<br><small><code>${esc(e.place)}</code></small>` : ''
+              }${e.stack ? `<details><summary><small>стек</small></summary><pre class="adm-pre">${esc(e.stack)}</pre>${e.ua ? `<small>${esc(e.ua)}</small>` : ''}</details>` : ''}</td>
+              <td>${e.count}</td><td><small>${when(e.lastAt)}${e.count > 1 ? `<br>впервые ${when(e.firstAt)}` : ''}</small></td>
+              <td><select data-st="${e.id}">${Object.entries(ERR_ST).map(([k, t]) => `<option value="${k}"${k === e.status ? ' selected' : ''}>${t}</option>`).join('')}</select></td></tr>`
+            )
+            .join('')}</tbody></table>`
+        : '<p class="adm-muted">Ошибок нет.</p>'
+    }</div>
+    <p class="adm-muted">Одинаковые ошибки склеиваются (сообщение + место). «Исправленная», случившись снова, опять становится новой. Выгрузку удобно отдать Claude — разобрать пачкой.</p>`;
+  body.querySelectorAll<HTMLButtonElement>('[data-f]').forEach((b) => (b.onclick = () => ((errFilter = b.dataset.f!), void drawErrors(body))));
+  body.querySelectorAll<HTMLSelectElement>('[data-st]').forEach(
+    (s) =>
+      (s.onchange = async () => {
+        const res = await call('/api/admin/errors', { id: Number(s.dataset.st), status: s.value });
+        if (!res.ok) toast(res.body.message || 'Не вышло.');
+      })
+  );
+  const all = body.querySelector<HTMLButtonElement>('[data-allseen]');
+  if (all)
+    all.onclick = async () => {
+      await call('/api/admin/errors', { ids: list.map((e) => e.id), status: 'seen' });
+      void drawErrors(body);
+    };
+  (body.querySelector('[data-md]') as HTMLButtonElement).onclick = async () => {
+    const res = await call('/api/admin/errors?format=md' + (errFilter ? '&status=' + errFilter : ''));
+    if (!res.ok) return toast(res.body.message || 'Не вышло.');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([res.body.md], { type: 'text/markdown;charset=utf-8' }));
+    a.download = `oshibki-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+}
+
+// ---------------------------------------------------------------- обращения
+
+let ticketFilter = 'new';
+
+async function drawTickets(body: HTMLElement) {
+  const r = await call('/api/admin/support' + (ticketFilter ? '?status=' + ticketFilter : ''));
+  if (!r.ok) return fail(body, r);
+  body.innerHTML = `<div class="adm-head"><h1>Обращения</h1><div class="adm-row">${[
+    ['new', `Ждут ответа (${r.body.fresh})`],
+    ['', 'Все'],
+  ]
+    .map(([k, t]) => `<button class="btn small${k === ticketFilter ? ' primary' : ''}" data-f="${k}">${t}</button>`)
+    .join('')}</div></div>
+    <div class="adm-card adm-tickets">${ticketList(r.body.tickets, true)}</div>
+    ${r.body.mail ? '' : '<p class="adm-muted">Почта сайта выключена — ответы письмами не уйдут.</p>'}`;
+  body.querySelectorAll<HTMLButtonElement>('[data-f]').forEach((b) => (b.onclick = () => ((ticketFilter = b.dataset.f!), void drawTickets(body))));
+  body.querySelectorAll<HTMLButtonElement>('[data-id]').forEach((b) => (b.onclick = () => void openTicket(Number(b.dataset.id), true, () => void drawTickets(body))));
 }
