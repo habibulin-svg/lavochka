@@ -68,7 +68,7 @@ class WhoView implements GameView<View, Event> {
       const ans = v.phase === 'answer' && v.answers[seat] ? `<span class="wh-ans wh-a-${v.answers[seat] === '?' ? 'u' : v.answers[seat]}">${ANS_TEXT[v.answers[seat]]}</span>` : '';
       const tilt = ((seat * 37) % 9) - 4;
       s += `<div class="wh-seat${turn ? ' wh-turn' : ''}${mine.includes(seat) && mine.length === 1 ? ' wh-me' : ''}" style="left:${x}%;top:${y}%;--c:${SEATS[seat].color};--t:${tilt}deg">
-        ${note}<div class="wh-face">${esc(this.plain(seat)).slice(0, 1)}</div><div class="wh-name">${esc(this.plain(seat))}</div>${ans}</div>`;
+        ${note}<div class="wh-face" data-cam="${seat}">${esc(this.plain(seat)).slice(0, 1)}</div><div class="wh-name">${esc(this.plain(seat))}</div>${ans}</div>`;
     });
     this.ring.innerHTML = s;
     this.center.innerHTML = this.centerHTML(v);
@@ -272,6 +272,10 @@ class WhoView implements GameView<View, Event> {
       default:
         return 'Игра окончена';
     }
+  }
+
+  focusSeat(v: View) {
+    return v.phase === 'ask' || v.phase === 'answer' ? v.turn : null;
   }
 
   playerStats(v: View, seat: number) {

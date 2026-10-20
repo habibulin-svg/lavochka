@@ -134,7 +134,7 @@ class SpyView implements GameView<View, Event> {
       const pick = targets.includes(seat) ? ' sp-can' : '';
       const used = v.accused.includes(seat) && talk ? '<i class="sp-used" title="уже обвинял">☝</i>' : '';
       s += `<div class="sp-seat${asking || asked ? ' sp-talk' : ''}${pick}${mine.includes(seat) && mine.length === 1 ? ' sp-me' : ''}${spy ? ' sp-spy' : ''}" data-seat="${seat}" style="left:${x}%;top:${y}%;--c:${SEATS[seat].color}">
-        <div class="sp-face">${esc(this.plain(seat)).slice(0, 1)}${used}</div><div class="sp-name">${esc(this.plain(seat))} <b>${v.scores[seat] ?? 0}</b></div><div class="sp-tags">${badge}</div>${said}</div>`;
+        <div class="sp-face" data-cam="${seat}">${esc(this.plain(seat)).slice(0, 1)}${used}</div><div class="sp-name">${esc(this.plain(seat))} <b>${v.scores[seat] ?? 0}</b></div><div class="sp-tags">${badge}</div>${said}</div>`;
     });
     this.ring.innerHTML = s;
     this.center.innerHTML = this.centerHTML(v);
@@ -560,6 +560,10 @@ class SpyView implements GameView<View, Event> {
     }
     void toAct;
     return '';
+  }
+
+  focusSeat(v: View) {
+    return v.phase === 'ask' ? v.asker : v.phase === 'answer' ? v.target : null;
   }
 
   playerStats(v: View, seat: number) {

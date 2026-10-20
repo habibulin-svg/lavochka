@@ -361,6 +361,15 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .voice-spot.empty { aspect-ratio: auto; min-height: 64px; display: flex; align-items: center; justify-content: center; }
 .voice-spot.empty .voice-spot-cap { position: static; background: none; padding: 10px; }
 .voice-spot-float { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: min(46%, 400px); z-index: 30; }
+/* камеры игроков на поле — над аватарами (core/seatcams.ts); главная — крупнее */
+.seat-cams { position: absolute; inset: 0; z-index: 25; pointer-events: none; }
+.seat-cam { position: absolute; border-radius: 10px; overflow: hidden; background: #15100c; box-shadow: 0 0 0 3px var(--c, #888), 0 6px 16px rgba(0, 0, 0, 0.55);
+  transition: width 0.25s, height 0.25s, left 0.25s, top 0.25s; }
+.seat-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.seat-cam.me video { transform: scaleX(-1); }
+.seat-cam.talk { box-shadow: 0 0 0 3px #ffd24a, 0 0 16px #ffd24a, 0 6px 16px rgba(0, 0, 0, 0.55); }
+.seat-cam.main { z-index: 2; border-radius: 14px; box-shadow: 0 0 0 4px #e3b25a, 0 12px 28px rgba(0, 0, 0, 0.6); }
+.seat-cam.main.talk { box-shadow: 0 0 0 4px #ffd24a, 0 0 22px #ffd24a, 0 12px 28px rgba(0, 0, 0, 0.6); }
 .voice-name { font-size: 11px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .voice-tile audio { display: none; }
 

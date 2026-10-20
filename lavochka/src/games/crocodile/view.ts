@@ -182,7 +182,7 @@ class CrocView implements GameView<View, Event> {
       const role = !active ? '' : v.eligible.includes(seat) ? 'угадывает' : seat === v.picker ? 'загадал' : v.teams ? 'соперник' : '';
       const sc = v.teams ? '' : ` <b>${total(v, seat)}</b>`;
       s += `<div class="cr-seat${v.eligible.includes(seat) && active ? ' cr-gue' : ''}" style="--c:${SEATS[seat].color}">
-        <div class="cr-face">${esc(this.plain(seat)).slice(0, 1)}</div>
+        <div class="cr-face" data-cam="${seat}">${esc(this.plain(seat)).slice(0, 1)}</div>
         <div class="cr-name">${nm(seat)}${sc}${team >= 0 ? ` <i class="cr-team cr-team${team}">${team + 1}</i>` : ''}</div>${role ? `<span class="cr-tag${role === 'угадывает' ? ' cr-tag-g' : ''}">${role}</span>` : ''}</div>`;
     }
     this.sofa.innerHTML = s;

@@ -107,7 +107,7 @@ class MafiaView implements GameView<View, Event> {
       const sel = this.nominate === seat ? ' mf-sel' : '';
       const side = x < 25 ? ' mf-l' : x > 75 ? ' mf-r' : '';
       s += `<div class="mf-seat${dead ? ' mf-dead' : ''}${me ? ' mf-me' : ''}${speaking ? ' mf-talk' : ''}${pick}${sel}${side}" data-seat="${seat}" style="left:${x}%;top:${y}%;--c:${SEATS[seat].color}">
-        <div class="mf-face">${dead ? '✝' : esc(this.plain(seat)).slice(0, 1)}</div><div class="mf-name">${esc(this.plain(seat))}${badge}</div>${nom}${said}</div>`;
+        <div class="mf-face" data-cam="${seat}">${dead ? '✝' : esc(this.plain(seat)).slice(0, 1)}</div><div class="mf-name">${esc(this.plain(seat))}${badge}</div>${nom}${said}</div>`;
     });
     this.ring.innerHTML = s;
     const title = v.phase === 'over' ? (v.winner === 'city' ? 'Город победил' : 'Мафия победила') : v.phase === 'night' ? `Ночь ${v.day}` : v.phase === 'day' ? `День ${v.day}` : `День ${v.day}: голосование`;
@@ -318,6 +318,10 @@ class MafiaView implements GameView<View, Event> {
     if (v.phase === 'night') return mine ? 'Ночь: ваш ход' : 'Город спит…';
     if (v.phase === 'day') return mine ? 'Ваше слово' : `Говорит ${name(toAct[0])}…`;
     return mine ? 'Ваш голос' : `Голосует ${name(toAct[0])}…`;
+  }
+
+  focusSeat(v: View) {
+    return v.phase === 'day' ? v.speaker : v.phase === 'vote' ? v.voter : null;
   }
 
   quiet(v: View) {

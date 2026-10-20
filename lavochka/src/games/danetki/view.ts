@@ -76,7 +76,7 @@ class DanetkiView implements GameView<View, Event> {
       const said = last && last.seat === seat && !last.hint && v.phase === 'play' ? `<div class="dn-bubble">${esc(last.text || (last.guess ? 'разгадка голосом' : 'вопрос голосом'))}${last.a ? ` <b class="dn-${last.a}">${ANS[last.a]}</b>` : last.right != null ? ` <b class="dn-${last.right ? 'y' : 'n'}">${last.right ? 'Верно!' : 'Нет'}</b>` : ''}</div>` : '';
       const side = x < 30 ? ' dn-l' : x > 70 ? ' dn-r' : '';
       s += `<div class="dn-seat${turn ? ' dn-turn' : ''}${host ? ' dn-host' : ''}${asked ? ' dn-asked' : ''}${side}" style="left:${x}%;top:${y}%;--c:${SEATS[seat].color}">
-        ${said}<div class="dn-face">${host ? '🔦' : esc(this.plain(seat)).slice(0, 1)}</div><div class="dn-name">${esc(this.plain(seat))}${v.rules ? ` <b>${v.scores[seat] ?? 0}</b>` : ''}</div>${host ? '<span class="dn-tag">ведущий</span>' : ''}</div>`;
+        ${said}<div class="dn-face" data-cam="${seat}">${host ? '🔦' : esc(this.plain(seat)).slice(0, 1)}</div><div class="dn-name">${esc(this.plain(seat))}${v.rules ? ` <b>${v.scores[seat] ?? 0}</b>` : ''}</div>${host ? '<span class="dn-tag">ведущий</span>' : ''}</div>`;
     });
     this.ring.innerHTML = s;
     this.center.innerHTML = this.cardHTML(v);
@@ -291,6 +291,11 @@ class DanetkiView implements GameView<View, Event> {
     if (v.phase === 'reveal') return v.last?.solver != null ? `Разгадал ${nm(v.last.solver)}` : 'Никто не разгадал';
     if (v.pending != null) return interactive.includes(v.host!) ? 'Ответьте игроку' : 'Ведущий отвечает…';
     return interactive.includes(v.turn) ? 'Ваш вопрос' : `Спрашивает ${nm(v.turn)}…`;
+  }
+
+  focusSeat(v: View) {
+    if (v.phase !== 'play') return null;
+    return v.pending != null ? v.host : v.turn;
   }
 
   playerStats(v: View, seat: number) {

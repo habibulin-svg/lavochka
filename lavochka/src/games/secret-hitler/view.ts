@@ -163,7 +163,7 @@ class SecretHitlerView implements GameView<View, Event> {
       const claim = this.claimBubble(v, g, x);
       const me = this.mine(v).length === 1 && this.mine(v)[0] === x;
       s += `<div class="sh-seat${dead ? ' sh-dead' : ''}${targets.includes(x) ? ' sh-can' : ''}${me ? ' sh-me' : ''}${toActNow(v).includes(x) && v.phase !== 'over' ? ' sh-turn' : ''}" data-seat="${x}" style="--c:${SEATS[x].color}">
-        <div class="sh-face">${esc(this.plain(x)).slice(0, 1)}${dead ? `<img class="sh-bullet" src="${IMG}bullet.webp" alt="казнён">` : ''}</div>
+        <div class="sh-face" data-cam="${x}" data-cam-place="over">${esc(this.plain(x)).slice(0, 1)}${dead ? `<img class="sh-bullet" src="${IMG}bullet.webp" alt="казнён">` : ''}</div>
         <div class="sh-name">${esc(this.plain(x))}</div>
         <div class="sh-plqs">${placards.join('')}</div>${ballot}<div class="sh-tags">${tags}</div>${claim}</div>`;
     }
@@ -594,6 +594,11 @@ class SecretHitlerView implements GameView<View, Event> {
         return interactive.some((x) => v.claimWait.includes(x)) ? 'Ваше заявление' : 'Заявления правительства…';
     }
     return '';
+  }
+
+  focusSeat(v: View) {
+    const t = toActNow(v);
+    return t.length === 1 && v.phase !== 'over' ? t[0] : null;
   }
 
   playerStats(v: View, seat: number) {

@@ -212,7 +212,7 @@ class CahView implements GameView<View, Event> {
       return out.join('');
     };
     const chip = (x: number, score: number, color: string, extra = '') =>
-      `<div class="cah-seat${x === me ? ' cah-me' : ''}${extra}" style="--c:${color}"><div class="cah-face">${x === RANDO ? '🎲' : esc(this.plain(x)).slice(0, 1)}</div>
+      `<div class="cah-seat${x === me ? ' cah-me' : ''}${extra}" style="--c:${color}"><div class="cah-face"${x === RANDO ? '' : ` data-cam="${x}" data-cam-place="over"`}>${x === RANDO ? '🎲' : esc(this.plain(x)).slice(0, 1)}</div>
         <div class="cah-name">${esc(this.plain(x))}</div><div class="cah-score" title="очки"><i></i>${score}</div><div class="cah-tags">${tag(x)}</div></div>`;
     let s = v.seats.map((x) => chip(x, v.scores[x] ?? 0, SEATS[x].color, x === v.czar ? ' cah-czar' : '')).join('');
     if (v.rando != null) s += chip(RANDO, v.rando, '#444', ' cah-rando');
@@ -531,6 +531,10 @@ class CahView implements GameView<View, Event> {
       }
     }
     return '';
+  }
+
+  focusSeat(v: View) {
+    return v.phase === 'judge' || v.phase === 'play' ? v.czar : null;
   }
 
   playerStats(v: View, seat: number) {

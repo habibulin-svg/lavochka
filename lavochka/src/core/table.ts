@@ -12,6 +12,7 @@ import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } f
 import { esc, h, sleep } from './util';
 import { assignLooks, type GameModule, type GameView, type ViewCtx } from './view';
 import { Voice, type VoiceTile } from './voice';
+import { SeatCams } from './seatcams';
 
 export type NetMode = 'local' | 'p2p' | 'server';
 
@@ -74,6 +75,8 @@ export class Table {
   private voiceEls = new Map<string, HTMLElement>();
   /** Крупное видео главного игрока (GameView.spotlight). */
   private spotEl: HTMLElement | null = null;
+  /** Камеры игроков над аватарами на поле (пати-игры). */
+  private cams: SeatCams | null = null;
   /** Сторож хода: свой ход отправлен, а стол не сдвинулся — попросить комнату прислать его заново. */
   private actTimer: ReturnType<typeof setTimeout> | undefined;
   private actTries = 0;
@@ -311,8 +314,23 @@ export class Table {
     this.renderSpot();
   }
 
+  /** Камеры над аватарами: только у игр, что помечают аватары [data-cam], и когда в голосе есть видео. */
+  private renderCams() {
+    const v = this.voice;
+    const board = this.el.querySelector('.table-board') as HTMLElement;
+    if (!v || this.closed || !this.current || !board.querySelector('[data-cam]')) {
+      this.cams?.destroy();
+      this.cams = null;
+      return;
+    }
+    this.cams ??= new SeatCams(board);
+    const spot = this.view.spotlight ? this.view.spotlight(this.current) : null;
+    this.cams.update(v.tiles(), this.view.focusSeat ? this.view.focusSeat(this.current) : null, spot);
+  }
+
   /** Видео главного игрока крупно (крокодил: показывающий) — в [data-spot] доски или поверх неё. */
   private renderSpot() {
+    this.renderCams();
     const v = this.voice;
     const seat = v && this.current && this.view.spotlight ? this.view.spotlight(this.current) : null;
     if (!v || seat == null || this.closed) {
@@ -744,6 +762,8 @@ export class Table {
     this.unsub();
     this.voice?.destroy();
     this.voice = null;
+    this.cams?.destroy();
+    this.cams = null;
     this.view.destroy?.();
     window.removeEventListener('keydown', this.onSpace);
     closeAllModals();

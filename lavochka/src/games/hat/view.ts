@@ -160,7 +160,7 @@ class HatView implements GameView<View, Event> {
       const tag = role === 'exp' ? '<span class="ht-tag">объясняет</span>' : role === 'gue' ? '<span class="ht-tag ht-tag-g">угадывает</span>' : '';
       const wrote = v.phase === 'write' ? `<span class="ht-tag ${v.written.includes(seat) ? 'ht-tag-g' : 'ht-tag-w'}">${v.written.includes(seat) ? 'положил' : 'пишет…'}</span>` : '';
       s += `<div class="ht-seat${role ? ' ht-' + role : ''}" style="left:${x}%;top:${y}%;--c:${SEATS[seat].color}">
-        <div class="ht-face">${role === 'exp' ? '🎩' : esc(this.plain(seat)).slice(0, 1)}</div>
+        <div class="ht-face" data-cam="${seat}">${role === 'exp' ? '🎩' : esc(this.plain(seat)).slice(0, 1)}</div>
         <div class="ht-name">${esc(this.plain(seat))}${score}${team >= 0 ? ` <i class="ht-team ht-team${team}">${team + 1}</i>` : ''}</div>${tag}${wrote}</div>`;
     });
     this.ring.innerHTML = s;
@@ -537,6 +537,10 @@ class HatView implements GameView<View, Event> {
       default:
         return 'Игра окончена';
     }
+  }
+
+  focusSeat(v: View) {
+    return v.phase === 'ready' || v.phase === 'explain' || v.phase === 'last' ? v.exp : null;
   }
 
   playerStats(v: View, seat: number) {
