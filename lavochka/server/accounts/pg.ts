@@ -3,7 +3,7 @@
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
 import type { TicketStatus } from '../../src/core/support';
-import { ExistsError, mergeRights, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PostRow, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, mergeRights, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PlusOrder, type PostRow, type Subscription, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -188,6 +188,28 @@ export const MIGRATIONS: string[] = [
      granted_at timestamptz not null default now(),
      primary key (group_id, right_id)
    );`,
+  // 9 — подписка «Лавочка+»: заказы (номера с 1 000 001, чтобы не пересекаться с донатами у Robokassa) и сроки
+  `create table plus_orders (
+     id bigserial primary key,
+     user_id bigint not null references users on delete cascade,
+     amount_kop bigint not null,
+     days int not null,
+     recurring boolean not null default false,
+     parent_id bigint,
+     created_at timestamptz not null default now(),
+     paid_at timestamptz,
+     until timestamptz
+   );
+   alter sequence plus_orders_id_seq restart with 1000001;
+   create index plus_orders_user on plus_orders (user_id, paid_at desc) where paid_at is not null;
+   create table subscriptions (
+     user_id bigint primary key references users on delete cascade,
+     until timestamptz not null,
+     autorenew boolean not null default false,
+     parent_id bigint,
+     tried_at timestamptz,
+     reminded_at timestamptz
+   );`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -211,6 +233,24 @@ function toUser(r: any): User {
 
 function toDonation(r: any): Donation {
   return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at) };
+}
+
+function toPlusOrder(r: any): PlusOrder {
+  return {
+    id: Number(r.id),
+    userId: Number(r.user_id),
+    amount: Number(r.amount_kop),
+    days: Number(r.days),
+    recurring: !!r.recurring,
+    parentId: r.parent_id == null ? null : Number(r.parent_id),
+    createdAt: ms(r.created_at)!,
+    paidAt: ms(r.paid_at),
+    until: ms(r.until),
+  };
+}
+
+function toSub(r: any): Subscription {
+  return { userId: Number(r.user_id), until: ms(r.until)!, autorenew: !!r.autorenew, parentId: r.parent_id == null ? null : Number(r.parent_id), triedAt: ms(r.tried_at), remindedAt: ms(r.reminded_at) };
 }
 
 function toError(r: any): ErrorRow {
@@ -548,6 +588,91 @@ export class PgAccountStore implements AccountStore {
       [limit]
     );
     return r.rows.map((x) => ({ ...toDonation(x), userName: x.user_name ?? null }));
+  }
+
+  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }) {
+    const r = await this.pool.query('insert into plus_orders (user_id, amount_kop, days, recurring, parent_id) values ($1, $2, $3, $4, $5) returning id', [
+      o.userId,
+      o.amount,
+      o.days,
+      o.recurring,
+      o.parentId,
+    ]);
+    return Number(r.rows[0].id);
+  }
+
+  async plusOrder(id: number) {
+    const r = await this.pool.query('select * from plus_orders where id = $1', [id]);
+    return r.rows[0] ? toPlusOrder(r.rows[0]) : null;
+  }
+
+  async payPlusOrder(id: number, now: number) {
+    const c = await this.pool.connect();
+    try {
+      await c.query('begin');
+      // заказ отмечается один раз: второе уведомление не найдёт неоплаченного и ничего не продлит
+      const o = await c.query('update plus_orders set paid_at = $2 where id = $1 and paid_at is null returning *', [id, date(now)]);
+      if (!o.rows[0]) {
+        await c.query('rollback');
+        return null;
+      }
+      const ord = toPlusOrder(o.rows[0]);
+      const s = await c.query(
+        `insert into subscriptions (user_id, until, autorenew, parent_id) values ($1, $2::timestamptz + make_interval(days => $3), $4, $5)
+         on conflict (user_id) do update set
+           until = greatest(subscriptions.until, $2::timestamptz) + make_interval(days => $3),
+           autorenew = subscriptions.autorenew or excluded.autorenew,
+           parent_id = coalesce(excluded.parent_id, subscriptions.parent_id),
+           tried_at = null, reminded_at = null
+         returning until`,
+        [ord.userId, date(now), ord.days, ord.recurring, ord.recurring ? ord.id : null]
+      );
+      const until = ms(s.rows[0].until)!;
+      await c.query('update plus_orders set until = $2 where id = $1', [id, date(until)]);
+      await c.query('commit');
+      return until;
+    } catch (e) {
+      await c.query('rollback').catch(() => {});
+      throw e;
+    } finally {
+      c.release();
+    }
+  }
+
+  async subscription(userId: number) {
+    const r = await this.pool.query('select * from subscriptions where user_id = $1', [userId]);
+    return r.rows[0] ? toSub(r.rows[0]) : null;
+  }
+
+  async updateSubscription(userId: number, patch: Partial<Pick<Subscription, 'autorenew' | 'parentId' | 'triedAt' | 'remindedAt'>>) {
+    const cols: Record<string, unknown> = {};
+    if (patch.autorenew !== undefined) cols.autorenew = patch.autorenew;
+    if (patch.parentId !== undefined) cols.parent_id = patch.parentId;
+    if (patch.triedAt !== undefined) cols.tried_at = date(patch.triedAt);
+    if (patch.remindedAt !== undefined) cols.reminded_at = date(patch.remindedAt);
+    const keys = Object.keys(cols);
+    if (!keys.length) return;
+    await this.pool.query(`update subscriptions set ${keys.map((k, i) => `${k} = $${i + 2}`).join(', ')} where user_id = $1`, [userId, ...keys.map((k) => cols[k])]);
+  }
+
+  async plusPayments(userId: number, limit: number) {
+    const r = await this.pool.query('select * from plus_orders where user_id = $1 and paid_at is not null order by paid_at desc limit $2', [userId, limit]);
+    return r.rows.map(toPlusOrder);
+  }
+
+  async subscriptions(limit: number) {
+    const r = await this.pool.query(
+      `select s.*, u.name, u.email, count(o.id) as n, coalesce(sum(o.amount_kop), 0) as kop
+         from subscriptions s join users u on u.id = s.user_id left join plus_orders o on o.user_id = s.user_id and o.paid_at is not null
+        group by s.user_id, u.name, u.email order by s.until desc limit $1`,
+      [limit]
+    );
+    return r.rows.map((x) => ({ ...toSub(x), name: x.name, email: x.email, payments: Number(x.n), amount: Number(x.kop) }));
+  }
+
+  async dueSubscriptions(before: number) {
+    const r = await this.pool.query('select * from subscriptions where autorenew and parent_id is not null and until < $1', [date(before)]);
+    return r.rows.map(toSub);
   }
 
   async usersWithRight(right: string, now: number) {

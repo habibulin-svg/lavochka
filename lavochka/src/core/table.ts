@@ -14,6 +14,7 @@ import { assignLooks, type GameModule, type GameView, type ViewCtx } from './vie
 import { Voice, type VoiceTile } from './voice';
 import { SeatCams } from './seatcams';
 import { setErrorGame } from '../site/errors';
+import { mayVideo, plusNote } from '../site/plus';
 
 export type NetMode = 'local' | 'p2p' | 'server';
 
@@ -221,9 +222,13 @@ export class Table {
       if (box.dataset.mode !== 'out' || box.dataset.who !== who) {
         box.dataset.mode = 'out';
         box.dataset.who = who;
-        box.innerHTML = `<div class="voice-row"><button class="btn small" data-v="join">🎤 Голос</button><button class="btn small" data-v="cam">📷 С камерой</button></div>${who ? `<div class="voice-who">В разговоре: ${who}</div>` : ''}`;
-        const join = (video: boolean) =>
+        // камера — по подписке «Лавочка+» (сервер проверяет сам), голос — всем
+        const cam = mayVideo();
+        box.innerHTML = `<div class="voice-row"><button class="btn small" data-v="join">🎤 Голос</button><button class="btn small" data-v="cam"${cam ? '' : ' title="Видео за столом — в подписке «Лавочка+»"'}>📷 С камерой${cam ? '' : ' ⭐'}</button></div>${who ? `<div class="voice-who">В разговоре: ${who}</div>` : ''}`;
+        const join = (video: boolean) => {
+          if (video && !mayVideo()) return plusNote('video');
           v.join(video, !!this.view.spotlight).catch((e) => toast(e?.name === 'NotAllowedError' ? 'Нет доступа к микрофону или камере' : 'Не удалось включить микрофон', 4000));
+        };
         (box.querySelector('[data-v=join]') as HTMLButtonElement).onclick = () => join(false);
         (box.querySelector('[data-v=cam]') as HTMLButtonElement).onclick = () => join(true);
       }
@@ -346,6 +351,7 @@ export class Table {
         const b = (e.target as HTMLElement).closest('[data-v=spotcam]');
         if (!b || !this.voice) return;
         e.stopPropagation();
+        if (!mayVideo()) return plusNote('video');
         this.voice.join(true, true).catch(() => toast('Нет доступа к камере', 4000));
       });
     }

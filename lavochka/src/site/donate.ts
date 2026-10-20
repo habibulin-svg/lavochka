@@ -114,26 +114,30 @@ export async function openDonate(): Promise<void> {
       const r = await fetch('/api/donate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ amount }) });
       const b = await r.json().catch(() => ({}));
       if (!r.ok || !b.form) return void (errEl.textContent = b.message || 'Не получилось начать оплату. Попробуйте ещё раз.');
-      // на страницу оплаты Robokassa — обычной формой (POST)
-      const f = document.createElement('form');
-      f.method = 'post';
-      f.action = b.form.action;
-      f.acceptCharset = 'utf-8';
-      for (const [k, v] of Object.entries(b.form.fields as Record<string, string>)) {
-        const i = document.createElement('input');
-        i.type = 'hidden';
-        i.name = k;
-        i.value = v;
-        f.appendChild(i);
-      }
-      document.body.appendChild(f);
-      f.submit();
+      goPay(b.form);
     } catch {
       errEl.textContent = 'Нет связи с сервером. Проверьте интернет.';
     } finally {
       pay.disabled = false;
     }
   };
+}
+
+/** На страницу оплаты Robokassa — обычной формой (POST); поля и подпись дал сервер. */
+export function goPay(form: { action: string; fields: Record<string, string> }): void {
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = form.action;
+  f.acceptCharset = 'utf-8';
+  for (const [k, v] of Object.entries(form.fields)) {
+    const i = document.createElement('input');
+    i.type = 'hidden';
+    i.name = k;
+    i.value = v;
+    f.appendChild(i);
+  }
+  document.body.appendChild(f);
+  f.submit();
 }
 
 /** Возврат со страницы оплаты: /?donate=spasibo или /?donate=otmena. */

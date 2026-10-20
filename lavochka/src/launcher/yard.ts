@@ -13,6 +13,7 @@ import { masterNote } from '../site/master';
 import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
 import { canPlay, canSee, onRelease, releaseBadge, releaseOf } from '../site/release';
+import { plusNote } from '../site/plus';
 import { loadStats, onStats } from '../site/stats';
 import './yard.css';
 
@@ -214,10 +215,7 @@ function card(g: CatalogEntry): HTMLElement {
 
 /** Игра в раннем доступе, а права нет. */
 export function earlyNote(g: CatalogEntry) {
-  modal(
-    `<h2>${esc(g.title)}</h2><p>${esc(g.sub)}.</p><p>Эта игра пока в <b>раннем доступе</b> — её первыми пробуют подписчики. Для всех она откроется совсем скоро.</p>`,
-    [{ text: 'Ладно', primary: true }]
-  );
+  plusNote('early', g.title);
 }
 
 /** Видна ли карточка: у группы — если видна хоть одна её игра. */

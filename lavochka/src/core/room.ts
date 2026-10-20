@@ -52,6 +52,17 @@ export function setRoomErrorHook(f: typeof roomErrorHook) {
 export const cleanAvatar = (a: unknown): string | null => (typeof a === 'string' && (AVATARS.includes(a) || PHOTO_RE.test(a)) ? a : null);
 /** Персонаж: короткий id (проверяет сама игра — незнакомый она заменит своим). */
 export const cleanLook = (l: unknown): string | null => (typeof l === 'string' && /^[a-z0-9_-]{1,24}$/i.test(l) ? l : null);
+/** Сигнал WebRTC от того, кому камера не положена: видеочасти SDP — только на приём (чужие камеры он видит, свою не шлёт). */
+export function noVideoSend(data: any): any {
+  const d = data?.description;
+  if (!d || typeof d.sdp !== 'string') return data;
+  const sdp = d.sdp
+    .split(/(?=\r?\nm=)/)
+    .map((sec: string) => (/^(\r?\n)?m=video/.test(sec) ? sec.replace(/a=sendrecv/g, 'a=recvonly').replace(/a=sendonly/g, 'a=inactive') : sec))
+    .join('');
+  return { ...data, description: { ...d, sdp } };
+}
+
 const cleanName = (n: unknown) => String(n || 'Игрок').trim().slice(0, 16) || 'Игрок';
 
 interface Conn {
@@ -210,7 +221,8 @@ export class Room {
         return;
       case 'voice':
         if (!conn.clientId) return;
-        conn.voice = m.on ? { video: !!m.video } : null;
+        // камера — по праву video (на сервере канал знает его; локально и P2P не проверяем)
+        conn.voice = m.on ? { video: !!m.video && conn.link.video !== false } : null;
         return this.voiceList();
       case 'rtc': {
         // сигналы WebRTC — только между участниками голосового чата, не больше 32 КБ
@@ -222,7 +234,8 @@ export class Room {
           return;
         }
         if (size > 32000) return;
-        for (const c of this.conns) if (c.voice && c.clientId === m.to) this.send(c, { t: 'rtc', from: conn.clientId, data: m.data });
+        const data = conn.link.video === false ? noVideoSend(m.data) : m.data;
+        for (const c of this.conns) if (c.voice && c.clientId === m.to) this.send(c, { t: 'rtc', from: conn.clientId, data });
         return;
       }
       default:

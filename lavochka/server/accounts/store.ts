@@ -71,6 +71,35 @@ export interface Donation {
   paidAt: number | null;
 }
 
+/** Заказ подписки «Лавочка+» (src/core/plus.ts): создаётся до оплаты, оплаченным его отмечает уведомление Robokassa. */
+export interface PlusOrder {
+  id: number;
+  userId: number;
+  /** Копейки. */
+  amount: number;
+  days: number;
+  /** Первая оплата с согласием на повторные списания (Recurring). */
+  recurring: boolean;
+  /** Повторное списание: номер материнского заказа. */
+  parentId: number | null;
+  createdAt: number;
+  paidAt: number | null;
+  /** Конец срока после этой оплаты. */
+  until: number | null;
+}
+
+/** Подписка игрока: до какого числа оплачена и продлевать ли самой. */
+export interface Subscription {
+  userId: number;
+  until: number;
+  autorenew: boolean;
+  /** Материнский заказ для повторных списаний (null — платили без автопродления). */
+  parentId: number | null;
+  /** Когда последний раз пытались списать или напоминали (чтобы не повторять каждый час). */
+  triedAt: number | null;
+  remindedAt: number | null;
+}
+
 /** Обращение в поддержку (src/core/support.ts). */
 export interface Ticket {
   id: number;
@@ -219,6 +248,21 @@ export interface AccountStore {
   /** Последние оплаченные — для админки. */
   recentDonations(limit: number): Promise<(Donation & { userName: string | null })[]>;
 
+  /** Новый заказ подписки (ещё не оплачен). */
+  createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }): Promise<number>;
+  plusOrder(id: number): Promise<PlusOrder | null>;
+  /** Засчитать оплату: отметить заказ и продлить подписку от конца срока (или от now, если срок прошёл) — за один раз.
+   * Вернёт новый конец срока или null — заказ уже был оплачен (повторное уведомление) или его нет. */
+  payPlusOrder(id: number, now: number): Promise<number | null>;
+  subscription(userId: number): Promise<Subscription | null>;
+  updateSubscription(userId: number, patch: Partial<Pick<Subscription, 'autorenew' | 'parentId' | 'triedAt' | 'remindedAt'>>): Promise<void>;
+  /** Оплаченные заказы игрока, новые первыми. */
+  plusPayments(userId: number, limit: number): Promise<PlusOrder[]>;
+  /** Подписки для админки (позже кончаются — выше), с числом оплат и суммой. */
+  subscriptions(limit: number): Promise<(Subscription & { name: string; email: string | null; payments: number; amount: number })[]>;
+  /** С автопродлением и материнским заказом, срок кончается раньше before. */
+  dueSubscriptions(before: number): Promise<Subscription[]>;
+
   /** Лайк игре (on=false — снять). */
   setLike(userId: number, game: string, on: boolean): Promise<void>;
   /** Игры, которым игрок поставил лайк. */
@@ -297,6 +341,9 @@ export class MemoryAccountStore implements AccountStore {
   private donations = new Map<number, Donation>();
   private seq = 0;
   private donSeq = 0;
+  private plusOrders = new Map<number, PlusOrder>();
+  private plusSeq = 1_000_000;
+  private subs = new Map<number, Subscription>();
   private likes = new Map<number, Set<string>>();
   private plays = new Map<number, PlayRecord[]>();
   private saves = new Map<string, { at: number; data: string | null }>();
@@ -542,6 +589,66 @@ export class MemoryAccountStore implements AccountStore {
       .sort((a, b) => b.paidAt! - a.paidAt!)
       .slice(0, limit)
       .map((d) => ({ ...d, userName: d.userId == null ? null : this.users.get(d.userId)?.name ?? null }));
+  }
+
+  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }) {
+    const id = ++this.plusSeq;
+    this.plusOrders.set(id, { id, ...o, createdAt: Date.now(), paidAt: null, until: null });
+    return id;
+  }
+
+  async plusOrder(id: number) {
+    const o = this.plusOrders.get(id);
+    return o ? { ...o } : null;
+  }
+
+  async payPlusOrder(id: number, now: number) {
+    const o = this.plusOrders.get(id);
+    if (!o || o.paidAt != null) return null;
+    const was = this.subs.get(o.userId);
+    const until = Math.max(was?.until ?? 0, now) + o.days * 86_400_000;
+    o.paidAt = now;
+    o.until = until;
+    const s: Subscription = was ?? { userId: o.userId, until, autorenew: false, parentId: null, triedAt: null, remindedAt: null };
+    s.until = until;
+    s.triedAt = null;
+    s.remindedAt = null;
+    if (o.recurring) Object.assign(s, { parentId: id, autorenew: true });
+    this.subs.set(o.userId, s);
+    return until;
+  }
+
+  async subscription(userId: number) {
+    const s = this.subs.get(userId);
+    return s ? { ...s } : null;
+  }
+
+  async updateSubscription(userId: number, patch: Partial<Pick<Subscription, 'autorenew' | 'parentId' | 'triedAt' | 'remindedAt'>>) {
+    const s = this.subs.get(userId);
+    if (s) Object.assign(s, patch);
+  }
+
+  async plusPayments(userId: number, limit: number) {
+    return [...this.plusOrders.values()]
+      .filter((o) => o.userId === userId && o.paidAt != null)
+      .sort((a, b) => b.paidAt! - a.paidAt!)
+      .slice(0, limit)
+      .map((o) => ({ ...o }));
+  }
+
+  async subscriptions(limit: number) {
+    return [...this.subs.values()]
+      .sort((a, b) => b.until - a.until)
+      .slice(0, limit)
+      .map((s) => {
+        const paid = [...this.plusOrders.values()].filter((o) => o.userId === s.userId && o.paidAt != null);
+        const u = this.users.get(s.userId);
+        return { ...s, name: u?.name ?? '?', email: u?.email ?? null, payments: paid.length, amount: paid.reduce((a, o) => a + o.amount, 0) };
+      });
+  }
+
+  async dueSubscriptions(before: number) {
+    return [...this.subs.values()].filter((s) => s.autorenew && s.parentId != null && s.until < before).map((s) => ({ ...s }));
   }
 
   async usersWithRight(right: string, now: number) {

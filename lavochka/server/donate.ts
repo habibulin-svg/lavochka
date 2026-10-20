@@ -2,13 +2,15 @@
  * HTTP-обвязка — donateApi:
  *   GET  /api/donate                    — надпись кнопки, цель сбора, подключена ли оплата
  *   POST /api/donate {amount}           — завести донат, вернуть форму оплаты (браузер отправит её на Robokassa)
- *   GET|POST /api/pay/robokassa/result  — уведомление об оплате (подпись Паролем #2), ответ «OK<номер>»
- *   GET|POST /api/pay/robokassa/success|fail — возврат покупателя: во двор с ?donate=spasibo|otmena
+ *   GET|POST /api/pay/robokassa/result  — уведомление об оплате (подпись Паролем #2), ответ «OK<номер>»;
+ *                                         заказы подписки (номера от PLUS_INV_FROM) уходят в server/plus.ts
+ *   GET|POST /api/pay/robokassa/success|fail — возврат покупателя: во двор с ?donate=… или ?plus=spasibo|otmena
  *   GET|POST /api/admin/donate          — Мастеру: настройки и последние донаты */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Accounts, Limiter, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 import { checkResult, payForm, type RobokassaConf } from './pay/robokassa';
+import { isPlusInv, type Plus } from './plus';
 import { DONATE_LABEL, DONATE_MAX, DONATE_MIN, DONATE_PURPOSE, LIMITS, type DonateInfo } from '../src/core/donate';
 
 const K = { label: 'donate.label', title: 'donate.goal.title', text: 'donate.goal.text', target: 'donate.goal.target', since: 'donate.goal.since' };
@@ -125,19 +127,23 @@ export async function donateApi(
   res: ServerResponse,
   url: URL,
   ip: string,
-  readBody: (req: IncomingMessage, limit?: number) => Promise<string>
+  readBody: (req: IncomingMessage, limit?: number) => Promise<string>,
+  plus?: Plus
 ): Promise<boolean> {
   const path = url.pathname;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
   const m = path.match(/^\/api\/pay\/robokassa\/(result|success|fail)$/);
   if (m) {
+    const p: Record<string, string> = await params(req, url, readBody).catch(() => ({}));
+    const sub = !!plus && isPlusInv(p.InvId);
     if (m[1] === 'result') {
-      const ok = await don.result(await params(req, url, readBody).catch(() => ({})));
+      const ok = sub ? await plus!.result(p) : await don.result(p);
       res.writeHead(ok ? 200 : 400, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
       res.end(ok ?? 'bad sign');
     } else {
       // возврат с Robokassa: оплата засчитывается уведомлением, здесь только «спасибо» или «не вышло»
-      res.writeHead(303, { location: m[1] === 'success' ? '/?donate=spasibo' : '/?donate=otmena', 'cache-control': 'no-store' });
+      const q = sub ? 'plus' : 'donate';
+      res.writeHead(303, { location: `/?${q}=${m[1] === 'success' ? 'spasibo' : 'otmena'}`, 'cache-control': 'no-store' });
       res.end();
     }
     return true;

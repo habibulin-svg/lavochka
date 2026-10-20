@@ -7,6 +7,7 @@ import { Sound } from '../core/audio';
 import { RIGHTS, type RightGrant } from '../core/rights';
 import { onSettings, saveSettings, settings } from '../core/settings';
 import { AVATARS, avatarHtml } from '../core/avatars';
+import { openPlus, plusLine } from './plus';
 import './account.css';
 
 export interface Me {
@@ -277,8 +278,9 @@ export function openProfile(): void {
         : ''
     }
     ${u.rights.length ? `<p class="lbl">Права</p><ul class="auth-rights">${u.rights.map((g) => `<li>${esc(RIGHTS[g.right as keyof typeof RIGHTS] ?? g.right)}${until(g)}${g.group ? ` <small>(группа «${esc(g.group)}»)</small>` : ''}</li>`).join('')}</ul>` : ''}
+    <div class="auth-plus"><span class="auth-plus-st">Подписка «Лавочка+»…</span><button type="button" class="btn small primary" data-a="plus">⭐ Лавочка+</button></div>
     <p class="row"><button type="button" class="btn small" data-a="history">📜 Мои партии</button><button type="button" class="btn small" data-a="records">🏆 Мои рекорды</button><button type="button" class="btn small" data-a="tickets">✉ Мои обращения</button></p>
-    ${u.rights.some((g) => g.right === 'master') ? `<p class="row"><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button><button type="button" class="btn small" data-a="support">📮 Обращения</button></p>` : ''}
+    ${u.rights.some((g) => g.right === 'master') ? `<p class="row"><button type="button" class="btn small" data-a="donate">♥ Поддержка проекта: надпись и цель</button><button type="button" class="btn small" data-a="support">📮 Обращения</button><a class="btn small" href="/admin/podpiski/" data-a="plusadmin">⭐ Подписки</a></p>` : ''}
     <p class="err" role="alert"></p>
     <div class="row auth-btns"><button type="button" class="btn" data-a="logout">Выйти</button><button type="button" class="btn primary" data-a="close">Закрыть</button></div>`;
   open = modal(box, [], { cls: 'auth-modal' });
@@ -308,6 +310,19 @@ export function openProfile(): void {
     open?.close();
     void import('./donate').then((d) => d.openDonateAdmin());
   });
+  act('plus', () => {
+    open?.close();
+    void openPlus();
+  });
+  act('plusadmin', () => open?.close());
+  // статус подписки — с сервера, когда придёт
+  fetch('/api/plus', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((st) => {
+      const el = box.querySelector('.auth-plus-st');
+      if (el && st) el.innerHTML = plusLine(st) || 'Подписка «Лавочка+»: видео за столом, ранний доступ к новым играм';
+    })
+    .catch(() => {});
   act('tickets', () => {
     open?.close();
     void import('./support').then((s) => s.openMyTickets());

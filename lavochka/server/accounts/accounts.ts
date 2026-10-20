@@ -367,7 +367,7 @@ export class Accounts {
 const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Простое письмо: обращение, текст, кнопка-ссылка, приписка. */
-function letter(name: string, lead: string, link: string, button: string, note: string): string {
+export function letter(name: string, lead: string, link: string, button: string, note: string): string {
   return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#2a2018;max-width:520px">
 <p style="font-size:20px;font-weight:bold;color:#6a3b12">Вечером на лавочке</p>
 <p>Здравствуйте, ${escHtml(name)}!</p>

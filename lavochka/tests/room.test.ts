@@ -2,12 +2,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { localPair, type RoomMsg } from '../src/core/protocol';
 import type { Snapshot } from '../src/core/authority';
-import { Room } from '../src/core/room';
+import { Room, noVideoSend } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
 import { AutoClient, until } from './harness';
 
 const rooms: Room[] = [];
+const CRLF = String.fromCharCode(13, 10);
 afterEach(() => rooms.splice(0).forEach((r) => r.close()));
 
 async function setup(dropGraceMs = 0) {
@@ -18,8 +19,10 @@ async function setup(dropGraceMs = 0) {
   ];
   const room = new Room({ def, options: {}, seats, code: 'TEST', ownerKey: 'key', botDelay: 0, dropGraceMs });
   rooms.push(room);
-  const join = (name: string, ownerKey?: string, seed = 1) => {
+  const join = (name: string, ownerKey?: string, seed = 1, video?: boolean) => {
     const [a, b] = localPair();
+    // право на камеру сервер пишет в канал со стороны комнаты
+    if (video !== undefined) a.video = video;
     room.connect(a);
     return { client: new AutoClient(def, b, name, ownerKey, seed), link: b };
   };
@@ -187,5 +190,27 @@ describe('голосовой чат', () => {
     // гость вышел — список обновился
     guest.client.voice(false);
     await until(() => owner.log.filter((m) => m.t === 'voice').pop()?.t === 'voice' && (owner.log.filter((m) => m.t === 'voice').pop() as { members: unknown[] }).members.length === 1, 5000, 'гость вышел из чата');
+  });
+
+  it('без права на камеру: в списке без видео, своё видео в SDP — только на приём', async () => {
+    const { join } = await setup();
+    const owner = join('Хозяин', 'key', 1, true).client;
+    const guest = join('Гость', undefined, 2, false).client;
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)), 5000, 'гость в лобби');
+    owner.client.voice(true, true);
+    guest.client.voice(true, true);
+    await until(() => owner.log.some((m) => m.t === 'voice' && m.members.length === 2), 5000, 'оба в чате');
+    const list = owner.log.filter((m) => m.t === 'voice').pop() as { members: { id: string; video: boolean }[] };
+    expect(list.members.find((m) => m.id === 'Хозяин')?.video).toBe(true);
+    expect(list.members.find((m) => m.id === 'Гость')?.video).toBe(false);
+    const sdp = ['v=0', 'm=audio 9 UDP', 'a=sendrecv', 'm=video 9 UDP', 'a=sendrecv', 'm=video 9 UDP', 'a=sendonly', ''].join(CRLF);
+    guest.client.rtc('Хозяин', { description: { type: 'offer', sdp } });
+    owner.client.rtc('Гость', { description: { type: 'answer', sdp } });
+    await until(() => owner.log.some((m) => m.t === 'rtc') && guest.log.some((m) => m.t === 'rtc'), 5000, 'сигналы дошли');
+    const got = (c: typeof owner) => (c.log.find((m) => m.t === 'rtc') as any).data.description.sdp as string;
+    expect(got(owner)).toBe(['v=0', 'm=audio 9 UDP', 'a=sendrecv', 'm=video 9 UDP', 'a=recvonly', 'm=video 9 UDP', 'a=inactive', ''].join(CRLF));
+    // у подписчика SDP не трогаем
+    expect(got(guest)).toBe(sdp);
+    expect(noVideoSend({ candidate: { candidate: 'x' } })).toEqual({ candidate: { candidate: 'x' } });
   });
 });

@@ -26,10 +26,12 @@ import { MOVED, SLUGS } from '../src/site/routes';
 import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './accounts';
 import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
+import { Plus, plusApi } from './plus';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
 import { Backoffice, backofficeApi } from './backoffice';
 import { mayPlay } from '../src/core/release';
+import { hasRight } from '../src/core/rights';
 import { Content, contentApi, prerenderProcess } from './content';
 import { robokassaFromEnv } from './pay/robokassa';
 
@@ -126,22 +128,30 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     rooms.set(code, room);
     ws.send(JSON.stringify({ t: 'created', code, ownerKey }));
     log(`комната ${code}: ${def.id}, мест ${seats.length}`);
-    return attach(ws, room);
+    return attach(ws, room, await mayVideo(req));
   }
   if (msg?.t === 'join') {
     const code = String(msg.code || '').toUpperCase();
     const room = rooms.get(code);
     if (!room || room.isClosed) return fail('Комната не найдена. Проверьте код.');
     ws.send(JSON.stringify({ t: 'joined', code }));
-    return attach(ws, room);
+    return attach(ws, room, await mayVideo(req));
   }
   return fail('Непонятный запрос.');
 }
 
-function attach(ws: WebSocket, room: Room): Link {
+/** Камера за столом — по праву video (подписка «Лавочка+»); голос — всем. База недоступна — не мешаем. */
+async function mayVideo(req: IncomingMessage): Promise<boolean> {
+  if (!accountsReady) return true;
+  const u = await userOf(req);
+  return !!u && hasRight(await accounts.store.rights(u.id, Date.now()).catch(() => []), 'video');
+}
+
+function attach(ws: WebSocket, room: Room, video: boolean): Link {
   clearTimeout(emptyTimers.get(room.code));
   emptyTimers.delete(room.code);
   const link = wsLink(ws);
+  link.video = video;
   room.connect(link);
   return link;
 }
@@ -201,6 +211,10 @@ setInterval(() => accountsReady && player.refresh().catch(() => {}), 600_000).un
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
+// подписка «Лавочка+» (server/plus.ts): та же Robokassa; повторные списания — только при ROBOKASSA_RECURRING=1
+const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
+log('подписка: ' + (plus.enabled ? (plus.recurring ? 'оплата и автопродление включены' : 'оплата включена, автопродление выключено') : 'оплата выключена'));
+setInterval(() => accountsReady && plus.tick().catch((e) => log('подписка: ' + (e as Error).message)), 3600_000).unref();
 // обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
 const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
@@ -394,7 +408,11 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   }
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
-    if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+    if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, plus)) return;
+  }
+  if (path === '/api/plus' || path === '/api/plus/autorenew' || path === '/api/admin/plus') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await plusApi(plus, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/support' || path === '/api/support/reply' || path === '/api/admin/support' || path === '/api/mail/in') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });
