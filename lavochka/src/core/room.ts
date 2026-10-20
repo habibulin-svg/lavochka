@@ -43,6 +43,12 @@ interface Occupant {
 }
 
 /** Аватар из сети: только значок из списка или фото с сервисов входа. */
+/** Куда сообщать о сбоях ботов (сервер пишет их в «Ошибки» админки); в браузере не задано. */
+export let roomErrorHook: ((e: unknown, where: string, game: string) => void) | null = null;
+export function setRoomErrorHook(f: typeof roomErrorHook) {
+  roomErrorHook = f;
+}
+
 export const cleanAvatar = (a: unknown): string | null => (typeof a === 'string' && (AVATARS.includes(a) || PHOTO_RE.test(a)) ? a : null);
 /** Персонаж: короткий id (проверяет сама игра — незнакомый она заменит своим). */
 export const cleanLook = (l: unknown): string | null => (typeof l === 'string' && /^[a-z0-9_-]{1,24}$/i.test(l) ? l : null);
@@ -691,6 +697,7 @@ export class Room {
         return rt.bot(a.viewFor([seat]), seat, level, mem, this.botRng);
       } catch (e) {
         console.error('bot failed', e);
+        roomErrorHook?.(e, 'бот (реальное время)', this.def.id);
         return rt.idle();
       }
     }
@@ -800,10 +807,12 @@ export class Room {
         action = await this.def.bot.choose(a.viewFor([seat]), seat, level, this.botRng);
       } catch (e) {
         console.error('bot failed', e);
+        roomErrorHook?.(e, 'бот', this.def.id);
       }
       if (token !== this.botToken || this.auth !== a || a.seq !== seq) return;
       if (action == null) {
         console.warn('Бот не нашёл хода', this.def.id, seat);
+        roomErrorHook?.(new Error('Бот не нашёл хода'), `бот, фаза ${String((a.viewFor([seat]) as any)?.phase ?? '?')}`, this.def.id);
         return;
       }
       this.tryAct(seat, action);

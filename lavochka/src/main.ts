@@ -17,6 +17,7 @@ import './site/history';
 import { syncSave } from './site/saves';
 import { metrikaHit, startMetrika } from './site/metrika';
 import { startPresence } from './site/stats';
+import { startErrorReports } from './site/errors';
 import { esc, h } from './core/util';
 import { byId, type CatalogEntry, type Category } from './games/catalog';
 import { yard } from './launcher/yard';
@@ -347,6 +348,7 @@ else {
   offerResume();
   setTimeout(startMetrika);
   startPresence();
+  startErrorReports();
   // вернулись со страницы оплаты — «спасибо» (после первого показа экрана: он закрывает окна)
   if (params.has('voshel') || params.has('privyazan')) setTimeout(handleOAuthReturn);
   if (params.has('donate')) setTimeout(() => void loadDonate().then(handleDonateReturn));

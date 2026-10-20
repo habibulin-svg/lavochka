@@ -90,6 +90,37 @@ export interface PlayRecord {
   endedAt: number;
 }
 
+/** Счётчик за день (статистика админки): day — 'ГГГГ-ММ-ДД' по Москве, metric — что считаем, key — по чему (игра, '' — всего). */
+export interface StatRow {
+  day: string;
+  metric: string;
+  key: string;
+  value: number;
+}
+
+export type ErrorStatus = 'new' | 'seen' | 'fixed' | 'ignored';
+
+/** Ошибка (браузер или сервер) — одинаковые склеиваются по отпечатку (сообщение + место). */
+export interface ErrorReport {
+  source: 'client' | 'server';
+  message: string;
+  /** Место: первая строка стека своего кода или файл:строка. */
+  place: string;
+  game: string | null;
+  url: string | null;
+  ua: string | null;
+  stack: string | null;
+}
+
+export interface ErrorRow extends ErrorReport {
+  id: number;
+  fingerprint: string;
+  count: number;
+  firstAt: number;
+  lastAt: number;
+  status: ErrorStatus;
+}
+
 export interface AccountStore {
   /** Подготовить хранилище (миграции). */
   init(): Promise<void>;
@@ -168,6 +199,27 @@ export interface AccountStore {
   tickets(q: { status?: TicketStatus; userId?: number; limit: number }): Promise<Ticket[]>;
   /** Сколько обращений ждут ответа. */
   newTickets(): Promise<number>;
+
+  /** Статистика: прибавить к счётчику дня. */
+  bumpStat(day: string, metric: string, key: string, delta: number): Promise<void>;
+  /** Статистика: записать, если больше записанного (пик онлайна). */
+  peakStat(day: string, metric: string, key: string, value: number): Promise<void>;
+  /** Счётчики за дни from..to включительно. */
+  statsBetween(from: string, to: string): Promise<StatRow[]>;
+
+  /** Ошибка: новая или ещё раз (счётчик, время; «исправленная» снова стала новой). */
+  logError(fingerprint: string, e: ErrorReport, now: number): Promise<void>;
+  errors(q: { status?: ErrorStatus; limit: number }): Promise<ErrorRow[]>;
+  setErrorStatus(id: number, status: ErrorStatus): Promise<void>;
+  /** Сколько ошибок в таком состоянии. */
+  countErrors(status: ErrorStatus): Promise<number>;
+
+  /** Игроки для админки: поиск по почте, имени или номеру (пусто — последние), новые первыми. */
+  searchUsers(q: string, limit: number): Promise<User[]>;
+  /** Сколько игроков (зарегистрированных с since, если задано). */
+  countUsers(since?: number): Promise<number>;
+  /** Регистрации по дням (по Москве) начиная с since: 'ГГГГ-ММ-ДД' → сколько. */
+  signupsByDay(since: number): Promise<Record<string, number>>;
 
   /** Убрать просроченные сессии и ссылки. */
   cleanup(now: number): Promise<void>;
@@ -422,6 +474,71 @@ export class MemoryAccountStore implements AccountStore {
 
   async newTickets() {
     return [...this.ticketsBy.values()].filter((t) => t.status === 'new').length;
+  }
+
+  private statMap = new Map<string, StatRow>();
+  private errorsBy = new Map<string, ErrorRow>();
+
+  async bumpStat(day: string, metric: string, key: string, delta: number) {
+    const k = `${day}|${metric}|${key}`;
+    const r = this.statMap.get(k);
+    if (r) r.value += delta;
+    else this.statMap.set(k, { day, metric, key, value: delta });
+  }
+
+  async peakStat(day: string, metric: string, key: string, value: number) {
+    const k = `${day}|${metric}|${key}`;
+    const r = this.statMap.get(k);
+    if (r) r.value = Math.max(r.value, value);
+    else this.statMap.set(k, { day, metric, key, value });
+  }
+
+  async statsBetween(from: string, to: string) {
+    return [...this.statMap.values()].filter((r) => r.day >= from && r.day <= to).map((r) => ({ ...r }));
+  }
+
+  async logError(fingerprint: string, e: ErrorReport, now: number) {
+    const r = this.errorsBy.get(fingerprint);
+    if (r) Object.assign(r, { count: r.count + 1, lastAt: now, status: r.status === 'fixed' ? 'new' : r.status, url: e.url ?? r.url, ua: e.ua ?? r.ua, game: e.game ?? r.game });
+    else this.errorsBy.set(fingerprint, { ...e, id: this.errorsBy.size + 1, fingerprint, count: 1, firstAt: now, lastAt: now, status: 'new' });
+  }
+
+  async errors(q: { status?: ErrorStatus; limit: number }) {
+    return [...this.errorsBy.values()]
+      .filter((r) => !q.status || r.status === q.status)
+      .sort((a, b) => b.lastAt - a.lastAt)
+      .slice(0, q.limit)
+      .map((r) => ({ ...r }));
+  }
+
+  async setErrorStatus(id: number, status: ErrorStatus) {
+    for (const r of this.errorsBy.values()) if (r.id === id) r.status = status;
+  }
+
+  async countErrors(status: ErrorStatus) {
+    return [...this.errorsBy.values()].filter((r) => r.status === status).length;
+  }
+
+  async searchUsers(q: string, limit: number) {
+    const t = q.trim().toLowerCase();
+    return [...this.users.values()]
+      .filter((u) => !t || String(u.id) === t || u.name.toLowerCase().includes(t) || (u.email ?? '').includes(t))
+      .sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
+      .slice(0, limit)
+      .map((u) => ({ ...u }));
+  }
+
+  async countUsers(since?: number) {
+    return [...this.users.values()].filter((u) => since == null || u.createdAt >= since).length;
+  }
+
+  async signupsByDay(since: number) {
+    const out: Record<string, number> = {};
+    for (const u of this.users.values()) if (u.createdAt >= since) {
+      const d = new Date(u.createdAt + 3 * 3600_000).toISOString().slice(0, 10);
+      out[d] = (out[d] ?? 0) + 1;
+    }
+    return out;
   }
 
   async cleanup(now: number) {

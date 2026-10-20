@@ -48,9 +48,9 @@ export function onStats(f: (s: Stats) => void): () => void {
   return () => subs.delete(f);
 }
 
-/** Начали партию (только тот, кто её начал: хозяин стола или игрок за своим экраном). */
-export function countPlay(game: string) {
-  void fetch(`${serverBase()}/api/played`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game }), keepalive: true }).catch(() => {});
+/** Начали партию (только тот, кто её начал: хозяин стола или игрок за своим экраном). mode — для статистики админки. */
+export function countPlay(game: string, mode: 'local' | 'net' | 'arcade') {
+  void fetch(`${serverBase()}/api/played`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game, mode }), keepalive: true }).catch(() => {});
 }
 
 let beat: ReturnType<typeof setInterval> | undefined;

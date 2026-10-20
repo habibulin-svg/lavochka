@@ -3,7 +3,7 @@
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
 import type { TicketStatus } from '../../src/core/support';
-import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
+import { ExistsError, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
   // 1 — аккаунты, сессии, ссылки из писем, права с датами, внешние входы
@@ -125,6 +125,30 @@ export const MIGRATIONS: string[] = [
      at timestamptz not null default now()
    );
    create index ticket_messages_ticket on ticket_messages (ticket_id, id);`,
+  // 6 — статистика по дням и автоошибки (админка, этап 5)
+  `create table stat_days (
+     day date not null,
+     metric text not null,
+     key text not null default '',
+     value bigint not null default 0,
+     primary key (day, metric, key)
+   );
+   create table errors (
+     id bigserial primary key,
+     fingerprint text not null unique,
+     source text not null,
+     message text not null,
+     place text not null,
+     game text,
+     url text,
+     ua text,
+     stack text,
+     count int not null default 1,
+     first_at timestamptz not null,
+     last_at timestamptz not null,
+     status text not null default 'new'
+   );
+   create index errors_last on errors (last_at desc);`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -148,6 +172,24 @@ function toUser(r: any): User {
 
 function toDonation(r: any): Donation {
   return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at) };
+}
+
+function toError(r: any): ErrorRow {
+  return {
+    id: Number(r.id),
+    fingerprint: r.fingerprint,
+    source: r.source,
+    message: r.message,
+    place: r.place,
+    game: r.game,
+    url: r.url,
+    ua: r.ua,
+    stack: r.stack,
+    count: Number(r.count),
+    firstAt: ms(r.first_at)!,
+    lastAt: ms(r.last_at)!,
+    status: r.status,
+  };
 }
 
 function toTicket(r: any): Ticket {
@@ -464,6 +506,73 @@ export class PgAccountStore implements AccountStore {
 
   async newTickets() {
     const r = await this.pool.query("select count(*) as n from tickets where status = 'new'");
+    return Number(r.rows[0].n);
+  }
+
+  async bumpStat(day: string, metric: string, key: string, delta: number) {
+    await this.pool.query(
+      'insert into stat_days (day, metric, key, value) values ($1, $2, $3, $4) on conflict (day, metric, key) do update set value = stat_days.value + excluded.value',
+      [day, metric, key, delta]
+    );
+  }
+
+  async peakStat(day: string, metric: string, key: string, value: number) {
+    await this.pool.query(
+      'insert into stat_days (day, metric, key, value) values ($1, $2, $3, $4) on conflict (day, metric, key) do update set value = greatest(stat_days.value, excluded.value)',
+      [day, metric, key, value]
+    );
+  }
+
+  async statsBetween(from: string, to: string) {
+    const r = await this.pool.query("select to_char(day, 'YYYY-MM-DD') as day, metric, key, value from stat_days where day between $1 and $2", [from, to]);
+    return r.rows.map((x) => ({ day: x.day, metric: x.metric, key: x.key, value: Number(x.value) }));
+  }
+
+  async logError(fingerprint: string, e: ErrorReport, now: number) {
+    await this.pool.query(
+      `insert into errors (fingerprint, source, message, place, game, url, ua, stack, first_at, last_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+       on conflict (fingerprint) do update set count = errors.count + 1, last_at = excluded.last_at,
+         status = case when errors.status = 'fixed' then 'new' else errors.status end,
+         url = coalesce(excluded.url, errors.url), ua = coalesce(excluded.ua, errors.ua), game = coalesce(excluded.game, errors.game)`,
+      [fingerprint, e.source, e.message, e.place, e.game, e.url, e.ua, e.stack, date(now)]
+    );
+  }
+
+  async errors(q: { status?: ErrorStatus; limit: number }) {
+    const r = q.status
+      ? await this.pool.query('select * from errors where status = $1 order by last_at desc limit $2', [q.status, q.limit])
+      : await this.pool.query('select * from errors order by last_at desc limit $1', [q.limit]);
+    return r.rows.map(toError);
+  }
+
+  async setErrorStatus(id: number, status: ErrorStatus) {
+    await this.pool.query('update errors set status = $2 where id = $1', [id, status]);
+  }
+
+  async countErrors(status: ErrorStatus) {
+    const r = await this.pool.query('select count(*) as n from errors where status = $1', [status]);
+    return Number(r.rows[0].n);
+  }
+
+  async searchUsers(q: string, limit: number) {
+    const t = q.trim().toLowerCase();
+    if (!t) return (await this.pool.query('select * from users order by created_at desc, id desc limit $1', [limit])).rows.map(toUser);
+    const id = /^\d{1,15}$/.test(t) ? Number(t) : -1;
+    const like = '%' + t.replace(/[\\%_]/g, (c) => '\\' + c) + '%';
+    const r = await this.pool.query('select * from users where id = $1 or lower(name) like $2 or email like $2 order by created_at desc, id desc limit $3', [id, like, limit]);
+    return r.rows.map(toUser);
+  }
+
+  async signupsByDay(since: number) {
+    const r = await this.pool.query(
+      "select to_char(created_at at time zone 'Europe/Moscow', 'YYYY-MM-DD') as d, count(*) as n from users where created_at >= $1 group by 1",
+      [date(since)]
+    );
+    return Object.fromEntries(r.rows.map((x) => [x.d, Number(x.n)]));
+  }
+
+  async countUsers(since?: number) {
+    const r = since == null ? await this.pool.query('select count(*) as n from users') : await this.pool.query('select count(*) as n from users where created_at >= $1', [date(since)]);
     return Number(r.rows[0].n);
   }
 

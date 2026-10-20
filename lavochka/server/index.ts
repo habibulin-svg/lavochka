@@ -16,7 +16,7 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { Link } from '../src/core/protocol';
-import { cleanLook, Room } from '../src/core/room';
+import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
 import type { GameDef } from '../src/core/types';
@@ -28,6 +28,7 @@ import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
+import { Backoffice, backofficeApi } from './backoffice';
 import { robokassaFromEnv } from './pay/robokassa';
 
 const PORT = Number(process.env.PORT) || 8787;
@@ -192,6 +193,14 @@ if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_L
 // обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
 const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
+// админка (server/backoffice.ts): статистика по дням, автоошибки, игроки и права
+const backoffice = new Backoffice(accounts, () => ({ online: onlineNow(), rooms: rooms.size, players: [...rooms.values()].reduce((n, r) => n + r.clientCount, 0) }), log);
+setInterval(() => accountsReady && backoffice.sample().catch(() => {}), 5 * 60_000).unref();
+setRoomErrorHook((e, where, game) => accountsReady && backoffice.serverError(e, where, game));
+process.on('unhandledRejection', (e) => {
+  log('необработанная ошибка: ' + e);
+  if (accountsReady) backoffice.serverError(e, 'unhandledRejection');
+});
 
 // ------------------------------------------------------------------ счётчики: онлайн и начатые партии
 // Онлайн — сколько вкладок отметилось за последние 3 минуты (сайт отмечается раз в минуту, пока вкладка видна).
@@ -230,14 +239,16 @@ function mayCount(ip: string, game: string): boolean {
   l.last[game] = now;
   return true;
 }
+/** Сейчас на сайте: вкладки за 3 минуты, но не меньше, чем людей за сетевыми столами сервера. */
+function onlineNow(now = Date.now()) {
+  for (const [id, t] of seen) if (now - t > ONLINE_MS) seen.delete(id);
+  return Math.max(seen.size, [...rooms.values()].reduce((n, r) => n + r.clientCount, 0));
+}
 let statsCache: { at: number; body: string } | null = null;
 function statsBody(): string {
   const now = Date.now();
   if (statsCache && now - statsCache.at < 60_000) return statsCache.body;
-  for (const [id, t] of seen) if (now - t > ONLINE_MS) seen.delete(id);
-  // онлайн — не меньше, чем людей за сетевыми столами сервера
-  const online = Math.max(seen.size, [...rooms.values()].reduce((n, r) => n + r.clientCount, 0));
-  statsCache = { at: now, body: JSON.stringify({ online, played, likes: player.likeCounts() }) };
+  statsCache = { at: now, body: JSON.stringify({ online: onlineNow(now), played, likes: player.likeCounts() }) };
   return statsCache.body;
 }
 setInterval(() => {
@@ -375,20 +386,29 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });
     if (await supportApi(support, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, readRaw)) return;
   }
+  if (path === '/api/errors' || path === '/api/admin/dash' || path === '/api/admin/users' || path === '/api/admin/errors') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await backofficeApi(backoffice, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+  }
   if (path === '/api/stats') {
     // ?v=<метка вкладки> — вкладка отмечается «во дворе»
     const v = new URL(req.url || '', 'http://x').searchParams.get('v');
-    if (v && /^[\w-]{6,40}$/.test(v) && (seen.has(v) || seen.size < 100_000)) seen.set(v, Date.now());
+    if (v && /^[\w-]{6,40}$/.test(v) && (seen.has(v) || seen.size < 100_000)) {
+      seen.set(v, Date.now());
+      backoffice.visit(v);
+    }
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     return res.end(statsBody());
   }
   if (path === '/api/played' && req.method === 'POST') {
     try {
-      const game = String(JSON.parse(await readBody(req, 256)).game || '');
+      const b = JSON.parse(await readBody(req, 256));
+      const game = String(b.game || '');
       if (!Object.hasOwn(SLUGS, game)) return json(res, 400, { error: 'game' });
       if (mayCount(clientIp(req), game)) {
         played[game] = (played[game] || 0) + 1;
         savePlayed();
+        if (accountsReady) backoffice.played(game, String(b.mode || 'local'));
       }
       return json(res, 200, { ok: true });
     } catch {
@@ -511,7 +531,10 @@ const server = createServer((req, res) => {
     return res.end();
   }
   if (path.startsWith('/api/')) {
-    api(req, res, path).catch(() => json(res, 500, { error: 'internal' }));
+    api(req, res, path).catch((e) => {
+      if (accountsReady) backoffice.serverError(e, 'API ' + path);
+      json(res, 500, { error: 'internal' });
+    });
     return;
   }
   serveStatic(req, res, path);

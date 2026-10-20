@@ -163,7 +163,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
   const [a, b] = localPair();
   room.connect(a);
   const client = new RoomClient(b, { ...me(def.id), ownerKey });
-  client.onBegin = () => countPlay(def.id);
+  client.onBegin = () => countPlay(def.id, 'local');
   active = { close: () => room.close() };
   nav.table(null, def.id);
   table = new Table({
@@ -275,7 +275,7 @@ function attach(mod: GameModule, client: RoomClient, mode: NetMode, code: string
     else nav.yard();
   };
   nav.table(code, def.id);
-  if (owner) client.onBegin = () => countPlay(def.id);
+  if (owner) client.onBegin = () => countPlay(def.id, 'net');
   // гость узнал игру только сейчас — сообщить своего персонажа
   const look = store.get<string>('look.' + def.id, '');
   if (!owner && mod.looks && look) client.me({ look });

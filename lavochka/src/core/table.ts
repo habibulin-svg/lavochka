@@ -13,6 +13,7 @@ import { esc, h, sleep } from './util';
 import { assignLooks, type GameModule, type GameView, type ViewCtx } from './view';
 import { Voice, type VoiceTile } from './voice';
 import { SeatCams } from './seatcams';
+import { setErrorGame } from '../site/errors';
 
 export type NetMode = 'local' | 'p2p' | 'server';
 
@@ -114,6 +115,7 @@ export class Table {
       </aside>
     </section>`);
     mountScreen('table', this.el);
+    setErrorGame(def.id);
 
     const q = <T extends HTMLElement>(s: string) => this.el.querySelector(s) as T;
     q('[data-act=menu]').onclick = () => this.menu();
@@ -768,5 +770,6 @@ export class Table {
     window.removeEventListener('keydown', this.onSpace);
     closeAllModals();
     removeScreen('table');
+    setErrorGame(null);
   }
 }

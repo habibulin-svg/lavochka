@@ -130,7 +130,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
   document.addEventListener('visibilitychange', onHide);
 
   const start = () => {
-    countPlay(mod.id);
+    countPlay(mod.id, 'arcade');
     inst?.destroy();
     stage.innerHTML = '';
     panel.innerHTML = '';
