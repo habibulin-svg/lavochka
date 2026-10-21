@@ -197,11 +197,13 @@ export function createView(): GameView<VsView, VsEvent> {
   const minis = new Map<number, { el: HTMLElement; cv: HTMLCanvasElement; key: string }>();
   let els: { main: HTMLElement; inc: HTMLElement; info: HTMLElement; foes: HTMLElement; foesR: HTMLElement; bigBox: HTMLElement; bigName: HTMLElement; swap: HTMLButtonElement };
 
-  const mySeat = () => (ctx.demo ? -1 : (ctx.mySeats[0] ?? -1));
+  /** Чьё поле крупно: своё, а у зрителя (и в превью) — первого игрока. */
+  const mySeat = () => (!ctx.demo && ctx.mySeats.length ? ctx.mySeats[0] : (latest?.boards[0]?.seat ?? -1));
+  const seated = () => !ctx.demo && ctx.mySeats.includes(mySeat());
   const mine = (v: VsView | null) => v?.boards.find((x) => x.seat === mySeat()) ?? null;
   const playing = () => {
     const m = mine(latest);
-    return !!m && !m.out && !latest!.over;
+    return seated() && !!m && !m.out && !latest!.over;
   };
 
   function angleTo(e: PointerEvent) {
@@ -353,7 +355,7 @@ export function createView(): GameView<VsView, VsEvent> {
     const warn = !v.over && v.pushAt - v.t < 1.6;
     if (m) {
       own.b = ownBoard();
-      own.aim = m.out ? m.aim : aim;
+      own.aim = playing() ? aim : m.aim;
       own.bg = mySeat();
       own.draw(dt, t, { aimDots: playing() && now >= busyUntil, warn, out: m.out, dim: m.out ? `${m.place}-е место` : v.over && v.winners.includes(m.seat) ? 'Победа!' : undefined });
     }

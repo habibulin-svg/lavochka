@@ -175,11 +175,13 @@ export function createView(): GameView<VsView, VsEvent> {
   const minis = new Map<number, { el: HTMLElement; cv: HTMLCanvasElement; key: string }>();
   let els: { inc: HTMLElement; info: HTMLElement; foes: HTMLElement; foesR: HTMLElement; bigBox: HTMLElement; bigName: HTMLElement; swap: HTMLButtonElement };
 
-  const mySeat = () => (ctx.demo ? -1 : (ctx.mySeats[0] ?? -1));
+  /** Чьё поле крупно: своё, а у зрителя (и в превью) — первого игрока. */
+  const mySeat = () => (!ctx.demo && ctx.mySeats.length ? ctx.mySeats[0] : (latest?.boards[0]?.seat ?? -1));
+  const seated = () => !ctx.demo && ctx.mySeats.includes(mySeat());
   const mine = (v: VsView | null) => v?.boards.find((x) => x.seat === mySeat()) ?? null;
   const playing = () => {
     const m = mine(latest);
-    return !!m && !m.out && !latest!.over;
+    return seated() && !!m && !m.out && !latest!.over;
   };
   const tall = () => matchMedia('(max-width: 760px)').matches && innerHeight > innerWidth;
 
@@ -308,7 +310,7 @@ export function createView(): GameView<VsView, VsEvent> {
       ghosts = ghosts.filter((s) => m.shotSeen < s.id && now - s.t0 < 500);
       const gs = ghosts.map((s) => ({ x: s.x + (s.vx * (now - s.t0)) / 1000, y: s.y + (s.vy * (now - s.t0)) / 1000, color: s.color }));
       const [cur, next] = loaded(m);
-      own.draw(dt, t, v.spec, m, since, { aim: m.out ? m.aim : aim, aimDots: playing(), cur: m.out ? -1 : cur, next: m.out ? -1 : next, ghosts: gs, bg: mySeat(), dim: m.out ? `${m.place}-е место` : v.over && v.winners.includes(m.seat) ? 'Победа!' : undefined });
+      own.draw(dt, t, v.spec, m, since, { aim: playing() ? aim : m.aim, aimDots: playing(), cur: m.out ? -1 : cur, next: m.out ? -1 : next, ghosts: gs, bg: mySeat(), dim: m.out ? `${m.place}-е место` : v.over && v.winners.includes(m.seat) ? 'Победа!' : undefined });
     }
     if (bigSeat >= 0) {
       const bv = v.boards.find((x) => x.seat === bigSeat);

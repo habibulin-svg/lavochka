@@ -58,3 +58,10 @@
 .egv-inc i.brick { border-radius: 2px; height: 10px; background: linear-gradient(#b0452a, #8a3018); box-shadow: inset 0 -2px 0 #d8cfc0; }
 .egv-info .warn { color: #ff8a70; font-weight: 700; }
 @media (max-width: 760px) { .trv .egv-mainbox { width: min(100%, calc(100svh - 330px)); } }
+/* «Шарики» в дуэли: поле лежачее — своё сверху во всю ширину, соперник под ним (так экран занят плотнее) */
+@media (min-width: 761px) {
+  .egv-root.duel .egv.zmv { --own: min(100%, calc((100svh - 190px) / 1.13)); grid-template-columns: minmax(0, var(--own)); grid-template-areas: 'main' 'right'; justify-content: center; max-width: none; gap: 6px; }
+  .egv-root.duel .zmv .egv-big { width: 50%; justify-self: center; flex-direction: column-reverse; }
+  .egv-root.duel .zmv .egv-btns { position: absolute; right: 8px; bottom: 8px; }
+  .egv-root.duel .zmv .egv-mainbox { position: relative; }
+}

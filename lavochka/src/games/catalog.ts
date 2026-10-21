@@ -8,7 +8,7 @@ import { loadClues } from '../words/clues';
 const withDict = <T>(m: Promise<T>) => Promise.all([m, loadDict()]).then(([x]) => x);
 const withClues = <T>(m: Promise<T>) => Promise.all([m, loadClues()]).then(([x]) => x);
 
-export type Category = 'board' | 'cards' | 'company' | 'paper' | 'puzzles' | 'tabletop' | 'sport' | 'electronics';
+export type Category = 'board' | 'cards' | 'company' | 'paper' | 'puzzles' | 'tabletop' | 'sport' | 'electronics' | 'arcade';
 
 export const CATEGORIES: { id: Category; title: string }[] = [
   { id: 'board', title: 'Доска и кости' },
@@ -19,6 +19,7 @@ export const CATEGORIES: { id: Category; title: string }[] = [
   { id: 'tabletop', title: 'Настолки' },
   { id: 'sport', title: 'Настольный спорт' },
   { id: 'electronics', title: 'Электроника' },
+  { id: 'arcade', title: 'Аркады' },
 ];
 
 export interface CatalogEntry {
@@ -147,9 +148,9 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'elektronika', added: '2026-10-12', title: 'Электроника ИМ', sub: 'настоящие советские ЖК-игры', cat: 'electronics', players: '1', wave: 5, icon: '🥚', tint: '#b8a000', thumb: 'elektronika.webp', arcade: true, load: () => import('./elektronika'), variants: ['Ну, погоди!', 'Тайны океана', 'Весёлый повар', 'Космический мост', 'Хоккей', 'Автослалом', 'Кот-рыболов', 'и ещё 7'] },
   { id: 'brick', added: '2026-10-10', title: 'Brick Game', sub: 'E-23 «96 in 1», настоящая прошивка', cat: 'electronics', players: '1', wave: 5, icon: '▦', tint: '#5d6b4f', thumb: 'brick.webp', arcade: true, load: () => import('./brick'), variants: ['тетрис', 'чудные фигуры', 'мяч и ракетка', 'сбей стену', 'ряды сверху'] },
   { id: 'avtomaty', added: '2026-10-17', title: 'Игровые автоматы', sub: 'советские 15 копеек, настоящие платы', cat: 'electronics', players: '1', wave: 6, icon: '🕹', tint: '#3e5a70', thumb: 'avtomaty.webp', arcade: true, load: () => import('./avtomaty'), variants: ['Конёк-Горбунок', 'S.O.S.', 'Снежная королева', 'Городки', 'Кот-рыболов', 'Тетрис', 'Чёрный корабль', 'и ещё 4'] },
-  { id: 'treasures', added: '2026-10-10', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'electronics', players: '1–10', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, net: true, shelved: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'дуэль по сети', 'битва до 10'] },
-  { id: 'shariki', added: '2026-10-10', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'electronics', players: '1–10', wave: 6, icon: '🐸', tint: '#4a7a10', arcade: true, net: true, shelved: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'дуэль по сети', 'битва до 10'] },
-  { id: 'eggs', added: '2026-10-10', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'electronics', players: '1–10', wave: 6, icon: '🦕', tint: '#7a5a10', arcade: true, net: true, shelved: true, load: () => import('./eggs'), variants: ['сто уровней', 'дуэль по сети', 'битва до 10', 'падлянки сопернику'] },
+  { id: 'treasures', added: '2026-10-21', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '💎', tint: '#1a6a5a', thumb: 'treasures.webp', arcade: true, net: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'дуэль по сети', 'битва до 10'] },
+  { id: 'shariki', added: '2026-10-21', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '🐸', tint: '#4a7a10', thumb: 'shariki.webp', arcade: true, net: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'дуэль по сети', 'битва до 10'] },
+  { id: 'eggs', added: '2026-10-21', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '🦕', tint: '#7a5a10', thumb: 'eggs.webp', arcade: true, net: true, load: () => import('./eggs'), variants: ['сто уровней', 'дуэль по сети', 'битва до 10', 'падлянки сопернику'] },
   { id: 'gops', added: '2026-10-10', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'electronics', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
 ];
 

@@ -353,7 +353,9 @@ function common(s: VsState): VsView {
  * а бот и экран сами копируют его, прежде чем что-то пробовать). */
 export function snapshot(s: VsState, seats: number[] | 'all'): VsView {
   const v = common(s);
-  if (seats === 'all' || !seats.length) return v;
+  // зритель (превью, показ) смотрит поле первого игрока целиком
+  if (seats === 'all') return { ...v, boards: v.boards.map((b, i) => (i ? b : { ...b, full: s.seats[0].b })) };
+  if (!seats.length) return v;
   return { ...v, boards: v.boards.map((b) => (seats.includes(b.seat) ? { ...b, full: seatOf(s, b.seat)!.b } : b)) };
 }
 

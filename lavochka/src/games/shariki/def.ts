@@ -92,7 +92,7 @@ export const def: GameDef<VsState, never, VsEvent, VsView> = {
   showcase() {
     const r = { v: 11, next: () => ((r.v = (r.v * 16807) % 2147483647) / 2147483647), int: (n: number) => Math.floor(r.next() * n), getState: () => 0 };
     const s = newVersus([0, 1], 'duel', 4, r);
-    for (let i = 0; i < 160; i++) step(s, [null, null], r);
+    for (let i = 0; i < 420; i++) step(s, [null, null], r);
     s.seats[1].z.addGray(3);
     return s;
   },

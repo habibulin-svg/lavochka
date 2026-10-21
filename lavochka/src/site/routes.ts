@@ -113,6 +113,7 @@ export const SECTION_SLUGS: Record<string, string> = {
   tabletop: 'nastolnye-igry',
   sport: 'nastolnyy-sport',
   electronics: 'elektronnye-igry',
+  arcade: 'arkady',
 };
 
 /** Переехавшие адреса → новые (сервер отвечает 301). */

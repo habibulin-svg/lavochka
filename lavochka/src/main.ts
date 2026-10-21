@@ -79,7 +79,7 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     if (my !== navSeq) return; // пока грузилось, ушли на другой экран
     // аркада с сетевым режимом: «Дуэль и битва» (или возврат со стола) — обычный экран настройки стола; «назад» — снова аркада
     const arcade = isArcade(mod) ? mod : null;
-    if (arcade?.net && (r.net || r.preset)) {
+    if (arcade?.net && (r.net || r.preset || r.rules)) {
       mod = await arcade.net.load();
       if (my !== navSeq) return;
     }
@@ -293,7 +293,9 @@ window.addEventListener('popstate', () => {
 async function thumbMode(id: string) {
   const g = byId(id);
   if (!g?.load) return;
-  const mod = (await g.load()).default;
+  let mod = (await g.load()).default;
+  // аркада с сетевым режимом: превью — дуэль (видны оба поля)
+  if (isArcade(mod) && mod.net) mod = await mod.net.load();
   const stage = document.createElement('div');
   stage.className = 'thumb-stage';
   const board = document.createElement('div');

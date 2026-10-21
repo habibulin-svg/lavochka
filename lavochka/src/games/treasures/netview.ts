@@ -100,11 +100,13 @@ export function createView(): GameView<VsView, VsEvent> {
   let els: { inc: HTMLElement; info: HTMLElement; foes: HTMLElement; foesR: HTMLElement; bigBox: HTMLElement; bigName: HTMLElement; bigCv: HTMLCanvasElement; own: HTMLElement; dim: HTMLElement };
   let bigKey = '';
 
-  const mySeat = () => (ctx.demo ? -1 : (ctx.mySeats[0] ?? -1));
+  /** Чьё поле крупно: своё, а у зрителя (и в превью) — первого игрока. */
+  const mySeat = () => (!ctx.demo && ctx.mySeats.length ? ctx.mySeats[0] : (latest?.boards[0]?.seat ?? -1));
+  const seated = () => !ctx.demo && ctx.mySeats.includes(mySeat());
   const mine = (v: VsView | null) => v?.boards.find((x) => x.seat === mySeat()) ?? null;
   const playing = () => {
     const m = mine(latest);
-    return !!m && !m.out && !latest!.over;
+    return seated() && !!m && !m.out && !latest!.over;
   };
 
   function send(force = false) {
