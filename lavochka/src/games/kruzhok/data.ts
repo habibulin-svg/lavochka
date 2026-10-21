@@ -13,7 +13,10 @@ export interface Puzzle {
 
 export interface Opening {
   eco: string;
+  /** Название по-английски (как в справочнике Lichess). */
   name: string;
+  /** Название по-русски. */
+  ru: string;
   uci: string[];
   fen: string;
 }
@@ -36,7 +39,7 @@ export function loadPuzzles(): Promise<Puzzle[]> {
 export function loadOpenings(): Promise<Opening[]> {
   openings ??= fetch(base + 'openings.json')
     .then((r) => r.json())
-    .then((j: { o: [string, string, string, string][] }) => j.o.map(([eco, name, uci, fen]) => ({ eco, name, uci: uci.split(' '), fen })))
+    .then((j: { o: [string, string, string, string, string][] }) => j.o.map(([eco, name, uci, fen, ru]) => ({ eco, name, ru: ru || name, uci: uci.split(' '), fen })))
     .catch((e) => {
       openings = null;
       throw e;

@@ -7,6 +7,7 @@ import { mountAnalysis } from './analysis';
 import { mountJournal } from './journal';
 import { mountClassics } from './partii';
 import { mountLessons } from './lessons';
+import { mountEncyclopedia } from './encyclopedia';
 import { mountTrainer } from './trainer';
 import './kruzhok.css';
 
@@ -14,7 +15,7 @@ const mod: ArcadeModule = {
   kind: 'arcade',
   id: 'kruzhok',
   title: 'Шахматный кружок',
-  about: 'Кружок при дворе: задачи с рейтингом и разрядами, классические партии с вопросом «А как сходил бы ты?», разбор позиций движком, а дальше — учебник и энциклопедия.',
+  about: 'Кружок при дворе: учебник от правил до стратегии, задачи с рейтингом и разрядами, классические партии с вопросом «А как сходил бы ты?», энциклопедия дебютов и терминов, разбор позиций движком.',
   controls: `<p>Ход — нажмите на фигуру, потом на подсвеченное поле. В разборе ← → листают ходы.</p>
     <p><b>Задачи</b> подбираются под ваш рейтинг; неверный ход можно вернуть — движок покажет, чем он плох. Рейтинг меняется только за первую попытку, подсказка — задача не в зачёт.</p>
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
@@ -23,6 +24,7 @@ const mod: ArcadeModule = {
     { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом' },
     { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»' },
     { id: 'razbor', label: 'Разбор', hint: 'доска с движком' },
+    { id: 'enciklopediya', label: 'Энциклопедия', hint: 'дебюты и термины' },
     { id: 'zhurnal', label: 'Журнал', hint: 'разряд, рейтинг, успехи' },
   ],
   noRecords: true,
@@ -38,6 +40,8 @@ const mod: ArcadeModule = {
             ? mountClassics(root, panel)
             : mode === 'uchebnik'
               ? mountLessons(root, panel)
+              : mode === 'enciklopediya'
+                ? mountEncyclopedia(root, panel)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();
