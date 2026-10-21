@@ -11,7 +11,8 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { parseLine, lineRu } from '../../src/games/chess/notation';
+import { inCheck } from '../../src/games/chess/engine';
+import { fromUci, lineRu, parseLine, position, ruSan } from '../../src/games/chess/notation';
 
 const dir = process.argv[2] ?? 'D:/temp/kruzhok';
 const exe = process.argv[3] ?? join(dir, 'sf/stockfish/stockfish-windows-x86-64-avx2.exe');
@@ -88,7 +89,8 @@ class Sf {
 }
 
 // ── отбор ──
-type ListRow = [string, string, string, string, string, string];
+/** [id, поиск, белые, чёрные, название, место, ключевые ходы — всегда вопрос: «30. Сa3», «21... Кf4»]. */
+type ListRow = [string, string, string, string, string, string, string[]?];
 const list = JSON.parse(readFileSync('tools/kruzhok/games-list.json', 'utf8')) as ListRow[];
 // партии, которых нет в индексе (Бессмертная — только в сборниках), — из tools/kruzhok/games-extra.json; они первыми
 const all = [...(JSON.parse(readFileSync('tools/kruzhok/games-extra.json', 'utf8')) as Raw[]), ...(JSON.parse(readFileSync(join(dir, 'all.json'), 'utf8')) as Raw[])];
@@ -111,7 +113,7 @@ async function main() {
   mkdirSync('public/kruzhok/games', { recursive: true });
   let sf: Sf | null = null;
   const index: unknown[] = [];
-  for (const [id, q, white, black, title, place] of list) {
+  for (const [id, q, white, black, title, place, must = []] of list) {
     const raw = find(q);
     const line = parseLine(raw.moves);
     const cache = join(dir, 'marked', `${id}.json`);
@@ -131,7 +133,7 @@ async function main() {
       writeFileSync(cache, JSON.stringify(mk));
       console.log('размечено', id, line.uci.length, 'полуходов');
     }
-    const game = build(id, raw, mk, { white, black, title, place });
+    const game = build(id, raw, mk, { white, black, title, place }, must);
     const text = join('tools/kruzhok/comments', `${id}.json`);
     if (existsSync(text)) Object.assign(game, JSON.parse(readFileSync(text, 'utf8')));
     writeFileSync(join('public/kruzhok/games', `${id}.json`), JSON.stringify(game));
@@ -151,7 +153,18 @@ export interface Stop {
   gap: number;
 }
 
-function build(id: string, raw: Raw, mk: Marked, meta: { white: string; black: string; title: string; place: string }) {
+function build(id: string, raw: Raw, mk: Marked, meta: { white: string; black: string; title: string; place: string }, must: string[] = []) {
+  // ключевые ходы из списка: «30. Сa3» → номер полухода (с проверкой, что так и сыграно)
+  const forced = must.map((t) => {
+    const m = /^(\d+)\.(\.\.)?\s*(\S+)$/.exec(t.trim());
+    if (!m) throw new Error(`${id}: ключевой ход «${t}» — не «30. Сa3»`);
+    const ply = (Number(m[1]) - 1) * 2 + (m[2] ? 1 : 0);
+    const s = position(mk.fens[ply]);
+    const mv = fromUci(s, mk.uci[ply] ?? '');
+    const played = mv ? ruSan(s, mv) : '?';
+    if (played.replace(/[+#]/g, '') !== m[3].replace(/[+#!?]/g, '')) throw new Error(`${id}: ключевой ход «${t}», а в партии ${played}`);
+    return ply;
+  });
   const n = mk.uci.length;
   // оценка после каждого полухода (за белых): лучшая линия следующей позиции; после мата — ±MATE
   const ev: number[] = [];
@@ -170,17 +183,32 @@ function build(id: string, raw: Raw, mk: Marked, meta: { white: string; black: s
     const after = cap(pov(ev[i], w));
     // сыгран лучший ход движка — не ошибка, даже если оценка следующей позиции чуть «уплыла» (разная глубина счёта)
     const loss = L[0].pv[0] === mk.uci[i] ? 0 : best - after;
-    if (loss >= 300) marks[i] = '??';
-    else if (loss >= 120) marks[i] = '?';
+    const key = forced.includes(i);
+    // «?» — только если ход что-то меняет: при перевесе больше пяти пешек неточность не ошибка
+    if (!key && after < 500) {
+      if (loss >= 300) marks[i] = '??';
+      else if (loss >= 120) marks[i] = '?';
+    }
+    if (key) {
+      marks[i] = '!!';
+      const good = [mk.uci[i], ...L.filter((x) => cap(pov(x.s, w)) >= after - 40).map((x) => x.pv[0])];
+      cands.push({ ply: i, score: 10000, good: [...new Set(good)], gap: L.length > 1 ? best - cap(pov(L[1].s, w)) : 0 });
+      continue;
+    }
     if (loss > 30 || L.length < 2) continue;
     // мат в 1, когда матует только этот ход, — тоже находка (обрезанные оценки матов равны)
     const gap = pov(L[0].s, w) === MATE - 1 && pov(L[1].s, w) < MATE - 1 ? 400 : best - cap(pov(L[1].s, w));
     // взятие в ответ на взятие на том же поле — не находка
     const prev = mk.uci[i - 1];
     const recapture = !!prev && prev.slice(2, 4) === mk.uci[i].slice(2, 4) && isCapture(mk, i - 1) && isCapture(mk, i);
-    if (gap >= 250) marks[i] = '!!';
-    else if (gap >= 120) marks[i] = '!';
-    if (i < 10 || recapture || gap < 90) continue;
+    // «!» — находка, а не вынужденный ход: не взятие в ответ, не уход от шаха, не у стороны, которая уже проигрывает
+    const check = inCheck(position(mk.fens[i]));
+    const loser = winner >= 0 && i % 2 !== winner;
+    if (!recapture && !check && !loser && best > -150) {
+      if (gap >= 300) marks[i] = '!!';
+      else if (gap >= 150) marks[i] = '!';
+    }
+    if (i < 10 || recapture || check || gap < 90) continue;
     const good = [mk.uci[i], ...L.filter((x) => cap(pov(x.s, w)) >= best - 40).map((x) => x.pv[0])];
     cands.push({ ply: i, score: Math.min(gap, 700) + (i % 2 === winner ? 150 : 0), good: [...new Set(good)], gap });
   }

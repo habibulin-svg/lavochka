@@ -8,8 +8,8 @@ import { RANKS, rankOf } from './rating';
 
 export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: () => void) {
   const p = loadProgress();
-  const r = rankOf(p.rating);
   const solved = Object.keys(p.solved).length;
+  const r = rankOf(p.rating, solved);
   const clean = Object.values(p.solved).filter((x) => x === 1).length;
   const answers = Object.values(loadAnswers()).flatMap((a) => Object.values(a));
 

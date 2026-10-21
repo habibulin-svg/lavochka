@@ -14,6 +14,9 @@ import { loadPuzzles, THEMES, themeName, type Puzzle } from './data';
 import { loadProgress, recordPuzzle, type Progress } from './progress';
 import { rankOf } from './rating';
 
+/** Открытая задача (id и рейтинг), пока её не решили и не провалили. */
+const OPEN = 'kruzhok.open';
+
 export interface TrainerOpts {
   /** Закрепление урока: только эти темы (любая из них), не выше этого рейтинга, выбор темы скрыт. */
   drill?: { themes: string[]; max?: number; title: string };
@@ -34,6 +37,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   let failed = false;
   let done = false;
   let busy = false;
+  /** Поколение задачи: после ожидания (ход соперника, показ решения) — проверить, что задача та же (сменили тему — нет). */
+  let gen = 0;
   let alive = true;
   let sub: { destroy(): void } | null = null;
 
@@ -101,10 +106,10 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   };
 
   const renderRank = () => {
-    const r = rankOf(prog.rating);
     const n = Object.keys(prog.solved).length;
+    const r = rankOf(prog.rating, n);
     q('.kz-rank').innerHTML = `<b>${esc(r.name)}</b>${r.provisional ? ' <small>(пока предварительно)</small>' : ''}<br>
-      <span>Рейтинг в задачах: <b>${prog.rating.r}</b>${r.next ? ` · до «${esc(r.next.short)}» — ${r.next.from - prog.rating.r}` : ''}</span><br>
+      <span>Рейтинг в задачах: <b>${prog.rating.r}</b>${r.toFirst ? ` · разряд — после ещё ${r.toFirst} задач` : r.next ? ` · до «${esc(r.next.short)}» — ${r.next.from - prog.rating.r}` : ''}</span><br>
       <small>Решено задач: ${n} · серия без ошибок: ${prog.streak} (лучшая ${prog.best})</small>`;
   };
 
@@ -136,6 +141,11 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
 
   const next = async () => {
     if (!alive) return;
+    // ушёл с открытой задачи, не решив, — она не в зачёт (иначе можно пропускать трудные без потери рейтинга)
+    if (pz && !done && ply > 0) fail();
+    const my = ++gen;
+    busy = false;
+    stockfish.stop();
     sub?.destroy();
     sub = null;
     host.hidden = false;
@@ -162,7 +172,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     buttons([]);
     renderRank();
     await sleep(700);
-    if (!alive) return;
+    if (!alive || my !== gen) return;
     opponent();
   };
 
@@ -182,6 +192,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   };
 
   const waitPlayer = () => {
+    // задача открыта: уйдёт перезагрузкой, не решив, — при следующем входе она не в зачёт
+    if (!failed && !(pz!.id in prog.solved)) store.set(OPEN, { id: pz!.id, rating: pz!.rating });
     say(failed ? 'Ищите дальше — задача уже не в зачёт, но решить её стоит.' : 'Ваш ход.');
     buttons([
       { text: '💡 Подсказка', on: hint },
@@ -201,16 +213,18 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     ply++;
     if (mate || ply >= pz!.moves.length) return solved();
     busy = true;
+    const my = gen;
     say('Верно! Соперник отвечает…', 'ok');
     await sleep(600);
+    if (!alive || my !== gen) return;
     busy = false;
-    if (!alive) return;
     opponent();
   };
 
   /** Неверный ход: показать, чем он плох, и дать вернуть. */
   const wrong = async (m: Move) => {
     const before = pos;
+    const my = gen;
     beforeWrong = before;
     const ru = ruSan(before, m);
     fail();
@@ -230,7 +244,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     busy = true;
     try {
       const a = await stockfish.analyse(toFen(pos), { depth: 14, ms: 2500, cancel: true });
-      if (!alive || pos === before) return;
+      if (!alive || pos === before || my !== gen) return;
       const top = a.lines[0];
       const reply = a.best ? fromUci(pos, a.best) : null;
       if (top) {
@@ -272,6 +286,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   const fail = () => {
     if (failed) return;
     failed = true;
+    store.set(OPEN, null);
     const r = recordPuzzle(prog, pz!.id, pz!.rating, false);
     prog = r.progress;
     renderRank();
@@ -290,24 +305,26 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     fail();
     board.input(null);
     buttons([]);
-    while (alive && ply < pz!.moves.length) {
+    const my = gen;
+    while (alive && my === gen && ply < pz!.moves.length) {
       const m = fromUci(pos, pz!.moves[ply]);
       if (!m) break;
       board.draw([{ from: m.from, to: m.to, kind: 'hint' }]);
       say(`Решение: ${esc(lineRu(pz!.fen, pz!.moves.slice(0, ply + 1)))}`, 'info');
       await sleep(900);
-      if (!alive) return;
+      if (!alive || my !== gen) return;
       board.draw();
       move(m);
       ply++;
       await sleep(500);
     }
-    finish();
+    if (alive && my === gen) finish();
   };
 
   const solved = () => {
     board.input(null);
     board.draw();
+    store.set(OPEN, null);
     if (!failed) {
       const r = recordPuzzle(prog, pz!.id, pz!.rating, true);
       prog = r.progress;
@@ -362,6 +379,10 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     setTimeout(() => f.remove(), 1800);
   };
 
+  // прошлый раз ушли с открытой задачи — она не в зачёт
+  const left = store.get<{ id: string; rating: number } | null>(OPEN, null);
+  if (left && !(left.id in prog.solved)) prog = recordPuzzle(prog, left.id, left.rating, false).progress;
+  store.set(OPEN, null);
   renderRank();
   say('Раскладываю задачи…');
   loadPuzzles()

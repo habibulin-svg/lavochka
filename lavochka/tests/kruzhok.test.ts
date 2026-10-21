@@ -88,5 +88,8 @@ describe('рейтинг кружка', () => {
     expect(rankOf({ r: 1450, rd: 50, at: 0 }).short).toBe('III');
     expect(rankOf({ r: 2050, rd: 50, at: 0 }).short).toBe('КМС');
     expect(rankOf({ r: 2050, rd: 200, at: 0 }).provisional).toBe(true);
+    // стартовый рейтинг — не разряд: до 10 задач «Новичок»
+    expect(rankOf({ r: 1200, rd: 300, at: 0 }, 0).short).toBe('б/р');
+    expect(rankOf({ r: 1200, rd: 300, at: 0 }, 10).short).toBe('I юн.');
   });
 });

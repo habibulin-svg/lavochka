@@ -47,9 +47,14 @@ export const RANKS: { from: number; name: string; short: string }[] = [
   { from: 2400, name: 'Гроссмейстер двора', short: 'ГМ' },
 ];
 
-/** Разряд по рейтингу; пока рейтинг не устоялся (мало задач), разряд «предварительный». */
-export function rankOf(r: Rating) {
+/** Сколько задач решить, прежде чем дать разряд: до этого — «Новичок» (стартовый рейтинг 1200 — не заслуга). */
+export const FIRST_RANK_AFTER = 10;
+
+/** Разряд по рейтингу; пока рейтинг не устоялся (мало задач), разряд «предварительный».
+ * solved — сколько задач уже решал ученик: меньше FIRST_RANK_AFTER — «Новичок», что бы ни показывал рейтинг. */
+export function rankOf(r: Rating, solved = Infinity) {
+  if (solved < FIRST_RANK_AFTER) return { ...RANKS[0], index: 0, next: null, provisional: false, toFirst: FIRST_RANK_AFTER - solved };
   let i = 0;
   while (i + 1 < RANKS.length && r.r >= RANKS[i + 1].from) i++;
-  return { ...RANKS[i], index: i, next: RANKS[i + 1] ?? null, provisional: r.rd > 110 };
+  return { ...RANKS[i], index: i, next: RANKS[i + 1] ?? null, provisional: r.rd > 110, toFirst: 0 };
 }

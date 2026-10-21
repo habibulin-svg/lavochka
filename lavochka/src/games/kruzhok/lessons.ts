@@ -5,10 +5,11 @@ import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import { Board, type Arrow, type Mark } from '../chess/board';
-import { play, sq, type State } from '../chess/engine';
+import { play, sq, type Move, type State } from '../chess/engine';
 import { stepPositions } from './lesson-steps';
-import { fromUci, position, ruSan, toUci } from '../chess/notation';
+import { fromUci, position, ruSan, toFen, toUci } from '../chess/notation';
 import { levelOf, mountMihalych } from '../chess/mihalych';
+import { score, stockfish } from '../chess/stockfish';
 import { loadLesson, loadLessonIndex, THEMES, type Lesson, type LessonInfo } from './data';
 import { loadProgress } from './progress';
 import { mountTrainer } from './trainer';
@@ -202,13 +203,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
       board.input(s.turn, (m) => {
         const u = toUci(m);
         const ok = st.try!.good.includes(u);
-        if (!ok) {
-          Sound.nomove();
-          board.set(s);
-          board.draw(arrowsOf(st.arrows), [...marksOf(st.marks), { sq: m.to, kind: 'bad' }]);
-          say(`${esc(st.text)}<br><b>${esc(ruSan(s, m))} — не то.</b> ${st.try!.hint ? esc(st.try!.hint) : 'Подумай ещё.'}`, 'bad');
-          return;
-        }
+        if (!ok) return void other(s, m);
         void answered(s, u, true);
       });
       buttons([{ text: 'Покажи, как надо', on: () => void answered(s, st.try!.good[0], false) }]);
@@ -218,7 +213,38 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
     mh.typed({ kind: 'chat' });
   };
 
-  const answered = async (s: State, u: string, mine: boolean) => {
+  /** Ход не из списка: может, он не хуже задуманного — спросим движок (сравним с ходом урока). */
+  const other = async (s: State, m: Move) => {
+    const st = l!.steps[at];
+    const step = at;
+    const ru = ruSan(s, m);
+    board.input(null);
+    say(`${esc(st.text)}<br><b>${esc(ru)}</b>… проверяю.`);
+    let fine = false;
+    try {
+      const want = fromUci(s, st.try!.good[0])!;
+      const [a, b] = [await stockfish.analyse(toFen(play(s, m)), { depth: 12, ms: 1500 }), await stockfish.analyse(toFen(play(s, want)), { depth: 12, ms: 1500 })];
+      // оценки за белых: для чёрных — наоборот
+      const sign = s.turn === 0 ? 1 : -1;
+      const mine = a.lines[0] ? score(a.lines[0]) * sign : -Infinity;
+      const best = b.lines[0] ? score(b.lines[0]) * sign : Infinity;
+      fine = mine >= best - 50 || (best > 400 && mine >= best * 0.75);
+    } catch {
+      /* без движка — как раньше: «не то» */
+    }
+    if (!alive || at !== step) return;
+    if (fine) {
+      void answered(s, st.try!.good[0], false, `<b>Тоже верно!</b> Ход ${esc(ru)} не хуже. А в уроке разберём другой — `);
+      return;
+    }
+    Sound.nomove();
+    board.set(s);
+    board.draw(arrowsOf(st.arrows), [...marksOf(st.marks), { sq: m.to, kind: 'bad' }]);
+    say(`${esc(st.text)}<br><b>${esc(ru)} — не то.</b> ${st.try!.hint ? esc(st.try!.hint) : 'Подумай ещё.'}`, 'bad');
+    board.input(s.turn, (x) => (st.try!.good.includes(toUci(x)) ? void answered(s, toUci(x), true) : void other(s, x)));
+  };
+
+  const answered = async (s: State, u: string, mine: boolean, lead?: string) => {
     const st = l!.steps[at];
     const step = at;
     board.input(null);
@@ -228,7 +254,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
     board.draw([{ from: m.from, to: m.to, kind: 'good' }]);
     m.captured ? Sound.capture() : Sound.place();
     if (mine) Sound.win();
-    say(`${mine ? '<b>Верно!</b> ' : `Вот как: <b>${esc(ruSan(s, m))}</b>. `}${st.try!.say ? esc(st.try!.say) : ''}`, mine ? 'ok' : 'info');
+    say(`${lead ? `${lead}<b>${esc(ruSan(s, m))}</b>. ` : mine ? '<b>Верно!</b> ' : `Вот как: <b>${esc(ruSan(s, m))}</b>. `}${st.try!.say ? esc(st.try!.say) : ''}`, mine || lead ? 'ok' : 'info');
     buttons([]);
     solved = true;
     nav();
@@ -291,6 +317,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
   return {
     destroy() {
       alive = false;
+      stockfish.stop();
       document.removeEventListener('keydown', keys);
       drill?.destroy();
       mh.destroy();
