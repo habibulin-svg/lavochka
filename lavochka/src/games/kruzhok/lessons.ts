@@ -15,11 +15,18 @@ import { loadProgress } from './progress';
 import { mountTrainer } from './trainer';
 import { leaveSub, lessonPath, setPath } from './pages';
 import { addStars, completeNode, DRILL_COUNT } from './path';
+import { touch } from './cloud';
+
+/** Записать часть журнала кружка (и отметить для копии в базе). */
+const putJournal = (key: string, v: unknown) => {
+  store.set(key, v);
+  touch();
+};
 
 const KEY = 'kruzhok.lessons';
 export const loadDone = () => store.get<Record<string, 1>>(KEY, {});
-const markDone = (id: string) => store.set(KEY, { ...loadDone(), [id]: 1 });
-export const resetLessons = () => store.set(KEY, {});
+const markDone = (id: string) => putJournal(KEY, { ...loadDone(), [id]: 1 });
+export const resetLessons = () => putJournal(KEY, {});
 
 type Kind = 'good' | 'bad' | 'info' | 'hint';
 const kindOf = (k: string | undefined): Kind => (k === 'good' || k === 'bad' || k === 'hint' ? k : 'info');

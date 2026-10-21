@@ -104,3 +104,20 @@ describe('виденное в базе', () => {
     expect((await pl.saves(new URLSearchParams(), ctx(a))).body.saves).toEqual([]);
   });
 });
+
+describe('журнал шахматного кружка в базе', () => {
+  it('только вошедшему, свежее побеждает, в списке сохранений не виден', async () => {
+    let ip = 0;
+    const ctx = (sid?: string) => ({ sid, ip: '10.8.0.' + ++ip, ua: 't', site: 'https://lavochka-games.ru', now: 1_800_000_000_000 + ip * 1000 });
+    const acc = new Accounts(new MemoryAccountStore(), new MemoryMailer());
+    const pl = new Player(acc, () => true);
+    const a = (await acc.register({ email: 'k@x.ru', password: 'пароль-игрока', consent: true }, ctx())).sid as string;
+    expect((await pl.putKruzhok({ at: 1_800_000_000_000, data: { stars: 1 } }, ctx())).code).toBe(401);
+    expect((await pl.putKruzhok({ at: 1_800_000_000_000, data: null }, ctx(a))).code).toBe(400);
+    expect((await pl.putKruzhok({ at: 1_800_000_000_500, data: { stars: 5 } }, ctx(a))).body.ok).toBe(true);
+    // старее записанного — не пишется
+    await pl.putKruzhok({ at: 1_800_000_000_100, data: { stars: 2 } }, ctx(a));
+    expect((await pl.kruzhok(ctx(a))).body).toEqual({ at: 1_800_000_000_500, data: { stars: 5 } });
+    expect((await pl.saves(new URLSearchParams(), ctx(a))).body.saves).toEqual([]);
+  });
+});

@@ -3,6 +3,13 @@
  * и зачёт. Звёзды кружка — видимая награда за всё, что ученик делает в кружке; грамота — за сданный зачёт. */
 import { store } from '../../core/settings';
 import type { LessonInfo } from './data';
+import { touch } from './cloud';
+
+/** Записать часть журнала кружка (и отметить для копии в базе). */
+const putJournal = (key: string, v: unknown) => {
+  store.set(key, v);
+  touch();
+};
 
 export type NodeKind = 'lesson' | 'drill' | 'game' | 'exam';
 
@@ -71,7 +78,7 @@ interface PathProgress {
 const KEY = 'kruzhok.path';
 const fresh = (): PathProgress => ({ done: {}, stars: 0, diplomas: {} });
 export const loadPath = (): PathProgress => ({ ...fresh(), ...store.get<Partial<PathProgress>>(KEY, {}) });
-export const resetPath = () => store.set(KEY, fresh());
+export const resetPath = () => putJournal(KEY, fresh());
 
 type Listener = (n: number, why: string) => void;
 const listeners = new Set<Listener>();
@@ -86,7 +93,7 @@ export function addStars(n: number, why: string) {
   if (n <= 0) return;
   const p = loadPath();
   p.stars += n;
-  store.set(KEY, p);
+  putJournal(KEY, p);
   listeners.forEach((f) => f(n, why));
 }
 
@@ -96,7 +103,7 @@ export function completeNode(id: string, stars: number, why: string) {
   if (id in p.done) return false;
   p.done[id] = stars;
   if (id.startsWith('z:')) p.diplomas[id.slice(2)] = new Date().toLocaleDateString('ru-RU');
-  store.set(KEY, p);
+  putJournal(KEY, p);
   addStars(stars, why);
   return true;
 }
@@ -113,7 +120,7 @@ export function syncPath(nodes: PathNode[], lessonsDone: Record<string, 1>, answ
       changed = true;
     }
   }
-  if (changed) store.set(KEY, p);
+  if (changed) putJournal(KEY, p);
 }
 
 /** Первый не пройденный узел — «Дальше». */

@@ -183,7 +183,7 @@ export function kruzhokPages(root: string): KruzhokPage[] {
       title: `${g.white} — ${g.black}, ${g.year}: «${g.title}» — партия с комментариями`,
       description: clip(`${g.title}: ${g.white} — ${g.black}, ${g.place} ${g.year}, ${RES[g.result] ?? g.result}. ${g.intro}`),
       h1: `${g.white} — ${g.black}: «${g.title}»`,
-      intro: `<p><b>${esc(g.place)}, ${g.year}. Итог — ${RES[g.result] ?? g.result}.</b> ${esc(g.intro)}</p><p>В кружке партию можно пролистать на доске: в ключевых местах она остановится и спросит «А как сходил бы ты?».</p>`,
+      intro: `<p><b>${esc(g.place)}, ${g.year}. Итог — ${RES[g.result] ?? g.result}.</b>${g.opening ? ` Дебют — <a href="${familyPath(g.opening.family)}">${esc(g.opening.ru)}</a>.` : ''} ${esc(g.intro)}</p><p>В кружке партию можно пролистать на доске: в ключевых местах она остановится и спросит «А как сходил бы ты?».</p>`,
       body: `<h2>Ход партии</h2>\n${chunks.join('\n')}\n${g.outro ? `<p>${esc(g.outro)}</p>` : ''}\n<p><a href="${sectionPath('partii')}">Все классические партии</a></p>`,
       priority: 0.5,
     });

@@ -3,7 +3,7 @@
  * подсказки против живого соперника — нечестно. В Фишере 960 молчит (движку нужна другая запись рокировки). */
 import { levelOf, mountMihalych, type MihalychEngine } from './mihalych';
 import { legalMoves, newGame, play, san, type State } from './engine';
-import { fromUci, lineRu, position as newPos, ruSan, toFen } from './notation';
+import { fromUci, lineRu, position as newPos, ruSan, toFen, toUci } from './notation';
 import { evalText, stockfish } from './stockfish';
 import { loadProgress } from '../kruzhok/progress';
 
@@ -21,6 +21,19 @@ function replay(st: State): string[] | null {
 }
 
 const sideName = (t: number) => (t === 0 ? 'белые' : 'чёрные');
+
+/** Ходы партии в записи UCI (для «Разобрать в кружке»). */
+export function uciMoves(st: State): string[] | null {
+  let s = newGame(st.cfg, st.sp);
+  const out: string[] = [];
+  for (const rec of st.moves) {
+    const m = legalMoves(s).find((x) => x.from === rec.from && (x.to === rec.to || x.rook === rec.to) && (!x.promo || san(s, x) === rec.san)) ?? null;
+    if (!m) return null;
+    out.push(toUci(m));
+    s = play(s, m);
+  }
+  return out;
+}
 
 export function mountCoach(host: HTMLElement, mySeat: number, getState: () => State | null) {
   const mh = mountMihalych(host, () => {

@@ -80,6 +80,8 @@ export interface ClassicGame {
   /** Комментарий к полуходу (по номеру). */
   notes: Record<string, string>;
   outro: string;
+  /** Дебют партии по справочнику (самая длинная совпавшая линия). */
+  opening?: { ru: string; family: string };
 }
 
 export type ClassicInfo = Pick<ClassicGame, 'id' | 'white' | 'black' | 'title' | 'place' | 'year' | 'result' | 'eco'> & { plies: number; stops: number };

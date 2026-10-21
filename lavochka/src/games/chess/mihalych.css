@@ -21,3 +21,5 @@
 .mh-ask[hidden] { display: none; }
 .mh-ask input { flex: 1; min-width: 0; font: 14px 'PT Sans', sans-serif; padding: 5px 8px; border-radius: 8px; border: 1px solid #a08a60; background: #fffaf0; }
 .mh-plus { align-self: flex-start; }
+.ch-kz { display: block; margin-top: 6px; text-align: center; text-decoration: none; }
+.ch-kz[hidden] { display: none; }

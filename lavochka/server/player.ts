@@ -6,7 +6,9 @@
  *   GET  /api/saves[?game=…]        — список своих сохранений / одно с данными
  *   POST /api/saves {game, at, snap} — сохранить (snap: null — партии больше нет); старее записанного — не пишется
  *   GET  /api/seen?game=…           — какие задания (данетки, дела) игрок уже видел: { seen: { номер: минута } }
- *   POST /api/seen {game, ids}      — открылись разгадки ids (хранится рядом с сохранениями, под игрой «seen:<игра>») */
+ *   POST /api/seen {game, ids}      — открылись разгадки ids (хранится рядом с сохранениями, под игрой «seen:<игра>»)
+ *   GET  /api/kruzhok               — журнал шахматного кружка: { at, data } (рядом с сохранениями, «kz:journal»)
+ *   POST /api/kruzhok {at, data}    — записать журнал; старее записанного — не пишется */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
@@ -17,6 +19,8 @@ const RESULTS = ['win', 'lose', 'draw', 'done'] as const;
 export const HISTORY_LIMIT = 50;
 /** Предел снимка партии в базе (байт JSON). */
 export const SAVE_MAX = 400_000;
+/** Журнал кружка — рядом с сохранениями игр, под своим ключом (в список сохранений не попадает). */
+const KZ_KEY = 'kz:journal';
 /** Сколько виденных заданий помним на игру. */
 export const SEEN_KEEP = 3000;
 
@@ -71,7 +75,7 @@ export class Player {
     const u = await this.acc.current(ctx);
     if (!u) return err(401, 'auth', 'Войдите заново.');
     const game = q.get('game');
-    if (!game) return { code: 200, body: { saves: (await this.acc.store.listSaves(u.id)).filter((s) => !s.game.startsWith('seen:')) } };
+    if (!game) return { code: 200, body: { saves: (await this.acc.store.listSaves(u.id)).filter((s) => !s.game.startsWith('seen:') && !s.game.startsWith('kz:')) } };
     if (!this.known(game)) return err(400, 'game', 'Нет такой игры.');
     const s = await this.acc.store.getSave(u.id, game);
     let snap: unknown = null;
@@ -136,6 +140,33 @@ export class Player {
     return { code: 200, body: { ok: true } };
   }
 
+  /** Журнал шахматного кружка: прогресс, уроки, партии, путь — одним объектом (клиент — kruzhok/cloud.ts). */
+  async kruzhok(ctx: Ctx): Promise<Reply> {
+    const u = await this.acc.current(ctx);
+    if (!u) return err(401, 'auth', 'Войдите заново.');
+    const s = await this.acc.store.getSave(u.id, KZ_KEY);
+    let data: unknown = null;
+    try {
+      data = s?.data ? JSON.parse(s.data) : null;
+    } catch {
+      data = null;
+    }
+    return { code: 200, body: { at: s?.at ?? 0, data } };
+  }
+
+  async putKruzhok(b: any, ctx: Ctx): Promise<Reply> {
+    const u = await this.acc.current(ctx);
+    if (!u) return err(401, 'auth', 'Войдите заново.');
+    const now = ctx.now ?? Date.now();
+    const at = Math.floor(Number(b?.at));
+    if (!Number.isFinite(at) || at <= 0 || at > now + 5 * 60_000) return err(400, 'at', 'Неверное время.');
+    if (!b?.data || typeof b.data !== 'object' || Array.isArray(b.data)) return err(400, 'data', 'Нет журнала.');
+    if (!this.saveLimit.take(String(u.id), now)) return err(429, 'often', 'Слишком часто.');
+    const data = JSON.stringify(b.data);
+    if (data.length > SAVE_MAX) return err(413, 'big', 'Журнал слишком большой.');
+    return { code: 200, body: { ok: await this.acc.store.putSave(u.id, KZ_KEY, at, data) } };
+  }
+
   async played(b: any, ctx: Ctx): Promise<Reply> {
     const u = await this.acc.current(ctx);
     if (!u) return { code: 200, body: { ok: false } };
@@ -170,11 +201,11 @@ export async function playerApi(
   ip: string,
   readBody: (req: IncomingMessage, limit?: number) => Promise<string>
 ): Promise<boolean> {
-  if (path !== '/api/likes' && path !== '/api/history' && path !== '/api/saves' && path !== '/api/seen') return false;
+  if (path !== '/api/likes' && path !== '/api/history' && path !== '/api/saves' && path !== '/api/seen' && path !== '/api/kruzhok') return false;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
   if (req.method === 'GET') {
     const q = new URL(req.url || '/', 'http://x').searchParams;
-    send(req, res, path === '/api/likes' ? await pl.mine(ctx) : path === '/api/saves' ? await pl.saves(q, ctx) : path === '/api/seen' ? await pl.seen(q, ctx) : await pl.history(ctx));
+    send(req, res, path === '/api/likes' ? await pl.mine(ctx) : path === '/api/saves' ? await pl.saves(q, ctx) : path === '/api/seen' ? await pl.seen(q, ctx) : path === '/api/kruzhok' ? await pl.kruzhok(ctx) : await pl.history(ctx));
     return true;
   }
   if (req.method !== 'POST') {
@@ -187,11 +218,11 @@ export async function playerApi(
   }
   let b: any;
   try {
-    b = JSON.parse((await readBody(req, path === '/api/saves' ? SAVE_MAX + 4096 : 2048)) || '{}');
+    b = JSON.parse((await readBody(req, path === '/api/saves' || path === '/api/kruzhok' ? SAVE_MAX + 4096 : 2048)) || '{}');
   } catch {
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, path === '/api/likes' ? await pl.like(b, ctx) : path === '/api/saves' ? await pl.putSave(b, ctx) : path === '/api/seen' ? await pl.addSeen(b, ctx) : await pl.played(b, ctx));
+  send(req, res, path === '/api/likes' ? await pl.like(b, ctx) : path === '/api/saves' ? await pl.putSave(b, ctx) : path === '/api/seen' ? await pl.addSeen(b, ctx) : path === '/api/kruzhok' ? await pl.putKruzhok(b, ctx) : await pl.played(b, ctx));
   return true;
 }

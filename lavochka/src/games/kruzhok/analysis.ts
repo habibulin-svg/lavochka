@@ -17,6 +17,8 @@ export interface AnalysisOpts {
   /** Кнопка «назад» (вернуться к задаче). */
   back?: { label: string; on: () => void };
   flipped?: boolean;
+  /** Пояснение над доской (например, «Твоя партия из «Шахмат»»). */
+  note?: string;
 }
 
 interface Ply {
@@ -34,7 +36,8 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
   let alive = true;
 
   const el = h(`<div class="kz-an">
-    ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : '<p class="kz-an-help"><b>Доска с движком.</b> Двигай фигуры за обе стороны — Stockfish сразу покажет оценку и лучшие продолжения. Хочешь разобрать свою партию — вставь её ходы ниже («1. e4 e5 2. Кf3…») и листай стрелками: где оценка резко прыгнула, там и ошибка.</p>'}
+    ${o.note ? `<p class="kz-an-help kz-ok">${esc(o.note)}</p>` : ''}
+    ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : o.note ? '' : '<p class="kz-an-help"><b>Доска с движком.</b> Двигай фигуры за обе стороны — Stockfish сразу покажет оценку и лучшие продолжения. Хочешь разобрать свою партию — вставь её ходы ниже («1. e4 e5 2. Кf3…») и листай стрелками: где оценка резко прыгнула, там и ошибка.</p>'}
     <div class="kz-eval"><div class="kz-evalbar"><i></i></div><b class="kz-evalnum">…</b></div>
     <div class="kz-lines"><small class="hint">Движок думает…</small></div>
     <div class="kz-nav">

@@ -2,6 +2,13 @@
  * (Для вошедших позже — копия в базе.) */
 import { store } from '../../core/settings';
 import { START, update, type Rating } from './rating';
+import { touch } from './cloud';
+
+/** Записать часть журнала кружка (и отметить для копии в базе). */
+const putJournal = (key: string, v: unknown) => {
+  store.set(key, v);
+  touch();
+};
 
 export interface Progress {
   rating: Rating;
@@ -23,7 +30,7 @@ export function loadProgress(): Progress {
   return { ...fresh(), ...store.get<Partial<Progress>>(KEY, {}) };
 }
 
-const save = (p: Progress) => store.set(KEY, p);
+const save = (p: Progress) => putJournal(KEY, p);
 const today = (now: number) => new Date(now).toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' });
 
 /** Записать задачу; рейтинг меняется только за первую попытку. Возвращает новый журнал и изменение рейтинга. */

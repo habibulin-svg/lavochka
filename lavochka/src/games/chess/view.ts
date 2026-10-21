@@ -5,7 +5,7 @@ import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
 import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, type Event, type Move, type Promo, type State } from './engine';
-import { mountCoach } from './coach';
+import { mountCoach, uciMoves } from './coach';
 import { pieceDefs, pieceRef } from './pieces';
 import './chess.css';
 
@@ -41,6 +41,8 @@ class ChessView implements GameView<State, Event> {
   private confirmResign = false;
   private coach: ReturnType<typeof mountCoach> | null = null;
   private coachHost: HTMLElement | null = null;
+  /** «Разобрать в шахматном кружке»: с ботом — всегда, с живым соперником — когда партия кончилась (иначе подсказка). */
+  private kz: HTMLAnchorElement | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -77,6 +79,25 @@ class ChessView implements GameView<State, Event> {
     });
     if (!ctx.demo) this.tick = setInterval(() => this.renderClocks(), 200);
     this.coachHost = ctl;
+    if (!ctx.demo) {
+      this.kz = document.createElement('a');
+      this.kz.className = 'btn small ch-kz';
+      this.kz.target = '_blank'; // в новой вкладке — партия здесь не теряется
+      this.kz.rel = 'noopener';
+      this.kz.textContent = '🔍 Разобрать в шахматном кружке';
+      this.kz.hidden = true;
+      ctl.appendChild(this.kz);
+    }
+  }
+
+  private updateKz() {
+    const st = this.s;
+    const c = this.ctx;
+    if (!this.kz || !st) return;
+    const bot = !c.online && c.mySeats.length === 1;
+    const u = st.cfg.variant !== '960' && (bot || st.phase === 'over') ? uciMoves(st) : null;
+    this.kz.hidden = !u || u.length < 2;
+    if (u) this.kz.href = `/shahmatnyj-kruzhok/razbor/?hody=${u.join('-')}`;
   }
 
   // ---------------------------------------------------------------- доска
@@ -365,6 +386,7 @@ class ChessView implements GameView<State, Event> {
     const c = this.ctx;
     if (!this.coach && this.coachHost && !c.demo && !c.online && c.mySeats.length === 1) this.coach = mountCoach(this.coachHost, c.mySeats[0], () => this.s);
     this.coach?.update();
+    this.updateKz();
   }
 
   async play(events: Event[], s: State) {
@@ -399,6 +421,7 @@ class ChessView implements GameView<State, Event> {
     this.render();
     this.renderClocks();
     this.coach?.update();
+    this.updateKz();
   }
 
   private async animate(m: Move, dur: number) {

@@ -11,9 +11,17 @@ import { mountEncyclopedia } from './encyclopedia';
 import { mountTrainer } from './trainer';
 import { MODES, parseKruzhok } from './pages';
 import { onStars } from './path';
+import { syncKruzhok } from './cloud';
 import { mountPut } from './put';
 import { Sound } from '../../core/audio';
 import './kruzhok.css';
+
+/** «Разобрать в кружке» из «Шахмат»: ходы партии в адресе (?hody=e2e4-e7e5-…). */
+function gameFromUrl() {
+  const raw = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hody') : null;
+  const moves = raw?.split('-').filter((u) => /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(u)).slice(0, 600);
+  return moves?.length ? { moves, note: 'Твоя партия из «Шахмат». Листай ходы стрелками ◀ ▶: где оценка резко прыгнула — там ошибка, а движок покажет, как было лучше.' } : {};
+}
 
 const mod: ArcadeModule = {
   kind: 'arcade',
@@ -39,7 +47,7 @@ const mod: ArcadeModule = {
       deep = undefined;
       sub =
         mode === 'razbor'
-          ? mountAnalysis(root, panel)
+          ? mountAnalysis(root, panel, gameFromUrl())
           : mode === 'partii'
             ? mountClassics(root, panel, start)
             : mode === 'uchebnik'
@@ -56,6 +64,13 @@ const mod: ArcadeModule = {
             : mountTrainer(root, panel);
     };
     open(opts.mode);
+    // вошедший: журнал из базы, если там новее (занимался на другом устройстве) — раздел заново, с ним
+    let alive = true;
+    void syncKruzhok().then((changed) => {
+      if (!changed || !alive) return;
+      sub.destroy();
+      open(opts.mode);
+    });
     // звёзды кружка — всплывающее «+N ⭐» поверх сцены, где бы ни заработал
     const off = onStars((n, why) => {
       const f = document.createElement('div');
@@ -67,6 +82,7 @@ const mod: ArcadeModule = {
     });
     return {
       destroy() {
+        alive = false;
         off();
         sub.destroy();
         stockfish.quit();

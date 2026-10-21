@@ -12,18 +12,25 @@ import { levelOf, mountMihalych, type MihalychEngine } from '../chess/mihalych';
 import { evalText, stockfish } from '../chess/stockfish';
 import { loadClassic, loadClassics, type ClassicGame, type ClassicInfo } from './data';
 import { loadProgress } from './progress';
-import { classicPath, leaveSub, setPath } from './pages';
+import { classicPath, familyPath, leaveSub, setPath } from './pages';
 import { addStars, completeNode } from './path';
+import { touch } from './cloud';
+
+/** Записать часть журнала кружка (и отметить для копии в базе). */
+const putJournal = (key: string, v: unknown) => {
+  store.set(key, v);
+  touch();
+};
 
 /** Ответы на остановки: id партии → номер полухода → 1 нашёл, 0 нет. */
 type Answers = Record<string, Record<string, 0 | 1>>;
 const KEY = 'kruzhok.classics';
 export const loadAnswers = () => store.get<Answers>(KEY, {});
-export const resetAnswers = () => store.set(KEY, {});
+export const resetAnswers = () => putJournal(KEY, {});
 const saveAnswer = (id: string, ply: number, ok: 0 | 1) => {
   const a = loadAnswers();
   (a[id] ??= {})[ply] = ok;
-  store.set(KEY, a);
+  putJournal(KEY, a);
 };
 
 /** Оценка из разметки (за белых, мат — ±10000) — в виде строки движка. */
@@ -157,7 +164,9 @@ export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, ba
     if (!g) return;
     const ok = Object.values(answers).filter((x) => x === 1).length;
     q('.kz-pg-head').innerHTML = `<b>${esc(g.title)}</b><br><span>${esc(g.white)} — ${esc(g.black)}</span><br>
-      <small>${esc(g.place)}, ${g.year} · ${RESULT[g.result] ?? g.result}${g.stops.length ? ` · найдено ${ok} из ${g.stops.length}` : ''}</small>`;
+      <small>${esc(g.place)}, ${g.year} · ${RESULT[g.result] ?? g.result}${g.stops.length ? ` · найдено ${ok} из ${g.stops.length}` : ''}</small>${
+        g.opening ? `<br><small>Дебют: <a href="${familyPath(g.opening.family)}">${esc(g.opening.ru)}</a></small>` : ''
+      }`;
   };
 
   const renderMoves = () => {

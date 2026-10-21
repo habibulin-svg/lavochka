@@ -113,6 +113,13 @@ async function main() {
   mkdirSync('public/kruzhok/games', { recursive: true });
   let sf: Sf | null = null;
   const index: unknown[] = [];
+  // справочник дебютов: самая длинная линия, с которой совпадает начало партии
+  const openings = (JSON.parse(readFileSync('public/kruzhok/openings.json', 'utf8')) as { o: [string, string, string, string, string][] }).o.map(([, , uci, , ru]) => ({ uci: uci.split(' '), ru }));
+  const openingOf = (moves: string[]) => {
+    let best: { uci: string[]; ru: string } | null = null;
+    for (const o of openings) if (o.uci.length <= moves.length && o.uci.every((u, i) => u === moves[i]) && (!best || o.uci.length > best.uci.length)) best = o;
+    return best ? { ru: best.ru, family: best.ru.split(', ')[0] } : undefined;
+  };
   for (const [id, q, white, black, title, place, must = []] of list) {
     const raw = find(q);
     const line = parseLine(raw.moves);
@@ -136,6 +143,7 @@ async function main() {
     const game = build(id, raw, mk, { white, black, title, place }, must);
     const text = join('tools/kruzhok/comments', `${id}.json`);
     if (existsSync(text)) Object.assign(game, JSON.parse(readFileSync(text, 'utf8')));
+    (game as { opening?: unknown }).opening = openingOf(mk.uci);
     writeFileSync(join('public/kruzhok/games', `${id}.json`), JSON.stringify(game));
     index.push({ id, white, black, title, place, year: Number(raw.Date?.slice(0, 4)), result: raw.Result, eco: raw.ECO, plies: mk.uci.length, stops: game.stops.length });
   }
