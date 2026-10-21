@@ -1,7 +1,9 @@
 """Видео-персонажи для холдема через шлюз routerai.ru: сначала картинка-эталон каждого персонажа, потом ролики-реакции
 из этой картинки (image-to-video). Окно: ключ, модели, персонажи, реакции, оценка цены, папка с результатом.
+Наборы «Аркада: …» — только картинки (фоны, фишки листом, персонажи) со своим соотношением сторон.
 
-Результат: <папка>/<персонаж>/ref.png и <персонаж>_<реакция>.mp4, общий log.txt и costs.csv.
+Результат: <папка>/<персонаж>/ref.png и <персонаж>_<реакция>.mp4, у аркад — <папка>/<набор>/<картинка>.png;
+общий log.txt и costs.csv.
 Уже готовые файлы пропускаются — можно останавливать и продолжать. Чтобы перегенерировать — удалить файл.
 
 Сборка exe: build.bat (PyInstaller). Зависимостей нет — только стандартная библиотека Python."""
@@ -123,8 +125,12 @@ def request(key: str, method: str, path: str, body: dict | None = None, raw: boo
         raise ApiError(f"сеть: {e.reason}") from None
 
 
-def gen_image(key: str, model: str, prompt: str, seed: int | None) -> tuple[bytes, float]:
-    body = {"model": model, "prompt": prompt, "n": 1, "aspect_ratio": "1:1", "resolution": "1K", "output_format": "png"}
+# Размер для моделей, которые не понимают aspect_ratio.
+SIZES = {"1:1": "1024x1024", "4:3": "1024x768", "3:4": "768x1024", "16:9": "1344x768", "2:3": "832x1248"}
+
+
+def gen_image(key: str, model: str, prompt: str, seed: int | None, aspect: str = "1:1") -> tuple[bytes, float]:
+    body = {"model": model, "prompt": prompt, "n": 1, "aspect_ratio": aspect, "resolution": "1K", "output_format": "png"}
     if seed is not None:
         body["seed"] = seed
     try:
@@ -135,7 +141,7 @@ def gen_image(key: str, model: str, prompt: str, seed: int | None) -> tuple[byte
             raise
         body.pop("resolution", None)
         body.pop("aspect_ratio", None)
-        body["size"] = "1024x1024"
+        body["size"] = SIZES.get(aspect, "1024x1024")
         r = request(key, "POST", "/images", body)
     item = (r.get("data") or [{}])[0]
     if item.get("b64_json"):
@@ -199,7 +205,7 @@ def gen_video(key: str, model: str, prompt: str, ref: bytes, duration: int, reso
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
-        root.title("Видео-персонажи для холдема — routerai.ru")
+        root.title("Видео-персонажи и картинки для сборника — routerai.ru")
         root.geometry("860x800")
         self.cfg = self.load_cfg()
         self.set_id = self.cfg.get("set") if self.cfg.get("set") in P.SETS else "players"
@@ -288,6 +294,7 @@ class App:
         self.hint.pack(anchor="w", padx=8, pady=(0, 6))
 
         self.on_vid_model(initial=True)
+        self.apply_mode()
         root.after(150, self.pump)
         root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -300,21 +307,37 @@ class App:
             d = {"chars": self.cfg.get("chars"), "reacts": self.cfg.get("reacts")}
         return d or {}
 
+    def images_only(self) -> bool:
+        return bool(P.SETS[self.set_id].get("images_only"))
+
+    def apply_mode(self):
+        """У наборов только из картинок нет видео: кнопки и настройки видео выключены."""
+        img = self.images_only()
+        for b in (self.b_vid, self.b_all):
+            b.configure(state="disabled" if self.busy or img else "normal")
+        self.b_img.configure(text="Картинки" if img else "1. Только эталоны (картинки)")
+        self.vid_combo.configure(state="disabled" if img else "readonly")
+        self.res.configure(state="disabled" if img else "readonly")
+        self.dur_spin.configure(state="disabled" if img else "normal")
+
     def build_sel(self):
         for w in self.sel.winfo_children():
             w.destroy()
         saved = self.saved_sel()
         off = P.SETS[self.set_id]["off"]
-        chars = ttk.LabelFrame(self.sel, text="Персонажи")
+        chars = ttk.LabelFrame(self.sel, text="Картинки" if self.images_only() else "Персонажи")
         chars.pack(side="left", fill="both", expand=True, padx=(0, 4))
         self.chars = {}
-        for i, (cid, (name, _)) in enumerate(self.prompts["characters"].items()):
+        for i, (cid, item) in enumerate(self.prompts["characters"].items()):
+            name = item[0]
             v = tk.BooleanVar(value=(cid in saved["chars"]) if saved.get("chars") else True)
             self.chars[cid] = v
             ttk.Checkbutton(chars, text=f"{name} ({cid})", variable=v, command=self.update_cost).grid(row=i // 2, column=i % 2, sticky="w")
+        self.reacts = {}
+        if self.images_only():
+            return
         reacts = ttk.LabelFrame(self.sel, text="Реакции" if self.set_id == "players" else "Действия")
         reacts.pack(side="left", fill="both", expand=True, padx=(4, 0))
-        self.reacts = {}
         for i, (rid, (name, _)) in enumerate(self.prompts["reactions"].items()):
             v = tk.BooleanVar(value=(rid in saved["reacts"]) if saved.get("reacts") else rid not in off)
             self.reacts[rid] = v
@@ -334,6 +357,7 @@ class App:
         self.set_id = list(P.SETS)[max(0, self.set_combo.current())]
         self.prompts = load_prompts(self.set_id)
         self.build_sel()
+        self.apply_mode()
         self.hint.configure(text=f"Промпты можно править в {prompts_file(self.set_id)}")
         self.update_cost()
 
@@ -407,9 +431,13 @@ class App:
         per_s = m["per_s"].get(self.res.get(), list(m["per_s"].values())[0])
         dur = self.safe_int(self.dur, 5)
         frames = 2 if self.last.get() else 1
-        n_vid = len(chars) * len(reacts)
+        n_vid = 0 if self.images_only() else len(chars) * len(reacts)
         img = len(chars) * self.safe_int(self.variants, 1) * IMAGE_MODELS[self.img_id()]["price"]
         vid = n_vid * (per_s * dur + m["per_image"] * frames)
+        if self.images_only():
+            n = len(chars) * self.safe_int(self.variants, 1)
+            self.cost_lbl.configure(text=f"Оценка: {n} картинок ≈ {img:.0f} ₽ (уже готовые файлы пропускаются)")
+            return
         self.cost_lbl.configure(
             text=f"Оценка: эталоны {img:.0f} ₽ + видео {n_vid} шт × {dur} с ≈ {vid:.0f} ₽ — итого ≈ {img + vid:.0f} ₽ "
             f"(уже готовые файлы пропускаются)"
@@ -447,9 +475,9 @@ class App:
 
     def set_busy(self, b: bool):
         self.busy = b
-        for w in (self.b_img, self.b_vid, self.b_all):
-            w.configure(state="disabled" if b else "normal")
+        self.b_img.configure(state="disabled" if b else "normal")
         self.b_stop.configure(state="normal" if b else "disabled")
+        self.apply_mode()
 
     def do_stop(self):
         self.stop.set()
@@ -471,6 +499,8 @@ class App:
         if not chars or (videos and not reacts):
             messagebox.showwarning("Выбор", "Отметьте персонажей и реакции.")
             return
+        if videos and self.images_only():
+            return
         self.save_cfg()
         self.stop.clear()
         self.set_busy(True)
@@ -486,6 +516,8 @@ class App:
             parallel=self.safe_int(self.parallel, 3),
             chars=chars,
             reacts=reacts,
+            set_id=self.set_id,
+            flat=self.images_only(),
             images=images,
             videos=videos,
         )
@@ -529,22 +561,28 @@ class App:
                 for cid in j["chars"]:
                     if self.stop.is_set():
                         break
-                    d = os.path.join(out, cid)
+                    item = pr["characters"][cid]
+                    name, person = item[0], item[1]
+                    aspect = item[2] if len(item) > 2 else "1:1"
+                    # аркады: все картинки набора в одной папке, файл — по id
+                    d = os.path.join(out, j["set_id"] if j["flat"] else cid)
                     os.makedirs(d, exist_ok=True)
-                    name, person = pr["characters"][cid]
-                    ref = os.path.join(d, "ref.png")
+                    stem = cid if j["flat"] else "ref"
+                    ref = os.path.join(d, f"{stem}.png")
                     if os.path.exists(ref):
-                        log(f"{name}: эталон уже есть — пропускаю")
+                        log(f"{name}: уже есть — пропускаю")
                         tick()
                         continue
                     n = j["variants"]
                     for i in range(n):
                         if self.stop.is_set():
                             break
-                        target = ref if n == 1 else os.path.join(d, f"ref_{i + 1}.png")
-                        log(f"{name}: картинка-эталон{'' if n == 1 else f' {i + 1}/{n}'} ({j['img_model']})…")
+                        target = ref if n == 1 else os.path.join(d, f"{stem}_{i + 1}.png")
+                        if os.path.exists(target):
+                            continue
+                        log(f"{name}: картинка{'' if n == 1 else f' {i + 1}/{n}'} ({j['img_model']}, {aspect})…")
                         try:
-                            img, cost = gen_image(j["key"], j["img_model"], pr["image"].format(person=person), seed=None)
+                            img, cost = gen_image(j["key"], j["img_model"], pr["image"].format(person=person), seed=None, aspect=aspect)
                             with open(target, "wb") as f:
                                 f.write(img)
                             self.spend(out, os.path.relpath(target, out), j["img_model"], cost)
@@ -554,13 +592,13 @@ class App:
                             if "HTTP 401" in str(e) or "HTTP 402" in str(e):
                                 raise
                     if n > 1 and not os.path.exists(ref):
-                        log(f"   {name}: выберите лучший вариант и переименуйте его в ref.png")
+                        log(f"   {name}: выберите лучший вариант и переименуйте его в {stem}.png")
                     tick()
             # 2. видео
             if j["videos"] and not self.stop.is_set():
                 jobs = []
                 for cid in j["chars"]:
-                    name, _ = pr["characters"][cid]
+                    name = pr["characters"][cid][0]
                     ref = os.path.join(out, cid, "ref.png")
                     if not os.path.exists(ref):
                         log(f"{name}: нет {cid}/ref.png — видео пропущены")
@@ -573,7 +611,7 @@ class App:
                 def one(cid: str, rid: str):
                     if self.stop.is_set():
                         return
-                    name, _ = pr["characters"][cid]
+                    name = pr["characters"][cid][0]
                     rname, action = pr["reactions"][rid]
                     target = os.path.join(out, cid, f"{cid}_{rid}.mp4")
                     if os.path.exists(target):

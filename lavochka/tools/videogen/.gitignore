@@ -5,3 +5,4 @@ videogen.json
 prompts.json
 videogen_out/
 __pycache__/
+prompts_*.json
