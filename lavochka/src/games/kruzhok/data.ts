@@ -99,3 +99,53 @@ export const THEMES: { id: string; name: string; group: 'Мат' | 'Тактик
 ];
 
 export const themeName = (id: string) => THEMES.find((t) => t.id === id)?.name ?? null;
+
+/** Классическая партия: ходы, оценки Stockfish после каждого полухода (за белых, мат — ±10000), пометки,
+ * остановки «А как сходил бы ты?» и тексты (собирает tools/kruzhok/games.ts). */
+export interface ClassicStop {
+  /** Номер полухода (0 — первый ход белых), который надо найти. */
+  ply: number;
+  /** Ходы UCI, которые засчитываются. */
+  good: string[];
+  /** На сколько сантипешек сыгранный ход сильнее следующего по силе. */
+  gap: number;
+}
+
+export interface ClassicGame {
+  id: string;
+  white: string;
+  black: string;
+  title: string;
+  place: string;
+  year: number;
+  event: string;
+  result: string;
+  eco: string;
+  uci: string[];
+  ev: number[];
+  marks: Record<string, string>;
+  stops: ClassicStop[];
+  /** Лучшая линия движка (русской записью) в позициях остановок и ошибок, по номеру полухода. */
+  best: Record<string, string>;
+  intro: string;
+  /** Комментарий к полуходу (по номеру). */
+  notes: Record<string, string>;
+  outro: string;
+}
+
+export type ClassicInfo = Pick<ClassicGame, 'id' | 'white' | 'black' | 'title' | 'place' | 'year' | 'result' | 'eco'> & { plies: number; stops: number };
+
+let classics: Promise<ClassicInfo[]> | null = null;
+
+export function loadClassics(): Promise<ClassicInfo[]> {
+  classics ??= fetch(base + 'games.json')
+    .then((r) => r.json())
+    .then((j: { g: ClassicInfo[] }) => j.g)
+    .catch((e) => {
+      classics = null;
+      throw e;
+    });
+  return classics;
+}
+
+export const loadClassic = (id: string): Promise<ClassicGame> => fetch(`${base}games/${id}.json`).then((r) => r.json());

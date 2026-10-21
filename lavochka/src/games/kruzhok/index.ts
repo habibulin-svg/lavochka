@@ -5,6 +5,7 @@ import type { ArcadeModule } from '../../core/arcade';
 import { stockfish } from '../chess/stockfish';
 import { mountAnalysis } from './analysis';
 import { mountJournal } from './journal';
+import { mountClassics } from './partii';
 import { mountTrainer } from './trainer';
 import './kruzhok.css';
 
@@ -12,11 +13,13 @@ const mod: ArcadeModule = {
   kind: 'arcade',
   id: 'kruzhok',
   title: 'Шахматный кружок',
-  about: 'Кружок при дворе: задачи с рейтингом и разрядами, разбор позиций движком, а дальше — учебник, классические партии и энциклопедия.',
+  about: 'Кружок при дворе: задачи с рейтингом и разрядами, классические партии с вопросом «А как сходил бы ты?», разбор позиций движком, а дальше — учебник и энциклопедия.',
   controls: `<p>Ход — нажмите на фигуру, потом на подсвеченное поле. В разборе ← → листают ходы.</p>
-    <p><b>Задачи</b> подбираются под ваш рейтинг; неверный ход можно вернуть — движок покажет, чем он плох. Рейтинг меняется только за первую попытку, подсказка — задача не в зачёт.</p>`,
+    <p><b>Задачи</b> подбираются под ваш рейтинг; неверный ход можно вернуть — движок покажет, чем он плох. Рейтинг меняется только за первую попытку, подсказка — задача не в зачёт.</p>
+    <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
   modes: [
     { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме' },
+    { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»' },
     { id: 'razbor', label: 'Разбор', hint: 'доска с движком' },
     { id: 'zhurnal', label: 'Журнал', hint: 'разряд, рейтинг, успехи' },
   ],
@@ -29,6 +32,8 @@ const mod: ArcadeModule = {
       sub =
         mode === 'razbor'
           ? mountAnalysis(root, panel)
+          : mode === 'partii'
+            ? mountClassics(root, panel)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();

@@ -1,6 +1,7 @@
 /* Шахматный кружок — журнал ученика: разряд и лесенка разрядов, рейтинг по дням, серия, задачи по темам. */
 import { esc, h } from '../../core/util';
 import { loadPuzzles, THEMES } from './data';
+import { loadAnswers, resetAnswers } from './partii';
 import { dayStreak, loadProgress, resetProgress } from './progress';
 import { RANKS, rankOf } from './rating';
 
@@ -9,6 +10,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
   const r = rankOf(p.rating);
   const solved = Object.keys(p.solved).length;
   const clean = Object.values(p.solved).filter((x) => x === 1).length;
+  const answers = Object.values(loadAnswers()).flatMap((a) => Object.values(a));
 
   const page = h(`<div class="kz-journal sheet">
     <h2>Журнал кружка</h2>
@@ -16,6 +18,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
       <div><small>Разряд</small><b>${esc(r.name)}</b>${r.provisional ? '<small>предварительно — решите ещё десяток задач</small>' : ''}</div>
       <div><small>Рейтинг в задачах</small><b>${p.rating.r}</b></div>
       <div><small>Решено</small><b>${solved}</b><small>${clean} с первого раза</small></div>
+      <div><small>Классические партии</small><b>${answers.filter((x) => x === 1).length} из ${answers.length}</b><small>ходов мастеров найдено</small></div>
       <div><small>Занимаетесь подряд</small><b>${dayStreak(p)} дн.</b><small>лучшая серия задач — ${p.best}</small></div>
     </div>
     <h3>Рейтинг</h3>
@@ -65,11 +68,12 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
   reset.onclick = () => {
     if (!sure) {
       sure = true;
-      reset.textContent = 'Точно? Рейтинг и решённые задачи сотрутся';
+      reset.textContent = 'Точно? Рейтинг, задачи и партии сотрутся';
       reset.classList.add('primary');
       return;
     }
     resetProgress();
+    resetAnswers();
     onReset();
   };
 

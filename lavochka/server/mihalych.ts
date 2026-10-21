@@ -27,7 +27,7 @@ export interface Ask {
   kind: Kind;
   level?: Level;
   /** Где спрашивают: задача кружка, разбор, партия с ботом. */
-  where?: 'puzzle' | 'analysis' | 'game' | 'lesson';
+  where?: 'puzzle' | 'analysis' | 'game' | 'lesson' | 'classic';
   fen?: string;
   /** Чей ход в позиции: 'белые' | 'чёрные'. */
   side?: string;
@@ -95,13 +95,13 @@ export function contextText(a: Ask): string {
   const words = (label: string, text: string) => (text ? `${label} (словами: ${text})` : label);
   const rows: [string, string][] = [
     ['Уровень ученика', LEVEL[a.level ?? 'novice'] ?? LEVEL.novice],
-    ['Где', { puzzle: 'решает задачу кружка', analysis: 'разбирает позицию на доске', game: 'играет партию с компьютером', lesson: 'проходит урок' }[a.where ?? 'analysis'] ?? ''],
+    ['Где', { puzzle: 'решает задачу кружка', analysis: 'разбирает позицию на доске', game: 'играет партию с компьютером', lesson: 'проходит урок', classic: 'разбирает классическую партию мастеров прошлого' }[a.where ?? 'analysis'] ?? ''],
     ['Позиция (FEN)', fen],
     ['Ход', cut(a.side, 10)],
     ['Последние ходы', cut(a.moves, 240)],
-    ['Дебют', cut(a.opening, 100)],
+    [a.where === 'classic' ? 'Партия' : 'Дебют', cut(a.opening, 100)],
     ['Тема', cut(a.theme, 120)],
-    ['Ход ученика', played && words(played, sanWords(at, played))],
+    [a.where === 'classic' && a.kind !== 'mistake' ? 'Ход мастера в партии' : 'Ход ученика', played && words(played, sanWords(at, played))],
     ['Оценка до хода ученика', cut(e.before, 40)],
     ['Оценка после хода ученика', cut(e.after, 40)],
     ['Лучший ход по движку', cut(e.best, 20) && words(cut(e.best, 20), sanWords(at, cut(e.best, 20)))],

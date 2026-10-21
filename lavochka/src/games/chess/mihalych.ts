@@ -22,7 +22,7 @@ export interface MihalychEngine {
 }
 
 export interface MihalychContext {
-  where: 'puzzle' | 'analysis' | 'game' | 'lesson';
+  where: 'puzzle' | 'analysis' | 'game' | 'lesson' | 'classic';
   level?: 'novice' | 'amateur' | 'strong';
   fen?: string;
   side?: string;
