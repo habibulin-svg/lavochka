@@ -139,18 +139,19 @@ def top(what: str) -> str:
 
 def notebook(what: str) -> str:
     return (
-        "Top-down photo of an open Soviet school notebook page with a light blue square grid (math notebook), slightly yellowed "
+        "Top-down photo, the paper fills the whole frame edge to edge (no table, no notebook cover visible): a single Soviet school notebook page with a light blue square grid (math notebook), slightly yellowed "
         f"paper, soft daylight. Drawn on it by a child with a blue ballpoint pen and colored pencils: {what} Leave the central "
         "area mostly empty grid for level markers. " + NO_TEXT
     )
 
 
 SHARIKI = {
-    "bg1": ("Фон: асфальт", top("old cracked grey asphalt of the yard with faded children's chalk drawings (hopscotch squares without numbers, sun, flowers), a few yellow leaves, a bottle cap, edges bordered by grass and a curb."), "4:3"),
+    "bg1": ("Фон: асфальт", top("old cracked grey asphalt of the yard with faded children's chalk doodles of a sun, flowers and a cat (pictures only, absolutely no writing, no digits, no hopscotch), a few yellow leaves, a bottle cap, edges bordered by grass and a curb."), "4:3"),
     "bg2": ("Фон: утоптанная земля", top("trampled bare earth of the yard with small pebbles, sparse patches of grass, plantain leaves and dandelions toward the edges, a puddle in one corner."), "4:3"),
     "bg3": ("Фон: осень", top("autumn yard ground covered with fallen maple leaves (yellow, orange, red) on dark wet asphalt, more leaves near the edges."), "4:3"),
-    "marbles": ("Шарики: 6 цветов", sheet(6, "glass marbles with a twisted colored swirl inside (cat's-eye marbles), colors from left to right: red, yellow, green, blue, purple, white", "magenta"), "16:9"),
-    "frog": ("Лягушка-пушка", TOY + "A green rubber squeaky toy frog seen strictly from above (top-down), sitting, its wide-open mouth pointing toward the top edge of the image, round eyes on top of the head, symmetric. " + key("magenta") + NO_TEXT, "1:1"),
+    "marbles1": ("Шарики: красный, жёлтый, синий", sheet(3, "glass marbles with a twisted swirl inside (cat's-eye marbles), each marble entirely one color: a pure red marble, a pure yellow marble, a pure blue marble", "green"), "16:9"),
+    "marbles2": ("Шарики: зелёный, фиолетовый, белый", sheet(3, "glass marbles with a twisted swirl inside (cat's-eye marbles), each marble entirely one color: a pure green marble, a pure purple marble, a pure milky-white marble", "magenta"), "16:9"),
+    "frog": ("Лягушка-пушка", TOY + "Bird's-eye view photographed from directly overhead: a green rubber squeaky toy frog lying flat on its belly, we see only its back and the top of its head, legs spread to the sides, the head points to the top edge of the image with the wide-open mouth at the very top, two round bulging eyes on top of the head, perfectly symmetric left-right, no perspective. " + key("magenta") + NO_TEXT, "1:1"),
     "hole": ("Яма: открытый люк", YARD + "Strict top-down view of an open round sewer manhole in asphalt: a deep dark round hole with a rusty rim, the heavy cast-iron lid lying shifted to one side, centered in the frame, ground around fades out. " + key("green") + NO_TEXT, "1:1"),
     "map": ("Карта уровней", notebook("a winding dotted path of a rolling marble through a yard, little apartment blocks, a sandbox, a frog, a manhole, swings."), "3:4"),
 }
@@ -170,7 +171,8 @@ EGGS = {
     "bg1": ("Фон: площадка", YARD + "Front view of a Soviet children's playground at dusk: an old concrete dinosaur sculpture painted green, metal climbing frames, tall ferns and overgrown grass in the foreground at the bottom, apartment block windows glowing in the distance. The upper and middle part is a calm, slightly blurred, low-contrast area (game pieces are drawn over it). No people. " + NO_TEXT, "2:3"),
     "bg2": ("Фон: заросли", YARD + "Front view of a wild overgrown corner of the yard behind garages: huge burdock leaves and ferns at the bottom, an old wooden fence, misty soft light; the upper and middle part is calm and low-contrast. No people. " + NO_TEXT, "2:3"),
     "bg3": ("Фон: вечер", YARD + "Front view of the yard late in the evening: dark blue sky, a single street lamp, silhouettes of trees and a concrete dinosaur on the playground at the bottom, warm windows; the upper and middle part is calm and low-contrast. No people. " + NO_TEXT, "2:3"),
-    "eggs": ("Яйца: 6 цветов", sheet(6, "dinosaur eggs standing upright, slightly oval, with darker irregular spots, colors from left to right: green, blue, red, yellow, purple, orange", "magenta"), "16:9"),
+    "eggs1": ("Яйца: зелёное, синее, красное", sheet(3, "dinosaur eggs standing upright, slightly oval, with darker irregular spots: a green egg, a blue egg, a red egg", "magenta"), "16:9"),
+    "eggs2": ("Яйца: жёлтое, фиолетовое, оранжевое", sheet(3, "dinosaur eggs standing upright, slightly oval, with darker irregular spots: a yellow egg, a purple egg, an orange egg", "green"), "16:9"),
     "dino": ("Динозаврик-пушка", TOY + "A small rubber toy dinosaur (green body, yellow belly), sitting upright, front view, head tilted up, mouth wide open as if ready to spit an egg upward, cute and slightly funny. " + key("magenta") + NO_TEXT, "1:1"),
     "ceiling": ("Каменный потолок", "Seamless horizontally tileable strip, front view of the bottom edge of a rough grey stone slab with moss and small hanging roots, the lower edge uneven. " + key("magenta") + NO_TEXT, "16:9"),
     "map": ("Карта уровней", notebook("a dotted path through a land of dinosaurs drawn in the yard: ferns, a volcano made from a sand pile, eggs in a nest, a toy dinosaur."), "3:4"),

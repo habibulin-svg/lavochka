@@ -643,8 +643,33 @@ class App:
         self.q.put(("done", None))
 
 
+def fix_clipboard(root: tk.Tk):
+    """Tk понимает Ctrl+V/C/X/A только в латинской раскладке — ловим по коду клавиши; плюс меню по правой кнопке."""
+    events = {86: "<<Paste>>", 67: "<<Copy>>", 88: "<<Cut>>", 65: "<<SelectAll>>"}
+
+    def on_key(e):
+        ev = events.get(e.keycode)
+        if ev and e.keysym.lower() not in ("v", "c", "x", "a"):
+            e.widget.event_generate(ev)
+            return "break"
+
+    def on_menu(e):
+        w = e.widget
+        m = tk.Menu(root, tearoff=0)
+        m.add_command(label="Вставить", command=lambda: w.event_generate("<<Paste>>"))
+        m.add_command(label="Копировать", command=lambda: w.event_generate("<<Copy>>"))
+        m.add_command(label="Вырезать", command=lambda: w.event_generate("<<Cut>>"))
+        m.add_command(label="Выделить всё", command=lambda: w.event_generate("<<SelectAll>>"))
+        m.tk_popup(e.x_root, e.y_root)
+
+    for cls in ("TEntry", "Entry", "Text"):
+        root.bind_class(cls, "<Control-KeyPress>", on_key, add="+")
+        root.bind_class(cls, "<Button-3>", on_menu, add="+")
+
+
 def main():
     root = tk.Tk()
+    fix_clipboard(root)
     try:
         ttk.Style().theme_use("vista")
     except tk.TclError:
