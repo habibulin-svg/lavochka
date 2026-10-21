@@ -20,14 +20,20 @@ interface Progress {
 const loadProgress = (): Progress => store.get<Progress>(KEY, { open: 1, best: {} });
 
 /** Картинки (tools/arcade-art): сокровища по виду фишки, спецфишки, клетки, песочница вокруг поля, карта уровней. */
-const GEM = ['gem0', 'gem1', 'gem2', 'gem3', 'gem4', 'gem5', 'gem6'] as const;
-const ART = new Sprites('klad', [...GEM, 'shovel', 'dynamite', 'nugget', 'stone', 'sand', 'dirt', 'bg', 'map'] as const);
+export const GEM = ['gem0', 'gem1', 'gem2', 'gem3', 'gem4', 'gem5', 'gem6'] as const;
+export const ART = new Sprites('klad', [...GEM, 'shovel', 'dynamite', 'nugget', 'stone', 'sand', 'dirt', 'bg', 'map'] as const);
 /** Цвет осколков по виду: монета, рубин, изумруд, сапфир, аметист, жемчуг, перстень. */
-const CHIP = ['#f0c020', '#e02030', '#20b050', '#2a60e8', '#9a40d8', '#f4f0ec', '#e8a820'];
+export const CHIP = ['#f0c020', '#e02030', '#20b050', '#2a60e8', '#9a40d8', '#f4f0ec', '#e8a820'];
+const chip = (kind: number) => CHIP[kind] ?? '#a0522d';
+
+/** Сетевая игра: поле приходит от стола, ход уходит туда же (карты уровней и итога нет). */
+export interface NetHooks {
+  onMove(ax: number, ay: number, bx: number, by: number): void;
+}
 
 type Pos = { x: number; y: number; a: number };
 
-class Game {
+export class Game {
   private el: HTMLElement;
   private board: Board | null = null;
   private cv!: HTMLCanvasElement;
@@ -52,11 +58,44 @@ class Game {
 
   constructor(
     root: HTMLElement,
-    private opts: ArcadeOpts
+    private opts: ArcadeOpts,
+    private net?: NetHooks
   ) {
     this.el = h('<div class="tr-dev"></div>');
     root.appendChild(this.el);
-    this.showMap();
+    if (!net) this.showMap();
+  }
+
+  /** Сетевая игра: начать на этом поле. */
+  netStart(b: Board) {
+    this.begin(b, 0);
+  }
+
+  /** Сетевая игра: поле пришло от стола (кирпичи, расхождение) — показать как есть. */
+  netReset(b: Board) {
+    this.board = b;
+    this.disp = [];
+    this.info.clear();
+    this.pos.clear();
+    this.target.clear();
+    this.fading.clear();
+    this.sel = null;
+    this.hintAt = null;
+    this.sync(true);
+  }
+
+  get netBusy() {
+    return this.busy;
+  }
+
+  get netBoard() {
+    return this.board;
+  }
+
+  /** Встряхнуть поле и выбить искры в клетках (кирпичи прилетели, камень). */
+  netFx(cells: [number, number][], color: string) {
+    for (const [x, y] of cells) this.fx.burst(x * C + C / 2, y * C + C / 2, color, 8, 180, 4);
+    if (cells.length) this.fx.shake(Math.min(8, 3 + cells.length));
   }
 
   // ---------------------------------------------------------------- карта уровней
@@ -84,12 +123,16 @@ class Game {
 
   private start(n: number) {
     Sound.ui();
-    const b = new Board(levelSpec(n));
+    this.begin(new Board(levelSpec(n)), n);
+  }
+
+  private begin(b: Board, n: number) {
     this.board = b;
+    const net = !!this.net;
     this.el.innerHTML = `<div class="tr-play">
-      <div class="tr-hud"></div>
+      ${net ? '' : '<div class="tr-hud"></div>'}
       <div class="tr-box" style="--bg:url('${ART.url('bg')}')"><canvas width="${N * C * 2}" height="${N * C * 2}"></canvas></div>
-      <div class="tr-btns"><button class="btn" data-b="map">← Уровни</button><button class="btn" data-b="hint">Подсказка</button><button class="btn" data-b="again">Заново</button></div>
+      <div class="tr-btns">${net ? '' : '<button class="btn" data-b="map">← Уровни</button>'}<button class="btn" data-b="hint">Подсказка</button>${net ? '' : '<button class="btn" data-b="again">Заново</button>'}</div>
     </div>`;
     this.cv = this.el.querySelector('canvas') as HTMLCanvasElement;
     this.g = this.cv.getContext('2d')!;
@@ -98,8 +141,9 @@ class Game {
     this.fx.gravity = 700;
     this.idle = 0;
     this.sandPat = this.dirtPat = null;
-    (this.el.querySelector('[data-b=map]') as HTMLButtonElement).onclick = () => this.showMap();
-    (this.el.querySelector('[data-b=again]') as HTMLButtonElement).onclick = () => this.start(n);
+    const btn = (k: string) => this.el.querySelector(`[data-b=${k}]`) as HTMLButtonElement | null;
+    if (btn('map')) btn('map')!.onclick = () => this.showMap();
+    if (btn('again')) btn('again')!.onclick = () => this.start(n);
     (this.el.querySelector('[data-b=hint]') as HTMLButtonElement).onclick = () => {
       this.hintAt = this.board?.hint() ?? null;
       setTimeout(() => (this.hintAt = null), 1500);
@@ -115,7 +159,7 @@ class Game {
       this.last = now;
       this.t += dt / 1000;
       this.fx.update(dt);
-      if (!this.busy && this.board && !this.board.won && !this.board.lost) {
+      if (!this.busy && this.board && !this.board.won && !this.board.lost && !this.net) {
         this.idle += dt / 1000;
         if (this.idle > 8 && !this.hintAt) this.hintAt = this.board.hint();
       }
@@ -142,7 +186,7 @@ class Game {
 
   private hud() {
     const b = this.board;
-    if (!b) return;
+    if (!b || this.net) return;
     const goal = b.spec.goal === 'dirt' ? `откопать клад: осталось земли <b>${b.dirtLeft}</b>` : `цель: <b>${b.spec.target}</b> очков`;
     (this.el.querySelector('.tr-hud') as HTMLElement).innerHTML = `<span>Уровень <b>${b.spec.n}</b></span><span>ходов <b>${b.moves}</b></span><span>очки <b>${b.score}</b></span><span>${goal}</span><span class="tr-stars">${'★'.repeat(b.stars())}${'☆'.repeat(3 - b.stars())}</span>`;
   }
@@ -153,7 +197,7 @@ class Game {
   }
 
   private pointer(e: PointerEvent, kind: 'down' | 'move') {
-    if (this.busy || !this.board) return;
+    if (this.busy || !this.board || this.frozen) return;
     const p = this.cellAt(e);
     if (kind === 'down') {
       Sound.unlock();
@@ -206,11 +250,17 @@ class Game {
       return;
     }
     [this.disp[ay][ax], this.disp[by][bx]] = [idB, idA];
+    this.net?.onMove(ax, ay, bx, by);
     for (let i = 0; i < steps.length; i++) await this.playStep(steps[i], i + 1);
-    this.sync(false);
+    // кирпичи стареют после своего хода (у стола — так же, как в комнате)
+    if (this.net && b === this.board) {
+      const st = b.ageBricks();
+      if (st.length) this.netFx(st, '#8a8178');
+    }
+    if (b === this.board) this.sync(false);
     this.hud();
     this.busy = false;
-    if (b.won || b.lost) await this.finish();
+    if ((b.won || b.lost) && !this.net) await this.finish();
   }
 
   private async playStep(st: Step, chain: number) {
@@ -225,7 +275,7 @@ class Game {
       const t = id == null ? null : this.info.get(id);
       const cx = x * C + C / 2;
       const cy = y * C + C / 2;
-      this.fx.burst(cx, cy, CHIP[t?.kind ?? 0], 6, 170, 4);
+      this.fx.burst(cx, cy, chip(t?.kind ?? 0), 6, 170, 4);
       if (t && t.special !== 'none') this.fx.ring(cx, cy, t.special === 'bomb' ? '#ff8040' : '#fff4b0', t.special === 'bomb' ? 90 : 60);
       if (id == null) continue;
       const p = this.pos.get(id);
@@ -387,6 +437,10 @@ class Game {
     const g = this.g;
     const cx = x + C / 2;
     const cy = y + C / 2;
+    if (t.special === 'brick') {
+      drawBrick(g, x, y, C, t.t ?? 0, alpha, this.t);
+      return;
+    }
     const im = ART.get(t.special === 'nugget' ? 'nugget' : GEM[t.kind % GEM.length]);
     if (im) {
       g.save();
@@ -552,10 +606,49 @@ class Game {
     g.restore();
   }
 
+  /** Сетевая игра: выбыл или партия кончилась — ходить нельзя. */
+  frozen = false;
+
   destroy() {
     cancelAnimationFrame(this.raf);
     this.el.remove();
   }
+}
+
+/** Кирпич: кладка с раствором, на нём — сколько своих ходов до камня (последний ход — красным, дрожит). */
+export function drawBrick(g: CanvasRenderingContext2D, x: number, y: number, C: number, t: number, alpha = 1, time = 0) {
+  g.save();
+  g.globalAlpha = alpha;
+  const j = t <= 1 ? Math.sin(time * 30) * 1.2 : 0;
+  g.translate(j, 0);
+  const pad = C * 0.06;
+  const w = C - pad * 2;
+  g.fillStyle = '#d8cfc0';
+  g.beginPath();
+  g.roundRect(x + pad, y + pad, w, w, C * 0.08);
+  g.fill();
+  const bh = w / 3;
+  for (let r = 0; r < 3; r++) {
+    const off = r % 2 ? 0 : w / 4;
+    for (let k = -1; k < 2; k++) {
+      const bx = x + pad + off + (k * w) / 2;
+      const x0 = Math.max(x + pad + 1, bx + 1);
+      const x1 = Math.min(x + C - pad - 1, bx + w / 2 - 1);
+      if (x1 <= x0) continue;
+      g.fillStyle = (r + k) % 2 ? '#b0452a' : '#a03a22';
+      g.fillRect(x0, y + pad + r * bh + 1, x1 - x0, bh - 2);
+    }
+  }
+  g.fillStyle = 'rgba(0,0,0,.5)';
+  g.beginPath();
+  g.arc(x + C / 2, y + C / 2, C * 0.2, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = t <= 1 ? '#ff6a50' : '#fff6c0';
+  g.font = `900 ${Math.round(C * 0.32)}px 'PT Sans', Arial, sans-serif`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(String(t), x + C / 2, y + C / 2 + 1);
+  g.restore();
 }
 
 const mod: ArcadeModule = {
@@ -567,6 +660,7 @@ const mod: ArcadeModule = {
     <p>Четыре в ряд — <b>лопата</b> (чистит строку или столбец), пять — <b>самородок</b> (поменяйте с любой — исчезнут все такие), уголок — <b>динамит</b> (3×3, разбивает камни).</p>
     <p>Каждый третий уровень — «откопать клад»: расчистить всю землю. В рекорды идёт сумма лучших очков по уровням.</p>`,
   modes: [{ id: 'levels', label: 'Сто уровней' }],
+  net: { label: 'Дуэль и битва', hint: 'по сети или с ботами: кирпичи сопернику, до десяти игроков', load: () => import('./net').then((m) => m.default) },
   mount(root, opts) {
     return new Game(root, opts);
   },

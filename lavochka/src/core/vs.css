@@ -50,3 +50,11 @@
 .zmv { --own: min(720px, calc((100svh - 190px) * 1.33)); }
 @media (max-width: 760px) { .zmv .egv-mainbox { width: min(100%, calc((100svh - 300px) * 0.75)); } }
 .egv-inc i.gray { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e0dcd4, #7a7670 55%, #3a3630); }
+/* «Клад»: поле квадратное — экран одиночной игры внутри */
+.trv { --own: min(560px, calc(100svh - 230px)); }
+.trv .tr-dev { width: 100%; }
+.trv-dim { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(20,10,0,.55); color: #fff6c0; font: 900 40px 'PT Sans', Arial, sans-serif; border-radius: 14px; pointer-events: none; }
+.trv-dim[hidden] { display: none; }
+.egv-inc i.brick { border-radius: 2px; height: 10px; background: linear-gradient(#b0452a, #8a3018); box-shadow: inset 0 -2px 0 #d8cfc0; }
+.egv-info .warn { color: #ff8a70; font-weight: 700; }
+@media (max-width: 760px) { .trv .egv-mainbox { width: min(100%, calc(100svh - 330px)); } }

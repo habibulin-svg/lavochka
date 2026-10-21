@@ -4,13 +4,19 @@
  * Уровень: цель — очки за число ходов или расчистить всю землю («откопать клад»); параметры — от номера уровня (генератор с семенем). */
 
 export const N = 8;
-export type Special = 'none' | 'row' | 'col' | 'bomb' | 'nugget';
+/** brick — кирпич-падлянка сетевой игры: не двигается и не складывается, через t своих ходов каменеет; ряд рядом его разбивает. */
+export type Special = 'none' | 'row' | 'col' | 'bomb' | 'nugget' | 'brick';
 
 export interface Tile {
   kind: number;
   special: Special;
   id: number;
+  /** Кирпич: сколько своих ходов до окаменения. */
+  t?: number;
 }
+
+/** Вид фишки-кирпича: ни с чем не складывается. */
+export const BRICK = -1;
 
 export interface Cell {
   tile: Tile | null;
@@ -52,13 +58,6 @@ export interface Step {
   points: number;
 }
 
-function rng(seed: number) {
-  let s = seed | 0 || 1;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return s / 2147483647;
-  };
-}
 
 export class Board {
   cells: Cell[][] = [];
@@ -66,13 +65,13 @@ export class Board {
   moves: number;
   dirtLeft = 0;
   private nextId = 1;
-  private rnd: () => number;
+  private seed: number;
 
   constructor(
     readonly spec: LevelSpec,
     seed = spec.n * 7919 + 13
   ) {
-    this.rnd = rng(seed);
+    this.seed = seed | 0 || 1;
     this.moves = spec.moves;
     for (let y = 0; y < N; y++) {
       const row: Cell[] = [];
@@ -110,6 +109,54 @@ export class Board {
         }
       if (this.hasMove()) break;
     }
+  }
+
+  private rnd() {
+    this.seed = (this.seed * 16807) % 2147483647;
+    return this.seed / 2147483647;
+  }
+
+  /** Поле из сохранённых данных (снимок комнаты): JSON теряет методы класса. */
+  static revive(o: object): Board {
+    return Object.setPrototypeOf(o, Board.prototype) as Board;
+  }
+
+  /** Падлянка: n фишек (сверху — в первую очередь) становятся кирпичами со счётчиком t. Возвращает клетки. */
+  addBricks(n: number, t = 3): [number, number][] {
+    const out: [number, number][] = [];
+    for (let k = 0; k < n; k++) {
+      const free: [number, number][] = [];
+      for (let y = 0; y < N && free.length < 6; y++)
+        for (let x = 0; x < N; x++) {
+          const tl = this.cells[y][x].tile;
+          if (tl && tl.special === 'none') free.push([x, y]);
+        }
+      if (!free.length) break;
+      const [x, y] = free[Math.floor(this.rnd() * free.length)];
+      const tl = this.newTile(BRICK, 'brick');
+      tl.t = t;
+      this.cells[y][x].tile = tl;
+      out.push([x, y]);
+    }
+    if (!this.hasMove()) this.shuffle();
+    return out;
+  }
+
+  /** Свой ход сделан: у кирпичей убывает счётчик, дошёл до нуля — камень навсегда. Возвращает окаменевшие клетки. */
+  ageBricks(): [number, number][] {
+    const out: [number, number][] = [];
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        const c = this.cells[y][x];
+        if (c.tile?.special !== 'brick') continue;
+        c.tile.t = (c.tile.t ?? 1) - 1;
+        if (c.tile.t > 0) continue;
+        c.tile = null;
+        c.stone = true;
+        out.push([x, y]);
+      }
+    if (out.length && !this.hasMove()) this.shuffle();
+    return out;
   }
 
   private newTile(kind: number, special: Special = 'none'): Tile {
@@ -163,13 +210,28 @@ export class Board {
     if (Math.abs(ax - bx) + Math.abs(ay - by) !== 1) return false;
     const a = this.cells[ay]?.[ax];
     const b = this.cells[by]?.[bx];
-    if (!a?.tile || !b?.tile) return false;
+    if (!a?.tile || !b?.tile || a.tile.special === 'brick' || b.tile.special === 'brick') return false;
     // две спецфишки или самородок — всегда можно
     if (a.tile.special === 'nugget' || b.tile.special === 'nugget') return true;
     [a.tile, b.tile] = [b.tile, a.tile];
-    const ok = this.matches().length > 0;
+    // ряд может появиться только через одну из двух переставленных клеток
+    const ok = this.lineAt(ax, ay) || this.lineAt(bx, by);
     [a.tile, b.tile] = [b.tile, a.tile];
     return ok;
+  }
+
+  /** Проходит ли через клетку ряд из трёх и больше. */
+  private lineAt(x: number, y: number): boolean {
+    const k = this.kindAt(x, y);
+    if (k < 0) return false;
+    let h = 1;
+    for (let i = x - 1; i >= 0 && this.kindAt(i, y) === k; i--) h++;
+    for (let i = x + 1; i < N && this.kindAt(i, y) === k; i++) h++;
+    if (h >= 3) return true;
+    let v = 1;
+    for (let i = y - 1; i >= 0 && this.kindAt(x, i) === k; i--) v++;
+    for (let i = y + 1; i < N && this.kindAt(x, i) === k; i++) v++;
+    return v >= 3;
   }
 
   hasMove(): boolean {
@@ -241,6 +303,12 @@ export class Board {
       else if (t.special === 'bomb') for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) queue.push([x + dx, y + dy]);
       else if (t.special === 'nugget') for (let yy = 0; yy < N; yy++) for (let xx = 0; xx < N; xx++) if (this.kindAt(xx, yy) === t.kind) queue.push([xx, yy]);
     }
+    // кирпичи вплотную к убранному — разбиваются
+    for (const key of [...kill]) {
+      const [x, y] = key.split(',').map(Number);
+      if (this.cells[y]?.[x]?.tile?.special === 'brick') continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (this.cells[y + dy]?.[x + dx]?.tile?.special === 'brick') kill.add(`${x + dx},${y + dy}`);
+    }
     const removed: [number, number][] = [];
     const added: Tile[] = [];
     let points = 0;
@@ -309,14 +377,14 @@ export class Board {
   }
 
   private shuffle() {
-    const tiles = this.cells.flat().filter((c) => c.tile).map((c) => c.tile!);
+    const tiles = this.cells.flat().filter((c) => c.tile && c.tile.special !== 'brick').map((c) => c.tile!);
     for (let tries = 0; tries < 30; tries++) {
       for (let i = tiles.length - 1; i > 0; i--) {
         const j = Math.floor(this.rnd() * (i + 1));
         [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
       }
       let k = 0;
-      for (const row of this.cells) for (const c of row) if (c.tile) c.tile = tiles[k++];
+      for (const row of this.cells) for (const c of row) if (c.tile && c.tile.special !== 'brick') c.tile = tiles[k++];
       if (!this.matches().length && this.hasMove()) return;
     }
   }
