@@ -150,3 +150,6 @@
 .kz-put-more a:hover { background: rgba(255, 240, 200, 0.9); }
 .kz-put-h { margin: 16px 0 0; }
 .kz-put-rep { display: block; text-align: center; text-decoration: none; }
+.kz-diploma { border: 0; background: none; font: 600 13px 'PT Sans', sans-serif; color: #8a5a10; cursor: pointer; text-decoration: underline dotted; }
+button.kz-put-daily { width: 100%; }
+p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }

@@ -13,7 +13,9 @@ import { mountGame } from './partii';
 import { buildPath, completeNode, loadPath, nextNode, partShare, syncPath, type PathNode } from './path';
 import { dayStreak, dueMistakes, loadProgress } from './progress';
 import { rankOf } from './rating';
-import { mountTrainer } from './trainer';
+import { DAILY, mountTrainer, todayKey } from './trainer';
+import { openDiploma } from './diploma';
+import { store } from '../../core/settings';
 
 const ICON: Record<PathNode['kind'], string> = { lesson: '📖', drill: '🧩', game: '♟', exam: '🎓' };
 
@@ -94,7 +96,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
           const sh = partShare(nodes, p.done, part);
           const dip = p.diplomas[part];
           return `<section class="kz-put-part${sh.done === sh.total ? ' full' : ''}">
-            <h3><span>${pi + 1}. ${esc(part)}</span>${dip ? `<b class="kz-diploma" title="Грамота от ${esc(dip)}">🏅 грамота</b>` : ''}<small>${sh.done}/${sh.total}</small></h3>
+            <h3><span>${pi + 1}. ${esc(part)}</span>${dip ? `<button class="kz-diploma" data-dip="${esc(part)}" title="Грамота от ${esc(dip)} — открыть и распечатать">🏅 грамота</button>` : ''}<small>${sh.done}/${sh.total}</small></h3>
             <i class="kz-put-bar" style="--w:${Math.round((sh.done / sh.total) * 100)}%"></i>
             <div class="kz-put-nodes">${nodes
               .filter((n) => n.part === part)
@@ -107,6 +109,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
         })
         .join('');
     page.querySelectorAll<HTMLButtonElement>('[data-id]').forEach((b) => (b.onclick = () => openNode(nodes.find((n) => n.id === b.dataset.id)!)));
+    page.querySelectorAll<HTMLButtonElement>('[data-dip]').forEach((b) => (b.onclick = () => openDiploma(b.dataset.dip!, p.diplomas[b.dataset.dip!], p.stars)));
     const top = page.querySelector<HTMLButtonElement>('.kz-put-go-top');
     if (top && next) top.onclick = () => openNode(next);
 
@@ -118,6 +121,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
         : 'Весь путь пройден — снимаю кепку! Теперь решай задачи на рейтинг и разбирай партии мастеров.';
     side.innerHTML = `
       <div class="kz-put-mh"><img src="${PORTRAIT}" alt="Михалыч" width="56" height="56"><p>${esc(hello)}</p></div>
+      ${store.get<string>(DAILY, '') === todayKey() ? '<p class="kz-put-daily done">🧩 Задача дня решена ✓ — завтра будет новая</p>' : '<button class="btn kz-put-daily">🧩 Задача дня: +5 ⭐</button>'}
       ${dueMistakes(prog).length ? `<a class="btn kz-put-rep" href="${sectionPath('zadachi')}">🔁 Работа над ошибками: ${dueMistakes(prog).length} задач ждут повтора</a>` : ''}
       ${next ? `<button class="btn primary kz-put-go">▶ ${next.id in p.done ? '' : 'Дальше: '}${esc(next.title)}</button>` : ''}
       <div class="kz-put-stats">
@@ -127,6 +131,15 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
         <div><b>${Object.keys(p.diplomas).length}</b><small>грамот</small></div>
       </div>
       <p class="hint"><small>Звёзды — за всё: урок +10, верный ход с первой попытки +2, задача +3, ход мастера +5, зачёт +30. Свободно решать задачи, листать партии и дебюты — во вкладках ниже.</small></p>`;
+    const daily = side.querySelector<HTMLButtonElement>('button.kz-put-daily');
+    if (daily)
+      daily.onclick = () => {
+        Sound.ui();
+        sub?.destroy();
+        page.hidden = true;
+        side.hidden = true;
+        sub = mountTrainer(stage, panel, { daily: true, back: { label: 'К пути', on: toPath } });
+      };
     const go = side.querySelector<HTMLButtonElement>('.kz-put-go');
     if (go && next) go.onclick = () => openNode(next);
   };

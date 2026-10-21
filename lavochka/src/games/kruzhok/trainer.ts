@@ -16,6 +16,10 @@ import { addStars } from './path';
 import { dueMistakes, loadProgress, recordPuzzle, type Progress } from './progress';
 import { rankOf } from './rating';
 
+/** Задача дня решена — дата (ГГГГ-ММ-ДД, Москва). */
+export const DAILY = 'kruzhok.daily';
+export const todayKey = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Moscow' });
+
 /** Открытая задача (id и рейтинг), пока её не решили и не провалили. */
 const OPEN = 'kruzhok.open';
 
@@ -23,6 +27,8 @@ export interface TrainerOpts {
   /** Закрепление урока: только эти темы (любая из них), не выше этого рейтинга, выбор темы скрыт. */
   drill?: { themes: string[]; max?: number; title: string };
   back?: { label: string; on: () => void };
+  /** Задача дня: одна задача под рейтинг, одна на всех в этот день (по дате). */
+  daily?: boolean;
   /** Занятие пути: решить count задач — тогда onDone (узел пройден, «Дальше по пути»). */
   goal?: { count: number; onDone: () => void; next?: { label: string; on: () => void } };
 }
@@ -87,7 +93,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     mh.typed({ ...where, hint: 'Спросить (задача не в зачёт)' });
   };
   const sel = q<HTMLSelectElement>('select');
-  if (o.drill) q('.kz-theme').hidden = true;
+  if (o.drill || o.daily) q('.kz-theme').hidden = true;
   if (o.back) q<HTMLButtonElement>('.kz-back').onclick = () => (Sound.ui(), o.back!.on());
   sel.value = theme;
   sel.onchange = () => {
@@ -129,6 +135,14 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   const pick = (): Puzzle | null => {
     repeat = false;
     const d = o.drill;
+    if (o.daily) {
+      // одна на день: из задач рядом с рейтингом — по дате (у всех с похожим рейтингом — одна и та же)
+      const near = all.filter((p) => Math.abs(p.rating - prog.rating.r) <= 150).sort((a, b) => (a.id < b.id ? -1 : 1));
+      const day = todayKey();
+      let hsh = 0;
+      for (const c of day) hsh = (hsh * 31 + c.charCodeAt(0)) >>> 0;
+      return near.length ? near[hsh % near.length] : null;
+    }
     if (!d) {
       const due = new Set(dueMistakes(prog));
       const again = due.size ? all.find((p) => due.has(p.id) && (!theme || p.themes.includes(theme))) : undefined;
@@ -151,7 +165,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
 
   const playerSide = () => (position(pz!.fen).turn === 0 ? 1 : 0) as 0 | 1;
 
-  const taskText = () => (repeat ? '🔁 <b>Работа над ошибками</b> — эта задача однажды не далась. ' : '') + taskBody();
+  const taskText = () => (o.daily ? '☀ <b>Задача дня.</b> ' : repeat ? '🔁 <b>Работа над ошибками</b> — эта задача однажды не далась. ' : '') + taskBody();
   const taskBody = () => {
     const side = playerSide() === 0 ? 'белых' : 'чёрных';
     const mate = pz!.themes.find((t) => /^mateIn\d$/.test(t));
@@ -353,6 +367,10 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
       if (r.first && r.delta) flash(r.delta);
       Sound.win();
       addStars(3, 'задача решена');
+      if (o.daily && store.get<string>(DAILY, '') !== todayKey()) {
+        store.set(DAILY, todayKey());
+        addStars(5, 'задача дня');
+      }
       say(`Решено! ${prog.streak > 2 ? `Серия — ${prog.streak} подряд.` : ''}`, 'ok');
     } else {
       addStars(1, 'задача решена со второй попытки');
@@ -382,6 +400,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     mh.actions([{ label: 'В чём идея?', say: 'Михалыч, в чём тут идея?', ...explain }]);
     mh.typed(explain);
     const reached = !!o.goal && solvedHere >= o.goal.count;
+    if (o.daily) return buttons([...(o.back ? [{ text: `← ${esc(o.back.label)}`, primary: true, on: o.back.on }] : []), { text: '🔍 Разобрать с движком', on: analyse }]);
     buttons([
       ...(reached && o.goal?.next ? [{ text: `▶ ${esc(o.goal.next.label)}`, primary: true, on: o.goal.next.on }] : []),
       { text: 'Следующая задача →', primary: !reached || !o.goal?.next, on: next },
