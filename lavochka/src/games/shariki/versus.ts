@@ -154,10 +154,12 @@ export function targetOf(s: VsState, me: VsSeat, rng?: Rng): number {
   const ok = (seat: number) => seat !== me.seat && !!seatOf(s, seat) && !seatOf(s, seat)!.out;
   if (ok(me.pick)) return me.pick;
   if (ok(me.lastBy) && s.t - me.lastAt < 20) return me.lastBy;
-  if (!ok(me.auto) || (rng && s.t >= me.autoAt)) {
+  // без rng (снимок для экрана) только читаем: иначе всем досталась бы одна цель — первое место за столом
+  if (!rng) return ok(me.auto) ? me.auto : -1;
+  if (!ok(me.auto) || s.t >= me.autoAt) {
     const list = alive(s).filter((x) => x.seat !== me.seat);
     if (!list.length) return -1;
-    me.auto = list[rng ? rng.int(list.length) : 0].seat;
+    me.auto = list[rng.int(list.length)].seat;
     me.autoAt = s.t + 10;
   }
   return me.auto;

@@ -12,6 +12,7 @@ import { Authority, type Snapshot, type StepResult } from './authority';
 import { AVATARS, PHOTO_RE } from './avatars';
 import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
+import { startTicker, type Ticker } from './ticker';
 import type { GameDef, Options, SeatKind, SeatSpec } from './types';
 
 const HEARTBEAT_MS = 2000;
@@ -122,7 +123,7 @@ export class Room {
   /** Хозяин потерял связь в лобби (обновил страницу): ждём его, прежде чем закрыть комнату. */
   private ownerTimer: ReturnType<typeof setTimeout> | undefined;
   // игра реального времени: таймер шагов, последний ввод мест, память ботов, события до ближайшего снимка
-  private rtTimer: ReturnType<typeof setInterval> | undefined;
+  private rtTimer: Ticker | undefined;
   private rtLast = 0;
   private rtTicks = 0;
   private rtInputs = new Map<number, unknown>();
@@ -650,11 +651,11 @@ export class Room {
     this.rtBotMem.clear();
     this.rtEvents = [];
     this.rtLast = now();
-    this.rtTimer = setInterval(() => this.rtLoop(), Math.max(4, Math.floor(rt.tickMs / 2)));
+    this.rtTimer = startTicker(() => this.rtLoop(), Math.max(4, Math.floor(rt.tickMs / 2)));
   }
 
   private rtStop() {
-    clearInterval(this.rtTimer);
+    this.rtTimer?.stop();
     this.rtTimer = undefined;
   }
 

@@ -1,6 +1,8 @@
 /* «Яйца динозавров»: уровни 1–100 строятся, яйцо прилипает к сетке, тройка лопается, оторвавшиеся падают, прицельная стрельба проходит лёгкий уровень. */
 import { describe, expect, it } from 'vitest';
 import { Bubbles, COLS } from '../src/games/eggs/logic';
+import { SeededRng } from '../src/core/rng';
+import { botInput, idleInput, newVersus, snapshot, step } from '../src/games/eggs/versus';
 
 describe('Яйца динозавров', () => {
   it('уровни строятся, заряды — из цветов на поле', () => {
@@ -52,5 +54,22 @@ describe('Яйца динозавров', () => {
     }
     expect(wins).toBeGreaterThan(0);
     expect(COLS).toBe(8);
+  });
+  it('битва: боты не бьют всем столом первое место', () => {
+    const rng = new SeededRng(3);
+    const brng = new SeededRng(4);
+    const s = newVersus([...Array(10).keys()], 'battle', 5, rng);
+    const mem: Record<string, any>[] = [...Array(10)].map(() => ({}));
+    const got = new Array(10).fill(0);
+    for (let i = 0; i < 20 * 40 && !s.over; i++) {
+      const v = snapshot(s);
+      const inp = [...Array(10).keys()].map((k) => (k === 0 ? idleInput() : botInput(v, k, 1, mem[k], brng)));
+      for (const e of step(s, inp, rng)) if (e.k === 'attack') got[e.to] += e.n;
+    }
+    const total = got.reduce((a, b) => a + b, 0);
+    expect(total).toBeGreaterThan(0);
+    // при случайных целях на место 0 приходится около десятой части, а не всё
+    expect(got[0]).toBeLessThan(total * 0.4);
+    expect(s.seats[0].out).toBe(false);
   });
 });
