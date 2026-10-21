@@ -1,8 +1,9 @@
 /* Проверка уроков учебника и сборка оглавления (src/games/kruzhok/lessons/index.json).
- * Запуск: npx tsx tools/kruzhok/lessons-check.ts [--sf путь к stockfish.exe]
+ * Запуск: npx tsx tools/kruzhok/lessons-check.ts [--sf путь к stockfish.exe] [--only 01,02,15] [--threads 1]
+ * (--only — проверять только эти уроки по номеру; оглавление пишется только при полной проверке)
  * Проверяет: поля урока, законность позиций (оба короля, у ждущей стороны нет шаха), ходы play/try/reply,
  * стрелки и подсветку; с --sf — что каждый засчитываемый ход в «Твой ход» не хуже лучшего хода движка на 0,5 пешки
- * (или тоже ставит мат). Ошибки — списком с файлом и шагом; код выхода 1, если они есть. */
+ * (при решающем перевесе — на четверть оценки; или тоже ставит мат). Ошибки — списком с файлом и шагом; код выхода 1, если они есть. */
 import { spawn } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,6 +17,10 @@ import { stepPositions } from '../../src/games/kruzhok/lesson-steps';
 const dir = 'src/games/kruzhok/lessons';
 const sfAt = process.argv.indexOf('--sf');
 const exe = sfAt > 0 ? process.argv[sfAt + 1] : null;
+const onlyAt = process.argv.indexOf('--only');
+const only = onlyAt > 0 ? process.argv[onlyAt + 1].split(',').map((x) => x.padStart(2, '0')) : null;
+const thAt = process.argv.indexOf('--threads');
+const threads = thAt > 0 ? Number(process.argv[thAt + 1]) : 4;
 const errors: string[] = [];
 const SQ = /^[a-h][1-8]$/;
 const KIND = /^(good|bad|hint|info)$/;
@@ -26,7 +31,7 @@ class Sf {
   private wait: ((l: string) => void) | null = null;
   constructor() {
     createInterface({ input: this.p.stdout }).on('line', (l) => this.wait?.(l));
-    this.p.stdin.write('uci\nsetoption name Threads value 4\n');
+    this.p.stdin.write(`uci\nsetoption name Threads value ${threads}\n`);
   }
   /** Оценка позиции за ходящего: сантипешки, мат — ±(100000 − ходов). */
   score(fen: string): Promise<number> {
@@ -63,7 +68,7 @@ function legal(fen: string, where: string): boolean {
 
 async function main() {
   const sf = exe ? new Sf() : null;
-  const files = readdirSync(dir).filter((f) => /^\d\d-[a-z0-9-]+\.json$/.test(f)).sort();
+  const files = readdirSync(dir).filter((f) => /^\d\d-[a-z0-9-]+\.json$/.test(f) && (!only || only.includes(f.slice(0, 2)))).sort();
   const index: Omit<Lesson, 'steps' | 'summary' | 'drill'>[] = [];
   const themeIds = new Set(THEMES.map((t) => t.id));
   for (const f of files) {
@@ -133,7 +138,8 @@ async function main() {
             if (!m) continue;
             const v = val.get(m.from + '-' + m.to + (m.promo ?? ''))!;
             const mate = best > 90000;
-            if (mate ? v < 90000 : v < best - 50) errors.push(`${w}: ход ${u} слабее лучшего (${v} против ${best}) в ${fen}`);
+            // при решающем перевесе движок «предпочитает» один из выигрывающих ходов — допуск шире (четверть оценки)
+            if (mate ? v < 90000 : v < best - Math.max(50, best >= 400 ? best / 4 : 0)) errors.push(`${w}: ход ${u} слабее лучшего (${v} против ${best}) в ${fen}`);
           }
         }
       }
@@ -141,7 +147,7 @@ async function main() {
     index.push({ id: l.id, n: l.n, part: l.part, title: l.title, goal: l.goal });
   }
   sf?.quit();
-  writeFileSync(join(dir, 'index.json'), JSON.stringify(index, null, 1) + '\n');
+  if (!only) writeFileSync(join(dir, 'index.json'), JSON.stringify(index, null, 1) + '\n');
   console.log(`уроков ${files.length}${errors.length ? `, ошибок ${errors.length}:` : ', ошибок нет'}`);
   for (const e of errors) console.log(' - ' + e);
   process.exit(errors.length ? 1 : 0);
