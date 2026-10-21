@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { Accounts } from '../server/accounts/accounts';
 import { MemoryMailer } from '../server/accounts/mail';
 import { MemoryAccountStore } from '../server/accounts/store';
-import { backOn, buildMessages, Mihalych, monthOf, PERSONA } from '../server/mihalych';
+import { backOn, buildMessages, contextText, Mihalych, monthOf, PERSONA } from '../server/mihalych';
+import { START_FEN as START } from '../src/games/chess/notation';
 
 let ipN = 0;
 function setup(cost = 0.02, conf: { key?: string | null; userRub?: number; siteRub?: number } = {}) {
@@ -95,6 +96,22 @@ describe('Совет Михалыча', () => {
     expect(msgs[1].content).not.toContain('Дебют');
     expect(msgs.map((x) => x.role)).toEqual(['system', 'user', 'assistant', 'user']);
     expect(msgs[3].content.length).toBe(500);
+  });
+
+  it('промпт: доска и ходы движка словами (модель не читает FEN сама)', () => {
+    const text = contextText({
+      kind: 'hint',
+      fen: 'r1bq3r/ppp3pp/2n3k1/3pP1N1/1b1p4/6Q1/PPPB1PPP/RN2K2R b KQ - 0 1',
+      engine: { best: 'С:d2+', line: '1... С:d2+ 2. Кр:d2 Ф:g5+' },
+    });
+    expect(text).toContain('Белые фигуры: король e1, ферзь g3, ладьи a1 и h1, слон d2, кони b1 и g5');
+    expect(text).toContain('белый слон d2 — нападает слон, защищает конь и король');
+    expect(text).toContain('С:d2+ (словами: чёрный слон с b4 берёт белого слона на d2, шах)');
+    expect(text).toContain('затем белый король с e1 берёт чёрного слона на d2');
+    // ход ученика — от позиции перед ним, ответ соперника — после
+    const r = contextText({ kind: 'review', fen: '8/8/8/8/8/8/8/8 w - - 0 1', engine: { at: START, played: 'e4', reply: '1... c5' } });
+    expect(r).toContain('e4 (словами: белая пешка с e2 идёт на e4)');
+    expect(r).toContain('c5 (словами: чёрная пешка с c7 идёт на c5)');
   });
 
   it('месяц и дата возвращения — по Москве', () => {

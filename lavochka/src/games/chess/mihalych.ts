@@ -9,6 +9,8 @@ import './mihalych.css';
 export type MihalychKind = 'mistake' | 'hint' | 'explain' | 'review' | 'chat';
 
 export interface MihalychEngine {
+  /** Позиция (FEN), к которой относятся played/best/line/solution, если это не текущая позиция разговора. */
+  at?: string;
   played?: string;
   before?: string;
   after?: string;

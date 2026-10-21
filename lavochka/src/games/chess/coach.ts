@@ -47,6 +47,7 @@ export function mountCoach(host: HTMLElement, mySeat: number, getState: () => St
     const after = await stockfish.analyse(fens[i + 1], { depth: 13, ms: 2500 });
     const bm = before.best ? fromUci(newPos(fens[i]), before.best) : null;
     return {
+      at: fens[i],
       played: st.moves[i].san,
       before: before.lines[0] ? evalText(before.lines[0]) + ' (за белых)' : undefined,
       after: after.lines[0] ? evalText(after.lines[0]) + ' (за белых)' : undefined,

@@ -8,6 +8,9 @@
  *   POST /api/mihalych {kind, level, fen, side, moves, engine, theme, opening, history, question} → {text, left} */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { hasRight } from '../src/core/rights';
+import { boardFacts, lineWords, sanWords } from '../src/games/chess/facts';
+import { parseMove, position, toFen } from '../src/games/chess/notation';
+import { play } from '../src/games/chess/engine';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 
@@ -31,7 +34,7 @@ export interface Ask {
   /** Последние ходы партии русской записью. */
   moves?: string;
   /** Данные движка — русской записью и словами. */
-  engine?: { played?: string; before?: string; after?: string; best?: string; line?: string; reply?: string; eval?: string; solution?: string };
+  engine?: { /** Позиция, к которой относятся played/best/line/solution (FEN), если это не fen запроса. */ at?: string; played?: string; before?: string; after?: string; best?: string; line?: string; reply?: string; eval?: string; solution?: string };
   theme?: string;
   opening?: string;
   history?: { role: 'user' | 'mihalych'; text: string }[];
@@ -48,6 +51,7 @@ export const PERSONA = `Ты — Михалыч, руководитель дво
 - объясняешь идею (что под боем, какая фигура без защиты, что открылось, куда целит соперник), а не сыплешь вариантами.
 
 Правила, которые нельзя нарушать:
+- Какая фигура на каком поле стоит, смотри ТОЛЬКО в списке «Что стоит на доске». FEN сам не разбирай. Прежде чем назвать фигуру и поле, сверься со списком: на d2 слон — значит слон, а не конь. Что под боем и что чем защищено — тоже только по этому списку. Ход движка в данных расписан словами — пересказывай по этим словам.
 - Ходы называй ТОЛЬКО те, что есть в данных от движка ниже. Не придумывай своих ходов и вариантов, не считай позицию сам. Нет хода в данных — говори об идее без конкретных ходов.
 - Ходы пиши русской записью, как в данных: Кр — король, Ф — ферзь, Л — ладья, С — слон, К — конь, пешка без буквы, «:» — взятие, 0-0 и 0-0-0 — рокировки.
 - Оценку движка переводи в слова: около нуля — поровну; 1 — как лишняя пешка; 3 — как лишняя лёгкая фигура; 5 и больше — выигрыш; «мат в N» — мат.
@@ -71,28 +75,47 @@ const TASK: Record<Kind, string> = {
 
 const cut = (v: unknown, n: number) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b-\u001f]/g, ' ').trim().slice(0, n) : '');
 
+/** Позиция после хода (для ответа соперника на ход ученика). */
+function afterMove(fen: string, move: string): string {
+  try {
+    const s = position(fen);
+    const m = parseMove(s, move);
+    return m ? toFen(play(s, m)) : '';
+  } catch {
+    return '';
+  }
+}
+
 /** Данные запроса — одним сообщением; длины обрезаны, лишнее отброшено. */
 export function contextText(a: Ask): string {
   const e = a.engine ?? {};
+  const fen = cut(a.fen, 100);
+  const at = cut(e.at, 100) || fen;
+  const played = cut(e.played, 20);
+  const words = (label: string, text: string) => (text ? `${label} (словами: ${text})` : label);
   const rows: [string, string][] = [
     ['Уровень ученика', LEVEL[a.level ?? 'novice'] ?? LEVEL.novice],
     ['Где', { puzzle: 'решает задачу кружка', analysis: 'разбирает позицию на доске', game: 'играет партию с компьютером', lesson: 'проходит урок' }[a.where ?? 'analysis'] ?? ''],
-    ['Позиция (FEN)', cut(a.fen, 100)],
+    ['Позиция (FEN)', fen],
     ['Ход', cut(a.side, 10)],
     ['Последние ходы', cut(a.moves, 240)],
     ['Дебют', cut(a.opening, 100)],
     ['Тема', cut(a.theme, 120)],
-    ['Ход ученика', cut(e.played, 20)],
+    ['Ход ученика', played && words(played, sanWords(at, played))],
     ['Оценка до хода ученика', cut(e.before, 40)],
     ['Оценка после хода ученика', cut(e.after, 40)],
-    ['Лучший ход по движку', cut(e.best, 20)],
-    ['Продолжение по движку', cut(e.line, 200)],
-    ['Ответ соперника на ход ученика (по движку)', cut(e.reply, 200)],
+    ['Лучший ход по движку', cut(e.best, 20) && words(cut(e.best, 20), sanWords(at, cut(e.best, 20)))],
+    ['Продолжение по движку', cut(e.line, 200) && words(cut(e.line, 200), lineWords(at, cut(e.line, 200)))],
+    ['Ответ соперника на ход ученика (по движку)', cut(e.reply, 200) && words(cut(e.reply, 200), played ? lineWords(afterMove(at, played), cut(e.reply, 200), 2) : '')],
     ['Оценка позиции', cut(e.eval, 40)],
-    ['Решение задачи', cut(e.solution, 240)],
+    ['Решение задачи', cut(e.solution, 240) && words(cut(e.solution, 240), lineWords(at, cut(e.solution, 240)))],
   ];
   const data = rows.filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`);
-  return `Данные от шахматного движка (им можно верить, других ходов не называй):\n${data.join('\n')}\n\nЗадание: ${TASK[a.kind] ?? TASK.chat}`;
+  const board = boardFacts(at);
+  const desk = board.length
+    ? `Что стоит на доске${at !== fen ? ' (позиция перед ходом ученика)' : ''} — проверено программой, фигуры и поля бери только отсюда:\n${board.map((t) => '- ' + t).join('\n')}\n\n`
+    : '';
+  return `${desk}Данные от шахматного движка (им можно верить, других ходов не называй):\n${data.join('\n')}\n\nЗадание: ${TASK[a.kind] ?? TASK.chat}`;
 }
 
 /** Сообщения для модели: характер, данные, последние реплики, вопрос. */
@@ -209,7 +232,7 @@ export class Mihalych {
       res = await this.http(API, {
         method: 'POST',
         headers: { authorization: `Bearer ${this.conf.key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: this.model, messages: buildMessages(b), max_tokens: 400, temperature: 0.7, usage: { include: true } }),
+        body: JSON.stringify({ model: this.model, messages: buildMessages(b), max_tokens: 400, temperature: 0.5, reasoning: { enabled: false }, usage: { include: true } }),
         signal: AbortSignal.timeout(40_000),
       });
     } catch (e) {
