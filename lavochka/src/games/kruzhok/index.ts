@@ -9,6 +9,7 @@ import { mountClassics } from './partii';
 import { mountLessons } from './lessons';
 import { mountEncyclopedia } from './encyclopedia';
 import { mountTrainer } from './trainer';
+import { MODES, parseKruzhok } from './pages';
 import './kruzhok.css';
 
 const mod: ArcadeModule = {
@@ -19,29 +20,27 @@ const mod: ArcadeModule = {
   controls: `<p>Ход — нажмите на фигуру, потом на подсвеченное поле. В разборе ← → листают ходы.</p>
     <p><b>Задачи</b> подбираются под ваш рейтинг; неверный ход можно вернуть — движок покажет, чем он плох. Рейтинг меняется только за первую попытку, подсказка — задача не в зачёт.</p>
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
-  modes: [
-    { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме' },
-    { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом' },
-    { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»' },
-    { id: 'razbor', label: 'Разбор', hint: 'доска с движком' },
-    { id: 'enciklopediya', label: 'Энциклопедия', hint: 'дебюты и термины' },
-    { id: 'zhurnal', label: 'Журнал', hint: 'разряд, рейтинг, успехи' },
-  ],
+  modes: MODES.map(({ id, label, hint }) => ({ id, label, hint })),
   noRecords: true,
   mount: (root, opts) => {
     const panel = opts.panel ?? document.createElement('div');
     root.classList.add('kz-stage');
     let sub: { destroy(): void };
+    // открыли адресом урока, партии или дебюта — сразу туда (только при первом показе раздела)
+    const at = typeof location !== 'undefined' ? parseKruzhok(location.pathname) : null;
+    let deep = at && at.mode === opts.mode ? at.sub : undefined;
     const open = (mode: string) => {
+      const start = deep;
+      deep = undefined;
       sub =
         mode === 'razbor'
           ? mountAnalysis(root, panel)
           : mode === 'partii'
-            ? mountClassics(root, panel)
+            ? mountClassics(root, panel, start)
             : mode === 'uchebnik'
-              ? mountLessons(root, panel)
+              ? mountLessons(root, panel, start)
               : mode === 'enciklopediya'
-                ? mountEncyclopedia(root, panel)
+                ? mountEncyclopedia(root, panel, start)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();

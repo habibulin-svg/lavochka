@@ -1,6 +1,7 @@
 /* Адреса сайта (без DOM: их читают роутер в браузере, пререндер при сборке, сервер и тесты).
  * Игры — в корне, транслитом: /nardy/, вариант со своим спросом — /nardy/dlinnye/, правила — /nardy/pravila/.
  * Сетевой стол — /stol/<код>, локальная партия — адрес игры с ?igra (оба noindex). */
+import { KRUZHOK_PATH, MODES as KZ_MODES, parseKruzhok } from '../games/kruzhok/pages';
 
 export const SITE_URL = 'https://lavochka-games.ru';
 export const SITE_NAME = 'Вечером на лавочке';
@@ -197,6 +198,8 @@ export interface ModePage {
 }
 
 export const MODE_PAGES: ModePage[] = [
+  // разделы шахматного кружка (вложенные страницы уроков, партий и дебютов — parseKruzhok)
+  ...KZ_MODES.filter((m) => m.path).map((m) => ({ path: `${KRUZHOK_PATH}/${m.path}`, game: 'kruzhok', mode: m.id })),
   { path: 'elektronika/nu-pogodi', game: 'elektronika', mode: 'nupogodi' },
   { path: 'elektronika/tayny-okeana', game: 'elektronika', mode: 'taynyoke' },
   { path: 'elektronika/vesyolyy-povar', game: 'elektronika', mode: 'vespovar' },
@@ -275,7 +278,10 @@ export function parseRoute(pathname: string, search = ''): Route {
   if (sec) return { kind: 'yard', cat: sec };
   const rules = p.endsWith('/pravila');
   const hit = BY_PATH.get(rules ? p.slice(0, -'/pravila'.length) : p);
-  if (!hit) return { kind: 'missing', path: p };
+  if (!hit) {
+    const kz = parseKruzhok(p);
+    return kz ? { kind: 'game', id: 'kruzhok', mode: kz.mode } : { kind: 'missing', path: p };
+  }
   if (rules && (hit.article || hit.mode)) return { kind: 'missing', path: p };
   return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined, article: hit.article, mode: hit.mode };
 }

@@ -16,6 +16,7 @@ import { cardMarkup } from '../src/site/card';
 import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
 import { clip, plain, type Faq, type GameSeo } from '../src/site/seo';
+import { kruzhokPages } from './kruzhok-seo';
 import { dataDir, KINDS, loadDocs, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -410,6 +411,7 @@ ${afaq.html}
 
 /** Игры серии у аркад: страница на каждую игру «Электроники ИМ» и каждый автомат. */
 function modePages(g: CatalogEntry, path: string, image?: string) {
+  if (g.id === 'kruzhok') return kruzhok(g, image);
   const list = MODE_PAGES.filter((m) => m.game === g.id);
   if (!list.length) return;
   const games: { id: string; title: string; about: string; note: string; board?: string }[] =
@@ -460,6 +462,29 @@ ${opt(mfaq.html)}<h2>${elk ? 'Другие игры «Электроники»' 
 <ul class="seo-links">${others.map((y) => `<li><a href="${href(y.id)}">${esc(y.title)}</a> — ${esc(y.note)}</li>`).join('')}</ul>
 <p><a href="${path}">${esc(g.title)} — все игры</a></p>
 ${similar(g)}`,
+    });
+  }
+}
+
+/** Шахматный кружок: разделы, уроки, партии, дебюты, термины (тексты — из данных кружка, tools/kruzhok-seo.ts). */
+function kruzhok(g: CatalogEntry, image?: string) {
+  for (const k of kruzhokPages(ROOT)) {
+    const t = editable(k.path, `Кружок: ${k.name}`, { title: k.title.length + SITE_NAME.length + 3 <= 70 ? `${k.title} | ${SITE_NAME}` : k.title, description: k.description, h1: k.h1, intro: k.intro, faq: [] });
+    const cr = crumbs([...trail(g), ...k.crumbs]);
+    const faq = faqBlock(t.faq);
+    pages.push({
+      path: k.path,
+      title: t.title,
+      description: t.description,
+      image,
+      priority: k.priority,
+      jsonld: [cr.ld, ...(faq.ld ? [faq.ld] : [])],
+      body: `${cr.html}
+<h1>${esc(t.h1)}</h1>
+${t.intro}
+${k.body}
+${faq.html}
+<p><a href="${gamePath(g.id)}">Шахматный кружок — все разделы</a></p>`,
     });
   }
 }

@@ -12,6 +12,7 @@ import { levelOf, mountMihalych } from '../chess/mihalych';
 import { loadLesson, loadLessonIndex, THEMES, type Lesson, type LessonInfo } from './data';
 import { loadProgress } from './progress';
 import { mountTrainer } from './trainer';
+import { leaveSub, lessonPath, setPath } from './pages';
 
 const KEY = 'kruzhok.lessons';
 export const loadDone = () => store.get<Record<string, 1>>(KEY, {});
@@ -31,17 +32,34 @@ const marksOf = (list: string[] = []): Mark[] =>
     return { sq: sq(s), kind: kindOf(k) };
   });
 
-export function mountLessons(stage: HTMLElement, panel: HTMLElement) {
+/** start — id урока, открытого адресом /shahmatnyj-kruzhok/uchebnik/<id>/. */
+export function mountLessons(stage: HTMLElement, panel: HTMLElement, start?: string) {
   let sub: { destroy(): void } | null = null;
+  let alive = true;
   const swap = (next: { destroy(): void }) => {
     sub?.destroy();
     sub = next;
   };
-  const list = () => swap(mountContents(stage, panel, (info, all) => open(info, all)));
-  const open = (info: LessonInfo, all: LessonInfo[]) => swap(mountLesson(stage, panel, info, all, list, open));
-  list();
+  const list = () => {
+    leaveSub('uchebnik');
+    swap(mountContents(stage, panel, (info, all) => open(info, all)));
+  };
+  const open = (info: LessonInfo, all: LessonInfo[]) => {
+    setPath(lessonPath(info.id));
+    swap(mountLesson(stage, panel, info, all, list, open));
+  };
+  if (start)
+    void loadLessonIndex()
+      .then((all) => {
+        if (!alive) return;
+        const info = all.find((l) => l.id === start);
+        info ? open(info, all) : list();
+      })
+      .catch(() => alive && list());
+  else list();
   return {
     destroy() {
+      alive = false;
       sub?.destroy();
     },
   };

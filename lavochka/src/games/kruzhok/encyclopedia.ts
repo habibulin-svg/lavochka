@@ -8,6 +8,7 @@ import { play, sq } from '../chess/engine';
 import { fromUci, lineRu, position, START_FEN } from '../chess/notation';
 import { mountAnalysis } from './analysis';
 import { loadOpenings, type Opening } from './data';
+import { familyPath, leaveSub, setPath, slug, termsPath } from './pages';
 
 export interface Term {
   term: string;
@@ -39,7 +40,8 @@ export function searchOpenings(all: (Opening & { line: string })[], query: strin
   return hits.sort((a, b) => a.uci.length - b.uci.length).slice(0, max);
 }
 
-export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement) {
+/** start — «terminy» или «debyuty/<семейство>» (открыли адресом). */
+export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?: string) {
   const host = h('<div class="kz-host"></div>');
   stage.appendChild(host);
   const board = new Board(host);
@@ -122,6 +124,7 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement) {
 
   /** Без запроса — семейства (сколько линий у каждого), по клику — варианты семейства. */
   const families = () => {
+    if (tab === 'op') leaveSub('enciklopediya');
     const by = new Map<string, (Opening & { line: string })[]>();
     for (const o of all) {
       const f = family(o);
@@ -134,6 +137,7 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement) {
     list.querySelectorAll<HTMLButtonElement>('[data-f]').forEach((b) => (b.onclick = () => (Sound.ui(), variants(b.dataset.f!, by.get(b.dataset.f!)!))));
   };
   const variants = (f: string, os: (Opening & { line: string })[]) => {
+    setPath(familyPath(f));
     const sorted = [...os].sort((a, b) => a.uci.length - b.uci.length || a.ru.localeCompare(b.ru, 'ru'));
     list.innerHTML = `<button class="btn small kz-en-up">← Все семейства</button><h4>${esc(f)}</h4>` + sorted.map(opRow).join('');
     q<HTMLButtonElement>('.kz-en-up').onclick = () => (Sound.ui(), families());
@@ -188,6 +192,8 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement) {
       (b.onclick = () => {
         Sound.ui();
         tab = b.dataset.tab as 'op' | 'terms';
+        if (tab === 'terms') setPath(termsPath());
+        else leaveSub('enciklopediya');
         el.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
         input.value = '';
         input.placeholder = tab === 'op' ? 'Название, код ЭКО или ходы: «сицилианская», «B90», «e4 c5 Кf3»' : 'Найти термин: «вилка», «пат», «оппозиция»';
@@ -205,7 +211,13 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement) {
       if (!alive) return;
       all = ops.map((o) => ({ ...o, line: lineRu(START_FEN, o.uci) }));
       terms = [...ts].sort((a, b) => a.term.localeCompare(b.term, 'ru'));
+      if (start === 'terminy') return (el.querySelector('[data-tab=terms]') as HTMLButtonElement).click();
       render();
+      const fam = start?.startsWith('debyuty/') ? start.slice(8) : null;
+      if (fam) {
+        const os = all.filter((o) => slug(family(o)) === fam);
+        if (os.length) variants(family(os[0]), os);
+      }
     })
     .catch(() => (list.innerHTML = '<p class="kz-err">Не удалось открыть справочник. Проверьте связь и откройте раздел ещё раз.</p>'));
 

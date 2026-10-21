@@ -12,6 +12,7 @@ import { levelOf, mountMihalych, type MihalychEngine } from '../chess/mihalych';
 import { evalText, stockfish } from '../chess/stockfish';
 import { loadClassic, loadClassics, type ClassicGame, type ClassicInfo } from './data';
 import { loadProgress } from './progress';
+import { classicPath, leaveSub, setPath } from './pages';
 
 /** Ответы на остановки: id партии → номер полухода → 1 нашёл, 0 нет. */
 type Answers = Record<string, Record<string, 0 | 1>>;
@@ -28,14 +29,22 @@ const saveAnswer = (id: string, ply: number, ok: 0 | 1) => {
 const evalOf = (v: number) => evalText(Math.abs(v) >= 9000 ? { cp: v, mate: Math.sign(v) * (10000 - Math.abs(v)) } : { cp: v, mate: null });
 const RESULT: Record<string, string> = { '1-0': 'Победа белых', '0-1': 'Победа чёрных', '1/2-1/2': 'Ничья' };
 
-export function mountClassics(stage: HTMLElement, panel: HTMLElement) {
+/** start — id партии, открытой адресом /shahmatnyj-kruzhok/partii/<id>/. */
+export function mountClassics(stage: HTMLElement, panel: HTMLElement, start?: string) {
   let sub: { destroy(): void } | null = null;
   const swap = (next: { destroy(): void }) => {
     sub?.destroy();
     sub = next;
   };
-  const list = () => swap(mountList(stage, panel, (id) => swap(mountGame(stage, panel, id, list))));
-  list();
+  const game = (id: string) => {
+    setPath(classicPath(id));
+    swap(mountGame(stage, panel, id, list));
+  };
+  const list = () => {
+    leaveSub('partii');
+    swap(mountList(stage, panel, game));
+  };
+  start ? game(start) : list();
   return {
     destroy() {
       sub?.destroy();

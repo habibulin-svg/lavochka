@@ -30,12 +30,18 @@ describe('адреса сайта', () => {
       expect(modePath(m.game, m.mode)).toBe(`/${m.path}/`);
     }
     expect(parseRoute('/poker/kombinacii/pravila/').kind).toBe('missing');
+    // вложенные страницы кружка — в свой раздел
+    expect(parseRoute('/shahmatnyj-kruzhok/uchebnik/vilka/')).toMatchObject({ kind: 'game', id: 'kruzhok', mode: 'uchebnik' });
+    expect(parseRoute('/shahmatnyj-kruzhok/debyuty/sicilianskaya-zashchita/')).toMatchObject({ kind: 'game', id: 'kruzhok', mode: 'enciklopediya' });
+    expect(parseRoute('/shahmatnyj-kruzhok/terminy/')).toMatchObject({ kind: 'game', id: 'kruzhok', mode: 'enciklopediya' });
+    expect(parseRoute('/shahmatnyj-kruzhok/uchebnik/vilka/eshche/').kind).toBe('missing');
   });
 
   it('у страницы игры серии — настоящая игра аркады', async () => {
     const lists: Record<string, { id: string }[]> = {
       elektronika: (await import('../src/games/elektronika/games')).GAMES,
       avtomaty: (await import('../src/games/avtomaty/games')).GAMES,
+      kruzhok: [...(await import('../src/games/kruzhok/pages')).MODES],
     };
     for (const m of MODE_PAGES) expect(lists[m.game]?.map((g) => g.id), m.path).toContain(m.mode);
   });
