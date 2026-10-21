@@ -53,12 +53,13 @@ const H = 940;
 const LCD = { x: 128.5, y: 72, w: 231, h: 330.5 };
 
 type Btn = { k: BrickKey | 'reset'; x: number; y: number; r: number };
-/** Окно низа корпуса: кусок картинки (x, y, w, h) и где он на компьютере (dx, dy) — в низе 488×138 при масштабе 0,5. */
-type Win = { x: number; y: number; w: number; h: number; dx: number; dy: number };
+/** Окно низа корпуса: кусок картинки (x, y, w, h) и где он на компьютере (dx, dy) — в низе 488×138 при масштабе 0,5;
+ *  f — растушёвка краёв окна на компьютере (слева, справа, сверху, снизу; в единицах картинки, по свободному пластику). */
+type Win = { x: number; y: number; w: number; h: number; dx: number; dy: number; f: [number, number, number, number] };
 const WINS: Win[] = [
-  { x: 22, y: 682, w: 226, h: 244, dx: 24, dy: 6 },
-  { x: 92, y: 598, w: 305, h: 66, dx: 168, dy: 52 },
-  { x: 318, y: 712, w: 146, h: 190, dx: 391, dy: 20 },
+  { x: 16, y: 668, w: 238, h: 258, dx: 21, dy: -1, f: [14, 18, 20, 7] },
+  { x: 92, y: 598, w: 305, h: 66, dx: 168, dy: 52, f: [22, 16, 5, 8] },
+  { x: 318, y: 690, w: 146, h: 212, dx: 391, dy: 9, f: [15, 16, 20, 15] },
 ];
 const BUTTONS: Btn[] = [
   { k: 'start', x: 135, y: 621, r: 15 },
@@ -119,7 +120,7 @@ function mount(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   wrap.innerHTML = `<div class="brk-unit" style="--case:url(${BASE}case.webp)"><div class="brk-top">${layer(
     `<div class="brk-lcd" style="left:${pct(LCD.x, W)};top:${pct(LCD.y, H)};width:${pct(LCD.w, W)};height:${pct(LCD.h, H)}"></div>`
   )}</div><div class="brk-bot">${WINS.map(
-    (r) => `<div class="brk-w" style="--sx:${r.x};--sy:${r.y};--sw:${r.w};--sh:${r.h};--dx:${r.dx};--dy:${r.dy}">${layer(LABELS + inWin(r))}</div>`
+    (r) => `<div class="brk-w" style="--sx:${r.x};--sy:${r.y};--sw:${r.w};--sh:${r.h};--dx:${r.dx};--dy:${r.dy};${r.f.map((v, j) => `--f${'lrtb'[j]}:${v}`).join(';')}">${layer(LABELS + inWin(r))}</div>`
   ).join('')}</div></div>`;
   root.appendChild(wrap);
   const lcd = wrap.querySelector('.brk-lcd') as HTMLElement;

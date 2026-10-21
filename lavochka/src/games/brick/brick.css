@@ -14,10 +14,14 @@
 @media (min-width: 900px) {
   .brk-w .brk-case { visibility: visible; }
   .brk-unit { --BH: 138; --k: 0.5; width: min(100cqw, 760px, 100cqh * 488 / (445 + var(--BH))); }
-  /* низ — тот же пластик: светлый переход от экрана, скосы по краям как у картинки, скруглённый низ */
-  .brk-bot { border-radius: 0 0 6% 6% / 0 0 20% 20%;
-    background: linear-gradient(90deg, #d2cfc7 0, #d2cfc7 0.7%, var(--brk-body) 1.6%, var(--brk-body) 97.8%, #d6d3cb 99%, #cbc8c0 100%),
-      var(--brk-body); box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.1); }
+  /* корпус уходит вниз, за край стола (снизу будто есть продолжение); низ — строка картинки на линии разреза,
+   * растянутая вниз (body.png): стык с верхом и края корпуса — пиксель в пиксель */
+  .brk { place-items: end center; }
+  .brk-bot { background: url(/brick/body.png) 0 0 / 100% 100%; }
+  /* окна растушёваны по краям — тон пластика под кнопками чуть другой, рамок не видно */
+  .brk-w { -webkit-mask: linear-gradient(90deg, transparent, #000 calc(var(--fl) / var(--sw) * 100%), #000 calc(100% - var(--fr) / var(--sw) * 100%), transparent),
+      linear-gradient(transparent, #000 calc(var(--ft) / var(--sh) * 100%), #000 calc(100% - var(--fb) / var(--sh) * 100%), transparent);
+    -webkit-mask-composite: source-in; mask-composite: intersect; }
   .brk-w { left: calc(var(--dx) / 488 * 100%); top: calc(var(--dy) / var(--BH) * 100%); width: calc(var(--sw) * var(--k) / 488 * 100%); height: calc(var(--sh) * var(--k) / var(--BH) * 100%); }
 }
 .brk-lcd { position: absolute; mix-blend-mode: multiply; pointer-events: none; }
