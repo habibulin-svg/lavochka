@@ -95,3 +95,5 @@
 .kz-moves .kz-mv.stop { text-decoration: underline dotted; }
 .kz-moves .kz-mv.found { color: #1f7a2a; font-weight: 700; }
 .kz-moves .kz-mv.found.on { color: #fff; }
+.kz-theme[hidden] { display: none; }
+.kz-drill { padding: 6px 9px; border-radius: 8px; background: rgba(60, 120, 60, 0.18); }

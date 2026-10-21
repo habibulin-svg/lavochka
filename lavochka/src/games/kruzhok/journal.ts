@@ -1,6 +1,7 @@
 /* Шахматный кружок — журнал ученика: разряд и лесенка разрядов, рейтинг по дням, серия, задачи по темам. */
 import { esc, h } from '../../core/util';
 import { loadPuzzles, THEMES } from './data';
+import { loadDone, resetLessons } from './lessons';
 import { loadAnswers, resetAnswers } from './partii';
 import { dayStreak, loadProgress, resetProgress } from './progress';
 import { RANKS, rankOf } from './rating';
@@ -18,6 +19,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
       <div><small>Разряд</small><b>${esc(r.name)}</b>${r.provisional ? '<small>предварительно — решите ещё десяток задач</small>' : ''}</div>
       <div><small>Рейтинг в задачах</small><b>${p.rating.r}</b></div>
       <div><small>Решено</small><b>${solved}</b><small>${clean} с первого раза</small></div>
+      <div><small>Учебник</small><b>${Object.keys(loadDone()).length}</b><small>уроков пройдено</small></div>
       <div><small>Классические партии</small><b>${answers.filter((x) => x === 1).length} из ${answers.length}</b><small>ходов мастеров найдено</small></div>
       <div><small>Занимаетесь подряд</small><b>${dayStreak(p)} дн.</b><small>лучшая серия задач — ${p.best}</small></div>
     </div>
@@ -74,6 +76,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
     }
     resetProgress();
     resetAnswers();
+    resetLessons();
     onReset();
   };
 

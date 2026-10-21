@@ -6,6 +6,7 @@ import { stockfish } from '../chess/stockfish';
 import { mountAnalysis } from './analysis';
 import { mountJournal } from './journal';
 import { mountClassics } from './partii';
+import { mountLessons } from './lessons';
 import { mountTrainer } from './trainer';
 import './kruzhok.css';
 
@@ -19,6 +20,7 @@ const mod: ArcadeModule = {
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
   modes: [
     { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме' },
+    { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом' },
     { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»' },
     { id: 'razbor', label: 'Разбор', hint: 'доска с движком' },
     { id: 'zhurnal', label: 'Журнал', hint: 'разряд, рейтинг, успехи' },
@@ -34,6 +36,8 @@ const mod: ArcadeModule = {
           ? mountAnalysis(root, panel)
           : mode === 'partii'
             ? mountClassics(root, panel)
+            : mode === 'uchebnik'
+              ? mountLessons(root, panel)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();

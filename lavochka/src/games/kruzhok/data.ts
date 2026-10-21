@@ -44,61 +44,7 @@ export function loadOpenings(): Promise<Opening[]> {
   return openings;
 }
 
-/** Темы задач по-русски, в порядке от простого к сложному; группа — для фильтра в решалке. */
-export const THEMES: { id: string; name: string; group: 'Мат' | 'Тактика' | 'Эндшпиль' | 'Стадия' }[] = [
-  { id: 'mateIn1', name: 'Мат в 1 ход', group: 'Мат' },
-  { id: 'mateIn2', name: 'Мат в 2 хода', group: 'Мат' },
-  { id: 'mateIn3', name: 'Мат в 3 хода', group: 'Мат' },
-  { id: 'mateIn4', name: 'Мат в 4 хода', group: 'Мат' },
-  { id: 'mateIn5', name: 'Мат в 5 и больше', group: 'Мат' },
-  { id: 'backRankMate', name: 'Мат на последней горизонтали', group: 'Мат' },
-  { id: 'smotheredMate', name: 'Спёртый мат', group: 'Мат' },
-  { id: 'anastasiaMate', name: 'Мат Анастасии', group: 'Мат' },
-  { id: 'arabianMate', name: 'Арабский мат', group: 'Мат' },
-  { id: 'bodenMate', name: 'Мат Бодена', group: 'Мат' },
-  { id: 'doubleBishopMate', name: 'Мат двумя слонами', group: 'Мат' },
-  { id: 'dovetailMate', name: 'Мат «ласточкин хвост»', group: 'Мат' },
-  { id: 'hookMate', name: 'Мат «крюк»', group: 'Мат' },
-  { id: 'killBoxMate', name: 'Мат «коробочка»', group: 'Мат' },
-  { id: 'vukovicMate', name: 'Мат Вуковича', group: 'Мат' },
-  { id: 'hangingPiece', name: 'Незащищённая фигура', group: 'Тактика' },
-  { id: 'fork', name: 'Вилка', group: 'Тактика' },
-  { id: 'pin', name: 'Связка', group: 'Тактика' },
-  { id: 'skewer', name: 'Линейный удар', group: 'Тактика' },
-  { id: 'discoveredAttack', name: 'Вскрытое нападение', group: 'Тактика' },
-  { id: 'doubleCheck', name: 'Двойной шах', group: 'Тактика' },
-  { id: 'trappedPiece', name: 'Ловля фигуры', group: 'Тактика' },
-  { id: 'capturingDefender', name: 'Уничтожение защитника', group: 'Тактика' },
-  { id: 'deflection', name: 'Отвлечение', group: 'Тактика' },
-  { id: 'attraction', name: 'Завлечение', group: 'Тактика' },
-  { id: 'sacrifice', name: 'Жертва', group: 'Тактика' },
-  { id: 'xRayAttack', name: 'Рентген', group: 'Тактика' },
-  { id: 'clearance', name: 'Освобождение поля или линии', group: 'Тактика' },
-  { id: 'interference', name: 'Перекрытие', group: 'Тактика' },
-  { id: 'intermezzo', name: 'Промежуточный ход', group: 'Тактика' },
-  { id: 'exposedKing', name: 'Открытый король', group: 'Тактика' },
-  { id: 'kingsideAttack', name: 'Атака на короткую рокировку', group: 'Тактика' },
-  { id: 'queensideAttack', name: 'Атака на длинную рокировку', group: 'Тактика' },
-  { id: 'quietMove', name: 'Тихий ход', group: 'Тактика' },
-  { id: 'defensiveMove', name: 'Защита', group: 'Тактика' },
-  { id: 'zugzwang', name: 'Цугцванг', group: 'Тактика' },
-  { id: 'promotion', name: 'Превращение пешки', group: 'Эндшпиль' },
-  { id: 'underPromotion', name: 'Слабое превращение', group: 'Эндшпиль' },
-  { id: 'advancedPawn', name: 'Проходная пешка', group: 'Эндшпиль' },
-  { id: 'pawnEndgame', name: 'Пешечный эндшпиль', group: 'Эндшпиль' },
-  { id: 'rookEndgame', name: 'Ладейный эндшпиль', group: 'Эндшпиль' },
-  { id: 'bishopEndgame', name: 'Слоновый эндшпиль', group: 'Эндшпиль' },
-  { id: 'knightEndgame', name: 'Коневой эндшпиль', group: 'Эндшпиль' },
-  { id: 'queenEndgame', name: 'Ферзевый эндшпиль', group: 'Эндшпиль' },
-  { id: 'queenRookEndgame', name: 'Ферзь и ладья', group: 'Эндшпиль' },
-  { id: 'enPassant', name: 'Взятие на проходе', group: 'Стадия' },
-  { id: 'castling', name: 'Рокировка', group: 'Стадия' },
-  { id: 'opening', name: 'Дебют', group: 'Стадия' },
-  { id: 'middlegame', name: 'Миттельшпиль', group: 'Стадия' },
-  { id: 'endgame', name: 'Эндшпиль', group: 'Стадия' },
-];
-
-export const themeName = (id: string) => THEMES.find((t) => t.id === id)?.name ?? null;
+export { THEMES, themeName } from './themes';
 
 /** Классическая партия: ходы, оценки Stockfish после каждого полухода (за белых, мат — ±10000), пометки,
  * остановки «А как сходил бы ты?» и тексты (собирает tools/kruzhok/games.ts). */
@@ -149,3 +95,43 @@ export function loadClassics(): Promise<ClassicInfo[]> {
 }
 
 export const loadClassic = (id: string): Promise<ClassicGame> => fetch(`${base}games/${id}.json`).then((r) => r.json());
+
+/** Урок учебника (формат — docs/analysis/kruzhok-uchebnik.md; проверка — tools/kruzhok/lessons-check.ts). */
+export interface LessonStep {
+  text: string;
+  fen?: string;
+  /** «e2e4» или «e2e4:good|bad|hint|info». */
+  arrows?: string[];
+  /** «e4» или «e4:good|bad|hint|info». */
+  marks?: string[];
+  /** Ходы UCI, которые доска показывает после текста. */
+  play?: string[];
+  /** Ученик делает ход сам. */
+  try?: { good: string[]; say?: string; hint?: string; reply?: string };
+}
+
+export interface Lesson {
+  id: string;
+  n: number;
+  part: string;
+  title: string;
+  goal: string;
+  steps: LessonStep[];
+  summary: string;
+  drill?: { themes: string[]; max?: number };
+}
+
+export type LessonInfo = Pick<Lesson, 'id' | 'n' | 'part' | 'title' | 'goal'> & { file: string };
+
+const lessonFiles = import.meta.glob<Lesson>('./lessons/[0-9]*.json', { import: 'default' });
+
+/** Оглавление учебника — по файлам уроков (номер и id — из имени «06-kon.json»). */
+export async function loadLessonIndex(): Promise<LessonInfo[]> {
+  const idx = (await import('./lessons/index.json')).default as Omit<LessonInfo, 'file'>[];
+  return idx.map((l) => ({ ...l, file: `./lessons/${String(l.n).padStart(2, '0')}-${l.id}.json` }));
+}
+
+export function loadLesson(file: string): Promise<Lesson> {
+  const f = lessonFiles[file];
+  return f ? f() : Promise.reject(new Error('нет урока ' + file));
+}

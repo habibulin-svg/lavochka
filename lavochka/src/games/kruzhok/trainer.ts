@@ -14,7 +14,13 @@ import { loadPuzzles, THEMES, themeName, type Puzzle } from './data';
 import { loadProgress, recordPuzzle, type Progress } from './progress';
 import { rankOf } from './rating';
 
-export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
+export interface TrainerOpts {
+  /** Закрепление урока: только эти темы (любая из них), не выше этого рейтинга, выбор темы скрыт. */
+  drill?: { themes: string[]; max?: number; title: string };
+  back?: { label: string; on: () => void };
+}
+
+export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerOpts = {}) {
   const host = h('<div class="kz-host"></div>');
   stage.appendChild(host);
   const board = new Board(host);
@@ -32,6 +38,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
   let sub: { destroy(): void } | null = null;
 
   const el = h(`<div class="kz-tr">
+    ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : ''}
+    ${o.drill ? `<div class="kz-drill">Закрепляем: <b>${esc(o.drill.title)}</b></div>` : ''}
     <div class="kz-rank"></div>
     <div class="kz-task"></div>
     <div class="kz-msg"></div>
@@ -64,6 +72,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
     mh.typed({ ...where, hint: 'Спросить (задача не в зачёт)' });
   };
   const sel = q<HTMLSelectElement>('select');
+  if (o.drill) q('.kz-theme').hidden = true;
+  if (o.back) q<HTMLButtonElement>('.kz-back').onclick = () => (Sound.ui(), o.back!.on());
   sel.value = theme;
   sel.onchange = () => {
     theme = sel.value;
@@ -100,7 +110,10 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
 
   /** Следующая задача: по теме или рядом с рейтингом, ещё не решённая. */
   const pick = (): Puzzle | null => {
-    const pool = all.filter((p) => !(p.id in prog.solved) && (!theme || p.themes.includes(theme)));
+    const d = o.drill;
+    const pool = d
+      ? all.filter((p) => !(p.id in prog.solved) && p.themes.some((t) => d.themes.includes(t)) && p.rating <= (d.max ?? 3000))
+      : all.filter((p) => !(p.id in prog.solved) && (!theme || p.themes.includes(theme)));
     if (!pool.length) return null;
     const r = prog.rating.r;
     for (const w of [100, 200, 350, 600, 3000]) {
@@ -129,7 +142,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
     el.hidden = false;
     pz = pick();
     if (!pz) {
-      say(theme ? 'По этой теме вы решили всё, что было. Выберите другую тему!' : 'Вы решили все задачи кружка. Михалыч снимает кепку!', 'ok');
+      say(theme || o.drill ? 'По этой теме вы решили всё, что было. Выберите другую тему!' : 'Вы решили все задачи кружка. Михалыч снимает кепку!', 'ok');
       buttons([]);
       return;
     }
