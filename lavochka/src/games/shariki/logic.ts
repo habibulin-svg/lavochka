@@ -7,6 +7,8 @@ export const FW = 800;
 export const FH = 600;
 export const D = 30;
 const SHOT_SPEED = 900;
+/** Серый шар (падлянка в сетевой игре): ни с чем не складывается, убирает его только тройка рядом. */
+export const GRAY = 9;
 
 export interface Ball {
   color: number;
@@ -36,6 +38,15 @@ export function levelSpec(n: number): LevelSpec {
     shape,
     frog: { x: FW / 2, y: FH / 2 + (shape === 1 ? 10 : 0) },
   };
+}
+
+const paths = new Map<string, { pts: [number, number][]; len: number }>();
+/** Путь уровня из кэша (в состоянии комнаты его не храним — он большой). */
+export function pathOf(sp: LevelSpec) {
+  const k = `${sp.shape}|${sp.turns}`;
+  let p = paths.get(k);
+  if (!p) paths.set(k, (p = makePath(sp)));
+  return p;
 }
 
 /** Путь — ломаная с равным шагом 2 точки, от старта к яме. */
@@ -85,7 +96,6 @@ export interface Shot {
 
 export class Zuma {
   readonly spec: LevelSpec;
-  readonly path: { pts: [number, number][]; len: number };
   balls: Ball[] = [];
   shots: Shot[] = [];
   spawned = 0;
@@ -103,14 +113,39 @@ export class Zuma {
   private seed: number;
   sounds: ('shot' | 'hit' | 'pop' | 'combo' | 'win' | 'lose')[] = [];
   /** Что лопнуло за кадр — для частиц и всплывающих очков (вид забирает и очищает). */
-  pops: { pts: [number, number][]; color: number; combo: number; points: number }[] = [];
+  pops: { pts: [number, number][]; color: number; combo: number; points: number; n: number }[] = [];
+  /** Сетевая игра: множитель скорости цепочки (темп, ускорение от падлянки). */
+  speedMul = 1;
 
-  constructor(n: number, seed = n * 104729 + 7) {
-    this.spec = levelSpec(n);
-    this.path = makePath(this.spec);
+  constructor(n: number, seed = n * 104729 + 7, spec: LevelSpec = levelSpec(n)) {
+    this.spec = spec;
     this.seed = seed;
     this.cur = this.rndColor();
     this.next = this.rndColor();
+  }
+
+  get path() {
+    return pathOf(this.spec);
+  }
+
+  /** Поле из сохранённых данных (снимок комнаты): JSON теряет методы класса. */
+  static revive(o: object): Zuma {
+    return Object.setPrototypeOf(o, Zuma.prototype) as Zuma;
+  }
+
+  /** Падлянка: n серых шаров встают в цепочку в случайные места (видимой её части) — всё, что впереди, сдвигается к яме. */
+  addGray(n: number) {
+    for (let k = 0; k < n; k++) {
+      const vis = this.balls.findIndex((b) => b.s >= 0);
+      if (vis < 0) break;
+      const idx = vis + 1 + Math.floor(this.rnd() * (this.balls.length - vis));
+      const prev = this.balls[idx - 1];
+      this.balls.splice(idx, 0, { color: GRAY, s: prev.s + D, id: this.nextId++ });
+      for (let i = idx + 1; i < this.balls.length; i++) {
+        if (this.balls[i].s < this.balls[i - 1].s + D) this.balls[i].s = this.balls[i - 1].s + D;
+        else break;
+      }
+    }
   }
 
   private rnd() {
@@ -120,7 +155,7 @@ export class Zuma {
 
   private rndColor(): number {
     // цвета — из тех, что есть в цепочке (в начале — любые)
-    const have = [...new Set(this.balls.map((b) => b.color))];
+    const have = [...new Set(this.balls.map((b) => b.color))].filter((c) => c !== GRAY);
     if (have.length && this.spawned >= Math.min(10, this.spec.total)) return have[Math.floor(this.rnd() * have.length)];
     return Math.floor(this.rnd() * this.spec.colors);
   }
@@ -171,7 +206,7 @@ export class Zuma {
       this.spawned++;
     }
     // толкание: задний кусок едет вперёд
-    const sp = this.spec.speed * (this.rush > 0 ? 6 : 1) * (this.danger() > 0.85 ? 0.6 : 1);
+    const sp = this.spec.speed * (this.rush > 0 ? 6 : 1) * (this.danger() > 0.85 ? 0.6 : 1) * (this.speedMul ?? 1);
     this.rush -= dt;
     const gs = this.groups();
     if (gs.length) {
@@ -182,7 +217,7 @@ export class Zuma {
     for (let k = 1; k < gs.length; k++) {
       const back = this.balls[gs[k - 1][1]];
       const front = this.balls[gs[k][0]];
-      if (back.color === front.color) for (let i = gs[k][0]; i <= gs[k][1]; i++) this.balls[i].s -= 300 * dt;
+      if (back.color === front.color && back.color !== GRAY) for (let i = gs[k][0]; i <= gs[k][1]; i++) this.balls[i].s -= 300 * dt;
     }
     // раздвинуть наложения
     for (let i = 1; i < this.balls.length; i++) {
@@ -257,6 +292,7 @@ export class Zuma {
   private checkAt(i: number, chain: boolean) {
     if (i < 0 || i >= this.balls.length) return;
     const c = this.balls[i].color;
+    if (c === GRAY) return;
     let a = i;
     let b = i;
     while (a > 0 && this.balls[a - 1].color === c && this.balls[a].s - this.balls[a - 1].s <= D + 0.5) a--;
@@ -266,8 +302,21 @@ export class Zuma {
     const n = b - a + 1;
     const points = n * 10 * this.combo + (this.combo > 1 ? 50 * this.combo : 0);
     this.score += points;
-    this.pops.push({ pts: this.balls.slice(a, b + 1).map((x) => this.at(x.s)), color: c, combo: this.combo, points });
+    const pts = this.balls.slice(a, b + 1).map((x) => this.at(x.s));
+    const s0 = this.balls[a].s;
+    const s1 = this.balls[b].s;
     this.balls.splice(a, n);
+    // серые шары вплотную к тройке — уходят вместе с ней (не больше двух с каждой стороны)
+    for (let k = 0; k < 2 && a < this.balls.length && this.balls[a].color === GRAY && this.balls[a].s - s1 <= D * (k + 1) + 0.5; k++) {
+      pts.push(this.at(this.balls[a].s));
+      this.balls.splice(a, 1);
+    }
+    for (let k = 0; k < 2 && a > 0 && this.balls[a - 1].color === GRAY && s0 - this.balls[a - 1].s <= D * (k + 1) + 0.5; k++) {
+      pts.push(this.at(this.balls[a - 1].s));
+      this.balls.splice(a - 1, 1);
+      a--;
+    }
+    this.pops.push({ pts, color: c, combo: this.combo, points, n });
     this.sounds.push(this.combo > 1 ? 'combo' : 'pop');
     // цвета во рту — только существующие
     const have = new Set(this.balls.map((x) => x.color));
@@ -276,7 +325,7 @@ export class Zuma {
   }
 
   /** Подсказка/бот: направление на шар цепочки того же цвета, что во рту (ближе к яме — важнее). */
-  bestAim(): number | null {
+  bestAim(minSame = 0): number | null {
     const { x, y } = this.spec.frog;
     let best: number | null = null;
     let bv = -Infinity;
@@ -301,6 +350,7 @@ export class Zuma {
       }
       if (blocked) continue;
       const same = (this.balls[i - 1]?.color === b.color ? 1 : 0) + (this.balls[i + 1]?.color === b.color ? 1 : 0);
+      if (same < minSame) continue;
       const v = same * 2 + b.s / this.path.len;
       if (v > bv) {
         bv = v;

@@ -3,32 +3,20 @@
  * и следующий на спине). Лопнули — осколки, очки, «Комбо ×N», тряска. Нажать — выстрел, правая кнопка или пробел — поменять шары.
  * На телефоне — нажать, куда стрелять; кнопка «⇄» — поменять. Прогресс — на этом устройстве. Картинки — tools/arcade-art. */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
-import { cover, Fx, Sprites } from '../../core/arcade-fx';
+import { Fx } from '../../core/arcade-fx';
 import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { h } from '../../core/util';
 import { D, FH, FW, Zuma } from './logic';
+import { ART, BALL, COLORS, drawAimDots, drawBall, drawDanger, drawFrog, drawGroove, drawHole, drawYard } from './paint';
 import './shariki.css';
 
 const KEY = 'shariki.progress';
-const COLORS = [
-  ['#e8302a', '#ff9a8a'],
-  ['#f0c020', '#fff0a0'],
-  ['#2a9a3a', '#9af0a0'],
-  ['#2a5ad8', '#a0c0ff'],
-  ['#9a3ac8', '#e0a8ff'],
-  ['#f4f4f0', '#ffffff'],
-];
-
 interface Progress {
   open: number;
   best: Record<number, number>;
 }
 const loadProgress = (): Progress => store.get<Progress>(KEY, { open: 1, best: {} });
-
-const BALL = ['ball0', 'ball1', 'ball2', 'ball3', 'ball4', 'ball5'] as const;
-const BG = ['bg1', 'bg2', 'bg3'] as const;
-const ART = new Sprites('shariki', [...BG, ...BALL, 'frog', 'hole', 'map'] as const);
 
 class Game {
   private el: HTMLElement;
@@ -211,25 +199,7 @@ class Game {
 
   /** Шарик: картинка (крутится — rot), пока не загрузилась — градиент. */
   private ball(x: number, y: number, color: number, r = D / 2, rot = 0) {
-    const g = this.g;
-    const im = ART.get(BALL[color % BALL.length]);
-    if (im) {
-      g.save();
-      g.translate(x, y);
-      g.rotate(rot);
-      g.drawImage(im, -r * 1.1, -r * 1.1, r * 2.2, r * 2.2);
-      g.restore();
-      return;
-    }
-    const [c, l] = COLORS[color % COLORS.length];
-    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-    gr.addColorStop(0, l);
-    gr.addColorStop(0.5, c);
-    gr.addColorStop(1, 'rgba(0,0,0,0.6)');
-    g.fillStyle = gr;
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    g.fill();
+    drawBall(this.g, x, y, color, r, rot);
   }
 
   private draw() {
@@ -239,60 +209,12 @@ class Game {
     const [ox, oy] = this.fx.offset();
     g.translate(ox, oy);
     // двор: у каждого третьего уровня свой фон
-    const bgi = ART.get(BG[(z.spec.n - 1) % 3]);
-    if (bgi) cover(g, bgi, -8, -8, FW + 16, FH + 16);
-    else {
-      const bg = g.createRadialGradient(FW / 2, FH / 2, 50, FW / 2, FH / 2, FW * 0.7);
-      bg.addColorStop(0, '#b8a070');
-      bg.addColorStop(1, '#7a6a3a');
-      g.fillStyle = bg;
-      g.fillRect(0, 0, FW, FH);
-    }
-    // канавка: светлый край сверху-слева, тёмная выемка, тень внутри
+    drawYard(g, z.spec.n - 1);
     const pts = z.path.pts;
-    g.lineCap = 'round';
-    g.lineJoin = 'round';
-    g.beginPath();
-    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-    g.save();
-    g.translate(-1.5, -1.5);
-    g.strokeStyle = 'rgba(255,240,210,0.35)';
-    g.lineWidth = D + 12;
-    g.stroke();
-    g.restore();
-    g.strokeStyle = 'rgba(35,25,15,0.7)';
-    g.lineWidth = D + 10;
-    g.stroke();
-    g.strokeStyle = 'rgba(70,55,35,0.85)';
-    g.lineWidth = D + 2;
-    g.stroke();
-    g.save();
-    g.translate(2, 3);
-    g.strokeStyle = 'rgba(0,0,0,0.25)';
-    g.lineWidth = D - 6;
-    g.stroke();
-    g.restore();
+    drawGroove(g, pts);
     // люк в конце; голова цепочки близко — вокруг люка красное свечение
-    const [hx, hy] = pts[pts.length - 1];
     const pulse = z.danger() > 0.8 ? 0.5 + 0.5 * Math.sin(this.t * 12) : 0;
-    if (pulse) {
-      const glow = g.createRadialGradient(hx, hy, 10, hx, hy, 70);
-      glow.addColorStop(0, `rgba(255,40,20,${0.55 * pulse})`);
-      glow.addColorStop(1, 'rgba(255,40,20,0)');
-      g.fillStyle = glow;
-      g.fillRect(hx - 70, hy - 70, 140, 140);
-    }
-    const hole = ART.get('hole');
-    if (hole) g.drawImage(hole, hx - 62, hy - 62, 124, 124);
-    else {
-      const hg = g.createRadialGradient(hx, hy, 4, hx, hy, 34);
-      hg.addColorStop(0, '#000');
-      hg.addColorStop(1, 'rgba(30,20,10,0.5)');
-      g.fillStyle = hg;
-      g.beginPath();
-      g.arc(hx, hy, 34, 0, Math.PI * 2);
-      g.fill();
-    }
+    drawHole(g, pts, pulse);
     // цепочка: тени, потом шарики (поворот по пройденному пути — катятся)
     g.fillStyle = 'rgba(0,0,0,0.28)';
     for (const b of z.balls) {
@@ -311,51 +233,11 @@ class Game {
     for (const s of z.shots) this.ball(s.x, s.y, s.color, D / 2, this.t * 10);
     // прицел: точки цвета шара во рту
     const { x, y } = z.spec.frog;
-    const ca = Math.cos(z.aim);
-    const sa = Math.sin(z.aim);
-    g.fillStyle = COLORS[z.cur % COLORS.length][1];
-    for (let d = 70; d < 300; d += 18) {
-      g.globalAlpha = 0.6 * (1 - (d - 70) / 230);
-      g.beginPath();
-      g.arc(x + ca * d, y + sa * d, 2.6, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.globalAlpha = 1;
-    // лягушка (на картинке рот смотрит вверх), после выстрела — отдача назад
-    const fx = x - ca * this.kick * 7;
-    const fy = y - sa * this.kick * 7;
-    g.save();
-    g.translate(fx, fy);
-    g.rotate(z.aim + Math.PI / 2);
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.beginPath();
-    g.ellipse(5, 10, 50, 56, 0, 0, Math.PI * 2);
-    g.fill();
-    const frog = ART.get('frog');
-    if (frog) g.drawImage(frog, -76, -76, 152, 152);
-    else {
-      const body = g.createRadialGradient(-10, -10, 5, 0, 0, 46);
-      body.addColorStop(0, '#8ad860');
-      body.addColorStop(1, '#2a7a1a');
-      g.fillStyle = body;
-      g.beginPath();
-      g.ellipse(0, 0, 38, 44, 0, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.restore();
-    // шар во рту и следующий на спине
-    this.ball(fx + ca * 54, fy + sa * 54, z.cur);
-    this.ball(fx - ca * 30, fy - sa * 30, z.next, 9);
+    drawAimDots(g, x, y, z.aim, z.cur);
+    drawFrog(g, x, y, z.aim, this.kick, z.cur, z.next);
     this.fx.draw(g);
     g.restore();
-    // опасно: края поля краснеют
-    if (pulse) {
-      const v = g.createRadialGradient(FW / 2, FH / 2, FH * 0.45, FW / 2, FH / 2, FW * 0.65);
-      v.addColorStop(0, 'rgba(200,0,0,0)');
-      v.addColorStop(1, `rgba(200,0,0,${0.35 * pulse})`);
-      g.fillStyle = v;
-      g.fillRect(0, 0, FW, FH);
-    }
+    drawDanger(g, pulse);
   }
 
   destroy() {
@@ -374,6 +256,7 @@ const mod: ArcadeModule = {
   controls: `<p>Мышью — целиться, нажать — выстрел; правая кнопка или <kbd>Пробел</kbd> — поменять шар во рту и на спине.</p>
     <p>Разрыв в цепочке стягивается, если по краям одного цвета, — так получаются комбо. Докатился до ямы хоть один — уровень проигран.</p>`,
   modes: [{ id: 'levels', label: 'Сто уровней' }],
+  net: { label: 'Дуэль и битва', hint: 'по сети или с ботами: серые шары сопернику, до десяти игроков', load: () => import('./net').then((m) => m.default) },
   mount(root, opts) {
     return new Game(root, opts);
   },

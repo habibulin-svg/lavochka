@@ -1,20 +1,10 @@
 /* «Яйца динозавров» по сети: дуэль один на один и «битва» до десяти. Игра реального времени — комната ведёт поля всех,
  * игроки шлют прицел и выстрелы. Без DOM. Одиночные сто уровней — аркада (index.ts), этот def — только для сетевого стола. */
 import type { GameDef, SeatSpec } from '../../core/types';
+import { VS_SEATS } from '../../core/vs';
 import { botInput, cleanInput, idleInput, newVersus, snapshot, step, TICK_MS, type VsEvent, type VsIn, type VsMode, type VsState, type VsView } from './versus';
 
-export const SEATS = [
-  { name: 'Вовка', color: '#c0281e', light: '#e86a5a', dark: '#7a140e' },
-  { name: 'Ленка', color: '#23408f', light: '#5a78c8', dark: '#122450' },
-  { name: 'Серёга', color: '#2a7a3a', light: '#5aaa6a', dark: '#164a20' },
-  { name: 'Танька', color: '#8a5a10', light: '#c8964a', dark: '#4a3008' },
-  { name: 'Димка', color: '#7a2a8a', light: '#b06ac0', dark: '#40104a' },
-  { name: 'Олька', color: '#c05a10', light: '#e8945a', dark: '#6a3008' },
-  { name: 'Лёха', color: '#1a7a7a', light: '#5ab0b0', dark: '#0a4040' },
-  { name: 'Маринка', color: '#b0306a', light: '#e070a0', dark: '#601838' },
-  { name: 'Костик', color: '#4a5a1a', light: '#8a9a5a', dark: '#2a3008' },
-  { name: 'Светка', color: '#3a3a9a', light: '#7a7ad0', dark: '#1a1a50' },
-];
+export const SEATS = VS_SEATS;
 
 const placeText = (p: number) => `${p}-е место`;
 

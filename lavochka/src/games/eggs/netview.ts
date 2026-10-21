@@ -3,6 +3,7 @@
 import { Fx } from '../../core/arcade-fx';
 import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
+import '../../core/vs.css';
 import type { GameView, ViewCtx } from '../../core/view';
 import { Bubbles, COLS, DEAD_ROW, FIELD_W, ROWS, SHOOTER_Y } from './logic';
 import { along, drawAim, drawBack, drawCeiling, drawDino, drawEgg, drawLine, EGG, FIELD_H, pathLen } from './paint';
