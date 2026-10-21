@@ -21,7 +21,7 @@ export function touch() {
   store.set(AT, Date.now());
   if (!currentUser()) return;
   clearTimeout(timer);
-  timer = window.setTimeout(upload, 4000);
+  timer = setTimeout(upload, 4000) as unknown as number;
 }
 
 /** Сверить с базой при входе в кружок: там новее — взять себе (true — журнал сменился), здесь новее — отправить. */
@@ -44,10 +44,11 @@ export async function syncKruzhok(): Promise<boolean> {
   return false;
 }
 
-addEventListener('pagehide', () => {
-  if (timer) {
-    clearTimeout(timer);
-    timer = 0;
-    upload();
-  }
-});
+if (typeof addEventListener !== 'undefined')
+  addEventListener('pagehide', () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = 0;
+      upload();
+    }
+  });

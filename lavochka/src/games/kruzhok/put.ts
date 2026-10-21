@@ -11,7 +11,7 @@ import { sectionPath } from './pages';
 import { mountLesson } from './lessons';
 import { mountGame } from './partii';
 import { buildPath, completeNode, loadPath, nextNode, partShare, syncPath, type PathNode } from './path';
-import { dayStreak, loadProgress } from './progress';
+import { dayStreak, dueMistakes, loadProgress } from './progress';
 import { rankOf } from './rating';
 import { mountTrainer } from './trainer';
 
@@ -118,6 +118,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
         : 'Весь путь пройден — снимаю кепку! Теперь решай задачи на рейтинг и разбирай партии мастеров.';
     side.innerHTML = `
       <div class="kz-put-mh"><img src="${PORTRAIT}" alt="Михалыч" width="56" height="56"><p>${esc(hello)}</p></div>
+      ${dueMistakes(prog).length ? `<a class="btn kz-put-rep" href="${sectionPath('zadachi')}">🔁 Работа над ошибками: ${dueMistakes(prog).length} задач ждут повтора</a>` : ''}
       ${next ? `<button class="btn primary kz-put-go">▶ ${next.id in p.done ? '' : 'Дальше: '}${esc(next.title)}</button>` : ''}
       <div class="kz-put-stats">
         <div><b>⭐ ${p.stars}</b><small>звёзд кружка</small></div>

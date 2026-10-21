@@ -149,3 +149,4 @@
 .kz-put-more a { color: inherit; text-decoration: none; padding: 3px 4px; border-radius: 6px; }
 .kz-put-more a:hover { background: rgba(255, 240, 200, 0.9); }
 .kz-put-h { margin: 16px 0 0; }
+.kz-put-rep { display: block; text-align: center; text-decoration: none; }

@@ -13,7 +13,7 @@ import { mountAnalysis } from './analysis';
 import { loadLessonIndex, loadPuzzles, THEME_LESSON, THEMES, themeName, type Puzzle } from './data';
 import { lessonPath } from './pages';
 import { addStars } from './path';
-import { loadProgress, recordPuzzle, type Progress } from './progress';
+import { dueMistakes, loadProgress, recordPuzzle, type Progress } from './progress';
 import { rankOf } from './rating';
 
 /** Открытая задача (id и рейтинг), пока её не решили и не провалили. */
@@ -123,9 +123,20 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
       <small>Решено задач: ${n} · серия без ошибок: ${prog.streak} (лучшая ${prog.best})</small>`;
   };
 
-  /** Следующая задача: по теме или рядом с рейтингом, ещё не решённая. */
+  /** Задача из «работы над ошибками» (решённая с ошибкой, подошёл срок повтора). */
+  let repeat = false;
+  /** Следующая задача: сначала повтор ошибок, потом — по теме или рядом с рейтингом, ещё не решённая. */
   const pick = (): Puzzle | null => {
+    repeat = false;
     const d = o.drill;
+    if (!d) {
+      const due = new Set(dueMistakes(prog));
+      const again = due.size ? all.find((p) => due.has(p.id) && (!theme || p.themes.includes(theme))) : undefined;
+      if (again) {
+        repeat = true;
+        return again;
+      }
+    }
     const pool = d
       ? all.filter((p) => !(p.id in prog.solved) && p.themes.some((t) => d.themes.includes(t)) && p.rating <= (d.max ?? 3000))
       : all.filter((p) => !(p.id in prog.solved) && (!theme || p.themes.includes(theme)));
@@ -140,7 +151,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
 
   const playerSide = () => (position(pz!.fen).turn === 0 ? 1 : 0) as 0 | 1;
 
-  const taskText = () => {
+  const taskText = () => (repeat ? '🔁 <b>Работа над ошибками</b> — эта задача однажды не далась. ' : '') + taskBody();
+  const taskBody = () => {
     const side = playerSide() === 0 ? 'белых' : 'чёрных';
     const mate = pz!.themes.find((t) => /^mateIn\d$/.test(t));
     if (mate) return `Ход ${side}. <b>${themeName(mate)}</b>.`;
