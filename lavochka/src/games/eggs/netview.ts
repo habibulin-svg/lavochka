@@ -30,7 +30,8 @@ class Field {
   private g: CanvasRenderingContext2D;
   b: Bubbles | null = null;
   aim = -Math.PI / 2;
-  flying: { color: number; path: [number, number][]; t0: number; dur: number; cell: [number, number] | null } | null = null;
+  /** ghosts — лопнувшие и упавшие этим выстрелом: в сетке их уже нет, но пока яйцо летит, они висят на месте. */
+  flying: { color: number; path: [number, number][]; t0: number; dur: number; cell: [number, number] | null; ghosts: [number, number, number][] } | null = null;
   popping: Pop[] = [];
   fx = new Fx();
   bg = 0;
@@ -43,7 +44,8 @@ class Field {
   /** Анимация выстрела: полёт по пути, потом лопнувшие и упавшие. */
   shot(b: Bubbles, color: number, path: [number, number][], cell: [number, number] | null, popped: [number, number, number][], fell: [number, number, number][]) {
     const dur = Math.max(120, pathLen(path) * 28);
-    this.flying = { color, path, t0: performance.now(), dur, cell };
+    const ghosts = [...popped, ...fell].filter(([r, c]) => !cell || r !== cell[0] || c !== cell[1]);
+    this.flying = { color, path, t0: performance.now(), dur, cell, ghosts };
     setTimeout(() => {
       if (this.flying?.path === path) this.flying = null;
       let sx = 0;
@@ -90,6 +92,10 @@ class Field {
           const [x, y] = b.center(r, c);
           drawEgg(g, U, x, y, v);
         }
+      for (const [r, c, col] of this.flying?.ghosts ?? []) {
+        const [x, y] = b.center(r, c);
+        drawEgg(g, U, x, y, col);
+      }
     }
     g.restore();
     let lowest = 0;

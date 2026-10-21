@@ -28,6 +28,8 @@ class Game {
   private aim = -Math.PI / 2;
   private flying: { color: number; path: [number, number][]; t: number } | null = null;
   private popping: { x: number; y: number; color: number; t: number; fall: boolean; vx: number }[] = [];
+  /** Лопнувшие и упавшие этим выстрелом — b.shoot уже убрал их из сетки, а пока яйцо летит, они висят на месте. */
+  private ghosts: [number, number, number][] = [];
   private fx = new Fx();
   private last = performance.now();
   private t = 0;
@@ -82,6 +84,7 @@ class Game {
     this.b = new Bubbles(n, (Math.random() * 1e9) | 0);
     this.flying = null;
     this.popping = [];
+    this.ghosts = [];
     this.busy = false;
     this.fx = new Fx();
     this.shown = 0;
@@ -138,6 +141,7 @@ class Game {
     const cell = res.cell;
     const hidden = cell && b.grid[cell[0]][cell[1]] === color ? cell : null;
     this.flying = { color, path: res.path, t: 0 };
+    this.ghosts = [...res.popped, ...res.fell].filter(([r, c]) => !cell || r !== cell[0] || c !== cell[1]);
     if (hidden) b.grid[hidden[0]][hidden[1]] = null;
     const len = pathLen(res.path);
     const dur = Math.max(120, len * 28);
@@ -152,6 +156,7 @@ class Game {
     });
     if (hidden) b.grid[hidden[0]][hidden[1]] = color;
     this.flying = null;
+    this.ghosts = [];
     // лопнули и упали
     if (res.popped.length) {
       Sound.capture();
@@ -250,6 +255,10 @@ class Game {
         const [x, y] = b.center(r, c);
         this.egg(x, y, v);
       }
+    for (const [r, c, col] of this.ghosts) {
+      const [x, y] = b.center(r, c);
+      this.egg(x, y, col);
+    }
     g.restore();
     // черта: красная, светится сильнее, когда яйца близко
     let lowest = 0;
