@@ -295,6 +295,11 @@ export interface AccountStore {
   /** Сколько обращений ждут ответа. */
   newTickets(): Promise<number>;
 
+  /** Расход помощника на ИИ за месяц ('ГГГГ-ММ', МСК): миллионные доли рубля и число запросов. */
+  aiUsage(userId: number, month: string): Promise<{ cost: number; requests: number }>;
+  addAiUsage(userId: number, month: string, costMicro: number, tokensIn: number, tokensOut: number): Promise<void>;
+  /** Расход всего сайта за месяц. */
+  aiTotal(month: string): Promise<{ cost: number; requests: number; users: number }>;
   /** Статистика: прибавить к счётчику дня. */
   bumpStat(day: string, metric: string, key: string, delta: number): Promise<void>;
   /** Статистика: записать, если больше записанного (пик онлайна). */
@@ -344,6 +349,7 @@ export class MemoryAccountStore implements AccountStore {
   private plusOrders = new Map<number, PlusOrder>();
   private plusSeq = 1_000_000;
   private subs = new Map<number, Subscription>();
+  private ai = new Map<string, { userId: number; month: string; cost: number; requests: number }>();
   private likes = new Map<number, Set<string>>();
   private plays = new Map<number, PlayRecord[]>();
   private saves = new Map<string, { at: number; data: string | null }>();
@@ -616,6 +622,22 @@ export class MemoryAccountStore implements AccountStore {
     if (o.recurring) Object.assign(s, { parentId: id, autorenew: true });
     this.subs.set(o.userId, s);
     return until;
+  }
+
+  async aiUsage(userId: number, month: string) {
+    const r = this.ai.get(`${userId}/${month}`);
+    return { cost: r?.cost ?? 0, requests: r?.requests ?? 0 };
+  }
+
+  async addAiUsage(userId: number, month: string, costMicro: number) {
+    const k = `${userId}/${month}`;
+    const r = this.ai.get(k) ?? { userId, month, cost: 0, requests: 0 };
+    this.ai.set(k, { ...r, cost: r.cost + Math.round(costMicro), requests: r.requests + 1 });
+  }
+
+  async aiTotal(month: string) {
+    const rows = [...this.ai.values()].filter((r) => r.month === month);
+    return { cost: rows.reduce((a, r) => a + r.cost, 0), requests: rows.reduce((a, r) => a + r.requests, 0), users: rows.length };
   }
 
   async subscription(userId: number) {

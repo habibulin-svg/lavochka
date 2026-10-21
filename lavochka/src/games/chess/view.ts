@@ -5,6 +5,7 @@ import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
 import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, type Event, type Move, type Promo, type State } from './engine';
+import { mountCoach } from './coach';
 import { pieceDefs, pieceRef } from './pieces';
 import './chess.css';
 
@@ -38,6 +39,8 @@ class ChessView implements GameView<State, Event> {
   private tick: ReturnType<typeof setInterval> | undefined;
   private flagSent = 0;
   private confirmResign = false;
+  private coach: ReturnType<typeof mountCoach> | null = null;
+  private coachHost: HTMLElement | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -73,6 +76,7 @@ class ChessView implements GameView<State, Event> {
       this.renderTargets();
     });
     if (!ctx.demo) this.tick = setInterval(() => this.renderClocks(), 200);
+    this.coachHost = ctl;
   }
 
   // ---------------------------------------------------------------- доска
@@ -357,6 +361,10 @@ class ChessView implements GameView<State, Event> {
     this.recvAt = Date.now();
     this.gBanner.innerHTML = '';
     this.applyFlip();
+    // Михалыч — только в партии с компьютером на этом экране (места известны к первому показу позиции)
+    const c = this.ctx;
+    if (!this.coach && this.coachHost && !c.demo && !c.online && c.mySeats.length === 1) this.coach = mountCoach(this.coachHost, c.mySeats[0], () => this.s);
+    this.coach?.update();
   }
 
   async play(events: Event[], s: State) {
@@ -390,6 +398,7 @@ class ChessView implements GameView<State, Event> {
     this.recvAt = Date.now();
     this.render();
     this.renderClocks();
+    this.coach?.update();
   }
 
   private async animate(m: Move, dur: number) {
@@ -469,6 +478,7 @@ class ChessView implements GameView<State, Event> {
 
   destroy() {
     clearInterval(this.tick);
+    this.coach?.destroy();
   }
 }
 

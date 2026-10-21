@@ -27,6 +27,7 @@ import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './a
 import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
 import { Plus, plusApi } from './plus';
+import { Mihalych, mihalychApi } from './mihalych';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
 import { Backoffice, backofficeApi } from './backoffice';
@@ -215,6 +216,9 @@ if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_L
 const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
 log('подписка: ' + (plus.enabled ? (plus.recurring ? 'оплата и автопродление включены' : 'оплата включена, автопродление выключено') : 'оплата выключена'));
 setInterval(() => accountsReady && plus.tick().catch((e) => log('подписка: ' + (e as Error).message)), 3600_000).unref();
+// «Совет Михалыча» (server/mihalych.ts): помощник на ИИ через routerai.ru; нет ключа — выключен
+const mihalych = new Mihalych(accounts, { key: process.env.ROUTERAI_API_KEY || null, model: process.env.MIHALYCH_MODEL || undefined, userRub: Number(process.env.MIHALYCH_USER_RUB) || 30, siteRub: Number(process.env.MIHALYCH_SITE_RUB) || 3000 }, log);
+log('михалыч: ' + (mihalych.enabled ? 'включён' : 'выключен (нет ROUTERAI_API_KEY)'));
 // обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
 const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
@@ -414,6 +418,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/plus' || path === '/api/plus/autorenew' || path === '/api/admin/plus') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await plusApi(plus, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+  }
+  if (path === '/api/mihalych' || path === '/api/admin/mihalych') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await mihalychApi(mihalych, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/support' || path === '/api/support/reply' || path === '/api/admin/support' || path === '/api/mail/in') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });

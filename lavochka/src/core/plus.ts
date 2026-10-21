@@ -10,7 +10,7 @@ export const PLUS_PRICE = 29_900;
 export const PLUS_DAYS = 30;
 export const DAY_MS = 86_400_000;
 /** Права подписки (косметика и ИИ добавятся, когда появятся). */
-export const PLUS_RIGHTS: RightId[] = ['video', 'early_access'];
+export const PLUS_RIGHTS: RightId[] = ['video', 'early_access', 'ai'];
 /** Назначение платежа (оно же — строка чека). */
 export const PLUS_PURPOSE = 'Подписка «Лавочка+» на 30 дней — сайт «Вечером на лавочке»';
 /** Адрес страницы подписки. */

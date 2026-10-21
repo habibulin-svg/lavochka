@@ -7,6 +7,7 @@ import { esc, h, sleep } from '../../core/util';
 import { Board } from '../chess/board';
 import { play, type Move, type State } from '../chess/engine';
 import { checkMark, fromUci, lineRu, position, ruSan, toFen, toUci } from '../chess/notation';
+import { levelOf, mountMihalych } from '../chess/mihalych';
 import { evalText, stockfish } from '../chess/stockfish';
 import { mountAnalysis } from './analysis';
 import { loadPuzzles, THEMES, themeName, type Puzzle } from './data';
@@ -42,6 +43,26 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
   </div>`);
   panel.appendChild(el);
   const q = <T extends HTMLElement>(s: string) => el.querySelector(s) as T;
+  /** Позиция до неверного хода, пока он стоит на доске: о ней и спрашиваем Михалыча. */
+  let beforeWrong: State | null = null;
+  const mh = mountMihalych(el, () => ({
+    where: 'puzzle',
+    level: levelOf(prog.rating.r),
+    fen: toFen(beforeWrong ?? pos),
+    side: (beforeWrong ?? pos).turn === 0 ? 'белые' : 'чёрные',
+    theme: pz ? pz.themes.map(themeName).filter(Boolean).join(', ') : undefined,
+  }));
+  /** Решение с текущего места: правильный ход и вся линия (русской записью). */
+  const rest = () => {
+    const m = pz && ply < pz.moves.length ? fromUci(pos, pz.moves[ply]) : null;
+    return { best: m ? ruSan(pos, m) : undefined, solution: pz ? lineRu(toFen(pos), pz.moves.slice(ply)) : undefined };
+  };
+  /** Пока задача не решена, вопрос Михалычу — подсказка намёком (и задача не в зачёт). */
+  const solving = () => {
+    const where = { kind: 'hint' as const, before: () => fail(), engine: () => ({ ...rest(), line: rest().solution }) };
+    mh.actions([{ label: 'Куда смотреть?', say: 'Михалыч, куда тут смотреть?', ...where }]);
+    mh.typed({ ...where, hint: 'Спросить (задача не в зачёт)' });
+  };
   const sel = q<HTMLSelectElement>('select');
   sel.value = theme;
   sel.onchange = () => {
@@ -115,6 +136,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
     ply = 0;
     failed = false;
     done = false;
+    beforeWrong = null;
+    mh.reset();
     pos = position(pz.fen);
     board.flip(playerSide() === 1);
     board.set(pos);
@@ -152,6 +175,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
       { text: 'Показать решение', on: solution },
     ]);
     board.input(pos.turn, onPlayer);
+    solving();
   };
 
   const onPlayer = async (m: Move) => {
@@ -174,6 +198,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
   /** Неверный ход: показать, чем он плох, и дать вернуть. */
   const wrong = async (m: Move) => {
     const before = pos;
+    beforeWrong = before;
     const ru = ruSan(before, m);
     fail();
     move(m);
@@ -181,12 +206,24 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
     board.draw([], [{ sq: m.to, kind: 'bad' }]);
     say(`<b>${esc(ru)}?</b> Не то. Смотрим, что на это есть у соперника…`, 'bad');
     buttons([{ text: '↶ Вернуть ход', primary: true, on: () => takeBack(before) }]);
+    const right = (() => {
+      const c = fromUci(before, pz!.moves[ply]);
+      return { best: c ? ruSan(before, c) : undefined, solution: lineRu(toFen(before), pz!.moves.slice(ply)) };
+    })();
+    const why: { after?: string; reply?: string } = {};
+    const mistake = { kind: 'mistake' as const, engine: () => ({ played: ru, ...why, best: right.best, line: right.solution }) };
+    mh.actions([{ label: 'Почему это ошибка?', say: `Михалыч, почему ${ru} — ошибка?`, ...mistake }]);
+    mh.typed(mistake);
     busy = true;
     try {
       const a = await stockfish.analyse(toFen(pos), { depth: 14, ms: 2500, cancel: true });
       if (!alive || pos === before) return;
       const top = a.lines[0];
       const reply = a.best ? fromUci(pos, a.best) : null;
+      if (top) {
+        why.after = evalText(top) + ' (за белых)';
+        why.reply = lineRu(toFen(pos), top.pv, 4);
+      }
       if (reply && top) {
         board.draw([{ from: reply.from, to: reply.to, kind: 'bad' }], [{ sq: m.to, kind: 'bad' }]);
         const sign = playerSide() === 0 ? 1 : -1;
@@ -212,6 +249,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
 
   const takeBack = (s: State) => {
     stockfish.stop();
+    beforeWrong = null;
     pos = s;
     board.set(pos, s.last);
     board.draw();
@@ -272,6 +310,10 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
     renderRank();
     const names = pz!.themes.map(themeName).filter(Boolean);
     q('.kz-about').innerHTML = `Задача <a href="https://lichess.org/training/${esc(pz!.id)}" target="_blank" rel="noopener">${esc(pz!.id)}</a> · рейтинг ${pz!.rating}${names.length ? ` · ${esc(names.join(', '))}` : ''}`;
+    const sol = lineRu(pz!.fen, pz!.moves);
+    const explain = { kind: 'explain' as const, engine: () => ({ solution: sol }) };
+    mh.actions([{ label: 'В чём идея?', say: 'Михалыч, в чём тут идея?', ...explain }]);
+    mh.typed(explain);
     buttons([
       { text: 'Следующая задача →', primary: true, on: next },
       { text: '🔍 Разобрать с движком', on: analyse },
@@ -321,6 +363,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement) {
       alive = false;
       stockfish.stop();
       sub?.destroy();
+      mh.destroy();
       board.destroy();
       host.remove();
       el.remove();

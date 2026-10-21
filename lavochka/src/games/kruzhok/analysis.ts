@@ -6,7 +6,9 @@ import { esc, h } from '../../core/util';
 import { Board } from '../chess/board';
 import { play, type Move } from '../chess/engine';
 import { fromUci, lineRu, position, ruSan, START_FEN, toFen } from '../chess/notation';
+import { levelOf, mountMihalych } from '../chess/mihalych';
 import { evalText, stockfish, type Analysis } from '../chess/stockfish';
+import { loadProgress } from './progress';
 
 export interface AnalysisOpts {
   fen?: string;
@@ -52,6 +54,30 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
   panel.appendChild(el);
   const q = <T extends HTMLElement>(s: string) => el.querySelector(s) as T;
   const fenInput = q<HTMLInputElement>('.kz-fen input');
+  let last: Analysis | null = null;
+  const mh = mountMihalych(el, () => {
+    const s = position(plies[at].fen);
+    return {
+      where: 'analysis',
+      level: levelOf(loadProgress().rating.r),
+      fen: plies[at].fen,
+      side: s.turn === 0 ? 'белые' : 'чёрные',
+      moves: plies.slice(Math.max(1, at - 9), at + 1).map((p) => p.ru).join(' '),
+    };
+  });
+  // вопрос о позиции — с тем, что успел насчитать движок
+  const engineNow = () => {
+    const fen = plies[at].fen;
+    const a = last && last.fen === fen ? last : null;
+    const top = a?.lines[0];
+    const best = a?.best ? fromUci(position(fen), a.best) : null;
+    return {
+      eval: top ? evalText(top) + ' (за белых)' : undefined,
+      best: best ? ruSan(position(fen), best) : undefined,
+      line: top ? lineRu(fen, top.pv, 8) : undefined,
+      played: plies[at].ru || undefined,
+    };
+  };
 
   const reset = (fen: string, moves: string[] = []) => {
     start = fen;
@@ -85,6 +111,8 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
     });
     fenInput.value = p.fen;
     renderMoves();
+    mh.actions([{ label: 'Что тут происходит?', kind: 'explain', say: 'Михалыч, что тут происходит и какой план?', engine: engineNow }]);
+    mh.typed({ kind: 'chat', engine: engineNow });
     void think(p.fen);
   };
 
@@ -114,6 +142,7 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
     q('.kz-evalnum').textContent = '…';
     const paint = (a: Analysis) => {
       if (!alive || plies[at].fen !== fen) return;
+      last = a;
       const top = a.lines[0];
       if (!top) return;
       q('.kz-evalnum').textContent = evalText(top);
@@ -182,6 +211,7 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
       alive = false;
       stockfish.stop();
       document.removeEventListener('keydown', keys);
+      mh.destroy();
       board.destroy();
       el.remove();
     },

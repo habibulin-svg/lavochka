@@ -210,6 +210,16 @@ export const MIGRATIONS: string[] = [
      tried_at timestamptz,
      reminded_at timestamptz
    );`,
+  // 10 — помощник на ИИ («Совет Михалыча»): расход по месяцам (МСК), в миллионных долях рубля
+  `create table ai_usage (
+     user_id bigint not null references users on delete cascade,
+     month text not null,
+     cost_micro bigint not null default 0,
+     requests int not null default 0,
+     tokens_in bigint not null default 0,
+     tokens_out bigint not null default 0,
+     primary key (user_id, month)
+   );`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -767,6 +777,25 @@ export class PgAccountStore implements AccountStore {
 
   async deletePost(kind: string, slug: string) {
     await this.pool.query('delete from posts where kind = $1 and slug = $2', [kind, slug]);
+  }
+
+  async aiUsage(userId: number, month: string) {
+    const r = await this.pool.query('select cost_micro, requests from ai_usage where user_id = $1 and month = $2', [userId, month]);
+    return { cost: Number(r.rows[0]?.cost_micro ?? 0), requests: Number(r.rows[0]?.requests ?? 0) };
+  }
+
+  async addAiUsage(userId: number, month: string, costMicro: number, tokensIn: number, tokensOut: number) {
+    await this.pool.query(
+      `insert into ai_usage (user_id, month, cost_micro, requests, tokens_in, tokens_out) values ($1, $2, $3, 1, $4, $5)
+       on conflict (user_id, month) do update set cost_micro = ai_usage.cost_micro + excluded.cost_micro, requests = ai_usage.requests + 1,
+         tokens_in = ai_usage.tokens_in + excluded.tokens_in, tokens_out = ai_usage.tokens_out + excluded.tokens_out`,
+      [userId, month, Math.round(costMicro), tokensIn, tokensOut]
+    );
+  }
+
+  async aiTotal(month: string) {
+    const r = await this.pool.query('select coalesce(sum(cost_micro), 0) as c, coalesce(sum(requests), 0) as n, count(*) as u from ai_usage where month = $1', [month]);
+    return { cost: Number(r.rows[0].c), requests: Number(r.rows[0].n), users: Number(r.rows[0].u) };
   }
 
   async bumpStat(day: string, metric: string, key: string, delta: number) {

@@ -1,0 +1,23 @@
+/* Совет Михалыча */
+.mh { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding: 8px; border-radius: 12px; background: rgba(255, 250, 235, 0.6); border: 1px solid rgba(42, 18, 6, 0.25); }
+.mh[hidden] { display: none; }
+.mh-head { display: flex; gap: 8px; align-items: center; }
+.mh-head img { width: 48px; height: 48px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.mh-head b { display: block; font-size: 15px; }
+.mh-head small { opacity: 0.7; }
+.mh-log { display: flex; flex-direction: column; gap: 5px; max-height: 260px; overflow: auto; }
+.mh-log:empty { display: none; }
+.mh-msg { padding: 6px 9px; border-radius: 10px; font-size: 14px; line-height: 1.38; white-space: pre-wrap; }
+.mh-user { align-self: flex-end; max-width: 85%; background: rgba(138, 90, 42, 0.18); }
+.mh-mihalych { align-self: flex-start; max-width: 95%; background: #fffaf0; border: 1px solid rgba(42, 18, 6, 0.18); }
+.mh-note { font-size: 13px; background: rgba(42, 18, 6, 0.07); }
+.mh-wait { opacity: 0.6; font-style: italic; }
+.mh-acts { display: flex; flex-wrap: wrap; gap: 4px; }
+.mh-acts:empty { display: none; }
+.mh-chip { border: 1px solid rgba(138, 90, 42, 0.6); background: #fffaf0; color: #5a3410; border-radius: 14px; padding: 3px 10px; font: 600 13px 'PT Sans', sans-serif; cursor: pointer; }
+.mh-chip:hover { background: #f3e2b8; }
+.mh-chip:disabled { opacity: 0.5; cursor: default; }
+.mh-ask { display: flex; gap: 4px; }
+.mh-ask[hidden] { display: none; }
+.mh-ask input { flex: 1; min-width: 0; font: 14px 'PT Sans', sans-serif; padding: 5px 8px; border-radius: 8px; border: 1px solid #a08a60; background: #fffaf0; }
+.mh-plus { align-self: flex-start; }
