@@ -1,5 +1,5 @@
 /* Сессии: локальная игра, хост P2P, хост на сервере, гость. Все сводятся к Room + RoomClient + Table. */
-import { isArcade } from './arcade';
+import { isArcade, type ArcadeModule } from './arcade';
 import { AVATARS, avatarHtml } from './avatars';
 import { byId } from '../games/catalog';
 import type { Snapshot } from './authority';
@@ -93,14 +93,20 @@ async function rejoinOwner(m: RoomMemo) {
     const w = await client.waitWelcome();
     const entry = byId(w.game);
     if (!entry?.load) throw new Error('Игра не найдена.');
-    const mod = (await entry.load()).default;
-    if (isArcade(mod)) throw new Error('В эту игру по сети не играют.');
+    const mod = await tableModule((await entry.load()).default);
     attach(mod, client, 'server', m.code, true, () => void rejoinOwner(m), m.ownerKey);
   } catch (e: any) {
     memo(null);
     closeActive();
     showLobbyError(e?.message || String(e), () => nav.yard());
   }
+}
+
+/** Модуль для стола: у аркады — её сетевой режим (дуэль, битва), если он есть. */
+async function tableModule(mod: GameModule | ArcadeModule): Promise<GameModule> {
+  if (!isArcade(mod)) return mod;
+  if (!mod.net) throw new Error('В эту игру по сети не играют.');
+  return mod.net.load();
 }
 
 export function loadSave(id: string): Snapshot | null {
@@ -252,8 +258,7 @@ export async function joinGame(code: string) {
     const w = await client.waitWelcome();
     const entry = byId(w.game);
     if (!entry?.load) throw new Error('У вас нет этой игры — обновите страницу.');
-    const mod = (await entry.load()).default;
-    if (isArcade(mod)) throw new Error('В эту игру по сети не играют.');
+    const mod = await tableModule((await entry.load()).default);
     attach(mod, client, mode, code, false, () => joinGame(code));
   } catch (e: any) {
     closeActive();

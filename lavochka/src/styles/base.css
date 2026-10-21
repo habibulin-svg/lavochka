@@ -103,6 +103,7 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .arcade-side h3 { margin: 10px 0 6px; font-size: 17px; }
 .arcade-run { display: flex; flex-wrap: wrap; gap: 6px; }
 .arcade-run .btn { flex: 1 1 0; white-space: nowrap; }
+.arcade-net { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; margin-top: 8px; } .arcade-net small { font-weight: 400; font-size: 12px; opacity: .85; }
 .arcade-panel:empty { display: none; }
 .arcade-panel { font-size: 14px; line-height: 1.4; }
 .arcade-panel p { margin: 0 0 6px; }

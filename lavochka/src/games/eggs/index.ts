@@ -2,37 +2,23 @@
  * пятнистые яйца, динозаврик-пушка внизу (яйцо на изготовку и следующее), прицел с отскоком от стенок, полёт яйца, лопанье и падение.
  * Мышью — целиться, нажать — выстрел; пробел или «⇄» — поменять яйца. */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
-import { cover, Fx, Sprites } from '../../core/arcade-fx';
+import { Fx } from '../../core/arcade-fx';
 import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { h, sleep } from '../../core/util';
 import { Bubbles, COLS, DEAD_ROW, FIELD_W, ROW_H, ROWS, SHOOTER_Y } from './logic';
+import { along, ART, drawAim, drawBack, drawCeiling, drawDino, drawEgg, drawLine, EGG, EGGS, FIELD_H, pathLen } from './paint';
 import './eggs.css';
 
 const U = 56;
 const CW = FIELD_W * U;
-// снизу место под динозаврика-игрушку
-const CH = (SHOOTER_Y + 1.9) * U;
+const CH = FIELD_H * U;
 const KEY = 'eggs.progress';
-const EGG = [
-  ['#7ac850', '#2a6a1a'],
-  ['#5aa0e8', '#1a4a90'],
-  ['#e85a4a', '#8a1a10'],
-  ['#f0d040', '#9a7a08'],
-  ['#b070e0', '#5a2a8a'],
-  ['#f09a40', '#9a4a08'],
-];
-
 interface Progress {
   open: number;
   best: Record<number, number>;
 }
 const loadProgress = (): Progress => store.get<Progress>(KEY, { open: 1, best: {} });
-
-/** Картинки (tools/arcade-art): яйца по цвету — как EGG, фоны по уровню, динозаврик-игрушка, каменный потолок, карта. */
-const EGGS = ['egg0', 'egg1', 'egg2', 'egg3', 'egg4', 'egg5'] as const;
-const BG = ['bg1', 'bg2', 'bg3'] as const;
-const ART = new Sprites('eggs', [...EGGS, ...BG, 'dino', 'ceiling', 'map'] as const);
 
 class Game {
   private el: HTMLElement;
@@ -153,7 +139,7 @@ class Game {
     const hidden = cell && b.grid[cell[0]][cell[1]] === color ? cell : null;
     this.flying = { color, path: res.path, t: 0 };
     if (hidden) b.grid[hidden[0]][hidden[1]] = null;
-    const len = res.path.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - res.path[i - 1][0], p[1] - res.path[i - 1][1]) : 0), 0);
+    const len = pathLen(res.path);
     const dur = Math.max(120, len * 28);
     const t0 = performance.now();
     await new Promise<void>((done) => {
@@ -223,42 +209,7 @@ class Game {
   }
 
   private egg(x: number, y: number, color: number, a = 1, rot = 0) {
-    const g = this.g;
-    const [c, d] = EGG[color % EGG.length];
-    const px = x * U;
-    const py = y * U;
-    const im = ART.get(EGGS[color % EGGS.length]);
-    if (im) {
-      g.save();
-      g.globalAlpha = a;
-      g.translate(px, py);
-      if (rot) g.rotate(rot);
-      g.drawImage(im, -U * 0.56, -U * 0.56, U * 1.12, U * 1.12);
-      g.restore();
-      return;
-    }
-    g.globalAlpha = a;
-    const gr = g.createRadialGradient(px - U * 0.15, py - U * 0.18, 2, px, py, U * 0.5);
-    gr.addColorStop(0, '#fffbe8');
-    gr.addColorStop(0.45, c);
-    gr.addColorStop(1, d);
-    g.fillStyle = gr;
-    g.beginPath();
-    g.ellipse(px, py + 1, U * 0.4, U * 0.47, 0, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = 'rgba(40,20,0,0.35)';
-    for (const [dx, dy, r] of [
-      [-0.12, 0.05, 0.05],
-      [0.14, -0.08, 0.04],
-      [0.05, 0.2, 0.035],
-      [-0.05, -0.2, 0.03],
-    ])
-      {
-        g.beginPath();
-        g.arc(px + dx * U, py + dy * U, r * U, 0, Math.PI * 2);
-        g.fill();
-      }
-    g.globalAlpha = 1;
+    drawEgg(this.g, U, x, y, color, a, rot);
   }
 
   private draw() {
@@ -274,22 +225,7 @@ class Game {
     const [ox, oy] = this.fx.offset();
     g.translate(ox, oy);
     // двор: у каждого третьего уровня свой фон, верх притемнён — яйца на нём читаются
-    const bgi = ART.get(BG[(b.spec.n - 1) % 3]);
-    if (bgi) {
-      cover(g, bgi, -8, -8, CW + 16, CH + 16);
-      const dim = g.createLinearGradient(0, 0, 0, CH);
-      dim.addColorStop(0, 'rgba(10,15,5,0.45)');
-      dim.addColorStop(0.75, 'rgba(10,15,5,0.15)');
-      dim.addColorStop(1, 'rgba(10,15,5,0)');
-      g.fillStyle = dim;
-      g.fillRect(-8, -8, CW + 16, CH + 16);
-    } else {
-      const bg = g.createLinearGradient(0, 0, 0, CH);
-      bg.addColorStop(0, '#2a4a1a');
-      bg.addColorStop(1, '#5a7a2a');
-      g.fillStyle = bg;
-      g.fillRect(0, 0, CW, CH);
-    }
+    drawBack(g, CW, CH, b.spec.n - 1);
     // потолок съезжает на ряд плавно (lag — сколько ещё не доехал), за выстрел до опускания — дрожит
     if (b.drops > this.dropsSeen) {
       this.dropsSeen = b.drops;
@@ -305,21 +241,7 @@ class Game {
     g.translate(jx, lag);
     // каменный потолок: над плитой — камень, нижний край плиты — по линии потолка
     const top = b.drops * ROW_H * U;
-    const ceil = ART.get('ceiling');
-    if (ceil) {
-      const ch = (CW * ceil.naturalHeight) / ceil.naturalWidth;
-      const cy = top + 10 - ch * 0.66;
-      if (cy > -8) {
-        g.fillStyle = '#4e4a46';
-        g.fillRect(-8, -8, CW + 16, cy + 20);
-      }
-      g.drawImage(ceil, -8, cy, CW + 16, ch);
-    } else {
-      g.fillStyle = '#6a5a4a';
-      g.fillRect(0, 0, CW, top + 6);
-      g.fillStyle = '#4a3a2a';
-      g.fillRect(0, top, CW, 6);
-    }
+    drawCeiling(g, CW, top);
     // яйца — вместе с потолком
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
@@ -330,21 +252,10 @@ class Game {
       }
     g.restore();
     // черта: красная, светится сильнее, когда яйца близко
-    const lineY = (DEAD_ROW * ROW_H + 0.05) * U;
     let lowest = 0;
     for (let r = 0; r < ROWS; r++) if (b.grid[r].some((v) => v != null)) lowest = r;
     const near = lowest + b.drops >= DEAD_ROW - 2 ? 0.5 + 0.5 * Math.sin(this.t * 10) : 0;
-    g.save();
-    g.shadowColor = '#ff3020';
-    g.shadowBlur = 6 + near * 14;
-    g.setLineDash([10, 8]);
-    g.strokeStyle = near ? `rgba(255,${80 - near * 60},40,1)` : '#e8402a';
-    g.lineWidth = 2 + near * 2;
-    g.beginPath();
-    g.moveTo(0, lineY);
-    g.lineTo(CW, lineY);
-    g.stroke();
-    g.restore();
+    drawLine(g, U, CW, near);
     // лопнувшие (вспухают и исчезают) и падающие (кувыркаются вниз)
     for (const p of this.popping) {
       p.t += dt / 1000 / (p.fall ? 0.9 : 0.25);
@@ -362,96 +273,17 @@ class Game {
     this.popping = this.popping.filter((p) => p.t < 1);
     // прицел: точки цвета яйца, до первого касания и после отскока
     if (!this.busy && !b.won && !b.lost) {
-      const tr = b.trace(this.aim);
-      const pts = tr.path.slice(0, 3);
-      g.fillStyle = EGG[b.cur % EGG.length][0];
-      let walked = 0;
-      for (let i = 1; i < pts.length; i++) {
-        const [x0, y0] = pts[i - 1];
-        const [x1, y1] = pts[i];
-        const seg = Math.hypot(x1 - x0, y1 - y0);
-        for (let d = (0.35 - (walked % 0.35)) % 0.35; d < seg; d += 0.35) {
-          const k = d / seg;
-          const fade = Math.max(0, 1 - (walked + d) / 9);
-          if (fade <= 0) break;
-          g.globalAlpha = 0.85 * fade;
-          g.beginPath();
-          g.arc((x0 + (x1 - x0) * k) * U, (y0 + (y1 - y0) * k) * U, 3, 0, Math.PI * 2);
-          g.fill();
-        }
-        walked += seg;
-      }
-      g.globalAlpha = 1;
+      drawAim(g, U, b.trace(this.aim).path, b.cur);
     }
     // летящее яйцо
     if (this.flying) {
-      const f = this.flying;
-      const path = f.path;
-      const total = path.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - path[i - 1][0], p[1] - path[i - 1][1]) : 0), 0);
-      let need = total * f.t;
-      let pos = path[0];
-      for (let i = 1; i < path.length; i++) {
-        const seg = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
-        if (need <= seg) {
-          const k = seg ? need / seg : 0;
-          pos = [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * k, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * k];
-          break;
-        }
-        need -= seg;
-        pos = path[i];
-      }
-      this.egg(pos[0], pos[1], f.color);
+      const [fx, fy] = along(this.flying.path, this.flying.t);
+      this.egg(fx, fy, this.flying.color);
     }
     // динозаврик: резиновая игрушка сидит внизу и наклоняется туда, куда целится
-    const sx = (FIELD_W / 2) * U;
-    const sy = SHOOTER_Y * U;
-    const dino = ART.get('dino');
-    if (dino) {
-      // на картинке у игрушки на голове яйцо (на 0.68 высоты от ног) — туда и кладём яйцо на изготовку, оно же точка вылета
-      const lean = (this.aim + Math.PI / 2) * 0.15;
-      const s = U * 2.6;
-      const feet = sy + s * 0.68;
-      g.save();
-      g.translate(sx, feet);
-      g.fillStyle = 'rgba(0,0,0,0.35)';
-      g.beginPath();
-      g.ellipse(0, 0, s * 0.3, s * 0.06, 0, 0, Math.PI * 2);
-      g.fill();
-      g.rotate(lean);
-      g.drawImage(dino, -s / 2, -s * 0.86, s, s);
-      g.restore();
-      if (!this.flying) this.egg(FIELD_W / 2 + (Math.sin(lean) * s * 0.68) / U, (feet - Math.cos(lean) * s * 0.68) / U, b.cur);
-      this.egg(FIELD_W / 2 + 1.9, SHOOTER_Y + 1.1, b.next, 0.9);
-      this.fx.draw(g);
-      g.restore();
-      return;
-    }
-    g.save();
-    g.translate(sx, sy);
-    g.rotate(this.aim + Math.PI / 2);
-    g.fillStyle = '#4a9a3a';
-    g.beginPath();
-    g.ellipse(0, 18, 34, 26, 0, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = '#3a7a2a';
-    g.beginPath();
-    g.ellipse(0, -6, 18, 30, 0, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = '#fff';
-    for (const ex of [-9, 9]) {
-      g.beginPath();
-      g.arc(ex, 6, 5, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.fillStyle = '#111';
-    for (const ex of [-9, 9]) {
-      g.beginPath();
-      g.arc(ex, 5, 2.2, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.restore();
-    if (!this.flying) this.egg(FIELD_W / 2 + Math.cos(this.aim) * 0.55, SHOOTER_Y + Math.sin(this.aim) * 0.55, b.cur);
-    this.egg(FIELD_W / 2 + 1.4, SHOOTER_Y + 0.4, b.next, 0.85);
+    const [ex, ey] = drawDino(g, U, this.aim);
+    if (!this.flying) this.egg(ex, ey, b.cur);
+    this.egg(FIELD_W / 2 + 1.9, SHOOTER_Y + 1.1, b.next, 0.9);
     this.fx.draw(g);
     g.restore();
   }
@@ -471,6 +303,7 @@ const mod: ArcadeModule = {
   controls: `<p>Мышью — целиться (яйцо отскакивает от стенок), нажать — выстрел, <kbd>Пробел</kbd> или «⇄» — поменять яйца.</p>
     <p>Яйцо ниже красной черты — уровень проигран. Упавшие яйца — очки вдвое.</p>`,
   modes: [{ id: 'levels', label: 'Сто уровней' }],
+  net: { label: 'Дуэль и битва', hint: 'по сети или с ботами: падлянки сопернику, до десяти игроков', load: () => import('./net').then((m) => m.default) },
   mount(root, opts) {
     return new Game(root, opts);
   },

@@ -59,7 +59,7 @@ function presetOpts(mod: GameModule, preset?: string) {
   return preset ? mod.def.presets?.find((p) => p.id === preset)?.options : undefined;
 }
 
-async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string } = {}) {
+async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string; net?: boolean } = {}) {
   // ярлык (например, «Шёл солдат» — поле кинь-двинь): открываем игру с заранее выбранными вариантами
   const g = entry.of ? byId(entry.of) : entry;
   if (!g?.load) return;
@@ -75,12 +75,20 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     return;
   }
   try {
-    const mod = (await g.load()).default;
+    let mod = (await g.load()).default;
     if (my !== navSeq) return; // пока грузилось, ушли на другой экран
+    // аркада с сетевым режимом: «Дуэль и битва» (или возврат со стола) — обычный экран настройки стола; «назад» — снова аркада
+    const arcade = isArcade(mod) ? mod : null;
+    if (arcade?.net && (r.net || r.preset)) {
+      mod = await arcade.net.load();
+      if (my !== navSeq) return;
+    }
     if (isArcade(mod)) {
-      stopArcade = openArcade(mod, toYard, { mode: r.mode, onMode: (m) => go(modePath(mod.id, m), true) });
+      const a = mod;
+      stopArcade = openArcade(a, toYard, { mode: r.mode, onMode: (m) => go(modePath(a.id, m), true), onNet: () => void openGame(entry, { net: true }) });
       return;
     }
+    const back = arcade ? () => void openGame(entry) : toYard;
     // вошедшему — сохранение из базы, если там новее (продолжить партию с другого устройства)
     if (!mod.ownSaves) {
       await syncSave(mod.def.id);
@@ -88,7 +96,7 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     }
     const fixed = presetOpts(mod, r.preset) ?? entry.opts;
     let rulesByUrl = !!r.rules; // правила открыли адресом: закрыли — меняем адрес на месте, а не шагаем назад
-    openHome(mod, toYard, fixed, {
+    openHome(mod, back, fixed, {
       rules: r.rules,
       resume: r.play,
       topExtra: likeButton(mod.def.id),
@@ -183,7 +191,7 @@ nav.home = (id) => {
   if (!g) return nav.yard();
   if (backFromTable()) return;
   go(location.pathname.startsWith('/stol/') ? gamePath(id) : location.pathname, true);
-  void openGame(g);
+  void openGame(g, { net: true });
 };
 nav.table = (code) => {
   // гость с адреса стола или повторное подключение — тот же адрес; иначе — новая запись в истории

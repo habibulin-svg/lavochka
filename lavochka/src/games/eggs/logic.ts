@@ -51,8 +51,8 @@ export class Bubbles {
   lost = false;
   private seed: number;
 
-  constructor(n: number, seed = n * 7907 + 3) {
-    this.spec = levelSpec(n);
+  constructor(n: number, seed = n * 7907 + 3, spec: LevelSpec = levelSpec(n)) {
+    this.spec = spec;
     this.seed = seed;
     for (let r = 0; r < ROWS; r++) this.grid.push(Array(COLS).fill(null));
     const sp = this.spec;
@@ -67,6 +67,37 @@ export class Bubbles {
       }
     this.cur = this.pick();
     this.next = this.pick();
+  }
+
+  /** Поле из сохранённых данных (снимок комнаты, view бота): JSON теряет методы класса. */
+  static revive(o: object): Bubbles {
+    return Object.setPrototypeOf(o, Bubbles.prototype) as Bubbles;
+  }
+
+  /** Сверху наезжает ряд яиц (сетевая игра): все ряды сдвигаются вниз, чётность меняется. holes — сколько ячеек оставить пустыми. */
+  pushRow(colors: number, holes = 0): void {
+    this.grid.pop();
+    this.shift = (this.shift + 1) % 2;
+    const row: (number | null)[] = Array(COLS).fill(null);
+    const cells: number[] = [];
+    for (let c = 0; c < COLS; c++) if (this.validCell(0, c)) cells.push(c);
+    for (const c of cells) row[c] = Math.floor(this.rnd() * colors);
+    for (let k = 0; k < holes && cells.length > 1; k++) row[cells.splice(Math.floor(this.rnd() * cells.length), 1)[0]] = null;
+    this.grid.unshift(row);
+    this.checkLost();
+  }
+
+  /** Яйцо за чертой — проигрыш. */
+  checkLost(): boolean {
+    if (this.grid.some((row, r) => r + this.drops >= DEAD_ROW && row.some((v) => v != null))) this.lost = true;
+    return this.lost;
+  }
+
+  /** Сколько яиц на поле. */
+  count(): number {
+    let n = 0;
+    for (const row of this.grid) for (const v of row) if (v != null) n++;
+    return n;
   }
 
   private rnd() {
@@ -100,14 +131,13 @@ export class Bubbles {
   }
 
   /** Полёт яйца: шаги до прилипания. Возвращает путь (точки) и ячейку. */
-  trace(angle: number): { path: [number, number][]; cell: [number, number] | null } {
+  trace(angle: number, step = 0.05): { path: [number, number][]; cell: [number, number] | null } {
     let x = FIELD_W / 2;
     let y = SHOOTER_Y;
     let dx = Math.cos(angle);
     let dy = Math.sin(angle);
     const path: [number, number][] = [[x, y]];
-    const step = 0.05;
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 100 / step; i++) {
       x += dx * step;
       y += dy * step;
       if (x < 0.5) {
@@ -123,12 +153,17 @@ export class Bubbles {
       // потолок
       const top = this.drops * ROW_H + 0.5;
       let hit = y <= top;
+      // задеть можно только яйца соседних рядов
+      const rc = (y - 0.5) / ROW_H - this.drops;
+      const r0 = Math.max(0, Math.floor(rc) - 1);
+      const r1 = Math.min(ROWS - 1, Math.ceil(rc) + 1);
       if (!hit)
-        for (let r = 0; r < ROWS && !hit; r++)
+        for (let r = r0; r <= r1 && !hit; r++)
           for (let c = 0; c < COLS; c++) {
             if (this.grid[r][c] == null) continue;
-            const [cx, cy] = this.center(r, c);
-            if ((cx - x) ** 2 + (cy - y) ** 2 < 0.8 * 0.8) {
+            const cx = c + 0.5 + ((r + this.shift) % 2 === 1 ? 0.5 : 0);
+            const cy = (r + this.drops) * ROW_H + 0.5;
+            if ((cx - x) * (cx - x) + (cy - y) * (cy - y) < 0.64) {
               hit = true;
               break;
             }
@@ -137,16 +172,22 @@ export class Bubbles {
         path.push([x, y]);
         return { path, cell: this.snap(x, Math.max(y, top)) };
       }
-      if (dy > -0.05 && i > 1000) break;
+      if (dy > -0.05 && i > 50 / step) break;
     }
     return { path, cell: null };
   }
 
   /** Ближайшая пустая ячейка к точке. */
   private snap(x: number, y: number): [number, number] | null {
+    // ближайшая ячейка — в соседних рядах (не нашлась — ищем по всему полю)
+    const rc = (y - 0.5) / ROW_H - this.drops;
+    return this.snapIn(x, y, Math.max(0, Math.floor(rc) - 2), Math.min(ROWS - 1, Math.ceil(rc) + 2)) ?? this.snapIn(x, y, 0, ROWS - 1);
+  }
+
+  private snapIn(x: number, y: number, r0: number, r1: number): [number, number] | null {
     let best: [number, number] | null = null;
     let bd = Infinity;
-    for (let r = 0; r < ROWS; r++)
+    for (let r = r0; r <= r1; r++)
       for (let c = 0; c < COLS; c++) {
         if (!this.validCell(r, c) || this.grid[r][c] != null) continue;
         // ячейка должна касаться потолка или соседа
@@ -173,6 +214,29 @@ export class Bubbles {
     this.next = this.pick();
     this.shots++;
     if (cell) {
+      const { popped, fell } = this.place(cell, color);
+      res.popped = popped;
+      res.fell = fell;
+    }
+    // заряды — только существующие цвета
+    const have = new Set(this.grid.flat().filter((v) => v != null));
+    if (have.size && !have.has(this.cur)) this.cur = this.pick();
+    if (have.size && !have.has(this.next)) this.next = this.pick();
+    if (!have.size) {
+      this.won = true;
+      this.score += 500;
+      return res;
+    }
+    // потолок опускается
+    if (this.shots % this.spec.dropEvery === 0) this.drops++;
+    this.checkLost();
+    return res;
+  }
+
+  /** Яйцо цвета color встало в ячейку: лопнуть тройку и уронить оторвавшееся. */
+  place(cell: [number, number], color: number): { popped: [number, number, number][]; fell: [number, number, number][] } {
+    const res = { popped: [] as [number, number, number][], fell: [] as [number, number, number][] };
+    {
       const [r, c] = cell;
       this.grid[r][c] = color;
       // связные того же цвета
@@ -221,18 +285,6 @@ export class Bubbles {
         this.score += res.fell.length * 20;
       }
     }
-    // заряды — только существующие цвета
-    const have = new Set(this.grid.flat().filter((v) => v != null));
-    if (have.size && !have.has(this.cur)) this.cur = this.pick();
-    if (have.size && !have.has(this.next)) this.next = this.pick();
-    if (!have.size) {
-      this.won = true;
-      this.score += 500;
-      return res;
-    }
-    // потолок опускается
-    if (this.shots % this.spec.dropEvery === 0) this.drops++;
-    if (this.grid.some((row, r) => r + this.drops >= DEAD_ROW && row.some((v) => v != null))) this.lost = true;
     return res;
   }
 

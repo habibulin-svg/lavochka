@@ -23,7 +23,8 @@ describe('каталог: карточки согласованы с играм�
       if (!load) continue;
       const def = await load();
       const [min, max] = parse(card.players);
-      expect([min, max], 'карточка ' + card.id).toEqual([def.players.min, def.players.max]);
+      // аркада с сетевым режимом: одному — сама аркада, вдвоём и больше — стол
+      expect([min, max], 'карточка ' + card.id).toEqual([card.net ? 1 : def.players.min, def.players.max]);
       checked.push(card.id);
     }
     // проверяем, что сверка действительно что-то проверила

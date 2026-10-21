@@ -8,6 +8,7 @@ import { saveSettings, settings, store } from './settings';
 import { openSettings } from './settings-ui';
 import { mountScreen, modal, showScreen } from './ui';
 import { esc, h } from './util';
+import type { GameModule } from './view';
 import { countPlay } from '../site/stats';
 
 export interface ArcadeMode {
@@ -48,6 +49,8 @@ export interface ArcadeModule {
   list?: boolean;
   /** Кнопки «Старт» в карточке (у «Электроники» — «Игра А» и «Игра Б»); без них — только «Пауза», если игра её умеет. */
   starts?: { id: string; label: string }[];
+  /** Сетевой режим (дуэль, битва): обычный стол со своим GameDef — кнопка в карточке открывает его экран настройки. */
+  net?: { label: string; hint?: string; load: () => Promise<GameModule> };
   /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
   noRecords?: boolean;
   mount(root: HTMLElement, opts: ArcadeOpts): ArcadeInstance;
@@ -57,7 +60,7 @@ export const isArcade = (m: unknown): m is ArcadeModule => !!m && (m as ArcadeMo
 
 /** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
 /** `at.mode` — открыть сразу эту игру серии (адрес страницы игры); `at.onMode` — игрок выбрал другую. */
-export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void } = {}): () => void {
+export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void; onNet?: () => void } = {}): () => void {
   let mode = at.mode ?? store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
@@ -72,6 +75,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
         <button class="icon-btn" data-a="sound" title="Звук"></button>
       </div>
       <div class="arcade-run"></div>
+      ${mod.net ? `<button class="btn primary arcade-net" data-a="net">👥 ${esc(mod.net.label)}${mod.net.hint ? `<small>${esc(mod.net.hint)}</small>` : ''}</button>` : ''}
       <div class="arcade-panel"></div>
       <div class="arcade-scroll">
         ${mod.list ? '<h3>Игры</h3>' : ''}<div class="seg arcade-modes${mod.list ? ' list' : ''}${mod.modes.length < 8 ? ' short' : ''}"></div>
@@ -201,6 +205,13 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
       { text: 'Продолжить', primary: true, action: () => setPaused(was) },
     ]);
   };
+  const netBtn = el.querySelector('[data-a=net]') as HTMLButtonElement | null;
+  if (netBtn)
+    netBtn.onclick = () => {
+      Sound.ui();
+      stop();
+      at.onNet?.();
+    };
   const sb = q<HTMLButtonElement>('[data-a=sound]');
   const upd = () => (sb.textContent = settings.sound ? '🔊' : '🔇');
   upd();

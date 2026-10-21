@@ -41,6 +41,8 @@ export interface CatalogEntry {
   thumb?: string;
   /** Аркада (реальное время, один игрок): свой экран, без пошагового стола и сервера партий. */
   arcade?: boolean;
+  /** У аркады есть сетевой режим (свой GameDef в defs.ts, ArcadeModule.net). */
+  net?: boolean;
   /** Отложена до последней волны: код живёт, а в лаунчере карточки нет (открывается только по прямой ссылке). */
   shelved?: boolean;
   load?: () => Promise<{ default: GameModule | ArcadeModule }>;
@@ -147,7 +149,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'avtomaty', added: '2026-10-17', title: 'Игровые автоматы', sub: 'советские 15 копеек, настоящие платы', cat: 'electronics', players: '1', wave: 6, icon: '🕹', tint: '#3e5a70', thumb: 'avtomaty.webp', arcade: true, load: () => import('./avtomaty'), variants: ['Конёк-Горбунок', 'S.O.S.', 'Снежная королева', 'Городки', 'Кот-рыболов', 'Тетрис', 'Чёрный корабль', 'и ещё 4'] },
   { id: 'treasures', added: '2026-10-10', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '💎', tint: '#1a6a5a', arcade: true, shelved: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'лопата, динамит, самородок'] },
   { id: 'shariki', added: '2026-10-10', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '🐸', tint: '#4a7a10', arcade: true, shelved: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'спираль, петля'] },
-  { id: 'eggs', added: '2026-10-10', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'electronics', players: '1', wave: 6, icon: '🦕', tint: '#7a5a10', arcade: true, shelved: true, load: () => import('./eggs'), variants: ['сто уровней', 'потолок опускается', 'отскоки от стенок'] },
+  { id: 'eggs', added: '2026-10-10', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'electronics', players: '1–10', wave: 6, icon: '🦕', tint: '#7a5a10', arcade: true, net: true, shelved: true, load: () => import('./eggs'), variants: ['сто уровней', 'дуэль по сети', 'битва до 10', 'падлянки сопернику'] },
   { id: 'gops', added: '2026-10-10', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'electronics', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
 ];
 

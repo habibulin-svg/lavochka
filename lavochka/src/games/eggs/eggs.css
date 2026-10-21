@@ -23,3 +23,50 @@
   .eg-map { padding: 8px; } .eg-grid { gap: 3px; padding: 2px; } .eg-lv b { font-size: 12px; } .eg-lv span { display: none; } .eg-map-t { font-size: 16px; }
   .eg-play { gap: 4px; } .eg-btns .btn { padding: 6px 10px; font-size: 14px; }
 }
+/* Сетевой стол: своё поле в середине, в дуэли соперник рядом крупно, в битве — мини-поля вокруг. */
+.egv-root { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.egv { --own: min(480px, calc((100svh - 190px) * 0.6)); display: grid; grid-template-columns: minmax(70px, 1fr) min(var(--own), calc(100% - 180px)) minmax(70px, 1fr); grid-template-areas: 'foes main right'; gap: 12px; align-items: start; width: 100%; max-width: 1200px; padding: 6px; }
+.egv-mainbox { grid-area: main; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.egv-main { position: relative; }
+.egv-main canvas, .egv-big canvas { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.5); touch-action: none; }
+.egv-main canvas { cursor: crosshair; }
+.egv-info { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; color: #f0f4d8; font: 14px 'PT Sans', Arial, sans-serif; min-height: 20px; }
+.egv-btns { display: flex; justify-content: center; } .egv-btns .btn[hidden] { display: none; }
+/* падлянки: столбик яиц у левого края поля, перед наездом мигает */
+.egv-inc { position: absolute; left: -16px; top: 12%; width: 12px; display: flex; flex-direction: column; gap: 3px; align-items: center; z-index: 1; }
+.egv-inc i { width: 12px; height: 14px; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; background: radial-gradient(circle at 35% 30%, #fff, #c8c0b0 45%, #6a5e50); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.egv-inc b { color: #ffb0a0; font-size: 11px; }
+.egv-inc.soon i { animation: egv-blink .25s infinite alternate; background: radial-gradient(circle at 35% 30%, #fff, #ff8a70 45%, #8a1a10); }
+@keyframes egv-blink { to { transform: translateX(3px); opacity: .55; } }
+.egv-foes { grid-area: foes; display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; align-content: start; }
+.egv-foes-r { grid-area: right; } .egv-foes[hidden] { display: none; }
+.egv-big { grid-area: right; display: flex; flex-direction: column; gap: 4px; max-width: 340px; width: 100%; }
+.egv-big canvas { cursor: pointer; }
+.egv-bigname { align-self: center; background: rgba(244,236,216,.92); color: #2a1a0a; border-radius: 6px; padding: 1px 8px; font: 700 13px 'PT Sans', Arial, sans-serif; text-align: center; }
+.egv-mini { position: relative; display: flex; flex-direction: column; gap: 2px; align-items: stretch; padding: 3px; border: 2px solid transparent; border-radius: 8px; background: rgba(0,0,0,.25); cursor: pointer; color: #f0f4d8; font: 11px 'PT Sans', Arial, sans-serif; }
+.egv-mini canvas { width: 100%; height: auto; border-radius: 5px; }
+.egv-mini span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(244,236,216,.92); color: #2a1a0a; border-radius: 4px; padding: 0 4px; font-weight: 700; } .egv-mini span b { color: #c08a00; }
+.egv-mini.target { border-color: #ff7050; box-shadow: 0 0 8px #ff7050; }
+.egv-mini.picked::after { content: '🎯'; position: absolute; top: 2px; right: 4px; font-size: 13px; }
+.egv-mini.watch { border-color: #80c0ff; }
+.egv-mini.out { opacity: .55; }
+.egv-mini.danger canvas { box-shadow: 0 0 0 2px rgba(255,90,60,.6); }
+.egv-mini.hit { animation: egv-hit .4s; }
+@keyframes egv-hit { 30% { transform: translateY(4px) scale(.96); filter: brightness(1.6); } }
+/* дуэль: мини-полей нет, соперник рядом */
+.egv-root.duel .egv { grid-template-columns: minmax(0, 10fr) minmax(0, 7fr); grid-template-areas: 'main right'; max-width: calc(var(--own) * 1.7 + 24px); }
+.egv-root.duel .egv-foes { display: none; }
+.egv-root.duel .egv-big { max-width: none; }
+/* телефон: своё поле на всю ширину, соперники полоской сверху */
+@media (max-width: 760px) {
+  .egv, .egv-root.duel .egv { grid-template-columns: 1fr; grid-template-areas: 'foes' 'right' 'main'; gap: 6px; padding: 2px; }
+  .table--eggs .table-main { height: min(calc(100svh - 110px), 190vw); min-height: min(150vw, 75vh); }
+  .egv-root { align-items: flex-start; }
+  .egv-mainbox { width: min(100%, calc((100svh - 300px) * 0.6)); margin: 0 auto; gap: 4px; }
+  .egv-btns .btn { padding: 4px 12px; }
+  .egv, .egv-root.duel .egv { --own: 100%; }
+  .egv-foes { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 52px; overflow-x: auto; padding-bottom: 2px; }
+  .egv-root.duel .egv-foes { display: grid; grid-auto-columns: 70px; justify-content: center; }
+  .egv-big { display: none !important; }
+  .egv-inc { left: 2px; }
+}
