@@ -1,17 +1,25 @@
 /* «Клад»: карта уровней и поле. */
-.tr-dev { width: min(100%, 620px); margin: 0 auto; }
-.tr-map { background: linear-gradient(180deg, #3a2a14, #241808); border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
-.tr-map-t { color: #f4dca0; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; }
-.tr-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; max-height: calc(100vh - 260px); overflow: auto; }
-.tr-lv { aspect-ratio: 1; border: 0; border-radius: 10px; background: linear-gradient(180deg, #f4d890, #c89a40); color: #3a2408; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+.tr-dev { width: min(100%, 620px, calc(100vh - 200px)); margin: 0 auto; }
+.tr-map { background: #e8e2d0 var(--map) center / cover; border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
+.tr-map-t { color: #1a2a6a; text-shadow: 0 0 6px #f4f0e4, 0 0 2px #f4f0e4; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; }
+.tr-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; padding: 4px; max-height: calc(100vh - 260px); overflow: auto; }
+.tr-lv { position: relative; aspect-ratio: 1; box-shadow: 0 2px 4px rgba(0,0,0,.3); border: 0; border-radius: 10px; background: linear-gradient(180deg, #f4d890, #c89a40); color: #3a2408; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
 .tr-lv b { font: 700 15px 'PT Sans', Arial, sans-serif; }
 .tr-lv span { font-size: 10px; color: #a8600a; min-height: 12px; }
 .tr-lv.dig { background: linear-gradient(180deg, #d8b080, #8a5a2a); color: #fff4d8; }
-.tr-lv.locked { background: #4a3a24; color: #8a7a60; cursor: default; }
+.tr-lv.locked { background: rgba(250,247,238,.42); border: 2px dashed rgba(60,80,150,.55); color: #14205a; cursor: default; box-shadow: none; }
+.tr-lv.locked b { text-shadow: 0 0 2px #fbf8ef, 0 0 3px #fbf8ef, 0 0 5px #fbf8ef, 0 0 8px #fbf8ef; }
+.tr-lv.locked span { font-size: 8px; text-shadow: 0 0 3px #fbf8ef; }
 .tr-play { position: relative; display: flex; flex-direction: column; gap: 8px; }
 .tr-hud { display: flex; flex-wrap: wrap; gap: 6px 14px; color: #f4e8c8; font: 14px 'PT Sans', Arial, sans-serif; justify-content: center; }
 .tr-stars { color: #ffd24a; letter-spacing: 2px; }
-.tr-play canvas { width: 100%; aspect-ratio: 1; border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.5), inset 0 0 0 4px #6a4a1a; touch-action: none; }
+/* поле внутри нарисованной песочницы */
+.tr-box { background: #7a6a4a var(--bg) center / cover; border-radius: 14px; padding: 17%; box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.tr-play canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 4px; box-shadow: 0 0 0 2px rgba(60,40,10,.4), inset 0 4px 10px rgba(0,0,0,.3); touch-action: none; }
 .tr-btns { display: flex; gap: 8px; justify-content: center; }
-.tr-end { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.tr-end { animation: tr-pop .35s cubic-bezier(.2,1.6,.4,1); position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
 .tr-end h2 { margin: 0 0 6px; } .tr-end div { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+@keyframes tr-pop { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } }
+/* телефон: от песочницы — только бортик, поле крупнее */
+@media (max-width: 600px) { .tr-box { padding: 4%; background-size: 135%; } .tr-btns .btn { padding: 6px 10px; font-size: 14px; } }
+@media (max-width: 600px) { .tr-map { padding: 8px; } .tr-grid { gap: 3px; padding: 2px; } .tr-lv b { font-size: 12px; } .tr-lv span { font-size: 7px; } .tr-map-t { font-size: 16px; } }

@@ -1,15 +1,25 @@
-/* «Яйца динозавров»: карта уровней и поле. */
-.eg-dev { width: min(100%, 480px, calc((100vh - 230px) * 0.62)); margin: 0 auto; }
-.eg-map { background: linear-gradient(180deg, #2a4a1a, #182a0a); border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
-.eg-map-t { color: #e0f0b0; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; }
-.eg-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-height: calc(100vh - 260px); overflow: auto; }
-.eg-lv { aspect-ratio: 0.85; border: 0; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; background: radial-gradient(circle at 35% 30%, #fffbe8, #c8b888); color: #3a2a0a; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
-.eg-lv b { font: 700 13px 'PT Sans', Arial, sans-serif; } .eg-lv span { font-size: 8px; }
-.eg-lv.done { background: radial-gradient(circle at 35% 30%, #fff0a0, #8ac850); }
-.eg-lv.locked { background: #3a4a2a; color: #7a8a60; cursor: default; }
+/* «Яйца динозавров»: карта уровней (тетрадный лист, уровни — яйца) и поле. */
+.eg-dev { width: min(100%, 560px, calc((100svh - 130px) * 0.6)); margin: 0 auto; }
+.eg-map { background: #e8e2d0 var(--map) center / cover; border-radius: 16px; padding: 14px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }
+.eg-map-t { color: #1a2a6a; font: 700 18px 'PT Serif', Georgia, serif; margin-bottom: 10px; text-align: center; text-shadow: 0 0 6px #f4f0e4, 0 0 2px #f4f0e4; }
+.eg-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; max-height: calc(100vh - 260px); overflow: auto; padding: 4px; }
+.eg-lv { position: relative; aspect-ratio: 0.85; border: 0; background: var(--egg) center / 125% no-repeat; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); transition: transform .12s; }
+.eg-lv:hover:not(:disabled) { transform: scale(1.1) rotate(-6deg); }
+.eg-lv b { font: 900 13px 'PT Sans', Arial, sans-serif; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.eg-lv span { font-size: 8px; font-weight: 700; text-shadow: 0 1px 2px #000; }
+.eg-lv.done::after { content: '★'; position: absolute; top: -4px; right: 0; color: #ffd040; font-size: 12px; text-shadow: 0 1px 2px #000; }
+.eg-lv.locked { background: rgba(250,247,238,.42); border: 2px dashed rgba(60,80,150,.55); border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; color: #14205a; cursor: default; filter: none; }
+.eg-lv.locked b { text-shadow: 0 0 2px #fbf8ef, 0 0 3px #fbf8ef, 0 0 5px #fbf8ef, 0 0 8px #fbf8ef; }
+.eg-lv.locked span { text-shadow: 0 0 3px #fbf8ef; opacity: .75; }
 .eg-play { position: relative; display: flex; flex-direction: column; gap: 8px; }
 .eg-hud { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; color: #f0f4d8; font: 14px 'PT Sans', Arial, sans-serif; }
 .eg-play canvas { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.5); touch-action: none; cursor: crosshair; }
 .eg-btns { display: flex; gap: 8px; justify-content: center; }
-.eg-end { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.eg-end { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); background: #f4ecd8; color: #2a1a0a; padding: 18px 26px; border-radius: 16px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,.5); animation: eg-pop .35s cubic-bezier(.2,1.6,.4,1); }
 .eg-end h2 { margin: 0 0 6px; } .eg-end div { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+@keyframes eg-pop { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } }
+/* телефон: карта плотнее, кнопки меньше */
+@media (max-width: 600px) {
+  .eg-map { padding: 8px; } .eg-grid { gap: 3px; padding: 2px; } .eg-lv b { font-size: 12px; } .eg-lv span { display: none; } .eg-map-t { font-size: 16px; }
+  .eg-play { gap: 4px; } .eg-btns .btn { padding: 6px 10px; font-size: 14px; }
+}

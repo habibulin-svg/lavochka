@@ -98,6 +98,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
   background: radial-gradient(ellipse at 40% 0%, #3a3a5a, #121018 70%); }
 .arcade-main { min-width: 0; min-height: 0; container-type: size; }
 .arcade-stage { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+/* аркады на холсте подстраивают ширину под экран — колонка не шире сцены */
+.arcade--shariki .arcade-stage, .arcade--treasures .arcade-stage, .arcade--eggs .arcade-stage { grid-template-columns: minmax(0, 1fr); }
 .arcade-side h3 { margin: 10px 0 6px; font-size: 17px; }
 .arcade-run { display: flex; flex-wrap: wrap; gap: 6px; }
 .arcade-run .btn { flex: 1 1 0; white-space: nowrap; }
@@ -299,6 +301,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
   .arcade-screen.active { display: block; height: auto; min-height: 100vh; }
   .arcade-main { height: min(100vw * 0.62, 75vh); }
   .arcade--brick .arcade-main { height: calc(100svh - 70px); }
+  /* аркады на холсте (шарики, клад, яйца) — поле на весь экран, панель с правилами ниже */
+  .arcade--shariki .arcade-main, .arcade--treasures .arcade-main, .arcade--eggs .arcade-main { height: auto; container-type: normal; }
   .arcade-scroll { overflow: visible; }
   /* кнопки хода и статус — сразу под столом, чтобы не мотать вниз; карточным играм стол выше (вертикальная раскладка) */
   .table-panel > .game-controls { order: -2; }

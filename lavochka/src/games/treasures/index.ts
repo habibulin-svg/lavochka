@@ -2,6 +2,7 @@
  * (монета, рубин, изумруд, сапфир, аметист, жемчуг, перстень), спецфишки (лопата, динамит, самородок).
  * Ход — нажать фишку и соседнюю (или провести пальцем). Анимация: обмен, исчезновение, падение. Прогресс — на этом устройстве. */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
+import { Fx, Sprites } from '../../core/arcade-fx';
 import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
@@ -17,6 +18,12 @@ interface Progress {
 }
 
 const loadProgress = (): Progress => store.get<Progress>(KEY, { open: 1, best: {} });
+
+/** Картинки (tools/arcade-art): сокровища по виду фишки, спецфишки, клетки, песочница вокруг поля, карта уровней. */
+const GEM = ['gem0', 'gem1', 'gem2', 'gem3', 'gem4', 'gem5', 'gem6'] as const;
+const ART = new Sprites('klad', [...GEM, 'shovel', 'dynamite', 'nugget', 'stone', 'sand', 'dirt', 'bg', 'map'] as const);
+/** Цвет осколков по виду: монета, рубин, изумруд, сапфир, аметист, жемчуг, перстень. */
+const CHIP = ['#f0c020', '#e02030', '#20b050', '#2a60e8', '#9a40d8', '#f4f0ec', '#e8a820'];
 
 type Pos = { x: number; y: number; a: number };
 
@@ -35,6 +42,13 @@ class Game {
   private raf = 0;
   private down: { x: number; y: number; cx: number; cy: number } | null = null;
   private hintAt: [number, number, number, number] | null = null;
+  private fx = new Fx();
+  private last = 0;
+  private t = 0;
+  /** Сколько стоят без хода (с) — после 8 с подсказка сама. */
+  private idle = 0;
+  private sandPat: CanvasPattern | null = null;
+  private dirtPat: CanvasPattern | null = null;
 
   constructor(
     root: HTMLElement,
@@ -51,7 +65,7 @@ class Game {
     cancelAnimationFrame(this.raf);
     this.board = null;
     const pr = loadProgress();
-    let s = '<div class="tr-map"><div class="tr-map-t">Сто кладов — выберите уровень</div><div class="tr-grid">';
+    let s = `<div class="tr-map" style="--map:url('${ART.url('map')}')"><div class="tr-map-t">Сто кладов — выберите уровень</div><div class="tr-grid">`;
     for (let n = 1; n <= 100; n++) {
       const b = pr.best[n];
       const open = n <= pr.open;
@@ -74,12 +88,16 @@ class Game {
     this.board = b;
     this.el.innerHTML = `<div class="tr-play">
       <div class="tr-hud"></div>
-      <canvas width="${N * C * 2}" height="${N * C * 2}"></canvas>
+      <div class="tr-box" style="--bg:url('${ART.url('bg')}')"><canvas width="${N * C * 2}" height="${N * C * 2}"></canvas></div>
       <div class="tr-btns"><button class="btn" data-b="map">← Уровни</button><button class="btn" data-b="hint">Подсказка</button><button class="btn" data-b="again">Заново</button></div>
     </div>`;
     this.cv = this.el.querySelector('canvas') as HTMLCanvasElement;
     this.g = this.cv.getContext('2d')!;
     this.g.setTransform(2, 0, 0, 2, 0, 0);
+    this.fx = new Fx();
+    this.fx.gravity = 700;
+    this.idle = 0;
+    this.sandPat = this.dirtPat = null;
     (this.el.querySelector('[data-b=map]') as HTMLButtonElement).onclick = () => this.showMap();
     (this.el.querySelector('[data-b=again]') as HTMLButtonElement).onclick = () => this.start(n);
     (this.el.querySelector('[data-b=hint]') as HTMLButtonElement).onclick = () => {
@@ -91,7 +109,16 @@ class Game {
     this.cv.addEventListener('pointerup', () => (this.down = null));
     this.sync(true);
     this.hud();
-    const loop = () => {
+    this.last = performance.now();
+    const loop = (now: number) => {
+      const dt = Math.min(50, now - this.last);
+      this.last = now;
+      this.t += dt / 1000;
+      this.fx.update(dt);
+      if (!this.busy && this.board && !this.board.won && !this.board.lost) {
+        this.idle += dt / 1000;
+        if (this.idle > 8 && !this.hintAt) this.hintAt = this.board.hint();
+      }
       this.draw();
       this.raf = requestAnimationFrame(loop);
     };
@@ -161,6 +188,8 @@ class Game {
     const idB = this.disp[by][bx];
     if (idA == null || idB == null) return;
     this.busy = true;
+    this.idle = 0;
+    this.hintAt = null;
     // показать обмен
     this.target.set(idA, { x: bx, y: by });
     this.target.set(idB, { x: ax, y: ay });
@@ -177,18 +206,27 @@ class Game {
       return;
     }
     [this.disp[ay][ax], this.disp[by][bx]] = [idB, idA];
-    for (const st of steps) await this.playStep(st);
+    for (let i = 0; i < steps.length; i++) await this.playStep(steps[i], i + 1);
     this.sync(false);
     this.hud();
     this.busy = false;
     if (b.won || b.lost) await this.finish();
   }
 
-  private async playStep(st: Step) {
+  private async playStep(st: Step, chain: number) {
     for (const t of st.added) this.info.set(t.id, t);
-    // исчезновение
+    // исчезновение: осколки своего цвета, очки посередине, большой взрыв — тряска
+    let sx = 0;
+    let sy = 0;
     for (const [x, y] of st.removed) {
+      sx += x;
+      sy += y;
       const id = this.disp[y][x];
+      const t = id == null ? null : this.info.get(id);
+      const cx = x * C + C / 2;
+      const cy = y * C + C / 2;
+      this.fx.burst(cx, cy, CHIP[t?.kind ?? 0], 6, 170, 4);
+      if (t && t.special !== 'none') this.fx.ring(cx, cy, t.special === 'bomb' ? '#ff8040' : '#fff4b0', t.special === 'bomb' ? 90 : 60);
       if (id == null) continue;
       const p = this.pos.get(id);
       if (p) this.fading.set(id, { ...p });
@@ -201,7 +239,14 @@ class Game {
         this.pos.set(m.id, { x: m.x, y: m.y, a: 1 });
         this.target.set(m.id, { x: m.x, y: m.y });
       }
-    if (st.removed.length) Sound.capture();
+    if (st.removed.length) {
+      const k = st.removed.length;
+      this.fx.text((sx / k) * C + C / 2, (sy / k) * C + C / 2, `+${st.points}`, '#fff6c0', 26 + Math.min(12, k));
+      if (chain > 1) this.fx.text((sx / k) * C + C / 2, (sy / k) * C + C / 2 - 34, `Каскад ×${chain}`, '#ffd040', 30);
+      if (k >= 6) this.fx.shake(Math.min(10, k / 2));
+      Sound.capture();
+      Sound.beep(900 + Math.min(6, chain) * 220, 0.05, 0.08);
+    }
     await sleep(170);
     this.fading.clear();
     // падение
@@ -244,17 +289,37 @@ class Game {
     const b = this.board;
     if (!b) return;
     const g = this.g;
-    // клетки
+    g.save();
+    const [ox, oy] = this.fx.offset();
+    g.translate(ox, oy);
+    // клетки: песок (шахматкой чуть темнее), земля — в ямке с тенью, камень — кирпич
+    const pat = (im: HTMLImageElement | null, cur: CanvasPattern | null) => {
+      if (cur || !im) return cur;
+      const p = g.createPattern(im, 'repeat');
+      p?.setTransform(new DOMMatrix().scale((C * 2) / im.naturalWidth));
+      return p;
+    };
+    this.sandPat = pat(ART.get('sand'), this.sandPat);
+    this.dirtPat = pat(ART.get('dirt'), this.dirtPat);
+    g.fillStyle = this.sandPat ?? '#e4d09a';
+    g.fillRect(-10, -10, N * C + 20, N * C + 20);
     for (let y = 0; y < N; y++)
       for (let x = 0; x < N; x++) {
         const c = b.cells[y][x];
-        g.fillStyle = (x + y) % 2 ? '#e8d4a0' : '#e0cb94';
-        g.fillRect(x * C, y * C, C, C);
+        if ((x + y) % 2) {
+          g.fillStyle = 'rgba(90,60,10,0.07)';
+          g.fillRect(x * C, y * C, C, C);
+        }
         if (c.dirt) {
-          g.fillStyle = c.dirt > 1 ? '#5a3a1a' : '#8a5a2a';
-          g.fillRect(x * C + 2, y * C + 2, C - 4, C - 4);
-          g.fillStyle = 'rgba(0,0,0,0.15)';
-          for (let i = 0; i < 6; i++) g.fillRect(x * C + ((i * 23) % (C - 8)) + 4, y * C + ((i * 37) % (C - 8)) + 4, 3, 3);
+          g.fillStyle = this.dirtPat ?? '#6a4420';
+          g.fillRect(x * C + 1, y * C + 1, C - 2, C - 2);
+          if (c.dirt > 1) {
+            g.fillStyle = 'rgba(20,10,0,0.35)';
+            g.fillRect(x * C + 1, y * C + 1, C - 2, C - 2);
+          }
+          g.fillStyle = 'rgba(0,0,0,0.35)';
+          g.fillRect(x * C + 1, y * C + 1, C - 2, 4);
+          g.fillRect(x * C + 1, y * C + 1, 3, C - 2);
         }
         if (c.stone) this.stone(x * C, y * C);
       }
@@ -273,27 +338,36 @@ class Game {
         if (id == null) continue;
         const p = this.pos.get(id);
         const t = this.info.get(id);
-        if (p && t) this.tile(t, p.x * C, p.y * C, 1);
+        if (!p || !t) continue;
+        // выбранная — покачивается и чуть больше, подсказка — подпрыгивает
+        const selected = this.sel && this.sel[0] === x && this.sel[1] === y;
+        const hinted = this.hintAt && ((this.hintAt[0] === x && this.hintAt[1] === y) || (this.hintAt[2] === x && this.hintAt[3] === y));
+        const scale = selected ? 1.12 + Math.sin(this.t * 8) * 0.04 : 1;
+        const lift = hinted ? -Math.abs(Math.sin(this.t * 6)) * 6 : 0;
+        this.tile(t, p.x * C, p.y * C + lift, 1, scale);
       }
     for (const [id, p] of this.fading) {
       const t = this.info.get(id);
-      if (t) this.tile(t, p.x * C, p.y * C, 0.4);
+      if (t) this.tile(t, p.x * C, p.y * C, 0.5, 1.25);
     }
-    // выбор и подсказка
-    const ring = (x: number, y: number, col: string) => {
-      g.strokeStyle = col;
+    if (this.sel) {
+      g.strokeStyle = `rgba(255,255,255,${0.6 + Math.sin(this.t * 8) * 0.3})`;
       g.lineWidth = 3;
-      g.strokeRect(x * C + 3, y * C + 3, C - 6, C - 6);
-    };
-    if (this.sel) ring(this.sel[0], this.sel[1], '#fff');
-    if (this.hintAt) {
-      ring(this.hintAt[0], this.hintAt[1], '#ffd24a');
-      ring(this.hintAt[2], this.hintAt[3], '#ffd24a');
+      g.beginPath();
+      g.roundRect(this.sel[0] * C + 3, this.sel[1] * C + 3, C - 6, C - 6, 10);
+      g.stroke();
     }
+    this.fx.draw(g);
+    g.restore();
   }
 
   private stone(x: number, y: number) {
     const g = this.g;
+    const im = ART.get('stone');
+    if (im) {
+      g.drawImage(im, x + 2, y + 2, C - 4, C - 4);
+      return;
+    }
     const grad = g.createRadialGradient(x + C * 0.4, y + C * 0.35, 4, x + C / 2, y + C / 2, C * 0.5);
     grad.addColorStop(0, '#b8b8b8');
     grad.addColorStop(1, '#5a5a5a');
@@ -309,10 +383,40 @@ class Game {
     g.fill();
   }
 
-  private tile(t: Tile, x: number, y: number, alpha: number) {
+  private tile(t: Tile, x: number, y: number, alpha: number, scale = 1) {
     const g = this.g;
     const cx = x + C / 2;
     const cy = y + C / 2;
+    const im = ART.get(t.special === 'nugget' ? 'nugget' : GEM[t.kind % GEM.length]);
+    if (im) {
+      g.save();
+      g.globalAlpha = alpha;
+      const s = C * 0.9 * scale;
+      // спецфишка светится
+      if (t.special !== 'none') {
+        const glow = g.createRadialGradient(cx, cy, 4, cx, cy, C * 0.55);
+        const k = 0.55 + Math.sin(this.t * 5 + t.id) * 0.2;
+        glow.addColorStop(0, `rgba(255,240,170,${k})`);
+        glow.addColorStop(1, 'rgba(255,240,170,0)');
+        g.fillStyle = glow;
+        g.fillRect(x - 6, y - 6, C + 12, C + 12);
+      }
+      g.shadowColor = 'rgba(60,30,0,0.45)';
+      g.shadowOffsetY = 3;
+      g.shadowBlur = 4;
+      g.drawImage(im, cx - s / 2, cy - s / 2, s, s);
+      g.shadowColor = 'transparent';
+      // значок: лопата поперёк (строка) или вдоль (столбец), динамит — в углу
+      const badge = t.special === 'row' || t.special === 'col' ? ART.get('shovel') : t.special === 'bomb' ? ART.get('dynamite') : null;
+      if (badge) {
+        g.translate(cx + C * 0.2, cy + C * 0.2);
+        if (t.special === 'row') g.rotate(-Math.PI / 4);
+        if (t.special === 'col') g.rotate(Math.PI / 4);
+        g.drawImage(badge, -C * 0.28, -C * 0.28, C * 0.56, C * 0.56);
+      }
+      g.restore();
+      return;
+    }
     g.globalAlpha = alpha;
     const gem = (col: string, light: string, path: () => void) => {
       const gr = g.createLinearGradient(x, y, x + C, y + C);

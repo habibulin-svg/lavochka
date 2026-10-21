@@ -102,6 +102,8 @@ export class Zuma {
   private nextId = 1;
   private seed: number;
   sounds: ('shot' | 'hit' | 'pop' | 'combo' | 'win' | 'lose')[] = [];
+  /** Что лопнуло за кадр — для частиц и всплывающих очков (вид забирает и очищает). */
+  pops: { pts: [number, number][]; color: number; combo: number; points: number }[] = [];
 
   constructor(n: number, seed = n * 104729 + 7) {
     this.spec = levelSpec(n);
@@ -262,7 +264,9 @@ export class Zuma {
     if (b - a + 1 < 3) return;
     this.combo = chain ? this.combo + 1 : 1;
     const n = b - a + 1;
-    this.score += n * 10 * this.combo + (this.combo > 1 ? 50 * this.combo : 0);
+    const points = n * 10 * this.combo + (this.combo > 1 ? 50 * this.combo : 0);
+    this.score += points;
+    this.pops.push({ pts: this.balls.slice(a, b + 1).map((x) => this.at(x.s)), color: c, combo: this.combo, points });
     this.balls.splice(a, n);
     this.sounds.push(this.combo > 1 ? 'combo' : 'pop');
     // цвета во рту — только существующие
