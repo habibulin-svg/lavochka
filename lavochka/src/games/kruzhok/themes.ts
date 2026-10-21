@@ -54,4 +54,14 @@ export const THEMES: { id: string; name: string; group: 'Мат' | 'Тактик
   { id: 'endgame', name: 'Эндшпиль', group: 'Стадия' },
 ];
 
+/** Урок учебника по теме задачи (id урока) — ссылка «Урок по теме» после задачи. */
+export const THEME_LESSON: Record<string, string> = {
+  mateIn1: 'mat', mateIn2: 'mat', backRankMate: 'mat-na-poslednej', smotheredMate: 'spertyj-mat', hangingPiece: 'nezashchishchennye',
+  fork: 'vilka', pin: 'svyazka', skewer: 'linejnyj-udar', discoveredAttack: 'vskrytoe-napadenie', doubleCheck: 'vskrytoe-napadenie',
+  capturingDefender: 'unichtozhenie-zashchitnika', deflection: 'otvlechenie', attraction: 'zavlechenie', sacrifice: 'zhertva',
+  interference: 'perekrytie', intermezzo: 'promezhutochnyj-hod', zugzwang: 'cugcvang', promotion: 'prevrashchenie',
+  underPromotion: 'prevrashchenie', advancedPawn: 'prohodnaya', pawnEndgame: 'korol-i-peshka', rookEndgame: 'pozitsiya-filidora',
+  enPassant: 'vzyatie-na-prohode', castling: 'rokirovka', opening: 'pravila-debyuta', exposedKing: 'zhertva', kingsideAttack: 'zhertva',
+};
+
 export const themeName = (id: string) => THEMES.find((t) => t.id === id)?.name ?? null;

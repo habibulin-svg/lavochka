@@ -147,7 +147,7 @@ export function kruzhokPages(root: string): KruzhokPage[] {
       description: clip(`${l.title}: ${l.goal} ${l.summary}`),
       h1: `Урок ${l.n}. ${l.title}`,
       intro: `<p><b>${esc(l.part)}.</b> ${esc(l.goal)} Урок на доске — с показом ходов и заданиями: откройте его в кружке и делайте ходы сами.</p>`,
-      body: `${steps}\n<h2>Запомни</h2>\n<p>${esc(l.summary)}</p>\n<p class="seo-links">${prev ? `← <a href="${lessonPath(prev.id)}">${esc(prev.title)}</a>` : ''}${prev && next ? ' · ' : ''}${next ? `<a href="${lessonPath(next.id)}">${esc(next.title)}</a> →` : ''} · <a href="${sectionPath('uchebnik')}">Все уроки</a></p>`,
+      body: `${steps}\n<h2>Запомни</h2>\n<p>${esc(l.summary.replace(/^Запомни[:.!]?\s*/i, ''))}</p>\n<p class="seo-links">${prev ? `← <a href="${lessonPath(prev.id)}">${esc(prev.title)}</a>` : ''}${prev && next ? ' · ' : ''}${next ? `<a href="${lessonPath(next.id)}">${esc(next.title)}</a> →` : ''} · <a href="${sectionPath('uchebnik')}">Все уроки</a></p>`,
       priority: 0.6,
     });
   }

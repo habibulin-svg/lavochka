@@ -10,6 +10,9 @@ import { mountLessons } from './lessons';
 import { mountEncyclopedia } from './encyclopedia';
 import { mountTrainer } from './trainer';
 import { MODES, parseKruzhok } from './pages';
+import { onStars } from './path';
+import { mountPut } from './put';
+import { Sound } from '../../core/audio';
 import './kruzhok.css';
 
 const mod: ArcadeModule = {
@@ -22,6 +25,8 @@ const mod: ArcadeModule = {
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
   modes: MODES.map(({ id, label, hint }) => ({ id, label, hint })),
   noRecords: true,
+  // открыли кружок — сначала «Путь»: что здесь есть и с чего начать
+  home: 'put',
   mount: (root, opts) => {
     const panel = opts.panel ?? document.createElement('div');
     root.classList.add('kz-stage');
@@ -41,6 +46,8 @@ const mod: ArcadeModule = {
               ? mountLessons(root, panel, start)
               : mode === 'enciklopediya'
                 ? mountEncyclopedia(root, panel, start)
+          : mode === 'put'
+            ? mountPut(root, panel)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();
@@ -49,8 +56,18 @@ const mod: ArcadeModule = {
             : mountTrainer(root, panel);
     };
     open(opts.mode);
+    // звёзды кружка — всплывающее «+N ⭐» поверх сцены, где бы ни заработал
+    const off = onStars((n, why) => {
+      const f = document.createElement('div');
+      f.className = 'kz-stars';
+      f.innerHTML = `+${n} ⭐<small>${why}</small>`;
+      root.appendChild(f);
+      if (n >= 10) Sound.win();
+      setTimeout(() => f.remove(), 2200);
+    });
     return {
       destroy() {
+        off();
         sub.destroy();
         stockfish.quit();
         root.classList.remove('kz-stage');

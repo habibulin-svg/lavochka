@@ -14,6 +14,7 @@ import { loadLesson, loadLessonIndex, THEMES, type Lesson, type LessonInfo } fro
 import { loadProgress } from './progress';
 import { mountTrainer } from './trainer';
 import { leaveSub, lessonPath, setPath } from './pages';
+import { addStars, completeNode, DRILL_COUNT } from './path';
 
 const KEY = 'kruzhok.lessons';
 export const loadDone = () => store.get<Record<string, 1>>(KEY, {});
@@ -100,7 +101,13 @@ function mountContents(stage: HTMLElement, panel: HTMLElement, open: (l: LessonI
   };
 }
 
-function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, all: LessonInfo[], back: () => void, open: (l: LessonInfo, all: LessonInfo[]) => void) {
+/** Открыт с «Пути»: в конце урока — «Дальше по пути» вместо «следующего урока»; назад — к пути. */
+export interface LessonPathOpts {
+  backLabel: string;
+  next?: { label: string; on: () => void };
+}
+
+export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, all: LessonInfo[], back: () => void, open: (l: LessonInfo, all: LessonInfo[]) => void, path?: LessonPathOpts) {
   const host = h('<div class="kz-host"></div>');
   stage.appendChild(host);
   const board = new Board(host);
@@ -110,10 +117,12 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
   let at = 0;
   /** Ход «Твой ход» сделан (или показан) — можно дальше. */
   let solved = false;
+  /** На этом шаге уже был неверный ход — звёзд за «Твой ход» нет. */
+  let missed = false;
   let drill: { destroy(): void } | null = null;
 
   const el = h(`<div class="kz-an kz-ls">
-    <button class="btn kz-back">← Оглавление</button>
+    <button class="btn kz-back">← ${esc(path?.backLabel ?? 'Оглавление')}</button>
     <div class="kz-rank kz-ls-head"><b>${info.n}. ${esc(info.title)}</b><br><small>${esc(info.part)}</small></div>
     <div class="kz-msg kz-ls-text"><small class="hint">Открываю урок…</small></div>
     <div class="kz-nav">
@@ -185,6 +194,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
     const st = l.steps[at];
     const s = position(starts[at]);
     solved = false;
+    missed = false;
     board.set(s);
     board.draw(arrowsOf(st.arrows), marksOf(st.marks));
     say(esc(st.text));
@@ -238,6 +248,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
       return;
     }
     Sound.nomove();
+    missed = true;
     board.set(s);
     board.draw(arrowsOf(st.arrows), [...marksOf(st.marks), { sq: m.to, kind: 'bad' }]);
     say(`${esc(st.text)}<br><b>${esc(ru)} — не то.</b> ${st.try!.hint ? esc(st.try!.hint) : 'Подумай ещё.'}`, 'bad');
@@ -254,6 +265,7 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
     board.draw([{ from: m.from, to: m.to, kind: 'good' }]);
     m.captured ? Sound.capture() : Sound.place();
     if (mine) Sound.win();
+    if ((mine || lead) && !missed) addStars(2, 'верный ход с первой попытки');
     say(`${lead ? `${lead}<b>${esc(ruSan(s, m))}</b>. ` : mine ? '<b>Верно!</b> ' : `Вот как: <b>${esc(ruSan(s, m))}</b>. `}${st.try!.say ? esc(st.try!.say) : ''}`, mine || lead ? 'ok' : 'info');
     buttons([]);
     solved = true;
@@ -263,16 +275,21 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
 
   const summary = () => {
     markDone(l!.id);
+    completeNode(`l:${l!.id}`, 10, 'урок пройден');
     board.input(null);
     board.draw();
-    say(`<b>Запомни.</b> ${esc(l!.summary)}`, 'ok');
+    say(`<b>Запомни.</b> ${esc(l!.summary.replace(/^Запомни[:.!]?\s*/i, ''))}`, 'ok');
     const next = all.find((x) => x.n === l!.n + 1);
     const d = l!.drill;
-    buttons([
-      ...(d ? [{ text: '🧩 Закрепить задачами', primary: true, on: () => practice(d) }] : []),
-      ...(next ? [{ text: `Следующий урок: ${esc(next.title)} →`, primary: !d, on: () => open(next, all) }] : []),
-      { text: 'К оглавлению', on: back },
-    ]);
+    buttons(
+      path
+        ? [...(path.next ? [{ text: `▶ ${esc(path.next.label)}`, primary: true, on: path.next.on }] : []), { text: `← ${esc(path.backLabel)}`, on: back }]
+        : [
+            ...(d ? [{ text: '🧩 Закрепить задачами', primary: true, on: () => practice(d) }] : []),
+            ...(next ? [{ text: `Следующий урок: ${esc(next.title)} →`, primary: !d, on: () => open(next, all) }] : []),
+            { text: 'К оглавлению', on: back },
+          ],
+    );
     nav();
   };
 
@@ -281,7 +298,11 @@ function mountLesson(stage: HTMLElement, panel: HTMLElement, info: LessonInfo, a
     el.hidden = true;
     board.input(null);
     const title = d.themes.map((t) => THEMES.find((x) => x.id === t)?.name ?? t).join(', ');
-    drill = mountTrainer(stage, panel, { drill: { ...d, title }, back: { label: `К уроку «${l!.title}»`, on: () => show() } });
+    drill = mountTrainer(stage, panel, {
+      drill: { ...d, title },
+      back: { label: `К уроку «${l!.title}»`, on: () => show() },
+      goal: { count: DRILL_COUNT, onDone: () => completeNode(`d:${l!.id}`, 5, 'закрепление пройдено') },
+    });
   };
 
   const step = (d: -1 | 1) => {

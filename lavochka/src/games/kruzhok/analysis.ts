@@ -5,7 +5,7 @@ import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import { Board } from '../chess/board';
 import { play, type Move } from '../chess/engine';
-import { fromUci, lineRu, position, ruSan, START_FEN, toFen } from '../chess/notation';
+import { fromUci, lineRu, parseLine, position, ruSan, START_FEN, toFen } from '../chess/notation';
 import { levelOf, mountMihalych } from '../chess/mihalych';
 import { evalText, stockfish, type Analysis } from '../chess/stockfish';
 import { loadProgress } from './progress';
@@ -34,7 +34,7 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
   let alive = true;
 
   const el = h(`<div class="kz-an">
-    ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : ''}
+    ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : '<p class="kz-an-help"><b>Доска с движком.</b> Двигай фигуры за обе стороны — Stockfish сразу покажет оценку и лучшие продолжения. Хочешь разобрать свою партию — вставь её ходы ниже («1. e4 e5 2. Кf3…») и листай стрелками: где оценка резко прыгнула, там и ошибка.</p>'}
     <div class="kz-eval"><div class="kz-evalbar"><i></i></div><b class="kz-evalnum">…</b></div>
     <div class="kz-lines"><small class="hint">Движок думает…</small></div>
     <div class="kz-nav">
@@ -46,7 +46,7 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
     </div>
     <div class="kz-moves"></div>
     <label class="kz-check"><input type="checkbox" data-a="arrow"${arrow ? ' checked' : ''}> Стрелка лучшего хода</label>
-    <details class="kz-fen"><summary>Своя позиция (FEN)</summary>
+    <details class="kz-fen"${o.back ? '' : ' open'}><summary>Своя партия или позиция</summary>
       <input class="recs-input" spellcheck="false"><div class="kz-fen-btns"><button class="btn small" data-a="setfen">Поставить</button><button class="btn small" data-a="startpos">Начальная</button></div><small class="kz-err"></small>
     </details>
     <small class="hint kz-credit">Движок — <a href="/stockfish/README.txt" target="_blank" rel="noopener">Stockfish</a> (GPLv3), считает прямо в браузере.</small>
@@ -180,13 +180,22 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
       case 'startpos':
         return reset(START_FEN);
       case 'setfen': {
+        const text = fenInput.value.trim();
         try {
-          const s = position(fenInput.value.trim());
+          const s = position(text);
           if (!s.board.includes('K') || !s.board.includes('k')) throw new Error('нет короля');
           q('.kz-err').textContent = '';
           reset(toFen(s));
         } catch {
-          q('.kz-err').textContent = 'Не похоже на FEN: пример — «rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1».';
+          // не позиция — может, ходы партии (английская или русская запись, с номерами и без)
+          try {
+            const l = parseLine(text);
+            if (!l.uci.length) throw new Error('пусто');
+            q('.kz-err').textContent = '';
+            reset(START_FEN, l.uci);
+          } catch (e) {
+            q('.kz-err').textContent = `Не разобрал: ${(e as Error).message}. Вставьте ходы («1. e4 e5 2. Кf3 Кc6») или позицию в FEN.`;
+          }
         }
         return;
       }

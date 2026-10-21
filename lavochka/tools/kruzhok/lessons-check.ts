@@ -69,7 +69,7 @@ function legal(fen: string, where: string): boolean {
 async function main() {
   const sf = exe ? new Sf() : null;
   const files = readdirSync(dir).filter((f) => /^\d\d-[a-z0-9-]+\.json$/.test(f) && (!only || only.includes(f.slice(0, 2)))).sort();
-  const index: Omit<Lesson, 'steps' | 'summary' | 'drill'>[] = [];
+  const index: Omit<Lesson, 'steps' | 'summary'>[] = [];
   const themeIds = new Set(THEMES.map((t) => t.id));
   for (const f of files) {
     let l: Lesson;
@@ -144,7 +144,7 @@ async function main() {
         }
       }
     }
-    index.push({ id: l.id, n: l.n, part: l.part, title: l.title, goal: l.goal });
+    index.push({ id: l.id, n: l.n, part: l.part, title: l.title, goal: l.goal, ...(l.drill ? { drill: l.drill } : {}) });
   }
   sf?.quit();
   if (!only) writeFileSync(join(dir, 'index.json'), JSON.stringify(index, null, 1) + '\n');

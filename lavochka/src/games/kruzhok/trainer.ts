@@ -10,7 +10,9 @@ import { checkMark, fromUci, lineRu, position, ruSan, toFen, toUci } from '../ch
 import { levelOf, mountMihalych } from '../chess/mihalych';
 import { evalText, stockfish } from '../chess/stockfish';
 import { mountAnalysis } from './analysis';
-import { loadPuzzles, THEMES, themeName, type Puzzle } from './data';
+import { loadLessonIndex, loadPuzzles, THEME_LESSON, THEMES, themeName, type Puzzle } from './data';
+import { lessonPath } from './pages';
+import { addStars } from './path';
 import { loadProgress, recordPuzzle, type Progress } from './progress';
 import { rankOf } from './rating';
 
@@ -21,6 +23,8 @@ export interface TrainerOpts {
   /** Закрепление урока: только эти темы (любая из них), не выше этого рейтинга, выбор темы скрыт. */
   drill?: { themes: string[]; max?: number; title: string };
   back?: { label: string; on: () => void };
+  /** Занятие пути: решить count задач — тогда onDone (узел пройден, «Дальше по пути»). */
+  goal?: { count: number; onDone: () => void; next?: { label: string; on: () => void } };
 }
 
 export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerOpts = {}) {
@@ -39,12 +43,18 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   let busy = false;
   /** Поколение задачи: после ожидания (ход соперника, показ решения) — проверить, что задача та же (сменили тему — нет). */
   let gen = 0;
+  /** Сколько задач решено в этом занятии (цель пути). */
+  let solvedHere = 0;
+  const goalText = () => {
+    const g = el.querySelector('.kz-goal');
+    if (g && o.goal) g.textContent = solvedHere >= o.goal.count ? 'занятие пройдено ✓' : `решено ${solvedHere} из ${o.goal.count}`;
+  };
   let alive = true;
   let sub: { destroy(): void } | null = null;
 
   const el = h(`<div class="kz-tr">
     ${o.back ? `<button class="btn kz-back">← ${esc(o.back.label)}</button>` : ''}
-    ${o.drill ? `<div class="kz-drill">Закрепляем: <b>${esc(o.drill.title)}</b></div>` : ''}
+    ${o.drill ? `<div class="kz-drill">Закрепляем: <b>${esc(o.drill.title)}</b>${o.goal ? ` · <span class="kz-goal"></span>` : ''}</div>` : ''}
     <div class="kz-rank"></div>
     <div class="kz-task"></div>
     <div class="kz-msg"></div>
@@ -330,8 +340,15 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
       prog = r.progress;
       if (r.first && r.delta) flash(r.delta);
       Sound.win();
+      addStars(3, 'задача решена');
       say(`Решено! ${prog.streak > 2 ? `Серия — ${prog.streak} подряд.` : ''}`, 'ok');
-    } else say('Решено — со второй попытки тоже счёт.', 'ok');
+    } else {
+      addStars(1, 'задача решена со второй попытки');
+      say('Решено — со второй попытки тоже счёт.', 'ok');
+    }
+    solvedHere++;
+    goalText();
+    if (o.goal && solvedHere === o.goal.count) o.goal.onDone();
     finish();
   };
 
@@ -340,12 +357,22 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     renderRank();
     const names = pz!.themes.map(themeName).filter(Boolean);
     q('.kz-about').innerHTML = `Задача <a href="https://lichess.org/training/${esc(pz!.id)}" target="_blank" rel="noopener">${esc(pz!.id)}</a> · рейтинг ${pz!.rating}${names.length ? ` · ${esc(names.join(', '))}` : ''}`;
+    // урок по теме задачи — чтобы разобраться, а не только решать
+    const lid = pz!.themes.map((t) => THEME_LESSON[t]).find(Boolean);
+    const shown = pz;
+    if (lid && !o.drill)
+      void loadLessonIndex().then((all) => {
+        const l = all.find((x) => x.id === lid);
+        if (l && alive && pz === shown) q('.kz-about').insertAdjacentHTML('beforeend', `<br>📖 Урок по теме: <a href="${lessonPath(l.id)}">${l.n}. ${esc(l.title)}</a>`);
+      });
     const sol = lineRu(pz!.fen, pz!.moves);
     const explain = { kind: 'explain' as const, engine: () => ({ solution: sol }) };
     mh.actions([{ label: 'В чём идея?', say: 'Михалыч, в чём тут идея?', ...explain }]);
     mh.typed(explain);
+    const reached = !!o.goal && solvedHere >= o.goal.count;
     buttons([
-      { text: 'Следующая задача →', primary: true, on: next },
+      ...(reached && o.goal?.next ? [{ text: `▶ ${esc(o.goal.next.label)}`, primary: true, on: o.goal.next.on }] : []),
+      { text: 'Следующая задача →', primary: !reached || !o.goal?.next, on: next },
       { text: '🔍 Разобрать с движком', on: analyse },
     ]);
   };
@@ -384,6 +411,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
   if (left && !(left.id in prog.solved)) prog = recordPuzzle(prog, left.id, left.rating, false).progress;
   store.set(OPEN, null);
   renderRank();
+  goalText();
   say('Раскладываю задачи…');
   loadPuzzles()
     .then((p) => {

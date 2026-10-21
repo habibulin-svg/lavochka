@@ -5,11 +5,12 @@
 export const KRUZHOK_PATH = 'shahmatnyj-kruzhok';
 
 export const MODES = [
-  // учебник — первым: с него начинает новичок
+  // «Путь» — первым: занятия по порядку, с него начинает новичок; остальное — свободно, на выбор
+  { id: 'put', label: 'Путь', hint: 'занятия по порядку: урок → задачи → партия → зачёт', path: null },
   { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом', path: 'uchebnik' },
   { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме', path: 'zadachi' },
   { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»', path: 'partii' },
-  { id: 'razbor', label: 'Разбор', hint: 'доска с движком', path: 'razbor' },
+  { id: 'razbor', label: 'Доска с движком', hint: 'разобрать свою партию или позицию', path: 'razbor' },
   { id: 'enciklopediya', label: 'Энциклопедия', hint: 'дебюты и термины', path: 'enciklopediya' },
   { id: 'zhurnal', label: 'Журнал', hint: 'разряд, рейтинг, успехи', path: null },
 ] as const;

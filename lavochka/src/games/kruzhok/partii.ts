@@ -13,6 +13,7 @@ import { evalText, stockfish } from '../chess/stockfish';
 import { loadClassic, loadClassics, type ClassicGame, type ClassicInfo } from './data';
 import { loadProgress } from './progress';
 import { classicPath, leaveSub, setPath } from './pages';
+import { addStars, completeNode } from './path';
 
 /** Ответы на остановки: id партии → номер полухода → 1 нашёл, 0 нет. */
 type Answers = Record<string, Record<string, 0 | 1>>;
@@ -87,7 +88,7 @@ function mountList(stage: HTMLElement, panel: HTMLElement, open: (id: string) =>
   };
 }
 
-function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, back: () => void) {
+export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, back: () => void, backLabel = 'Все партии') {
   const host = h('<div class="kz-host"></div>');
   stage.appendChild(host);
   const board = new Board(host);
@@ -106,7 +107,7 @@ function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, back: () 
   let answers: Record<string, 0 | 1> = loadAnswers()[id] ?? {};
 
   const el = h(`<div class="kz-an kz-pg">
-    <button class="btn kz-back">← Все партии</button>
+    <button class="btn kz-back">← ${esc(backLabel)}</button>
     <div class="kz-rank kz-pg-head"><small class="hint">Загружаю партию…</small></div>
     <div class="kz-msg kz-note"></div>
     <div class="kz-btns"></div>
@@ -301,6 +302,9 @@ function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, back: () 
     const res: 0 | 1 = ok && !hinted ? 1 : 0;
     answers = { ...answers, [ply]: res };
     saveAnswer(id, ply, res);
+    if (res) addStars(5, 'найден ход мастера');
+    // все вопросы партии пройдены — узел пути «партия мастера»
+    if (g.stops.every((x) => answers[x.ply] !== undefined)) completeNode(`g:${id}`, 10, 'партия мастера разобрана');
     asking = null;
     at = ply + 1;
     reach = Math.max(reach, at);

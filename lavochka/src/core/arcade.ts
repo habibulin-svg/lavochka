@@ -53,6 +53,8 @@ export interface ArcadeModule {
   net?: { label: string; hint?: string; load: () => Promise<GameModule> };
   /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
   noRecords?: boolean;
+  /** Раздел «главная»: с него открывается аркада, если адрес не называет раздел (иначе — последний выбранный). */
+  home?: string;
   mount(root: HTMLElement, opts: ArcadeOpts): ArcadeInstance;
 }
 
@@ -61,7 +63,7 @@ export const isArcade = (m: unknown): m is ArcadeModule => !!m && (m as ArcadeMo
 /** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
 /** `at.mode` — открыть сразу эту игру серии (адрес страницы игры); `at.onMode` — игрок выбрал другую. */
 export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void; onNet?: () => void } = {}): () => void {
-  let mode = at.mode ?? store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
+  let mode = at.mode ?? mod.home ?? store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
   let paused = false;

@@ -47,7 +47,7 @@ export function loadOpenings(): Promise<Opening[]> {
   return openings;
 }
 
-export { THEMES, themeName } from './themes';
+export { THEMES, THEME_LESSON, themeName } from './themes';
 
 /** Классическая партия: ходы, оценки Stockfish после каждого полухода (за белых, мат — ±10000), пометки,
  * остановки «А как сходил бы ты?» и тексты (собирает tools/kruzhok/games.ts). */
@@ -124,7 +124,7 @@ export interface Lesson {
   drill?: { themes: string[]; max?: number };
 }
 
-export type LessonInfo = Pick<Lesson, 'id' | 'n' | 'part' | 'title' | 'goal'> & { file: string };
+export type LessonInfo = Pick<Lesson, 'id' | 'n' | 'part' | 'title' | 'goal' | 'drill'> & { file: string };
 
 const lessonFiles = import.meta.glob<Lesson>('./lessons/[0-9]*.json', { import: 'default' });
 
