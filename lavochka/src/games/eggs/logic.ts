@@ -19,7 +19,7 @@ export interface LevelSpec {
   n: number;
   colors: number;
   rows: number;
-  /** Узор: 0 — сплошь, 1 — пирамида, 2 — шахматка с дырами, 3 — полосы. */
+  /** Узор: 0 — сплошь, 1 — пирамида, 2 — шахматка с дырами, 3 — косые полосы с примесью. */
   pattern: number;
   dropEvery: number;
 }
@@ -62,7 +62,13 @@ export class Bubbles {
         let put = true;
         if (sp.pattern === 1) put = c >= Math.floor(r / 2) && c < COLS - Math.floor(r / 2) - (odd(r, 0) ? 1 : 0);
         if (sp.pattern === 2) put = (r + c) % 3 !== 0;
-        const color = sp.pattern === 3 ? Math.floor(r / 2) % sp.colors : Math.floor(this.rnd() * sp.colors);
+        let color = Math.floor(this.rnd() * sp.colors);
+        // полосы — косые, в одно яйцо (c + ⌈r/2⌉ — одна диагональ сетки), и треть яиц другого цвета: сплошной
+        // одноцветный пласт снимался бы одним выстрелом
+        if (sp.pattern === 3) {
+          const stripe = (c + Math.ceil(r / 2)) % sp.colors;
+          color = this.rnd() < 0.3 ? (stripe + 1 + Math.floor(this.rnd() * (sp.colors - 1))) % sp.colors : stripe;
+        }
         if (put) this.grid[r][c] = color;
       }
     this.cur = this.pick();
