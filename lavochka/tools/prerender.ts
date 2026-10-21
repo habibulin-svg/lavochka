@@ -664,7 +664,19 @@ function homePage() {
     title: t.title,
     description: t.description,
     priority: 1,
-    jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: abs('/'), inLanguage: 'ru' }, ...(faq.ld ? [faq.ld] : [])],
+    // Название сайта в выдаче Google берёт отсюда; alternateName и издатель — чтобы не путал с похожими по имени магазинами.
+    jsonld: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SITE_NAME,
+        alternateName: ['Лавочка — дворовые игры', 'lavochka-games.ru'],
+        url: abs('/'),
+        inLanguage: 'ru',
+        publisher: { '@type': 'Organization', name: SITE_NAME, url: abs('/') },
+      },
+      ...(faq.ld ? [faq.ld] : []),
+    ],
     body: `<h1>${esc(t.h1)}</h1>\n${t.intro}\n${cards(SHOWN.filter(ready), true)}\n${sections}\n${opt(faq.html)}${latestPosts()}`,
   });
 }
