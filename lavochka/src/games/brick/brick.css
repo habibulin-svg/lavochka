@@ -1,7 +1,18 @@
 /* Brick Game E-23: корпус-картинка, поверх — ЖК из MAME (multiply по серо-зелёному стеклу), подписи и колпачки кнопок. */
 .brk { --brk-body: #e0ddd5; width: 100%; height: 100%; display: grid; place-items: center; }
-.brk-unit { position: relative; width: min(100cqw, 620px, 100cqh * 488 / 940); aspect-ratio: 488 / 940; filter: drop-shadow(0 10px 18px rgba(30, 20, 10, 0.45)); user-select: none; -webkit-user-select: none; touch-action: none; }
-.brk-case { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; border-radius: 7% 7% 0 0 / 3.6% 3.6% 0 0; }
+/* Корпус 488×940 режется по y=445 (низ экрана): --y0 — откуда начинается низ (445 — подряд, 590 — без полосы), --kb — масштаб низа. */
+.brk-unit { --y0: 445; --kb: 1; position: relative; width: min(100cqw, 620px, 100cqh * 488 / (445 + (940 - var(--y0)) * var(--kb))); filter: drop-shadow(0 10px 18px rgba(30, 20, 10, 0.45)); user-select: none; -webkit-user-select: none; touch-action: none; }
+.brk-top { position: relative; width: 100%; aspect-ratio: 488 / 445; overflow: hidden; border-radius: 7% 7% 0 0 / 7.6% 7.6% 0 0; }
+.brk-top .brk-layer { position: absolute; left: 0; top: 0; width: 100%; height: calc(940 / 445 * 100%); }
+.brk-bot { display: flex; justify-content: center; background: var(--brk-body); }
+.brk-botin { position: relative; width: calc(var(--kb) * 100%); height: 0; padding-top: calc((940 - var(--y0)) / 488 * var(--kb) * 100%); overflow: hidden; }
+.brk-botin .brk-layer { position: absolute; left: 0; width: 100%; top: calc(var(--y0) / (940 - var(--y0)) * -100%); height: calc(940 / (940 - var(--y0)) * 100%); }
+.brk-case { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+/* компьютер: экран крупнее — полосы между экраном и кнопками нет, кнопки вдвое мельче (играют клавишами) */
+@media (min-width: 900px) {
+  .brk-unit { --y0: 590; --kb: 0.42; width: min(100cqw, 760px, 100cqh * 488 / (445 + (940 - var(--y0)) * var(--kb))); }
+  .brk-bot { border-radius: 0 0 14px 14px; }
+}
 .brk-lcd { position: absolute; mix-blend-mode: multiply; pointer-events: none; }
 .brk-lcd svg { width: 100%; height: 100%; display: block; }
 .brk-lcd [data-s] { opacity: 0.05; }

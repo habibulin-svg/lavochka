@@ -104,7 +104,9 @@ function pick(m: BrickMachine, num: number) {
 function mount(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
   const wrap = document.createElement('div');
   wrap.className = 'brk';
-  wrap.innerHTML = `<div class="brk-unit"><img class="brk-case" alt="" src="${BASE}case.webp"><div class="brk-lcd" style="left:${pct(LCD.x, W)};top:${pct(LCD.y, H)};width:${pct(LCD.w, W)};height:${pct(LCD.h, H)}"></div>${LABELS}${BUTTONS.map(buttonHtml).join('')}</div>`;
+  // корпус двумя кусками: верх с экраном и низ с кнопками (на компьютере низ — без широкой полосы и вдвое мельче, см. brick.css);
+  // в каждом куске — слой во весь корпус, так что координаты кнопок и экрана прежние
+  wrap.innerHTML = `<div class="brk-unit"><div class="brk-top"><div class="brk-layer"><img class="brk-case" alt="" src="${BASE}case.webp"><div class="brk-lcd" style="left:${pct(LCD.x, W)};top:${pct(LCD.y, H)};width:${pct(LCD.w, W)};height:${pct(LCD.h, H)}"></div></div></div><div class="brk-bot"><div class="brk-botin"><div class="brk-layer"><img class="brk-case" alt="" src="${BASE}case.webp">${LABELS}${BUTTONS.map(buttonHtml).join('')}</div></div></div></div>`;
   root.appendChild(wrap);
   const lcd = wrap.querySelector('.brk-lcd') as HTMLElement;
   const info = document.createElement('p');
