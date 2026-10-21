@@ -304,6 +304,7 @@ const MIME: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
   '.mp4': 'video/mp4',
   '.ogg': 'audio/ogg',
+  '.wasm': 'application/wasm',
   '.glb': 'model/gltf-binary',
 };
 

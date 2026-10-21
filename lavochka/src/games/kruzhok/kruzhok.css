@@ -1,0 +1,84 @@
+/* Шахматный кружок: доска на зелёном сукне стола кружка, справа — тетрадная карточка раздела. */
+.arcade--kruzhok .arcade-main { background: radial-gradient(ellipse at 50% 30%, rgba(255, 220, 160, 0.1), transparent 60%), linear-gradient(160deg, #2e3a2c, #182016 70%); border-radius: 14px; }
+.kz-stage { padding: 10px; box-sizing: border-box; }
+.kz-host { width: 100%; height: 100%; display: grid; place-items: center; }
+.kz-host[hidden] { display: none; }
+.kz-stage .kb-wrap { position: relative; width: min(100cqw - 20px, 100cqh - 20px); height: auto; aspect-ratio: 1; }
+
+/* доска */
+.kb-wrap .kb-mark.kb-good { fill: rgba(60, 170, 60, 0.45); }
+.kb-wrap .kb-mark.kb-bad { fill: rgba(220, 40, 20, 0.45); }
+.kb-wrap .kb-mark.kb-info { fill: rgba(40, 110, 220, 0.4); }
+.kb-wrap .kb-mark.kb-hint { fill: rgba(255, 200, 40, 0.55); }
+.kb-wrap .kb-arrow { stroke-width: 15; stroke-linecap: round; opacity: 0.82; }
+.kb-wrap .kb-arrow.kb-good, .kb-wrap .kb-head.kb-good { stroke: #2f9e3a; fill: #2f9e3a; }
+.kb-wrap .kb-arrow.kb-bad, .kb-wrap .kb-head.kb-bad { stroke: #d2321e; fill: #d2321e; }
+.kb-wrap .kb-arrow.kb-info, .kb-wrap .kb-head.kb-info { stroke: #2a6edc; fill: #2a6edc; }
+.kb-wrap .kb-arrow.kb-hint, .kb-wrap .kb-head.kb-hint { stroke: #e8a810; fill: #e8a810; }
+.kb-wrap .kb-head { stroke: none !important; }
+.kb-wrap:not(.kb-live) .ch-pc { cursor: default; }
+.kb-promo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(80%, 360px); padding: 12px; border-radius: 12px; background: #f3e2b8; color: #2a1206; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-align: center; z-index: 3; }
+.kb-promo b { display: block; margin-bottom: 8px; }
+
+/* карточка раздела */
+.kz-tr, .kz-an { display: flex; flex-direction: column; gap: 8px; }
+.kz-tr[hidden] { display: none; }
+.kz-rank { position: relative; padding: 8px 10px; border-radius: 10px; background: rgba(255, 250, 235, 0.55); border: 1px dashed rgba(42, 18, 6, 0.35); line-height: 1.35; }
+.kz-task { font-size: 16px; }
+.kz-msg { min-height: 2.6em; padding: 6px 9px; border-radius: 8px; background: rgba(255, 250, 235, 0.45); }
+.kz-msg.kz-ok { background: rgba(70, 160, 70, 0.25); }
+.kz-msg.kz-bad { background: rgba(210, 50, 30, 0.18); }
+.kz-btns { display: flex; flex-direction: column; gap: 6px; }
+.kz-btns .btn { width: 100%; }
+.kz-theme { display: flex; flex-direction: column; gap: 3px; font-weight: 700; font-size: 13px; }
+.kz-theme select { font: 15px 'PT Sans', sans-serif; padding: 5px; border-radius: 8px; border: 1px solid #a08a60; background: #fffaf0; }
+.kz-about a { color: inherit; }
+.kz-flash { position: absolute; right: 10px; top: 8px; font: 700 22px 'PT Sans', sans-serif; animation: kz-flash 1.8s ease-out forwards; }
+.kz-flash.up { color: #1f7a2a; }
+.kz-flash.down { color: #b0281a; }
+@keyframes kz-flash { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-24px); } }
+
+/* разбор */
+.kz-back { align-self: flex-start; }
+.kz-eval { display: flex; align-items: center; gap: 8px; }
+.kz-evalbar { flex: 1; height: 16px; border-radius: 8px; background: #2a1a10; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.5); }
+.kz-evalbar i { display: block; height: 100%; width: 50%; background: #f6ecd4; transition: width 0.4s; }
+.kz-evalnum { min-width: 4.5em; text-align: right; font-size: 15px; }
+.kz-lines { display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.3; }
+.kz-line b { display: inline-block; min-width: 3.4em; }
+.kz-nav { display: flex; gap: 4px; }
+.kz-nav .btn { flex: 1; padding-left: 0; padding-right: 0; }
+.kz-moves { max-height: 180px; overflow: auto; display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: baseline; font-size: 14px; padding: 6px; border-radius: 8px; background: rgba(255, 250, 235, 0.45); }
+.kz-moves .n { opacity: 0.6; font-size: 12px; }
+.kz-mv { border: 0; background: none; padding: 1px 4px; border-radius: 4px; font: inherit; cursor: pointer; color: inherit; }
+.kz-mv.on { background: var(--brown, #8a5a2a); color: #fff; }
+.kz-check { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.kz-fen summary { cursor: pointer; font-size: 14px; }
+.kz-fen input { width: 100%; box-sizing: border-box; font: 12px 'PT Mono', monospace; padding: 5px; margin: 6px 0; }
+.kz-fen-btns { display: flex; gap: 6px; }
+.kz-err { color: #a02010; }
+.kz-credit a { color: inherit; }
+
+/* журнал */
+.kz-journal { width: min(760px, 100%); max-height: 100%; overflow: auto; box-sizing: border-box; padding: 16px 20px; border-radius: 12px; align-self: start; }
+.kz-journal h2 { margin: 0 0 10px; }
+.kz-journal h3 { margin: 16px 0 6px; }
+.kz-j-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.kz-j-top > div { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 10px; background: rgba(255, 250, 235, 0.55); }
+.kz-j-top b { font-size: 20px; }
+.kz-j-top small { opacity: 0.75; }
+.kz-j-chart svg { width: 100%; height: 140px; display: block; color: #8a3a1a; background: repeating-linear-gradient(0deg, rgba(40, 80, 160, 0.12) 0 1px, transparent 1px 20px); border-radius: 8px; }
+.kz-j-axis { display: flex; justify-content: space-between; opacity: 0.7; }
+.kz-ladder { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column-reverse; gap: 2px; }
+.kz-ladder li { padding: 3px 8px; border-radius: 6px; opacity: 0.6; }
+.kz-ladder li b { display: inline-block; min-width: 3.5em; }
+.kz-ladder li.past { opacity: 0.85; }
+.kz-ladder li.on { opacity: 1; background: rgba(138, 90, 42, 0.25); font-weight: 700; }
+.kz-j-th { display: grid; grid-template-columns: 1fr 120px 90px; gap: 8px; align-items: center; font-size: 14px; padding: 2px 0; border-bottom: 1px dotted rgba(42, 18, 6, 0.2); }
+.kz-j-th i { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #8a5a2a var(--w), rgba(42, 18, 6, 0.12) var(--w)); }
+.kz-j-th small { text-align: right; opacity: 0.75; }
+
+@media (max-width: 900px) {
+  .arcade--kruzhok .arcade-main { height: min(100vw, 75vh); }
+  .kz-moves { max-height: 120px; }
+}

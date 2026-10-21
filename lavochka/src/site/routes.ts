@@ -11,6 +11,7 @@ export const SLUGS: Record<string, string> = {
   shishbesh: 'shish-besh',
   nardy: 'nardy',
   chess: 'shahmaty',
+  kruzhok: 'shahmatnyj-kruzhok',
   checkers: 'shashki',
   go: 'go',
   renju: 'rendzyu',

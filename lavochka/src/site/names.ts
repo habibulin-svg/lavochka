@@ -99,6 +99,7 @@ export const NAMES: Record<string, Names> = {
   // — электроника —
   elektronika: { ru: ['ну погоди', 'ну, погоди! игра', 'волк ловит яйца', 'электроника ИМ-02', 'тайны океана', 'весёлый повар', 'советские электронные игры'], en: ['Nu, pogodi!', 'Elektronika IM-02', 'Game & Watch', 'LCD game'] },
   brick: { ru: ['тетрис', 'брик гейм', 'тетрис 9999 в 1', 'тетрис 90-х'], en: ['Brick Game', 'Tetris', 'Brick Game 9999 in 1', 'E-23'] },
+  kruzhok: { ru: ['шахматные задачи', 'задачи по шахматам', 'шахматный кружок', 'школа шахмат', 'обучение шахматам', 'мат в 2 хода', 'анализ партии', 'шахматный движок'], en: ['Chess puzzles', 'Chess tactics', 'Chess school', 'Chess analysis board', 'Stockfish'] },
   avtomaty: { ru: ['советские игровые автоматы', 'автоматы за 15 копеек', 'морской бой автомат', 'конёк-горбунок автомат', 'игровые автоматы СССР'], en: ['Soviet arcade machines', 'Soviet arcade', 'Arcade emulator'] },
   treasures: { ru: ['три в ряд', 'клад три в ряд', 'собери три в ряд', 'три в ряд сокровища', 'самоцветы'], en: ['Match 3', 'Treasure match', 'Bejeweled', 'Jewels', 'Match three'] },
   shariki: { ru: ['зума', 'шарики зума', 'лягушка шарики', 'зума делюкс', 'шарики стрелялка', 'цепочка шариков'], en: ['Zuma', 'Marble shooter', 'Zuma Deluxe', 'Ball shooter'] },
