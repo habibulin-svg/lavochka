@@ -1,6 +1,6 @@
 /* Шахматный кружок — журнал ученика: разряд и лесенка разрядов, рейтинг по дням, серия, задачи по темам. */
 import { esc, h } from '../../core/util';
-import { loadPuzzles, THEMES } from './data';
+import { loadThemeIndex, THEMES } from './data';
 import { currentUser } from '../../site/account';
 import { loadDone, resetLessons } from './lessons';
 import { loadPath, resetPath } from './path';
@@ -50,13 +50,12 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
       <div class="kz-j-axis"><small>${Math.round(lo + 20)}</small><small>${Math.round(hi - 20)}</small></div>`;
   }
 
-  void loadPuzzles().then((all) => {
-    const byId = new Map(all.map((x) => [x.id, x]));
+  void loadThemeIndex().then(({ total: totals, of }) => {
     const rows: string[] = [];
     for (const t of THEMES) {
-      const total = all.filter((x) => x.themes.includes(t.id)).length;
+      const total = totals.get(t.id) ?? 0;
       if (!total) continue;
-      const mine = Object.entries(p.solved).filter(([id]) => byId.get(id)?.themes.includes(t.id));
+      const mine = Object.entries(p.solved).filter(([id]) => of.get(id)?.includes(t.id));
       const ok = mine.filter(([, v]) => v === 1).length;
       rows.push(`<div class="kz-j-th"><span>${esc(t.name)}</span><i style="--w:${Math.round((mine.length / total) * 100)}%"></i><small>${mine.length ? `${ok}/${mine.length}` : '—'} из ${total}</small></div>`);
     }

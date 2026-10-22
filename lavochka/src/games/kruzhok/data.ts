@@ -36,6 +36,19 @@ export function loadPuzzles(): Promise<Puzzle[]> {
   return puzzles;
 }
 
+/** Для журнала: сколько задач в каждой теме и темы каждой задачи — без самой базы задач. */
+export async function loadThemeIndex(): Promise<{ total: Map<string, number>; of: Map<string, string[]> }> {
+  const j = (await (await fetch(base + 'themes-index.json')).json()) as ThemeIndex;
+  const total = new Map(THEMES.map((t, i) => [t.id, j.n[i] ?? 0]));
+  const of = new Map(
+    j.p.split(';').map((x) => {
+      const [id, ix] = x.split(':');
+      return [id, ix ? ix.split(',').map((i) => THEMES[+i]?.id ?? '') : []];
+    }),
+  );
+  return { total, of };
+}
+
 export function loadOpenings(): Promise<Opening[]> {
   openings ??= fetch(base + 'openings.json')
     .then((r) => r.json())
@@ -48,6 +61,7 @@ export function loadOpenings(): Promise<Opening[]> {
 }
 
 export { THEMES, THEME_LESSON, themeName } from './themes';
+import { THEMES, type ThemeIndex } from './themes';
 
 /** Классическая партия: ходы, оценки Stockfish после каждого полухода (за белых, мат — ±10000), пометки,
  * остановки «А как сходил бы ты?» и тексты (собирает tools/kruzhok/games.ts). */

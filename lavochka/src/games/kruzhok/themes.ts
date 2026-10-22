@@ -65,3 +65,22 @@ export const THEME_LESSON: Record<string, string> = {
 };
 
 export const themeName = (id: string) => THEMES.find((t) => t.id === id)?.name ?? null;
+
+/** Указатель для журнала: темы — номерами в THEMES, задачи — строкой «id:0,5;id:3». */
+export interface ThemeIndex {
+  /** Сколько задач в каждой теме (по порядку THEMES). */
+  n: number[];
+  p: string;
+}
+
+export function themeIndex(list: [string, string[]][]): ThemeIndex {
+  const n = THEMES.map(() => 0);
+  const p = list
+    .map(([id, th]) => {
+      const ix = THEMES.map((t, i) => (th.includes(t.id) ? i : -1)).filter((i) => i >= 0);
+      for (const i of ix) n[i]++;
+      return `${id}:${ix.join(',')}`;
+    })
+    .join(';');
+  return { n, p };
+}

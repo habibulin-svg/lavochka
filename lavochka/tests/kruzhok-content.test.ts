@@ -8,6 +8,7 @@ import { inCheck, play } from '../src/games/chess/engine';
 import { fromUci, position, toFen } from '../src/games/chess/notation';
 import type { ClassicGame, Lesson } from '../src/games/kruzhok/data';
 import { starsBest, stepPositions } from '../src/games/kruzhok/lesson-steps';
+import { themeIndex } from '../src/games/kruzhok/themes';
 import { THEMES } from '../src/games/kruzhok/themes';
 
 const LESSONS = 'src/games/kruzhok/lessons';
@@ -93,5 +94,13 @@ describe('термины кружка', () => {
       if (t.lesson) expect(ids.has(t.lesson), `${t.term}: урок ${t.lesson}`).toBe(true);
       if (t.fen) expect(legal(t.fen), t.term).toBeNull();
     }
+  });
+});
+
+describe('указатель тем для журнала', () => {
+  it('совпадает с базой задач (иначе — npx tsx tools/kruzhok/puzzle-themes.ts)', () => {
+    const db = JSON.parse(readFileSync('public/kruzhok/puzzles.json', 'utf8')) as { p: [string, string, string, number, string][] };
+    const idx = JSON.parse(readFileSync('public/kruzhok/themes-index.json', 'utf8'));
+    expect(idx).toEqual(themeIndex(db.p.map(([id, , , , th]) => [id, th.split(' ')])));
   });
 });
