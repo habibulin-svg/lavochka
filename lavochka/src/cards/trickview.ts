@@ -4,8 +4,8 @@
 import { Sound } from '../core/audio';
 import { esc, h, sleep } from '../core/util';
 import type { GameView, ViewCtx } from '../core/view';
-import { preloadDeck } from './render';
-import { settings } from '../core/settings';
+import { preloadDeck, deckStyle } from './render';
+
 import { sameCard, sortHand, type Card, type Suit } from './deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from './stage';
 import type { SeatLook } from '../core/types';
@@ -86,7 +86,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, 1000, 720, `tv-wrap ${this.cls}-wrap`, `<div class="tv-cloth ${this.cloth}"></div>`, { portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="tv-plates"></div><div class="cs-banner" hidden></div>';

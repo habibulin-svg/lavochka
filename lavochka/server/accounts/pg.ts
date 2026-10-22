@@ -228,6 +228,10 @@ export const MIGRATIONS: string[] = [
   `alter table ai_usage add column helper text not null default 'mihalych';
    alter table ai_usage drop constraint ai_usage_pkey;
    alter table ai_usage add primary key (user_id, month, helper);`,
+  // 13 — в подписку вошло оформление (колода «Классическая»): действующим подписчикам — до конца их срока
+  `insert into user_rights (user_id, right_id, until)
+     select user_id, 'cosmetics', until from subscriptions where until > now()
+   on conflict (user_id, right_id) do nothing;`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);

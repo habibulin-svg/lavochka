@@ -28,7 +28,7 @@ export const store = {
   },
 };
 
-export type DeckStyle = 'atlas' | 'slavic' | 'russian';
+export type DeckStyle = 'atlas' | 'slavic' | 'russian' | 'classic';
 export type NetMode = 'p2p' | 'server';
 
 export interface Settings {

@@ -11,7 +11,7 @@ import { attachSeo } from './site/page';
 import { siteBar } from './site/bar';
 import { handleAuthRoute, handleOAuthReturn, loadAccount } from './site/account';
 import { handleDonateReturn, loadDonate } from './site/donate';
-import { handlePlusReturn, wirePlusLinks } from './site/plus';
+import { handlePlusReturn, mayCosmetics, wirePlusLinks } from './site/plus';
 import { wireSupportLinks } from './site/support';
 import { likeButton } from './site/likes';
 import './site/history';
@@ -24,7 +24,7 @@ import { canPlay, releaseOf, releaseReady } from './site/release';
 import { esc, h } from './core/util';
 import { byId, type CatalogEntry, type Category } from './games/catalog';
 import { earlyNote, yard } from './launcher/yard';
-import { cardHTML, DECK_STYLES } from './cards/render';
+import { cardHTML, DECK_STYLES, setCosmetics } from './cards/render';
 import { makeDeck } from './cards/deck';
 import { Authority } from './core/authority';
 import { SeededRng } from './core/rng';
@@ -382,4 +382,5 @@ else {
   if (params.has('obrashenie')) setTimeout(() => void import('./site/support').then((s) => s.handleTicketLink()));
   wireSupportLinks();
   wirePlusLinks();
+  setCosmetics(mayCosmetics);
 }

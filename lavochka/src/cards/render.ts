@@ -1,7 +1,8 @@
 /* Отрисовка карт: сканы трёх советских колод (атласная, славянская, «Русский стиль»), собранные
  * скриптом tools/cards/build.py в public/cards/<колода>/<масть><ранг>.webp; рубашка — back.webp.
+ * «Классическая» (Лавочка+, право cosmetics) — Vector Playing Cards, LGPL-3.0, tools/cards/classic.py.
  * Картон, потёртости и скругление уже в картинке; тень и блик — в CSS (.card). */
-import type { DeckStyle } from '../core/settings';
+import { settings, type DeckStyle } from '../core/settings';
 import { cardName, type Card } from './deck';
 
 /** Пропорции карты: 58×90 мм. */
@@ -62,8 +63,18 @@ export function deckImage(url: string): HTMLImageElement | undefined {
   return byUrl.get(url);
 }
 
-export const DECK_STYLES: { id: DeckStyle; title: string; hint: string }[] = [
+export const DECK_STYLES: { id: DeckStyle; title: string; hint: string; plus?: true }[] = [
   { id: 'atlas', title: 'Атласные', hint: 'классическая советская колода' },
   { id: 'slavic', title: 'Славянские', hint: 'богатыри и узорочье' },
   { id: 'russian', title: 'Русский стиль', hint: 'бояре, стрельцы, боярыни' },
+  { id: 'classic', title: 'Классическая', hint: 'как в покер-клубе: J, Q, K, A', plus: true },
 ];
+
+/** Есть ли право на оформление из «Лавочки+» (сайт подставляет проверку по аккаунту). */
+let cosmetics = () => false;
+export function setCosmetics(f: () => boolean) {
+  cosmetics = f;
+}
+export const mayDeck = (st: DeckStyle) => !DECK_STYLES.find((d) => d.id === st)?.plus || cosmetics();
+/** Колода за столом: выбранная, а платная без подписки — атласная. */
+export const deckStyle = (): DeckStyle => (mayDeck(settings.deck) ? settings.deck : 'atlas');

@@ -1,5 +1,6 @@
 /* Окно общих настроек сборника. */
-import { cardHTML, DECK_STYLES } from '../cards/render';
+import { cardHTML, DECK_STYLES, mayDeck } from '../cards/render';
+import { plusNote } from '../site/plus';
 import type { Card } from '../cards/deck';
 import { serverBase } from './net/ws';
 import { saveSettings, settings, type DeckStyle, type NetMode } from './settings';
@@ -54,10 +55,12 @@ export function openSettings() {
   const renderDecks = () => {
     pick.innerHTML = '';
     for (const d of DECK_STYLES) {
-      const b = h(`<button class="deck-opt${settings.deck === d.id ? ' on' : ''}">
+      const lock = !mayDeck(d.id);
+      const b = h(`<button class="deck-opt${settings.deck === d.id && !lock ? ' on' : ''}${lock ? ' locked' : ''}">
           <span class="deck-cards">${SAMPLE.map((c) => cardHTML(c, d.id)).join('')}${cardHTML(null, d.id)}</span>
-          <b>${d.title}</b><small>${d.hint}</small></button>`);
+          <b>${lock ? '🔒 ' : ''}${d.title}</b><small>${d.hint}${d.plus ? ' · Лавочка+' : ''}</small></button>`);
       b.onclick = () => {
+        if (lock) return plusNote('deck');
         settings.deck = d.id as DeckStyle;
         saveSettings();
         renderDecks();

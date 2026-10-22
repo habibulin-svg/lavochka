@@ -3,8 +3,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { preloadDeck } from '../../cards/render';
-import { settings } from '../../core/settings';
+import { preloadDeck, deckStyle } from '../../cards/render';
 import { sameCard, sortHand, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
 import { canPlay, countOf, lowRank, type Event, type View } from './engine';
@@ -30,7 +29,7 @@ class DevyatkaView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, 1000, 720, 'dv-wrap', '<div class="dv-cloth"></div>', { portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="dv-plates"></div><div class="cs-banner" hidden></div>';

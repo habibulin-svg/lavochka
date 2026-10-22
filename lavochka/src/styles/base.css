@@ -289,7 +289,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .settings h3 { margin: 18px 0 8px; font-size: 18px; }
 .set-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
 .set-row input[type='range'] { flex: 1; max-width: 260px; }
-.deck-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.deck-pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.deck-opt.locked .deck-cards { opacity: 0.75; }
 .deck-opt { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; border-radius: 10px; border: 2px solid transparent; background: rgba(255, 250, 235, 0.35); cursor: pointer; font: inherit; color: var(--ink); }
 .deck-opt.on { border-color: var(--red); background: rgba(255, 250, 235, 0.8); }
 .deck-opt small { opacity: 0.7; font-size: 12px; text-align: center; }
@@ -341,6 +342,8 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .card-joker[data-deck='slavic'] { background: #faf6e8; font-family: 'Arial Narrow', 'Liberation Sans Narrow', 'Roboto Condensed', sans-serif; }
 .card-joker[data-deck='russian'] { background: #fbf9f1; font-family: 'Times New Roman', Times, 'PT Serif', serif; font-weight: 400; }
 .card-joker[data-deck='russian'] > i { -webkit-text-stroke: 0.04em currentColor; }
+.card-joker[data-deck='classic'] { background: #fbfaf6; font-family: Arial, 'Liberation Sans', sans-serif; font-weight: 400; }
+.card-joker[data-deck='classic'][data-red='1'] { color: #df0000; }
 .card-joker > i { position: absolute; left: 3.2cqw; top: 3cqh; font-style: normal; font-size: 7.4cqh; line-height: 1; letter-spacing: -0.06em; writing-mode: vertical-rl; text-orientation: upright; }
 .card-joker > i:last-child { left: auto; top: auto; right: 3.2cqw; bottom: 3cqh; transform: rotate(180deg); }
 .card-joker > b { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Segoe UI Symbol', 'DejaVu Sans', sans-serif; font-size: 34cqh; font-weight: 400; line-height: 1; }

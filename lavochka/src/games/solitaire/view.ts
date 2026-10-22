@@ -2,10 +2,10 @@
  * Карту тянут мышью или пальцем; простое нажатие — карта сама идёт в лучшее место (в дом, если можно);
  * в пирамиде нажатие выбирает карту, второе — пару к ней. Ключ карты — её номер в раздаче, поэтому полёт и переворот выходят сами. */
 import { Sound } from '../../core/audio';
-import { settings, store } from '../../core/settings';
+import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { preloadDeck } from '../../cards/render';
+import { preloadDeck, deckStyle } from '../../cards/render';
 import { CardStage, CH, CW, type StageItem } from '../../cards/stage';
 import { SUIT_SYM } from '../../cards/deck';
 import { bestTarget, upRun, type Board, type Ctx, type Move } from './engine';
@@ -89,7 +89,7 @@ class SolitaireView implements GameView<View, Event> {
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     this.root = root;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     const ctl = h(`<div class="so-controls"><div class="so-info"></div><div class="so-btns"></div>
       ${ctx.demo ? '' : '<div class="hint small-hint">Тяните карту или просто нажмите — она пойдёт в лучшее место. Колода — нажатием. Ctrl+Z — отменить ход.</div>'}</div>`);
     ctx.controls.appendChild(ctl);

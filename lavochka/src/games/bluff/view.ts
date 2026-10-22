@@ -4,8 +4,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { preloadDeck } from '../../cards/render';
-import { settings } from '../../core/settings';
+import { preloadDeck, deckStyle } from '../../cards/render';
 import { rankLabel, sameCard, sortHand, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
 import { claimed, countOf, pileOf, ranksOf, type Event, type View } from './engine';
@@ -36,7 +35,7 @@ class BluffView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, 1000, 720, 'bl-wrap', '<div class="bl-cloth"></div>', { portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="bl-plates"></div><div class="cs-banner" hidden></div>';

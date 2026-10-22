@@ -4,8 +4,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { preloadDeck } from '../../cards/render';
-import { settings } from '../../core/settings';
+import { preloadDeck, deckStyle } from '../../cards/render';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
 import type { Card } from '../../cards/deck';
 import { BJ_MIN, betRange, canDo, total, type Event, type Hand, type View } from './engine';
@@ -25,7 +24,7 @@ class OchkoView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, 1000, 720, 'ok-wrap', '<div class="ok-cloth"><div class="ok-arc">ДВАДЦАТЬ ОДНО · ВЕЧЕРОМ НА ЛАВОЧКЕ</div></div>', { portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="ok-plates"></div><div class="cs-banner" hidden></div>';

@@ -34,8 +34,8 @@ export function plusPeriod(until: number | null | undefined, now: number): { sta
   while (addMonths(until, -(k + 1)) > now && k < 240) k++;
   return { start: addMonths(until, -(k + 1)), end: addMonths(until, -k) };
 }
-/** Права подписки (косметика и ИИ добавятся, когда появятся). */
-export const PLUS_RIGHTS: RightId[] = ['video', 'early_access', 'ai'];
+/** Права подписки: камера, ранний доступ, помощники на ИИ (Михалыч и Димон), оформление (колода «Классическая»). */
+export const PLUS_RIGHTS: RightId[] = ['video', 'early_access', 'ai', 'cosmetics'];
 /** Назначение платежа (оно же — строка чека). */
 export const PLUS_PURPOSE = 'Подписка «Лавочка+» на месяц — сайт «Вечером на лавочке»';
 /** Адрес страницы подписки. */

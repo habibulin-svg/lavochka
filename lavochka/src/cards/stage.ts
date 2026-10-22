@@ -15,8 +15,8 @@
  *
  * Вертикальный экран (телефон): если игра дала размеры portrait, сцена переключается на них, когда место под стол
  * вытянуто вверх; игра узнаёт об этом через onMode и раскладывает карты заново (cs.portrait, cs.W, cs.H). */
-import { settings } from '../core/settings';
-import { cardUrl, jokerHTML } from './render';
+
+import { cardUrl, jokerHTML, deckStyle } from './render';
 import { cardId, cardName, type Card } from './deck';
 import './stage.css';
 
@@ -271,11 +271,11 @@ export class CardStage {
     const want = c ? cardId(c) : 'back';
     el.dataset.face = want;
     if (c && c.r === 15) {
-      face.innerHTML = jokerHTML(c, settings.deck);
+      face.innerHTML = jokerHTML(c, deckStyle());
       return Promise.resolve();
     }
     const old = face.firstElementChild as HTMLElement | null;
-    const src = cardUrl(c, settings.deck);
+    const src = cardUrl(c, deckStyle());
     if (old instanceof HTMLImageElement && old.getAttribute('src') === src) return Promise.resolve();
     const img = new Image();
     img.className = 'card';
@@ -303,7 +303,7 @@ export class CardStage {
     const wait = parseInt(delay) || 0;
     // картинку готовим заранее, пока карта ещё сжимается
     const pre = new Image();
-    pre.src = cardUrl(c, settings.deck);
+    pre.src = cardUrl(c, deckStyle());
     void pre.decode().catch(() => {});
     const a = face.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: half, delay: wait + dur * 0.15, easing: 'ease-in', fill: 'forwards' });
     a.onfinish = () => {

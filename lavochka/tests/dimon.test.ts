@@ -133,7 +133,7 @@ describe('Димон: сервер', () => {
 
   it('миграция: у расхода — помощник, ключ (пользователь, период, помощник)', () => {
     const m = MIGRATIONS[11];
-    expect(MIGRATIONS.length).toBe(12);
+    expect(MIGRATIONS.length).toBeGreaterThanOrEqual(12);
     expect(m).toContain("add column helper text not null default 'mihalych'");
     expect(m).toContain('drop constraint ai_usage_pkey');
     expect(m).toContain('add primary key (user_id, month, helper)');

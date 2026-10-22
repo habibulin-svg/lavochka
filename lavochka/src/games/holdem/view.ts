@@ -9,8 +9,8 @@ import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx, ViewPref } from '../../core/view';
 import type { Options } from '../../core/types';
-import { preloadDeck } from '../../cards/render';
-import { settings, store } from '../../core/settings';
+import { preloadDeck, deckStyle } from '../../cards/render';
+import { store } from '../../core/settings';
 import type { Card } from '../../cards/deck';
 import { showdownPause } from '../poker/view';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
@@ -89,7 +89,7 @@ class HoldemView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, W, H, 'hd-wrap', '<div class="hd-floor"></div><div class="hd-table"><div class="hd-felt"><div class="hd-print">Вечером на лавочке<small>♠ ♥ ♣ ♦</small></div></div></div>');
     this.cs.over.innerHTML = '<div class="hd-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.hd-plates') as HTMLElement;
@@ -163,7 +163,7 @@ class HoldemView implements GameView<View, Event> {
             this.ctx.hold?.(0);
             return;
           }
-          this.gl = new m.Table3D(this.glHost, settings.deck, () => this.ctx.hold?.(0));
+          this.gl = new m.Table3D(this.glHost, deckStyle(), () => this.ctx.hold?.(0));
           this.gl.lookOf = (seat) => this.ctx.look?.(seat) ?? null;
           this.draw();
         })
@@ -317,7 +317,7 @@ class HoldemView implements GameView<View, Event> {
     if (gl) {
       this.plates.innerHTML = blinds;
       const g3 = this.gl!;
-      g3.setDeck(settings.deck);
+      g3.setDeck(deckStyle());
       g3.setSeats(v.seats.map((seat) => ({ seat, ...this.anchor(v, seat), me: seat === this.viewer, out: v.chips[seat] <= 0 && !v.inHand.includes(seat) })));
       g3.setFocus(v.phase !== 'over' ? v.turn : null);
       g3.setHand(this.myCards(v));

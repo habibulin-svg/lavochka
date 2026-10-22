@@ -3,8 +3,8 @@
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { settings } from '../../core/settings';
-import { preloadDeck } from '../../cards/render';
+
+import { preloadDeck, deckStyle } from '../../cards/render';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
 import type { Card } from '../../cards/deck';
 import { cid, hasFour, type Event, type Input, type View } from './engine';
@@ -54,7 +54,7 @@ class GovnoView implements GameView<View, Event> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(settings.deck);
+    preloadDeck(deckStyle());
     this.cs = new CardStage(root, 1000, 660, 'gv-wrap', '<div class="gv-cloth"></div>', { portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="gv-plates"></div><div class="gv-ring"><b></b><small></small></div><div class="gv-palms"></div><div class="cs-banner" hidden></div>';
