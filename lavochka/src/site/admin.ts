@@ -84,7 +84,7 @@ interface Day {
 let period = 30;
 
 async function drawDash(body: HTMLElement) {
-  const r = await call(`/api/admin/dash?days=${period}`);
+  const [r, ai] = await Promise.all([call(`/api/admin/dash?days=${period}`), call('/api/admin/mihalych')]);
   if (!r.ok) return void (body.innerHTML = `<div class="adm-card adm-err">${esc(r.body.message ?? 'Не удалось загрузить.')}</div>`);
   const { days, games, totals, live } = r.body as { days: Day[]; games: { game: string; plays: number }[]; totals: any; live: any };
   const sum = (k: keyof Day) => days.reduce((n, d) => n + (d[k] as number), 0);
@@ -100,6 +100,7 @@ async function drawDash(body: HTMLElement) {
       ${tile('пожертвований', rub(totals.donated30), 'за 30 дней')}
       ${tile('обращений ждут', num(totals.ticketsNew), '', '/admin/obrashcheniya/')}
       ${tile('новых ошибок', num(totals.errorsNew), '', '/admin/oshibki/')}
+      ${ai.ok ? tile('Михалыч за месяц', `${(ai.body.rub as number).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽`, `${num(ai.body.requests)} вопросов, учеников ${num(ai.body.users)} · потолок ${num(ai.body.siteRub)} ₽`) : ''}
     </div>
     <div class="adm-charts">
       ${bars(days, 'plays', 'Партии в день', (d) => `${d.plays}: за экраном ${d.local}, по сети ${d.net}, аркады ${d.arcade}`)}
