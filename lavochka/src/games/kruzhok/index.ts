@@ -13,6 +13,7 @@ import { MODES, parseKruzhok } from './pages';
 import { onStars } from './path';
 import { syncKruzhok } from './cloud';
 import { mountPut } from './put';
+import { mountThumb } from './thumb';
 import { Sound } from '../../core/audio';
 import './kruzhok.css';
 
@@ -35,6 +36,7 @@ const mod: ArcadeModule = {
   noRecords: true,
   // открыли кружок — сначала «Путь»: что здесь есть и с чего начать
   home: 'put',
+  thumb: mountThumb,
   mount: (root, opts) => {
     const panel = opts.panel ?? document.createElement('div');
     root.classList.add('kz-stage');

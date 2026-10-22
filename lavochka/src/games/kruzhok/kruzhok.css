@@ -153,3 +153,12 @@
 .kz-diploma { border: 0; background: none; font: 600 13px 'PT Sans', sans-serif; color: #8a5a10; cursor: pointer; text-decoration: underline dotted; }
 button.kz-put-daily { width: 100%; }
 p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }
+
+/* превью карточки (?thumb=kruzhok) */
+.kz-thumb { position: fixed; inset: 0; display: flex; align-items: center; gap: 3vw; padding: 3vh 4vw; box-sizing: border-box; background: radial-gradient(ellipse at 30% 30%, rgba(255, 220, 160, 0.16), transparent 60%), linear-gradient(160deg, #2e3a2c, #182016 70%); }
+.kz-thumb-board { height: 94vh; aspect-ratio: 1; flex: none; }
+.kz-thumb-board .kb-wrap { width: 100%; filter: drop-shadow(0 1.5vh 2.5vh rgba(0, 0, 0, 0.55)); }
+.kz-thumb-side { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2vh; color: #f3e2b8; font: 700 4vh 'PT Serif', serif; }
+.kz-thumb-side img { width: 30vh; height: 30vh; border-radius: 50%; border: 0.8vh solid #f3e2b8; box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.5); }
+.kz-thumb-say { position: relative; padding: 2.2vh 2.6vh; border-radius: 2.4vh; background: #fffaf0; color: #2a1206; font: 600 4.4vh/1.25 'PT Serif', serif; text-align: center; box-shadow: 0 1vh 2.5vh rgba(0, 0, 0, 0.45); }
+.kz-thumb-say::after { content: ''; position: absolute; left: 50%; bottom: -2.4vh; margin-left: -2vh; border: 1.4vh solid transparent; border-top: 2.4vh solid #fffaf0; border-bottom: 0; }

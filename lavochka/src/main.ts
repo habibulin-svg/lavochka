@@ -295,6 +295,7 @@ async function thumbMode(id: string) {
   if (!g?.load) return;
   let mod = (await g.load()).default;
   // аркада с сетевым режимом: превью — дуэль (видны оба поля)
+  if (isArcade(mod) && mod.thumb) return mod.thumb(document.body.appendChild(document.createElement('div')));
   if (isArcade(mod) && mod.net) mod = await mod.net.load();
   const stage = document.createElement('div');
   stage.className = 'thumb-stage';

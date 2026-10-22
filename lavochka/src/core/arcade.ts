@@ -55,6 +55,8 @@ export interface ArcadeModule {
   noRecords?: boolean;
   /** Раздел «главная»: с него открывается аркада, если адрес не называет раздел (иначе — последний выбранный). */
   home?: string;
+  /** Своё превью карточки (?thumb=<id>): нарисовать во весь экран вместо раздела. */
+  thumb?: (el: HTMLElement) => void;
   mount(root: HTMLElement, opts: ArcadeOpts): ArcadeInstance;
 }
 
