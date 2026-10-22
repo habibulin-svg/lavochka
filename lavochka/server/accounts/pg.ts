@@ -3,6 +3,7 @@
  * (таблица schema_migrations). Новую миграцию — только дописывать в конец, старые не править. */
 import pg from 'pg';
 import type { TicketStatus } from '../../src/core/support';
+import { addMonths } from '../../src/core/plus';
 import { ExistsError, mergeRights, type AccountStore, type Donation, type PlayRecord, type Right, type ErrorReport, type ErrorRow, type ErrorStatus, type PlusOrder, type PostRow, type Subscription, type Ticket, type TicketMsg, type TokenKind, type User, type UserPatch } from './store';
 
 export const MIGRATIONS: string[] = [
@@ -220,6 +221,9 @@ export const MIGRATIONS: string[] = [
      tokens_out bigint not null default 0,
      primary key (user_id, month)
    );`,
+  // 11 — подписка по ссылке Robokassa: её платежи приходят со своими номерами, номер хранится, чтобы не засчитать дважды
+  `alter table plus_orders add column ext_inv text;
+   create unique index plus_orders_ext on plus_orders (ext_inv) where ext_inv is not null;`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -256,6 +260,7 @@ function toPlusOrder(r: any): PlusOrder {
     createdAt: ms(r.created_at)!,
     paidAt: ms(r.paid_at),
     until: ms(r.until),
+    extInv: r.ext_inv ?? null,
   };
 }
 
@@ -600,15 +605,26 @@ export class PgAccountStore implements AccountStore {
     return r.rows.map((x) => ({ ...toDonation(x), userName: x.user_name ?? null }));
   }
 
-  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }) {
-    const r = await this.pool.query('insert into plus_orders (user_id, amount_kop, days, recurring, parent_id) values ($1, $2, $3, $4, $5) returning id', [
-      o.userId,
-      o.amount,
-      o.days,
-      o.recurring,
-      o.parentId,
-    ]);
-    return Number(r.rows[0].id);
+  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null; extInv?: string | null }) {
+    try {
+      const r = await this.pool.query('insert into plus_orders (user_id, amount_kop, days, recurring, parent_id, ext_inv) values ($1, $2, $3, $4, $5, $6) returning id', [
+        o.userId,
+        o.amount,
+        o.days,
+        o.recurring,
+        o.parentId,
+        o.extInv ?? null,
+      ]);
+      return Number(r.rows[0].id);
+    } catch (e) {
+      if ((e as { code?: string }).code === '23505') throw new ExistsError('exists');
+      throw e;
+    }
+  }
+
+  async plusOrderByExt(extInv: string) {
+    const r = await this.pool.query('select * from plus_orders where ext_inv = $1', [extInv]);
+    return r.rows[0] ? toPlusOrder(r.rows[0]) : null;
   }
 
   async plusOrder(id: number) {
@@ -627,15 +643,18 @@ export class PgAccountStore implements AccountStore {
         return null;
       }
       const ord = toPlusOrder(o.rows[0]);
+      // срок — календарный месяц от конца оплаченного (или от дня оплаты), считается так же, как в памяти (addMonths)
+      const was = await c.query('select until from subscriptions where user_id = $1 for update', [ord.userId]);
+      const next = addMonths(Math.max(ms(was.rows[0]?.until ?? null) ?? 0, now), 1);
       const s = await c.query(
-        `insert into subscriptions (user_id, until, autorenew, parent_id) values ($1, $2::timestamptz + make_interval(days => $3), $4, $5)
+        `insert into subscriptions (user_id, until, autorenew, parent_id) values ($1, $2, $3, $4)
          on conflict (user_id) do update set
-           until = greatest(subscriptions.until, $2::timestamptz) + make_interval(days => $3),
+           until = $2,
            autorenew = subscriptions.autorenew or excluded.autorenew,
            parent_id = coalesce(excluded.parent_id, subscriptions.parent_id),
            tried_at = null, reminded_at = null
          returning until`,
-        [ord.userId, date(now), ord.days, ord.recurring, ord.recurring ? ord.id : null]
+        [ord.userId, date(next), ord.recurring, ord.recurring ? ord.id : null]
       );
       const until = ms(s.rows[0].until)!;
       await c.query('update plus_orders set until = $2 where id = $1', [id, date(until)]);

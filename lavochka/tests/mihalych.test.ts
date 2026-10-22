@@ -119,3 +119,28 @@ describe('Совет Михалыча', () => {
     expect(backOn(Date.UTC(2026, 11, 20))).toBe('1 января');
   });
 });
+
+describe('Михалыч: запас — на оплаченный месяц подписки', () => {
+  it('подписка с 10 октября: запой до 10 ноября, 1-го не сбрасывается, после продления — снова можно; общий потолок — календарный', async () => {
+    const { m, acc, ctx } = setup(31);
+    const u = await user(acc, ctx, []);
+    const paid = Date.UTC(2026, 9, 10, 9);
+    const pay = async (t: number) => {
+      const id = await acc.store.createPlusOrder({ userId: u.id, amount: 29_900, days: 30, recurring: false, parentId: null });
+      const until = (await acc.store.payPlusOrder(id, t))!;
+      await acc.store.grant(u.id, 'ai', until, null);
+    };
+    await pay(paid);
+    expect((await m.ask(ask, ctx(u.sid))).code).toBe(200);
+    const r = await m.ask(ask, ctx(u.sid));
+    expect(r.code).toBe(429);
+    expect(String(r.body.message)).toContain('в запое до 10 ноября');
+    expect((await m.ask(ask, ctx(u.sid, Date.UTC(2026, 10, 2, 9)))).code).toBe(429);
+    await pay(Date.UTC(2026, 10, 9, 9));
+    expect((await m.ask(ask, ctx(u.sid, Date.UTC(2026, 10, 10, 12)))).code).toBe(200);
+    // общий учёт сайта — по календарным месяцам
+    expect((await acc.store.aiTotal('2026-10')).cost).toBe(31_000_000);
+    expect((await acc.store.aiTotal('2026-11')).cost).toBe(31_000_000);
+  });
+});
+

@@ -135,9 +135,11 @@ export async function donateApi(
   const m = path.match(/^\/api\/pay\/robokassa\/(result|success|fail)$/);
   if (m) {
     const p: Record<string, string> = await params(req, url, readBody).catch(() => ({}));
-    const sub = !!plus && isPlusInv(p.InvId);
+    // платёж подписки по ссылке Robokassa приходит со своим номером — узнаём его раньше доната
+    const link = !!plus && (await plus.isLinkPayment(p));
+    const sub = link || (!!plus && isPlusInv(p.InvId));
     if (m[1] === 'result') {
-      const ok = sub ? await plus!.result(p) : await don.result(p);
+      const ok = link ? await plus!.linkResult(p) : sub ? await plus!.result(p) : await don.result(p);
       res.writeHead(ok ? 200 : 400, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
       res.end(ok ?? 'bad sign');
     } else {

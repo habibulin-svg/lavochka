@@ -13,6 +13,7 @@ import { parseMove, position, toFen } from '../src/games/chess/notation';
 import { play } from '../src/games/chess/engine';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
+import { plusPeriod } from '../src/core/plus';
 
 export const MIHALYCH_MODEL = '~deepseek/deepseek-v4-flash-latest';
 const API = 'https://routerai.ru/api/v1/chat/completions';
@@ -151,8 +152,12 @@ export function backOn(now: number): string {
   return next.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 }
 
-export const ZAPOY = (now: number) =>
-  `Михалыч в запое до ${backOn(now)}. Весь месяц разбирал с тобой партии, наговорился до хрипоты и, говорит, заслужил. Месячный запас его советов кончился — первого числа вернётся к доске трезвым и с новыми силами. Задачи и разбор движком работают как прежде.`;
+/** Дата словами: «22 ноября». */
+const dayWords = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'Europe/Moscow' });
+
+/** Личный запас — на оплаченный месяц подписки (от дня оплаты), back — когда он обновится словами. */
+export const ZAPOY = (back: string) =>
+  `Михалыч в запое до ${back}. Весь месяц разбирал с тобой партии, наговорился до хрипоты и, говорит, заслужил. Месячный запас его советов кончился — ${back} вернётся к доске трезвым и с новыми силами. Задачи и разбор движком работают как прежде.`;
 const SICK = (now: number) =>
   `Михалыч слёг до ${backOn(now)}: в этом месяце к нему в кружок пришло столько народу, что голос сел. Первого числа снова будет на лавочке. Задачи и разбор движком работают как прежде.`;
 
@@ -198,17 +203,26 @@ export class Mihalych {
     const now = ctx.now ?? Date.now();
     const rights = await this.acc.store.rights(u.id, now);
     if (!hasRight(rights, 'ai', now)) return { deny: err(403, 'plus', 'Советы Михалыча — для подписчиков «Лавочки+». Задачи и разбор движком — бесплатно всем.') };
-    return { user: u, unlimited: hasRight(rights, 'ai_unlimited', now), now };
+    const { key, back } = await this.period(u.id, now);
+    return { user: u, unlimited: hasRight(rights, 'ai_unlimited', now), now, key, back };
+  }
+
+  /** Учётный период ученика: оплаченный месяц подписки (ключ «p<день начала>»); без подписки (право от Мастера) —
+   * календарный месяц. Общий потолок сайта всегда считается по календарному месяцу (monthOf). */
+  private async period(userId: number, now: number): Promise<{ key: string; back: string }> {
+    const s = await this.acc.store.subscription(userId);
+    const p = plusPeriod(s?.until, now);
+    if (p) return { key: 'p' + new Date(p.start + 3 * 3600_000).toISOString().slice(0, 10), back: dayWords(p.end) };
+    return { key: monthOf(now), back: backOn(now) };
   }
 
   async status(ctx: Ctx): Promise<Reply> {
     if (!this.enabled) return { code: 200, body: { enabled: false, allowed: false } };
     const w = await this.who(ctx);
     if (!w.user) return { code: 200, body: { enabled: true, allowed: false, reason: (w.deny.body as { error: string }).error, message: (w.deny.body as { message: string }).message } };
-    const month = monthOf(w.now);
-    const used = await this.acc.store.aiUsage(w.user.id, month);
+    const used = await this.acc.store.aiUsage(w.user.id, w.key);
     const left = w.unlimited ? null : Math.max(0, 1 - used.cost / this.userMicro);
-    return { code: 200, body: { enabled: true, allowed: true, unlimited: w.unlimited, left, zapoy: left === 0 ? ZAPOY(w.now) : null } };
+    return { code: 200, body: { enabled: true, allowed: true, unlimited: w.unlimited, left, zapoy: left === 0 ? ZAPOY(w.back) : null } };
   }
 
   async ask(b: Ask, ctx: Ctx): Promise<Reply> {
@@ -221,8 +235,8 @@ export class Mihalych {
       return err(429, 'often', 'Погоди, дай Михалычу дух перевести — спроси через минутку.');
     const month = monthOf(now);
     if (!w.unlimited) {
-      const used = await this.acc.store.aiUsage(w.user.id, month);
-      if (used.cost >= this.userMicro) return err(429, 'zapoy', ZAPOY(now));
+      const used = await this.acc.store.aiUsage(w.user.id, w.key);
+      if (used.cost >= this.userMicro) return err(429, 'zapoy', ZAPOY(w.back));
     }
     const total = await this.acc.store.aiTotal(month);
     if (total.cost >= this.siteMicro && !w.unlimited) return err(429, 'sick', SICK(now));
@@ -259,9 +273,11 @@ export class Mihalych {
     const cached = Number(u.prompt_tokens_details?.cached_tokens) || 0;
     const rub = Number(u.cost);
     const micro = Number.isFinite(rub) && rub > 0 ? rub * MICRO : (tin - cached) * PRICE.in + cached * PRICE.cached + tout * PRICE.out;
+    // строка календарного месяца — для общего потолка и админки, строка периода — личный запас
     await this.acc.store.addAiUsage(w.user.id, month, micro, tin, tout);
+    if (w.key !== month) await this.acc.store.addAiUsage(w.user.id, w.key, micro, tin, tout);
     if (!text) return err(502, 'empty', 'Михалыч почесал затылок и промолчал. Спроси по-другому.');
-    const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, month);
+    const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, w.key);
     return { code: 200, body: { text, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
   }
 

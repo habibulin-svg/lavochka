@@ -18,6 +18,7 @@ $keys = @(
   @{ n = 'ROBOKASSA_PASS2';      f = $main;   d = 'Robokassa — Пароль #2 (боевой)' },
   @{ n = 'ROBOKASSA_HASH';       f = $main;   d = 'Robokassa — алгоритм хеша: md5 или sha256' },
   @{ n = 'ROBOKASSA_TEST';       f = $main;   d = 'Robokassa — тестовый режим: 1 — тест, 0 — боевой' },
+  @{ n = 'ROBOKASSA_SUBSCRIPTION'; f = $main; d = 'Robokassa — ссылка на подписку из «Подписки» (или SubscriptionId)' },
   @{ n = 'ROBOKASSA_RECURRING';  f = $main;   d = 'Robokassa — автопродление подписки: 1 — включено, 0 — нет' },
   @{ n = 'ROUTERAI_API_KEY';     f = $main;   d = 'routerai.ru — ключ API (Совет Михалыча в шахматном кружке)' },
   @{ n = 'YADISK_TOKEN';         f = $backup; d = 'Яндекс Диск — токен (бэкапы)' }

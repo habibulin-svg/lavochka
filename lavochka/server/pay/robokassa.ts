@@ -2,13 +2,17 @@
  * Переменные: ROBOKASSA_LOGIN, ROBOKASSA_PASS1, ROBOKASSA_PASS2 (в тестовом режиме — тестовые пароли магазина),
  * ROBOKASSA_TEST=1 — тестовые платежи, ROBOKASSA_HASH — алгоритм подписи из настроек магазина (md5 по умолчанию),
  * ROBOKASSA_RECEIPT=0 — не передавать номенклатуру чека (по умолчанию передаём: для чека самозанятого),
- * ROBOKASSA_RECURRING=1 — повторные списания подписки (включать, только когда Robokassa подключит их магазину).
+ * ROBOKASSA_RECURRING=1 — повторные списания подписки (включать, только когда Robokassa подключит их магазину),
+ * ROBOKASSA_SUBSCRIPTION — продукт «Подписки» из кабинета Robokassa (SubscriptionId или вся платёжная ссылка):
+ *   подписчик оформляет её на странице Robokassa, списывает и отменяет тоже Robokassa, нам приходят уведомления.
  * Адреса в кабинете магазина: Result URL — /api/pay/robokassa/result, Success URL — …/success, Fail URL — …/fail. */
 import { createHash } from 'node:crypto';
 
 export const PAY_FORM = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 /** Повторное списание по материнскому платежу (тестового режима у него нет). */
 export const RECURRING_URL = 'https://auth.robokassa.ru/Merchant/Recurring';
+/** Страница оформления продукта «Подписки». */
+export const SUBSCRIBE_URL = 'https://auth.robokassa.ru/RecurringSubscriptionPage/Subscription/Subscribe';
 
 export interface RobokassaConf {
   login: string;
@@ -19,6 +23,16 @@ export interface RobokassaConf {
   receipt: boolean;
   /** Повторные платежи подключены (автопродление подписки). */
   recurring: boolean;
+  /** Ссылка на продукт «Подписки» (без почты) или null. */
+  subscription: string | null;
+}
+
+/** ROBOKASSA_SUBSCRIPTION: SubscriptionId или вся ссылка → ссылка на страницу оформления. */
+export function subscriptionUrl(v: string | undefined): string | null {
+  const s = (v || '').trim();
+  if (!s) return null;
+  if (/^https:\/\/auth\.robokassa\.ru\//.test(s)) return s;
+  return /^[0-9a-f-]{36}$/i.test(s) ? `${SUBSCRIBE_URL}?SubscriptionId=${s}` : null;
 }
 
 export function robokassaFromEnv(env = process.env): RobokassaConf | null {
@@ -31,6 +45,7 @@ export function robokassaFromEnv(env = process.env): RobokassaConf | null {
     hash: (env.ROBOKASSA_HASH || 'md5').toLowerCase(),
     receipt: env.ROBOKASSA_RECEIPT !== '0',
     recurring: env.ROBOKASSA_RECURRING === '1',
+    subscription: subscriptionUrl(env.ROBOKASSA_SUBSCRIPTION),
   };
 }
 

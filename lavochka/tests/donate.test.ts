@@ -8,7 +8,7 @@ import { Donate } from '../server/donate';
 import { checkResult, payForm, phpUrlencode, robokassaFromEnv, type RobokassaConf } from '../server/pay/robokassa';
 import { DONATE_LABEL } from '../src/core/donate';
 
-const conf: RobokassaConf = { login: 'lavochka', pass1: 'p1', pass2: 'p2', test: true, hash: 'md5', receipt: true, recurring: false };
+const conf: RobokassaConf = { login: 'lavochka', pass1: 'p1', pass2: 'p2', test: true, hash: 'md5', receipt: true, recurring: false, subscription: null };
 const md5 = (s: string) => createHash('md5').update(s).digest('hex');
 const resultSig = (sum: string, inv: number) => md5(`${sum}:${inv}:p2`);
 

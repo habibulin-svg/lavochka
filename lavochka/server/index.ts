@@ -214,7 +214,7 @@ const donate = new Donate(accounts, robokassaFromEnv(), log);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
 // подписка «Лавочка+» (server/plus.ts): та же Robokassa; повторные списания — только при ROBOKASSA_RECURRING=1
 const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
-log('подписка: ' + (plus.enabled ? (plus.recurring ? 'оплата и автопродление включены' : 'оплата включена, автопродление выключено') : 'оплата выключена'));
+log('подписка: ' + (plus.enabled ? (plus.recurring ? 'оплата и автопродление включены' : plus.link ? 'оплата включена, автопродление — подпиской по ссылке Robokassa' : 'оплата включена, автопродление выключено') : 'оплата выключена'));
 setInterval(() => accountsReady && plus.tick().catch((e) => log('подписка: ' + (e as Error).message)), 3600_000).unref();
 // «Совет Михалыча» (server/mihalych.ts): помощник на ИИ через routerai.ru; нет ключа — выключен
 const mihalych = new Mihalych(accounts, { key: process.env.ROUTERAI_API_KEY || null, model: process.env.MIHALYCH_MODEL || undefined, userRub: Number(process.env.MIHALYCH_USER_RUB) || 30, siteRub: Number(process.env.MIHALYCH_SITE_RUB) || 3000 }, log);
@@ -415,7 +415,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, plus)) return;
   }
-  if (path === '/api/plus' || path === '/api/plus/autorenew' || path === '/api/admin/plus') {
+  if (path === '/api/plus' || path === '/api/plus/autorenew' || path === '/api/plus/link' || path === '/api/admin/plus') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await plusApi(plus, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }

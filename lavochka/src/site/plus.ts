@@ -5,7 +5,7 @@ import { esc } from '../core/util';
 import { modal, toast, type ModalHandle } from '../core/ui';
 import { Sound } from '../core/audio';
 import { hasRight } from '../core/rights';
-import { PLUS_DAYS, PLUS_NAME, PLUS_PAGE, PLUS_PRICE, type PlusRow, type PlusStatus } from '../core/plus';
+import { PLUS_NAME, PLUS_PAGE, PLUS_PRICE, type PlusRow, type PlusStatus } from '../core/plus';
 import { currentUser, loadAccount, openAuth } from './account';
 import { goPay } from './donate';
 import './plus.css';
@@ -62,24 +62,43 @@ export async function openPlus(): Promise<void> {
   const s = await status();
   if (!s) return void toast('Сервер не ответил. Попробуйте чуть позже.');
   const live = !!s.until && s.until > Date.now();
+  // подписка по ссылке Robokassa: оформить (если ещё не продлевается) или как отменить (если продлевается)
+  const viaLink = s.link && !s.recurring;
+  const linkOn = viaLink && s.autorenew;
   const box = document.createElement('div');
   box.className = 'don plus';
   box.innerHTML = `<h2>${PLUS_NAME}</h2>
     ${s.until ? `<p class="plus-state">${plusLine(s)}</p>` : '<p class="hint">Все игры бесплатны, голос за столом — тоже. Подписка добавляет сверху:</p>'}
     ${WHAT}
-    <p class="plus-price"><b>${rub(s.price)}</b> за ${s.days} дней${live ? ' — новый срок прибавится к оставшемуся' : ''}.</p>
+    ${
+      viaLink
+        ? `<p class="plus-price"><b>${rub(s.price)}</b> в месяц${linkOn ? '' : ' — с автопродлением или разово на месяц'}.</p>`
+        : `<p class="plus-price"><b>${rub(s.price)}</b> за месяц${live ? ' — новый месяц прибавится к оставшемуся сроку' : ''}.</p>`
+    }
     ${
       s.recurring && !s.autorenew
-        ? `<label class="don-check plus-agree"><input type="checkbox" name="autorenew"> Продлевать самой: раз в ${s.days} дней списывать ${rub(s.price)} с этой карты, пока не отменю. Отменить — в любой момент здесь же.</label>`
+        ? `<label class="don-check plus-agree"><input type="checkbox" name="autorenew"> Продлевать самой: раз в месяц списывать ${rub(s.price)} с этой карты, пока не отменю. Отменить — в любой момент здесь же.</label>`
         : ''
     }
     <p class="don-note">${
-      s.enabled
-        ? `Оплата картой или через СБП на странице Robokassa, данные карты сайт не получает. ${s.recurring ? '' : 'Без автопродления: когда срок подойдёт к концу, пришлём напоминание на почту. '}Условия — <a href="/oferta/" target="_blank">оферта</a> и <a href="${PLUS_PAGE}" target="_blank">страница подписки</a>.`
-        : 'Приём оплаты скоро откроется — спасибо, что заглянули!'
+      !s.enabled
+        ? 'Приём оплаты скоро откроется — спасибо, что заглянули!'
+        : linkOn
+          ? `Подписка продлевается сама: раз в месяц Robokassa списывает ${rub(s.price)} с карты и заранее присылает напоминание. Отменить — по ссылке «отписаться» в письме от robot@robokassa.ru; оплаченный срок останется.`
+          : viaLink
+            ? `<b>С автопродлением</b> — оплата картой на странице Robokassa, дальше она сама списывает ${rub(s.price)} раз в месяц, пока не отпишетесь (ссылка — в её письме). ${
+                s.email ? `Почту на её странице оставьте <b>${esc(s.email)}</b> — по ней подписка привяжется к аккаунту.` : '<b>Нужна подтверждённая почта в профиле</b> — по ней подписка привяжется к аккаунту.'
+              } <b>Разово</b> — картой или СБП, без списаний; к концу срока пришлём напоминание. Данные карты сайт не получает. Условия — <a href="/oferta/" target="_blank">оферта</a> и <a href="${PLUS_PAGE}" target="_blank">страница подписки</a>.`
+            : `Оплата картой или через СБП на странице Robokassa, данные карты сайт не получает. ${s.recurring ? '' : 'Без автопродления: когда срок подойдёт к концу, пришлём напоминание на почту. '}Условия — <a href="/oferta/" target="_blank">оферта</a> и <a href="${PLUS_PAGE}" target="_blank">страница подписки</a>.`
     }</p>
     <p class="err" role="alert"></p>
-    <div class="row don-btns">${s.autorenew ? '<button type="button" class="btn" data-a="cancel">Отменить автопродление</button>' : ''}<button type="button" class="btn" data-a="close">Не сейчас</button><button type="button" class="btn primary" data-a="pay"${s.enabled ? '' : ' disabled'}>${live ? `Продлить на ${s.days} дней` : `Оформить ${PLUS_NAME}`}</button></div>
+    <div class="row don-btns">${
+      linkOn
+        ? '<button type="button" class="btn primary" data-a="close">Хорошо</button>'
+        : viaLink
+          ? `<button type="button" class="btn" data-a="close">Не сейчас</button><button type="button" class="btn" data-a="pay"${s.enabled ? '' : ' disabled'}>Разово на месяц</button><button type="button" class="btn primary" data-a="sub"${s.email ? '' : ' disabled'}>С автопродлением</button>`
+          : `${s.autorenew ? '<button type="button" class="btn" data-a="cancel">Отменить автопродление</button>' : ''}<button type="button" class="btn" data-a="close">Не сейчас</button><button type="button" class="btn primary" data-a="pay"${s.enabled ? '' : ' disabled'}>${live ? 'Продлить на месяц' : `Оформить ${PLUS_NAME}`}</button>`
+    }</div>
     ${
       s.payments.length
         ? `<p class="lbl">Оплаты</p><ul class="don-recent">${s.payments
@@ -98,8 +117,18 @@ export async function openPlus(): Promise<void> {
       toast(`Автопродление отменено. ${PLUS_NAME} действует до ${date(r.body.until)}`, 5000);
       void openPlus();
     };
-  const pay = box.querySelector('[data-a=pay]') as HTMLButtonElement;
-  pay.onclick = async () => {
+  const subBtn = box.querySelector('[data-a=sub]') as HTMLButtonElement | null;
+  if (subBtn)
+    subBtn.onclick = async () => {
+      Sound.ui();
+      subBtn.disabled = true;
+      const r = await post('/api/plus/link', {});
+      subBtn.disabled = false;
+      if (!r.ok || !r.body.url) return void (errEl.textContent = r.body.message || 'Не получилось открыть подписку. Попробуйте ещё раз.');
+      location.href = r.body.url;
+    };
+  const pay = box.querySelector('[data-a=pay]') as HTMLButtonElement | null;
+  if (pay) pay.onclick = async () => {
     Sound.ui();
     pay.disabled = true;
     const agree = box.querySelector('[name=autorenew]') as HTMLInputElement | null;
@@ -116,7 +145,7 @@ export function plusNote(what: 'video' | 'early', title?: string): void {
     what === 'video'
       ? `<p><b>Видео за столом</b> — в подписке «${PLUS_NAME}». Голос остаётся бесплатным: можно войти в разговор и без камеры.</p><p>Камеры подписчиков за этим столом видно всем.</p>`
       : `<p>${title ? `«${esc(title)}» пока` : 'Эта игра пока'} в <b>раннем доступе</b> — её первыми пробуют подписчики «${PLUS_NAME}». Для всех она откроется совсем скоро.</p>`;
-  modal(`<h2>${what === 'video' ? '📷 Камера' : esc(title ?? 'Ранний доступ')}</h2>${text}<p class="hint">${rub(PLUS_PRICE / 100)} за ${PLUS_DAYS} дней · <a href="${PLUS_PAGE}">что входит</a></p>`, [
+  modal(`<h2>${what === 'video' ? '📷 Камера' : esc(title ?? 'Ранний доступ')}</h2>${text}<p class="hint">${rub(PLUS_PRICE / 100)} в месяц · <a href="${PLUS_PAGE}">что входит</a></p>`, [
     { text: 'Ладно' },
     { text: `Оформить ${PLUS_NAME}`, primary: true, action: () => void openPlus() },
   ]);
@@ -168,13 +197,17 @@ export function wirePlusLinks(): void {
 /** Подписки игроков (админка → «Подписки»): у кого, до какого числа, сколько оплачено. */
 export async function drawPlusAdmin(body: HTMLElement): Promise<void> {
   const r = await fetch('/api/admin/plus', { cache: 'no-store' }).catch(() => null);
-  const d: { list: PlusRow[]; active: number; enabled: boolean; recurring: boolean } | null = r?.ok ? await r.json() : null;
+  const d: { list: PlusRow[]; active: number; enabled: boolean; recurring: boolean; link: boolean } | null = r?.ok ? await r.json() : null;
   if (!d) return void (body.innerHTML = '<div class="adm-card"><p>Не загрузилось — нужен вход Мастера.</p></div>');
   const now = Date.now();
   const total = d.list.reduce((a, x) => a + x.rub, 0);
   body.innerHTML = `<div class="adm-head"><h1>Подписки «${PLUS_NAME}»</h1></div>
     <div class="adm-card"><p>Оплата: ${d.enabled ? '<b class="auth-ok">подключена</b>' : '<b class="auth-no">выключена</b> (нет ключей Robokassa)'}, автопродление: ${
-      d.recurring ? '<b class="auth-ok">включено</b>' : '<b class="auth-no">выключено</b> (ROBOKASSA_RECURRING)'
+      d.recurring
+        ? '<b class="auth-ok">включено</b>'
+        : d.link
+          ? '<b class="auth-ok">подпиской по ссылке Robokassa</b> (подписчики и отмены — в её кабинете, «Подписки»)'
+          : '<b class="auth-no">выключено</b> (ROBOKASSA_RECURRING / ROBOKASSA_SUBSCRIPTION)'
     }. Действуют сейчас: <b>${d.active}</b>, всего получено: <b>${rub(total)}</b>.</p></div>
     <div class="adm-card">${
       d.list.length

@@ -1,6 +1,7 @@
 /* Хранилище аккаунтов: интерфейс и вариант в памяти (тесты и разработка без базы).
  * На сервере — PostgreSQL (pg.ts); выбор — в accounts/index.ts по переменной PGDATABASE.
  * Времена — миллисекунды (Date.now()); null у «до» — бессрочно. */
+import { addMonths } from '../../src/core/plus';
 import type { TicketKind, TicketStatus } from '../../src/core/support';
 
 export interface User {
@@ -86,6 +87,8 @@ export interface PlusOrder {
   paidAt: number | null;
   /** Конец срока после этой оплаты. */
   until: number | null;
+  /** Номер платежа Robokassa, если заказ завела её подписка по ссылке (у такого платежа номер не наш). */
+  extInv?: string | null;
 }
 
 /** Подписка игрока: до какого числа оплачена и продлевать ли самой. */
@@ -249,8 +252,10 @@ export interface AccountStore {
   recentDonations(limit: number): Promise<(Donation & { userName: string | null })[]>;
 
   /** Новый заказ подписки (ещё не оплачен). */
-  createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }): Promise<number>;
+  /** extInv — номер платежа Robokassa (подписка по ссылке); второй заказ с тем же номером — ошибка ExistsError. */
+  createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null; extInv?: string | null }): Promise<number>;
   plusOrder(id: number): Promise<PlusOrder | null>;
+  plusOrderByExt(extInv: string): Promise<PlusOrder | null>;
   /** Засчитать оплату: отметить заказ и продлить подписку от конца срока (или от now, если срок прошёл) — за один раз.
    * Вернёт новый конец срока или null — заказ уже был оплачен (повторное уведомление) или его нет. */
   payPlusOrder(id: number, now: number): Promise<number | null>;
@@ -597,9 +602,10 @@ export class MemoryAccountStore implements AccountStore {
       .map((d) => ({ ...d, userName: d.userId == null ? null : this.users.get(d.userId)?.name ?? null }));
   }
 
-  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null }) {
+  async createPlusOrder(o: { userId: number; amount: number; days: number; recurring: boolean; parentId: number | null; extInv?: string | null }) {
+    if (o.extInv != null && (await this.plusOrderByExt(o.extInv))) throw new ExistsError('exists');
     const id = ++this.plusSeq;
-    this.plusOrders.set(id, { id, ...o, createdAt: Date.now(), paidAt: null, until: null });
+    this.plusOrders.set(id, { id, ...o, extInv: o.extInv ?? null, createdAt: Date.now(), paidAt: null, until: null });
     return id;
   }
 
@@ -608,11 +614,16 @@ export class MemoryAccountStore implements AccountStore {
     return o ? { ...o } : null;
   }
 
+  async plusOrderByExt(extInv: string) {
+    for (const o of this.plusOrders.values()) if (o.extInv === extInv) return { ...o };
+    return null;
+  }
+
   async payPlusOrder(id: number, now: number) {
     const o = this.plusOrders.get(id);
     if (!o || o.paidAt != null) return null;
     const was = this.subs.get(o.userId);
-    const until = Math.max(was?.until ?? 0, now) + o.days * 86_400_000;
+    const until = addMonths(Math.max(was?.until ?? 0, now), 1);
     o.paidAt = now;
     o.until = until;
     const s: Subscription = was ?? { userId: o.userId, until, autorenew: false, parentId: null, triedAt: null, remindedAt: null };
