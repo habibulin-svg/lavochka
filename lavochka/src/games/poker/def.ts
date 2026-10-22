@@ -6,6 +6,17 @@ import { SeededRng } from '../../core/rng';
 import { SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
 import { apply, cfgFrom, deal, GAMES, isMix, makeView, maxPlayers, MIXES, newState, recFor, setup, toAct, type Action, type Event, type Game, type Mode, type State, type Struct, type View } from './engine';
+import { chooseOfc } from './ofc/ai';
+import { applyOfc, isOfc, makeOView, ofcMax, redactOfc, resultOfc, setupOfc, toActOfc, type OAction, type OEvent, type OfcMode, type OState, type OView } from './ofc/engine';
+import { describeOfc, OFC_PRESETS, OFC_RULES } from './ofc/rules';
+
+/** Всё, что ходит через def: обычный покер или китайский (OFC — свой движок без ставок, вид 'ofc'/'ofcp'). */
+export type AnyState = State | OState;
+export type AnyView = View | OView;
+export type AnyAction = Action | OAction;
+export type AnyEvent = Event | OEvent;
+export const isO = (s: object): s is OState => 'ofc' in s;
+const isOEv = (e: AnyEvent): e is OEvent => e.type[0] === 'o';
 
 export const SEATS = [
   { name: 'Вовка', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -104,7 +115,7 @@ const A = (seat: number, a: Action, caption?: string, rig?: number[]) => ({ seat
 // колода после раздачи: сброс, флоп, сброс, тёрн, сброс, ривер
 const DECK = '3C KS 9H 4H 5C 2H 6C 10C 8D 8S';
 
-const MODES: [Mode, string][] = [
+const MODES: [Mode | OfcMode, string][] = [
   ['holdem', 'Техасский холдем'],
   ['shortdeck', 'Short Deck (6+)'],
   ['pineapple', 'Пайнэппл'],
@@ -123,20 +134,25 @@ const MODES: [Mode, string][] = [
   ['badacey', 'Бадэйси (A–5 + бадуги)'],
   ['horse', 'HORSE — по кругу'],
   ['eight', '8-Game — восемь видов по кругу'],
+  ['ofcp', 'Китайский покер «Ананас» (OFC)'],
+  ['ofc', 'Китайский покер — классический'],
 ];
 
 const modeOf = (o: Record<string, unknown>) => cfgFrom(o as Record<string, string>).mode;
+/** Обычный покер (со ставками) — для настроек, которые китайскому не нужны. */
+const bet = (o: Record<string, unknown>) => !isOfc(o.mode);
+const maxOf = (o: Record<string, unknown>) => (isOfc(o.mode) ? ofcMax(o.mode) : maxPlayers(modeOf(o)));
 
-export const def: GameDef<State, Action, Event, View> = {
+export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
   id: 'poker',
   title: 'Покер',
   players: { min: 2, max: 9, default: 6 },
-  countsFor: (o) => Array.from({ length: maxPlayers(modeOf(o)) - 1 }, (_, i) => i + 2),
-  countsHint: (o) => (maxPlayers(modeOf(o)) < 9 ? `в этом виде — до ${maxPlayers(modeOf(o))}: больше не хватит колоды` : undefined),
+  countsFor: (o) => Array.from({ length: maxOf(o) - 1 }, (_, i) => i + 2),
+  countsHint: (o) => (maxOf(o) < 9 ? `в этом виде — до ${maxOf(o)}: больше не хватит колоды` : undefined),
   seats: SEATS,
   options: [
     { key: 'mode', label: 'Вид', type: 'select', choices: MODES.map(([value, label]) => ({ value, label })), default: 'holdem' },
-    { key: 'hilo', label: 'Хай-лоу «8 или лучше»', type: 'toggle', default: false, hint: 'Банк пополам: старшей руке и лучшей младшей из пяти разных до восьмёрки.', showIf: (o) => { const m = modeOf(o); return !isMix(m) && !!GAMES[m].hilo; } },
+    { key: 'hilo', label: 'Хай-лоу «8 или лучше»', type: 'toggle', default: false, hint: 'Банк пополам: старшей руке и лучшей младшей из пяти разных до восьмёрки.', showIf: (o) => { const m = modeOf(o); return bet(o) && !isMix(m) && !!GAMES[m].hilo; } },
     {
       key: 'struct',
       label: 'Ставки',
@@ -148,7 +164,7 @@ export const def: GameDef<State, Action, Event, View> = {
         { value: 'nl', label: 'безлимит' },
       ],
       default: 'auto',
-      showIf: (o) => !isMix(modeOf(o)),
+      showIf: (o) => bet(o) && !isMix(modeOf(o)),
     },
     {
       key: 'stack',
@@ -156,6 +172,7 @@ export const def: GameDef<State, Action, Event, View> = {
       type: 'select',
       choices: [500, 1000, 1500, 2000].map((v) => ({ value: v, label: String(v) })),
       default: 1000,
+      showIf: bet,
     },
     {
       key: 'blind',
@@ -164,6 +181,7 @@ export const def: GameDef<State, Action, Event, View> = {
       choices: [10, 20, 50].map((v) => ({ value: v, label: String(v) })),
       default: 20,
       hint: 'Малый — половина. От него же лимитные ставки, анте и принос в стаде.',
+      showIf: bet,
     },
     {
       key: 'every',
@@ -176,6 +194,7 @@ export const def: GameDef<State, Action, Event, View> = {
         { value: 0, label: 'никогда' },
       ],
       default: 10,
+      showIf: bet,
     },
     {
       key: 'ante',
@@ -189,7 +208,7 @@ export const def: GameDef<State, Action, Event, View> = {
       ],
       default: 'none',
       hint: 'Анте с каждого — десятая часть большого блайнда; баттон-анте — баттон платит его за весь стол; анте большого блайнда — большой блайнд кладёт ещё один блайнд.',
-      showIf: (o) => { const m = modeOf(o); return !isMix(m) && GAMES[m].family !== 'stud'; },
+      showIf: (o) => { const m = modeOf(o); return bet(o) && !isMix(m) && GAMES[m].family !== 'stud'; },
     },
     {
       key: 'hands',
@@ -202,6 +221,28 @@ export const def: GameDef<State, Action, Event, View> = {
         { value: 0, label: 'до последнего' },
       ],
       default: 0,
+      showIf: bet,
+    },
+    {
+      key: 'fant',
+      label: 'Фантазия',
+      type: 'select',
+      choices: [
+        { value: 'on', label: 'обычная' },
+        { value: 'prog', label: 'прогрессивная (только «Ананас»)' },
+        { value: 'off', label: 'без фантазии' },
+      ],
+      default: 'on',
+      hint: 'Пара дам и старше вверху без фола — следующая раздача все карты сразу. Прогрессивная: QQ — 14 карт, KK — 15, AA — 16, сет — 17.',
+      showIf: (o) => !bet(o),
+    },
+    {
+      key: 'deals',
+      label: 'Раздач',
+      type: 'select',
+      choices: [4, 6, 8, 12].map((v) => ({ value: v, label: String(v) })),
+      default: 6,
+      showIf: (o) => !bet(o),
     },
   ],
   presets: [
@@ -209,7 +250,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'turbo', label: 'Холдем турбо', hint: '500 фишек, блайнды растут каждые 5 раздач', options: { mode: 'holdem', struct: 'auto', stack: 500, every: 5, hands: 0, ante: 'none' } },
     { id: 'deep', label: 'Холдем, глубокие стеки', hint: '2000 фишек, рост каждые 20 раздач', options: { mode: 'holdem', struct: 'auto', stack: 2000, every: 20, hands: 0, ante: 'none' } },
     { id: 'lhe', label: 'Лимитный холдем', hint: 'Рейз ровно на ставку, не больше четырёх за круг', options: { mode: 'holdem', struct: 'limit' } },
-    { id: 'shortdeck', label: 'Short Deck', hint: 'Колода с шестёрки, флеш старше фулл-хауса, анте с каждого', options: { mode: 'shortdeck', struct: 'auto', ante: 'all' } },
+    { id: 'shortdeck', label: 'Short Deck', hint: 'Колода с шестёрки, флеш старше фулл-хауса, сет старше стрита, анте с каждого', options: { mode: 'shortdeck', struct: 'auto', ante: 'all' } },
     { id: 'pineapple', label: 'Пайнэппл', hint: 'Три карты, одну сбросить до флопа', options: { mode: 'pineapple', struct: 'auto' } },
     { id: 'crazy', label: 'Крейзи-пайнэппл', hint: 'Три карты, одну сбросить после флопа', options: { mode: 'crazy', struct: 'auto' } },
     { id: 'plo', label: 'Омаха', hint: '4 карты, пот-лимит', options: { mode: 'omaha4', hilo: false, struct: 'auto' } },
@@ -228,22 +269,24 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'badacey', label: 'Бадэйси', hint: 'Пополам: A–5 и бадуги', options: { mode: 'badacey' } },
     { id: 'horse', label: 'HORSE', hint: 'Холдем, Омаха х/л, разз, стад, стад х/л — по кругу', options: { mode: 'horse' } },
     { id: 'eight', label: '8-Game', hint: '2–7, холдем, Омаха х/л, разз, стад, стад х/л, безлимитный холдем, PLO — по кругу', options: { mode: 'eight' } },
+    ...OFC_PRESETS,
   ],
 
-  setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
-  toAct,
-  apply: (s, seat, a, rng) => apply(s, seat, a, rng),
-  view: (s, seats) => makeView(s, seats),
-  redact,
+  setup: (seats, opts, rng) => (isOfc(opts.mode) ? setupOfc : setup)(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
+  toAct: (s) => (isO(s) ? toActOfc(s) : toAct(s)),
+  apply: (s, seat, a, rng) => (isO(s) ? applyOfc(s, seat, a as OAction, rng) : apply(s, seat, a as Action, rng)),
+  view: (s, seats) => (isO(s) ? makeOView(s, seats) : makeView(s, seats)),
+  redact: (ev, seats) => (isOEv(ev) ? redactOfc(ev, seats) : redact(ev, seats)),
   result(s) {
+    if (isO(s)) return resultOfc(s);
     if (!s.over) return null;
     const top = Math.max(...s.seats.map((p) => s.chips[p]));
     const scores: Record<number, number> = {};
     for (const p of s.seats) scores[p] = s.chips[p];
     return { winners: s.seats.filter((p) => s.chips[p] === top), text: `${top} фишек`, scores };
   },
-  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => choose(v, seat, lv, rng) },
-  describe,
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isO(v) ? chooseOfc(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
+  describe: (ev, name) => (isOEv(ev) ? describeOfc(ev, name) : describe(ev, name)),
 
   showcase: () => {
     const s = dealt(['AH KH', '7C 2D', 'QS QD'], DECK);
@@ -317,14 +360,14 @@ export const def: GameDef<State, Action, Event, View> = {
       {
         title: 'Short Deck (6+)',
         html: `<p>Холдем колодой с шестёрки — 36 карт. Карт меньше — сильные руки чаще, поэтому порядок комбинаций чуть другой:
-          <b>флеш старше фулл-хауса</b> (собрать пять одной масти труднее), а младший стрит — <b>Т-6-7-8-9</b> (туз вместо пятёрки).
-          Обычно играют с анте с каждого.</p>`,
+          <b>флеш старше фулл-хауса</b> (собрать пять одной масти труднее) и <b>сет старше стрита</b> — так играют сейчас во всех крупных
+          турнирах. Младший стрит — <b>Т-6-7-8-9</b> (туз вместо пятёрки). Обычно играют с анте с каждого.</p>`,
         demo: {
           seats: bots(2),
           // одна раздача — после вскрытия стол не пересдаётся, видно руки
-          setup: () => pos('shortdeck', ['AH 7H', 'QS QC'], { board: L('QH 9H 9C 6H KD'), street: 3, total: [100, 100, 0, 0, 0, 0, 0, 0, 0], button: 1, cfg: { ...cfgFrom({ mode: 'shortdeck' }), hands: 1 } }),
-          intro: 'Ривер: Д♥ 9♥ 9♣ 6♥ К♦. У Вовки флеш червей, у Ленки фулл-хаус — дамы и девятки.',
-          steps: [A(0, { type: 'check' }, 'Вовка — чек.'), A(1, { type: 'check' }, 'Ленка тоже. Вскрытие: в Short Deck флеш старше фулл-хауса — банк Вовке.')],
+          setup: () => pos('shortdeck', ['9S 9D', 'JS TD'], { board: L('9C QH KD 8S 6H'), street: 3, total: [100, 100, 0, 0, 0, 0, 0, 0, 0], button: 1, cfg: { ...cfgFrom({ mode: 'shortdeck' }), hands: 1 } }),
+          intro: 'Ривер: 9♣ Д♥ К♦ 8♠ 6♥. У Вовки сет девяток, у Ленки стрит до короля.',
+          steps: [A(0, { type: 'check' }, 'Вовка — чек.'), A(1, { type: 'check' }, 'Ленка тоже. Вскрытие: в Short Deck сет старше стрита (а флеш — старше фулл-хауса) — банк Вовке.')],
         },
       },
       {
@@ -426,6 +469,7 @@ export const def: GameDef<State, Action, Event, View> = {
           steps: [A(2, { type: 'raise', to: 20 }, 'Серёга доводит до малой ставки.'), A(0, { type: 'fold' }, 'Вовка — пас.'), A(1, { type: 'fold' }, 'Ленка — пас, банк Серёге. Круг стада кончился — следующая раздача уже безлимитный холдем.')],
         },
       },
+      ...OFC_RULES,
     ],
   },
 };

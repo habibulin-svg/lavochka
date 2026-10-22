@@ -1,5 +1,6 @@
 /* Покер — лобби на экране игры, как в покер-руме: вкладки форматов. Сейчас работает «Быстрая игра» (стол на очки, вид — в
- * «Правилах партии»); Sit&Go, турниры, сетевое лобби, школа и статистика — следующими этапами (docs/analysis/poker-plan.md). */
+ * «Правилах партии»); Sit&Go, турниры, сетевое лобби, школа и статистика — следующими этапами (docs/analysis/poker-plan.md).
+ * Отдельная кнопка — китайский покер «Ананас»: выбирает его пресет. */
 import { h } from '../../core/util';
 
 const TABS: { id: string; label: string; ready?: boolean; hint: string }[] = [
@@ -15,7 +16,14 @@ export function lobby(box: HTMLElement) {
   const el = h(`<div class="pk-lobby">
     <div class="pk-tabs" role="tablist">${TABS.map((t) => `<button role="tab" data-t="${t.id}" class="${t.ready ? 'on' : ''}" ${t.ready ? 'aria-selected="true"' : 'aria-disabled="true"'}>${t.label}${t.ready ? '' : '<small>скоро</small>'}</button>`).join('')}</div>
     <p class="pk-lobby-hint"></p>
+    <button class="pk-ofc" type="button" title="Без ставок: разложи 13 карт в три ряда">🍍 Китайский покер «Ананас» <small>OFC: три ряда, роялти, фантазия</small></button>
   </div>`);
+  // китайский покер — тот же стол «Покера», вид выбирается пресетом
+  (el.querySelector('.pk-ofc') as HTMLButtonElement).onclick = () => {
+    const b = document.querySelector<HTMLButtonElement>('.presets .preset[data-id="ofcp"]');
+    b?.click();
+    b?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  };
   const hint = el.querySelector('.pk-lobby-hint') as HTMLElement;
   const show = (id: string) => {
     const t = TABS.find((x) => x.id === id)!;

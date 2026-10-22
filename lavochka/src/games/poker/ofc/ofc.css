@@ -1,0 +1,21 @@
+/* Китайский покер: пустые места рядов, подписи рядов, подсказка фола. */
+.ofc-slot { position: absolute; border-radius: 6px; border: 2px dashed rgba(255, 240, 200, 0.35); background: rgba(0, 0, 0, 0.1); box-sizing: border-box; }
+.ofc-slot[data-row] { pointer-events: auto; cursor: pointer; }
+.ofc-slot[data-row]:hover, .ofc-slot.ofc-go { border-color: #ffd24a; background: rgba(255, 210, 74, 0.14); }
+.ofc-lbl { position: absolute; transform: translateX(-100%); text-align: right; color: #f6e2b0; font: 13px system-ui, sans-serif; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); white-space: nowrap; }
+.cs-port .ofc-lbl { transform: none; text-align: left; }
+.ofc-lbl b { display: block; font: 700 15px 'PT Serif', Georgia, serif; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+.cs-port .ofc-lbl b { display: inline; margin-right: 6px; font-size: 13px; }
+.ofc-lbl span { color: #fff; }
+.ofc-foul { display: inline-block; margin-top: 2px; padding: 1px 8px; border-radius: 999px; background: #c07a10; color: #fff; font: italic 700 13px system-ui, sans-serif; }
+.ofc-warn { padding: 6px 8px; border-radius: 6px; background: #fbe6c4; color: #6a3a00; font-size: 13px; font-weight: 600; }
+.ofc-warn.sure { background: #b3221a; color: #fff; }
+.ofc-foul.sure { background: #b3221a; box-shadow: 0 0 0 2px #ffd0c8; animation: cs-glow 1s ease-in-out infinite; }
+.ofc-hint, .ofc-disc { position: absolute; color: #f6e2b0; font: 13px system-ui, sans-serif; opacity: 0.85; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+.ofc-title { position: absolute; color: #f6e2b0; font: 13px 'PT Serif', Georgia, serif; opacity: 0.8; white-space: nowrap; }
+.cs-port .ofc-title { transform: translateX(-50%); }
+.cs-card.ofc-plan .cs-face { box-shadow: 0 0 0 2px #ffd24a, 0 6px 10px rgba(0, 0, 0, 0.35); }
+.cs-banner.ofc-score { left: 83%; top: 66%; padding: 10px 18px; font-size: 20px; text-align: left; white-space: normal; min-width: 230px; }
+.cs-port .cs-banner.ofc-score { left: 50%; top: 84%; }
+.ofc-score small { display: block; font: 13px system-ui, sans-serif; opacity: 0.85; margin-bottom: 4px; }
+.ofc-score-t { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; }

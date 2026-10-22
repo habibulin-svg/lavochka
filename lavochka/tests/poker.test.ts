@@ -6,6 +6,7 @@ import type { Card, Suit } from '../src/cards/deck';
 import { def } from '../src/games/poker/def';
 import { choose } from '../src/games/poker/ai';
 import { high, highCat, highName, highSD } from '../src/games/poker/hands';
+import { isOfc } from '../src/games/poker/ofc/engine';
 import { apply, cfgFrom, deal, makeView, MIXES, newState, type Action, type Event, type HandRecord, type State } from '../src/games/poker/engine';
 
 const rng = () => new SeededRng(8);
@@ -27,7 +28,13 @@ describe('комбинации', () => {
     expect(high(L('AH AD KS 7C 4H'))).toBeGreaterThan(high(L('AH AD QS 7C 4H')));
     expect(high(L('6H 2D 3S 4C 5H'))).toBeGreaterThan(high(L('AH 2D 3S 4C 5H')));
   });
-  it('Short Deck: флеш старше фулл-хауса, A-6-7-8-9 — младший стрит', () => {
+  it('Short Deck: флеш старше фулл-хауса, сет старше стрита, A-6-7-8-9 — младший стрит', () => {
+    const set = highSD(L('9S 9C 9H KD 7C'));
+    const straight = highSD(L('10S JD QC KH AS'));
+    expect(set).toBeGreaterThan(straight);
+    expect(highName(set, true)).toBe('сет');
+    expect(highName(straight, true)).toBe('стрит');
+    expect(highSD(L('9S 9C 9H KD 7C QH'))).toBe(set);
     const flush = highSD(L('AH 7H QH 9H 6H'));
     const full = highSD(L('QS QC QH 9H 9C'));
     expect(flush).toBeGreaterThan(full);
@@ -200,11 +207,12 @@ describe('скрытые карты и история раздач', () => {
   });
 
   it('боты на всех видах: каждая раздача записана, фишки сходятся, чужое не утекает', () => {
-    for (const p of def.presets!) {
+    // китайский покер — без ставок и истории раздач, у него свой тест (ofc.test.ts)
+    for (const p of def.presets!.filter((x) => !isOfc(x.options.mode))) {
       const opts = { ...Object.fromEntries(def.options!.map((o) => [o.key, o.default])), ...p.options, hands: 12 };
       const seats = [0, 1, 2, 3];
       const r0 = new SeededRng(11);
-      let s = def.setup(seats.map((seat) => ({ seat, kind: 'bot', level: 1, name: '' })), opts, r0);
+      let s = <State>def.setup(seats.map((seat) => ({ seat, kind: 'bot', level: 1, name: '' })), opts, r0);
       const recs: HandRecord[] = [];
       let guard = 0;
       while (!s.over && guard++ < 5000) {

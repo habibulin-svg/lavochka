@@ -1,7 +1,7 @@
 /* Покер — оценка рук для всех видов (без DOM). Сила — число: старше — больше (для «низких» видов — меньше значит лучше,
  * но наружу отдаём уже «чем больше, тем лучше», чтобы делёж банка был одинаковым).
  *   high — старшая комбинация из любых пяти;
- *   highSD — Short Deck (колода с шестёрки): флеш старше фулл-хауса, A-6-7-8-9 — младший стрит;
+ *   highSD — Short Deck (колода с шестёрки): флеш старше фулл-хауса, сет старше стрита, A-6-7-8-9 — младший стрит;
  *   omahaHigh — ровно две свои + три общие;
  *   low27 — «двойка-семёрка»: туз старший, стриты и флеши считаются против, лучшая 7-5-4-3-2;
  *   lowA5 — «туз-пятёрка»: туз младший, стриты и флеши не считаются, лучшая 5-4-3-2-A (разз, лоу в хай-лоу);
@@ -26,14 +26,14 @@ function combos<T>(a: T[], k: number): T[][] {
   return out;
 }
 
-const pack = (cat: number, ks: number[]) => {
+export const pack = (cat: number, ks: number[]) => {
   let v = cat;
   for (let i = 0; i < 5; i++) v = v * 15 + (ks[i] ?? 0);
   return v;
 };
 export const highCat = (v: number) => Math.floor(v / 15 ** 5);
 
-/** Пятёрка: категория и кикеры; wheel — считать ли A-2-3-4-5 стритом (в Short Deck — A-6-7-8-9, а флеш старше фулл-хауса). */
+/** Пятёрка: категория и кикеры; wheel — считать ли A-2-3-4-5 стритом (в Short Deck — A-6-7-8-9, флеш старше фулл-хауса, сет старше стрита). */
 function five(cards: Card[], wheel: boolean, sd = false): number {
   const rs = cards.map((c) => c.r).sort((a, b) => b - a);
   const flush = cards.every((c) => c.s === cards[0].s);
@@ -51,8 +51,8 @@ function five(cards: Card[], wheel: boolean, sd = false): number {
   if (g[0][1] === 4) return pack(7, [g[0][0], g[1][0]]);
   if (g[0][1] === 3 && g[1][1] === 2) return pack(sd ? 5 : 6, [g[0][0], g[1][0]]);
   if (flush) return pack(sd ? 6 : 5, rs);
-  if (st) return pack(4, [st]);
-  if (g[0][1] === 3) return pack(3, [g[0][0], ...ord.slice(3)]);
+  if (st) return pack(sd ? 3 : 4, [st]);
+  if (g[0][1] === 3) return pack(sd ? 4 : 3, [g[0][0], ...ord.slice(3)]);
   if (g[0][1] === 2 && g[1][1] === 2) return pack(2, [g[0][0], g[1][0], g[2][0]]);
   if (g[0][1] === 2) return pack(1, [g[0][0], ...ord.slice(2)]);
   return pack(0, rs);
@@ -74,10 +74,12 @@ export function highSD(cards: Card[]): number {
   return best;
 }
 
-/** Название старшей комбинации (в Short Deck категории флеша и фулл-хауса переставлены). */
+// Short Deck: категории переставлены — флеш ↔ фулл-хаус, сет ↔ стрит
+const SD_SWAP: Record<number, number> = { 3: 4, 4: 3, 5: 6, 6: 5 };
+/** Название старшей комбинации (в Short Deck категории флеша и фулл-хауса, сета и стрита переставлены). */
 export function highName(v: number, sd = false): string {
   const c = highCat(v);
-  return HIGH_NAMES[sd && c === 5 ? 6 : sd && c === 6 ? 5 : c] ?? '';
+  return HIGH_NAMES[sd ? (SD_SWAP[c] ?? c) : c] ?? '';
 }
 
 /** Меньше пяти карт (стад до раздачи всех, показ в дороге): пары и кикеры. */

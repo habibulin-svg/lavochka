@@ -32,8 +32,8 @@ export const NAMES: Record<string, Names> = {
   preferans: { ru: ['преф', 'пуля', 'сочинка', 'сочи', 'ленинградка', 'ростовский преферанс', 'классический преферанс'], en: ['Preference', 'Preferans', 'Russian Preference'] },
   bridge: { ru: ['контрактный бридж', 'роббер', 'спортивный бридж', 'Чикаго', 'мини-бридж'], en: ['Bridge', 'Contract bridge', 'Rubber bridge', 'Chicago bridge', 'Duplicate bridge', 'Minibridge'] },
   poker: {
-    ru: ['техасский холдем', 'холдем', 'техасский покер', 'покер без денег', 'покер на фишки', '3D покер', 'покер на фантики', 'омаха', 'омаха хай-лоу', 'шорт-дек', 'покер на 36 картах', 'пайнэппл', 'куршевель', 'семикарточный стад', 'пятикарточный дро', 'лоуболл', 'бадуги', 'разз', 'хорс', 'восемь игр'],
-    en: ['Poker', "Texas Hold'em", 'Holdem', "No-Limit Hold'em", 'Omaha', 'PLO', 'Omaha Hi-Lo', 'Short Deck', "6+ Hold'em", 'Pineapple', 'Crazy Pineapple', 'Courchevel', 'Seven-card stud', 'Five-card draw', 'Lowball', '2-7 Triple Draw', 'Badugi', 'Razz', 'HORSE', '8-Game Mix'],
+    ru: ['техасский холдем', 'холдем', 'техасский покер', 'покер без денег', 'покер на фишки', '3D покер', 'покер на фантики', 'омаха', 'омаха хай-лоу', 'шорт-дек', 'покер на 36 картах', 'пайнэппл', 'куршевель', 'семикарточный стад', 'пятикарточный дро', 'лоуболл', 'бадуги', 'разз', 'хорс', 'восемь игр', 'китайский покер', 'ананас', 'китайский покер ананас', 'открытый китайский покер'],
+    en: ['Poker', "Texas Hold'em", 'Holdem', "No-Limit Hold'em", 'Omaha', 'PLO', 'Omaha Hi-Lo', 'Short Deck', "6+ Hold'em", 'Pineapple', 'Crazy Pineapple', 'Courchevel', 'Seven-card stud', 'Five-card draw', 'Lowball', '2-7 Triple Draw', 'Badugi', 'Razz', 'HORSE', '8-Game Mix', 'Open-Face Chinese Poker', 'OFC', 'Pineapple OFC', 'Chinese Poker'],
   },
   drunkard: { ru: ['пьяница в карты', 'война', 'карточная война', 'в пьяницу'], en: ['War', 'Battle', 'Beggar-my-neighbour'] },
   bluff: { ru: ['верю не верю', 'сомневаюсь', 'чит', 'блеф', 'обманщик'], en: ['Cheat', 'I Doubt It', 'Bluff', 'Bullshit', 'BS'] },

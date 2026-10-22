@@ -151,6 +151,7 @@ export const VARIANTS: VariantPage[] = [
   // покер: прежние страницы холдема и Омахи — теперь варианты единой карточки
   { path: 'poker/tehasskiy-holdem', game: 'poker', preset: 'holdem' },
   { path: 'poker/omaha', game: 'poker', preset: 'plo' },
+  { path: 'poker/kitayskiy-poker', game: 'poker', preset: 'ofcp' },
   { path: 'loto/vokrug-sveta', game: 'loto', preset: 'world' },
   { path: 'ochko/blekdzhek', game: 'ochko', preset: 'bj' },
   { path: 'seka/svara', game: 'seka', preset: 'svara' },
