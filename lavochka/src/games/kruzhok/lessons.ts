@@ -5,8 +5,9 @@ import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import { Board, type Arrow, type Mark } from '../chess/board';
-import { inCheck, insufficient, legalMoves, play, sq, type Move, type State } from '../chess/engine';
+import { play, sq, type Move, type State } from '../chess/engine';
 import { starsBest, starsDone, stepPositions, whiteAgain } from './lesson-steps';
+import { runFight as runFight0 } from './fight';
 import { fromUci, position, ruSan, toFen, toUci } from '../chess/notation';
 import { levelOf, mountMihalych } from '../chess/mihalych';
 import { score, stockfish } from '../chess/stockfish';
@@ -126,6 +127,7 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
   let solved = false;
   /** На этом шаге уже был неверный ход — звёзд за «Твой ход» нет. */
   let missed = false;
+  let stopFight: (() => void) | null = null;
   let drill: { destroy(): void } | null = null;
 
   const el = h(`<div class="kz-an kz-ls">
@@ -196,6 +198,8 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
     drill = null;
     host.hidden = false;
     el.hidden = false;
+    stopFight?.();
+    stopFight = null;
     board.input(null);
     if (board.flipped) board.flip(false);
     if (at >= l.steps.length) return summary();
@@ -285,89 +289,26 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
     start();
   };
 
-  /** «Доиграй против движка»: ученик ведёт позицию, Stockfish отвечает; упустил выигрыш (или ничью) — сначала. */
+  /** «Доиграй против движка» (fight.ts): получилось — +5 звёзд и шаг пройден. */
   const runFight = (st: LessonStep) => {
-    const f = st.fight!;
     const step = at;
-    const me = position(starts[at]).turn;
-    const need = f.moves ?? 12;
-    const goal = f.goal === 'queen' ? 'Проведи пешку в ферзи' : f.goal === 'mate' ? 'Поставь мат' : `Продержись ${need} ходов`;
-    let s = position(starts[at]);
-    let n = 0;
-    let run = 0;
-    board.flip(me === 1);
-    /** Оценка за ученика: мат — ±10000. */
-    const mine = (a: { lines: { cp: number; mate: number | null }[] }) => (a.lines[0] ? score(a.lines[0]) * (me === 0 ? 1 : -1) : 0);
-    const status = (extra = '') => say(`${esc(st.text)}<br><small>${goal} против движка · твоих ходов: <b>${n}</b></small>${extra}`);
-    const end = (ok: boolean, why: string) => {
-      board.input(null);
-      if (ok) {
-        Sound.win();
-        if (!solved) addStars(5, 'доиграл против движка');
-        solved = true;
-        say(`<b>Получилось!</b> ${why}${f.say ? ' ' + esc(f.say) : ''}`, 'ok');
-        buttons([{ text: '↻ Ещё раз', on: start }]);
-      } else {
-        Sound.nomove();
-        missed = true;
-        say(`${why} Попробуй сначала.${f.hint ? ' ' + esc(f.hint) : ''}`, 'bad');
-        buttons([{ text: '↻ Сначала', primary: true, on: start }]);
-      }
-      nav();
-    };
-    /** Конец по правилам: мат, пат, голые короли. null — играем дальше. */
-    const over = (x: State): 'mate' | 'draw' | null => (legalMoves(x).length ? (insufficient(x.board) ? 'draw' : null) : inCheck(x) ? 'mate' : 'draw');
-    const turn = () =>
-      board.input(me, async (m) => {
-        const id = run;
-        if (!alive || at !== step) return;
-        n++;
-        s = play(s, m);
-        board.set(s, { from: m.from, to: m.to });
-        board.draw();
-        m.captured ? Sound.capture() : Sound.place();
-        board.input(null);
-        const o = over(s);
-        if (o === 'mate') return end(true, 'Мат!');
-        if (o === 'draw') return f.goal === 'draw' ? end(true, 'Ничья — ты устоял.') : end(false, 'Ничья — а была победа.');
-        status('<br>Движок думает…');
-        let a;
-        try {
-          a = await stockfish.analyse(toFen(s), { depth: 16, ms: 1500 });
-        } catch {
-          return id === run && alive && at === step ? status('<br>Движок не запустился — проверь связь и нажми «Сначала».') : undefined;
-        }
-        if (id !== run || !alive || at !== step) return;
-        const v = mine(a);
-        if (f.goal === 'queen' && m.promo) return v >= 400 ? end(true, 'Пешка стала ферзём, и удержать его соперник не может.') : end(false, 'Ферзь появился, да сразу пропадает.');
-        if (f.goal !== 'draw' && v < 150) return end(false, 'Этим ходом выигрыш упущен — теперь движок спасается.');
-        if (f.goal === 'draw' && v < -400) return end(false, 'Позиция уже проиграна.');
-        if (f.goal === 'draw' && n >= need) return end(true, `Продержался ${need} ходов — позиция ничейная.`);
-        const r = a.best ? fromUci(s, a.best) : null;
-        if (!r) return end(f.goal === 'draw', 'Движку нечем ходить.');
-        await sleep(300);
-        if (id !== run || !alive || at !== step) return;
-        s = play(s, r);
-        board.set(s, { from: r.from, to: r.to });
-        r.captured ? Sound.capture() : Sound.place();
-        const o2 = over(s);
-        if (o2 === 'mate') return end(false, 'Мат тебе.');
-        if (o2 === 'draw') return f.goal === 'draw' ? end(true, 'Ничья — ты устоял.') : end(false, 'Ничья — а была победа.');
-        status();
-        turn();
-      });
-    const start = () => {
-      if (!alive || at !== step) return;
-      run++;
-      s = position(starts[step]);
-      n = 0;
-      board.set(s);
-      board.draw(arrowsOf(st.arrows), marksOf(st.marks));
-      status();
-      buttons([{ text: '↻ Сначала', on: start }, ...(f.hint ? [{ text: '💡 Подсказка', on: () => status(`<br>${esc(f.hint!)}`) }] : [])]);
-      turn();
-    };
-    start();
+    stopFight = runFight0({
+      ...st.fight!,
+      board,
+      fen: starts[at],
+      text: esc(st.text),
+      arrows: arrowsOf(st.arrows),
+      marks: marksOf(st.marks),
+      live: () => alive && at === step,
+      tell: say,
+      buttons,
+      onEnd: (ok) => {
+        if (ok && !solved) addStars(5, 'доиграл против движка');
+        if (ok) solved = true;
+        else missed = true;
+        nav();
+      },
+    });
   };
 
   /** Ход не из списка: может, он не хуже задуманного — спросим движок (сравним с ходом урока). */

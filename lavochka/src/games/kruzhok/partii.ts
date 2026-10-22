@@ -6,7 +6,7 @@ import { Sound } from '../../core/audio';
 import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import { Board } from '../chess/board';
-import { play, type Move } from '../chess/engine';
+import { legalMoves, play, type Move } from '../chess/engine';
 import { fromUci, position, ruSan, toFen, toUci } from '../chess/notation';
 import { levelOf, mountMihalych, type MihalychEngine } from '../chess/mihalych';
 import { evalText, stockfish } from '../chess/stockfish';
@@ -15,6 +15,7 @@ import { loadProgress } from './progress';
 import { classicPath, familyPath, leaveSub, setPath } from './pages';
 import { addStars, completeNode } from './path';
 import { touch } from './cloud';
+import { runFight } from './fight';
 
 /** Записать часть журнала кружка (и отметить для копии в базе). */
 const putJournal = (key: string, v: unknown) => {
@@ -110,6 +111,8 @@ export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, ba
   /** Остановка, на которой ждём ход ученика (номер полухода), или null. */
   let asking: number | null = null;
   let hinted = false;
+  let stopFight: (() => void) | null = null;
+  let fightRun = 0;
   let quiz = store.get('kruzhok.quiz', true);
   let answers: Record<string, 0 | 1> = loadAnswers()[id] ?? {};
 
@@ -212,15 +215,60 @@ export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, ba
     return { at: fens[i], played: ru[i], eval: evalOf(g!.ev[i]) + ' (за белых)', line: g!.best[i] };
   };
 
+  /** Партию бросили, не доиграв до мата: выигравшей стороне есть что добивать. */
+  const finish = () => {
+    if (!g || (g.result !== '1-0' && g.result !== '0-1')) return false;
+    const s = position(fens[ru.length]);
+    return legalMoves(s).length > 0;
+  };
+  /** «Доиграй сам»: финал партии против движка — ученик за победителя, цель — мат. */
+  const playout = async () => {
+    stopFight?.();
+    let s = position(fens[ru.length]);
+    const win = g!.result === '1-0' ? 0 : 1;
+    const token = ++fightRun;
+    if (s.turn !== win) {
+      // сдались после своего хода — сначала отвечает за них движок
+      say('Движок думает за сдавшегося…');
+      buttons([]);
+      try {
+        const a = await stockfish.analyse(toFen(s), { depth: 16, ms: 1500 });
+        const m = a.best ? fromUci(s, a.best) : null;
+        if (!m || !alive || token !== fightRun) return;
+        s = play(s, m);
+      } catch {
+        return void (alive && token === fightRun && show());
+      }
+    }
+    stopFight = runFight({
+      goal: 'mate',
+      board,
+      fen: toFen(s),
+      text: `Здесь ${g!.result === '1-0' ? 'чёрные' : 'белые'} сдались. А ты доведёшь партию до мата?`,
+      live: () => alive && token === fightRun,
+      tell: say,
+      buttons,
+      extra: [{ text: '← К партии', on: () => (stopFight?.(), (stopFight = null), fightRun++, show()) }],
+      onEnd: (ok) => {
+        if (ok && !(store.get<string[]>('kruzhok.mated', []).includes(id))) {
+          store.set('kruzhok.mated', [...store.get<string[]>('kruzhok.mated', []), id]);
+          addStars(5, 'партия доиграна до мата');
+        }
+      },
+    });
+  };
+
   const show = () => {
     if (!g) return;
+    stopFight?.();
+    stopFight = null;
     const last = at > 0 ? moves[at - 1] : null;
     board.set(position(fens[at]), last ? { from: last.from, to: last.to } : null);
     board.draw();
     board.input(null);
     paintEval(at > 0 ? g.ev[at - 1] : 0);
     say(noteHtml());
-    buttons([]);
+    buttons(at === ru.length && finish() ? [{ text: '⚔ Доиграй сам — поставь мат', primary: true, on: () => void playout() }] : []);
     renderMoves();
     renderHead();
     q<HTMLButtonElement>('[data-a=next]').disabled = at >= ru.length;
