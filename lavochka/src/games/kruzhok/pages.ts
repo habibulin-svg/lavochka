@@ -9,6 +9,7 @@ export const MODES = [
   { id: 'put', label: 'Путь', hint: 'занятия по порядку: урок → задачи → партия → зачёт', path: null },
   { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом', path: 'uchebnik' },
   { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме', path: 'zadachi' },
+  { id: 'shturm', label: 'Штурм', hint: 'задачи на время: три минуты', path: 'shturm' },
   { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»', path: 'partii' },
   { id: 'razbor', label: 'Доска с движком', hint: 'разобрать свою партию или позицию', path: 'razbor' },
   { id: 'enciklopediya', label: 'Энциклопедия', hint: 'дебюты и термины', path: 'enciklopediya' },

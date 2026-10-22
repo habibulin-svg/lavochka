@@ -181,3 +181,9 @@ p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }
 .kz-en-art { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 250, 235, 0.55); font-size: 14px; line-height: 1.4; }
 .kz-en-art p { margin: 0 0 6px; }
 .kz-en-tip { font-weight: 600; }
+
+/* штурм */
+.kz-storm-clock { font: 700 44px/1 'PT Mono', ui-monospace, monospace; text-align: center; padding: 6px 0; letter-spacing: 2px; }
+.kz-storm-clock.low { color: #c42a18; animation: kz-blink 1s steps(2) infinite; }
+@keyframes kz-blink { 50% { opacity: 0.45; } }
+.kz-storm-score { display: flex; justify-content: space-around; font-size: 16px; }

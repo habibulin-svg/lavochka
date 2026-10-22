@@ -85,6 +85,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
       ${next ? `<button class="btn primary kz-put-go kz-put-go-top">▶ ${doneN ? 'Продолжить' : 'Начать'}: ${esc(next.title)}</button>` : ''}
       <div class="kz-put-more"><b>А ещё в кружке — на выбор, когда захочется:</b>
         <a href="${sectionPath('zadachi')}">🧩 <b>Задачи</b> — 6000 задач под твой рейтинг или по теме</a>
+        <a href="${sectionPath('shturm')}">⚡ <b>Штурм</b> — задачи на время: сколько решишь за три минуты?</a>
         <a href="${sectionPath('partii')}">♟ <b>Партии мастеров</b> — 37 классических партий с вопросом «А как сходил бы ты?»</a>
         <a href="${sectionPath('enciklopediya')}">📚 <b>Энциклопедия</b> — все дебюты по-русски и словарь терминов</a>
         <a href="${sectionPath('razbor')}">🔍 <b>Доска с движком</b> — разобрать свою партию: где ошибся и как надо было</a>

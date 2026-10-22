@@ -14,6 +14,7 @@ import { onStars } from './path';
 import { syncKruzhok } from './cloud';
 import { mountPut } from './put';
 import { mountThumb } from './thumb';
+import { mountStorm } from './storm';
 import { Sound } from '../../core/audio';
 import './kruzhok.css';
 
@@ -58,6 +59,8 @@ const mod: ArcadeModule = {
                 ? mountEncyclopedia(root, panel, start)
           : mode === 'put'
             ? mountPut(root, panel)
+          : mode === 'shturm'
+            ? mountStorm(root, panel)
           : mode === 'zhurnal'
             ? mountJournal(root, panel, () => {
                 sub.destroy();
