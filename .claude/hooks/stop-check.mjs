@@ -1,10 +1,17 @@
 // Stop: если код сборника менялся с последней удачной проверки — tsc + vitest. Ошибки возвращают Claude к работе.
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { APP, ROOT, git, out, readInput, run } from './lib.mjs';
 
 const input = await readInput();
+
+/** Идёт ли уже где-то vitest (Windows: командные строки процессов node). */
+function vitestRunning() {
+  const r = spawnSync('powershell.exe', ['-NoProfile', '-Command', "@(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -match 'vitest' }).Count"], { encoding: 'utf8' });
+  return Number((r.stdout || '').trim()) > 0;
+}
 const WATCH = ['lavochka/src', 'lavochka/server', 'lavochka/tests', 'lavochka/package.json', 'lavochka/tsconfig.json', 'lavochka/vite.config.ts'];
 const changed = git('status', '--porcelain', '--', ...WATCH)
   .split('\n')
@@ -29,6 +36,11 @@ const cacheFile = join(cacheDir, 'last-check');
 if (existsSync(cacheFile) && readFileSync(cacheFile, 'utf8') === fp) process.exit(0);
 
 const tsc = run(join(APP, 'node_modules', 'typescript', 'bin', 'tsc'), ['--noEmit', '--pretty', 'false']);
+// Тесты уже идут (другая сессия гоняет check) — второй прогон на тех же 4 ядрах душит оба («Timeout calling onTaskUpdate»).
+if (tsc.ok && vitestRunning()) {
+  out({ systemMessage: '✓ Типы в порядке; тесты не запускал — уже идёт другой прогон vitest.' });
+  process.exit(0);
+}
 const tests = tsc.ok ? run(join(APP, 'node_modules', 'vitest', 'vitest.mjs'), ['run', '--reporter=dot', '--config', 'vitest.quick.config.ts']) : { ok: false, out: '(тесты не запускались: сначала типы)' };
 
 if (tsc.ok && tests.ok) {
