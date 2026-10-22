@@ -57,7 +57,7 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   const el = h(`<div class="kz-an kz-en">
     <div class="kz-en-tabs"><button class="btn small on" data-tab="op">Дебюты</button><button class="btn small" data-tab="terms">Термины</button></div>
     <input class="recs-input kz-en-q" placeholder="Название, код ЭКО или ходы: «сицилианская», «B90», «e4 c5 Кf3»" spellcheck="false">
-    <div class="kz-msg kz-en-card" hidden></div>
+    <div class="kz-msg kz-en-card" hidden aria-live="polite"></div>
     <div class="kz-btns"></div>
     <div class="kz-en-list"><small class="hint">Открываю справочник…</small></div>
     <small class="hint kz-credit">Дебюты — справочник Lichess chess-openings (CC0), названия — по-русски.</small>

@@ -116,7 +116,7 @@ export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, ba
   const el = h(`<div class="kz-an kz-pg">
     <button class="btn kz-back">← ${esc(backLabel)}</button>
     <div class="kz-rank kz-pg-head"><small class="hint">Загружаю партию…</small></div>
-    <div class="kz-msg kz-note"></div>
+    <div class="kz-msg kz-note" aria-live="polite"></div>
     <div class="kz-btns"></div>
     <div class="kz-eval"><div class="kz-evalbar"><i></i></div><b class="kz-evalnum"></b></div>
     <div class="kz-nav">

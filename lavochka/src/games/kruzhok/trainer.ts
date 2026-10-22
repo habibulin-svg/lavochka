@@ -63,7 +63,7 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     ${o.drill ? `<div class="kz-drill">Закрепляем: <b>${esc(o.drill.title)}</b>${o.goal ? ` · <span class="kz-goal"></span>` : ''}</div>` : ''}
     <div class="kz-rank"></div>
     <div class="kz-task"></div>
-    <div class="kz-msg"></div>
+    <div class="kz-msg" aria-live="polite"></div>
     <div class="kz-btns"></div>
     <label class="kz-theme">Тема <select><option value="">Любая — по моему рейтингу</option>${['Мат', 'Тактика', 'Эндшпиль', 'Стадия']
       .map((g) => `<optgroup label="${g}">${THEMES.filter((t) => t.group === g).map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</optgroup>`)

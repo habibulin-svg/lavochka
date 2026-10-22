@@ -166,3 +166,12 @@ p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }
 /* «собери звёздочки» */
 .kb-wrap .kb-star { fill: #ffc928; stroke: #a8650a; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); animation: kb-star 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes kb-star { to { transform: scale(1.1) rotate(8deg); } }
+
+/* ход текстом (доступность): ⌨ в нижнем левом углу рамки, поле — поверх нижней кромки доски */
+.kb-kbd { display: none; position: absolute; left: 0; bottom: 0; width: 6%; height: 6%; padding: 0; border: 0; background: none; color: rgba(255, 240, 210, 0.75); font-size: clamp(12px, 2.6cqmin, 22px); cursor: pointer; }
+.kb-live .kb-kbd { display: block; }
+.kb-kbd:hover, .kb-kbd:focus-visible { color: #fff; }
+.kb-type { position: absolute; left: 7%; bottom: 1%; display: flex; gap: 6px; padding: 6px; border-radius: 10px; background: #f3e2b8; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); z-index: 3; }
+.kb-type[hidden] { display: none; }
+.kb-type input { width: 11em; padding: 5px 8px; border: 1px solid rgba(42, 18, 6, 0.35); border-radius: 6px; font: inherit; }
+.kb-type input[aria-invalid] { border-color: #d2321e; background: #fde8e4; }

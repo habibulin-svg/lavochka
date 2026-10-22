@@ -68,7 +68,7 @@ export const PORTRAIT = `${import.meta.env.BASE_URL}kruzhok/mihalych.webp`;
 export function mountMihalych(host: HTMLElement, ctx: () => MihalychContext) {
   const el = h(`<div class="mh" hidden>
     <div class="mh-head"><img src="${PORTRAIT}" alt="Михалыч" width="48" height="48"><div><b>Михалыч</b><small class="mh-status"></small></div></div>
-    <div class="mh-log"></div>
+    <div class="mh-log" aria-live="polite"></div>
     <div class="mh-acts"></div>
     <form class="mh-ask"><input maxlength="500" placeholder="Спросить Михалыча…" enterkeyhint="send"><button class="btn small" title="Спросить">➤</button></form>
   </div>`);

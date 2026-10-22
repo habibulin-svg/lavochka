@@ -5,7 +5,7 @@ import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
 import { woodTexture, WOODS } from '../../core/wood';
 import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, type Move, type Promo, type State } from './engine';
-import { position, toFen } from './notation';
+import { parseMove, position, toFen } from './notation';
 import { pieceDefs, pieceRef } from './pieces';
 import './chess.css';
 
@@ -50,10 +50,13 @@ export class Board {
   private marks: Mark[] = [];
   private last: { from: number; to: number } | null = null;
   private id = `b${++uid}`;
+  private typed: HTMLFormElement;
 
   constructor(host: HTMLElement, o: BoardOpts = {}) {
     this.flippedV = !!o.flipped;
-    this.el = h(`<div class="ch-wrap kb-wrap"><svg class="ch-board" xmlns="${NS}" viewBox="0 0 ${W} ${W}"></svg><div class="kb-promo" hidden></div></div>`);
+    this.el = h(`<div class="ch-wrap kb-wrap"><svg class="ch-board" xmlns="${NS}" viewBox="0 0 ${W} ${W}" role="img" aria-label="Шахматная доска"></svg><div class="kb-promo" hidden></div>
+      <button class="kb-kbd" type="button" title="Ввести ход текстом" aria-label="Ввести ход текстом">⌨</button>
+      <form class="kb-type" hidden><input aria-label="Ход текстом, например Кf3, e4, 0-0 или e2e4" placeholder="Ход: Кf3, e4, 0-0" autocomplete="off" spellcheck="false"><button class="btn small">Ход</button></form></div>`);
     host.appendChild(this.el);
     this.svg = this.el.querySelector('svg') as SVGSVGElement;
     this.promo = this.el.querySelector('.kb-promo') as HTMLElement;
@@ -66,6 +69,28 @@ export class Board {
       pieces: this.svg.querySelector('.kb-pieces') as SVGGElement,
     };
     this.svg.addEventListener('click', (e) => this.click(e));
+    this.typed = this.el.querySelector('.kb-type') as HTMLFormElement;
+    const field = this.typed.querySelector('input') as HTMLInputElement;
+    (this.el.querySelector('.kb-kbd') as HTMLButtonElement).onclick = () => {
+      this.typed.hidden = !this.typed.hidden;
+      if (!this.typed.hidden) field.focus();
+    };
+    field.oninput = () => field.removeAttribute('aria-invalid');
+    field.onkeydown = (e) => {
+      e.stopPropagation(); // стрелки и буквы — в поле, а не листают урок
+      if (e.key === 'Escape') this.typed.hidden = true;
+    };
+    this.typed.onsubmit = (e) => {
+      e.preventDefault();
+      const m = this.typedMove(field.value);
+      if (!m) {
+        field.setAttribute('aria-invalid', 'true');
+        Sound.nomove();
+        return;
+      }
+      field.value = '';
+      this.done(m);
+    };
     this.render();
   }
 
@@ -100,6 +125,7 @@ export class Board {
     this.moves = side != null && this.s.turn === side ? legalMoves(this.s) : [];
     this.selected = null;
     this.el.classList.toggle('kb-live', side != null);
+    if (side == null) this.typed.hidden = true;
     this.renderTargets();
   }
 
@@ -256,6 +282,19 @@ export class Board {
     const ry = Math.floor((p.y - F) / SQ);
     if (fx < 0 || fx > 7 || ry < 0 || ry > 7) return null;
     return (this.flippedV ? ry : 7 - ry) * 8 + (this.flippedV ? 7 - fx : fx);
+  }
+
+  /** Ход, введённый текстом: «Кf3», «кf3», «e4», «0-0», «e2e4»; русские «а», «с», «е» в названии поля — как латинские. */
+  private typedMove(text: string): Move | null {
+    if (!this.moves.length) return null;
+    let t = text.trim().replace(/\s+/g, '');
+    const piece = /^(кр|[кфлс])(?=.*[a-hа-я][1-8])/i.exec(t);
+    if (piece) t = piece[1][0].toUpperCase() + piece[1].slice(1).toLowerCase() + t.slice(piece[1].length);
+    t = t.replace(/[асе](?=[1-8])/g, (c) => ({ а: 'a', с: 'c', е: 'e' })[c as 'а' | 'с' | 'е']);
+    const m = parseMove(this.s, t);
+    if (!m) return null;
+    // превращение без фигуры — ферзь
+    return this.moves.find((x) => x.from === m.from && x.to === m.to && (x.promo ?? 'Q') === (m.promo ?? 'Q')) ?? null;
   }
 
   private click(e: MouseEvent) {

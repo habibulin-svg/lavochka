@@ -131,7 +131,7 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
   const el = h(`<div class="kz-an kz-ls">
     <button class="btn kz-back">← ${esc(path?.backLabel ?? 'Оглавление')}</button>
     <div class="kz-rank kz-ls-head"><b>${info.n}. ${esc(info.title)}</b><br><small>${esc(info.part)}</small></div>
-    <div class="kz-msg kz-ls-text"><small class="hint">Открываю урок…</small></div>
+    <div class="kz-msg kz-ls-text" aria-live="polite"><small class="hint">Открываю урок…</small></div>
     <div class="kz-nav">
       <button class="btn small" data-a="prev" title="Шаг назад">◀</button>
       <small class="kz-ls-step"></small>
