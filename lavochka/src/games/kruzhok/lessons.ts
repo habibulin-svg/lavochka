@@ -6,11 +6,11 @@ import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import { Board, type Arrow, type Mark } from '../chess/board';
 import { play, sq, type Move, type State } from '../chess/engine';
-import { stepPositions } from './lesson-steps';
+import { starsBest, starsDone, stepPositions, whiteAgain } from './lesson-steps';
 import { fromUci, position, ruSan, toFen, toUci } from '../chess/notation';
 import { levelOf, mountMihalych } from '../chess/mihalych';
 import { score, stockfish } from '../chess/stockfish';
-import { loadLesson, loadLessonIndex, THEMES, type Lesson, type LessonInfo } from './data';
+import { loadLesson, loadLessonIndex, THEMES, type Lesson, type LessonInfo, type LessonStep } from './data';
 import { loadProgress } from './progress';
 import { mountTrainer } from './trainer';
 import { leaveSub, lessonPath, setPath } from './pages';
@@ -171,7 +171,7 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
     q('.kz-ls-step').textContent = at < n ? `шаг ${at + 1} из ${n}` : 'итог';
     q<HTMLButtonElement>('[data-a=prev]').disabled = at === 0;
     const st = l!.steps[at];
-    q<HTMLButtonElement>('[data-a=next]').disabled = at >= n || (!!st?.try && !solved);
+    q<HTMLButtonElement>('[data-a=next]').disabled = at >= n || (!!(st?.try || st?.stars) && !solved);
   };
 
   /** Показать ходы по очереди на доске. */
@@ -225,9 +225,62 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
       });
       buttons([{ text: 'Покажи, как надо', on: () => void answered(s, st.try!.good[0], false) }]);
     }
+    if (st.stars) runStars(st);
     nav();
     mh.actions([{ label: 'Объясни иначе', kind: 'explain', say: 'Михалыч, объясни это по-другому, попроще.' }]);
     mh.typed({ kind: 'chat' });
+  };
+
+  /** «Собери звёздочки»: фигура ходит подряд, звезда берётся, когда фигура встала на её поле; чёрных — съесть. */
+  const runStars = (st: LessonStep) => {
+    const step = at;
+    const best = starsBest(starts[at], st.stars!.at);
+    let s = whiteAgain(position(starts[at]));
+    let left: number[] = [];
+    let n = 0;
+    const paint = (last: { from: number; to: number } | null = null) => {
+      board.set(s, last);
+      board.draw(arrowsOf(st.arrows), [...marksOf(st.marks), ...left.map((x) => ({ sq: x, kind: 'star' as const }))]);
+    };
+    const status = (extra = '') => say(`${esc(st.text)}<br><small>Ходов: <b>${n}</b>${best > 0 ? ` · можно управиться за ${best}` : ''}</small>${extra}`);
+    const listen = () =>
+      board.input(0, (m) => {
+        if (!alive || at !== step) return;
+        n++;
+        s = whiteAgain(play(s, m));
+        const got = left.includes(m.to);
+        left = left.filter((x) => x !== m.to);
+        paint({ from: m.from, to: m.to });
+        if (m.captured) Sound.capture();
+        else if (got) Sound.beep(1320, 0.09, 0.14);
+        else Sound.place();
+        if (!starsDone(s, left)) return void (status(), listen());
+        board.input(null);
+        Sound.win();
+        const quick = best > 0 && n <= best;
+        if (quick && !solved) addStars(2, 'быстрее не бывает');
+        solved = true;
+        say(
+          `<b>Всё собрано!</b> Ходов: ${n}. ${quick ? 'Быстрее не бывает!' : best > 0 ? `А можно было за ${best} — попробуешь ещё раз?` : ''}${st.stars!.say ? ' ' + esc(st.stars!.say) : ''}`,
+          'ok',
+        );
+        buttons([{ text: '↻ Ещё раз', on: start }]);
+        nav();
+      });
+    const start = () => {
+      if (!alive || at !== step) return;
+      s = whiteAgain(position(starts[step]));
+      left = st.stars!.at.map(sq);
+      n = 0;
+      paint();
+      status();
+      listen();
+      buttons([
+        { text: '↻ Начать заново', on: start },
+        ...(st.stars!.hint ? [{ text: '💡 Подсказка', on: () => status(`<br>${esc(st.stars!.hint!)}`) }] : []),
+      ]);
+    };
+    start();
   };
 
   /** Ход не из списка: может, он не хуже задуманного — спросим движок (сравним с ходом урока). */
@@ -315,7 +368,7 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
   const step = (d: -1 | 1) => {
     if (!l || drill) return;
     const n = l.steps.length;
-    if (d < 0 ? at <= 0 : at >= n || (!!l.steps[at]?.try && !solved)) return;
+    if (d < 0 ? at <= 0 : at >= n || (!!(l.steps[at]?.try || l.steps[at]?.stars) && !solved)) return;
     at += d;
     Sound.ui();
     show();

@@ -123,6 +123,8 @@ export function kruzhokPages(root: string): KruzhokPage[] {
     const steps = l.steps
       .map((st, i) => {
         let t = `<p>${esc(st.text)}</p>`;
+        if (st.stars) t += `
+<p><i>Упражнение на доске: ${st.stars.at.length ? `звёздочки на ${st.stars.at.join(', ')}` : 'съесть все чёрные фигуры'}.</i></p>`;
         if (st.try) {
           // ответ задания — для тех, кто читает страницу без доски
           let s = position(starts[i]);

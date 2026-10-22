@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { inCheck, play } from '../src/games/chess/engine';
 import { fromUci, position, toFen } from '../src/games/chess/notation';
 import type { ClassicGame, Lesson } from '../src/games/kruzhok/data';
-import { stepPositions } from '../src/games/kruzhok/lesson-steps';
+import { starsBest, stepPositions } from '../src/games/kruzhok/lesson-steps';
 import { THEMES } from '../src/games/kruzhok/themes';
 
 const LESSONS = 'src/games/kruzhok/lessons';
@@ -37,6 +37,14 @@ describe('учебник кружка', () => {
       const starts = stepPositions(l);
       l.steps.forEach((st, i) => {
         const w = `${f} шаг ${i + 1}`;
+        if (st.stars) {
+          // «собери звёздочки»: без королей, ходят одни белые — главное, чтобы собиралось
+          const pos = position(starts[i]);
+          expect(pos.turn, w).toBe(0);
+          expect(pos.board.includes('k'), `${w}: чёрный король тут ни к чему`).toBe(false);
+          expect(starsBest(starts[i], st.stars.at), `${w}: не собрать`).toBeGreaterThan(0);
+          return;
+        }
         expect(legal(starts[i]), w).toBeNull();
         let s = position(starts[i]);
         for (const u of st.play ?? []) {

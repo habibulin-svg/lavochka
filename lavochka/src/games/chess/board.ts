@@ -23,7 +23,8 @@ export interface Arrow {
 
 export interface Mark {
   sq: number;
-  kind: 'good' | 'bad' | 'info' | 'hint';
+  /** star — звёздочка на поле (упражнение «собери звёздочки»). */
+  kind: 'good' | 'bad' | 'info' | 'hint' | 'star';
 }
 
 export interface BoardOpts {
@@ -183,7 +184,19 @@ export class Board {
   private renderMarks() {
     let m = '';
     if (this.last) for (const sq of [this.last.from, this.last.to]) m += this.rect(sq, 'ch-last');
-    for (const k of this.marks) m += this.rect(k.sq, `kb-mark kb-${k.kind}`);
+    for (const k of this.marks) {
+      if (k.kind !== 'star') {
+        m += this.rect(k.sq, `kb-mark kb-${k.kind}`);
+        continue;
+      }
+      const { x, y } = this.xy(k.sq);
+      const pts = Array.from({ length: 10 }, (_, i) => {
+        const r = (i % 2 ? 0.17 : 0.38) * SQ;
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        return `${(x + r * Math.cos(a)).toFixed(1)},${(y + r * Math.sin(a)).toFixed(1)}`;
+      });
+      m += `<polygon class="kb-star" points="${pts.join(' ')}"/>`;
+    }
     if (inCheck(this.s)) {
       const { x, y } = this.xy(kingSq(this.s.board, this.s.turn));
       m += `<circle cx="${x}" cy="${y}" r="${SQ * 0.48}" fill="url(#${this.id}Check)"/>`;

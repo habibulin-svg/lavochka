@@ -12,7 +12,7 @@ import { inCheck, legalMoves, play } from '../../src/games/chess/engine';
 import { fromUci, position, toFen } from '../../src/games/chess/notation';
 import type { Lesson } from '../../src/games/kruzhok/data';
 import { THEMES } from '../../src/games/kruzhok/themes';
-import { stepPositions } from '../../src/games/kruzhok/lesson-steps';
+import { stepPositions, starsBest } from '../../src/games/kruzhok/lesson-steps';
 
 const dir = 'src/games/kruzhok/lessons';
 const sfAt = process.argv.indexOf('--sf');
@@ -97,6 +97,11 @@ async function main() {
       const w = `${f} шаг ${i + 1}`;
       if (!st.text?.trim()) errors.push(`${w}: нет текста`);
       if (st.text && st.text.split(/\s+/).length > 70) errors.push(`${w}: длинный текст (${st.text.split(/\s+/).length} слов)`);
+      if (st.stars) {
+        // «собери звёздочки»: доска без чёрного короля, ходят одни белые
+        if (starsBest(starts[i], st.stars.at) < 1) errors.push(`${w}: звёздочки не собрать`);
+        continue;
+      }
       if (!legal(starts[i], w)) continue;
       for (const a of st.arrows ?? []) {
         const [m, k] = a.split(':');

@@ -113,6 +113,8 @@ export interface LessonStep {
   play?: string[];
   /** Ученик делает ход сам. */
   try?: { good: string[]; say?: string; hint?: string; reply?: string };
+  /** «Собери звёздочки»: белые ходят подряд, чёрные стоят; собрать звёзды на полях и съесть все чёрные фигуры. */
+  stars?: { at: string[]; say?: string; hint?: string };
 }
 
 export interface Lesson {

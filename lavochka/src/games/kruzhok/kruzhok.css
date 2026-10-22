@@ -162,3 +162,7 @@ p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }
 .kz-thumb-side img { width: 30vh; height: 30vh; border-radius: 50%; border: 0.8vh solid #f3e2b8; box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.5); }
 .kz-thumb-say { position: relative; padding: 2.2vh 2.6vh; border-radius: 2.4vh; background: #fffaf0; color: #2a1206; font: 600 4.4vh/1.25 'PT Serif', serif; text-align: center; box-shadow: 0 1vh 2.5vh rgba(0, 0, 0, 0.45); }
 .kz-thumb-say::after { content: ''; position: absolute; left: 50%; bottom: -2.4vh; margin-left: -2vh; border: 1.4vh solid transparent; border-top: 2.4vh solid #fffaf0; border-bottom: 0; }
+
+/* «собери звёздочки» */
+.kb-wrap .kb-star { fill: #ffc928; stroke: #a8650a; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); animation: kb-star 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes kb-star { to { transform: scale(1.1) rotate(8deg); } }
