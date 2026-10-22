@@ -122,6 +122,8 @@ export interface Cfg {
   /** Удваивать блайнды каждые столько раздач (0 — не расти). */
   every: number;
   ante: AnteKind;
+  /** Турнир (этап 3): выплаты по местам — боты на пузыре учитывают ICM. */
+  prizes?: number[];
 }
 
 const MODES: Mode[] = [...(Object.keys(GAMES) as Game[]), 'horse', 'eight'];
