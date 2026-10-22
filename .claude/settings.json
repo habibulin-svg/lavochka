@@ -32,7 +32,7 @@
           {
             "type": "command",
             "command": "\"C:/Program Files/nodejs/node.exe\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-check.mjs\"",
-            "timeout": 240,
+            "timeout": 420,
             "statusMessage": "Проверяю типы и тесты сборника…"
           }
         ]
