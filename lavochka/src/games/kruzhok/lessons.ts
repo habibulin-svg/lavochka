@@ -426,6 +426,16 @@ export function mountLesson(stage: HTMLElement, panel: HTMLElement, info: Lesson
     board.input(null);
     board.draw();
     say(`<b>Запомни.</b> ${esc(l!.summary.replace(/^Запомни[:.!]?\s*/i, ''))}`, 'ok');
+    // слова урока из словаря кружка — коротко, под «Запомни»
+    const id = l!.id;
+    void import('./terms.json').then((m) => {
+      const ts = (m.default as { term: string; text: string; lesson?: string }[]).filter((t) => t.lesson === id);
+      if (!ts.length || !alive || at < l!.steps.length || l!.id !== id) return;
+      q('.kz-ls-text').insertAdjacentHTML(
+        'beforeend',
+        `<details class="kz-ls-terms"><summary>Слова урока: ${ts.map((t) => esc(t.term)).join(', ')}</summary>${ts.map((t) => `<p><b>${esc(t.term)}</b> — ${esc(t.text)}</p>`).join('')}</details>`,
+      );
+    });
     const next = all.find((x) => x.n === l!.n + 1);
     const d = l!.drill;
     buttons(
