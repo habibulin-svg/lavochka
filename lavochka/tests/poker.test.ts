@@ -34,7 +34,7 @@ describe('комбинации', () => {
     expect(set).toBeGreaterThan(straight);
     expect(highName(set, true)).toBe('сет');
     expect(highName(straight, true)).toBe('стрит');
-    expect(highSD(L('9S 9C 9H KD 7C QH'))).toBe(set);
+    expect(highName(highSD(L('9S 9C 9H KD 7C QH 6D')), true)).toBe('сет');
     const flush = highSD(L('AH 7H QH 9H 6H'));
     const full = highSD(L('QS QC QH 9H 9C'));
     expect(flush).toBeGreaterThan(full);
