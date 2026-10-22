@@ -10,7 +10,8 @@ sudo -u lavochka git pull -q --ff-only
 cd lavochka
 build() {
   sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&
-  sudo -u lavochka -H npm run build >/tmp/lavochka-build.log 2>&1
+  # 2 ГБ памяти: tsc по умолчанию упирается в ~900 МБ кучи и падает — даём больше (остальное добирает zram)
+  sudo -u lavochka -H env NODE_OPTIONS=--max-old-space-size=1600 npm run build >/tmp/lavochka-build.log 2>&1
 }
 if ! build; then
   tail -30 /tmp/lavochka-build.log
