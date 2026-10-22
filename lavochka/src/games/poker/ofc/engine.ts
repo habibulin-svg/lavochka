@@ -282,7 +282,9 @@ export function deal(s0: OState, rng: Rng, nextFant: number[]): { state: OState;
 }
 
 export function setupOfc(seats: number[], opts: Options, rng: Rng): OState {
-  return deal(newOState(ocfgFrom(opts), seats), rng, Array(N).fill(0)).state;
+  const cfg = ocfgFrom(opts);
+  // больше мест колода не потянет (экран настройки и так не даст) — лишние не садятся
+  return deal(newOState(cfg, seats.slice(0, ofcMax(cfg.mode))), rng, Array(N).fill(0)).state;
 }
 
 export const toActOfc = (s: OState): number[] => (s.over ? [] : [s.turn]);
