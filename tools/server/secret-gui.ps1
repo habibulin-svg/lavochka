@@ -14,10 +14,11 @@ $keys = @(
   @{ n = 'VK_SERVICE_KEY';       f = $main;   d = 'VK ID — сервисный ключ доступа' },
   @{ n = 'UNISENDER_API_KEY';    f = $main;   d = 'Unisender Go — API-ключ' },
   @{ n = 'ROBOKASSA_LOGIN';      f = $main;   d = 'Robokassa — идентификатор магазина (lavochka-games)' },
-  @{ n = 'ROBOKASSA_PASS1';      f = $main;   d = 'Robokassa — Пароль #1 (в тесте — тестовый)' },
-  @{ n = 'ROBOKASSA_PASS2';      f = $main;   d = 'Robokassa — Пароль #2 (в тесте — тестовый)' },
+  @{ n = 'ROBOKASSA_PASS1';      f = $main;   d = 'Robokassa — Пароль #1 (боевой, из «Технических настроек»)' },
+  @{ n = 'ROBOKASSA_PASS2';      f = $main;   d = 'Robokassa — Пароль #2 (боевой)' },
   @{ n = 'ROBOKASSA_HASH';       f = $main;   d = 'Robokassa — алгоритм хеша: md5 или sha256' },
   @{ n = 'ROBOKASSA_TEST';       f = $main;   d = 'Robokassa — тестовый режим: 1 — тест, 0 — боевой' },
+  @{ n = 'ROBOKASSA_RECURRING';  f = $main;   d = 'Robokassa — автопродление подписки: 1 — включено, 0 — нет' },
   @{ n = 'ROUTERAI_API_KEY';     f = $main;   d = 'routerai.ru — ключ API (Совет Михалыча в шахматном кружке)' },
   @{ n = 'YADISK_TOKEN';         f = $backup; d = 'Яндекс Диск — токен (бэкапы)' }
 )
