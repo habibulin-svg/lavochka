@@ -93,3 +93,23 @@ describe('сохранения в базе', () => {
     expect((await pl.saves(q(), c(a))).body.saves).toEqual([{ game: 'durak', at: now, has: false }]);
   });
 });
+
+describe('тренажёр покера в профиле (/api/poker)', () => {
+  it('гостю нельзя; новее — записывается, старее — нет; у каждого своё; в список сохранений не попадает', async () => {
+    const { pl, a, b } = await setup();
+    const now = 1_800_000_000_000;
+    const c = (sid?: string) => ({ ...ctx(sid), now });
+    const data = { hud: { v: 1, me: { hands: 3 } }, bank: { base: 1000 } };
+    expect((await pl.putPoker({ at: now - 1000, data }, c())).code).toBe(401);
+    expect((await pl.poker(c())).code).toBe(401);
+    expect((await pl.putPoker({ at: now - 1000, data }, c(a))).body.ok).toBe(true);
+    expect((await pl.putPoker({ at: now - 2000, data: { hud: {} } }, c(a))).body.ok).toBe(false);
+    expect((await pl.poker(c(a))).body).toEqual({ at: now - 1000, data });
+    expect((await pl.poker(c(b))).body).toEqual({ at: 0, data: null });
+    expect((await pl.putPoker({ at: now, data: [] }, c(a))).code).toBe(400);
+    expect((await pl.putPoker({ at: now + 3600_000, data }, c(a))).code).toBe(400);
+    expect((await pl.saves(new URLSearchParams(), c(a))).body.saves).toEqual([]);
+    // журнал кружка рядом — свой, не путается
+    expect((await pl.kruzhok(c(a))).body).toEqual({ at: 0, data: null });
+  });
+});

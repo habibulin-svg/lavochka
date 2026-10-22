@@ -37,6 +37,9 @@ class PokerView implements GameView<View, Event> {
   private selected: Card[] = [];
   private raiseTo = 0;
 
+  /** HUD тренажёра под табличкой соперника (poker/trainer.ts). */
+  constructor(private hud: ((seat: number) => string) | null = null) {}
+
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     preloadDeck(settings.deck);
@@ -144,6 +147,8 @@ class PokerView implements GameView<View, Event> {
       const out = v.chips[p] <= 0 && !v.inHand.includes(p);
       const tag = v.folded[p] ? ' <em>пас</em>' : v.allin[p] ? ' <em>ва-банк</em>' : v.phase === 'draw' && v.drew[p] ? ` <em>сменил ${v.drawn[p] || 'ничего'}</em>` : v.phase === 'discard' && v.drew[p] ? ' <em>сбросил</em>' : '';
       s += `<div class="cs-plate${on ? ' on' : ''}${out ? ' pk-out' : ''}" style="--c:${SEATS[p].color};left:${x}px;top:${y}px">${esc(this.plain(p).replace(/\s*\(.*\)\s*$/, ''))} <i>${v.chips[p]}</i>${tag}${v.button === p ? ' <b class="pk-d">D</b>' : ''}</div>`;
+      const hud = me ? '' : (this.hud?.(p) ?? '');
+      if (hud) s += `<div class="pk-hud" data-hud="${p}" style="left:${x}px;top:${y + (g.port ? 36 : 32)}px">${hud}</div>`;
       if (v.bet[p] > 0) {
         const bx = a.x + (g.center.x - a.x) * 0.45;
         const by = a.y + (g.center.y - a.y) * 0.45 + (me ? -60 : 30);
@@ -151,7 +156,7 @@ class PokerView implements GameView<View, Event> {
       }
     }
     const pot = potSize(v) - v.bet.reduce((a, b) => a + b, 0);
-    s += `<div class="pk-pot" style="left:${g.center.x}px;top:${g.center.y - (g.port ? 100 : 105)}px">${isMix(v.cfg.mode) ? `${MIXES[v.cfg.mode].name}: ` : ''}${esc(gameTitle(v.game, v.hilo))} · раздача ${v.hand}${pot > 0 ? `<b>банк ${pot}</b>` : ''}</div>`;
+    s += `<div class="pk-pot" style="left:${g.center.x}px;top:${g.center.y - (g.port ? 100 : 82)}px">${isMix(v.cfg.mode) ? `${MIXES[v.cfg.mode].name}: ` : ''}${esc(gameTitle(v.game, v.hilo))} · раздача ${v.hand}${pot > 0 ? `<b>банк ${pot}</b>` : ''}</div>`;
     this.plates.innerHTML = s;
   }
 
@@ -307,6 +312,6 @@ class PokerView implements GameView<View, Event> {
   }
 }
 
-export function createView(): GameView<View, Event> {
-  return new PokerView();
+export function createView(hud: ((seat: number) => string) | null = null): GameView<View, Event> {
+  return new PokerView(hud);
 }

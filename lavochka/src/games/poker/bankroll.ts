@@ -1,12 +1,14 @@
 /* Покер — виртуальный банкролл (отдельный режим турниров, решение пользователя): стартовые очки, бай-ины, ROI, ITM,
  * бесплатное пополнение раз в сутки. Без денег — только очки. Хранится в localStorage; баланс не хранится отдельно, а
  * считается по записям турниров (стоимость входов и выигрыш у каждого), поэтому повторный показ того же турнира ничего не
- * списывает дважды. Перенос в профиль на сервере — на этапе 4 (вместе со статистикой). */
+ * списывает дважды. Вошедшему — ещё и в профиль на сервере, вместе со статистикой (poker/cloud.ts). */
 import { store } from '../../core/settings';
 import type { TourState } from './tour';
 
 export const BANK_START = 1000;
 const KEY = 'poker.bank';
+/** Банкролл изменился — облако (poker/cloud.ts) отправит его в профиль. */
+export const bankHooks = { changed: () => {} };
 
 interface Entry {
   fmt: string;
@@ -58,6 +60,7 @@ export function refill(): boolean {
   b.base += BANK_START - info.balance;
   b.day = today();
   store.set(KEY, b);
+  bankHooks.changed();
   return true;
 }
 
@@ -90,4 +93,5 @@ export function trackTour(T: TourState, me: number) {
     delete b.list[k];
   }
   store.set(KEY, b);
+  bankHooks.changed();
 }

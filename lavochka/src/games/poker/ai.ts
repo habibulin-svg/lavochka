@@ -288,6 +288,12 @@ function weightOf(v: View, m: OppModel, hole: Card[]): number {
   return w;
 }
 
+/** Подсказка тренажёра: шансы места на банк по его виду. Флоп-игры — против диапазонов соперников «как у регуляра» по их
+ * ходам (стиль бота подсказка не знает), остальные — против любых карт. */
+export function handEquity(v: View, seat: number, samples: number, rng: Rng): number {
+  return info(v).family === 'flop' && v.board.length ? flopEquity(v, seat, samples, rng, oppModels(v, seat, 1)) : equity(v, seat, samples, rng);
+}
+
 /** Шансы флоп-игры против диапазонов (models = null — против любых карт). */
 function flopEquity(v: View, seat: number, samples: number, rng: Rng, models: OppModel[] | null): number {
   const g = info(v);
@@ -648,25 +654,32 @@ function postflop(c: Ctx): Action {
       if (eq > 0.88 && !river && tex < 0.4 && rng.next() < 0.25 / prof.aggr) return { type: 'check' };
       if (rng.next() < Math.min(1, 0.72 * prof.aggr)) return potRaise(c, size(river && eq > 0.85 ? 0.75 + tex * 0.2 : tex >= 0.6 ? 0.7 : 0.5));
     }
+    // тонкое вэлью: рука чуть слабее порога — ставка поменьше (без этого все прочекивают до вскрытия)
+    if (eq >= valueTh - 0.1 && rng.next() < 0.4 * prof.aggr) return potRaise(c, size(0.4));
     // продолженная ставка
     if (preAgg && v.street === 1 && !here.some(aggressive)) {
       const p = prof.cbet * (tex < 0.4 ? 1.1 : 0.85) * (nOpp > 1 ? 0.55 : 1) * (level === 2 && vil?.id === 'station' && eq < 0.4 ? 0.6 : 1);
       if (rng.next() < p) return potRaise(c, size(tex < 0.4 ? 0.33 : 0.6));
     }
-    // второй ствол на тёрне
-    if (v.street === 2 && iBetPrev && (eq > 0.45 || ms.draw > 0.15) && rng.next() < 0.45 * prof.aggr) return potRaise(c, size(0.6));
+    // второй (и третий) ствол: ставил на прошлой улице — продолжает с силой, дро или иногда блефом
+    if (v.street >= 2 && iBetPrev && (eq > 0.45 || ms.draw > 0.15 || rng.next() < 0.3 * prof.bluff * bluffK) && rng.next() < 0.6 * prof.aggr) return potRaise(c, size(0.6));
     // полублеф с дро
     if (!river && ms.draw >= 0.15 && rng.next() < 0.33 * prof.aggr) return potRaise(c, size(0.6));
     // все до меня прочекали — забрать банк ставкой (в позиции, вдвоём или втроём)
     const checkedToMe = here.length > 0 && here.every((a) => a.a === 'check') && !iChecked;
-    if (checkedToMe && nOpp <= 2 && rng.next() < (0.28 * prof.aggr * bluffK) / nOpp) return potRaise(c, size(0.5));
+    if (checkedToMe && nOpp <= 3 && rng.next() < (0.6 * prof.aggr * bluffK) / Math.sqrt(nOpp)) return potRaise(c, size(0.5));
+    // пробная ставка: прошлую улицу все прочекали — первым забрать банк
+    const probe = here.length === 0 && v.street >= 2 && prev.length > 0 && prev.every((a) => a.a === 'check');
+    if (probe && nOpp <= 2 && rng.next() < (0.45 * prof.aggr * bluffK) / Math.sqrt(nOpp)) return potRaise(c, size(0.5));
     // блеф на ривере, когда соперники показали слабость (чек)
     if (river && eq < 0.3 && rng.next() < (prof.bluff * 0.4 * bluffK) / nOpp) return potRaise(c, size(0.7));
     return { type: 'check' };
   }
 
   const odds = c.call / (c.pot + c.call);
-  const margin = (level === 2 ? 0 : level === 1 ? 0.02 : -0.04) - prof.stick + callK;
+  // на тёрне и ривере ставка значит больше: средней рукой — пас чаще (кроме колл-станции)
+  const pressure = prof.stick > 0.1 ? 0 : v.street >= 2 ? 0.12 : 0.04;
+  const margin = (level === 2 ? 0 : level === 1 ? 0.02 : -0.04) - prof.stick + callK + pressure;
   // у дро выигрыш потом: на глубоких стеках сложный и средний доплачивают чуть дороже шансов банка
   const implied = level > 0 && !river && ms.draw >= 0.15 && c.eff > 30 ? 0.05 : 0;
   const raiseTh = 0.72 + 0.05 * (nOpp - 1) - (vil?.id === 'maniac' ? 0.08 : 0);

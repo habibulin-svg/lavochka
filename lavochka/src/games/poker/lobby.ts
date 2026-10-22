@@ -1,7 +1,7 @@
 /* Покер — лобби на экране игры, как в покер-руме: вкладки форматов. «Быстрая игра» — стол на очки (вид — в «Правилах
  * партии»); «Sit&Go» и «Турниры» — турниры с ботами (poker/tour.ts): вид покера, формат, скорость, вид турнира, соперники
- * и — по желанию — игра на виртуальный банкролл (poker/bankroll.ts). Сетевое лобби, школа и статистика — следующими
- * этапами (docs/analysis/poker-plan.md). Отдельная кнопка — китайский покер «Ананас»: выбирает его пресет. */
+ * и — по желанию — игра на виртуальный банкролл (poker/bankroll.ts); «Моя статистика» — poker/mystats.ts. Сетевое лобби и
+ * школа — следующими этапами (docs/analysis/poker-plan.md). Отдельная кнопка — китайский покер «Ананас»: выбирает его пресет. */
 import { store } from '../../core/settings';
 import type { Options } from '../../core/types';
 import { esc, h } from '../../core/util';
@@ -10,6 +10,7 @@ import { BANK_START, bankInfo, refill } from './bankroll';
 import { def } from './def';
 import { cfgFrom, maxPlayers } from './engine';
 import { isOfc } from './ofc/engine';
+import { renderStats } from './mystats';
 import { bigAt, FMTS, KINDS, LATE_LEVELS, paidOf, payout, REBUY_LEVELS, SPEEDS, startStack, type TourFmt, type TourKind, type TourSpeed } from './tour';
 
 type Tab = 'cash' | 'sng' | 'mtt' | 'net' | 'school' | 'stats';
@@ -19,7 +20,7 @@ const TABS: { id: Tab; label: string; ready?: boolean; hint: string }[] = [
   { id: 'mtt', label: 'Турниры', ready: true, hint: 'Многостоловый турнир: остальные столы играют сами, вас пересаживают, финальный стол — как в руме.' },
   { id: 'net', label: 'По сети', hint: 'Сетевое лобби: столы и Sit&Go с живыми игроками.' },
   { id: 'school', label: 'Школа', hint: 'Уроки по шагам: позиции, шансы, турнирная игра, ICM — с задачами за столом.' },
-  { id: 'stats', label: 'Моя статистика', hint: 'VPIP, PFR, выигрыш на 100 раздач, история и разбор раздач.' },
+  { id: 'stats', label: 'Моя статистика', ready: true, hint: 'Ваши VPIP, PFR и другие цифры, выигрыш на 100 раздач, турниры, история раздач с реплеером и разбором, выгрузка для трекеров.' },
 ];
 
 interface Pick {
@@ -100,7 +101,8 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     form.hidden = id === 'cash';
     // турнир — свой блок, «Правила партии» и места ему не нужны
     el.closest('.home-screen')?.classList.toggle('pk-tour-mode', id !== 'cash');
-    if (id !== 'cash') renderForm();
+    if (id === 'stats') renderStats(form);
+    else if (id !== 'cash') renderForm();
   };
   for (const b of tabBtns) {
     const t = TABS.find((x) => x.id === b.dataset.t)!;

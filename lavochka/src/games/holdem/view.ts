@@ -55,6 +55,8 @@ function webglOk(): boolean {
 /** Подпись поверх стола (и в плоском виде, и в 3D). */
 interface Label extends Label3D {
   style?: string;
+  /** Свои атрибуты элемента (обычный стол). */
+  data?: string;
 }
 
 class HoldemView implements GameView<View, Event> {
@@ -78,6 +80,9 @@ class HoldemView implements GameView<View, Event> {
   private skip!: HTMLButtonElement;
   /** Выигрыш раздачи: лежит кучкой перед победителем, пока не начнётся следующая. */
   private won = new Map<number, number>();
+
+  /** HUD тренажёра под табличкой соперника — только на обычном столе (в 3D-комнате его нет). */
+  constructor(private hud: ((seat: number) => string) | null = null) {}
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -268,6 +273,8 @@ class HoldemView implements GameView<View, Event> {
       const tag = v.allin[seat] ? ' <em>ва-банк</em>' : out ? ' <em>пас</em>' : busted ? ' <em>вылетел</em>' : '';
       const py = me ? a.y + 62 : a.y + 46;
       labels.push({ cls: `cs-plate hd-plate${on ? ' on' : ''}${out || busted ? ' hd-dim' : ''}`, style: `--c:${SEATS[seat].color}`, x: a.x, y: py, seat, html: `${esc(this.plain(seat))} <i>${v.chips[seat]}</i>${tag}` });
+      const hud = gl || me ? '' : (this.hud?.(seat) ?? '');
+      if (hud) labels.push({ cls: 'pk-hud', x: a.x, y: py + 34, html: hud, data: `data-hud="${seat}"` });
       // ставка этого круга — фишками к центру; своя — справа от карт, чужие — по пути к центру
       if (v.bet[seat] > 0) {
         const k = gl ? 0.42 : 0.36;
@@ -323,7 +330,7 @@ class HoldemView implements GameView<View, Event> {
       );
       return;
     }
-    this.plates.innerHTML = labels.map((l) => `<div class="${l.cls}" style="${l.style ? l.style + ';' : ''}left:${l.x}px;top:${l.y}px">${l.html}</div>`).join('') + blinds;
+    this.plates.innerHTML = labels.map((l) => `<div class="${l.cls}" ${l.data ?? ''} style="${l.style ? l.style + ';' : ''}left:${l.x}px;top:${l.y}px">${l.html}</div>`).join('') + blinds;
   }
 
   /** Стопка фишек по номиналам 500/100/25/5. */
@@ -728,8 +735,8 @@ class HoldemView implements GameView<View, Event> {
 }
 
 /** Стол холдема на общем движке покера: View и события движка — через переходник (adapter.ts). */
-export function createView(): GameView<PView, PEvent> {
-  const inner = new HoldemView();
+export function createView(hud: ((seat: number) => string) | null = null): GameView<PView, PEvent> {
+  const inner = new HoldemView(hud);
   return {
     mount: (root, ctx) => inner.mount(root, ctx),
     setView: (v) => inner.setView(toView(v)),

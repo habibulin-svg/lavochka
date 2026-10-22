@@ -273,8 +273,8 @@ export type Event =
   | { type: 'blinds'; small: number; big: number }
   | { type: 'deal'; hand: number; game: Game; hilo: boolean; struct: Struct; button: number; seats: number[]; small: number; big: number; hole?: Card[][]; up?: boolean[][]; board?: Card[] }
   | { type: 'post'; seat: number; amount: number; what: string }
-  /** to — ставка места в круге после хода. */
-  | { type: 'act'; seat: number; action: Action; amount: number; to: number; allin: boolean }
+  /** to — ставка места в круге после хода; open — первая ставка на улице (а не рейз). */
+  | { type: 'act'; seat: number; action: Action; amount: number; to: number; allin: boolean; open?: boolean }
   | { type: 'street'; street: number; board?: Card[]; cards?: { seat: number; card: Card | null; up: boolean }[] }
   | { type: 'draw'; seat: number; count: number; cards?: Card[] }
   | { type: 'discard'; seat: number; card?: Card }
@@ -946,9 +946,9 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       return null;
   }
   s.acted.push(seat);
-  ev.push({ type: 'act', seat, action: a, amount, to: s.bet[seat], allin: s.allin[seat] });
   // в историю — смысл хода: ставка (первая на улице), рейз, колл (в том числе ва-банк меньше ставки)
   const kind = a.type === 'fold' || a.type === 'check' || a.type === 'call' ? a.type : s.bet[seat] > before ? (before === 0 || (info(s).family === 'stud' && s.street === 0 && s.raises <= 1 && before < s.big) ? 'bet' : 'raise') : 'call';
+  ev.push({ type: 'act', seat, action: a, amount, to: s.bet[seat], allin: s.allin[seat], ...(kind === 'bet' ? { open: true } : {}) });
   s.rec?.acts.push({ k: 'act', street: s.street, seat, a: kind, amount, to: s.bet[seat], ...(s.allin[seat] ? { allin: true } : {}) });
   return advance(s, ev, rng);
 }

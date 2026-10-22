@@ -127,6 +127,8 @@ export class CardStage {
     }
     const k = Math.min(r.width / this.W, r.height / this.H);
     this.stage.style.transform = `translate(${(r.width - this.W * k) / 2}px, ${(r.height - this.H * k) / 2}px) scale(${k}) ${this.tilt}`;
+    // масштаб — в CSS: мелким подписям (HUD покера) — не меньше читаемого на телефоне
+    this.stage.style.setProperty('--cs-k', String(k || 1));
   }
 
   /** Наклонить сцену (пустая строка — вид сверху). */

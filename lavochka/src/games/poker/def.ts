@@ -46,7 +46,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return ev.what === 'принос' ? `${name(ev.seat)} — принос ${ev.amount}` : null;
     case 'act': {
       const a = ev.action;
-      const t = a.type === 'fold' ? 'пас' : a.type === 'check' ? 'чек' : a.type === 'call' ? `колл ${ev.amount}` : a.type === 'raise' ? `рейз до ${a.to}` : a.type === 'allin' ? `ва-банк до ${ev.to}` : '';
+      const t = a.type === 'fold' ? 'пас' : a.type === 'check' ? 'чек' : a.type === 'call' ? `колл ${ev.amount}` : a.type === 'raise' ? (ev.open ? `ставка ${a.to}` : `рейз до ${a.to}`) : a.type === 'allin' ? `ва-банк до ${ev.to}` : '';
       return t ? `${name(ev.seat)}: ${t}${ev.allin && a.type !== 'allin' ? ' (ва-банк)' : ''}` : null;
     }
     case 'street':
