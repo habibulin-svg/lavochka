@@ -52,17 +52,26 @@ class Engine {
         rej(e as Error);
         return;
       }
-      this.w.onmessage = (e) => this.line(String(e.data));
-      this.w.onerror = () => {
+      const fail = () => {
+        clearTimeout(slow);
         const err = new Error('Не удалось запустить движок');
         rej(err);
         this.job?.reject(err);
         this.job = null;
         for (const j of this.queue.splice(0)) j.reject(err);
         this.ready = null;
+        this.waitReady = null;
+        this.w?.terminate();
         this.w = null;
       };
-      this.waitReady = res;
+      // .wasm не пришёл (связь, не тот тип у сервера) — не ждать вечно: через 25 с — ошибка, следующий разбор попробует снова
+      const slow = setTimeout(fail, 25000);
+      this.w.onmessage = (e) => this.line(String(e.data));
+      this.w.onerror = fail;
+      this.waitReady = () => {
+        clearTimeout(slow);
+        res();
+      };
       this.send('uci');
       this.send('setoption name Hash value 16');
       this.send('isready');
@@ -136,6 +145,7 @@ class Engine {
   /** Освободить память (уход из кружка). */
   quit() {
     this.stop();
+    this.job?.reject(new Error('cancelled'));
     this.w?.terminate();
     this.w = null;
     this.ready = null;

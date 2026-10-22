@@ -49,6 +49,8 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   let tab: 'op' | 'terms' = 'op';
   let all: (Opening & { line: string })[] = [];
   let terms: Term[] = [];
+  let opsReady = false;
+  let opsFailed = false;
   let sub: { destroy(): void } | null = null;
   let timer = 0;
 
@@ -147,6 +149,10 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   const bindRows = () => list.querySelectorAll<HTMLButtonElement>('[data-i]').forEach((b) => (b.onclick = () => (Sound.ui(), openOpening(all[+b.dataset.i!]))));
 
   const renderOp = () => {
+    if (!opsReady) {
+      list.innerHTML = opsFailed ? '<p class="kz-err">Не удалось открыть справочник. Проверьте связь и откройте раздел ещё раз.</p>' : '<small class="hint">Открываю справочник дебютов…</small>';
+      return;
+    }
     const query = input.value.trim();
     if (!query) return families();
     const hits = searchOpenings(all, query);
@@ -206,12 +212,22 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   );
 
   board.set(position());
-  void Promise.all([loadOpenings(), import('./terms.json').then((m) => m.default as Term[]).catch(() => [] as Term[])])
-    .then(([ops, ts]) => {
+  // термины — свои 37 КБ, не ждут справочника дебютов (1 МБ) и не падают вместе с ним
+  void import('./terms.json')
+    .then((m) => m.default as Term[])
+    .catch(() => [] as Term[])
+    .then((ts) => {
+      if (!alive) return;
+      terms = [...ts].sort((a, b) => a.term.localeCompare(b.term, 'ru'));
+      if (tab === 'terms') render();
+    });
+  if (start === 'terminy') (el.querySelector('[data-tab=terms]') as HTMLButtonElement).click();
+  void loadOpenings()
+    .then((ops) => {
       if (!alive) return;
       all = ops.map((o) => ({ ...o, line: lineRu(START_FEN, o.uci) }));
-      terms = [...ts].sort((a, b) => a.term.localeCompare(b.term, 'ru'));
-      if (start === 'terminy') return (el.querySelector('[data-tab=terms]') as HTMLButtonElement).click();
+      opsReady = true;
+      if (tab !== 'op') return;
       render();
       const fam = start?.startsWith('debyuty/') ? start.slice(8) : null;
       if (fam) {
@@ -219,7 +235,10 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
         if (os.length) variants(family(os[0]), os);
       }
     })
-    .catch(() => (list.innerHTML = '<p class="kz-err">Не удалось открыть справочник. Проверьте связь и откройте раздел ещё раз.</p>'));
+    .catch(() => {
+      opsFailed = true;
+      if (alive && tab === 'op') render();
+    });
 
   return {
     destroy() {

@@ -1,6 +1,7 @@
 /* Шахматный кружок — журнал ученика: разряд и лесенка разрядов, рейтинг по дням, серия, задачи по темам. */
 import { esc, h } from '../../core/util';
 import { loadPuzzles, THEMES } from './data';
+import { currentUser } from '../../site/account';
 import { loadDone, resetLessons } from './lessons';
 import { loadPath, resetPath } from './path';
 import { loadAnswers, resetAnswers } from './partii';
@@ -63,7 +64,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
   });
 
   const side = h(`<div class="kz-tr">
-    <p>Журнал хранится на этом устройстве. Чтобы не потерять его при смене телефона, скоро можно будет войти на сайт — журнал перенесётся в аккаунт.</p>
+    <p>${currentUser() ? 'Журнал сохраняется на сайте — с другого устройства войдите тем же входом и продолжайте с того же места.' : 'Журнал хранится на этом устройстве. Войдите на сайт — он сохранится в профиле и не потеряется при смене телефона.'}</p>
     <button class="btn small" data-a="reset">Начать журнал заново</button>
   </div>`);
   panel.appendChild(side);
