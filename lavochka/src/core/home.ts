@@ -249,9 +249,9 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   q('[data-a=start]').onclick = () => launch({ ...draft.options });
   function launch(options: Options, table?: LaunchTable) {
     Sound.unlock();
-    const list = seatsFor(table ? table.count : draft.count);
+    const list = table?.seats ?? seatsFor(table ? table.count : draft.count);
     // свой стол (турнир): один человек — первый «человек» из лобби или первое место, остальные — боты
-    const me = table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
+    const me = table?.seats ? list[0] : table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
     const seats: SeatSpec[] = list.map((s, i) => {
       const st = draft.seats[s];
       const look = def.seats[s];

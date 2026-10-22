@@ -11,7 +11,7 @@ import type { Rng } from '../../core/types';
 import { classIndex, classOf, fastHigh } from './eval';
 import { contenders, GAMES, potSize, toCall, type HandRecord, type View } from './engine';
 import { allCards, highCat } from './hands';
-import { icm, icmCallEquity } from './icm';
+import { icm, icmCallNeed } from './icm';
 import { PREFLOP, prePct } from './ranges';
 import { frames } from './replay';
 import { positions } from './stats';
@@ -260,7 +260,7 @@ export function solvePF(sp: PFSpot, samples = 1600, seed = 7): PFResult {
     const s1 = foldStack();
     s1[P] = st[P] - c;
     const s0 = vec(s1);
-    needIcm = icmCallEquity(s0, sp.prizes!, seats.indexOf(H), seats.indexOf(P), callAmt, potNow);
+    needIcm = icmCallNeed(s0, sp.prizes!, seats.indexOf(H), seats.indexOf(P), callAmt, potNow);
   }
   const better = pool ? icmA! > icmF! : evBB > 0;
   const iCaller = Math.max(0, sp.behind.indexOf(H));
@@ -577,7 +577,7 @@ export function tipsFor(v: View, seat: number, eq: number | null, nameOf: (seat:
       const poolSum = prizes.reduce((a, b) => a + b, 0);
       let txt = `ICM: ваш стек стоит ${pct(now / poolSum, 1)} призовых. Спор на все с ${nameOf(vil)}: проигрыш −${pct(loss / poolSum, 1)}, выигрыш +${pct(gain / poolSum, 1)} — фактор пузыря <b>${bf.toFixed(2)}</b>`;
       if (call > 0 && call >= v.chips[seat] * 0.5) {
-        const need = icmCallEquity(v.seats.map((p) => v.chips[p]), prizes, hero, vi, Math.min(call, v.chips[seat]), pot);
+        const need = icmCallNeed(v.seats.map((p) => v.chips[p]), prizes, hero, vi, Math.min(call, v.chips[seat]), pot);
         txt += `; для колла нужно ${pct(need)} по ICM (без ICM — ${pct(call / (pot + call))})`;
       }
       t.icm = txt;

@@ -1,0 +1,75 @@
+/* Школа покера: путь в лобби и окно урока (текст слева, 2D-стол справа; на телефоне — стол над текстом). */
+.pks-wait { opacity: 0.7; }
+.pks-head { display: flex; flex-direction: column; gap: 4px; }
+.pks-head > div:first-child { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pks-rank { font-size: 1.1em; }
+.pks-head small { opacity: 0.75; }
+.pks-bar { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.12); overflow: hidden; }
+.pks-bar i { display: block; height: 100%; background: linear-gradient(90deg, #14532d, #c9a24a); }
+.pks-about { margin: 6px 0; font-size: 0.86em; opacity: 0.8; }
+.pks-path { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.pks-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line, #c9b98f); background: transparent;
+}
+.pks-item:hover { background: rgba(20, 83, 45, 0.07); }
+.pks-item.next { border-color: #14532d; box-shadow: inset 3px 0 0 #14532d; }
+.pks-item.done .pks-n { background: #14532d; color: #fff; }
+.pks-n {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  border: 1px solid #14532d; color: #14532d;
+}
+.pks-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pks-t small { font-size: 0.8em; opacity: 0.72; }
+.pks-m { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.pks-m em { font-size: 0.78em; font-style: normal; color: #14532d; font-weight: 600; }
+.pks-m small { font-size: 0.72em; opacity: 0.75; }
+.pks-stars { color: #c08a12; letter-spacing: 1px; white-space: nowrap; }
+
+/* окно урока */
+.pks-modal .modal-body { padding: 14px 16px; width: min(1100px, 100%); }
+.pks-lesson { display: flex; flex-direction: column; gap: 10px; }
+.pks-top { display: flex; align-items: center; gap: 10px; }
+.pks-top > b { font-size: 1.12em; }
+.pks-dots { flex: 1; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.12); overflow: hidden; min-width: 60px; }
+.pks-dots i { display: block; height: 100%; background: #14532d; transition: width 0.3s; }
+.pks-close { flex: none; font: inherit; font-size: 18px; line-height: 1; background: transparent; border: 0; cursor: pointer; padding: 4px 6px; color: inherit; }
+.pks-main { display: grid; grid-template-columns: minmax(260px, 1fr) 1.5fr; gap: 14px; align-items: start; }
+.pks-main:has(.pks-side[hidden]) { grid-template-columns: 1fr; max-width: 680px; }
+.pks-text { font-size: 15px; line-height: 1.45; }
+.pks-kicker { margin: 0 0 4px; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.65; }
+.pks-say { margin-bottom: 8px; }
+.pks-cap { min-height: 1.4em; margin: 6px 0 0; font-weight: 600; color: #14532d; }
+.pks-remember { margin: 0 0 10px; padding-left: 1.2em; }
+.pks-remember li { margin-bottom: 6px; }
+.pks-hint { font-size: 0.86em; opacity: 0.75; }
+.pks-table { background: #2a2230; border-radius: 10px; padding: 6px; }
+.pks-board { height: min(56vh, 460px); container-type: size; position: relative; }
+.pks-ctl { display: none; }
+.pks-opts { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.pks-opt { min-width: 64px; }
+.pks-opt.right { background: #14532d; border-color: #14532d; color: #fff; opacity: 1; }
+.pks-opt.wrong { background: #8a1f17; border-color: #8a1f17; color: #fff; opacity: 1; }
+.pks-why { border-top: 1px solid rgba(0, 0, 0, 0.12); padding-top: 8px; }
+.pks-why p { margin: 0 0 6px; }
+.pks-verdict { font-weight: 700; }
+.pks-verdict.ok { color: #14532d; }
+.pks-verdict.bad { color: #8a1f17; }
+.pks-calc { font-size: 0.88em; background: rgba(20, 83, 45, 0.07); border-radius: 8px; padding: 6px 8px; }
+.pks-hud { display: flex; flex-wrap: wrap; gap: 6px; }
+.pks-hud span { background: #1d1a24; color: #f3e9d2; border-radius: 6px; padding: 3px 8px; font-size: 0.9em; }
+.pks-big { font-size: 34px; margin: 4px 0; }
+.pks-game { border: 1px dashed #c9a24a; background: rgba(201, 162, 74, 0.12); border-radius: 9px; padding: 8px 10px; margin-top: 8px; }
+.pks-game p { margin: 0 0 4px; }
+.pks-nav { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.pks-nav .btn.primary { order: 9; }
+
+@media (max-width: 760px) {
+  .pks-modal { padding: 0; }
+  .pks-modal .modal-body { max-height: 100vh; height: 100%; border-radius: 0; padding: 10px; }
+  .pks-main { grid-template-columns: 1fr; }
+  .pks-side { order: -1; }
+  .pks-board { height: min(46vh, 420px); }
+  .pks-text { font-size: 14px; }
+  .pks-nav { position: sticky; bottom: -10px; background: var(--panel-bg); padding: 6px 0; }
+}

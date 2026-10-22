@@ -57,6 +57,23 @@ export function icmCallEquity(stacks: number[], prizes: number[], hero: number, 
   return w - l > 0 ? Math.max(0, Math.min(1, (fold - l) / (w - l))) : 1;
 }
 
+/** Нужные шансы для колла по ICM, когда ставки уже в банке: stacks — фишки за столом (без банка), pot — весь банк до
+ * колла (со ставкой соперника), call — сколько доплатить герою. Пас — банк уходит villain, выиграл — герой забирает банк,
+ * проиграл — villain забирает банк и колл. */
+export function icmCallNeed(stacks: number[], prizes: number[], hero: number, villain: number, call: number, pot: number): number {
+  const fold = stacks.slice();
+  fold[villain] += pot;
+  const win = stacks.slice();
+  win[hero] += pot;
+  const lose = stacks.slice();
+  lose[hero] -= call;
+  lose[villain] += pot + call;
+  const f = icm(fold, prizes)[hero];
+  const w = icm(win, prizes)[hero];
+  const l = icm(lose, prizes)[hero];
+  return w - l > 0 ? Math.max(0, Math.min(1, (f - l) / (w - l))) : 1;
+}
+
 /** Фактор пузыря: во сколько раз проигранная фишка дороже выигранной в споре hero и villain на risk фишек (1 — как в кэше). */
 export function bubbleFactor(stacks: number[], prizes: number[], hero: number, villain: number, risk: number): number {
   const now = icm(stacks, prizes)[hero];

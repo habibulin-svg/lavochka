@@ -35,6 +35,8 @@ export interface LaunchTable {
   count: number;
   /** Уровень бота по месту (по умолчанию — как выбран в лобби). */
   levels?: number[];
+  /** Какие места занять (школа покера: стиль бота закреплён за местом); человек — первое из них. */
+  seats?: number[];
 }
 
 export interface GameView<V = any, E = any> {
