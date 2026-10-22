@@ -80,6 +80,9 @@
 
 @media (max-width: 900px) {
   .arcade--kruzhok .arcade-main { height: min(100vw, 75vh); }
+  /* лист без доски (путь, списки, журнал) — во всю высоту, страница листается целиком, а не коробка внутри */
+  .arcade--kruzhok .arcade-main:has(.kz-stage > .kz-journal:not([hidden])) { height: auto; container-type: normal; }
+  .arcade--kruzhok .kz-stage > .kz-journal { max-height: none; overflow: visible; }
   .kz-moves { max-height: 120px; }
 }
 

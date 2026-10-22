@@ -180,7 +180,8 @@ export function loadLesson(file: string): Promise<Lesson> {
 export interface Etude {
   id: string;
   author: string;
-  year: number;
+  /** Год (null — неизвестен). */
+  year: number | null;
   /** Откуда позиция (ссылка). */
   source: string;
   fen: string;

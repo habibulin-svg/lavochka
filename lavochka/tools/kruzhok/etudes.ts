@@ -4,9 +4,10 @@
  * и главного варианта, что каждый ход решающей стороны держит результат (выигрыш — оценка ≥ +3 или мат; ничья — не хуже
  * −0,8; мат — мат не дальше заданного), и что в конце варианта результат ясен. Пишет отчёт: ошибки — этюд выбывает,
  * пометки (защита не лучшая, есть второй решающий ход) — для вычитки. С --out — пишет public/kruzhok/etudes.json
- * из прошедших проверку. */
+ * из прошедших проверку. В позициях до 7 фигур выигрыш и ничью решают таблицы эндшпиля Lichess (tablebase.lichess.ovh,
+ * кэш — D:/temp/etudes/tb-cache.json): Stockfish без них недооценивает долгие выигрыши (оценка ≈ +2 при чистом выигрыше). */
 import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { inCheck, legalMoves } from '../../src/games/chess/engine';
 import { parseLine, position, toFen } from '../../src/games/chess/notation';
@@ -57,6 +58,30 @@ class Sf {
   }
 }
 
+const TB_CACHE = 'D:/temp/etudes/tb-cache.json';
+const tbCache: Record<string, string> = existsSync(TB_CACHE) ? JSON.parse(readFileSync(TB_CACHE, 'utf8')) : {};
+const pieces = (fen: string) => fen.split(' ')[0].replace(/[^a-zA-Z]/g, '').length;
+
+/** Итог по таблицам для стороны, чей ход: win / loss / draw (cursed-win и blessed-loss — ничья по правилу 50 ходов). */
+async function tb(fen: string): Promise<'win' | 'loss' | 'draw'> {
+  const key = fen.split(' ').slice(0, 4).join(' ');
+  if (!tbCache[key]) {
+    for (let i = 0; ; i++) {
+      const r = await fetch('https://tablebase.lichess.ovh/standard?fen=' + encodeURIComponent(fen));
+      if (r.ok) {
+        tbCache[key] = (await r.json()).category;
+        break;
+      }
+      if (i > 4) throw new Error('таблицы не ответили: ' + r.status);
+      await new Promise((ok) => setTimeout(ok, 1500 * (i + 1)));
+    }
+    writeFileSync(TB_CACHE, JSON.stringify(tbCache));
+    await new Promise((ok) => setTimeout(ok, 250));
+  }
+  const c = tbCache[key];
+  return c === 'win' ? 'win' : c === 'loss' ? 'loss' : 'draw';
+}
+
 /** Держит ли оценка (за решающую сторону) цель этюда. */
 function holds(e: EtudeSrc, v: number, movesLeft: number): boolean {
   if (e.goal === 'win') return v >= 300 || v >= MATE - 200;
@@ -94,7 +119,11 @@ async function main() {
         const best = top[0]?.v ?? 0;
         const after = await sf.lines(line.fens[i + 1], 1, 20);
         const v = -(after[0]?.v ?? 0); // оценка после хода — за того, кто ходил
-        if (mine) {
+        if (mine && e.goal !== 'mate' && pieces(line.fens[i + 1]) <= 7) {
+          // таблицы: после хода решающей стороны соперник должен проигрывать (выигрыш) или хотя бы не выигрывать (ничья)
+          const t = await tb(line.fens[i + 1]);
+          if (e.goal === 'win' ? t !== 'loss' : t === 'win') errs.push(`${i / 2 + 1}-й ход ${line.ru[i]}: по таблицам — ${t === 'win' ? 'проигрыш' : t === 'draw' ? 'ничья' : 'выигрыш'} у соперника`);
+        } else if (mine) {
           if (!holds(e, v, left)) errs.push(`${i / 2 + 1}-й ход ${line.ru[i]}: результат не держится (оценка ${v})`);
           else if (top[1] && top[1].move !== line.uci[i] && holds(e, top[1].v, left)) notes.push(`${i / 2 + 1}-й ход ${line.ru[i]}: решает и ${top[1].move}`);
         } else if (v < best - 60 && !(Math.abs(best) >= MATE - 200)) notes.push(`защита ${line.ru[i]} не лучшая (${v} при ${best})`);
@@ -111,7 +140,7 @@ async function main() {
   sf.quit();
   console.log(`\nпрошли ${ok.length} из ${list.length}`);
   if (args.includes('--out')) {
-    ok.sort((a, b) => a.level - b.level || a.year - b.year);
+    ok.sort((a, b) => a.level - b.level || (a.year ?? 9999) - (b.year ?? 9999));
     writeFileSync('public/kruzhok/etudes.json', JSON.stringify({ src: 'Позиции — классические этюды (источники в tools/kruzhok/etudes-src.json); проверка — Stockfish', e: ok }));
     console.log('записано public/kruzhok/etudes.json');
   }

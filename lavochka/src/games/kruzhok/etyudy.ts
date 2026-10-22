@@ -31,6 +31,8 @@ const markSolved = (id: string, clean: boolean) => {
 };
 
 const LEVEL = ['', 'Для начала', 'Посложнее', 'Для сильных'];
+/** «Рихард Рети, 1921» (год — если известен). */
+export const byline = (e: Pick<Etude, 'author' | 'year'>) => (e.year ? `${e.author}, ${e.year}` : e.author);
 /** Звёзды за этюд, решённый без подсказки: по трудности. */
 const STARS = [0, 3, 5, 8];
 export const goalText = (e: Pick<Etude, 'goal' | 'mateIn' | 'fen'>) => {
@@ -75,7 +77,7 @@ function mountList(stage: HTMLElement, panel: HTMLElement, open: (id: string) =>
       const done = loadSolvedEtudes();
       const row = (e: Etude) => `<button class="kz-gi" data-id="${esc(e.id)}">
           <b>${esc(e.title)}</b>
-          <span>${esc(e.author)}, ${e.year}</span>
+          <span>${esc(byline(e))}</span>
           <small>${esc(goalText(e))}</small>
           <i>${done[e.id] === 1 ? '✔ решён' : done[e.id] === 0 ? '✔ с подсказкой' : '★'.repeat(e.level)}</i>
         </button>`;
@@ -143,7 +145,7 @@ export function mountEtude(stage: HTMLElement, panel: HTMLElement, id: string, b
     level: levelOf(loadProgress().rating.r),
     fen: toFen(s),
     side: s.turn === 0 ? 'белые' : 'чёрные',
-    theme: e ? `этюд: ${goalText(e).toLowerCase()} (${e.author}, ${e.year})` : undefined,
+    theme: e ? `этюд: ${goalText(e).toLowerCase()} (${byline(e)})` : undefined,
   }));
   /** Решение с текущего места — для Михалыча. */
   const rest = () => {
@@ -174,7 +176,7 @@ export function mountEtude(stage: HTMLElement, panel: HTMLElement, id: string, b
   const head = () => {
     if (!e) return;
     const mark = loadSolvedEtudes()[e.id];
-    q('.kz-pg-head').innerHTML = `<b>${esc(e.title)}</b><br><span>${esc(e.author)}, ${e.year}</span><br><small>${esc(goalText(e))} · ${'★'.repeat(e.level)}${mark === 1 ? ' · ✔ решён' : mark === 0 ? ' · ✔ с подсказкой' : ''}</small>`;
+    q('.kz-pg-head').innerHTML = `<b>${esc(e.title)}</b><br><span>${esc(byline(e))}</span><br><small>${esc(goalText(e))} · ${'★'.repeat(e.level)}${mark === 1 ? ' · ✔ решён' : mark === 0 ? ' · ✔ с подсказкой' : ''}</small>`;
   };
 
   const nextOne = () => {
@@ -291,7 +293,7 @@ export function mountEtude(stage: HTMLElement, panel: HTMLElement, id: string, b
     const reply = a.best ? fromUci(s, a.best) : null;
     if (keeps) {
       Sound.nomove();
-      say(`<b>${esc(ru)}</b> — тоже не проигрывает цель, движок согласен. Но автор задумал другой путь — точнее и красивее. Найди его!`, 'info');
+      say(`<b>${esc(ru)}</b> — ${e.goal === 'draw' ? 'тоже держит ничью' : e.goal === 'win' ? 'тоже сохраняет выигрыш' : 'тоже ведёт к мату'}, движок согласен. Но автор задумал другой путь — точнее и красивее. Найди его!`, 'info');
     } else {
       Sound.nomove();
       if (reply) board.draw([{ from: reply.from, to: reply.to, kind: 'bad' }]);

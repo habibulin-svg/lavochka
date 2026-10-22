@@ -136,17 +136,18 @@ export function kruzhokPages(root: string): KruzhokPage[] {
     const side = position(e.fen).turn === 0 ? 'Белые' : 'Чёрные';
     return e.goal === 'win' ? `${side} начинают и выигрывают` : e.goal === 'draw' ? `${side} начинают и делают ничью` : `${side} дают мат в ${e.mateIn} ход.`;
   };
+  const by = (e: Etude) => (e.year ? `${e.author}, ${e.year}` : e.author);
   if (etudes.length) {
     out.push({
       path: sectionPath('etyudy'),
       name: 'Этюды',
       crumbs: [['Этюды', sectionPath('etyudy')]],
       title: `Шахматные этюды онлайн — ${num(etudes.length, 'классический этюд', 'классических этюда', 'классических этюдов')} с решениями`,
-      description: clip(`Знаменитые шахматные этюды: ${etudes.slice(0, 3).map((e) => `${e.author} (${e.year})`).join(', ')} и другие. Решайте на доске: соперник защищается, как задумал автор, движок проверяет ваши ходы. Бесплатно.`),
+      description: clip(`Знаменитые шахматные этюды: ${etudes.slice(0, 3).map((e) => (e.year ? `${e.author} (${e.year})` : e.author)).join(', ')} и другие. Решайте на доске: соперник защищается, как задумал автор, движок проверяет ваши ходы. Бесплатно.`),
       h1: 'Шахматные этюды: найди путь автора',
       intro: `<p>Этюд — позиция, придуманная мастером: на вид простая или безнадёжная, а внутри — единственный красивый путь к победе или к ничьей. В кружке собраны классические этюды — от знаменитого этюда Рети, где король догоняет пешку, до тонких ловушек с патом и превращением в слабую фигуру.</p>
 <p>Решайте прямо на доске: вы ходите за сторону, чей ход, а соперник защищается так, как задумал автор. Нашли другой путь, который тоже ведёт к цели, — движок Stockfish подтвердит, но попросит найти авторский. После решения — рассказ об идее этюда, а выигрыш можно доиграть против движка.</p>`,
-      body: `<h2>Все этюды</h2>\n<ul class="seo-links">${etudes.map((e) => `<li><a href="${etudePath(e.id)}">${esc(e.title)}</a> — ${esc(e.author)}, ${e.year}. ${esc(goalOf(e))}</li>`).join('')}</ul>`,
+      body: `<h2>Все этюды</h2>\n<ul class="seo-links">${etudes.map((e) => `<li><a href="${etudePath(e.id)}">${esc(e.title)}</a> — ${esc(by(e))}. ${esc(goalOf(e))}</li>`).join('')}</ul>`,
       priority: 0.7,
     });
   }
@@ -158,9 +159,9 @@ export function kruzhokPages(root: string): KruzhokPage[] {
         ['Этюды', sectionPath('etyudy')],
         [e.title, etudePath(e.id)],
       ],
-      title: `Этюд ${e.author}, ${e.year}: «${e.title}» — решение`,
-      description: clip(`${goalOf(e)}. Шахматный этюд: ${e.author}, ${e.year}. ${e.idea}`),
-      h1: `Этюд: ${e.author}, ${e.year} — «${e.title}»`,
+      title: `Этюд «${e.title}» (${by(e)}) — решение`,
+      description: clip(`${goalOf(e)}. Шахматный этюд: ${by(e)}. ${e.idea}`),
+      h1: `Этюд «${e.title}» — ${by(e)}`,
       intro: `<p><b>${esc(goalOf(e))}.</b> Позиция: <code>${esc(e.fen)}</code>.</p><p>${esc(e.hint)}</p><p>В кружке этюд решается на доске: соперник защищается, как задумал автор, а движок проверяет каждый ход.</p>`,
       body: `<h2>Решение</h2>\n<p><b>${esc(lineRu(e.fen, e.line))}</b></p>\n<p>${esc(e.idea)}</p>\n<p><a href="${sectionPath('etyudy')}">Все этюды</a></p>`,
       priority: 0.5,

@@ -175,7 +175,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
 
   for (const m of mod.modes) {
     const label = mod.list && m.hint ? `${esc(m.label)}<small>${esc(m.hint)}</small>` : esc(m.label);
-    const b = h<HTMLButtonElement>(`<button class="${m.id === mode ? 'on' : ''}" title="${esc(m.hint ?? '')}">${label}</button>`);
+    const b = h<HTMLButtonElement>(`<button class="${m.id === mode ? 'on' : ''}" data-mode="${esc(m.id)}" title="${esc(m.hint ?? '')}">${label}</button>`);
     b.onclick = () => {
       Sound.ui();
       b.blur(); // пробел в аркадах — игровая клавиша (монета, прыжок): не должен снова жать кнопку списка
@@ -189,6 +189,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
     modes.appendChild(b);
   }
   modes.hidden = mod.modes.length < 2;
+  const home = mod.home ? mod.modes.find((m) => m.id === mod.home) ?? null : null;
 
   const stop = () => {
     document.removeEventListener('visibilitychange', onHide);
@@ -204,7 +205,9 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
     const was = paused;
     setPaused(true);
     modal(`<h2>Пауза</h2><p>${esc(mod.title)}: игра замерла, пока открыто меню.</p>`, [
-      { text: 'Настройки', action: () => openSettings() },
+      { text: 'Настройки', action: () => void openSettings() },
+      // у аркады со своим «лобби» (кружок — «Путь») — вернуться в него, а не только во двор
+      ...(home ? [{ text: `В начало — ${home.label}`, action: () => (modes.querySelector<HTMLButtonElement>(`[data-mode="${home.id}"]`) ?? null)?.click() }] : []),
       { text: 'Во двор', action: leave },
       { text: 'Продолжить', primary: true, action: () => setPaused(was) },
     ]);
