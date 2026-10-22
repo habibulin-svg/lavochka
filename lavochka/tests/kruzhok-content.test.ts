@@ -104,3 +104,21 @@ describe('указатель тем для журнала', () => {
     expect(idx).toEqual(themeIndex(db.p.map(([id, , , , th]) => [id, th.split(' ')])));
   });
 });
+
+describe('статьи о дебютах', () => {
+  it('семейство есть в справочнике, линия законна, текст не пустой', () => {
+    const debuts = JSON.parse(readFileSync('src/games/kruzhok/debuts.json', 'utf8')) as { family: string; line: string; text: string[] }[];
+    const fams = new Set((JSON.parse(readFileSync('public/kruzhok/openings.json', 'utf8')) as { o: string[][] }).o.map((x) => x[4].split(', ')[0]));
+    expect(debuts.length).toBeGreaterThanOrEqual(20);
+    for (const d of debuts) {
+      expect(fams.has(d.family), d.family).toBe(true);
+      expect(d.text.length, d.family).toBeGreaterThanOrEqual(2);
+      let s = position();
+      for (const u of d.line.split(' ')) {
+        const m = fromUci(s, u);
+        expect(m, `${d.family}: ${u}`).not.toBeNull();
+        s = play(s, m!);
+      }
+    }
+  });
+});

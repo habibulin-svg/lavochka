@@ -1,11 +1,11 @@
 /* Страницы шахматного кружка для пререндера (tools/prerender.ts): разделы (учебник, задачи, партии, разбор,
  * энциклопедия), урок, классическая партия с комментариями, семейство дебютов, словарь терминов.
  * Тексты — из данных кружка (уроки, партии, справочник дебютов, terms.json), без отдельного написания. */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { play } from '../src/games/chess/engine';
 import { fromUci, lineRu, position, ruSan, START_FEN } from '../src/games/chess/notation';
-import type { ClassicGame, ClassicInfo, Lesson } from '../src/games/kruzhok/data';
+import type { ClassicGame, ClassicInfo, Debut, Lesson } from '../src/games/kruzhok/data';
 import { classicPath, familyPath, lessonPath, sectionPath, termsPath } from '../src/games/kruzhok/pages';
 import { stepPositions } from '../src/games/kruzhok/lesson-steps';
 
@@ -195,8 +195,11 @@ export function kruzhokPages(root: string): KruzhokPage[] {
     });
   }
 
-  // ---- семейства дебютов
+  // ---- семейства дебютов (статьи — src/games/kruzhok/debuts.json, где есть)
+  const debutPath = join(src, 'debuts.json');
+  const debuts = existsSync(debutPath) ? (JSON.parse(readFileSync(debutPath, 'utf8')) as Debut[]) : [];
   for (const [f, os] of bigFams) {
+    const art = debuts.find((d) => d.family === f);
     const sorted = [...os].sort((a, b) => a.uci.length - b.uci.length || a.ru.localeCompare(b.ru, 'ru'));
     const main = sorted[0];
     const ecos = [...new Set(os.map((o) => o.eco))].sort();
@@ -208,10 +211,10 @@ export function kruzhokPages(root: string): KruzhokPage[] {
         [f, familyPath(f)],
       ],
       title: `${f}: ходы и варианты — ${num(os.length, 'линия', 'линии', 'линий')}`,
-      description: clip(`${f} (${main.name.split(':')[0]}): ${lineRu(START_FEN, main.uci)}. ${num(os.length, 'вариант', 'варианта', 'вариантов')} с ходами и кодами ЭКО ${ecos[0]}${ecos.length > 1 ? '–' + ecos[ecos.length - 1] : ''}, показ на доске и разбор движком.`),
+      description: art ? clip(`${f}: ${lineRu(START_FEN, main.uci)}. ${art.text[0]}`) : clip(`${f} (${main.name.split(':')[0]}): ${lineRu(START_FEN, main.uci)}. ${num(os.length, 'вариант', 'варианта', 'вариантов')} с ходами и кодами ЭКО ${ecos[0]}${ecos.length > 1 ? '–' + ecos[ecos.length - 1] : ''}, показ на доске и разбор движком.`),
       h1: `${f}: варианты и ходы`,
       intro: `<p>${esc(f)} (по-английски — ${esc(main.name.split(':')[0])}) начинается ходами <b>${esc(lineRu(START_FEN, main.uci))}</b>. Код ЭКО — ${ecos.slice(0, 6).join(', ')}${ecos.length > 6 ? '…' : ''}. В справочнике кружка — ${num(os.length, 'вариант', 'варианта', 'вариантов')}; каждый можно посмотреть на доске и разобрать с движком.</p>`,
-      body: `<h2>Варианты</h2>\n<ul class="seo-links">${sorted.slice(0, 80).map((o) => `<li><b>${esc(o.ru)}</b> (${o.eco}): ${esc(lineRu(START_FEN, o.uci))}</li>`).join('')}</ul>${sorted.length > 80 ? `<p>…и ещё ${sorted.length - 80} — в энциклопедии кружка.</p>` : ''}\n<p><a href="${sectionPath('enciklopediya')}">Все дебюты</a> · <a href="${termsPath()}">Словарь терминов</a></p>`,
+      body: `${art ? `<h2>Идея дебюта</h2>\n${art.text.map((t) => `<p>${esc(t)}</p>`).join('\n')}${art.tip ? `\n<p><i>Совет: ${esc(art.tip)}</i></p>` : ''}\n` : ''}<h2>Варианты</h2>\n<ul class="seo-links">${sorted.slice(0, 80).map((o) => `<li><b>${esc(o.ru)}</b> (${o.eco}): ${esc(lineRu(START_FEN, o.uci))}</li>`).join('')}</ul>${sorted.length > 80 ? `<p>…и ещё ${sorted.length - 80} — в энциклопедии кружка.</p>` : ''}\n<p><a href="${sectionPath('enciklopediya')}">Все дебюты</a> · <a href="${termsPath()}">Словарь терминов</a></p>`,
       priority: 0.5,
     });
   }

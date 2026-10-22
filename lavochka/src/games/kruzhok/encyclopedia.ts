@@ -7,7 +7,7 @@ import { Board } from '../chess/board';
 import { play, sq } from '../chess/engine';
 import { fromUci, lineRu, position, START_FEN } from '../chess/notation';
 import { mountAnalysis } from './analysis';
-import { loadOpenings, type Opening } from './data';
+import { loadDebuts, loadOpenings, type Debut, type Opening } from './data';
 import { familyPath, leaveSub, setPath, slug, termsPath } from './pages';
 
 export interface Term {
@@ -50,6 +50,8 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   let all: (Opening & { line: string })[] = [];
   let terms: Term[] = [];
   let opsReady = false;
+  let debuts: Debut[] = [];
+  const debutsP = loadDebuts().then((d) => (debuts = d));
   let opsFailed = false;
   let sub: { destroy(): void } | null = null;
   let timer = 0;
@@ -141,7 +143,11 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
   const variants = (f: string, os: (Opening & { line: string })[]) => {
     setPath(familyPath(f));
     const sorted = [...os].sort((a, b) => a.uci.length - b.uci.length || a.ru.localeCompare(b.ru, 'ru'));
-    list.innerHTML = `<button class="btn small kz-en-up">← Все семейства</button><h4>${esc(f)}</h4>` + sorted.map(opRow).join('');
+    const d = debuts.find((x) => x.family === f);
+    const art = d
+      ? `<div class="kz-en-art">${d.text.map((t) => `<p>${esc(t)}</p>`).join('')}${d.tip ? `<p class="kz-en-tip">💡 ${esc(d.tip)}</p>` : ''}</div>`
+      : '';
+    list.innerHTML = `<button class="btn small kz-en-up">← Все семейства</button><h4>${esc(f)}</h4>${art}` + sorted.map(opRow).join('');
     q<HTMLButtonElement>('.kz-en-up').onclick = () => (Sound.ui(), families());
     bindRows();
     openOpening(sorted[0]);
@@ -222,8 +228,8 @@ export function mountEncyclopedia(stage: HTMLElement, panel: HTMLElement, start?
       if (tab === 'terms') render();
     });
   if (start === 'terminy') (el.querySelector('[data-tab=terms]') as HTMLButtonElement).click();
-  void loadOpenings()
-    .then((ops) => {
+  void Promise.all([loadOpenings(), debutsP])
+    .then(([ops]) => {
       if (!alive) return;
       all = ops.map((o) => ({ ...o, line: lineRu(START_FEN, o.uci) }));
       opsReady = true;

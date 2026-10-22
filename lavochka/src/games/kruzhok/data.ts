@@ -49,6 +49,22 @@ export async function loadThemeIndex(): Promise<{ total: Map<string, number>; of
   return { total, of };
 }
 
+/** Статья о дебюте (src/games/kruzhok/debuts.json): идея, планы, совет — для семейств с большим спросом. */
+export interface Debut {
+  family: string;
+  /** Главная линия, UCI через пробел. */
+  line: string;
+  text: string[];
+  tip?: string;
+}
+
+const debutFile = import.meta.glob<Debut[]>('./debuts.json', { import: 'default' });
+
+export function loadDebuts(): Promise<Debut[]> {
+  const f = debutFile['./debuts.json'];
+  return f ? f().catch(() => []) : Promise.resolve([]);
+}
+
 export function loadOpenings(): Promise<Opening[]> {
   openings ??= fetch(base + 'openings.json')
     .then((r) => r.json())

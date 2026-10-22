@@ -178,3 +178,6 @@ p.kz-put-daily { margin: 0; text-align: center; opacity: 0.8; }
 .kz-ls-terms { margin-top: 6px; font-size: 14px; }
 .kz-ls-terms summary { cursor: pointer; font-weight: 600; }
 .kz-ls-terms p { margin: 4px 0; }
+.kz-en-art { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 250, 235, 0.55); font-size: 14px; line-height: 1.4; }
+.kz-en-art p { margin: 0 0 6px; }
+.kz-en-tip { font-weight: 600; }
