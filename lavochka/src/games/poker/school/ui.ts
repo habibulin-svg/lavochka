@@ -70,6 +70,13 @@ export function renderSchool(box: HTMLElement, launch: Launch) {
 
 // ---------------------------------------------------------------- стол урока
 
+/** Снимок для стола урока: open — руки всех живых лицом (2D-стол открывает чужие карты только на вскрытии — через shown). */
+function viewOf(s: State, hero: number, open: boolean) {
+  const v = makeView(s, open ? 'all' : [hero]);
+  if (open) v.shown = { ...v.shown, ...Object.fromEntries(s.inHand.filter((p) => !s.folded[p] && p !== hero && v.hole[p]?.length).map((p) => [p, v.hole[p]])) };
+  return v;
+}
+
 class Table {
   view: GameView;
   el: HTMLElement;
@@ -90,7 +97,7 @@ class Table {
   }
   show(s: State, hero: number, open: boolean) {
     this.hero = hero;
-    this.view.setView(makeView(s, open ? 'all' : [hero]));
+    this.view.setView(viewOf(s, hero, open));
     this.view.setTurn(s.over ? [] : [s.turn], []);
   }
   destroy() {
@@ -192,7 +199,7 @@ export function openLesson(l: Lesson, launch: Launch, onClose: () => void) {
           if (!r || my !== token) return;
           s = r.state;
           if (p.caption) cap.textContent = p.caption;
-          await table.view.play(r.events, makeView(s, at.open ? 'all' : [at.hero]));
+          await table.view.play(r.events, viewOf(s, at.hero, at.open));
           if (my !== token) return;
           await sleep(900 / settings.speed);
         }
@@ -226,7 +233,9 @@ export function openLesson(l: Lesson, launch: Launch, onClose: () => void) {
     const t = l.tasks[j];
     const b = t.scene ? buildScene(t.scene) : null;
     side.hidden = !b;
-    if (b) table.show(b.s, b.hero, !!t.scene!.open);
+    // вскрытие («кто выиграет») — карты всех на виду, иначе задачу не решить
+    const showdown = t.kind === 'winner' || t.kind === 'winlow';
+    if (b) table.show(b.s, b.hero, showdown || !!t.scene!.open);
     const sol: Solved = solve(t);
     text.innerHTML = `<p class="pks-kicker">Задача ${j + 1} из ${l.tasks.length} · твой ход?</p><div class="pks-say">${t.q}</div>${taskInfo(t)}
       <div class="pks-opts">${sol.options.map(([v, lab]) => `<button type="button" class="btn pks-opt" data-v="${esc(v)}">${esc(lab)}</button>`).join('')}</div>
@@ -247,7 +256,7 @@ export function openLesson(l: Lesson, launch: Launch, onClose: () => void) {
         why.hidden = false;
         why.innerHTML = `<p class="pks-verdict ${ok ? 'ok' : 'bad'}">${ok ? '✓ Верно!' : `✗ Не так. Верно — «${esc(sol.options.find(([v]) => v === sol.answer)?.[1] ?? sol.answer)}».`}</p><p>${t.why}</p><p class="pks-calc">🧮 ${sol.facts}</p>`;
         // после ответа — карты соперников, если их видно в разборе
-        if (b && t.scene && !t.scene.open && (t.kind === 'winner' || t.kind === 'outs')) table.show(b.s, b.hero, true);
+        if (b && t.scene && !t.scene.open && t.kind === 'outs') table.show(b.s, b.hero, true);
         nav.innerHTML = '';
         btn(j + 1 < l.tasks.length ? 'Следующая →' : 'Итог →', 'primary', () => (j + 1 < l.tasks.length ? task(j + 1) : end()));
         why.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

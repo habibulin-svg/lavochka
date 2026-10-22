@@ -26,6 +26,13 @@
 .pks-m small { font-size: 0.72em; opacity: 0.75; }
 .pks-stars { color: #c08a12; letter-spacing: 1px; white-space: nowrap; }
 
+/* на компьютере школа — на всю ширину, путь в две колонки (по порядку сверху вниз) */
+.home-screen.pk-wide .home-cols { grid-template-columns: 1fr; }
+@media (min-width: 900px) {
+  .pks-path { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, auto); grid-auto-flow: column; gap: 6px 12px; }
+  .pks-item { height: 100%; }
+}
+
 /* окно урока */
 .pks-modal .modal-body { padding: 14px 16px; width: min(1100px, 100%); }
 .pks-lesson { display: flex; flex-direction: column; gap: 10px; }

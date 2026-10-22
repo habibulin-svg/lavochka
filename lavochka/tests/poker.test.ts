@@ -244,3 +244,21 @@ describe('скрытые карты и история раздач', () => {
     }
   }, 120_000);
 });
+
+describe('ва-банк и вскрытие', () => {
+  it('все ва-банк — руки открываются до докрутки доски, на вскрытии не повторяются', () => {
+    const s0 = newState(cfgFrom({ mode: 'holdem' }), [0, 1]);
+    const rng = new SeededRng(5);
+    const s = deal(s0, rng).state;
+    let r = apply(s, s.turn, { type: 'allin' }, rng)!;
+    r = apply(r.state, r.state.turn, { type: 'call' }, rng)!;
+    const kinds = r.events.map((e) => e.type);
+    const firstStreet = kinds.indexOf('street');
+    const shows = kinds.flatMap((k, i) => (k === 'show' ? [i] : []));
+    expect(shows.length).toBe(2);
+    expect(shows.every((i) => i < firstStreet)).toBe(true);
+    // соперник видит карты другого сразу после колла
+    const v = makeView(r.state, [0]);
+    expect(r.state.rec?.shown[1]?.length ?? v.hole[1].length).toBe(2);
+  });
+});

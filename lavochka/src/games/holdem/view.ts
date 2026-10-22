@@ -12,6 +12,7 @@ import type { Options } from '../../core/types';
 import { preloadDeck } from '../../cards/render';
 import { settings, store } from '../../core/settings';
 import type { Card } from '../../cards/deck';
+import { showdownPause } from '../poker/view';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
 import type { Chips3D, Label3D, Table3D } from './scene3d';
 import { DEALER, type DealerAct, type Gesture } from './people3d';
@@ -77,6 +78,8 @@ class HoldemView implements GameView<View, Event> {
   private canGl = false;
   /** «Пропустить»: раздачу (пока я снова не в игре) или всё до конца (вылетел). */
   private ff: 'hand' | 'game' | null = null;
+  /** Кто открыл карты в этой раздаче (для паузы на вскрытии). */
+  private seen: Record<number, Card[]> = {};
   private skip!: HTMLButtonElement;
   /** Выигрыш раздачи: лежит кучкой перед победителем, пока не начнётся следующая. */
   private won = new Map<number, number>();
@@ -592,6 +595,7 @@ class HoldemView implements GameView<View, Event> {
             shoot(ev.seat);
             await pause(500);
           }
+          this.seen[ev.seat] = ev.cards;
           const hole = this.v!.hole.slice();
           hole[ev.seat] = ev.cards;
           this.v = { ...this.v!, hole };
@@ -640,6 +644,10 @@ class HoldemView implements GameView<View, Event> {
         } else if (ev.type === 'blinds') {
           await this.showBanner(`Блайнды ${ev.big / 2}/${ev.big}`, 900 / this.ctx.speed(), !!this.ff);
         } else if (ev.type === 'deal') {
+          // было вскрытие — дать его рассмотреть, прежде чем крупье соберёт карты (не в «пропустить»)
+          const sd = this.v?.src.shown ?? {};
+          if (ev.hand > 1 && !this.ff && (shown || Object.keys(sd).length)) await showdownPause(this.ctx, { shown: { ...sd, ...this.seen } });
+          this.seen = {};
           // пропущенная раздача кончилась — дальше как обычно (вылетел — кнопка предложит досмотреть до конца)
           if (this.ff === 'hand') this.setFF(null);
           // выигрыш — в стопку победителя

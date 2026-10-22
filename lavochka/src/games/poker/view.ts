@@ -123,8 +123,10 @@ class PokerView implements GameView<View, Event> {
           out.push(c ? { key: cardKey(c), card: c, x: f.x, y: f.y - (sel ? 30 : 0), r: f.r, s: g.port ? 0.95 : 0.9, z: 100 + i, cls: (sel ? 'cs-sel' : canSel ? 'cs-can' : '') + (folded ? ' cs-dim' : ''), data: canSel ? { card: c.s + c.r } : undefined } : { key: `b:${p}:${i}`, card: null, x: f.x, y: f.y, r: f.r, s: g.port ? 0.95 : 0.9, z: 100 + i });
         } else {
           const stud = info(v).family === 'stud';
-          const f = fan(n, i, a.x, a.y, stud ? (g.port ? 150 : 200) : g.port ? 80 : 110, stud ? 28 : 12, 6, 8);
-          const s = stud ? 0.5 : 0.46;
+          // показ (правила, школа): открытые чужие руки — крупнее и врозь, чтобы их можно было прочитать
+          const big = this.ctx.demo && !stud && !!v.shown[p];
+          const f = fan(n, i, a.x, a.y, stud ? (g.port ? 150 : 200) : g.port ? 80 : 110, stud ? 28 : big ? 36 : 12, 6, 8);
+          const s = stud ? 0.5 : big ? 0.6 : 0.46;
           out.push(c ? { key: cardKey(c), card: c, x: f.x, y: f.y + (v.up[p]?.[i] ? 0 : 0), r: f.r, s, z: 50 + i, cls: folded ? 'cs-dim' : '' } : { key: `b:${p}:${i}`, card: null, x: f.x, y: f.y, r: f.r, s, z: 50 + i, cls: folded ? 'cs-dim' : '' });
         }
       }
@@ -254,8 +256,13 @@ class PokerView implements GameView<View, Event> {
         Sound.place();
         await sleep(260 / sp);
       } else if (ev.type === 'street') {
+        // карты улицы — сразу на стол; при открытых руках (ва-банк) — не спеша, чтобы докрутку было видно
+        if (this.v && ev.board?.length) {
+          this.v = { ...this.v, board: [...this.v.board, ...ev.board], bet: this.v.bet.map(() => 0) };
+          this.draw();
+        }
         Sound.card();
-        await sleep(350 / sp);
+        await sleep((this.v && Object.keys(this.v.shown).length ? 1100 : 350) / sp);
       } else if (ev.type === 'draw' || ev.type === 'discard') {
         Sound.card();
         await sleep(300 / sp);
@@ -268,6 +275,8 @@ class PokerView implements GameView<View, Event> {
         this.showBanner(`${this.plain(ev.seat)} +${ev.amount}${ev.hand ? ` (${ev.hand})` : ''}`, 1600);
         await sleep(1500 / sp);
       } else if (ev.type === 'deal') {
+        // было вскрытие — дать его рассмотреть, прежде чем сдать новую раздачу
+        if (this.v && Object.keys(this.v.shown).length) await showdownPause(this.ctx, this.v);
         Sound.shuffle();
       } else if (ev.type === 'end') {
         this.showBanner(`Больше всех — ${this.plain(ev.winner)}`, 0);
@@ -310,6 +319,13 @@ class PokerView implements GameView<View, Event> {
   destroy() {
     this.cs.destroy();
   }
+}
+
+/** Пауза на вскрытии перед новой раздачей: сам участвовал — ждём касания («Нажмите, чтобы продолжить»), нет — короткая. */
+export async function showdownPause(ctx: ViewCtx, v: Pick<View, 'shown'>) {
+  const mine = ctx.mySeats.some((p) => v.shown[p]);
+  if (mine && ctx.read && !ctx.demo) await ctx.read(3000);
+  else await sleep(1200 / ctx.speed());
 }
 
 export function createView(hud: ((seat: number) => string) | null = null): GameView<View, Event> {

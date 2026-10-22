@@ -102,6 +102,8 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     form.hidden = id === 'cash';
     // турнир — свой блок, «Правила партии» и места ему не нужны
     el.closest('.home-screen')?.classList.toggle('pk-tour-mode', id !== 'cash');
+    // школа — на всю ширину экрана: вторая колонка (места, правила) ей не нужна
+    el.closest('.home-screen')?.classList.toggle('pk-wide', id === 'school');
     if (id === 'stats') renderStats(form);
     else if (id === 'school') renderSchool(form, launch);
     else if (id !== 'cash') renderForm();

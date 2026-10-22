@@ -624,6 +624,14 @@ function advance(s: State, ev: Event[], rng: Rng, fromDeal = false): { state: St
   while (true) {
     if (s.street >= lastStreet(s)) return finishHand(s, ev, rng, false);
     const g = info(s);
+    // все (кроме, может, одного) ва-банк — торговли больше не будет: руки открываются сразу, доска докручивается в открытую
+    // (не в дро и не перед сбросом крейзи-пайнэппла — там игроки ещё меняют карты)
+    if (g.family !== 'draw' && !g.discard && contenders(s).filter((p) => !s.allin[p]).length < 2)
+      for (const p of contenders(s))
+        if (!s.shown[p]) {
+          s.shown[p] = s.hole[p].slice();
+          ev.push({ type: 'show', seat: p, cards: s.hole[p].slice(), hand: (g.family === 'flop' ? s.board.length >= 3 : s.hole[p].length >= 5) ? handName(s, p) : '' });
+        }
     if (needDiscard(s)) {
       s.phase = 'discard';
       s.drew = Array(N).fill(false);
@@ -775,9 +783,10 @@ export function finishHand(s: State, ev: Event[], rng: Rng, uncontested: boolean
   else {
     const val = new Map(alive.map((p) => [p, values(s, p)]));
     for (const p of alive) {
-      s.shown[p] = s.hole[p].slice();
       names.set(p, handName(s, p));
-      ev.push({ type: 'show', seat: p, cards: s.hole[p].slice(), hand: names.get(p)! });
+      // открытые при ва-банке уже показаны — второй раз в журнал не пишем
+      if (!s.shown[p]) ev.push({ type: 'show', seat: p, cards: s.hole[p].slice(), hand: names.get(p)! });
+      s.shown[p] = s.hole[p].slice();
     }
     const levels = [...new Set(s.inHand.map((p) => s.total[p]).filter((v) => v > 0))].sort((a, b) => a - b);
     let prev = 0;
