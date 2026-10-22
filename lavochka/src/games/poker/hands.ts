@@ -1,6 +1,7 @@
 /* Покер — оценка рук для всех видов (без DOM). Сила — число: старше — больше (для «низких» видов — меньше значит лучше,
  * но наружу отдаём уже «чем больше, тем лучше», чтобы делёж банка был одинаковым).
  *   high — старшая комбинация из любых пяти;
+ *   highSD — Short Deck (колода с шестёрки): флеш старше фулл-хауса, A-6-7-8-9 — младший стрит;
  *   omahaHigh — ровно две свои + три общие;
  *   low27 — «двойка-семёрка»: туз старший, стриты и флеши считаются против, лучшая 7-5-4-3-2;
  *   lowA5 — «туз-пятёрка»: туз младший, стриты и флеши не считаются, лучшая 5-4-3-2-A (разз, лоу в хай-лоу);
@@ -32,15 +33,15 @@ const pack = (cat: number, ks: number[]) => {
 };
 export const highCat = (v: number) => Math.floor(v / 15 ** 5);
 
-/** Пятёрка: категория и кикеры; wheel — считать ли A-2-3-4-5 стритом. */
-function five(cards: Card[], wheel: boolean): number {
+/** Пятёрка: категория и кикеры; wheel — считать ли A-2-3-4-5 стритом (в Short Deck — A-6-7-8-9, а флеш старше фулл-хауса). */
+function five(cards: Card[], wheel: boolean, sd = false): number {
   const rs = cards.map((c) => c.r).sort((a, b) => b - a);
   const flush = cards.every((c) => c.s === cards[0].s);
   const u = [...new Set(rs)];
   let st = 0;
   if (u.length === 5) {
     if (u[0] - u[4] === 4) st = u[0];
-    else if (wheel && u[0] === 14 && u[1] === 5) st = 5;
+    else if (wheel && u[0] === 14 && (sd ? u[1] === 9 && u[4] === 6 : u[1] === 5)) st = sd ? 9 : 5;
   }
   if (st && flush) return pack(8, [st]);
   const cnt = new Map<number, number>();
@@ -48,8 +49,8 @@ function five(cards: Card[], wheel: boolean): number {
   const g = [...cnt.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]);
   const ord = g.flatMap(([r, n]) => Array(n).fill(r) as number[]);
   if (g[0][1] === 4) return pack(7, [g[0][0], g[1][0]]);
-  if (g[0][1] === 3 && g[1][1] === 2) return pack(6, [g[0][0], g[1][0]]);
-  if (flush) return pack(5, rs);
+  if (g[0][1] === 3 && g[1][1] === 2) return pack(sd ? 5 : 6, [g[0][0], g[1][0]]);
+  if (flush) return pack(sd ? 6 : 5, rs);
   if (st) return pack(4, [st]);
   if (g[0][1] === 3) return pack(3, [g[0][0], ...ord.slice(3)]);
   if (g[0][1] === 2 && g[1][1] === 2) return pack(2, [g[0][0], g[1][0], g[2][0]]);
@@ -63,6 +64,20 @@ export function high(cards: Card[]): number {
   let best = -1;
   for (const c of combos(cards, 5)) best = Math.max(best, five(c, true));
   return best;
+}
+
+/** Лучшая пятёрка Short Deck из 5–8 карт. */
+export function highSD(cards: Card[]): number {
+  if (cards.length < 5) return partialHigh(cards);
+  let best = -1;
+  for (const c of combos(cards, 5)) best = Math.max(best, five(c, true, true));
+  return best;
+}
+
+/** Название старшей комбинации (в Short Deck категории флеша и фулл-хауса переставлены). */
+export function highName(v: number, sd = false): string {
+  const c = highCat(v);
+  return HIGH_NAMES[sd && c === 5 ? 6 : sd && c === 6 ? 5 : c] ?? '';
 }
 
 /** Меньше пяти карт (стад до раздачи всех, показ в дороге): пары и кикеры. */
@@ -139,6 +154,7 @@ export function badugiSize(cards: Card[]): number {
   return Math.floor(badugi(cards) / 15 ** 5 + 0.9999);
 }
 
-export const allCards = (): Card[] => SUITS.flatMap((s) => Array.from({ length: 13 }, (_, i) => ({ s, r: i + 2 })));
+/** Колода: 52 карты или короткая с шестёрки (36, Short Deck). */
+export const allCards = (short = false): Card[] => SUITS.flatMap((s) => Array.from({ length: 13 }, (_, i) => ({ s, r: i + 2 }))).filter((c) => !short || c.r >= 6);
 
 export { combos };

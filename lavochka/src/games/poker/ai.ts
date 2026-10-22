@@ -6,8 +6,8 @@
  *   Сложный — больше розыгрышей, полублеф и ставка «на стоп» в лимите. */
 import type { Rng } from '../../core/types';
 import type { Card } from '../../cards/deck';
-import { allCards, badugi, combos, high } from './hands';
-import { contenders, info, potSize, raiseRange, toCall, values, type Action, type State, type View } from './engine';
+import { allCards, badugi, combos, high, highSD } from './hands';
+import { contenders, GAMES, info, potSize, raiseRange, toCall, values, type Action, type State, type View } from './engine';
 
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 const fast = !!env?.VITEST && !env?.SIM_GAMES;
@@ -68,13 +68,32 @@ export function discards(game: State['game'], hand: Card[]): Card[] {
   return hand.filter((c) => !top.includes(c));
 }
 
+/** Пайнэппл: какую из трёх карт сбросить — оставить лучшую пару карт (до флопа — на глазок, после — по комбинации с доской). */
+export function pineDiscard(game: State['game'], hand: Card[], board: Card[]): Card {
+  const score = (two: Card[]) => {
+    if (board.length >= 3) return (GAMES[game].short ? highSD : high)([...two, ...board]);
+    const [a, b] = two[0].r >= two[1].r ? two : [two[1], two[0]];
+    return (a.r === b.r ? 40 + a.r * 2 : a.r + b.r / 2) + (a.s === b.s ? 3 : 0) + (a.r - b.r <= 2 && a.r !== b.r ? 2 : 0);
+  };
+  let best = hand[0];
+  let bv = -Infinity;
+  for (const c of hand) {
+    const v = score(hand.filter((x) => x !== c));
+    if (v > bv) {
+      bv = v;
+      best = c;
+    }
+  }
+  return best;
+}
+
 /** Доля банка, которую в среднем возьмёт seat. */
 export function equity(v: View, seat: number, samples: number, rng: Rng): number {
   const g = info(v);
   const known = new Set<string>();
   for (const h of v.hole) for (const c of h) if (c) known.add(key(c));
   for (const c of v.board) known.add(key(c));
-  const pool = allCards().filter((c) => !known.has(key(c)));
+  const pool = allCards(g.short).filter((c) => !known.has(key(c)));
   const opp = contenders(v).filter((p) => p !== seat);
   const drawsLeft = g.family === 'draw' ? g.draws - v.street + (v.phase === 'draw' && !v.drew[seat] ? 0 : 0) : 0;
   let share = 0;
@@ -90,6 +109,7 @@ export function equity(v: View, seat: number, samples: number, rng: Rng): number
     let board = v.board.slice();
     if (g.family === 'flop') while (board.length < 5) board.push(take());
     if (g.family === 'stud') for (const p of [seat, ...opp]) while (hole[p].length < g.cards) hole[p].push(take());
+    if (g.discard) for (const p of [seat, ...opp]) if (hole[p].length > 2) hole[p] = hole[p].filter((c) => c !== pineDiscard(v.game, hole[p], v.board));
     if (g.family === 'draw')
       for (let r = 0; r < drawsLeft; r++)
         for (const p of [seat, ...opp]) {
@@ -114,6 +134,7 @@ export function equity(v: View, seat: number, samples: number, rng: Rng): number
 
 export function choose(v: View, seat: number, level: number, rng: Rng): Action | null {
   if (v.over || v.turn !== seat) return null;
+  if (v.phase === 'discard') return { type: 'discard', card: pineDiscard(v.game, v.hole[seat], v.board) };
   if (v.phase === 'draw') {
     const out = discards(v.game, v.hole[seat]);
     if (level === 0 && out.length < v.hole[seat].length && rng.next() < 0.25) {

@@ -208,6 +208,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
 
   // ---------- вид на этом экране (у каждого игрока свой)
   const prefsBox = q('.prefs');
+  const prefRows: [HTMLElement, (o: Options) => boolean][] = [];
   for (const p of mod.prefs || []) {
     const row = h(`<div class="row pref-row"><span class="lbl">${esc(p.label)}:</span><div class="seg"></div>${p.hint ? `<small class="opt-hint">${esc(p.hint)}</small>` : ''}</div>`);
     const box = row.querySelector('.seg') as HTMLElement;
@@ -224,6 +225,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
       box.appendChild(b);
     }
     mark();
+    if (p.showIf) prefRows.push([row, p.showIf]);
     prefsBox.appendChild(row);
   }
 
@@ -237,6 +239,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   function renderOpts() {
     const was = draft.preset;
     draft.preset = matchPreset(def, draft.options);
+    for (const [row, show] of prefRows) row.hidden = !show(draft.options);
     if (ready && draft.preset !== was) o.onPreset?.(draft.preset);
     persist();
     renderCounts();

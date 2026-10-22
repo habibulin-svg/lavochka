@@ -8,14 +8,16 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx, ViewPref } from '../../core/view';
+import type { Options } from '../../core/types';
 import { preloadDeck } from '../../cards/render';
 import { settings, store } from '../../core/settings';
 import type { Card } from '../../cards/deck';
 import { CardStage, cardKey, type Point, type StageItem } from '../../cards/stage';
 import type { Chips3D, Label3D, Table3D } from './scene3d';
 import { DEALER, type DealerAct, type Gesture } from './people3d';
-import { holding, minRaiseTo, toCall, type Event, type View } from './engine';
-import { SEATS } from './def';
+import { holding, minRaiseTo, toCall, toEvents, toView, type Event, type View } from './adapter';
+import type { Event as PEvent, View as PView } from '../poker/engine';
+import { SEATS } from '../poker/def';
 import { LOADING } from './loading';
 import './holdem.css';
 
@@ -31,6 +33,8 @@ export const VIEW_PREF: ViewPref = {
     { value: '2d', label: 'Стол' },
   ],
   default: '3d',
+  // 3D-комната — только у видов на две карты (холдем, Short Deck)
+  showIf: (o: Options) => o.mode === 'holdem' || o.mode === 'shortdeck',
 };
 /** seat — 3D-комната; flat — стол сверху (он же показ правил и запасной без WebGL). */
 type Mode = 'seat' | 'flat';
@@ -299,7 +303,7 @@ class HoldemView implements GameView<View, Event> {
       if (pot > 0) chips.push({ key: 'pot', x: C.x, y: C.y + 125, amount: pot });
       if (potAll) labels.push({ cls: 'hd-pot hd-bet-gl', x: C.x + 95, y: C.y + 125, h: 0.1, html: `<span>банк ${potAll}</span>` });
     } else if (potAll) labels.push({ cls: 'hd-pot', x: C.x, y: C.y + 70, html: `${this.chipStack(potAll)}<span>банк ${potAll}</span>` });
-    const blinds = `<div class="hd-blinds">блайнды ${v.big / 2}/${v.big} · раздача ${v.hand}</div>`;
+    const blinds = `<div class="hd-blinds">${v.title ? `${esc(v.title)} · ` : ''}блайнды ${v.big / 2}/${v.big} · раздача ${v.hand}</div>`;
     if (gl) {
       this.plates.innerHTML = blinds;
       const g3 = this.gl!;
@@ -396,7 +400,7 @@ class HoldemView implements GameView<View, Event> {
     const stack = v.chips[seat];
     const pot = v.inHand.reduce((a, x) => a + v.total[x], 0);
     const max = v.bet[seat] + stack;
-    const min = Math.min(max, minRaiseTo(v));
+    const min = Math.min(max, minRaiseTo(v, seat));
     const row = h('<div class="hd-row"></div>');
     const add = (text: string, cls: string, on: () => void) => {
       const b = h<HTMLButtonElement>(`<button class="btn ${cls}">${text}</button>`);
@@ -723,6 +727,16 @@ class HoldemView implements GameView<View, Event> {
   }
 }
 
-export function createView(): GameView<View, Event> {
-  return new HoldemView();
+/** Стол холдема на общем движке покера: View и события движка — через переходник (adapter.ts). */
+export function createView(): GameView<PView, PEvent> {
+  const inner = new HoldemView();
+  return {
+    mount: (root, ctx) => inner.mount(root, ctx),
+    setView: (v) => inner.setView(toView(v)),
+    play: (evs, v) => inner.play(toEvents(evs), toView(v)),
+    setTurn: (a, i) => inner.setTurn(a, i),
+    status: (v, a, i) => inner.status(toView(v), a, i),
+    playerStats: (v, seat) => inner.playerStats(toView(v), seat),
+    destroy: () => inner.destroy(),
+  };
 }

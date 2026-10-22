@@ -9,7 +9,7 @@ import { settings } from '../../core/settings';
 import { preloadDeck } from '../../cards/render';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
 import { sameCard, type Card } from '../../cards/deck';
-import { contenders, countOf, info, maxDraw, potSize, raiseRange, structOf, toCall, type Event, type View } from './engine';
+import { contenders, countOf, info, isMix, maxDraw, MIXES, potSize, raiseRange, structOf, toCall, type Event, type View } from './engine';
 import { gameTitle, SEATS } from './def';
 import './poker.css';
 
@@ -60,12 +60,13 @@ class PokerView implements GameView<View, Event> {
     this.cs.stage.addEventListener('click', (e) => {
       const el = (e.target as Element).closest('[data-card]') as HTMLElement | null;
       const v = this.v;
-      if (!el || !v || this.actSeat == null || v.phase !== 'draw') return;
+      if (!el || !v || this.actSeat == null || (v.phase !== 'draw' && v.phase !== 'discard')) return;
       e.preventDefault();
       const c = v.hole[this.actSeat].find((x) => x && x.s + x.r === el.dataset.card);
       if (!c) return;
       const i = this.selected.findIndex((x) => sameCard(x, c));
       if (i >= 0) this.selected.splice(i, 1);
+      else if (v.phase === 'discard') this.selected = [c];
       else if (this.selected.length < maxDraw(v)) this.selected.push(c);
       Sound.ui();
       this.draw();
@@ -115,7 +116,7 @@ class PokerView implements GameView<View, Event> {
         if (me) {
           const f = fan(n, i, a.x, a.y, g.port ? 330 : 380, g.port ? 74 : 82, 10, 8);
           const sel = !!c && this.selected.some((x) => sameCard(x, c));
-          const canSel = !!c && this.actSeat === p && v.phase === 'draw';
+          const canSel = !!c && this.actSeat === p && (v.phase === 'draw' || v.phase === 'discard');
           out.push(c ? { key: cardKey(c), card: c, x: f.x, y: f.y - (sel ? 30 : 0), r: f.r, s: g.port ? 0.95 : 0.9, z: 100 + i, cls: (sel ? 'cs-sel' : canSel ? 'cs-can' : '') + (folded ? ' cs-dim' : ''), data: canSel ? { card: c.s + c.r } : undefined } : { key: `b:${p}:${i}`, card: null, x: f.x, y: f.y, r: f.r, s: g.port ? 0.95 : 0.9, z: 100 + i });
         } else {
           const stud = info(v).family === 'stud';
@@ -141,7 +142,7 @@ class PokerView implements GameView<View, Event> {
       const x = Math.max(80, Math.min(g.W - 80, a.x));
       const on = !v.over && v.turn === p;
       const out = v.chips[p] <= 0 && !v.inHand.includes(p);
-      const tag = v.folded[p] ? ' <em>пас</em>' : v.allin[p] ? ' <em>ва-банк</em>' : v.phase === 'draw' && v.drew[p] ? ` <em>сменил ${v.drawn[p] || 'ничего'}</em>` : '';
+      const tag = v.folded[p] ? ' <em>пас</em>' : v.allin[p] ? ' <em>ва-банк</em>' : v.phase === 'draw' && v.drew[p] ? ` <em>сменил ${v.drawn[p] || 'ничего'}</em>` : v.phase === 'discard' && v.drew[p] ? ' <em>сбросил</em>' : '';
       s += `<div class="cs-plate${on ? ' on' : ''}${out ? ' pk-out' : ''}" style="--c:${SEATS[p].color};left:${x}px;top:${y}px">${esc(this.plain(p).replace(/\s*\(.*\)\s*$/, ''))} <i>${v.chips[p]}</i>${tag}${v.button === p ? ' <b class="pk-d">D</b>' : ''}</div>`;
       if (v.bet[p] > 0) {
         const bx = a.x + (g.center.x - a.x) * 0.45;
@@ -150,7 +151,7 @@ class PokerView implements GameView<View, Event> {
       }
     }
     const pot = potSize(v) - v.bet.reduce((a, b) => a + b, 0);
-    s += `<div class="pk-pot" style="left:${g.center.x}px;top:${g.center.y - (g.port ? 100 : 105)}px">${esc(gameTitle(v.game, v.hilo))} · раздача ${v.hand}${pot > 0 ? `<b>банк ${pot}</b>` : ''}</div>`;
+    s += `<div class="pk-pot" style="left:${g.center.x}px;top:${g.center.y - (g.port ? 100 : 105)}px">${isMix(v.cfg.mode) ? `${MIXES[v.cfg.mode].name}: ` : ''}${esc(gameTitle(v.game, v.hilo))} · раздача ${v.hand}${pot > 0 ? `<b>банк ${pot}</b>` : ''}</div>`;
     this.plates.innerHTML = s;
   }
 
@@ -178,6 +179,12 @@ class PokerView implements GameView<View, Event> {
     const v = this.v;
     const p = this.actSeat;
     if (!v || p == null || v.over || this.hidden || this.ctx.demo) return;
+    if (v.phase === 'discard') {
+      this.btns.appendChild(h('<div class="pk-ask">Коснитесь карты, которую сбросить: остаются две.</div>'));
+      const b = this.button('Сбросить', 'primary', () => this.send({ type: 'discard', card: this.selected[0] }));
+      b.disabled = this.selected.length !== 1;
+      return;
+    }
     if (v.phase === 'draw') {
       const k = this.selected.length;
       this.btns.appendChild(h(`<div class="pk-ask">Обмен: коснитесь карт, которые сбросить (до ${maxDraw(v)}).</div>`));
@@ -244,7 +251,7 @@ class PokerView implements GameView<View, Event> {
       } else if (ev.type === 'street') {
         Sound.card();
         await sleep(350 / sp);
-      } else if (ev.type === 'draw') {
+      } else if (ev.type === 'draw' || ev.type === 'discard') {
         Sound.card();
         await sleep(300 / sp);
       } else if (ev.type === 'show') {
@@ -287,8 +294,8 @@ class PokerView implements GameView<View, Event> {
   status(v: View, toAct: number[], interactive: number[]) {
     if (v.over) return 'Партия окончена';
     const who = toAct[0];
-    if (interactive.includes(who)) return v.phase === 'draw' ? 'Ваш обмен' : 'Ваш ход';
-    return `${this.ctx.name(who)} ${v.phase === 'draw' ? 'меняет' : 'думает'}…`;
+    if (interactive.includes(who)) return v.phase === 'draw' ? 'Ваш обмен' : v.phase === 'discard' ? 'Сбросьте лишнюю карту' : 'Ваш ход';
+    return `${this.ctx.name(who)} ${v.phase === 'draw' ? 'меняет' : v.phase === 'discard' ? 'сбрасывает карту' : 'думает'}…`;
   }
 
   playerStats(v: View, seat: number) {

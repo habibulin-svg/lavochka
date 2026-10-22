@@ -1,6 +1,6 @@
 /* Персонажи холдема 3D: кто сидит за столом (видео-люди и 3D-модели — в одном порядке). Без three — его грузит только 3D-стол. */
 import type { Look } from '../../core/view';
-import { SEATS } from './def';
+import { SEATS } from '../poker/def';
 
 /** Порядок — как у мест: Вовка, Ленка, Серёга, Танька, Димон, Колян, Светка, Жека, Михалыч. */
 export const CHARS = ['vovka', 'lenka', 'seryoga', 'tanka', 'dimon', 'kolyan', 'svetka', 'zheka', 'mihalych'];

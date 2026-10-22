@@ -30,9 +30,7 @@ export const SLUGS: Record<string, string> = {
   bura: 'bura',
   preferans: 'preferans',
   bridge: 'bridzh',
-  pokers: 'poker',
-  holdem: 'poker/tehasskiy-holdem',
-  poker: 'poker/omaha',
+  poker: 'poker',
   drunkard: 'pyanica',
   bluff: 'verju-ne-verju',
   sunduchok: 'sunduchok',
@@ -150,6 +148,9 @@ export const VARIANTS: VariantPage[] = [
   { path: 'bilyard/pul', game: 'billiards', preset: 'pool8' },
   { path: 'bilyard/snuker', game: 'billiards', preset: 'snooker' },
   { path: 'bura/burkozel', game: 'bura', preset: 'burkozel' },
+  // покер: прежние страницы холдема и Омахи — теперь варианты единой карточки
+  { path: 'poker/tehasskiy-holdem', game: 'poker', preset: 'holdem' },
+  { path: 'poker/omaha', game: 'poker', preset: 'plo' },
   { path: 'loto/vokrug-sveta', game: 'loto', preset: 'world' },
   { path: 'ochko/blekdzhek', game: 'ochko', preset: 'bj' },
   { path: 'seka/svara', game: 'seka', preset: 'svara' },
@@ -188,7 +189,7 @@ export interface ArticlePage {
   also?: string[];
 }
 
-export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'holdem', slug: 'kombinacii', also: ['poker', 'pokers'] }];
+export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'poker', slug: 'kombinacii' }];
 
 /** Игры серии у аркад («Электроника ИМ», автоматы): своя страница на каждую, адрес открывает прибор сразу на ней. */
 export interface ModePage {

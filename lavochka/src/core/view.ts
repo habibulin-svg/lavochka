@@ -61,6 +61,8 @@ export interface ViewPref {
   hint?: string;
   choices: { value: string; label: string }[];
   default: string;
+  /** Показывать выбор только при таких правилах партии (3D-комната покера — только у холдема). */
+  showIf?: (o: Options) => boolean;
 }
 
 export interface GameModule {
