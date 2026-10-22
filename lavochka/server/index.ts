@@ -27,6 +27,8 @@ import { accountsFromEnv, authApi, OAuth, oauthApi, providersFromEnv } from './a
 import { cookieOf } from './accounts/http';
 import { Donate, donateApi } from './donate';
 import { Plus, plusApi } from './plus';
+import { AiDesk } from './ai';
+import { Dimon, dimonApi } from './dimon';
 import { Mihalych, mihalychApi } from './mihalych';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
@@ -216,9 +218,13 @@ if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_L
 const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
 log('подписка: ' + (plus.enabled ? (plus.recurring ? 'оплата и автопродление включены' : plus.link ? 'оплата включена, автопродление — подпиской по ссылке Robokassa' : 'оплата включена, автопродление выключено') : 'оплата выключена'));
 setInterval(() => accountsReady && plus.tick().catch((e) => log('подписка: ' + (e as Error).message)), 3600_000).unref();
-// «Совет Михалыча» (server/mihalych.ts): помощник на ИИ через routerai.ru; нет ключа — выключен
-const mihalych = new Mihalych(accounts, { key: process.env.ROUTERAI_API_KEY || null, model: process.env.MIHALYCH_MODEL || undefined, userRub: Number(process.env.MIHALYCH_USER_RUB) || 30, siteRub: Number(process.env.MIHALYCH_SITE_RUB) || 3000 }, log);
-log('михалыч: ' + (mihalych.enabled ? 'включён' : 'выключен (нет ROUTERAI_API_KEY)'));
+// помощники на ИИ через routerai.ru (server/ai.ts): Михалыч в шахматах, Димон в покере; лимит пользователя и потолок
+// сайта — общие на обоих (AI_* или старые MIHALYCH_*); нет ключа — выключены
+const env = (k: string) => process.env['AI_' + k] || process.env['MIHALYCH_' + k];
+const aiDesk = new AiDesk(accounts, { key: process.env.ROUTERAI_API_KEY || null, model: env('MODEL') || undefined, userRub: Number(env('USER_RUB')) || 30, siteRub: Number(env('SITE_RUB')) || 3000 }, log);
+const mihalych = new Mihalych(aiDesk);
+const dimon = new Dimon(aiDesk);
+log('помощники (Михалыч, Димон): ' + (aiDesk.enabled ? 'включены' : 'выключены (нет ROUTERAI_API_KEY)'));
 // обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
 const support = new Support(accounts, log);
 setInterval(() => accountsReady && accounts.store.cleanup(Date.now()).catch(() => {}), 3600_000).unref();
@@ -422,6 +428,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/mihalych' || path === '/api/mihalych/route' || path === '/api/admin/mihalych') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await mihalychApi(mihalych, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+  }
+  if (path === '/api/dimon') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await dimonApi(dimon, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/support' || path === '/api/support/reply' || path === '/api/admin/support' || path === '/api/mail/in') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });

@@ -2,7 +2,8 @@
  * подсказки по желанию (шансы и ауты, шансы банка, сила руки, M и зона, пуш/фолд по Нэшу, ICM-цена) и разбор «лучший
  * ход» после каждой своей раздачи. Всё — по своему виду: HUD — только по ходам и вскрытым картам (годится и для сети),
  * подсказки и разбор — только в игре против ботов на этом устройстве (не по сети и не в хот-сите).
- * Панель — в слоте игры (ctx.controls), окна — поверх стола; панель стола (.voice, .tabs) не трогаем. */
+ * Панель — в слоте игры (ctx.controls), окна — поверх стола; панель стола (.voice, .tabs) не трогаем.
+ * Там же — Димон (poker/dimon.ts, «Лавочка+»): тоже только против ботов, по своему виду (dimon-facts.ts). */
 import { SeededRng } from '../../core/rng';
 import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
@@ -13,6 +14,8 @@ import { recFor, type Event, type View } from './engine';
 import { cleanName, loadHud, recordHand, recordTour, saveHud, statN, STATS, statVal, styleGuess, summaryOf, type StatKey } from './hud';
 import { zero } from './stats';
 import { syncPoker } from './cloud';
+import { dimonStatus, mountDimon, type DimonAction, type DimonBlock } from './dimon';
+import { handFacts, oppFacts, oppsFacts, tableFacts, tourFacts } from './dimon-facts';
 
 interface Prefs {
   hud: boolean;
@@ -20,12 +23,14 @@ interface Prefs {
   /** В турнире на банкролл подсказки — отдельно (по умолчанию выключены: «чистый» результат). */
   tipsBank: boolean;
   best: boolean;
+  /** Блок Димона открыт. */
+  dimon: boolean;
   keys: Record<TipKey, boolean>;
 }
 const PREF = 'poker.trainer';
 const prefs = (): Prefs => {
   const p = store.get<Partial<Prefs>>(PREF, {});
-  return { hud: p.hud ?? true, tips: p.tips ?? false, tipsBank: p.tipsBank ?? false, best: p.best ?? true, keys: { str: true, odds: true, pot: true, m: true, nash: true, icm: true, ...(p.keys ?? {}) } };
+  return { hud: p.hud ?? true, tips: p.tips ?? false, tipsBank: p.tipsBank ?? false, best: p.best ?? true, dimon: p.dimon ?? true, keys: { str: true, odds: true, pot: true, m: true, nash: true, icm: true, ...(p.keys ?? {}) } };
 };
 
 const MAIN: StatKey[] = ['vpip', 'pfr', 'threeBet', 'af'];
@@ -42,6 +47,12 @@ export class Trainer {
   private timer = 0;
   private lastBest = '';
   private seenTour = new Set<number>();
+  /** Димон: блок (создаётся, когда сервер его знает), последняя своя раздача — для «Как я сыграл?». */
+  private dimon: DimonBlock | null = null;
+  private dimonOn = false;
+  private dimonBox: HTMLElement;
+  private lastHand: { rec: Extract<Event, { type: 'hand' }>['rec']; me: number; names: Record<number, string>; prizes?: number[] } | null = null;
+  private dimonKey = '';
 
   constructor(
     root: HTMLElement,
@@ -51,10 +62,16 @@ export class Trainer {
     this.tipsBox = h('<div class="pk-tips" hidden></div>');
     this.bestBox = h('<div class="pk-best" hidden></div>');
     this.pop = h('<div class="pk-pop" hidden></div>');
+    this.dimonBox = h('<div class="pk-dm" hidden></div>');
     if (!ctx.demo) {
       ctx.controls.prepend(this.bar);
       root.appendChild(this.pop);
       void syncPoker();
+      void dimonStatus().then((s) => {
+        this.dimonOn = s.enabled;
+        if (s.enabled) this.renderBar();
+        this.syncDimon();
+      });
     }
     root.addEventListener('click', (e) => {
       const el = (e.target as Element).closest('[data-hud]') as HTMLElement | null;
@@ -66,13 +83,15 @@ export class Trainer {
     this.pop.addEventListener('click', (e) => {
       const t = e.target as Element;
       if (t === this.pop || t.closest('.pk-pclose')) this.pop.hidden = true;
+      const ask = t.closest('[data-dimon]') as HTMLElement | null;
+      if (ask) this.askAbout(Number(ask.dataset.dimon));
     });
     this.renderBar();
   }
 
   /** Подсказки и разбор — под кнопками хода (стол уже смонтировал свои): кнопки не уезжают вниз. */
   placeBelow() {
-    if (!this.ctx.demo) this.ctx.controls.append(this.bestBox, this.tipsBox);
+    if (!this.ctx.demo) this.ctx.controls.append(this.bestBox, this.tipsBox, this.dimonBox);
   }
 
   /** Человек один за этим экраном и играет не по сети — можно подсказывать. */
@@ -99,7 +118,9 @@ export class Trainer {
     if (this.ctx.demo) return;
     const tips = this.tipsOn;
     this.bar.innerHTML = `<button type="button" class="pk-trb${this.p.hud ? ' on' : ''}" data-k="hud" title="Цифры соперников под их табличками (на 2D-столе)">📊 HUD</button>${
-      this.solo ? `<button type="button" class="pk-trb${tips ? ' on' : ''}" data-k="tips" title="${this.bankTour ? 'В турнире на банкролл — отдельный переключатель: без подсказок результат «чистый»' : 'Шансы, ауты, шансы банка, M, Нэш, ICM'}">💡 Подсказки${this.bankTour ? ' <small>банкролл</small>' : ''}</button><button type="button" class="pk-trb" data-k="set" aria-label="Что подсказывать">⚙</button>` : ''
+      this.solo ? `<button type="button" class="pk-trb${tips ? ' on' : ''}" data-k="tips" title="${this.bankTour ? 'В турнире на банкролл — отдельный переключатель: без подсказок результат «чистый»' : 'Шансы, ауты, шансы банка, M, Нэш, ICM'}">💡 Подсказки${this.bankTour ? ' <small>банкролл</small>' : ''}</button><button type="button" class="pk-trb" data-k="set" aria-label="Что подсказывать">⚙</button>${
+        this.dimonOn ? `<button type="button" class="pk-trb${this.p.dimon ? ' on' : ''}" data-k="dimon" title="Димон — помощник по покеру («Лавочка+»): что делать, разбор раздачи, цифры соперников">🃏 Димон</button>` : ''
+      }` : ''
     }`;
     for (const b of this.bar.querySelectorAll<HTMLButtonElement>('button'))
       b.onclick = () => {
@@ -109,6 +130,12 @@ export class Trainer {
           if (this.bankTour) this.p.tipsBank = !this.p.tipsBank;
           else this.p.tips = !this.p.tips;
         } else if (k === 'set') return this.openSettings();
+        else if (k === 'dimon') {
+          this.p.dimon = !this.p.dimon;
+          this.save();
+          this.renderBar();
+          return this.syncDimon();
+        }
         this.save();
         this.renderBar();
         this.tipKey = '';
@@ -162,7 +189,9 @@ export class Trainer {
         <p><b>Что значит:</b> ${st.what}</p><p><b>У стилей:</b> ${st.styles}</p><p><b>Как пользоваться:</b> ${st.use}</p></details>`;
     }).join('');
     this.pop.innerHTML = `<div class="pk-pbox"><div class="pk-phead"><b>${esc(nm)}</b>${guess ? `<span class="pk-guess">похоже: ${guess}</span>` : ''}<button type="button" class="pk-pclose" aria-label="Закрыть">✕</button></div>
-      <p class="pk-pnote">Статистика копится по имени между партиями — только по тому, что видно за столом. Коснитесь цифры — что она значит и как ею пользоваться.</p>${rows}</div>`;
+      <p class="pk-pnote">Статистика копится по имени между партиями — только по тому, что видно за столом. Коснитесь цифры — что она значит и как ею пользоваться.</p>${rows}${
+        this.solo && this.dimonOn ? `<button type="button" class="btn small pk-dmask" data-dimon="${seat}">🃏 Спросить Димона о нём</button>` : ''
+      }</div>`;
     this.pop.hidden = false;
   }
 
@@ -175,6 +204,7 @@ export class Trainer {
     if (was !== this.bankTour) this.renderBar();
     this.trackTour(v);
     this.refreshTips();
+    this.syncDimon();
   }
 
   private trackTour(v: View) {
@@ -208,6 +238,7 @@ export class Trainer {
         html = vd.html;
       }
     }
+    if (me >= 0) this.lastHand = { rec, me, names, prizes: v.cfg.prizes };
     const d = loadHud();
     if (recordHand(d, rec, me, names, { tour: !!v.tour, prizes: v.cfg.prizes, best })) saveHud(d);
     if (best && this.p.best) this.showBest(best, html, rec.no);
@@ -259,7 +290,63 @@ export class Trainer {
     }
   }
 
+  // ---------------------------------------------------------------- Димон
+
+  /** Блок Димона: только один человек против ботов на этом устройстве; кнопки — по тому, что сейчас на столе. */
+  private syncDimon() {
+    const show = this.dimonOn && this.solo && this.p.dimon;
+    if (!show) {
+      this.dimonBox.hidden = true;
+      return;
+    }
+    this.dimonBox.hidden = false;
+    if (!this.dimon) {
+      this.dimon = mountDimon(this.dimonBox, 'table');
+      this.dimonKey = '';
+    }
+    const v = this.v;
+    const me = this.me;
+    if (!v) return;
+    const inHand = v.inHand.includes(me) && !v.folded[me] && !v.over && !v.between;
+    const last = this.lastHand;
+    const tourDone = !!v.tour?.done;
+    const key = `${v.hand}:${inHand}:${last?.rec.no ?? -1}:${tourDone}`;
+    if (key === this.dimonKey) return;
+    this.dimonKey = key;
+    const list: DimonAction[] = [];
+    const table = () => tableFacts(this.v!, me, { name: (p) => this.name(p), bots: loadHud().bots });
+    const lastFacts = () => handFacts(last!.rec, last!.me, last!.names, last!.prizes);
+    if (inHand) list.push({ label: 'Что тут делать?', kind: 'move', say: 'Димон, что тут делать?', facts: table });
+    if (last) list.push({ label: `Как я сыграл раздачу ${last.rec.no}?`, kind: 'hand', say: `Как я сыграл раздачу ${last.rec.no}?`, facts: lastFacts });
+    if (v.seats.length > 1) list.push({ label: 'Кто тут опасный?', kind: 'opp', say: 'Кто за столом опасный и как против кого играть?', facts: () => this.oppsNow() });
+    if (tourDone) list.push({ label: 'Разбери мой турнир', kind: 'tour', say: 'Разбери мой турнир', facts: () => tourFacts(loadHud()) });
+    this.dimon.actions(list);
+    this.dimon.typed({ facts: () => (this.v && this.v.inHand.includes(me) && !this.v.folded[me] && !this.v.over ? table() : last ? lastFacts() : this.oppsNow()) });
+  }
+
+  private oppsNow() {
+    const bots = loadHud().bots;
+    const v = this.v;
+    return oppsFacts((v?.seats ?? []).filter((p) => p !== this.me).map((p) => ({ name: this.name(p), c: bots[this.name(p)] ?? zero() })));
+  }
+
+  /** Из окна HUD: «Спросить Димона о нём». */
+  private askAbout(seat: number) {
+    this.pop.hidden = true;
+    if (!this.p.dimon) {
+      this.p.dimon = true;
+      this.save();
+      this.renderBar();
+    }
+    this.syncDimon();
+    const nm = this.name(seat);
+    this.dimon?.ask({ label: '', kind: 'opp', say: `Что значит статистика ${nm}? Как против него играть?`, facts: () => oppFacts(nm, loadHud().bots[nm] ?? zero()) });
+    this.dimonBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
   destroy() {
+    this.dimon?.destroy();
+    this.dimonBox.remove();
     clearTimeout(this.timer);
     this.bar.remove();
     this.tipsBox.remove();

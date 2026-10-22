@@ -1,9 +1,12 @@
 /* Покер — вкладка лобби «Моя статистика»: свои цифры как в HUD, выигрыш в быстрой игре (bb/100 и кривая), турниры
- * (места, ITM, ROI банкролла), последние раздачи с реплеером и разбором, выгрузка истории в формате для трекеров. */
+ * (места, ITM, ROI банкролла), последние раздачи с реплеером и разбором, выгрузка истории в формате для трекеров.
+ * Димон («Лавочка+») разбирает статистику, последний турнир и раздачу в реплеере — по своей истории (чужое уже скрыто). */
 import type { Card } from '../../cards/deck';
 import { esc, h } from '../../core/util';
 import { bankInfo } from './bankroll';
 import { bestMove } from './calc';
+import { mountDimon, type DimonAction, type DimonBlock } from './dimon';
+import { handFacts, statsFacts, tourFacts } from './dimon-facts';
 import { syncPoker } from './cloud';
 import { gameTitle, SEATS } from './def';
 import { exportHistory, hhGame } from './hh';
@@ -37,6 +40,8 @@ function curve(pts: number[]): string {
 }
 
 export function renderStats(box: HTMLElement) {
+  let dimon: DimonBlock | null = null;
+  const dimonBox = h('<section class="pk-ms-dimon"></section>');
   const draw = () => {
     const d = loadHud();
     const s = summaryOf(d.me);
@@ -83,6 +88,13 @@ export function renderStats(box: HTMLElement) {
         </div>
         <p class="pk-pnote">Файл .txt в текстовом формате истории раздач, который понимают популярные покерные трекеры: холдем и Омаха. Хранятся последние 200 раздач.</p></section>
     </div>`;
+    // Димон — над всем, разговор переживает перерисовку
+    box.querySelector('.pk-ms')!.prepend(dimonBox);
+    dimon ??= mountDimon(dimonBox, 'stats');
+    const list: DimonAction[] = [{ label: 'Разбери мою статистику', kind: 'stats', say: 'Димон, разбери мою статистику: что подтянуть?', facts: () => statsFacts(loadHud(), bankInfo()) }];
+    if (d.tours.length) list.push({ label: 'Разбери мой последний турнир', kind: 'tour', say: 'Разбери мой последний турнир', facts: () => tourFacts(loadHud()) });
+    dimon.actions(list);
+    dimon.typed({ facts: () => statsFacts(loadHud(), bankInfo()) });
     for (const b of box.querySelectorAll<HTMLButtonElement>('.pk-ms-hand')) b.onclick = () => openReplay(d.hist[Number(b.dataset.i)]);
     (box.querySelector('.pk-ms-export') as HTMLButtonElement).onclick = () => {
       const { text } = exportHistory(loadHud().hist);
@@ -116,6 +128,12 @@ function openReplay(x: Saved) {
   let i = 0;
   const el = h('<div class="pk-rp" role="dialog" aria-label="Реплеер раздачи"><div class="pk-pbox pk-rpbox"></div></div>');
   const boxEl = el.querySelector('.pk-rpbox') as HTMLElement;
+  // Димон: «Как я сыграл?» — по своей истории раздачи (разговор живёт, пока открыт реплеер)
+  const dmBox = h('<div class="pk-rp-dimon"></div>');
+  const dimon = mountDimon(dmBox, 'replay');
+  const facts = () => handFacts(r, x.me, Object.fromEntries(r.seats.map((s) => [s.seat, nm(s.seat)])), x.prizes);
+  dimon.actions([{ label: 'Как я сыграл раздачу?', kind: 'hand', say: 'Димон, как я сыграл эту раздачу?', facts }]);
+  dimon.typed({ facts, hint: 'Спросить Димона про эту раздачу…' });
   const ring = r.seats.map((s) => s.seat).sort((a, b) => a - b);
   const render = () => {
     const f: Frame = fr[i];
@@ -140,8 +158,10 @@ function openReplay(x: Saved) {
         render();
       };
     (boxEl.querySelector('.pk-pclose') as HTMLButtonElement).onclick = close;
+    boxEl.appendChild(dmBox);
   };
   const close = () => {
+    dimon.destroy();
     el.remove();
     removeEventListener('keydown', key);
   };

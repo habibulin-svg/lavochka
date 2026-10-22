@@ -2,24 +2,18 @@
  * Клиент шлёт не готовый текст подсказки, а данные: вид запроса, позицию, оценки и линии Stockfish (ходы — уже
  * русской записью), тему, последние реплики и вопрос. Промпт сервер собирает сам: неизменная часть — первой
  * (её кэширует шлюз), данные — следом. Модель — через шлюз routerai.ru (OpenAI-совместимый), ключ ROUTERAI_API_KEY.
- * Учёт — рубли из ответа шлюза (usage.cost), по календарным месяцам МСК; лимит на ученика и общий на сайт.
- * Безлимит — право `ai_unlimited` (и Мастер).
+ * Учёт, лимиты и права — общие с Димоном (server/ai.ts): запас на месяц один на всех помощников пользователя.
  *   GET  /api/mihalych — можно ли спросить, сколько осталось
  *   POST /api/mihalych {kind, level, fen, side, moves, engine, theme, opening, history, question} → {text, left} */
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { hasRight } from '../src/core/rights';
 import { boardFacts, lineWords, sanWords } from '../src/games/chess/facts';
 import { parseMove, position, toFen } from '../src/games/chess/notation';
 import { play } from '../src/games/chess/engine';
-import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
+import type { Accounts, Ctx, Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
-import { plusPeriod } from '../src/core/plus';
+import { AI_MODEL, AiDesk, backOn, cut, err, monthOf, plain, type AiConf, type HelperWords } from './ai';
 
-export const MIHALYCH_MODEL = '~deepseek/deepseek-v4-flash-latest';
-const API = 'https://routerai.ru/api/v1/chat/completions';
-/** Цены шлюза, ₽ за миллион токенов — если в ответе нет usage.cost. */
-const PRICE = { in: 10, out: 21, cached: 2.13 };
-const MICRO = 1_000_000;
+export const MIHALYCH_MODEL = AI_MODEL;
 
 export type Kind = 'mistake' | 'hint' | 'explain' | 'review' | 'chat';
 export type Level = 'novice' | 'amateur' | 'strong';
@@ -73,8 +67,6 @@ const TASK: Record<Kind, string> = {
   review: 'Оцени ход ученика по данным движка: сравни оценку до и после. Потеря меньше полпешки — хвали; больше — объясни ошибку и что было лучше.',
   chat: 'Ответь на вопрос ученика.',
 };
-
-const cut = (v: unknown, n: number) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b-\u001f]/g, ' ').trim().slice(0, n) : '');
 
 /** Позиция после хода (для ответа соперника на ход ученика). */
 function afterMove(fen: string, move: string): string {
@@ -143,172 +135,72 @@ export function buildMessages(a: Ask): { role: 'system' | 'user' | 'assistant'; 
   return out;
 }
 
-/** Месяц учёта по Москве: 'ГГГГ-ММ'. */
-export const monthOf = (now: number) => new Date(now + 3 * 3600_000).toISOString().slice(0, 7);
-/** Первое число следующего месяца словами: «1 ноября». */
-export function backOn(now: number): string {
-  const d = new Date(now + 3 * 3600_000);
-  const next = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 12));
-  return next.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
-}
-
-/** Дата словами: «22 ноября». */
-const dayWords = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'Europe/Moscow' });
+export { backOn, monthOf };
 
 /** Личный запас — на оплаченный месяц подписки (от дня оплаты), back — когда он обновится словами. */
 export const ZAPOY = (back: string) =>
   `Михалыч в запое до ${back}. Весь месяц разбирал с тобой партии, наговорился до хрипоты и, говорит, заслужил. Месячный запас его советов кончился — ${back} вернётся к доске трезвым и с новыми силами. Задачи и разбор движком работают как прежде.`;
-const SICK = (now: number) =>
-  `Михалыч слёг до ${backOn(now)}: в этом месяце к нему в кружок пришло столько народу, что голос сел. Первого числа снова будет на лавочке. Задачи и разбор движком работают как прежде.`;
 
-type Fetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
+export const WORDS: HelperWords = {
+  id: 'mihalych',
+  tag: 'михалыч',
+  login: 'Михалыч разговаривает с теми, кто вошёл на сайт и оформил «Лавочку+».',
+  plus: 'Советы Михалыча — для подписчиков «Лавочки+». Задачи и разбор движком — бесплатно всем.',
+  off: 'Михалыч ещё не пришёл в кружок. Загляни чуть позже!',
+  often: 'Погоди, дай Михалычу дух перевести — спроси через минутку.',
+  zapoy: ZAPOY,
+  sick: (back) => `Михалыч слёг до ${back}: в этом месяце к нему в кружок пришло столько народу, что голос сел. Первого числа снова будет на лавочке. Задачи и разбор движком работают как прежде.`,
+  silent: 'Михалыч задумался и не ответил. Спроси ещё раз.',
+  mumble: 'Михалыч что-то пробормотал невнятное. Спроси ещё раз.',
+};
 
-export interface MihalychConf {
-  key: string | null;
-  model?: string;
-  /** Лимит на ученика в месяц, ₽. */
-  userRub?: number;
-  /** Общий лимит сайта в месяц, ₽. */
-  siteRub?: number;
-}
-
-const err = (code: number, error: string, message: string, extra: Record<string, unknown> = {}): Reply => ({ code, body: { error, message, ...extra } });
+/** Настройки — общие для всех помощников (server/ai.ts). */
+export type MihalychConf = AiConf;
 
 export class Mihalych {
-  private perUser = new Limiter(60, 3600_000);
-  private perMinute = new Limiter(6, 60_000);
-  private model: string;
-  private userMicro: number;
-  private siteMicro: number;
+  readonly desk: AiDesk;
 
-  constructor(
-    private acc: Accounts,
-    private conf: MihalychConf,
-    private log: (s: string) => void = () => {},
-    private http: Fetch = fetch
-  ) {
-    this.model = conf.model || MIHALYCH_MODEL;
-    this.userMicro = (conf.userRub ?? 30) * MICRO;
-    this.siteMicro = (conf.siteRub ?? 3000) * MICRO;
+  /** desk — общий стол помощников (лимиты и учёт — одни на Михалыча и Димона); можно дать Accounts и настройки. */
+  constructor(desk: AiDesk | Accounts, conf: AiConf = { key: null }, log: (s: string) => void = () => {}, http?: ConstructorParameters<typeof AiDesk>[3]) {
+    this.desk = desk instanceof AiDesk ? desk : new AiDesk(desk, conf, log, http);
   }
 
   get enabled() {
-    return !!this.conf.key;
+    return this.desk.enabled;
   }
 
-  /** Кто спрашивает и можно ли: пользователь, безлимит ли, ответ-отказ. */
-  private async who(ctx: Ctx) {
-    const u = await this.acc.current(ctx);
-    if (!u) return { deny: err(401, 'login', 'Михалыч разговаривает с теми, кто вошёл на сайт и оформил «Лавочку+».') };
-    const now = ctx.now ?? Date.now();
-    const rights = await this.acc.store.rights(u.id, now);
-    if (!hasRight(rights, 'ai', now)) return { deny: err(403, 'plus', 'Советы Михалыча — для подписчиков «Лавочки+». Задачи и разбор движком — бесплатно всем.') };
-    const { key, back } = await this.period(u.id, now);
-    return { user: u, unlimited: hasRight(rights, 'ai_unlimited', now), now, key, back };
-  }
-
-  /** Учётный период ученика: оплаченный месяц подписки (ключ «p<день начала>»); без подписки (право от Мастера) —
-   * календарный месяц. Общий потолок сайта всегда считается по календарному месяцу (monthOf). */
-  private async period(userId: number, now: number): Promise<{ key: string; back: string }> {
-    const s = await this.acc.store.subscription(userId);
-    const p = plusPeriod(s?.until, now);
-    if (p) return { key: 'p' + new Date(p.start + 3 * 3600_000).toISOString().slice(0, 10), back: dayWords(p.end) };
-    return { key: monthOf(now), back: backOn(now) };
-  }
-
-  async status(ctx: Ctx): Promise<Reply> {
-    if (!this.enabled) return { code: 200, body: { enabled: false, allowed: false } };
-    const w = await this.who(ctx);
-    if (!w.user) return { code: 200, body: { enabled: true, allowed: false, reason: (w.deny.body as { error: string }).error, message: (w.deny.body as { message: string }).message } };
-    const used = await this.acc.store.aiUsage(w.user.id, w.key);
-    const left = w.unlimited ? null : Math.max(0, 1 - used.cost / this.userMicro);
-    return { code: 200, body: { enabled: true, allowed: true, unlimited: w.unlimited, left, zapoy: left === 0 ? ZAPOY(w.back) : null } };
+  status(ctx: Ctx): Promise<Reply> {
+    return this.desk.status(ctx, WORDS);
   }
 
   async ask(b: Ask, ctx: Ctx): Promise<Reply> {
-    if (!this.enabled) return err(503, 'off', 'Михалыч ещё не пришёл в кружок. Загляни чуть позже!');
-    const w = await this.who(ctx);
-    if (!w.user) return w.deny;
+    if (!this.enabled) return err(503, 'off', WORDS.off);
+    const w = await this.desk.who(ctx, WORDS);
+    if ('deny' in w) return w.deny;
     if (!b || !['mistake', 'hint', 'explain', 'review', 'chat'].includes(b.kind)) return err(400, 'kind', 'Не понял вопроса.');
-    const now = w.now;
-    if (!this.perMinute.take('u' + w.user.id, now) || !this.perUser.take('u' + w.user.id, now))
-      return err(429, 'often', 'Погоди, дай Михалычу дух перевести — спроси через минутку.');
-    const month = monthOf(now);
-    if (!w.unlimited) {
-      const used = await this.acc.store.aiUsage(w.user.id, w.key);
-      if (used.cost >= this.userMicro) return err(429, 'zapoy', ZAPOY(w.back));
-    }
-    const total = await this.acc.store.aiTotal(month);
-    if (total.cost >= this.siteMicro && !w.unlimited) return err(429, 'sick', SICK(now));
-
-    const r = await this.complete(w, buildMessages(b), 400);
+    const no = await this.desk.gate(w, WORDS);
+    if (no) return no;
+    const r = await this.desk.complete(w, WORDS, buildMessages(b), 400);
     if ('code' in r) return r;
-    const text = r.text.replace(/\*\*?|__|^#+\s*/gm, '').trim();
+    const text = plain(r.text);
     if (!text) return err(502, 'empty', 'Михалыч почесал затылок и промолчал. Спроси по-другому.');
-    const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, w.key);
-    return { code: 200, body: { text, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
-  }
-
-  /** Запрос к модели и учёт расхода (личный период и календарный месяц). Ответ модели или отказ. */
-  private async complete(
-    w: { user: { id: number }; key: string; now: number },
-    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    maxTokens: number,
-  ): Promise<{ text: string } | Reply> {
-    const month = monthOf(w.now);
-    let res;
-    try {
-      res = await this.http(API, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${this.conf.key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: this.model, messages, max_tokens: maxTokens, temperature: 0.5, reasoning: { enabled: false }, usage: { include: true } }),
-        signal: AbortSignal.timeout(40_000),
-      });
-    } catch (e) {
-      this.log(`михалыч: шлюз не ответил — ${(e as Error).message}`);
-      return err(502, 'gateway', 'Михалыч задумался и не ответил. Спроси ещё раз.');
-    }
-    const raw = await res.text();
-    if (!res.ok) {
-      this.log(`михалыч: шлюз ${res.status} ${raw.slice(0, 200)}`);
-      return err(502, 'gateway', 'Михалыч задумался и не ответил. Спроси ещё раз.');
-    }
-    let j: any;
-    try {
-      j = JSON.parse(raw);
-    } catch {
-      return err(502, 'gateway', 'Михалыч что-то пробормотал невнятное. Спроси ещё раз.');
-    }
-    const u = j?.usage ?? {};
-    const tin = Number(u.prompt_tokens) || 0;
-    const tout = Number(u.completion_tokens) || 0;
-    const cached = Number(u.prompt_tokens_details?.cached_tokens) || 0;
-    const rub = Number(u.cost);
-    const micro = Number.isFinite(rub) && rub > 0 ? rub * MICRO : (tin - cached) * PRICE.in + cached * PRICE.cached + tout * PRICE.out;
-    // строка календарного месяца — для общего потолка и админки, строка периода — личный запас
-    await this.acc.store.addAiUsage(w.user.id, month, micro, tin, tout);
-    if (w.key !== month) await this.acc.store.addAiUsage(w.user.id, w.key, micro, tin, tout);
-    return { text: String(j?.choices?.[0]?.message?.content ?? '') };
+    return { code: 200, body: { text, left: await this.desk.left(w) } };
   }
 
   /** Личный маршрут: профиль ученика и кандидаты из базы кружка (src/games/kruzhok/route.ts) → вступление и шаги
    * только из кандидатов. */
   async route(b: RouteAsk, ctx: Ctx): Promise<Reply> {
-    if (!this.enabled) return err(503, 'off', 'Михалыч ещё не пришёл в кружок. Загляни чуть позже!');
-    const w = await this.who(ctx);
-    if (!w.user) return w.deny;
+    if (!this.enabled) return err(503, 'off', WORDS.off);
+    const w = await this.desk.who(ctx, WORDS);
+    if ('deny' in w) return w.deny;
     const items = Array.isArray(b?.items) ? b.items.filter((x) => x && typeof x.id === 'string' && typeof x.title === 'string').slice(0, 24) : [];
     if (!items.length) return err(400, 'empty', 'Пока не из чего собрать маршрут — порешай задачи или сыграй партию с компьютером.');
-    const now = w.now;
-    if (!this.perMinute.take('u' + w.user.id, now) || !this.perUser.take('u' + w.user.id, now)) return err(429, 'often', 'Погоди, дай Михалычу дух перевести — спроси через минутку.');
-    if (!w.unlimited) {
-      const used = await this.acc.store.aiUsage(w.user.id, w.key);
-      if (used.cost >= this.userMicro) return err(429, 'zapoy', ZAPOY(w.back));
-    }
-    if ((await this.acc.store.aiTotal(monthOf(now))).cost >= this.siteMicro && !w.unlimited) return err(429, 'sick', SICK(now));
+    const no = await this.desk.gate(w, WORDS);
+    if (no) return no;
     const list = items.map((x, i) => `${i + 1}. [${cut(x.id, 60)}] ${cut(x.title, 120)} — ${cut(x.why, 160)}`).join('\n');
-    const r = await this.complete(
+    const r = await this.desk.complete(
       w,
+      WORDS,
       [
         { role: 'system', content: PERSONA },
         {
@@ -323,7 +215,7 @@ export class Mihalych {
     try {
       plan = JSON.parse(r.text.slice(r.text.indexOf('{'), r.text.lastIndexOf('}') + 1));
     } catch {
-      this.log('михалыч: маршрут не разобрался — ' + r.text.slice(0, 200));
+      this.desk.log('михалыч: маршрут не разобрался — ' + r.text.slice(0, 200));
       return err(502, 'empty', 'Михалыч начертил маршрут так, что сам не разобрал. Спроси ещё раз.');
     }
     const known = new Set(items.map((x) => x.id));
@@ -333,17 +225,12 @@ export class Mihalych {
       .filter((x: { id: string }) => known.has(x.id) && !seen.has(x.id) && seen.add(x.id))
       .slice(0, 7);
     if (!steps.length) return err(502, 'empty', 'Михалыч почесал затылок и ничего толком не предложил. Спроси ещё раз.');
-    const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, w.key);
-    return { code: 200, body: { intro: String(plan.intro ?? '').replace(/\*\*?|__/g, '').trim().slice(0, 800), steps, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
+    return { code: 200, body: { intro: String(plan.intro ?? '').replace(/\*\*?|__/g, '').trim().slice(0, 800), steps, left: await this.desk.left(w) } };
   }
 
-  /** Мастеру: расход за месяц. */
-  async admin(ctx: Ctx): Promise<Reply> {
-    const u = await this.acc.current(ctx);
-    const now = ctx.now ?? Date.now();
-    if (!u || !hasRight(await this.acc.store.rights(u.id, now), 'master', now)) return err(403, 'master', 'Только для Мастера.');
-    const t = await this.acc.store.aiTotal(monthOf(now));
-    return { code: 200, body: { month: monthOf(now), rub: t.cost / MICRO, requests: t.requests, users: t.users, siteRub: this.siteMicro / MICRO, userRub: this.userMicro / MICRO } };
+  /** Мастеру: расход за месяц (всех помощников). */
+  admin(ctx: Ctx): Promise<Reply> {
+    return this.desk.admin(ctx);
   }
 }
 

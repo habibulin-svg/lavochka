@@ -1,0 +1,5 @@
+/* Димон — блок помощника по покеру (разметка и основа — chess/mihalych.css) */
+.dm { color: #2a1206; }
+.dm .mh-head img { object-fit: cover; background: #3a2a1a; }
+.mh-dimon { align-self: flex-start; max-width: 95%; background: #fffaf0; border: 1px solid rgba(42, 18, 6, 0.18); }
+.pk-dmask { margin-top: 8px; }

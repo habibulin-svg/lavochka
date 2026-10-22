@@ -224,6 +224,10 @@ export const MIGRATIONS: string[] = [
   // 11 — подписка по ссылке Robokassa: её платежи приходят со своими номерами, номер хранится, чтобы не засчитать дважды
   `alter table plus_orders add column ext_inv text;
    create unique index plus_orders_ext on plus_orders (ext_inv) where ext_inv is not null;`,
+  // 12 — помощников двое (Михалыч в шахматах, Димон в покере): расход по каждому; запас пользователя — сумма по всем
+  `alter table ai_usage add column helper text not null default 'mihalych';
+   alter table ai_usage drop constraint ai_usage_pkey;
+   alter table ai_usage add primary key (user_id, month, helper);`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -799,22 +803,28 @@ export class PgAccountStore implements AccountStore {
   }
 
   async aiUsage(userId: number, month: string) {
-    const r = await this.pool.query('select cost_micro, requests from ai_usage where user_id = $1 and month = $2', [userId, month]);
-    return { cost: Number(r.rows[0]?.cost_micro ?? 0), requests: Number(r.rows[0]?.requests ?? 0) };
+    const r = await this.pool.query('select coalesce(sum(cost_micro), 0) as c, coalesce(sum(requests), 0) as n from ai_usage where user_id = $1 and month = $2', [userId, month]);
+    return { cost: Number(r.rows[0].c), requests: Number(r.rows[0].n) };
   }
 
-  async addAiUsage(userId: number, month: string, costMicro: number, tokensIn: number, tokensOut: number) {
+  async addAiUsage(userId: number, month: string, costMicro: number, tokensIn: number, tokensOut: number, helper = 'mihalych') {
     await this.pool.query(
-      `insert into ai_usage (user_id, month, cost_micro, requests, tokens_in, tokens_out) values ($1, $2, $3, 1, $4, $5)
-       on conflict (user_id, month) do update set cost_micro = ai_usage.cost_micro + excluded.cost_micro, requests = ai_usage.requests + 1,
+      `insert into ai_usage (user_id, month, helper, cost_micro, requests, tokens_in, tokens_out) values ($1, $2, $3, $4, 1, $5, $6)
+       on conflict (user_id, month, helper) do update set cost_micro = ai_usage.cost_micro + excluded.cost_micro, requests = ai_usage.requests + 1,
          tokens_in = ai_usage.tokens_in + excluded.tokens_in, tokens_out = ai_usage.tokens_out + excluded.tokens_out`,
-      [userId, month, Math.round(costMicro), tokensIn, tokensOut]
+      [userId, month, helper, Math.round(costMicro), tokensIn, tokensOut]
     );
   }
 
   async aiTotal(month: string) {
-    const r = await this.pool.query('select coalesce(sum(cost_micro), 0) as c, coalesce(sum(requests), 0) as n, count(*) as u from ai_usage where month = $1', [month]);
-    return { cost: Number(r.rows[0].c), requests: Number(r.rows[0].n), users: Number(r.rows[0].u) };
+    const r = await this.pool.query('select helper, sum(cost_micro) as c, sum(requests) as n, count(distinct user_id) as u from ai_usage where month = $1 group by rollup (helper)', [month]);
+    const helpers: Record<string, { cost: number; requests: number }> = {};
+    let all = { cost: 0, requests: 0, users: 0 };
+    for (const x of r.rows) {
+      if (x.helper == null) all = { cost: Number(x.c), requests: Number(x.n), users: Number(x.u) };
+      else helpers[x.helper] = { cost: Number(x.c), requests: Number(x.n) };
+    }
+    return { ...all, helpers };
   }
 
   async bumpStat(day: string, metric: string, key: string, delta: number) {
