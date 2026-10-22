@@ -8,7 +8,7 @@ import { settings, store } from './settings';
 import type { Options, SeatKind, SeatSpec } from './types';
 import { mountScreen, showScreen } from './ui';
 import { esc, h, plural } from './util';
-import type { GameModule } from './view';
+import type { GameModule, LaunchTable } from './view';
 
 interface SeatDraft {
   kind: SeatKind | 'off';
@@ -247,14 +247,17 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
 
   // ---------- запуск
   q('[data-a=start]').onclick = () => launch({ ...draft.options });
-  function launch(options: Options) {
+  function launch(options: Options, table?: LaunchTable) {
     Sound.unlock();
-    const seats: SeatSpec[] = seatsFor(draft.count).map((s) => {
+    const list = seatsFor(table ? table.count : draft.count);
+    // свой стол (турнир): один человек — первый «человек» из лобби или первое место, остальные — боты
+    const me = table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
+    const seats: SeatSpec[] = list.map((s, i) => {
       const st = draft.seats[s];
       const look = def.seats[s];
-      const kind = st.kind === 'off' ? 'bot' : st.kind;
-      const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? st.name || (onlyHuman() ? settings.name : '') || look.name : '';
-      return { seat: s, kind, level: st.level, name };
+      const kind = table ? (s === me ? 'human' : 'bot') : st.kind === 'off' ? 'bot' : st.kind;
+      const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? (table ? st.kind === 'human' && st.name : st.name) || (table || onlyHuman() ? settings.name : '') || look.name : '';
+      return { seat: s, kind, level: table?.levels?.[i] ?? st.level, name };
     });
     if (seats.some((s) => s.kind === 'remote')) void hostGame(mod, seats, options);
     else {

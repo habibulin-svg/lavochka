@@ -29,6 +29,14 @@ export interface ViewCtx<A = any> {
   look?(seat: number): string | null;
 }
 
+/** Свой запуск из блока home (турнир покера): сколько мест и боты какого уровня — человек один (первый «человек» из лобби
+ * или место 0), остальные места — боты. */
+export interface LaunchTable {
+  count: number;
+  /** Уровень бота по месту (по умолчанию — как выбран в лобби). */
+  levels?: number[];
+}
+
 export interface GameView<V = any, E = any> {
   mount(root: HTMLElement, ctx: ViewCtx): void;
   /** Отрисовать состояние сразу, без анимации. */
@@ -51,6 +59,8 @@ export interface GameView<V = any, E = any> {
   /** Чьё видео на поле крупнее остальных (шляпа: объясняющий; данетки: кто спрашивает). Камеры на поле стол ставит над аватарами
    * с [data-cam="<место>"] (см. core/seatcams.ts); без главного по игре крупным становится тот, кто говорит. */
   focusSeat?(view: V): number | null;
+  /** Имя места по ходу партии (турнир: за стол пересаживают других игроков); null — имя из лобби. */
+  seatName?(view: V, seat: number): string | null;
   destroy?(): void;
 }
 
@@ -72,7 +82,7 @@ export interface GameModule {
   /** Игра сама хранит свои незаконченные партии (головоломки — по штуке на каждую): общий «Продолжить» не нужен. */
   ownSaves?: boolean;
   /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */
-  home?(box: HTMLElement, launch: (options: Options) => void): void;
+  home?(box: HTMLElement, launch: (options: Options, table?: LaunchTable) => void): void;
   /** Персонажи, которых игрок выбирает себе в лобби (холдем 3D). По умолчанию место i — looks[i]. */
   looks?: Look[];
 }

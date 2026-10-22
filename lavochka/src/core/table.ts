@@ -604,7 +604,8 @@ export class Table {
   name(seat: number): string {
     const look = this.o.mod.def.seats[seat];
     const st = this.seats.find((s) => s.seat === seat);
-    return `<span class="nm" style="--c:${look?.ink ?? look?.color ?? '#333'}">${esc(st?.name || look?.name || 'Игрок')}</span>`;
+    const own = this.current && this.view.seatName ? this.view.seatName(this.current, seat) : null;
+    return `<span class="nm" style="--c:${look?.ink ?? look?.color ?? '#333'}">${esc(own || st?.name || look?.name || 'Игрок')}</span>`;
   }
 
   private kindLabel(s: SeatStatus) {
@@ -627,7 +628,7 @@ export class Table {
       ul.appendChild(
         h(`<li class="player${active ? ' active' : ''}${win ? ' winner' : ''}">
           <span class="chip" style="--c:${look.color};--d:${look.dark}"></span>${s.avatar ? avatarHtml(s.avatar, 'p-ava') : ''}
-          <span class="pinfo"><span class="pname">${esc(s.name)}${me}</span><span class="pkind">${this.kindLabel(s)}${off}</span></span>
+          <span class="pinfo"><span class="pname">${esc((this.current && this.view.seatName?.(this.current, s.seat)) || s.name)}${me}</span><span class="pkind">${this.kindLabel(s)}${off}</span></span>
           <span class="pstat">${stats}</span></li>`)
       );
     }

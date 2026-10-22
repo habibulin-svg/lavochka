@@ -9,11 +9,12 @@ import { apply, cfgFrom, deal, GAMES, isMix, makeView, maxPlayers, MIXES, newSta
 import { chooseOfc } from './ofc/ai';
 import { applyOfc, isOfc, makeOView, ofcMax, redactOfc, resultOfc, setupOfc, toActOfc, type OAction, type OEvent, type OfcMode, type OState, type OView } from './ofc/engine';
 import { describeOfc, OFC_PRESETS, OFC_RULES } from './ofc/rules';
+import { afterApply, isTour, isTourAction, tourApply, tourResult, tourSetup, type TourAction } from './tour';
 
 /** Всё, что ходит через def: обычный покер или китайский (OFC — свой движок без ставок, вид 'ofc'/'ofcp'). */
 export type AnyState = State | OState;
 export type AnyView = View | OView;
-export type AnyAction = Action | OAction;
+export type AnyAction = Action | OAction | TourAction;
 export type AnyEvent = Event | OEvent;
 export const isO = (s: object): s is OState => 'ofc' in s;
 const isOEv = (e: AnyEvent): e is OEvent => e.type[0] === 'o';
@@ -62,6 +63,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} вылетает.`;
     case 'end':
       return `🏁 Больше всех фишек — у <b>${name(ev.winner)}</b>.`;
+    case 'tour':
+      return ev.kind === 'big' || ev.kind === 'end' ? `<b>${ev.text}</b>` : ev.text;
   }
   return null;
 }
@@ -272,14 +275,22 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
     ...OFC_PRESETS,
   ],
 
-  setup: (seats, opts, rng) => (isOfc(opts.mode) ? setupOfc : setup)(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
+  setup: (seats, opts, rng) =>
+    isOfc(opts.mode) ? setupOfc(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng) : isTour(opts) ? tourSetup(seats, opts, cfgFrom(opts), rng) : setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
   toAct: (s) => (isO(s) ? toActOfc(s) : toAct(s)),
-  apply: (s, seat, a, rng) => (isO(s) ? applyOfc(s, seat, a as OAction, rng) : apply(s, seat, a as Action, rng)),
+  apply(s, seat, a, rng) {
+    if (isO(s)) return applyOfc(s, seat, a as OAction, rng);
+    if (isTourAction(a)) return tourApply(s, seat, a, rng);
+    const r = apply(s, seat, a as Action, rng);
+    return r && s.tour ? afterApply(r, rng) : r;
+  },
+  free: (s, _seat, a) => !isO(s) && !!s.tour && isTourAction(a) && a.what === 'rebuy',
   view: (s, seats) => (isO(s) ? makeOView(s, seats) : makeView(s, seats)),
   redact: (ev, seats) => (isOEv(ev) ? redactOfc(ev, seats) : redact(ev, seats)),
   result(s) {
     if (isO(s)) return resultOfc(s);
     if (!s.over) return null;
+    if (s.tour) return tourResult(s);
     const top = Math.max(...s.seats.map((p) => s.chips[p]));
     const scores: Record<number, number> = {};
     for (const p of s.seats) scores[p] = s.chips[p];
@@ -468,6 +479,19 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
           intro: `8-Game, раздача 18 — последняя на круге стада хай-лоу (${MIXES.eight.slots.map((x) => x.letter).join(' → ')}).`,
           steps: [A(2, { type: 'raise', to: 20 }, 'Серёга доводит до малой ставки.'), A(0, { type: 'fold' }, 'Вовка — пас.'), A(1, { type: 'fold' }, 'Ленка — пас, банк Серёге. Круг стада кончился — следующая раздача уже безлимитный холдем.')],
         },
+      },
+      {
+        title: 'Турниры: Sit&Go и MTT',
+        html: `<p>В турнире фишки — не очки: все покупают вход (<b>бай-ин</b>) и получают одинаковый стек, а <b>блайнды растут по уровням</b>.
+          Кто остался без фишек — выбыл; призы делят первые места. <b>Sit&Go</b> — один стол (вдвоём, на 6 или 9): платят 100%, 65/35 или 50/30/20.
+          <b>«Удвоение»</b> — половина стола получает по два бай-ина. <b>Многостоловый (MTT)</b> — 18…180 игроков, платят примерно 15% поля;
+          столы балансируют — игроков пересаживают, последние девять играют <b>финальный стол</b>. С середины турнира добавляется <b>анте</b>.</p>
+          <p><b>Пузырь</b> — когда до призов остался один вылет: тут фишку проиграть дороже, чем выиграть (это и считает <b>ICM</b> — сколько
+          призовых «стоит» стек). <b>M</b> — на сколько кругов блайндов и анте хватит стека: зелёная зона (20+) — играй во всю силу, жёлтая (10–20) — плотнее,
+          оранжевая (6–10) — входи первым рейзом, красная (меньше 6) — только ва-банк или пас.</p>
+          <p>Виды: <b>фриз-аут</b> — один вход; <b>ребай</b> — докупить стек, пока фишек не больше стартовых, в первые уровни, и <b>аддон</b> в перерыв;
+          <b>ре-энтри</b> — вылетел в начале — войди снова; <b>PKO</b> (прогрессивный нокаут) — половина бай-ина идёт в награду за голову:
+          за выбитого — половину его награды сразу, половину — к своей. Уровни здесь — по часам турнира: раздача «стоит» около минуты, так что часы стоят, пока вы думаете.</p>`,
       },
       ...OFC_RULES,
     ],

@@ -34,8 +34,9 @@
 .pk-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .pk-tabs button {
   font: inherit; font-size: 0.92em; padding: 6px 10px; border-radius: 8px; cursor: pointer;
-  border: 1px solid var(--line, #c9b98f); background: transparent; color: inherit; opacity: 0.6;
+  border: 1px solid var(--line, #c9b98f); background: transparent; color: inherit;
 }
+.pk-tabs button[aria-disabled] { opacity: 0.55; }
 .pk-tabs button.on { opacity: 1; background: #14532d; border-color: #14532d; color: #fff; font-weight: 600; }
 .pk-tabs button small { display: block; font-size: 0.72em; opacity: 0.85; line-height: 1; }
 .pk-lobby-hint { margin: 6px 0 0; font-size: 0.88em; opacity: 0.8; min-height: 2.4em; }
@@ -47,3 +48,69 @@
 /* Таблица роялти в правилах китайского покера. */
 .pk-roy { border-collapse: collapse; margin: 6px 0; font-size: 0.92em; }
 .pk-roy td, .pk-roy th { border: 1px solid rgba(128, 110, 80, 0.5); padding: 3px 6px; text-align: left; vertical-align: top; }
+
+/* Турниры в лобби: свой блок вместо «Правил партии» и мест. */
+.home-screen.pk-tour-mode .home-card > h2,
+.home-screen.pk-tour-mode .count-row,
+.home-screen.pk-tour-mode .seat-rows,
+.home-screen.pk-tour-mode .prefs,
+.home-screen.pk-tour-mode .home-card > .hint,
+.home-screen.pk-tour-mode .home-card > .buttons,
+.home-screen.pk-tour-mode .home-card > .err,
+.home-screen.pk-tour-mode .opts-card { display: none !important; }
+.pk-tform { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.pk-trow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.pk-trow > span:first-child { min-width: 92px; font-weight: 600; font-size: 0.92em; }
+.pk-trow select { font: inherit; padding: 4px 6px; border-radius: 6px; max-width: 100%; }
+.pk-seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.pk-seg button {
+  font: inherit; font-size: 0.9em; padding: 5px 9px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--line, #c9b98f); background: transparent; color: inherit;
+}
+.pk-seg button.on { background: #14532d; border-color: #14532d; color: #fff; }
+.pk-seg button small { opacity: 0.75; font-size: 0.8em; }
+.pk-tcheck { font-size: 0.92em; cursor: pointer; }
+.pk-tcheck small, .pk-tq { opacity: 0.75; }
+.pk-tinfo { margin: 0; font-size: 0.85em; opacity: 0.85; line-height: 1.4; }
+.pk-bank { border: 1px dashed #c9a24a; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; gap: 6px; background: rgba(201, 162, 74, 0.08); }
+.pk-bankinfo { font-size: 0.9em; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pk-tstart { width: 100%; }
+.pk-terr { margin: 0; color: #b3322a; font-size: 0.88em; min-height: 0; }
+
+/* Экран турнира поверх стола. */
+.pk-tour-host { position: relative; }
+.pk-tbar {
+  position: absolute; z-index: 30; top: 6px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 12px);
+  padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255, 233, 168, 0.35); cursor: pointer;
+  background: rgba(10, 20, 14, 0.78); color: #f3ead2; font: 13px/1.3 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pk-tbar b { color: #ffe9a8; }
+.pk-tmore { opacity: 0.6; }
+.pk-z { display: inline-block; padding: 0 5px; border-radius: 5px; font-weight: 700; color: #111; }
+.pk-z-green { background: #6fcf7f; }
+.pk-z-yellow { background: #f3d55b; }
+.pk-z-orange { background: #f39a4b; }
+.pk-z-red { background: #e5564b; color: #fff; }
+.pk-z-dead { background: #555; color: #fff; }
+.pk-tpanel { position: absolute; z-index: 31; top: 40px; left: 50%; transform: translateX(-50%); width: min(440px, calc(100% - 16px)); max-height: calc(100% - 50px); overflow: auto; }
+.pk-tbox { background: #f6efdc; color: #2a2016; border-radius: 10px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); font-size: 14px; }
+.pk-thead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pk-tclose { border: 0; background: transparent; font-size: 18px; cursor: pointer; color: inherit; }
+.pk-tbox h4 { margin: 10px 0 4px; font-size: 14px; }
+.pk-tbox p { margin: 4px 0; }
+.pk-tgrid { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin-top: 6px; }
+.pk-tgrid > span { opacity: 0.7; }
+.pk-tlist { margin: 0; padding-left: 26px; }
+.pk-tlist li { padding: 1px 0; }
+.pk-tlist li > span { display: inline-block; min-width: 50%; }
+.pk-tlist li.me { font-weight: 700; color: #14532d; }
+.pk-tlist small { opacity: 0.75; font-weight: 400; }
+.pk-tres { font-size: 15px; }
+.pk-task { position: absolute; z-index: 32; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); }
+.pk-task[hidden] { display: none; }
+.pk-task-box { background: #f6efdc; color: #2a2016; border-radius: 12px; padding: 14px 16px; max-width: min(360px, calc(100% - 24px)); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+.pk-task-box p { margin: 0 0 10px; }
+.pk-rebuy { width: 100%; margin-top: 6px; }
+@media (max-width: 600px) {
+  .pk-tbar { font-size: 11.5px; padding: 3px 8px; top: 4px; }
+}

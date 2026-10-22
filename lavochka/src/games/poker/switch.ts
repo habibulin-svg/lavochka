@@ -6,6 +6,7 @@ import { createView as createHoldem } from '../holdem/view';
 import type { AnyEvent, AnyView } from './def';
 import type { Mode } from './engine';
 import { createOfcView } from './ofc/view';
+import { TourUI } from './tourui';
 import { createView as createFlat } from './view';
 
 export const holdemTable = (mode: Mode) => mode === 'holdem' || mode === 'shortdeck';
@@ -14,6 +15,7 @@ class SwitchView implements GameView<AnyView, AnyEvent> {
   private root!: HTMLElement;
   private ctx!: ViewCtx;
   private inner: GameView<any, any> | null = null;
+  private tour: TourUI | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.root = root;
@@ -24,15 +26,21 @@ class SwitchView implements GameView<AnyView, AnyEvent> {
     if (!this.inner) {
       this.inner = 'ofc' in v ? createOfcView() : holdemTable(v.cfg.mode) ? createHoldem() : createFlat();
       this.inner.mount(this.root, this.ctx);
+      if ('tour' in v && v.tour) this.tour = new TourUI(this.root, this.ctx);
     }
     return this.inner;
   }
 
   setView(v: AnyView) {
     this.pick(v).setView(v);
+    if (!('ofc' in v)) this.tour?.update(v);
   }
-  play(events: AnyEvent[], v: AnyView) {
-    return this.pick(v).play(events, v);
+  async play(events: AnyEvent[], v: AnyView) {
+    await this.pick(v).play(events, v);
+    if (!('ofc' in v)) this.tour?.update(v);
+  }
+  seatName(v: AnyView, seat: number) {
+    return 'ofc' in v ? null : TourUI.seatName(v, seat);
   }
   setTurn(toAct: number[], interactive: number[]) {
     this.inner?.setTurn(toAct, interactive);
@@ -44,6 +52,7 @@ class SwitchView implements GameView<AnyView, AnyEvent> {
     return this.pick(v).playerStats?.(v, seat) ?? '';
   }
   destroy() {
+    this.tour?.destroy();
     this.inner?.destroy?.();
   }
 }

@@ -18,6 +18,7 @@
 import type { Options, Rng } from '../../core/types';
 import { sameCard, type Card, type Suit } from '../../cards/deck';
 import { allCards, badugi, badugiSize, high, highCat, highName, highSD, low27, low8, lowA5, omahaHigh } from './hands';
+import type { TourEvKind, TourState } from './tour';
 
 export type Game = 'holdem' | 'shortdeck' | 'pineapple' | 'crazy' | 'omaha4' | 'omaha5' | 'courchevel' | 'stud7' | 'stud5' | 'razz' | 'draw5' | 'td27' | 'tda5' | 'badugi' | 'badeucy' | 'badacey';
 export type Mix = 'horse' | 'eight';
@@ -254,6 +255,12 @@ export interface State {
   over: boolean;
   /** История текущей (или только что сыгранной) раздачи. */
   rec: HandRecord | null;
+  /** Турнир (poker/tour.ts): раздачу между раздачами ведёт он — уровни, вылеты, ребаи, пересадки. */
+  tour?: TourState;
+  /** Турнир: раздача сыграна, следующую сдаст турнир. */
+  between?: boolean;
+  /** Турнир: место решает «ребай / ре-энтри / аддон» — торговли нет. */
+  decide?: { seat: number; what: 'rebuy' | 'reentry' | 'addon' } | null;
 }
 
 export interface View extends State {
@@ -276,7 +283,9 @@ export type Event =
   | { type: 'bust'; seat: number }
   /** Раздача сыграна: её история. */
   | { type: 'hand'; rec: HandRecord }
-  | { type: 'end'; winner: number };
+  | { type: 'end'; winner: number }
+  /** Турнир: уровень, вылет и место, пересадка, пузырь, итог (poker/tour.ts). */
+  | { type: 'tour'; kind: TourEvKind; text: string };
 
 export const info = (s: Pick<State, 'game'>) => GAMES[s.game];
 export const structOf = (s: Pick<State, 'struct'>): Struct => s.struct;
@@ -396,6 +405,7 @@ const SUIT_ORDER: Suit[] = ['C', 'D', 'H', 'S'];
 
 export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
   const s: State = { ...s0, chips: s0.chips.slice() };
+  if (s.between) s.between = false;
   const ev: Event[] = [];
   s.hand++;
   if (s.cfg.every && s.hand > 1 && (s.hand - 1) % s.cfg.every === 0) {
@@ -527,7 +537,7 @@ export function setup(seats: number[], opts: Options, rng: Rng): State {
   return deal(newState(cfgFrom(opts), seats), rng).state;
 }
 
-export const toAct = (s: State): number[] => (s.over ? [] : [s.turn]);
+export const toAct = (s: State): number[] => (s.over ? [] : s.decide ? [s.decide.seat] : s.between ? [] : [s.turn]);
 export const toCall = (s: Pick<State, 'current' | 'bet' | 'chips'>, p: number) => Math.min(s.chips[p], Math.max(0, s.current - s.bet[p]));
 
 /** Допустимый рейз «до»: [мин, макс] или null. */
@@ -810,6 +820,11 @@ export function finishHand(s: State, ev: Event[], rng: Rng, uncontested: boolean
     ev.push({ type: 'hand', rec: r });
   }
   for (const p of s.inHand) if (s.chips[p] === 0) ev.push({ type: 'bust', seat: p });
+  // турнир сам решает, что дальше (poker/tour.ts)
+  if (s.tour) {
+    s.between = true;
+    return { state: s, events: ev };
+  }
   const left = live(s);
   if (left.length <= 1 || (s.cfg.hands > 0 && s.hand >= s.cfg.hands)) {
     s.over = true;
@@ -851,7 +866,7 @@ function clone(s0: State): State {
 export const maxDraw = (s: State) => info(s).cards;
 
 export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
-  if (s0.over || seat !== s0.turn || !a || typeof a !== 'object') return null;
+  if (s0.over || s0.decide || s0.between || seat !== s0.turn || !a || typeof a !== 'object') return null;
   const s = clone(s0);
   const ev: Event[] = [];
   if (s.phase === 'discard') {
