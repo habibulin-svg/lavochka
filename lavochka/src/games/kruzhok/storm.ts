@@ -9,6 +9,7 @@ import { play, type Move, type State } from '../chess/engine';
 import { checkMark, fromUci, position, toUci } from '../chess/notation';
 import { loadPuzzles, type Puzzle } from './data';
 import { addStars } from './path';
+import { touch } from './cloud';
 
 const TIME = 180;
 const PENALTY = 10;
@@ -173,6 +174,7 @@ export function mountStorm(stage: HTMLElement, panel: HTMLElement) {
     const record = solved > best;
     if (record) {
       store.set(BEST, solved);
+      touch();
       if (solved >= 5) addStars(10, 'новый рекорд штурма');
     }
     record ? Sound.win() : Sound.turn();

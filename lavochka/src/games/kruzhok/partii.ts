@@ -252,6 +252,7 @@ export function mountGame(stage: HTMLElement, panel: HTMLElement, id: string, ba
       onEnd: (ok) => {
         if (ok && !(store.get<string[]>('kruzhok.mated', []).includes(id))) {
           store.set('kruzhok.mated', [...store.get<string[]>('kruzhok.mated', []), id]);
+          touch();
           addStars(5, 'партия доиграна до мата');
         }
       },

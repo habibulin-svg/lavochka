@@ -4,7 +4,7 @@
 import { store } from '../../core/settings';
 import { currentUser } from '../../site/account';
 
-const KEYS = ['kruzhok.progress', 'kruzhok.lessons', 'kruzhok.classics', 'kruzhok.path'] as const;
+const KEYS = ['kruzhok.progress', 'kruzhok.lessons', 'kruzhok.classics', 'kruzhok.path', 'kruzhok.storm', 'kruzhok.mated'] as const;
 const AT = 'kruzhok.at';
 let timer = 0;
 
