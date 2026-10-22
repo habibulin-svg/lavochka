@@ -34,7 +34,13 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   const botRng = new SeededRng(seed ^ 0x5bd1e995);
   if (def.realtime) return simulateRealtime(def, a, seats, botRng);
   let steps = 0;
+  let pause = Date.now();
   while (!a.result && steps < maxSteps) {
+    // передышка потоку: долгий синхронный цикл не даёт vitest обмениваться с воркером («Timeout calling onTaskUpdate»)
+    if (Date.now() - pause > 200) {
+      await new Promise((r) => setImmediate(r));
+      pause = Date.now();
+    }
     const toAct = a.toAct();
     if (!toAct.length) return { steps, finished: false, winners: [], error: 'никто не ходит, а результата нет' };
     const seat = toAct[0];

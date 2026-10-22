@@ -14,10 +14,11 @@ tools: Bash, Read, Grep, Glob
 Команды:
 | Команда | Что делает |
 |---|---|
-| `npm run check` | `tsc --noEmit` + все тесты (по умолчанию запускай её) |
+| `npm run check:quick` | `tsc` + тесты, партии ботов — только в изменённых играх (~2 мин; по ходу работы) |
+| `npm run check` | `tsc --noEmit` + все тесты (~6 мин; перед пушем — по умолчанию запускай её) |
 | `npx vitest run tests/<файл>` | один файл тестов |
 | `npx vitest run -t "<имя>"` | тесты по имени |
-| `SIM_GAMES=40 npx vitest run tests/games.test.ts` | длинный прогон ботов (если попросили) |
+| `SIM_GAMES=40 npx vitest run tests/games-` | длинный прогон ботов (если попросили) |
 | `npm run build` | сборка сайта и сервера |
 
 Правила:

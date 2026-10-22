@@ -29,7 +29,7 @@ const cacheFile = join(cacheDir, 'last-check');
 if (existsSync(cacheFile) && readFileSync(cacheFile, 'utf8') === fp) process.exit(0);
 
 const tsc = run(join(APP, 'node_modules', 'typescript', 'bin', 'tsc'), ['--noEmit', '--pretty', 'false']);
-const tests = tsc.ok ? run(join(APP, 'node_modules', 'vitest', 'vitest.mjs'), ['run', '--reporter=dot']) : { ok: false, out: '(тесты не запускались: сначала типы)' };
+const tests = tsc.ok ? run(join(APP, 'node_modules', 'vitest', 'vitest.mjs'), ['run', '--reporter=dot', '--config', 'vitest.quick.config.ts']) : { ok: false, out: '(тесты не запускались: сначала типы)' };
 
 if (tsc.ok && tests.ok) {
   mkdirSync(cacheDir, { recursive: true });

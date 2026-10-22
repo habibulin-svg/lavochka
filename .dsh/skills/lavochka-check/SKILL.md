@@ -18,7 +18,7 @@ npm run check
 | `npm run check` | `tsc --noEmit` + все тесты — **обязательно перед коммитом** |
 | `npx vitest run tests/<файл>` | один файл тестов |
 | `npx vitest run -t "<имя>"` | тесты по имени |
-| `$env:SIM_GAMES=40; npx vitest run tests/games.test.ts` | длинный прогон ботов |
+| `$env:SIM_GAMES=40; npx vitest run tests/games-` | длинный прогон ботов |
 | `npm run build` | `dist/` (сайт) + `dist-server/` (сервер) |
 
 Быстрая проверка только типов без записи (ничего не меняет в дереве):
