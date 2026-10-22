@@ -419,7 +419,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await plusApi(plus, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
-  if (path === '/api/mihalych' || path === '/api/admin/mihalych') {
+  if (path === '/api/mihalych' || path === '/api/mihalych/route' || path === '/api/admin/mihalych') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await mihalychApi(mihalych, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }

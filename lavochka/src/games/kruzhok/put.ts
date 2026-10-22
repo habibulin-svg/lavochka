@@ -15,6 +15,14 @@ import { dayStreak, dueMistakes, loadProgress } from './progress';
 import { rankOf } from './rating';
 import { DAILY, mountTrainer, todayKey } from './trainer';
 import { openDiploma } from './diploma';
+import { mountRouteCard } from './route-ui';
+import type { RouteItem } from './route';
+import { mountEtude } from './etyudy';
+import { mountAnalysis } from './analysis';
+import { loadMyGames } from './mygames';
+import { themeName } from './themes';
+import { fromUci, position, ruSan } from '../chess/notation';
+import { play } from '../chess/engine';
 import { store } from '../../core/settings';
 
 const ICON: Record<PathNode['kind'], string> = { lesson: '📖', drill: '🧩', game: '♟', exam: '🎓' };
@@ -24,6 +32,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
   let nodes: PathNode[] = [];
   let lessons: LessonInfo[] = [];
   let sub: { destroy(): void } | null = null;
+  let card: { destroy(): void } | null = null;
 
   const page = h(`<div class="kz-journal sheet kz-put"><h2>Путь кружка</h2><small class="hint">Раскрываю тетрадь…</small></div>`);
   const side = h(`<div class="kz-tr kz-put-side"></div>`);
@@ -64,6 +73,48 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
           onDone: () => completeNode(n.id, exam ? 30 : 5, exam ? `зачёт сдан: ${n.part}` : 'закрепление пройдено'),
           next: nextBtn(n),
         },
+      });
+    }
+  };
+
+  /** Шаг личного маршрута Михалыча: урок, задачи по теме, этюд, партия мастера, своя ошибочная позиция. */
+  const openItem = (it: RouteItem) => {
+    const [kind, a, b] = it.id.split(':');
+    const back = { label: 'К пути', on: toPath };
+    const shut = () => {
+      sub?.destroy();
+      page.hidden = true;
+      side.hidden = true;
+    };
+    if (kind === 'lesson') {
+      const l = lessons.find((x) => x.id === a);
+      if (!l) return;
+      shut();
+      sub = mountLesson(stage, panel, l, lessons, toPath, () => {}, { backLabel: 'К пути' });
+    } else if (kind === 'drill') {
+      shut();
+      sub = mountTrainer(stage, panel, { drill: { themes: [a], title: themeName(a) ?? it.title }, back });
+    } else if (kind === 'etude') {
+      shut();
+      const one = (id: string): { destroy(): void } => mountEtude(stage, panel, id, toPath, (next) => (sub?.destroy(), (sub = one(next))), 'К пути');
+      sub = one(a);
+    } else if (kind === 'game') {
+      shut();
+      sub = mountGame(stage, panel, a, toPath, 'К пути');
+    } else if (kind === 'mine') {
+      const g = loadMyGames().find((x) => String(x.at) === a);
+      const ply = Number(b);
+      if (!g) return;
+      // позиция перед ошибкой: какой ход был сыгран — словами
+      let s = position();
+      for (const u of g.moves.slice(0, ply)) s = play(s, fromUci(s, u)!);
+      const m = fromUci(s, g.moves[ply]);
+      shut();
+      sub = mountAnalysis(stage, panel, {
+        moves: g.moves.slice(0, ply),
+        flipped: g.side === 1,
+        back,
+        note: `Твоя партия: здесь ты сыграл ${m ? ruSan(s, m) : 'другое'}, и это была ошибка. Подумай сам, как было лучше, — потом посмотри, что предлагает движок.`,
       });
     }
   };
@@ -143,6 +194,8 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
       };
     const go = side.querySelector<HTMLButtonElement>('.kz-put-go');
     if (go && next) go.onclick = () => openNode(next);
+    card?.destroy();
+    card = mountRouteCard(side, openItem);
   };
 
   void Promise.all([loadLessonIndex(), loadClassics().catch(() => [])])
@@ -159,6 +212,7 @@ export function mountPut(stage: HTMLElement, panel: HTMLElement) {
     destroy() {
       alive = false;
       sub?.destroy();
+      card?.destroy();
       page.remove();
       side.remove();
     },

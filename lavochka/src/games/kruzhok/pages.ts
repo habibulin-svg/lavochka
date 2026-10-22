@@ -1,6 +1,6 @@
 /* Шахматный кружок — разделы и адреса страниц (без DOM: нужны экрану, пререндеру и тестам).
  * Раздел — свой адрес `/shahmatnyj-kruzhok/<раздел>/`; внутри — страницы урока, партии, семейства дебютов и словаря:
- * /shahmatnyj-kruzhok/uchebnik/<урок>/, /partii/<партия>/, /debyuty/<семейство>/, /terminy/. */
+ * /shahmatnyj-kruzhok/uchebnik/<урок>/, /partii/<партия>/, /etyudy/<этюд>/, /debyuty/<семейство>/, /terminy/. */
 
 export const KRUZHOK_PATH = 'shahmatnyj-kruzhok';
 
@@ -10,6 +10,7 @@ export const MODES = [
   { id: 'uchebnik', label: 'Учебник', hint: 'от правил до стратегии, шаг за шагом', path: 'uchebnik' },
   { id: 'zadachi', label: 'Задачи', hint: 'решать по рейтингу или по теме', path: 'zadachi' },
   { id: 'shturm', label: 'Штурм', hint: 'задачи на время: три минуты', path: 'shturm' },
+  { id: 'etyudy', label: 'Этюды', hint: 'классика композиции: найди путь автора', path: 'etyudy' },
   { id: 'partii', label: 'Партии', hint: 'классика: «А как сходил бы ты?»', path: 'partii' },
   { id: 'razbor', label: 'Доска с движком', hint: 'разобрать свою партию или позицию', path: 'razbor' },
   { id: 'enciklopediya', label: 'Энциклопедия', hint: 'дебюты и термины', path: 'enciklopediya' },
@@ -17,7 +18,7 @@ export const MODES = [
 ] as const;
 
 /** Вложенные страницы: часть адреса после кружка → раздел. */
-const SUBS: Record<string, string> = { uchebnik: 'uchebnik', partii: 'partii', debyuty: 'enciklopediya', terminy: 'enciklopediya' };
+const SUBS: Record<string, string> = { uchebnik: 'uchebnik', partii: 'partii', etyudy: 'etyudy', debyuty: 'enciklopediya', terminy: 'enciklopediya' };
 
 const RU: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'j', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p',
@@ -50,6 +51,7 @@ export function parseKruzhok(pathname: string): { mode: string; sub?: string } |
 
 export const lessonPath = (id: string) => `/${KRUZHOK_PATH}/uchebnik/${id}/`;
 export const classicPath = (id: string) => `/${KRUZHOK_PATH}/partii/${id}/`;
+export const etudePath = (id: string) => `/${KRUZHOK_PATH}/etyudy/${id}/`;
 export const familyPath = (family: string) => `/${KRUZHOK_PATH}/debyuty/${slug(family)}/`;
 export const termsPath = () => `/${KRUZHOK_PATH}/terminy/`;
 export const sectionPath = (mode: string) => {

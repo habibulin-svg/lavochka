@@ -5,6 +5,7 @@ import { currentUser } from '../../site/account';
 import { loadDone, resetLessons } from './lessons';
 import { loadPath, resetPath } from './path';
 import { loadAnswers, resetAnswers } from './partii';
+import { loadSolvedEtudes, resetEtudes } from './etyudy';
 import { dayStreak, loadProgress, resetProgress } from './progress';
 import { RANKS, rankOf } from './rating';
 
@@ -24,6 +25,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
       <div><small>Звёзды кружка</small><b>⭐ ${loadPath().stars}</b><small>грамот: ${Object.keys(loadPath().diplomas).length}</small></div>
       <div><small>Учебник</small><b>${Object.keys(loadDone()).length}</b><small>уроков пройдено</small></div>
       <div><small>Классические партии</small><b>${answers.filter((x) => x === 1).length} из ${answers.length}</b><small>ходов мастеров найдено</small></div>
+      <div><small>Этюды</small><b>${Object.keys(loadSolvedEtudes()).length}</b><small>${Object.values(loadSolvedEtudes()).filter((x) => x === 1).length} без подсказки</small></div>
       <div><small>Занимаетесь подряд</small><b>${dayStreak(p)} дн.</b><small>лучшая серия задач — ${p.best}</small></div>
     </div>
     <h3>Рейтинг</h3>
@@ -78,6 +80,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
     }
     resetProgress();
     resetAnswers();
+    resetEtudes();
     resetLessons();
     resetPath();
     onReset();

@@ -241,12 +241,27 @@ export class Mihalych {
     const total = await this.acc.store.aiTotal(month);
     if (total.cost >= this.siteMicro && !w.unlimited) return err(429, 'sick', SICK(now));
 
+    const r = await this.complete(w, buildMessages(b), 400);
+    if ('code' in r) return r;
+    const text = r.text.replace(/\*\*?|__|^#+\s*/gm, '').trim();
+    if (!text) return err(502, 'empty', 'Михалыч почесал затылок и промолчал. Спроси по-другому.');
+    const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, w.key);
+    return { code: 200, body: { text, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
+  }
+
+  /** Запрос к модели и учёт расхода (личный период и календарный месяц). Ответ модели или отказ. */
+  private async complete(
+    w: { user: { id: number }; key: string; now: number },
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+    maxTokens: number,
+  ): Promise<{ text: string } | Reply> {
+    const month = monthOf(w.now);
     let res;
     try {
       res = await this.http(API, {
         method: 'POST',
         headers: { authorization: `Bearer ${this.conf.key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: this.model, messages: buildMessages(b), max_tokens: 400, temperature: 0.5, reasoning: { enabled: false }, usage: { include: true } }),
+        body: JSON.stringify({ model: this.model, messages, max_tokens: maxTokens, temperature: 0.5, reasoning: { enabled: false }, usage: { include: true } }),
         signal: AbortSignal.timeout(40_000),
       });
     } catch (e) {
@@ -264,9 +279,6 @@ export class Mihalych {
     } catch {
       return err(502, 'gateway', 'Михалыч что-то пробормотал невнятное. Спроси ещё раз.');
     }
-    const text = String(j?.choices?.[0]?.message?.content ?? '')
-      .replace(/\*\*?|__|^#+\s*/gm, '')
-      .trim();
     const u = j?.usage ?? {};
     const tin = Number(u.prompt_tokens) || 0;
     const tout = Number(u.completion_tokens) || 0;
@@ -276,9 +288,53 @@ export class Mihalych {
     // строка календарного месяца — для общего потолка и админки, строка периода — личный запас
     await this.acc.store.addAiUsage(w.user.id, month, micro, tin, tout);
     if (w.key !== month) await this.acc.store.addAiUsage(w.user.id, w.key, micro, tin, tout);
-    if (!text) return err(502, 'empty', 'Михалыч почесал затылок и промолчал. Спроси по-другому.');
+    return { text: String(j?.choices?.[0]?.message?.content ?? '') };
+  }
+
+  /** Личный маршрут: профиль ученика и кандидаты из базы кружка (src/games/kruzhok/route.ts) → вступление и шаги
+   * только из кандидатов. */
+  async route(b: RouteAsk, ctx: Ctx): Promise<Reply> {
+    if (!this.enabled) return err(503, 'off', 'Михалыч ещё не пришёл в кружок. Загляни чуть позже!');
+    const w = await this.who(ctx);
+    if (!w.user) return w.deny;
+    const items = Array.isArray(b?.items) ? b.items.filter((x) => x && typeof x.id === 'string' && typeof x.title === 'string').slice(0, 24) : [];
+    if (!items.length) return err(400, 'empty', 'Пока не из чего собрать маршрут — порешай задачи или сыграй партию с компьютером.');
+    const now = w.now;
+    if (!this.perMinute.take('u' + w.user.id, now) || !this.perUser.take('u' + w.user.id, now)) return err(429, 'often', 'Погоди, дай Михалычу дух перевести — спроси через минутку.');
+    if (!w.unlimited) {
+      const used = await this.acc.store.aiUsage(w.user.id, w.key);
+      if (used.cost >= this.userMicro) return err(429, 'zapoy', ZAPOY(w.back));
+    }
+    if ((await this.acc.store.aiTotal(monthOf(now))).cost >= this.siteMicro && !w.unlimited) return err(429, 'sick', SICK(now));
+    const list = items.map((x, i) => `${i + 1}. [${cut(x.id, 60)}] ${cut(x.title, 120)} — ${cut(x.why, 160)}`).join('\n');
+    const r = await this.complete(
+      w,
+      [
+        { role: 'system', content: PERSONA },
+        {
+          role: 'user',
+          content: `Ученик спрашивает: «Михалыч, что мне подтянуть?» Вот что про него известно (посчитано программой, верь этому):\n${cut(b.profile, 1500)}\n\nЧто есть в кружке под его слабые места (номер в квадратных скобках — код):\n${list}\n\nЗадание: составь личный маршрут из 4–7 шагов — только из этого списка, в разумном порядке (сначала главное). Ответь строго JSON без пояснений вокруг: {"intro": "2–3 предложения от тебя: что у ученика получается и что главное подтянуть, по данным выше", "steps": [{"id": "код из квадратных скобок", "say": "одно-два предложения: зачем этот шаг именно ему"}]}`,
+        },
+      ],
+      700,
+    );
+    if ('code' in r) return r;
+    let plan: { intro?: unknown; steps?: unknown };
+    try {
+      plan = JSON.parse(r.text.slice(r.text.indexOf('{'), r.text.lastIndexOf('}') + 1));
+    } catch {
+      this.log('михалыч: маршрут не разобрался — ' + r.text.slice(0, 200));
+      return err(502, 'empty', 'Михалыч начертил маршрут так, что сам не разобрал. Спроси ещё раз.');
+    }
+    const known = new Set(items.map((x) => x.id));
+    const seen = new Set<string>();
+    const steps = (Array.isArray(plan.steps) ? plan.steps : [])
+      .map((x: any) => ({ id: String(x?.id ?? '').replace(/^\[|\]$/g, ''), say: String(x?.say ?? '').replace(/\*\*?|__/g, '').trim().slice(0, 400) }))
+      .filter((x: { id: string }) => known.has(x.id) && !seen.has(x.id) && seen.add(x.id))
+      .slice(0, 7);
+    if (!steps.length) return err(502, 'empty', 'Михалыч почесал затылок и ничего толком не предложил. Спроси ещё раз.');
     const used = w.unlimited ? null : await this.acc.store.aiUsage(w.user.id, w.key);
-    return { code: 200, body: { text, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
+    return { code: 200, body: { intro: String(plan.intro ?? '').replace(/\*\*?|__/g, '').trim().slice(0, 800), steps, left: used ? Math.max(0, 1 - used.cost / this.userMicro) : null } };
   }
 
   /** Мастеру: расход за месяц. */
@@ -292,6 +348,12 @@ export class Mihalych {
 }
 
 /** Обработать адреса Михалыча; false — не наш адрес. */
+/** Запрос маршрута (src/games/kruzhok/route.ts). */
+export interface RouteAsk {
+  profile: string;
+  items: { id: string; title: string; why: string }[];
+}
+
 export async function mihalychApi(
   m: Mihalych,
   req: IncomingMessage,
@@ -301,13 +363,13 @@ export async function mihalychApi(
   readBody: (req: IncomingMessage, limit?: number) => Promise<string>
 ): Promise<boolean> {
   const path = url.pathname;
-  if (path !== '/api/mihalych' && path !== '/api/admin/mihalych') return false;
+  if (path !== '/api/mihalych' && path !== '/api/mihalych/route' && path !== '/api/admin/mihalych') return false;
   const ctx: Ctx = { sid: cookieOf(req), ip, ua: String(req.headers['user-agent'] || ''), site: siteOf(req) };
   if (req.method === 'GET') {
     send(req, res, path === '/api/admin/mihalych' ? await m.admin(ctx) : await m.status(ctx));
     return true;
   }
-  if (req.method !== 'POST' || path !== '/api/mihalych') {
+  if (req.method !== 'POST' || path === '/api/admin/mihalych') {
     send(req, res, { code: 405, body: { error: 'method' } });
     return true;
   }
@@ -315,13 +377,13 @@ export async function mihalychApi(
     send(req, res, { code: 403, body: { error: 'origin' } });
     return true;
   }
-  let b: Ask;
+  let b: any;
   try {
     b = JSON.parse((await readBody(req, 16384)) || '{}');
   } catch {
     send(req, res, { code: 400, body: { error: 'bad body' } });
     return true;
   }
-  send(req, res, await m.ask(b, ctx));
+  send(req, res, path === '/api/mihalych/route' ? await m.route(b as RouteAsk, ctx) : await m.ask(b as Ask, ctx));
   return true;
 }

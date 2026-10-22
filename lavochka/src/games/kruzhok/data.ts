@@ -175,3 +175,36 @@ export function loadLesson(file: string): Promise<Lesson> {
   const f = lessonFiles[file];
   return f ? f() : Promise.reject(new Error('нет урока ' + file));
 }
+
+/** Этюд: классическая композиция (подборка и проверка Stockfish — tools/kruzhok/etudes.ts). */
+export interface Etude {
+  id: string;
+  author: string;
+  year: number;
+  /** Откуда позиция (ссылка). */
+  source: string;
+  fen: string;
+  /** win — выигрывает сторона, чей ход; draw — делает ничью; mate — мат в mateIn ходов. */
+  goal: 'win' | 'draw' | 'mate';
+  mateIn?: number;
+  title: string;
+  /** Идея и история — показывается после решения. */
+  idea: string;
+  hint: string;
+  level: 1 | 2 | 3;
+  /** Главный вариант (UCI): ходы решающей стороны и защита автора. */
+  line: string[];
+}
+
+let etudes: Promise<Etude[]> | null = null;
+
+export function loadEtudes(): Promise<Etude[]> {
+  etudes ??= fetch(base + 'etudes.json')
+    .then((r) => r.json())
+    .then((j: { e: Etude[] }) => j.e)
+    .catch((e) => {
+      etudes = null;
+      throw e;
+    });
+  return etudes;
+}

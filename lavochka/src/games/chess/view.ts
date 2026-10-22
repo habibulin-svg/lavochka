@@ -6,6 +6,7 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
 import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, type Event, type Move, type Promo, type State } from './engine';
 import { mountCoach, uciMoves } from './coach';
+import { logMyGame } from '../kruzhok/mygames';
 import { pieceDefs, pieceRef } from './pieces';
 import './chess.css';
 
@@ -98,6 +99,8 @@ class ChessView implements GameView<State, Event> {
     const u = st.cfg.variant !== '960' && (bot || st.phase === 'over') ? uciMoves(st) : null;
     this.kz.hidden = !u || u.length < 2;
     if (u) this.kz.href = `/shahmatnyj-kruzhok/razbor/?hody=${u.join('-')}`;
+    // партия с компьютером закончилась — в журнал кружка, для личного маршрута Михалыча (kruzhok/mygames.ts)
+    if (u && bot && st.phase === 'over') logMyGame(u, c.mySeats[0] as 0 | 1, st.winner);
   }
 
   // ---------------------------------------------------------------- доска

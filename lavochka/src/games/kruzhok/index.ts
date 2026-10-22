@@ -15,6 +15,7 @@ import { syncKruzhok } from './cloud';
 import { mountPut } from './put';
 import { mountThumb } from './thumb';
 import { mountStorm } from './storm';
+import { mountEtudes } from './etyudy';
 import { Sound } from '../../core/audio';
 import './kruzhok.css';
 
@@ -29,7 +30,7 @@ const mod: ArcadeModule = {
   kind: 'arcade',
   id: 'kruzhok',
   title: 'Шахматный кружок',
-  about: 'Кружок при дворе: учебник от правил до стратегии, задачи с рейтингом и разрядами, классические партии с вопросом «А как сходил бы ты?», энциклопедия дебютов и терминов, разбор позиций движком.',
+  about: 'Кружок при дворе: учебник от правил до стратегии, задачи с рейтингом и разрядами, классические этюды, классические партии с вопросом «А как сходил бы ты?», энциклопедия дебютов и терминов, разбор позиций движком.',
   controls: `<p>Ход — нажмите на фигуру, потом на подсвеченное поле. В разборе ← → листают ходы.</p>
     <p><b>Задачи</b> подбираются под ваш рейтинг; неверный ход можно вернуть — движок покажет, чем он плох. Рейтинг меняется только за первую попытку, подсказка — задача не в зачёт.</p>
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
@@ -53,6 +54,8 @@ const mod: ArcadeModule = {
           ? mountAnalysis(root, panel, gameFromUrl())
           : mode === 'partii'
             ? mountClassics(root, panel, start)
+            : mode === 'etyudy'
+              ? mountEtudes(root, panel, start)
             : mode === 'uchebnik'
               ? mountLessons(root, panel, start)
               : mode === 'enciklopediya'
