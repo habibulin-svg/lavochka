@@ -115,6 +115,9 @@ export interface LessonStep {
   try?: { good: string[]; say?: string; hint?: string; reply?: string };
   /** «Собери звёздочки»: белые ходят подряд, чёрные стоят; собрать звёзды на полях и съесть все чёрные фигуры. */
   stars?: { at: string[]; say?: string; hint?: string };
+  /** «Доиграй против движка»: queen — провести пешку в ферзи (и не отдать), mate — поставить мат,
+   *  draw — продержаться moves ходов (по умолчанию 12) или добиться ничьей. Ученик играет за сторону, чей ход в fen. */
+  fight?: { goal: 'queen' | 'mate' | 'draw'; moves?: number; say?: string; hint?: string };
 }
 
 export interface Lesson {
