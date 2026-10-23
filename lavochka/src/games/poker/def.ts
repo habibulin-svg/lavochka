@@ -5,7 +5,7 @@ import type { GameDef, SeatSpec } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
-import { apply, cfgFrom, deal, GAMES, isMix, makeView, maxPlayers, MIXES, newState, recFor, setup, toAct, type Action, type Event, type Game, type Mode, type State, type Struct, type View } from './engine';
+import { apply, cfgFrom, deal, toCall, GAMES, isMix, makeView, maxPlayers, MIXES, newState, recFor, setup, toAct, type Action, type Event, type Game, type Mode, type State, type Struct, type View } from './engine';
 import { chooseOfc } from './ofc/ai';
 import { applyOfc, isOfc, makeOView, ofcMax, redactOfc, resultOfc, setupOfc, toActOfc, type OAction, type OEvent, type OfcMode, type OState, type OView } from './ofc/engine';
 import { describeOfc, OFC_PRESETS, OFC_RULES } from './ofc/rules';
@@ -297,6 +297,9 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
     return { winners: s.seats.filter((p) => s.chips[p] === top), text: `${top} фишек`, scores };
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isO(v) ? chooseOfc(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
+  // турнир по сети: отключившийся «сидит вне игры» — блайнды платит, чекает или сбрасывает (обмены и решения — за бота)
+  away: (v, seat) => (isO(v) || !v.tour || v.decide || v.phase !== 'bet' ? null : toCall(v, seat) > 0 ? { type: 'fold' } : { type: 'check' }),
+  awayText: (o) => (isTour(o) ? 'он «сидит вне игры»: блайнды платит, чек или пас' : null),
   describe: (ev, name) => (isOEv(ev) ? describeOfc(ev, name) : describe(ev, name)),
 
   showcase: () => {

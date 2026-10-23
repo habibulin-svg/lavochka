@@ -201,7 +201,7 @@ export function tourSetup(seats: SeatSpec[], opts: Options, cfg0: Cfg, rng: Rng)
     const sp = i < order.length ? seats.find((x) => x.seat === order[i])! : null;
     const name = sp ? sp.name.replace(/\s*\(бот\)$/, '') || `Игрок ${i + 1}` : nameFor(i);
     if (sp) used.set(name, 1);
-    players.push({ id: i, name, chips: start, out: 0, joined: true, joinAt: 0, human: sp?.kind === 'human', entries: 1, rebuys: 0, addon: false, bounty: bounty0, won: 0, prize: 0 });
+    players.push({ id: i, name, chips: start, out: 0, joined: true, joinAt: 0, human: !!sp && sp.kind !== 'bot', entries: 1, rebuys: 0, addon: false, bounty: bounty0, won: 0, prize: 0 });
   }
   const levelSec = SPEEDS[speed].min * 60;
   // поздняя регистрация: треть поля (кроме своего стола) садится в первые уровни
@@ -763,9 +763,17 @@ export function tourResult(s: State): { winners: number[]; text: string; scores:
   const winners = (humans.length ? humans.filter(good) : w ? [w] : []).map((p) => ids.indexOf(p.id)).filter((k) => k >= 0);
   const me = humans[0];
   const n = entriesOf(T);
-  const text = me
-    ? `${me.out}-е место из ${n}${me.prize + me.won ? ` — ${me.prize + me.won} очков` : ''}${T.don || me.out === 1 ? '' : `; победитель — ${w?.name ?? '—'}`}`
-    : `победитель — ${w?.name ?? '—'} (из ${n})`;
+  // по сети людей несколько: места всех, у кого лучше — выше
+  const text =
+    humans.length > 1
+      ? `победитель — ${w?.name ?? '—'} (из ${n}); ${humans
+          .slice()
+          .sort((a, b) => a.out - b.out)
+          .map((p) => `${p.name} — ${p.out}-е${p.prize + p.won ? ` (${p.prize + p.won} очков)` : ''}`)
+          .join(', ')}`
+      : me
+        ? `${me.out}-е место из ${n}${me.prize + me.won ? ` — ${me.prize + me.won} очков` : ''}${T.don || me.out === 1 ? '' : `; победитель — ${w?.name ?? '—'}`}`
+        : `победитель — ${w?.name ?? '—'} (из ${n})`;
   const scores: Record<number, number> = {};
   ids.forEach((id, k) => id >= 0 && (scores[k] = T.players[id].out));
   return { winners, text, scores };

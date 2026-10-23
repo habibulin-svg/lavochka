@@ -166,6 +166,10 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   redact?(ev: E, seats: number[] | 'all'): E | null;
   result(s: S): GameResult | null;
   bot: BotDef<V, A>;
+  /** Ход за человека, который потерял связь и не вернулся за время ожидания: «сидит вне игры» (покерный турнир — чек или пас).
+   * null — ходит бот, как в остальных играх. awayText — как сказать об этом за столом (null — «за него будет ходить бот»). */
+  away?(v: V, seat: number): A | null;
+  awayText?(opts: Options): string | null;
   /** Строка журнала для события (HTML). name(seat) — имя игрока, уже экранированное. */
   describe?(ev: E, name: (seat: number) => string): string | null;
   rules: RulesDoc;

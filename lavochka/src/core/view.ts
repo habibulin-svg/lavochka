@@ -37,6 +37,8 @@ export interface LaunchTable {
   levels?: number[];
   /** Какие места занять (школа покера: стиль бота закреплён за местом); человек — первое из них. */
   seats?: number[];
+  /** Сколько мест после человека ждут игроков по сети (турнир по сети); не пришедших заменят боты. */
+  remote?: number;
 }
 
 export interface GameView<V = any, E = any> {

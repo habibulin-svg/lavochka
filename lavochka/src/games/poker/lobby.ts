@@ -19,7 +19,7 @@ const TABS: { id: Tab; label: string; ready?: boolean; hint: string }[] = [
   { id: 'cash', label: 'Быстрая игра', ready: true, hint: 'Стол на очки: выберите вид покера в «Правилах партии», число игроков и садитесь. С друзьями — место «Сеть».' },
   { id: 'sng', label: 'Sit&Go', ready: true, hint: 'Турнир на один стол: блайнды растут по уровням, призы — первым местам.' },
   { id: 'mtt', label: 'Турниры', ready: true, hint: 'Многостоловый турнир: остальные столы играют сами, вас пересаживают, финальный стол — как в руме.' },
-  { id: 'net', label: 'По сети', hint: 'Сетевое лобби: столы и Sit&Go с живыми игроками.' },
+  { id: 'net', label: 'По сети', ready: true, hint: 'Sit&Go с друзьями: создайте стол и позовите их по коду или ссылке — свободные места займут боты, за столом чат и голос.' },
   { id: 'school', label: 'Школа', ready: true, hint: 'Уроки по шагам — от правил до финального стола: показ на столе, задачи «твой ход?» с разбором и игра против ботов нужного стиля.' },
   { id: 'stats', label: 'Моя статистика', ready: true, hint: 'Ваши VPIP, PFR и другие цифры, выигрыш на 100 раздач, турниры, история раздач с реплеером и разбором, выгрузка для трекеров.' },
 ];
@@ -37,6 +37,9 @@ interface Pick {
   bots: string;
   bank: boolean;
   buyin: number;
+  /** Sit&Go по сети: сколько мест ждут друзей и какой формат. */
+  friends: number;
+  netFmt: TourFmt;
 }
 
 const phone = () => typeof matchMedia === 'function' && matchMedia('(max-width: 700px)').matches;
@@ -80,6 +83,8 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     bots: '1',
     bank: false,
     buyin: 100,
+    friends: 1,
+    netFmt: 'sng6',
     ...store.get<Partial<Pick>>(KEY, {}),
     ...pageOf(),
   };
@@ -136,8 +141,10 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     `<div class="pk-seg" data-k="${key}">${list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" class="${v === cur ? 'on' : ''}">${l}</button>`).join('')}</div>`;
 
   function renderForm() {
-    const sng = st.tab === 'sng';
-    const fmt = sng ? st.sng : st.mtt;
+    // по сети — тот же Sit&Go, только места для друзей и без банкролла (у каждого свой, на чужом столе его не списать)
+    const net = st.tab === 'net';
+    const sng = st.tab === 'sng' || net;
+    const fmt = net ? st.netFmt : sng ? st.sng : st.mtt;
     const speed = sng ? st.speedS : st.speedM;
     const kinds: TourKind[] = sng ? (fmt === 'don' ? ['freeze'] : ['freeze', 'pko']) : ['freeze', 'rebuy', 'reentry', 'pko'];
     let kind = sng ? st.kindS : st.kindM;
@@ -153,6 +160,7 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     const pays = FMTS[fmt].don ? `${paid} из ${n} удваивают бай-ин` : pct.slice(0, 5).map((p) => `${Math.round(p * 100)}%`).join(' / ') + (paid > 5 ? ` … ${paid} мест` : '');
     const b = bankInfo();
     const fmts = (sng ? ['hu', 'sng6', 'sng9', 'don'] : ['mtt18', 'mtt45', 'mtt90', 'mtt180']) as TourFmt[];
+    const friends = Math.max(1, Math.min(n - 1, st.friends));
     const notes: string[] = [];
     if (kind === 'rebuy') notes.push(`Ребай — если фишек не больше стартовых, первые ${REBUY_LEVELS} уровней; потом перерыв и аддон (+${Math.round(stack * 1.5)}).`);
     if (kind === 'reentry') notes.push(`Ре-энтри — вылетел в первые ${LATE_LEVELS} уровней, можно войти снова.`);
@@ -164,10 +172,17 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
       <div class="pk-trow"><span>Скорость</span>${seg('speed', (Object.keys(SPEEDS) as TourSpeed[]).map((s) => [s, `${SPEEDS[s].label} <small>${SPEEDS[s].min} мин</small>`]), speed)}</div>
       ${kinds.length > 1 ? `<div class="pk-trow"><span>Вид</span>${seg('kind', kinds.map((k) => [k, k === 'pko' ? 'PKO' : KINDS[k]]), kind)}</div>` : ''}
       ${!sng && kind !== 'reentry' ? `<label class="pk-trow pk-tcheck"><input type="checkbox" class="pk-late" ${st.late ? 'checked' : ''}> Поздняя регистрация <small>(часть поля садится в первые ${LATE_LEVELS} уровней)</small></label>` : ''}
-      <div class="pk-trow"><span>Соперники</span>${seg('bots', BOTS, st.bots)}</div>
+      ${net ? `<div class="pk-trow"><span>Мест для друзей</span>${seg('friends', Array.from({ length: n - 1 }, (_, i) => [String(i + 1), String(i + 1)]), String(friends))}</div>` : ''}
+      <div class="pk-trow"><span>${net ? 'Боты на пустые места' : 'Соперники'}</span>${seg('bots', BOTS, st.bots)}</div>
       <p class="pk-tinfo">Стек ${stack.toLocaleString('ru-RU')} (${Math.round(stack / big)} ББ), уровень ${SPEEDS[speed].min} мин турнирного времени — часы идут раздачами и стоят, пока вы думаете.
         Анте — с ${sng ? 5 : 4}-го уровня. Платят: ${pays}.${notes.length ? `<br>${notes.join('<br>')}` : ''}</p>
-      <div class="pk-bank">
+      ${
+        net
+          ? `<p class="pk-tinfo">Вы получите код комнаты и ссылку — друзья заходят по ней и садятся за стол. Кого не дождались, заменят боты. Без банкролла.
+              Потерял связь — «сидит вне игры»: блайнды платит, чек или пас, пока не вернётся.</p>`
+          : ''
+      }
+      <div class="pk-bank"${net ? ' hidden' : ''}>
         <label class="pk-tcheck"><input type="checkbox" class="pk-bankon" ${st.bank ? 'checked' : ''}> На банкролл <small>(виртуальные очки: бай-ины, ROI, ITM)</small></label>
         ${
           st.bank
@@ -177,7 +192,7 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
             : '<small class="pk-tq">Быстрая игра — без банкролла: просто турнир.</small>'
         }
       </div>
-      <button type="button" class="btn primary pk-tstart">${sng ? 'Начать Sit&Go' : `Начать турнир на ${n}`}${st.bank ? ` · ${st.buyin} очков` : ''}</button>
+      <button type="button" class="btn primary pk-tstart">${net ? `Создать стол Sit&Go · ${friends} ${friends === 1 ? 'место' : friends < 5 ? 'места' : 'мест'} по сети` : sng ? 'Начать Sit&Go' : `Начать турнир на ${n}`}${st.bank && !net ? ` · ${st.buyin} очков` : ''}</button>
       <p class="pk-terr"></p>`;
     (form.querySelector('.pk-game') as HTMLSelectElement).onchange = (e) => {
       st.game = (e.target as HTMLSelectElement).value;
@@ -189,7 +204,8 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
         btn.onclick = () => {
           const v = btn.dataset.v!;
           const k = s.dataset.k;
-          if (k === 'fmt') st[sng ? 'sng' : 'mtt'] = v as TourFmt;
+          if (k === 'fmt') st[net ? 'netFmt' : sng ? 'sng' : 'mtt'] = v as TourFmt;
+          if (k === 'friends') st.friends = Number(v);
           if (k === 'speed') st[sng ? 'speedS' : 'speedM'] = v as TourSpeed;
           if (k === 'kind') st[sng ? 'kindS' : 'kindM'] = v as TourKind;
           if (k === 'bots') st.bots = v;
@@ -215,12 +231,13 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
         renderForm();
       };
     (form.querySelector('.pk-tstart') as HTMLButtonElement).onclick = () => {
-      if (st.bank && bankInfo().balance < st.buyin) {
+      if (st.bank && !net && bankInfo().balance < st.buyin) {
         (form.querySelector('.pk-terr') as HTMLElement).textContent = 'Не хватает очков на бай-ин — выберите поменьше или пополните банкролл (раз в сутки).';
         return;
       }
       const count = FMTS[fmt].mtt ? max : n;
       const levels = Array.from({ length: count }, (_, i) => (st.bots === 'mix' ? (i * 7 + Math.floor(Math.random() * 3)) % 3 : Number(st.bots)));
+      if (net) return launch({ ...game.options, tour: fmt, speed, tkind: kind, late: false, bank: false, buyin: 100 }, { count, levels, remote: friends });
       launch({ ...game.options, tour: fmt, speed, tkind: kind, late: !sng && st.late, bank: st.bank, buyin: st.bank ? st.buyin : 100 }, { count, levels });
     };
   }

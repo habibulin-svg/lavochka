@@ -251,11 +251,12 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     Sound.unlock();
     const list = table?.seats ?? seatsFor(table ? table.count : draft.count);
     // свой стол (турнир): один человек — первый «человек» из лобби или первое место, остальные — боты
-    const me = table?.seats ? list[0] : table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
+    // турнир по сети: человек — первое место, за ним места для друзей
+    const me = table?.seats || table?.remote ? list[0] : table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
     const seats: SeatSpec[] = list.map((s, i) => {
       const st = draft.seats[s];
       const look = def.seats[s];
-      const kind = table ? (s === me ? 'human' : 'bot') : st.kind === 'off' ? 'bot' : st.kind;
+      const kind = table ? (s === me ? 'human' : i <= (table.remote ?? 0) ? 'remote' : 'bot') : st.kind === 'off' ? 'bot' : st.kind;
       const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? (table ? st.kind === 'human' && st.name : st.name) || (table || onlyHuman() ? settings.name : '') || look.name : '';
       return { seat: s, kind, level: table?.levels?.[i] ?? st.level, name };
     });

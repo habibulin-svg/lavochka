@@ -366,9 +366,10 @@ export class Room {
       const grace = this.grace();
       const now = Date.now();
       for (const s of conn.seats) if (!this.isOnline(s)) this.offSince.set(s, now);
+      const then = this.def.awayText?.(this.options) ?? 'за него будет ходить бот';
       this.broadcast({
         t: 'info',
-        text: grace >= 1000 ? `${who}: потерял связь — ждём ${Math.round(grace / 1000)} с, потом за него будет ходить бот` : `${who}: потерял связь — пока за него ходит бот`,
+        text: grace >= 1000 ? `${who}: потерял связь — ждём ${Math.round(grace / 1000)} с, потом ${then}` : `${who}: потерял связь — пока ${then}`,
       });
       this.broadcast({ t: 'seats', seats: this.seatStatus() });
       this.pumpBots();
@@ -818,7 +819,9 @@ export class Room {
       const level = spec.kind === 'bot' ? spec.level : Math.floor((this.def.bot.levels.length - 1) / 2);
       let action: unknown = null;
       try {
-        action = await this.def.bot.choose(a.viewFor([seat]), seat, level, this.botRng);
+        // отключившийся человек «сидит вне игры», если игра так умеет; иначе за него ходит бот
+        const away = spec.kind === 'bot' ? null : (this.def.away?.(a.viewFor([seat]), seat) ?? null);
+        action = away ?? (await this.def.bot.choose(a.viewFor([seat]), seat, level, this.botRng));
       } catch (e) {
         console.error('bot failed', e);
         roomErrorHook?.(e, 'бот', this.def.id);
