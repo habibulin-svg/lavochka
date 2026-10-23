@@ -1,0 +1,22 @@
+/* Королевская игра Ура: снимок доски, фишки и лотки поверх, пирамидки в панели. */
+.ur-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+.ur-board { width: min(100cqw, calc(100cqh * 1696 / 1074)); height: auto; aspect-ratio: 1696 / 1074; user-select: none; }
+.ur-tray { fill: rgba(0, 0, 0, 0.22); stroke: rgba(255, 255, 255, 0.08); stroke-width: 3; }
+.ur-tlabel { fill: rgba(255, 255, 255, 0.28); font: 600 30px system-ui, sans-serif; text-anchor: middle; }
+.ur-pc.anim { transition: transform 0.14s ease-out; }
+.ur-pc .ur-ring { fill: none; stroke: transparent; stroke-width: 8; }
+.ur-pc.can { cursor: pointer; }
+.ur-pc.can .ur-ring { stroke: #fff2b0; stroke-dasharray: 20 14; animation: ur-glow 1s ease-in-out infinite; }
+.ur-pc.sel .ur-ring { stroke: #ffd84a; stroke-dasharray: none; animation: none; }
+.ur-target { cursor: pointer; }
+.ur-target circle { fill: rgba(255, 230, 120, 0.25); stroke: #ffe680; stroke-width: 8; stroke-dasharray: 22 12; animation: ur-glow 1s ease-in-out infinite; }
+.ur-target .ur-dot { fill: #ffe680; stroke: none; animation: none; }
+.ur-target.ur-ros circle { stroke: #ffb0d0; }
+.ur-lastc { fill: none; stroke: rgba(255, 240, 160, 0.7); stroke-width: 6; }
+.ur-dice { display: flex; align-items: center; gap: 10px; }
+.ur-dsvg { width: 220px; max-width: 70%; height: auto; }
+.ur-dsvg.rolling .ur-die { animation: ur-shake 0.5s ease-out; transform-box: fill-box; transform-origin: center; }
+.ur-val { font-size: 30px; min-width: 1.2em; text-align: center; }
+.ur-info { font-size: 14px; margin: 6px 0; }
+@keyframes ur-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes ur-shake { 0% { transform: rotate(-40deg) translateY(-8px); } 50% { transform: rotate(25deg); } 100% { transform: none; } }

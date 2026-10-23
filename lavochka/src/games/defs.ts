@@ -67,6 +67,8 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   foxgeese: () => import('./foxgeese/def').then((m) => m.def),
   tafl: () => import('./tafl/def').then((m) => m.def),
   bagchal: () => import('./bagchal/def').then((m) => m.def),
+  ur: () => import('./ur/def').then((m) => m.def),
+  senet: () => import('./senet/def').then((m) => m.def),
   renju: () => import('./renju/def').then((m) => m.def),
   mancala: () => import('./mancala/def').then((m) => m.def),
   ochko: () => import('./ochko/def').then((m) => m.def),

@@ -1,0 +1,23 @@
+/* Сенет: доска-ящик в коде, фишки поверх, палочки в панели. */
+.sn-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+.sn-board { width: min(100cqw, calc(100cqh * 1290 / 434)); height: auto; aspect-ratio: 1290 / 434; user-select: none; }
+.sn-num { font: 600 15px system-ui, sans-serif; opacity: 0.45; }
+.sn-dlabel { fill: rgba(255, 255, 255, 0.55); font: 600 20px system-ui, sans-serif; text-anchor: middle; }
+.sn-pc.anim { transition: transform 0.13s ease-out; }
+.sn-pc .sn-ring { fill: none; stroke: transparent; stroke-width: 5; }
+.sn-pc.can { cursor: pointer; }
+.sn-pc.can .sn-ring { stroke: #fff2b0; stroke-dasharray: 14 10; animation: sn-glow 1s ease-in-out infinite; }
+.sn-pc.sel .sn-ring { stroke: #ffd84a; stroke-dasharray: none; animation: none; }
+.sn-target { cursor: pointer; }
+.sn-target circle { fill: rgba(255, 230, 120, 0.25); stroke: #ffe680; stroke-width: 5; stroke-dasharray: 16 9; animation: sn-glow 1s ease-in-out infinite; }
+.sn-target.back circle { stroke: #ffa070; }
+.sn-target.water circle { stroke: #9fe0ff; }
+.sn-target .sn-dot { fill: #ffe680; stroke: none; animation: none; }
+.sn-lastc { fill: none; stroke: rgba(255, 240, 160, 0.75); stroke-width: 4; }
+.sn-sticks { display: flex; align-items: center; gap: 10px; }
+.sn-ssvg { width: 170px; max-width: 70%; height: auto; }
+.sn-ssvg.rolling .sn-stick { animation: sn-toss 0.45s ease-out; transform-box: fill-box; transform-origin: center; }
+.sn-val { font-size: 30px; min-width: 1.2em; text-align: center; }
+.sn-info { font-size: 14px; margin: 6px 0; }
+@keyframes sn-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes sn-toss { 0% { transform: translateY(-14px) rotate(-12deg) scaleY(0.3); } 60% { transform: rotate(6deg); } 100% { transform: none; } }

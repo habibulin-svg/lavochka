@@ -21,6 +21,8 @@ export const NAMES: Record<string, Names> = {
   mill: { ru: ['мельница онлайн', 'игра мельница', 'мельница на 9 камней', 'мельница 12 фишек', 'настольная игра мельница'], en: ["Nine men's morris", 'Mill', 'Merels', "Twelve men's morris", "Three men's morris"] },
   foxgeese: { ru: ['лиса и гуси онлайн', 'игра лиса и гуси', 'асальто', 'солитёр йога', 'игра йога СССР', 'солитер с колышками'], en: ['Fox and geese', 'Asalto', 'Peg solitaire', 'Solitaire board game'] },
   tafl: { ru: ['хнефатафл онлайн', 'шахматы викингов', 'тафл', 'таблут', 'брандубх', 'игра викингов'], en: ['Hnefatafl', 'Viking chess', 'Tafl', 'Tablut', 'Brandubh', 'Copenhagen hnefatafl', 'Fetlar'] },
+  ur: { ru: ['королевская игра ура', 'игра ура', 'ур настольная игра', 'шумерская игра', 'древнейшая настольная игра', 'игра двадцати клеток'], en: ['Royal Game of Ur', 'Game of Ur', 'Game of Twenty', 'Ur board game'] },
+  senet: { ru: ['сенет онлайн', 'игра сенет', 'египетская настольная игра', 'игра фараонов', 'игра Тутанхамона'], en: ['Senet', 'Senat', 'Egyptian board game', 'Game of passing'] },
   bagchal: { ru: ['баг-чал онлайн', 'тигры и козы', 'игра в тигров', 'багчал', 'непальская игра'], en: ['Bagh-Chal', 'Bagh Chal', 'Tigers and goats', 'Baghchal'] },
   hex: { ru: ['гекс онлайн', 'игра гекс', 'шестиугольники', 'соедини стороны', 'игра Нэша'], en: ['Hex', 'Nash', 'Polygon', 'Con-tac-tix'] },
   renju: { ru: ['рендзю', 'гомоку', 'пять в ряд', 'пятёрки', 'крестики-нолики на большом поле', 'японские крестики-нолики'], en: ['Renju', 'Gomoku', 'Five in a Row', 'Gobang', 'Omok'] },
