@@ -1,0 +1,6 @@
+/* Перекати-поле: подписи в боковой панели. */
+.pk-info { font-size: 15px; display: flex; flex-direction: column; gap: 4px; }
+.pk-info small { display: block; font-size: 12px; opacity: 0.8; }
+.pk-chip { display: inline-block; width: 0.85em; height: 0.85em; border-radius: 2px; border: 2px solid; box-sizing: border-box; vertical-align: -0.08em; }
+.pk-hint { font-size: 13.5px; }
+.demo-controls .pk-info { color: #efe6cc; }

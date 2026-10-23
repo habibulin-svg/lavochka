@@ -1,0 +1,7 @@
+/* Пентаго: поворот квадранта, подписи. */
+.pt-spin { transform-box: view-box; animation: pt-spin 0.5s ease-in-out both; }
+@keyframes pt-spin { from { transform: rotate(0deg); } to { transform: rotate(var(--to)); } }
+.pt-info { font-size: 15px; display: flex; flex-direction: column; gap: 4px; }
+.pt-info small { display: block; font-size: 12px; opacity: 0.8; }
+.pt-hint { font-size: 13.5px; }
+.demo-controls .pt-info { color: #efe6cc; }

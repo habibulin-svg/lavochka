@@ -41,6 +41,8 @@ export interface PointBoardSpec<S, A> {
   hit: number;
   /** Радиус подсветки. */
   ring?: number;
+  /** Своя точка под мышью (x, y — в единицах доски): ≥ 0 — она, иначе — ближайшая в радиусе hit (Пентаго: половина квадранта). */
+  pick?(s: S, x: number, y: number): number;
 }
 
 export interface Move {
@@ -101,6 +103,8 @@ export class PointBoard<S, A> {
     const ctm = this.svg.getScreenCTM();
     if (!ctm) return -1;
     const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+    const own = this.spec.pick ? this.spec.pick(s, pt.x, pt.y) : -1;
+    if (own >= 0) return own;
     let best = -1;
     let bd = this.spec.hit * this.spec.hit;
     const n = this.spec.count(s);
