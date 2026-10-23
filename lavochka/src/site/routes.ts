@@ -21,6 +21,7 @@ export const SLUGS: Record<string, string> = {
   ur: 'korolevskaya-igra-ura',
   senet: 'senet',
   fanorona: 'fanorona',
+  surakarta: 'surakarta',
   mill: 'melnica',
   tafl: 'hnefatafl',
   foxgeese: 'lisa-i-gusi',

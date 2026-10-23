@@ -23,6 +23,7 @@ export const NAMES: Record<string, Names> = {
   tafl: { ru: ['хнефатафл онлайн', 'шахматы викингов', 'тафл', 'таблут', 'брандубх', 'игра викингов'], en: ['Hnefatafl', 'Viking chess', 'Tafl', 'Tablut', 'Brandubh', 'Copenhagen hnefatafl', 'Fetlar'] },
   ur: { ru: ['королевская игра ура', 'игра ура', 'ур настольная игра', 'шумерская игра', 'древнейшая настольная игра', 'игра двадцати клеток'], en: ['Royal Game of Ur', 'Game of Ur', 'Game of Twenty', 'Ur board game'] },
   fanorona: { ru: ['фанорона онлайн', 'игра фанорона', 'мадагаскарские шашки', 'фанорон-тэло', 'фанорон-дими', 'мадагаскарская игра'], en: ['Fanorona', 'Fanoron-Telo', 'Fanoron-Dimy', 'Malagasy board game'] },
+  surakarta: { ru: ['суракарта онлайн', 'игра суракарта', 'яванская игра', 'индонезийская настольная игра', 'игра с петлями'], en: ['Surakarta', 'Surakarta game', 'Indonesian board game'] },
   senet: { ru: ['сенет онлайн', 'игра сенет', 'египетская настольная игра', 'игра фараонов', 'игра Тутанхамона'], en: ['Senet', 'Senat', 'Egyptian board game', 'Game of passing'] },
   bagchal: { ru: ['баг-чал онлайн', 'тигры и козы', 'игра в тигров', 'багчал', 'непальская игра'], en: ['Bagh-Chal', 'Bagh Chal', 'Tigers and goats', 'Baghchal'] },
   hex: { ru: ['гекс онлайн', 'игра гекс', 'шестиугольники', 'соедини стороны', 'игра Нэша'], en: ['Hex', 'Nash', 'Polygon', 'Con-tac-tix'] },

@@ -70,6 +70,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   ur: () => import('./ur/def').then((m) => m.def),
   senet: () => import('./senet/def').then((m) => m.def),
   fanorona: () => import('./fanorona/def').then((m) => m.def),
+  surakarta: () => import('./surakarta/def').then((m) => m.def),
   renju: () => import('./renju/def').then((m) => m.def),
   mancala: () => import('./mancala/def').then((m) => m.def),
   ochko: () => import('./ochko/def').then((m) => m.def),

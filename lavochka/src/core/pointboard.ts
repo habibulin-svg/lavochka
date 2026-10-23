@@ -62,6 +62,13 @@ export class PointBoard<S, A> {
   private buttons: HTMLElement;
   /** Свои метки поверх доски (подсказки игры). */
   extra: (s: S) => string = () => '';
+  /** Выбранная фишка и точка под мышью (−1 — нет) — для меток игры. */
+  get selected() {
+    return this.sel;
+  }
+  get hovered() {
+    return this.hover;
+  }
 
   constructor(
     root: HTMLElement,
