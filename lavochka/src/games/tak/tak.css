@@ -1,0 +1,24 @@
+/* Так: деревянная доска с рамкой, камни — клён и орех. */
+.table--tak {
+  --panel-bg: linear-gradient(180deg, #f2ebdc, #ddd0b4);
+  --panel-ink: #1e160a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #17110a;
+}
+.tk-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.tk-svg { width: 100%; height: 100%; }
+.tk-frame { fill: #5a3418; stroke: #2a1608; stroke-width: 0.04; filter: drop-shadow(0 0.1px 0.2px rgba(0, 0, 0, 0.6)); }
+.tk-cell { fill: rgba(255, 235, 200, 0.12); stroke: rgba(60, 30, 10, 0.35); stroke-width: 0.02; }
+.tk-cell.alt { fill: rgba(80, 40, 10, 0.08); }
+.tk-cell.last { fill: rgba(255, 210, 74, 0.22); }
+.tk-cell.road { fill: rgba(120, 220, 120, 0.45); }
+.tk-cell.sel { stroke: #ffd24a; stroke-width: 0.06; }
+.tk-cell.tgt { fill: rgba(255, 210, 74, 0.35); }
+.tk-h { fill: #fff3d0; font: 700 0.22px 'PT Sans', sans-serif; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 0.04px; }
+.tk-res { fill: rgba(255, 238, 200, 0.8); font: 600 0.19px 'PT Sans', sans-serif; }
+.tk-info { font-size: 15px; }
+.tk-info small { display: block; opacity: 0.7; }
+.tk-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tk-btns > .btn { flex: 1 1 45%; }
+.tk-row { flex: 1 1 100%; display: flex; gap: 6px; }
+.tk-row > .btn { flex: 1 1 30%; }
+.tk-ask { flex: 1 1 100%; font-size: 13px; opacity: 0.85; }

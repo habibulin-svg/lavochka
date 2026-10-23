@@ -1,0 +1,18 @@
+/* Шатра: войлок цвета охры на деревянной раме, ров, крепости с зубцами. */
+.table--shatra {
+  --panel-bg: linear-gradient(180deg, #f3ead4, #dfcfa8);
+  --panel-ink: #22160a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 220, 160, 0.08), transparent 65%), #1a120a;
+}
+.sh-cell { fill: rgba(255, 245, 220, 0.16); stroke: rgba(90, 50, 16, 0.55); stroke-width: 0.025; }
+.sh-cell.fort { fill: rgba(140, 70, 20, 0.12); }
+.sh-cell.gate { fill: rgba(140, 70, 20, 0.22); }
+.sh-fortress { stroke: #5a3010; stroke-width: 0.05; }
+.sh-merlon { fill: #6a3a14; }
+.sh-moat { fill: #2f6f9a; opacity: 0.9; }
+.sh-wave { fill: none; stroke: rgba(220, 240, 255, 0.6); stroke-width: 0.03; }
+.sh-orn { fill: none; stroke: #e6c27a; stroke-width: 0.045; stroke-linecap: round; opacity: 0.8; }
+.sh-num { fill: rgba(80, 40, 10, 0.45); font: 600 0.16px 'PT Sans', sans-serif; }
+.sh-info { font-size: 15px; }
+.sh-info small { display: block; opacity: 0.7; }
+.sh-hint { font-size: 13px; opacity: 0.8; margin-top: 6px; }

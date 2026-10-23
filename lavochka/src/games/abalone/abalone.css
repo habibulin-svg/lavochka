@@ -1,0 +1,24 @@
+/* Абалон: чёрная пластиковая плита с серебряной каймой (или тёмное дерево), стеклянно-блестящие шары. */
+.table--abalone {
+  --panel-bg: linear-gradient(180deg, #eef0f2, #d6dade);
+  --panel-ink: #14161a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(200, 210, 230, 0.1), transparent 65%), #101216;
+}
+.ab-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ab-svg { width: 100%; height: 100%; max-height: 100%; }
+.ab-rim { fill: #b9bec6; stroke: #5a5e66; stroke-width: 0.06; filter: drop-shadow(0 0.25px 0.3px rgba(0, 0, 0, 0.6)); }
+.ab-svg.wood .ab-rim { fill: #c8a26a; stroke: #4a2c12; }
+.ab-plate { stroke: rgba(0, 0, 0, 0.6); stroke-width: 0.04; }
+.ab-hole { fill: rgba(0, 0, 0, 0.55); stroke: rgba(255, 255, 255, 0.12); stroke-width: 0.03; }
+.ab-svg.wood .ab-hole { fill: rgba(30, 14, 4, 0.6); stroke: rgba(255, 220, 160, 0.15); }
+.ab-tray { fill: rgba(0, 0, 0, 0.35); stroke: rgba(255, 255, 255, 0.18); stroke-width: 0.04; }
+.ab-ball { transition: transform 0.36s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.ab-ball.sel .ab-m0, .ab-ball.sel .ab-m1 { stroke: #ffd24a; stroke-width: 0.09; }
+.ab-last { fill: none; stroke: rgba(255, 210, 74, 0.55); stroke-width: 0.05; stroke-dasharray: 0.12 0.08; pointer-events: none; }
+.ab-arrow { cursor: pointer; }
+.ab-arrow circle { fill: rgba(255, 210, 74, 0.92); stroke: #6a4a00; stroke-width: 0.04; }
+.ab-arrow path { fill: #3a2a00; }
+.ab-arrow:hover circle { fill: #ffe68a; }
+.ab-info { font-size: 15px; }
+.ab-info small { display: block; opacity: 0.7; }
+.ab-hint { font-size: 13px; opacity: 0.8; margin-top: 6px; }
