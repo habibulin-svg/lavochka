@@ -20,6 +20,7 @@ export const SLUGS: Record<string, string> = {
   bagchal: 'bag-chal',
   ur: 'korolevskaya-igra-ura',
   senet: 'senet',
+  fanorona: 'fanorona',
   mill: 'melnica',
   tafl: 'hnefatafl',
   foxgeese: 'lisa-i-gusi',
