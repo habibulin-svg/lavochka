@@ -63,6 +63,8 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   bulls: () => import('./bulls/def').then((m) => m.def),
   hex: () => import('./hex/def').then((m) => m.def),
   perekati: () => import('./perekati/def').then((m) => m.def),
+  razvedchik: () => import('./razvedchik/def').then((m) => m.def),
+  vput: () => import('./vput/def').then((m) => m.def),
   reversi: () => import('./reversi/def').then((m) => m.def),
   mill: () => import('./mill/def').then((m) => m.def),
   foxgeese: () => import('./foxgeese/def').then((m) => m.def),

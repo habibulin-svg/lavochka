@@ -18,6 +18,8 @@ export const SLUGS: Record<string, string> = {
   reversi: 'reversi',
   hex: 'geks',
   perekati: 'perekati-pole',
+  razvedchik: 'razvedchik-i-dozor',
+  vput: 'v-put-dorogu',
   bagchal: 'bag-chal',
   ur: 'korolevskaya-igra-ura',
   senet: 'senet',
