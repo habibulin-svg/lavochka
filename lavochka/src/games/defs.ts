@@ -59,6 +59,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   schnapsen: () => import('./schnapsen/def').then((m) => m.def),
   baccarat: () => import('./baccarat/def').then((m) => m.def),
   konchinka: () => import('./konchinka/def').then((m) => m.def),
+  cribbage: () => import('./cribbage/def').then((m) => m.def),
   khrap: () => import('./khrap/def').then((m) => m.def),
   bridge: () => import('./bridge/def').then((m) => m.def),
   poker: () => import('./poker/def').then((m) => m.def),

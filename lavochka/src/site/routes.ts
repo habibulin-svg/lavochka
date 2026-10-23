@@ -60,6 +60,7 @@ export const SLUGS: Record<string, string> = {
   schnapsen: 'shnapsen',
   baccarat: 'bakkara',
   konchinka: 'konchinka',
+  cribbage: 'kribbedzh',
   khrap: 'hrap',
   ochko: 'ochko',
   seka: 'seka',

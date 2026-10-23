@@ -1,0 +1,45 @@
+/* Криббедж: английский паб — тёмно-синее сукно, доска из ореха с цветными колышками. */
+.table--cribbage {
+  --panel-bg: linear-gradient(180deg, #f0ebe0, #dcd2bc);
+  --panel-ink: #1a1810;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(200, 220, 255, 0.07), transparent 65%), #0e1018;
+}
+.cb-cloth {
+  position: absolute; left: 228px; top: 14px; right: 14px; bottom: 14px; border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #23406e, #12213f 72%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #4a2e18, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.cs-port .cb-cloth { left: 14px; top: 186px; }
+.cb-board { position: absolute; left: 0; top: 0; width: 220px; height: 720px; pointer-events: none; }
+.cb-board.port { width: 540px; height: 170px; }
+.cb-svg { display: block; }
+.cb-svg .wood rect { fill: url(#cbw); stroke: #4a2a12; stroke-width: 2; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)); }
+.cb-svg .inlay { fill: rgba(60, 30, 10, 0.18); stroke: rgba(240, 200, 140, 0.35); stroke-width: 1.2; }
+.cb-svg .ttl { fill: rgba(255, 230, 180, 0.55); font: 700 14px 'PT Serif', Georgia, serif; letter-spacing: 3px; text-anchor: middle; }
+.cb-svg .holes circle { fill: #2a160a; stroke: rgba(255, 220, 160, 0.25); stroke-width: 0.6; }
+.cb-svg .marks text { fill: rgba(255, 228, 170, 0.75); font: 700 9px 'PT Sans', sans-serif; text-anchor: middle; }
+.cb-peg circle { fill: var(--pc); stroke: rgba(0, 0, 0, 0.6); stroke-width: 0.8; }
+.cb-peg .hl { fill: rgba(255, 255, 255, 0.55); stroke: none; }
+.cb-peg .sh { fill: rgba(0, 0, 0, 0.35); stroke: none; }
+.cb-peg:not(.front) circle:not(.hl) { opacity: 0.75; }
+.cb-plates { position: absolute; inset: 0; }
+.cb-plates .cs-plate i { font-style: normal; font-size: 0.85em; opacity: 0.8; }
+.cb-count {
+  position: absolute; transform: translate(-50%, 0); font: 700 30px 'PT Serif', Georgia, serif; color: #ffe08a;
+  background: rgba(0, 0, 0, 0.4); border-radius: 50%; width: 52px; height: 52px; line-height: 52px; text-align: center;
+}
+.cb-show {
+  position: absolute; transform: translate(-50%, 0); max-width: 620px; text-align: center; color: #fff4d8; text-shadow: 0 1px 2px #000;
+  font: 600 18px 'PT Sans', sans-serif; background: rgba(0, 0, 0, 0.45); border-radius: 12px; padding: 4px 14px;
+}
+.cb-show b { color: #ffd24a; }
+.cb-show small { display: block; font-size: 13px; opacity: 0.85; }
+.cs-card.cb-old .cs-face { filter: brightness(0.8); }
+.cb-controls { display: flex; flex-direction: column; gap: 8px; }
+.cb-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.cb-btns > .btn { flex: 1 1 45%; }
+.cb-ask { flex: 1 1 100%; font-size: 14px; }
+.cb-btns .btn .red { color: #ffd0c8; }

@@ -60,6 +60,7 @@ export const NAMES: Record<string, Names> = {
   hearts: { ru: ['червы', 'червушки', 'черви в карты', 'чёрная дама', 'Hearts'], en: ['Hearts', 'Black Lady', 'Black Maria', 'Omnibus Hearts'] },
   king: { ru: ['кинг в карты', 'дамский преферанс', 'барбу'], en: ['King', 'Barbu'] },
   raspisnoy: { ru: ['расписной', 'расписуха', 'кинг-покер', 'покер на взятки'], en: ['Oh Hell', 'Up and Down the River', 'Contract Whist', 'Nomination Whist', 'Wizard'] },
+  cribbage: { ru: ['криббедж онлайн', 'крибедж', 'игра криббедж', 'криббидж', 'карточная игра с доской', 'английская карточная игра'], en: ['Cribbage', 'Crib', 'Cribbage online', 'Cribbage board'] },
   konchinka: { ru: ['кончинка карточная игра', 'кончина в карты', 'скопа', 'скопоне', 'эскоба', 'карусель в карты', 'тинтере'], en: ['Scopa', 'Scopone', 'Scopone scientifico', 'Escoba', 'Konchinka'] },
   baccarat: { ru: ['баккара онлайн', 'игра баккара', 'пунто банко', 'шмен де фер', 'шемен де фер', 'баккара в карты', 'баккара бесплатно'], en: ['Baccarat', 'Punto banco', 'Chemin de fer', 'Chemmy', 'Baccarat online'] },
   schnapsen: { ru: ['шнапсен онлайн', 'шестьдесят шесть в карты', '66 карточная игра', 'игра 66', 'шнапс в карты', 'австрийская карточная игра'], en: ['Schnapsen', 'Sixty-six', '66 card game', 'Schnapsen online'] },
