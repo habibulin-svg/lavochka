@@ -1,0 +1,5 @@
+/* Камисадо: подписи в боковой панели. */
+.km-info { font-size: 15px; display: flex; flex-direction: column; gap: 4px; }
+.km-info small { display: block; font-size: 12px; opacity: 0.8; }
+.km-sw { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 2px; vertical-align: -0.05em; margin: 0 3px 0 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.km-hint { font-size: 13.5px; }
