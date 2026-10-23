@@ -1,0 +1,18 @@
+/* Общая доска «точки и линии»: подсветка, перелёт фишек. */
+.pb-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box; user-select: none; }
+.pb-board { height: 100%; max-width: 100%; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.45)); cursor: pointer; }
+.pb-piece { transform-box: view-box; }
+.pb-move { animation: pb-fly 0.32s ease-in-out both; }
+.pb-new { animation: pb-drop 0.22s ease-out both; }
+.pb-gone { animation: pb-out 0.45s ease-in both; pointer-events: none; }
+.pb-sel { filter: drop-shadow(0 0 0.12px #ffe066) drop-shadow(0 0 0.12px #ffe066) brightness(1.12); }
+.pb-dot { fill: #fff3a0; stroke: rgba(0, 0, 0, 0.7); stroke-width: 0.04; pointer-events: none; }
+.pb-can { fill: none; stroke: rgba(255, 230, 120, 0.8); stroke-width: 0.045; stroke-dasharray: 0.1 0.07; pointer-events: none; }
+.pb-take { fill: rgba(220, 40, 40, 0.18); stroke: #e03030; stroke-width: 0.06; pointer-events: none; }
+.pb-take.hov { fill: rgba(220, 40, 40, 0.35); }
+.pb-last { fill: none; stroke: rgba(230, 40, 40, 0.7); stroke-width: 0.035; pointer-events: none; }
+.pb-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.pb-btns:empty { display: none; }
+@keyframes pb-fly { from { transform: translate(var(--dx), var(--dy)); } to { transform: translate(0, 0); } }
+@keyframes pb-drop { from { transform: translate(0, -0.4px); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@keyframes pb-out { from { opacity: 1; } to { opacity: 0; } }

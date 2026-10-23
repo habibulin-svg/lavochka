@@ -1,0 +1,4 @@
+/* Тафл: счёт и подсказка в боковой панели. */
+.tf-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.tf-info small { font-size: 12px; opacity: 0.75; }
+.tf-hint { font-size: 13.5px; }

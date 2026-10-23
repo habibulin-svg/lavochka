@@ -1,0 +1,5 @@
+/* Баг-Чал: подписи лотков и счёт в боковой панели. */
+.bc-tray { font: 600 0.17px sans-serif; fill: rgba(255, 255, 255, 0.55); dominant-baseline: middle; pointer-events: none; }
+.bc-info { font-size: 15px; }
+.bc-info small { display: block; font-size: 12px; opacity: 0.75; }
+.bc-hint { font-size: 13.5px; }

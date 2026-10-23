@@ -1,0 +1,4 @@
+/* Игры на кресте: счёт и подсказка в боковой панели. */
+.fg-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.fg-info small { font-size: 12px; opacity: 0.75; }
+.fg-hint { font-size: 13.5px; }

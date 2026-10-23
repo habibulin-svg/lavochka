@@ -1,0 +1,5 @@
+/* Мельница: подписи советской доски, счёт в боковой панели. */
+.ml-coord { font: 600 0.24px sans-serif; fill: #e8f0ff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.ml-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.ml-take { color: #e04040; font-weight: 700; }
+.ml-hint { font-size: 13.5px; }
