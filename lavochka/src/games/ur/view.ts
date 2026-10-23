@@ -103,7 +103,7 @@ class UrView implements GameView<State, Event> {
     const wrap = h(`<div class="ur-wrap"><svg class="ur-board" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
         ${defs()}${trays()}
         <image href="${TEX}" x="0" y="${TRAY}" width="${BW}" height="${BH}" filter="url(#ur-bshadow)"/>
-        <g class="ur-last"></g><g class="ur-marks"></g><g class="ur-pcs"></g>
+        <g class="ur-last"></g><g class="ur-pcs"></g><g class="ur-marks"></g>
       </svg></div>`);
     root.appendChild(wrap);
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
