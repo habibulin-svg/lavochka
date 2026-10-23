@@ -25,6 +25,7 @@ export const SLUGS: Record<string, string> = {
   surakarta: 'surakarta',
   kamisado: 'kamisado',
   pentago: 'pentago',
+  quoridor: 'koridor',
   mill: 'melnica',
   tafl: 'hnefatafl',
   foxgeese: 'lisa-i-gusi',
