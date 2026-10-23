@@ -52,6 +52,20 @@ const BOTS: [string, string][] = [
 /** Виды покера для турниров — все пресеты, кроме китайского (у него нет ставок). */
 const GAMES = (def.presets ?? []).filter((p) => !isOfc(p.options.mode) && p.id !== 'turbo' && p.id !== 'deep');
 
+/** Страницы сайта о форматах и тренажёре (routes.ts ARTICLES) открывают лобби на своей вкладке и с подходящим выбором. */
+const BY_PAGE: Record<string, Partial<Pick>> = {
+  'sit-and-go': { tab: 'sng' },
+  'turniry-mtt': { tab: 'mtt' },
+  'turbo-i-giper': { tab: 'sng', speedS: 'hyper' },
+  'rebay-i-baunti': { tab: 'mtt', kindM: 'pko' },
+  'push-fold': { tab: 'sng', speedS: 'hyper' },
+  icm: { tab: 'sng', sng: 'sng9' },
+  shkola: { tab: 'school' },
+  'statistika-hud': { tab: 'stats' },
+  'auty-i-shansy': { tab: 'cash' },
+};
+const pageOf = () => (typeof location === 'undefined' ? undefined : BY_PAGE[location.pathname.split('/').filter(Boolean)[1] ?? '']);
+
 export function lobby(box: HTMLElement, launch: (options: Options, table?: LaunchTable) => void) {
   const st: Pick = {
     tab: 'cash',
@@ -67,6 +81,7 @@ export function lobby(box: HTMLElement, launch: (options: Options, table?: Launc
     bank: false,
     buyin: 100,
     ...store.get<Partial<Pick>>(KEY, {}),
+    ...pageOf(),
   };
   const el = h(`<div class="pk-lobby">
     <div class="pk-tabs" role="tablist">${TABS.map((t) => `<button role="tab" data-t="${t.id}" ${t.ready ? '' : 'aria-disabled="true"'}>${t.label}${t.ready ? '' : '<small>скоро</small>'}</button>`).join('')}</div>

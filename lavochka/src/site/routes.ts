@@ -152,6 +152,25 @@ export const VARIANTS: VariantPage[] = [
   { path: 'poker/tehasskiy-holdem', game: 'poker', preset: 'holdem' },
   { path: 'poker/omaha', game: 'poker', preset: 'plo' },
   { path: 'poker/kitayskiy-poker', game: 'poker', preset: 'ofcp' },
+  // покер: по странице на каждый вид (этап 9 покерного блока)
+  { path: 'poker/short-deck', game: 'poker', preset: 'shortdeck' },
+  { path: 'poker/payneppl', game: 'poker', preset: 'pineapple' },
+  { path: 'poker/kreyzi-payneppl', game: 'poker', preset: 'crazy' },
+  { path: 'poker/omaha-5', game: 'poker', preset: 'plo5' },
+  { path: 'poker/omaha-hay-lou', game: 'poker', preset: 'o8' },
+  { path: 'poker/kurshevel', game: 'poker', preset: 'courchevel' },
+  { path: 'poker/stad', game: 'poker', preset: 'stud' },
+  { path: 'poker/stad-hay-lou', game: 'poker', preset: 'stud8' },
+  { path: 'poker/pyatikartochnyy-stad', game: 'poker', preset: 'stud5' },
+  { path: 'poker/razz', game: 'poker', preset: 'razz' },
+  { path: 'poker/dro', game: 'poker', preset: 'draw' },
+  { path: 'poker/2-7-troynoy-obmen', game: 'poker', preset: 'td27' },
+  { path: 'poker/a-5-troynoy-obmen', game: 'poker', preset: 'tda5' },
+  { path: 'poker/badugi', game: 'poker', preset: 'badugi' },
+  { path: 'poker/badyusi', game: 'poker', preset: 'badeucy' },
+  { path: 'poker/badeysi', game: 'poker', preset: 'badacey' },
+  { path: 'poker/horse', game: 'poker', preset: 'horse' },
+  { path: 'poker/8-game', game: 'poker', preset: 'eight' },
   { path: 'loto/vokrug-sveta', game: 'loto', preset: 'world' },
   { path: 'ochko/blekdzhek', game: 'ochko', preset: 'bj' },
   { path: 'seka/svara', game: 'seka', preset: 'svara' },
@@ -190,7 +209,19 @@ export interface ArticlePage {
   also?: string[];
 }
 
-export const ARTICLES: ArticlePage[] = [{ path: 'poker/kombinacii', game: 'poker', slug: 'kombinacii' }];
+export const ARTICLES: ArticlePage[] = [
+  { path: 'poker/kombinacii', game: 'poker', slug: 'kombinacii' },
+  // покер: форматы турниров и тренажёр — экран открывает лобби на нужной вкладке (poker/lobby.ts BY_PAGE)
+  { path: 'poker/sit-and-go', game: 'poker', slug: 'sit-and-go' },
+  { path: 'poker/turniry-mtt', game: 'poker', slug: 'turniry-mtt' },
+  { path: 'poker/turbo-i-giper', game: 'poker', slug: 'turbo-i-giper' },
+  { path: 'poker/rebay-i-baunti', game: 'poker', slug: 'rebay-i-baunti' },
+  { path: 'poker/shkola', game: 'poker', slug: 'shkola' },
+  { path: 'poker/icm', game: 'poker', slug: 'icm' },
+  { path: 'poker/statistika-hud', game: 'poker', slug: 'statistika-hud' },
+  { path: 'poker/auty-i-shansy', game: 'poker', slug: 'auty-i-shansy' },
+  { path: 'poker/push-fold', game: 'poker', slug: 'push-fold' },
+];
 
 /** Игры серии у аркад («Электроника ИМ», автоматы): своя страница на каждую, адрес открывает прибор сразу на ней. */
 export interface ModePage {
