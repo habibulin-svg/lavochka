@@ -1,0 +1,23 @@
+/* Кончинка: стол в деревенской избе — клеёнка в клетку на дощатом столе. */
+.table--konchinka {
+  --panel-bg: linear-gradient(180deg, #f4eedd, #e3d7b6);
+  --panel-ink: #22180a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #1a120a;
+}
+.kc-cloth {
+  position: absolute; inset: 14px; border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255, 255, 255, 0.16), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(160, 40, 30, 0.28) 0 22px, transparent 22px 44px),
+    repeating-linear-gradient(90deg, rgba(160, 40, 30, 0.28) 0 22px, transparent 22px 44px),
+    linear-gradient(170deg, #efe4cc, #d9c9a4);
+  box-shadow: inset 0 0 60px rgba(60, 30, 10, 0.45), 0 0 0 12px #6a4422, 0 0 0 14px #3e2410, 0 18px 30px rgba(0, 0, 0, 0.6);
+}
+.kc-plates { position: absolute; inset: 0; }
+.kc-plates .cs-plate i { font-style: normal; opacity: 0.8; font-size: 0.9em; }
+.kc-controls { display: flex; flex-direction: column; gap: 8px; }
+.kc-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.kc-btns > .btn { flex: 1 1 45%; }
+.kc-ask { flex: 1 1 100%; font-size: 14px; }
+.kc-ask .red { color: #c0281e; }
+.kc-btns .btn.primary .red { color: #ffd6cc; }

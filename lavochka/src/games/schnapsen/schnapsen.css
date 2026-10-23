@@ -1,0 +1,18 @@
+/* Шнапсен: венское кафе — тёмно-зелёное сукно с золотой каймой, мраморная кромка столика. */
+.table--schnapsen {
+  --panel-bg: linear-gradient(180deg, #f2ece0, #ddd2bb);
+  --panel-ink: #1e1a10;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 240, 210, 0.08), transparent 65%), #14100c;
+}
+.tv-cloth.sn-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #1f5a40, #0f3324 72%);
+  box-shadow: inset 0 0 0 3px rgba(212, 175, 90, 0.55), inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #d9d2c4, 0 0 0 13px #9a8f7c, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.sn-melds { font-weight: 700; letter-spacing: 1px; }
+.sn-melds .red, .tv-center .red { color: #e0473a; }
+.cs-plate small { opacity: 0.75; margin-left: 2px; }
+.sn-row { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.sn-row > .btn { flex: 1 1 30%; }
