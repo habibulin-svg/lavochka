@@ -64,6 +64,8 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   canasta: () => import('./canasta/def').then((m) => m.def),
   pinochle: () => import('./pinochle/def').then((m) => m.def),
   skat: () => import('./skat/def').then((m) => m.def),
+  xiangqi: () => import('./xiangqi/def').then((m) => m.def),
+  shogi: () => import('./shogi/def').then((m) => m.def),
   deberts: () => import('./deberts/def').then((m) => m.def),
   chapaev: () => import('./chapaev/def').then((m) => m.def),
   khrap: () => import('./khrap/def').then((m) => m.def),

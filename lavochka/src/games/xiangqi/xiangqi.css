@@ -1,0 +1,10 @@
+/* Сянци: доска и фигуры рисуются в SVG (view.ts). */
+.xq-wrap { max-width: min(100%, 78vh); margin: 0 auto; }
+.xq-river { font: 700 0.5px 'Noto Serif SC', 'SimSun', serif; text-anchor: middle; opacity: 0.75; letter-spacing: 0.08px; }
+.xq-river.vi { font: italic 600 0.4px 'Segoe UI', 'Noto Sans', Arial, sans-serif; }
+.xq-coord { font: 600 0.26px system-ui, sans-serif; fill: #5a3a1a; text-anchor: middle; opacity: 0.7; }
+.xq-ch { font-family: 'Noto Serif SC', 'KaiTi', 'SimSun', serif; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.xq-ch.lat { font-family: 'Segoe UI', 'Noto Sans', Arial, sans-serif; }
+.xq-info { font-size: 13px; line-height: 1.5; padding: 6px 8px; background: rgba(255, 248, 230, 0.6); border-radius: 8px; }
+.xq-info small { display: block; opacity: 0.7; }
+.xq-hint { font-size: 12px; opacity: 0.75; margin-top: 6px; }

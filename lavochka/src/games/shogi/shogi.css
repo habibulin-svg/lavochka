@@ -1,0 +1,11 @@
+/* Сёги: доска и фигуры рисуются в SVG (view.ts). */
+.sg-wrap { max-width: min(100%, 72vh); margin: 0 auto; }
+.sg-ch { font-family: 'Noto Serif JP', 'Yu Mincho', 'MS Mincho', serif; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.sg-ch.lat { font-family: 'Segoe UI', Arial, sans-serif; }
+.sg-zoo { text-anchor: middle; pointer-events: none; }
+.sg-cnt { font: 700 0.22px system-ui, sans-serif; fill: #fff; text-anchor: middle; pointer-events: none; }
+.sg-panel:empty { display: none; }
+.sg-ask { font-weight: 700; margin-bottom: 6px; }
+.sg-row { display: flex; gap: 6px; }
+.sg-row .btn { flex: 1; }
+.sg-hint { font-size: 12px; opacity: 0.75; margin-top: 6px; }
