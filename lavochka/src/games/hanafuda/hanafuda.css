@@ -1,0 +1,41 @@
+/* Ханафуда: низкий столик — тёмное дерево и циновка-татами посередине. Карты уже обычных (пропорция 0,6). */
+.table--hanafuda {
+  --panel-bg: linear-gradient(180deg, #f3ecdc, #e2d6bb);
+  --panel-ink: #22180a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 220, 170, 0.08), transparent 65%), #1b120c;
+}
+.hf-cloth {
+  position: absolute; inset: 14px; border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(255, 250, 220, 0.18), transparent 64%),
+    repeating-linear-gradient(90deg, rgba(90, 70, 20, 0.16) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 3px, transparent 3px 6px),
+    linear-gradient(175deg, #c9b878, #b09c58 70%);
+  box-shadow: inset 0 0 0 10px #2e4a2c, inset 0 0 0 12px #172616, inset 0 0 70px rgba(40, 30, 0, 0.45),
+    0 0 0 12px #5a3a20, 0 0 0 14px #2f1c0c, 0 18px 30px rgba(0, 0, 0, 0.6);
+}
+.hf-wrap .cs-face { left: 3.3px; right: 3.3px; border-radius: 3px; }
+.hf-wrap .cs-face .card { border-radius: 3px; }
+.hf-wrap .cs-face::after { border-radius: 3px; }
+.hf-wrap .cs-card.cs-target .cs-face::before { border-radius: 5px; }
+/* номер месяца в углу */
+.hf-nums .cs-card[data-m]::before {
+  content: attr(data-m); position: absolute; left: 6px; top: 3px; z-index: 2; min-width: 22px; padding: 1px 4px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9); color: #2a1a0a; font: 700 17px 'PT Serif', Georgia, serif; text-align: center; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+/* двойная пустая и чашка сакэ в го-стопе */
+.hf-wrap .cs-card.hf-dbl::after, .hf-wrap .cs-card.hf-sake::after {
+  content: '×2'; position: absolute; right: 6px; bottom: 4px; z-index: 2; padding: 1px 5px; border-radius: 8px;
+  background: #c8102e; color: #fff; font: 700 16px system-ui, sans-serif; pointer-events: none;
+}
+.hf-wrap .cs-card.hf-sake::after { content: '×2 / ёль'; background: #8a5a10; font-size: 13px; }
+.hf-wrap .cs-card.hf-pend .cs-face { box-shadow: 0 0 0 2px #fff4c2, 0 6px 12px rgba(0, 0, 0, 0.45); }
+.hf-wrap .cs-card.hf-deck .cs-face { box-shadow: 0 0 0 3px #ffd24a, 0 0 14px 3px rgba(255, 200, 60, 0.8); }
+.hf-decknum { position: absolute; transform: translateX(-50%); padding: 1px 8px; border-radius: 10px; background: rgba(20, 16, 10, 0.75); color: #f6e2b0; font: 700 14px system-ui, sans-serif; }
+.hf-info { font-size: 15px; }
+.hf-banner.hf-multi { white-space: normal; text-align: center; font-size: 24px; line-height: 1.35; max-width: 80%; width: max-content; }
+.hf-ask { font-weight: 400; font-size: 14px; line-height: 1.4; }
+.hf-k-hikari { color: #b0230f; }
+.cs-port .hf-nums .cs-card[data-m]::before, .cs-port.hf-nums .cs-card[data-m]::before { font-size: 19px; }
+.cs-port .hf-decknum { font-size: 17px; }

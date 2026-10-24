@@ -69,6 +69,7 @@ export const SLUGS: Record<string, string> = {
   canasta: 'kanasta',
   pinochle: 'pinokl',
   skat: 'skat',
+  hanafuda: 'hanafuda',
   xiangqi: 'syanci',
   shogi: 'syogi',
   chinesecheckers: 'kitajskie-shashki',
@@ -206,6 +207,7 @@ export const VARIANTS: VariantPage[] = [
   { path: 'chapaev/karrom', game: 'chapaev', preset: 'carrom' },
   { path: 'deberc/klabor', game: 'deberts', preset: 'klabor' },
   { path: 'deberc/belot', game: 'deberts', preset: 'belote' },
+  { path: 'hanafuda/go-stop', game: 'hanafuda', preset: 'gostop' },
   // покер: прежние страницы холдема и Омахи — теперь варианты единой карточки
   { path: 'poker/tehasskiy-holdem', game: 'poker', preset: 'holdem' },
   { path: 'poker/omaha', game: 'poker', preset: 'plo' },

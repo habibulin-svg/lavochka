@@ -55,6 +55,8 @@ function identOf(it: StageItem): string {
 export interface StageOpts {
   /** Размеры сцены на вытянутом вверх экране (телефон). Без них сцена всегда одна. */
   portrait?: { W: number; H: number };
+  /** Своя колода (ханафуда): адрес и подпись картинки карты; null — рубашка. Карта — та же {s, r}, смысл задаёт игра. */
+  faces?: { url(c: Card | null): string; alt(c: Card | null): string };
 }
 
 export interface RenderOpts {
@@ -270,17 +272,17 @@ export class CardStage {
     const face = el.firstElementChild as HTMLElement;
     const want = c ? cardId(c) : 'back';
     el.dataset.face = want;
-    if (c && c.r === 15) {
+    if (c && c.r === 15 && !this.opts.faces) {
       face.innerHTML = jokerHTML(c, deckStyle());
       return Promise.resolve();
     }
     const old = face.firstElementChild as HTMLElement | null;
-    const src = cardUrl(c, deckStyle());
+    const src = this.url(c);
     if (old instanceof HTMLImageElement && old.getAttribute('src') === src) return Promise.resolve();
     const img = new Image();
     img.className = 'card';
     img.draggable = false;
-    img.alt = c ? cardName(c) : 'рубашка';
+    img.alt = this.opts.faces ? this.opts.faces.alt(c) : c ? cardName(c) : 'рубашка';
     img.src = src;
     const put = () => {
       if (el.dataset.face === want) face.replaceChildren(img);
@@ -290,6 +292,10 @@ export class CardStage {
       return Promise.resolve();
     }
     return img.decode().then(put, put);
+  }
+
+  private url(c: Card | null) {
+    return this.opts.faces ? this.opts.faces.url(c) : cardUrl(c, deckStyle());
   }
 
   /** Перевернуть карту: сжать по ширине, сменить лицо, развернуть обратно (когда новая картинка готова). */
@@ -303,7 +309,7 @@ export class CardStage {
     const wait = parseInt(delay) || 0;
     // картинку готовим заранее, пока карта ещё сжимается
     const pre = new Image();
-    pre.src = cardUrl(c, deckStyle());
+    pre.src = this.url(c);
     void pre.decode().catch(() => {});
     const a = face.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: half, delay: wait + dur * 0.15, easing: 'ease-in', fill: 'forwards' });
     a.onfinish = () => {
