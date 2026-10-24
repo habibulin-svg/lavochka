@@ -1,0 +1,22 @@
+/* Рамми: столик в одесском дворике — бордовое сукно. */
+.table--rummy {
+  --panel-bg: linear-gradient(180deg, #f3ece0, #ded2b8);
+  --panel-ink: #1e160a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 220, 200, 0.08), transparent 65%), #160c0c;
+}
+.tv-cloth.rm-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #6e2230, #3e0e18 72%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #5a3a22, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.rm-plates { position: absolute; inset: 0; }
+.cs-card.rm-dead .cs-face { filter: brightness(0.75) sepia(0.4); }
+.rm-controls { display: flex; flex-direction: column; gap: 8px; }
+.rm-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.rm-btns > .btn { flex: 1 1 45%; }
+.rm-btns > .btn.rm-sort { flex: 0 1 auto; opacity: 0.85; }
+.rm-ask { flex: 1 1 100%; font-size: 14px; }
+.rm-btns .btn .red, .rm-ask .red { color: #c8281e; }
+.rm-btns .btn.primary .red { color: #ffd6cc; }

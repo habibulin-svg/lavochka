@@ -1,0 +1,31 @@
+/* Окей: зелёное сукно чайханы, деревянная подставка, фишки — кость с цветными номерами. */
+.table--okey {
+  --panel-bg: linear-gradient(180deg, #f1ece0, #dcd2b8);
+  --panel-ink: #1a160c;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #0e140e;
+}
+.ok-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ok-svg { width: 100%; height: 100%; }
+.ok-felt { fill: #1f5a36; stroke: #3a2410; stroke-width: 10; }
+.ok-rack { fill: #8a5a2c; stroke: #4a2c10; stroke-width: 3; }
+.ok-rack-lip { fill: #6a4018; }
+.ok-face { fill: #fbf6e8; stroke: #b8ac90; stroke-width: 1.5; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.35)); }
+.ok-back { fill: #e8dcc0; stroke: #a89870; stroke-width: 1.5; }
+.ok-tile { cursor: pointer; }
+.ok-tile.sel .ok-face { stroke: #ffb020; stroke-width: 4; }
+.ok-tile.can .ok-face { stroke: #ffd24a; stroke-width: 3; }
+.ok-tile.wild .ok-face { fill: #fff3c8; }
+.ok-stockg.can { cursor: pointer; }
+.ok-stockg.can .ok-back { stroke: #ffd24a; stroke-width: 3; }
+.ok-num { font: 700 24px 'PT Sans', sans-serif; text-anchor: middle; }
+.ok-smile { fill: #c8281e; text-anchor: middle; }
+.ok-name { font: 700 18px 'PT Sans', sans-serif; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.6); stroke-width: 3px; }
+.ok-small { fill: rgba(255, 245, 220, 0.8); font: 600 14px 'PT Sans', sans-serif; text-anchor: middle; }
+.ok-wrap .cs-banner { position: absolute; }
+.ok-info { font-size: 15px; }
+.ok-info small { display: block; opacity: 0.75; }
+.ok-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ok-btns > .btn { flex: 1 1 45%; }
+.ok-btns > .btn.ok-sort { flex: 1 1 30%; font-size: 13px; opacity: 0.85; }
+.ok-btns > .btn.ok-sort.on { outline: 2px solid #ffd24a; }
+.ok-ask { flex: 1 1 100%; font-size: 14px; }
