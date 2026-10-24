@@ -6,7 +6,56 @@
  */
 import type { Options, Rng } from '../../core/types';
 
-export type Variant = 'classic' | '960';
+export type Variant = 'classic' | '960' | 'shatranj' | 'chaturanga' | 'makruk' | 'sittuyin' | 'senterej' | 'marseillais' | 'shatar';
+export const VARIANTS: Variant[] = ['classic', '960', 'shatranj', 'chaturanga', 'makruk', 'sittuyin', 'senterej', 'marseillais', 'shatar'];
+
+/** Правила варианта. Буквы фигур везде одни (FEN), а ходят Q и B по-разному:
+ *  Q — ферзь или «фарзин» (шаг по диагонали); B — слон, «фил» (прыжок на две по диагонали) или «кхон» (шаг по диагонали или вперёд). */
+export interface Rules {
+  q: 'queen' | 'ferz';
+  b: 'bishop' | 'alfil' | 'khon';
+  /** Двойной первый ход пешки (и взятие на проходе). */
+  double: boolean;
+  castle: boolean;
+  /** Во что превращается пешка и на какой горизонтали (считая от своей, 0..7). */
+  promo: Promo[];
+  promoRank: number;
+  /** Пат: ничья или победа поставившего пат. */
+  stalemate: 'draw' | 'win';
+  /** Голый король: проигрыш (шатрандж), ничья (шатар) или как обычно. */
+  bare: 'none' | 'lose' | 'draw';
+  /** Ничья после стольких ходов без взятий и ходов пешкой (0 — нет). */
+  nMoves: number;
+  /** Начальная расстановка (FEN), если не классическая. */
+  start?: string;
+  /** Марсельские: два хода за очередь. */
+  twice?: boolean;
+  /** Сентередж: до первого взятия ходят сколько хотят и передают ход сами. */
+  werera?: boolean;
+  /** Ситтуйин: фигуры (кроме пешек) расставляют в начале; превращение — на диагоналях, если сит-кэ взят. */
+  place?: boolean;
+  /** Шатар: мат конём не допускается. */
+  noKnightMate?: boolean;
+  /** Макрук: счёт ходов при голом короле. */
+  counting?: boolean;
+}
+
+const BASE: Rules = { q: 'queen', b: 'bishop', double: true, castle: true, promo: ['Q', 'R', 'B', 'N'], promoRank: 7, stalemate: 'draw', bare: 'none', nMoves: 50 };
+const OLD: Rules = { ...BASE, q: 'ferz', b: 'alfil', double: false, castle: false, promo: ['Q'], stalemate: 'win', nMoves: 70 };
+export const RULES: Record<Variant, Rules> = {
+  classic: BASE,
+  '960': BASE,
+  shatranj: { ...OLD, bare: 'lose', start: 'rnbkqbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBKQBNR' },
+  chaturanga: { ...OLD, start: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' },
+  makruk: { ...OLD, b: 'khon', promoRank: 5, stalemate: 'draw', nMoves: 0, counting: true, start: 'rnbqkbnr/8/pppppppp/8/8/PPPPPPPP/8/RNBKQBNR' },
+  sittuyin: { ...OLD, b: 'khon', promo: [], stalemate: 'draw', nMoves: 50, place: true, start: '8/8/4pppp/pppp4/4PPPP/PPPP4/8/8' },
+  senterej: { ...OLD, stalemate: 'draw', nMoves: 50, werera: true, start: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' },
+  marseillais: { ...BASE, twice: true },
+  shatar: { ...BASE, double: false, castle: false, promo: ['Q'], bare: 'draw', noKnightMate: true, start: 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR' },
+};
+export const rulesOf = (s: { cfg: Cfg }) => RULES[s.cfg.variant] ?? BASE;
+/** Фигуры, которые в ситтуйине расставляют в начале. */
+export const RESERVE = ['K', 'Q', 'R', 'R', 'B', 'B', 'N', 'N'];
 export type Promo = 'Q' | 'R' | 'B' | 'N';
 
 export interface Cfg {
@@ -21,7 +70,7 @@ export const DEFAULT_CFG: Cfg = { variant: 'classic', clock: 0, inc: 0 };
 
 export function cfgFrom(o: Options): Cfg {
   return {
-    variant: o.variant === '960' ? '960' : 'classic',
+    variant: VARIANTS.includes(o.variant as Variant) ? (o.variant as Variant) : 'classic',
     clock: Math.max(0, Math.min(180, Number(o.clock) || 0)),
     inc: Math.max(0, Math.min(60, Number(o.inc) || 0)),
   };
@@ -42,6 +91,8 @@ export interface Move {
   captured: string;
   promo?: Promo;
   ep?: boolean;
+  /** Ситтуйин: фигура, которую ставят из запаса (from = -1). */
+  drop?: string;
   /** Рокировка: 'K' — короткая, 'Q' — длинная; to — куда встаёт король, rook — откуда ладья. */
   castle?: 'K' | 'Q';
   rook?: number;
@@ -54,7 +105,7 @@ export interface MoveRec {
   seat: number;
 }
 
-export type EndReason = 'mate' | 'stalemate' | 'resign' | 'time' | 'repetition' | 'fifty' | 'material' | 'agreed';
+export type EndReason = 'mate' | 'stalemate' | 'resign' | 'time' | 'repetition' | 'fifty' | 'material' | 'agreed' | 'bare' | 'count';
 
 export interface State {
   cfg: Cfg;
@@ -83,6 +134,15 @@ export interface State {
   captured: [string[], string[]];
   /** Номер начальной позиции Фишера (518 — классическая). */
   sp: number;
+  /** Марсельские: сделан первый из двух ходов очереди. */
+  sub?: number;
+  /** Сентередж: ещё идёт «верера» (до первого взятия) и сколько ходов подряд сделано в этой очереди. */
+  free?: boolean;
+  run?: number;
+  /** Ситтуйин: фигуры, которые ещё не расставлены (по сторонам). */
+  reserve?: [string[], string[]];
+  /** Макрук: сколько ходов осталось голому королю до ничьей. */
+  count?: number | null;
 }
 
 export type Action =
@@ -91,13 +151,16 @@ export type Action =
   | { type: 'offer' }
   | { type: 'accept' }
   | { type: 'decline' }
-  | { type: 'flag' };
+  | { type: 'flag' }
+  | { type: 'drop'; piece: string; to: number }
+  | { type: 'pass' };
 
 export type Event =
   | { type: 'start'; sp: number; variant: Variant }
   | { type: 'move'; seat: number; move: Move; san: string; check: boolean; num: number }
   | { type: 'offer'; seat: number }
   | { type: 'decline'; seat: number }
+  | { type: 'pass'; seat: number }
   | { type: 'end'; winner: number | null; reason: EndReason };
 
 // ---------------------------------------------------------------- клетки
@@ -122,6 +185,11 @@ const ROOK_D = [
 const BISHOP_D = [
   [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
+const ALFIL = [
+  [2, 2], [2, -2], [-2, 2], [-2, -2],
+];
+/** Шаги кхона стороны c: четыре диагонали и вперёд. */
+const khonSteps = (c: number) => [...BISHOP_D, [0, c === 0 ? 1 : -1]];
 
 function step(sq: number, df: number, dr: number): number {
   const f = fileOf(sq) + df;
@@ -130,7 +198,7 @@ function step(sq: number, df: number, dr: number): number {
 }
 
 /** Бьёт ли сторона by клетку sq. */
-export function attacked(board: string[], sq: number, by: number): boolean {
+export function attacked(board: string[], sq: number, by: number, r: Rules = BASE): boolean {
   const dir = by === 0 ? 1 : -1;
   // пешки: бьют по диагонали вперёд, значит стоят на шаг «назад» от клетки
   for (const df of [-1, 1]) {
@@ -145,10 +213,28 @@ export function attacked(board: string[], sq: number, by: number): boolean {
     const s = step(sq, df, dr);
     if (s >= 0 && board[s] === side(by, 'K')) return true;
   }
+  if (r.q === 'ferz')
+    for (const [df, dr] of BISHOP_D) {
+      const s = step(sq, df, dr);
+      if (s >= 0 && board[s] === side(by, 'Q')) return true;
+    }
+  if (r.b === 'alfil')
+    for (const [df, dr] of ALFIL) {
+      const s = step(sq, df, dr);
+      if (s >= 0 && board[s] === side(by, 'B')) return true;
+    }
+  if (r.b === 'khon')
+    for (const [df, dr] of khonSteps(by)) {
+      const s = step(sq, -df, -dr);
+      if (s >= 0 && board[s] === side(by, 'B')) return true;
+    }
+  const rq = r.q === 'queen' ? 'RQ' : 'R';
+  const bq = (r.b === 'bishop' ? 'B' : '') + (r.q === 'queen' ? 'Q' : '');
   for (const [dirs, kinds] of [
-    [ROOK_D, 'RQ'],
-    [BISHOP_D, 'BQ'],
+    [ROOK_D, rq],
+    [BISHOP_D, bq],
   ] as const) {
+    if (!kinds) continue;
     for (const [df, dr] of dirs) {
       let s = step(sq, df, dr);
       while (s >= 0) {
@@ -168,35 +254,50 @@ export function kingSq(board: string[], c: number): number {
   return board.indexOf(side(c, 'K'));
 }
 
-export const inCheck = (s: Pick<State, 'board' | 'turn'>, c: number = s.turn) => attacked(s.board, kingSq(s.board, c), 1 - c);
+export const inCheck = (s: Pick<State, 'board' | 'turn'> & { cfg?: Cfg }, c: number = s.turn) => {
+  const k = kingSq(s.board, c);
+  return k >= 0 && attacked(s.board, k, 1 - c, s.cfg ? RULES[s.cfg.variant] ?? BASE : BASE);
+};
 
 // ---------------------------------------------------------------- ходы
 
 function pseudo(s: State, c: number, out: Move[], capturesOnly = false) {
+  const R = rulesOf(s);
   const b = s.board;
   const dir = c === 0 ? 1 : -1;
   const startRank = c === 0 ? 1 : 6;
-  const lastRank = c === 0 ? 7 : 0;
+  const lastRank = c === 0 ? R.promoRank : 7 - R.promoRank;
+  const ep = R.double && !s.sub ? s.ep : -1;
   for (let sq = 0; sq < 64; sq++) {
     const p = b[sq];
     if (!own(p, c)) continue;
     const k = kindOf(p);
     if (k === 'P') {
-      const push = (to: number, captured: string, ep = false) => {
-        if (rankOf(to) === lastRank) for (const promo of ['Q', 'R', 'B', 'N'] as Promo[]) out.push({ from: sq, to, piece: p, captured, promo });
-        else out.push({ from: sq, to, piece: p, captured, ep });
+      const push = (to: number, captured: string, isEp = false) => {
+        if (rankOf(to) === lastRank && R.promo.length) for (const promo of R.promo) out.push({ from: sq, to, piece: p, captured, promo });
+        else out.push({ from: sq, to, piece: p, captured, ep: isEp });
       };
       const one = step(sq, 0, dir);
       if (one >= 0 && !b[one] && (!capturesOnly || rankOf(one) === lastRank)) {
         push(one, '');
         const two = step(sq, 0, 2 * dir);
-        if (rankOf(sq) === startRank && !b[two] && !capturesOnly) out.push({ from: sq, to: two, piece: p, captured: '' });
+        if (R.double && rankOf(sq) === startRank && !b[two] && !capturesOnly) out.push({ from: sq, to: two, piece: p, captured: '' });
       }
       for (const df of [-1, 1]) {
         const t = step(sq, df, dir);
         if (t < 0) continue;
         if (b[t] && colorOf(b[t]) !== c) push(t, b[t]);
-        else if (t === s.ep) push(t, side(1 - c, 'P'), true);
+        else if (t === ep) push(t, side(1 - c, 'P'), true);
+      }
+      // ситтуйин: пешка на большой диагонали чужой половины становится сит-кэ на месте, если свой сит-кэ взят
+      if (R.place && !capturesOnly && promoSquare(sq, c) && !b.includes(side(c, 'Q'))) out.push({ from: sq, to: sq, piece: p, captured: '', promo: 'Q' });
+      continue;
+    }
+    if ((k === 'Q' && R.q === 'ferz') || (k === 'B' && R.b !== 'bishop')) {
+      for (const [df, dr] of k === 'Q' ? BISHOP_D : R.b === 'alfil' ? ALFIL : khonSteps(c)) {
+        const t = step(sq, df, dr);
+        if (t < 0 || own(b[t], c) || (capturesOnly && !b[t])) continue;
+        out.push({ from: sq, to: t, piece: p, captured: b[t] });
       }
       continue;
     }
@@ -223,6 +324,7 @@ function pseudo(s: State, c: number, out: Move[], capturesOnly = false) {
 
 /** Рокировки (общие правила, годятся и для Фишера 960). */
 function castles(s: State, c: number, out: Move[]) {
+  if (!rulesOf(s).castle) return;
   const b = s.board;
   const rank = c === 0 ? 0 : 7;
   const ksq = kingSq(b, c);
@@ -260,6 +362,15 @@ export function play(s: State, m: Move): State {
   const b = s.board.slice();
   const c = colorOf(m.piece);
   const castle = { ...s.castle };
+  const R = rulesOf(s);
+  if (m.drop) {
+    b[m.to] = m.piece;
+    const reserve: [string[], string[]] = [s.reserve![0].slice(), s.reserve![1].slice()];
+    reserve[c].splice(reserve[c].indexOf(m.drop), 1);
+    // белые расставляют все фигуры, потом чёрные; расставили оба — ходят белые
+    const turn: 0 | 1 = reserve[c].length ? s.turn : c === 0 && reserve[1].length ? 1 : 0;
+    return { ...s, board: b, reserve, turn, last: { from: m.to, to: m.to } };
+  }
   if (m.castle) {
     const rank = c === 0 ? 0 : 7;
     b[m.from] = '';
@@ -288,21 +399,64 @@ export function play(s: State, m: Move): State {
   }
   const pawn = kindOf(m.piece) === 'P';
   const ep = pawn && Math.abs(m.to - m.from) === 16 ? (m.from + m.to) / 2 : -1;
+  // марсельские: второй ход той же стороны — если первым не дан шах (у белых в самую первую очередь — один ход)
+  let keep = false;
+  if (R.twice && !s.sub && !(c === 0 && s.full === 1)) {
+    const ok = kingSq(b, 1 - c);
+    keep = ok < 0 || !attacked(b, ok, c, R);
+  }
+  // сентередж: в «верере» очередь не переходит, пока нет взятия
+  const free = !!s.free && !m.captured;
+  if (free) keep = true;
   return {
     ...s,
     board: b,
     castle,
     ep,
     half: pawn || m.captured ? 0 : s.half + 1,
-    full: s.full + (c === 1 ? 1 : 0),
-    turn: (1 - s.turn) as 0 | 1,
+    full: s.full + (c === 1 && !keep ? 1 : 0),
+    turn: (keep ? s.turn : 1 - s.turn) as 0 | 1,
+    sub: R.twice ? (keep ? 1 : 0) : s.sub,
+    free: s.free ? free : s.free,
+    run: s.free ? (free ? (s.run ?? 0) + 1 : 0) : s.run,
     last: { from: m.from, to: m.to },
   };
+}
+
+/** Передать очередь (сентередж в «верере», марсельские без второго хода). */
+export function passTurn(s: State): State {
+  return { ...s, turn: (1 - s.turn) as 0 | 1, sub: s.sub ? 0 : s.sub, run: 0, full: s.full + (s.turn === 1 ? 1 : 0), ep: -1 };
+}
+
+/** Клетка превращения в ситтуйине: на большой диагонали в чужой половине доски. */
+function promoSquare(sq: number, c: number) {
+  const f = fileOf(sq);
+  const r = rankOf(sq);
+  const far = c === 0 ? r >= 4 : r <= 3;
+  return far && (f === r || f === 7 - r);
+}
+
+/** Ситтуйин: куда можно поставить фигуру из запаса (своя половина за пешками, ладьи — только на последнюю горизонталь). */
+function drops(s: State, c: number, out: Move[]) {
+  const pool = [...new Set(s.reserve![c])];
+  for (let sq = 0; sq < 64; sq++) {
+    if (s.board[sq]) continue;
+    const r = c === 0 ? rankOf(sq) : 7 - rankOf(sq);
+    if (r > 2) continue;
+    for (const k of pool) {
+      if (k === 'R' && r !== 0) continue;
+      out.push({ from: -1, to: sq, piece: side(c, k), captured: '', drop: k });
+    }
+  }
 }
 
 /** Ходы без проверки, не остаётся ли король под шахом (рокировки — уже законные). Для перебора у ботов. */
 export function pseudoMoves(s: State): Move[] {
   const out: Move[] = [];
+  if (s.reserve && s.reserve[s.turn].length) {
+    drops(s, s.turn, out);
+    return out;
+  }
   pseudo(s, s.turn, out);
   castles(s, s.turn, out);
   return out;
@@ -319,12 +473,47 @@ export function pseudoCaptures(s: State): Move[] {
 export function legalMoves(s: State): Move[] {
   const c = s.turn;
   const out: Move[] = [];
+  const R = rulesOf(s);
+  if (s.reserve && s.reserve[c].length) {
+    drops(s, c, out);
+    return out;
+  }
   pseudo(s, c, out);
   castles(s, c, out);
-  return out.filter((m) => {
+  let ms = out.filter((m) => {
     if (m.castle) return true; // поля короля уже проверены
     const n = play(s, m);
-    return !attacked(n.board, kingSq(n.board, c), 1 - c);
+    const k = kingSq(n.board, c);
+    return k < 0 || !attacked(n.board, k, 1 - c, R);
+  });
+  // шатар — мат конём не ставят; ситтуйин — пат ставить нельзя
+  if (R.noKnightMate) ms = ms.filter((m) => kindOf(m.piece) !== 'N' || !mated(play(s, m)));
+  if (R.place) {
+    const ok = ms.filter((m) => !stalemated(play(s, m)));
+    if (ok.length) ms = ok;
+  }
+  return ms;
+}
+
+/** Сторона, которая ходит, получила мат / пат. */
+function mated(n: State): boolean {
+  return inCheck(n) && !anyLegal(n);
+}
+function stalemated(n: State): boolean {
+  return !inCheck(n) && !anyLegal(n);
+}
+/** Есть ли у стороны, которая ходит, хоть один ход (без особых фильтров). */
+function anyLegal(s: State): boolean {
+  const c = s.turn;
+  const out: Move[] = [];
+  pseudo(s, c, out);
+  castles(s, c, out);
+  const R = rulesOf(s);
+  return out.some((m) => {
+    if (m.castle) return true;
+    const n = play(s, m);
+    const k = kingSq(n.board, c);
+    return k < 0 || !attacked(n.board, k, 1 - c, R);
   });
 }
 
@@ -367,6 +556,11 @@ export function newGame(cfg: Cfg, sp = 518, now = 0): State {
     board[56 + f] = back[f].toLowerCase();
   }
   const rooks = back.map((p, i) => (p === 'R' ? i : -1)).filter((i) => i >= 0);
+  const R = RULES[cfg.variant] ?? BASE;
+  if (R.start) {
+    board.fill('');
+    placeFen(board, R.start);
+  }
   const s: State = {
     cfg,
     board,
@@ -387,8 +581,25 @@ export function newGame(cfg: Cfg, sp = 518, now = 0): State {
     captured: [[], []],
     sp,
   };
+  if (!R.castle) s.castle = { wK: -1, wQ: -1, bK: -1, bQ: -1 };
+  if (R.place) s.reserve = [RESERVE.slice(), RESERVE.slice()];
+  if (R.werera) {
+    s.free = true;
+    s.run = 0;
+  }
+  if (R.twice) s.sub = 0;
   s.keys = [posKey(s)];
   return s;
+}
+
+function placeFen(board: string[], place: string) {
+  place.split('/').forEach((row, i) => {
+    let f = 0;
+    for (const ch of row) {
+      if (/\d/.test(ch)) f += Number(ch);
+      else board[(7 - i) * 8 + f++] = ch;
+    }
+  });
 }
 
 /** Клетка по имени: sq('e4'). */
@@ -399,13 +610,8 @@ export function fromFen(fen: string, cfg: Cfg = DEFAULT_CFG): State {
   const [place, turn, cast = '-', ep = '-', half = '0', full = '1'] = fen.trim().split(/\s+/);
   const s = newGame(cfg);
   s.board = new Array(64).fill('');
-  place.split('/').forEach((row, i) => {
-    let f = 0;
-    for (const ch of row) {
-      if (/\d/.test(ch)) f += Number(ch);
-      else s.board[(7 - i) * 8 + f++] = ch;
-    }
-  });
+  placeFen(s.board, place);
+  if (s.reserve) s.reserve = [[], []];
   s.turn = turn === 'b' ? 1 : 0;
   s.castle = {
     wK: cast.includes('K') ? 7 : -1,
@@ -427,7 +633,7 @@ export function setup(_seats: number[], opts: Options, rng: Rng, now = Date.now(
 
 export function posKey(s: State): string {
   const c = s.castle;
-  return s.board.map((p) => p || '.').join('') + s.turn + [c.wK, c.wQ, c.bK, c.bQ].join(',') + s.ep;
+  return s.board.map((p) => p || '.').join('') + s.turn + [c.wK, c.wQ, c.bK, c.bQ].join(',') + s.ep + (s.sub ? '+' : '') + (s.free ? '~' : '');
 }
 
 // ---------------------------------------------------------------- запись ходов
@@ -436,6 +642,8 @@ const RU: Record<string, string> = { K: 'Кр', Q: 'Ф', R: 'Л', B: 'С', N: '�
 
 export function san(s: State, m: Move, all: Move[] = legalMoves(s)): string {
   if (m.castle) return m.castle === 'K' ? '0-0' : '0-0-0';
+  if (m.drop) return `${RU[m.drop] || 'п'}@${sqName(m.to)}`;
+  if (m.from === m.to && m.promo) return `${sqName(m.to)}=${RU[m.promo]}`;
   const k = kindOf(m.piece);
   let t = RU[k];
   if (k === 'P') {
@@ -458,9 +666,10 @@ export function san(s: State, m: Move, all: Move[] = legalMoves(s)): string {
 // ---------------------------------------------------------------- партия
 
 /** Хватает ли материала, чтобы поставить мат хоть кому-то. */
-export function insufficient(board: string[]): boolean {
+export function insufficient(board: string[], r: Rules = BASE): boolean {
   const pieces = board.filter((p) => p && kindOf(p) !== 'K');
   if (!pieces.length) return true;
+  if (r.q !== 'queen' || r.b !== 'bishop') return false;
   if (pieces.some((p) => 'PRQ'.includes(kindOf(p)))) return false;
   if (pieces.length === 1) return true; // король и лёгкая фигура против короля
   // только слоны, и все на полях одного цвета
@@ -483,6 +692,50 @@ export function toAct(s: State): number[] {
   if (s.phase === 'draw') return [1 - s.offer];
   return [s.turn];
 }
+
+/** Сколько у стороны фигур, кроме короля. */
+const army = (board: string[], c: number) => board.reduce((n, p) => n + (own(p, c) && kindOf(p) !== 'K' ? 1 : 0), 0);
+
+/** Макрук: лимит ходов голому королю — по сильнейшей фигуре соперника минус все фигуры на доске. */
+function countLimit(board: string[], strong: number): number {
+  const n = (k: string) => board.filter((p) => own(p, strong) && kindOf(p) === k).length;
+  const base = n('R') >= 2 ? 8 : n('R') ? 16 : n('B') >= 2 ? 22 : n('N') >= 2 ? 32 : n('B') ? 44 : 64;
+  return Math.max(1, base - board.filter((p) => p).length);
+}
+
+/** Окончание партии после хода стороны seat (очередь уже перешла). */
+function judge(s: State, seat: number, replies: Move[], ev: Event[]) {
+  const R = rulesOf(s);
+  const opp = 1 - seat;
+  if (!replies.length) {
+    if (inCheck(s)) return finish(s, seat, 'mate', ev);
+    return finish(s, R.stalemate === 'win' ? seat : null, 'stalemate', ev);
+  }
+  const mine = army(s.board, seat);
+  const theirs = army(s.board, opp);
+  if (R.bare === 'lose' && !theirs && mine) {
+    // голый король проигрывает — если только он тут же не оголит соперника в ответ
+    const last = mine === 1 ? s.board.findIndex((p) => own(p, seat) && kindOf(p) !== 'K') : -1;
+    if (mine >= 2 || !replies.some((m) => m.to === last)) return finish(s, seat, 'bare', ev);
+  }
+  if (R.bare === 'draw' && !theirs && mine) return finish(s, null, 'bare', ev);
+  if (insufficient(s.board, R)) return finish(s, null, 'material', ev);
+  if (R.counting) {
+    const bare = !mine ? seat : !theirs ? opp : -1;
+    if (bare < 0) s.count = null;
+    else {
+      if (s.count == null) s.count = countLimit(s.board, 1 - bare);
+      if (seat === bare) s.count--;
+      if (s.count <= 0) return finish(s, null, 'count', ev);
+    }
+    if (!s.board.some((p) => p && kindOf(p) === 'P') && s.half >= 128) return finish(s, null, 'count', ev);
+  }
+  if (!s.free && s.keys.filter((k) => k === s.keys[s.keys.length - 1]).length >= 3) return finish(s, null, 'repetition', ev);
+  if (R.nMoves && s.half >= R.nMoves * 2) return finish(s, null, 'fifty', ev);
+}
+
+/** «Верера» в сентередже: не больше стольких ходов подряд, потом очередь переходит сама. */
+export const WERERA_RUN = 6;
 
 function finish(s: State, winner: number | null, reason: EndReason, ev: Event[]) {
   s.phase = 'over';
@@ -531,11 +784,22 @@ export function apply(s0: State, seat: number, a: Action, now: number = Date.now
       finish(s, canMate(s.board, 1 - seat) ? 1 - seat : null, 'time', ev);
       return { state: s, events: ev };
     }
+    case 'pass': {
+      if (!s0.free || !s0.run) return null;
+      ev.push({ type: 'pass', seat });
+      const s = passTurn(s0);
+      s.turnStart = now;
+      s.keys = [...s0.keys, posKey(s)];
+      return { state: s, events: ev };
+    }
+    case 'drop':
     case 'move': {
       const all = legalMoves(s0);
       const m =
-        all.find((x) => x.from === a.from && x.to === a.to && (!x.promo || x.promo === (a.promo || 'Q'))) ??
-        all.find((x) => x.castle && x.from === a.from && x.rook === a.to);
+        a.type === 'drop'
+          ? all.find((x) => x.drop === a.piece && x.to === a.to)
+          : (all.find((x) => !x.drop && x.from === a.from && x.to === a.to && (!x.promo || x.promo === (a.promo || x.promo))) ??
+            all.find((x) => x.castle && x.from === a.from && x.rook === a.to));
       if (!m) return null;
       const clock = [...s0.clock] as [number, number];
       if (timed) {
@@ -549,25 +813,29 @@ export function apply(s0: State, seat: number, a: Action, now: number = Date.now
         clock[seat] += s0.cfg.inc * 1000;
       }
       const name = san(s0, m, all);
-      const s = play(s0, m);
+      let s = play(s0, m);
       s.clock = clock;
       s.turnStart = now;
       s.offer = -1;
       s.captured = [s0.captured[0].slice(), s0.captured[1].slice()];
       if (m.captured) s.captured[seat].push(m.captured);
-      const check = inCheck(s);
-      const replies = legalMoves(s);
-      const mate = check && !replies.length;
+      if (m.drop) {
+        s.moves = [...s0.moves, { san: name, from: m.to, to: m.to, seat }];
+        s.keys = [posKey(s)];
+        ev.push({ type: 'move', seat, move: m, san: name, check: false, num: s0.full });
+        return { state: s, events: ev };
+      }
+      const check = inCheck(s, 1 - seat);
+      // очередь осталась у того же (второй ход марсельских, «верера»): нет хода, шах в «верере» или длинная серия — отдаём
+      if (s.turn === seat && (check || (s.free && (s.run ?? 0) >= WERERA_RUN) || !legalMoves(s).length)) s = passTurn(s);
+      const replies = s.turn === seat ? [] : legalMoves(s);
+      const mate = s.turn !== seat && check && !replies.length;
       const rec = name + (mate ? '#' : check ? '+' : '');
       s.moves = [...s0.moves, { san: rec, from: m.from, to: m.to, seat }];
       const key = posKey(s);
       s.keys = s.half === 0 ? [key] : [...s0.keys, key];
       ev.push({ type: 'move', seat, move: m, san: rec, check, num: s0.full });
-      if (mate) finish(s, seat, 'mate', ev);
-      else if (!replies.length) finish(s, null, 'stalemate', ev);
-      else if (insufficient(s.board)) finish(s, null, 'material', ev);
-      else if (s.keys.filter((k) => k === key).length >= 3) finish(s, null, 'repetition', ev);
-      else if (s.half >= 100) finish(s, null, 'fifty', ev);
+      if (s.turn !== seat) judge(s, seat, replies, ev);
       return { state: s, events: ev };
     }
     default:

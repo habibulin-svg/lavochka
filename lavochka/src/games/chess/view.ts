@@ -18,6 +18,8 @@ const W = F * 2 + SQ * 8; // 728
 const GLYPH: Record<string, string> = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
 const VAL: Record<string, number> = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
 
+const PIECE_RU: Record<string, string> = { K: 'король — мин-джи', Q: 'генерал — сит-кэ', R: 'ладья — яхта', B: 'слон — син', N: 'конь — мьин' };
+
 class ChessView implements GameView<State, Event> {
   private ctx!: ViewCtx;
   private svg!: SVGSVGElement;
@@ -44,6 +46,8 @@ class ChessView implements GameView<State, Event> {
   private coachHost: HTMLElement | null = null;
   /** «Разобрать в шахматном кружке»: с ботом — всегда, с живым соперником — когда партия кончилась (иначе подсказка). */
   private kz: HTMLAnchorElement | null = null;
+  /** Ситтуйин: какая фигура из запаса выбрана для расстановки. */
+  private dropPick: string | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -96,7 +100,7 @@ class ChessView implements GameView<State, Event> {
     const c = this.ctx;
     if (!this.kz || !st) return;
     const bot = !c.online && c.mySeats.length === 1;
-    const u = st.cfg.variant !== '960' && (bot || st.phase === 'over') ? uciMoves(st) : null;
+    const u = st.cfg.variant === 'classic' && (bot || st.phase === 'over') ? uciMoves(st) : null;
     this.kz.hidden = !u || u.length < 2;
     if (u) this.kz.href = `/shahmatnyj-kruzhok/razbor/?hody=${u.join('-')}`;
     // партия с компьютером закончилась — в журнал кружка, для личного маршрута Михалыча (kruzhok/mygames.ts)
@@ -187,6 +191,12 @@ class ChessView implements GameView<State, Event> {
   private renderTargets() {
     const from = this.selected ?? this.hover;
     let t = '';
+    if (this.dropPick && this.s) {
+      for (const mv of this.moves.filter((x) => x.drop === this.dropPick)) {
+        const c = this.xy(mv.to);
+        t += `<g class="ch-tgt" data-to="${mv.to}"><rect x="${c.x - SQ / 2}" y="${c.y - SQ / 2}" width="${SQ}" height="${SQ}" fill="transparent"/><circle cx="${c.x}" cy="${c.y}" r="${SQ * 0.15}" class="ch-dot"/></g>`;
+      }
+    }
     if (from != null && this.s) {
       const { x, y } = this.xy(from);
       t += `<rect x="${x - SQ / 2}" y="${y - SQ / 2}" width="${SQ}" height="${SQ}" class="ch-sel${this.selected != null ? '' : ' ch-preview'}"/>`;
@@ -196,7 +206,7 @@ class ChessView implements GameView<State, Event> {
         // рокировка: можно нажать и на поле короля, и на свою ладью
         const spots = mv.castle ? [mv.to, mv.rook!] : [mv.to];
         for (const to of spots) {
-          if (seen.has(to) || to === from) continue;
+          if (seen.has(to) || (to === from && !mv.promo)) continue;
           seen.add(to);
           const c = this.xy(to);
           const cap = !!mv.captured && !mv.ep ? true : mv.ep;
@@ -215,6 +225,17 @@ class ChessView implements GameView<State, Event> {
   private onClick(e: MouseEvent) {
     if (this.actSeat == null || !this.s) return;
     const tgt = (e.target as Element).closest('[data-to]') as SVGElement | null;
+    if (this.dropPick) {
+      const to = tgt ? +tgt.dataset.to! : this.squareAt(e);
+      if (to != null && this.moves.some((m) => m.drop === this.dropPick && m.to === to)) {
+        const seat = this.actSeat;
+        const piece = this.dropPick;
+        this.clearTurn();
+        Sound.unlock();
+        this.ctx.act(seat, { type: 'drop', piece, to });
+      }
+      return;
+    }
     if (tgt && this.selected != null) return this.pick(+tgt.dataset.to!);
     const pc = (e.target as Element).closest('[data-sq]') as SVGElement | null;
     // нажатие по клетке: своя фигура — выбрать, иначе — сбросить выбор
@@ -247,17 +268,17 @@ class ChessView implements GameView<State, Event> {
     if (from == null) return;
     const opts = this.moves.filter((m) => m.from === from && (m.to === to || (m.castle && m.rook === to)));
     if (!opts.length) return;
-    if (opts.some((m) => m.promo)) return this.askPromo(from, opts[0].to);
+    if (opts.some((m) => m.promo)) return opts.length === 1 && opts[0].from !== opts[0].to ? this.send(from, to, opts[0].promo) : this.askPromo(from, opts[0].to, opts.map((m) => m.promo!));
     this.send(from, opts[0].castle ? opts[0].rook! : to);
   }
 
-  private askPromo(from: number, to: number) {
+  private askPromo(from: number, to: number, list: Promo[]) {
     const st = this.s!;
     const c = colorOf(st.board[from]);
     this.promo.hidden = false;
-    this.promo.innerHTML = '<div class="ch-ask">Во что превратить пешку?</div>';
+    this.promo.innerHTML = `<div class="ch-ask">${from === to ? 'Превратить пешку на месте?' : 'Во что превратить пешку?'}</div>`;
     const row = h('<div class="ch-promo-row"></div>');
-    for (const p of ['Q', 'R', 'B', 'N'] as Promo[]) {
+    for (const p of list) {
       const b = h<HTMLButtonElement>(`<button class="btn ch-pp" title="${{ Q: 'Ферзь', R: 'Ладья', B: 'Слон', N: 'Конь' }[p]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(c === 0 ? p : p.toLowerCase())}"/></svg></button>`);
       b.onclick = () => this.send(from, to, p);
       row.appendChild(b);
@@ -279,6 +300,7 @@ class ChessView implements GameView<State, Event> {
   }
 
   private clearTurn() {
+    this.dropPick = null;
     this.actSeat = null;
     this.moves = [];
     this.selected = null;
@@ -304,6 +326,25 @@ class ChessView implements GameView<State, Event> {
     const st = this.s;
     if (!st || this.ctx.demo) return;
     const seat = this.actSeat;
+    // ситтуйин: расстановка — фигуры из запаса кнопками
+    if (st.reserve && seat != null && st.reserve[seat].length) {
+      this.btns.appendChild(h(`<div class="ch-ask">Расставьте фигуры на своей половине (ладьи — только на последнюю горизонталь). Осталось: ${st.reserve[seat].length}.</div>`));
+      const row = h('<div class="ch-promo-row ch-reserve"></div>');
+      for (const k of [...new Set(st.reserve[seat])]) {
+        const n = st.reserve[seat].filter((x) => x === k).length;
+        const b = h<HTMLButtonElement>(`<button class="btn ch-pp${this.dropPick === k ? ' on' : ''}" title="${PIECE_RU[k]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(seat === 0 ? k : k.toLowerCase())}"/></svg>${n > 1 ? `<i>×${n}</i>` : ''}</button>`);
+        b.onclick = () => {
+          Sound.ui();
+          this.dropPick = k;
+          this.renderButtons();
+          this.renderTargets();
+        };
+        row.appendChild(b);
+      }
+      this.btns.appendChild(row);
+      return;
+    }
+    if (st.phase === 'play' && seat != null && st.free && st.run) this.button('Передать ход', true, () => this.act(seat, { type: 'pass' }));
     if (st.phase === 'draw' && seat != null) {
       this.btns.appendChild(h('<div class="ch-ask">Соперник предлагает ничью</div>'));
       this.button('Согласиться на ничью', true, () => this.act(seat, { type: 'accept' }));
@@ -387,7 +428,7 @@ class ChessView implements GameView<State, Event> {
     this.applyFlip();
     // Михалыч — только в партии с компьютером на этом экране (места известны к первому показу позиции)
     const c = this.ctx;
-    if (!this.coach && this.coachHost && !c.demo && !c.online && c.mySeats.length === 1) this.coach = mountCoach(this.coachHost, c.mySeats[0], () => this.s);
+    if (!this.coach && this.coachHost && !c.demo && !c.online && c.mySeats.length === 1 && (s.cfg.variant === 'classic' || s.cfg.variant === '960')) this.coach = mountCoach(this.coachHost, c.mySeats[0], () => this.s);
     this.coach?.update();
     this.updateKz();
   }
@@ -401,19 +442,29 @@ class ChessView implements GameView<State, Event> {
         if (ev.move.captured) Sound.capture();
         else Sound.place();
         if (ev.check) Sound.turn();
+      } else if (ev.type === 'pass') {
+        Sound.ui();
+        await this.banner(`Ход — ${ev.seat === 0 ? 'чёрным' : 'белым'}`, 700 / speed);
       } else if (ev.type === 'offer' || ev.type === 'decline') {
         Sound.ui();
         await this.banner(ev.type === 'offer' ? 'Предложена ничья' : 'Играем дальше', 900 / speed);
       } else if (ev.type === 'end') {
         Sound.win();
+        const who = ev.winner === 0 ? 'белых' : 'чёрных';
         const txt =
           ev.winner == null
             ? ev.reason === 'stalemate'
               ? 'Пат — ничья'
-              : 'Ничья'
+              : ev.reason === 'bare'
+                ? 'Голый король — ничья'
+                : 'Ничья'
             : ev.reason === 'mate'
-              ? `Мат! Победа ${ev.winner === 0 ? 'белых' : 'чёрных'}`
-              : `Победа ${ev.winner === 0 ? 'белых' : 'чёрных'}`;
+              ? `Мат! Победа ${who}`
+              : ev.reason === 'stalemate'
+                ? `Пат! Победа ${who}`
+                : ev.reason === 'bare'
+                  ? `Голый король! Победа ${who}`
+                  : `Победа ${who}`;
         this.s = s;
         this.render();
         await this.banner(txt, 0);
@@ -492,7 +543,9 @@ class ChessView implements GameView<State, Event> {
     if (st.phase === 'draw') return interactive.includes(1 - st.offer) ? 'Вам предлагают ничью' : `${name(st.offer)} предложили ничью…`;
     const who = name(st.turn);
     const check = inCheck(st) ? ' — <b>шах!</b>' : '';
-    return interactive.includes(st.turn) ? `Ваш ход: ${who}${check}` : `Ходят ${who}${check}…`;
+    if (st.reserve?.[st.turn].length) return interactive.includes(st.turn) ? `Расстановка: ${who}` : `${who} расставляют фигуры…`;
+    const more = st.sub ? ' — второй ход' : st.free ? ' — «верера», ходите сколько хотите' : '';
+    return interactive.includes(st.turn) ? `Ваш ход: ${who}${check}${more}` : `Ходят ${who}${check}${more}…`;
   }
 
   playerStats(st: State, seat: number) {

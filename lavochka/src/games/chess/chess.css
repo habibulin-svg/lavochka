@@ -35,3 +35,8 @@
 .ch-pp { padding: 2px; background: #f3e2b8; }
 .ch-pp svg { width: 100%; height: auto; display: block; }
 .ch-took { font-size: 18px; letter-spacing: -2px; }
+/* ситтуйин: запас фигур для расстановки */
+.ch-reserve { grid-template-columns: repeat(5, 1fr); }
+.ch-reserve .ch-pp { position: relative; }
+.ch-reserve .ch-pp.on { outline: 3px solid #d8a020; background: #ffe9a8; }
+.ch-reserve .ch-pp i { position: absolute; right: 3px; bottom: 1px; font-style: normal; font-size: 12px; font-weight: 700; color: #4a2a08; }

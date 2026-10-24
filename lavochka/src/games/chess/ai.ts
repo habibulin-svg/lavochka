@@ -3,9 +3,14 @@
  *   Средний — два полухода и размен до конца;
  *   Сложный — углубляется до четырёх полуходов (с ограничением по числу позиций), сначала смотрит взятия. */
 import type { Rng } from '../../core/types';
-import { attacked, inCheck, kingSq, legalMoves, play, pseudoCaptures, pseudoMoves, type Action, type Move, type State } from './engine';
+import { attacked, inCheck, kingSq, legalMoves, play, pseudoCaptures, pseudoMoves, RULES, rulesOf, type Action, type Move, type Rules, type State } from './engine';
 
 const VAL: Record<string, number> = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 0 };
+/** Цена фигур в старинных вариантах: фарзин и фил слабы, кхон — около двух пешек с половиной. */
+function valOf(r: Rules): Record<string, number> {
+  if (r === RULES.classic) return VAL;
+  return { ...VAL, Q: r.q === 'ferz' ? 180 : 900, B: r.b === 'alfil' ? 130 : r.b === 'khon' ? 250 : 330 };
+}
 
 // Таблицы позиций — с точки зрения белых, напечатаны с 8-й горизонтали (как доска сверху).
 const PST: Record<string, number[]> = {
@@ -90,7 +95,8 @@ const env = (globalThis as { process?: { env?: Record<string, string | undefined
 export const tuning = { fast: !!env?.VITEST && !env?.SIM_GAMES };
 
 /** Оценка позиции за белых (в сантипешках). */
-export function evaluate(board: string[]): number {
+export function evaluate(board: string[], r: Rules = RULES.classic): number {
+  const VAL = valOf(r);
   let mat = 0;
   for (const p of board) {
     const k = p.toUpperCase();
@@ -119,7 +125,7 @@ interface Ctx {
 }
 
 function ordered(s: State, capturesOnly = false): Move[] {
-  const ms = capturesOnly ? pseudoCaptures(s) : pseudoMoves(s);
+  const ms = capturesOnly ? (s.reserve?.[s.turn].length ? [] : pseudoCaptures(s)) : pseudoMoves(s);
   const score = (m: Move) => (m.captured ? 10 * VAL[m.captured.toUpperCase()] - VAL[m.piece.toUpperCase()] / 10 : 0) + (m.promo ? 800 : 0);
   return ms.sort((a, b) => score(b) - score(a));
 }
@@ -127,10 +133,17 @@ function ordered(s: State, capturesOnly = false): Move[] {
 function legalAfter(s: State, m: Move): State | null {
   const n = play(s, m);
   if (m.castle) return n;
-  return attacked(n.board, kingSq(n.board, s.turn), 1 - s.turn) ? null : n;
+  if (m.drop) return n;
+  const k = kingSq(n.board, s.turn);
+  return k >= 0 && attacked(n.board, k, 1 - s.turn, rulesOf(s)) ? null : n;
 }
 
-const persp = (s: State) => (s.turn === 0 ? 1 : -1) * evaluate(s.board);
+const persp = (s: State) => (s.turn === 0 ? 1 : -1) * evaluate(s.board, rulesOf(s));
+
+/** Оценка хода с точки зрения ходившего: очередь может остаться у него же (второй ход марсельских, «верера»). */
+function child(s: State, n: State, f: (a: number, b: number) => number, alpha: number, beta: number): number {
+  return n.turn === s.turn ? f(alpha, beta) : -f(-beta, -alpha);
+}
 
 function quiesce(s: State, alpha: number, beta: number, ctx: Ctx, depth = 0): number {
   ctx.nodes++;
@@ -141,7 +154,7 @@ function quiesce(s: State, alpha: number, beta: number, ctx: Ctx, depth = 0): nu
   for (const m of ordered(s, true)) {
     const n = legalAfter(s, m);
     if (!n) continue;
-    const v = -quiesce(n, -beta, -alpha, ctx, depth + 1);
+    const v = child(s, n, (a, b) => quiesce(n, a, b, ctx, depth + 1), alpha, beta);
     if (v >= beta) return beta;
     if (v > alpha) alpha = v;
   }
@@ -157,7 +170,7 @@ function search(s: State, depth: number, alpha: number, beta: number, ply: numbe
     const n = legalAfter(s, m);
     if (!n) continue;
     any = true;
-    const v = -search(n, depth - 1, -beta, -alpha, ply + 1, ctx, qs);
+    const v = child(s, n, (a, b) => search(n, depth - 1, a, b, ply + 1, ctx, qs), alpha, beta);
     if (v >= beta) return beta;
     if (v > alpha) alpha = v;
     if (ctx.nodes > ctx.limit) break;
@@ -174,7 +187,7 @@ function rootScores(s: State, depth: number, qs: boolean, limit: number): { m: M
     const n = legalAfter(s, m);
     if (!n) continue;
     const repeats = s.keys.length > 3 && s.keys.slice(-8).includes(boardKey(n));
-    const v = -search(n, depth - 1, -MATE - 1, MATE + 1, 1, ctx, qs);
+    const v = child(s, n, (a, b) => search(n, depth - 1, a, b, 1, ctx, qs), -MATE - 1, MATE + 1);
     out.push({ m, v: repeats ? Math.min(v, 0) : v });
   }
   return out.sort((a, b) => b.v - a.v);
@@ -185,18 +198,26 @@ function boardKey(s: State): string {
   return s.board.map((p) => p || '.').join('') + s.turn;
 }
 
-const toAction = (m: Move): Action => ({ type: 'move', from: m.from, to: m.to, promo: m.promo });
+const toAction = (m: Move): Action => (m.drop ? { type: 'drop', piece: m.drop, to: m.to } : { type: 'move', from: m.from, to: m.to, promo: m.promo });
 
 export function choose(s: State, seat: number, level: number, rng: Rng): Action | null {
   if (s.phase === 'over') return null;
   if (s.phase === 'draw') {
     // соглашаемся на ничью, если дела плохи
-    const v = (seat === 0 ? 1 : -1) * evaluate(s.board);
+    const v = (seat === 0 ? 1 : -1) * evaluate(s.board, rulesOf(s));
     return { type: v < (level >= 2 ? -80 : -150) ? 'accept' : 'decline' };
   }
   if (s.turn !== seat) return null;
   const legal = legalMoves(s);
+  // «верера»: пара-тройка развивающих ходов, потом очередь сопернику
+  if (s.free && (s.run ?? 0) >= 1 + (level === 2 ? 2 : level) ) return { type: 'pass' };
   if (!legal.length) return null;
+  // расстановка ситтуйина: по таблицам позиций, с разбросом
+  if (legal[0].drop) {
+    const sc = rootScores(s, 1, false, 1e9);
+    const good = sc.filter((x) => x.v >= sc[0].v - 25);
+    return toAction(good[rng.int(good.length)].m);
+  }
   if (level === 0) {
     if (rng.next() < 0.18) return toAction(legal[rng.int(legal.length)]);
     const sc = rootScores(s, 1, false, 1e9);
