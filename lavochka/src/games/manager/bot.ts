@@ -30,7 +30,7 @@ import {
 /** Сколько держать в кармане. */
 function reserve(s: State, seat: number, level: number): number {
   if (s.map === 'kosmos') return [80, 200, 350][level];
-  const k = s.map === 'biznes' ? 5 : s.map === 'biznesmen' ? 8 : s.map === 'imperiya' ? 0.08 : 1;
+  const k = s.map === 'biznes' ? 5 : s.map === 'biznesmen' ? 8 : s.map === 'imperiya' || s.map === 'nep' ? 0.08 : 1;
   if (level === 0) return 2000 * k;
   let worst = 0;
   for (let c = 0; c < s.owner.length; c++) {
@@ -71,7 +71,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
           const built = s.houses.some((h, c) => h > 0 && s.owner[c] !== seat);
           const stay = level === 2 && built;
           if (!stay && s.freeCards[seat].length) return { type: 'useCard' };
-          if (!stay && cash >= 500 + res && level > 0) return { type: 'payJail' };
+          if (!stay && cash >= (b.jailPay ?? 500) + res && level > 0) return { type: 'payJail' };
           return { type: 'roll' };
         }
         // выкуп из залога, когда денег с запасом

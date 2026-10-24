@@ -6,7 +6,7 @@ import { BoardCam } from '../../core/boardcam';
 import { DiceTray } from '../../core/dice';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { BIG_CARDS, BM_COLORS, boardOf, CASINO, CASINO_STAR, INSURE, PRICE_MAX, RATE, ROULETTE, SHARES_BUY_CAP, STOCK_CARDS, TICKER, type Board, type MapId } from './boards';
+import { BIG_CARDS, BM_COLORS, boardOf, CASINO, CASINO_STAR, INSURE, PRICE_MAX, RATE, ROULETTE, SHARES_BUY_CAP, STOCK_CARDS, TICKER, wordsOf, type Board, type MapId } from './boards';
 import type { Ev } from './def';
 import { SEATS } from './def';
 import {
@@ -328,7 +328,7 @@ class ManagerView implements GameView<State, Ev> {
           await sleep(200 / speed);
           break;
         case 'jail':
-          this.say(`${strip(this.ctx.name(ev.seat))} — на бирже`);
+          this.say(`${strip(this.ctx.name(ev.seat))} — ${wordsOf(this.b!).jailAt}`);
           Sound.nomove();
           await sleep(700 / speed);
           break;
@@ -375,7 +375,10 @@ class ManagerView implements GameView<State, Ev> {
     const b = boardOf(v.map);
     switch (v.phase) {
       case 'roll':
-        if (v.jail[who]) return me ? 'Вы на бирже: дубль, 500 или карточка освобождения' : `${nm} на бирже…`;
+        if (v.jail[who]) {
+          const w = wordsOf(b);
+          return me ? `Вы ${w.jailAt}: дубль, ${fmt(b.jailPay ?? 500)}${b.id === 'nep' ? '' : ' или карточка освобождения'}` : `${nm} ${w.jailAt}…`;
+        }
         return me ? (b.id !== 'kosmos' ? 'Бросайте кубики (до броска можно строить, закладывать и меняться)' : 'Бросайте кубик') : `Ходит ${nm}…`;
       case 'buy':
         return me ? `Покупать ${esc(b.cells[v.pos[who]].full ?? '')}?` : `${nm} думает, покупать ли…`;
@@ -422,7 +425,7 @@ class ManagerView implements GameView<State, Ev> {
     const impFlags = imp
       ? [v.wait[seat] ? `пропуск ${v.wait[seat]}` : '', v.accel[seat] ? `ускорение ${v.accel[seat]}` : '', v.inertia[seat] ? 'инерциоид' : '', v.pyatak[seat] ? `пятак ×${v.pyatak[seat]}` : '']
       : [];
-    const flags = [...impFlags, sh ? `<span class="mg-shs">${sh}</span>` : '', bm && v.wait[seat] ? `в клинике: ${v.wait[seat]}` : '', biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? 'на бирже' : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
+    const flags = [...impFlags, sh ? `<span class="mg-shs">${sh}</span>` : '', bm && v.wait[seat] ? `в клинике: ${v.wait[seat]}` : '', biz && v.usd[seat] ? `<b>${dollars(v.usd[seat])}</b>` : '', v.jail[seat] ? wordsOf(b).jailAt : '', ins, ...perk, v.loan[seat] ? 'ссуда' : '', v.skip[seat] ? 'пропуск' : '']
       .filter(Boolean)
       .join(' · ');
     return `<b>${fmt(v.cash[seat])}</b> ${b.cur} · ${n} ${b.id === 'kosmos' ? 'пл.' : 'уч.'}${flags ? ' · ' + flags : ''}`;
@@ -467,7 +470,7 @@ class ManagerView implements GameView<State, Ev> {
         if (o != null) html = o < 4 ? `<i class="mg-chip" style="background-image:url(/manager/chip-${o < 0 ? 'bank' : o}.webp)"></i>` : `<i class="mg-chip ring" style="--c:${SEATS[o].color}"></i>`;
       } else if (o != null) {
         const hs = v.houses[i];
-        const ent = hs === 4 && b.id !== 'imperiya';
+        const ent = hs === (b.shops ?? 3) + 1 && b.id !== 'imperiya';
         html = `<i class="mg-band">${ent ? '<b class="mg-ent"></b>' : `<b class="mg-house${b.id === 'imperiya' ? ' rocket' : ''}"></b>`.repeat(hs)}</i>${v.mort[i] ? '<span class="mg-mort">залог</span>' : ''}`;
       }
       if (el.dataset.html !== html) {
@@ -598,7 +601,7 @@ class ManagerView implements GameView<State, Ev> {
     const cell = b.cells[c];
     const color = cell.group != null ? b.groups[cell.group].color : '#2a3a6a';
     const hs = v.houses[c];
-    const mark = b.id === 'imperiya' ? '▲'.repeat(hs) : hs === 4 ? '🏭' : '▪'.repeat(hs);
+    const mark = b.id === 'imperiya' ? '▲'.repeat(hs) : hs === (b.shops ?? 3) + 1 ? '🏭' : '▪'.repeat(hs);
     return `<button class="mg-pchip${v.mort[c] ? ' mort' : ''}" data-cell="${c}" style="--g:${color}">${esc(cell.name)}${hs ? `<small>${mark}</small>` : ''}</button>`;
   }
 
@@ -685,6 +688,29 @@ class ManagerView implements GameView<State, Ev> {
         ${firm ? `<div class="mg-dn">фирма за рубежом — без построек; на таможне за неё пошлина 5 000</div>` : `<div class="mg-dn">вся группа — плата за участок вдвое; стоимость филиала и предприятия — <b>${fmt(cell.build!)}</b></div>`}
         <div class="mg-own">владелец: ${esc(owner)}${v.mort[c] ? ' · <b>заложен</b>' : ''}${own && !v.mort[c] ? ` · сейчас ${fmt(rent(v, c))}` : ''}</div></div></div>`;
     }
+    if (b.id === 'nep') {
+      const own = o != null && o >= 0;
+      const tail = `<div class="mg-dr"><span>залог</span><b>${fmt(cell.price! / 2)}</b></div>
+        <div class="mg-own">владелец: ${esc(owner)}${v.mort[c] ? ' · <b>заложено</b>' : ''}${own && !v.mort[c] ? ` · сейчас ${fmt(rent(v, c))}` : ''}</div>`;
+      if (cell.util) {
+        const k = own ? b.cells.filter((x, i) => x.util === cell.util && v.owner[i] === o).length : 0;
+        const what = cell.util === 'port' ? ['1 порт', '2 порта', '3 порта', '4 порта'] : ['один из двух патентов', 'оба патента'];
+        return `<div class="mg-deed"><div class="mg-dh" style="--g:#ece6d6">${esc(cell.util === 'port' ? cell.name : 'Коммунальные услуги: ' + cell.name)}<b>${fmt(cell.price!)}</b></div>
+          <div class="mg-db"><div class="mg-dt">плата владельцу, если у него есть:</div>
+          ${cell.rents!.map((r, i) => `<div class="mg-dr${i === k - 1 ? ' on' : ''}"><span>${what[i]}</span><b>${fmt(r)}</b></div>`).join('')}${tail}</div></div>`;
+      }
+      const gn = b.groups[cell.group!];
+      const syn = own && fullGroup(v, c);
+      const lvN = own ? (v.houses[c] === 0 ? (syn ? 1 : 0) : v.houses[c] + 1) : -1;
+      const rowsN = ['только поле', 'синдикат', '1 магазин', '2 магазина', '3 магазина', '4 магазина', 'торговый дом'];
+      const vals = [cell.rents![0], cell.rents![0] * 2, ...cell.rents!.slice(1)];
+      return `<div class="mg-deed"><div class="mg-dh" style="--g:${gn.color}">${esc(cell.name)}<b>${fmt(cell.price!)}</b></div>
+        <div class="mg-db"><div class="mg-dt">плата владельцу:</div>
+        ${vals.map((r, i) => `<div class="mg-dr${i === lvN ? ' on' : ''}"><span>${rowsN[i]}</span><b>${fmt(r)}</b></div>`).join('')}
+        <div class="mg-dr"><span>цена магазина</span><b>${fmt(cell.build!)}</b></div>
+        <div class="mg-dn">торговый дом — вместо 4 магазинов, доплата ещё ${fmt(cell.build!)}</div>
+        <div class="mg-dn">${esc(gn.name)}: синдикат — все патенты отрасли у одного</div>${tail}</div></div>`;
+    }
     const g = b.groups[cell.group!];
     if (b.id === 'biznes') {
       const rowsB = ['поле', 'монополия', '1 филиал', '2 филиала', '3 филиала', 'предприятие'];
@@ -722,9 +748,10 @@ class ManagerView implements GameView<State, Ev> {
       const bmz = b.id === 'biznesmen';
       const cost = biz && v.houses[c] === 3 ? dollars(cell.buildUsd!) : fmt(cell.build!);
       const back = biz && v.houses[c] === 4 ? dollars(cell.buildUsd! / 2) : fmt(cell.build! / 2);
-      const entNext = bmz ? v.houses[c] === 1 : v.houses[c] === 3;
+      const entNext = bmz ? v.houses[c] === 1 : v.houses[c] === (b.shops ?? 3);
+      const w = wordsOf(b);
       const imp = b.id === 'imperiya';
-      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${imp ? 'Ракета' : entNext ? 'Предприятие' : 'Филиал'} — ${cost}</button>`);
+      if (canBuild(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn primary" data-a="build">${imp ? 'Ракета' : cap(entNext ? w.hotel : w.house)} — ${cost}</button>`);
       if (canSell(v, op, c)) btns.push(`<button class="btn" data-a="sell">Продать ${imp ? 'ракету' : 'постройку'} +${back}</button>`);
       if (canMortgage(v, op, c)) btns.push(`<button class="btn" data-a="mortgage">Заложить +${fmt(cell.price! / 2)}</button>`);
       if (canRedeem(v, op, c) && v.phase !== 'debt') btns.push(`<button class="btn" data-a="redeem">Выкупить −${fmt(redeemCost(v, c))}</button>`);
@@ -769,8 +796,9 @@ class ManagerView implements GameView<State, Ev> {
     switch (v.phase) {
       case 'roll':
         if (me && v.jail[seat]) {
-          html = `<div class="mg-q">На бирже, попытка ${v.jail[seat]} из 3</div><div class="mg-btns">
-            <button class="btn" data-a="payJail" ${v.cash[seat] < 500 ? 'disabled' : ''}>Заплатить 500</button>
+          const fee = b.jailPay ?? 500;
+          html = `<div class="mg-q">${cap(wordsOf(b).jailAt)}, попытка ${v.jail[seat]} из 3</div><div class="mg-btns">
+            <button class="btn" data-a="payJail" ${v.cash[seat] < fee ? 'disabled' : ''}>Заплатить ${fmt(fee)}</button>
             ${v.freeCards[seat].length ? '<button class="btn" data-a="useCard">Сдать карточку</button>' : ''}</div>`;
         }
         break;
@@ -1041,3 +1069,5 @@ class ManagerView implements GameView<State, Ev> {
 export function createView(): GameView<State, Ev> {
   return new ManagerView();
 }
+
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);

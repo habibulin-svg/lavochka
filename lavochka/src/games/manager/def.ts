@@ -1,7 +1,7 @@
-/* «Менеджер», «Космос 2000» и «Бизнес» — одна карточка, поле (и с ним правила) выбирается настройкой. Движок — engine.ts, боты — bot.ts. */
+/* «Менеджер», «Космос 2000», «Бизнес», «Бизнесмен», «Империя» и «НЭП» — одна карточка, поле (и с ним правила) выбирается настройкой. Движок — engine.ts, боты — bot.ts. */
 import type { DemoScript, GameDef, Rng, SeatSpec } from '../../core/types';
 import { SEATS as HSEATS } from '../hodilki/core';
-import { BM_COLORS, BOARDS, boardOf, INSURE, RATE, ROULETTE, STOCK_CARDS, type MapId } from './boards';
+import { BM_COLORS, BOARDS, boardOf, INSURE, RATE, ROULETTE, STOCK_CARDS, wordsOf, type MapId } from './boards';
 import { choose } from './bot';
 import { apply, dollars, fmt, newState, toAct, view, type Action, type Event, type State } from './engine';
 
@@ -542,6 +542,127 @@ const IMPERIYA_RULES = [
   },
 ];
 
+const NE = 'nep' as const;
+
+const NEP_RULES = [
+  {
+    title: 'НЭП: ход, патенты и торги',
+    html: `<p>От 2 до 6 игроков, у каждого на старте <b>1 500 руб.</b> Бросают два кубика и идут по часовой стрелке от «Начала». За каждый проход
+      «Начала» банк платит <b>200 руб.</b> Дубль — ещё бросок; три дубля подряд — сразу в «Театр».</p>
+      <p>На свободном предприятии можно купить у банка патент по цене на поле. Отказались — банкир продаёт патент <b>с торгов</b>
+      (торгуются все, и тот, кто отказался, шаг — 10 руб.). На чужом предприятии платят владельцу по карточке патента; заложенное платы не приносит.</p>`,
+    demo: demo(NE, () => {}, [
+      { seat: 0, action: { type: 'roll' }, rig: [0, 4], caption: 'Вовка бросает 1 и 5 — ресторан «Яр» свободен, патент стоит 100 руб.' },
+      { seat: 0, action: { type: 'buy' }, caption: 'Покупает: карточка патента теперь у него.' },
+      { seat: 1, action: { type: 'roll' }, rig: [2, 3], caption: 'Ленка попадает на «Метрополь» (100 руб.)…' },
+      { seat: 1, action: { type: 'pass' }, caption: '…и отказывается. Банкир выставляет патент на торги.' },
+      { seat: 0, action: { type: 'bid', amount: 50 }, caption: 'Вовка даёт 50.' },
+      { seat: 1, action: { type: 'bid', amount: 60 }, caption: 'Ленка — 60.' },
+      { seat: 0, action: { type: 'fold' }, caption: 'Вовка выходит из торгов — «Метрополь» у Ленки за 60 руб.' },
+    ]),
+  },
+  {
+    title: 'НЭП: синдикат, магазины и торговый дом',
+    html: `<p>Все патенты одной отрасли (одного цвета) у одного игрока — <b>синдикат</b>: плата за пустое поле вдвое, и можно строить. Сначала
+      <b>магазины</b> — до четырёх на поле, равномерно: на поле не может быть больше магазинов, чем на соседнем той же отрасли. Потом
+      <b>торговый дом</b>: четыре магазина сдают банку и доплачивают ещё цену магазина. Цена магазина — на карточке патента: 50, 100, 150 или 200 руб.
+      Строят до броска. В банке 32 магазина и 12 торговых домов — кончились, ждите, пока кто-нибудь продаст.</p>
+      <p>Постройки продают только банку за полцены, с самых застроенных полей.</p>`,
+    demo: demo(
+      NE,
+      (s) => {
+        s.owner[2] = 0;
+        s.owner[4] = 0;
+        s.pos[0] = 17;
+      },
+      [
+        { seat: 0, action: { type: 'build', cell: 2 }, caption: '«Серебро» и «Фарфор» — вся «Посуда» у Вовки, синдикат. Магазин на «Серебре» — 50 руб.' },
+        { seat: 0, action: { type: 'build', cell: 4 }, caption: 'Строят равномерно: теперь магазин на «Фарфоре»…' },
+        { seat: 0, action: { type: 'build', cell: 2 }, caption: '…и второй — на «Серебре».' },
+        { seat: 0, action: { type: 'roll' }, rig: [0, 1], caption: 'Вовка встаёт на «Таможню» — здесь ничего не происходит.' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 0], caption: 'Ленка — на «Серебре» с двумя магазинами: 30 руб. Вовке (пустое поле синдиката — 4). Дубль — ещё бросок.' },
+      ]
+    ),
+  },
+  {
+    title: 'НЭП: «Шанс», «Лотерея» и налоги',
+    html: `<p>На «Шансе» и «Лотерее» берут верхнюю карточку своей колоды, выполняют и кладут вниз: премии и штрафы, подарки от каждого игрока,
+      ремонт магазинов и торговых домов, переходы на «Начало», в «Театр», к ближайшему порту. «Плати налог» — 200 или 100 руб. в банк.</p>
+      <p>В колодах — карточки с оригинала, по 18 штук.</p>`,
+    demo: demo(
+      NE,
+      (s) => {
+        top(s, 0, 'Гран-при');
+        top(s, 1, 'Двигайтесь вперёд к ближайшему');
+        s.pos[1] = 22;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 2], caption: 'Вовка на «Шансе»: «Гран-при 500 руб.»' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 1], caption: 'Ленка тянет «Лотерею»: вперёд к ближайшему порту — «Порт Север» свободен.' },
+        { seat: 1, action: { type: 'buy' }, caption: 'Ленка покупает порт за 200 руб.' },
+      ]
+    ),
+  },
+  {
+    title: 'НЭП: театр',
+    html: `<p>В «Театр» попадают с клетки «Посетите театр», по карточке и за три дубля подряд — фишку ставят прямо в «Театр», за «Начало» не платят.
+      Остановиться на «Театре» обычным ходом — просто зашли посмотреть.</p>
+      <p>Выйти: выбросить дубль (три попытки) или заплатить <b>50 руб.</b> до броска. После третьей неудачной попытки 50 руб. платят обязательно и идут
+      на выпавшее. Сидя в театре, можно получать плату, строить и закладывать.</p>`,
+    demo: demo(
+      NE,
+      (s) => {
+        s.pos[0] = 25;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 2], caption: 'Вовка встаёт на «Посетите театр» — и отправляется в «Театр».' },
+        { seat: 1, action: { type: 'roll' }, rig: [0, 1], caption: 'Ленка — «Плати налог»: 200 руб. в банк.' },
+        { seat: 0, action: { type: 'payJail' }, caption: 'Вовка платит 50 руб. и выходит из театра…' },
+        { seat: 0, action: { type: 'roll' }, rig: [3, 4], caption: '…и сразу ходит: «Севрюга».' },
+      ]
+    ),
+  },
+  {
+    title: 'НЭП: порты, коммунальные услуги, залог и разорение',
+    html: `<p>Порты платят по их числу у хозяина: 25, 50, 100 или 200 руб. «Энергия» и «Вода» — 50 руб., если у хозяина одна, и 150 — если обе.
+      На них не строят.</p>
+      <p>Не хватает денег — продайте постройки банку за полцены и заложите патенты: банк даёт половину цены, выкуп — та же половина.
+      Заложить, продать или обменять можно патент, на отрасли которого нет построек. Если и так не набрать — разорение: всё уходит банку,
+      банк сам платит кредитору, игрок выбывает. Побеждает последний оставшийся — <b>первый нэпман</b>. Можно играть на время (20 или 40 кругов) —
+      тогда побеждает самый богатый.</p>`,
+    demo: demo(
+      NE,
+      (s) => {
+        s.owner[8] = 1;
+        s.owner[18] = 1;
+        s.owner[2] = 0;
+        s.pos[0] = 2;
+        s.cash[0] = 30;
+      },
+      [
+        { seat: 0, action: { type: 'roll' }, rig: [1, 3], caption: 'Вовка — в «Порту Юг». У Ленки два порта: платить 50 руб., а у Вовки 30.' },
+        { seat: 0, action: { type: 'mortgage', cell: 2 }, caption: 'Вовка закладывает «Серебро» за 30 руб. — долг уплачен.' },
+      ]
+    ),
+  },
+  {
+    title: 'НЭП: сделки',
+    html: `<p>До броска можно меняться с другими игроками патентами без построек и продавать их за деньги — по цене, о которой договорились.
+      Нажмите на поле соперника или кнопку «Сделка», соберите предложение — второй игрок соглашается или отказывается.</p>`,
+    demo: demo(
+      NE,
+      (s) => {
+        s.owner[2] = 0;
+        s.owner[4] = 1;
+      },
+      [
+        { seat: 0, action: { type: 'offer', to: 1, give: [], get: [4], cash: 120, cards: 0 }, caption: 'Вовке не хватает «Фарфора» до синдиката — он предлагает Ленке 120 руб.' },
+        { seat: 1, action: { type: 'accept' }, caption: 'Ленка соглашается: «Посуда» у Вовки, можно строить магазины.' },
+      ]
+    ),
+  },
+];
+
 function showcase(): State {
   const rng = { next: () => 0.5, int: (n: number) => n - 1, getState: () => 0 };
   const s = newState('manager', [0, 1, 2, 3], {}, rng);
@@ -600,6 +721,7 @@ export const def: GameDef<State, Action, Ev, State> = {
     { id: 'biznes', label: 'Бизнес', hint: 'патенты, филиалы, валютные предприятия, биржа и лотерея', options: { map: 'biznes', limit: 0 } },
     { id: 'imperiya', label: 'Империя', hint: 'планеты фантастов, ракеты, подпространство и антимир', options: { map: 'imperiya', limit: 0 } },
     { id: 'biznesmen', label: 'Бизнесмен', hint: 'два круга, биржа акций с табло, рулетка, автомагистраль (1990)', options: { map: 'biznesmen', limit: 0 } },
+    { id: 'nep', label: 'НЭП', hint: 'экономическая ретро-игра: патенты, магазины, торговые дома и театр', options: { map: 'nep', limit: 0 } },
   ],
   setup: (seats, opts, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
@@ -619,7 +741,7 @@ export const def: GameDef<State, Action, Ev, State> = {
   describe: (ev, name) => describe(ev, name),
   rules: {
     goal: 'Покупать участки (или планеты), собирать с соперников плату за наём и разорить всех — остаться единственным, у кого есть капитал.',
-    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES, ...BIZNESMEN_RULES, ...IMPERIYA_RULES],
+    sections: [...MANAGER_RULES, ...KOSMOS_RULES, ...BIZNES_RULES, ...BIZNESMEN_RULES, ...IMPERIYA_RULES, ...NEP_RULES],
   },
 };
 
@@ -646,10 +768,13 @@ const QUIET = new Set([
   'услуга маклера',
   'ракета',
   'ракета продана банку',
+  'магазин',
+  'торговый дом',
 ]);
 
 function describe(ev: Ev, name: (seat: number) => string): string | null {
   const b = boardOf(ev.m ?? 'manager');
+  const w = wordsOf(b);
   const m = (n: number) => `${fmt(n)} ${b.cur}`;
   const cn = (c: number) => b.cells[c]?.full ?? b.cells[c]?.name ?? '';
   const who = (w: number | null | 'pot') => (w === 'pot' ? 'Амазонкам' : w == null ? 'банку' : name(w));
@@ -657,7 +782,7 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
     case 'roll':
       return `${name(ev.seat)} бросает: <b>${ev.dice.join(' + ')}</b>`;
     case 'pay':
-      if (QUIET.has(ev.why)) return null; // покупку, постройку, залог описывает своё событие
+      if (QUIET.has(ev.why) || ev.why.endsWith('— продажа банку')) return null; // покупку, постройку, залог описывает своё событие
       {
         const sum = ev.usd ? dollars(ev.amount) : m(ev.amount);
         if (ev.from == null) return `${name(ev.to as number)} получает ${sum} — ${ev.why}`;
@@ -675,7 +800,7 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
     case 'won':
       return ev.seat == null ? `${cn(ev.cell)}: никто не купил${b.id === 'kosmos' ? ' — планета уходит банку' : ''}` : `${cn(ev.cell)} уходит с торгов: ${name(ev.seat)}, ${m(ev.price)}`;
     case 'build':
-      return `${name(ev.seat)} строит ${ev.level === 4 ? 'предприятие' : 'филиал'}: ${cn(ev.cell)}`;
+      return `${name(ev.seat)} строит ${ev.level === (b.shops ?? 3) + 1 ? w.hotel : w.house}: ${cn(ev.cell)}`;
     case 'unbuild':
       return `${name(ev.seat)} продаёт банку постройку: ${cn(ev.cell)}`;
     case 'mortgage':
@@ -685,11 +810,13 @@ function describe(ev: Ev, name: (seat: number) => string): string | null {
     case 'card':
       return `${name(ev.seat)}, «${b.decks[ev.deck].name}»: <i>${b.decks[ev.deck].cards[ev.id].text}</i>`;
     case 'jail':
-      return `${name(ev.seat)} — на бирже`;
-    case 'free':
-      return `${name(ev.seat)} выходит с биржи${ev.how === 'double' ? ' — дубль' : ev.how === 'card' ? ' по карточке' : ev.how === 'pay' ? ' за 500' : ' — три хода прошли, 500 в банк'}`;
+      return `${name(ev.seat)} — ${w.jailAt}`;
+    case 'free': {
+      const fee = m(b.jailPay ?? 500);
+      return `${name(ev.seat)} выходит ${w.jailFrom}${ev.how === 'double' ? ' — дубль' : ev.how === 'card' ? ' по карточке' : ev.how === 'pay' ? ` за ${fee}` : ` — три хода прошли, ${fee} в банк`}`;
+    }
     case 'stay':
-      return `${name(ev.seat)} не выбросил дубль — остаётся на бирже`;
+      return `${name(ev.seat)} не выбросил дубль — остаётся ${w.jailAt}`;
     case 'offer': {
       const o = ev.offer;
       return `${name(o.from)} предлагает сделку ${name(o.to)}`;

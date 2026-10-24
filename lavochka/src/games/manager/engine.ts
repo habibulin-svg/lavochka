@@ -27,6 +27,7 @@ import {
   type Board,
   type Card,
   type MapId,
+  wordsOf,
 } from './boards';
 
 export type Phase =
@@ -284,6 +285,10 @@ export const isBm = (s: State) => s.map === 'biznesmen';
 export const isImp = (s: State) => s.map === 'imperiya';
 /** Поля по правилам «Менеджера» (Ленинград и Одесса — одни правила, разные клетки). */
 export const isMgr = (s: State) => s.map === 'manager' || s.map === 'odessa';
+/** «НЭП» — классические правила: 4 магазина и торговый дом, порты и коммунальные услуги, 200 за каждый проход «Начала». */
+export const isNep = (s: State) => s.map === 'nep';
+/** Уровень большой постройки (предприятие, торговый дом): простых построек + 1. */
+export const topLevel = (s: State) => (B(s).shops ?? 3) + 1;
 export const N = (s: State) => B(s).cells.length;
 
 export const fmt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -391,7 +396,7 @@ export function newState(map: MapId, seats: number[], o: { limit?: number; start
     offer: null,
     debt: null,
     offers: 0,
-    stock: map === 'biznes' ? [18, 12] : bm ? [20, 12] : map === 'imperiya' ? [40, 0] : [26, 12],
+    stock: b.stock ? [b.stock[0], b.stock[1]] : map === 'biznes' ? [18, 12] : bm ? [20, 12] : map === 'imperiya' ? [40, 0] : [26, 12],
     round: 1,
     limit: o.limit ?? 0,
     startPass: !!o.startPass,
@@ -442,6 +447,8 @@ export function rent(s: State, c: number): number {
   const cell = B(s).cells[c];
   if (!cell.rents || s.mort[c]) return 0;
   if (s.map === 'kosmos') return cell.rents[0];
+  // «НЭП»: порты и коммунальные услуги — по их числу у хозяина
+  if (cell.util === 'port' || cell.util === 'comm') return cell.rents[sameUtil(s, c) - 1];
   const h = s.houses[c];
   if (isBiz(s)) return h === 0 ? cell.rents[fullGroup(s, c) ? 1 : 0] : cell.rents[h + 1];
   // «Бизнесмен»: участок (вдвое — если вся группа), филиал, предприятие; фирма — одна плата
@@ -482,12 +489,13 @@ export function canBuild(s: State, seat: number, c: number): boolean {
     if (h === 1) return s.stock[1] >= 1 && groupCells(s, cell.group!).every((i) => i === c || s.houses[i] >= 1);
     return false;
   }
-  if (h >= 4 || h !== Math.min(...groupHouses(s, c))) return false;
+  const top = topLevel(s);
+  if (h >= top || h !== Math.min(...groupHouses(s, c))) return false;
   // по правилам «Менеджера»: за один ход на каждом участке группы — по одному филиалу (или одно предприятие)
   if (isMgr(s) && s.built?.includes(c)) return false;
   // «Империя»: до четырёх ракет на планете, равномерно по системе
   if (isImp(s)) return s.stock[0] >= 1 && s.cash[seat] >= cell.build!;
-  if (h < 3 ? s.stock[0] < 1 : s.stock[1] < 1) return false;
+  if (h < top - 1 ? s.stock[0] < 1 : s.stock[1] < 1) return false;
   return s.cash[seat] >= cell.build!;
 }
 
@@ -495,7 +503,7 @@ export function canSell(s: State, seat: number, c: number): boolean {
   if (isBiz(s)) return s.owner[c] === seat && s.houses[c] > 0;
   // «Бизнесмен»: филиал нельзя снять, пока в группе стоит предприятие
   if (isBm(s)) return s.owner[c] === seat && s.houses[c] > 0 && (s.houses[c] === 4 || !groupHouses(s, c).includes(4));
-  return (isMgr(s) || isImp(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
+  return (isMgr(s) || isImp(s) || isNep(s)) && s.owner[c] === seat && s.houses[c] > 0 && s.houses[c] === Math.max(...groupHouses(s, c));
 }
 
 // «Менеджер»: нельзя заложить участок, если постройка стоит на нём самом (rules.txt, «Торговля собственностью»)
@@ -551,7 +559,7 @@ export const housesOf = (s: State, seat: number) => {
   let h = 0;
   let e = 0;
   for (const c of owned(s, seat)) {
-    if (s.houses[c] === 4) e++;
+    if (s.houses[c] === topLevel(s)) e++;
     else h += s.houses[c];
   }
   return { h, e };
@@ -646,7 +654,7 @@ function eliminate(x: Ctx, seat: number) {
   for (let c = 0; c < s.owner.length; c++) {
     if (s.owner[c] !== seat) continue;
     s.owner[c] = s.map === 'kosmos' ? -1 : null;
-    if (s.houses[c] === 4 && !isImp(s)) {
+    if (s.houses[c] === topLevel(s) && !isImp(s)) {
       s.stock[1]++;
     } else s.stock[0] += s.houses[c];
     s.houses[c] = 0;
@@ -695,7 +703,7 @@ function checkWin(x: Ctx) {
   if (left.length <= 1 && !s.result) {
     s.result = {
       winners: left,
-      text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : isImp(s) ? 'единственный не разорился — властелин Империи' : isBm(s) ? 'единственный не разорился — настоящий бизнесмен' : isBiz(s) ? 'единственный не обанкротился — самое развитое производство' : 'единственный не разорился — монополист',
+      text: s.map === 'kosmos' ? 'остался в космосе последним с капиталом' : isImp(s) ? 'единственный не разорился — властелин Империи' : isBm(s) ? 'единственный не разорился — настоящий бизнесмен' : isBiz(s) ? 'единственный не обанкротился — самое развитое производство' : isNep(s) ? 'единственный не разорился — первый нэпман' : 'единственный не разорился — монополист',
     };
     s.phase = 'over';
     x.ev.push({ type: 'end', winners: left, text: s.result.text });
@@ -806,7 +814,7 @@ function passStart(x: Ctx, seat: number, landed: boolean) {
   if (isBiz(s)) {
     s.perk[seat] = 0; // льготы — до конца круга
     if (s.premium) give(x, null, seat, b.startPay, 'премия за круг');
-  } else if (isMgr(s) || isBm(s) || landed || s.startPass) give(x, null, seat, b.startPay, landed ? 'остановка на «Старте»' : 'проход через «Старт»');
+  } else if (isMgr(s) || isBm(s) || isNep(s) || landed || s.startPass) give(x, null, seat, b.startPay, `${landed ? 'остановка на' : 'проход через'} «${b.cells[0].name}»`);
   if (s.loan[seat] > 0) {
     s.loanLaps[seat]++;
     if (s.cash[seat] >= s.loan[seat]) {
@@ -1218,6 +1226,19 @@ function applyFx(x: Ctx, seat: number, card: Card) {
         }
       }
       moveTo(x, seat, to);
+      return;
+    }
+    case 'nearestUtil': {
+      const len = b.cells.length;
+      let to = s.pos[seat];
+      for (let i = 1; i <= len; i++) {
+        const c = (s.pos[seat] + (fx.back ? -i : i) + len * 2) % len;
+        if (b.cells[c].util === fx.util) {
+          to = c;
+          break;
+        }
+      }
+      moveTo(x, seat, to, fx.back);
       return;
     }
     case 'cosmodrome':
@@ -1958,13 +1979,15 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
           }
           return ok();
         }
-        if (s.houses[c] === 3) {
+        const top = topLevel(s);
+        if (s.houses[c] === top - 1) {
           s.stock[1]--;
-          s.stock[0] += 3;
+          s.stock[0] += top - 1;
         } else s.stock[0]--;
         s.houses[c]++;
         if (isMgr(s)) s.built = [...(s.built ?? []), c];
-        give(x, seat, null, cost, s.houses[c] === 4 ? 'предприятие' : 'филиал');
+        const w = wordsOf(b);
+        give(x, seat, null, cost, s.houses[c] === top ? w.hotel : w.house);
         x.ev.push({ type: 'build', seat, cell: c, level: s.houses[c] });
         return ok();
       }
@@ -2002,16 +2025,17 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
             s.stock[0]++;
             give(x, null, seat, half, 'филиал продан банку');
           }
-        } else if (s.houses[c] === 4) {
-          const k = Math.min(3, s.stock[0]);
+        } else if (s.houses[c] === topLevel(s)) {
+          // большую постройку меняют обратно на простые, сколько их есть в банке; недостающие — деньгами
+          const k = Math.min(topLevel(s) - 1, s.stock[0]);
           s.stock[1]++;
           s.stock[0] -= k;
           s.houses[c] = k;
-          give(x, null, seat, half * (1 + 3 - k), 'предприятие продано банку');
+          give(x, null, seat, half * (topLevel(s) - k), `${wordsOf(b).hotel} — продажа банку`);
         } else {
           s.houses[c]--;
           s.stock[0]++;
-          give(x, null, seat, half, 'филиал продан банку');
+          give(x, null, seat, half, `${wordsOf(b).house} — продажа банку`);
         }
         x.ev.push({ type: 'unbuild', seat, cell: c, level: s.houses[c] });
         break;
