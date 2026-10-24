@@ -7,7 +7,7 @@ import type { GameView, ViewCtx } from '../core/view';
 import { preloadDeck, deckStyle } from './render';
 
 import { sameCard, sortHand, type Card, type Suit } from './deck';
-import { CardStage, cardKey, fan, type Point, type StageItem } from './stage';
+import { CardStage, cardKey, fan, portraitHand, type Point, type StageItem, type StageOpts } from './stage';
 import type { SeatLook } from '../core/types';
 import './trickview.css';
 
@@ -48,6 +48,8 @@ export interface TrickModel {
   playFrom?(seat: number): boolean;
   /** Открытые чужие руки крупнее (болван). */
   openBig?: boolean;
+  /** Своя рука на телефоне — в два ряда (таро: 18–30 высоких карт). */
+  twoRows?: boolean;
 }
 
 export interface TrickGeo {
@@ -81,7 +83,9 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
   constructor(
     private readonly cls: string,
     private readonly cloth: string,
-    protected readonly looks: SeatLook[]
+    protected readonly looks: SeatLook[],
+    /** Своя колода (таро): картинки и размер карты на сцене. */
+    private readonly stageOpts: StageOpts = {}
   ) {}
 
   /** Что где лежит при этом состоянии. */
@@ -96,8 +100,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    preloadDeck(deckStyle());
-    this.cs = new CardStage(root, 1000, 720, `tv-wrap ${this.cls}-wrap`, `<div class="tv-cloth ${this.cloth}"></div>`, { portrait: { W: 540, H: 900 } });
+    if (!this.stageOpts.faces) preloadDeck(deckStyle());
+    this.cs = new CardStage(root, 1000, 720, `tv-wrap ${this.cls}-wrap`, `<div class="tv-cloth ${this.cloth}"></div>`, { ...this.stageOpts, portrait: { W: 540, H: 900 } });
     this.cs.onMode = () => this.draw();
     this.cs.over.innerHTML = '<div class="tv-plates"></div><div class="cs-banner" hidden></div>';
     this.plates = this.cs.over.querySelector('.tv-plates') as HTMLElement;
@@ -202,16 +206,16 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
       const anyOk = up && list.some((c) => m.canPlay(c));
       for (let k = 0; k < cnt; k++) {
         if (me) {
-          const p = fan(cnt, k, a.x, a.y, g.port ? 480 : 720, g.port ? 56 : 76, 16, 10);
+          const p = g.port && m.twoRows ? portraitHand(cnt, k, a.x, a.y - 30, 430, g.hs * 0.9) : { ...fan(cnt, k, a.x, a.y, g.port ? 480 : 720, g.port ? 56 : 76, 16, 10), s: g.hs };
           const c = list[k];
           if (!up || !c) {
-            items.push({ key: `b:${seat}:${k}`, card: null, ...p, s: g.hs, z: 100 + k });
+            items.push({ key: `b:${seat}:${k}`, card: null, ...p, z: 100 + k });
             continue;
           }
           const act = this.actSeat === seat && !this.hidden;
           const ok = act && m.canPlay(c);
           const sel = this.selected.some((x) => sameDeckCard(x, c));
-          items.push({ key: this.keyOf(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: handId(c) } : undefined });
+          items.push({ key: this.keyOf(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: p.s, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: handId(c) } : undefined });
         } else {
           const big = up && m.openBig;
           // крупная открытая рука сбоку — уже и не за краем стола
@@ -252,7 +256,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
     for (const seat of m.seats) {
       const a = this.anchor(m, seat);
       const me = seat === this.viewer;
-      const y = me ? a.y - 78 * g.hs - 36 : a.y + (g.port ? 34 : 42);
+      // рука в два ряда (таро на телефоне) — табличка над верхним рядом
+      const y = me ? (g.port && m.twoRows ? a.y - 182 : a.y - 78 * g.hs - 36) : a.y + (g.port ? 34 : 42);
       const x = Math.max(g.port ? 80 : 90, Math.min(g.W - (g.port ? 80 : 90), a.x));
       s += `<div class="cs-plate${m.turn === seat ? ' on' : ''}" style="--c:${this.looks[seat].color};left:${x}px;top:${y}px">${esc(this.plain(seat))} ${m.plate(seat)}</div>`;
     }

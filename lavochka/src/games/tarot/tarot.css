@@ -1,0 +1,18 @@
+/* Французское таро: парижское кафе — тёмно-синее сукно, медная кромка; карты Уэйта — Смит с индексами. */
+.table--tarot {
+  --panel-bg: linear-gradient(180deg, #f2ece0, #ddd2b8);
+  --panel-ink: #1a160c;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #0c1018;
+}
+.tv-cloth.ta-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #24406e, #121f3a 72%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #8a5a2a, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.ta-chien { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); z-index: 450; display: flex; gap: 8px; align-items: flex-end;
+  padding: 10px 12px 22px; border-radius: 12px; background: rgba(10, 16, 28, 0.78); border: 2px solid #c9a24a; pointer-events: none; }
+.ta-chien img { width: 70px; border-radius: 5px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.ta-chien small { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; color: #f6e2b0; font: 13px 'PT Sans', Arial, sans-serif; }
+.cs-port .ta-chien img { width: 52px; }

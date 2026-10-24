@@ -69,6 +69,7 @@ export const NAMES: Record<string, Names> = {
   shogi: { ru: ['сёги онлайн', 'японские шахматы', 'шоги', 'сеги', 'мини-сёги', 'животные сёги', 'доубуцу сёги'], en: ['Shogi', 'Japanese chess', 'Minishogi', 'Dobutsu shogi', 'Let\'s Catch the Lion'] },
   xiangqi: { ru: ['сянци онлайн', 'китайские шахматы', 'сянци', 'ко-туонг', 'вьетнамские шахматы', 'ко-уп', 'кыо-туонг'], en: ['Xiangqi', 'Chinese chess', 'Co tuong', 'Vietnamese chess', 'Co up'] },
   hanafuda: { ru: ['ханафуда онлайн', 'коикои', 'кои-кои', 'го-стоп', 'хвату', 'японские карты', 'цветочные карты'], en: ['Hanafuda', 'Koi-Koi', 'Go-Stop', 'Hwatu', 'Flower cards'] },
+  tarot: { ru: ['французское таро', 'таро карточная игра', 'игра в таро', 'тарок', 'тарокк', 'таро онлайн игра'], en: ['French Tarot', 'Jeu de tarot', 'Tarot card game', 'Tarock'] },
   skat: { ru: ['скат онлайн', 'игра скат', 'скат карточная игра', 'немецкий скат'], en: ['Skat', 'German Skat'] },
   pinochle: { ru: ['пинокль онлайн', 'пинокл', 'игра пинокль', 'пинокль карточная игра'], en: ['Pinochle', 'Partnership pinochle', 'Cutthroat pinochle'] },
   deberts: { ru: ['деберц онлайн', 'деберц', 'клабор', 'клабар', 'белот', 'дэбчик', 'деберц правила', 'клаберьяс'], en: ['Deberts', 'Klaberjass', 'Klabberjass', 'Belote', 'Clobyosh', 'Bela'] },

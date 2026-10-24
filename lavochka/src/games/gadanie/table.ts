@@ -202,9 +202,13 @@ export function mountTable(root: HTMLElement, panel: HTMLElement, deck: DeckKind
           .map(({ i }) => `<button class="btn" data-person="${i}">${esc(cardTitle('karty', i))}</button>`)
           .join('')}</div>`;
     } else if (phase === 'draw') {
-      act.innerHTML = `<p class="gd-left">Тяните карту из колоды: осталось <b>${left}</b></p>
-        <p class="hint">Следующее место: <b>${esc(spread.spots[slotsOf(spread)[drawn.length]].label)}</b>.</p>
-        <button class="btn" data-a="reset">Начать заново</button>`;
+      // последняя карта ещё летит на место — следующего места нет
+      const next = spread.spots[slotsOf(spread)[drawn.length]];
+      act.innerHTML = next
+        ? `<p class="gd-left">Тяните карту из колоды: осталось <b>${left}</b></p>
+        <p class="hint">Следующее место: <b>${esc(next.label)}</b>.</p>
+        <button class="btn" data-a="reset">Начать заново</button>`
+        : `<p class="gd-left">Все карты легли — открываем…</p>`;
     } else {
       act.innerHTML = `<button class="btn primary" data-a="again">🔄 Разложить заново</button>`;
     }

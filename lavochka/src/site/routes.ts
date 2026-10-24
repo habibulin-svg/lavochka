@@ -71,6 +71,7 @@ export const SLUGS: Record<string, string> = {
   canasta: 'kanasta',
   pinochle: 'pinokl',
   skat: 'skat',
+  tarot: 'francuzskoe-taro',
   hanafuda: 'hanafuda',
   xiangqi: 'syanci',
   shogi: 'syogi',
