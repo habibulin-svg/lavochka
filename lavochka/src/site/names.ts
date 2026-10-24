@@ -64,6 +64,8 @@ export const NAMES: Record<string, Names> = {
   hearts: { ru: ['червы', 'червушки', 'черви в карты', 'чёрная дама', 'Hearts'], en: ['Hearts', 'Black Lady', 'Black Maria', 'Omnibus Hearts'] },
   king: { ru: ['кинг в карты', 'дамский преферанс', 'барбу'], en: ['King', 'Barbu'] },
   raspisnoy: { ru: ['расписной', 'расписуха', 'кинг-покер', 'покер на взятки'], en: ['Oh Hell', 'Up and Down the River', 'Contract Whist', 'Nomination Whist', 'Wizard'] },
+  chinesecheckers: { ru: ['ромашка игра', 'ромашка настольная игра', 'китайские шашки', 'халма', 'уголки на звезде', 'звёздные шашки'], en: ['Chinese checkers', 'Halma', 'Sternhalma', 'Chinese chequers'] },
+  janggi: { ru: ['чанги онлайн', 'корейские шахматы', 'чанги', 'джанги', 'чангги'], en: ['Janggi', 'Korean chess', 'Changgi'] },
   shogi: { ru: ['сёги онлайн', 'японские шахматы', 'шоги', 'сеги', 'мини-сёги', 'животные сёги', 'доубуцу сёги'], en: ['Shogi', 'Japanese chess', 'Minishogi', 'Dobutsu shogi', 'Let\'s Catch the Lion'] },
   xiangqi: { ru: ['сянци онлайн', 'китайские шахматы', 'сянци', 'ко-туонг', 'вьетнамские шахматы', 'ко-уп', 'кыо-туонг'], en: ['Xiangqi', 'Chinese chess', 'Co tuong', 'Vietnamese chess', 'Co up'] },
   skat: { ru: ['скат онлайн', 'игра скат', 'скат карточная игра', 'немецкий скат'], en: ['Skat', 'German Skat'] },

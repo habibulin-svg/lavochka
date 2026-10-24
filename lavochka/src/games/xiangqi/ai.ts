@@ -74,9 +74,13 @@ function world(v: View, rng: Rng): Pos {
   return { board, hidden: v.hidden, mode: v.cfg.mode, turn: v.turn };
 }
 
+/** Прогоны тестов (vitest без SIM_GAMES): боты думают мельче, чтобы партии шли быстро. */
+const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+const fast = !!env?.VITEST && !env?.SIM_GAMES;
+
 export function choose(v: View, seat: number, level: number, rng: Rng): Action | null {
   if (v.over || v.turn !== seat) return null;
-  const depth = level === 0 ? 1 : level === 1 ? 3 : 4;
+  const depth = fast ? Math.min(level + 1, 2) : level === 0 ? 1 : level === 1 ? 3 : 4;
   const noise = level === 0 ? 220 : level === 1 ? 20 : 0;
   const hiddenAny = v.hidden.some(Boolean);
   if (!hiddenAny) {
