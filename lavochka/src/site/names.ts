@@ -21,7 +21,7 @@ export const NAMES: Record<string, Names> = {
   mill: { ru: ['мельница онлайн', 'игра мельница', 'мельница на 9 камней', 'мельница 12 фишек', 'настольная игра мельница'], en: ["Nine men's morris", 'Mill', 'Merels', "Twelve men's morris", "Three men's morris"] },
   foxgeese: { ru: ['лиса и гуси онлайн', 'игра лиса и гуси', 'асальто', 'солитёр йога', 'игра йога СССР', 'солитер с колышками'], en: ['Fox and geese', 'Asalto', 'Peg solitaire', 'Solitaire board game'] },
   tafl: { ru: ['хнефатафл онлайн', 'шахматы викингов', 'тафл', 'таблут', 'брандубх', 'игра викингов'], en: ['Hnefatafl', 'Viking chess', 'Tafl', 'Tablut', 'Brandubh', 'Copenhagen hnefatafl', 'Fetlar'] },
-  ur: { ru: ['королевская игра ура', 'игра ура', 'ур настольная игра', 'шумерская игра', 'древнейшая настольная игра', 'игра двадцати клеток'], en: ['Royal Game of Ur', 'Game of Ur', 'Game of Twenty', 'Ur board game'] },
+  ur: { ru: ['царская игра ура', 'королевская игра ура', 'игра ура', 'ур настольная игра', 'шумерская игра', 'древнейшая настольная игра', 'игра двадцати клеток'], en: ['Royal Game of Ur', 'Game of Ur', 'Game of Twenty', 'Ur board game'] },
   fanorona: { ru: ['фанорона онлайн', 'игра фанорона', 'мадагаскарские шашки', 'фанорон-тэло', 'фанорон-дими', 'мадагаскарская игра'], en: ['Fanorona', 'Fanoron-Telo', 'Fanoron-Dimy', 'Malagasy board game'] },
   quoridor: { ru: ['коридор настольная игра', 'игра коридор онлайн', 'кворидор', 'игра со стенками', 'лабиринт из стенок'], en: ['Quoridor', 'Quoridor online', 'Quoridor Kid'] },
   pentago: { ru: ['пентаго онлайн', 'игра пентаго', 'пять в ряд с поворотом', 'крестики-нолики с поворотом', 'вращающиеся квадраты'], en: ['Pentago', 'Pentago online', 'Pentago XL', 'Multiplayer Pentago'] },

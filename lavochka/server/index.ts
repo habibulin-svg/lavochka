@@ -563,9 +563,10 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
   // старый адрес на Render не индексируем: сайт переезжает на свой домен
   if (/\.onrender\.com$/i.test(String(req.headers.host || '').split(':')[0])) headers['x-robots-tag'] = 'noindex';
   // переехавший адрес — насовсем на новый
-  const moved = MOVED[path.replace(/^\/+|\/+$/g, '')];
-  if (moved) {
-    res.writeHead(301, { location: `/${moved}/` + (req.url || '').slice(path.length), ...headers });
+  const bare = path.replace(/^\/+|\/+$/g, '');
+  const was = Object.keys(MOVED).find((k) => bare === k || bare.startsWith(k + '/'));
+  if (was) {
+    res.writeHead(301, { location: `/${MOVED[was]}${bare.slice(was.length)}/` + (req.url || '').slice(path.length), ...headers });
     return res.end();
   }
   let status = 200;

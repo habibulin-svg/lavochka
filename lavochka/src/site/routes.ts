@@ -22,7 +22,7 @@ export const SLUGS: Record<string, string> = {
   razvedchik: 'razvedchik-i-dozor',
   vput: 'v-put-dorogu',
   bagchal: 'bag-chal',
-  ur: 'korolevskaya-igra-ura',
+  ur: 'carskaya-igra-ura',
   senet: 'senet',
   fanorona: 'fanorona',
   surakarta: 'surakarta',
@@ -164,6 +164,7 @@ export const SECTION_SLUGS: Record<string, string> = {
 /** Переехавшие адреса → новые (сервер отвечает 301). */
 export const MOVED: Record<string, string> = {
   'golovolomki/pravila': 'krossvordy-i-sudoku/pravila',
+  'korolevskaya-igra-ura': 'carskaya-igra-ura',
 };
 
 /** Отдельная страница варианта — только там, где у него свой спрос (docs/seo/plan.md); остальные варианты — разделом на странице игры. */

@@ -1,4 +1,4 @@
-/* Гонки древности: ключевые правила Королевской игры Ура и сенета. */
+/* Гонки древности: ключевые правила Царской игры Ура и сенета. */
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import * as ur from '../src/games/ur/engine';
@@ -6,7 +6,7 @@ import * as sn from '../src/games/senet/engine';
 import { choose as urBot } from '../src/games/ur/ai';
 import { choose as snBot } from '../src/games/senet/ai';
 
-describe('Королевская игра Ура', () => {
+describe('Царская игра Ура', () => {
   it('путь: свой ряд, общий средний, обратно по малому блоку', () => {
     expect(ur.cell(0, 1)).toEqual([3, 2]);
     expect(ur.cell(0, 4)).toEqual([0, 2]);
