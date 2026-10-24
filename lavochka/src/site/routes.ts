@@ -130,6 +130,7 @@ export const SLUGS: Record<string, string> = {
   vorona: 'belaya-vorona',
   western: 'vestern',
   akcii: 'akcionery',
+  poezd: 'poezdom-po-sssr',
   sea: 'morskie-strategii',
   zakoldovannaya: 'zakoldovannaya-strana',
   // настольный спорт
