@@ -1,4 +1,4 @@
-/* «Освоение галактики»: раздача, бой на кубиках, взятие с карточкой, обмен, цели, союзник вдвоём, партии ботов. */
+/* «Космические войны»: раздача, бой на кубиках, взятие с карточкой, обмен, цели, союзник вдвоём, партии ботов. */
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { choose, winProb } from '../src/games/galaktika/ai';

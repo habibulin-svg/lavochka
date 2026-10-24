@@ -1,4 +1,4 @@
-/* «Освоение галактики» — советский «Риск» (около 1990): 6 планет, 42 территории, звездолёты освоения, тайные цели.
+/* «Космические войны» — советский «Риск» (около 1990): 6 планет, 42 территории, звездолёты освоения, тайные цели.
  * Поле — скан пользователя (склейка tools/galaktika/cut.py); правила — по листку игры. Чего в листке нет — решения в docs/STATE.md. */
 import type { DemoScript, GameDef, Rng, SeatSpec } from '../../core/types';
 import { choose } from './ai';
@@ -163,7 +163,7 @@ const RULES = [
 
 export const def: GameDef<State, Action, Event, State> = {
   id: 'galaktika',
-  title: 'Освоение галактики',
+  title: 'Космические войны',
   players: { min: 2, max: 4, default: 3 },
   countsFor: (o) => (o.mode === 'duel' ? [2] : [3, 4]),
   countsHint: (o) => (o.mode === 'duel' ? 'вдвоём — с союзником' : 'втроём или вчетвером'),

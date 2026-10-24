@@ -1,4 +1,4 @@
-/* «Освоение галактики»: планисфера под камерой, фишки-звездолёты (SVG), окна броска и перемещения, панель с карточками. */
+/* «Космические войны»: планисфера под камерой, фишки-звездолёты (SVG), окна броска и перемещения, панель с карточками. */
 .table--galaktika { --table-bg: radial-gradient(ellipse at 50% 30%, #1a1a3a, #050510); }
 .gk-wrap { position: relative; width: 100%; height: 100%; }
 .gk-board { position: absolute; border-radius: 6px; overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.7); opacity: 0; transition: opacity 0.5s ease; background: #05050a; }

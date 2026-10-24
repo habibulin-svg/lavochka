@@ -123,7 +123,7 @@ export const SLUGS: Record<string, string> = {
   kupi: 'kupi-prodai',
   sovabstract: 'sovetskie-abstrakty',
   wargames: 'vargejmy',
-  galaktika: 'osvoenie-galaktiki',
+  galaktika: 'kosmicheskie-vojny',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',
@@ -168,6 +168,7 @@ export const SECTION_SLUGS: Record<string, string> = {
 export const MOVED: Record<string, string> = {
   'golovolomki/pravila': 'krossvordy-i-sudoku/pravila',
   'korolevskaya-igra-ura': 'carskaya-igra-ura',
+  'osvoenie-galaktiki': 'kosmicheskie-vojny',
 };
 
 /** Отдельная страница варианта — только там, где у него свой спрос (docs/seo/plan.md); остальные варианты — разделом на странице игры. */
