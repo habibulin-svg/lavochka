@@ -100,7 +100,7 @@ async function drawDash(body: HTMLElement) {
       ${tile('пожертвований', rub(totals.donated30), 'за 30 дней')}
       ${tile('обращений ждут', num(totals.ticketsNew), '', '/admin/obrashcheniya/')}
       ${tile('новых ошибок', num(totals.errorsNew), '', '/admin/oshibki/')}
-      ${ai.ok ? tile('Помощники за месяц', `${(ai.body.rub as number).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽`, `${num(ai.body.requests)} вопросов (${[['mihalych', 'Михалыч'], ['dimon', 'Димон']].map(([k, n]) => `${n} ${num(ai.body.helpers?.[k]?.requests ?? 0)}`).join(', ')}), людей ${num(ai.body.users)} · потолок ${num(ai.body.siteRub)} ₽`) : ''}
+      ${ai.ok ? tile('Помощники за месяц', `${(ai.body.rub as number).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽`, `${num(ai.body.requests)} вопросов (${[['mihalych', 'Михалыч'], ['dimon', 'Димон'], ['svetka', 'Светка']].map(([k, n]) => `${n} ${num(ai.body.helpers?.[k]?.requests ?? 0)}`).join(', ')}), людей ${num(ai.body.users)} · потолок ${num(ai.body.siteRub)} ₽`) : ''}
     </div>
     <div class="adm-charts">
       ${bars(days, 'plays', 'Партии в день', (d) => `${d.plays}: за экраном ${d.local}, по сети ${d.net}, аркады ${d.arcade}`)}

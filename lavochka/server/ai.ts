@@ -1,5 +1,5 @@
 /* Помощники на ИИ (подписка «Лавочка+», право `ai`): Михалыч в шахматах (server/mihalych.ts), Димон в покере
- * (server/dimon.ts). Общее у них здесь: вызов модели через шлюз routerai.ru (OpenAI-совместимый, ключ ROUTERAI_API_KEY),
+ * (server/dimon.ts), Светка в гадании (server/svetka.ts). Общее у них здесь: вызов модели через шлюз routerai.ru (OpenAI-совместимый, ключ ROUTERAI_API_KEY),
  * учёт расхода (таблица ai_usage — по помощникам), права и лимиты.
  *   Лимит на пользователя — ОДИН на всех помощников (сумма по Михалычу и Димону) за оплаченный месяц подписки (без
  *   подписки, по праву от Мастера, — календарный месяц МСК); общий потолок сайта — тоже один, по календарному месяцу.
@@ -9,8 +9,8 @@ import { hasRight } from '../src/core/rights';
 import { plusPeriod } from '../src/core/plus';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 
-export type HelperId = 'mihalych' | 'dimon';
-export const HELPERS: HelperId[] = ['mihalych', 'dimon'];
+export type HelperId = 'mihalych' | 'dimon' | 'svetka';
+export const HELPERS: HelperId[] = ['mihalych', 'dimon', 'svetka'];
 
 export const AI_MODEL = '~deepseek/deepseek-v4-flash-latest';
 const API = 'https://routerai.ru/api/v1/chat/completions';

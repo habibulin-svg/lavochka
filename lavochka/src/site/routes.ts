@@ -2,6 +2,7 @@
  * Игры — в корне, транслитом: /nardy/, вариант со своим спросом — /nardy/dlinnye/, правила — /nardy/pravila/.
  * Сетевой стол — /stol/<код>, локальная партия — адрес игры с ?igra (оба noindex). */
 import { KRUZHOK_PATH, MODES as KZ_MODES, parseKruzhok } from '../games/kruzhok/pages';
+import { GADANIE_PATH, MODES as GD_MODES, parseGadanie } from '../games/gadanie/pages';
 
 export const SITE_URL = 'https://lavochka-games.ru';
 export const SITE_NAME = 'Вечером на лавочке';
@@ -45,6 +46,7 @@ export const SLUGS: Record<string, string> = {
   loto: 'loto',
   perudo: 'perudo',
   // карты
+  gadanie: GADANIE_PATH,
   durak: 'durak',
   thousand: 'tysyacha',
   '101': '101',
@@ -294,6 +296,8 @@ export interface ModePage {
 export const MODE_PAGES: ModePage[] = [
   // разделы шахматного кружка (вложенные страницы уроков, партий и дебютов — parseKruzhok)
   ...KZ_MODES.filter((m) => m.path).map((m) => ({ path: `${KRUZHOK_PATH}/${m.path}`, game: 'kruzhok', mode: m.id })),
+  // разделы гадания: на таро, на игральных картах, справочник
+  ...GD_MODES.filter((m) => m.path).map((m) => ({ path: `${GADANIE_PATH}/${m.path}`, game: 'gadanie', mode: m.id })),
   { path: 'elektronika/nu-pogodi', game: 'elektronika', mode: 'nupogodi' },
   { path: 'elektronika/tayny-okeana', game: 'elektronika', mode: 'taynyoke' },
   { path: 'elektronika/vesyolyy-povar', game: 'elektronika', mode: 'vespovar' },
@@ -374,7 +378,9 @@ export function parseRoute(pathname: string, search = ''): Route {
   const hit = BY_PATH.get(rules ? p.slice(0, -'/pravila'.length) : p);
   if (!hit) {
     const kz = parseKruzhok(p);
-    return kz ? { kind: 'game', id: 'kruzhok', mode: kz.mode } : { kind: 'missing', path: p };
+    if (kz) return { kind: 'game', id: 'kruzhok', mode: kz.mode };
+    const gd = parseGadanie(p);
+    return gd ? { kind: 'game', id: 'gadanie', mode: gd.mode } : { kind: 'missing', path: p };
   }
   if (rules && (hit.article || hit.mode)) return { kind: 'missing', path: p };
   return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined, article: hit.article, mode: hit.mode };

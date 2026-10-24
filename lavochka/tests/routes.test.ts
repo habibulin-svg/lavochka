@@ -35,6 +35,8 @@ describe('адреса сайта', () => {
     expect(parseRoute('/shahmatnyj-kruzhok/debyuty/sicilianskaya-zashchita/')).toMatchObject({ kind: 'game', id: 'kruzhok', mode: 'enciklopediya' });
     expect(parseRoute('/shahmatnyj-kruzhok/terminy/')).toMatchObject({ kind: 'game', id: 'kruzhok', mode: 'enciklopediya' });
     expect(parseRoute('/shahmatnyj-kruzhok/uchebnik/vilka/eshche/').kind).toBe('missing');
+    expect(parseRoute('/gadanie-na-kartah/znacheniya-kart/devyatka-mechej/')).toMatchObject({ kind: 'game', id: 'gadanie', mode: 'znacheniya' });
+    expect(parseRoute('/gadanie-na-kartah/znacheniya-kart/net-takoj/').kind).toBe('missing');
   });
 
   it('у страницы игры серии — настоящая игра аркады', async () => {
@@ -42,6 +44,7 @@ describe('адреса сайта', () => {
       elektronika: (await import('../src/games/elektronika/games')).GAMES,
       avtomaty: (await import('../src/games/avtomaty/games')).GAMES,
       kruzhok: [...(await import('../src/games/kruzhok/pages')).MODES],
+      gadanie: [...(await import('../src/games/gadanie/pages')).MODES],
     };
     for (const m of MODE_PAGES) expect(lists[m.game]?.map((g) => g.id), m.path).toContain(m.mode);
   });

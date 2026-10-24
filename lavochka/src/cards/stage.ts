@@ -57,6 +57,8 @@ export interface StageOpts {
   portrait?: { W: number; H: number };
   /** Своя колода (ханафуда): адрес и подпись картинки карты; null — рубашка. Карта — та же {s, r}, смысл задаёт игра. */
   faces?: { url(c: Card | null): string; alt(c: Card | null): string };
+  /** Размер карты на сцене, если не 100×155 (таро — 7:12). */
+  card?: { w: number; h: number };
 }
 
 export interface RenderOpts {
@@ -81,6 +83,9 @@ export class CardStage {
   /** Наклон сцены «в 3D» (например, rotateX(24deg)); перспектива — на обёртке. */
   private tilt = '';
   private dims: { W: number; H: number };
+  /** Размер карты на сцене. */
+  readonly cw: number;
+  readonly ch: number;
 
   constructor(
     root: HTMLElement,
@@ -91,8 +96,14 @@ export class CardStage {
     private readonly opts: StageOpts = {}
   ) {
     this.dims = { W: landW, H: landH };
+    this.cw = opts.card?.w ?? CW;
+    this.ch = opts.card?.h ?? CH;
     this.wrap = document.createElement('div');
     this.wrap.className = `cs-wrap ${cls}`;
+    if (opts.card) {
+      this.wrap.style.setProperty('--cs-cw', this.cw + 'px');
+      this.wrap.style.setProperty('--cs-ch', this.ch + 'px');
+    }
     this.wrap.innerHTML = `<div class="cs-stage" style="width:${landW}px;height:${landH}px">${background}<div class="cs-over"></div></div>`;
     root.appendChild(this.wrap);
     // стол карточной игры: на телефоне — выше, кнопки сразу под ним
@@ -142,7 +153,7 @@ export class CardStage {
   }
 
   private transform(it: Pos) {
-    return `translate(${it.x - CW / 2}px, ${it.y - CH / 2}px) rotate(${it.r}deg) scale(${it.s})`;
+    return `translate(${it.x - this.cw / 2}px, ${it.y - this.ch / 2}px) rotate(${it.r}deg) scale(${it.s})`;
   }
 
   private place(el: HTMLElement, p: Pos) {
@@ -262,7 +273,7 @@ export class CardStage {
       el.style.zIndex = String(z);
       return;
     }
-    el.style.zIndex = String(d > CW * 0.6 ? 1000 + z : Math.max(old, z));
+    el.style.zIndex = String(d > this.cw * 0.6 ? 1000 + z : Math.max(old, z));
     this.landing.set(el, window.setTimeout(() => (el.style.zIndex = String(z)), ms + 30));
   }
 

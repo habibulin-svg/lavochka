@@ -5,7 +5,7 @@
 .cs-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; --cs-dur: 360ms; }
 .cs-over { position: absolute; inset: 0; pointer-events: none; z-index: 400; }
 .cs-card {
-  position: absolute; left: 0; top: 0; width: 100px; height: 155px; transform-origin: 50% 50%;
+  position: absolute; left: 0; top: 0; width: var(--cs-cw, 100px); height: var(--cs-ch, 155px); transform-origin: 50% 50%;
   transition: transform var(--cs-dur) cubic-bezier(0.2, 0.7, 0.3, 1), opacity var(--cs-dur);
   will-change: transform; backface-visibility: hidden;
 }

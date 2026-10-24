@@ -29,6 +29,7 @@ import { Donate, donateApi } from './donate';
 import { Plus, plusApi } from './plus';
 import { AiDesk } from './ai';
 import { Dimon, dimonApi } from './dimon';
+import { Svetka, svetkaApi } from './svetka';
 import { Mihalych, mihalychApi } from './mihalych';
 import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
@@ -224,6 +225,7 @@ const env = (k: string) => process.env['AI_' + k] || process.env['MIHALYCH_' + k
 const aiDesk = new AiDesk(accounts, { key: process.env.ROUTERAI_API_KEY || null, model: env('MODEL') || undefined, userRub: Number(env('USER_RUB')) || 30, siteRub: Number(env('SITE_RUB')) || 3000 }, log);
 const mihalych = new Mihalych(aiDesk);
 const dimon = new Dimon(aiDesk);
+const svetka = new Svetka(aiDesk);
 log('помощники (Михалыч, Димон): ' + (aiDesk.enabled ? 'включены' : 'выключены (нет ROUTERAI_API_KEY)'));
 // обращения (server/support.ts): с сайта и письмами через Postfix (deploy/mail/)
 const support = new Support(accounts, log);
@@ -432,6 +434,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/dimon') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await dimonApi(dimon, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
+  }
+  if (path === '/api/svetka') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await svetkaApi(svetka, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/support' || path === '/api/support/reply' || path === '/api/admin/support' || path === '/api/mail/in') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Напишите на почту или попробуйте чуть позже.' });

@@ -17,6 +17,7 @@ import { NAMES } from '../src/site/names';
 import { GROUPS, HOME, SECTIONS } from '../src/site/sections';
 import { clip, plain, type Faq, type GameSeo } from '../src/site/seo';
 import { kruzhokPages } from './kruzhok-seo';
+import { gadaniePages } from './gadanie-seo';
 import { dataDir, KINDS, loadDocs, loadPosts, PER_PAGE, ruDate, type Kind, type Post } from './posts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -412,6 +413,7 @@ ${afaq.html}
 /** Игры серии у аркад: страница на каждую игру «Электроники ИМ» и каждый автомат. */
 function modePages(g: CatalogEntry, path: string, image?: string) {
   if (g.id === 'kruzhok') return kruzhok(g, image);
+  if (g.id === 'gadanie') return gadanie(g, image);
   const list = MODE_PAGES.filter((m) => m.game === g.id);
   if (!list.length) return;
   const games: { id: string; title: string; about: string; note: string; board?: string }[] =
@@ -485,6 +487,29 @@ ${t.intro}
 ${k.body}
 ${faq.html}
 <p><a href="${gamePath(g.id)}">Шахматный кружок — все разделы</a></p>`,
+    });
+  }
+}
+
+/** Гадание: разделы и страницы карт справочника (тексты — из справочника гадания, tools/gadanie-seo.ts). */
+function gadanie(g: CatalogEntry, image?: string) {
+  for (const k of gadaniePages()) {
+    const t = editable(k.path, `Гадание: ${k.name}`, { title: k.title.length + SITE_NAME.length + 3 <= 70 ? `${k.title} | ${SITE_NAME}` : k.title, description: k.description, h1: k.h1, intro: k.intro, faq: [] });
+    const cr = crumbs([...trail(g), ...k.crumbs]);
+    const faq = faqBlock(t.faq);
+    pages.push({
+      path: k.path,
+      title: t.title,
+      description: t.description,
+      image: k.image ?? image,
+      priority: k.priority,
+      jsonld: [cr.ld, ...(faq.ld ? [faq.ld] : [])],
+      body: `${cr.html}
+<h1>${esc(t.h1)}</h1>
+${k.image ? `<img class="seo-card" src="${k.image}" alt="${esc(k.name)}" width="300" height="514" loading="lazy">` : ''}${t.intro}
+${k.body}
+${faq.html}
+<p><a href="${gamePath(g.id)}">Гадание на картах — все разделы</a></p>`,
     });
   }
 }
