@@ -1,0 +1,48 @@
+/* «Освоение галактики»: планисфера под камерой, фишки-звездолёты (SVG), окна броска и перемещения, панель с карточками. */
+.table--galaktika { --table-bg: radial-gradient(ellipse at 50% 30%, #1a1a3a, #050510); }
+.gk-wrap { position: relative; width: 100%; height: 100%; }
+.gk-board { position: absolute; border-radius: 6px; overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.7); opacity: 0; transition: opacity 0.5s ease; background: #05050a; }
+.gk-board.ready { opacity: 1; }
+.gk-img, .gk-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.gk-n { font: 900 52px system-ui, sans-serif; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.75); stroke-width: 7px; }
+.gk-tok.pop { animation: gk-pop 0.35s ease; }
+@keyframes gk-pop { 50% { transform: scale(1.2); } }
+.gk-tok > * { transition: transform 0.2s; }
+.gk-ring { fill: none; stroke: #fff6a0; stroke-width: 7; stroke-dasharray: 18 12; animation: gk-ants 1.6s linear infinite; }
+.gk-tok.sel .gk-ring { stroke: #ffd21a; stroke-width: 12; stroke-dasharray: none; }
+.gk-tok.tgt .gk-ring { stroke: #ff7a5a; }
+@keyframes gk-ants { to { stroke-dashoffset: -60; } }
+
+.gk-stage { position: absolute; left: 2%; right: 2%; bottom: 62px; z-index: 80; display: flex; justify-content: center; pointer-events: none; font: 15px / 1.35 system-ui, sans-serif; color: #fff; }
+.gk-stage > * { pointer-events: auto; }
+.gk-box { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; box-sizing: border-box; background: rgba(12, 12, 36, 0.93);
+  padding: 12px 16px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7); border: 1px solid rgba(160, 180, 255, 0.35); }
+.gk-q { text-align: center; }
+.gk-q.big { font-size: 24px; }
+.gk-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.gk-mv { min-width: 2em; text-align: center; font-size: 20px; }
+.gk-goals { font-size: 13px; opacity: 0.9; }
+.gk-float { position: absolute; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.gk-say { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); background: rgba(12, 12, 36, 0.92); color: #ffe7a8; padding: 8px 16px; border-radius: 8px;
+  font: 700 16px system-ui, sans-serif; animation: gk-say 2s ease forwards; white-space: nowrap; }
+@keyframes gk-say { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.gk-dice { display: flex; gap: 14px; justify-content: center; }
+.gk-dice .dice-tray { min-height: 60px; gap: 6px; }
+.gk-dice .die-wrap { zoom: 0.8; }
+.gk-dd .face { background: radial-gradient(circle at 35% 30%, #6a6a8a, #2a2a44 70%, #15152a); }
+.gk-dd .face .pip { background: radial-gradient(circle at 40% 35%, #fff, #c8c8e0); }
+.gk-panel { display: flex; flex-direction: column; gap: 8px; }
+.gk-left { font-size: 15px; }
+.gk-steps, .gk-trade { display: flex; gap: 6px; flex-wrap: wrap; }
+.gk-go { align-self: flex-start; }
+.gk-cards { display: flex; flex-wrap: wrap; gap: 5px; }
+.gk-card { position: relative; width: 104px; height: 64px; padding: 4px 30px 4px 5px; box-sizing: border-box; border-radius: 5px; border: 2px solid transparent;
+  background: url(/galaktika/back.webp) center / 100% 100%; color: #222; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
+.gk-card:disabled { cursor: default; }
+.gk-card.on { border-color: #ffd21a; transform: translateY(-3px); box-shadow: 0 0 8px rgba(255, 210, 26, 0.7); }
+.gk-ci { font-size: 16px; line-height: 1; }
+.gk-cn { font: 700 10px / 1.15 system-ui, sans-serif; text-transform: uppercase; }
+.gk-goal { font-size: 13px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 6px 8px; }
+.gk-bonus { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; opacity: 0.85; }
+.gk-bonus span::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin-right: 4px; }

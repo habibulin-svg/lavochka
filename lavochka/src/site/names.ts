@@ -127,6 +127,8 @@ export const NAMES: Record<string, Names> = {
   narody: { ru: ['настольные игры народов мира', 'старинные настольные игры', 'традиционные игры разных стран'], en: ['Traditional board games', 'Games of the world'] },
   novye: { ru: ['современные настольные игры', 'современные абстрактные игры', 'новые логические настольные игры'], en: ['Modern abstract strategy games', 'Modern board games'] },
   sovabstract: { ru: ['советские логические игры', 'логические настольные игры СССР', 'абстрактные игры'], en: ['Abstract strategy games', 'Soviet board games'] },
+  wargames: { ru: ['военные настольные игры', 'варгеймы онлайн', 'советские стратегии настольные'], en: ['Wargames', 'Strategy board games'] },
+  galaktika: { ru: ['риск настольная игра', 'риск онлайн', 'советский риск', 'риск освоение галактики', 'игра захват территорий', 'стратегия с кубиками'], en: ['Risk', 'Risk board game', 'Soviet Risk', 'Galaxy conquest'] },
   kupi: { ru: ['экономические игры', 'монополия по-советски', 'советская монополия', 'игры про бизнес'], en: ['Economic board games', 'Monopoly-like games'] },
   manager: { ru: ['менеджер настольная игра', 'Одесса', 'Бизнесмен', 'Космос 2000', 'советская монополия', 'ДЛТ'], en: ['Manager board game', 'Soviet Monopoly'] },
   vorona: { ru: ['белая ворона настольная игра', 'зарплата и счета', 'экономическая игра'] },
