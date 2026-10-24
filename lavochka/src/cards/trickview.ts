@@ -11,6 +11,14 @@ import { CardStage, cardKey, fan, type Point, type StageItem } from './stage';
 import type { SeatLook } from '../core/types';
 import './trickview.css';
 
+/** Отметка карты под касанием (у двойных колод — с номером колоды). */
+const handId = (c: Card) => {
+  const d = (c as Card & { d?: number }).d;
+  return d == null ? c.s + c.r : `${c.s}${c.r}.${d}`;
+};
+/** Та же карта (у двойных колод — и та же колода). */
+const sameDeckCard = (a: Card, b: Card) => sameCard(a, b) && (a as Card & { d?: number }).d === (b as Card & { d?: number }).d;
+
 export interface TrickModel {
   seats: number[];
   /** Видимые карты руки (чужие — пусто). */
@@ -28,6 +36,8 @@ export interface TrickModel {
   tricks(seat: number): number;
   /** Козырь (для сортировки руки и значка). */
   trump?: Suit | null;
+  /** свой порядок карт в руке (по умолчанию — по мастям, козырь справа) */
+  sort?: (hand: Card[]) => Card[];
   /** Открытая карта козыря у колоды (если есть). */
   trumpCard?: Card | null;
   /** Надпись посередине над взяткой: контракт, заказ. */
@@ -163,12 +173,18 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
 
   // ---------------------------------------------------------------- раскладка
 
+  /** Ключ карты на сцене: у двойных колод (пинокль) — с номером колоды, чтобы одинаковые карты не сливались. */
+  private keyOf(c: Card): string {
+    const d = (c as Card & { d?: number }).d;
+    return d == null ? cardKey(c) : `${cardKey(c)}.${d}`;
+  }
+
   private layout(m: TrickModel): StageItem[] {
     const g = this.g;
     const items: StageItem[] = [];
     m.trick.forEach((t, i) => {
       const p = this.trickPt(m, t.seat);
-      items.push({ key: cardKey(t.card), card: t.card, x: p.x, y: p.y, r: ((t.seat * 13 + i * 7) % 16) - 8, s: g.port ? 0.8 : 0.85, z: 200 + i, fromPt: this.anchor(m, t.seat) });
+      items.push({ key: this.keyOf(t.card), card: t.card, x: p.x, y: p.y, r: ((t.seat * 13 + i * 7) % 16) - 8, s: g.port ? 0.8 : 0.85, z: 200 + i, fromPt: this.anchor(m, t.seat) });
     });
     if (m.trumpCard) {
       // остаток колоды в углу, козырь — поперёк из-под него
@@ -181,7 +197,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
       const a = this.anchor(m, seat);
       const me = seat === this.viewer;
       const up = me ? this.faceUp(m, seat) : !!m.open?.(seat);
-      const list = up ? sortHand(m.hand(seat), m.trump ?? undefined) : [];
+      const list = up ? (m.sort ? m.sort(m.hand(seat)) : sortHand(m.hand(seat), m.trump ?? undefined)) : [];
       // гасим неходовые, только когда в руке есть чем ходить (в торговле/заказе — нет)
       const anyOk = up && list.some((c) => m.canPlay(c));
       for (let k = 0; k < cnt; k++) {
@@ -194,8 +210,8 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           }
           const act = this.actSeat === seat && !this.hidden;
           const ok = act && m.canPlay(c);
-          const sel = this.selected.some((x) => sameCard(x, c));
-          items.push({ key: cardKey(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: c.s + c.r } : undefined });
+          const sel = this.selected.some((x) => sameDeckCard(x, c));
+          items.push({ key: this.keyOf(c), card: c, x: p.x, y: p.y - (sel ? 30 : ok ? 14 : 0), r: p.r, s: g.hs, z: 100 + k, cls: act ? (sel ? 'cs-sel' : ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: handId(c) } : undefined });
         } else {
           const big = up && m.openBig;
           // крупная открытая рука сбоку — уже и не за краем стола
@@ -209,7 +225,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
           const ok = from && m.canPlay(c!);
           items.push(
             c
-              ? { key: cardKey(c), card: c, x: p.x, y: p.y + (ok ? -10 : 0), r: p.r, s: os, z: 50 + k, cls: from ? (ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: c.s + c.r, from: String(seat) } : undefined }
+              ? { key: this.keyOf(c), card: c, x: p.x, y: p.y + (ok ? -10 : 0), r: p.r, s: os, z: 50 + k, cls: from ? (ok ? 'cs-can' : anyOk ? 'tv-no' : '') : '', data: ok ? { hand: handId(c), from: String(seat) } : undefined }
               : { key: `b:${seat}:${k}`, card: null, ...p, s: os, z: 50 + k }
           );
         }
@@ -257,7 +273,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
     if (!el) return;
     const m = this.model(v);
     const from = el.dataset.from != null ? Number(el.dataset.from) : this.actSeat;
-    const card = m.hand(from).find((c) => c.s + c.r === el.dataset.hand);
+    const card = m.hand(from).find((c) => handId(c) === el.dataset.hand);
     if (!card || !m.canPlay(card)) return;
     this.onCard(card);
   }
@@ -269,7 +285,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
 
   /** Выбрать/снять карту (не больше max). */
   protected toggle(card: Card, max: number) {
-    const i = this.selected.findIndex((x) => sameCard(x, card));
+    const i = this.selected.findIndex((x) => sameDeckCard(x, card));
     if (i >= 0) this.selected.splice(i, 1);
     else {
       if (this.selected.length >= max) this.selected.shift();

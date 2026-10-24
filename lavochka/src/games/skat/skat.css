@@ -1,0 +1,15 @@
+/* Скат: немецкая пивная — зелёное сукно, дубовая кромка. */
+.table--skat {
+  --panel-bg: linear-gradient(180deg, #f2ece0, #ddd2b8);
+  --panel-ink: #1a160c;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #10140c;
+}
+.tv-cloth.sk-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #2e6a3a, #163a1e 72%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #7a5430, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.sk-row { flex: 1 1 100%; display: flex; gap: 6px; }
+.sk-row > .btn.sk-opt { flex: 1 1 30%; font-size: 13px; }

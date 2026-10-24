@@ -67,6 +67,9 @@ export const SLUGS: Record<string, string> = {
   cribbage: 'kribbedzh',
   rummy: 'rammi',
   canasta: 'kanasta',
+  pinochle: 'pinokl',
+  skat: 'skat',
+  deberts: 'deberc',
   chapaev: 'chapaev',
   kunken: 'kunken',
   khrap: 'hrap',
@@ -183,6 +186,8 @@ export const VARIANTS: VariantPage[] = [
   { path: 'bura/burkozel', game: 'bura', preset: 'burkozel' },
   { path: 'okey/rummikub', game: 'okey', preset: 'rummikub' },
   { path: 'chapaev/karrom', game: 'chapaev', preset: 'carrom' },
+  { path: 'deberc/klabor', game: 'deberts', preset: 'klabor' },
+  { path: 'deberc/belot', game: 'deberts', preset: 'belote' },
   // покер: прежние страницы холдема и Омахи — теперь варианты единой карточки
   { path: 'poker/tehasskiy-holdem', game: 'poker', preset: 'holdem' },
   { path: 'poker/omaha', game: 'poker', preset: 'plo' },
