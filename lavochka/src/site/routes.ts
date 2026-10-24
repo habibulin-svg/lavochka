@@ -267,6 +267,7 @@ export const VARIANTS: VariantPage[] = [
   { path: 'kin-dvin/lukomorye', game: 'hodilki', preset: 'luk' },
   { path: 'menedzher/odessa', game: 'manager', preset: 'odessa' },
   { path: 'menedzher/biznesmen', game: 'manager', preset: 'biznesmen' },
+  { path: 'menedzher/nep', game: 'manager', preset: 'nep' },
 ];
 
 /** Статьи при игре (справочные страницы с большим спросом): экран игры, под ним — текст статьи.
