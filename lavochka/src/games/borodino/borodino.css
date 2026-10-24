@@ -1,0 +1,65 @@
+/* «Бородино»: карта под камерой, фишки со скана, подсветка клеток (SVG), окна атаки и преследования, панель с часами и потерями. */
+.table--borodino { --table-bg: radial-gradient(ellipse at 50% 30%, #4a3a22, #1a120a); }
+.bd-wrap { position: relative; width: 100%; height: 100%; }
+.bd-board { position: absolute; border-radius: 6px; overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.5s ease; background: #e8d890; }
+.bd-board.ready { opacity: 1; }
+.bd-img, .bd-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.bd-tokens { position: absolute; inset: 0; pointer-events: none; }
+.bd-tok { position: absolute; width: 2.05%; aspect-ratio: 1; transform: translate(-50%, -50%); transition: left 0.14s linear, top 0.14s linear; z-index: 10; }
+.bd-tok i { position: absolute; inset: 0; background-image: url(/borodino/counters.webp); background-size: 1600% 1400%; border-radius: 6%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 2px 4px 5px rgba(0, 0, 0, 0.55); }
+.bd-tok.cmd { width: 1.45%; z-index: 12; }
+.bd-tok.sel i { box-shadow: 0 0 0 3px #ffd21a, 2px 4px 6px rgba(0, 0, 0, 0.6); }
+.bd-tok.att i { box-shadow: 0 0 0 3px #ff7a2a, 2px 4px 6px rgba(0, 0, 0, 0.6); }
+.bd-tok.tgt i { box-shadow: 0 0 0 4px #e8231c, 2px 4px 6px rgba(0, 0, 0, 0.6); }
+.bd-tok.done { filter: saturate(0.6) brightness(0.9); }
+.bd-tok.hit i { animation: bd-shake 0.45s ease 2; }
+.bd-tok.atk i { animation: bd-pulse 0.45s ease 2; }
+.bd-tok.dead { transition: opacity 0.4s; opacity: 0; }
+@keyframes bd-shake { 25% { transform: translateX(-8%); } 75% { transform: translateX(8%); } }
+@keyframes bd-pulse { 50% { transform: scale(1.12); } }
+.bd-can { fill: rgba(40, 120, 255, 0.28); stroke: #0b3a9a; stroke-width: 3; }
+.bd-tg { fill: rgba(232, 35, 28, 0.18); stroke: #e8231c; stroke-width: 4; stroke-dasharray: 10 6; }
+.bd-must { fill: none; stroke: #ff7a2a; stroke-width: 6; }
+.bd-info { fill: none; stroke: #ffd21a; stroke-width: 6; }
+.bd-trail { stroke: #ffd21a; stroke-width: 6; stroke-dasharray: 14 10; opacity: 0.8; }
+
+.bd-stage { position: absolute; left: 2%; right: 2%; bottom: 62px; z-index: 80; display: flex; justify-content: center; pointer-events: none; font: 14px / 1.35 system-ui, sans-serif; color: #fff; }
+.bd-stage > * { pointer-events: auto; }
+.bd-box { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; max-height: 70vh; overflow: auto; box-sizing: border-box;
+  background: rgba(30, 22, 12, 0.94); padding: 12px 14px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 220, 150, 0.35); }
+.bd-q { text-align: center; }
+.bd-q.big { font-size: 24px; }
+.bd-q.dim { opacity: 0.75; font-style: italic; }
+.bd-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.bd-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 560px; }
+.bd-pick { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 4px; border-radius: 6px; border: 2px solid transparent; background: rgba(255, 255, 255, 0.08); color: #fff; cursor: pointer; text-align: left; font: inherit; }
+.bd-pick.on { border-color: #ff7a2a; background: rgba(255, 122, 42, 0.2); }
+.bd-pick i { width: 34px; height: 34px; flex: none; background-image: url(/borodino/counters.webp); background-size: 1600% 1400%; border-radius: 3px; }
+.bd-pick span { display: flex; flex-direction: column; font-size: 12px; max-width: 160px; }
+.bd-pick small { opacity: 0.75; }
+.bd-row { display: flex; gap: 3px; }
+.bd-row span { display: flex; flex-direction: column; align-items: center; min-width: 34px; padding: 2px 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); font-weight: 700; }
+.bd-row span b { font-size: 10px; opacity: 0.7; }
+.bd-row .rЗ1, .bd-row .rЗ2, .bd-row .rЗУ { background: rgba(60, 170, 80, 0.45); }
+.bd-row .rА1, .bd-row .rА2, .bd-row .rАУ { background: rgba(200, 50, 40, 0.45); }
+.bd-row .rx { background: rgba(200, 150, 40, 0.5); }
+.bd-float { position: absolute; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.bd-say { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); background: rgba(30, 22, 12, 0.92); color: #ffe7a8; padding: 8px 16px; border-radius: 8px;
+  font: 700 16px system-ui, sans-serif; animation: bd-say 2s ease forwards; white-space: nowrap; }
+@keyframes bd-say { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.bd-ctl { display: flex; flex-direction: column; gap: 8px; }
+.bd-tray .dice-tray { min-height: 56px; }
+.bd-panel { display: flex; flex-direction: column; gap: 8px; }
+.bd-clock { font-size: 15px; }
+.bd-bar { position: relative; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+.bd-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #4a9a4a, #c8a020 40%, #c83020); }
+.bd-bar span { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(0, 0, 0, 0.5); }
+.bd-unit { font-size: 13px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 6px 8px; }
+.bd-crt { border-collapse: collapse; font-size: 12px; margin: 6px 0; }
+.bd-crt th, .bd-crt td { border: 1px solid rgba(0, 0, 0, 0.25); padding: 2px 4px; text-align: center; }
+@media (max-width: 600px) {
+  .bd-tok { width: 2.6%; }
+  .bd-tok.cmd { width: 1.9%; }
+}
