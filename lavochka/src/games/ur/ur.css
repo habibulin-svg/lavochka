@@ -20,3 +20,9 @@
 .ur-info { font-size: 14px; margin: 6px 0; }
 @keyframes ur-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 @keyframes ur-shake { 0% { transform: rotate(-40deg) translateY(-8px); } 50% { transform: rotate(25deg); } 100% { transform: none; } }
+/* Ур по Скирюку: столбики и ход назад */
+.ur-badge { fill: #1a140c; stroke: #ffe680; stroke-width: 4; }
+.ur-badget { fill: #ffe680; font: 800 30px system-ui, sans-serif; text-anchor: middle; }
+.ur-target.ur-back circle { stroke: #ff6a5a; fill: rgba(255, 90, 70, 0.22); }
+.ur-target.ur-back .ur-dot { fill: #ff6a5a; }
+.ur-extra { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }

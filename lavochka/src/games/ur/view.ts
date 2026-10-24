@@ -8,15 +8,15 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { cell, HOME, legal, ROSETTES, type Action, type Event, type State } from './engine';
 import './ur.css';
 
-const TEX = `${import.meta.env.BASE_URL}tex/ur/board.webp`;
-const BW = 1696;
-const BH = 694;
-const TRAY = 190;
-const W = BW;
-const H = BH + 2 * TRAY;
-const COLS = [135, 345, 555, 765, 975, 1180, 1375, 1570];
-const ROWS = [120, 330, 550];
-const R = 62;
+export const TEX = `${import.meta.env.BASE_URL}tex/ur/board.webp`;
+export const BW = 1696;
+export const BH = 694;
+export const TRAY = 190;
+export const W = BW;
+export const H = BH + 2 * TRAY;
+export const COLS = [135, 345, 555, 765, 975, 1180, 1375, 1570];
+export const ROWS = [120, 330, 550];
+export const R = 62;
 
 type Pt = [number, number];
 
@@ -31,7 +31,7 @@ function spot(side: number, p: number, k: number): Pt {
   return p === 0 ? [110 + k * 150, y] : [W - 110 - k * 150, y];
 }
 
-function piece(side: number): string {
+export function piece(side: number): string {
   const dots = [
     [0, 0],
     [-0.42, -0.42],
@@ -48,7 +48,7 @@ function piece(side: number): string {
     <circle class="ur-ring" r="${R + 10}"/>`;
 }
 
-function defs(): string {
+export function defs(): string {
   return `<defs>
     <radialGradient id="ur-p0" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#ece6d6"/><stop offset="0.8" stop-color="#d3cab2"/><stop offset="1" stop-color="#b6ab90"/></radialGradient>
     <radialGradient id="ur-p1" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#6c6c76"/><stop offset="0.5" stop-color="#36363e"/><stop offset="1" stop-color="#18181c"/></radialGradient>
@@ -65,7 +65,7 @@ function trays(): string {
 }
 
 /** Пирамидка-тетраэдр сверху: три грани, вершина в центре; отмеченная вершина — белая точка. */
-function tetra(up: number, i: number): string {
+export function tetra(up: number, i: number): string {
   const x = 34 + i * 62;
   const y = 36;
   const a: Pt = [x, y - 26];
