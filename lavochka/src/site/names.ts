@@ -64,6 +64,8 @@ export const NAMES: Record<string, Names> = {
   hearts: { ru: ['червы', 'червушки', 'черви в карты', 'чёрная дама', 'Hearts'], en: ['Hearts', 'Black Lady', 'Black Maria', 'Omnibus Hearts'] },
   king: { ru: ['кинг в карты', 'дамский преферанс', 'барбу'], en: ['King', 'Barbu'] },
   raspisnoy: { ru: ['расписной', 'расписуха', 'кинг-покер', 'покер на взятки'], en: ['Oh Hell', 'Up and Down the River', 'Contract Whist', 'Nomination Whist', 'Wizard'] },
+  canasta: { ru: ['канаста онлайн', 'канаста карточная игра', 'канаста правила', 'игра канаста'], en: ['Canasta', 'Canasta online', 'Classic canasta'] },
+  chapaev: { ru: ['чапаев игра', 'чапаев в шашки', 'шашки чапаев', 'щелчки', 'чапаевцы', 'карром', 'чапаев онлайн'], en: ['Chapayev', 'Checkers flicking game', 'Carrom', 'Carrom board'] },
   rummy: { ru: ['рамми онлайн', 'игра рамми', 'джин рамми', 'джин-рамми онлайн', 'рамми в карты', 'реми'], en: ['Rummy', 'Gin rummy', 'Gin', 'Rummy online'] },
   kunken: { ru: ['кункен онлайн', 'кункен карточная игра', 'одесский кункен', 'кункен правила'], en: ['Kunken', 'Conquian'] },
   cribbage: { ru: ['криббедж онлайн', 'крибедж', 'игра криббедж', 'криббидж', 'карточная игра с доской', 'английская карточная игра'], en: ['Cribbage', 'Crib', 'Cribbage online', 'Cribbage board'] },

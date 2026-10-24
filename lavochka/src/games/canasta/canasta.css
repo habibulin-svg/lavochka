@@ -1,0 +1,22 @@
+/* Канаста: аргентинский клуб — тёмно-зелёное сукно с золотой каймой. */
+.table--canasta {
+  --panel-bg: linear-gradient(180deg, #f1ece0, #dcd2b8);
+  --panel-ink: #1a160c;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #0e140e;
+}
+.tv-cloth.ca-cloth {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #24553c, #0f3020 72%);
+  box-shadow: inset 0 0 0 3px rgba(212, 175, 90, 0.5), inset 0 0 70px rgba(0, 0, 0, 0.55), 0 0 0 10px #4a2e18, 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.ca-plates { position: absolute; inset: 0; }
+.cs-card.ca-clean { box-shadow: 0 0 0 4px #c8281e; border-radius: 6px; }
+.cs-card.ca-dirty { box-shadow: 0 0 0 4px #1a1a1a; border-radius: 6px; }
+.ca-controls { display: flex; flex-direction: column; gap: 8px; }
+.ca-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.ca-btns > .btn { flex: 1 1 45%; }
+.ca-ask { flex: 1 1 100%; font-size: 14px; }
+.ca-btns .btn .red { color: #c8281e; }
+.ca-btns .btn.primary .red { color: #ffd6cc; }

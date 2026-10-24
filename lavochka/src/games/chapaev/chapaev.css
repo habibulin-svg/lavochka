@@ -1,0 +1,24 @@
+/* Чапаев: складная шахматная доска на столе; карром — фанера с чёрной рамой. */
+.table--chapaev {
+  --panel-bg: linear-gradient(180deg, #f2ebdc, #ddd0b4);
+  --panel-ink: #1e160a;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 230, 180, 0.08), transparent 65%), #16110c;
+}
+.cp-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.cp-svg { width: 100%; height: 100%; touch-action: none; user-select: none; }
+.cp-frame { fill: #6a3c1c; stroke: #2a1608; stroke-width: 0.04; filter: drop-shadow(0 0.15px 0.25px rgba(0, 0, 0, 0.6)); }
+.cp-fold { stroke: rgba(40, 20, 6, 0.45); stroke-width: 0.025; }
+.cp-lbl { fill: rgba(255, 232, 190, 0.8); font: 600 0.24px 'PT Sans', sans-serif; text-anchor: middle; }
+.cp-can { fill: none; stroke: rgba(255, 210, 74, 0.55); stroke-width: 0.03; stroke-dasharray: 0.08 0.06; pointer-events: none; }
+.cp-aim { stroke: rgba(255, 230, 120, 0.9); stroke-width: 0.045; stroke-dasharray: 0.12 0.08; pointer-events: none; }
+.cp-pull { stroke: rgba(255, 255, 255, 0.5); stroke-width: 0.03; pointer-events: none; }
+.cp-power { fill: none; stroke: #ff7a2a; stroke-width: 0.08; transform-box: fill-box; pointer-events: none; }
+.cp-striker { cursor: grab; }
+.cr-frame { fill: #1a1210; stroke: #000; stroke-width: 0.04; filter: drop-shadow(0 0.15px 0.25px rgba(0, 0, 0, 0.6)); }
+.cr-line { fill: none; stroke: #2a1a10; stroke-width: 0.025; }
+.cr-dot { fill: #c8281e; stroke: #2a1a10; stroke-width: 0.02; }
+.cr-arrow { fill: #2a1a10; }
+.cr-star { fill: rgba(200, 40, 30, 0.85); stroke: #2a1a10; stroke-width: 0.015; }
+.cp-info { font-size: 15px; }
+.cp-info small { display: block; opacity: 0.7; }
+.cp-hint { font-size: 13px; opacity: 0.8; margin-top: 6px; }
