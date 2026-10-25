@@ -1,0 +1,28 @@
+/* Плиточник: бетонный пол стройрынка, картонные ящики, прилавок, стена ванной под плитку. */
+.table--azul {
+  --panel-bg: linear-gradient(180deg, #efe9dd, #d7cdb8);
+  --panel-ink: #1d1912;
+  --table-bg: #5d5a54;
+}
+.az-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: url('/azul/floor.webp') center / 520px repeat; }
+.az-svg { width: 100%; height: 100%; }
+.az-bg { stroke: rgba(0, 0, 0, 0.35); stroke-width: 1.5; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45)); }
+.az-board.turn .az-bg { stroke: #ffd24a; stroke-width: 3; }
+.az-name { fill: #1f1b14; font-family: 'PT Sans', sans-serif; font-weight: 700; paint-order: stroke; stroke: rgba(255, 255, 255, 0.55); stroke-width: 3px; }
+.az-lbl { fill: #2a241a; font-family: 'PT Sans', sans-serif; font-weight: 700; opacity: 0.8; }
+.az-pen { fill: #7a1a10; font-family: 'PT Sans', sans-serif; font-weight: 700; text-anchor: middle; }
+.az-slot { fill: rgba(90, 80, 66, 0.35); stroke: rgba(40, 32, 20, 0.45); stroke-width: 1; }
+.az-slot.floor { fill: rgba(140, 40, 30, 0.18); }
+.az-slot.hl { fill: rgba(255, 214, 90, 0.5); stroke: #e0a800; stroke-width: 2; }
+.az-cell { fill: rgba(70, 70, 70, 0.22); stroke: rgba(40, 40, 40, 0.35); stroke-width: 1; }
+.az-cell.hl { fill: rgba(255, 214, 90, 0.55); stroke: #e0a800; stroke-width: 2.5; cursor: pointer; }
+.az-ghost { opacity: 0.26; filter: grayscale(0.35); pointer-events: none; }
+.az-hit { fill: transparent; cursor: pointer; }
+.az-bevel { fill: none; stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.2; pointer-events: none; }
+.az-t.can { cursor: pointer; }
+.az-t.can:hover .az-bevel { stroke: #ffd24a; stroke-width: 2.5; }
+.az-t.sel .az-bevel { stroke: #ffd24a; stroke-width: 3.5; }
+.az-t.sel { transform: translateY(-3px); }
+.az-counter { stroke: rgba(0, 0, 0, 0.4); stroke-width: 2; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45)); }
+.az-trowel { filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.5)); }
+.az-info { font-size: 14px; }

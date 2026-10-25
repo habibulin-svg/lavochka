@@ -25,6 +25,7 @@ export const NAMES: Record<string, Names> = {
   fanorona: { ru: ['фанорона онлайн', 'игра фанорона', 'мадагаскарские шашки', 'фанорон-тэло', 'фанорон-дими', 'мадагаскарская игра'], en: ['Fanorona', 'Fanoron-Telo', 'Fanoron-Dimy', 'Malagasy board game'] },
   quoridor: { ru: ['коридор настольная игра', 'игра коридор онлайн', 'кворидор', 'игра со стенками', 'лабиринт из стенок'], en: ['Quoridor', 'Quoridor online', 'Quoridor Kid'] },
   pentago: { ru: ['пентаго онлайн', 'игра пентаго', 'пять в ряд с поворотом', 'крестики-нолики с поворотом', 'вращающиеся квадраты'], en: ['Pentago', 'Pentago online', 'Pentago XL', 'Multiplayer Pentago'] },
+  azul: { ru: ['азул', 'азул онлайн', 'игра азул', 'настольная игра с плиткой', 'плиточник настольная игра', 'азул серая стена'], en: ['Azul', 'Azul online', 'Azul board game'] },
   blokus: { ru: ['блокус', 'блокус онлайн', 'игра блокус', 'блоки настольная игра', 'игра с фигурками полимино', 'блокус дуо'], en: ['Blokus', 'Blokus online', 'Blokus Duo', 'Blokus board game'] },
   santorini: { ru: ['санторини настольная игра', 'санторини онлайн', 'игра санторини', 'санторин', 'игра со строителями и куполами', 'башни с куполами настольная игра'], en: ['Santorini', 'Santorini board game', 'Santorini online'] },
   hive: { ru: ['улей настольная игра', 'игра улей', 'хайв', 'хайв онлайн', 'игра с насекомыми', 'пчела и муравьи настольная игра'], en: ['Hive', 'Hive board game', 'Hive online', 'Hive Pocket', 'Hive mosquito ladybug pillbug'] },
