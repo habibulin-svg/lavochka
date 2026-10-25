@@ -133,6 +133,8 @@ export const SLUGS: Record<string, string> = {
   borodino: 'borodino',
   srazhenie: 'srazhenie',
   poedinok: 'poedinok',
+  vozboy: 'vozdushnyj-boj',
+  vataku: 'v-ataku',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',

@@ -1,0 +1,10 @@
+/* «В атаку!»: поле в пикселях выпрямленного фото (1544×1184, клетка 72) — подсветка PointBoard в этих единицах. */
+.va .pb-dot { stroke-width: 2; }
+.va .pb-can { stroke-width: 3; stroke-dasharray: 8 6; }
+.va .pb-take { stroke-width: 4; }
+.va .pb-last { stroke-width: 4; }
+.va .pb-sel { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 3px #ffe066); }
+.va-deploy .pb-can { display: none; }
+.va-mine { pointer-events: none; }
+.va-info { display: flex; flex-direction: column; gap: 3px; }
+.va-hint { font-size: 13px; opacity: 0.8; }

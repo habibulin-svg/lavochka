@@ -1,0 +1,11 @@
+/* «Воздушный бой»: поле в пикселях сканов — подсветка PointBoard в этих единицах. */
+.vb .pb-dot { stroke-width: 1.5; }
+.vb .pb-can { stroke-width: 2.5; stroke-dasharray: 6 4; }
+.vb .pb-take { stroke-width: 3; }
+.vb .pb-last { stroke-width: 3; }
+.vb .pb-sel { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 2px #ffe066); }
+.vb-arrow { fill: #fffbe0; stroke: #222; stroke-width: 1.5; pointer-events: none; }
+.vb-arrow.vb-hit { fill: #ff4a3a; }
+.vb-bad line { stroke: #d01010; stroke-width: 4; stroke-linecap: round; pointer-events: none; }
+.vb-info { display: flex; flex-direction: column; gap: 3px; }
+.vb-hint { font-size: 13px; opacity: 0.8; }
