@@ -1,0 +1,13 @@
+/* «Морская игра»: поле в своих единицах (1100×1020), шаг сетки 80. */
+.ms .pb-dot { stroke-width: 2; }
+.ms .pb-can { stroke-width: 3; stroke-dasharray: 7 5; }
+.ms .pb-take { stroke-width: 4; }
+.ms .pb-last { stroke-width: 3; }
+.ms .pb-sel { filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 3px #ffe066); }
+.ms-num { font: 700 13px sans-serif; fill: #1d5f8f; text-anchor: middle; pointer-events: none; }
+.ms-badge { font: 700 11px sans-serif; fill: #222; text-anchor: middle; pointer-events: none; }
+.ms-cmp { font: 700 12px serif; fill: #8a2a10; text-anchor: middle; }
+.ms-turn { fill: #ffe066; stroke: #222; stroke-width: 1.5; pointer-events: none; }
+.ms-mine { pointer-events: none; }
+.ms-info { display: flex; flex-direction: column; gap: 3px; }
+.ms-hint { font-size: 13px; opacity: 0.8; }
