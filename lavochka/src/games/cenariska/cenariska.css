@@ -1,0 +1,11 @@
+/* «Цена риска»: доска в пикселях выпрямленного фото (1400×1400), клетка 176. */
+.cr .pb-dot { stroke-width: 4; }
+.cr .pb-can { stroke-width: 5; stroke-dasharray: 12 8; }
+.cr .pb-take { stroke-width: 5; }
+.cr .pb-last { stroke-width: 5; }
+.cr .pb-sel { filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 4px #ffe066); }
+.cr-laid text { font: 700 16px sans-serif; fill: #1a1208; text-anchor: middle; pointer-events: none; }
+.cr-hand-row { display: flex; gap: 10px; align-items: center; }
+.cr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #0006; }
+.cr-info { display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.cr-hint { font-size: 13px; opacity: 0.8; }

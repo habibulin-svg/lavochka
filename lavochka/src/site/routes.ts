@@ -137,6 +137,7 @@ export const SLUGS: Record<string, string> = {
   vataku: 'v-ataku',
   tanki: 'idut-tanki',
   morskaya: 'morskaya-igra',
+  cenariska: 'cena-riska',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',
