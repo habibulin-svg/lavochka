@@ -20,6 +20,8 @@ export const SLUGS: Record<string, string> = {
   hex: 'geks',
   perekati: 'perekati-pole',
   razvedchik: 'razvedchik-i-dozor',
+  igroteka: 'nasha-igroteka',
+  shagdy: 'shagdy',
   vput: 'v-put-dorogu',
   bagchal: 'bag-chal',
   ur: 'carskaya-igra-ura',

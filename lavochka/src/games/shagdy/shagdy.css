@@ -1,0 +1,7 @@
+/* Шагды: номера клеток, цифры сочетаний, счёт в боковой панели. */
+.sg-num { font: 600 0.2px sans-serif; pointer-events: none; }
+.sg-dig { font: 600 0.17px sans-serif; fill: #b8b8c0; pointer-events: none; }
+.sg-cap { font: 600 0.26px sans-serif; fill: #c8c8d0; pointer-events: none; }
+.sg-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.sg-cur { color: #c0392b; font-weight: 600; }
+.sg-hint { font-size: 13.5px; }

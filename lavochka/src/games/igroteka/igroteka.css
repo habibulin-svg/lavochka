@@ -1,0 +1,6 @@
+/* «Наша игротека»: счёт и подсказка в боковой панели, корона дамки. */
+.ig-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.ig-title { font-weight: 700; font-size: 15.5px; }
+.ig-take { color: #e04040; font-weight: 700; }
+.ig-hint { font-size: 13.5px; }
+.ig-crown { text-anchor: middle; dominant-baseline: central; pointer-events: none; font-family: serif; }
