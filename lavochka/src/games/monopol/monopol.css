@@ -1,0 +1,35 @@
+/* «Мо-но-пол»: поле с камерой, пуговицы, жетоны владельцев, подсветка выбора, боковая панель. */
+.mp-wrap { position: relative; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; }
+.mp-board { position: absolute; border-radius: 6px; overflow: hidden; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.3s; }
+.mp-board.ready { opacity: 1; }
+.mp-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.mp-marks, .mp-hot, .mp-tokens { position: absolute; inset: 0; }
+.mp-marks, .mp-tokens { pointer-events: none; }
+.mp-token { position: absolute; width: 2.4%; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6)); transition: left 0.16s ease-out, top 0.16s ease-out; }
+.mp-token.on { filter: drop-shadow(0 0 4px #ffe066) drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6)); z-index: 2; }
+.mp-jeton { position: absolute; transform: translate(-50%, -50%); background: var(--c); color: var(--t); font: 700 0.62vmin/1 'PT Serif', serif; letter-spacing: 0.04em;
+  padding: 0.35vmin 0.6vmin; border: 1px solid rgba(0, 0, 0, 0.5); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); white-space: nowrap; text-align: center; }
+.mp-jeton b { display: block; font: 700 0.62vmin/1.2 sans-serif; }
+.mp-pot { position: absolute; transform: translate(-50%, -50%); background: rgba(20, 10, 40, 0.85); color: #ffe066; font: 700 0.9vmin/1 sans-serif; padding: 0.4vmin 0.8vmin; border-radius: 0.6vmin; }
+.mp-spot { position: absolute; border: 3px solid #ffe066; border-radius: 6px; background: rgba(255, 230, 100, 0.18); cursor: pointer; animation: mp-blink 1.2s ease-in-out infinite; }
+.mp-spot.sq { border-radius: 4px; }
+.mp-spot:hover { background: rgba(255, 230, 100, 0.4); }
+@keyframes mp-blink { 50% { border-color: rgba(255, 230, 100, 0.45); } }
+.mp-panel { display: flex; flex-direction: column; gap: 6px; }
+.mp-tray.dice-tray { min-height: 54px; }
+.mp-acts { display: flex; flex-direction: column; gap: 6px; }
+.mp-acts:empty { display: none; }
+.mp-q { font-size: 14px; }
+.mp-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.mp-row > span { flex: 1 1 140px; font-size: 13.5px; }
+.mp-row small { opacity: 0.7; }
+.mp-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; }
+.mp-list .btn { text-align: left; }
+.mp-inv summary { cursor: pointer; font-size: 13.5px; }
+.mp-info { display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; }
+.mp-p { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.mp-p i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.4); flex: none; align-self: center; }
+.mp-p.on b { text-decoration: underline; }
+.mp-p.out { opacity: 0.45; }
+.mp-round { opacity: 0.75; font-size: 12.5px; }
+.mp-panel .btn.small { padding: 3px 9px; font-size: 13px; min-height: 0; }
