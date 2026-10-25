@@ -133,6 +133,7 @@ export const SLUGS: Record<string, string> = {
   novye: 'novye-nastolki',
   manager: 'menedzher',
   monopol: 'monopol',
+  konversiya: 'konversiya',
   vorona: 'belaya-vorona',
   western: 'vestern',
   akcii: 'akcionery',

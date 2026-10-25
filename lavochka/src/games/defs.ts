@@ -86,6 +86,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   igroteka: () => import('./igroteka/def').then((m) => m.def),
   shagdy: () => import('./shagdy/def').then((m) => m.def),
   monopol: () => import('./monopol/def').then((m) => m.def),
+  konversiya: () => import('./konversiya/def').then((m) => m.def),
   vput: () => import('./vput/def').then((m) => m.def),
   reversi: () => import('./reversi/def').then((m) => m.def),
   mill: () => import('./mill/def').then((m) => m.def),

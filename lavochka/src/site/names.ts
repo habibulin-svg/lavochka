@@ -34,6 +34,7 @@ export const NAMES: Record<string, Names> = {
   senet: { ru: ['сенет онлайн', 'игра сенет', 'египетская настольная игра', 'игра фараонов', 'игра Тутанхамона'], en: ['Senet', 'Senat', 'Egyptian board game', 'Game of passing'] },
   bagchal: { ru: ['баг-чал онлайн', 'тигры и козы', 'игра в тигров', 'багчал', 'непальская игра'], en: ['Bagh-Chal', 'Bagh Chal', 'Tigers and goats', 'Baghchal'] },
   vput: { ru: ['в путь дорогу настольная игра', 'игра в путь-дорогу малыш', 'настольная игра автобусы', 'игра про автобус и пассажиров', 'детская ходилка с автобусами'], en: ['V put-dorogu', 'On the Road', 'Soviet bus board game'] },
+  konversiya: { ru: ['конверсия', 'конверсия игра', 'конверсия 1 настольная игра', 'конверсия аск-гейм', 'советская инвестиционная игра'], en: ['Konversiya', 'Conversion', 'Conversion 1 board game'] },
   monopol: { ru: ['монопол', 'мо-но-пол', 'монопол настольная игра', 'игра монопол 1991', 'новая супер игра монопол'], en: ['Monopol', 'Mo-no-pol', 'Soviet Monopoly clone 1991'] },
   shagdy: { ru: ['шагды', 'шагды игра', 'шагды настольная игра', 'двойные ходы игра', 'советская игра шагды'], en: ['Shagdy', 'Double steps', 'Soviet board game Shagdy'] },
   igroteka: { ru: ['наша игротека', 'наша игротека настольная игра', 'набор игр наша игротека', 'волк и овцы', 'алькуерк', 'сиджа', 'болотуду', 'хасами шоги', 'сенегальские шашки', 'так-тикль', 'леопарды и коровы', 'квартет игра'], en: ['Nasha igroteka', 'Our game library', 'Fox and hounds', 'Alquerque', 'Seega', 'Hasami shogi', 'Tic-tac-chec', 'Teeko', 'Turkish draughts'] },
