@@ -1,0 +1,24 @@
+/* Санторин: остров в море, плита 5×5, белые ярусы и синие купола. */
+.table--santorini {
+  --panel-bg: linear-gradient(180deg, #f4efe4, #ddd3bd);
+  --panel-ink: #1b1a16;
+  --table-bg: linear-gradient(180deg, #3f8f93, #1d6670);
+}
+.sn-wrap { position: absolute; inset: 0; overflow: hidden; }
+.sn-svg { width: 100%; height: 100%; display: block; }
+.sn-grid { fill: none; stroke: rgba(90, 80, 64, 0.55); stroke-width: 1.6; stroke-linecap: round; }
+.sn-grid2 { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 0.6; transform: translate(0.6px, 0.8px); }
+.sn-hit { fill: transparent; cursor: pointer; }
+.sn-tgt { fill: rgba(255, 214, 90, 0.35); stroke: #ffd24a; stroke-width: 1.6; stroke-linejoin: round; pointer-events: none; animation: sn-pulse 1.1s ease-in-out infinite alternate; }
+.sn-tgt.build { fill: rgba(80, 170, 255, 0.32); stroke: #6cc0ff; }
+@keyframes sn-pulse { from { fill-opacity: 0.55; } to { fill-opacity: 1; } }
+.sn-was { fill: none; stroke: rgba(255, 240, 180, 0.8); stroke-width: 1.2; stroke-dasharray: 4 3; pointer-events: none; }
+.sn-new { fill: none; stroke: rgba(255, 240, 180, 0.9); stroke-width: 1.4; pointer-events: none; }
+.sn-b { pointer-events: none; }
+.sn-w { cursor: pointer; }
+.sn-w image { pointer-events: none; }
+.sn-ws { fill: rgba(0, 0, 0, 0.32); }
+.sn-w.can .sn-ws { fill: rgba(255, 210, 74, 0.55); }
+.sn-w.sel .sn-ws { fill: rgba(255, 210, 74, 0.95); stroke: #fff3c0; stroke-width: 1; }
+.sn-info { font-size: 14px; }
+.sn-sh { fill: rgba(40, 30, 20, 0.28); filter: blur(2.5px); pointer-events: none; }

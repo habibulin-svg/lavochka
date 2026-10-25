@@ -100,6 +100,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   kamisado: () => import('./kamisado/def').then((m) => m.def),
   shatra: () => import('./shatra/def').then((m) => m.def),
   okey: () => import('./okey/def').then((m) => m.def),
+  santorini: () => import('./santorini/def').then((m) => m.def),
   hive: () => import('./hive/def').then((m) => m.def),
   abalone: () => import('./abalone/def').then((m) => m.def),
   tak: () => import('./tak/def').then((m) => m.def),
