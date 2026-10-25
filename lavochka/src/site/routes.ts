@@ -132,6 +132,7 @@ export const SLUGS: Record<string, string> = {
   galaktika: 'kosmicheskie-vojny',
   borodino: 'borodino',
   srazhenie: 'srazhenie',
+  poedinok: 'poedinok',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',

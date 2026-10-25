@@ -1,0 +1,11 @@
+/* «Поединок»: поле в своих единицах (1000×1100) — подсветка PointBoard в этих единицах. */
+.pd .pb-dot { stroke-width: 3; }
+.pd .pb-can { stroke-width: 4; stroke-dasharray: 10 7; }
+.pd .pb-take { stroke-width: 5; }
+.pd .pb-last { stroke-width: 4; }
+.pd .pb-sel { filter: drop-shadow(0 0 5px #ffe066) drop-shadow(0 0 3px #ffe066); }
+.pd-path { fill: none; stroke: #e0302a; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 16; opacity: 0.85; pointer-events: none; }
+.pd-path1 { stroke: #2a62e0; }
+.pd-last { fill: none; stroke: rgba(120, 60, 0, 0.45); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 14; pointer-events: none; }
+.pd-info { display: flex; flex-direction: column; gap: 3px; }
+.pd-hint { font-size: 13px; opacity: 0.8; }

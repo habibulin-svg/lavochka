@@ -137,6 +137,7 @@ export const NAMES: Record<string, Names> = {
   sovabstract: { ru: ['советские логические игры', 'логические настольные игры СССР', 'абстрактные игры'], en: ['Abstract strategy games', 'Soviet board games'] },
   wargames: { ru: ['военные настольные игры', 'варгеймы онлайн', 'советские стратегии настольные'], en: ['Wargames', 'Strategy board games'] },
   galaktika: { ru: ['космические войны', 'освоение галактики', 'риск настольная игра', 'риск онлайн', 'советский риск', 'риск освоение галактики', 'игра захват территорий', 'стратегия с кубиками'], en: ['Risk', 'Risk board game', 'Soviet Risk', 'Galaxy conquest'] },
+  poedinok: { ru: ['поединок настольная игра', 'игра с кубиками перекатывать', 'шахматы на кубиках', 'дуэль кубики игра', 'электромера поединок'], en: ['Duell board game', 'Duel dice game', 'dice chess rolling', 'Duell Ravensburger'] },
   srazhenie: { ru: ['стратего', 'стратего онлайн', 'стратегия сражение настольная игра', 'игра маршал генерал разведчик сапер', 'игра с минами и флагом', 'советский стратего'], en: ['Stratego', 'Stratego online', 'Battle board game', 'capture the flag board game'] },
   borodino: { ru: ['бородино настольная игра', 'бородинское сражение игра', 'варгейм бородино', 'наполеон и кутузов игра', 'игра 1812 года', 'гексы варгейм'], en: ['Borodino wargame', 'Borodino 1812 board game', 'Napoleonic wargame'] },
   kupi: { ru: ['экономические игры', 'монополия по-советски', 'советская монополия', 'игры про бизнес'], en: ['Economic board games', 'Monopoly-like games'] },
