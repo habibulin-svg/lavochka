@@ -1,0 +1,32 @@
+/* Блоки: серое пластиковое поле, прозрачные цветные фигурки. */
+.table--blokus {
+  --panel-bg: linear-gradient(180deg, #f2f3f5, #d9dce0);
+  --panel-ink: #1a1c20;
+  --table-bg: radial-gradient(ellipse at 50% 40%, #4a5260, #2a2f38 70%);
+}
+.bk-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.bk-svg { width: 100%; height: 100%; touch-action: manipulation; }
+.bk-frame { filter: drop-shadow(0 0.15px 0.25px rgba(0, 0, 0, 0.6)); }
+.bk-holes rect { stroke: rgba(255, 255, 255, 0.55); stroke-width: 0.025; }
+.bk-c.last > rect:first-child { stroke: #fff; stroke-width: 0.07; }
+.bk-c.drop { animation: bk-drop 0.28s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes bk-drop { from { transform: scale(1.25); opacity: 0.2; } to { transform: scale(1); opacity: 1; } }
+.bk-an { fill: #fff; stroke: rgba(0, 0, 0, 0.5); stroke-width: 0.03; opacity: 0.85; pointer-events: none; }
+.bk-ghost { opacity: 0.75; pointer-events: none; }
+.bk-ghost.bad { opacity: 0.35; filter: grayscale(0.8); }
+.bk-panel { display: flex; flex-direction: column; gap: 8px; }
+.bk-score { display: flex; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 14px; }
+.bk-score span { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 8px; }
+.bk-score span.now { background: rgba(0, 0, 0, 0.1); }
+.bk-score span.out { opacity: 0.45; text-decoration: line-through; }
+.bk-score i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.bk-who { font-size: 14px; }
+.bk-hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 3px; }
+.bk-p { aspect-ratio: 1; padding: 2px; border: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.05); cursor: pointer; }
+.bk-p:disabled { cursor: default; }
+.bk-p.sel { background: rgba(255, 200, 40, 0.55); }
+.bk-p:not(:disabled):hover { background: rgba(0, 0, 0, 0.12); }
+.bk-p svg { width: 100%; height: 100%; display: block; }
+.bk-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.bk-btns .btn { flex: 1 1 40%; }
+.bk-tip { font-size: 12px; opacity: 0.75; }

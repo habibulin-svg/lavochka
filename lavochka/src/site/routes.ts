@@ -34,6 +34,7 @@ export const SLUGS: Record<string, string> = {
   abalone: 'abalon',
   hive: 'ulej',
   santorini: 'santorin',
+  blokus: 'bloki',
   tak: 'tak',
   pentago: 'pentago',
   quoridor: 'koridor',
