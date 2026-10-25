@@ -134,14 +134,17 @@ export interface State {
   /** Товарная биржа: пункты товаров. */
   gp: Record<Good, number>;
   turn: number;
-  phase: 'roll' | 'ask' | 'over';
+  /** 'move' — бросок сделан, фишку переставляет сам игрок (до развилки или до конца хода). */
+  phase: 'roll' | 'move' | 'ask' | 'over';
+  /** Фаза 'move': сколько шагов осталось. */
+  left?: number;
   ask: Ask | null;
   auc: Auction | null;
   dice: number | null;
   result: { winners: number[]; text: string; scores: Record<number, number> } | null;
 }
 
-export type Action = { type: 'roll' } | { type: 'choose'; id: string } | { type: 'sell'; cell: number };
+export type Action = { type: 'roll' } | { type: 'move' } | { type: 'choose'; id: string } | { type: 'sell'; cell: number };
 
 export type Who = number | null;
 
@@ -447,6 +450,39 @@ function nexts(s: State, seat: number, cell: number): number[] {
   // в колонии — не больше двух кругов
   if (cell === 129 && s.colLap[seat] >= 1) return [131];
   return n;
+}
+
+/** Фаза 'move': где остановится фишка — на развилке посреди хода или в конце (для подсветки клетки). */
+export function walkTarget(s: State): number | null {
+  if (s.phase !== 'move' || !s.left) return null;
+  return stopCell(s, s.turn, s.left);
+}
+
+function stopCell(s: State, seat: number, steps: number): number {
+  let p = s.pos[seat];
+  let col = s.colLap[seat];
+  for (let left = steps; left > 0; left--) {
+    const n = p === 129 && col >= 1 ? [131] : CELLS[p].next;
+    if (n.length > 1) break;
+    if (p === 130 && n[0] === 114) col++;
+    p = n[0];
+  }
+  return p;
+}
+
+/** Бросок или выбор на развилке: дальше фишку переставит игрок — действие 'move'. */
+function walkLater(x: Ctx, seat: number, left: number) {
+  if (left <= 0) {
+    land(x, seat);
+    return;
+  }
+  // развилка прямо здесь — сразу вопрос, переставлять пока нечего
+  if (stopCell(x.s, seat, left) === x.s.pos[seat]) {
+    walk(x, seat, left);
+    return;
+  }
+  x.s.left = left;
+  x.s.phase = 'move';
 }
 
 /** Шаги по полю; на развилке посреди хода — вопрос. Дошёл — разбор клетки. */
@@ -1123,7 +1159,7 @@ function checkEnd(x: Ctx): boolean {
 /** После разбора: если вопроса нет — ход закончен. */
 function settle(x: Ctx) {
   const { s } = x;
-  if (s.result) return;
+  if (s.result || s.phase === 'move') return;
   if (s.ask && s.out[s.ask.seat] && s.ask.kind !== 'offer') s.ask = null;
   if (!s.ask) {
     if (s.auc) return auctionNext(x);
@@ -1166,7 +1202,15 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     const d = die(x);
     s.dice = d;
     x.ev.push({ type: 'roll', seat, d });
-    walk(x, seat, d);
+    walkLater(x, seat, d);
+    return ok();
+  }
+  if (s.phase === 'move') {
+    if (a.type !== 'move') return null;
+    const left = s.left ?? 0;
+    s.left = 0;
+    s.phase = 'roll';
+    walk(x, seat, left);
     settle(x);
     return ok();
   }
@@ -1189,7 +1233,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         s.pos[seat] = 114;
         x.ev.push({ type: 'move', seat, path: [114], jump: true });
       } else step(x, seat, to);
-      if (!s.out[seat]) walk(x, seat, q.left! - 1);
+      if (!s.out[seat]) walkLater(x, seat, q.left! - 1);
       break;
     }
     case 'buy':

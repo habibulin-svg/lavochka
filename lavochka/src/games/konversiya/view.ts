@@ -1,7 +1,9 @@
-/* «Конверсия» — отрисовка. Поля в наборе не было, собираем его как в правилах («Как организовать поле для игры»): сверху —
- * таблица ввоза-вывоза с фишкой-индикатором (цвета зон — как в наборе), ряд континентов мирового рынка с «стопками» импорта,
- * внутренний рынок СССР с запасами и ценами по курсу, карточки игроков с имуществом и грузом. Картинки — карточки собственности,
- * жетоны и «События в пути» из PnP-архива (tools/konversiya/cut.py). Действия — формами в боковой панели. */
+/* «Конверсия» — отрисовка. Всё — из PnP-архива набора (tools/konversiya/cut.py, tracks.py): сверху — настоящая таблица
+ * ввоза-вывоза выбранной длины с фишкой-индикатором на клетке; ниже — внутренний рынок СССР (ячейки со стопками карточек
+ * собственности, планками заводов и жетонами, цены по курсу) и мировой рынок (континенты со своим импортом); затем стол каждого
+ * игрока: банковские чеки, кредитное обязательство, карточки, заводы со вставленными станками, жетоны сырья и товара, груз.
+ * Пуговицы игроков стоят в СССР или на континенте и переезжают при поездке. Действия — формами в боковой панели;
+ * поездку можно начать и щелчком по континенту. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -25,25 +27,22 @@ import {
   ROW,
   sellPrice,
   toNextRate,
+  total,
   trips,
   tripGoods,
   WORLD_PRICE,
   worth,
-  ZONES,
   type Action,
   type Cont,
   type Event,
   type Key,
   type Mode,
+  type Player,
   type State,
 } from './engine';
+import TRACKS from './tracks.json';
 import './konversiya.css';
 
-const ZONE_COLORS: Record<string, string[]> = {
-  short: ['#8a3ab8', '#2f7fd8', '#f0b020', '#3aa040'],
-  medium: ['#8a3ab8', '#3aa040', '#2f7fd8', '#f0b020'],
-  long: ['#8a3ab8', '#3aa040', '#2f7fd8', '#f0b020'],
-};
 const RATIO = ['1:10', '1:8', '1:5', '1:2', '1:1'];
 const SHORT: Record<Key, string> = {
   equipS: 'Оборудование',
@@ -59,16 +58,94 @@ const SHORT: Record<Key, string> = {
   raw: 'Сырьё',
   goods: 'Товар',
 };
-const icon = (k: Key) => `<img class="kv-ic kv-ic-${k}" src="/konversiya/${k}.webp" alt="" draggable="false">`;
+/** Карточки собственности (картон) и жетоны (пластмасса) — рисуются по-разному. */
+const CARD: Key[] = ['equipS', 'equipI', 'truckS', 'truckI', 'fleetS', 'fleetI'];
+const icon = (k: Key, cls = '') => `<img class="kv-ic kv-ic-${k} ${cls}" src="/konversiya/${k}.webp" alt="${SHORT[k]}" draggable="false">`;
 const MODE_NAME: Record<Mode, string> = { truck: 'свой автотранспорт', fleet: 'свой флот', state: 'государственный транспорт' };
+const btnImg = (s: number) => `/hodilki/buttons/${Math.min(s, 6)}.webp`;
+
+/** Стопка карточек: до 5 видимых слоёв со сдвигом и число. */
+function stack(k: Key, n: number, cls = '') {
+  if (n <= 0) return '';
+  const layers = Math.min(n, 5);
+  let o = `<span class="kv-stack ${cls}" title="${SHORT[k]}: ${n}">`;
+  for (let i = 0; i < layers; i++) o += `<img src="/konversiya/${k}.webp" alt="" draggable="false" style="--i:${layers - 1 - i}">`;
+  return o + (n > 1 ? `<b class="kv-n">${n}</b>` : '') + `</span>`;
+}
+
+/** Кучка жетонов: до 4 видимых со сдвигом и число. */
+function pile(k: Key, n: number, cls = '') {
+  if (n <= 0) return '';
+  const layers = Math.min(n, 4);
+  let o = `<span class="kv-pile ${cls}" title="${SHORT[k]}: ${n}">`;
+  for (let i = 0; i < layers; i++) o += `<img src="/konversiya/${k}.webp" alt="" draggable="false" style="--i:${i}">`;
+  return o + (n > 1 ? `<b class="kv-n">${n}</b>` : '') + `</span>`;
+}
+
+/** Сырьё и товар — жетонами 10, 5 и 1. */
+function chips(k: 'raw' | 'goods', n: number) {
+  if (n <= 0) return '';
+  let o = '';
+  let left = n;
+  for (const [v, img] of [
+    [10, `${k}10`],
+    [5, `${k}5`],
+    [1, k],
+  ] as const) {
+    const c = Math.floor(left / v);
+    left -= c * v;
+    if (!c) continue;
+    o += `<span class="kv-pile kv-coin" title="${SHORT[k]}: жетоны по ${v}">${Array.from({ length: Math.min(c, 4) }, (_, i) => `<img src="/konversiya/${img}.webp" alt="" draggable="false" style="--i:${i}">`).join('')}${c > 1 ? `<b class="kv-n">${c}</b>` : ''}</span>`;
+  }
+  return `<span class="kv-coins" title="${SHORT[k]}: ${n}">${o}<em>${SHORT[k].toLowerCase()} ${n}</em></span>`;
+}
+
+/** Банковские чеки на сумму (тысячи): купюры по достоинствам, стопками. */
+function notes(sum: number, usd: boolean) {
+  const vals = usd ? [20, 10, 5, 1] : [100, 50, 20, 10, 5, 1];
+  let left = Math.max(0, Math.floor(sum));
+  let o = '';
+  for (const v of vals) {
+    const c = Math.floor(left / v);
+    left -= c * v;
+    if (!c) continue;
+    o += `<span class="kv-note" title="${v} тыс. ${usd ? 'долларов' : 'рублей'} × ${c}">${Array.from({ length: Math.min(c, 3) }, (_, i) => `<img src="/konversiya/${usd ? 'usd' : 'rub'}${v}.webp" alt="" draggable="false" style="--i:${i}">`).join('')}${c > 1 ? `<b class="kv-n">${c}</b>` : ''}</span>`;
+  }
+  return o;
+}
+
+/** Заводы — планки с пятью гнёздами, станки вставлены по порядку (импортные первыми). */
+function factories(pl: Player) {
+  let mi = pl.own.machI;
+  let ms = pl.own.machS;
+  let o = '';
+  for (let f = 0; f < pl.own.factory; f++) {
+    let slots = '';
+    for (let k = 0; k < 5; k++) {
+      const key: Key | null = mi > 0 ? 'machI' : ms > 0 ? 'machS' : null;
+      if (key === 'machI') mi--;
+      else if (key === 'machS') ms--;
+      if (key) slots += `<img class="kv-slot-m" src="/konversiya/${key}.webp" alt="" draggable="false" style="--k:${k}">`;
+    }
+    o += `<span class="kv-plant" title="Завод: до 5 станков"><img src="/konversiya/factory.webp" alt="завод" draggable="false">${slots}</span>`;
+  }
+  // станки без завода
+  if (mi > 0) o += pile('machI', mi);
+  if (ms > 0) o += pile('machS', ms);
+  return o;
+}
 
 class KonversiyaView implements GameView<State, Event> {
   private ctx!: ViewCtx;
   private root!: HTMLElement;
   private track!: HTMLElement;
+  private trackImg!: HTMLImageElement;
+  private ind!: HTMLElement;
+  private rateEl!: HTMLElement;
   private world!: HTMLElement;
   private ussr!: HTMLElement;
   private players!: HTMLElement;
+  private chipsEl!: HTMLElement;
   private cardEl!: HTMLElement;
   private panel!: HTMLElement;
   private v: State | null = null;
@@ -76,26 +153,74 @@ class KonversiyaView implements GameView<State, Event> {
   private form: 'buy' | 'sell' | 'trip' | null = null;
   private qty: Partial<Record<Key, number>> = {};
   private trip: { to: string; mode: Mode; goods: number } | null = null;
+  /** Показанное положение фишки-индикатора (во время анимации отстаёт от состояния). */
+  private shownInd = 0;
+  private variant = '';
+  private ro!: ResizeObserver;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
-    this.root = h(`<div class="kv-wrap">
-        <div class="kv-track"></div>
-        <div class="kv-world"></div>
-        <div class="kv-ussr"></div>
+    this.root = h(`<div class="kv-wrap"><div class="kv-table">
+        <div class="kv-head"><div class="kv-rate"></div></div>
+        <div class="kv-track"><div class="kv-track-in"><img class="kv-track-img" alt="таблица ввоза-вывоза" draggable="false"><i class="kv-ind" title="фишка-индикатор перемены курса"></i></div></div>
+        <div class="kv-markets">
+          <section class="kv-sheet kv-ussr"></section>
+          <section class="kv-sheet kv-world"></section>
+        </div>
         <div class="kv-players"></div>
-        <div class="kv-card" hidden></div>
-      </div>`);
+        <div class="kv-chips"></div>
+      </div>
+      <div class="kv-card" hidden></div></div>`);
     root.appendChild(this.root);
+    // в показе правил и на снимке пуговицы встают сразу, без переезда
+    this.root.classList.toggle('kv-demo', !!ctx.demo);
     this.track = this.root.querySelector('.kv-track') as HTMLElement;
+    this.trackImg = this.root.querySelector('.kv-track-img') as HTMLImageElement;
+    this.ind = this.root.querySelector('.kv-ind') as HTMLElement;
+    this.rateEl = this.root.querySelector('.kv-rate') as HTMLElement;
     this.world = this.root.querySelector('.kv-world') as HTMLElement;
     this.ussr = this.root.querySelector('.kv-ussr') as HTMLElement;
     this.players = this.root.querySelector('.kv-players') as HTMLElement;
+    this.chipsEl = this.root.querySelector('.kv-chips') as HTMLElement;
     this.cardEl = this.root.querySelector('.kv-card') as HTMLElement;
     this.cardEl.addEventListener('click', () => (this.cardEl.hidden = true));
+    this.world.addEventListener('click', (e) => this.onCont(e));
     this.panel = h(`<div class="kv-panel"></div>`);
     ctx.controls.appendChild(this.panel);
     this.panel.addEventListener('click', (e) => this.onClick(e));
+    this.trackImg.onload = () => this.placeChips();
+    // пуговицы стоят над якорями мест: раскладка сдвигается, пока грузятся картинки, — пересчёт по размеру стола
+    this.ro = new ResizeObserver(() => this.placeChips());
+    this.ro.observe(this.root);
+    this.ro.observe(this.root.querySelector('.kv-table') as HTMLElement);
+    // и по загрузке каждой картинки (событие load не всплывает — ловим на погружении)
+    let queued = false;
+    this.root.addEventListener(
+      'load',
+      () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+          queued = false;
+          this.placeChips();
+        });
+      },
+      true,
+    );
+  }
+
+  /** Щелчок по континенту в свой ход в СССР — поездка туда (форма с выбором транспорта). */
+  private onCont(e: MouseEvent) {
+    const el = (e.target as HTMLElement).closest('[data-cont]') as HTMLElement | null;
+    const v = this.v;
+    if (!el || !v || this.me == null || v.turn !== this.me || v.over) return;
+    const ts = trips(v, this.me).filter((t) => t.to === el.dataset.cont);
+    if (!ts.length) return;
+    e.preventDefault();
+    this.form = 'trip';
+    this.qty = {};
+    this.trip = { to: ts[0].to, mode: ts[0].mode, goods: tripGoods(v, this.me, ts[0].mode) };
+    this.renderPanel();
   }
 
   private onClick(e: MouseEvent) {
@@ -156,62 +281,134 @@ class KonversiyaView implements GameView<State, Event> {
     this.renderPanel();
   }
 
-  // ---------- поле
+  // ---------- таблица ввоза-вывоза
 
-  private renderTrack(v: State) {
-    const z = ZONES[v.cfg.variant];
-    const tot = z.reduce((a, b) => a + b, 0);
-    const col = ZONE_COLORS[v.cfg.variant];
-    let o = `<div class="kv-tt"><b>Курс ${rate(v)}</b> (${RATIO[rate(v) - 1]}) · пересекло границу ${v.ind} из ${tot}${rate(v) < 5 ? ` · до смены курса ${toNextRate(v)}` : ''}</div><div class="kv-bar">`;
-    z.forEach((n, i) => (o += `<i style="flex:${n};background:${col[i]}"><span>${i + 1}</span></i>`));
-    o += `<em style="left:${Math.min(100, (v.ind / tot) * 100)}%"></em></div>`;
-    this.track.innerHTML = o;
+  private useTrack(v: State) {
+    if (this.variant === v.cfg.variant) return;
+    this.variant = v.cfg.variant;
+    const t = TRACKS[v.cfg.variant];
+    this.trackImg.src = `/konversiya/track-${v.cfg.variant}.webp`;
+    this.root.style.setProperty('--track-ar', `${t.w} / ${t.h}`);
+    this.track.dataset.variant = v.cfg.variant;
   }
 
-  private chips(v: State, loc: string) {
-    return v.p
-      .map((q, i) => (q.alive && q.loc === loc ? `<b class="kv-chip" style="background:${SEATS[i].color}" title="${SEATS[i].name}"></b>` : ''))
-      .join('');
+  private placeInd(n: number) {
+    const cells = TRACKS[this.variant as keyof typeof TRACKS].cells;
+    const [x, y] = cells[Math.max(0, Math.min(cells.length - 1, n))];
+    this.ind.style.left = x * 100 + '%';
+    this.ind.style.top = y * 100 + '%';
   }
 
-  private renderWorld(v: State) {
-    let o = '<div class="kv-h">Мировой рынок</div><div class="kv-conts">';
-    for (const c of CONTS) {
-      const k = CONT_ITEM[c];
-      o += `<div class="kv-cont${BY_SEA.includes(c) ? ' sea' : ''}"><div class="kv-cn">${CONT_NAME[c]}${this.chips(v, c)}</div>${icon(k)}
-        <div class="kv-cs">${SHORT[k].replace(/ \(.*\)/, '')} · $${WORLD_PRICE[ROW[k]]} · <b>${v.world[c]}</b></div></div>`;
-    }
-    this.world.innerHTML = o + '</div>';
+  private renderRate(v: State, ind = v.ind) {
+    const r = rate({ cfg: v.cfg, ind });
+    const left = toNextRate({ cfg: v.cfg, ind });
+    this.rateEl.innerHTML = `<b class="kv-r r${r}">Курс ${r}</b><span>рубль к доллару ${RATIO[r - 1]}</span><span>партий через границу: <b>${ind}</b> из ${total(v.cfg.variant)}</span>${r < 5 ? `<span>до смены курса — <b>${left}</b></span>` : '<span><b>рубль конвертируемый — конец игры</b></span>'}`;
   }
+
+  // ---------- рынки
 
   private renderUssr(v: State) {
-    let o = `<div class="kv-h">Внутренний рынок СССР ${this.chips(v, 'ussr')}<small>купить / продать, тыс. руб.; перевозка партии — ${freight(v)}</small></div><div class="kv-goods">`;
+    let o = `<header><i class="kv-star">★</i><h3>Внутренний рынок СССР</h3><small>покупка / продажа, тыс. руб. · перевозка партии ${freight(v)}</small><span class="kv-anchor" data-anchor="ussr"></span></header><div class="kv-slots">`;
     for (const k of KEYS) {
-      const stock = k === 'raw' || k === 'goods' ? '∞' : String(v.market[k]);
-      if (stock === '0' && (k.endsWith('I') || k === 'comp')) {
-        o += `<div class="kv-g off">${icon(k)}<span>${SHORT[k]}</span><small>ещё не завезли</small></div>`;
-        continue;
-      }
-      o += `<div class="kv-g">${icon(k)}<span>${SHORT[k]}</span><small>${buyPrice(v, k)} / ${sellPrice(v, k)} · ${stock}</small></div>`;
+      const inf = k === 'raw' || k === 'goods';
+      const n = v.market[k];
+      const off = !inf && n <= 0;
+      const goods = inf ? chips(k as 'raw' | 'goods', 15) : CARD.includes(k) ? stack(k, n) : k === 'factory' ? `<span class="kv-plantpile">${pile('factory', n)}</span>` : pile(k, n);
+      o += `<div class="kv-slot${off ? ' off' : ''}${CARD.includes(k) ? ' card' : ''}">
+        <div class="kv-slot-in">${off ? `<span class="kv-empty">${k.endsWith('I') || k === 'comp' ? 'ещё не завезли' : 'раскупили'}</span>` : goods}</div>
+        <div class="kv-tag"><span>${SHORT[k]}</span><b>${buyPrice(v, k)}<i>/</i>${sellPrice(v, k)}</b>${inf ? '' : `<small>${n} шт.</small>`}</div></div>`;
     }
     this.ussr.innerHTML = o + '</div>';
   }
 
+  private renderWorld(v: State) {
+    let o = '<header><i class="kv-globe">◍</i><h3>Мировой рынок</h3><small>цены в тысячах долларов, рынок покупает советский товар по $4</small></header><div class="kv-conts">';
+    const meHere = this.me != null && v.turn === this.me && !v.over ? trips(v, this.me).map((t) => t.to) : [];
+    for (const c of CONTS) {
+      const k = CONT_ITEM[c];
+      const n = v.world[c];
+      const can = meHere.includes(c);
+      o += `<div class="kv-cont kv-c-${c}${can ? ' can' : ''}" data-cont="${c}"${can ? ' title="Поехать сюда"' : ''}>
+        <div class="kv-cn">${CONT_NAME[c]}${BY_SEA.includes(c) ? '<i class="kv-sea" title="сюда ходит и флот">⚓</i>' : ''}</div>
+        <div class="kv-cg">${CARD.includes(k) ? stack(k, n, 'small') : pile(k, n)}</div>
+        <div class="kv-cs">${SHORT[k].replace(/ \(.*\)/, '')} · <b>$${WORLD_PRICE[ROW[k]]}</b></div>
+        <span class="kv-anchor" data-anchor="${c}"></span></div>`;
+    }
+    this.world.innerHTML = o + '</div>';
+  }
+
+  // ---------- столы игроков
+
   private renderPlayers(v: State) {
     let o = '';
     v.p.forEach((q, i) => {
-      const own = KEYS.filter((k) => q.own[k] > 0)
-        .map((k) => `<span class="kv-own">${icon(k)}<b>${q.own[k]}</b></span>`)
-        .join('');
-      const cargo = loadOf(q.cargo)
-        ? `груз: ${[q.cargo.goods ? `свой товар ${q.cargo.goods}` : '', q.cargo.state ? `гос. ${q.cargo.stateKind === 'goods' ? 'товар' : SHORT[q.cargo.stateKind ?? 'goods'].toLowerCase()} ${q.cargo.state}` : '', ...Object.entries(q.cargo.imports).map(([k, n]) => `${SHORT[k as Key].toLowerCase()} ${n}`)].filter(Boolean).join(', ')}`
+      const cards = CARD.map((k) => stack(k, q.own[k], 'small')).join('');
+      const tok = `${factories(q)}${pile('comp', q.own.comp)}${chips('raw', q.own.raw)}${chips('goods', q.own.goods)}`;
+      const c = q.cargo;
+      const cargo = loadOf(c)
+        ? `<div class="kv-cargo"><span>груз${q.loc === 'ussr' ? '' : ' в пути'}:</span>${c.goods ? chips('goods', c.goods) : ''}${c.state ? `<span class="kv-state" title="государственный груз">гос. ${c.stateKind && c.stateKind !== 'goods' ? SHORT[c.stateKind].toLowerCase() : 'товар'} ×${c.state}</span>` : ''}${Object.entries(c.imports)
+            .map(([k, n]) => (CARD.includes(k as Key) ? stack(k as Key, n ?? 0, 'small') : pile(k as Key, n ?? 0)))
+            .join('')}</div>`
         : '';
+      const where = q.loc === 'ussr' ? 'в СССР' : CONT_NAME[q.loc as Cont];
       o += `<div class="kv-pl${v.turn === i && !v.over ? ' on' : ''}${q.alive ? '' : ' out'}" style="--c:${SEATS[i].color}">
-        <div class="kv-pn">${this.ctx.name(i)} <small>${q.loc === 'ussr' ? 'в СССР' : CONT_NAME[q.loc as Cont]}${q.skip ? ' · пропускает ход' : ''}</small></div>
-        <div class="kv-money"><b>${q.rub}</b> тыс. руб. · <b>${q.usd}</b> тыс. $${q.loan ? ' · <span class="kv-loan">ссуда: вернуть 150</span>' : ''} · итог ≈ ${worth(v, i)}</div>
-        <div class="kv-owns">${own || '<small>имущества нет</small>'}</div>${cargo ? `<div class="kv-cargo">${cargo}</div>` : ''}</div>`;
+        <div class="kv-pn"><img src="${btnImg(i)}" alt="" draggable="false"><b>${this.ctx.name(i)}</b><small>${where}${q.skip ? ' · пропускает ход' : ''} · итог ≈ ${worth(v, i)}</small></div>
+        <div class="kv-cash"><span class="kv-sum">${q.rub} тыс. руб.</span>${notes(q.rub, false)}${q.usd ? `<span class="kv-sum usd">$${q.usd} тыс.</span>${notes(q.usd, true)}` : ''}${q.loan ? `<span class="kv-loan" title="Кредитное обязательство: вернуть ${LOAN_BACK} тыс."><img src="/konversiya/credit.webp" alt="кредитное обязательство" draggable="false"></span>` : ''}</div>
+        ${cards || tok ? `<div class="kv-owns">${cards}${tok}</div>` : '<div class="kv-owns"><small class="kv-none">имущества нет</small></div>'}${cargo}</div>`;
     });
     this.players.innerHTML = o;
+  }
+
+  /** Пуговицы игроков — над якорями мест (СССР, континенты); при смене места переезжают. */
+  private placeChips() {
+    const v = this.v;
+    if (!v) return;
+    const table = this.chipsEl.parentElement!;
+    // положение якоря внутри стола (не экранное: стол может быть масштабирован)
+    const at = (el: HTMLElement) => {
+      let x = 0;
+      let y = 0;
+      for (let e: HTMLElement | null = el; e && e !== table; e = e.offsetParent as HTMLElement | null) {
+        x += e.offsetLeft;
+        y += e.offsetTop;
+      }
+      return { x, y };
+    };
+    const byLoc = new Map<string, number[]>();
+    v.p.forEach((q, i) => {
+      if (!q.alive) return;
+      byLoc.set(q.loc, [...(byLoc.get(q.loc) ?? []), i]);
+    });
+    for (let i = 0; i < v.p.length; i++) {
+      let el = this.chipsEl.querySelector(`[data-seat="${i}"]`) as HTMLElement | null;
+      if (!el) {
+        el = h(`<img class="kv-chip" data-seat="${i}" src="${btnImg(i)}" alt="" draggable="false">`);
+        this.chipsEl.appendChild(el);
+      }
+      const q = v.p[i];
+      el.hidden = !q.alive;
+      const a = this.root.querySelector(`[data-anchor="${q.loc}"]`) as HTMLElement | null;
+      if (!a || !q.alive) continue;
+      const r = at(a);
+      const list = byLoc.get(q.loc) ?? [i];
+      const k = list.indexOf(i);
+      el.style.left = r.x - k * 28 + 'px';
+      el.style.top = r.y + 'px';
+      el.classList.toggle('on', v.turn === i && !v.over);
+    }
+    this.placeInd(this.shownInd);
+  }
+
+  private render() {
+    const v = this.v;
+    if (!v) return;
+    this.useTrack(v);
+    this.renderRate(v, this.shownInd);
+    this.renderUssr(v);
+    this.renderWorld(v);
+    this.renderPlayers(v);
+    this.placeChips();
+    this.renderPanel();
   }
 
   // ---------- панель действий
@@ -309,7 +506,7 @@ class KonversiyaView implements GameView<State, Event> {
     }
     // поездка
     const ts = trips(v, i);
-    o += '<div class="kv-q">Куда и на чём:</div><div class="kv-dests">';
+    o += `<div class="kv-q">Куда и на чём${pl.loc === 'ussr' ? ' (можно щёлкнуть по континенту)' : ''}:</div><div class="kv-dests">`;
     for (const t of ts) {
       const sel = this.trip && this.trip.to === t.to && this.trip.mode === t.mode;
       o += `<button class="btn small ${sel ? 'primary' : ''}" data-k="dest" data-to="${t.to}" data-mode="${t.mode}">${t.to === 'ussr' ? 'СССР' : CONT_NAME[t.to as Cont]} — ${MODE_NAME[t.mode]}${t.cost ? ` (${t.cost} тыс.)` : ''}</button>`;
@@ -324,18 +521,9 @@ class KonversiyaView implements GameView<State, Event> {
     return o;
   }
 
-  private render() {
-    const v = this.v;
-    if (!v) return;
-    this.renderTrack(v);
-    this.renderWorld(v);
-    this.renderUssr(v);
-    this.renderPlayers(v);
-    this.renderPanel();
-  }
-
   setView(v: State) {
     this.v = v;
+    this.shownInd = v.ind;
     this.render();
   }
 
@@ -349,15 +537,41 @@ class KonversiyaView implements GameView<State, Event> {
         Sound.card();
         await sleep(1700 / sp());
         this.cardEl.hidden = true;
+      } else if (ev.type === 'trip' || ev.type === 'back') {
+        // пуговица переезжает на место назначения (или возвращается)
+        if (this.v) {
+          const p = this.v.p.slice();
+          p[ev.seat] = { ...p[ev.seat], loc: ev.type === 'trip' ? ev.to : ev.at };
+          this.v = { ...this.v, p };
+          this.placeChips();
+        }
+        Sound.step();
+        await sleep(520 / sp());
+      } else if (ev.type === 'arrive' && ev.units > 0) {
+        // фишка-индикатор: на столько клеток, сколько партий пересекло границу
+        const from = this.shownInd;
+        const to = Math.min(total(v.cfg.variant), from + ev.units);
+        this.ind.classList.add('lifted');
+        for (let n = from + 1; n <= to; n++) {
+          this.shownInd = n;
+          this.placeInd(n);
+          this.renderRate(v, n);
+          Sound.step();
+          await sleep((ev.units > 12 ? 60 : 140) / sp());
+        }
+        this.ind.classList.remove('lifted');
+        Sound.place();
       } else if (ev.type === 'rate') {
+        this.rateEl.classList.add('flash');
         Sound.win();
-        await sleep(400 / sp());
+        await sleep(700 / sp());
+        this.rateEl.classList.remove('flash');
       } else if (ev.type === 'buy' || ev.type === 'load') Sound.place();
       else if (ev.type === 'sell') Sound.home();
-      else if (ev.type === 'trip') Sound.step();
       else if (ev.type === 'end') Sound.win();
     }
     this.v = v;
+    this.shownInd = v.ind;
     this.render();
   }
 
@@ -372,9 +586,12 @@ class KonversiyaView implements GameView<State, Event> {
     if (!interactive.includes(toAct[0])) return `Ходит ${this.ctx.name(toAct[0])}…`;
     return v.extra ? 'Ещё одна операция' : 'Ваш ход — выберите действие';
   }
+
+  destroy() {
+    this.ro.disconnect();
+  }
 }
 
 export function createView(): GameView<State, Event> {
   return new KonversiyaView();
 }
-

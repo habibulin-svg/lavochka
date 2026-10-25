@@ -21,7 +21,15 @@ function demo(patch: (s: State) => void, steps: DemoScript<State, Action>['steps
       patch(s);
       return s;
     },
-    steps,
+    // после броска фишку переставляют отдельным шагом: подкрутка сверх кубика и подпись — на нём
+    steps: steps.flatMap((st) =>
+      st.action.type === 'roll'
+        ? [
+            { ...st, rig: st.rig?.slice(0, 1), caption: `${SEATS[st.seat].name} бросает кубик…` },
+            { seat: st.seat, action: { type: 'move' } as Action, rig: st.rig?.slice(1), caption: st.caption },
+          ]
+        : [st],
+    ),
   };
 }
 

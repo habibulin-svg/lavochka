@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/konversiya/ai';
 import * as kv from '../src/games/konversiya/engine';
+import TRACKS from '../src/games/konversiya/tracks.json';
 
 const fresh = (n = 2, variant = 'short', deck: string[] = []) => {
   const s = kv.newState(kv.cfgFrom({ variant }), n, new SeededRng(1));
@@ -16,17 +17,22 @@ function act(s: kv.State, a: kv.Action) {
 }
 
 describe('Конверсия', () => {
-  it('колода — 50 карт; таблицы — 100, 125, 190', () => {
+  it('колода — 50 карт; красная клетка таблиц — 100, 126, 191 (как на листе набора)', () => {
     expect(kv.DECK.length).toBe(50);
     expect(kv.total('short')).toBe(100);
-    expect(kv.total('medium')).toBe(125);
-    expect(kv.total('long')).toBe(190);
+    expect(kv.total('medium')).toBe(126);
+    expect(kv.total('long')).toBe(191);
+    for (const v of ['short', 'medium', 'long'] as const) expect(TRACKS[v].cells.length).toBe(kv.total(v) + 1);
     const s = fresh(2, 'medium');
     expect(kv.rate(s)).toBe(1);
     s.ind = 15;
+    expect(kv.rate(s)).toBe(1);
+    s.ind = 16;
     expect(kv.rate(s)).toBe(2);
-    s.ind = 124;
+    s.ind = 125;
     expect(kv.rate(s)).toBe(4);
+    s.ind = 126;
+    expect(kv.rate(s)).toBe(5);
   });
 
   it('цены по курсу, импорт вдвое дороже', () => {

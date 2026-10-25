@@ -3,21 +3,41 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BOARDS, boardOf } from '../src/games/manager/boards';
 import { def } from '../src/games/manager/def';
-import { apply, canBuild, canMortgage, marketOpts, newState, rent, toAct, type Action, type State } from '../src/games/manager/engine';
+import { apply, canBuild, canMortgage, marketOpts, newState, rent, toAct, walkTarget, type Action, type State } from '../src/games/manager/engine';
 import { STOCK_CARDS } from '../src/games/manager/boards';
 import { botSeats, defaults, simulate } from './harness';
 
 const rng = () => new RiggedRng(new SeededRng(7));
 
-function act(s: State, seat: number, a: Action, rig?: number[]): State {
-  const r = rng();
-  r.rig(rig);
+function act(s: State, seat: number, a: Action, rig?: number[], r0?: RiggedRng): State {
+  const r = r0 ?? rng();
+  if (!r0) r.rig(rig);
   const res = apply(s, seat, a, r);
   expect(res, JSON.stringify(a)).not.toBeNull();
+  // после броска фишку переставляет игрок — отдельным действием (остаток подкрутки — на то, что случится на клетке)
+  if (a.type === 'roll' && res!.state.phase === 'move') return act(res!.state, seat, { type: 'move' }, undefined, r);
   return res!.state;
 }
 
 describe('Менеджер', () => {
+  it('после броска фишку переставляет сам игрок: фаза move, подсвеченная клетка, бот — отдельным действием', () => {
+    for (const map of ['manager', 'nep', 'kosmos', 'biznes', 'biznesmen', 'imperiya', 'odessa'] as const) {
+      let s = newState(map, [0, 1], {}, rng());
+      const r = rng();
+      r.rig(map === 'kosmos' ? [2] : [0, 1]);
+      const res = apply(s, 0, { type: 'roll' }, r)!;
+      expect(res.state.phase, map).toBe('move');
+      expect(res.events.some((e) => e.type === 'move'), map).toBe(false);
+      s = res.state;
+      const to = walkTarget(s);
+      expect(to, map).not.toBeNull();
+      expect(apply(s, 0, { type: 'roll' }, rng()), map).toBeNull();
+      const m = apply(s, 0, { type: 'move' }, rng())!;
+      expect(m.state.pos[0], map).toBe(to);
+      expect(m.events.some((e) => e.type === 'move'), map).toBe(true);
+    }
+  });
+
   it('каждый пресет открывает своё поле', () => {
     const seats2 = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));
     // любое поле из списка должно настраиваться своим id (раньше перечень полей был выписан вслепую,

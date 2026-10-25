@@ -2,7 +2,8 @@
  * правила игр: в «Менеджере» два кубика, дубли, биржа, филиалы/предприятия, залог и долги; в «Космосе» один кубик, планеты без построек,
  * банк с жетонами «Б», казино, страховка, пираты с «золотом Амазонок», ссуда банкроту.
  *
- * Ход: фаза 'roll' — игрок до броска делает операции (строит, закладывает, предлагает сделку) и бросает. После хода клетка
+ * Ход: фаза 'roll' — игрок до броска делает операции (строит, закладывает, предлагает сделку) и бросает; фаза 'move' — фишку
+ * на выпавшую клетку переставляет сам игрок (отдельное действие, как в кинь-двинь: игра не ходит за человека). После хода клетка
  * разбирается (resolve): может открыть фазу решения (купить, торги, долг, страховка, казино), по её окончании ход заканчивается (finish). */
 import type { Rng } from '../../core/types';
 import {
@@ -32,6 +33,7 @@ import {
 
 export type Phase =
   | 'roll'
+  | 'move'
   | 'resolve'
   | 'buy'
   | 'auction'
@@ -110,6 +112,8 @@ export interface State {
   turn: number;
   phase: Phase;
   dice: number[] | null;
+  /** Фаза 'move': на сколько шагов переставить фишку. */
+  walk?: number;
   doubles: number;
   /** «Менеджер» (Ленинград, Одесса): участки, на которых уже строили с последнего броска — за ход по одной постройке на участок. */
   built?: number[];
@@ -195,6 +199,7 @@ export interface State {
 
 export type Action =
   | { type: 'roll' }
+  | { type: 'move' }
   | { type: 'buy' }
   | { type: 'pass' }
   | { type: 'bid'; amount: number }
@@ -830,13 +835,8 @@ function passStart(x: Ctx, seat: number, landed: boolean) {
   }
 }
 
-/** Шаги фишки: n > 0 — вперёд, n < 0 — назад (назад «Старт» не платит). */
-function step(x: Ctx, seat: number, n: number) {
-  const { s } = x;
-  if (isImp(s)) {
-    stepImp(x, seat, n);
-    return;
-  }
+/** Клетки, по которым пройдёт фишка (без «Империи»). */
+function ringPath(s: State, seat: number, n: number): number[] {
   const len = N(s);
   const next = B(s).next;
   const path: number[] = [];
@@ -849,6 +849,60 @@ function step(x: Ctx, seat: number, n: number) {
     p = q;
     path.push(p);
   }
+  return path;
+}
+
+/** «Империя»: клетки пути и сколько раз пройден «Гомер» (маршрут — до сброса в stepImp). */
+function impPath(s: State, seat: number, n: number): { path: number[]; laps: number } {
+  const path: number[] = [];
+  let p = s.pos[seat];
+  let laps = 0;
+  if (n < 0) {
+    for (let i = 0; i < -n; i++) {
+      if (p < 38) p = (p + 37) % 38;
+      path.push(p);
+    }
+    return { path, laps };
+  }
+  const route = s.route[seat];
+  const rev = s.rev[seat];
+  for (let i = 0; i < n; i++) {
+    let q: number;
+    if (route === 'inner' && p === 37 && i === 0) q = 39;
+    else if (rev && p >= 38) q = p === 41 ? 40 : p === 40 ? 39 : p === 39 ? 38 : 0;
+    else q = p < 38 ? (p + 1) % 38 : p === 38 ? 0 : p === 41 ? 38 : p + 1;
+    if (q === 0 && (p === 37 || p === 38)) laps++;
+    p = q;
+    path.push(p);
+  }
+  return { path, laps };
+}
+
+/** Фаза 'move': куда встанет фишка того, кто ходит (подсветка клетки для игрока). */
+export function walkTarget(s: State): number | null {
+  if (s.phase !== 'move' || !s.walk) return null;
+  const seat = s.turn;
+  if (isImp(s) && s.route[seat] === 'sub') return 42 + ((s.walk - 1) % 4);
+  const path = isImp(s) ? impPath(s, seat, s.walk).path : ringPath(s, seat, s.walk);
+  return path.length ? path[path.length - 1] : s.pos[seat];
+}
+
+/** Бросок сделан: фишку переставит игрок — действие 'move'. */
+function walk(x: Ctx, n: number) {
+  x.s.phase = 'move';
+  x.s.walk = n;
+}
+
+/** Шаги фишки: n > 0 — вперёд, n < 0 — назад (назад «Старт» не платит). */
+function step(x: Ctx, seat: number, n: number) {
+  const { s } = x;
+  if (isImp(s)) {
+    stepImp(x, seat, n);
+    return;
+  }
+  const path = ringPath(s, seat, n);
+  const dir = n > 0 ? 1 : -1;
+  const p = path.length ? path[path.length - 1] : s.pos[seat];
   s.pos[seat] = p;
   x.ev.push({ type: 'move', seat, path });
   if (dir > 0) {
@@ -1315,29 +1369,12 @@ function swapAll(x: Ctx, a: number, b: number) {
  * космодром), с космодрома — на «Гомера»; после антимира малый круг — вспять. Вход на «Гомера» — полный круг, 200. */
 function stepImp(x: Ctx, seat: number, n: number) {
   const { s } = x;
-  const path: number[] = [];
-  let p = s.pos[seat];
-  let laps = 0;
-  if (n < 0) {
-    for (let i = 0; i < -n; i++) {
-      if (p < 38) p = (p + 37) % 38;
-      path.push(p);
-    }
-  } else {
-    const route = s.route[seat];
-    const rev = s.rev[seat];
+  const { path, laps } = impPath(s, seat, n);
+  if (n > 0) {
     s.route[seat] = '';
     s.rev[seat] = false;
-    for (let i = 0; i < n; i++) {
-      let q: number;
-      if (route === 'inner' && p === 37 && i === 0) q = 39;
-      else if (rev && p >= 38) q = p === 41 ? 40 : p === 40 ? 39 : p === 39 ? 38 : 0;
-      else q = p < 38 ? (p + 1) % 38 : p === 38 ? 0 : p === 41 ? 38 : p + 1;
-      if (q === 0 && (p === 37 || p === 38)) laps++;
-      p = q;
-      path.push(p);
-    }
   }
+  const p = path.length ? path[path.length - 1] : s.pos[seat];
   s.pos[seat] = p;
   x.ev.push({ type: 'move', seat, path });
   for (let k = 0; k < laps; k++) {
@@ -1521,7 +1558,10 @@ function debtPaid(x: Ctx) {
   s.debt = null;
   give(x, seat, d.to, d.amount, 'уплата долга');
   s.phase = 'resolve';
-  if (d.then === 'move' && s.dice) step(x, seat, s.dice[0] + s.dice[1]);
+  if (d.then === 'move' && s.dice) {
+    walk(x, s.dice[0] + s.dice[1]);
+    return;
+  }
   settle(x);
 }
 
@@ -2121,9 +2161,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
           s.accel[seat]--;
         }
         s.lastMove = n;
-        if (s.route[seat] === 'sub') subMove(x, seat, n);
-        else step(x, seat, n);
-        settle(x);
+        walk(x, n);
         return ok();
       }
       if (isBm(s)) {
@@ -2133,8 +2171,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         s.dice = [d1, d2];
         s.bonus = d1 === 3 && d2 === 3;
         x.ev.push({ type: 'roll', seat, dice: [d1, d2] });
-        step(x, seat, d1 + d2);
-        settle(x);
+        walk(x, d1 + d2);
         return ok();
       }
       if (isBiz(s)) {
@@ -2143,16 +2180,14 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         const d2 = rng.int(6) + 1;
         s.dice = [d1, d2];
         x.ev.push({ type: 'roll', seat, dice: [d1, d2] });
-        step(x, seat, d1 + d2);
-        settle(x);
+        walk(x, d1 + d2);
         return ok();
       }
       if (s.map === 'kosmos') {
         const d = rng.int(6) + 1;
         s.dice = [d];
         x.ev.push({ type: 'roll', seat, dice: [d] });
-        step(x, seat, d);
-        settle(x);
+        walk(x, d);
         return ok();
       }
       const d1 = rng.int(6) + 1;
@@ -2164,8 +2199,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         if (dbl) {
           s.jail[seat] = 0;
           x.ev.push({ type: 'free', seat, how: 'double' });
-          step(x, seat, d1 + d2);
-          settle(x);
+          walk(x, d1 + d2);
           return ok();
         }
         s.jail[seat]++;
@@ -2178,8 +2212,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         x.ev.push({ type: 'free', seat, how: 'forced' });
         s.phase = 'resolve';
         const r = charge(x, seat, B(s).jailPay ?? 500, null, 'выход с биржи', 'move');
-        if (r === 'ok') step(x, seat, d1 + d2);
-        if (r !== 'debt') settle(x);
+        if (r === 'ok') walk(x, d1 + d2);
+        else if (r !== 'debt') settle(x);
         return ok();
       }
       if (dbl) {
@@ -2191,7 +2225,16 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         }
         s.again = true;
       } else s.again = false;
-      step(x, seat, d1 + d2);
+      walk(x, d1 + d2);
+      return ok();
+    }
+    case 'move': {
+      if (a.type !== 'move' || !s.walk) return null;
+      const n = s.walk;
+      s.walk = 0;
+      s.phase = 'resolve';
+      if (isImp(s) && s.route[seat] === 'sub') subMove(x, seat, n);
+      else step(x, seat, n);
       settle(x);
       return ok();
     }

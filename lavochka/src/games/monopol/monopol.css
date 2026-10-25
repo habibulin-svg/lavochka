@@ -13,6 +13,7 @@
 .mp-pot { position: absolute; transform: translate(-50%, -50%); background: rgba(20, 10, 40, 0.85); color: #ffe066; font: 700 0.9vmin/1 sans-serif; padding: 0.4vmin 0.8vmin; border-radius: 0.6vmin; }
 .mp-spot { position: absolute; border: 3px solid #ffe066; border-radius: 6px; background: rgba(255, 230, 100, 0.18); cursor: pointer; animation: mp-blink 1.2s ease-in-out infinite; }
 .mp-spot.sq { border-radius: 4px; }
+.mp-spot.go { border-width: 5px; box-shadow: 0 0 0 3px rgba(20, 14, 0, 0.8), 0 0 18px #ffe066; }
 .mp-spot:hover { background: rgba(255, 230, 100, 0.4); }
 @keyframes mp-blink { 50% { border-color: rgba(255, 230, 100, 0.45); } }
 .mp-panel { display: flex; flex-direction: column; gap: 6px; }

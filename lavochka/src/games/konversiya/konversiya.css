@@ -1,42 +1,124 @@
-/* «Конверсия»: таблица ввоза-вывоза, континенты, внутренний рынок, игроки, карта события, панель действий. */
-.kv-wrap { position: relative; width: 100%; height: 100%; overflow: auto; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
-  background: radial-gradient(ellipse at 50% 0%, #2b3a2f, #141b16); color: #f2efe2; font: 14px/1.3 'PT Sans', system-ui, sans-serif; }
-.kv-h { font: 700 15px/1.2 'PT Sans', sans-serif; letter-spacing: 0.03em; text-transform: uppercase; color: #e8d9a0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-.kv-h small { text-transform: none; letter-spacing: 0; color: #c8c2a8; font-weight: 400; }
-.kv-track { background: #0b0b0d; border-radius: 10px; padding: 8px 12px; box-shadow: inset 0 0 0 1px #333; }
-.kv-tt { margin-bottom: 6px; }
-.kv-bar { position: relative; display: flex; height: 22px; border-radius: 6px; overflow: hidden; }
-.kv-bar i { display: flex; align-items: center; justify-content: center; border-right: 2px solid #0b0b0d; font-style: normal; font-weight: 700; color: rgba(0, 0, 0, 0.55); }
-.kv-bar em { position: absolute; top: -3px; width: 14px; height: 28px; margin-left: -7px; border-radius: 4px; background: #fff; box-shadow: 0 0 0 2px #000, 0 0 8px #fff; transition: left 0.5s; }
-.kv-conts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.kv-cont { background: rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 6px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.kv-cont.sea { box-shadow: inset 0 -3px 0 #2f7fd8; }
-.kv-cn { font-weight: 700; display: flex; gap: 4px; align-items: center; }
-.kv-cs { font-size: 12.5px; color: #d8d2b8; }
-.kv-ic { height: 44px; width: auto; max-width: 100%; object-fit: contain; border-radius: 3px; }
-.kv-ic-factory { height: 26px; }
-.kv-goods { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
-.kv-g { background: rgba(255, 255, 255, 0.07); border-radius: 8px; padding: 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
-.kv-g span { font-size: 12.5px; }
-.kv-g small { color: #e8d9a0; }
-.kv-g.off { opacity: 0.4; }
-.kv-chip { display: inline-block; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 2px 4px #000; }
-.kv-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
-.kv-pl { background: rgba(0, 0, 0, 0.35); border-radius: 10px; padding: 8px; border-left: 6px solid var(--c); }
-.kv-pl.on { box-shadow: 0 0 0 2px #ffe066; }
-.kv-pl.out { opacity: 0.4; }
-.kv-pn small { color: #c8c2a8; }
-.kv-loan { color: #ff9a8a; }
-.kv-owns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; align-items: center; }
-.kv-own { display: inline-flex; align-items: center; gap: 2px; }
-.kv-own .kv-ic { height: 30px; }
-.kv-own .kv-ic-factory { height: 16px; }
-.kv-cargo { margin-top: 4px; font-size: 12.5px; color: #e8d9a0; }
-.kv-card { position: absolute; inset: 0; margin: auto; width: min(420px, 90%); height: fit-content; z-index: 5; background: #fff; color: #222; border-radius: 10px; padding: 8px;
+/* «Конверсия»: стол из ореха, на нём таблица ввоза-вывоза (чёрный картон набора), листы внутреннего и мирового рынка, столы игроков.
+ * Карточки, жетоны, чеки и планки заводов — вырезки из PnP-архива набора; стопки — слоями со сдвигом и тенью. */
+.kv-wrap { position: relative; width: 100%; height: 100%; overflow: auto; box-sizing: border-box; color: #2a2318; font: 14px/1.3 'PT Sans', system-ui, sans-serif;
+  background: radial-gradient(ellipse at 50% 20%, rgba(255, 230, 190, 0.12), rgba(0, 0, 0, 0.45) 75%), url(/tex/holdem/walnut2d.webp) center / 520px; }
+.kv-table { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 12px; min-width: 0; }
+
+/* курс */
+.kv-head { display: flex; justify-content: center; }
+.kv-rate { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 8px; color: #f4ecd6;
+  background: rgba(20, 14, 8, 0.72); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); transition: box-shadow 0.3s; }
+.kv-rate b { color: #ffd76a; }
+.kv-rate .kv-r { font-size: 16px; padding: 1px 9px; border-radius: 5px; color: #1a1408; }
+.kv-r.r1 { background: #b06ad8; }
+.kv-r.r2 { background: #6ac06a; }
+.kv-r.r3 { background: #5aa8f0; }
+.kv-r.r4 { background: #f8c040; }
+.kv-r.r5 { background: #f04a2a; color: #fff; }
+.kv-rate.flash { box-shadow: 0 0 0 3px #ffd76a, 0 0 24px #ffd76a; }
+
+/* таблица ввоза-вывоза — скан набора, фишка-индикатор на клетке */
+.kv-track { overflow-x: auto; border-radius: 10px; background: #050505; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.6), inset 0 0 0 2px #1c1c1c; padding: 6px; }
+.kv-track-in { position: relative; min-width: 560px; aspect-ratio: var(--track-ar, 5 / 1); }
+.kv-track-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.kv-ind { position: absolute; z-index: 2; width: 2.6%; aspect-ratio: 1; transform: translate(-50%, -62%); border-radius: 50%; pointer-events: auto;
+  background: radial-gradient(circle at 35% 30%, #fff, #e8e8e8 30%, #9a9a9a 70%, #5a5a5a); box-shadow: 0 3px 4px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 255, 255, 0.6);
+  transition: left 0.12s ease, top 0.12s ease, transform 0.15s; }
+.kv-ind::after { content: ''; position: absolute; inset: 28%; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ff6a5a, #b81a10); }
+.kv-ind.lifted { transform: translate(-50%, -80%) scale(1.25); }
+
+/* листы рынков — картон с печатью */
+.kv-markets { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }
+.kv-sheet { position: relative; border-radius: 8px; padding: 0 10px 10px; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+  background: linear-gradient(rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.04)), repeating-linear-gradient(35deg, rgba(120, 90, 40, 0.035) 0 2px, transparent 2px 5px), #efe4c6; }
+.kv-sheet header { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 0 -10px 10px; padding: 7px 12px; border-radius: 8px 8px 0 0; color: #fff3c8; }
+.kv-ussr header { background: linear-gradient(#c8301e, #9a1e12); padding-right: 130px; }
+.kv-world header { background: linear-gradient(#2a5a9a, #173a6a); }
+.kv-sheet h3 { margin: 0; font: 700 15px/1.2 'PT Sans', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.kv-sheet header small { flex-basis: 100%; padding-right: 0; color: rgba(255, 243, 200, 0.8); font-size: 12px; }
+.kv-star, .kv-globe { font-style: normal; color: #ffd24a; font-size: 18px; }
+.kv-anchor { position: absolute; right: 8px; top: 13px; width: 1px; height: 1px; }
+
+/* ячейки внутреннего рынка */
+.kv-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.kv-slot { display: flex; flex-direction: column; border-radius: 7px; background: #d9caa4; box-shadow: inset 0 2px 6px rgba(60, 40, 10, 0.45), 0 1px 0 rgba(255, 255, 255, 0.5); overflow: hidden; }
+.kv-slot-in { flex: 1; min-height: 96px; display: flex; align-items: center; justify-content: center; padding: 6px 4px; }
+.kv-slot.off .kv-slot-in { opacity: 0.55; }
+.kv-empty { font-size: 12px; color: #6a5a3a; font-style: italic; text-align: center; }
+.kv-tag { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; padding: 4px 6px; background: #f8f1dc; border-top: 1px dashed #b8a478; font-size: 12px; }
+.kv-tag span { flex-basis: 100%; font-weight: 700; color: #3a2a10; }
+.kv-tag b { color: #9a1e12; font-size: 13px; }
+.kv-tag b i { color: #8a7a5a; font-style: normal; margin: 0 1px; }
+.kv-tag small { margin-left: auto; color: #6a5a3a; }
+
+/* стопки карточек и кучки жетонов */
+.kv-stack { position: relative; display: inline-block; height: 84px; aspect-ratio: 0.69; margin: 0 8px 6px 0; flex: none; }
+.kv-stack img { position: absolute; left: 0; top: 0; height: 100%; width: auto; border-radius: 4px; transform: translate(calc(var(--i) * 2px), calc(var(--i) * -2px));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+.kv-stack.small { height: 58px; }
+.kv-pile { --h: 44px; --o: 0.72; position: relative; display: inline-flex; align-items: center; height: var(--h); margin-right: 8px; flex: none; }
+.kv-pile img { height: 100%; width: auto; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+.kv-pile img + img { margin-left: calc(var(--h) * var(--o) * -1); transform: translateY(calc(var(--i) * -3px)); }
+.kv-plantpile .kv-pile { --h: 26px; --o: 3.3; }
+.kv-n { position: absolute; right: -8px; bottom: -6px; z-index: 3; min-width: 18px; padding: 0 4px; border-radius: 9px; text-align: center; font: 700 12px/18px 'PT Sans', sans-serif;
+  color: #fff; background: #2a2318; box-shadow: 0 0 0 2px #f4ecd6; }
+.kv-coins { display: inline-flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.kv-coins em { font-style: normal; font-size: 11px; color: #6a5a3a; margin-left: 4px; }
+.kv-pile.kv-coin { --h: 32px; --o: 0.8; }
+.kv-slot .kv-coins em { display: none; }
+
+/* мировой рынок */
+.kv-conts { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.kv-cont { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 8px; text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, #cfe2ef, #a9c4da); box-shadow: inset 0 2px 6px rgba(20, 40, 70, 0.35); }
+.kv-cont.can { cursor: pointer; box-shadow: inset 0 2px 6px rgba(20, 40, 70, 0.35), 0 0 0 3px #ffd24a; }
+.kv-cont.can:hover { filter: brightness(1.06); }
+.kv-cn { font-weight: 700; color: #173a6a; display: flex; gap: 4px; align-items: center; }
+.kv-sea { font-style: normal; color: #2a5a9a; }
+.kv-cg { min-height: 62px; display: flex; align-items: center; justify-content: center; }
+.kv-cs { font-size: 12px; color: #2a3a4a; }
+.kv-cont .kv-anchor { right: 8px; top: 6px; }
+
+/* пуговицы игроков над местами */
+.kv-chips { position: absolute; inset: 0; pointer-events: none; }
+.kv-chip { position: absolute; z-index: 6; width: 26px; height: 26px; margin: -6px 0 0 -26px; border-radius: 50%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55));
+  transition: left 0.5s cubic-bezier(0.45, 0, 0.25, 1), top 0.5s cubic-bezier(0.45, 0, 0.25, 1); }
+.kv-chip.on { animation: kv-bob 1.2s ease-in-out infinite; }
+.kv-demo .kv-chip { transition: none; }
+@keyframes kv-bob { 50% { transform: translateY(-3px) scale(1.08); } }
+
+/* столы игроков */
+.kv-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.kv-pl { position: relative; border-radius: 8px; padding: 8px 10px 10px; background: rgba(240, 230, 205, 0.94); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5); border-top: 5px solid var(--c); }
+.kv-pl.on { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5), 0 0 0 3px #ffd24a; }
+.kv-pl.out { opacity: 0.45; filter: grayscale(0.6); }
+.kv-pn { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kv-pn img { width: 22px; height: 22px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.kv-pn small { color: #6a5a3a; }
+.kv-cash { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }
+.kv-sum { font-weight: 700; color: #1e5a2a; }
+.kv-sum.usd { color: #1e3a6a; }
+.kv-note { position: relative; display: inline-block; width: 74px; height: 30px; margin-right: 4px; }
+.kv-note img { position: absolute; left: 0; top: 0; width: 100%; height: auto; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  transform: translate(calc(var(--i) * 3px), calc(var(--i) * -2px)) rotate(calc(var(--i) * -2deg)); }
+.kv-loan img { height: 30px; width: auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); transform: rotate(2deg); }
+.kv-owns { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 4px; }
+.kv-none { color: #8a7a5a; }
+.kv-plant { position: relative; display: inline-block; width: 150px; margin-right: 4px; }
+.kv-plant > img:first-child { width: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
+/* гнёзда на планке — в перспективе фото: слева ниже, справа выше */
+.kv-slot-m { position: absolute; width: 17%; left: calc(6% + var(--k) * 16.5%); top: calc(18% - var(--k) * 7%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+.kv-cargo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #b8a478; font-size: 12.5px; color: #6a4a10; }
+.kv-state { padding: 1px 6px; border-radius: 4px; background: #e2d2a8; }
+
+/* карта «События в пути» */
+.kv-card { position: absolute; inset: 0; margin: auto; width: min(420px, 90%); height: fit-content; z-index: 20; background: #fff; color: #222; border-radius: 10px; padding: 8px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7); text-align: center; animation: kv-pop 0.25s ease-out; cursor: pointer; }
 .kv-card img { width: 100%; display: block; border-radius: 6px; }
 .kv-card div { font-size: 13px; padding-top: 6px; }
 @keyframes kv-pop { from { transform: scale(0.8); opacity: 0; } }
+
+/* панель действий */
 .kv-panel { display: flex; flex-direction: column; gap: 6px; }
 .kv-panel:empty { display: none; }
 .kv-q { font-size: 14px; }
@@ -44,8 +126,13 @@
 .kv-panel .btn.small { padding: 3px 9px; font-size: 13px; min-height: 0; }
 .kv-form { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(0, 0, 0, 0.15); padding-top: 6px; }
 .kv-row { display: flex; align-items: center; gap: 6px; }
-.kv-row .kv-ic { height: 28px; }
+.kv-row .kv-ic { height: 28px; width: auto; }
 .kv-row span { flex: 1; font-size: 13px; }
 .kv-row b { min-width: 18px; text-align: center; }
-.kv-sum { font-weight: 700; font-size: 13.5px; }
-@media (max-width: 700px) { .kv-conts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.kv-sum { font-size: 13.5px; }
+
+@media (max-width: 760px) {
+  .kv-markets { grid-template-columns: minmax(0, 1fr); }
+  .kv-table { padding: 8px; gap: 10px; }
+  .kv-players { grid-template-columns: minmax(0, 1fr); }
+}

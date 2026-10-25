@@ -9,7 +9,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { BATH, BATH_XY, cellarXY, cellAt, CELLAR_W, FH, FIRMS, FW, KASSA, RACE, RACE_XY, WHEEL_XY } from './board';
 import { SEATS } from './def';
-import { bankOf, debtOf, firmsOf, legal, loanLimit, marketCost, realPrice, rentOf, worth, type Action, type Event, type State } from './engine';
+import { bankOf, debtOf, firmsOf, legal, loanLimit, marketCost, moveTarget, realPrice, rentOf, worth, type Action, type Event, type State } from './engine';
 import './monopol.css';
 
 const fmt = (n: number) => n.toLocaleString('ru-RU');
@@ -60,6 +60,10 @@ class MonopolView implements GameView<State, Event> {
       speed: () => this.ctx.speed(),
       dots: () => (this.v ? this.v.alive.flatMap((a, s) => (a ? [{ key: s, ...this.pt(this.v!, s), img: `/hodilki/buttons/${s}.webp`, on: this.v!.turn === s }] : [])) : []),
       turn: () => (this.v && !this.v.over ? [this.pt(this.v, this.v.turn)] : []),
+      spots: () => {
+        const to = this.v && this.me != null && this.v.turn === this.me ? this.targetPt(this.v) : null;
+        return to ? [to] : [];
+      },
     });
     const img = this.wrap.querySelector('.mp-img') as HTMLImageElement;
     const ready = () => {
@@ -161,11 +165,32 @@ class MonopolView implements GameView<State, Event> {
     this.marks.innerHTML = o;
   }
 
-  /** Подсветка клеток, которые можно выбрать (любая клетка, фирмы рынка, клетки подвала). */
+  /** Куда встанет пуговица после броска (клетка поля, тазик, сектор колеса, клетка бегов) — точка на поле. */
+  private targetPt(v: State) {
+    const t = moveTarget(v);
+    if (!t) return null;
+    const tmp: State = { ...v, where: v.where.slice(), sub: v.sub.slice(), loc: v.loc.slice() };
+    tmp.where[v.turn] = t.where;
+    tmp.sub[v.turn] = t.sub;
+    tmp.loc[v.turn] = t.loc;
+    return t.where === 'board' ? center(t.loc) : this.pt(tmp, v.turn);
+  }
+
+  /** Подсветка клеток, которые можно выбрать (любая клетка, фирмы рынка, клетки подвала, место для своей пуговицы). */
   private renderHot() {
     const v = this.v;
     let o = '';
-    if (v && this.me != null && v.turn === this.me && !v.over) {
+    if (v && this.me != null && v.turn === this.me && !v.over && v.phase === 'move') {
+      // бросок сделан — пуговицу переставляет сам игрок: щелчок по подсвеченному месту
+      const t = moveTarget(v)!;
+      if (t.where === 'board') {
+        const c = cellAt(t.loc);
+        o += `<div class="mp-spot go" data-act='{"type":"move"}' style="left:${(c.x0 / FW) * 100}%;top:${(c.y0 / FH) * 100}%;width:${((c.x1 - c.x0) / FW) * 100}%;height:${((c.y1 - c.y0) / FH) * 100}%"></div>`;
+      } else {
+        const p = this.targetPt(v)!;
+        o += `<div class="mp-spot sq go" data-act='{"type":"move"}' style="left:${((p.x - 30) / FW) * 100}%;top:${((p.y - 30) / FH) * 100}%;width:${(60 / FW) * 100}%;height:${(60 / FH) * 100}%"></div>`;
+      }
+    } else if (v && this.me != null && v.turn === this.me && !v.over) {
       for (const a of legal(v)) {
         if (a.type === 'pick' || ((v.phase === 'market' || v.phase === 'free') && a.type === 'buy')) {
           const c = cellAt(a.loc);
@@ -261,6 +286,9 @@ class MonopolView implements GameView<State, Event> {
         o += `</div>` + this.btn({ type: 'pass' }, v.phase === 'market' ? 'Хватит' : 'Не покупать');
         break;
       }
+      case 'move':
+        o += `<div class="mp-q">Выпало ${v.die}: переставьте свою пуговицу на подсвеченное место.</div>`;
+        break;
       case 'cellar':
         o += `<div class="mp-q">Подвал: бросок ${v.rolls + 1} из 6.</div>` + this.btn({ type: 'roll' }, 'Бросить кубик', 'primary');
         break;
@@ -298,6 +326,9 @@ class MonopolView implements GameView<State, Event> {
     const sp = () => this.ctx.speed();
     for (const ev of events) {
       if (ev.type === 'roll') {
+        // кадр «откуда — куда», пока катится кубик
+        const to = v.turn === ev.seat ? this.targetPt(v) : null;
+        if (to) void this.cam.frame([this.pt(v, ev.seat), to]);
         await this.tray.roll([ev.die], sp());
       } else if (ev.type === 'bet') {
         await this.tray.roll([ev.die], sp());
@@ -338,6 +369,12 @@ class MonopolView implements GameView<State, Event> {
     }
     this.v = v;
     this.render();
+    // своя пуговица ждёт перестановки — в кадре она и подсвеченное место
+    const to = this.me != null && v.turn === this.me ? this.targetPt(v) : null;
+    if (to && !this.ctx.demo) {
+      this.cam.release();
+      void this.cam.frame([this.pt(v, v.turn), to]);
+    }
   }
 
   setTurn(toAct: number[], interactive: number[]) {
@@ -345,7 +382,8 @@ class MonopolView implements GameView<State, Event> {
     this.me = v && !v.over && !this.ctx.demo ? (interactive.find((x) => toAct.includes(x)) ?? null) : null;
     if (v && !v.over && this.cam && !this.ctx.demo) {
       this.cam.release();
-      void this.cam.frame([this.pt(v, v.turn)]);
+      const to = this.targetPt(v);
+      void this.cam.frame([this.pt(v, v.turn), ...(to ? [to] : [])]);
     }
     this.render();
   }
@@ -354,7 +392,7 @@ class MonopolView implements GameView<State, Event> {
     if (v.over) return v.winner == null ? 'Поровну' : `Победа: ${this.ctx.name(v.winner)}`;
     if (!interactive.includes(toAct[0])) return `Ходит ${this.ctx.name(toAct[0])}…`;
     const p = v.phase;
-    return p === 'turn' ? 'Ваш ход — бросайте кубик' : p === 'buy' ? 'Покупать фирму?' : p === 'bank' ? 'Сберкнижка' : p === 'roulette' ? 'Рулетка: делайте ставку' : p === 'pick' ? 'Выберите клетку' : p === 'cellarGo' ? 'Выберите клетку подвала' : 'Ваше решение';
+    return p === 'turn' ? 'Ваш ход — бросайте кубик' : p === 'buy' ? 'Покупать фирму?' : p === 'bank' ? 'Сберкнижка' : p === 'roulette' ? 'Рулетка: делайте ставку' : p === 'pick' ? 'Выберите клетку' : p === 'cellarGo' ? 'Выберите клетку подвала' : p === 'move' ? `Выпало ${v.die} — переставьте пуговицу` : 'Ваше решение';
   }
 
   destroy() {

@@ -65,6 +65,8 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   const res = reserve(s, seat, level);
   const cash = s.cash[seat];
   switch (s.phase) {
+    case 'move':
+      return { type: 'move' };
     case 'roll': {
       if (s.map !== 'kosmos') {
         if (s.jail[seat]) {

@@ -13,6 +13,8 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   switch (s.phase) {
     case 'roll':
       return { type: 'roll' };
+    case 'move':
+      return { type: 'move' };
     case 'mail': {
       const m = MAIL[s.card!.id];
       if (m.kind === 'risk') return level === 0 ? (rng.next() < 0.6 ? { type: 'buy' } : { type: 'pass' }) : { type: 'buy' };

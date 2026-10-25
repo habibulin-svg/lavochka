@@ -8,7 +8,7 @@
 import type { Rng } from '../../core/types';
 import { BIZ, CELLS, DEPOSIT_RATE, ELECTION, LOAN_FREE, LOAN_RATE, MAIL, PAYDAY, SALARY, STAKE, type Variant } from './data';
 
-export type Phase = 'roll' | 'resolve' | 'mail' | 'biz' | 'client' | 'payday' | 'over';
+export type Phase = 'roll' | 'move' | 'resolve' | 'mail' | 'biz' | 'client' | 'payday' | 'over';
 
 export interface State {
   variant: Variant;
@@ -51,6 +51,7 @@ export interface State {
 
 export type Action =
   | { type: 'roll' }
+  | { type: 'move' }
   | { type: 'buy' }
   | { type: 'pass' }
   | { type: 'sell'; i: number }
@@ -412,6 +413,9 @@ function end(x: Ctx) {
 
 // ---------------- действия ----------------
 
+/** Куда встанет фишка того, кто ходит, после броска (дальше Дня Белой Вороны — не идут). */
+export const walkTo = (s: State) => Math.min(PAYDAY, s.pos[s.actor] + (s.dice ?? 0));
+
 export function toAct(s: State): number[] {
   if (s.result || s.phase === 'over') return [];
   return [s.actor];
@@ -453,8 +457,15 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         s.cash[seat] += s.pot;
         s.pot = 0;
       }
+      // фишку на выпавшую клетку переставляет сам игрок — действие 'move'
+      s.phase = 'move';
+      return ok();
+    }
+    case 'move': {
+      if (a.type !== 'move' || !s.dice) return null;
+      s.phase = 'roll';
       const from = s.pos[seat];
-      const to = Math.min(PAYDAY, from + d);
+      const to = walkTo(s);
       const path: number[] = [];
       for (let p = from + 1; p <= to; p++) path.push(p);
       s.pos[seat] = to;

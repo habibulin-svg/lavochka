@@ -7,11 +7,13 @@ import { def } from '../src/games/akcii/def';
 import { apply, creditFor, newState, priceOf, profitOf, type Action, type State } from '../src/games/akcii/engine';
 import { botSeats, defaults, simulate } from './harness';
 
-function act(s: State, seat: number, a: Action, rig?: number[]): State {
-  const r = new RiggedRng(new SeededRng(5));
-  r.rig(rig);
+function act(s: State, seat: number, a: Action, rig?: number[], r0?: RiggedRng): State {
+  const r = r0 ?? new RiggedRng(new SeededRng(5));
+  if (!r0) r.rig(rig);
   const res = apply(s, seat, a, r);
   expect(res, JSON.stringify(a)).not.toBeNull();
+  // после броска фишку переставляет игрок — отдельным действием (остаток подкрутки — на то, что случится на клетке)
+  if (a.type === 'roll' && res!.state.phase === 'move') return act(res!.state, seat, { type: 'move' }, undefined, r);
   return res!.state;
 }
 

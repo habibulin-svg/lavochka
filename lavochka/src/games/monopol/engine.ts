@@ -46,7 +46,7 @@ export const LOAN_STEP = 100;
 const SAFETY_ROUNDS = 120;
 
 export type Where = 'board' | 'cellar' | 'wheel' | 'race' | 'bath';
-export type Phase = 'turn' | 'buy' | 'bank' | 'roulette' | 'pick' | 'free' | 'market' | 'cellar' | 'cellarGo' | 'wheel' | 'race';
+export type Phase = 'turn' | 'move' | 'buy' | 'bank' | 'roulette' | 'pick' | 'free' | 'market' | 'cellar' | 'cellarGo' | 'wheel' | 'race';
 
 export interface State {
   cfg: Cfg;
@@ -71,6 +71,8 @@ export interface State {
   phase: Phase;
   /** Бросок этого хода (последний). */
   die: number | null;
+  /** Фаза 'move': откуда бросали (поле или баня — 'turn', колесо, бега); фишку переставляет сам игрок. */
+  from?: 'turn' | 'wheel' | 'race';
   /** Стоял на Зале игровых автоматов в начале хода. */
   zal: boolean[];
   /** На сберкнижке: долг этой книжке уже урегулирован в этот визит. */
@@ -87,6 +89,7 @@ export interface State {
 
 export type Action =
   | { type: 'roll' }
+  | { type: 'move' }
   | { type: 'invest'; loc: number; amount: number }
   | { type: 'shift'; from: number; to: number; amount: number }
   | { type: 'buy'; loc: number }
@@ -273,6 +276,8 @@ export function legal(s: State): Action[] {
     case 'wheel':
     case 'race':
       return [{ type: 'roll' }];
+    case 'move':
+      return [{ type: 'move' }];
   }
 }
 
@@ -344,7 +349,24 @@ export function step(s0: State, a: Action, rng: Rng): { state: State; events: Ev
       const d = 1 + rng.int(6);
       s.die = d;
       ev.push({ type: 'roll', seat, die: d });
-      if (s.phase === 'turn') {
+      if (s.phase === 'cellar') {
+        s.rolls++;
+        s.phase = 'cellarGo';
+        return { state: s, events: ev };
+      }
+      // фишку на выпавшее место переставляет сам игрок — действие 'move'
+      if (s.phase === 'turn' || s.phase === 'wheel' || s.phase === 'race') {
+        s.from = s.phase;
+        s.phase = 'move';
+      }
+      return { state: s, events: ev };
+    }
+    case 'move': {
+      const d = s.die ?? 1;
+      const from = s.from ?? 'turn';
+      s.from = undefined;
+      s.phase = from;
+      if (from === 'turn') {
         if (s.where[seat] === 'bath') {
           s.sub[seat] += d;
           if (s.sub[seat] > BATH_N) {
@@ -366,12 +388,7 @@ export function step(s0: State, a: Action, rng: Rng): { state: State; events: Ev
         land(s, seat, ev, rng);
         return { state: s, events: ev };
       }
-      if (s.phase === 'cellar') {
-        s.rolls++;
-        s.phase = 'cellarGo';
-        return { state: s, events: ev };
-      }
-      if (s.phase === 'wheel') {
+      if (from === 'wheel') {
         s.sub[seat] = (s.sub[seat] + d) % WHEEL.length;
         s.rolls++;
         const v = WHEEL[s.sub[seat]];
@@ -384,7 +401,7 @@ export function step(s0: State, a: Action, rng: Rng): { state: State; events: Ev
         } else money(s, seat, v, 'белка в колесе', ev);
         return { state: s, events: ev };
       }
-      if (s.phase === 'race') {
+      if (from === 'race') {
         const k = s.sub[seat] + d;
         const last = RACE_TRACK.length - 1;
         if (k > last) return raceOut(s, seat, ev);
@@ -568,6 +585,19 @@ function moveBy(s: State, seat: number, d: number, ev: Event[]) {
   }
   s.loc[seat] = loc;
   ev.push({ type: 'move', seat, path });
+}
+
+/** Фаза 'move': куда встанет фишка того, кто ходит — клетка поля или место в бане, на колесе, на бегах (для подсветки). */
+export function moveTarget(s: State): { where: Where; loc: number; sub: number } | null {
+  if (s.phase !== 'move' || s.die == null) return null;
+  const seat = s.turn;
+  const d = s.die;
+  if (s.from === 'wheel') return { where: 'wheel', loc: s.loc[seat], sub: (s.sub[seat] + d) % WHEEL.length };
+  if (s.from === 'race') return { where: 'race', loc: s.loc[seat], sub: Math.min(RACE_TRACK.length - 1, s.sub[seat] + d) };
+  if (s.where[seat] === 'bath') return s.sub[seat] + d > BATH_N ? { where: 'board', loc: s.loc[seat], sub: 0 } : { where: 'bath', loc: s.loc[seat], sub: s.sub[seat] + d };
+  let loc = s.loc[seat];
+  for (let i = 0; i < d; i++) loc = next(loc, d % 2 === 0);
+  return { where: 'board', loc, sub: 0 };
 }
 
 /** Что делать на клетке. */

@@ -3,22 +3,36 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { BIZ, CELLS, MAIL } from '../src/games/vorona/data';
 import { def } from '../src/games/vorona/def';
-import { apply, newState, type Action, type State } from '../src/games/vorona/engine';
+import { apply, newState, walkTo, type Action, type State } from '../src/games/vorona/engine';
 import { botSeats, defaults, simulate } from './harness';
 
 const rng = () => new RiggedRng(new SeededRng(3));
 
-function act(s: State, seat: number, a: Action, rig?: number[]): State {
-  const r = rng();
-  r.rig(rig);
+function act(s: State, seat: number, a: Action, rig?: number[], r0?: ReturnType<typeof rng>): State {
+  const r = r0 ?? rng();
+  if (!r0) r.rig(rig);
   const res = apply(s, seat, a, r);
   expect(res, JSON.stringify(a)).not.toBeNull();
+  // после броска фишку переставляет игрок — отдельным действием (остаток подкрутки — на то, что случится на клетке)
+  if (a.type === 'roll' && res!.state.phase === 'move') return act(res!.state, seat, { type: 'move' }, undefined, r);
   return res!.state;
 }
 
 const mailId = (start: string) => MAIL.findIndex((m) => m.text.startsWith(start) || m.who.startsWith(start));
 
 describe('Белая ворона', () => {
+  it('после броска фишку переставляет сам игрок: фаза move', () => {
+    const s0 = newState('blue', [0, 1], 2, rng());
+    const r = rng();
+    r.rig([3]);
+    const res = apply(s0, 0, { type: 'roll' }, r)!;
+    expect(res.state.phase).toBe('move');
+    expect(walkTo(res.state)).toBe(4);
+    expect(res.events.some((e) => e.type === 'move')).toBe(false);
+    const m = apply(res.state, 0, { type: 'move' }, rng())!;
+    expect(m.state.pos[0]).toBe(4);
+  });
+
   it('колоды: 64 карточки «Почты», по 15 бизнесов; поле — 32 клетки, День Белой Вороны — 31-я', () => {
     expect(MAIL.length).toBe(64);
     expect(MAIL.filter((m) => m.kind === 'risk').length).toBe(4);

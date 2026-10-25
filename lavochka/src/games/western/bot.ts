@@ -19,6 +19,7 @@ function gain(s: State, seat: number, cell: number, price: number) {
 
 export function choose(s: State, seat: number, level: number, rng: Rng): Action | null {
   if (s.phase === 'roll') return { type: 'roll' };
+  if (s.phase === 'move') return { type: 'move' };
   const a = s.ask;
   if (!a || a.seat !== seat) return null;
   const cash = s.cash[seat];

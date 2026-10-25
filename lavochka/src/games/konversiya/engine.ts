@@ -66,7 +66,9 @@ export const CONT_ITEM: Record<Cont, Key> = { europe: 'machI', asia: 'equipI', a
 export const BY_SEA: Cont[] = ['africa', 'australia', 'america'];
 
 export type Variant = 'short' | 'medium' | 'long';
-export const ZONES: Record<Variant, number[]> = { short: [25, 25, 25, 25], medium: [15, 25, 35, 50], long: [15, 25, 50, 100] };
+/** Клетки зон курсов 1–4 на таблицах набора (tools/konversiya/tracks.py): фишка стоит на «0», следующая за зонами клетка — красная, 5-й курс.
+ * В короткой таблице красная — 25-я клетка жёлтой полосы, поэтому жёлтых 24. */
+export const ZONES: Record<Variant, number[]> = { short: [25, 25, 25, 24], medium: [15, 25, 35, 50], long: [15, 25, 50, 100] };
 export const START = 100;
 export const LOAN = 100;
 export const LOAN_BACK = 150;
@@ -207,7 +209,7 @@ export function rate(s: { cfg: Cfg; ind: number }): number {
   const z = ZONES[s.cfg.variant];
   for (let i = 0; i < z.length; i++) {
     acc += z[i];
-    if (s.ind < acc) return i + 1;
+    if (s.ind <= acc) return i + 1;
   }
   return 5;
 }
@@ -216,11 +218,12 @@ export function toNextRate(s: { cfg: Cfg; ind: number }): number {
   let acc = 0;
   for (const z of ZONES[s.cfg.variant]) {
     acc += z;
-    if (s.ind < acc) return acc - s.ind;
+    if (s.ind <= acc) return acc + 1 - s.ind;
   }
   return 0;
 }
-export const total = (v: Variant) => ZONES[v].reduce((a, b) => a + b, 0);
+/** Номер красной клетки: дойти до неё — конец игры. */
+export const total = (v: Variant) => ZONES[v].reduce((a, b) => a + b, 0) + 1;
 
 /** Купить на внутреннем рынке (импортное — вдвое дороже). */
 export const buyPrice = (s: State, k: Key) => TABLE[ROW[k]][rate(s) - 1][0] * (isImported(k) ? 2 : 1);

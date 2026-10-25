@@ -168,7 +168,8 @@ export interface State {
   deck: Record<Deck, number[]>;
   anyBought: boolean;
   turn: number;
-  phase: 'roll' | 'ask' | 'over';
+  /** 'move' — бросок сделан, фишку на выпавшую клетку переставляет сам игрок. */
+  phase: 'roll' | 'move' | 'ask' | 'over';
   ask: Ask | null;
   auc: Auction | null;
   dice: number | null;
@@ -179,6 +180,7 @@ export interface State {
 
 export type Action =
   | { type: 'roll' }
+  | { type: 'move' }
   | { type: 'choose'; id: string }
   | { type: 'build'; cell: number }
   | { type: 'mortgage'; cell: number }
@@ -523,9 +525,8 @@ function spin(x: Ctx, seat: number) {
 
 // ---------------- ход ----------------
 
-/** Шаги вперёд: малый бизнес кончается на «Начале», большой — в «Клубе» (остаток очков сгорает). */
-function walk(x: Ctx, seat: number, d: number) {
-  const { s } = x;
+/** Клетки хода на d вперёд и пройден ли круг малого бизнеса. */
+function walkPath(s: State, seat: number, d: number): { path: number[]; lap: boolean } {
   let p = s.pos[seat];
   const path: number[] = [];
   let lap = false;
@@ -540,7 +541,22 @@ function walk(x: Ctx, seat: number, d: number) {
     path.push(p);
     if (lap || p === CLUB) break;
   }
+  return { path, lap };
+}
+
+/** Фаза 'move': куда встанет фишка того, кто ходит (для подсветки клетки). */
+export function walkTarget(s: State): number | null {
+  if (s.phase !== 'move' || !s.dice) return null;
+  const { path } = walkPath(s, s.turn, s.dice);
+  return path.length ? path[path.length - 1] : null;
+}
+
+/** Шаги вперёд: малый бизнес кончается на «Начале», большой — в «Клубе» (остаток очков сгорает). */
+function walk(x: Ctx, seat: number, d: number) {
+  const { s } = x;
+  const { path, lap } = walkPath(s, seat, d);
   if (!path.length) return;
+  const p = path[path.length - 1];
   s.pos[seat] = p;
   s.fresh[seat] = false;
   x.ev.push({ type: 'move', seat, path });
@@ -1250,7 +1266,19 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       }
       note(x, seat, 'чётное — забастовка кончилась');
     } else x.ev.push({ type: 'roll', seat, d });
-    walk(x, seat, d);
+    // фишку на выпавшую клетку переставляет сам игрок — действие 'move'
+    if (walkPath(s, seat, d).path.length) {
+      s.phase = 'move';
+      return ok();
+    }
+    settle(x);
+    return ok();
+  }
+
+  if (a.type === 'move') {
+    if (s.phase !== 'move' || seat !== s.turn || !s.dice) return null;
+    s.phase = 'roll';
+    walk(x, seat, s.dice);
     settle(x);
     return ok();
   }

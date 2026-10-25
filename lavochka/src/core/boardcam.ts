@@ -37,6 +37,8 @@ export interface BoardCamOpts {
   speed: () => number;
   /** Фишки на миникарте. */
   dots: () => CamDot[];
+  /** Места поля, которые миникарта тоже не закрывает (клетка, куда игрок ставит фишку). */
+  spots?: () => CamPoint[];
   /** «Где ход» (и первый кадр): что показать. */
   turn: () => CamPoint[];
   /** Камера сдвинулась (для отрисовки того, что живёт в экранных координатах). */
@@ -408,7 +410,7 @@ export class BoardCam {
     const mw = this.mini.offsetWidth;
     const mh = this.mini.offsetHeight;
     if (!mw || !mh) return;
-    const pts = dots.map((d) => this.toScreen(d));
+    const pts = [...dots, ...(this.o.spots?.() ?? [])].map((d) => this.toScreen(d));
     const pad = 28;
     const free = (c: 'bl' | 'tl' | 'tr') => {
       const x0 = c === 'tr' ? r.w - 10 - mw : 10;

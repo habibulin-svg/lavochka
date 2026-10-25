@@ -7,7 +7,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { BIZ, GRID, MAIL, type Biz, type Variant } from './data';
 import { SEATS, type Ev } from './def';
-import { bankOk, billsSum, fmt, type Action, type State } from './engine';
+import { bankOk, billsSum, fmt, walkTo, type Action, type State } from './engine';
 import './vorona.css';
 
 const strip = (s: string) => s.replace(/<[^>]+>/g, '');
@@ -27,6 +27,7 @@ class VoronaView implements GameView<State, Ev> {
   private rollBtn!: HTMLButtonElement;
   private mine!: HTMLElement;
   private tray!: DiceTray;
+  private toEl!: HTMLElement;
   private tokens = new Map<number, HTMLElement>();
   private shown: number[] = [];
   private interactive: number[] = [];
@@ -37,7 +38,8 @@ class VoronaView implements GameView<State, Ev> {
     this.ctx = ctx;
     this.wrap = h(`<div class="bv-wrap"><div class="bv-board">
         <img class="bv-img" alt="поле" draggable="false">
-        <div class="bv-pot"><div class="bv-tray"></div><div class="bv-potsum"></div></div>
+        <div class="bv-pot"><div class="bv-potsum"></div></div>
+        <div class="bv-to" hidden></div>
         <div class="bv-tokens"></div>
         <div class="bv-stage"></div>
         <div class="bv-float"></div>
@@ -49,16 +51,30 @@ class VoronaView implements GameView<State, Ev> {
     this.potEl = this.wrap.querySelector('.bv-potsum') as HTMLElement;
     this.stage = this.wrap.querySelector('.bv-stage') as HTMLElement;
     this.float = this.wrap.querySelector('.bv-float') as HTMLElement;
-    this.tray = new DiceTray(this.wrap.querySelector('.bv-tray') as HTMLElement, 1);
+    this.toEl = this.wrap.querySelector('.bv-to') as HTMLElement;
+    // клетка, куда ставить свою фишку после броска; своя фишка по щелчку приподнимается
+    this.toEl.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.commitMove();
+    });
+    this.tokensEl.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest('.bv-token') as HTMLElement | null;
+      if (!el || this.moveTo() == null || Number(el.dataset.seat) !== this.v!.actor) return;
+      e.preventDefault();
+      el.classList.toggle('lifted');
+    });
     this.img.onload = () => {
       this.board.classList.add('ready');
       this.ctx.hold?.(0);
     };
+    // кубик — в лотке на сукне в панели справа, как во всех играх
     this.panel = h(`<div class="bv-panel">
+        <div class="bv-dice"></div>
         <button class="btn primary bv-roll" data-tap hidden>Бросить кубик</button>
         <div class="bv-mine"></div>
       </div>`);
     ctx.controls.appendChild(this.panel);
+    this.tray = new DiceTray(this.panel.querySelector('.bv-dice') as HTMLElement, 1);
     this.rollBtn = this.panel.querySelector('.bv-roll') as HTMLButtonElement;
     this.mine = this.panel.querySelector('.bv-mine') as HTMLElement;
     this.rollBtn.onclick = () => this.send({ type: 'roll' });
@@ -94,6 +110,20 @@ class VoronaView implements GameView<State, Ev> {
       height: (g.h / g.ratio) * 100 + '%',
     });
     this.fit();
+  }
+
+  /** Фаза хода у этого экрана: клетка, на которую игрок ставит свою фишку; иначе null. */
+  private moveTo(): number | null {
+    const v = this.v;
+    if (!v || this.busy || this.ctx.demo || v.phase !== 'move' || !this.interactive.includes(v.actor)) return null;
+    return walkTo(v);
+  }
+
+  private commitMove() {
+    const v = this.v;
+    if (!v || this.moveTo() == null) return;
+    this.tokens.get(v.actor)?.classList.remove('lifted');
+    this.send({ type: 'move' });
   }
 
   /** Центр клетки дня в % от ширины и высоты поля. */
@@ -209,6 +239,8 @@ class VoronaView implements GameView<State, Ev> {
     switch (v.phase) {
       case 'roll':
         return me ? `Бросайте кубик (месяц ${v.month[who] + 1} из ${v.months})` : `Ходит ${nm}…`;
+      case 'move':
+        return me ? `Выпало ${v.dice} — переставьте свою фишку на подсвеченный день` : `${nm} переставляет фишку…`;
       case 'mail':
         return me ? 'Почта: решайте' : `${nm} читает почту…`;
       case 'biz':
@@ -243,6 +275,14 @@ class VoronaView implements GameView<State, Ev> {
     if (!v) return;
     this.syncTokens();
     this.placeTokens();
+    const to = this.moveTo();
+    this.toEl.hidden = to == null;
+    if (to != null) {
+      const g = GRID[this.variant!];
+      const c = this.cellXY(to);
+      Object.assign(this.toEl.style, { left: c.x - g.w * 50 + '%', top: c.y - (g.h / g.ratio) * 55 + '%', width: g.w * 100 + '%', height: (g.h / g.ratio) * 100 + '%' });
+    }
+    for (const [s, el] of this.tokens) el.classList.toggle('grab', to != null && s === v.actor);
     this.potEl.innerHTML = v.pot ? `выборы царя зверей: <b>${fmt(v.pot)}</b>` : '';
     if (!this.busy) this.renderStage();
     this.renderPanel();

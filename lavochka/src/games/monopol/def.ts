@@ -52,7 +52,11 @@ function pos(o: (s: State) => void): State {
   o(s);
   return s;
 }
-const Roll = (seat: number, die: number, caption?: string, more: number[] = []): DemoStep<Action> => ({ seat, action: { type: 'roll' }, rig: [die - 1, ...more], caption });
+/** Бросок и перестановка пуговицы — два шага: фишку игрок ставит сам; подпись — когда пуговица встала (more — подкрутка для клетки). */
+const Roll = (seat: number, die: number, caption?: string, more: number[] = []): DemoStep<Action>[] => [
+  { seat, action: { type: 'roll' }, rig: [die - 1], caption: `Выпало ${die}…` },
+  { seat, action: { type: 'move' }, rig: more, caption },
+];
 const Do = (seat: number, action: Action, caption?: string, rig?: number[]): DemoStep<Action> => ({ seat, action, caption, rig });
 
 function fixedRng(seed: number): Rng {
@@ -122,7 +126,7 @@ export const def: GameDef<State, Action, Event, State> = {
         html: `<p>Все начинают на «Папиной сберкнижке» и получают по 500 банкнот. Бросьте кубик и пройдите столько клеток по часовой стрелке.
           Свободную фирму можно купить — цена в левом нижнем углу клетки, банкноты уходят в фонд игры, на клетку ложится ваш жетон.</p>
           <p>Клетки «+500» дают 500 банкнот — и когда на них встаёте, и когда проходите мимо.</p>`,
-        demo: { seats: demoSeats, intro: 'Начало: все на «Папиной сберкнижке».', steps: [Roll(0, 1, 'Единица — «Артель» за 500.'), Do(0, { type: 'buy', loc: 1 }, 'Белый покупает фирму.')] },
+        demo: { seats: demoSeats, intro: 'Начало: все на «Папиной сберкнижке».', steps: [...Roll(0, 1, 'Единица — «Артель» за 500.'), Do(0, { type: 'buy', loc: 1 }, 'Белый покупает фирму.')] },
       },
       {
         title: 'Развилка: большой и малый круг',
@@ -135,7 +139,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [4, 4];
             }),
           intro: 'Обе фишки — на «Кондитерской», перед развилкой.',
-          steps: [Roll(0, 2, 'Двойка, чётная — на малый круг, к «Калинке».'), Roll(1, 3, 'Тройка, нечётная — по большому кругу, к «Яхтклубу».')],
+          steps: [...Roll(0, 2, 'Двойка, чётная — на малый круг, к «Калинке».'), ...Roll(1, 3, 'Тройка, нечётная — по большому кругу, к «Яхтклубу».')],
         },
       },
       {
@@ -152,7 +156,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.inv[3] = 300;
             }),
           intro: '«Автозавод» (700, дробь 1/5) — у Зелёного, и он вложил туда 300.',
-          steps: [Roll(0, 2, 'Белый встаёт на «Автозавод» и платит (700 + 300) / 5 = 200.')],
+          steps: [...Roll(0, 2, 'Белый встаёт на «Автозавод» и платит (700 + 300) / 5 = 200.')],
         },
       },
       {
@@ -167,7 +171,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [29, 8];
             }),
           intro: 'Белый на «Вернисаже», рядом Папина сберкнижка.',
-          steps: [Roll(0, 1, 'Белый на сберкнижке.'), Do(0, { type: 'loan', amount: 1000 }, 'Кредит 1000 банкнот.')],
+          steps: [...Roll(0, 1, 'Белый на сберкнижке.'), Do(0, { type: 'loan', amount: 1000 }, 'Кредит 1000 банкнот.')],
         },
       },
       {
@@ -182,7 +186,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [1, 8];
             }),
           intro: 'Белый у рулетки.',
-          steps: [Roll(0, 1, 'Рулетка.'), Do(0, { type: 'bet', amount: 100, num: 3 }, 'Ставка 100 на тройку — выпала тройка, +500!', [2])],
+          steps: [...Roll(0, 1, 'Рулетка.'), Do(0, { type: 'bet', amount: 100, num: 3 }, 'Ставка 100 на тройку — выпала тройка, +500!', [2])],
         },
       },
       {
@@ -196,7 +200,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [10, 8];
             }),
           intro: 'Белый перед лотереей.',
-          steps: [Roll(0, 1, 'Лотерея: 6—6 — тысяча банкнот из фонда!', [5, 5])],
+          steps: [...Roll(0, 1, 'Лотерея: 6—6 — тысяча банкнот из фонда!', [5, 5])],
         },
       },
       {
@@ -211,7 +215,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [12, 8];
             }),
           intro: 'Белый на «Старике Хоттабыче», дальше — чёрный кот.',
-          steps: [Roll(0, 1, 'В подвал!'), Do(0, { type: 'roll' }, 'Тройка.', [2]), Do(0, { type: 'go', cell: 12 }, 'Шаг вперёд-назад — и на красную клетку +500.')],
+          steps: [...Roll(0, 1, 'В подвал!'), Do(0, { type: 'roll' }, 'Тройка.', [2]), Do(0, { type: 'go', cell: 12 }, 'Шаг вперёд-назад — и на красную клетку +500.')],
         },
       },
       {
@@ -227,7 +231,7 @@ export const def: GameDef<State, Action, Event, State> = {
               s.loc = [SM + 1, 8];
             }),
           intro: 'Белый на «Салоне мод», рядом белка.',
-          steps: [Roll(0, 1, 'Белка в колесе.'), Do(0, { type: 'roll' }, 'Тройка — пустой сектор, по стрелке к «Старику Хоттабычу».', [2])],
+          steps: [...Roll(0, 1, 'Белка в колесе.'), Do(0, { type: 'roll' }, 'Тройка…', [2]), Do(0, { type: 'move' }, 'Пустой сектор — по стрелке к «Старику Хоттабычу».')],
         },
       },
       {

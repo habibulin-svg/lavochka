@@ -1,6 +1,6 @@
 /* «Конверсия 1» — «первая советская оригинальная игра инвестиционного типа» (АСК-ГЕЙМ, СП «АСК»): добыча сырья, заводы и станки,
- * перевозки за границу, импорт и перемена курса рубля. Поля в наборе не было — собираем его сами: внутренний рынок СССР, пять
- * континентов мирового рынка и таблица ввоза-вывоза; карточки и жетоны — из PnP-архива. */
+ * перевозки за границу, импорт и перемена курса рубля. Всё на столе — из PnP-архива набора: таблицы ввоза-вывоза (три
+ * длины — пресеты), карточки, жетоны, деньги; внутренний рынок СССР и пять континентов разложены по правилам. */
 import type { DemoStep, GameDef, Rng, SeatSpec } from '../../core/types';
 import { choose } from './ai';
 import { apply, CARD_KINDS, cfgFrom, newState, setup, step, toAct, worth, type Action, type Event, type Key, type State, NAMES, CONT_NAME } from './engine';
@@ -95,8 +95,8 @@ export const def: GameDef<State, Action, Event, State> = {
   ],
   presets: [
     { id: 'short', label: 'Короткая таблица', hint: 'Для знакомства с игрой: 100 партий груза до конвертируемого рубля', options: { variant: 'short' } },
-    { id: 'medium', label: 'Средняя таблица', hint: '125 партий, первые курсы меняются быстрее', options: { variant: 'medium' } },
-    { id: 'long', label: 'Длинная таблица', hint: '190 партий — долгая игра', options: { variant: 'long' } },
+    { id: 'medium', label: 'Средняя таблица', hint: '126 партий, первые курсы меняются быстрее', options: { variant: 'medium' } },
+    { id: 'long', label: 'Длинная таблица', hint: '191 партия — долгая игра', options: { variant: 'long' } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat), opts, rng),

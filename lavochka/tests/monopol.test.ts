@@ -15,10 +15,24 @@ const fresh = (n = 2) => mp.newState(mp.cfgFrom({}), n);
 function act(s: mp.State, a: mp.Action, rng: Rng = dice(1)) {
   const r = mp.apply(s, s.turn, a, rng);
   if (!r) throw new Error(`нельзя: ${JSON.stringify(a)} в фазе ${s.phase}`);
+  // после броска пуговицу переставляет игрок — отдельным действием (остаток подкрутки — на то, что случится на клетке)
+  if (a.type === 'roll' && r.state.phase === 'move') return act(r.state, { type: 'move' }, rng);
   return r.state;
 }
 
 describe('Монопол', () => {
+  it('после броска пуговицу переставляет сам игрок: фаза move и место на поле', () => {
+    const s0 = mp.newState(mp.cfgFrom({}), 2);
+    const r = mp.apply(s0, 0, { type: 'roll' }, dice(2))!;
+    expect(r.state.phase).toBe('move');
+    expect(r.events.some((e) => e.type === 'move')).toBe(false);
+    const t = mp.moveTarget(r.state)!;
+    expect(mp.legal(r.state)).toEqual([{ type: 'move' }]);
+    const m = mp.apply(r.state, 0, { type: 'move' }, dice(1))!;
+    expect(m.state.loc[0]).toBe(t.loc);
+    expect(m.events.some((e) => e.type === 'move')).toBe(true);
+  });
+
   it('поле: 30 клеток большого круга, 5 малого, 22 фирмы', () => {
     expect(BIG.length).toBe(30);
     expect(SMALL.length).toBe(5);

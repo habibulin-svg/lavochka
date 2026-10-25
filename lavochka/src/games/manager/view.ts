@@ -26,6 +26,7 @@ import {
   redeemCost,
   rent,
   tradeable,
+  walkTarget,
   type Action,
   type State,
 } from './engine';
@@ -110,6 +111,10 @@ class ManagerView implements GameView<State, Ev> {
       speed: () => this.ctx.speed(),
       dots: () => (this.v && this.b ? alive(this.v).map((s) => ({ key: s, ...this.pt(this.shown[s] ?? 0), img: `/hodilki/buttons/${s}.webp`, on: this.v!.turn === s })) : []),
       turn: () => (this.v && this.b && !this.v.result ? [this.pt(this.shown[this.v.turn] ?? 0)] : []),
+      spots: () => {
+        const to = this.moveTo();
+        return to != null ? [this.pt(to)] : [];
+      },
       moved: () => this.placeUi(),
     });
     this.img.onload = () => {
@@ -137,9 +142,21 @@ class ManagerView implements GameView<State, Ev> {
       const el = (e.target as HTMLElement).closest('[data-cell]') as HTMLElement | null;
       if (!el || this.ctx.demo) return;
       const c = Number(el.dataset.cell);
+      if (c === this.moveTo()) {
+        e.preventDefault();
+        this.commitMove();
+        return;
+      }
       if (this.b?.cells[c].kind !== 'prop') return;
       e.preventDefault(); // не тап «по свободному месту»: стол бросил бы кубики
       this.openCard(c);
+    });
+    // своя пуговица в фазе хода: взял (приподнялась, клетка подсвечена) — поставил щелчком по клетке
+    this.tokensEl.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest('.mg-token') as HTMLElement | null;
+      if (!el || this.moveTo() == null || Number(el.dataset.seat) !== this.v!.turn) return;
+      e.preventDefault();
+      el.classList.toggle('lifted');
     });
     this.mine.addEventListener('click', (e) => {
       const el = (e.target as HTMLElement).closest('[data-cell]') as HTMLElement | null;
@@ -151,6 +168,20 @@ class ManagerView implements GameView<State, Ev> {
       if (t === this.pop || t.closest('[data-close]')) this.closePop();
     });
 
+  }
+
+  /** Фаза хода у этого экрана: клетка, на которую игрок ставит свою фишку; иначе null. */
+  private moveTo(): number | null {
+    const v = this.v;
+    if (!v || this.busy || this.ctx.demo || v.phase !== 'move' || !this.interactive.includes(v.turn)) return null;
+    return walkTarget(v);
+  }
+
+  private commitMove() {
+    const v = this.v;
+    if (!v || this.moveTo() == null) return;
+    this.tokens.get(v.turn)?.classList.remove('lifted');
+    this.send({ type: 'move' });
   }
 
   /** Центр клетки в координатах камеры (поле 2000×2000). */
@@ -245,10 +276,14 @@ class ManagerView implements GameView<State, Ev> {
     this.prompt.textContent = '';
     for (const ev of events) {
       switch (ev.type) {
-        case 'roll':
+        case 'roll': {
           this.cardEl.hidden = true;
+          // кадр «откуда — куда», пока катятся кубики: дальше фишку переставляет игрок
+          const to = v.turn === ev.seat ? walkTarget(v) : null;
+          if (to != null) void this.cam.frame([this.pt(this.shown[ev.seat] ?? 0), this.pt(to)], this.others());
           await this.tray?.roll(ev.dice, speed);
           break;
+        }
         case 'move': {
           const el = this.tokens.get(ev.seat);
           await this.cam.frame([this.pt(this.shown[ev.seat] ?? 0), this.pt(ev.path[ev.path.length - 1])], this.others());
@@ -355,6 +390,12 @@ class ManagerView implements GameView<State, Ev> {
     this.shown = v.pos.slice();
     this.busy = false;
     this.render();
+    // своя фишка ждёт перестановки — в кадре она и подсвеченная клетка
+    const to = this.moveTo();
+    if (to != null) {
+      this.cam.release();
+      void this.cam.frame([this.pt(this.shown[v.turn] ?? 0), this.pt(to)], this.others());
+    }
   }
 
   setTurn(_toAct: number[], interactive: number[]) {
@@ -363,7 +404,8 @@ class ManagerView implements GameView<State, Ev> {
     this.render();
     if (mine && this.v && this.b) {
       this.cam.release();
-      void this.cam.frame([this.pt(this.shown[this.v.turn] ?? 0)], this.others());
+      const to = this.moveTo();
+      void this.cam.frame([this.pt(this.shown[this.v.turn] ?? 0), ...(to != null ? [this.pt(to)] : [])], this.others());
     }
     this.placeUi();
   }
@@ -381,6 +423,8 @@ class ManagerView implements GameView<State, Ev> {
           return me ? `Вы ${w.jailAt}: дубль, ${fmt(b.jailPay ?? 500)}${b.id === 'nep' ? '' : ' или карточка освобождения'}` : `${nm} ${w.jailAt}…`;
         }
         return me ? (b.id !== 'kosmos' ? 'Бросайте кубики (до броска можно строить, закладывать и меняться)' : 'Бросайте кубик') : `Ходит ${nm}…`;
+      case 'move':
+        return me ? `Выпало ${v.walk} — переставьте свою фишку на подсвеченную клетку` : `${nm} переставляет фишку…`;
       case 'buy':
         return me ? `Покупать ${esc(b.cells[v.pos[who]].full ?? '')}?` : `${nm} думает, покупать ли…`;
       case 'auction':
@@ -458,6 +502,10 @@ class ManagerView implements GameView<State, Ev> {
     const v = this.v;
     const b = this.b;
     if (!v || !b) return;
+    // клетка, куда ставить свою фишку после броска
+    const to = this.moveTo();
+    this.marks.forEach((el, i) => el.classList.toggle('mg-to', i === to));
+    for (const [s, el] of this.tokens) el.classList.toggle('grab', to != null && s === v.turn);
     // клетки: владелец, постройки, залог
     b.cells.forEach((c, i) => {
       const el = this.marks[i];

@@ -12,8 +12,17 @@ export type Ev = Event & { m?: MapId };
 
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
-/** Показ правил: обычная расстановка на двоих и правка позиции. */
-function demo(map: MapId, patch: (s: State) => void, steps: DemoScript<State, Action>['steps']): DemoScript<State, Action> {
+/** Бросок, после которого фишка не ходит (сидит на бирже, третий дубль), помечается stay. */
+type Step = DemoScript<State, Action>['steps'][number] & { stay?: boolean };
+
+/** Показ правил: обычная расстановка на двоих и правка позиции. После броска фишку переставляют отдельным шагом —
+ * подпись хода показывается, когда фишка встала. */
+function demo(map: MapId, patch: (s: State) => void, script: Step[]): DemoScript<State, Action> {
+  const steps = script.flatMap(({ stay, ...st }) =>
+    st.action.type === 'roll' && !stay
+      ? [{ ...st, caption: `${SEATS[st.seat].name} бросает кубики…` }, { seat: st.seat, action: { type: 'move' } as Action, caption: st.caption }]
+      : [st],
+  );
   return {
     seats: demoSeats,
     options: { map },

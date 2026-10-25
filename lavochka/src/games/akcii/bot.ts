@@ -54,6 +54,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       if (m != null) return { type: 'redeem', cell: m };
     }
   }
+  if (s.phase === 'move') return s.turn === seat ? { type: 'move' } : null;
   if (s.phase === 'roll') return s.turn === seat ? { type: 'roll' } : null;
   const a = s.ask;
   if (!a || a.seat !== seat) return null;

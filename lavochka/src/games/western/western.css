@@ -12,6 +12,9 @@
 .ww-btn { position: absolute; inset: 0; background: center / 100% 100% no-repeat; border-radius: 50%;
   box-shadow: 0 0 0 calc(var(--u) * 0.18) #fff, 0 0 0 calc(var(--u) * 0.3) rgba(0, 0, 0, 0.75), 0 calc(var(--u) * 0.3) calc(var(--u) * 0.6) rgba(0, 0, 0, 0.6);
   transition: transform 0.15s ease; }
+.ww-to { position: absolute; z-index: 25; width: 5.4%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
+  border: 0.6vmin solid #ffe066; background: rgba(255, 230, 100, 0.25); box-shadow: 0 0 0 0.35vmin rgba(20, 14, 0, 0.85), inset 0 0 0 0.3vmin rgba(20, 14, 0, 0.6), 0 0 2.4vmin #ffe066; animation: ww-to 1s ease-in-out infinite; }
+@keyframes ww-to { 50% { transform: translate(-50%, -50%) scale(1.12); background: rgba(255, 240, 160, 0.4); } }
 .ww-token.lifted .ww-btn { transform: translate(-6%, -10%) scale(1.25); }
 .ww-token.out { opacity: 0.35; filter: grayscale(1); }
 .ww-token.on { z-index: 32; }

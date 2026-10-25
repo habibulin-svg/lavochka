@@ -9,7 +9,7 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { CELLS, CO, FIELD_H, FIELD_W, GOOD_IDS, GOODS, GOODS_XY, LABOUR, LEAD, STOCK_XY } from './data';
 import { SEATS } from './def';
-import { coValue, fmt, goodPrice, money, owned, worth, type Action, type Event, type State } from './engine';
+import { coValue, fmt, goodPrice, money, owned, walkTarget, worth, type Action, type Event, type State } from './engine';
 import './western.css';
 
 const strip = (s: string) => s.replace(/<[^>]+>/g, '');
@@ -64,6 +64,10 @@ class WesternView implements GameView<State, Event> {
       speed: () => this.ctx.speed(),
       dots: () => (this.v ? this.v.seats.filter((s) => !this.v!.out[s]).map((s) => ({ key: s, ...CELLS[this.shown[s] ?? 0], img: `/hodilki/buttons/${s}.webp`, on: this.actor() === s })) : []),
       turn: () => this.turnPoints(),
+      spots: () => {
+        const to = this.moveTo();
+        return to != null ? [CELLS[to]] : [];
+      },
       moved: () => this.onCam(),
     });
     const img = this.wrap.querySelector('.ww-img') as HTMLImageElement;
@@ -97,11 +101,12 @@ class WesternView implements GameView<State, Event> {
     return v ? (v.ask ? v.ask.seat : v.turn) : -1;
   }
 
-  /** Что показать на ход: фишка того, кто ходит. */
+  /** Что показать на ход: фишка того, кто ходит (и клетка, куда её ставить). */
   private turnPoints(): CamPoint[] {
     const v = this.v;
     if (!v || v.result) return [];
-    return [CELLS[this.shown[this.actor()] ?? 0]];
+    const to = v.phase === 'move' ? walkTarget(v) : null;
+    return [CELLS[this.shown[this.actor()] ?? 0], ...(to != null ? [CELLS[to]] : [])];
   }
 
   /** Остальные фишки — тоже в кадре по возможности. */
@@ -136,9 +141,13 @@ class WesternView implements GameView<State, Event> {
     for (let i = 0; i < events.length; i++) {
       const ev = events[i];
       switch (ev.type) {
-        case 'roll':
+        case 'roll': {
+          // кадр «откуда — куда», пока катится кубик
+          const to = v.turn === ev.seat ? walkTarget(v) : null;
+          if (to != null) void this.cam.frame([CELLS[this.shown[ev.seat] ?? 0], CELLS[to]], this.others());
           await this.tray.roll([ev.d], speed);
           break;
+        }
         case 'move': {
           // соседние шаги одного игрока — одним движением
           const path = ev.path.slice();
@@ -243,6 +252,12 @@ class WesternView implements GameView<State, Event> {
     this.shown = v.pos.slice();
     this.busy = false;
     this.render();
+    // своя фишка ждёт перестановки — в кадре она и подсвеченная клетка
+    const to = this.moveTo();
+    if (to != null) {
+      this.cam.release();
+      void this.cam.frame([CELLS[this.shown[v.turn] ?? 0], CELLS[to]], this.others());
+    }
   }
 
   setTurn(_toAct: number[], interactive: number[]) {
@@ -261,6 +276,7 @@ class WesternView implements GameView<State, Event> {
     const me = interactive.includes(who);
     const nm = this.ctx.name(who);
     if (v.phase === 'roll') return me ? `Бросайте кубик (круг ${v.circle[who] + 1} из ${v.circles})` : `Ходит ${nm}…`;
+    if (v.phase === 'move') return me ? `Выпало ${v.dice} — переставьте свою фишку на подсвеченную клетку` : `${nm} переставляет фишку…`;
     if (v.ask) return me ? esc(v.ask.text) : `${nm} решает…`;
     return '';
   }
@@ -323,10 +339,19 @@ class WesternView implements GameView<State, Event> {
     }
   }
 
-  /** Флажки владельцев на клетках акций и жетоны бирж. */
+  /** Фаза хода у этого экрана: клетка, на которую игрок ставит свою фишку; иначе null. */
+  private moveTo(): number | null {
+    const v = this.v;
+    if (!v || this.busy || this.ctx.demo || v.phase !== 'move' || !this.interactive.includes(v.turn)) return null;
+    return walkTarget(v);
+  }
+
+  /** Флажки владельцев на клетках акций и жетоны бирж; клетка, куда ставить свою фишку. */
   private renderMarks() {
     const v = this.v!;
     let html = '';
+    const to = this.moveTo();
+    if (to != null) html += `<div class="ww-to" style="left:${px(CELLS[to].x)};top:${py(CELLS[to].y)}"></div>`;
     for (const key of Object.keys(CO)) {
       const c = Number(key);
       const o = v.owner[c];
@@ -482,6 +507,12 @@ class WesternView implements GameView<State, Event> {
     }
     if (best < 0) {
       this.tip.hidden = true;
+      return;
+    }
+    // бросок сделан — фишку ставят щелчком по подсвеченной клетке
+    if (best === this.moveTo()) {
+      this.tip.hidden = true;
+      this.send({ type: 'move' });
       return;
     }
     const a = v.ask;

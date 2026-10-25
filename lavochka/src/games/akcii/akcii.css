@@ -134,3 +134,7 @@
 .ak-fb { display: flex; gap: 3px; flex: none; }
 .ak-fb .btn { padding: 2px 6px; font-size: 11px; }
 .ak-rateslist { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; opacity: 0.85; }
+/* клетка, куда ставить свою фишку после броска */
+.ak-to { position: absolute; z-index: 25; width: 5.6%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box; pointer-events: none;
+  border: 0.6vmin solid #ffe066; background: rgba(255, 230, 100, 0.25); box-shadow: 0 0 0 0.35vmin rgba(20, 14, 0, 0.85), inset 0 0 0 0.3vmin rgba(20, 14, 0, 0.6), 0 0 2.4vmin #ffe066; animation: ak-to 1s ease-in-out infinite; }
+@keyframes ak-to { 50% { transform: translate(-50%, -50%) scale(1.12); background: rgba(255, 240, 160, 0.4); } }
