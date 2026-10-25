@@ -85,7 +85,6 @@ class ManagerView implements GameView<State, Ev> {
           <div class="mg-float"></div>
         </div>
         <div class="mg-center bc-ui">
-          <div class="mg-tray"></div>
           <div class="mg-card" hidden></div>
           <div class="mg-prompt"></div>
         </div>
@@ -97,7 +96,6 @@ class ManagerView implements GameView<State, Ev> {
     this.cellsEl = this.wrap.querySelector('.mg-cells') as HTMLElement;
     this.tokensEl = this.wrap.querySelector('.mg-tokens') as HTMLElement;
     this.center = this.wrap.querySelector('.mg-center') as HTMLElement;
-    this.trayEl = this.wrap.querySelector('.mg-tray') as HTMLElement;
     this.cardEl = this.wrap.querySelector('.mg-card') as HTMLElement;
     this.prompt = this.wrap.querySelector('.mg-prompt') as HTMLElement;
     this.pop = this.wrap.querySelector('.mg-pop') as HTMLElement;
@@ -120,12 +118,15 @@ class ManagerView implements GameView<State, Ev> {
       this.cam.shown();
     };
 
+    // кубики — в лотке на сукне в панели справа, как во всех играх (на поле их срезал край экрана телефона)
     this.panel = h(`<div class="mg-panel">
+        <div class="mg-dice"></div>
         <button class="btn primary mg-roll" data-tap hidden>Бросить кубики</button>
         <button class="btn mg-deal" hidden>Сделка…</button>
         <div class="mg-mine"></div>
       </div>`);
     ctx.controls.appendChild(this.panel);
+    this.trayEl = this.panel.querySelector('.mg-dice') as HTMLElement;
     this.rollBtn = this.panel.querySelector('.mg-roll') as HTMLButtonElement;
     this.dealBtn = this.panel.querySelector('.mg-deal') as HTMLButtonElement;
     this.mine = this.panel.querySelector('.mg-mine') as HTMLElement;

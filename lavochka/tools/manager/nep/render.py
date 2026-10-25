@@ -1,4 +1,6 @@
-# Поле «НЭП» 2000×2000: зелёная рамка, кольцо из 40 клеток (по часовой от «Начала» в левом нижнем углу), центр — склейка с фото.
+# Поле «НЭП» 2000×2000: зелёная рамка, кольцо из 40 клеток (по часовой от «Начала»), центр — склейка с фото.
+# Кольцо набирается как на оригинале («Начало» слева внизу) и поворачивается на 90° против часовой: «Начало» — справа внизу
+# (решение пользователя). Центр — center_r.png из turn.py (каёмка повёрнута, картинка прямая).
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 
@@ -149,9 +151,11 @@ rtext(['ТАМОЖНЯ'], S - M - C + 150 * k, M + 128 * k, 135, 38)
 corner_icon('tl', S - M - C + 120 * k, S - M - C + 121 * k)
 rtext(['ПОСЕТИТЕ', 'ТЕАТР'], S - M - C + 170 * k, S - M - C + 168 * k, 45, 36, fill=(70, 70, 70))
 corner_icon('bl', M + 123 * k, S - M - C + 104 * k)
-rtext(['НАЧАЛО'], M + C / 2, S - M - C + 214 * k, 0, 40)
 
-cen = Image.open('D:/temp/nep/center.png').convert('RGBA').resize((hi - lo - LINE, hi - lo - LINE), Image.LANCZOS)
+board = board.rotate(90)
+# «НАЧАЛО» после поворота — по-прежнему горизонтально, над стрелкой
+rtext(['НАЧАЛО'], S - M - C / 2, S - M - C + 52 * k, 0, 40)
+cen = Image.open('D:/temp/nep/center_r.png').convert('RGBA').resize((hi - lo - LINE, hi - lo - LINE), Image.LANCZOS)
 board.alpha_composite(cen, (lo + LINE // 2, lo + LINE // 2))
 board = board.convert('RGB')
 board.save('D:/temp/nep/nep_board.png')

@@ -55,7 +55,6 @@
 .mg-center { position: absolute; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 1.2);
   padding: calc(var(--u) * 1.5); box-sizing: border-box; pointer-events: none; font: calc(var(--u) * 1.75) / 1.3 system-ui, sans-serif; color: #fff; }
 .mg-center > * { pointer-events: auto; }
-.mg-tray.dice-tray { flex: none; height: auto; min-height: calc(var(--u) * 9); width: 60%; background: none; box-shadow: none; overflow: visible; }
 .mg-prompt { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 0.9); max-width: 100%; text-align: center; }
 .mg-prompt:empty { display: none; }
 .mg-q { background: rgba(10, 16, 40, 0.82); padding: calc(var(--u) * 0.6) calc(var(--u) * 1.2); border-radius: calc(var(--u) * 0.8); text-shadow: 0 1px 2px #000; }
@@ -136,6 +135,7 @@
 
 /* панель стола */
 .mg-panel { display: flex; flex-direction: column; gap: 8px; }
+.mg-dice.dice-tray { min-height: 64px; }
 .mg-cash { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .mg-sum { font: 800 20px/1.2 system-ui, sans-serif; }
 .mg-notes { display: inline-flex; gap: 3px; }
@@ -152,7 +152,6 @@
 .mg-wrap[data-map='biznesmen'] .mg-token { width: 3.6%; }
 .mg-wrap[data-map='biznesmen'] .mg-center { overflow: auto; }
 .mg-wrap[data-map='biznesmen'] .mg-center .btn { font-size: calc(var(--u) * 1.45); padding: calc(var(--u) * 0.5) calc(var(--u) * 1); }
-.mg-wrap[data-map='biznesmen'] .mg-tray.dice-tray { min-height: calc(var(--u) * 7); }
 .mg-wrap[data-map='biznesmen'] .mg-card { width: calc(var(--u) * 22); }
 .mg-shs { display: inline-flex; gap: 2px; vertical-align: middle; }
 .mg-sh { display: inline-block; width: 1.25em; border-radius: 3px; background: var(--c); color: #111; text-align: center; font-weight: 700; font-style: normal; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
