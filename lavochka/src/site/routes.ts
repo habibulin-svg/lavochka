@@ -131,6 +131,7 @@ export const SLUGS: Record<string, string> = {
   wargames: 'vargejmy',
   galaktika: 'kosmicheskie-vojny',
   borodino: 'borodino',
+  srazhenie: 'srazhenie',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',

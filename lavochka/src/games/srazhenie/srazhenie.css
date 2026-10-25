@@ -1,0 +1,11 @@
+/* «Сражение»: поле в пикселях карты (1200×1510) — подсветка PointBoard в этих единицах. */
+.sz .pb-dot { stroke-width: 3; }
+.sz .pb-can { stroke-width: 4; stroke-dasharray: 10 7; }
+.sz .pb-take { stroke-width: 5; }
+.sz .pb-last { stroke-width: 5; }
+.sz .pb-sel { filter: drop-shadow(0 0 4px #ffe066) drop-shadow(0 0 3px #ffe066) brightness(1.08); }
+.sz-info { display: flex; flex-direction: column; gap: 3px; }
+.sz-row { line-height: 1.5; }
+.sz-chip { display: inline-block; min-width: 18px; padding: 0 4px; margin: 0 2px; border-radius: 4px; background: rgba(127, 127, 127, 0.18); font-size: 12px; text-align: center; }
+.sz-hint { font-size: 13px; opacity: 0.8; }
+.sz-deploy .pb-can { display: none; }
