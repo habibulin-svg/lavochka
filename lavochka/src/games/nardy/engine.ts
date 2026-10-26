@@ -15,7 +15,7 @@
  */
 import type { Options, Rng } from '../../core/types';
 
-export type Mode = 'long' | 'short' | 'gulbara' | 'plakoto' | 'fevga' | 'portes';
+export type Mode = 'long' | 'short' | 'gulbara' | 'plakoto' | 'fevga' | 'portes' | 'tabula' | 'zeno' | 'duodecim' | 'pompeii';
 export type HeadRule = 'classic' | 'strict' | 'free';
 export type Block6 = 'rule' | 'home' | 'forbid' | 'allow';
 
@@ -45,6 +45,22 @@ export interface Cfg {
 export const tavliMode = (game: number): Mode => (['portes', 'plakoto', 'fevga'] as const)[(game - 1) % 3];
 /** Встречная геометрия (как в коротких). */
 export const isShortGeo = (cfg: Cfg) => cfg.mode === 'short' || cfg.mode === 'portes' || cfg.mode === 'plakoto';
+/** Римские игры: табула (24 пункта) и 12 линий (36 полей) — три кости, шашки входят с руки, одиночку бьют. */
+export const isRoman = (cfg: Cfg) => cfg.mode === 'tabula' || cfg.mode === 'zeno' || cfg.mode === 'duodecim' || cfg.mode === 'pompeii';
+/** 12 линий: три ряда по 12 полей. */
+export const isLines = (cfg: Cfg) => cfg.mode === 'duodecim' || cfg.mode === 'pompeii';
+/** Оба игрока идут по одному и тому же пути (табула по Остину). */
+export const sharedPath = (cfg: Cfg) => cfg.mode === 'tabula';
+/** Табула Зенона: шашки не снимают — побеждает тот, кто первым собрал все в последней четверти. */
+export const noBearOff = (cfg: Cfg) => cfg.mode === 'zeno';
+/** Сколько пунктов на пути. */
+export const boardSize = (cfg: Cfg) => (isLines(cfg) ? 36 : 24);
+/** Шашек у каждого: в помпейском наборе — по 12. */
+export const checkersOf = (cfg: Cfg) => (cfg.mode === 'pompeii' ? 12 : CHECKERS);
+/** Сколько костей бросают. */
+export const diceCount = (cfg: Cfg) => (isRoman(cfg) ? 3 : 2);
+/** С какого индекса пути начинается дом (откуда можно снимать). */
+export const homeStart = (cfg: Cfg) => (isLines(cfg) ? 24 : 18);
 
 export const DEFAULT_CFG: Cfg = {
   mode: 'long',
@@ -63,6 +79,9 @@ export function cfgFrom(o: Options): Cfg {
   const bool = (v: unknown, def: boolean) => (typeof v === 'boolean' ? v : def);
   const tavli = o.mode === 'tavli';
   const mode = tavli ? 'portes' : pick(o.mode, ['long', 'short', 'gulbara', 'plakoto', 'fevga', 'portes'] as const, 'long');
+  const roman = ['tabula', 'zeno', 'duodecim', 'pompeii'].includes(String(o.mode));
+  if (roman)
+    return { mode: o.mode as Mode, target: Math.max(1, Math.min(25, Number(o.target) || 1)), head: 'free', block6: 'allow', mars: false, koks: false, cube: false, cascade: false, steal: false };
   const greek = mode === 'plakoto' || mode === 'fevga' || mode === 'portes';
   if (greek)
     return { mode, target: Math.max(1, Math.min(25, Number(o.target) || (tavli ? 5 : 1))), head: 'free', block6: 'rule', mars: true, koks: false, cube: false, cascade: false, steal: false, tavli };
@@ -80,7 +99,8 @@ export function cfgFrom(o: Options): Cfg {
 }
 
 export const CHECKERS = 15;
-export const OFF = 24;
+/** Индекс «снята с доски» (за пределами любого пути). */
+export const OFF = 99;
 export const BAR = -1;
 
 export interface CubeState {
@@ -95,11 +115,13 @@ export interface State {
   /** Плакото: кто зажат на пункте (место) или -1. */
   pin?: number[];
   bar: [number, number];
+  /** Римские игры: шашки, ещё не введённые на доску (на руке). */
+  hand?: [number, number];
   off: [number, number];
   cur: number;
   phase: 'opening' | 'roll' | 'move' | 'cube' | 'over';
   /** Выпавшие кубики (для показа). */
-  dice: [number, number];
+  dice: number[];
   /** Значения, которые осталось сыграть в этой части хода. */
   left: number[];
   /** Гюльбара: следующие дубли каскада. */
@@ -136,7 +158,7 @@ export type EndKind = 'oin' | 'mars' | 'koks' | 'drop' | 'mother';
 
 export type Event =
   | { type: 'opening'; rolls: [number, number][]; first: number; game: number; mode?: Mode }
-  | { type: 'roll'; seat: number; dice: [number, number]; cascade?: number[]; noMoves?: boolean }
+  | { type: 'roll'; seat: number; dice: number[]; cascade?: number[]; noMoves?: boolean }
   | { type: 'stage'; seat: number; value: number }
   | {
       type: 'move';
@@ -144,13 +166,17 @@ export type Event =
       from: number;
       to: number;
       die: number;
-      /** Абсолютные пункты для анимации: -1 — бар, 24 — снята. */
+      /** Абсолютные пункты для анимации: -1 — бар (или рука), OFF — снята. */
       fromAbs: number;
       toAbs: number;
       hit?: boolean;
       /** Плакото: зажал шашку соперника. */
       pin?: boolean;
       stolen?: boolean;
+      /** Римские игры: шашка введена с руки (а не с бара). */
+      fromHand?: boolean;
+      /** Римские игры: поля в журнале считаются от входа (1 — первое поле пути). */
+      fwd?: boolean;
     }
   | { type: 'forfeit'; seat: number; count: number; toOpponent: boolean }
   | { type: 'steal'; seat: number; count: number }
@@ -166,7 +192,24 @@ export interface Step {
 
 // ---------- геометрия ----------
 
+/* Римские игры: путь каждого игрока — список абсолютных полей.
+ * Табула — та же доска в 24 пункта: по Остину оба входят в правую верхнюю четверть и идут одной дорогой
+ * против часовой стрелки (дом — справа внизу); у Зенона — навстречу, как в коротких нардах.
+ * 12 линий — поля 0..35: ряд × 12 + столбец (ряд 0 — нижний, у белых; 2 — верхний; столбцы слева направо).
+ * Белые входят в правую половину среднего ряда и идут по нему справа налево, затем верхний ряд слева направо,
+ * затем свой нижний ряд справа налево и снимаются за его левым краем. Путь чёрных — тот же, повёрнутый на 180°. */
+const LONG_PATH = [...Array(24).keys()].map((i) => (12 + i) % 24);
+const LINES_PATH = [...Array(36).keys()].map((i) => (i < 12 ? 23 - i : i < 24 ? i + 12 : 35 - i));
+const ROMAN_PATHS: Partial<Record<Mode, number[][]>> = {
+  tabula: [LONG_PATH, LONG_PATH],
+  zeno: [LONG_PATH, LONG_PATH.map((_, i) => (35 - i) % 24)],
+  duodecim: [LINES_PATH, LINES_PATH.map((a) => 35 - a)],
+  pompeii: [LINES_PATH, LINES_PATH.map((a) => 35 - a)],
+};
+
 export function absOf(cfg: Cfg, p: number, i: number): number {
+  const rp = ROMAN_PATHS[cfg.mode];
+  if (rp) return rp[p][i];
   if (p === 0) return (12 + i) % 24;
   return isShortGeo(cfg) ? (35 - i) % 24 : i;
 }
@@ -174,12 +217,13 @@ export function absOf(cfg: Cfg, p: number, i: number): number {
 const PATH_CACHE = new Map<string, number[][]>();
 /** idxOf[p][a] — индекс пути игрока p для абсолютного пункта a. */
 export function idxTable(cfg: Cfg): number[][] {
-  const key = isShortGeo(cfg) ? 's' : 'l';
+  const key = ROMAN_PATHS[cfg.mode] ? cfg.mode : isShortGeo(cfg) ? 's' : 'l';
   let t = PATH_CACHE.get(key);
   if (!t) {
+    const n = boardSize(cfg);
     t = [0, 1].map((p) => {
-      const r = new Array(24).fill(0);
-      for (let i = 0; i < 24; i++) r[absOf(cfg, p, i)] = i;
+      const r = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) r[absOf(cfg, p, i)] = i;
       return r;
     });
     PATH_CACHE.set(key, t);
@@ -189,7 +233,7 @@ export function idxTable(cfg: Cfg): number[][] {
 
 export const sign = (p: number) => (p === 0 ? 1 : -1);
 /** Длинная геометрия: шашка не бьёт, одиночка закрывает пункт (длинные, гюльбара, февга). */
-export const isLong = (cfg: Cfg) => !isShortGeo(cfg);
+export const isLong = (cfg: Cfg) => !isShortGeo(cfg) && !isRoman(cfg);
 
 /** Шашек игрока p на индексе пути i. */
 export function own(s: State, p: number, i: number): number {
@@ -202,24 +246,30 @@ export function foe(s: State, p: number, i: number): number {
   return v < 0 ? -v : 0;
 }
 
+/** Шашки, которые ещё надо ввести на доску: побитые и (в римских играх) не вошедшие. */
+export const waiting = (s: State, p: number) => s.bar[p] + (s.hand ? s.hand[p] : 0);
+
 export function allHome(s: State, p: number): boolean {
-  if (s.bar[p]) return false;
-  for (let i = 0; i < 18; i++) if (own(s, p, i)) return false;
+  if (waiting(s, p)) return false;
+  const h = homeStart(s.cfg);
+  for (let i = 0; i < h; i++) if (own(s, p, i)) return false;
   // плакото: зажатые шашки тоже должны быть дома
-  if (s.pin) for (let a = 0; a < 24; a++) if (s.pin[a] === p && idxTable(s.cfg)[p][a] < 18) return false;
+  if (s.pin) for (let a = 0; a < 24; a++) if (s.pin[a] === p && idxTable(s.cfg)[p][a] < h) return false;
   return true;
 }
 
 export function pipCount(s: State, p: number): number {
-  let n = s.bar[p] * 25;
-  for (let i = 0; i < 24; i++) n += own(s, p, i) * (24 - i);
-  return n;
+  const n = boardSize(s.cfg);
+  let v = waiting(s, p) * (n + 1);
+  for (let i = 0; i < n; i++) v += own(s, p, i) * (n - i);
+  return v;
 }
 
 // ---------- расстановка ----------
 
 function emptyBoard(cfg: Cfg): number[] {
-  const pts = new Array(24).fill(0);
+  const pts = new Array(boardSize(cfg)).fill(0);
+  if (isRoman(cfg)) return pts; // все шашки на руке
   const put = (p: number, i: number, n: number) => (pts[absOf(cfg, p, i)] += n * sign(p));
   for (const p of [0, 1]) {
     if (cfg.mode === 'short' || cfg.mode === 'portes') {
@@ -238,9 +288,10 @@ function freshGame(s: State) {
   s.pts = emptyBoard(s.cfg);
   s.pin = s.cfg.mode === 'plakoto' ? new Array(24).fill(-1) : undefined;
   s.bar = [0, 0];
+  s.hand = isRoman(s.cfg) ? [checkersOf(s.cfg), checkersOf(s.cfg)] : undefined;
   s.off = [0, 0];
   s.phase = 'opening';
-  s.dice = [0, 0];
+  s.dice = new Array(diceCount(s.cfg)).fill(0);
   s.left = [];
   s.queue = [];
   s.steal = [];
@@ -270,8 +321,9 @@ export const clone = (s: State): State => ({
   pts: s.pts.slice(),
   pin: s.pin ? s.pin.slice() : undefined,
   bar: [s.bar[0], s.bar[1]],
+  hand: s.hand ? [s.hand[0], s.hand[1]] : undefined,
   off: [s.off[0], s.off[1]],
-  dice: [s.dice[0], s.dice[1]],
+  dice: s.dice.slice(),
   left: s.left.slice(),
   queue: s.queue.slice(),
   steal: s.steal.slice(),
@@ -325,10 +377,11 @@ function badBlock(s: State, p: number): boolean {
 /** Куда придёт шашка: индекс пути или OFF. null — ход по правилам невозможен (без учёта «максимума кубиков»). */
 function stepTarget(s: State, p: number, from: number, die: number): number | null {
   const long = isLong(s.cfg);
+  const n = boardSize(s.cfg);
   if (s.bar[p] > 0 && from !== BAR) return null;
   if (from === BAR) {
-    if (!s.bar[p]) return null;
-  } else if (from < 0 || from > 23 || !own(s, p, from)) return null;
+    if (!waiting(s, p)) return null;
+  } else if (from < 0 || from >= n || !own(s, p, from)) return null;
   if (long && from === 0 && s.headMoves >= headLimit(s, p)) return null;
   // февга: пока первая шашка не дошла до четверти соперника, с головы вторую не снимают
   if (s.cfg.mode === 'fevga' && from === 0) {
@@ -337,7 +390,9 @@ function stepTarget(s: State, p: number, from: number, die: number): number | nu
     if (far >= 1 && far < 12 && !s.off[p]) return null;
   }
   const to = (from === BAR ? -1 : from) + die;
-  if (to < 24) {
+  if (to < n) {
+    // табула: пока на руке есть шашки, за первую четверть не выходят
+    if (s.cfg.mode === 'tabula' && s.hand![p] > 0 && to >= 6) return null;
     const f = foe(s, p, to);
     if (s.cfg.mode === 'plakoto') {
       // встать можно на пустой, свой или одиночную шашку соперника, под которой никто не зажат
@@ -347,10 +402,10 @@ function stepTarget(s: State, p: number, from: number, die: number): number | nu
     if (long ? f > 0 : f > 1) return null;
     return to;
   }
-  if (!allHome(s, p)) return null;
-  if (to > 24) {
+  if (noBearOff(s.cfg) || !allHome(s, p)) return null;
+  if (to > n) {
     // с младшего пункта можно снимать большим кубиком, только если на старших пунктах дома пусто
-    for (let j = 18; j < from; j++) if (own(s, p, j)) return null;
+    for (let j = homeStart(s.cfg); j < from; j++) if (own(s, p, j)) return null;
   }
   return OFF;
 }
@@ -360,8 +415,14 @@ function doStep(s: State, p: number, from: number, die: number, to: number) {
   const sg = sign(p);
   let hit = false;
   let pinned = false;
-  if (from === BAR) s.bar[p]--;
-  else {
+  let fromHand = false;
+  if (from === BAR) {
+    if (s.bar[p]) s.bar[p]--;
+    else {
+      s.hand![p]--;
+      fromHand = true;
+    }
+  } else {
     const fa = absOf(s.cfg, p, from);
     s.pts[fa] -= sg;
     // плакото: ушла последняя шашка — зажатая освобождается
@@ -397,9 +458,11 @@ function doStep(s: State, p: number, from: number, die: number, to: number) {
     to,
     die,
     fromAbs: from === BAR ? -1 : absOf(s.cfg, p, from),
-    toAbs: to === OFF ? 24 : absOf(s.cfg, p, to),
+    toAbs: to === OFF ? OFF : absOf(s.cfg, p, to),
   };
   if (hit) ev.hit = true;
+  if (fromHand) ev.fromHand = true;
+  if (isRoman(s.cfg)) ev.fwd = true;
   if (pinned) ev.pin = true;
   return ev;
 }
@@ -408,7 +471,8 @@ function doStep(s: State, p: number, from: number, die: number, to: number) {
 function rawSteps(s: State, p: number): Step[] {
   const out: Step[] = [];
   const dice = [...new Set(s.left)];
-  const froms = s.bar[p] ? [BAR] : [...Array(24).keys()].filter((i) => own(s, p, i));
+  const onBoard = [...Array(boardSize(s.cfg)).keys()].filter((i) => own(s, p, i));
+  const froms = s.bar[p] ? [BAR] : s.hand?.[p] ? [BAR, ...onBoard] : onBoard;
   for (const d of dice) {
     for (const f of froms) {
       const to = stepTarget(s, p, f, d);
@@ -425,7 +489,7 @@ function rawSteps(s: State, p: number): Step[] {
 }
 
 export function boardKey(s: State): string {
-  return s.pts.join(',') + '|' + (s.pin ? s.pin.join(',') : '') + '|' + s.bar.join(',') + '|' + s.off.join(',') + '|' + s.left.join(',') + '|' + s.headMoves;
+  return s.pts.join(',') + '|' + (s.pin ? s.pin.join(',') : '') + '|' + s.bar.join(',') + '|' + (s.hand ? s.hand.join(',') : '') + '|' + s.off.join(',') + '|' + s.left.join(',') + '|' + s.headMoves;
 }
 
 /** Сколько ещё кубиков можно сыграть из этой позиции (в пределах текущей части хода). */
@@ -587,11 +651,14 @@ function endTurn(s: State, events: Event[]) {
   s.phase = 'roll';
 }
 
-function startMoves(s: State, a: number, b: number, events: Event[], ev: Extract<Event, { type: 'roll' }>) {
-  s.dice = [a, b];
+function startMoves(s: State, dice: number[], events: Event[], ev: Extract<Event, { type: 'roll' }>) {
+  const [a, b] = dice;
+  s.dice = dice.slice();
   s.headMoves = 0;
   s.queue = [];
-  if (a === b) {
+  // римские игры: три кости, дубль не удваивается
+  if (dice.length > 2) s.left = dice.slice();
+  else if (a === b) {
     s.left = [a, a, a, a];
     if (isCascade(s)) {
       for (let v = a + 1; v <= 6; v++) s.queue.push(v);
@@ -625,7 +692,7 @@ export function apply(state: State, seat: number, a: Action, rng: Rng): { state:
     events.push({ type: 'opening', rolls, first, game: s.game, mode: s.cfg.mode });
     if (isShortGeo(s.cfg) || s.cfg.mode === 'fevga') {
       // в коротких (и в тавли) первый ход играют сразу этими кубиками
-      startMoves(s, Math.max(x, y), Math.min(x, y), events, { type: 'roll', seat: first, dice: [Math.max(x, y), Math.min(x, y)] });
+      startMoves(s, [Math.max(x, y), Math.min(x, y)], events, { type: 'roll', seat: first, dice: [Math.max(x, y), Math.min(x, y)] });
     } else s.phase = 'roll';
     return { state: s, events };
   }
@@ -634,9 +701,8 @@ export function apply(state: State, seat: number, a: Action, rng: Rng): { state:
 
   if (a.type === 'roll') {
     if (s.phase !== 'roll') return null;
-    const d1 = die();
-    const d2 = die();
-    startMoves(s, d1, d2, events, { type: 'roll', seat, dice: [d1, d2] });
+    const ds = Array.from({ length: diceCount(s.cfg) }, die);
+    startMoves(s, ds, events, { type: 'roll', seat, dice: ds.slice() });
     return { state: s, events };
   }
 
@@ -652,7 +718,7 @@ export function apply(state: State, seat: number, a: Action, rng: Rng): { state:
       endGame(s, seat, 'mother', events);
       return { state: s, events };
     }
-    if (s.off[seat] === CHECKERS) {
+    if (s.off[seat] === checkersOf(s.cfg) || (noBearOff(s.cfg) && allHome(s, seat))) {
       endGame(s, seat, 'oin', events);
       return { state: s, events };
     }
@@ -705,7 +771,7 @@ export function finals(s: State, limit = 6000): { state: State; steps: Step[] }[
   const walk = (t: State, steps: Step[]) => {
     const raw = t.left.length ? rawSteps(t, p) : [];
     if (!raw.length) {
-      const k = t.pts.join(',') + '|' + t.bar.join(',') + '|' + t.off.join(',');
+      const k = t.pts.join(',') + '|' + t.bar.join(',') + '|' + (t.hand ? t.hand.join(',') : '') + '|' + t.off.join(',');
       if (!out.has(k)) out.set(k, { state: t, steps });
       return;
     }

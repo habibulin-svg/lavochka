@@ -2,7 +2,7 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { plural } from '../../core/util';
 import { choose } from './ai';
-import { apply, absOf, BAR, cfgFrom, DEFAULT_CFG, newGame, OFF, sign, toAct, type Action, type Cfg, type EndKind, type Event, type State } from './engine';
+import { apply, absOf, BAR, boardSize, cfgFrom, checkersOf, DEFAULT_CFG, newGame, OFF, sign, toAct, type Action, type Cfg, type EndKind, type Event, type Mode, type State } from './engine';
 
 export const SEATS = [
   { name: 'Белые', color: '#e8dcc0', light: '#fffaf0', dark: '#8a7a5a', ink: '#7a5f30' },
@@ -10,10 +10,13 @@ export const SEATS = [
 ];
 
 /** Номер пункта глазами игрока: 24 — голова / самый дальний, 1 — последний пункт дома. */
-const ptName = (i: number) => (i === BAR ? 'бар' : i === OFF ? 'снята' : String(24 - i));
+const ptName = (i: number, fwd = false) => (i === BAR ? 'бар' : i === OFF ? 'снята' : String(fwd ? i + 1 : 24 - i));
 
 const END_TEXT: Record<EndKind, string> = { oin: 'ойн', mars: 'марс', koks: 'кокс', drop: 'отказ от удвоения', mother: 'зажата «мать»' };
 const GREEK = ['tavli', 'portes', 'plakoto', 'fevga'];
+const ROMAN = ['tabula', 'zeno', 'duodecim', 'pompeii'];
+/** Варианты без правил длинных нард (головы, блока из шести, кокса). */
+const NO_LONG = [...GREEK, ...ROMAN, 'short'];
 const MODE_NAME: Record<string, string> = { portes: 'портес', plakoto: 'плакото', fevga: 'февга' };
 
 function describe(ev: Event, name: (seat: number) => string): string | null {
@@ -24,8 +27,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${ev.game > 1 ? `<b>Партия ${ev.game}.</b> ` : ''}${ev.mode && MODE_NAME[ev.mode] ? `<b>${MODE_NAME[ev.mode]}</b>. ` : ''}Розыгрыш первого хода: ${name(0)} ${last[0]}, ${name(1)} ${last[1]}${ties} — начинают ${name(ev.first)}.`;
     }
     case 'roll': {
-      let t = `${name(ev.seat)}: <b>${ev.dice[0]}:${ev.dice[1]}</b>`;
-      if (ev.dice[0] === ev.dice[1]) t += ' — дубль';
+      let t = `${name(ev.seat)}: <b>${ev.dice.join(':')}</b>`;
+      if (ev.dice.length === 2 && ev.dice[0] === ev.dice[1]) t += ' — дубль';
       if (ev.cascade?.length) t += `, каскад до ${ev.cascade[ev.cascade.length - 1]}:${ev.cascade[ev.cascade.length - 1]}`;
       if (ev.noMoves) t += '. <i>Ходов нет.</i>';
       return t;
@@ -33,7 +36,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'stage':
       return `<i>Каскад: дубль ${ev.value}:${ev.value}.</i>`;
     case 'move': {
-      let t = `${name(ev.seat)}${ev.stolen ? ' (за соперника)' : ''}: ${ev.from === BAR ? 'с бара' : ptName(ev.from)} → ${ev.to === OFF ? 'снята' : ptName(ev.to)}`;
+      const from = ev.from !== BAR ? ptName(ev.from, ev.fwd) : ev.fromHand ? 'с руки' : 'с бара';
+      let t = `${name(ev.seat)}${ev.stolen ? ' (за соперника)' : ''}: ${from} → ${ev.to === OFF ? 'снята' : ptName(ev.to, ev.fwd)}`;
       if (ev.hit) t += ' — <b>бьёт!</b>';
       if (ev.pin) t += ' — <b>зажимает!</b>';
       return t;
@@ -84,7 +88,28 @@ function pos(c: Partial<Cfg>, white: [number, number][], black: [number, number]
   return Object.assign(s, extra);
 }
 
+/** Римская позиция: шашки [индекс пути, сколько]; кого нет на доске — на руке (в extra можно задать off). */
+function rpos(mode: Mode, white: [number, number][], black: [number, number][], extra: Partial<State> = {}): State {
+  const cfg = cfgFrom({ mode });
+  const s = newGame(cfg);
+  s.pts = new Array(boardSize(cfg)).fill(0);
+  const n = checkersOf(cfg);
+  const off = extra.off ?? [0, 0];
+  [white, black].forEach((list, p) => {
+    for (const [i, k] of list) {
+      if (i === BAR) s.bar[p] += k;
+      else s.pts[absOf(cfg, p, i)] += k * sign(p);
+    }
+    s.hand![p] = n - off[p] - list.reduce((a, [, k]) => a + k, 0);
+  });
+  s.phase = 'roll';
+  s.cur = 0;
+  s.turns = [3, 3];
+  return Object.assign(s, extra);
+}
+
 const dice = (a: number, b: number) => [a - 1, b - 1];
+const dice3 = (a: number, b: number, c: number) => [a - 1, b - 1, c - 1];
 const mv = (from: number, die: number, caption?: string) => ({ seat: 0, action: { type: 'move', from, die } as Action, caption });
 
 export const def: GameDef<State, Action, Event, State> = {
@@ -106,6 +131,10 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'portes', label: 'портес (греческие короткие)' },
         { value: 'plakoto', label: 'плакото — зажимать, а не бить' },
         { value: 'fevga', label: 'февга (греческие длинные)' },
+        { value: 'tabula', label: 'табула (Древний Рим, три кости)' },
+        { value: 'zeno', label: 'табула Зенона — навстречу, без снятия' },
+        { value: 'duodecim', label: '12 линий (Ludus duodecim scriptorum)' },
+        { value: 'pompeii', label: 'Duodecim scripta — доска-надпись из Помпей' },
       ],
       default: 'long',
     },
@@ -131,7 +160,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'free', label: 'сколько угодно' },
       ],
       default: 'classic',
-      showIf: (o) => o.mode !== 'short' && !GREEK.includes(String(o.mode)),
+      showIf: (o) => !NO_LONG.includes(String(o.mode)),
     },
     {
       key: 'block6',
@@ -144,16 +173,16 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'allow', label: 'можно всегда' },
       ],
       default: 'rule',
-      showIf: (o) => o.mode !== 'short' && !GREEK.includes(String(o.mode)),
+      showIf: (o) => !NO_LONG.includes(String(o.mode)),
     },
-    { key: 'mars', label: 'Марс — 2 очка', hint: 'Соперник не успел снять ни одной шашки.', type: 'toggle', default: true },
+    { key: 'mars', label: 'Марс — 2 очка', hint: 'Соперник не успел снять ни одной шашки.', type: 'toggle', default: true, showIf: (o) => !ROMAN.includes(String(o.mode)) },
     {
       key: 'koks',
       label: 'Кокс — 3 очка',
       hint: 'Марс, да ещё у проигравшего шашки остались в первой четверти пути (в коротких — на баре или в доме победителя).',
       type: 'toggle',
       default: false,
-      showIf: (o) => o.mars === true && !GREEK.includes(String(o.mode)),
+      showIf: (o) => o.mars === true && !GREEK.includes(String(o.mode)) && !ROMAN.includes(String(o.mode)),
     },
     { key: 'cube', label: 'Куб удвоения', hint: 'Перед броском можно предложить удвоить ставку; отказ — проигрыш по текущему кубу.', type: 'toggle', default: false, showIf: (o) => o.mode === 'short' },
     { key: 'cascade', label: 'Каскад дублей', hint: 'С четвёртого хода дубль тянет за собой все старшие дубли до 6:6.', type: 'toggle', default: true, showIf: (o) => o.mode === 'gulbara' },
@@ -169,6 +198,10 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'portes', label: 'Портес', hint: 'Греческие короткие: бой, бар, марс — 2', options: { mode: 'portes', target: 1, mars: true } },
     { id: 'plakoto', label: 'Плакото', hint: 'Шашки навстречу; не бьют, а зажимают', options: { mode: 'plakoto', target: 1, mars: true } },
     { id: 'fevga', label: 'Февга', hint: 'Греческие длинные: первая шашка уходит вперёд одна', options: { mode: 'fevga', target: 1, mars: true } },
+    { id: 'tabula', label: 'Табула', hint: 'Древний Рим: три кости, все шашки входят с руки, одиночку бьют', options: { mode: 'tabula', target: 1 } },
+    { id: 'zeno', label: 'Табула Зенона', hint: 'Навстречу; не снимают — побеждает, кто первым соберёт всех в доме', options: { mode: 'zeno', target: 1 } },
+    { id: 'duodecim', label: '12 линий', hint: 'Три ряда по 12 полей, три кости, по 15 шашек', options: { mode: 'duodecim', target: 1 } },
+    { id: 'pompeii', label: 'Duodecim scripta', hint: 'Доска-надпись из Помпей: шесть слов по шесть букв, по 12 шашек', options: { mode: 'pompeii', target: 1 } },
   ],
 
   setup: (_seats, opts) => newGame(cfgFrom(opts)),
@@ -180,6 +213,7 @@ export const def: GameDef<State, Action, Event, State> = {
     const scores = { 0: s.score[0], 1: s.score[1] };
     if (s.cfg.target > 1) return { winners: [s.winner], text: `выиграли матч ${s.score[0]}:${s.score[1]}`, scores };
     const k = s.lastEnd?.kind ?? 'oin';
+    if (ROMAN.includes(s.cfg.mode)) return { winners: [s.winner], text: s.cfg.mode === 'zeno' ? 'первыми собрали все шашки в доме' : 'первыми вывели все шашки', scores };
     const txt = k === 'mars' ? 'марс — выиграли вдвойне' : k === 'koks' ? 'кокс — выиграли втройне' : k === 'drop' ? 'соперник отказался от удвоения' : 'первыми сняли все шашки';
     return { winners: [s.winner], text: txt, scores };
   },
@@ -344,6 +378,101 @@ export const def: GameDef<State, Action, Event, State> = {
             { seat: 0, action: { type: 'roll' }, rig: dice(3, 1), caption: 'Выпало 3 и 1.' },
             mv(5, 3, 'Тройкой — прямо на чёрную: она зажата и не сдвинется, пока белая стоит сверху.'),
             mv(2, 1, 'Единицей — другой шашкой.'),
+          ],
+        },
+      },
+      {
+        title: 'Табула: три кости и вход с руки',
+        html: `<p><b>Табула</b> — римская предшественница нард, в неё играли от Августа до Византии. Доска та же, 24 пункта, у каждого 15 шашек,
+          но в начале доска <b>пуста</b>: все шашки на руке и входят в первую четверть — кость с числом 3 ставит шашку на третий пункт.
+          Бросают <b>три кости</b>, каждая — отдельный ход; дубль не удваивается. Сыграть надо столько костей, сколько получится.</p>
+          <p>По реконструкции Остина (по описанию партии императора Зенона) оба игрока идут одной дорогой в одну сторону: входят справа вверху, дом — справа внизу.
+          Пока на руке есть шашки, вошедшие не выходят за первую четверть.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'tabula' },
+          setup: () => rpos('tabula', [[0, 2], [4, 1]], [[1, 2], [3, 1]]),
+          intro: 'Табула. У белых три шашки на доске, двенадцать на руке; чёрные идут той же дорогой.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice3(6, 4, 2), caption: 'Три кости: 6, 4 и 2.' },
+            mv(BAR, 6, 'Шестёрка — шашка с руки на шестой пункт.'),
+            mv(BAR, 4, 'Четвёрка — тоже с руки, прямо на одинокую чёрную: она побита и уходит на бар.'),
+            mv(0, 2, 'Шашка с пятого пункта двойкой ушла бы за первую четверть — пока на руке есть шашки, так нельзя. Двойку играет шашка с первого пункта.'),
+          ],
+        },
+      },
+      {
+        title: 'Табула: бой и вход побитой',
+        html: `<p>Одинокую шашку соперника бьют — она уходит на бар и входит заново с начала пути. Пока побитая не вошла, другими шашками ходить нельзя.
+          На пункт с двумя шашками соперника вставать нельзя.</p>
+          <p>Когда все шашки в последней четверти, их выводят с доски: кость снимает шашку со своего пункта, большая — с самого дальнего занятого.
+          Первым вывел все 15 — победил. Марса в табуле нет.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'tabula' },
+          setup: () => rpos('tabula', [[2, 1], [10, 7], [14, 7]], [[5, 1], [12, 7], [17, 7]]),
+          intro: 'Все шашки вошли. На шестом пункте пути — одинокая чёрная.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice3(3, 6, 1), caption: 'У белых 3, 6 и 1.' },
+            mv(2, 3, 'Тройкой — на чёрную: бьём, она уходит на бар.'),
+            mv(5, 6, 'Шестёркой — дальше той же шашкой…'),
+            mv(10, 1, '…и единицей.'),
+            { seat: 1, action: { type: 'roll' }, rig: dice3(2, 5, 4), caption: 'Чёрные сначала обязаны ввести побитую.' },
+            { seat: 1, action: { type: 'move', from: BAR, die: 2 }, caption: 'Двойкой — на второй пункт. Теперь можно ходить остальными.' },
+          ],
+        },
+      },
+      {
+        title: 'Табула Зенона: навстречу и без снятия',
+        html: `<p>Другая реконструкция по той же эпиграмме Агафия: шашки идут <b>навстречу</b> друг другу, как в коротких нардах, — каждый входит в свою первую четверть,
+          она же дом соперника. Шашки не снимают: побеждает тот, кто первым соберёт все 15 в последней четверти.</p>
+          <p>Агафий рассказывает, как Зенону выпало 2, 5 и 6 и его стройная позиция рассыпалась: пришлось оставить под боем сразу несколько одиночек.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'zeno' },
+          setup: () => rpos('zeno', [[19, 6], [20, 5], [22, 3], [13, 1]], [[18, 8], [21, 4], [9, 3]]),
+          intro: 'Табула Зенона. Белым осталось завести домой одну шашку.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice3(5, 2, 1), caption: 'Выпало 5, 2 и 1.' },
+            mv(13, 5, 'Пятёркой последняя шашка входит в дом — все 15 собраны, белые победили.'),
+          ],
+        },
+      },
+      {
+        title: '12 линий: три ряда по двенадцать',
+        html: `<p><b>Ludus duodecim scriptorum</b> — «игра двенадцати линий», самая известная настольная игра Рима: доска в три ряда по 12 полей, разделённых посередине.
+          У каждого 15 шашек, все на руке, бросают три кости, одиночку бьют, на два и больше чужих не встают — правила как в табуле.</p>
+          <p>Путь — змейкой: белые входят в правую половину среднего ряда, идут по нему налево, потом по верхнему ряду направо и по своему нижнему — налево,
+          и снимаются за его левым краем. Чёрные идут так же, но с другой стороны доски. Снимать можно, когда все шашки в последнем ряду.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'duodecim' },
+          setup: () => rpos('duodecim', [[3, 2], [9, 1]], [[14, 2], [26, 1]]),
+          intro: '12 линий. Белые — снизу, их путь начинается справа в среднем ряду.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice3(6, 5, 3), caption: 'Выпало 6, 5 и 3.' },
+            mv(BAR, 6, 'Шестёркой — с руки на шестое поле среднего ряда.'),
+            mv(9, 5, 'Пятёркой — из среднего ряда в верхний, на одинокую чёрную: бьём.'),
+            mv(3, 3, 'Тройкой — дальше по среднему ряду.'),
+          ],
+        },
+      },
+      {
+        title: 'Duodecim scripta: надпись из Помпей',
+        html: `<p>Римляне часто вместо полей писали на доске буквы: 36 клеток — шесть слов по шесть букв. На доске из Помпей —
+          меню таверны: <i>ABEMUS INCENA PULLUM PISCEM PERNAM PAONEM</i> — «есть на ужин: курица, рыба, окорок, павлин»
+          (в HABEMUS пропущена H, чтобы вышло шесть букв). Буквы на ход не влияют: это и поля, и украшение.</p>
+          <p>В этом варианте, как в наборе с такой доской, у каждого по <b>12 шашек</b> — партия короче. Остальные правила как в «12 линиях».</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'pompeii' },
+          setup: () => rpos('pompeii', [[4, 2], [14, 1]], [[1, 1], [6, 2]]),
+          intro: 'Duodecim scripta. Каждая буква — поле.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: dice3(6, 4, 1), caption: 'Выпало 6, 4 и 1.' },
+            mv(BAR, 4, 'Четвёркой — с руки.'),
+            mv(4, 6, 'Шестёркой — шашка доходит до одинокой чёрной и бьёт её.'),
+            mv(14, 1, 'Единицей — по верхнему ряду.'),
           ],
         },
       },

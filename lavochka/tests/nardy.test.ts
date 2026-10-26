@@ -163,3 +163,88 @@ describe('нарды: партии ботов целиком', () => {
     expect(res.finished).toBe(true);
   }, 120_000);
 });
+
+describe('римские игры: табула и 12 линий', () => {
+  const roll3 = (s: State, a: number, b: number, c: number) => {
+    const rng = new RiggedRng(new SeededRng(1));
+    rng.rig([a - 1, b - 1, c - 1]);
+    return apply(s, s.cur, { type: 'roll' }, rng)!.state;
+  };
+  const start = (mode: string) => {
+    const s = newGame(cfg({ mode }));
+    s.phase = 'roll';
+    s.cur = 0;
+    return s;
+  };
+
+  it('табула: три кости, дубль не удваивается, все шашки на руке', () => {
+    const s = roll3(start('tabula'), 4, 4, 2);
+    expect(s.hand).toEqual([15, 15]);
+    expect(s.left.sort()).toEqual([2, 4, 4]);
+    expect(froms(s)).toEqual([-1]);
+  });
+
+  it('табула: пока на руке есть шашки, за первую четверть не выходят', () => {
+    let s = roll3(start('tabula'), 5, 3, 1);
+    s = act(s, 0, { type: 'move', from: -1, die: 1 })!.state; // вошла на пункт 1 (индекс 0)
+    // с индекса 0 пятёркой — на индекс 5, ещё первая четверть; а с 4 (после тройки) пятёркой — уже нельзя
+    expect(legalSteps(s).some((x) => x.from === 0 && x.die === 5)).toBe(true);
+    s = act(s, 0, { type: 'move', from: 0, die: 3 })!.state;
+    expect(legalSteps(s).some((x) => x.from === 3 && x.die === 5)).toBe(false);
+  });
+
+  it('табула: одиночку бьют, побитая вводится раньше всего', () => {
+    const c = cfg({ mode: 'tabula' });
+    const s = newGame(c);
+    s.hand = [0, 0];
+    s.pts = new Array(24).fill(0);
+    s.pts[absOf(c, 0, 2)] = 1;
+    s.pts[absOf(c, 0, 10)] = 14;
+    s.pts[absOf(c, 1, 5)] = -1;
+    s.pts[absOf(c, 1, 12)] = -14;
+    s.phase = 'roll';
+    s.cur = 0;
+    let t = roll3(s, 3, 6, 6);
+    const r = act(t, 0, { type: 'move', from: 2, die: 3 })!;
+    expect(r.events.some((e) => e.type === 'move' && e.hit)).toBe(true);
+    expect(r.state.bar[1]).toBe(1);
+    t = r.state;
+    t.cur = 1;
+    t = roll3({ ...t, left: [], phase: 'roll' }, 2, 4, 5);
+    expect(froms(t)).toEqual([-1]);
+  });
+
+  it('табула Зенона: снимать нельзя, побеждает собравший всех в последней четверти', () => {
+    const c = cfg({ mode: 'zeno' });
+    const s = newGame(c);
+    s.hand = [0, 0];
+    s.pts = new Array(24).fill(0);
+    s.pts[absOf(c, 0, 20)] = 14;
+    s.pts[absOf(c, 0, 15)] = 1;
+    s.pts[absOf(c, 1, 3)] = -15;
+    s.phase = 'roll';
+    s.cur = 0;
+    let t = roll3(s, 6, 1, 1);
+    expect(legalSteps(t).some((x) => x.from === 20 && x.die === 6)).toBe(false);
+    const r = act(t, 0, { type: 'move', from: 15, die: 6 })!;
+    expect(r.state.phase).toBe('over');
+    expect(r.state.winner).toBe(0);
+  });
+
+  it('12 линий: 36 полей, путь змейкой, у каждого поля оба пути', () => {
+    const c = cfg({ mode: 'duodecim' });
+    for (const p of [0, 1]) expect(new Set([...Array(36).keys()].map((i) => absOf(c, p, i))).size).toBe(36);
+    expect(absOf(c, 0, 0)).toBe(23); // правый край среднего ряда
+    expect(absOf(c, 0, 35)).toBe(0); // левый край нижнего ряда
+    expect(absOf(c, 1, 0)).toBe(12);
+    expect(newGame(cfg({ mode: 'pompeii' })).hand).toEqual([12, 12]);
+  });
+
+  for (const mode of ['tabula', 'zeno', 'duodecim', 'pompeii'])
+    for (const level of [0, 2])
+      it(`${mode}, уровень ${level}: партия ботов доходит до конца`, async () => {
+        const res = await simulate(def, botSeats(def, 2, [level]), { mode, target: 1 }, 17 + level);
+        expect(res.error).toBeUndefined();
+        expect(res.finished).toBe(true);
+      }, 120_000);
+});

@@ -3,7 +3,7 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { absOf, BAR, CHECKERS, legalSteps, mayDouble, OFF, pipCount, targetOf, type Event, type State, type Step } from './engine';
+import { absOf, BAR, boardSize, checkersOf, isLines, legalSteps, mayDouble, OFF, pipCount, sharedPath, targetOf, type Event, type State, type Step } from './engine';
 import { woodTexture, WOODS } from '../../core/wood';
 import { arches, BURN, burnDefs, carvedFrame, cup, hinge, rosette, slot, spearFiligree, spearPath, star8 } from './decor';
 import './nardy.css';
@@ -30,10 +30,50 @@ function pointGeo(a: number) {
   return { x: colX(col), bottom };
 }
 
-function stackY(bottom: boolean, k: number, n: number) {
-  const sp = n > 5 ? (STACK - 2 * R) / (n - 1) : 2 * R;
-  return bottom ? H - F - R - k * sp : F + R + k * sp;
+const RH = (H - 2 * F) / 3; // ряд доски «12 линий»
+
+/** Поле под стопку шашек: стопка растёт от y0 в сторону dir на длину len; cy — стопка по центру (средний ряд 12 линий). */
+interface Cell {
+  x: number;
+  y0: number;
+  dir: 1 | -1;
+  len: number;
+  cy?: number;
+  bottom: boolean;
 }
+
+function spearCell(a: number): Cell {
+  const { x, bottom } = pointGeo(a);
+  return { x, y0: bottom ? H - F : F, dir: bottom ? -1 : 1, len: STACK, bottom };
+}
+
+/** 12 линий: поле a = ряд × 12 + столбец, ряд 0 — нижний. */
+function lineCell(a: number): Cell {
+  const r = Math.floor(a / 12);
+  const top = F + (2 - r) * RH;
+  const x = colX(a % 12);
+  if (r === 2) return { x, y0: top + 6, dir: 1, len: RH - 12, bottom: false };
+  if (r === 0) return { x, y0: top + RH - 6, dir: -1, len: RH - 12, bottom: true };
+  return { x, y0: top + 6, dir: 1, len: RH - 12, cy: top + RH / 2, bottom: false };
+}
+
+const capOf = (c: Cell) => Math.max(1, Math.floor(c.len / (2 * R)));
+
+function stackY(c: Cell, k: number, n: number) {
+  const sp = n > capOf(c) ? (c.len - 2 * R) / (n - 1) : 2 * R;
+  if (c.cy != null) return c.cy + (k - (n - 1) / 2) * sp;
+  return c.y0 + c.dir * (R + k * sp);
+}
+
+/** Дорожка поля «12 линий» (для подсветки и нажатия). */
+function laneRect(a: number) {
+  const c = lineCell(a);
+  const top = F + (2 - Math.floor(a / 12)) * RH;
+  return `x="${c.x - PW / 2 + 5}" y="${top + 4}" width="${PW - 10}" height="${RH - 8}" rx="12"`;
+}
+
+/** Помпейская доска: шесть слов по шесть букв, по два слова в ряду (сверху вниз). */
+const POMPEII = ['ABEMUS', 'INCENA', 'PULLUM', 'PISCEM', 'PERNAM', 'PAONEM'];
 
 export type Skin = 'dark' | 'light';
 const SKIN_KEY = 'lavochka.nardy.skin';
@@ -48,6 +88,7 @@ function loadSkin(): Skin {
 interface Model {
   pts: number[];
   bar: [number, number];
+  hand?: [number, number];
   off: [number, number];
   /** Плакото: кто зажат на пункте или -1. */
   pin?: number[];
@@ -63,6 +104,9 @@ class NardyView implements GameView<State, Event> {
   private gCube!: SVGGElement;
   private gBanner!: SVGGElement;
   private tray!: DiceTray;
+  private trayEl!: HTMLElement;
+  /** Вид доски: пункты-копья (24), три ряда «12 линий» или они же с помпейской надписью. */
+  private kind: 'spears' | 'lines' | 'pompeii' = 'spears';
   private btns!: HTMLElement;
   private leftInfo!: HTMLElement;
   private state: State | null = null;
@@ -100,7 +144,8 @@ class NardyView implements GameView<State, Event> {
         ${ctx.demo ? '' : `<div class="hint small-hint">${touchScreen() ? 'Бросок — кнопкой или тапом по доске.' : 'Пробел — бросок.'} Нажмите на шашку, затем на подсвеченный пункт.</div>`}
       </div>`);
     ctx.controls.appendChild(ctl);
-    this.tray = new DiceTray(ctl.querySelector('.nd-tray') as HTMLElement);
+    this.trayEl = ctl.querySelector('.nd-tray') as HTMLElement;
+    this.tray = new DiceTray(this.trayEl);
     this.btns = ctl.querySelector('.nd-btns') as HTMLElement;
     this.leftInfo = ctl.querySelector('.nd-left') as HTMLElement;
     const skinBtn = ctl.querySelector('.nd-skin') as HTMLButtonElement;
@@ -197,6 +242,10 @@ class NardyView implements GameView<State, Event> {
       const cx = x0 + half / 2;
       s += `<g clip-path="url(#${clip})">`;
       s += `<image href="${tex}" x="${x0}" y="${F}" width="${half}" height="${fh}" preserveAspectRatio="none"/>`;
+      if (this.kind !== 'spears') {
+        s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/></g>`;
+        continue;
+      }
       // медальон в середине — между рядами пунктов, где шашки не стоят
       if (dark) s += `<g filter="url(#ndInlayShadow)">${star8(cx, H / 2, 88, 'url(#ndInlay)', '#6a3c18', inlayEdge)}</g>`;
       else s += `<g filter="url(#ndBurn)">${rosette(cx, H / 2, 92)}</g>`;
@@ -213,11 +262,13 @@ class NardyView implements GameView<State, Event> {
     // сгиб «книжки»: бортики и латунные петли
     s += `<rect x="${BAR_X - B / 2}" y="${F - 6}" width="${B}" height="${fh + 12}" fill="#2a1206" opacity=".35"/>`;
     s += `<rect x="${BAR_X - 1.5}" y="${F - 6}" width="3" height="${fh + 12}" fill="#0d0502" opacity=".8"/>`;
-    s += hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8);
+    // у 12 линий в середине рядов розетки — петли на границах рядов
+    s += this.kind === 'spears' ? hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8) : hinge(BAR_X, F + RH) + hinge(BAR_X, F + 2 * RH);
+    if (this.kind !== 'spears') s += this.linesSvg(dark, inlayEdge);
     // пункты-«копья»: инкрустация из клёна (тёмная доска) или выжженный контур с узором (светлая)
     let pts = '';
     let fil = '';
-    for (let a = 0; a < 24; a++) {
+    for (let a = 0; a < (this.kind === 'spears' ? 24 : 0); a++) {
       const { x, bottom } = pointGeo(a);
       const dir = bottom ? -1 : 1;
       const base = bottom ? H - F - 12 : F + 12;
@@ -243,16 +294,64 @@ class NardyView implements GameView<State, Event> {
     if (this.flipped) this.rotor.setAttribute('transform', `rotate(180 ${W / 2} ${H / 2})`);
   }
 
+  /** 12 линий: три ряда дорожек, между половинами — розетки; на помпейской доске в дорожках буквы. */
+  private linesSvg(dark: boolean, edge: string) {
+    let lanes = '';
+    let deco = '';
+    const ink = dark ? '#7a4a20' : BURN;
+    for (let a = 0; a < 36; a++) {
+      const r = Math.floor(a / 12);
+      const col = a % 12;
+      const odd = (col + r) % 2 === 1;
+      if (dark) lanes += `<rect class="nd-pt" data-a="${a}" ${laneRect(a)} fill="url(#ndInlay)" fill-opacity="${odd ? 0.55 : 0.9}" stroke="${edge}" stroke-width="1.4"/>`;
+      else lanes += `<rect class="nd-pt" data-a="${a}" ${laneRect(a)} fill="#fff6e0" fill-opacity="${odd ? 0.1 : 0.3}" stroke="${BURN}" stroke-width="2.2"/>`;
+      const x = lineCell(a).x;
+      const top = F + (2 - r) * RH;
+      const cy = top + RH / 2;
+      if (this.kind === 'pompeii') {
+        const ch = POMPEII[(2 - r) * 2 + (col >= 6 ? 1 : 0)][col % 6];
+        deco += dark
+          ? `<text x="${x}" y="${cy + 2}" class="nd-letter" fill="#140802" opacity=".7">${ch}</text><text x="${x}" y="${cy}" class="nd-letter" fill="#f0d7a4">${ch}</text>`
+          : `<text x="${x}" y="${cy}" class="nd-letter" fill="${BURN}">${ch}</text>`;
+      } else {
+        // круглое клеймо в середине дорожки и насечки у её концов
+        deco += `<circle cx="${x}" cy="${cy}" r="9" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="${x}" cy="${cy}" r="3" fill="${ink}"/>`;
+        deco += `<path d="M${x - 14},${top + 18}h28M${x - 14},${top + RH - 18}h28" stroke="${ink}" stroke-width="1.4"/>`;
+      }
+    }
+    // посередине каждого ряда — розетка, как на римских досках
+    let ros = '';
+    for (let r = 0; r < 3; r++) ros += rosette(BAR_X, F + r * RH + RH / 2, 24);
+    if (dark) ros = ros.replace(new RegExp(BURN, 'g'), '#e8c48a');
+    return dark
+      ? `<g filter="url(#ndInlayShadow)">${lanes}</g><g filter="url(#ndBurn)" opacity=".85">${deco}</g><g opacity=".75">${ros}</g>`
+      : `<g filter="url(#ndBurn)">${lanes}${deco}${ros}</g>`;
+  }
+
+  private cell(a: number): Cell {
+    return this.kind === 'spears' ? spearCell(a) : lineCell(a);
+  }
+
   private pathIdx(p: number, a: number) {
-    for (let i = 0; i < 24; i++) if (absOf(this.state!.cfg, p, i) === a) return i;
+    const cfg = this.state!.cfg;
+    for (let i = 0; i < boardSize(cfg); i++) if (absOf(cfg, p, i) === a) return i;
     return -9;
   }
 
-  /** Сторона лотка снятых шашек игрока p: у его дома. */
+  /** Сторона лотка снятых шашек игрока p: у его дома (в табуле, где дом общий, у чёрных — с другого края). */
   private trayOf(p: number) {
-    const a = absOf(this.state!.cfg, p, 21);
-    const { x, bottom } = pointGeo(a);
-    return { x: x < W / 2 ? F + T / 2 - 4 : W - F - T / 2 + 4, bottom };
+    const cfg = this.state!.cfg;
+    const c = this.cell(absOf(cfg, p, boardSize(cfg) - 3));
+    let left = c.x < W / 2;
+    if (sharedPath(cfg) && p === 1) left = !left;
+    return { x: left ? F + T / 2 - 4 : W - F - T / 2 + 4, bottom: c.bottom };
+  }
+
+  /** Желоб с шашками на руке (римские игры): на другом борту от снятых. */
+  private handOf(p: number) {
+    const cfg = this.state!.cfg;
+    const tr = this.trayOf(p);
+    return { x: W - tr.x, bottom: isLines(cfg) ? tr.bottom : this.cell(absOf(cfg, p, 2)).bottom };
   }
 
   /** Центр k-й снятой шашки в лотке (от торца лотка к середине доски). */
@@ -314,7 +413,7 @@ class NardyView implements GameView<State, Event> {
     let s = '';
     const movable = new Set(this.steps.map((st) => st.from));
     const me = this.actSeat;
-    for (let a = 0; a < 24; a++) {
+    for (let a = 0; a < m.pts.length; a++) {
       const v = m.pts[a];
       if (!v) continue;
       const p = v > 0 ? 0 : 1;
@@ -322,16 +421,17 @@ class NardyView implements GameView<State, Event> {
       const pinned = m.pin && m.pin[a] >= 0 ? m.pin[a] : -1;
       const shift = pinned >= 0 ? 1 : 0;
       const n = Math.abs(v);
-      const { x, bottom } = pointGeo(a);
+      const c = this.cell(a);
+      const x = c.x;
       const idx = me === p ? this.pathIdx(p, a) : -9;
-      if (pinned >= 0) s += this.checkerSvg(pinned, x, stackY(bottom, 0, n + 1), ' class-add="pinned"');
+      if (pinned >= 0) s += this.checkerSvg(pinned, x, stackY(c, 0, n + 1), ' class-add="pinned"');
       for (let k = 0; k < n; k++) {
-        const y = stackY(bottom, k + shift, n + shift);
+        const y = stackY(c, k + shift, n + shift);
         const top = k === n - 1;
         const cls = top && movable.has(idx) ? ` data-from="${idx}" class-add="${this.selected === idx ? 'selected' : 'movable'}"` : '';
         s += this.checkerSvg(p, x, y, cls);
       }
-      if (n > 5) s += this.label(x, stackY(bottom, n - 1, n), n, p);
+      if (n > capOf(c)) s += this.label(x, stackY(c, n - 1, n), n, p);
     }
     for (const p of [0, 1]) {
       for (let k = 0; k < m.bar[p]; k++) {
@@ -343,6 +443,21 @@ class NardyView implements GameView<State, Event> {
       if (m.bar[p] > 1) {
         const { x, y } = this.barPos(p, Math.min(m.bar[p] - 1, 3));
         s += this.label(x, y, m.bar[p], p);
+      }
+      // римские игры: шашки на руке — на ребре в желобе; верхнюю можно взять, если на баре пусто
+      const hand = m.hand?.[p] ?? 0;
+      if (hand) {
+        const hd = this.handOf(p);
+        let stack = '';
+        for (let k = 0; k < hand; k++) stack += this.edgeSvg(p, hd.x, this.offY(hd, k));
+        s += `<g filter="url(#ndShadow)">${stack}</g>`;
+        const ly = this.offY(hd, hand) + (hd.bottom ? -6 : 6);
+        s += `<g class="nd-offn" transform="translate(${hd.x},${ly}) rotate(${this.flipped ? 180 : 0})"><rect x="-17" y="-12" width="34" height="24" rx="12"/><text y="1">${hand}</text></g>`;
+        if (me === p && movable.has(BAR) && !m.bar[p]) {
+          const y0 = Math.min(this.offY(hd, 0), this.offY(hd, hand - 1)) - 14;
+          const y1 = Math.max(this.offY(hd, 0), this.offY(hd, hand - 1)) + 14;
+          s += `<g class="nd-ch nd-hand" data-from="${BAR}" class-add="${this.selected === BAR ? 'selected' : 'movable'}"><rect class="nd-ring" x="${hd.x - 31}" y="${y0}" width="62" height="${y1 - y0}" rx="14" fill="#fff" fill-opacity="0"/></g>`;
+        }
       }
       // снятые шашки — стопкой на ребре в лотке, у открытого конца стопки — сколько снято
       const tr = this.trayOf(p);
@@ -391,12 +506,15 @@ class NardyView implements GameView<State, Event> {
           continue;
         }
         const a = absOf(st.cfg, p, to);
-        const { x, bottom } = pointGeo(a);
-        // сам пункт-«копьё» светится под шашками
-        const base = bottom ? H - F - 12 : F + 12;
-        hi += `<path class="${cls} nd-pt-hi"${attrs} d="${spearPath(x, base, PH - 12, PW - 22, bottom ? -1 : 1)}"/>`;
+        const c = this.cell(a);
+        const x = c.x;
+        // сам пункт-«копьё» (дорожка 12 линий) светится под шашками
+        if (this.kind === 'spears') {
+          const base = c.bottom ? H - F - 12 : F + 12;
+          hi += `<path class="${cls} nd-pt-hi"${attrs} d="${spearPath(x, base, PH - 12, PW - 22, c.bottom ? -1 : 1)}"/>`;
+        } else hi += `<rect class="${cls} nd-pt-hi"${attrs} ${laneRect(a)}/>`;
         const n = Math.abs(this.model.pts[a]) + (this.model.pts[a] * (p === 0 ? 1 : -1) < 0 ? 0 : 1);
-        const y = stackY(bottom, Math.min(n - 1, 4), Math.max(n, 1));
+        const y = stackY(c, Math.min(n - 1, capOf(c) - 1), Math.max(n, 1));
         s += `<g class="${cls}"${attrs}><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${die}</text></g>`;
       }
     }
@@ -421,7 +539,7 @@ class NardyView implements GameView<State, Event> {
   // ---------------------------------------------------------------- состояние
 
   private syncModel(s: State) {
-    this.model = { pts: s.pts.slice(), bar: [s.bar[0], s.bar[1]], off: [s.off[0], s.off[1]], pin: s.pin ? s.pin.slice() : undefined };
+    this.model = { pts: s.pts.slice(), bar: [s.bar[0], s.bar[1]], hand: s.hand ? [s.hand[0], s.hand[1]] : undefined, off: [s.off[0], s.off[1]], pin: s.pin ? s.pin.slice() : undefined };
   }
 
   private bottomSeat() {
@@ -432,8 +550,13 @@ class NardyView implements GameView<State, Event> {
 
   setView(s: State) {
     this.state = s;
-    // смотрим на доску со стороны своих шашек: дом — внизу справа (у чёрных доска повёрнута)
-    const flip = this.bottomSeat() === 1;
+    const kind = s.cfg.mode === 'pompeii' ? 'pompeii' : isLines(s.cfg) ? 'lines' : 'spears';
+    if (kind !== this.kind) {
+      this.kind = kind;
+      this.build();
+    }
+    // смотрим на доску со стороны своих шашек: дом — внизу справа (у чёрных доска повёрнута); в табуле путь общий — не вертим
+    const flip = !sharedPath(s.cfg) && this.bottomSeat() === 1;
     if (flip !== this.flipped) {
       this.flipped = flip;
       this.rotor.setAttribute('transform', flip ? `rotate(180 ${W / 2} ${H / 2})` : '');
@@ -444,9 +567,18 @@ class NardyView implements GameView<State, Event> {
     this.showDice(s);
   }
 
+  /** Лоток на n костей (в римских играх — три; розыгрыш первого хода — всегда две). */
+  private ensureTray(n: number) {
+    if (this.tray.dice.length === n) return;
+    this.trayEl.innerHTML = '';
+    this.tray = new DiceTray(this.trayEl, n);
+  }
+
   private showDice(s: State) {
-    if (s.dice[0]) this.tray.show(s.dice, s.phase === 'move' ? this.usedFlags(s) : [true, true]);
-    else this.tray.show(null, [true, true]);
+    if (s.dice[0]) {
+      this.ensureTray(s.dice.length);
+      this.tray.show(s.dice, s.phase === 'move' ? this.usedFlags(s) : s.dice.map(() => true));
+    } else this.tray.show(null, [true, true, true]);
     const left = s.phase === 'move' && s.left.length ? `Осталось: <b>${s.left.join(' · ')}</b>` : '';
     const q = s.queue.length ? ` · дальше ${s.queue.map((v) => `${v}:${v}`).join(', ')}` : '';
     const sc = s.cfg.target > 1 ? `<div>Матч до ${s.cfg.target}: <b>${s.score[0]}:${s.score[1]}</b>${s.crawford ? ' · партия Кроуфорда' : ''}</div>` : '';
@@ -454,8 +586,14 @@ class NardyView implements GameView<State, Event> {
   }
 
   private usedFlags(s: State): boolean[] {
-    if (s.dice[0] === s.dice[1]) return [s.left.length < 2, s.left.length < 1];
-    return [!s.left.includes(s.dice[0]), !s.left.includes(s.dice[1]) || (s.dice[0] === s.dice[1])];
+    if (s.dice.length === 2 && s.dice[0] === s.dice[1]) return [s.left.length < 2, s.left.length < 1];
+    const left = s.left.slice();
+    return s.dice.map((v) => {
+      const i = left.indexOf(v);
+      if (i < 0) return true;
+      left.splice(i, 1);
+      return false;
+    });
   }
 
   async play(events: Event[], s: State) {
@@ -466,11 +604,13 @@ class NardyView implements GameView<State, Event> {
         case 'opening': {
           const last = ev.rolls[ev.rolls.length - 1];
           this.gBanner.innerHTML = '';
+          this.ensureTray(2);
           await this.tray.roll(last, speed);
           await this.banner(`${ev.first === 0 ? 'Белые' : 'Чёрные'} начинают`, 900 / speed);
           break;
         }
         case 'roll':
+          this.ensureTray(ev.dice.length);
           await this.tray.roll(ev.dice, speed);
           if (ev.noMoves) {
             Sound.nomove();
@@ -514,28 +654,33 @@ class NardyView implements GameView<State, Event> {
     await sleep(ms);
   }
 
-  /** Координаты шашки, которую снимают / ставят на абсолютный пункт a (-1 — бар, 24 — снята). */
-  private spot(p: number, a: number, leaving: boolean) {
+  /** Координаты шашки, которую снимают / ставят на абсолютный пункт a (-1 — бар или рука, OFF — снята). */
+  private spot(p: number, a: number, leaving: boolean, fromHand = false) {
     const m = this.model;
+    if (a === -1 && fromHand) {
+      const hd = this.handOf(p);
+      return { x: hd.x, y: this.offY(hd, Math.max(0, (m.hand?.[p] ?? 1) - 1)) };
+    }
     if (a === -1) return this.barPos(p, Math.max(0, Math.min(m.bar[p] - (leaving ? 1 : 0), 3)));
-    if (a === 24) {
+    if (a === OFF) {
       const tr = this.trayOf(p);
       return { x: tr.x, y: this.offY(tr, m.off[p]) };
     }
-    const { x, bottom } = pointGeo(a);
+    const c = this.cell(a);
     const n = Math.abs(m.pts[a]) + (leaving ? 0 : 1);
-    return { x, y: stackY(bottom, n - 1, n) };
+    return { x: c.x, y: stackY(c, n - 1, n) };
   }
 
   private async animateMove(ev: Extract<Event, { type: 'move' }>, speed: number) {
     const p = ev.seat;
     const m = this.model;
     const sg = p === 0 ? 1 : -1;
-    const a = this.spot(p, ev.fromAbs, true);
-    if (ev.fromAbs === -1) m.bar[p]--;
+    const a = this.spot(p, ev.fromAbs, true, ev.fromHand);
+    if (ev.fromHand && m.hand) m.hand[p]--;
+    else if (ev.fromAbs === -1) m.bar[p]--;
     else m.pts[ev.fromAbs] -= sg;
     let victim: { x: number; y: number } | null = null;
-    if (ev.hit && ev.toAbs >= 0 && ev.toAbs < 24) {
+    if (ev.hit && ev.toAbs >= 0 && ev.toAbs !== OFF) {
       victim = this.spot(1 - p, ev.toAbs, true);
       m.pts[ev.toAbs] = 0;
     }
@@ -544,7 +689,7 @@ class NardyView implements GameView<State, Event> {
     const ghost = this.ghost(p, a.x, a.y);
     await this.tween(ghost, a, b, 320 / speed);
     ghost.remove();
-    if (ev.toAbs === 24) m.off[p]++;
+    if (ev.toAbs === OFF) m.off[p]++;
     else m.pts[ev.toAbs] += sg;
     Sound.place();
     if (victim) {
@@ -681,7 +826,8 @@ class NardyView implements GameView<State, Event> {
 
   playerStats(s: State, seat: number) {
     const sc = s.cfg.target > 1 ? `<span title="Очки в матче">★ ${s.score[seat]}</span>` : '';
-    return `${sc}<span title="Осталось пройти">⟶ ${pipCount(s, seat)}</span><span title="Снято">⬆ ${s.off[seat]}/${CHECKERS}</span>`;
+    const hand = s.hand?.[seat] ? `<span title="На руке — ещё не вошли">✋ ${s.hand[seat]}</span>` : '';
+    return `${sc}<span title="Осталось пройти">⟶ ${pipCount(s, seat)}</span>${hand}<span title="Снято">⬆ ${s.off[seat]}/${checkersOf(s.cfg)}</span>`;
   }
 
   destroy() {

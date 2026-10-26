@@ -1,6 +1,6 @@
 /* Нарды — боты: перебор всех вариантов хода целиком и оценка позиции. */
 import type { Rng } from '../../core/types';
-import { BAR, boardKey, finals, isLong, isShortGeo, legalSteps, own, pipCount, simStep, type Action, type State, type Step } from './engine';
+import { absOf, BAR, boardKey, boardSize, checkersOf, diceCount, finals, homeStart, idxTable, isLong, isRoman, isShortGeo, legalSteps, own, pipCount, simStep, waiting, type Action, type State, type Step } from './engine';
 
 /** Сколько из 36 бросков попадают на расстояние d (короткие нарды, прямые и комбинированные удары). */
 const SHOTS = [0, 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1];
@@ -19,19 +19,36 @@ const WEIGHTS: W[] = [
   { prime: 0.9, flex: 0.45, stack: 0.5, blot: 14, home: 3, bar: 11 },
 ];
 
-/** Позиция шашки соперника в индексах пути игрока p (короткие: навстречу). */
-const mirror = (j: number) => 23 - j;
+/** Вероятность попасть ровно на расстояние d одной костью или суммой нескольких (для трёх костей, без удвоения дублей). */
+let SHOTS3: number[] | null = null;
+function shots3(): number[] {
+  if (SHOTS3) return SHOTS3;
+  const r = new Array(19).fill(0);
+  for (let a = 1; a <= 6; a++)
+    for (let b = 1; b <= 6; b++)
+      for (let c = 1; c <= 6; c++) for (const d of new Set([a, b, c, a + b, a + c, b + c, a + b + c])) r[d]++;
+  return (SHOTS3 = r.map((x) => x / 216));
+}
+const shotP = (s: State, d: number) => (diceCount(s.cfg) > 2 ? (shots3()[d] ?? 0) : (SHOTS[d] ?? 0) / 36);
 
+/** Индексы пути игрока o для шашек игрока p (и -1 за каждую шашку, ждущую входа). */
+function posIn(s: State, p: number, o: number): number[] {
+  const t = idxTable(s.cfg)[o];
+  const out: number[] = [];
+  if (waiting(s, p)) out.push(-1);
+  for (let i = 0; i < boardSize(s.cfg); i++) if (own(s, p, i)) out.push(t[absOf(s.cfg, p, i)]);
+  return out;
+}
+
+/** Может ли ещё кто-то кого-то побить: какая-то шашка соперника позади моей на его пути (или наоборот). */
 function contact(s: State, p: number): boolean {
   if (isLong(s.cfg)) return true;
   const o = 1 - p;
-  let myBack = 24;
-  if (s.bar[p]) myBack = -1;
-  else for (let i = 0; i < 24; i++) if (own(s, p, i)) { myBack = i; break; }
-  let foeBack = -1;
-  if (s.bar[o]) foeBack = 24;
-  else for (let j = 0; j < 24; j++) if (own(s, o, j)) { foeBack = mirror(j); break; }
-  return myBack < foeBack;
+  const reach = (a: number, b: number) => {
+    const back = Math.min(...posIn(s, a, a));
+    return posIn(s, b, a).some((j) => j > back);
+  };
+  return reach(o, p) || reach(p, o);
 }
 
 /** Оценка одной стороны (без пипов). */
@@ -64,13 +81,15 @@ function side(s: State, p: number, w: W): number {
     v += pts * w.flex;
     return v;
   }
-  // короткие
+  // короткие и римские
+  const size = boardSize(s.cfg);
+  const hs = homeStart(s.cfg);
   let run = 0;
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < size; i++) {
     const n = own(s, p, i);
     if (n >= 2) {
       run++;
-      if (i >= 18) v += w.home;
+      if (i >= hs) v += w.home;
       if (i <= 5) v += 1; // якорь в доме соперника
     } else {
       if (run > 1) v += run * run * w.prime;
@@ -80,22 +99,24 @@ function side(s: State, p: number, w: W): number {
   if (run > 1) v += run * run * w.prime;
   v -= s.bar[p] * w.bar;
   if (s.bar[o]) {
+    // сколько входных пунктов соперника я закрыл
     let closed = 0;
-    for (let i = 18; i < 24; i++) if (own(s, p, i) >= 2) closed++;
+    for (let j = 0; j < 6; j++) if (s.pts[absOf(s.cfg, o, j)] * (p === 0 ? 1 : -1) >= 2) closed++;
     v += s.bar[o] * closed * 1.5;
   }
   // одиночные шашки под боем
   if (contact(s, p)) {
-    const foes: number[] = [];
-    if (s.bar[o]) foes.push(24);
-    for (let j = 0; j < 24; j++) if (own(s, o, j)) foes.push(mirror(j));
-    for (let i = 0; i < 24; i++) {
+    const foes = posIn(s, o, o);
+    const t = idxTable(s.cfg)[o];
+    const scale = 24 / size;
+    for (let i = 0; i < size; i++) {
       if (own(s, p, i) !== 1) continue;
+      const at = t[absOf(s.cfg, p, i)];
       let miss = 1;
       const ds = new Set<number>();
-      for (const k of foes) if (k > i && k - i <= 24) ds.add(k - i);
-      for (const d of ds) miss *= 1 - SHOTS[d] / 36;
-      v -= (1 - miss) * (w.blot + i * 0.35);
+      for (const k of foes) if (at > k) ds.add(at - k);
+      for (const d of ds) miss *= 1 - shotP(s, d);
+      v -= (1 - miss) * (w.blot + i * 0.35 * scale);
     }
   }
   return v;
@@ -111,7 +132,7 @@ export function evaluate(s: State, p: number, level: number): number {
   const w = WEIGHTS[Math.min(level, 2)];
   const o = 1 - p;
   const pips = pipCount(s, o) - pipCount(s, p);
-  if (s.off[p] === 15) return 1000;
+  if (s.off[p] === checkersOf(s.cfg)) return 1000;
   if (!contact(s, p)) return pips * 1.2 + (s.off[p] - s.off[o]) * 2;
   return pips + side(s, p, w) - side(s, o, w);
 }
@@ -163,7 +184,7 @@ function planMove(s: State, level: number, rng: Rng): Step | null {
     const scored = fins.map((f) => ({ f, v: evaluate(f.state, p, level) + rng.next() * noise })).sort((a, b) => b.v - a.v);
     pick = scored[0].f;
     // сложный: для коротких нард с контактом — проверка ответа соперника по лучшим кандидатам
-    if (level >= 2 && !isLong(s.cfg) && scored.length > 1 && contact(s, p)) {
+    if (level >= 2 && !isLong(s.cfg) && !isRoman(s.cfg) && scored.length > 1 && contact(s, p)) {
       let best = -Infinity;
       for (const c of scored.slice(0, 3)) {
         const v = lookahead(c.f.state, p);

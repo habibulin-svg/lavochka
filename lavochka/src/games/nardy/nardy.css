@@ -36,3 +36,9 @@
 .nd-board .nd-preview { pointer-events: none; }
 .nd-board .nd-pt-hi.nd-preview { fill: rgba(255, 220, 140, 0.26); stroke-dasharray: 10 6; animation: none; }
 .nd-board .nd-target.nd-preview .t-bg { fill: rgba(255, 220, 140, 0.3); animation: none; }
+
+/* 12 линий: буквы помпейской доски; «рука» — желоб с невошедшими шашками */
+.nd-board .nd-letter { font: 700 46px 'PT Serif', Georgia, serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.nd-board .nd-hand { cursor: pointer; }
+/* три кости (римские игры) — помельче, чтобы влезали и в узкую панель показа правил */
+.nd-tray:has(.die-wrap:nth-child(3)) .die-wrap { zoom: 0.8; }
