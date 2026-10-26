@@ -1,6 +1,7 @@
 /* Санторин — отрисовка в изометрии: остров с каменной плитой (public/santorini/island.webp, картинка 1024×768),
  * сетка 5×5 — по углам плиты на снимке; постройки и строители — спрайты «три четверти» (l1, l2, l3, l3d, w0, w1).
- * Рисуем от дальних клеток к ближним. Ход: коснуться своего строителя, потом подсвеченной клетки; потом — где строить. */
+ * Рисуем от дальних клеток к ближним. Ход: коснуться своего строителя, потом подсвеченной клетки; потом — где строить.
+ * Цели хода — отдельным верхним слоем (видны и за башнями), касание прилипает к ближайшей цели; доску можно повернуть. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -29,8 +30,15 @@ function at(u: number, v: number): [number, number] {
   const y = T[1] * (1 - u) * (1 - v) + R[1] * u * (1 - v) + L[1] * (1 - u) * v + B[1] * u * v;
   return [x, y];
 }
-/** Клетка c (строка r сверху = 5-я горизонталь): строки идут от T к L, столбцы — от T к R. */
-const cellUV = (c: number): [number, number] => [(c % N) / N, Math.floor(c / N) / N];
+/** Поворот доски на виде (четверти круга по часовой); логика клеток не меняется. */
+let ROT = 0;
+/** Клетка c (строка r сверху = 5-я горизонталь): строки идут от T к L, столбцы — от T к R; с учётом поворота вида. */
+function cellUV(c: number): [number, number] {
+  let r = Math.floor(c / N);
+  let col = c % N;
+  for (let k = 0; k < ROT; k++) [r, col] = [col, N - 1 - r];
+  return [col / N, r / N];
+}
 function center(c: number): [number, number] {
   const [u, v] = cellUV(c);
   return at(u + 0.5 / N, v + 0.5 / N);
@@ -73,11 +81,23 @@ class SantoriniView implements GameView<State, Event> {
   private s: State | null = null;
   private act: number | null = null;
   private sel: number | null = null; // выбранный строитель (номер)
+  private rot = 0; // поворот вида
+  /** Куда прилипает касание: точка на виде → клетка. */
+  private spots: { c: number; x: number; y: number }[] = [];
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
     const wrap = h('<div class="sn-wrap"><svg class="sn-svg" preserveAspectRatio="xMidYMid meet"></svg></div>');
     root.appendChild(wrap);
+    if (!ctx.demo) {
+      const turn = h('<button class="sn-rot" title="Повернуть доску" aria-label="Повернуть доску">⟳</button>');
+      turn.addEventListener('click', () => {
+        this.rot = (this.rot + 1) % 4;
+        Sound.ui();
+        this.draw();
+      });
+      wrap.appendChild(turn);
+    }
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
     this.fit();
     new ResizeObserver(() => this.fit()).observe(wrap);
@@ -119,6 +139,7 @@ class SantoriniView implements GameView<State, Event> {
     const s = this.s;
     if (!s) return;
     const tg = this.targets();
+    ROT = this.rot;
     let o = `<image href="${BASE}island.webp" x="0" y="0" width="${IMG_W}" height="${IMG_H}" preserveAspectRatio="none"/>`;
     // сетка: швы плиты
     let grid = '';
@@ -133,6 +154,8 @@ class SantoriniView implements GameView<State, Event> {
     // последний ход — на полу
     if (s.last?.from != null) o += `<polygon points="${diamond(s.last.from, 0, 0.86)}" class="sn-was"/>`;
     // от дальних к ближним: по сумме строки и столбца
+    let top = ''; // верхний слой: цели хода и свои строители — видны и за башнями
+    this.spots = [];
     const order = Array.from({ length: N * N }, (_, c) => c).sort((a, b) => center(a)[1] - center(b)[1] || center(a)[0] - center(b)[0]);
     for (const c of order) {
       const [x, y] = center(c);
@@ -141,16 +164,27 @@ class SantoriniView implements GameView<State, Event> {
       o += `<polygon points="${diamond(c, 0)}" class="sn-hit"/>`;
       o += building(s.h[c], s.dome[c], x, y);
       if (s.last?.built === c) o += `<polygon points="${diamond(c, s.dome[c] ? ELEV[3] * CELL_W : lift, 0.7)}" class="sn-new"/>`;
-      if (tg.has(c)) o += `<polygon points="${diamond(c, s.dome[c] ? 0 : lift, 0.82)}" class="sn-tgt${s.phase === 'build' ? ' build' : ''}"/>`;
+      if (tg.has(c)) {
+        const up = s.dome[c] ? 0 : lift;
+        top += `<polygon points="${diamond(c, up, 0.82)}" class="sn-tgt${s.phase === 'build' ? ' build' : ''}"/>`;
+        this.spots.push({ c, x, y: y - up });
+      }
       for (const seat of [0, 1]) {
         const w = s.workers[seat].indexOf(c);
         if (w < 0) continue;
         const mine = this.act === seat && s.phase === 'move';
         const cls = (mine ? ' can' : '') + (mine && this.sel === w ? ' sel' : '') + (s.phase === 'build' && seat === s.turn && s.active === w ? ' sel' : '');
         o += worker(seat, x, y, lift, cls);
+        if (mine && stepsFrom(s, c).length) {
+          // свой строитель над крышами — кольцо поверх всего, касание к нему тоже прилипает
+          const r = CELL_W * 0.24;
+          top += `<ellipse cx="${x.toFixed(1)}" cy="${(y - lift).toFixed(1)}" rx="${r.toFixed(1)}" ry="${(r * 0.5).toFixed(1)}" class="sn-ring${this.sel === w ? ' sel' : ''}"/>`;
+          if (!tg.has(c)) this.spots.push({ c, x, y: y - lift - CELL_W * 0.35 });
+        }
       }
       o += '</g>';
     }
+    o += `<g class="sn-top">${top}</g>`;
     this.svg.innerHTML = o;
     this.text();
   }
@@ -172,9 +206,8 @@ class SantoriniView implements GameView<State, Event> {
   private onClick(e: MouseEvent) {
     const s = this.s;
     if (!s || this.act == null) return;
-    const el = (e.target as Element).closest('[data-c]');
-    if (!el) return;
-    const c = Number(el.getAttribute('data-c'));
+    const c = this.pick(e);
+    if (c == null) return;
     const a = this.targets().get(c);
     if (a) return this.send(a);
     if (s.phase === 'move') {
@@ -187,6 +220,24 @@ class SantoriniView implements GameView<State, Event> {
       }
     }
     Sound.nomove();
+  }
+
+  /** Клетка под касанием: ближайшая цель или свой строитель (палец редко попадает точно), иначе — пол под пальцем. */
+  private pick(e: MouseEvent): number | null {
+    const m = this.svg.getScreenCTM();
+    if (m) {
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      let best: number | null = null;
+      let bd = (CELL_W * 0.62) ** 2;
+      for (const sp of this.spots) {
+        // ромб клетки вдвое ниже, чем шире, — расстояние по вертикали считаем вдвое длиннее
+        const d = (sp.x - p.x) ** 2 + ((sp.y - p.y) * 1.6) ** 2;
+        if (d < bd) [bd, best] = [d, sp.c];
+      }
+      if (best != null) return best;
+    }
+    const el = (e.target as Element).closest('[data-c]');
+    return el ? Number(el.getAttribute('data-c')) : null;
   }
 
   private send(a: Action) {
@@ -218,6 +269,7 @@ class SantoriniView implements GameView<State, Event> {
 
   /** Строитель переезжает: новая позиция нарисована, сдвигаем его от старой клетки (с подскоком). */
   private async slide(from: number, to: number, prev: State) {
+    ROT = this.rot;
     const g = this.svg.querySelector(`[data-c="${to}"] .sn-w`) as SVGGElement | null;
     if (!g) return;
     const [x0, y0] = center(from);

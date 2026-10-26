@@ -22,3 +22,11 @@
 .sn-w.sel .sn-ws { fill: rgba(255, 210, 74, 0.95); stroke: #fff3c0; stroke-width: 1; }
 .sn-info { font-size: 14px; }
 .sn-sh { fill: rgba(40, 30, 20, 0.28); filter: blur(2.5px); pointer-events: none; }
+.sn-top { pointer-events: none; }
+.sn-top .sn-tgt { stroke-width: 2.2; }
+.sn-ring { fill: none; stroke: #ffd24a; stroke-width: 1.8; stroke-dasharray: 5 3; }
+.sn-ring.sel { stroke: #fff3c0; stroke-dasharray: none; stroke-width: 2.4; }
+.sn-rot { position: absolute; right: 10px; bottom: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: rgba(244, 239, 228, 0.88); color: #1b1a16; font-size: 24px; line-height: 44px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+.sn-rot:active { transform: scale(0.94); }
