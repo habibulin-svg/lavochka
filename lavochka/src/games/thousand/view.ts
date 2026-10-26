@@ -78,6 +78,8 @@ class ThousandView implements GameView<View, Event> {
     const ord = this.order(v);
     const k = ord.indexOf(seat);
     if (k === 0) return this.g.hand;
+    // вдвоём соперник — напротив
+    if (v.seats.length === 2) return this.g.port ? { x: 270, y: 72 } : { x: 500, y: 92 };
     if (this.g.port) {
       if (v.seats.length === 3) return k === 1 ? { x: 120, y: 92 } : { x: 420, y: 92 };
       return k === 1 ? { x: 82, y: 160 } : k === 2 ? { x: 270, y: 72 } : { x: 458, y: 160 };
@@ -121,7 +123,13 @@ class ThousandView implements GameView<View, Event> {
     const CENTER = g.c;
     const items: StageItem[] = [];
     // прикуп
-    if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 70 + i * 70, y: g.prik, r: (i - 1) * 6, s: g.S, z: 5 + i });
+    if (v.seats.length === 2 && (v.phase === 'bid' || v.phase === 'pile'))
+      // вдвоём — две закрытые стопки по две карты
+      for (let i = 0; i < 4; i++) {
+        const pile = i >> 1;
+        items.push({ key: `p:${i}`, card: null, x: CENTER.x + (pile ? 80 : -80) + (i & 1) * 14, y: g.prik + (i & 1) * 6, r: (pile ? 4 : -4) + (i & 1) * 5, s: g.S, z: 5 + i });
+      }
+    else if (v.phase === 'bid' || v.phase === 'dark') for (let i = 0; i < 3; i++) items.push({ key: `p:${i}`, card: null, x: CENTER.x - 70 + i * 70, y: g.prik, r: (i - 1) * 6, s: g.S, z: 5 + i });
     // взятка
     const t = v.trick;
     if (t)
@@ -300,6 +308,17 @@ class ThousandView implements GameView<View, Event> {
       this.button('Пас', false, () => this.send({ type: 'pass' }));
       return;
     }
+    if (v.phase === 'pile') {
+      this.btns.appendChild(h(`<div class="th-ask">Какую стопку прикупа открыть?</div>`));
+      this.button('Левую', true, () => this.send({ type: 'pile', i: 0 }));
+      this.button('Правую', true, () => this.send({ type: 'pile', i: 1 }));
+      return;
+    }
+    if (v.phase === 'give' && v.seats.length === 2) {
+      this.btns.appendChild(h(`<div class="th-ask">${this.selected ? 'Снести эту карту?' : `Выберите карту в снос (${2 - v.given.length} из 2) — её очки ваши`}</div>`));
+      if (this.selected) this.button('В снос', true, () => this.send({ type: 'give', to: -1, card: this.selected! }));
+      return;
+    }
     if (v.phase === 'give') {
       const left = v.players.filter((x) => x !== seat && !v.given.includes(x));
       this.btns.appendChild(h(`<div class="th-ask">${this.selected ? 'Кому отдать карту?' : 'Выберите карту, которую отдадите'}</div>`));
@@ -439,6 +458,21 @@ class ThousandView implements GameView<View, Event> {
         this.v = next;
         this.drawPlates(next);
         await sleep(380 / speed);
+      } else if (ev.type === 'give' && ev.to === -1) {
+        // вдвоём: карта уходит в закрытый снос
+        const cur = this.v!;
+        const c = ev.card;
+        const next: View = {
+          ...cur,
+          given: [...cur.given, -1],
+          hands: cur.hands.map((hh, i) => (i === ev.seat && c ? hh.filter((x) => !sameCard(x, c)) : hh)),
+          counts: cur.counts.map((n, i) => (i === ev.seat ? n - 1 : n)),
+        };
+        this.v = next;
+        this.cs.render(this.layout(next), speed);
+        this.drawPlates(next);
+        Sound.card();
+        await sleep(320 / speed);
       } else if (ev.type === 'give') {
         // отданная карта летит к получателю
         const cur = this.v!;
@@ -521,7 +555,10 @@ class ThousandView implements GameView<View, Event> {
         return mine ? 'Темнить или смотреть карты?' : `${name(who)} решает, темнить ли…`;
       case 'bid':
         return mine ? 'Торгуйтесь: больше или пас?' : `Торгуется ${name(who)}…`;
+      case 'pile':
+        return mine ? 'Откройте одну из стопок прикупа' : `${name(who)} выбирает стопку прикупа…`;
       case 'give':
+        if (v.seats.length === 2) return mine ? 'Снесите две карты' : `${name(who)} сносит две карты…`;
         return mine ? 'Отдайте по карте соперникам' : `${name(who)} отдаёт карты…`;
       case 'raise':
         return mine ? (canRospis(v) ? 'Поднять заказ, играть или расписаться?' : 'Поднять заказ?') : `${name(who)} думает над заказом…`;

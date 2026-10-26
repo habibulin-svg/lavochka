@@ -334,3 +334,32 @@ describe('марьяжи по договорённости и золотой к�
     expect(won.sc.deltas.slice(0, 3)).toEqual([240, 40, 20]);
   });
 });
+
+describe('вдвоём', () => {
+  it('по 10 карт, прикуп — две стопки по две; заказчик берёт одну, сносит две — их очки его; соперник снос не видит', () => {
+    let s = deal(newState(cfgFrom({ dark: false, golden: false } as Options), [0, 1]), rng()).state;
+    expect(s.hands[0]).toHaveLength(10);
+    expect(s.hands[1]).toHaveLength(10);
+    expect(s.prikup).toHaveLength(4);
+    const piles = [s.prikup.slice(0, 2), s.prikup.slice(2)];
+    // торговля: пас — играет «сидящий на ста»
+    const bidder = s.first;
+    s = apply(s, s.turn, { type: 'pass' }, rng())!.state;
+    expect(s.phase).toBe('pile');
+    expect(s.turn).toBe(bidder);
+    // стопки закрыты: сопернику прикуп не виден
+    expect(makeView(s, [1 - bidder]).prikup).toHaveLength(0);
+    s = apply(s, bidder, { type: 'pile', i: 1 }, rng())!.state;
+    expect(s.hands[bidder]).toHaveLength(12);
+    expect(s.prikup).toEqual(piles[1]);
+    const [a, b] = s.hands[bidder];
+    expect(apply(s, bidder, { type: 'give', to: 1 - bidder, card: a } as Action, rng())).toBeNull(); // вдвоём не отдают, а сносят
+    s = apply(s, bidder, { type: 'give', to: -1, card: a }, rng())!.state;
+    s = apply(s, bidder, { type: 'give', to: -1, card: b }, rng())!.state;
+    expect(s.phase).toBe('raise');
+    expect(s.hands[bidder]).toHaveLength(10);
+    const pts = (c: Card) => ({ 14: 11, 10: 10, 13: 4, 12: 3, 11: 2, 9: 0 } as Record<number, number>)[c.r];
+    expect(s.roundPts[bidder]).toBe(pts(a) + pts(b));
+    expect(makeView(s, [1 - bidder]).snos?.every((c) => c.r === 0)).toBe(true);
+  });
+});

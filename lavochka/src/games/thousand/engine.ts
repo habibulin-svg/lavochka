@@ -95,7 +95,8 @@ export const PENALTY = 120;
 /** Тёмная играется на 120. */
 export const DARK_BID = 120;
 
-export type Phase = 'dark' | 'bid' | 'give' | 'raise' | 'play' | 'over';
+/** pile — вдвоём: заказчик выбирает одну из двух стопок прикупа. */
+export type Phase = 'dark' | 'bid' | 'pile' | 'give' | 'raise' | 'play' | 'over';
 
 export interface Trick {
   leader: number;
@@ -154,7 +155,12 @@ export interface State {
   redeals: number;
   round: number;
   winner: number | null;
+  /** Вдвоём: снос заказчика (две закрытые карты — его очки). */
+  snos?: Card[];
 }
+
+/** Тысяча вдвоём: по 10 карт, прикуп — две закрытые стопки по две; заказчик берёт одну и сносит две карты. */
+export const isDuo = (s: Pick<State, 'seats'>) => s.seats.length === 2;
 
 export interface View extends State {
   counts: number[];
@@ -170,6 +176,7 @@ export type Action =
   | { type: 'give'; to: number; card: Card }
   | { type: 'raise'; value: number }
   | { type: 'rospis' }
+  | { type: 'pile'; i: 0 | 1 }
   | { type: 'play'; card: Card; marriage?: boolean };
 
 export type RedealReason = 'nines' | 'prikup9' | 'prikupLow';
@@ -250,7 +257,8 @@ export function marriageFor(s: Pick<State, 'cfg' | 'tricksPlayed' | 'trick' | 'h
 }
 
 /** Пересдачу по прикупу заказчик может потребовать, пока не отдал ни одной карты. */
-export function prikupRedeal(s: Pick<State, 'cfg' | 'prikup' | 'phase' | 'given' | 'golden'>): RedealReason | null {
+export function prikupRedeal(s: Pick<State, 'cfg' | 'prikup' | 'phase' | 'given' | 'golden'> & Partial<Pick<State, 'seats'>>): RedealReason | null {
+  if (s.seats && isDuo({ seats: s.seats })) return null;
   if (s.phase !== 'give' || s.given.length) return null;
   if (s.cfg.redealPrikup9 && nines(s.prikup) >= 2) return 'prikup9';
   if (s.cfg.redealPrikupMin > 0 && handPoints(s.prikup) < s.cfg.redealPrikupMin) return 'prikupLow';
@@ -337,8 +345,9 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
   for (let tries = 0; ; tries++) {
     const deck = shuffle(makeDeck24(), rng);
     hands = [[], [], [], []];
-    for (const p of players) hands[p] = deck.splice(0, 7);
-    prikup = deck.splice(0, 3);
+    // вдвоём — по 10, прикуп из четырёх карт (две стопки по две); втроём и вчетвером — по 7 и три в прикупе
+    for (const p of players) hands[p] = deck.splice(0, players.length === 2 ? 10 : 7);
+    prikup = deck.splice(0, players.length === 2 ? 4 : 3);
     const bad = s0.cfg.redeal9 && tries < 20 ? players.find((p) => nines(hands[p]) === 4) : undefined;
     if (bad == null) break;
     ev.push({ type: 'redeal', seat: bad, reason: 'nines', cards: hands[bad].filter((c) => c.r === 9) });
@@ -378,7 +387,8 @@ export function deal(s0: State, rng: Rng, again = false): { state: State; events
   // три пересдачи подряд — «плохая раздача»: сдающему минус 120
   for (let i = 0; i < fines; i++) fine(s, dealer, ev);
   // тёмная: только первая рука, не в минусе и пока никто не сидит на бочке
-  const darkOk = s.cfg.dark && !golden && s.scores[first] >= 0 && !(s.cfg.barrel && s.seats.some((x) => s.barrel[x] > 0));
+  s.snos = [];
+  const darkOk = s.cfg.dark && !golden && !isDuo(s) && s.scores[first] >= 0 && !(s.cfg.barrel && s.seats.some((x) => s.barrel[x] > 0));
   if (darkOk) {
     s.phase = 'dark';
     s.turn = first;
@@ -424,6 +434,13 @@ function nextBidder(s: State, seat: number): number {
 }
 
 function startPlay(s: State, ev: Event[]) {
+  // вдвоём заказчик сначала выбирает стопку
+  if (isDuo(s)) {
+    s.phase = 'pile';
+    s.turn = s.bidder;
+    s.given = [];
+    return;
+  }
   // прикуп — заказчику
   s.hands = s.hands.map((h, i) => (i === s.bidder ? [...h, ...s.prikup] : h));
   ev.push({ type: 'prikup', seat: s.bidder, bid: s.bid, cards: s.prikup.slice(), dark: s.dark || undefined });
@@ -483,7 +500,32 @@ export function apply(raw: State, seat: number, a: Action, rng: Rng): { state: S
       } else s.turn = nextBidder(s, seat);
       return { state: s, events: ev };
     }
+    case 'pile': {
+      if (a.type !== 'pile' || (a.i !== 0 && a.i !== 1) || seat !== s.bidder) return null;
+      // открытая стопка — заказчику, её видят оба; вторая так и остаётся закрытой в стороне
+      const cards = s.prikup.slice(a.i * 2, a.i * 2 + 2);
+      s.prikup = cards;
+      s.hands[seat] = [...s.hands[seat], ...cards];
+      ev.push({ type: 'prikup', seat, bid: s.bid, cards: cards.slice() });
+      s.shown = true;
+      s.phase = 'give';
+      s.given = [];
+      return { state: s, events: ev };
+    }
     case 'give': {
+      if (isDuo(s)) {
+        // вдвоём: две карты в закрытый снос (to = -1), их очки — заказчику
+        if (a.type !== 'give' || a.to !== -1 || !has(s.hands[seat], a.card)) return null;
+        s.hands[seat] = s.hands[seat].filter((c) => !sameCard(c, a.card));
+        s.snos = [...(s.snos ?? []), a.card];
+        s.given.push(-1);
+        ev.push({ type: 'give', seat, to: -1, card: a.card });
+        if (s.given.length === 2) {
+          s.roundPts[seat] += handPoints(s.snos);
+          s.phase = 'raise';
+        }
+        return { state: s, events: ev };
+      }
       if (a.type === 'redeal') {
         const why = prikupRedeal(s0);
         if (!why) return null;
@@ -710,6 +752,7 @@ export function makeView(s: State, seats: number[] | 'all'): View {
     ...s,
     hands: s.hands.map((h, i) => (see(i) ? h.slice() : [])),
     prikup: s.shown ? s.prikup.slice() : [],
+    snos: seats === 'all' || seats.includes(s.bidder) ? s.snos?.slice() : s.snos?.map(() => ({ s: 'S', r: 0 }) as Card),
     // повторный вызов на готовом виде (превью) не теряет счётчиков
     counts: s.hands.map((h, i) => (s as Partial<View>).counts?.[i] ?? h.length),
     me: seats === 'all' ? s.seats.slice() : seats.slice(),

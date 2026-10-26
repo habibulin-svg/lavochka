@@ -59,23 +59,32 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     if (next <= Math.min(max, brave)) return { type: 'bid', value: next };
     return { type: 'pass' };
   }
+  // вдвоём: стопки закрыты — выбирают наугад
+  if (s.phase === 'pile') return { type: 'pile', i: rng.int(2) as 0 | 1 };
   if (s.phase === 'give') {
     // плохой прикуп и рука не тянет заказ — пересдача
     if (prikupRedeal(s) && (level === 0 ? rng.next() < 0.5 : estimate(hand, false, aces) < s.bid)) return { type: 'redeal' };
-    const to = s.players.find((x) => x !== seat && !s.given.includes(x))!;
+    // вдвоём — в снос (to = -1): очки сноса достаются самому заказчику, так что сносят мелочь не из марьяжей
+    const to = s.seats.length === 2 ? -1 : s.players.find((x) => x !== seat && !s.given.includes(x))!;
     // отдаём мелочь, не ломая марьяжей и не отдавая тузов
     const keep = new Set(marriagesIn(hand));
     const ranked = hand
       .slice()
       .sort((a, b) => (keep.has(a.s) && (a.r === 13 || a.r === 12) ? 50 : 0) + POINTS[a.r] + (a.r === 14 ? 30 : 0) - ((keep.has(b.s) && (b.r === 13 || b.r === 12) ? 50 : 0) + POINTS[b.r] + (b.r === 14 ? 30 : 0)));
+    if (to === -1 && level > 0) {
+      // снос — свои очки: сносим «голую» десятку или короля без пары (в игре их всё равно отберут), тузы и марьяжи держим
+      const bare = (c: Card) => !keep.has(c.s) && c.r !== 14 && !(c.r === 10 && hand.some((x) => x.s === c.s && x.r === 14));
+      const loot = hand.filter(bare).sort((a, b) => POINTS[b.r] - POINTS[a.r]);
+      if (loot.length) return { type: 'give', to, card: loot[0] };
+    }
     const pick = level === 0 ? hand[rng.int(hand.length)] : ranked[0];
     return { type: 'give', to, card: pick };
   }
   if (s.phase === 'raise') {
     const need = s.cfg.barrel && s.barrel[seat] > 0 ? Math.ceil((goal - s.scores[seat]) / 5) * 5 : 0;
     const est = round5(estimate(hand, false, aces) * (level === 2 ? 1 : level === 1 ? 0.95 : 0.85));
-    // безнадёжно — расписаться (лёгкий не умеет)
-    if (level > 0 && canRospis(s) && est < s.bid * 0.6) return { type: 'rospis' };
+    // безнадёжно — расписаться (лёгкий — только когда рука совсем пустая)
+    if (canRospis(s) && est < s.bid * (level > 0 ? 0.6 : 0.4)) return { type: 'rospis' };
     // на бочке без нужного заказа с неё не выйти — поднимаем до тысячи, если хоть как-то похоже
     if (need > s.bid && need <= max && est >= need - 25) return { type: 'raise', value: need };
     if (level === 0) return { type: 'raise', value: s.bid };

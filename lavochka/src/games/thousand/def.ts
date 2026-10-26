@@ -110,10 +110,25 @@ function pos(hands: string[], prikup: string, extra: Partial<State> = {}): State
 
 const A = (seat: number, a: Action, caption?: string) => ({ seat, action: a, caption });
 
+/** Вдвоём: по 10 карт, прикуп — две закрытые стопки по две. */
+function duo(hands: string[], prikup: string, extra: Partial<State> = {}): State {
+  const s = newState(cfgFrom({}), [0, 1]);
+  s.players = [0, 1];
+  s.dealer = 1;
+  hands.forEach((h, i) => (s.hands[i] = L(h)));
+  s.prikup = L(prikup);
+  s.snos = [];
+  s.round = 1;
+  s.bidder = 0;
+  s.first = 0;
+  s.turn = 1;
+  return Object.assign(s, extra);
+}
+
 export const def: GameDef<State, Action, Event, View> = {
   id: 'thousand',
   title: 'Тысяча',
-  players: { min: 3, max: 4, default: 3 },
+  players: { min: 2, max: 4, default: 3 },
   seats: SEATS,
   options: [
     { key: 'barrel', label: 'Бочка', type: 'toggle', default: true, hint: 'С 880 очков сидишь на бочке: выйти можно только своим заказом, на это три кона; не вышел — минус 120.' },
@@ -353,6 +368,23 @@ export const def: GameDef<State, Action, Event, View> = {
             A(0, { type: 'give', to: 1, card: C('9S') }, 'Отдаёт девятку Ленке…'),
             A(0, { type: 'give', to: 2, card: C('9C') }, '…и Серёге.'),
             A(0, { type: 'rospis' }, 'Расписывается: себе −100, Ленке и Серёге по 60.'),
+          ],
+        },
+      },
+      {
+        title: 'Вдвоём',
+        html: `<p>Вдвоём каждому сдают по <b>10 карт</b>, а оставшиеся четыре кладут двумя закрытыми стопками по две. Торгуются по очереди;
+          выигравший торговлю <b>открывает любую стопку</b>, показывает её сопернику и забирает себе, а потом <b>сносит две любые карты</b>
+          в закрытую стопку — их очки идут ему. Вторая стопка в игре не участвует. Дальше всё как обычно: заказ можно поднять, взятки — по две карты.</p>`,
+        demo: {
+          seats: demoSeats.slice(0, 2),
+          setup: () => duo(['AS 10S KS QS AH 10H JH 9H AD 9D', 'JS 9S KH QH KD QD JD 10D AC 10C'], 'KC QC JC 9C', { phase: 'bid', bid: 100 }),
+          intro: 'Вовка «на ста», Ленка торгуется первой.',
+          steps: [
+            A(1, { type: 'pass' }, 'Ленка пасует — играет Вовка.'),
+            A(0, { type: 'pile', i: 0 }, 'Открывает левую стопку: король и дама треф — марьяж!'),
+            A(0, { type: 'give', to: -1, card: C('JH') }, 'Сносит валета червей…'),
+            A(0, { type: 'give', to: -1, card: C('9D') }, '…и девятку бубен. Их очки — Вовке.'),
           ],
         },
       },
