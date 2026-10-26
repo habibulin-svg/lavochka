@@ -38,6 +38,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     }
     case 'rubber':
       return `🏆 Роббер за ${ev.winner === 0 ? '«нами»' : '«ними»'}: +${ev.bonus}.`;
+    case 'honours':
+      return `Гонор у ${ev.side === 0 ? '«нас»' : '«них»'}: +${ev.pts} над чертой.`;
     case 'end':
       return `🏁 Итог: «мы» ${ev.total[0]} — «они» ${ev.total[1]}.`;
   }

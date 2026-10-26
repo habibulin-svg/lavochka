@@ -9,6 +9,8 @@
  * Счёт: за взятки сверх шести — ♣♦ 20, ♥♠ 30, БК 40 за первую и 30 за остальные; контра ×2, реконтра ×4.
  *   Роббер: очки за взятки контракта — «под черту», 100 под чертой — гейм; кто взял два гейма — роббер (+700, или +500 при 2:1);
  *   остальное (сверхвзятки, штрафы, премии за шлем и за сыгранную контру) — «над чертой». Взявший гейм — в зоне.
+ *   Гонор (только роббер): четыре из пяти старших козырей (Т К Д В 10) в одной руке — 100, все пять — 150, в бескозырке четыре туза — 150;
+ *   пишется над чертой той стороне, у кого эта рука (хоть у защиты, хоть у болвана).
  *   Чикаго: 4 сдачи — первая без зоны, вторая и третья в зоне сдающий, четвёртая обе; гейм +300/+500, частичка +50.
  *   Спортивный: та же сдача играется «за другим столом» ботами; разница переводится в IMP.
  *   Мини-бридж: без торговли — открывают очки силы, пара с большим числом очков играет, разыгрывающий (с большими очками в паре)
@@ -105,6 +107,7 @@ export type Event =
   | { type: 'trick'; seat: number; cards: Card[] }
   | { type: 'result'; result: BoardResult }
   | { type: 'rubber'; winner: number; bonus: number }
+  | { type: 'honours'; side: number; pts: number }
   | { type: 'end'; total: [number, number] };
 
 export const partner = (p: number) => (p + 2) % 4;
@@ -330,6 +333,21 @@ export function setOtherTable(f: typeof otherTable) {
   otherTable = f;
 }
 
+/** Гонор по сданным рукам: [сторона, очки] или null. */
+export function honours(deal: Card[][], strain: Strain): [number, number] | null {
+  for (let p = 0; p < 4; p++) {
+    const h = deal[p] ?? [];
+    if (strain === 'N') {
+      if (h.filter((c) => c.r === 14).length === 4) return [side(p), 150];
+      continue;
+    }
+    const n = h.filter((c) => c.s === strain && c.r >= 10).length;
+    if (n === 5) return [side(p), 150];
+    if (n === 4) return [side(p), 100];
+  }
+  return null;
+}
+
 function finishBoard(s: State, ev: Event[], rng: Rng) {
   const vul = vulnerable(s);
   const ct = s.contract;
@@ -352,6 +370,12 @@ function finishBoard(s: State, ev: Event[], rng: Rng) {
       s.total[t] += Math.max(0, r.below) + Math.max(0, r.above);
       if (r.total < 0) s.total[1 - t] += -r.total;
       res.score = t === 0 ? r.total : -r.total;
+      const hon = honours(s.deal, ct.strain);
+      if (hon) {
+        s.above[hon[0]] += hon[1];
+        s.total[hon[0]] += hon[1];
+        ev.push({ type: 'honours', side: hon[0], pts: hon[1] });
+      }
     }
     s.results.push(res);
     ev.push({ type: 'result', result: res });
