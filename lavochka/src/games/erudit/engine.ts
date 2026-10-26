@@ -32,13 +32,13 @@ export const SETS: Record<string, TileSet> = {
       ц: [1, 10], ч: [2, 5], ш: [1, 10], щ: [1, 10], ъ: [1, 10], ы: [2, 5], ь: [2, 5], э: [1, 10], ю: [1, 10], я: [3, 3], '*': [3, 0],
     },
   },
-  // русский «Скрэббл»: 104 фишки, 2 пустые (Ё в нашем словаре — Е, её фишка добавлена к Е)
+  // русский «Скрэббл»: 104 фишки, 2 пустые; Ё — своя фишка (3 очка), а в словаре её нет — слово проверяется с Е
   scrabble: {
     title: 'Скрэббл',
     rack: 7,
     bonus: 50,
     tiles: {
-      а: [8, 1], б: [2, 3], в: [4, 1], г: [2, 3], д: [4, 2], е: [9, 1], ж: [1, 5], з: [2, 5], и: [5, 1], й: [1, 4], к: [4, 2],
+      а: [8, 1], б: [2, 3], в: [4, 1], г: [2, 3], д: [4, 2], е: [8, 1], ё: [1, 3], ж: [1, 5], з: [2, 5], и: [5, 1], й: [1, 4], к: [4, 2],
       л: [4, 2], м: [3, 2], н: [5, 1], о: [10, 1], п: [4, 2], р: [5, 1], с: [5, 1], т: [5, 1], у: [4, 2], ф: [1, 10], х: [1, 5],
       ц: [1, 5], ч: [1, 5], ш: [1, 8], щ: [1, 10], ъ: [1, 10], ы: [2, 4], ь: [2, 3], э: [1, 8], ю: [1, 8], я: [2, 3], '*': [2, 0],
     },
@@ -127,6 +127,9 @@ export type Event =
   | { type: 'end'; seat: number | null; rest: number[] };
 
 export const tileSet = (cfg: Cfg) => SETS[cfg.set];
+/** Словарь без ё: «ёлка» проверяется как «елка». */
+export const yo = (w: string) => w.replace(/ё/g, 'е');
+
 export const valueOf = (cfg: Cfg, letter: string) => tileSet(cfg).tiles[letter]?.[1] ?? 0;
 
 function fillBag(cfg: Cfg, rng: Rng): string[] {
@@ -235,7 +238,7 @@ export function evaluate(s: State, tiles: Place[], rack: string[], take?: number
     if (cross.length > 1) words.push({ word: cross.map((x) => b[x]!.ch).join(''), cells: cross });
   }
   if (!words.length) return { ok: false, why: 'Слово — хотя бы из двух букв.' };
-  for (const w of words) if (!hasWord(w.word)) return { ok: false, why: `«${w.word}» нет в словаре.` };
+  for (const w of words) if (!hasWord(yo(w.word))) return { ok: false, why: `«${w.word}» нет в словаре.` };
   let points = 0;
   for (const w of words) {
     let sum = 0;

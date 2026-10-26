@@ -5,7 +5,7 @@
  *   Сложный — лучший с поправкой на то, что остаётся на руке (звёздочку бережёт, гласные с согласными — вперемешку). */
 import type { Rng } from '../../core/types';
 import { ALPHABET, hasPrefix, hasWord } from '../../words/dict';
-import { CENTER, evaluate, JOKER, N, tileSet, valueOf, type Action, type Place, type View } from './engine';
+import { CENTER, evaluate, JOKER, N, tileSet, valueOf, yo, type Action, type Place, type View } from './engine';
 
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 export const tuning = { fast: !!env?.VITEST && !env?.SIM_GAMES };
@@ -43,9 +43,9 @@ export function findMoves(s: View, rack: string[], limit = Infinity): Found[] {
         const f = c % N;
         const [dr, df] = perp === 1 ? [0, 1] : [1, 0];
         let pre = '';
-        for (let rr = r - dr, ff = f - df; rr >= 0 && ff >= 0 && filled(rr * N + ff); rr -= dr, ff -= df) pre = b[rr * N + ff]!.ch + pre;
+        for (let rr = r - dr, ff = f - df; rr >= 0 && ff >= 0 && filled(rr * N + ff); rr -= dr, ff -= df) pre = yo(b[rr * N + ff]!.ch) + pre;
         let suf = '';
-        for (let rr = r + dr, ff = f + df; rr < N && ff < N && filled(rr * N + ff); rr += dr, ff += df) suf += b[rr * N + ff]!.ch;
+        for (let rr = r + dr, ff = f + df; rr < N && ff < N && filled(rr * N + ff); rr += dr, ff += df) suf += yo(b[rr * N + ff]!.ch);
         if (!pre && !suf) return null;
         const ok = new Set<string>();
         for (const ch of ALPHABET) if (hasWord(pre + ch + suf)) ok.add(ch);
@@ -61,7 +61,7 @@ export function findMoves(s: View, rack: string[], limit = Infinity): Found[] {
       const extend = (pos: number, word: string, touched: boolean) => {
         if (out.length >= limit) return;
         if (pos < N && filled(line[pos])) {
-          const w = word + b[line[pos]]!.ch;
+          const w = word + yo(b[line[pos]]!.ch);
           if (!hasPrefix(w)) return;
           extend(pos + 1, w, true);
           return;
@@ -82,7 +82,8 @@ export function findMoves(s: View, rack: string[], limit = Infinity): Found[] {
           const t = left[i];
           if (tried.has(t)) continue;
           tried.add(t);
-          const opts = t === JOKER ? jokerLetters : t;
+          // фишка Ё ложится как Е (словарь без ё)
+          const opts = t === JOKER ? jokerLetters : t === 'ё' ? 'е' : t;
           for (const ch of opts) {
             if (allowed && !allowed.has(ch)) continue;
             const w = word + ch;

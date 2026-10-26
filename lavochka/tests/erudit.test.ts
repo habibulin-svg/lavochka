@@ -31,6 +31,20 @@ describe('эрудит: набор и поле', () => {
   });
 });
 
+describe('скрэббл: буква Ё', () => {
+  it('своя фишка (3 очка), слово проверяется по словарю через Е', () => {
+    expect(SETS.scrabble.tiles['ё']).toEqual([1, 3]);
+    const s = game([['ё', 'л', 'к', 'а', 'р', 'с', 'и'], []], { set: 'scrabble' });
+    const v = evaluate(s, [at(7, 5), at(7, 6), at(7, 7), at(7, 8)].map((cell, i) => ({ cell, letter: 'ёлка'[i] })), s.racks[0]);
+    expect(v.ok).toBe(true);
+    if (v.ok) {
+      expect(v.score.words[0].word).toBe('ёлка');
+      // Ё 3 + Л 2 + К 2 + А 1 = 8, центр ×2
+      expect(v.score.points).toBe(16);
+    }
+  });
+});
+
 describe('эрудит: выкладка', () => {
   it('первое слово — через центр; КОТ = 5 очков', () => {
     const s = game([['к', 'о', 'т', 'а', 'р', 'с', 'и'], ['л', 'е', 'с', 'н', 'о', 'д', 'м']]);

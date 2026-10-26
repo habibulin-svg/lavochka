@@ -1019,7 +1019,10 @@ export function goraForFinal(s: Pick<State, 'seats' | 'gora'> & Partial<Pick<Sta
   return g;
 }
 
-/** Итог в вистах: висты на других минус висты на тебя, плюс гора (10 вистов за очко) поровну на всех. */
+/** Сколько вистов стоит очко горы в итоге: в «Ленинграде» — 20 (висты там тоже вдвое), иначе 10. */
+export const goraPrice = (cfg?: Pick<Cfg, 'variant'>) => (cfg?.variant === 'leningrad' ? 20 : 10);
+
+/** Итог в вистах: висты на других минус висты на тебя, плюс гора (10 вистов за очко, в «Ленинграде» 20) поровну на всех. */
 export function finalScores(s: Pick<State, 'seats' | 'gora' | 'whists'> & Partial<Pick<State, 'cfg' | 'pulya' | 'totGora' | 'phase'>>): number[] {
   const n = s.seats.length;
   const out = [0, 0, 0, 0];
@@ -1028,7 +1031,7 @@ export function finalScores(s: Pick<State, 'seats' | 'gora' | 'whists'> & Partia
   for (const p of s.seats) {
     let v = 0;
     for (const q of s.seats) if (q !== p) v += s.whists[p][q] - s.whists[q][p];
-    v += ((goraSum - n * gora[p]) * 10) / n;
+    v += ((goraSum - n * gora[p]) * goraPrice(s.cfg)) / n;
     out[p] = Math.round(v);
   }
   // из-за округления подгоняем последнего, чтобы сумма была ноль
