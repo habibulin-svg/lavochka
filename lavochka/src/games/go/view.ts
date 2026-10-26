@@ -3,7 +3,7 @@
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { BLACK, hoshi, isLegal, WHITE, type Event, type State } from './engine';
+import { BLACK, hoshi, isLegal, TIBET_CENTER_BONUS, WHITE, type Event, type State } from './engine';
 import { ghostSvg, gobanAspect, gobanBoard, gobanBox, gobanDefs, lastMark, pointAt, preloadGoban, stoneSvg } from './goban';
 import './go.css';
 
@@ -89,6 +89,13 @@ class GoView implements GameView<State, Event> {
         o += `<rect x="${x - 0.17}" y="${y - 0.17}" width="0.34" height="0.34" class="go-terr ${ow === BLACK ? 'b' : 'w'}"/>`;
       }
     }
+    // тибетское го: куда можно ходить (не дальше пункта от своего камня, не в только что снятые)
+    if (s.cfg.rules === 'tibetan' && this.actSeat != null && !s.over) {
+      for (let p = 0; p < n * n; p++) {
+        if (s.board[p] || p === this.hover || !isLegal(s, p)) continue;
+        o += `<circle cx="${L(p % n)}" cy="${L(Math.floor(p / n))}" r="0.09" class="go-ok"/>`;
+      }
+    }
     // тень будущего хода
     if (this.actSeat != null && this.hover >= 0 && isLegal(s, this.hover)) {
       const c = this.actSeat === 0 ? BLACK : WHITE;
@@ -101,10 +108,13 @@ class GoView implements GameView<State, Event> {
   private drawPanel() {
     const s = this.s;
     if (!s) return;
-    let t = `<div class="go-caps">Пленные: ● ${s.caps[0]} · ○ ${s.caps[1]} · коми ${String(s.komi).replace('.', ',')}</div>`;
-    if (s.final) t += `<div class="go-score">${s.final.resign != null ? `${s.final.resign === 0 ? 'Чёрные' : 'Белые'} сдались` : `Чёрные ${String(s.final.score[0]).replace('.', ',')} — белые ${String(s.final.score[1]).replace('.', ',')}`}</div>`;
+    const tibet = s.cfg.rules === 'tibetan';
+    let t = tibet
+      ? `<div class="go-caps">Пленные: ● ${s.caps[0]} · ○ ${s.caps[1]} · центр: ${s.center < 0 ? 'свободен' : `${s.center === 0 ? 'чёрные' : 'белые'} +${TIBET_CENTER_BONUS}`}</div>`
+      : `<div class="go-caps">Пленные: ● ${s.caps[0]} · ○ ${s.caps[1]} · коми ${String(s.komi).replace('.', ',')}</div>`;
+    if (s.final) t += `<div class="go-score">${s.final.resign != null ? `${s.final.resign === 0 ? 'Чёрные' : 'Белые'} сдались` : `Чёрные ${String(s.final.score[0]).replace('.', ',')} — белые ${String(s.final.score[1]).replace('.', ',')}${s.final.winner < 0 ? ', ничья' : ''}`}</div>`;
     else if (this.actSeat != null && !this.ctx.demo) {
-      t += `<div class="go-ask">${s.passes ? 'Соперник спасовал: пас — и партия окончена.' : 'Ваш ход: поставьте камень.'}</div><div class="go-row"><button class="btn" data-do="pass">Пас</button><button class="btn" data-do="resign">Сдаться</button></div>`;
+      t += `<div class="go-ask">${s.passes ? 'Соперник спасовал: пас — и партия окончена.' : tibet ? 'Ваш ход: камень — на пункт с точкой.' : 'Ваш ход: поставьте камень.'}</div><div class="go-row"><button class="btn" data-do="pass">Пас</button><button class="btn" data-do="resign">Сдаться</button></div>`;
     }
     this.panel.innerHTML = t;
   }

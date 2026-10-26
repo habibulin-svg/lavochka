@@ -8,3 +8,4 @@
 .go-row .btn { flex: 1; }
 .go-ask, .go-score { font-weight: 700; }
 .go-caps { font-size: 13px; }
+.go-ok { fill: #20160a; fill-opacity: 0.28; pointer-events: none; }

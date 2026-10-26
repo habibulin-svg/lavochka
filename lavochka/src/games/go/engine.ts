@@ -8,16 +8,23 @@
  * Подсчёт: японский — своя территория (пустые пункты, окружённые только своими камнями) + пленные, коми белым 6,5;
  * китайский — свои камни + территория, коми 7,5. Фора: 2–9 чёрных камней на звёздные пункты, белые ходят первыми, коми 0,5.
  * Можно сдаться.
+ *
+ * Тибетское го (миг-манг): доска 17×17 без звёзд, 12 камней заранее — на третьей линии через три пункта, цвета чередуются.
+ * Первыми ходят белые; камень ставят не дальше чем через пункт от своего (в квадрате 5×5 вокруг своего камня).
+ * Усиленное ко: нельзя ставить камень в пункты, откуда соперник только что снял камни. Подсчёт китайский, без коми;
+ * +5 тому, кто первым занял центр; −20 тому, чей угловой камень расстановки в итоге оказался в чужом углу.
  */
 import type { Options, Rng } from '../../core/types';
 
 export interface Cfg {
-  size: 9 | 13 | 19;
-  rules: 'japanese' | 'chinese';
+  size: 9 | 13 | 17 | 19;
+  rules: 'japanese' | 'chinese' | 'tibetan';
   handicap: number;
 }
 
 export function cfgFrom(o: Options): Cfg {
+  // тибетское го — всегда 17×17 с расстановкой, без форы
+  if (o.rules === 'tibetan') return { size: 17, rules: 'tibetan', handicap: 0 };
   const size = Number(o.size) === 13 ? 13 : Number(o.size) === 19 ? 19 : 9;
   const h = Math.max(0, Math.min(9, Math.floor(Number(o.handicap) || 0)));
   return { size, rules: o.rules === 'chinese' ? 'chinese' : 'japanese', handicap: h === 1 ? 0 : h };
@@ -45,6 +52,9 @@ export interface State {
   /** Итог: мёртвые камни, территория, очки. */
   final: { dead: number[]; owner: number[]; score: [number, number]; winner: number; resign?: number } | null;
   komi: number;
+  /** Тибетское го: пункты, куда ходящему нельзя (только что снятые камни), и кто первым занял центр (−1 — никто). */
+  ban: number[];
+  center: number;
 }
 
 export type Action = { type: 'play'; p: number } | { type: 'pass' } | { type: 'resign' };
@@ -53,6 +63,37 @@ export type Event =
   | { type: 'pass'; seat: number }
   | { type: 'resign'; seat: number }
   | { type: 'end'; score: [number, number]; winner: number; dead: number[] };
+
+/** Тибетская расстановка: пункты кольца на третьей линии (3, 7, 11, 15) по кругу, цвета чередуются. */
+export function tibetStart(): { p: number; c: number }[] {
+  const n = 17;
+  const L = [2, 6, 10, 14];
+  const ring: [number, number][] = [];
+  for (const x of L) ring.push([x, 2]);
+  for (const y of L.slice(1)) ring.push([14, y]);
+  for (const x of L.slice(0, 3).reverse()) ring.push([x, 14]);
+  for (const y of L.slice(1, 3).reverse()) ring.push([2, y]);
+  return ring.map(([x, y], i) => ({ p: y * n + x, c: i % 2 ? WHITE : BLACK }));
+}
+/** Угловые камни расстановки (за чужой захват угла — штраф). */
+export const tibetCorners = (): { p: number; c: number }[] => tibetStart().filter((_, i) => i % 3 === 0);
+export const TIBET_CENTER = 8 * 17 + 8;
+export const TIBET_CENTER_BONUS = 5;
+export const TIBET_CORNER_PENALTY = 20;
+
+/** Тибетское ограничение: рядом (в квадрате 5×5) есть свой камень; если своих нет — можно куда угодно. */
+export function nearOwn(board: number[], n: number, p: number, c: number): boolean {
+  const x = p % n;
+  const y = (p - x) / n;
+  let any = false;
+  for (let q = 0; q < n * n; q++) {
+    if (board[q] !== c) continue;
+    any = true;
+    const qx = q % n;
+    if (Math.abs(qx - x) <= 2 && Math.abs((q - qx) / n - y) <= 2) return true;
+  }
+  return !any;
+}
 
 export function neighbors(n: number, p: number): number[] {
   const x = p % n;
@@ -86,6 +127,37 @@ export function group(board: number[], n: number, p: number): { stones: number[]
   return { stones, libs: libs.size };
 }
 
+// метки обхода для hasLib: номер обхода вместо Set — доигрыши на больших досках идут в разы быстрее
+let marks = new Int32Array(0);
+let stamp = 0;
+
+/** Есть ли у группы камня p хоть одно дыхание (обход до первого найденного). */
+export function hasLib(board: number[], n: number, p: number): boolean {
+  if (marks.length < n * n) marks = new Int32Array(n * n);
+  if (++stamp > 2e9) {
+    marks.fill(0);
+    stamp = 1;
+  }
+  const c = board[p];
+  const st = [p];
+  marks[p] = stamp;
+  while (st.length) {
+    const q = st.pop()!;
+    const x = q % n;
+    for (let k = 0; k < 4; k++) {
+      const r = k === 0 ? (x > 0 ? q - 1 : -1) : k === 1 ? (x < n - 1 ? q + 1 : -1) : k === 2 ? q - n : q + n;
+      if (r < 0 || r >= n * n) continue;
+      const v = board[r];
+      if (v === 0) return true;
+      if (v === c && marks[r] !== stamp) {
+        marks[r] = stamp;
+        st.push(r);
+      }
+    }
+  }
+  return false;
+}
+
 /** Поставить камень: новая доска и снятые камни; null — нельзя (занято, самоубийство). */
 export function place(board: number[], n: number, p: number, c: number): { board: number[]; captured: number[] } | null {
   if (board[p] !== 0) return null;
@@ -93,15 +165,14 @@ export function place(board: number[], n: number, p: number, c: number): { board
   b[p] = c;
   const captured: number[] = [];
   for (const r of neighbors(n, p)) {
-    if (b[r] === other(c)) {
-      const g = group(b, n, r);
-      if (g.libs === 0) for (const s of g.stones) {
+    if (b[r] === other(c) && !hasLib(b, n, r)) {
+      for (const s of group(b, n, r).stones) {
         b[s] = 0;
         captured.push(s);
       }
     }
   }
-  if (!captured.length && group(b, n, p).libs === 0) return null;
+  if (!captured.length && !hasLib(b, n, p)) return null;
   return { board: b, captured };
 }
 
@@ -122,8 +193,9 @@ export function handicapPoints(n: number, k: number): number[] {
   return pts.slice(0, k);
 }
 
-/** Звёзды на доске (для отрисовки). */
+/** Звёзды на доске (для отрисовки). На тибетской доске их нет. */
 export function hoshi(n: number): number[] {
+  if (n === 17) return [];
   if (n === 9) return handicapPoints(9, 4).concat([4 * 9 + 4]);
   return handicapPoints(n, 9);
 }
@@ -131,12 +203,14 @@ export function hoshi(n: number): number[] {
 export function newState(cfg: Cfg): State {
   const n = cfg.size;
   const board = Array(n * n).fill(0);
-  for (const p of handicapPoints(n, cfg.handicap)) board[p] = BLACK;
+  const tibet = cfg.rules === 'tibetan';
+  if (tibet) for (const { p, c } of tibetStart()) board[p] = c;
+  else for (const p of handicapPoints(n, cfg.handicap)) board[p] = BLACK;
   return {
     cfg,
     n,
     board,
-    turn: cfg.handicap ? 1 : 0,
+    turn: cfg.handicap || tibet ? 1 : 0,
     caps: [0, 0],
     prev: '',
     last: -1,
@@ -144,7 +218,9 @@ export function newState(cfg: Cfg): State {
     moves: 0,
     over: false,
     final: null,
-    komi: cfg.handicap ? 0.5 : cfg.rules === 'chinese' ? 7.5 : 6.5,
+    komi: tibet ? 0 : cfg.handicap ? 0.5 : cfg.rules === 'chinese' ? 7.5 : 6.5,
+    ban: [],
+    center: -1,
   };
 }
 
@@ -156,20 +232,28 @@ export const toAct = (s: State): number[] => (s.over ? [] : [s.turn]);
 
 /** Допустимые ходы (без паса). */
 export function legalMoves(s: State): number[] {
-  const c = colorOf(s.turn);
   const out: number[] = [];
-  for (let p = 0; p < s.n * s.n; p++) {
-    if (s.board[p]) continue;
-    const r = place(s.board, s.n, p, c);
-    if (r && key(r.board) !== s.prev) out.push(p);
-  }
+  for (let p = 0; p < s.n * s.n; p++) if (!s.board[p] && isLegal(s, p)) out.push(p);
   return out;
 }
 
 export function isLegal(s: State, p: number): boolean {
   if (!Number.isInteger(p) || p < 0 || p >= s.n * s.n || s.board[p]) return false;
-  const r = place(s.board, s.n, p, colorOf(s.turn));
+  const c = colorOf(s.turn);
+  if (s.cfg.rules === 'tibetan') {
+    if (s.ban?.includes(p) || !nearOwn(s.board, s.n, p, c)) return false;
+    return !!place(s.board, s.n, p, c);
+  }
+  const r = place(s.board, s.n, p, c);
   return !!r && key(r.board) !== s.prev;
+}
+
+/** Тибетские поправки к счёту по итоговой карте владения (owner: камни и территория). */
+export function tibetBonus(owner: number[], center: number): [number, number] {
+  const b: [number, number] = [0, 0];
+  if (center >= 0) b[center] += TIBET_CENTER_BONUS;
+  for (const { p, c } of tibetCorners()) if (owner[p] === other(c)) b[c - 1] -= TIBET_CORNER_PENALTY;
+  return b;
 }
 
 // ---------------------------------------------------------------- подсчёт
@@ -269,6 +353,10 @@ export function score(s: State, dead: number[]): { owner: number[]; score: [numb
     if (b[p]) stones[b[p] - 1]++;
     else if (owner[p]) terr[owner[p] - 1]++;
   }
+  if (s.cfg.rules === 'tibetan') {
+    const t = tibetBonus(owner, s.center);
+    return { owner, score: [stones[0] + terr[0] + t[0], stones[1] + terr[1] + t[1]] };
+  }
   const sc: [number, number] = s.cfg.rules === 'chinese' ? [stones[0] + terr[0], stones[1] + terr[1] + s.komi] : [terr[0] + caps[0], terr[1] + caps[1] + s.komi];
   return { owner, score: sc };
 }
@@ -276,7 +364,8 @@ export function score(s: State, dead: number[]): { owner: number[]; score: [numb
 function finish(s: State, rng: Rng, ev: Event[]) {
   const dead = deadStones(s, rng);
   const r = score(s, dead);
-  const winner = r.score[0] > r.score[1] ? 0 : 1;
+  // ничья возможна только без коми (тибетское го): победителя нет, −1
+  const winner = r.score[0] > r.score[1] ? 0 : r.score[0] < r.score[1] ? 1 : -1;
   s.over = true;
   s.final = { dead, owner: r.owner, score: r.score, winner };
   ev.push({ type: 'end', score: r.score, winner, dead });
@@ -299,6 +388,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     s.turn = 1 - seat;
     s.moves++;
     s.last = -1;
+    s.ban = [];
     ev.push({ type: 'pass', seat });
     // страховка от бесконечной партии ботов
     if (s.passes >= 2 || s.moves >= s.n * s.n * 3) finish(s, rng, ev);
@@ -310,6 +400,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   s.board = r.board;
   s.caps[seat] += r.captured.length;
   s.passes = 0;
+  s.ban = s.cfg.rules === 'tibetan' ? r.captured : [];
+  if (s.cfg.rules === 'tibetan' && a.p === TIBET_CENTER && s.center < 0) s.center = seat;
   s.last = a.p;
   s.turn = 1 - seat;
   s.moves++;

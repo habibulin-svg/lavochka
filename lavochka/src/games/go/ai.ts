@@ -5,21 +5,23 @@
  *   Сложный — 1,8 с.
  * Пасует, когда ходить некуда (только свои глаза) или соперник спасовал, а по доигрываниям партия выиграна. */
 import type { Rng } from '../../core/types';
-import { colorOf, group, hoshi, isEyeLike, isLegal, legalMoves, neighbors, other, place, playout, territory, type Action, type State } from './engine';
+import { colorOf, group, hoshi, isEyeLike, isLegal, legalMoves, neighbors, other, place, playout, territory, tibetBonus, type Action, type State } from './engine';
 
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 const fast = !!env?.VITEST && !env?.SIM_GAMES;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
-/** Итог доигрыша для цвета c: 1 — победа. */
-function result(b: number[], n: number, c: number, komi: number): number {
-  const t = territory(b, n);
-  let blk = 0;
-  let wht = komi;
+/** Итог доигрыша для цвета c: 1 — победа (в тибетском го — с бонусом за центр и штрафом за углы). */
+function result(s: State, b: number[], c: number): number {
+  const t = territory(b, s.n);
+  const tb = s.cfg.rules === 'tibetan' ? tibetBonus(t, s.center) : [0, 0];
+  let blk = tb[0];
+  let wht = s.komi + tb[1];
   for (const o of t) {
     if (o === 1) blk++;
     else if (o === 2) wht++;
   }
+  if (blk === wht) return 0.5;
   const blackWins = blk > wht;
   return (c === 1) === blackWins ? 1 : 0;
 }
@@ -114,11 +116,11 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     }
     const r = place(s.board, n, cands[i], c);
     const b = r ? playout(r.board, n, other(c), rng) : s.board;
-    wins[i] += result(b, n, c, s.komi);
+    wins[i] += result(s, b, c);
     runs[i]++;
     total++;
     if (s.passes && total % 8 === 0) {
-      passWins += result(playout(s.board, n, other(c), rng), n, c, s.komi);
+      passWins += result(s, playout(s.board, n, other(c), rng), c);
       passRuns++;
     }
     if (fast && total >= minRuns) break;
