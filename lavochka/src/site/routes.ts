@@ -44,6 +44,7 @@ export const SLUGS: Record<string, string> = {
   daldos: 'daldos',
   shen: 'sobaki-i-shakaly',
   petteia: 'petteyya',
+  puluk: 'puluk',
   foxgeese: 'lisa-i-gusi',
   bulls: 'byki-i-korovy',
   renju: 'rendzyu',

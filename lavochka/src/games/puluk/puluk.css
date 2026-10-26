@@ -1,0 +1,38 @@
+/* Пулук: циновка-петате, палочки дорожки, корзинки-дома, глиняные и каменные воины, зёрна в лотке. */
+.pl-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: #8a6434 url('/tex/puluk/table.webp') center / 384px repeat; border-radius: 10px;
+  box-shadow: inset 0 0 60px rgba(40, 20, 0, 0.55);
+}
+.pl-board { width: 100%; height: 100%; user-select: none; overflow: visible; }
+.pl-turn { fill: none; stroke: #f4e4b4; stroke-width: 13; stroke-linecap: round; stroke-dasharray: 0.1 26; filter: drop-shadow(1px 2px 1px rgba(40, 20, 0, 0.5)); }
+.pl-stick { filter: drop-shadow(3px 4px 2px rgba(40, 20, 0, 0.45)); }
+.pl-pc image, .pl-home image { filter: drop-shadow(2px 5px 3px rgba(40, 20, 0, 0.5)); }
+.pl-pc.anim { transition: transform 0.16s ease-out; }
+.pl-pc.gone { transition: opacity 0.35s; opacity: 0; }
+.pl-ring { fill: rgba(60, 30, 5, 0.25); stroke: transparent; stroke-width: 3; }
+.pl-pc.can, .pl-home.can { cursor: pointer; }
+.pl-pc.can .pl-ring, .pl-home.can > .pl-ring { fill: rgba(255, 250, 225, 0.45); stroke: #fff; stroke-width: 6; stroke-dasharray: 14 8; filter: drop-shadow(0 0 3px #3a1a04); animation: pl-glow 1s ease-in-out infinite; }
+.pl-pc.sel .pl-ring, .pl-home.sel > .pl-ring { fill: rgba(255, 255, 240, 0.6); stroke: #fff; stroke-dasharray: none; stroke-width: 7; animation: none; }
+.pl-pc.can image, .pl-home.can image { filter: drop-shadow(0 0 7px #fff6c8) drop-shadow(2px 5px 3px rgba(40, 20, 0, 0.5)); }
+.pl-pc.sel image, .pl-home.sel image { filter: brightness(1.12) drop-shadow(0 0 9px #fff) drop-shadow(2px 5px 3px rgba(40, 20, 0, 0.5)); }
+.pl-pris { opacity: 0.92; }
+.pl-badge circle { fill: #2a1206; stroke: #f2d9a8; stroke-width: 2; }
+.pl-badge text { font: 700 17px 'PT Serif', Georgia, serif; fill: #f8e6c0; text-anchor: middle; }
+.pl-arrow { fill: none; stroke: #fff2c8; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px #2a1206); }
+.pl-dead { font: 700 22px 'PT Serif', Georgia, serif; fill: #fff3d6; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; }
+.pl-target { cursor: pointer; }
+.pl-target circle { fill: rgba(255, 250, 220, 0.4); stroke: #fff; stroke-width: 6; filter: drop-shadow(0 0 3px #3a1a04); animation: pl-glow 1s ease-in-out infinite; }
+.pl-target.hit circle { fill: rgba(255, 120, 90, 0.35); stroke: #ffd2b8; }
+.pl-target:hover circle { fill: rgba(255, 250, 220, 0.7); }
+.pl-target text { font: 700 22px 'PT Serif', Georgia, serif; fill: #fff6dc; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+@keyframes pl-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+/* напарники в командной игре: та же глина посветлее (охра) и тот же камень с зеленью (нефрит) */
+.pl-tone2 { filter: sepia(0.5) saturate(1.6) hue-rotate(12deg) brightness(1.35); }
+.pl-tone3 { filter: sepia(0.6) hue-rotate(95deg) saturate(2.2) brightness(1.5); }
+
+.pl-controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pl-tray { min-height: 70px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; padding: 6px 0; max-width: 100%; }
+.pl-kern { width: 40px; height: 60px; display: block; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45)); }
+.pl-tray.blank .pl-kern { opacity: 0.35; }
+.pl-val { text-align: center; font: 700 15px 'PT Serif', Georgia, serif; min-height: 20px; color: var(--panel-ink, #2a1206); }
