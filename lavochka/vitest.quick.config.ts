@@ -2,6 +2,7 @@
  * их гоняем только для игр, чьи папки менялись (git status), по одной партии на число игроков. Задеты общие
  * core/cards/harness — все игры. Полная проверка (npm run check) — перед пушем в конце большого этапа. */
 import { execSync } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import base from './vitest.config';
 
@@ -24,4 +25,8 @@ function touched(): string {
   return [...ids].join(',');
 }
 
-export default mergeConfig(base, defineConfig({ test: { passWithNoTests: true, env: { GAMES_ONLY: process.env.GAMES_ONLY ?? touched() } } }));
+// Быструю проверку часто гоняют несколько сессий сразу: на ядро меньше обычного, иначе главный процесс vitest
+// не успевает отвечать обработчикам («Timeout calling onTaskUpdate») и прогон падает при зелёных тестах.
+const workers = Math.max(1, availableParallelism() - 2);
+
+export default mergeConfig(base, defineConfig({ test: { passWithNoTests: true, maxWorkers: workers, minWorkers: 1, env: { GAMES_ONLY: process.env.GAMES_ONLY ?? touched() } } }));
