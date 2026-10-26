@@ -16,7 +16,8 @@
 import type { Options } from '../../core/types';
 
 export type Mode = 'fox' | 'asalto' | 'yoga';
-export type Look = 'soviet' | 'wood';
+/** map — французская карта асальто XIX века «Jeu du siège de Sébastopol» (только асальто, диагонали через точку). */
+export type Look = 'soviet' | 'wood' | 'map';
 
 export interface Cfg {
   mode: Mode;
@@ -33,14 +34,15 @@ export interface Cfg {
 export function cfgFrom(o: Options): Cfg {
   const mode: Mode = o.mode === 'asalto' ? 'asalto' : o.mode === 'yoga' ? 'yoga' : 'fox';
   const g = Number(o.geese);
+  const map = mode === 'asalto' && o.look === 'map';
   return {
     mode,
     geese: g === 15 || g === 17 ? g : 13,
     foxes: Number(o.foxes) === 2 ? 2 : 1,
     back: o.back === true,
-    lines: o.lines === 'all' ? 'all' : 'alt',
+    lines: o.lines === 'all' && !map ? 'all' : 'alt',
     holes: mode === 'yoga' && Number(o.holes) === 37 ? 37 : 33,
-    look: o.look === 'wood' ? 'wood' : 'soviet',
+    look: map ? 'map' : o.look === 'wood' ? 'wood' : 'soviet',
   };
 }
 

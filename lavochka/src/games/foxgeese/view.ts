@@ -2,7 +2,10 @@
  * Советская коробка (лиса и гуси, асальто): белый пластиковый корпус, голубой войлок, белые линии с диагоналями
  * и кольца-гнёзда; фишки-«шашечки» — гуси белые, повстанцы красные, лиса и офицеры оранжевые.
  * Советская «Йога»: чёрный круглый футляр, жёлтая вкладка с лунками, белые конические колышки.
- * Деревянная доска: орех, лунки, стеклянные шарики (у солитёра — разноцветные). */
+ * Деревянная доска: орех, лунки, стеклянные шарики (у солитёра — разноцветные).
+ * Французская карта асальто «Jeu du siège de Sébastopol» (Эпиналь, XIX век, общественное достояние;
+ * public/foxgeese/sebastopol.webp, 1100×1213 — фото листа, выпрямленное по углам): точки — по нарисованным пунктам,
+ * осаждающие — красные фишки с белым кантом, защитники — тёмно-синие с золотом. */
 import { Sound } from '../../core/audio';
 import { PointBoard } from '../../core/pointboard';
 import { h, sleep } from '../../core/util';
@@ -13,14 +16,31 @@ import './foxgeese.css';
 
 const M = 0.8;
 const W = 6 + 2 * M;
-const X = (s: State, p: number) => M + geo(s.cfg).xy[p][0];
-const Y = (s: State, p: number) => M + geo(s.cfg).xy[p][1];
+const MAP_SRC = `${import.meta.env.BASE_URL}foxgeese/sebastopol.webp`;
+/** Карта: пикселей на единицу доски (шаг сетки на картинке ~135 px) и размер картинки. */
+const MAP_PX = 135;
+const MAP_W = 1100 / MAP_PX;
+const MAP_H = 1213 / MAP_PX;
+/** Пункты на карте, в пикселях картинки, по порядку точек креста (ряды сверху вниз, слева направо). */
+const MAP_XY: [number, number][] = [
+  [408, 230], [542, 233], [674, 235],
+  [411, 369], [543, 369], [675, 368],
+  [136, 497], [272, 501], [412, 505], [543, 505], [673, 505], [818, 507], [956, 505],
+  [138, 636], [275, 638], [414, 639], [545, 641], [676, 642], [817, 641], [955, 640],
+  [140, 772], [278, 772], [414, 771], [546, 772], [676, 772], [817, 772], [953, 772],
+  [415, 905], [545, 906], [677, 905],
+  [415, 1043], [548, 1042], [680, 1045],
+];
+const isMap = (s: State) => s.cfg.look === 'map';
+const X = (s: State, p: number) => (isMap(s) ? MAP_XY[p][0] / MAP_PX : M + geo(s.cfg).xy[p][0]);
+const Y = (s: State, p: number) => (isMap(s) ? MAP_XY[p][1] / MAP_PX : M + geo(s.cfg).xy[p][1]);
 let walnut = '';
 
 function defs(): string {
   return `<defs>
     <radialGradient id="fg-w" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#e9ecef"/><stop offset="1" stop-color="#aeb4ba"/></radialGradient>
     <radialGradient id="fg-r" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ff5a7a"/><stop offset="0.6" stop-color="#d0103e"/><stop offset="1" stop-color="#7a0420"/></radialGradient>
+    <radialGradient id="fg-navy" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#5a74c8"/><stop offset="0.6" stop-color="#1e2c6a"/><stop offset="1" stop-color="#0a1030"/></radialGradient>
     <radialGradient id="fg-o" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffc45a"/><stop offset="0.6" stop-color="#e0921a"/><stop offset="1" stop-color="#8a5206"/></radialGradient>
     <radialGradient id="fg-peg" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#efe9da"/><stop offset="1" stop-color="#bfb6a0"/></radialGradient>
     <radialGradient id="fg-hole" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#6a5a20"/><stop offset="0.8" stop-color="#b8a44a"/><stop offset="1" stop-color="#e8d98a"/></radialGradient>
@@ -65,6 +85,7 @@ function board(s: State): string {
   const G = geo(s.cfg);
   const yoga = s.cfg.mode === 'yoga';
   let o = defs();
+  if (isMap(s)) return o + `<image href="${MAP_SRC}" width="${MAP_W}" height="${MAP_H}"/>`;
   if (s.cfg.look === 'soviet' && yoga) {
     const c = W / 2;
     o += `<circle cx="${c}" cy="${c}" r="${c - 0.02}" fill="#17181a" stroke="#000" stroke-width="0.04"/>`;
@@ -104,6 +125,14 @@ const GLASS = ['#3a7ad8', '#d83a4a', '#3aa85a', '#e0b030', '#8a4ad8', '#2ab0b8']
 function piece(s: State, kind: string, p: number, x: number, y: number): string {
   const sh = (r: number) => `<circle cx="${x + 0.04}" cy="${y + 0.06}" r="${r * 1.1}" fill="url(#fg-sh)"/>`;
   const fox = kind === 'f';
+  if (isMap(s)) {
+    // точёные фишки: осаждающие — красные с белым кантом, защитники — тёмно-синие с золотым
+    const [g, edge, rim] = fox ? ['fg-navy', '#0a1030', '#f0c040'] : ['fg-r', '#4a0414', '#ffffff'];
+    return `${sh(0.3)}<circle cx="${x}" cy="${y + 0.05}" r="0.28" fill="${edge}"/>
+      <circle cx="${x}" cy="${y}" r="0.28" fill="url(#${g})" stroke="${rim}" stroke-width="0.05"/>
+      <circle cx="${x}" cy="${y}" r="0.19" fill="none" stroke="${rim}" stroke-opacity="0.7" stroke-width="0.025"/>
+      ${fox ? `<path d="M${x} ${y - 0.12}l0.035 0.075 0.08 0.01-0.06 0.055 0.017 0.08-0.072-0.04-0.072 0.04 0.017-0.08-0.06-0.055 0.08-0.01z" fill="${rim}"/>` : ''}`;
+  }
   if (s.cfg.look === 'soviet' && s.cfg.mode === 'yoga') {
     // колышек-конус сверху: широкое основание, тень вбок, светлая вершинка
     return `<ellipse cx="${x + 0.1}" cy="${y + 0.12}" rx="0.3" ry="0.22" fill="#000" opacity="0.28"/>
@@ -144,7 +173,7 @@ class CrossView implements GameView<State, Event> {
     if (!ctx.demo) ctx.controls.appendChild(this.hint);
     this.pb = new PointBoard<State, Action>(root, ctx, {
       count: (s) => geo(s.cfg).xy.length,
-      size: () => [W, W],
+      size: (s) => (isMap(s) ? [MAP_W, MAP_H] : [W, W]),
       xy: (s, p) => [X(s, p), Y(s, p)],
       board,
       pieces: (s) => s.board.flatMap((v, p) => (v ? [{ p, kind: v === FOX ? 'f' : 'm' }] : [])),
