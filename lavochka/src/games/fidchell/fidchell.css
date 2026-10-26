@@ -1,0 +1,14 @@
+/* Фидхел: счёт и подсказка в боковой панели. */
+.fd-info {
+  font-size: 14.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fd-info small {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.fd-hint {
+  font-size: 13.5px;
+}

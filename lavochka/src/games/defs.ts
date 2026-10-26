@@ -106,6 +106,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   shen: () => import('./shen/def').then((m) => m.def),
   petteia: () => import('./petteia/def').then((m) => m.def),
   puluk: () => import('./puluk/def').then((m) => m.def),
+  fidchell: () => import('./fidchell/def').then((m) => m.def),
   bagchal: () => import('./bagchal/def').then((m) => m.def),
   ur: () => import('./ur/def').then((m) => m.def),
   senet: () => import('./senet/def').then((m) => m.def),
