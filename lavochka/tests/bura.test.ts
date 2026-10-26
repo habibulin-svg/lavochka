@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import type { Card, Suit } from '../src/cards/deck';
 import { def } from '../src/games/bura/def';
+import * as bura from '../src/games/bura/engine';
 import { apply, cfgFrom, covers, deal, makeView, newState, type Action, type State } from '../src/games/bura/engine';
 
 const rng = () => new SeededRng(9);
@@ -90,5 +91,22 @@ describe('скрытые карты и боты', () => {
       const a = (await def.bot.choose(makeView(s, [s.turn]), s.turn, lv, rng())) as Action;
       expect(apply(s, s.turn, a, rng())).not.toBeNull();
     }
+  });
+});
+
+describe('комбинации', () => {
+  it('бура: молодка (три одной некозырной масти) и малая москва (три десятки)', () => {
+    const cfg = bura.cfgFrom({});
+    expect(bura.combosIn(L('6S 9S AS'), cfg, 'H')).toEqual(['molodka']);
+    expect(bura.combosIn(L('6H 9H AH'), cfg, 'H')).toEqual(['bura']);
+    expect(bura.combosIn(L('10S 10C 10D'), cfg, 'H')).toEqual(['small']);
+    expect(bura.combosIn(L('AS AC AD'), cfg, 'H')).toEqual(['moscow']);
+  });
+  it('буркозёл: молодка — четыре одной масти, 4 конца — четыре десятки или туза', () => {
+    const cfg = bura.cfgFrom({ mode: 'kozel', hand: 4 });
+    expect(bura.combosIn(L('6S 9S AS KS'), cfg, 'H')).toEqual(['molodka']);
+    expect(bura.combosIn(L('10S 10C 10D 10H'), cfg, 'H')).toEqual(['konce']);
+    expect(bura.combosIn(L('AS AC AD AH'), cfg, 'H')).toEqual(['moscow', 'konce']);
+    expect(bura.combosIn(L('6S 9S AS KH'), cfg, 'H')).toEqual([]);
   });
 });

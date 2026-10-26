@@ -6,7 +6,7 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck, deckStyle } from '../../cards/render';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
-import { covers, deckLeft, handCount, handSize, maxLead, isBura, isMoscow, target, type Event, type View } from './engine';
+import { combosIn, COMBO_NAME, covers, deckLeft, handCount, handSize, maxLead, target, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './bura.css';
 
@@ -232,12 +232,12 @@ class BuraView implements GameView<View, Event> {
     if (!v || seat == null || this.ctx.demo || this.hidden) return;
     const hand = v.hands[seat];
     if (v.phase === 'lead') {
-      if (isBura(hand, v.trump, handSize(v.cfg))) this.button('Бура! Показать', true, () => this.send({ type: 'show', kind: 'bura' }));
-      if (v.cfg.moscow && isMoscow(hand, handSize(v.cfg), v.trump)) this.button('Москва! Показать', true, () => this.send({ type: 'show', kind: 'moscow' }));
+      for (const k of combosIn(hand, v.cfg, v.trump)) this.button(`${COMBO_NAME[k]}! Показать`, true, () => this.send({ type: 'show', kind: k }));
       this.button(this.selected.length ? `Зайти (${this.selected.length})` : 'Выберите карты для захода', !!this.selected.length, () => this.send({ type: 'lead', cards: this.selected }), !this.selected.length);
       this.button(`«Вскрываюсь!» — у меня ${target(v.cfg)}`, false, () => this.send({ type: 'declare' }));
       return;
     }
+    if (combosIn(hand, v.cfg, v.trump).includes('molodka')) this.button('Стоп! Молодка', true, () => this.send({ type: 'show', kind: 'molodka' }));
     const k = v.lead!.cards.length;
     const ready = this.selected.length === k;
     this.btns.appendChild(h(`<div class="br-ask">Нужно ${k} ${k === 1 ? 'карта' : 'карты'}: выбрано ${this.selected.length}</div>`));
@@ -296,7 +296,7 @@ class BuraView implements GameView<View, Event> {
         await this.showBanner(ev.ok ? `«Вскрываюсь!» — ${ev.pts}` : `Ошибка: всего ${ev.pts}`, 1300 / speed);
       } else if (ev.type === 'show') {
         Sound.win();
-        await this.showBanner(ev.kind === 'bura' ? 'Бура!' : 'Москва!', 1300 / speed);
+        await this.showBanner(`${COMBO_NAME[ev.kind]}!`, 1300 / speed);
       } else if (ev.type === 'round') {
         await this.showBanner(ev.winner != null ? `Кон за ${this.plain(ev.winner)}` : 'Кон окончен', 1200 / speed);
       } else if (ev.type === 'deal') Sound.shuffle();

@@ -9,6 +9,11 @@
  * Карты кончились, а никто не вскрылся — выигрывает тот, у кого больше очков во взятках.
  * Проигравшим кон — палки: 2, без единой взятки — 4, после буры или москвы — 4. Набравший 12 палок проиграл партию.
  *
+ * Комбинации (показать на своём заходе — кон сразу твой): бура, москва, молодка — вся рука одной некозырной масти
+ *   (её можно показать и не в свой заход, крикнув «Стоп!», — когда отвечаешь); в буре ещё «малая москва» — три десятки,
+ *   в буркозле — «4 конца»: четыре десятки или четыре туза. Бура, москва, 4 конца — палки как за буру; молодка и малая
+ *   москва — как за обычный проигрыш (буркозёл: 4 вместо 6).
+ *
  * Буркозёл (пресет, mode = 'kozel'): на руке 4 карты, заходят 1–4 картами одной масти. Кон играют до конца колоды
  * (или «вскрываются» на 61 из 120). Штрафы как в Козле: лучшему — 0, у кого 31 и больше — 2, 30 и меньше — 4, без взяток — 6;
  * ошибся при вскрытии — 6. Бура — 4 козыря, москва — 3 туза с козырным: кон сразу, остальным по 6. Поровну у лучших — «яйца»:
@@ -73,7 +78,7 @@ export interface State {
   /** Множитель штрафов после «яиц» (буркозёл). */
   eggs?: number;
   /** Чем кончился последний кон — для показа. */
-  last: { winner: number | null; reason: 'declare' | 'wrong' | 'bura' | 'moscow' | 'cards'; pts: number[] } | null;
+  last: { winner: number | null; reason: 'declare' | 'wrong' | Combo | 'cards'; pts: number[] } | null;
   loser: number | null;
 }
 
@@ -85,7 +90,7 @@ export interface View extends State {
   me: number[];
 }
 
-export type Action = { type: 'lead'; cards: Card[] } | { type: 'beat'; cards: Card[] } | { type: 'skip'; cards: Card[] } | { type: 'declare' } | { type: 'show'; kind: 'bura' | 'moscow' };
+export type Action = { type: 'lead'; cards: Card[] } | { type: 'beat'; cards: Card[] } | { type: 'skip'; cards: Card[] } | { type: 'declare' } | { type: 'show'; kind: Combo };
 
 export type Event =
   | { type: 'deal'; round: number; dealer: number; trump: Card; counts: number[]; hands?: Card[][] }
@@ -95,8 +100,8 @@ export type Event =
   | { type: 'take'; seat: number; count: number }
   | { type: 'draw'; seat: number; count: number; cards?: Card[] }
   | { type: 'declare'; seat: number; pts: number; ok: boolean }
-  | { type: 'show'; seat: number; kind: 'bura' | 'moscow'; cards: Card[] }
-  | { type: 'round'; winner: number | null; reason: 'declare' | 'wrong' | 'bura' | 'moscow' | 'cards'; pts: number[]; add: number[]; palki: number[] }
+  | { type: 'show'; seat: number; kind: Combo; cards: Card[] }
+  | { type: 'round'; winner: number | null; reason: 'declare' | 'wrong' | Combo | 'cards'; pts: number[]; add: number[]; palki: number[] }
   | { type: 'end'; loser: number; palki: number[] };
 
 // ---------------------------------------------------------------- карты
@@ -144,6 +149,24 @@ export function combos(hand: Card[], k: number): Card[][] {
 export function leads(hand: Card[]): Card[][] {
   const out: Card[][] = [];
   for (let k = 1; k <= hand.length; k++) for (const c of combos(hand, k)) if (c.every((x) => x.s === c[0].s)) out.push(c);
+  return out;
+}
+
+/** Комбинации на руке. */
+export type Combo = 'bura' | 'moscow' | 'molodka' | 'konce' | 'small';
+export const COMBO_NAME: Record<Combo, string> = { bura: 'Бура', moscow: 'Москва', molodka: 'Молодка', konce: '4 конца', small: 'Малая москва' };
+/** Сильные комбинации — палки, как за буру; слабые (молодка, малая москва) — как за обычный проигрыш. */
+export const strongCombo = (r: string) => r === 'bura' || r === 'moscow' || r === 'konce';
+
+/** Какие комбинации есть на руке. */
+export function combosIn(hand: Card[], cfg: Cfg, trump: Suit): Combo[] {
+  const size = handSize(cfg);
+  const out: Combo[] = [];
+  if (isBura(hand, trump, size)) out.push('bura');
+  if (cfg.moscow && isMoscow(hand, size, trump)) out.push('moscow');
+  if (hand.length === size && hand.every((c) => c.s === hand[0].s && c.s !== trump)) out.push('molodka');
+  if (size === 4 && hand.length === 4 && [10, 14].some((r) => hand.every((c) => c.r === r))) out.push('konce');
+  if (size === 3 && hand.length === 3 && hand.every((c) => c.r === 10)) out.push('small');
   return out;
 }
 
@@ -239,7 +262,7 @@ export function setup(seats: number[], opts: Options, rng: Rng): State {
 export const toAct = (s: State): number[] => (s.phase === 'over' ? [] : [s.turn]);
 
 /** Конец кона: палки проигравшим, новая раздача или конец партии. */
-function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' | 'bura' | 'moscow' | 'cards', ev: Event[], rng: Rng): { state: State; events: Event[] } {
+function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' | Combo | 'cards', ev: Event[], rng: Rng): { state: State; events: Event[] } {
   const pts = s.piles.map(pilePoints);
   const add = [0, 0, 0, 0];
   let eggs = s.eggs ?? 1;
@@ -253,7 +276,7 @@ function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' |
         continue;
       }
       if (p === winner || (tie && pts[p] === top)) continue;
-      add[p] = (reason === 'bura' || reason === 'moscow' || s.tricks[p] === 0 ? 6 : pts[p] <= 30 ? 4 : 2) * eggs;
+      add[p] = (strongCombo(reason) || s.tricks[p] === 0 ? 6 : reason === 'molodka' || reason === 'small' ? 4 : pts[p] <= 30 ? 4 : 2) * eggs;
     }
     // «яйца»: лучшие поровну — следующий кон вдвойне
     eggs = tie ? eggs * 2 : 1;
@@ -270,7 +293,7 @@ function endRound(s: State, winner: number | null, reason: 'declare' | 'wrong' |
       const top = Math.max(...s.seats.map((x) => pts[x]));
       if (pts[p] === top) continue;
     }
-    add[p] = reason === 'bura' || reason === 'moscow' || s.tricks[p] === 0 ? 4 : 2;
+    add[p] = strongCombo(reason) || s.tricks[p] === 0 ? 4 : 2;
   }
   const palki = s.palki.map((x, i) => x + add[i]);
   const realWinner = reason === 'wrong' ? null : winner;
@@ -302,8 +325,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       return endRound(s, seat, ok ? 'declare' : 'wrong', ev, rng);
     }
     if (a.type === 'show') {
-      const ok = a.kind === 'bura' ? isBura(hand, s.trump, handSize(s.cfg)) : s.cfg.moscow && isMoscow(hand, handSize(s.cfg), s.trump);
-      if (!ok) return null;
+      if (!combosIn(hand, s.cfg, s.trump).includes(a.kind)) return null;
       ev.push({ type: 'show', seat, kind: a.kind, cards: hand.slice() });
       return endRound(s, seat, a.kind, ev, rng);
     }
@@ -319,7 +341,12 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (s.turn === seat) return takeTrick(s, ev, rng);
     return { state: s, events: ev };
   }
-  // ответ на заход
+  // ответ на заход; «Стоп!» — молодку показывают и не в свой заход
+  if (a.type === 'show') {
+    if (a.kind !== 'molodka' || !combosIn(hand, s.cfg, s.trump).includes('molodka')) return null;
+    ev.push({ type: 'show', seat, kind: a.kind, cards: hand.slice() });
+    return endRound(s, seat, a.kind, ev, rng);
+  }
   const lead = s.lead!;
   const best = s.best!;
   if (a.type !== 'beat' && a.type !== 'skip') return null;

@@ -2,7 +2,7 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
-import { apply, cfgFrom, makeView, newState, setup, toAct, type Action, type Event, type State, type View } from './engine';
+import { apply, cfgFrom, makeView, newState, setup, toAct, type Action, type Event, type State, type View, COMBO_NAME } from './engine';
 
 export const SEATS = [
   { name: 'Вовка', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -12,7 +12,7 @@ export const SEATS = [
 ];
 
 const cn = (c: Card) => `<b>${c.r === 14 ? 'Т' : c.r === 13 ? 'К' : c.r === 12 ? 'Д' : c.r === 11 ? 'В' : c.r}${SUIT_SYM[c.s]}</b>`;
-const REASON: Record<string, string> = { declare: 'вскрылся — 31 есть', wrong: 'вскрылся без 31', bura: 'бура!', moscow: 'москва!', cards: 'карты кончились' };
+const REASON: Record<string, string> = { declare: 'вскрылся — 31 есть', wrong: 'вскрылся без 31', bura: 'бура!', moscow: 'москва!', molodka: 'молодка!', konce: '4 конца!', small: 'малая москва!', cards: 'карты кончились' };
 
 function describe(ev: Event, name: (seat: number) => string): string | null {
   switch (ev.type) {
@@ -29,7 +29,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'declare':
       return ev.ok ? `${name(ev.seat)}: «Вскрываюсь!» — <b>${ev.pts}</b> очков.` : `${name(ev.seat)}: «Вскрываюсь!» — а там всего ${ev.pts}. Ошибка!`;
     case 'show':
-      return `${name(ev.seat)}: <b>${ev.kind === 'bura' ? 'Бура' : 'Москва'}!</b> ${ev.cards.map(cn).join(' ')}`;
+      return `${name(ev.seat)}: <b>${ev.kind === 'molodka' && ev.cards.length ? 'Стоп! Молодка' : COMBO_NAME[ev.kind]}!</b> ${ev.cards.map(cn).join(' ')}`;
     case 'round': {
       const add = ev.add.map((x, i) => (x ? `${name(i)} +${x}` : '')).filter(Boolean);
       return `${ev.winner != null ? `Кон за ${name(ev.winner)}` : 'Кон без победителя'} (${REASON[ev.reason]}). Палки: ${add.join(', ') || 'никому'}.`;
@@ -181,6 +181,8 @@ export const def: GameDef<State, Action, Event, View> = {
       {
         title: 'Бура и москва',
         html: `<p><b>Бура</b> — три козыря на руке, <b>москва</b> — три туза. Показал на своём заходе — сразу выиграл кон, а проигравшим — по 4 палки.</p>
+          <p>Слабее — <b>молодка</b> (три карты одной некозырной масти) и <b>малая москва</b> (три десятки): кон тоже твой, но проигравшим по 2 палки.
+          Молодку можно показать и не в свой заход — крикнуть «Стоп!», когда отвечаешь на чужой заход.</p>
           <p>Палки: проигравшему кон — 2, без единой взятки — 4. Кто первым набрал 12 (или сколько договорились), тот проиграл партию.</p>`,
         demo: {
           seats: demoSeats,
@@ -194,7 +196,9 @@ export const def: GameDef<State, Action, Event, View> = {
         html: `<p>Бура пополам с Козлом. На руке <b>по 4 карты</b>, заходить можно и всеми четырьмя одной масти. Кон играют до последней карты:
           все очки — 120, выигрывает набравший больше (можно и раньше «вскрыться», если у тебя уже 61).</p>
           <p>Штрафные «палки»: у кого 31 и больше — 2, 30 и меньше — 4, ни одной взятки — 6. Лучшему — ничего. Поровну у лучших — «яйца»:
-          следующий кон вдвойне. <b>Бура</b> — четыре козыря, <b>москва</b> — три туза с козырным: кон сразу, остальным по 6. 12 палок — козёл.</p>`,
+          следующий кон вдвойне. <b>Бура</b> — четыре козыря, <b>москва</b> — три туза с козырным, <b>4 конца</b> — четыре десятки
+          или четыре туза: кон сразу, остальным по 6. <b>Молодка</b> — четыре карты одной масти (можно и «Стоп!» не в свой заход): кон твой,
+          остальным по 4. 12 палок — козёл.</p>`,
         demo: {
           seats: demoSeats,
           options: { mode: 'kozel', hand: 4 },

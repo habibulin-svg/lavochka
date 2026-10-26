@@ -4,7 +4,7 @@
  *   Сложный — ещё и заходит парой-тройкой одной масти, бережёт козыри, считает, что последним бить выгодно всегда. */
 import type { Rng } from '../../core/types';
 import type { Card } from '../../cards/deck';
-import { combos, covers, isBura, isMoscow, leads, pilePoints, POINTS, POWER, handSize, maxLead, target, type Action, type State } from './engine';
+import { combos, combosIn, covers, leads, strongCombo, pilePoints, POINTS, POWER, maxLead, target, type Action, type State } from './engine';
 
 const cost = (cs: Card[], trump: string) => cs.reduce((a, c) => a + (c.s === trump ? 8 + POWER[c.r] : POWER[c.r] * 0.6), 0);
 
@@ -12,9 +12,11 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   if (s.phase === 'over' || s.turn !== seat) return null;
   const hand = s.hands[seat];
   const trump = s.trump;
+  // «Стоп!» — молодку показывают и отвечая на чужой заход
+  if (s.phase === 'answer' && level > 0 && combosIn(hand, s.cfg, trump).includes('molodka')) return { type: 'show', kind: 'molodka' };
   if (s.phase === 'lead') {
-    if (isBura(hand, trump, handSize(s.cfg))) return { type: 'show', kind: 'bura' };
-    if (s.cfg.moscow && isMoscow(hand, handSize(s.cfg), trump)) return { type: 'show', kind: 'moscow' };
+    const cb = combosIn(hand, s.cfg, trump);
+    if (cb.length) return { type: 'show', kind: cb.find(strongCombo) ?? cb[0] };
     const mine = pilePoints(s.piles[seat]);
     // лёгкий иногда «не досчитывает» и вскрывается позже
     if (mine >= target(s.cfg) && (level > 0 || rng.next() < 0.7)) return { type: 'declare' };
