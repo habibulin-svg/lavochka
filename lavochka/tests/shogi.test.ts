@@ -85,3 +85,15 @@ describe('сёги', () => {
     }
   }, 600000);
 });
+
+describe('сёги: импас', () => {
+  it('очки за фигуры: ладья и слон по 5, остальные по 1 (и в руке тоже)', async () => {
+    const sh = await import('../src/games/shogi/engine');
+    const pos = { board: Array(81).fill(null), hands: [{ R: 1, P: 3 }, {}] as [Record<string, number>, Record<string, number>], turn: 0 as const, mode: 'shogi' as const };
+    pos.board[0] = { o: 0, k: 'B', pr: false };
+    pos.board[1] = { o: 0, k: 'G', pr: false };
+    pos.board[2] = { o: 0, k: 'K', pr: false };
+    expect(sh.impassePoints(pos, 0)).toBe(5 + 1 + 5 + 3);
+    expect(sh.IMPASSE_NEED).toBe(24);
+  });
+});

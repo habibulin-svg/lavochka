@@ -46,7 +46,7 @@ export interface Move {
   promo?: boolean;
 }
 
-export type EndReason = 'mate' | 'try' | 'perpetual' | 'repetition' | 'moves' | 'resign';
+export type EndReason = 'mate' | 'try' | 'perpetual' | 'repetition' | 'moves' | 'resign' | 'impasse' | 'impasseDraw';
 
 export interface State {
   cfg: Cfg;
@@ -306,6 +306,25 @@ function finish(s: State, winner: number | null, reason: EndReason, ev: Event[])
 
 export const MAX_PLY = 400;
 
+/** Импас (дзисёги): очки за фигуры на доске и в руке — ладья и слон по 5, остальные (кроме короля) по 1. */
+export function impassePoints(pos: Pos, o: number): number {
+  let n = 0;
+  for (const p of pos.board) if (p && p.o === o && p.k !== 'K') n += p.k === 'R' || p.k === 'B' ? 5 : 1;
+  for (const [k, c] of Object.entries(pos.hands[o])) n += (k === 'R' || k === 'B' ? 5 : 1) * c;
+  return n;
+}
+/** Сколько очков нужно при импасе (правило 24 очков). */
+export const IMPASSE_NEED = 24;
+
+/** Оба короля вошли в лагерь соперника (большие сёги). */
+function bothKingsIn(pos: Pos): boolean {
+  if (pos.mode !== 'shogi') return false;
+  return [0, 1].every((o) => {
+    const k = pos.board.findIndex((p) => p?.o === o && p.k === 'K');
+    return k >= 0 && inZone(pos, k, o);
+  });
+}
+
 export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
   if (s0.over || seat !== s0.turn || !a) return null;
   const ev: Event[] = [];
@@ -332,7 +351,13 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
   s.keys = [...s0.keys, k];
   ev.push({ type: 'move', seat, from: m.from, to: m.to, kind: moved, drop: !!m.drop, promo: !!m.promo, captured, check, text });
   if (!legalPos(n).length) finish(s, seat, 'mate', ev);
-  else if (s.cfg.mode === 'dobutsu' && moved === 'K' && relRank(n, m.to, seat) === GEO.dobutsu.h - 1 && !attacked(n, m.to, 1 - seat)) finish(s, seat, 'try', ev);
+  else if (bothKingsIn(n) && !check) {
+    // импас: оба короля в лагере соперника, мата не будет — считают очки; меньше 24 — проигрыш, у обоих хватает — ничья
+    const pts = [impassePoints(n, 0), impassePoints(n, 1)];
+    const ok = pts.map((p) => p >= IMPASSE_NEED);
+    if (ok[0] && ok[1]) finish(s, null, 'impasseDraw', ev);
+    else finish(s, ok[0] ? 0 : ok[1] ? 1 : pts[0] >= pts[1] ? 0 : 1, 'impasse', ev);
+  } else if (s.cfg.mode === 'dobutsu' && moved === 'K' && relRank(n, m.to, seat) === GEO.dobutsu.h - 1 && !attacked(n, m.to, 1 - seat)) finish(s, seat, 'try', ev);
   else if (s.keys.filter((x) => x === k).length >= 4) {
     // сэннитэ: вечный шах — проигрыш шахующего, иначе ничья
     if (s.checks[seat] >= 4) finish(s, 1 - seat, 'perpetual', ev);
