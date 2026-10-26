@@ -140,6 +140,7 @@ export const SLUGS: Record<string, string> = {
   cenariska: 'cena-riska',
   polet: 'polet',
   polkovodec: 'polkovodec',
+  vkosmos: 'v-kosmos',
   narody: 'igry-narodov-mira',
   mirkarty: 'kartochnye-igry-so-vsego-sveta',
   vostochnye: 'vostochnye-shahmaty',
