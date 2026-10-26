@@ -11,6 +11,8 @@
  * Биток ставят на свою линию и щелчком загоняют свои фишки в лузы. Забил свою — ещё удар. Королеву надо «покрыть» — следующим
  * ударом забить свою фишку, иначе она возвращается в центр. Забил биток — штраф: одна своя забитая фишка — обратно в центр.
  * Забил все свои (и королева покрыта) — партия: победителю — оставшиеся фишки соперника, за королеву +3. Играют до 25.
+ * Разбой: первый удар сдачи, не сдвинувший ни одной фишки, можно повторить — всего три попытки, потом ход переходит.
+ * Последнюю свою фишку нельзя забить раньше королевы: фол — она и ещё одна забитая (штраф) возвращаются в центр, ход переходит.
  */
 import type { Options } from '../../core/types';
 import { simulate, shotSpeed, type Disc, type Field, type SimResult } from './physics';
@@ -74,6 +76,8 @@ export interface State {
   pocketed: [number, number];
   cover: number | null;
   queenBy: number | null;
+  /** Карром: попыток разбоя в этой сдаче (null — сдача уже разбита). */
+  breakTries?: number | null;
   shots: number;
   last: { seat: number; result: string } | null;
   over: boolean;
@@ -129,6 +133,7 @@ export function newState(cfg: Cfg, seats: number[]): State {
     pocketed: [0, 0],
     cover: null,
     queenBy: null,
+    breakTries: 0,
     shots: 0,
     last: null,
     over: false,
@@ -190,6 +195,22 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
   s.pieces = s.pieces.filter((p) => !pos.get(p.id)!.gone).map((p) => ({ ...p, x: pos.get(p.id)!.x, y: pos.get(p.id)!.y }));
   const me = seat;
   if (s.cfg.mode === 'chapaev') return chapaevAfter(s0, s, a as Extract<Action, { type: 'shot' }>, goneIds, ev);
+  // разбой: биток не сдвинул ни одной фишки — ещё попытка (всего три), потом ход переходит
+  if (s0.breakTries != null) {
+    const moved = s0.pieces.some((p) => {
+      const d = pos.get(p.id)!;
+      return d.gone || Math.hypot(d.x - p.x, d.y - p.y) > 1e-6;
+    });
+    if (!moved) {
+      const tries = (s0.breakTries ?? 0) + 1;
+      s.breakTries = tries < 3 ? tries : 0;
+      if (tries >= 3) s.turn = 1 - me;
+      ev.push({ type: 'foul', seat: me, text: tries < 3 ? `разбой не вышел — ещё попытка (${tries + 1} из 3)` : 'три попытки разбоя — ход переходит' });
+      ev.splice(0, 0, { type: 'shot', seat: me, id: STRIKER, angle: (a as Extract<Action, { type: 'strike' }>).angle, power: a.power, x: (a as Extract<Action, { type: 'strike' }>).x, gone: [], again: tries < 3 });
+      return { state: s, events: ev };
+    }
+    s.breakTries = null;
+  }
   return carromAfter(s0, s, a as Extract<Action, { type: 'strike' }>, goneIds, !!pos.get(STRIKER)!.gone, ev, me);
 }
 
@@ -276,6 +297,15 @@ function carromAfter(s0: State, s: State, a: Extract<Action, { type: 'strike' }>
     }
     ev.push({ type: 'foul', seat: me, text: 'биток в лузе — штраф' });
   }
+  // последняя своя — не раньше королевы: она и ещё одна забитая — обратно в центр, ход переходит
+  if (own > 0 && !s.pieces.some((p) => p.o === me) && (s.pieces.some((p) => p.o === 2) || s.cover === me)) {
+    for (let k = 0; k < 2 && s.pocketed[me] > 0; k++) {
+      s.pocketed[me]--;
+      s.pieces.push({ id: 200 + s.shots * 2 + k, o: me, x: CR.size / 2 + (k ? -1 : 1) * CR.coin * 2.2, y: CR.size / 2 });
+    }
+    again = false;
+    ev.push({ type: 'foul', seat: me, text: 'последняя своя раньше королевы — фол' });
+  }
   ev.splice(0, 0, { type: 'shot', seat: me, id: STRIKER, angle: a.angle, power: a.power, x: a.x, gone, again });
   // конец сдачи: у кого-то не осталось фишек
   const leftMe = s.pieces.filter((p) => p.o === me).length;
@@ -297,6 +327,7 @@ function carromAfter(s0: State, s: State, a: Extract<Action, { type: 'strike' }>
     s.pocketed = [0, 0];
     s.cover = null;
     s.queenBy = null;
+    s.breakTries = 0;
     s.round++;
     s.turn = l;
     return { state: s, events: ev };
