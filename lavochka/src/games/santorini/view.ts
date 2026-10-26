@@ -4,6 +4,7 @@
  * Цели хода — отдельным верхним слоем (видны и за башнями), касание прилипает к ближайшей цели; доску можно повернуть. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
+import { Zoom } from '../../core/zoom';
 import type { GameView, ViewCtx } from '../../core/view';
 import { legal, N, stepsFrom, type Action, type Event, type State } from './engine';
 import './santorini.css';
@@ -99,6 +100,7 @@ class SantoriniView implements GameView<State, Event> {
       wrap.appendChild(turn);
     }
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
+    new Zoom(wrap, this.svg, { demo: ctx.demo, corner: 'bl' });
     this.fit();
     new ResizeObserver(() => this.fit()).observe(wrap);
     this.info = h('<div class="sn-info"></div>');

@@ -4,6 +4,7 @@
  * Действие игры описывается «местом» (spot): from → to — переставить фишку, только to — поставить/снять/выбрать точку.
  * Действия без места (null) становятся кнопками в боковой панели («Хватит прыгать»). */
 import { Sound } from './audio';
+import { Zoom } from './zoom';
 import { h } from './util';
 import type { ViewCtx } from './view';
 import './pointboard.css';
@@ -43,6 +44,8 @@ export interface PointBoardSpec<S, A> {
   ring?: number;
   /** Своя точка под мышью (x, y — в единицах доски): ≥ 0 — она, иначе — ближайшая в радиусе hit (Пентаго: половина квадранта). */
   pick?(s: S, x: number, y: number): number;
+  /** Приближение щипком, колесом и кнопками (мелкие доски на телефоне, core/zoom.ts). */
+  zoom?: boolean;
 }
 
 export interface Move {
@@ -81,6 +84,7 @@ export class PointBoard<S, A> {
     const wrap = h(`<div class="pb-wrap ${cls}"><svg class="pb-board" xmlns="${NS}"></svg></div>`);
     root.appendChild(wrap);
     this.svg = wrap.querySelector('svg') as SVGSVGElement;
+    if (spec.zoom) new Zoom(wrap, this.svg, { demo: ctx.demo });
     this.buttons = h(`<div class="pb-btns"></div>`);
     ctx.controls.appendChild(this.buttons);
     this.svg.addEventListener('click', (e) => this.click(e));

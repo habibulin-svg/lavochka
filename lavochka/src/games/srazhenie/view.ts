@@ -55,6 +55,7 @@ class SrazhenieView implements GameView<State, Event> {
         legal: (s, seat) => this.legal(s, seat),
         spot: (a) => (a.type === 'move' ? { from: a.from, to: a.to } : a.type === 'swap' ? { from: a.a, to: a.b } : null),
         label: (a) => (a.type === 'ready' ? 'В бой!' : a.type === 'auto' ? 'Расставить с умом' : a.type === 'shuffle' ? 'Перемешать' : '…'),
+        zoom: true,
         hit: 56,
         ring: 52,
       },

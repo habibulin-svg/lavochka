@@ -54,6 +54,7 @@ class PolkovodecView implements GameView<State, Event> {
           return pc ? { from: pc.p, to: a.to } : null;
         },
         label: (a) => (a.type === 'end' ? 'Закончить ход' : '…'),
+        zoom: true,
         hit: 28,
         ring: 26,
       },

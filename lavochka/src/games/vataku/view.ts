@@ -63,6 +63,7 @@ class VatakuView implements GameView<State, Event> {
         spot: (a) =>
           a.type === 'move' || a.type === 'shoot' ? { from: a.from, to: a.to } : a.type === 'swap' ? { from: a.a, to: a.b } : a.type === 'mine' ? { from: N + a.from, to: N + a.to } : null,
         label: (a) => (a.type === 'ready' ? 'Убрать стенку — в бой!' : a.type === 'auto' ? 'Расставить заново' : '…'),
+        zoom: true,
         hit: 30,
         ring: 30,
       },

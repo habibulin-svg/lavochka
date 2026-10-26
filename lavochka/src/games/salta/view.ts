@@ -176,6 +176,7 @@ class SaltaView implements GameView<State, Event> {
         piece: (s, kind, x, y) => this.piece(s, kind, x, y),
         legal: (s, seat) => (s.turn !== seat || s.over ? [] : moves(s, seat).length ? moves(s, seat).map((m) => ({ type: 'move', from: m.from, to: m.to }) as Action) : [{ type: 'pass' }]),
         spot: (a) => (a.type === 'move' ? { from: a.from, to: a.to } : null),
+        zoom: true,
         label: () => 'Ходить некуда — пропустить ход',
         hit: 0.5,
         ring: 0.45,

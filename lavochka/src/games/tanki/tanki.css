@@ -8,6 +8,5 @@
 .tk-mtext { font: 700 9px sans-serif; fill: #fff; text-anchor: middle; pointer-events: none; }
 .tk-rlab { font: 700 15px sans-serif; fill: #fff; stroke: #000; stroke-width: 3; paint-order: stroke; text-anchor: middle; pointer-events: none; }
 .tk-repair { font-size: 18px; text-anchor: middle; pointer-events: none; }
-.tk-die { filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.5)); }
 .tk-info { display: flex; flex-direction: column; gap: 3px; }
 .tk-hint { font-size: 13px; opacity: 0.8; }

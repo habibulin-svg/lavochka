@@ -22,10 +22,16 @@ function selected(all: string[]): string[] {
 const LEVEL_MIXES = [[0], [1], [2], [0, 1, 2]];
 export const PARTS = 8;
 
-/** Игры части part (0…PARTS-1) — через одну, чтобы тяжёлые не собрались в одном файле. */
+/** Игры части part (0…PARTS-1) — через одну, чтобы тяжёлые не собрались в одном файле. Часть считается по полному
+ * списку, а фильтр GAMES_ONLY — потом: игра всегда в своём файле, остальные файлы просто пусты (а не падают). */
 export function gameSuites(part: number) {
-  const ids = selected(Object.keys(DEFS).sort()).filter((_, i) => i % PARTS === part);
-  if (!ids.length) return;
+  const all = Object.keys(DEFS).sort();
+  const sel = new Set(selected(all));
+  const ids = all.filter((id, i) => i % PARTS === part && sel.has(id));
+  if (!ids.length) {
+    describe.skip(`часть ${part + 1}: игр нет`, () => it('—', () => {}));
+    return;
+  }
   describe.each(ids)('%s', (id) => {
     const load = (): Promise<GameDef> => DEFS[id]();
 

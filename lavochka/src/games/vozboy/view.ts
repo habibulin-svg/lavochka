@@ -73,6 +73,7 @@ class VozboyView implements GameView<State, Event> {
           if (!f || !pl) return null;
           return { from: pl.p * 5, to: f.end * 5 + 1 + DIRS.indexOf(f.dir) };
         },
+        zoom: true,
         hit: 16,
         ring: 14,
       },

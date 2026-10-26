@@ -56,6 +56,7 @@ class MorskayaView implements GameView<State, Event> {
         legal: (s, seat) => legal(s, seat),
         spot: (a) => this.spot(a),
         label: (a) => (a.type === 'mine' ? (this.s?.mines.includes(this.s.ships.find((x) => x.id === a.id)?.p ?? -1) ? '⚓ Тральщик снимает мину' : '💣 Тральщик ставит мину') : '…'),
+        zoom: true,
         hit: 30,
         ring: 30,
       },

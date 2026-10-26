@@ -32,3 +32,12 @@
   .bc-cb { height: 34px; padding: 0; width: 38px; justify-content: center; }
   .bc-cb span { display: none; }
 }
+
+/* Приближение небольших досок (core/zoom.ts): только «−», «⤢», «+» в углу. */
+.zm-bar { z-index: 40; }
+.zm-bar.zm-bl { right: auto; left: 10px; }
+.zm-bar.zm-tr { bottom: auto; top: 8px; }
+.zm-bar.zm-tl { bottom: auto; top: 8px; right: auto; left: 10px; }
+.zm-bar .bc-cb { width: 38px; font-size: 18px; }
+.zm-bar .bc-zoom .bc-cb:nth-child(2) { border-radius: 0; border-right: 1px solid rgba(60, 40, 10, 0.2); }
+.zm-bar .bc-cb:disabled { opacity: 0.45; cursor: default; }

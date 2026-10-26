@@ -1,7 +1,8 @@
 /* «Идут танки» — отрисовка. Поле — скан (public/tanki/board.webp, 1194×1522), клетки — map.ts. Фигурки вырезаны с фото
  * комплекта (танки, самолёты, ракеты на подставках, красные и зелёные); мины — пластинки кодом (на фото их не разглядеть),
- * кубик «1:3» — кодом. Ход: «Бросить кубик», затем касание танка и клетки; развороты, полёты, ракеты — кнопками. */
+ * кубик «1:3» — в лотке на панели. Ход: «Бросить кубик», затем касание танка и клетки; развороты, полёты, ракеты — кнопками. */
 import { Sound } from '../../core/audio';
+import { DiceTray } from '../../core/dice';
 import { PointBoard } from '../../core/pointboard';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -37,7 +38,7 @@ class TankiView implements GameView<State, Event> {
   private hint!: HTMLElement;
   private s: State | null = null;
   private seat = -1;
-  private die = 0;
+  private tray!: DiceTray;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -45,6 +46,10 @@ class TankiView implements GameView<State, Event> {
     ctx.controls.appendChild(this.info);
     this.hint = h(`<div class="tk-hint"></div>`);
     if (!ctx.demo) ctx.controls.appendChild(this.hint);
+    const trayEl = h(`<div class="tk-tray"></div>`);
+    ctx.controls.appendChild(trayEl);
+    this.tray = new DiceTray(trayEl, 1);
+    this.tray.show(null, [true]);
     this.pb = new PointBoard<State, Action>(
       root,
       ctx,
@@ -70,6 +75,7 @@ class TankiView implements GameView<State, Event> {
           return null;
         },
         label: (a) => this.label(a),
+        zoom: true,
         hit: 26,
         ring: 24,
       },
@@ -150,16 +156,7 @@ class TankiView implements GameView<State, Event> {
         o += `<text x="${x}" y="${y + 24}" class="tk-rlab">${k + 1}${lab ? (lab === 'hit' ? ' Ц-П' : ' П') : ''}</text>`;
       });
     }
-    if (s.phase === 'move' && s.roll) o += this.dieSvg(s.roll, 1100, 760);
-    else if (this.die) o += this.dieSvg(this.die, 1100, 760);
     return o;
-  }
-
-  /** Кубик «1:3»: грани 1, 2, 3 — каждая дважды. */
-  private dieSvg(v: number, x: number, y: number): string {
-    const pips: Record<number, [number, number][]> = { 1: [[0, 0]], 2: [[-12, -12], [12, 12]], 3: [[-12, -12], [0, 0], [12, 12]] };
-    return `<g transform="translate(${x} ${y})" class="tk-die"><rect x="-26" y="-26" width="52" height="52" rx="9" fill="#151515" stroke="#000" stroke-width="2"/>
-      ${pips[v].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="5.5" fill="#f0eee4"/>`).join('')}</g>`;
   }
 
   private text() {
@@ -195,11 +192,10 @@ class TankiView implements GameView<State, Event> {
     const sp = () => this.ctx.speed();
     for (const ev of events) {
       if (ev.type === 'roll') {
-        this.die = ev.value;
-        Sound.diceRoll(0.5);
+        // кубик «1:3» — в лотке на панели, не на карте (на телефоне карта и так тесная)
         this.s = v;
         this.pb.set(v);
-        await sleep(450 / sp());
+        await this.tray.roll([ev.value], sp());
       } else if (ev.type === 'move') {
         const prev = this.s ?? v;
         const t = prev.tanks.find((x) => x.id === ev.id);
@@ -233,7 +229,7 @@ class TankiView implements GameView<State, Event> {
         else Sound.win();
       }
     }
-    if (v.phase !== 'move') this.die = 0;
+    this.tray.show(v.phase === 'move' && v.roll ? [v.roll] : null, [!(v.phase === 'move' && v.roll)]);
     this.s = v;
     this.pb.mark(v.last);
     this.pb.set(v);

@@ -145,6 +145,7 @@ class PetteiaView implements GameView<State, Event> {
         legal: (s, seat) => (s.turn === seat ? legal(s) : []),
         spot: (a) => (a.type === 'move' ? { from: a.from, to: a.to } : a.type === 'place' ? { to: a.to } : null),
         label: () => 'Хватит прыгать',
+        zoom: true,
         hit: 0.5,
         ring: 0.44,
       },

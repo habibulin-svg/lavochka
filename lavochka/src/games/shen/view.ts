@@ -1,6 +1,7 @@
 /* Шен — отрисовка: доска-щит (картинка tools/shen), лунки, пальма, змейки и иероглифы «нефер» — SVG поверх неё, колышки с головами
  * собак и шакалов стоят в лунках. Фишки в руке стоят рядом с доской. Ход — касание подсвеченной фишки, затем лунки, куда её поставить. */
 import { Sound } from '../../core/audio';
+import { Zoom } from '../../core/zoom';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { LINES, NEFER, SHEN, alive, legalMoves, type Event, type Move, type State } from './engine';
@@ -129,6 +130,7 @@ export class ShenView implements GameView<State, Event> {
     this.wrap = h(`<div class="sh-wrap"><svg class="sh-board" xmlns="${NS}" viewBox="-150 -20 960 1250" preserveAspectRatio="xMidYMid meet"><g class="sh-g"></g><g class="sh-p"></g><g class="sh-t"></g></svg></div>`);
     root.appendChild(this.wrap);
     this.svg = this.wrap.querySelector('svg') as SVGSVGElement;
+    new Zoom(this.wrap, this.svg, { demo: ctx.demo });
     this.gBoard = this.svg.querySelector('.sh-g') as SVGGElement;
     this.gPieces = this.svg.querySelector('.sh-p') as SVGGElement;
     this.gTargets = this.svg.querySelector('.sh-t') as SVGGElement;

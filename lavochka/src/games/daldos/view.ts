@@ -2,6 +2,7 @@
  * Недаленная фишка стоит поперёк ряда, надаленная — вдоль: у лопатки это видно сразу (ребро или широкая сторона).
  * На узком экране лодка встаёт носом вверх. Ход — касание подсвеченной фишки, затем лунки, куда её поставить. */
 import { Sound } from '../../core/audio';
+import { Zoom } from '../../core/zoom';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { face } from './def';
@@ -51,6 +52,7 @@ export class DaldosView implements GameView<State, Event> {
     this.wrap = h(`<div class="dl-wrap"><svg class="dl-board" xmlns="${NS}" preserveAspectRatio="xMidYMid meet"><g class="dl-g"></g><g class="dl-p"></g><g class="dl-t"></g></svg></div>`);
     root.appendChild(this.wrap);
     this.svg = this.wrap.querySelector('svg') as SVGSVGElement;
+    new Zoom(this.wrap, this.svg, { demo: ctx.demo });
     this.gBoard = this.svg.querySelector('.dl-g') as SVGGElement;
     this.gPieces = this.svg.querySelector('.dl-p') as SVGGElement;
     this.gTargets = this.svg.querySelector('.dl-t') as SVGGElement;
