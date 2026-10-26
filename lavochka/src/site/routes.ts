@@ -43,6 +43,7 @@ export const SLUGS: Record<string, string> = {
   tafl: 'hnefatafl',
   daldos: 'daldos',
   shen: 'sobaki-i-shakaly',
+  petteia: 'petteyya',
   foxgeese: 'lisa-i-gusi',
   bulls: 'byki-i-korovy',
   renju: 'rendzyu',
@@ -201,9 +202,11 @@ export interface VariantPage {
 
 export const VARIANTS: VariantPage[] = [
   { path: 'nardy/dlinnye', game: 'nardy', preset: 'long' },
+  { path: 'petteyya/latrunkuli', game: 'petteia', preset: 'latrunculi' },
   { path: 'nardy/korotkie', game: 'nardy', preset: 'short' },
   { path: 'durak/perevodnoy', game: 'durak', preset: 'perevodnoy' },
   { path: 'durak/podkidnoy', game: 'durak', preset: 'podkidnoy' },
+  { path: 'go/tibetskoe', game: 'go', preset: 'tibet' },
   { path: 'shashki/russkie', game: 'checkers', preset: 'russian' },
   { path: 'shashki/ugolki', game: 'checkers', preset: 'ugolki' },
   { path: 'shashki/poddavki', game: 'checkers', preset: 'giveaway' },

@@ -1,0 +1,5 @@
+/* Петтейя: плита на каменных плитах форума, счёт и подсказка в боковой панели. */
+.pt-wrap { background: #6a645a url('/tex/petteia/table.webp') center / cover no-repeat; border-radius: 10px; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5); }
+.pt-info { font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.pt-info small { font-size: 12px; opacity: 0.75; }
+.pt-hint { font-size: 13.5px; }
