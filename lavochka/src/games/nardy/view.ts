@@ -151,7 +151,6 @@ class NardyView implements GameView<State, Event> {
   /** Шашка под курсором — показываем, куда она может пойти. */
   private hover: number | null = null;
   private steps: Step[] = [];
-  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private onKey = (e: KeyboardEvent) => {
     if (e.code !== 'Space') return;
     const t = e.target as HTMLElement;
@@ -793,7 +792,6 @@ class NardyView implements GameView<State, Event> {
   // ---------------------------------------------------------------- ход игрока
 
   private clearTurn() {
-    clearTimeout(this.autoTimer);
     this.actSeat = null;
     this.selected = null;
     this.hover = null;
@@ -842,13 +840,6 @@ class NardyView implements GameView<State, Event> {
     const froms = new Set(this.steps.map((x) => x.from));
     if (froms.size === 1) this.selected = [...froms][0];
     this.render();
-    const distinct = new Set(this.steps.map((x) => x.from + ':' + targetOf(s, x)));
-    if (this.ctx.autoSingle() && distinct.size === 1) {
-      const st = this.steps[0];
-      this.autoTimer = setTimeout(() => {
-        if (this.state === s && this.actSeat === seat) this.send(st);
-      }, 450 / this.ctx.speed());
-    }
   }
 
   private select(from: number | null) {
@@ -889,7 +880,6 @@ class NardyView implements GameView<State, Event> {
   }
 
   destroy() {
-    clearTimeout(this.autoTimer);
     document.removeEventListener('keydown', this.onKey);
   }
 }

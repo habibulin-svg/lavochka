@@ -40,7 +40,6 @@ export class ChauparView implements GameView<CState, CEvent> {
   private els = new Map<string, SVGGElement>();
   private moves: CMove[] = [];
   private rollSeat: number | null = null;
-  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private onKey = (e: KeyboardEvent) => {
     if (e.code !== 'Space' || this.rollBtn.disabled || !this.rollBtn.isConnected) return;
     const t = e.target as HTMLElement;
@@ -335,7 +334,6 @@ export class ChauparView implements GameView<CState, CEvent> {
   }
 
   private clearTurn() {
-    clearTimeout(this.autoTimer);
     this.rollBtn.disabled = true;
     this.rollBtn.classList.remove('pulse');
     this.rollSeat = null;
@@ -358,16 +356,6 @@ export class ChauparView implements GameView<CState, CEvent> {
     }
     this.moves = legalMoves(s);
     for (const m of this.moves) this.els.get(`${seat}:${m.piece}`)?.classList.add('can');
-    const distinct = new Set(this.moves.map((m) => `${m.from}>${m.to}`));
-    if (this.ctx.autoSingle() && distinct.size === 1) {
-      const m = this.moves[0];
-      this.autoTimer = setTimeout(() => {
-        if (this.s === s) {
-          this.clearTurn();
-          this.ctx.act(seat, { type: 'move', piece: m.piece, die: m.die, to: m.to });
-        }
-      }, 500 / this.ctx.speed());
-    }
   }
 
   /** Выбрали фишку — показываем, куда она может встать (по одной цели на клетку). */
@@ -427,7 +415,6 @@ export class ChauparView implements GameView<CState, CEvent> {
   }
 
   destroy() {
-    clearTimeout(this.autoTimer);
     document.removeEventListener('keydown', this.onKey);
   }
 }

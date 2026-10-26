@@ -97,7 +97,6 @@ export class PatolliView implements GameView<State, Event> {
   private els = new Map<string, SVGGElement>();
   private moves: Move[] = [];
   private rollSeat: number | null = null;
-  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private onKey = (e: KeyboardEvent) => {
     if (e.code !== 'Space' || this.rollBtn.disabled || !this.rollBtn.isConnected) return;
     const t = e.target as HTMLElement;
@@ -422,7 +421,6 @@ export class PatolliView implements GameView<State, Event> {
   }
 
   private clearTurn() {
-    clearTimeout(this.autoTimer);
     this.rollBtn.disabled = true;
     this.rollBtn.classList.remove('pulse');
     this.rollSeat = null;
@@ -451,15 +449,6 @@ export class PatolliView implements GameView<State, Event> {
     this.moves = legalMoves(s);
     for (const m of this.moves) this.srcEl(s, m.from)?.classList.add('can');
     if (this.moves.length === 1) this.pick(this.moves[0].from);
-    if (this.ctx.autoSingle() && this.moves.length === 1) {
-      const m = this.moves[0];
-      this.autoTimer = setTimeout(() => {
-        if (this.s === s) {
-          this.clearTurn();
-          this.ctx.act(seat, { type: 'move', from: m.from });
-        }
-      }, 500 / this.ctx.speed());
-    }
   }
 
   /** Выбрали фишку (или чашу) — подсвечиваем клетку, куда она встанет. */
@@ -506,7 +495,6 @@ export class PatolliView implements GameView<State, Event> {
   }
 
   destroy() {
-    clearTimeout(this.autoTimer);
     document.removeEventListener('keydown', this.onKey);
   }
 }

@@ -42,7 +42,6 @@ export class PulukView implements GameView<State, Event> {
   private els = new Map<number, SVGGElement>();
   private moves: Move[] = [];
   private rollSeat: number | null = null;
-  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private ro: ResizeObserver | null = null;
   private onKey = (e: KeyboardEvent) => {
     if (e.code !== 'Space' || this.rollBtn.disabled || !this.rollBtn.isConnected) return;
@@ -356,7 +355,6 @@ export class PulukView implements GameView<State, Event> {
   }
 
   private clearTurn() {
-    clearTimeout(this.autoTimer);
     this.rollBtn.disabled = true;
     this.rollBtn.classList.remove('pulse');
     this.rollSeat = null;
@@ -385,15 +383,6 @@ export class PulukView implements GameView<State, Event> {
     this.moves = legalMoves(s);
     for (const m of this.moves) (m.from < 0 ? this.homeEl(s) : this.els.get(m.from))?.classList.add('can');
     if (this.moves.length === 1) this.pick(this.moves[0].from);
-    if (this.ctx.autoSingle() && this.moves.length === 1) {
-      const m = this.moves[0];
-      this.autoTimer = setTimeout(() => {
-        if (this.s === s) {
-          this.clearTurn();
-          this.ctx.act(seat, { type: 'move', from: m.from });
-        }
-      }, 500 / this.ctx.speed());
-    }
   }
 
   /** Выбрали воина (или дом) — показываем поле, куда он встанет. */
@@ -446,7 +435,6 @@ export class PulukView implements GameView<State, Event> {
   }
 
   destroy() {
-    clearTimeout(this.autoTimer);
     this.ro?.disconnect();
     document.removeEventListener('keydown', this.onKey);
   }

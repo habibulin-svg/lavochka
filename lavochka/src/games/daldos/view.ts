@@ -37,7 +37,6 @@ export class DaldosView implements GameView<State, Event> {
   private els = new Map<number, SVGGElement>();
   private moves: Move[] = [];
   private rollSeat: number | null = null;
-  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private ro: ResizeObserver | null = null;
   private onKey = (e: KeyboardEvent) => {
     if (e.code !== 'Space' || this.rollBtn.disabled || !this.rollBtn.isConnected) return;
@@ -294,7 +293,6 @@ export class DaldosView implements GameView<State, Event> {
   }
 
   private clearTurn() {
-    clearTimeout(this.autoTimer);
     this.rollBtn.disabled = true;
     this.rollBtn.classList.remove('pulse');
     this.rollSeat = null;
@@ -319,15 +317,6 @@ export class DaldosView implements GameView<State, Event> {
     const froms = new Set(this.moves.map((m) => m.from));
     for (const f of froms) this.els.get(f)?.classList.add('can');
     if (froms.size === 1) this.pick([...froms][0]);
-    if (this.ctx.autoSingle() && this.moves.length === 1) {
-      const m = this.moves[0];
-      this.autoTimer = setTimeout(() => {
-        if (this.s === s) {
-          this.clearTurn();
-          this.ctx.act(seat, { type: 'move', from: m.from, to: m.to, use: m.use });
-        }
-      }, 500 / this.ctx.speed());
-    }
   }
 
   /** Выбрали фишку — показываем лунки, куда она может встать. */
@@ -376,7 +365,6 @@ export class DaldosView implements GameView<State, Event> {
   }
 
   destroy() {
-    clearTimeout(this.autoTimer);
     this.ro?.disconnect();
     document.removeEventListener('keydown', this.onKey);
   }
