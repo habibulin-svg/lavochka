@@ -38,6 +38,8 @@ export interface Cfg {
   diamonds: boolean;
   /** Король-говно: серия партий со званиями; козырь назначает Король, первым ходит Говно. */
   ranks: boolean;
+  /** Король-говно: подкидывать (кроме самого Короля) — только с разрешения Короля, раз за кон. */
+  kingPermit?: boolean;
   /** Длинный дурак (на 2–4): шестёрки — личные козыри, проигравший выкладывает следующую карту своей масти. */
   long: boolean;
   /** Погоны: кто остался с картами против последних шестёрок — получает погоны. */
@@ -86,6 +88,7 @@ export function cfgFrom(o: Options): Cfg {
     spades: bool(o.spades, false),
     diamonds: bool(o.diamonds, false),
     ranks,
+    kingPermit: ranks && bool(o.kingPermit, true),
     long: bool(o.long, false),
     pogony: bool(o.pogony, false),
     games: Math.max(1, Math.min(20, Number(o.games) || (ranks ? 5 : 1))),
@@ -159,6 +162,9 @@ export interface State {
   winner: number | null;
   /** Сколько карт в колоде этой партии. */
   size: number;
+  /** Король-говно: разрешил ли Король подкидывать в этом коне (null — ещё не спрашивали) и ждём ли его ответа. */
+  permit?: boolean | null;
+  permitAsk?: boolean;
 }
 
 /** Что видит игрок: чужие руки и колода скрыты, вместо них — сколько карт. */
@@ -209,7 +215,8 @@ export type Action =
   | { type: 'pflip' }
   | { type: 'ptake' }
   | { type: 'plead'; card: Card }
-  | { type: 'pflipLead' };
+  | { type: 'pflipLead' }
+  | { type: 'permit'; yes: boolean };
 
 export type Event =
   | { type: 'deal'; game: number; dealer: number | null; counts: number[]; trumpCard: Card | null; trump: Suit; first: number; low: Card | null; chooser?: number; ptrump?: (Suit | null)[] }
@@ -219,6 +226,7 @@ export type Event =
   | { type: 'transfer'; seat: number; card: Card | null; shown?: Card; to: number }
   | { type: 'take'; seat: number }
   | { type: 'throw'; seat: number; cards: Card[] }
+  | { type: 'permit'; seat: number; yes: boolean }
   | { type: 'pass'; seat: number; take: boolean }
   | { type: 'bito'; count: number }
   | { type: 'pickup'; seat: number; cards: Card[] }
@@ -532,6 +540,15 @@ function startBout(s: State, attacker: number, defender: number) {
   s.asker = -1;
   s.phase = 'attack';
   s.cap = Math.min(boutLimit(s), s.hands[defender].length);
+  s.permit = null;
+  s.permitAsk = false;
+}
+
+/** Король, чьё разрешение нужно, чтобы подкидывать (в игре, не отбивается), или null. */
+export function permitKing(s: State): number | null {
+  if (!s.cfg.kingPermit || s.game <= 1 || !s.ranking.length) return null;
+  const k = s.ranking[0];
+  return s.seats.includes(k) && !s.out.includes(k) && k !== s.defender ? k : null;
 }
 
 export function setup(seats: number[], opts: Options, rng: Rng): State {
@@ -659,7 +676,16 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       askNext(s, ev, rng);
       break;
     }
+    case 'permit': {
+      if (!s.permitAsk || seat !== s.asker || (s.phase !== 'throw' && s.phase !== 'take')) return null;
+      s.permit = !!a.yes;
+      s.permitAsk = false;
+      ev.push({ type: 'permit', seat, yes: !!a.yes });
+      askNext(s, ev, rng);
+      break;
+    }
     case 'throw': {
+      if (s.permitAsk) return null;
       if (s.phase !== 'throw' && s.phase !== 'take') return null;
       const cards = a.cards;
       if (!Array.isArray(cards) || !cards.length || !distinct(cards)) return null;
@@ -678,6 +704,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       break;
     }
     case 'pass': {
+      if (s.permitAsk) return null;
       if (s.phase !== 'throw' && s.phase !== 'take') return null;
       s.passed.push(seat);
       ev.push({ type: 'pass', seat, take: s.phase === 'take' });
@@ -692,8 +719,16 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
 
 /** Следующий, кого спросить «подкинешь?». Никого — кон закончен. */
 function askNext(s: State, ev: Event[], rng: Rng) {
+  // Король-говно: прежде чем подкинет кто-то кроме Короля, Король разрешает (или нет) — раз за кон
+  const k = permitKing(s);
+  if (k != null && s.permit == null && throwersOf(s).some((t) => t !== k && !s.passed.includes(t) && throwable(s, t).length)) {
+    s.asker = k;
+    s.permitAsk = true;
+    return;
+  }
   for (const t of throwersOf(s)) {
     if (s.passed.includes(t)) continue;
+    if (s.permit === false && t !== k) continue;
     if (throwable(s, t).length) {
       s.asker = t;
       return;

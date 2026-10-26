@@ -186,6 +186,9 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
       return chooseDefense(v, seat, level, rng);
     case 'throw':
     case 'take':
+      // Король-говно: Король решает, можно ли остальным подкидывать (лёгкий — наугад, остальные — разрешают:
+      // отбивающийся — соперник в борьбе за звания, пусть берёт)
+      if (v.permitAsk) return { type: 'permit', yes: level === 0 ? rng.int(2) === 0 : true };
       return chooseThrow(v, seat, level, rng);
     case 'pbeat': {
       // польский: крыть с руки самой дешёвой подходящей; нечем — тянуть из колоды, а без колоды — брать три

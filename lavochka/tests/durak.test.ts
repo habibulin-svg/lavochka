@@ -232,6 +232,50 @@ describe('серия со званиями', () => {
     expect(sawTrump).toBe(true);
     expect(a.state.game).toBe(3);
   });
+  it('со второй партии подкидывают с разрешения Короля; «не разрешаю» — подкидывает только он', async () => {
+    const opts = { ...defaults(def), ranks: true, games: 3 };
+    const seats = botSeats(def, 4, [1]);
+    const a = new Authority(def, seats, opts);
+    a.rng = new SeededRng(7);
+    a.state = def.setup(seats, opts, a.rng);
+    const brng = new SeededRng(2);
+    let asked = 0;
+    let refused = 0;
+    while (!a.result) {
+      const s = a.state as State;
+      const seat = a.toAct()[0];
+      if (s.permitAsk) {
+        asked++;
+        expect(seat).toBe(s.ranking[0]);
+        expect(s.game).toBeGreaterThan(1);
+        // пока Король не ответил, подкинуть нельзя
+        expect(a.act(seat, { type: 'pass' })).toBeNull();
+        const yes = asked % 2 === 0;
+        expect(a.act(seat, { type: 'permit', yes })).not.toBeNull();
+        if (!yes) {
+          refused++;
+          const t = a.state as State;
+          if (t.asker >= 0 && (t.phase === 'throw' || t.phase === 'take')) expect(t.asker).toBe(s.ranking[0]);
+        }
+        continue;
+      }
+      if (s.game === 1) expect(s.permitAsk ?? false).toBe(false);
+      a.act(seat, await def.bot.choose(a.viewFor([seat]), seat, 1, brng));
+    }
+    expect(asked).toBeGreaterThan(0);
+    expect(refused).toBeGreaterThan(0);
+  });
+  it('чат: со второй партии назвал по имени — минута молчания; в первой и без званий — можно', () => {
+    const s = setup([0, 1, 2], { ranks: true }, new SeededRng(3));
+    const names = ['Вовка', 'Ленка', 'Дед Паша'];
+    expect(def.chatRule!(s, 0, 'Ленка, ходи!', names)).toBeNull(); // первая партия — званий ещё нет
+    const s2 = { ...s, game: 2 };
+    expect(def.chatRule!(s2, 0, 'Ленка, ходи!', names)?.mute).toBe(60);
+    expect(def.chatRule!(s2, 0, 'дед паша, не спи', names)?.mute).toBe(60);
+    expect(def.chatRule!(s2, 0, 'Принц, ходи', names)).toBeNull();
+    expect(def.chatRule!(s2, 0, 'Вовка молодец', names)).toBeNull(); // себя — можно
+    expect(def.chatRule!({ ...s2, cfg: { ...s2.cfg, ranks: false } }, 0, 'Ленка', names)).toBeNull();
+  });
   it('cfgFrom: со званиями серия по умолчанию — 5 партий', () => {
     expect(cfgFrom({ ranks: true }).games).toBe(5);
   });

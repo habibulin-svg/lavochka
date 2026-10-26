@@ -550,6 +550,12 @@ class DurakView implements GameView<View, Event> {
       if (v.deckCount) this.button('Тянуть из колоды', !polishBeaters(v, seat).length, () => this.send({ type: 'pflip' }));
       else if (!polishBeaters(v, seat).length) this.button('Крыть нечем — забрать три', true, () => this.send({ type: 'ptake' }));
     }
+    if (v.permitAsk && (v.phase === 'throw' || v.phase === 'take')) {
+      this.btns.appendChild(h(`<div class="dk-ask">Король, разрешаете подкидывать?</div>`));
+      this.button('Подкидывайте', true, () => this.send({ type: 'permit', yes: true }));
+      this.button('Не разрешаю', false, () => this.send({ type: 'permit', yes: false }));
+      return;
+    }
     if (v.phase === 'throw') this.button(v.attacker === seat ? 'Бито' : 'Пас', !za, () => this.send({ type: 'pass' }));
     if (v.phase === 'take') this.button('Хватит — пусть забирает', !za, () => this.send({ type: 'pass' }));
   }

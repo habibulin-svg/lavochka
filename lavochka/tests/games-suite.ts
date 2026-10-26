@@ -19,7 +19,9 @@ function selected(all: string[]): string[] {
   const ids = only.split(',').filter(Boolean);
   return ids.some((id) => !all.includes(id)) ? all : ids;
 }
-const LEVEL_MIXES = [[0], [1], [2], [0, 1, 2]];
+/** Уровни ботов по партиям: каждый уровень играет, но «все сложные» — нет (это самые долгие партии, а силу ботов
+ * проверяют тесты своих игр). */
+const LEVEL_MIXES = [[0], [1], [0, 2], [2, 1, 0]];
 export const PARTS = 8;
 
 /** Игры части part (0…PARTS-1) — через одну, чтобы тяжёлые не собрались в одном файле. Часть считается по полному
@@ -64,7 +66,8 @@ export function gameSuites(part: number) {
       for (const p of def.presets || []) {
         const opts = { ...defaults(def), ...p.options };
         // запас шагов: серии («Лукоморье» — четыре части подряд) ботам приходится проходить долго
-        const res = await simulate(def, botSeats(def, def.players.default), opts, 77, 400_000);
+        // наборы правил проверяем на лёгких ботах: важно, что правила играбельны, а не сила игры (сильные — в 5–20 раз дольше)
+        const res = await simulate(def, botSeats(def, def.players.default, [0]), opts, 77, 400_000);
         expect(res.error, `пресет ${p.id}`).toBeUndefined();
         expect(res.finished, `пресет ${p.id}`).toBe(true);
       }

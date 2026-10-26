@@ -53,6 +53,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} подкидывает: ${cards(ev.cards)}`;
     case 'pass':
       return null;
+    case 'permit':
+      return ev.yes ? `${name(ev.seat)}: <i>подкидывайте!</i>` : `${name(ev.seat)}: <i>подкидывать не разрешаю.</i>`;
     case 'bito':
       return `<i>Бито (${ev.count} ${plural(ev.count, 'карта', 'карты', 'карт')}).</i>`;
     case 'pickup':
@@ -229,6 +231,14 @@ export const def: GameDef<State, Action, Event, View> = {
       default: false,
     },
     {
+      key: 'kingPermit',
+      label: 'Подкидывать — с разрешения Короля',
+      hint: 'Со второй партии: прежде чем подкинуть, остальные ждут, пока Король разрешит (раз за кон). Сам Король подкидывает без спроса.',
+      type: 'toggle',
+      default: true,
+      showIf: (o) => o.ranks === true,
+    },
+    {
       key: 'games',
       label: 'Партий',
       type: 'select',
@@ -259,6 +269,18 @@ export const def: GameDef<State, Action, Event, View> = {
   toAct,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view: (s, seats) => makeView(s, seats),
+  // Король-говно: со второй партии зовут только по званиям — назвал по имени, молчи минуту
+  chatRule: (s, seat, text, names) => {
+    if (!s.cfg.ranks || s.game <= 1) return null;
+    const low = ` ${text.toLowerCase().replace(/[^а-яёa-z0-9]+/g, ' ')} `;
+    for (const x of s.seats) {
+      if (x === seat) continue;
+      const nm = (names[x] || '').replace(/\s*\(бот\)$/, '').toLowerCase().trim();
+      if (nm.length >= 3 && low.includes(` ${nm.replace(/[^а-яёa-z0-9]+/g, ' ')} `))
+        return { mute: 60, note: `${names[seat] || 'Игрок'}: по имени за этим столом не зовут — только по званиям. Минута молчания.` };
+    }
+    return null;
+  },
   redact,
   result(s) {
     if (s.phase !== 'over') return null;

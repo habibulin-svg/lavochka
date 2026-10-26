@@ -175,6 +175,8 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   awayText?(opts: Options): string | null;
   /** Строка журнала для события (HTML). name(seat) — имя игрока, уже экранированное. */
   describe?(ev: E, name: (seat: number) => string): string | null;
+  /** Правило чата за сетевым столом (Король-говно: по имени не зовут — минута молчания). names — имена мест по номеру. */
+  chatRule?(state: S, seat: number, text: string, names: string[]): { mute: number; note: string } | null;
   rules: RulesDoc;
   /** Красивая позиция «посреди партии» — для превью на карточке. */
   showcase?(): S;

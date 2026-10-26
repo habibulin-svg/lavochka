@@ -82,6 +82,8 @@ interface Conn {
   holdUntil: number;
   /** В голосовом чате (и с камерой ли). */
   voice: { video: boolean } | null;
+  /** Молчит до этого момента (правило игры в чате). */
+  muteUntil?: number;
 }
 
 export interface RoomConfig {
@@ -190,7 +192,19 @@ export class Room {
       }
       case 'chat': {
         const text = String(m.text || '').trim().slice(0, 300);
-        if (text && conn.clientId) this.broadcast({ t: 'chat', name: conn.name, seat: conn.seats[0] ?? null, text });
+        if (!text || !conn.clientId) return;
+        const now = Date.now();
+        if (conn.muteUntil && conn.muteUntil > now) {
+          this.send(conn, { t: 'chat', name: 'Стол', seat: null, text: `Вы молчите ещё ${Math.ceil((conn.muteUntil - now) / 1000)} с.` });
+          return;
+        }
+        this.broadcast({ t: 'chat', name: conn.name, seat: conn.seats[0] ?? null, text });
+        const seat = conn.seats[0];
+        const rule = this.auth && seat != null ? this.def.chatRule?.(this.auth.state, seat, text, this.auth.seats.reduce<string[]>((a, x) => ((a[x.seat] = x.name), a), [])) : null;
+        if (rule) {
+          conn.muteUntil = now + rule.mute * 1000;
+          this.broadcast({ t: 'chat', name: 'Стол', seat: null, text: rule.note });
+        }
         return;
       }
       case 'idle':
