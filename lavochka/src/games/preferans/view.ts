@@ -298,9 +298,18 @@ class PrefView implements GameView<View, Event> {
       case 'dark':
         this.btns.appendChild(h('<div class="pf-ask">Ваше первое слово. Спасовать втёмную, не глядя в карты? Если будут распасы — они вдвое, а вам бомба; перебить пас втёмную можно только семерной.</div>'));
         this.button('Пас втёмную', true, () => this.send({ type: 'dark-pass' }));
+        if (v.cfg.darkBids) {
+          if (minLevel(v) <= 6) this.button('Раз втёмную', false, () => this.send({ type: 'dark-bid', bid: { level: 6, trump: 'S' } }));
+          this.button('Мизер втёмную', false, () => this.send({ type: 'dark-bid', bid: { misere: true } }));
+        }
         this.button('Смотреть карты', false, () => this.send({ type: 'look' }));
         return;
       case 'bid': {
+        if (seat === v.darkBidder) {
+          this.btns.appendChild(h('<div class="pf-ask">Вашу игру втёмную перебили — карт вы не видели, остаётся пас.</div>'));
+          this.button('Пас', true, () => this.send({ type: 'pass' }));
+          return;
+        }
         const min = minLevel(v);
         this.btns.appendChild(h(`<div class="pf-ask">Торговля: ${v.bid ? `сейчас ${bidName(v.bid)}` : 'ставок не было'}${min > 6 ? ` · не ниже ${min}-й (${v.darkSeat != null ? 'пас втёмную' : 'выход из распасов'})` : ''}</div>`));
         this.bidGrid(v.bid, (b) => this.send({ type: 'bid', bid: b }), !v.spoke.includes(seat), min);
@@ -444,7 +453,7 @@ class PrefView implements GameView<View, Event> {
         await this.showBanner(ev.forced ? 'Распасы (обязательные)' : 'Распасы!', 1000 / speed);
       } else if (ev.type === 'dark') {
         Sound.ui();
-        if (ev.dark) await this.showBanner(`${this.plain(ev.seat)}: пас втёмную!`, 1000 / speed);
+        if (ev.dark) await this.showBanner(`${this.plain(ev.seat)}: ${ev.bid ? `${bidName(ev.bid)} втёмную` : 'пас втёмную'}!`, 1000 / speed);
       } else if (ev.type === 'show') {
         Sound.ui();
         await this.showBanner(`${this.plain(ev.seat)}: ${ev.open ? 'в светлую' : 'втёмную'}`, 800 / speed);

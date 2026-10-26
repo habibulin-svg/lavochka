@@ -328,3 +328,25 @@ describe('соглашения', () => {
     expect(r.state.totPulya[0]).toBe(22);
   });
 });
+
+describe('«Классика»: заявки втёмную', () => {
+  it('мизер втёмную: карт не видно до конца торговли, перебить можно только десятерной, игра вдвое', () => {
+    let s = deal(newState(cfgFrom({ variant: 'classic', darkBids: true, opening: 0 } as Options), [0, 1, 2]), new SeededRng(4)).state;
+    expect(s.phase).toBe('dark');
+    const first = s.turn;
+    expect(apply(s, first, { type: 'dark-bid', bid: { level: 7, trump: 'S' } }, new SeededRng(1))).toBeNull();
+    s = apply(s, first, { type: 'dark-bid', bid: { misere: true } }, new SeededRng(1))!.state;
+    expect(s.darkBidder).toBe(first);
+    expect(makeView(s, [first]).hands[first]).toHaveLength(0);
+    const next = s.turn;
+    expect(apply(s, next, { type: 'bid', bid: { level: 9, trump: 'NT' } }, new SeededRng(1))).toBeNull();
+    while (s.phase === 'bid') s = apply(s, s.turn, { type: 'pass' }, new SeededRng(1))!.state;
+    expect(s.phase).toBe('discard');
+    expect(s.declarer).toBe(first);
+    expect(makeView(s, [first]).hands[first].length).toBeGreaterThan(0);
+  });
+  it('без договорённости — нельзя', () => {
+    const s = deal(newState(cfgFrom({ variant: 'classic', opening: 0 } as Options), [0, 1, 2]), new SeededRng(4)).state;
+    expect(apply(s, s.turn, { type: 'dark-bid', bid: { misere: true } }, new SeededRng(1))).toBeNull();
+  });
+});

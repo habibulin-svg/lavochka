@@ -68,6 +68,8 @@ export interface Cfg {
   darkPass: boolean;
   /** «Классика»: кругов обязательных распасов перед игрой. */
   opening: number;
+  /** «Классика», по договорённости (Кодекс 3.3.19): первая рука может сказать «раз» или мизер втёмную. */
+  darkBids?: boolean;
 }
 
 export const SKAKS = 4;
@@ -98,6 +100,7 @@ export function cfgFrom(o: Options): Cfg {
     paidPrikup: flag(o.paidPrikup, d.paidPrikup),
     darkPass: variant === 'classic' && flag(o.darkPass, d.darkPass),
     opening: variant === 'classic' ? pick(Number(o.opening), [0, 1, 2], d.opening) : 0,
+    darkBids: variant === 'classic' && flag(o.darkBids, false),
   };
 }
 
@@ -171,6 +174,8 @@ export interface State {
   passed: number[];
   /** Игра: заказ или распасы. */
   kind: 'game' | 'misere' | 'raspasy' | null;
+  /** «Скачки»: взяток на несыгранном мизере — следующие распасы идут в гору по 2 / 4 / 6 за взятку. */
+  misFail?: number;
   contract: Bid | null;
   declarer: number;
   /** Решения вистующих. */
@@ -198,6 +203,8 @@ export interface State {
   /** Пас втёмную в этой сдаче (место) и сколько распасов втёмную было подряд до неё. */
   darkSeat: number | null;
   darkRun: number;
+  /** Кто заявил втёмную («раз» или мизер) — не видит карт до конца торговли, игра вдвое. */
+  darkBidder?: number | null;
   /** Бомбы «Классики»: множители по порядку. */
   bombs: number[][];
   pulya: number[];
@@ -243,6 +250,7 @@ export interface View extends State {
 
 export type Action =
   | { type: 'dark-pass' }
+  | { type: 'dark-bid'; bid: Bid }
   | { type: 'look' }
   | { type: 'bid'; bid: Bid }
   | { type: 'pass' }
@@ -259,7 +267,7 @@ export type ScoreKind = 'game' | 'misere' | 'raspasy' | 'free' | 'half' | 'conce
 
 export type Event =
   | { type: 'deal'; round: number; dealer: number; counts: number[]; hands?: Card[][] }
-  | { type: 'dark'; seat: number; dark: boolean }
+  | { type: 'dark'; seat: number; dark: boolean; bid?: Bid }
   | { type: 'bid'; seat: number; bid: Bid }
   | { type: 'pass'; seat: number }
   | { type: 'prikup'; seat: number; cards: Card[] }
@@ -399,6 +407,7 @@ export function newState(cfg: Cfg, seats: number[]): State {
     forced: false,
     openingLeft: cfg.opening * seats.length,
     darkSeat: null,
+    darkBidder: null,
     darkRun: 0,
     bombs: [[], [], [], []],
     pulya: [0, 0, 0, 0],
@@ -492,6 +501,7 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
     tricksPlayed: 0,
     forced,
     darkSeat: null,
+    darkBidder: null,
     round: s0.round + 1,
   };
   const ev: Event[] = [{ type: 'deal', round: s.round, dealer, counts: hands.map((h) => h.length), hands: hands.map((h) => h.slice()) }];
@@ -578,6 +588,20 @@ export function apply(raw: State, seat: number, a: Action, rng: Rng): { state: S
   const s: State = { ...s0, hands: s0.hands.slice(), passed: s0.passed.slice(), spoke: s0.spoke.slice(), tricks: s0.tricks.slice(), whist: { ...s0.whist }, whistOrder: s0.whistOrder.slice() };
   switch (s0.phase) {
     case 'dark': {
+      if (a.type === 'dark-bid') {
+        // «раз втёмную» (шесть пик) или мизер втёмную — по договорённости, только в «Классике»
+        const b = a.bid;
+        const raz = b && !isMis(b) && b.level === 6 && b.trump === 'S';
+        if (!s.cfg.darkBids || !b || (!raz && !isMis(b)) || (raz && !levelOk(b, minLevel(s)))) return null;
+        s.phase = 'bid';
+        s.bid = b;
+        s.bidder = who;
+        s.darkBidder = who;
+        s.spoke.push(who);
+        ev.push({ type: 'dark', seat: who, dark: true, bid: b });
+        s.turn = nextBidder(s, who);
+        return { state: s, events: ev };
+      }
       if (a.type !== 'dark-pass' && a.type !== 'look') return null;
       s.phase = 'bid';
       ev.push({ type: 'dark', seat: who, dark: a.type === 'dark-pass' });
@@ -593,6 +617,9 @@ export function apply(raw: State, seat: number, a: Action, rng: Rng): { state: S
         const b = a.bid;
         if (!b || (isMis(b) ? false : !(b.level >= 6 && b.level <= 10 && BID_SUITS.includes(b.trump)))) return null;
         if (s.bid && bidRank(b) <= bidRank(s.bid)) return null;
+        // заявивший втёмную карт не видит — дальше только пас; мизер втёмную перебивает лишь десятерная
+        if (who === s.darkBidder) return null;
+        if (s.darkBidder != null && s.bidder === s.darkBidder && s.bid && isMis(s.bid) && (isMis(b) || b.level < 10)) return null;
         if (!levelOk(b, minLevel(s))) return null;
         if (isMis(b) && s.spoke.includes(who)) return null;
         s.bid = b;
@@ -832,6 +859,8 @@ function scoreRound(s0: State, ev: Event[], rng: Rng, how: 'play' | 'free' | 'ha
   const s: State = { ...s0, pulya: s0.pulya.slice(), gora: s0.gora.slice(), whists: s0.whists.map((r) => r.slice()), bombs: s0.bombs.map((b) => b.slice()) };
   const notes: string[] = [];
   const cfg = s.cfg;
+  // «скачки»: особая цена — только ближайших распасов после несыгранного мизера
+  s.misFail = undefined;
   let made = true;
   let mult = 1;
   let kind: ScoreKind;
@@ -848,6 +877,11 @@ function scoreRound(s0: State, ev: Event[], rng: Rng, how: 'play' | 'free' | 'ha
       for (const q of s.players) if (!low.includes(q)) for (const x of low) s.whists[x][q] += (5 * s.tricks[q]) / low.length;
       for (const p of s.players) if (s.tricks[p] === 0) addPulya(s, p, 1, notes);
       if (s.seats.length === 4) addPulya(s, s.dealer, 1, notes);
+    } else if (cfg.variant === 'skachki' && s0.misFail) {
+      // распасы после несыгранного мизера: всё в гору, по 2 / 4 / 6 за взятку (одна, две, три и больше взяток на мизере)
+      mult = [2, 4, 6][Math.min(3, s0.misFail) - 1];
+      for (const p of s.players) s.gora[p] += s.tricks[p] * mult;
+      notes.push(`misfail:${s0.misFail}`);
     } else {
       const dark = s.darkSeat != null ? 2 ** (s.darkRun + 1) : 1;
       mult = cfg.raspPrice * progMult(cfg, n) * dark * (s.forced && cfg.variant === 'skachki' ? 2 : 1);
@@ -866,13 +900,15 @@ function scoreRound(s0: State, ev: Event[], rng: Rng, how: 'play' | 'free' | 'ha
     s.raspasyRun = n;
   } else {
     const d = s.declarer;
-    mult = s.bombs[d][0] ?? 1;
+    // игра втёмную — вдвое
+    mult = (s.bombs[d][0] ?? 1) * (s.darkBidder === d ? 2 : 1);
     const others = s.seats.filter((x) => x !== d);
     if (s.kind === 'misere') {
       kind = 'misere';
       made = s.tricks[d] === 0;
       if (made) addPulya(s, d, MISERE_VALUE * mult, notes);
       else s.gora[d] += MISERE_VALUE * s.tricks[d] * mult;
+      if (!made && cfg.variant === 'skachki') s.misFail = s.tricks[d];
     } else if (how === 'concede') {
       // сдал без розыгрыша: «без трёх» («без двух») на игре, до которой доторговался; висты никто не пишет
       kind = 'concede';
@@ -1044,7 +1080,7 @@ export function makeView(raw: State, seats: number[] | 'all'): View {
   const s = migrate(raw);
   const pub = publicSeats(s);
   // пас втёмную: первая рука решает, не видя своих карт
-  const blind = (x: number) => s.phase === 'dark' && x === s.turn;
+  const blind = (x: number) => (s.phase === 'dark' && x === s.turn) || (s.phase === 'bid' && x === s.darkBidder);
   const see = (x: number) => seats === 'all' || pub.includes(x) || (seats.includes(x) && !blind(x));
   const v = s as Partial<View>;
   const prikupShown = (s.phase !== 'bid' && s.phase !== 'dark') || (s.kind === 'raspasy' && s.cfg.raspPrikup);

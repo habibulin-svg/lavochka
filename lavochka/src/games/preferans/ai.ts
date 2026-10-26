@@ -109,6 +109,10 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
       // пас втёмную — азарт: изредка
       return { type: rng.next() < [0.08, 0.12, 0.15][level] ? 'dark-pass' : 'look' };
     case 'bid': {
+      // заявил втёмную и перебили — карт не видит, только пас
+      if (who === s.darkBidder) return { type: 'pass' };
+      // мизер втёмную перебивает только десятерная — боты не рискуют
+      if (s.darkBidder != null && s.bidder === s.darkBidder && s.bid && 'misere' in s.bid) return { type: 'pass' };
       const { trump, est } = bestTrump(hand);
       const e = est * (level === 0 ? 0.85 + rng.next() * 0.2 : level === 1 ? 0.95 : 1) + 0.4; // прикуп
       const min = minLevel(s);
