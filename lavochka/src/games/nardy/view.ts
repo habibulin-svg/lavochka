@@ -15,7 +15,8 @@ const PW = 64; // ширина пункта
 const B = 60; // бар
 const W = F * 2 + T * 2 + B + PW * 12; // 1040
 const H = 760;
-const R = 29; // радиус шашки
+/** Радиус шашки: на помпейской плите буквы стоят тесно — шашки там мельче. */
+let R = 29;
 const OFF_STEP = 16; // толщина снятой шашки «на ребре» в лотке
 const PH = 262; // длина пункта-«копья»
 const STACK = 5 * 2 * R; // наибольшая высота стопки
@@ -47,11 +48,35 @@ function spearCell(a: number): Cell {
   return { x, y0: bottom ? H - F : F, dir: bottom ? -1 : 1, len: STACK, bottom };
 }
 
-/** 12 линий: поле a = ряд × 12 + столбец, ряд 0 — нижний. */
-function lineCell(a: number): Cell {
+/* Помпейская плита — фотография (public/nardy/pompeii.webp, снята 600×424), поверх — невидимые поля на буквах.
+ * Координаты букв — в пикселях исходного снимка: ряды снизу вверх (PERNAM PAONEM, PVLLVM PISCEM, ABEMVS INCENA),
+ * в каждом 6 букв слева от знака посередине и 6 справа. По бокам — полосы под руку и снятые шашки. */
+const PHOTO_W = 600;
+const PHOTO_H = 424;
+const PHOTO_S = (W - 96) / PHOTO_W;
+const PHOTO_X0 = 48;
+const PHOTO_Y0 = (H - PHOTO_H * PHOTO_S) / 2;
+const px = (x: number) => PHOTO_X0 + x * PHOTO_S;
+const py = (y: number) => PHOTO_Y0 + y * PHOTO_S;
+const STONE_ROWS = [
+  { y: 291, xs: [20, 65, 108, 153, 192, 237, 379, 411, 440, 468, 507, 557] },
+  { y: 160, xs: [47, 87, 125, 158, 199, 260, 385, 412, 437, 467, 505, 549] },
+  { y: 25, xs: [70, 106, 133, 172, 212, 250, 372, 406, 440, 469, 492, 518] },
+];
+/** Знаки посередине плиты (сердце, колесо, ветвь) — там бар. */
+const STONE_MID = px(314);
+const STONE_LEN = 176;
+const STONE_R = 17;
+
+/** 12 линий: поле a = ряд × 12 + столбец, ряд 0 — нижний. На помпейской плите шашки стоят стопкой прямо на букве. */
+function lineCell(a: number, stone = false): Cell {
   const r = Math.floor(a / 12);
   const top = F + (2 - r) * RH;
   const x = colX(a % 12);
+  if (stone) {
+    const cy = py(STONE_ROWS[r].y);
+    return { x: px(STONE_ROWS[r].xs[a % 12]), y0: cy - STONE_LEN / 2, dir: 1, len: STONE_LEN, cy, bottom: r === 0 };
+  }
   if (r === 2) return { x, y0: top + 6, dir: 1, len: RH - 12, bottom: false };
   if (r === 0) return { x, y0: top + RH - 6, dir: -1, len: RH - 12, bottom: true };
   return { x, y0: top + 6, dir: 1, len: RH - 12, cy: top + RH / 2, bottom: false };
@@ -66,14 +91,21 @@ function stackY(c: Cell, k: number, n: number) {
 }
 
 /** Дорожка поля «12 линий» (для подсветки и нажатия). */
-function laneRect(a: number) {
-  const c = lineCell(a);
+function laneRect(a: number, stone = false) {
+  const c = lineCell(a, stone);
+  if (stone) {
+    // ширина — до середины между соседними буквами ряда
+    const xs = STONE_ROWS[Math.floor(a / 12)].xs;
+    const col = a % 12;
+    const gaps = [col % 6 > 0 ? xs[col] - xs[col - 1] : 99, col % 6 < 5 ? xs[col + 1] - xs[col] : 99];
+    const w = Math.min(60, Math.min(...gaps) * PHOTO_S);
+    return `x="${(c.x - w / 2).toFixed(1)}" y="${(c.cy! - STONE_LEN / 2 - 8).toFixed(1)}" width="${w.toFixed(1)}" height="${STONE_LEN + 16}" rx="10"`;
+  }
   const top = F + (2 - Math.floor(a / 12)) * RH;
   return `x="${c.x - PW / 2 + 5}" y="${top + 4}" width="${PW - 10}" height="${RH - 8}" rx="12"`;
 }
 
-/** Помпейская доска: шесть слов по шесть букв, по два слова в ряду (сверху вниз). */
-const POMPEII = ['ABEMUS', 'INCENA', 'PULLUM', 'PISCEM', 'PERNAM', 'PAONEM'];
+
 
 export type Skin = 'dark' | 'light';
 const SKIN_KEY = 'lavochka.nardy.skin';
@@ -105,6 +137,7 @@ class NardyView implements GameView<State, Event> {
   private gBanner!: SVGGElement;
   private tray!: DiceTray;
   private trayEl!: HTMLElement;
+  private skinBtn!: HTMLButtonElement;
   /** Вид доски: пункты-копья (24), три ряда «12 линий» или они же с помпейской надписью. */
   private kind: 'spears' | 'lines' | 'pompeii' = 'spears';
   private btns!: HTMLElement;
@@ -149,6 +182,7 @@ class NardyView implements GameView<State, Event> {
     this.btns = ctl.querySelector('.nd-btns') as HTMLElement;
     this.leftInfo = ctl.querySelector('.nd-left') as HTMLElement;
     const skinBtn = ctl.querySelector('.nd-skin') as HTMLButtonElement;
+    this.skinBtn = skinBtn;
     const skinText = () => (skinBtn.textContent = this.skin === 'dark' ? 'Доска: тёмная резная' : 'Доска: светлая выжженная');
     skinText();
     skinBtn.hidden = ctx.demo;
@@ -224,65 +258,69 @@ class NardyView implements GameView<State, Event> {
       <clipPath id="ndClipAll"><rect width="${W}" height="${H}" rx="20"/></clipPath>
     </defs>`;
     s += `<g id="ndRotor">`;
-    // корпус: орех под лаком, резная рамка
-    s += `<rect width="${W}" height="${H}" rx="20" fill="#3a1d0c"/>`;
-    s += `<image href="${wFrame}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#ndClipAll)"/>`;
-    s += `<g filter="url(#ndBurn)">${carvedFrame(W, H, F)}</g>`;
-    // борта: желоба для снятых шашек и лунки для кубиков
-    for (const cx of [F + T / 2 - 4, W - F - T / 2 + 4]) {
-      s += slot(cx, F + 8, H / 2 - 46, 54) + slot(cx, H / 2 + 46, H - F - 8, 54) + cup(cx, H / 2, 22);
-    }
-    // две половины-доски
-    const halves: [number, string, string][] = [
-      [fieldL, wField2, 'ndClipL'],
-      [rightL, wField, 'ndClipR'],
-    ];
-    const inlayEdge = dark ? '#1a0a02' : BURN;
-    for (const [x0, tex, clip] of halves) {
-      const cx = x0 + half / 2;
-      s += `<g clip-path="url(#${clip})">`;
-      s += `<image href="${tex}" x="${x0}" y="${F}" width="${half}" height="${fh}" preserveAspectRatio="none"/>`;
-      if (this.kind !== 'spears') {
-        s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/></g>`;
-        continue;
+    // помпейская плита — мрамор с резными буквами; остальные доски — деревянная «книжка»
+    if (this.kind === 'pompeii') s += this.stoneSvg();
+    else {
+      // корпус: орех под лаком, резная рамка
+      s += `<rect width="${W}" height="${H}" rx="20" fill="#3a1d0c"/>`;
+      s += `<image href="${wFrame}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#ndClipAll)"/>`;
+      s += `<g filter="url(#ndBurn)">${carvedFrame(W, H, F)}</g>`;
+      // борта: желоба для снятых шашек и лунки для кубиков
+      for (const cx of [F + T / 2 - 4, W - F - T / 2 + 4]) {
+        s += slot(cx, F + 8, H / 2 - 46, 54) + slot(cx, H / 2 + 46, H - F - 8, 54) + cup(cx, H / 2, 22);
       }
-      // медальон в середине — между рядами пунктов, где шашки не стоят
-      if (dark) s += `<g filter="url(#ndInlayShadow)">${star8(cx, H / 2, 88, 'url(#ndInlay)', '#6a3c18', inlayEdge)}</g>`;
-      else s += `<g filter="url(#ndBurn)">${rosette(cx, H / 2, 92)}</g>`;
-      // арки у торцов: резные (тёмная) или выжженные (светлая)
-      const arch = arches(x0, half, F + 2, 1) + arches(x0, half, H - F - 2, -1);
-      // тёмная: резьба — тень под кромкой и блик на ней
-      s += dark
-        ? `<g opacity=".7" transform="translate(0,2.5)" stroke-width="4">${arch.replace(new RegExp(BURN, 'g'), '#140802')}</g><g opacity=".6">${arch.replace(new RegExp(BURN, 'g'), '#f0cf9a')}</g>`
-        : `<g filter="url(#ndBurn)">${arch}</g>`;
-      // тень от бортика рамки — поле утоплено
-      s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/>`;
-      s += `</g>`;
+      // две половины-доски
+      const halves: [number, string, string][] = [
+        [fieldL, wField2, 'ndClipL'],
+        [rightL, wField, 'ndClipR'],
+      ];
+      const inlayEdge = dark ? '#1a0a02' : BURN;
+      for (const [x0, tex, clip] of halves) {
+        const cx = x0 + half / 2;
+        s += `<g clip-path="url(#${clip})">`;
+        s += `<image href="${tex}" x="${x0}" y="${F}" width="${half}" height="${fh}" preserveAspectRatio="none"/>`;
+        if (this.kind !== 'spears') {
+          s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/></g>`;
+          continue;
+        }
+        // медальон в середине — между рядами пунктов, где шашки не стоят
+        if (dark) s += `<g filter="url(#ndInlayShadow)">${star8(cx, H / 2, 88, 'url(#ndInlay)', '#6a3c18', inlayEdge)}</g>`;
+        else s += `<g filter="url(#ndBurn)">${rosette(cx, H / 2, 92)}</g>`;
+        // арки у торцов: резные (тёмная) или выжженные (светлая)
+        const arch = arches(x0, half, F + 2, 1) + arches(x0, half, H - F - 2, -1);
+        // тёмная: резьба — тень под кромкой и блик на ней
+        s += dark
+          ? `<g opacity=".7" transform="translate(0,2.5)" stroke-width="4">${arch.replace(new RegExp(BURN, 'g'), '#140802')}</g><g opacity=".6">${arch.replace(new RegExp(BURN, 'g'), '#f0cf9a')}</g>`
+          : `<g filter="url(#ndBurn)">${arch}</g>`;
+        // тень от бортика рамки — поле утоплено
+        s += `<rect x="${x0 - 8}" y="${F - 8}" width="${half + 16}" height="${fh + 16}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="18" filter="url(#ndInset)"/>`;
+        s += `</g>`;
+      }
+      // сгиб «книжки»: бортики и латунные петли
+      s += `<rect x="${BAR_X - B / 2}" y="${F - 6}" width="${B}" height="${fh + 12}" fill="#2a1206" opacity=".35"/>`;
+      s += `<rect x="${BAR_X - 1.5}" y="${F - 6}" width="3" height="${fh + 12}" fill="#0d0502" opacity=".8"/>`;
+      // у 12 линий в середине рядов розетки — петли на границах рядов
+      s += this.kind === 'spears' ? hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8) : hinge(BAR_X, F + RH) + hinge(BAR_X, F + 2 * RH);
+      if (this.kind !== 'spears') s += this.linesSvg(dark, inlayEdge);
+      // пункты-«копья»: инкрустация из клёна (тёмная доска) или выжженный контур с узором (светлая)
+      let pts = '';
+      let fil = '';
+      for (let a = 0; a < (this.kind === 'spears' ? 24 : 0); a++) {
+        const { x, bottom } = pointGeo(a);
+        const dir = bottom ? -1 : 1;
+        const base = bottom ? H - F - 12 : F + 12;
+        const w = PW - 22;
+        const d = spearPath(x, base, PH - 12, w, dir);
+        if (dark) pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="url(#ndInlay)" stroke="${inlayEdge}" stroke-width="1.2"/>`;
+        else pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="#fff6e0" fill-opacity=".25" stroke="${BURN}" stroke-width="2.2"/>`;
+        fil += spearFiligree(x, base, PH - 12, w, dir, dark ? '#7a4a20' : BURN);
+        const dotY = base + dir * (PH + 8);
+        fil += `<circle cx="${x}" cy="${dotY}" r="4" fill="${dark ? 'url(#ndInlay)' : BURN}" stroke="${inlayEdge}" stroke-width=".8"/>`;
+      }
+      s += dark ? `<g filter="url(#ndInlayShadow)">${pts}</g><g filter="url(#ndBurn)" opacity=".8">${fil}</g>` : `<g filter="url(#ndBurn)">${pts}${fil}</g>`;
+      // лаковый отблеск поверх корпуса
+      s += `<rect width="${W}" height="${H}" rx="20" fill="url(#ndLacquer)" pointer-events="none"/>`;
     }
-    // сгиб «книжки»: бортики и латунные петли
-    s += `<rect x="${BAR_X - B / 2}" y="${F - 6}" width="${B}" height="${fh + 12}" fill="#2a1206" opacity=".35"/>`;
-    s += `<rect x="${BAR_X - 1.5}" y="${F - 6}" width="3" height="${fh + 12}" fill="#0d0502" opacity=".8"/>`;
-    // у 12 линий в середине рядов розетки — петли на границах рядов
-    s += this.kind === 'spears' ? hinge(BAR_X, H * 0.2) + hinge(BAR_X, H * 0.8) : hinge(BAR_X, F + RH) + hinge(BAR_X, F + 2 * RH);
-    if (this.kind !== 'spears') s += this.linesSvg(dark, inlayEdge);
-    // пункты-«копья»: инкрустация из клёна (тёмная доска) или выжженный контур с узором (светлая)
-    let pts = '';
-    let fil = '';
-    for (let a = 0; a < (this.kind === 'spears' ? 24 : 0); a++) {
-      const { x, bottom } = pointGeo(a);
-      const dir = bottom ? -1 : 1;
-      const base = bottom ? H - F - 12 : F + 12;
-      const w = PW - 22;
-      const d = spearPath(x, base, PH - 12, w, dir);
-      if (dark) pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="url(#ndInlay)" stroke="${inlayEdge}" stroke-width="1.2"/>`;
-      else pts += `<path class="nd-pt" data-a="${a}" d="${d}" fill="#fff6e0" fill-opacity=".25" stroke="${BURN}" stroke-width="2.2"/>`;
-      fil += spearFiligree(x, base, PH - 12, w, dir, dark ? '#7a4a20' : BURN);
-      const dotY = base + dir * (PH + 8);
-      fil += `<circle cx="${x}" cy="${dotY}" r="4" fill="${dark ? 'url(#ndInlay)' : BURN}" stroke="${inlayEdge}" stroke-width=".8"/>`;
-    }
-    s += dark ? `<g filter="url(#ndInlayShadow)">${pts}</g><g filter="url(#ndBurn)" opacity=".8">${fil}</g>` : `<g filter="url(#ndBurn)">${pts}${fil}</g>`;
-    // лаковый отблеск поверх корпуса
-    s += `<rect width="${W}" height="${H}" rx="20" fill="url(#ndLacquer)" pointer-events="none"/>`;
     s += `<g id="ndHi"></g><g id="ndCheckers"></g><g id="ndMarks"></g><g id="ndCube"></g></g><g id="ndBanner"></g>`;
     this.svg.innerHTML = s;
     this.rotor = this.svg.querySelector('#ndRotor') as SVGGElement;
@@ -294,7 +332,30 @@ class NardyView implements GameView<State, Event> {
     if (this.flipped) this.rotor.setAttribute('transform', `rotate(180 ${W / 2} ${H / 2})`);
   }
 
-  /** 12 линий: три ряда дорожек, между половинами — розетки; на помпейской доске в дорожках буквы. */
+  /** Помпейская плита: снимок доски из Помпей, тонированный под мрамор с красными буквами; поля — невидимые дорожки на буквах. */
+  private stoneSvg() {
+    const src = '/nardy/pompeii.webp';
+    const iw = PHOTO_W * PHOTO_S;
+    const ih = PHOTO_H * PHOTO_S;
+    let s = `<defs>
+      <filter id="ndStTone" color-interpolation-filters="sRGB"><feComponentTransfer>
+        <feFuncR type="table" tableValues=".33 .62 .9 .97"/><feFuncG type="table" tableValues=".12 .45 .86 .95"/><feFuncB type="table" tableValues=".08 .38 .8 .9"/>
+      </feComponentTransfer></filter>
+      <filter id="ndStBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="14"/></filter>
+      <linearGradient id="ndStSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e1208" stop-opacity=".78"/><stop offset=".05" stop-color="#1e1208" stop-opacity=".45"/><stop offset=".08" stop-color="#1e1208" stop-opacity="0"/><stop offset=".92" stop-color="#1e1208" stop-opacity="0"/><stop offset=".95" stop-color="#1e1208" stop-opacity=".45"/><stop offset="1" stop-color="#1e1208" stop-opacity=".78"/></linearGradient>
+      <clipPath id="ndStClip"><rect width="${W}" height="${H}" rx="10"/></clipPath>
+    </defs>`;
+    // края плиты дорисованы размытым тем же снимком, по бокам — тень полос под шашки
+    s += `<g clip-path="url(#ndStClip)" filter="url(#ndStTone)"><rect width="${W}" height="${H}" fill="#cfcac0"/>`;
+    s += `<image href="${src}" x="-60" y="-60" width="${W + 120}" height="${H + 120}" preserveAspectRatio="none" filter="url(#ndStBlur)" opacity=".9"/>`;
+    s += `<image href="${src}" x="${PHOTO_X0}" y="${PHOTO_Y0}" width="${iw}" height="${ih}" preserveAspectRatio="none"/></g>`;
+    s += `<rect width="${W}" height="${H}" rx="10" fill="url(#ndStSide)" pointer-events="none"/>`;
+    s += `<rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" rx="9" fill="none" stroke="#6f6658" stroke-width="3"/>`;
+    for (let a = 0; a < 36; a++) s += `<rect class="nd-pt" data-a="${a}" ${laneRect(a, true)} fill="#fff" fill-opacity="0"/>`;
+    return s;
+  }
+
+  /** 12 линий: три ряда дорожек, между половинами — розетки. */
   private linesSvg(dark: boolean, edge: string) {
     let lanes = '';
     let deco = '';
@@ -308,16 +369,9 @@ class NardyView implements GameView<State, Event> {
       const x = lineCell(a).x;
       const top = F + (2 - r) * RH;
       const cy = top + RH / 2;
-      if (this.kind === 'pompeii') {
-        const ch = POMPEII[(2 - r) * 2 + (col >= 6 ? 1 : 0)][col % 6];
-        deco += dark
-          ? `<text x="${x}" y="${cy + 2}" class="nd-letter" fill="#140802" opacity=".7">${ch}</text><text x="${x}" y="${cy}" class="nd-letter" fill="#f0d7a4">${ch}</text>`
-          : `<text x="${x}" y="${cy}" class="nd-letter" fill="${BURN}">${ch}</text>`;
-      } else {
-        // круглое клеймо в середине дорожки и насечки у её концов
-        deco += `<circle cx="${x}" cy="${cy}" r="9" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="${x}" cy="${cy}" r="3" fill="${ink}"/>`;
-        deco += `<path d="M${x - 14},${top + 18}h28M${x - 14},${top + RH - 18}h28" stroke="${ink}" stroke-width="1.4"/>`;
-      }
+      // круглое клеймо в середине дорожки и насечки у её концов
+      deco += `<circle cx="${x}" cy="${cy}" r="9" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="${x}" cy="${cy}" r="3" fill="${ink}"/>`;
+      deco += `<path d="M${x - 14},${top + 18}h28M${x - 14},${top + RH - 18}h28" stroke="${ink}" stroke-width="1.4"/>`;
     }
     // посередине каждого ряда — розетка, как на римских досках
     let ros = '';
@@ -329,7 +383,7 @@ class NardyView implements GameView<State, Event> {
   }
 
   private cell(a: number): Cell {
-    return this.kind === 'spears' ? spearCell(a) : lineCell(a);
+    return this.kind === 'spears' ? spearCell(a) : lineCell(a, this.kind === 'pompeii');
   }
 
   private pathIdx(p: number, a: number) {
@@ -344,7 +398,8 @@ class NardyView implements GameView<State, Event> {
     const c = this.cell(absOf(cfg, p, boardSize(cfg) - 3));
     let left = c.x < W / 2;
     if (sharedPath(cfg) && p === 1) left = !left;
-    return { x: left ? F + T / 2 - 4 : W - F - T / 2 + 4, bottom: c.bottom };
+    const edge = this.kind === 'pompeii' ? 24 : F + T / 2 - 4;
+    return { x: left ? edge : W - edge, bottom: c.bottom };
   }
 
   /** Желоб с шашками на руке (римские игры): на другом борту от снятых. */
@@ -380,7 +435,7 @@ class NardyView implements GameView<State, Event> {
   private barPos(p: number, k: number) {
     // белые на баре — в верхней половине, чёрные — в нижней (ближе к дому, куда входить)
     const top = p === 0;
-    return { x: BAR_X, y: top ? H / 2 - R - 8 - k * 2 * R * 0.7 : H / 2 + R + 8 + k * 2 * R * 0.7 };
+    return { x: this.kind === 'pompeii' ? STONE_MID : BAR_X, y: top ? H / 2 - R - 8 - k * 2 * R * 0.7 : H / 2 + R + 8 + k * 2 * R * 0.7 };
   }
 
   /** Точёная деревянная шашка: волокна, бороздки, фаска, блик лака. */
@@ -512,7 +567,7 @@ class NardyView implements GameView<State, Event> {
         if (this.kind === 'spears') {
           const base = c.bottom ? H - F - 12 : F + 12;
           hi += `<path class="${cls} nd-pt-hi"${attrs} d="${spearPath(x, base, PH - 12, PW - 22, c.bottom ? -1 : 1)}"/>`;
-        } else hi += `<rect class="${cls} nd-pt-hi"${attrs} ${laneRect(a)}/>`;
+        } else hi += `<rect class="${cls} nd-pt-hi"${attrs} ${laneRect(a, this.kind === 'pompeii')}/>`;
         const n = Math.abs(this.model.pts[a]) + (this.model.pts[a] * (p === 0 ? 1 : -1) < 0 ? 0 : 1);
         const y = stackY(c, Math.min(n - 1, capOf(c) - 1), Math.max(n, 1));
         s += `<g class="${cls}"${attrs}><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${die}</text></g>`;
@@ -553,7 +608,10 @@ class NardyView implements GameView<State, Event> {
     const kind = s.cfg.mode === 'pompeii' ? 'pompeii' : isLines(s.cfg) ? 'lines' : 'spears';
     if (kind !== this.kind) {
       this.kind = kind;
+      R = kind === 'pompeii' ? STONE_R : 29;
       this.build();
+      // у мраморной плиты нет деревянных «кож»
+      this.skinBtn.hidden = this.ctx.demo || kind === 'pompeii';
     }
     // смотрим на доску со стороны своих шашек: дом — внизу справа (у чёрных доска повёрнута); в табуле путь общий — не вертим
     const flip = !sharedPath(s.cfg) && this.bottomSeat() === 1;
