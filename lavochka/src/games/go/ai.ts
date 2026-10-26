@@ -93,7 +93,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     return { type: 'play', p: quick(s, useful, rng) };
   }
   const budget = fast ? 0 : level === 1 ? 700 : 1800;
-  const minRuns = fast ? Math.min(12, cands.length * 2) : cands.length * 3;
+  const minRuns = fast ? Math.min(12, cands.length * 2) : cands.length;
   const wins = new Float64Array(cands.length);
   const runs = new Float64Array(cands.length);
   const t0 = now();
