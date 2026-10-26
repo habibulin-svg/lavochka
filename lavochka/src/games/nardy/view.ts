@@ -3,7 +3,8 @@ import { Sound } from '../../core/audio';
 import { DiceTray } from '../../core/dice';
 import { h, sleep, touchScreen } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { absOf, BAR, boardSize, checkersOf, isLines, legalSteps, mayDouble, OFF, pipCount, sharedPath, targetOf, type Event, type State, type Step } from './engine';
+import { absOf, apply, BAR, boardSize, checkersOf, isLines, legalSteps, mayDouble, OFF, pipCount, sharedPath, targetOf, type Event, type State, type Step } from './engine';
+import { SeededRng } from '../../core/rng';
 import { woodTexture, WOODS } from '../../core/wood';
 import { arches, BURN, burnDefs, carvedFrame, cup, hinge, rosette, slot, spearFiligree, spearPath, star8 } from './decor';
 import './nardy.css';
@@ -529,17 +530,37 @@ class NardyView implements GameView<State, Event> {
     this.renderCube();
   }
 
-  /** Куда может пойти шашка from: пункт пути (или OFF) и кубик. */
+  /** Куда может пойти шашка from: пункт пути (или OFF) и кубик; chain — та же шашка на сумму костей (ходы подряд). */
   private targetsOf(from: number) {
     const st = this.state!;
-    const out: { to: number; die: number }[] = [];
+    const out: { to: number; die: number; label: string; chain?: Step[] }[] = [];
     for (const step of this.steps.filter((x) => x.from === from)) {
       const to = targetOf(st, step);
       if (to == null || out.some((o) => o.to === to)) continue;
-      out.push({ to, die: step.die });
+      out.push({ to, die: step.die, label: String(step.die) });
     }
+    // сумма костей одной шашкой: ход за ходом той же шашкой, пока ход у нас (промежуточные пункты должны быть открыты)
+    const seat = st.cur;
+    const rng = new SeededRng(1);
+    const walk = (s: State, at: number, path: Step[]) => {
+      if (path.length >= 4 || s.cur !== seat || s.phase !== 'move') return;
+      for (const step of legalSteps(s).filter((x) => x.from === at)) {
+        const to = targetOf(s, step);
+        if (to == null) continue;
+        const r = apply(s, seat, { type: 'move', from: step.from, die: step.die }, rng);
+        if (!r) continue;
+        const chain = [...path, step];
+        if (chain.length > 1 && !out.some((o) => o.to === to)) out.push({ to, die: -1, label: chain.map((c) => c.die).join('+'), chain });
+        if (to !== OFF) walk(r.state, to, chain);
+      }
+    };
+    if (from !== BAR) walk(st, from, []);
     return out;
   }
+
+  /** Сумма костей: остальные ходы цепочки — после того, как пришло новое положение. */
+  private chain: Step[] = [];
+  private chainSeat = -1;
 
   private renderMarks() {
     let s = '';
@@ -551,12 +572,12 @@ class NardyView implements GameView<State, Event> {
       // выбранная шашка — цели можно нажимать; под курсором — только подсказка
       const live = this.selected != null;
       const cls = live ? 'nd-target' : 'nd-target nd-preview';
-      for (const { to, die } of this.targetsOf(from)) {
+      for (const { to, die, label } of this.targetsOf(from)) {
         const attrs = live ? ` data-to="${to}" data-die="${die}"` : '';
         if (to === OFF) {
           const tr = this.trayOf(p);
           const y = tr.bottom ? H - F - 150 : F + 150;
-          s += `<g class="${cls}"${attrs}><rect x="${tr.x - 32}" y="${y - 140}" width="64" height="280" rx="10" class="t-bg"/><text x="${tr.x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${tr.x} ${y})">${die}</text></g>`;
+          s += `<g class="${cls}"${attrs}><rect x="${tr.x - 32}" y="${y - 140}" width="64" height="280" rx="10" class="t-bg"/><text x="${tr.x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${tr.x} ${y})">${label}</text></g>`;
           continue;
         }
         const a = absOf(st.cfg, p, to);
@@ -569,7 +590,7 @@ class NardyView implements GameView<State, Event> {
         } else hi += `<rect class="${cls} nd-pt-hi"${attrs} ${laneRect(a, this.kind === 'pompeii')}/>`;
         const n = Math.abs(this.model.pts[a]) + (this.model.pts[a] * (p === 0 ? 1 : -1) < 0 ? 0 : 1);
         const y = stackY(c, Math.min(n - 1, capOf(c) - 1), Math.max(n, 1));
-        s += `<g class="${cls}"${attrs}><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${die}</text></g>`;
+        s += `<g class="${cls}${die < 0 ? ' nd-sum' : ''}"${attrs}><circle cx="${x}" cy="${y}" r="${R + 2}" class="t-bg"/><text x="${x}" y="${y}" class="t-label${label.length > 2 ? ' t-small' : ''}" transform="rotate(${this.flipped ? 180 : 0} ${x} ${y})">${label}</text></g>`;
       }
     }
     this.gHi.innerHTML = hi;
@@ -812,9 +833,11 @@ class NardyView implements GameView<State, Event> {
     this.btns.appendChild(b);
   }
 
-  setTurn(_toAct: number[], interactive: number[]) {
+  setTurn(toAct: number[], interactive: number[]) {
     this.clearTurn();
     const s = this.state;
+    // цепочка «на сумму костей» живёт только внутри своего хода (во время анимации interactive пуст — это не повод её бросать)
+    if (!s || !toAct.includes(this.chainSeat)) this.chain = [];
     if (!s || s.phase === 'over' || this.ctx.demo) return;
     if (s.phase === 'opening') {
       const seat = interactive[0];
@@ -837,6 +860,13 @@ class NardyView implements GameView<State, Event> {
     }
     this.actSeat = seat;
     this.steps = legalSteps(s);
+    // продолжение хода «на сумму костей» — тем же игроком выбранная цепочка
+    const next = this.chain.shift();
+    if (next && this.steps.some((x) => x.from === next.from && x.die === next.die)) {
+      this.send(next, true);
+      return;
+    }
+    this.chain = [];
     const froms = new Set(this.steps.map((x) => x.from));
     if (froms.size === 1) this.selected = [...froms][0];
     this.render();
@@ -851,13 +881,24 @@ class NardyView implements GameView<State, Event> {
   private pickTarget(to: number, die: number) {
     if (this.actSeat == null || this.selected == null) return;
     const s = this.state!;
+    if (die < 0) {
+      const t = this.targetsOf(this.selected).find((x) => x.to === to && x.chain);
+      if (t?.chain) {
+        this.chainSeat = this.actSeat;
+        // остаток цепочки — до отправки: локальная комната отвечает сразу
+        this.chain = t.chain.slice(1);
+        this.send(t.chain[0], true);
+      }
+      return;
+    }
     const st = this.steps.find((x) => x.from === this.selected && x.die === die && targetOf(s, x) === to);
     if (st) this.send(st);
   }
 
-  private send(st: Step) {
+  private send(st: Step, keepChain = false) {
     const seat = this.actSeat;
     if (seat == null) return;
+    if (!keepChain) this.chain = [];
     this.clearTurn();
     this.ctx.act(seat, { type: 'move', from: st.from, die: st.die });
   }

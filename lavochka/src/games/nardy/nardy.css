@@ -25,6 +25,8 @@
 .nd-board .nd-target .t-bg { fill: rgba(255, 190, 60, 0.45); stroke: #ffb020; stroke-width: 4; animation: nd-glow 1s ease-in-out infinite; }
 .nd-board .nd-target:hover .t-bg { fill: rgba(255, 250, 220, 0.75); }
 .nd-board .nd-target .t-label { font: 700 24px 'PT Serif', Georgia, serif; fill: #2a1206; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.nd-board .nd-target .t-label.t-small { font-size: 16px; }
+.nd-board .nd-sum .t-bg { opacity: 0.8; }
 .nd-board .nd-cube { font: 700 24px 'PT Serif', Georgia, serif; fill: #2a1206; text-anchor: middle; dominant-baseline: central; }
 .nd-board .nd-banner rect { fill: rgba(30, 14, 4, 0.82); stroke: #c9a24a; stroke-width: 3; }
 .nd-board .nd-banner text { font: 700 38px 'PT Serif', Georgia, serif; fill: #f6e2b0; text-anchor: middle; dominant-baseline: central; }
