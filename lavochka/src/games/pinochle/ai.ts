@@ -6,7 +6,7 @@
 import type { Rng } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { makeDeck, SUITS, type Suit } from '../../cards/deck';
-import { apply, beats, counter, legal, meldTotal, melds, minBid, pairs, power, sameP, teamOf, type Action, type PCard, type State, type View } from './engine';
+import { apply, beats, counter, legal, meldTotal, melds, minBid, pairs, PASS, power, sameP, teamOf, type Action, type PCard, type State, type View } from './engine';
 
 function bestTrump(hand: PCard[]): { suit: Suit; val: number } {
   let best: { suit: Suit; val: number } = { suit: 'S', val: -1 };
@@ -99,6 +99,18 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
     return n <= lim ? { type: 'bid', n } : { type: 'pass' };
   }
   if (v.phase === 'trump') return { type: 'trump', suit: bestTrump(v.hands[seat]).suit };
+  if (v.phase === 'pass' || v.phase === 'return') {
+    // обмен: напарник отдаёт козыри и тузы (то, что пригодится заказчику), заказчик возвращает мелочь не из мелдов
+    const hand = v.hands[seat].slice();
+    const T = v.trump!;
+    const keep = (c: PCard) => (c.s === T ? 30 : 0) + (c.r === 14 ? 20 : 0) + (c.r === 10 ? 8 : 0) + (c.r === 13 || c.r === 12 ? 4 : 0);
+    if (v.phase === 'pass') hand.sort((x, y) => keep(y) - keep(x));
+    else {
+      const inMeld = (c: PCard) => meldTotal(v.hands[seat], T) > meldTotal(v.hands[seat].filter((x) => x !== c), T);
+      hand.sort((x, y) => (inMeld(x) ? 100 : 0) + keep(x) - ((inMeld(y) ? 100 : 0) + keep(y)));
+    }
+    return { type: 'give', cards: (level === 0 ? hand.sort(() => rng.next() - 0.5) : hand).slice(0, PASS) };
+  }
   if (v.phase === 'bury') {
     const hand = v.hands[seat];
     const T = v.trump!;

@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { countOf, legal, minBid, pairs, sameP, teamOf, type Event, type PCard, type View } from './engine';
+import { countOf, legal, minBid, pairs, PASS, sameP, teamOf, type Event, type PCard, type View } from './engine';
 import { SEATS } from './def';
 import './pinochle.css';
 
@@ -20,7 +20,7 @@ class PinochleView extends TrickView<View, Event> {
 
   protected model(v: View): TrickModel {
     const act = this.actSeat;
-    const ok = act != null && v.phase === 'play' ? legal(v, act) : act != null && v.phase === 'bury' ? v.hands[act] : [];
+    const ok = act != null && v.phase === 'play' ? legal(v, act) : act != null && (v.phase === 'bury' || v.phase === 'pass' || v.phase === 'return') ? v.hands[act] : [];
     const center = v.trump
       ? `Козырь ${sym(v.trump)} ${SUIT_NAME[v.trump]}<small>заказ ${v.bid} — ${this.plain(v.bidder!)} · мелды ${v.meld.join(' : ')} · счёт ${v.score.join(' : ')}</small>`
       : `Торги${v.bid ? `: ${v.bid} — ${this.plain(v.bidder!)}` : ''}<small>счёт ${v.score.join(' : ')} · до ${v.cfg.target}</small>`;
@@ -49,6 +49,7 @@ class PinochleView extends TrickView<View, Event> {
   protected override onCard(card: Card) {
     const v = this.v!;
     if (v.phase === 'bury') return this.toggle(card, 3);
+    if (v.phase === 'pass' || v.phase === 'return') return this.toggle(card, PASS);
     this.send({ type: 'play', card });
   }
 
@@ -70,6 +71,11 @@ class PinochleView extends TrickView<View, Event> {
     if (v.phase === 'trump') {
       this.btns.appendChild(h('<div class="tv-ask">Заказ ваш — назовите козырь.</div>'));
       for (const s of SUITS) this.button(`${sym(s)} ${SUIT_NAME[s]}`, '', () => this.send({ type: 'trump', suit: s }));
+      return true;
+    }
+    if (v.phase === 'pass' || v.phase === 'return') {
+      this.btns.appendChild(h(`<div class="tv-ask">${v.phase === 'pass' ? `Обмен: отдайте напарнику-заказчику ${PASS} карты — козыри, тузы, то, что ему пригодится.` : `Обмен: верните напарнику ${PASS} карты — мелды считают уже после обмена.`}</div>`));
+      this.button(`Отдать (${this.selected.length} из ${PASS})`, 'primary', () => this.send({ type: 'give', cards: this.selected.slice() as PCard[] }), this.selected.length !== PASS);
       return true;
     }
     if (v.phase === 'bury') {
@@ -123,7 +129,7 @@ class PinochleView extends TrickView<View, Event> {
     if (v.over) return 'Партия окончена';
     const who = toAct[0];
     if (!interactive.includes(who)) return `Ходит ${this.ctx.name(who)}…`;
-    return v.phase === 'bid' ? 'Торги' : v.phase === 'trump' ? 'Назовите козырь' : v.phase === 'bury' ? 'Закопайте три карты' : 'Ваш ход';
+    return v.phase === 'bid' ? 'Торги' : v.phase === 'trump' ? 'Назовите козырь' : v.phase === 'bury' ? 'Закопайте три карты' : v.phase === 'pass' || v.phase === 'return' ? 'Обмен с напарником' : 'Ваш ход';
   }
 
   playerStats(v: View, seat: number) {

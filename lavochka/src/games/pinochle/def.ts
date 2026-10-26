@@ -2,7 +2,7 @@
 import type { GameDef, Options, SeatSpec } from '../../core/types';
 import { SUIT_SYM, type Suit } from '../../cards/deck';
 import { choose } from './ai';
-import { apply, cfgFrom, makeView, newState, pairs, setup, teamOf, toAct, type Action, type Event, type PCard, type State, type View } from './engine';
+import { apply, cfgFrom, makeView, newState, pairs, PASS, setup, teamOf, toAct, type Action, type Event, type PCard, type State, type View } from './engine';
 
 export const SEATS = [
   { name: 'Билл', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -25,7 +25,9 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'won':
       return `Заказ — ${name(ev.seat)}, ${ev.bid}${ev.widow ? `; прикуп: ${ev.widow.map(cn).join(' ')}` : ''}.`;
     case 'trump':
-      return `Козырь — ${SUIT_SYM[ev.suit]}. Мелды: ${ev.meld.join(' : ')}.`;
+      return ev.pending ? `Козырь — ${SUIT_SYM[ev.suit]}. Обмен с напарником: по ${PASS} карты.` : `Козырь — ${SUIT_SYM[ev.suit]}. Мелды: ${ev.meld.join(' : ')}.`;
+    case 'give':
+      return null;
     case 'hand':
       return `Сдача: ${ev.add.map((x) => (x > 0 ? '+' : '') + x).join(' : ')}${ev.lines.length ? ` (${ev.lines.join(', ')})` : ''}. Счёт ${ev.score.join(' : ')}.`;
     case 'end':
@@ -37,6 +39,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
 function redact(ev: Event, seats: number[] | 'all'): Event | null {
   if (seats === 'all') return ev;
   if (ev.type === 'deal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) ? h : [])) };
+  if (ev.type === 'give' && !seats.includes(ev.seat) && !seats.includes(ev.to)) return { ...ev, cards: undefined };
   return ev;
 }
 
@@ -74,6 +77,7 @@ export const def: GameDef<State, Action, Event, View> = {
       ],
       default: 1500,
     },
+    { key: 'exchange', label: 'Обмен с напарником — по 4 карты', type: 'toggle', default: true, hint: 'Вчетвером: после козыря напарник отдаёт заказчику 4 карты, тот возвращает 4 — мелды считают уже после обмена.' },
   ],
   presets: [
     { id: 'partners', label: 'Пара на пару', hint: 'Вчетвером, по 12 карт, торги от 250, до 1500', options: { target: 1500 } },

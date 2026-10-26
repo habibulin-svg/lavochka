@@ -21,12 +21,17 @@ export interface PCard extends Card {
 
 export interface Cfg {
   target: number;
+  /** Вчетвером: после козыря напарник отдаёт заказчику 4 карты, тот возвращает 4. */
+  exchange?: boolean;
 }
 
 export function cfgFrom(o: Options, n = 4): Cfg {
   const t = Number(o.target);
-  return { target: [500, 1000, 1500].includes(t) ? t : n === 3 ? 1000 : 1500 };
+  return { target: [500, 1000, 1500].includes(t) ? t : n === 3 ? 1000 : 1500, exchange: o.exchange !== false };
 }
+
+/** Сколько карт в обмене с напарником. */
+export const PASS = 4;
 
 export const MIN_BID = 250;
 const POWER: Record<number, number> = { 14: 6, 10: 5, 13: 4, 12: 3, 11: 2, 9: 1 };
@@ -73,7 +78,7 @@ export function melds(hand: Card[], trump: Suit): MeldLine[] {
 
 export const meldTotal = (hand: Card[], trump: Suit) => melds(hand, trump).reduce((x, m) => x + m.pts, 0);
 
-export type Phase = 'bid' | 'trump' | 'bury' | 'play' | 'over';
+export type Phase = 'bid' | 'trump' | 'pass' | 'return' | 'bury' | 'play' | 'over';
 
 export interface State {
   cfg: Cfg;
@@ -108,15 +113,16 @@ export interface View extends State {
   counts: number[];
 }
 
-export type Action = { type: 'bid'; n: number } | { type: 'pass' } | { type: 'trump'; suit: Suit } | { type: 'bury'; cards: PCard[] } | { type: 'play'; card: PCard };
+export type Action = { type: 'bid'; n: number } | { type: 'pass' } | { type: 'trump'; suit: Suit } | { type: 'bury'; cards: PCard[] } | { type: 'give'; cards: PCard[] } | { type: 'play'; card: PCard };
 
 export type Event =
   | { type: 'deal'; deal: number; dealer: number; hands?: PCard[][] }
   | { type: 'bid'; seat: number; n: number }
   | { type: 'pass'; seat: number }
   | { type: 'won'; seat: number; bid: number; widow?: PCard[] }
-  | { type: 'trump'; seat: number; suit: Suit; melds: MeldLine[][]; meld: number[] }
+  | { type: 'trump'; seat: number; suit: Suit; melds: MeldLine[][]; meld: number[]; /** мелды — после обмена с напарником */ pending?: boolean }
   | { type: 'bury'; seat: number; n: number }
+  | { type: 'give'; seat: number; to: number; n: number; cards?: PCard[] }
   | { type: 'play'; seat: number; card: PCard }
   | { type: 'trick'; seat: number; cards: PCard[]; pts: number }
   | { type: 'hand'; lines: string[]; add: number[]; score: number[] }
@@ -288,9 +294,33 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     }
     return { state: s, events: ev };
   }
+  if (s.phase === 'pass' || s.phase === 'return') {
+    // обмен с напарником: сначала напарник отдаёт 4, потом заказчик возвращает 4; мелды — после обмена
+    if (a.type !== 'give' || !Array.isArray(a.cards) || a.cards.length !== PASS) return null;
+    const cs = a.cards.map((c) => s.hands[seat].find((x) => sameP(x, c)));
+    if (cs.some((c) => !c) || new Set(cs.map((c) => `${c!.s}${c!.r}${c!.d}`)).size !== PASS) return null;
+    const to = s.phase === 'pass' ? s.bidder! : partnerOf(s, s.bidder!);
+    s.hands[seat] = s.hands[seat].filter((x) => !cs.some((c) => sameP(c!, x)));
+    s.hands[to] = [...s.hands[to], ...(cs as PCard[])];
+    ev.push({ type: 'give', seat, to, n: PASS, cards: cs as PCard[] });
+    if (s.phase === 'pass') {
+      s.phase = 'return';
+      s.turn = s.bidder!;
+    } else {
+      declareMelds(s, s.trump!, s.bidder!, ev);
+      s.phase = 'play';
+      s.turn = s.bidder!;
+    }
+    return { state: s, events: ev };
+  }
   if (s.phase === 'trump') {
     if (a.type !== 'trump' || !SUITS.includes(a.suit)) return null;
     s.trump = a.suit;
+    if (pairs(s) && s.cfg.exchange) {
+      s.phase = 'pass';
+      s.turn = partnerOf(s, seat);
+      return { state: s, events: [{ type: 'trump', seat, suit: a.suit, melds: s.meldLines.map(() => []), meld: s.meld.slice(), pending: true }] };
+    }
     for (const x of s.seats) {
       s.meldLines[x] = melds(s.hands[x], a.suit);
       s.meld[teamOf(s, x)] += s.meldLines[x].reduce((y, m) => y + m.pts, 0);
@@ -336,6 +366,18 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   ev.push({ type: 'trick', seat: w, cards, pts });
   if (last) endHand(s, rng, ev);
   return { state: s, events: ev };
+}
+
+/** Напарник (вчетвером — напротив). */
+export const partnerOf = (s: { seats: number[] }, seat: number) => s.seats[(s.seats.indexOf(seat) + 2) % s.seats.length];
+
+/** Мелды всех рук (после обмена) — в общий счёт сторон. */
+function declareMelds(s: State, trump: Suit, seat: number, ev: Event[]) {
+  for (const x of s.seats) {
+    s.meldLines[x] = melds(s.hands[x], trump);
+    s.meld[teamOf(s, x)] += s.meldLines[x].reduce((y, m) => y + m.pts, 0);
+  }
+  ev.push({ type: 'trump', seat, suit: trump, melds: s.meldLines.map((m) => (m ? m.slice() : m)), meld: s.meld.slice() });
 }
 
 function endHand(s: State, rng: Rng, ev: Event[]) {
