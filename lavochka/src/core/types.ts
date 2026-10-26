@@ -140,6 +140,8 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   countsFor?(opts: Options): number[];
   /** Подпись у выбора числа игроков при этих настройках: «вдвоём или командами: 2 на 2 / 3 на 3». */
   countsHint?(opts: Options): string | undefined;
+  /** Имя места при этих правилах, если не такое, как в `seats` (асальто — «Повстанцы», солитёр — «Игрок»). */
+  seatNameFor?(opts: Options, seat: number): string | undefined;
   /** Команды при этих настройках и этих местах (номера мест по возрастанию): кто с кем в паре. null — каждый сам за себя.
    * Лобби подписывает пары и даёт хозяину пересадить игроков; тест сверяет, что командный пресет и правда даёт команды. */
   teams?(opts: Options, seats: number[]): number[][] | null;

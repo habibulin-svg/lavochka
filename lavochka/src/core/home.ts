@@ -170,7 +170,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     box.innerHTML = '';
     for (const s of active) {
       const st = draft.seats[s];
-      const look = def.seats[s];
+      const look = { ...def.seats[s], name: def.seatNameFor?.(draft.options, s) ?? def.seats[s].name };
       const row = h(`<div class="seat-row">
         <span class="chip" style="--c:${look.color};--d:${look.dark}"></span>
         <span class="seat-name">${esc(look.name)}</span>
@@ -255,7 +255,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     const me = table?.seats || table?.remote ? list[0] : table ? (list.find((s) => draft.seats[s].kind === 'human') ?? list[0]) : -1;
     const seats: SeatSpec[] = list.map((s, i) => {
       const st = draft.seats[s];
-      const look = def.seats[s];
+      const look = { ...def.seats[s], name: def.seatNameFor?.(options, s) ?? def.seats[s].name };
       const kind = table ? (s === me ? 'human' : i <= (table.remote ?? 0) ? 'remote' : 'bot') : st.kind === 'off' ? 'bot' : st.kind;
       const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? (table ? st.kind === 'human' && st.name : st.name) || (table || onlyHuman() ? settings.name : '') || look.name : '';
       return { seat: s, kind, level: table?.levels?.[i] ?? st.level, name };

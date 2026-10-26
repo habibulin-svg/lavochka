@@ -64,6 +64,11 @@ export const def: GameDef<State, Action, Event, State> = {
   players: { min: 1, max: 2, default: 2 },
   countsFor: (o) => (o.mode === 'yoga' ? [1] : [2]),
   countsHint: (o) => (o.mode === 'yoga' ? 'солитёр — головоломка для одного' : undefined),
+  seatNameFor: (o, seat) => {
+    if (o.mode === 'yoga') return seat === 0 ? 'Игрок' : undefined;
+    if (o.mode === 'asalto') return o.look === 'map' ? ['Осаждающие', 'Защитники'][seat] : ['Повстанцы', 'Офицеры'][seat];
+    return o.mode === 'fox' && Number(o.foxes) === 2 && seat === 1 ? 'Лисы' : undefined;
+  },
   seats: SEATS,
   options: [
     {
