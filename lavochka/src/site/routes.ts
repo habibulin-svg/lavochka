@@ -42,6 +42,7 @@ export const SLUGS: Record<string, string> = {
   mill: 'melnica',
   tafl: 'hnefatafl',
   daldos: 'daldos',
+  shen: 'sobaki-i-shakaly',
   foxgeese: 'lisa-i-gusi',
   bulls: 'byki-i-korovy',
   renju: 'rendzyu',

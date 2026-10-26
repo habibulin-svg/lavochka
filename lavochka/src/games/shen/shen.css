@@ -1,0 +1,35 @@
+/* Шен: доска-щит на папирусной циновке, колышки с головами, палочки в панели. */
+.sh-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: #6a4a24 url('/tex/shen/table.webp') center / 384px repeat; border-radius: 10px;
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.55);
+}
+.sh-board { width: 100%; height: 100%; user-select: none; overflow: visible; }
+.sh-pc image { filter: drop-shadow(0 0 1.2px rgba(40, 20, 0, 0.95)) drop-shadow(5px 4px 3px rgba(30, 14, 0, 0.45)); }
+.sh-pc.anim { transition: transform 0.14s ease-out; }
+.sh-pc.glide { transition: transform 0.5s ease-in-out; }
+.sh-pc.gone { transition: opacity 0.4s, transform 0.4s; opacity: 0; }
+.sh-pc .sh-ring { fill: rgba(0, 0, 0, 0.3); stroke: transparent; stroke-width: 3; }
+.sh-pc.can { cursor: pointer; }
+.sh-pc.can .sh-ring { fill: rgba(255, 236, 160, 0.4); stroke: #fff2b0; stroke-dasharray: 6 4; animation: sh-glow 1s ease-in-out infinite; }
+.sh-pc.sel .sh-ring { fill: rgba(255, 250, 220, 0.6); stroke: #fff; stroke-dasharray: none; stroke-width: 4; }
+.sh-pc.can image, .sh-pc.sel image { filter: drop-shadow(0 0 1.2px rgba(40, 20, 0, 0.95)) drop-shadow(0 0 6px rgba(255, 236, 160, 1)); }
+.sh-target { cursor: pointer; }
+.sh-target circle { fill: rgba(255, 242, 176, 0.35); stroke: #ffe680; stroke-width: 4; animation: sh-glow 1s ease-in-out infinite; }
+.sh-target.snake circle { stroke: #9fe0a0; }
+.sh-target.back circle { stroke: #ffa070; }
+.sh-target.shen circle { stroke: #fff; fill: rgba(255, 250, 220, 0.5); }
+.sh-target:hover circle { fill: rgba(255, 250, 220, 0.75); }
+.sh-target text { font: 700 22px 'PT Serif', Georgia, serif; fill: #fff6dc; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+.sh-hand { font: 700 26px 'PT Serif', Georgia, serif; fill: #fff3d6; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; }
+@keyframes sh-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.sh-controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sh-tray { min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px 0; }
+.sh-stick { width: 168px; height: 17px; display: block; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45)); }
+.sh-tray.blank .sh-stick { opacity: 0.35; }
+.sh-val { text-align: center; font: 700 16px 'PT Serif', Georgia, serif; min-height: 20px; color: var(--panel-ink, #2a1206); }
+@media (max-width: 700px) {
+  .sh-tray { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; min-height: 0; }
+  .sh-stick { width: 130px; height: 14px; }
+}
