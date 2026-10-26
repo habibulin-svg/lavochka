@@ -41,6 +41,7 @@ export const SLUGS: Record<string, string> = {
   quoridor: 'koridor',
   mill: 'melnica',
   tafl: 'hnefatafl',
+  daldos: 'daldos',
   foxgeese: 'lisa-i-gusi',
   bulls: 'byki-i-korovy',
   renju: 'rendzyu',

@@ -1,0 +1,36 @@
+/* Далдос: доска-лодка на дощатом столе, фишки-лопатки и обелиски, кости-призмы в лотке. */
+.dl-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: #3a2414 url('/tex/daldos/table.webp') center / cover no-repeat; border-radius: 10px;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
+}
+.dl-board { width: 100%; height: 100%; user-select: none; overflow: visible; }
+.dl-pc { transition: none; }
+.dl-pc.anim { transition: transform 0.14s ease-out; }
+.dl-pc.gone { transition: opacity 0.35s; opacity: 0; }
+.dl-pc .dl-ring { fill: rgba(0, 0, 0, 0.35); stroke: transparent; stroke-width: 3; }
+.dl-pc.can { cursor: pointer; }
+.dl-pc.can .dl-ring { fill: rgba(255, 236, 160, 0.35); stroke: #fff2b0; stroke-dasharray: 6 4; animation: dl-glow 1s ease-in-out infinite; }
+.dl-pc.sel .dl-ring { fill: rgba(255, 250, 220, 0.55); stroke: #fff; stroke-dasharray: none; stroke-width: 4; }
+.dl-pc.can:hover image, .dl-pc.sel image { filter: brightness(1.15); }
+.dl-target { cursor: pointer; }
+.dl-target circle { fill: rgba(255, 242, 176, 0.3); stroke: #fff2b0; stroke-width: 4; animation: dl-glow 1s ease-in-out infinite; }
+.dl-target.hit circle { fill: rgba(255, 120, 90, 0.35); stroke: #ffd2b8; }
+.dl-target:hover circle { fill: rgba(255, 250, 220, 0.7); }
+.dl-target text { font: 700 28px 'PT Serif', Georgia, serif; fill: #fff6dc; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+@keyframes dl-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.dl-controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dl-tray { min-height: 76px; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 6px 0; }
+.dl-die { position: relative; width: 112px; height: 33px; transition: opacity 0.2s; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.45)); }
+.dl-die img { width: 100%; height: 100%; display: block; }
+.dl-die.used { opacity: 0.35; }
+.dl-die.blank .dl-mark { opacity: 0; }
+/* насечки — выжжены по дереву */
+.dl-mark {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font: 700 21px/1 'PT Serif', Georgia, serif; letter-spacing: 1px; color: #4a2509;
+  text-shadow: 0 1px 0 rgba(255, 240, 210, 0.7), 0 -1px 1px rgba(40, 15, 0, 0.5);
+}
+.dl-die.dal .dl-mark { color: #8a1c0c; }
+.dl-val { text-align: center; font: 700 15px 'PT Serif', Georgia, serif; min-height: 20px; color: var(--panel-ink, #2a1206); }

@@ -102,6 +102,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   mill: () => import('./mill/def').then((m) => m.def),
   foxgeese: () => import('./foxgeese/def').then((m) => m.def),
   tafl: () => import('./tafl/def').then((m) => m.def),
+  daldos: () => import('./daldos/def').then((m) => m.def),
   bagchal: () => import('./bagchal/def').then((m) => m.def),
   ur: () => import('./ur/def').then((m) => m.def),
   senet: () => import('./senet/def').then((m) => m.def),
