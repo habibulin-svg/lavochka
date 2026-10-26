@@ -6,7 +6,7 @@
 import { Sound } from '../../core/audio';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { arrange, canFinish, faceOf, leftOf, OPEN, rulesOf, type Action, type Event, type View } from './engine';
+import { arrange, arrange101, canFinish, faceOf, leftOf, OPEN, OPEN101, rulesOf, showTile, type Action, type Event, type View } from './engine';
 import { groupValue, orderGroup, partition, sameTile, type Tile } from './tiles';
 import { bestCover } from './ai';
 import { SEATS, TILE_COLORS, tn } from './def';
@@ -76,7 +76,7 @@ class OkeyView implements GameView<View, Event> {
     if (this.sort === 'color') return rack.slice().sort((a, b) => face(a).c - face(b).c || face(a).n - face(b).n);
     if (this.sort === 'num') return rack.slice().sort((a, b) => face(a).n - face(b).n || face(a).c - face(b).c);
     // по комбинациям: что складывается — подряд, остальное — по цвету
-    const best = bestCover(rack, face, v.cfg.mode === 'okey');
+    const best = bestCover(rack, face, v.cfg.mode !== 'rummikub');
     const used = new Set(best.flat());
     const rest = rack.filter((t) => !used.has(t)).sort((a, b) => face(a).c - face(b).c || face(a).n - face(b).n);
     return [...best.flatMap((g) => orderGroup(g, face, rulesOf(v.cfg))), ...rest];
@@ -112,27 +112,30 @@ class OkeyView implements GameView<View, Event> {
       if (d.length > 1) o += `<text x="${at.x}" y="${at.y + 48}" class="ok-small">${d.length}</text>`;
     }
     // центр
-    if (v.cfg.mode === 'okey') {
+    if (v.cfg.mode !== 'rummikub') {
+      // в «Окее 101» колода и индикатор — ниже, над подставкой: середина — под стол
+      const [sx, sy] = v.cfg.mode === 'o101' ? [170, 440] : [430, 300];
       const canStock = this.act != null && v.phase === 'draw';
-      o += `<g${canStock ? ' data-tile="stock" class="ok-stockg can"' : ' class="ok-stockg"'}>${tileSvg(null, 430, 300)}${tileSvg(null, 432, 296)}${tileSvg(null, 434, 292)}</g>`;
-      o += `<text x="432" y="350" class="ok-small">${v.stockLeft}</text>`;
+      o += `<g${canStock ? ' data-tile="stock" class="ok-stockg can"' : ' class="ok-stockg"'}>${tileSvg(null, sx, sy)}${tileSvg(null, sx + 2, sy - 4)}${tileSvg(null, sx + 4, sy - 8)}</g>`;
+      o += `<text x="${sx + 2}" y="${sy + 50}" class="ok-small">${v.stockLeft}</text>`;
       if (v.indicator) {
-        o += tileSvg(v.indicator, 540, 296);
-        o += `<text x="540" y="350" class="ok-small">индикатор</text>`;
-        o += `<text x="610" y="300" class="ok-small" style="text-anchor:start">окей: ${v.okey!.n}</text>`;
-        o += `<circle cx="660" cy="294" r="9" fill="${TILE_COLORS[v.okey!.c]}"/>`;
+        o += tileSvg(v.indicator, sx + 110, sy - 4);
+        o += `<text x="${sx + 110}" y="${sy + 50}" class="ok-small">индикатор</text>`;
+        o += `<text x="${sx + 180}" y="${sy}" class="ok-small" style="text-anchor:start">окей: ${v.okey!.n}</text>`;
+        o += `<circle cx="${sx + 230}" cy="${sy - 6}" r="9" fill="${TILE_COLORS[v.okey!.c]}"/>`;
       }
-    } else {
+    }
+    if (v.cfg.mode !== 'okey') {
       // стол руммикуба: группы рядами
       let x = 150;
-      let y = 160;
+      let y = v.cfg.mode === 'o101' ? 130 : 160;
       for (const g of v.table) {
         const w = g.length * 34 + 16;
         if (x + w > 860) (x = 150), (y += 62);
         g.forEach((t, i) => (o += tileSvg(t, x + i * 34 + 17, y, { small: true, wild: face(t).wild })));
         x += w;
       }
-      o += `<text x="90" y="400" class="ok-small">колода ${v.stockLeft}</text>`;
+      if (v.cfg.mode === 'rummikub') o += `<text x="90" y="400" class="ok-small">колода ${v.stockLeft}</text>`;
     }
     // своя подставка
     o += `<rect x="70" y="520" width="800" height="150" rx="14" class="ok-rack"/><rect x="80" y="600" width="780" height="10" rx="4" class="ok-rack-lip"/>`;
@@ -171,6 +174,7 @@ class OkeyView implements GameView<View, Event> {
     const t = v.racks[this.act].find((x) => keyOf(x) === k);
     if (!t) return;
     if (v.cfg.mode === 'okey') this.sel = this.sel.some((s) => sameTile(s, t)) ? [] : [t];
+    else if (v.cfg.mode === 'o101' && v.phase !== 'discard') return;
     else {
       const i = this.sel.findIndex((s) => sameTile(s, t));
       if (i >= 0) this.sel.splice(i, 1);
@@ -205,6 +209,34 @@ class OkeyView implements GameView<View, Event> {
     const v = this.v;
     const seat = this.act;
     if (!v || seat == null) return;
+    if (v.cfg.mode === 'okey' && showTile(v, seat)) this.button('Показать индикатор', 'primary', () => this.send({ type: 'show' }));
+    if (v.cfg.mode === 'o101') {
+      if (v.phase === 'draw') {
+        this.btns.appendChild(h('<div class="ok-ask">Возьмите фишку: из колоды или сброс соседа слева.</div>'));
+        this.button('Из колоды', 'primary', () => this.send({ type: 'draw', from: 'stock' }));
+        this.button('Сброс соседа', '', () => this.send({ type: 'draw', from: 'left' }), !!v.discards[leftOf(v.seats, seat)]?.length);
+      } else {
+        const lay = this.sel.length && this.sel.length < v.racks[seat].length ? arrange101(v, seat, this.sel) : null;
+        if (this.sel.length) this.button(lay ? 'Выложить' : v.opened[seat] ? 'Не ложится' : `Нужно ${OPEN101} или пять пар`, 'primary', () => this.send({ type: 'play', tiles: this.sel.slice() }), !!lay);
+        if (this.sel.length === 1) {
+          const t = this.sel[0];
+          const last = v.racks[seat].length === 1;
+          this.button(last ? 'Сбросить и выйти!' : `Сбросить ${t.n === 0 ? '☺' : t.n}`, last ? 'primary' : '', () => this.send({ type: 'discard', tile: t }), !last || v.opened[seat]);
+        }
+        this.btns.appendChild(h(`<div class="ok-ask">${v.opened[seat] ? (v.pairs?.[seat] ? 'Вы открылись парами — докладывайте пары.' : 'Выкладывайте и докладывайте к комбинациям на столе.') : `Первая выкладка — от ${OPEN101} очков или пятью парами.`} Потом выберите одну фишку и сбросьте.</div>`));
+      }
+      for (const [k, label] of [
+        ['groups', 'По комбинациям'],
+        ['color', 'По цвету'],
+        ['num', 'По номеру'],
+      ] as const)
+        this.button(label, `ok-sort${this.sort === k ? ' on' : ''}`, () => {
+          this.sort = k;
+          this.draw();
+          this.renderButtons();
+        });
+      return;
+    }
     if (v.cfg.mode === 'okey') {
       if (v.phase === 'draw') {
         this.btns.appendChild(h('<div class="ok-ask">Возьмите фишку: из колоды или сброс соседа слева.</div>'));
@@ -294,6 +326,7 @@ class OkeyView implements GameView<View, Event> {
     const who = toAct[0];
     if (!interactive.includes(who)) return `Ходит ${this.ctx.name(who)}…`;
     if (v.cfg.mode === 'rummikub') return 'Выкладывайте или берите фишку';
+    if (v.cfg.mode === 'o101') return v.phase === 'draw' ? 'Возьмите фишку' : 'Выкладывайте и сбросьте фишку';
     return v.phase === 'draw' ? 'Возьмите фишку' : 'Сбросьте фишку';
   }
 

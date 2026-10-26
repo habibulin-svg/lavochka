@@ -27,6 +27,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `${name(ev.seat)} выкладывает ${ev.tiles.map(tn).join(' ')}.`;
     case 'pass':
       return `${name(ev.seat)}: пас.`;
+    case 'show':
+      return `${name(ev.seat)} показывает индикатор ${tn(ev.tile)} — остальным минус очко.`;
     case 'hand':
       return ev.winner == null ? `Сдача без победителя: ${ev.text}.` : `Сдача за ${name(ev.winner)} — ${ev.text}.`;
     case 'end':
@@ -55,7 +57,7 @@ function pos(racks: string[], opts: Options, extra: Partial<State> = {}): State 
   s.stock = TS('к1 к2 ж1 ж2 с1 с2 ч1 ч2');
   s.round = 1;
   s.turn = 0;
-  if (s.cfg.mode === 'okey') {
+  if (s.cfg.mode !== 'rummikub') {
     s.indicator = T('ч9');
     s.okey = { c: 3, n: 10 };
     s.phase = 'discard';
@@ -77,6 +79,7 @@ export const def: GameDef<State, Action, Event, View> = {
       choices: [
         { value: 'okey', label: 'окей — турецкий, джокер по индикатору' },
         { value: 'rummikub', label: 'руммикуб — выкладка на стол' },
+        { value: 'o101', label: 'окей 101 — открытие от 101 очка, штрафы' },
       ],
       default: 'okey',
     },
@@ -92,7 +95,7 @@ export const def: GameDef<State, Action, Event, View> = {
     },
     {
       key: 'rounds',
-      label: 'Руммикуб — сдач',
+      label: 'Сдач (руммикуб и окей 101)',
       type: 'select',
       choices: [
         { value: 1, label: 'одна' },
@@ -107,6 +110,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'quick', label: 'Окей до 10', hint: 'Короткая партия', options: { mode: 'okey', start: 10 } },
     { id: 'rummikub', label: 'Руммикуб', hint: 'Выкладка на стол от 30 очков, перестройка стола, три сдачи', options: { mode: 'rummikub', rounds: 3 } },
     { id: 'rummikub1', label: 'Руммикуб — одна сдача', hint: 'Быстро: кто первым выложил всё', options: { mode: 'rummikub', rounds: 1 } },
+    { id: 'okey101', label: 'Окей 101', hint: 'По 21 фишке, первая выкладка — от 101 очка или пятью парами, штрафы, меньше — лучше', options: { mode: 'o101', rounds: 3 } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -150,6 +154,36 @@ export const def: GameDef<State, Action, Event, View> = {
           setup: () => pos(['к3 к4 к5 ж7 с7 ч7 с10 с11 с12 с13 ж1 ж2 ч10 ж4 к13', 'с1 с2 с3 ч4 ч5 ч6 к11 ж11 с11\' ч11 ж8 ж9 к13 ч2'], { mode: 'okey' }),
           intro: 'Индикатор — чёрная 9, значит окей — чёрная 10.',
           steps: [A(0, { type: 'discard', tile: T('к13'), finish: true }, 'Окей встаёт на место жёлтой тройки: ж1-ж2-окей-ж4. Мехмет сбрасывает красную 13 — и выходит.')],
+        },
+      },
+      {
+        title: 'Показ индикатора',
+        html: `<p>У кого на руке вторая такая же фишка, как индикатор, может <b>показать</b> её в свой первый ход (gösterme) — остальные теряют по очку.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'okey' },
+          setup: () => pos(['к3 к4 к5 ж7 с7 ч7 с10 с11 с12 ч9 ж1 ж2 ч10 ж4 к13', "с1 с2 с3 ч4 ч5 ч6 к11 ж11 с11' ч11 ж8 ж9 к13 ч2"], { mode: 'okey' }),
+          intro: 'Индикатор — чёрная 9, и у Мехмета вторая чёрная 9.',
+          steps: [A(0, { type: 'show' }, 'Мехмет показывает её — у соперника минус очко.')],
+        },
+      },
+      {
+        title: 'Окей 101',
+        html: `<p>Турецкий «Окей 101» (по Pagat): по <b>21 фишке</b>, первому 22; индикатор и окей — как в окее. Ход: взять фишку (из колоды или сброс соседа),
+          выложить на стол и доложить сколько хочешь, сбросить одну. <b>Первая выкладка</b> — комбинациями не меньше чем на <b>101 очко</b>
+          (окей считается за ту фишку, которую заменяет) или <b>пятью парами</b>; открывшийся парами дальше кладёт только пары.</p>
+          <p>Вышел (последняя фишка ушла в сброс) — себе <b>−101</b>, остальным штраф: не открывшимся <b>202</b>, открывшимся — сумма фишек на руке
+          (окей — 101). Победитель открылся парами или вышел океем — штрафы вдвое. Колода кончилась — сдача без победителя, штрафы те же.
+          После заданного числа сдач побеждает тот, у кого <b>меньше</b> очков.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { mode: 'o101' },
+          setup: () => pos(['к10 к11 к12 к13 ж10 ж11 ж12 ж13 к9 ж9 с9 ч1 ж2', "с1 с2 с3 ч4 ч5 ч6 к1 ж11' с11 ч11 ж8 ж9' к13' ч2"], { mode: 'o101' }),
+          intro: 'У Мехмета два ряда по 46 и три девятки — 119.',
+          steps: [
+            A(0, { type: 'play', tiles: TS('к10 к11 к12 к13 ж10 ж11 ж12 ж13 к9 ж9 с9') }, 'Первая выкладка — 119 очков, больше 101.'),
+            A(0, { type: 'discard', tile: T('ч1') }, 'И сброс — ход окончен.'),
+          ],
         },
       },
       {

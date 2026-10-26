@@ -93,3 +93,43 @@ describe('Окей и руммикуб', () => {
     }
   }, 300000);
 });
+
+describe('окей: показ индикатора и «Окей 101»', () => {
+  const base = (mode: 'okey' | 'o101', racks: string[]) => {
+    const s = ok.newState(ok.cfgFrom({ mode }), [0, 1]);
+    racks.forEach((r, i) => (s.racks[i] = TS(r)));
+    s.stock = TS('к1 к2 ж1 ж2 с1 с2 ч1 ч2');
+    s.round = 1;
+    s.turn = 0;
+    s.indicator = T('ч9');
+    s.okey = { c: 3, n: 10 };
+    s.phase = 'discard';
+    return s;
+  };
+  it('показ: вторая такая же, как индикатор, — в первый ход, остальным −1, один раз', () => {
+    const s = base('okey', ['к3 к4 ч9 ж7', 'с1 с2']);
+    const r = ok.apply(s, 0, { type: 'show' }, new SeededRng(1))!;
+    expect(r.state.score).toEqual([20, 19]);
+    expect(ok.apply(r.state, 0, { type: 'show' }, new SeededRng(1))).toBeNull();
+    expect(ok.apply({ ...s, moves: 2 }, 0, { type: 'show' }, new SeededRng(1))).toBeNull();
+  });
+  it('101: открытие от 101, меньше — нельзя; выход — себе −101, неоткрывшемуся +202', () => {
+    const s = base('o101', ['к10 к11 к12 к13 ж10 ж11 ж12 ж13 к9 ж9 с9 ч1', 'с1 с2 с3']);
+    expect(ok.apply(s, 0, { type: 'play', tiles: TS('к10 к11 к12 к13') }, new SeededRng(1))).toBeNull(); // 46 < 101
+    let r = ok.apply(s, 0, { type: 'play', tiles: TS('к10 к11 к12 к13 ж10 ж11 ж12 ж13 к9 ж9 с9') }, new SeededRng(1))!;
+    expect(r.state.opened[0]).toBe(true);
+    r = ok.apply(r.state, 0, { type: 'discard', tile: T('ч1') }, new SeededRng(1))!;
+    const hand = r.events.find((e) => e.type === 'hand') as Extract<ok.Event, { type: 'hand' }>;
+    expect(hand.delta[0]).toBe(-101);
+    expect(hand.delta[1]).toBe(202);
+  });
+  it('101: открытие пятью парами — дальше только пары, штрафы вдвое', () => {
+    const s = base('o101', ['к1 к1\' ж2 ж2\' с3 с3\' ч4 ч4\' к5 к5\' ж8', 'с1 с2 с3']);
+    const r = ok.apply(s, 0, { type: 'play', tiles: TS('к1 к1\' ж2 ж2\' с3 с3\' ч4 ч4\' к5 к5\'') }, new SeededRng(1))!;
+    expect(r.state.pairs![0]).toBe(true);
+    const end = ok.apply(r.state, 0, { type: 'discard', tile: T('ж8') }, new SeededRng(1))!;
+    const hand = end.events.find((e) => e.type === 'hand') as Extract<ok.Event, { type: 'hand' }>;
+    expect(hand.delta[0]).toBe(-202);
+    expect(hand.delta[1]).toBe(404);
+  });
+});

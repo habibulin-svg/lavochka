@@ -177,3 +177,28 @@ export function sevenPairs(ts: Tile[], face: (t: Tile) => Face): boolean {
   for (const v of counts.values()) single += v % 2;
   return single <= wild && (wild - single) % 2 === 0;
 }
+
+/** Разбить фишки на пары одинаковых (джокер — пара к любой); null — не разбиваются. «Окей 101»: открытие пятью парами. */
+export function pairsOf(ts: Tile[], face: (t: Tile) => Face): Tile[][] | null {
+  if (ts.length % 2) return null;
+  const wild = ts.filter((t) => face(t).wild);
+  const by = new Map<string, Tile[]>();
+  for (const t of ts) {
+    const f = face(t);
+    if (f.wild) continue;
+    const k = `${f.c}.${f.n}`;
+    by.set(k, [...(by.get(k) ?? []), t]);
+  }
+  const out: Tile[][] = [];
+  const w = wild.slice();
+  for (const list of by.values()) {
+    for (let i = 0; i + 1 < list.length; i += 2) out.push([list[i], list[i + 1]]);
+    if (list.length % 2) {
+      const j = w.pop();
+      if (!j) return null;
+      out.push([list[list.length - 1], j]);
+    }
+  }
+  for (let i = 0; i + 1 < w.length; i += 2) out.push([w[i], w[i + 1]]);
+  return out;
+}

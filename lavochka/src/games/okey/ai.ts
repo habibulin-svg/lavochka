@@ -4,7 +4,7 @@
  * Руммикуб: лёгкий выкладывает только свои комбинации; средний ещё и докладывает фишки к столу; сложный пробует и перестроить весь стол.
  *   Первая выкладка — как только набирается 30. */
 import type { Rng } from '../../core/types';
-import { arrange, canFinish, faceOf, leftOf, OPEN, rulesOf, type Action, type View } from './engine';
+import { arrange, arrange101, canFinish, faceOf, leftOf, OPEN, OPEN101, rulesOf, showTile, type Action, type View } from './engine';
 import { groupValue, partition, sameTile, validGroup, type Face, type Tile } from './tiles';
 
 /** Связность фишки с остальными: тот же номер другого цвета, соседний номер того же цвета. */
@@ -86,9 +86,61 @@ export function bestCover(rack: Tile[], face: (t: Tile) => Face, wrap: boolean):
   return best;
 }
 
+/** Сброс: самая «одинокая» фишка вне комбинаций, окей не сбрасывают. */
+function loneliest(v: View, rack: Tile[], level: number, rng: Rng): Tile {
+  const face = faceOf(v);
+  const cover = level > 0 ? new Set(bestCover(rack, face, true).flat()) : new Set<Tile>();
+  const cands = rack.filter((t) => !face(t).wild && !cover.has(t));
+  const pool = cands.length ? cands : rack.filter((t) => !face(t).wild);
+  if (!pool.length) return rack[0];
+  if (level === 0) return pool[rng.int(pool.length)];
+  let best = pool[0];
+  let bv = Infinity;
+  for (const t of pool) {
+    const s = links(rack, t, face) + rng.next() * 0.1;
+    if (s < bv) (bv = s), (best = t);
+  }
+  return best;
+}
+
+/** Пары одинаковых фишек на подставке (без джокеров). */
+function pairsIn(rack: Tile[], face: (t: Tile) => Face): Tile[] {
+  const by = new Map<string, Tile[]>();
+  for (const t of rack) {
+    const f = face(t);
+    if (f.wild) continue;
+    by.set(`${f.c}.${f.n}`, [...(by.get(`${f.c}.${f.n}`) ?? []), t]);
+  }
+  return [...by.values()].flatMap((l) => (l.length >= 2 ? l.slice(0, 2) : []));
+}
+
+/** «Окей 101»: выкладка (первая — от 101 или пятью парами), докладка, сброс. */
+function okey101(v: View, seat: number, level: number, rng: Rng): Action {
+  const face = faceOf(v);
+  const rules = rulesOf(v.cfg);
+  const rack = v.racks[seat];
+  if (v.phase === 'draw') return { type: 'draw', from: 'stock' };
+  const ok = (tiles: Tile[]) => tiles.length && tiles.length < rack.length && arrange101(v, seat, tiles);
+  if (!v.opened[seat] || !v.pairs?.[seat]) {
+    const cover = bestCover(rack, face, true);
+    const own = cover.flat();
+    const sum = cover.reduce((x, g) => x + groupValue(g, face, rules), 0);
+    if (v.opened[seat] || sum >= OPEN101) {
+      if (ok(own)) return { type: 'play', tiles: own };
+      if (v.opened[seat] && level > 0)
+        for (const t of rack) if (!face(t).wild && v.table.some((g) => g.length >= 3 && validGroup([...g, t].map(face), rules)) && ok([t])) return { type: 'play', tiles: [t] };
+    }
+  }
+  const pairs = pairsIn(rack, face);
+  if ((!v.opened[seat] && pairs.length >= 10 && level > 0) || (v.opened[seat] && v.pairs?.[seat] && pairs.length)) if (ok(pairs)) return { type: 'play', tiles: pairs };
+  return { type: 'discard', tile: loneliest(v, rack, level, rng) };
+}
+
 function okey(v: View, seat: number, level: number, rng: Rng): Action {
   const face = faceOf(v);
   const rack = v.racks[seat];
+  // показ индикатора — сразу, пока можно
+  if (showTile(v, seat)) return { type: 'show' };
   if (v.phase === 'draw') {
     const left = v.discards[leftOf(v.seats, seat)];
     const top = left[left.length - 1];
@@ -151,7 +203,7 @@ function rummikub(v: View, seat: number, level: number, rng: Rng): Action {
 
 export function choose(v: View, seat: number, level: number, rng: Rng): Action | null {
   if (v.over || v.turn !== seat) return null;
-  return v.cfg.mode === 'okey' ? okey(v, seat, level, rng) : rummikub(v, seat, level, rng);
+  return v.cfg.mode === 'okey' ? okey(v, seat, level, rng) : v.cfg.mode === 'o101' ? okey101(v, seat, level, rng) : rummikub(v, seat, level, rng);
 }
 
 export const _test = { bestCover, groupsOf, partition };
