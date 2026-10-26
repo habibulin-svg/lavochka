@@ -4,12 +4,16 @@ import { chooseMove } from './ai';
 import { applyMove, applyRoll, cfgFrom, DEFAULT_CFG, newGame, type Action, type Cfg, type Event, type State } from './engine';
 import { chooseL } from '../ludo/ai';
 import { applyLMove, applyLRoll, isL, lcfgFrom, lToAct, newLGame, type LAction, type LEvent, type LState } from '../ludo/engine';
+import { chooseC } from '../chaupar/ai';
+import { applyCMove, applyCRoll, ccfgFrom, cToAct, GOAL, GRACE, isC, newCGame, throwDice, type CAction, type CEvent, type CState } from '../chaupar/engine';
 
-/** Людо и парчис играются на своих досках своим движком (src/games/ludo); шиш-беш — этим. */
-type AnyState = State | LState;
-type AnyAction = Action | LAction;
-type AnyEvent = Event | LEvent;
+/** Людо и парчис играются на своих досках своим движком (src/games/ludo), чаупар и пачиси — своим (src/games/chaupar);
+ * шиш-беш — этим. */
+type AnyState = State | LState | CState;
+type AnyAction = Action | LAction | CAction;
+type AnyEvent = Event | LEvent | CEvent;
 const isLudoOpts = (o: { game?: unknown }) => o.game === 'ludo' || o.game === 'parchis';
+const isShishOpts = (o: { game?: unknown }) => (o.game ?? 'shishbesh') === 'shishbesh';
 
 export const SEATS = [
   { name: 'Красный', color: '#b3322a', light: '#e0674f', dark: '#6e1a14' },
@@ -38,8 +42,34 @@ function describeL(ev: LEvent, name: (seat: number) => string): string {
   return lines.join('<br>');
 }
 
+const AGAIN_C: Record<string, string> = { triple: 'Три одинаковые', grace: 'Милость', capture: 'За срубленную фишку' };
+
+function describeC(ev: CEvent, name: (seat: number) => string): string {
+  const lines: string[] = [];
+  const who = name(ev.seat);
+  if (ev.type === 'roll') {
+    if (ev.shells) {
+      const up = ev.shells.filter(Boolean).length;
+      lines.push(`${who}: каури ртом вверх — ${up}, это <b>${ev.dice[0]}</b>${GRACE.includes(ev.dice[0]) ? ' — <b>милость!</b>' : ''}`);
+    } else lines.push(`${who} бросил пасы: <b>${ev.dice.join(' · ')}</b>`);
+    if (ev.noMoves) lines.push('<i>Ходов нет.</i>');
+  } else {
+    let t = ev.from < 0 ? `${who} вводит фишку на поле` : ev.home ? `${who} доводит фишку до центра (${ev.value})` : `${who} ходит на ${ev.value}`;
+    if (ev.castle && ev.from >= 0) t += ' и встаёт в замок';
+    if (ev.captured.length) t += ' и рубит ' + ev.captured.map((c) => name(c.seat)).join(', ') + '!';
+    lines.push(t);
+    if (ev.forfeit) lines.push('<i>Остальные кости сгорают — ходить нечем.</i>');
+    if (ev.done) lines.push(`<i>${who} довёл все фишки и ждёт союзника.</i>`);
+    if (ev.win) lines.push(`🏆 ${who} — все фишки в центре!`);
+  }
+  const te = ev.turnEnd;
+  if (te && te.again) lines.push(`<i>${AGAIN_C[te.reason || ''] || 'Ещё бросок'} — ${name(te.next)} бросает ещё раз.</i>`);
+  return lines.join('<br>');
+}
+
 function describe(ev0: AnyEvent, name: (seat: number) => string): string {
   if ((ev0 as LEvent).lg) return describeL(ev0 as LEvent, name);
+  if ((ev0 as CEvent).ch) return describeC(ev0 as CEvent, name);
   const ev = ev0 as Event;
   const lines: string[] = [];
   if (ev.type === 'roll') {
@@ -103,6 +133,33 @@ function lpos(kind: 'ludo' | 'parchis', red: number[], green: number[], extra: R
   return s;
 }
 
+/** Позиция чаупара для показа: фишки по местам, ход первого. */
+function cpos(pieces: Record<number, number[]>, throws: 'pasa' | 'cowrie' = 'pasa', pairs = true): CState {
+  const n = throws === 'pasa' ? 3 : 1;
+  return {
+    ch: true,
+    cfg: { throws, pairs },
+    players: Object.entries(pieces).map(([seat, p]) => ({ seat: Number(seat), pieces: p })),
+    cur: 0,
+    phase: 'roll',
+    dice: Array(n).fill(0),
+    used: Array(n).fill(true),
+    bonus: false,
+    winner: null,
+    turn: 1,
+  };
+}
+/** Пасы для подкрутки: pasa(6, 5, 2) → индексы граней 1, 2, 5, 6. */
+const pasa = (...v: number[]) => v.map((x) => [1, 2, 5, 6].indexOf(x));
+/** Каури для подкрутки: сколько раковин ртом вверх. */
+const cowries = (up: number) => Array.from({ length: 6 }, (_, i) => (i < up ? 1 : 0));
+const quadSeats: SeatSpec[] = [
+  { seat: 0, kind: 'bot', name: 'Красный', level: 1 },
+  { seat: 1, kind: 'bot', name: 'Зелёный', level: 1 },
+  { seat: 2, kind: 'bot', name: 'Жёлтый', level: 1 },
+  { seat: 3, kind: 'bot', name: 'Синий', level: 1 },
+];
+
 export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
   id: 'shishbesh',
   title: 'Шиш-беш',
@@ -119,6 +176,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
         { value: 'shishbesh', label: 'шиш-беш — два кубика, углы, укрытия' },
         { value: 'ludo', label: 'людо — своя доска, выход на 6' },
         { value: 'parchis', label: 'парчис — испанская доска, выход на 5, барьеры, бонусы' },
+        { value: 'chaupar', label: 'чаупар — индийский вышитый крест, пасы или каури' },
       ],
       default: 'shishbesh',
     },
@@ -138,6 +196,25 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
       showIf: (o) => o.game === 'ludo',
     },
     {
+      key: 'throws',
+      label: 'Чем бросать',
+      type: 'select',
+      choices: [
+        { value: 'pasa', label: 'три длинные кости-пасы (1, 2, 5, 6)' },
+        { value: 'cowrie', label: 'шесть раковин каури — пачиси' },
+      ],
+      default: 'pasa',
+      showIf: (o) => o.game === 'chaupar',
+    },
+    {
+      key: 'pairs',
+      label: 'Вчетвером — пары',
+      type: 'toggle',
+      default: true,
+      hint: 'Сидящие напротив — союзники: друг друга не рубят, побеждают вместе.',
+      showIf: (o) => o.game === 'chaupar',
+    },
+    {
       key: 'arm',
       label: 'Поле',
       type: 'select',
@@ -147,7 +224,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
       ],
       default: 5,
       hint: 'На длинном поле круг 56 клеток, а домик — 5 клеток.',
-      showIf: (o) => (o.game ?? 'shishbesh') === 'shishbesh',
+      showIf: isShishOpts,
     },
     {
       key: 'houses',
@@ -158,7 +235,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
         { value: 'alternate', label: 'через один (лесенкой)' },
       ],
       default: 'opposite',
-      showIf: (o) => (o.game ?? 'shishbesh') === 'shishbesh',
+      showIf: isShishOpts,
     },
     {
       key: 'start',
@@ -170,7 +247,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
         { value: 'both', label: 'на шестёрку или дубль' },
       ],
       default: 'six',
-      showIf: (o) => (o.game ?? 'shishbesh') === 'shishbesh',
+      showIf: isShishOpts,
     },
     {
       key: 'quick',
@@ -178,7 +255,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
       type: 'toggle',
       default: false,
       hint: 'Пока на поле нет ни одной своей фишки, на выход даётся три броска подряд.',
-      showIf: (o) => (o.game ?? 'shishbesh') === 'shishbesh',
+      showIf: isShishOpts,
     },
   ],
   presets: [
@@ -188,14 +265,27 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
     { id: 'double', label: 'Старт на дубль', hint: 'Фишка выходит из парка только на дубль', options: { arm: 5, houses: 'opposite', start: 'double' } },
     { id: 'ludo', label: 'Людо', hint: 'Своя доска, один кубик, выход и ещё бросок на 6, безопасные звёзды', options: { game: 'ludo', ludoBonus: false, ludoBlocks: false } },
     { id: 'ludoplus', label: 'Людо с бонусами', hint: 'Ещё бросок за рубку и за дом, блоки из двух фишек', options: { game: 'ludo', ludoBonus: true, ludoBlocks: true } },
+    { id: 'chaupar', label: 'Чаупар', hint: 'Индийский крест 3 × 8: три кости-пасы, замки, вход на шестёрку, вчетвером — пары', options: { game: 'chaupar', throws: 'pasa', pairs: true } },
+    { id: 'pachisi', label: 'Пачиси', hint: 'Тот же крест, но бросают шесть каури: 25, 10 и 6 — «милость»', options: { game: 'chaupar', throws: 'cowrie', pairs: true } },
     { id: 'parchis', label: 'Парчис', hint: 'Испанская доска на 68 клеток: выход на 5, барьеры, +20 за рубку и +10 за дом', options: { game: 'parchis' } },
   ],
 
-  setup: (seats, opts, rng) => (isLudoOpts(opts) ? newLGame(seats.map((s) => s.seat), lcfgFrom(opts)) : newGame(seats.map((s) => s.seat), rng, cfgFrom(opts))),
+  setup: (seats, opts, rng) =>
+    opts.game === 'chaupar'
+      ? newCGame(seats.map((s) => s.seat), rng, ccfgFrom(opts))
+      : isLudoOpts(opts)
+        ? newLGame(seats.map((s) => s.seat), lcfgFrom(opts))
+        : newGame(seats.map((s) => s.seat), rng, cfgFrom(opts)),
 
-  toAct: (s) => (isL(s) ? lToAct(s) : s.phase === 'over' ? [] : [s.players[s.cur].seat]),
+  toAct: (s) => (isL(s) ? lToAct(s) : isC(s) ? cToAct(s) : s.phase === 'over' ? [] : [s.players[s.cur].seat]),
 
   apply(s0, seat, a0, rng: Rng) {
+    if (isC(s0)) {
+      if (s0.phase === 'over' || s0.players[s0.cur].seat !== seat) return null;
+      const a = a0 as CAction;
+      const res = a.type === 'roll' ? applyCRoll(s0, throwDice(s0.cfg, rng)) : applyCMove(s0, a);
+      return res && { state: res.state, events: [res.event] };
+    }
     if (isL(s0)) {
       if (s0.phase === 'over' || s0.seats[s0.cur] !== seat) return null;
       const a = a0 as LAction;
@@ -214,12 +304,17 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
 
   view: (s) => s,
 
-  result: (s) => (s.winner == null ? null : { winners: [s.winner], text: isL(s) ? 'первым довёл все четыре фишки' : 'первым завёл все четыре фишки в домик' }),
+  result: (s) => {
+    if (s.winner == null) return null;
+    if (isC(s)) return { winners: s.winners ?? [s.winner], text: (s.winners?.length ?? 1) > 1 ? 'первой парой довели все фишки до центра' : 'первым довёл все четыре фишки до центра' };
+    return { winners: [s.winner], text: isL(s) ? 'первым довёл все четыре фишки' : 'первым завёл все четыре фишки в домик' };
+  },
 
   bot: {
     levels: ['Лёгкий', 'Средний', 'Сложный'],
     choose(s, seat, level, rng) {
       if (isL(s)) return chooseL(s, seat, level, rng);
+      if (isC(s)) return chooseC(s, seat, level, rng);
       if (s.phase === 'roll') return { type: 'roll' };
       const m = chooseMove(s, level, rng);
       return m && { type: 'move', piece: m.piece, die: m.die, to: m.to };
@@ -397,6 +492,114 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyState> = {
           steps: [
             { seat: 0, action: { type: 'roll' }, rig: [2], caption: 'Ровно три!' },
             { seat: 0, action: { type: 'move', piece: 0 }, caption: 'Четвёртая фишка в центре — победа.' },
+          ],
+        },
+      },
+      {
+        title: 'Чаупар: крест и путь',
+        html: `<p>Индийская игра на вышитом полотне-кресте: четыре рукава по <b>3 столбца × 8 клеток</b> и центр — <i>чаркони</i>. У каждого 4 фишки-готи,
+          играют двое, трое или вчетвером; вчетвером сидящие напротив — <b>пары</b>.</p>
+          <p>Фишка входит на поле у центра, спускается по <b>среднему столбцу своего рукава</b>, обходит весь крест против часовой стрелки по внешним столбцам
+          (68 клеток) и поднимается по своему среднему столбцу обратно в центр — 84 шага. Свой средний столбец — только для своих фишек.</p>`,
+      },
+      {
+        title: 'Чаупар: пасы и вход',
+        html: `<p>Бросают три длинные кости — <b>пасы</b> с гранями 1, 2, 5 и 6. Каждая кость — отдельный ход любой фишкой, порядок любой; сходить можно — ходить обязательно.
+          Фишка входит на поле только костью <b>«6»</b>. Три одинаковые кости — после хода ещё бросок.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'chaupar', throws: 'pasa' },
+          setup: () => cpos({ 0: [-1, -1, -1, -1], 1: [40, -1, -1, -1] }),
+          intro: 'Все красные фишки ждут у края полотна.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: pasa(6, 5, 2), caption: 'Выпало 6, 5 и 2. Шестёрка вводит фишку.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 0 }, caption: 'Фишка встаёт на первую клетку своего столбца, у самого центра.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 5 }, caption: 'Пятёркой — вниз по своему столбцу.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 2, to: 7 }, caption: 'Двойкой — на торец рукава. Это замок, здесь фишку не срубить.' },
+          ],
+        },
+      },
+      {
+        title: 'Чаупар: рубка',
+        html: `<p>Встав на клетку с чужими фишками, вы их <b>рубите</b>: они уходят с поля и снова ждут входа. <b>Срубивший бросает ещё раз.</b>
+          Свои фишки (и фишки союзника) могут стоять на одной клетке сколько угодно.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'chaupar', throws: 'pasa' },
+          setup: () => cpos({ 0: [12, -1, -1, -1], 1: [65, -1, -1, -1] }),
+          intro: 'Зелёная фишка в двух клетках впереди красной.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: pasa(2, 5, 6), caption: 'Выпало 2, 5 и 6.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 14 }, caption: 'Двойкой — прямо на зелёную: рубка! Зелёная уходит с поля.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 19 }, caption: 'Пятёркой — дальше.' },
+            { seat: 0, action: { type: 'move', piece: 1, die: 2, to: 0 }, caption: 'Шестёркой входит вторая фишка. За рубку красный бросает ещё раз.' },
+          ],
+        },
+      },
+      {
+        title: 'Чаупар: замки',
+        html: `<p>Клетки с вышитым крестом и зеркальцем — <b>замки</b>: торцы средних столбцов и 4-я клетка от края на каждом внешнем столбце, всего 12.
+          В замке не рубят, а на замок, где стоит фишка противника, встать нельзя.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'chaupar', throws: 'pasa' },
+          setup: () => cpos({ 0: [15, -1, -1, -1], 1: [71, -1, -1, -1] }),
+          intro: 'Зелёная фишка сидит в замке в пяти клетках от красной.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: pasa(5, 2, 1), caption: 'Выпало 5, 2 и 1. Пятёркой встать в замок к зелёной нельзя.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 17 }, caption: 'Двойкой — вперёд, к замку.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 22 }, caption: 'Теперь пятёрка проводит мимо замка: рубить в замке нельзя, а проходить мимо можно.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 2, to: 23 }, caption: 'Единицей — ещё шаг.' },
+          ],
+        },
+      },
+      {
+        title: 'Пачиси: каури',
+        html: `<p>В пачиси вместо костей бросают <b>шесть раковин каури</b> и считают, сколько легли ртом вверх: 2, 3, 4, 5 и 6 — столько и шагов,
+          одна — <b>10</b> (или 1, если так удобнее), ни одной — <b>25</b>. Броски 6, 10 и 25 — <b>милость</b>: ими можно ввести фишку, и после хода бросают ещё раз.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'chaupar', throws: 'cowrie' },
+          setup: () => cpos({ 0: [-1, -1, -1, 30], 1: [50, -1, -1, -1] }, 'cowrie'),
+          intro: 'Пачиси. Три красные фишки ждут входа, одна уже в пути.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: cowries(1), caption: 'Одна раковина ртом вверх — это 10 (можно сходить и на 1), милость.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 0 }, caption: 'Милостью вводим фишку. И бросаем ещё раз.' },
+            { seat: 0, action: { type: 'roll' }, rig: cowries(3), caption: 'Три раковины — три шага.' },
+            { seat: 0, action: { type: 'move', piece: 3, die: 0, to: 33 }, caption: 'Фишка в пути идёт на три клетки.' },
+          ],
+        },
+      },
+      {
+        title: 'Чаупар: пары',
+        html: `<p>Вчетвером сидящие напротив играют в паре: красный с жёлтым, зелёный с синим. Фишку союзника не рубят — встают к ней на клетку,
+          и в замок к союзнику встать можно. Доведя свои фишки, игрок ждёт союзника; побеждает пара, первой заведшая в центр все восемь фишек.</p>`,
+        demo: {
+          seats: quadSeats,
+          options: { game: 'chaupar', throws: 'pasa', pairs: true },
+          setup: () => cpos({ 0: [12, -1, -1, -1], 1: [-1, -1, -1, -1], 2: [48, -1, -1, -1], 3: [-1, -1, -1, -1] }),
+          intro: 'Жёлтая фишка — союзник красного — в двух клетках впереди.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: pasa(2, 1, 5), caption: 'Выпало 2, 1 и 5.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 0, to: 14 }, caption: 'Двойкой — к жёлтой. Это союзник: никто никого не рубит.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 1, to: 15 }, caption: 'Единицей — дальше.' },
+            { seat: 0, action: { type: 'move', piece: 0, die: 2, to: 20 }, caption: 'Пятёркой — в замок на 4-й клетке соседнего рукава.' },
+          ],
+        },
+      },
+      {
+        title: 'Чаупар: в центр',
+        html: `<p>Обойдя крест, фишка поднимается по своему среднему столбцу и входит в центр — только <b>точным</b> броском: лишнего не бывает.
+          Побеждает тот, кто первым приведёт в центр все четыре фишки (вчетвером — пара).</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { game: 'chaupar', throws: 'pasa' },
+          setup: () => cpos({ 0: [GOAL, GOAL, GOAL, 79], 1: [30, -1, -1, -1] }),
+          intro: 'Три красные фишки уже в центре, четвёртой осталось четыре клетки.',
+          steps: [
+            { seat: 0, action: { type: 'roll' }, rig: pasa(2, 2, 6), caption: 'Выпало 2, 2 и 6. Шестёрка не годится — перебор.' },
+            { seat: 0, action: { type: 'move', piece: 3, die: 0, to: 81 }, caption: 'Двойкой — вверх по своему столбцу.' },
+            { seat: 0, action: { type: 'move', piece: 3, die: 1, to: GOAL }, caption: 'Второй двойкой — ровно в центр. Победа!' },
           ],
         },
       },

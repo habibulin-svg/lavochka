@@ -1,10 +1,12 @@
 import type { GameModule, GameView, ViewCtx } from '../../core/view';
+import { isC } from '../chaupar/engine';
+import { ChauparView } from '../chaupar/view';
 import { isL } from '../ludo/engine';
 import { LudoView } from '../ludo/view';
 import { def } from './def';
 import { createView as createShish } from './view';
 
-/** Людо и парчис — свой вид на своих досках; переключаемся по состоянию партии. */
+/** Людо и парчис, чаупар и пачиси — свой вид на своих досках; переключаемся по состоянию партии. */
 class SwitchView implements GameView {
   private root!: HTMLElement;
   private ctx!: ViewCtx;
@@ -17,13 +19,13 @@ class SwitchView implements GameView {
   }
 
   private pick(v: unknown): GameView {
-    const kind = isL(v) ? 'ludo' : 'shish';
+    const kind = isL(v) ? 'ludo' : isC(v) ? 'chaupar' : 'shish';
     if (kind !== this.kind || !this.cur) {
       this.cur?.destroy?.();
       this.root.innerHTML = '';
       this.ctx.controls.innerHTML = '';
       this.kind = kind;
-      this.cur = kind === 'ludo' ? new LudoView() : createShish();
+      this.cur = kind === 'ludo' ? new LudoView() : kind === 'chaupar' ? new ChauparView() : createShish();
       this.cur.mount(this.root, this.ctx);
     }
     return this.cur;
