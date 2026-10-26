@@ -58,7 +58,9 @@ export const def: GameDef<State, Action, Event, State> = {
       ],
       default: 5,
     },
-    { key: 'diag', label: 'Слова по диагонали', type: 'toggle', default: false, hint: 'Соседними считаются и клетки углом.' },
+    { key: 'diag', label: 'Слова по диагонали', type: 'toggle', default: false, hint: 'Соседними считаются и клетки углом.', showIf: (o) => o.royal !== true },
+    { key: 'royal', label: '«Королевский квадрат»', type: 'toggle', default: false, hint: 'Слова и по диагонали, а вдвоём — двойной ход: после слова ставишь ещё одну букву.' },
+    { key: 'draw3', label: 'Три пропуска подряд у всех — ничья', type: 'toggle', default: false, hint: 'Иначе партия кончается, когда все один раз подряд пропустили, и побеждают очки.' },
     {
       key: 'min',
       label: 'Слово не короче',
@@ -74,6 +76,7 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'classic', label: 'Классика 5×5', hint: 'Как на тетрадном листе', options: { size: 5, diag: false, min: 2 } },
     { id: 'big', label: 'Большое поле 7×7', hint: 'Партия длиннее, слова длиннее', options: { size: 7, diag: false, min: 2 } },
     { id: 'diag', label: 'С диагоналями', hint: 'Слово можно вести и углом', options: { size: 5, diag: true, min: 3 } },
+    { id: 'royal', label: 'Королевский квадрат', hint: '«Наука и жизнь», 1980: диагонали и двойной ход вдвоём', options: { size: 5, diag: true, min: 2, royal: true, draw3: true } },
   ],
 
   setup: (seats, opts, rng) => newGame(seats.map((x) => x.seat), cfgFrom(opts), rng),
@@ -85,6 +88,7 @@ export const def: GameDef<State, Action, Event, State> = {
     const w = winners(s);
     const scores = Object.fromEntries(s.players.map((p) => [p.seat, p.score]));
     const best = s.players.find((p) => p.seat === w[0])!.score;
+    if (s.draw) return { winners: w, text: 'ничья — все трижды подряд пропустили ход', scores };
     const text = w.length > 1 ? `ничья — по ${best} ${plural(best, 'очку', 'очка', 'очков')}` : `${best} ${plural(best, 'очко', 'очка', 'очков')}`;
     return { winners: w, text, scores };
   },

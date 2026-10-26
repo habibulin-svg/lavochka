@@ -302,6 +302,7 @@ class BaldaView implements GameView<State, Event> {
   status(s: State, toAct: number[], interactive: number[]) {
     if (s.over) return 'Партия окончена';
     const who = toAct[0];
+    if (s.second) return interactive.includes(who) ? `Двойной ход: ещё одно слово, ${this.ctx.name(who)}` : `${this.ctx.name(who)} делает второй ход…`;
     return interactive.includes(who) ? `Ваш ход: ${this.ctx.name(who)}` : `Думает ${this.ctx.name(who)}…`;
   }
 

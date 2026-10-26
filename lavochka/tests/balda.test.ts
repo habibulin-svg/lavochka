@@ -69,3 +69,21 @@ describe('балда: боты', () => {
     expect(len(2)).toBeGreaterThan(len(0));
   });
 });
+
+describe('балда: Королевский квадрат и ничья по пропускам', () => {
+  it('вдвоём — двойной ход; три пропуска подряд у всех — ничья', async () => {
+    const { loadDict } = await import('../src/words/dict');
+    await loadDict();
+    const eng = await import('../src/games/balda/engine');
+    const { SeededRng } = await import('../src/core/rng');
+    const cfg = eng.cfgFrom({ royal: true, draw3: true });
+    expect(cfg.diag).toBe(true);
+    let s = eng.newGame([0, 1], cfg, new SeededRng(3), 'балда');
+    // пропуски: 5 раз — ещё не конец, 6-й (по три у каждого) — ничья
+    for (let i = 0; i < 5; i++) s = eng.apply(s, s.players[s.cur].seat, { type: 'pass' })!.state;
+    expect(s.over).toBe(false);
+    s = eng.apply(s, s.players[s.cur].seat, { type: 'pass' })!.state;
+    expect(s.over).toBe(true);
+    expect(eng.winners(s)).toEqual([0, 1]);
+  });
+});

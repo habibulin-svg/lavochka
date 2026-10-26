@@ -2,7 +2,10 @@
  * Поле n×n, в средней строке — начальное слово. Ход: поставить одну букву в пустую клетку рядом с занятой и прочитать слово
  * цепочкой соседних клеток (по сторонам; по настройке — и по диагонали), каждая клетка — не больше раза, новая буква — в цепочке.
  * Слово — существительное из словаря, в партии ещё не было. Очко за каждую букву слова. Конец — поле заполнено,
- * или все подряд пропустили ход, или сдались все, кроме одного. Побеждает набравший больше очков. */
+ * или все подряд пропустили ход, или сдались все, кроме одного. Побеждает набравший больше очков.
+ * По настройке (как в Википедии): конец по пропускам — только когда все трижды подряд пропустили, и тогда ничья.
+ * «Королевский квадрат» («Наука и жизнь», 1980, № 7): слова и по диагонали, а вдвоём — двойной ход: сходил словом —
+ *   ставишь ещё одну букву (второе слово) тем же ходом. */
 import type { Options, Rng } from '../../core/types';
 import { clone } from '../../core/util';
 import { ALPHABET, hasWord, norm, wordsOfLength } from '../../words/dict';
@@ -12,11 +15,16 @@ export interface Cfg {
   diag: boolean;
   /** Минимальная длина слова. */
   min: number;
+  /** Конец по пропускам — когда все трижды подряд пропустили, и это ничья. */
+  draw3?: boolean;
+  /** «Королевский квадрат»: вдвоём двойной ход. */
+  royal?: boolean;
 }
 
 export function cfgFrom(o: Options): Cfg {
   const size = [5, 6, 7].includes(Number(o.size)) ? Number(o.size) : 5;
-  return { size, diag: o.diag === true, min: Number(o.min) === 3 ? 3 : 2 };
+  const royal = o.royal === true;
+  return { size, diag: o.diag === true || royal, min: Number(o.min) === 3 ? 3 : 2, draw3: o.draw3 === true, royal };
 }
 
 export interface Player {
@@ -38,6 +46,10 @@ export interface State {
   passes: number;
   last: { cell: number; path: number[] } | null;
   over: boolean;
+  /** «Королевский квадрат»: первый из двух ходов уже сделан — ход за тем же игроком. */
+  second?: boolean;
+  /** Ничья по пропускам (настройка draw3). */
+  draw?: boolean;
 }
 
 export type Action = { type: 'word'; cell: number; letter: string; path: number[] } | { type: 'pass' } | { type: 'resign' };
@@ -158,12 +170,18 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
     if (s.grid.every((x) => x)) {
       s.over = true;
       events.push({ type: 'end', reason: 'full' });
-    } else nextPlayer(s);
+    } else if (s.cfg.royal && alive(s).length === 2 && !s.second) s.second = true; // двойной ход — ещё слово
+    else {
+      s.second = false;
+      nextPlayer(s);
+    }
   } else if (a.type === 'pass') {
     s.passes++;
+    s.second = false;
     events.push({ type: 'pass', seat });
-    if (s.passes >= alive(s).length) {
+    if (s.passes >= alive(s).length * (s.cfg.draw3 ? 3 : 1)) {
       s.over = true;
+      if (s.cfg.draw3) s.draw = true;
       events.push({ type: 'end', reason: 'passes' });
     } else nextPlayer(s);
   } else if (a.type === 'resign') {
@@ -183,6 +201,8 @@ export function apply(s0: State, seat: number, a: Action): { state: State; event
 /** Победители: лучшие по очкам среди не сдавшихся. */
 export function winners(s: State): number[] {
   const live = alive(s);
+  // все трижды подряд пропустили — ничья, как ни лежат очки
+  if (s.draw) return live.map((p) => p.seat);
   const best = Math.max(...live.map((p) => p.score));
   return live.filter((p) => p.score === best).map((p) => p.seat);
 }
