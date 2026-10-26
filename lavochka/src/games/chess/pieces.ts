@@ -110,6 +110,43 @@ const PROFILES: Record<string, Prof> = {
   ],
 };
 
+// старинные фигуры: фарзин (советник, шаг по диагонали) — невысокий, с гладкой маковкой без короны;
+// фил / алфил (слон, прыжок через поле) — с двумя бивнями; кхон (макрук) — ступенчатое острое навершие, как у тайского храма
+PROFILES.F = [
+  ...BASE,
+  { c: [16, 80], to: [12, 70] },
+  [9, 52],
+  { c: [18, 51], to: [17, 47] },
+  [10, 45],
+  { c: [18, 40], to: [17, 32] },
+  { c: [16, 24], to: [8, 23] },
+  { c: [12, 17], to: [0, 15] },
+];
+PROFILES.A = [
+  ...BASE,
+  { c: [17, 80], to: [13, 70] },
+  [10, 54],
+  { c: [18, 53], to: [17, 50] },
+  [11, 48],
+  { c: [20, 42], to: [19, 32] },
+  { c: [18, 24], to: [10, 22] },
+  { c: [8, 18], to: [0, 18] },
+];
+PROFILES.H = [
+  ...BASE,
+  { c: [16, 80], to: [12, 70] },
+  [9, 54],
+  { c: [17, 53], to: [16, 50] },
+  [9, 48],
+  [13, 42],
+  [8, 38],
+  [11, 33],
+  [6, 29],
+  [8, 25],
+  [3, 20],
+  [0, 8],
+];
+
 /** Пояски-бороздки (высоты), где резец оставил след. */
 const GROOVES: Record<string, number[]> = {
   P: [87, 82, 60],
@@ -118,6 +155,9 @@ const GROOVES: Record<string, number[]> = {
   Q: [87, 82, 41, 36, 22],
   K: [87, 82, 39, 34],
   N: [87, 82],
+  F: [87, 82, 49, 45],
+  A: [87, 82, 52, 48],
+  H: [87, 82, 51, 48],
 };
 
 /** Резная голова коня (смотрит влево) на точёной подставке. */
@@ -169,6 +209,10 @@ function piece(kind: string, c: 'w' | 'b'): string {
     s += `<path d="M42 88 L42 ${kind === 'P' ? 40 : 30}" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity="${L.shine * 0.45}"/>`;
     if (kind === 'B') s += `<path d="M44 34 L56 22" stroke="${L.edge}" stroke-width="2.4" stroke-linecap="round"/>`;
     if (kind === 'K') s += `<path d="M50 4 V17 M44 9 H56" stroke="${L.edge}" stroke-width="7" stroke-linecap="round"/><path d="M50 4 V17 M44 9 H56" stroke="url(#pc${c})" stroke-width="4" stroke-linecap="round"/>`;
+    if (kind === 'A')
+      // бивни слона
+      for (const sx of [-1, 1]) s += `<path d="M${50 + sx * 14} 30 Q${50 + sx * 24} 32 ${50 + sx * 23} 42" fill="none" stroke="${L.edge}" stroke-width="5.4" stroke-linecap="round"/><path d="M${50 + sx * 14} 30 Q${50 + sx * 24} 32 ${50 + sx * 23} 42" fill="none" stroke="${c === 'w' ? '#fffaf0' : '#d8cbb8'}" stroke-width="3" stroke-linecap="round"/>`;
+    if (kind === 'F') s += `<circle cx="50" cy="13" r="3.4" fill="url(#pc${c})" stroke="${L.edge}" stroke-width="1"/>`;
     if (kind === 'Q') for (const x of [-14, -7, 0, 7, 14]) s += `<circle cx="${50 + x}" cy="${22 - (14 - Math.abs(x)) * 0.25}" r="2.2" fill="url(#pc${c})" stroke="${L.edge}" stroke-width="1"/>`;
   }
   for (const y of GROOVES[kind]) s += `<path d="M${50 - 26} ${y} Q50 ${y + 1.6} ${50 + 26} ${y}" fill="none" stroke="${L.line}" stroke-width=".9" opacity=".55" clip-path="url(#pclip${kind}${c})"/>`;
@@ -179,12 +223,22 @@ function piece(kind: string, c: 'w' | 'b'): string {
 /** Все определения фигур — вставить в <defs> доски один раз. */
 export function pieceDefs(): string {
   let s = defs('w') + defs('b');
-  for (const c of ['w', 'b'] as const) for (const k of ['P', 'N', 'B', 'R', 'Q', 'K']) s += piece(k, c);
+  for (const c of ['w', 'b'] as const) for (const k of ['P', 'N', 'B', 'R', 'Q', 'K', 'F', 'A', 'H']) s += piece(k, c);
   return s;
 }
 
+/** Как рисовать старинные фигуры: ферзь — фарзином, слон — филом или кхоном (по правилам варианта). */
+export interface OldLook {
+  q?: 'queen' | 'ferz';
+  b?: 'bishop' | 'alfil' | 'khon';
+}
+
 /** id символа для фигуры FEN-буквой. */
-export function pieceRef(p: string): string {
+export function pieceRef(p: string, old?: OldLook): string {
   const c = p === p.toUpperCase() ? 'w' : 'b';
-  return `#pc-${c}${p.toUpperCase()}`;
+  let k = p.toUpperCase();
+  if (k === 'Q' && old?.q === 'ferz') k = 'F';
+  else if (k === 'B' && old?.b === 'alfil') k = 'A';
+  else if (k === 'B' && old?.b === 'khon') k = 'H';
+  return `#pc-${c}${k}`;
 }

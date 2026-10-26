@@ -4,7 +4,7 @@ import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
-import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, type Event, type Move, type Promo, type State } from './engine';
+import { colorOf, fileOf, inCheck, kingSq, legalMoves, rankOf, rulesOf, type Event, type Move, type Promo, type State } from './engine';
 import { mountCoach, uciMoves } from './coach';
 import { logMyGame } from '../kruzhok/mygames';
 import { pieceDefs, pieceRef } from './pieces';
@@ -160,7 +160,7 @@ class ChessView implements GameView<State, Event> {
 
   private pieceSvg(p: string, sq: number) {
     const { x, y } = this.xy(sq);
-    return `<g class="ch-pc" data-sq="${sq}" transform="translate(${x - SQ / 2},${y - SQ / 2})"><use href="${pieceRef(p)}" x="${-SQ * 0.06}" y="${-SQ * 0.1}" width="${SQ * 1.12}" height="${SQ * 1.12}" filter="url(#chShadow)"/></g>`;
+    return `<g class="ch-pc" data-sq="${sq}" transform="translate(${x - SQ / 2},${y - SQ / 2})"><use href="${pieceRef(p, this.s ? rulesOf(this.s) : undefined)}" x="${-SQ * 0.06}" y="${-SQ * 0.1}" width="${SQ * 1.12}" height="${SQ * 1.12}" filter="url(#chShadow)"/></g>`;
   }
 
   private render() {
@@ -279,7 +279,7 @@ class ChessView implements GameView<State, Event> {
     this.promo.innerHTML = `<div class="ch-ask">${from === to ? 'Превратить пешку на месте?' : 'Во что превратить пешку?'}</div>`;
     const row = h('<div class="ch-promo-row"></div>');
     for (const p of list) {
-      const b = h<HTMLButtonElement>(`<button class="btn ch-pp" title="${{ Q: 'Ферзь', R: 'Ладья', B: 'Слон', N: 'Конь' }[p]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(c === 0 ? p : p.toLowerCase())}"/></svg></button>`);
+      const b = h<HTMLButtonElement>(`<button class="btn ch-pp" title="${{ Q: 'Ферзь', R: 'Ладья', B: 'Слон', N: 'Конь' }[p]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(c === 0 ? p : p.toLowerCase(), this.s ? rulesOf(this.s) : undefined)}"/></svg></button>`);
       b.onclick = () => this.send(from, to, p);
       row.appendChild(b);
     }
@@ -332,7 +332,7 @@ class ChessView implements GameView<State, Event> {
       const row = h('<div class="ch-promo-row ch-reserve"></div>');
       for (const k of [...new Set(st.reserve[seat])]) {
         const n = st.reserve[seat].filter((x) => x === k).length;
-        const b = h<HTMLButtonElement>(`<button class="btn ch-pp${this.dropPick === k ? ' on' : ''}" title="${PIECE_RU[k]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(seat === 0 ? k : k.toLowerCase())}"/></svg>${n > 1 ? `<i>×${n}</i>` : ''}</button>`);
+        const b = h<HTMLButtonElement>(`<button class="btn ch-pp${this.dropPick === k ? ' on' : ''}" title="${PIECE_RU[k]}"><svg viewBox="0 0 100 100"><use href="${pieceRef(seat === 0 ? k : k.toLowerCase(), this.s ? rulesOf(this.s) : undefined)}"/></svg>${n > 1 ? `<i>×${n}</i>` : ''}</button>`);
         b.onclick = () => {
           Sound.ui();
           this.dropPick = k;
