@@ -53,6 +53,8 @@ export interface ArcadeModule {
   net?: { label: string; hint?: string; load: () => Promise<GameModule> };
   /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
   noRecords?: boolean;
+  /** На телефоне переключатель режимов — над игрой (у кружка листы длинные, до вкладок в панели не долистать). */
+  modesOnTop?: boolean;
   /** Раздел «главная»: с него открывается аркада, если адрес не называет раздел (иначе — последний выбранный). */
   home?: string;
   /** Своё превью карточки (?thumb=<id>): нарисовать во весь экран вместо раздела. */
@@ -95,6 +97,19 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
   const run = q('.arcade-run');
   const recs = el.querySelector('.arcade-recs') as HTMLElement | null;
   const modes = q('.arcade-modes');
+  if (mod.modesOnTop) {
+    // узкий экран: вкладки — над игрой, широкий — на своём месте в панели
+    const home = modes.parentElement!;
+    const anchor = modes.nextSibling;
+    const mql = window.matchMedia('(max-width: 900px), (max-aspect-ratio: 1/1)');
+    const place = () => {
+      if (mql.matches) el.insertBefore(modes, el.firstChild);
+      else home.insertBefore(modes, anchor);
+      modes.classList.toggle('arcade-modes-top', mql.matches);
+    };
+    place();
+    mql.addEventListener('change', place);
+  }
   const veil = h(`<button class="arcade-veil" hidden><b>Пауза</b><span>нажмите, чтобы продолжить</span></button>`);
 
   const modeLabel = () => mod.modes.find((m) => m.id === mode)?.label ?? mode;

@@ -36,6 +36,7 @@ const mod: ArcadeModule = {
     <p><b>Партии</b> листаются ▶ или →; в ключевых местах доска ждёт ваш ход — «А как сходил бы ты?». Вопросы можно выключить галочкой.</p>`,
   modes: MODES.map(({ id, label, hint }) => ({ id, label, hint })),
   noRecords: true,
+  modesOnTop: true,
   // открыли кружок — сначала «Путь»: что здесь есть и с чего начать
   home: 'put',
   thumb: mountThumb,
