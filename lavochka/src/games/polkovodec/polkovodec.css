@@ -1,0 +1,10 @@
+/* «Полководец»: поле 36×27 клеток по 60 px. */
+.pk .pb-dot { stroke-width: 2; }
+.pk .pb-can { stroke-width: 3; stroke-dasharray: 6 4; }
+.pk .pb-take { stroke-width: 4; }
+.pk .pb-last { stroke-width: 3; }
+.pk .pb-sel { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 3px #ffe066); }
+.pk-info { font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.pk-shop { display: flex; flex-wrap: wrap; gap: 4px; }
+.pk-shop-t { width: 100%; font-size: 12px; opacity: 0.8; }
+.pk-btn { font-size: 12px; padding: 3px 6px; }
