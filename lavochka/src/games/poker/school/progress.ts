@@ -49,7 +49,22 @@ export function recordLesson(id: string, tasks: number, mistakes: number, now = 
   return p;
 }
 
-/** Игра-закрепление начата. */
+const PENDING = 'poker.school.pending';
+
+/** Игра-закрепление начата: засчитается, когда партия будет доиграна (finishPending). */
+export function startPending(id: string) {
+  store.set(PENDING, id);
+}
+
+/** Партия покера доиграна: если это было закрепление урока — засчитать. */
+export function finishPending() {
+  const id = store.get<string>(PENDING, '');
+  if (!id) return;
+  store.set(PENDING, '');
+  recordGame(id);
+}
+
+/** Игра-закрепление сыграна. */
 export function recordGame(id: string, now = Date.now()): SchoolProgress {
   const p = loadSchool();
   const was = p.lessons[id];

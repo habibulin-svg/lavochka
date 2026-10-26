@@ -125,6 +125,8 @@ export interface Cfg {
   ante: AnteKind;
   /** Турнир (этап 3): выплаты по местам — боты на пузыре учитывают ICM. */
   prizes?: number[];
+  /** Кэш-игра: блайнды не растут, проигравший докупается до стартового стека; итог — выигрыш с учётом докупок. */
+  cash?: boolean;
 }
 
 const MODES: Mode[] = [...(Object.keys(GAMES) as Game[]), 'horse', 'eight'];
@@ -138,10 +140,12 @@ export function cfgFrom(o: Options): Cfg {
     hilo: !!o.hilo,
     struct: st,
     stack: pick(o.stack, [500, 1000, 1500, 2000], 1000),
-    hands: pick(o.hands, [0, 20, 30, 40], 0),
+    // кэш-игра без конца не кончится — по умолчанию 30 раздач
+    hands: pick(o.hands, [0, 20, 30, 40], 0) || (o.cash === true ? 30 : 0),
     blind: pick(o.blind, [10, 20, 50], 20),
     every: pick(o.every, [0, 5, 10, 20], 10),
     ante: o.ante === 'all' || o.ante === 'button' || o.ante === 'bb' ? o.ante : 'none',
+    cash: o.cash === true,
   };
 }
 
@@ -227,6 +231,8 @@ export interface State {
   small: number;
   big: number;
   chips: number[];
+  /** Кэш-игра: сколько раз докупался каждый (по стартовому стеку). */
+  rebuys?: number[];
   /** Свои карты; у стада — с отметкой «открыта». */
   hole: Card[][];
   up: boolean[][];
@@ -281,6 +287,8 @@ export type Event =
   | { type: 'show'; seat: number; cards: Card[]; hand: string }
   | { type: 'win'; seat: number; amount: number; hand: string; uncontested: boolean }
   | { type: 'bust'; seat: number }
+  /** Кэш-игра: докупка до стартового стека. */
+  | { type: 'rebuy'; seat: number; amount: number }
   /** Раздача сыграна: её история. */
   | { type: 'hand'; rec: HandRecord }
   | { type: 'end'; winner: number }
@@ -408,7 +416,7 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
   if (s.between) s.between = false;
   const ev: Event[] = [];
   s.hand++;
-  if (s.cfg.every && s.hand > 1 && (s.hand - 1) % s.cfg.every === 0) {
+  if (s.cfg.every && !s.cfg.cash && s.hand > 1 && (s.hand - 1) % s.cfg.every === 0) {
     s.big *= 2;
     s.small = s.big / 2;
     ev.push({ type: 'blinds', small: s.small, big: s.big });
@@ -834,6 +842,15 @@ export function finishHand(s: State, ev: Event[], rng: Rng, uncontested: boolean
     s.between = true;
     return { state: s, events: ev };
   }
+  // кэш-игра: проигравшиеся докупаются, никто не выбывает
+  if (s.cfg.cash)
+    for (const p of s.seats)
+      if (s.chips[p] === 0) {
+        s.chips[p] = s.cfg.stack;
+        s.rebuys = s.rebuys ?? Array(N).fill(0);
+        s.rebuys[p]++;
+        ev.push({ type: 'rebuy', seat: p, amount: s.cfg.stack });
+      }
   const left = live(s);
   if (left.length <= 1 || (s.cfg.hands > 0 && s.hand >= s.cfg.hands)) {
     s.over = true;
@@ -846,7 +863,10 @@ export function finishHand(s: State, ev: Event[], rng: Rng, uncontested: boolean
 }
 
 /** У кого больше всех фишек (при равных — первый по месту). */
-export const richest = (s: Pick<State, 'seats' | 'chips'>) => s.seats.slice().sort((a, b) => s.chips[b] - s.chips[a] || a - b)[0];
+export const richest = (s: Pick<State, 'seats' | 'chips'> & Partial<Pick<State, 'rebuys' | 'cfg'>>) => s.seats.slice().sort((a, b) => netOf(s, b) - netOf(s, a) || a - b)[0];
+
+/** Итог места: фишки минус докупки (в кэш-игре); иначе — фишки. */
+export const netOf = (s: Pick<State, 'chips'> & Partial<Pick<State, 'rebuys' | 'cfg'>>, p: number) => s.chips[p] - (s.rebuys?.[p] ?? 0) * (s.cfg?.stack ?? 0);
 
 // ---------------------------------------------------------------- ход
 

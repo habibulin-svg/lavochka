@@ -5,7 +5,7 @@ import type { GameDef, SeatSpec } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { choose } from './ai';
-import { apply, cfgFrom, deal, toCall, GAMES, isMix, makeView, maxPlayers, MIXES, newState, recFor, setup, toAct, type Action, type Event, type Game, type Mode, type State, type Struct, type View } from './engine';
+import { apply, cfgFrom, deal, toCall, GAMES, isMix, makeView, maxPlayers, MIXES, netOf, newState, recFor, setup, toAct, type Action, type Event, type Game, type Mode, type State, type Struct, type View } from './engine';
 import { chooseOfc } from './ofc/ai';
 import { applyOfc, isOfc, makeOView, ofcMax, redactOfc, resultOfc, setupOfc, toActOfc, type OAction, type OEvent, type OfcMode, type OState, type OView } from './ofc/engine';
 import { describeOfc, OFC_PRESETS, OFC_RULES } from './ofc/rules';
@@ -61,6 +61,8 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `💰 ${name(ev.seat)} забирает <b>${ev.amount}</b>${ev.hand ? ` (${ev.hand})` : ''}.`;
     case 'bust':
       return `${name(ev.seat)} вылетает.`;
+    case 'rebuy':
+      return `${name(ev.seat)} докупается: +${ev.amount}.`;
     case 'end':
       return `🏁 Больше всех фишек — у <b>${name(ev.winner)}</b>.`;
     case 'tour':
@@ -213,6 +215,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
       hint: 'Анте с каждого — десятая часть большого блайнда; баттон-анте — баттон платит его за весь стол; анте большого блайнда — большой блайнд кладёт ещё один блайнд.',
       showIf: (o) => { const m = modeOf(o); return bet(o) && !isMix(m) && GAMES[m].family !== 'stud'; },
     },
+    { key: 'cash', label: 'Кэш-игра: без вылета', type: 'toggle', default: false, hint: 'Блайнды не растут, проигравшийся сразу докупается до стартового стека; в конце — кто сколько выиграл с учётом докупок.', showIf: bet },
     {
       key: 'hands',
       label: 'Раздач',
@@ -259,6 +262,7 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
   presets: [
     { id: 'holdem', label: 'Холдем', hint: 'Безлимит, 1000 фишек, блайнды растут каждые 10 раздач — до последнего', options: { mode: 'holdem', struct: 'auto', stack: 1000, every: 10, hands: 0, ante: 'none' } },
     { id: 'turbo', label: 'Холдем турбо', hint: '500 фишек, блайнды растут каждые 5 раздач', options: { mode: 'holdem', struct: 'auto', stack: 500, every: 5, hands: 0, ante: 'none' } },
+    { id: 'cash', label: 'Холдем — кэш', hint: 'Без вылета: блайнды не растут, проигравшийся докупается; 40 раздач, итог — выигрыш', options: { mode: 'holdem', struct: 'auto', stack: 1000, hands: 40, ante: 'none', cash: true } },
     { id: 'deep', label: 'Холдем, глубокие стеки', hint: '2000 фишек, рост каждые 20 раздач', options: { mode: 'holdem', struct: 'auto', stack: 2000, every: 20, hands: 0, ante: 'none' } },
     { id: 'lhe', label: 'Лимитный холдем', hint: 'Рейз ровно на ставку, не больше четырёх за круг', options: { mode: 'holdem', struct: 'limit' } },
     { id: 'shortdeck', label: 'Short Deck', hint: 'Колода с шестёрки, флеш старше фулл-хауса, сет старше стрита, анте с каждого', options: { mode: 'shortdeck', struct: 'auto', ante: 'all' } },
@@ -299,10 +303,12 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
     if (isO(s)) return resultOfc(s);
     if (!s.over) return null;
     if (s.tour) return tourResult(s);
-    const top = Math.max(...s.seats.map((p) => s.chips[p]));
+    // кэш-игра — по выигрышу с учётом докупок
+    const net = (p: number) => (s.cfg.cash ? netOf(s, p) - s.cfg.stack : s.chips[p]);
+    const top = Math.max(...s.seats.map(net));
     const scores: Record<number, number> = {};
-    for (const p of s.seats) scores[p] = s.chips[p];
-    return { winners: s.seats.filter((p) => s.chips[p] === top), text: `${top} фишек`, scores };
+    for (const p of s.seats) scores[p] = net(p);
+    return { winners: s.seats.filter((p) => net(p) === top), text: s.cfg.cash ? `${top >= 0 ? '+' : ''}${top} фишек` : `${top} фишек`, scores };
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isO(v) ? chooseOfc(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
   // турнир по сети: отключившийся «сидит вне игры» — блайнды платит, чекает или сбрасывает (обмены и решения — за бота)

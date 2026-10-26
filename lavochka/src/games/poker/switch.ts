@@ -7,6 +7,7 @@ import { createView as createHoldem } from '../holdem/view';
 import type { AnyEvent, AnyView } from './def';
 import type { Event, Mode } from './engine';
 import { createOfcView } from './ofc/view';
+import { finishPending } from './school/progress';
 import { Trainer } from './trainer';
 import { TourUI } from './tourui';
 import { createView as createFlat } from './view';
@@ -55,6 +56,8 @@ class SwitchView implements GameView<AnyView, AnyEvent> {
     // раздача сыграна — статистика сразу, чтобы HUD на следующей уже её показывал
     if (!('ofc' in v)) this.trainer?.events(events as Event[], v);
     await inner.play(events, v);
+    // партия доиграна — закрепление урока школы (если это оно) засчитано
+    if (v.over && !this.ctx.demo) finishPending();
     if (!('ofc' in v)) {
       this.tour?.update(v);
       this.trainer?.update(v);

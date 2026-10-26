@@ -14,7 +14,7 @@ import { def, SEATS } from '../def';
 import { apply, makeView, type State } from '../engine';
 import { SEAT_PROFILE, type ProfileId } from '../profiles';
 import { createView } from '../view';
-import { loadSchool, rankOf, recordGame, recordLesson, starsFor, type SchoolProgress } from './progress';
+import { loadSchool, rankOf, recordLesson, startPending, starsFor, type SchoolProgress } from './progress';
 import { buildScene, toAction } from './scene';
 import { seatName, solve, type Solved } from './solve';
 import type { Lesson, LessonGame, Task } from './types';
@@ -281,7 +281,8 @@ export function openLesson(l: Lesson, launch: Launch, onClose: () => void) {
     btn('Решить ещё раз', '', () => task(0));
     btn('К пути', '', close);
     btn('🃏 Сыграть', 'primary', () => {
-      recordGame(l.id);
+      // засчитается, когда партия будет доиграна
+      startPending(l.id);
       close();
       startGame(l.game, launch);
     });
