@@ -87,6 +87,19 @@ describe('длинные нарды', () => {
     expect(end.points).toBe(2);
     expect(def.result(r.state)?.winners).toEqual([0]);
   });
+
+  it('домашний марс (по настройке): шашка проигравшего в доме победителя — 4 очка', () => {
+    const c = cfg({ homeMars: true });
+    // индекс пути чёрных, который приходится на пункт в доме белых
+    const k = [...Array(24).keys()].find((i) => absOf(c, 1, i) === absOf(c, 0, 20))!;
+    const s = roll(pos(c, [[23, 1]], [[10, 14], [k, 1]]), 1, 2);
+    const end = act(s, 0, { type: 'move', from: 23, die: 2 })!.events.find((e) => e.type === 'gameEnd') as any;
+    expect(end.kind).toBe('homeMars');
+    expect(end.points).toBe(4);
+    // без настройки — обычный марс
+    const s2 = roll(pos(cfg(), [[23, 1]], [[10, 14], [k, 1]]), 1, 2);
+    expect((act(s2, 0, { type: 'move', from: 23, die: 2 })!.events.find((e) => e.type === 'gameEnd') as any).kind).toBe('mars');
+  });
 });
 
 describe('короткие нарды', () => {

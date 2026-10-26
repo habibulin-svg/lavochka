@@ -12,7 +12,7 @@ export const SEATS = [
 /** Номер пункта глазами игрока: 24 — голова / самый дальний, 1 — последний пункт дома. */
 const ptName = (i: number, fwd = false) => (i === BAR ? 'бар' : i === OFF ? 'снята' : String(fwd ? i + 1 : 24 - i));
 
-const END_TEXT: Record<EndKind, string> = { oin: 'ойн', mars: 'марс', koks: 'кокс', drop: 'отказ от удвоения', mother: 'зажата «мать»' };
+const END_TEXT: Record<EndKind, string> = { oin: 'ойн', mars: 'марс', koks: 'кокс', homeMars: 'домашний марс', drop: 'отказ от удвоения', mother: 'зажата «мать»' };
 const GREEK = ['tavli', 'portes', 'plakoto', 'fevga'];
 const ROMAN = ['tabula', 'zeno', 'duodecim', 'pompeii'];
 /** Варианты без правил длинных нард (головы, блока из шести, кокса). */
@@ -184,6 +184,14 @@ export const def: GameDef<State, Action, Event, State> = {
       default: false,
       showIf: (o) => o.mars === true && !GREEK.includes(String(o.mode)) && !ROMAN.includes(String(o.mode)),
     },
+    {
+      key: 'homeMars',
+      label: 'Домашний марс — 4 очка',
+      hint: 'Марс, да ещё шашки проигравшего остались в доме победителя (так играют не везде).',
+      type: 'toggle',
+      default: false,
+      showIf: (o) => o.mars === true && (o.mode === 'long' || o.mode === 'gulbara'),
+    },
     { key: 'cube', label: 'Куб удвоения', hint: 'Перед броском можно предложить удвоить ставку; отказ — проигрыш по текущему кубу.', type: 'toggle', default: false, showIf: (o) => o.mode === 'short' },
     { key: 'cascade', label: 'Каскад дублей', hint: 'С четвёртого хода дубль тянет за собой все старшие дубли до 6:6.', type: 'toggle', default: true, showIf: (o) => o.mode === 'gulbara' },
     { key: 'steal', label: 'Остаток каскада доигрывает соперник', type: 'toggle', default: true, showIf: (o) => o.mode === 'gulbara' && o.cascade === true },
@@ -214,7 +222,7 @@ export const def: GameDef<State, Action, Event, State> = {
     if (s.cfg.target > 1) return { winners: [s.winner], text: `выиграли матч ${s.score[0]}:${s.score[1]}`, scores };
     const k = s.lastEnd?.kind ?? 'oin';
     if (ROMAN.includes(s.cfg.mode)) return { winners: [s.winner], text: s.cfg.mode === 'zeno' ? 'первыми собрали все шашки в доме' : 'первыми вывели все шашки', scores };
-    const txt = k === 'mars' ? 'марс — выиграли вдвойне' : k === 'koks' ? 'кокс — выиграли втройне' : k === 'drop' ? 'соперник отказался от удвоения' : 'первыми сняли все шашки';
+    const txt = k === 'mars' ? 'марс — выиграли вдвойне' : k === 'koks' ? 'кокс — выиграли втройне' : k === 'homeMars' ? 'домашний марс — выиграли вчетверо' : k === 'drop' ? 'соперник отказался от удвоения' : 'первыми сняли все шашки';
     return { winners: [s.winner], text: txt, scores };
   },
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
@@ -297,7 +305,8 @@ export const def: GameDef<State, Action, Event, State> = {
       {
         title: 'Победа, марс и кокс',
         html: `<p>Кто первым снял все шашки — выиграл <b>ойн</b> (1 очко). Если соперник не успел снять ни одной — <b>марс</b> (2 очка).
-          <b>Кокс</b> (3 очка, включается в настройках) — марс, да ещё у проигравшего шашки остались в первой четверти пути (в коротких — на баре или в доме победителя).</p>
+          <b>Кокс</b> (3 очка, включается в настройках) — марс, да ещё у проигравшего шашки остались в первой четверти пути (в коротких — на баре или в доме победителя).
+          В длинных можно включить и <b>домашний марс</b> (4 очка): марс, а шашки проигравшего ещё стоят в доме победителя — так играют не везде.</p>
           <p>Можно играть одну партию или матч до 3, 5, 7 очков.</p>`,
       },
       {

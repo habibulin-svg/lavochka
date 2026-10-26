@@ -29,8 +29,10 @@ export interface Cfg {
   block6: Block6;
   /** Марс (соперник не снял ни одной шашки) — 2 очка. */
   mars: boolean;
-  /** Кокс / домашний марс — 3 очка. */
+  /** Кокс — 3 очка. */
   koks: boolean;
+  /** Домашний марс — 4 очка: марс, да ещё шашки проигравшего остались в доме победителя (длинные). */
+  homeMars?: boolean;
   /** Короткие: куб удвоения. */
   cube: boolean;
   /** Гюльбара: каскад дублей (после дубля — все старшие дубли до 6:6). */
@@ -92,6 +94,7 @@ export function cfgFrom(o: Options): Cfg {
     block6: pick(o.block6, ['rule', 'home', 'forbid', 'allow'] as const, DEFAULT_CFG.block6),
     mars: bool(o.mars, true),
     koks: bool(o.koks, mode === 'short'),
+    homeMars: mode !== 'short' && bool(o.homeMars, false),
     cube: mode === 'short' && bool(o.cube, false),
     cascade: bool(o.cascade, true),
     steal: bool(o.steal, true),
@@ -154,7 +157,7 @@ export type Action =
   | { type: 'take' }
   | { type: 'drop' };
 
-export type EndKind = 'oin' | 'mars' | 'koks' | 'drop' | 'mother';
+export type EndKind = 'oin' | 'mars' | 'koks' | 'homeMars' | 'drop' | 'mother';
 
 export type Event =
   | { type: 'opening'; rolls: [number, number][]; first: number; game: number; mode?: Mode }
@@ -554,7 +557,10 @@ function endGame(s: State, w: number, kind: EndKind, events: Event[]) {
   else if (kind !== 'drop' && s.off[l] === 0 && s.cfg.mars) {
     kind = 'mars';
     base = 2;
-    if (s.cfg.koks && isKoks(s, l)) {
+    if (s.cfg.homeMars && inWinnersHome(s, l)) {
+      kind = 'homeMars';
+      base = 4;
+    } else if (s.cfg.koks && isKoks(s, l)) {
       kind = 'koks';
       base = 3;
     }
@@ -583,6 +589,14 @@ function endGame(s: State, w: number, kind: EndKind, events: Event[]) {
 
 /** Кокс: проигравший не снял ни одной шашки и не вывел все шашки из первой четверти пути
  *  (в коротких — шашка на баре или в доме победителя). */
+/** Шашки проигравшего l стоят в доме победителя (пункты, откуда победитель снимал). */
+export function inWinnersHome(s: State, l: number): boolean {
+  const w = 1 - l;
+  const n = boardSize(s.cfg);
+  for (let i = homeStart(s.cfg); i < n; i++) if (foe(s, w, i)) return true;
+  return false;
+}
+
 export function isKoks(s: State, l: number): boolean {
   if (s.bar[l]) return true;
   for (let i = 0; i < 6; i++) if (own(s, l, i)) return true;
