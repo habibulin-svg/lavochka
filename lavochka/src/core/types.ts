@@ -39,7 +39,8 @@ export interface OptionDef {
   label: string;
   hint?: string;
   type: 'select' | 'toggle' | 'number';
-  choices?: { value: string | number; label: string }[];
+  /** showIf у варианта — показывать его только при этих правилах (иначе значение сбрасывается на первый видимый). */
+  choices?: { value: string | number; label: string; showIf?: (o: Options) => boolean }[];
   min?: number;
   max?: number;
   step?: number;

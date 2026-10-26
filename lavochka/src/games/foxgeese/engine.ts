@@ -9,6 +9,10 @@
  *   Повстанцы ходят на соседнюю точку только вперёд, вбок или вперёд по диагонали; офицеры — в любую сторону,
  *   и бить (прыгать) обязаны, прыжки продолжаются, пока можно. Повстанцы выигрывают, заняв все 9 точек крепости
  *   или заперев офицеров; офицеры — когда повстанцев осталось меньше девяти.
+ * «Осада Севастополя» (асальто на французской карте, правила листа): защитники сначала сами ставятся на пункты крепости;
+ *   осаждающие ходят только вперёд — прямо или наискось (по красным линиям), вбок и назад нельзя (чёрные линии — не для них);
+ *   защитники бьют по желанию, но не побившего, когда мог, осаждающие «фукают» — снимают перед своим ходом;
+ *   без защитников (оба сфуканы) — победа осаждающих.
  * «Йога» (солитёр): один игрок. Все лунки заняты, кроме центральной; фишка прыгает по прямой через соседнюю
  *   на пустую лунку, перепрыгнутая снимается. Цель — оставить одну фишку, лучше всего в центре.
  * Линии: «через точку» — диагонали только у точек с чётной суммой координат (классическая доска),
@@ -29,6 +33,8 @@ export interface Cfg {
   /** Доска солитёра: 33 (английская) или 37 (французская). */
   holes: 33 | 37;
   look: Look;
+  /** Правила листа «Осада Севастополя» (асальто на карте). */
+  strict: boolean;
 }
 
 export function cfgFrom(o: Options): Cfg {
@@ -43,6 +49,7 @@ export function cfgFrom(o: Options): Cfg {
     lines: o.lines === 'all' && !map ? 'all' : 'alt',
     holes: mode === 'yoga' && Number(o.holes) === 37 ? 37 : 33,
     look: map ? 'map' : o.look === 'wood' ? 'wood' : 'soviet',
+    strict: map,
   };
 }
 
@@ -112,14 +119,20 @@ export interface State {
   over: boolean;
   winner: number | null;
   last: number[];
+  /** Сколько защитников ещё поставить (строгое асальто: расстановка в начале). */
+  place?: number;
+  /** Защитники, не побившие, когда могли, — осаждающие могут их «сфукать» (точки). */
+  huff?: number[];
 }
 
-export type Action = { type: 'move'; from: number; to: number } | { type: 'stop' };
+export type Action = { type: 'move'; from: number; to: number } | { type: 'stop' } | { type: 'place'; at: number } | { type: 'huff'; at: number };
 export type Event =
   | { type: 'move'; seat: number; from: number; to: number; kind: number; eat: number }
   | { type: 'stop'; seat: number }
+  | { type: 'place'; seat: number; at: number }
+  | { type: 'huff'; seat: number; at: number }
   | { type: 'end'; winner: number | null; why: EndWhy; left?: number };
-export type EndWhy = 'trapped' | 'eaten' | 'stuck' | 'fort' | 'long' | 'solved' | 'left';
+export type EndWhy = 'trapped' | 'eaten' | 'stuck' | 'fort' | 'long' | 'solved' | 'left' | 'huffed';
 
 const LIMIT = 300;
 /** Меньше стольких гусей (повстанцев) — запереть лису (взять крепость) уже нечем. */
@@ -141,8 +154,10 @@ export function newState(cfg: Cfg): State {
     G.xy.forEach(([x, y], p) => {
       if (!isFort(x, y)) board[p] = MAN;
     });
-    put(2, 2, FOX);
-    put(4, 2, FOX);
+    if (!cfg.strict) {
+      put(2, 2, FOX);
+      put(4, 2, FOX);
+    }
   } else {
     // гуси снизу: нижняя ветвь, затем ряд 4, затем края ряда 3
     const order: [number, number][] = [];
@@ -155,7 +170,10 @@ export function newState(cfg: Cfg): State {
       put(4, 1, FOX);
     } else put(3, 1, FOX);
   }
-  return { cfg, board, turn: 0, chain: -1, ply: 0, eaten: 0, over: false, winner: null, last: [] };
+  const s: State = { cfg, board, turn: 0, chain: -1, ply: 0, eaten: 0, over: false, winner: null, last: [] };
+  // строгое асальто: защитники сначала расставляются сами
+  if (cfg.mode === 'asalto' && cfg.strict) Object.assign(s, { turn: 1, place: 2, huff: [] });
+  return s;
 }
 
 export const setup = (_seats: number[], o: Options) => newState(cfgFrom(o));
@@ -176,6 +194,7 @@ function manSteps(s: State, G: Geo, p: number): Action[] {
     if (s.board[a] !== EMPTY) continue;
     if (asalto) {
       if (dy > 0) continue; // только к крепости: вперёд, вбок, вперёд по диагонали
+      if (s.cfg.strict && dy === 0) continue; // по листу — только вперёд, прямо или наискось
     } else {
       if (dx && dy) continue; // гуси — только по прямым
       if (dy > 0 && !s.cfg.back) continue;
@@ -202,12 +221,22 @@ export function legal(s: State): Action[] {
     });
     return out;
   }
+  const strict = mode === 'asalto' && s.cfg.strict;
+  if (s.place) {
+    const out: Action[] = [];
+    G.xy.forEach(([x, y], p) => {
+      if (isFort(x, y) && s.board[p] === EMPTY) out.push({ type: 'place', at: p });
+    });
+    return out;
+  }
   if (s.chain >= 0) {
     const more = jumps(s, G, s.chain);
-    return mode === 'asalto' ? more : [...more, { type: 'stop' }];
+    return mode === 'asalto' && !strict ? more : [...more, { type: 'stop' }];
   }
   const out: Action[] = [];
   if (s.turn === 0) {
+    // «фук»: сначала можно снять защитника, который не побил
+    for (const at of s.huff ?? []) if (s.board[at] === FOX) out.push({ type: 'huff', at });
     s.board.forEach((v, p) => {
       if (v === MAN) out.push(...manSteps(s, G, p));
     });
@@ -219,7 +248,7 @@ export function legal(s: State): Action[] {
     caps.push(...jumps(s, G, p));
     out.push(...foxSteps(s, G, p));
   });
-  if (mode === 'asalto' && caps.length) return caps;
+  if (mode === 'asalto' && !strict && caps.length) return caps;
   return [...caps, ...out];
 }
 
@@ -240,10 +269,42 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
   const seat = s0.turn;
   const events: Event[] = [];
   let pass = true;
-  if (a.type === 'stop') {
+  if (a.type === 'place') {
+    s.board[a.at] = FOX;
+    s.place = (s.place ?? 1) - 1;
+    s.last = [a.at];
+    events.push({ type: 'place', seat, at: a.at });
+    if (s.place > 0) pass = false;
+  } else if (a.type === 'huff') {
+    s.board[a.at] = EMPTY;
+    s.huff = [];
+    s.last = [a.at];
+    events.push({ type: 'huff', seat, at: a.at });
+    s.ply++;
+    if (!s.board.includes(FOX)) {
+      s.over = true;
+      s.winner = 0;
+      events.push({ type: 'end', winner: 0, why: 'huffed' });
+    }
+    // после «фука» осаждающие ходят как обычно
+    return { state: s, events };
+  } else if (a.type === 'stop') {
+    // строгое асальто: бросил серию, а бить ещё было что, — защитника можно сфукать
+    if (s.cfg.strict && s.chain >= 0 && jumps(s, G, s.chain).length) s.huff = [s.chain];
     s.chain = -1;
     events.push({ type: 'stop', seat });
   } else {
+    // строгое асальто: защитники, которые могли бить, а пошли без взятия, — под «фук»
+    if (s.cfg.strict && seat === 1) {
+      const isJumpMove = !G.dirs[a.from].some(([, , x]) => x === a.to);
+      if (s.chain < 0 && !isJumpMove) {
+        const could: number[] = [];
+        s0.board.forEach((v, p) => {
+          if (v === FOX && jumps(s0, G, p).length) could.push(p === a.from ? a.to : p);
+        });
+        s.huff = could;
+      } else s.huff = [];
+    } else if (s.cfg.strict) s.huff = [];
     const kind = s.board[a.from];
     s.board[a.from] = EMPTY;
     s.board[a.to] = kind;
@@ -288,7 +349,13 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
 
 export function apply(s: State, seat: number, a: Action): { state: State; events: Event[] } | null {
   if (s.over || seat !== s.turn || !a) return null;
-  const ok = legal(s).some((m) => m.type === a.type && (m.type === 'stop' || (a.type === 'move' && m.from === a.from && m.to === a.to)));
+  const ok = legal(s).some(
+    (m) =>
+      m.type === a.type &&
+      (m.type === 'stop' ||
+        (m.type === 'move' && a.type === 'move' && m.from === a.from && m.to === a.to) ||
+        ((m.type === 'place' || m.type === 'huff') && (a.type === 'place' || a.type === 'huff') && m.at === a.at)),
+  );
   return ok ? step(s, a) : null;
 }
 

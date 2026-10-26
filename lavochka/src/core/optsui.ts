@@ -13,6 +13,11 @@ export function matchPreset(def: GameDef, options: Options): string | null {
   return best?.id ?? null;
 }
 
+/** Варианты выбора, видимые при этих правилах. */
+export function visibleChoices(o: OptionDef, options: Options) {
+  return (o.choices || []).filter((c) => !c.showIf || c.showIf(options));
+}
+
 /** Числа игроков, допустимые при этих вариантах (игра может сузить список: «Шайба» — 2, 4, 6). */
 export function allowedCounts(def: GameDef, options: Options): number[] {
   const list = (def.countsFor?.(options) ?? []).filter((n) => n >= def.players.min && n <= def.players.max);
@@ -76,7 +81,8 @@ export function optionsEditor(def: GameDef, options: Options, presetsBox: HTMLEl
       i.checked = !!v;
       i.onchange = () => set(o.key, i.checked);
     } else if (o.type === 'select') {
-      ctl = h(`<label class="opt"><span>${esc(o.label)}</span><select>${(o.choices || []).map((c) => `<option value="${esc(c.value)}">${esc(c.label)}</option>`).join('')}</select></label>`);
+      const choices = visibleChoices(o, options);
+      ctl = h(`<label class="opt"><span>${esc(o.label)}</span><select>${choices.map((c) => `<option value="${esc(c.value)}">${esc(c.label)}</option>`).join('')}</select></label>`);
       const sel = ctl.querySelector('select') as HTMLSelectElement;
       sel.value = String(v);
       sel.onchange = () => {
@@ -94,6 +100,11 @@ export function optionsEditor(def: GameDef, options: Options, presetsBox: HTMLEl
   }
 
   function render() {
+    // значение, чей вариант при этих правилах скрыт, — на первый видимый
+    for (const o of def.options || []) {
+      const vis = o.choices && visibleChoices(o, options);
+      if (vis && vis.length && !vis.some((c) => c.value === options[o.key])) options[o.key] = vis[0].value;
+    }
     const cur = matchPreset(def, options);
     presetsBox.querySelectorAll<HTMLButtonElement>('.preset').forEach((b) => b.classList.toggle('on', b.dataset.id === cur));
     optsBox.replaceChildren();

@@ -179,7 +179,7 @@ class CrossView implements GameView<State, Event> {
       pieces: (s) => s.board.flatMap((v, p) => (v ? [{ p, kind: v === FOX ? 'f' : 'm' }] : [])),
       piece: (s, kind, x, y, p) => piece(s, kind, p, x, y),
       legal: (s, seat) => (s.turn === seat ? legal(s) : []),
-      spot: (a) => (a.type === 'move' ? { from: a.from, to: a.to } : null),
+      spot: (a) => (a.type === 'move' ? { from: a.from, to: a.to } : a.type === 'place' || a.type === 'huff' ? { to: a.at } : null),
       label: () => 'Хватит прыгать',
       hit: 0.45,
       ring: 0.34,
@@ -187,6 +187,7 @@ class CrossView implements GameView<State, Event> {
   }
 
   seatName(v: State, seat: number) {
+    if (v.cfg.strict) return seat === 0 ? 'Осаждающие' : 'Защитники';
     return v.cfg.mode === 'fox' && v.cfg.foxes === 2 && seat === 1 ? 'Лисы' : NAMES[v.cfg.mode][seat] || null;
   }
 
@@ -200,8 +201,15 @@ class CrossView implements GameView<State, Event> {
     } else if (s.cfg.mode === 'asalto') {
       const G = geo(s.cfg);
       const fort = G.xy.filter(([x, y], p) => isFort(x, y) && s.board[p] === MAN).length;
-      this.info.innerHTML = `<div>Повстанцев: <b>${n}</b> (меньше ${MIN_MEN} — офицеры победили)</div><div>В крепости: <b>${fort}</b> из 9</div>`;
-      this.hint.textContent = 'Повстанцы ходят только к крепости. Офицеры обязаны бить прыжком, если можно.';
+      const [m, o] = s.cfg.strict ? ['Осаждающих', 'защитники'] : ['Повстанцев', 'офицеры'];
+      this.info.innerHTML = `<div>${m}: <b>${n}</b> (меньше ${MIN_MEN} — ${o} победили)</div><div>В крепости: <b>${fort}</b> из 9</div>`;
+      this.hint.textContent = !s.cfg.strict
+        ? 'Повстанцы ходят только к крепости. Офицеры обязаны бить прыжком, если можно.'
+        : s.place
+          ? 'Защитники: нажмите на пункт крепости, куда встать.'
+          : s.huff?.length && s.turn === 0
+            ? 'Фук! Защитник не побил, когда мог: нажмите на него, чтобы снять, — или просто ходите.'
+            : 'Осаждающие ходят только вперёд — прямо или наискось. Защитники бьют по желанию, но не побившего фукают.';
     } else {
       this.info.innerHTML = `<div>Гусей: <b>${n}</b> · съедено: <b>${s.eaten}</b></div><small>Меньше ${MIN_MEN} гусей — лиса победила</small>`;
       this.hint.textContent = 'Нажмите на фишку и на точку, куда пойти. Лиса прыгает через гуся на пустую точку за ним.';
@@ -226,6 +234,14 @@ class CrossView implements GameView<State, Event> {
           setTimeout(() => (v.cfg.mode === 'yoga' ? Sound.place() : Sound.capture()), 260);
         } else Sound.step();
         await sleep((ev.eat >= 0 ? 520 : 320) / this.ctx.speed());
+      } else if (ev.type === 'place') {
+        this.pb.set(v);
+        Sound.place();
+        await sleep(240 / this.ctx.speed());
+      } else if (ev.type === 'huff') {
+        this.pb.set(v);
+        Sound.capture();
+        await sleep(360 / this.ctx.speed());
       } else if (ev.type === 'end') {
         if (ev.winner != null || ev.why === 'solved') Sound.win();
         else Sound.nomove();
@@ -250,6 +266,7 @@ class CrossView implements GameView<State, Event> {
       return v.winner == null ? 'Ничья' : 'Партия окончена';
     }
     if (!interactive.includes(toAct[0])) return `Ходит ${this.ctx.name(toAct[0])}…`;
+    if (v.place) return 'Расставьте защитников';
     if (v.chain >= 0) return 'Можно прыгать дальше';
     return v.cfg.mode === 'yoga' ? 'Прыгайте' : 'Ваш ход';
   }
