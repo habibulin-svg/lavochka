@@ -56,6 +56,8 @@ export class Table {
   el: HTMLElement;
   private view: GameView;
   private seats: SeatStatus[] = [];
+  /** Окно итога партии — закрывается, если хозяин вернул всех в лобби. */
+  private resultModal: { close(): void } | null = null;
   private mySeats: number[] = [];
   private current: unknown = null;
   private toAct: number[] = [];
@@ -404,7 +406,13 @@ export class Table {
     if (this.closed) return;
     switch (m.t) {
       case 'start':
+        this.resultModal?.close();
+        this.resultModal = null;
         return this.start(m);
+      case 'lobby':
+        this.resultModal?.close();
+        this.resultModal = null;
+        return;
       case 'step':
         return this.enqueue(m);
       case 'rt':
@@ -677,13 +685,16 @@ export class Table {
     const names = r.winners.map((s) => this.name(s)).join(', ');
     const look = this.o.mod.def.seats[r.winners[0]];
     const btns = [{ text: 'В меню', action: () => this.leave() }];
-    if (this.o.owner) btns.push({ text: 'Сыграть ещё', primary: true, action: () => this.o.client.restart() } as any);
-    else btns.push({ text: 'Ждать реванша', primary: true } as any);
+    if (this.o.owner) {
+      // по сети — можно вернуться в лобби: пересесть, позвать ещё кого-то, сменить правила
+      if (this.o.mode !== 'local') btns.push({ text: 'В лобби', action: () => this.o.client.toLobby() } as any);
+      btns.push({ text: 'Сыграть ещё', primary: true, action: () => this.o.client.restart() } as any);
+    } else btns.push({ text: 'Ждать реванша', primary: true } as any);
     const body = h(`<div><div class="win-box"><div class="win-chip" style="--c:${look?.color};--d:${look?.dark}"></div>
        <h2>${r.winners.length > 1 ? 'Победители' : r.winners.length ? 'Победа!' : 'Партия окончена'}</h2><p>${names ? `<b>${names}</b> — ` : ''}${esc(r.text)}.</p></div></div>`);
     const offer = this.o.record?.();
     if (offer) body.appendChild(offerBlock(offer));
-    modal(body, btns, offer ? { cls: 'recs-modal' } : {});
+    this.resultModal = modal(body, btns, offer ? { cls: 'recs-modal' } : {});
   }
 
   private menu() {

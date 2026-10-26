@@ -58,6 +58,8 @@ export type ClientMsg =
   | { t: 'hold'; ms: number }
   | { t: 'start'; fillBots: boolean }
   | { t: 'restart' }
+  /** Хозяин после партии — обратно в лобби (пересесть, сменить правила). */
+  | { t: 'tolobby' }
   | { t: 'pong' }
   | { t: 'bye' }
   /** Клиент не дождался ответа на свой ход — прислать стол заново. */

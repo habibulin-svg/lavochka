@@ -14,6 +14,8 @@ interface SeatDraft {
   kind: SeatKind | 'off';
   level: number;
   name: string;
+  /** Персонаж (холдем 3D) — для игры за одним экраном. */
+  look?: string | null;
 }
 
 interface SetupDraft {
@@ -178,6 +180,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
         <select class="level" ${st.kind === 'bot' ? '' : 'hidden'}>${def.bot.levels.map((l, i) => `<option value="${i}">${esc(l)}</option>`).join('')}</select>
         <input class="pname" maxlength="16" placeholder="${esc(look.name)}" ${st.kind === 'human' ? '' : 'hidden'}>
         <span class="remote-note" ${st.kind === 'remote' ? '' : 'hidden'}>имя задаст друг</span>
+        ${mod.looks?.length && st.kind === 'human' ? `<select class="plook" title="Персонаж за столом"><option value="">персонаж — любой</option>${mod.looks.map((l) => `<option value="${esc(l.id)}">${esc(l.label)}</option>`).join('')}</select>` : ''}
       </div>`);
       const kind = row.querySelector('.kind') as HTMLSelectElement;
       kind.value = st.kind === 'off' ? 'bot' : st.kind;
@@ -192,6 +195,14 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
         st.level = +lvl.value;
         persist();
       };
+      const lk = row.querySelector('.plook') as HTMLSelectElement | null;
+      if (lk) {
+        lk.value = st.look ?? '';
+        lk.onchange = () => {
+          st.look = lk.value || null;
+          persist();
+        };
+      }
       const nm = row.querySelector('.pname') as HTMLInputElement;
       nm.value = st.name;
       nm.oninput = () => {
@@ -258,7 +269,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
       const look = { ...def.seats[s], name: def.seatNameFor?.(options, s) ?? def.seats[s].name };
       const kind = table ? (s === me ? 'human' : i <= (table.remote ?? 0) ? 'remote' : 'bot') : st.kind === 'off' ? 'bot' : st.kind;
       const name = kind === 'bot' ? `${look.name} (бот)` : kind === 'human' ? (table ? st.kind === 'human' && st.name : st.name) || (table || onlyHuman() ? settings.name : '') || look.name : '';
-      return { seat: s, kind, level: table?.levels?.[i] ?? st.level, name };
+      return { seat: s, kind, level: table?.levels?.[i] ?? st.level, name, ...(kind === 'human' && st.look ? { look: st.look } : {}) };
     });
     if (seats.some((s) => s.kind === 'remote')) void hostGame(mod, seats, options);
     else {

@@ -113,6 +113,9 @@ export class RoomClient {
     this.onBegin?.();
     this.send({ t: 'restart' });
   }
+  toLobby() {
+    this.send({ t: 'tolobby' });
+  }
   sync() {
     this.send({ t: 'sync' });
   }

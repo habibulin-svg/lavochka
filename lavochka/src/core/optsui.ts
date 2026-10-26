@@ -42,8 +42,8 @@ export function optionsSummary(def: GameDef, options: Options): string {
       parts.push(`${o.label.toLowerCase()}: ${ch ? ch.label : String(v)}`);
     }
   }
-  if (p) return p.label;
-  return parts.length ? 'свои правила: ' + parts.join(', ') : 'обычные правила';
+  const base = p ? p.label : parts.length ? 'свои правила: ' + parts.join(', ') : 'обычные правила';
+  return def.summary ? def.summary(options, base) : base;
 }
 
 /**

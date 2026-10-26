@@ -285,8 +285,10 @@ function attach(mod: GameModule, client: RoomClient, mode: NetMode, code: string
   const look = store.get<string>('look.' + def.id, '');
   if (!owner && mod.looks && look) client.me({ look });
   table = new Table({ mod, client, mode, code, owner, onLeave: back, onReconnect: reconnect });
-  const lobby = buildLobby(mod, client, mode, code, owner, back);
+  let lobby = buildLobby(mod, client, mode, code, owner, back);
   client.on((m) => {
+    // после партии хозяин вернул всех в лобби — экран лобби снова поверх стола
+    if (m.t === 'lobby' && !document.querySelector('[data-screen=lobby]')) lobby = buildLobby(mod, client, mode, code, owner, back);
     if (m.t === 'lobby') lobby.update(m);
     else if (m.t === 'start') removeScreen('lobby');
     else if (m.t === 'closed' && document.querySelector('[data-screen=lobby]')) {

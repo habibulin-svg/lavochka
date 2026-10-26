@@ -229,6 +229,9 @@ export class Room {
       case 'restart':
         if (conn.owner && this.auth && this.auth.result) this.restart();
         return;
+      case 'tolobby':
+        if (conn.owner && this.auth && this.auth.result) this.toLobby();
+        return;
       case 'bye':
         return this.drop(conn, true);
       case 'sync':
@@ -644,6 +647,15 @@ export class Room {
     this.save();
     this.pumpBots();
     this.rtStart();
+  }
+
+  /** После партии — обратно в лобби: места и правила снова можно менять. */
+  private toLobby() {
+    this.botToken++;
+    this.rtStop();
+    this.auth = null;
+    this.save();
+    this.lobbyAll();
   }
 
   private restart() {

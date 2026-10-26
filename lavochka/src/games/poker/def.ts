@@ -9,7 +9,7 @@ import { apply, cfgFrom, deal, toCall, GAMES, isMix, makeView, maxPlayers, MIXES
 import { chooseOfc } from './ofc/ai';
 import { applyOfc, isOfc, makeOView, ofcMax, redactOfc, resultOfc, setupOfc, toActOfc, type OAction, type OEvent, type OfcMode, type OState, type OView } from './ofc/engine';
 import { describeOfc, OFC_PRESETS, OFC_RULES } from './ofc/rules';
-import { afterApply, isTour, isTourAction, tourApply, tourResult, tourSetup, type TourAction } from './tour';
+import { afterApply, FMTS, isTour, isTourAction, KINDS, SPEEDS, tourApply, tourResult, tourSetup, type TourAction, type TourFmt, type TourKind, type TourSpeed } from './tour';
 
 /** Всё, что ходит через def: обычный покер или китайский (OFC — свой движок без ставок, вид 'ofc'/'ofcp'). */
 export type AnyState = State | OState;
@@ -248,6 +248,14 @@ export const def: GameDef<AnyState, AnyAction, AnyEvent, AnyView> = {
       showIf: (o) => !bet(o),
     },
   ],
+  // стол Sit&Go по сети: в лобби «Играем: Холдем · Sit&Go, 6 игроков, турбо, фриз-аут»
+  summary: (o, base) => {
+    const f = FMTS[o.tour as TourFmt];
+    if (!f) return base;
+    const sp = SPEEDS[o.speed as TourSpeed]?.label.toLowerCase();
+    const k = KINDS[o.tkind as TourKind]?.toLowerCase();
+    return [`${base} · ${f.mtt ? 'турнир' : 'Sit&Go'}, ${f.label}`, sp, k].filter(Boolean).join(', ');
+  },
   presets: [
     { id: 'holdem', label: 'Холдем', hint: 'Безлимит, 1000 фишек, блайнды растут каждые 10 раздач — до последнего', options: { mode: 'holdem', struct: 'auto', stack: 1000, every: 10, hands: 0, ante: 'none' } },
     { id: 'turbo', label: 'Холдем турбо', hint: '500 фишек, блайнды растут каждые 5 раздач', options: { mode: 'holdem', struct: 'auto', stack: 500, every: 5, hands: 0, ante: 'none' } },

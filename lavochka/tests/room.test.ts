@@ -44,6 +44,21 @@ describe('комната', () => {
     expect(JSON.stringify(guest.view)).toBe(JSON.stringify(owner.view));
   }, 90_000);
 
+  it('после партии хозяин возвращает всех в лобби, оттуда — новая партия', async () => {
+    const { join } = await setup();
+    const owner = join('Хозяин', 'key', 1).client;
+    const guest = join('Гость', undefined, 2).client;
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)), 5000, 'гость в лобби');
+    owner.client.start(false);
+    await until(() => !!owner.result, 60000, 'конец партии');
+    const lobbies = guest.log.filter((m) => m.t === 'lobby').length;
+    owner.client.toLobby();
+    await until(() => guest.log.filter((m) => m.t === 'lobby').length > lobbies, 5000, 'гость снова в лобби');
+    const starts = guest.log.filter((m) => m.t === 'start').length;
+    owner.client.start(false);
+    await until(() => guest.log.filter((m) => m.t === 'start').length > starts, 5000, 'новая партия');
+  }, 90_000);
+
   it('за отключившегося ходит бот, вернувшийся получает своё место', async () => {
     const { join } = await setup();
     const owner = join('Хозяин', 'key', 1).client;
