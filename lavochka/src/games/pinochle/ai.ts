@@ -6,7 +6,7 @@
 import type { Rng } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { makeDeck, SUITS, type Suit } from '../../cards/deck';
-import { apply, beats, counter, legal, meldTotal, melds, minBid, pairs, PASS, power, sameP, teamOf, type Action, type PCard, type State, type View } from './engine';
+import { apply, beats, counter, legal, meldOptions, meldTotal, melds, minBid, pairs, PASS, power, sameP, teamOf, type Action, type PCard, type State, type View } from './engine';
 
 function bestTrump(hand: PCard[]): { suit: Suit; val: number } {
   let best: { suit: Suit; val: number } = { suit: 'S', val: -1 };
@@ -99,6 +99,17 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
     return n <= lim ? { type: 'bid', n } : { type: 'pass' };
   }
   if (v.phase === 'trump') return { type: 'trump', suit: bestTrump(v.hands[seat]).suit };
+  if (v.phase === 'meld') {
+    // вдвоём: объявить самый дорогой из доступных мелдов (лёгкий — наугад или ничего)
+    const opts = meldOptions(v, seat);
+    if (!opts.length) return { type: 'meld', i: -1 };
+    if (level === 0) return { type: 'meld', i: rng.int(opts.length + 1) - 1 };
+    let best = 0;
+    opts.forEach((m, i) => {
+      if (m.pts > opts[best].pts) best = i;
+    });
+    return { type: 'meld', i: best };
+  }
   if (v.phase === 'pass' || v.phase === 'return') {
     // обмен: напарник отдаёт козыри и тузы (то, что пригодится заказчику), заказчик возвращает мелочь не из мелдов
     const hand = v.hands[seat].slice();

@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { countOf, legal, minBid, pairs, PASS, sameP, teamOf, type Event, type PCard, type View } from './engine';
+import { countOf, duo, legal, meldOptions, minBid, pairs, PASS, sameP, teamOf, type Event, type PCard, type View } from './engine';
 import { SEATS } from './def';
 import './pinochle.css';
 
@@ -21,7 +21,9 @@ class PinochleView extends TrickView<View, Event> {
   protected model(v: View): TrickModel {
     const act = this.actSeat;
     const ok = act != null && v.phase === 'play' ? legal(v, act) : act != null && (v.phase === 'bury' || v.phase === 'pass' || v.phase === 'return') ? v.hands[act] : [];
-    const center = v.trump
+    const center = duo(v)
+      ? `Козырь ${sym(v.trump!)} ${SUIT_NAME[v.trump!]}<small>колода ${v.stockLeft}${v.trumpCard && v.stockLeft ? ` (внизу ${this.cardTxt(v.trumpCard)})` : ''} · мелды ${v.meld.join(' : ')} · счёт ${v.score.join(' : ')} · до ${v.cfg.target}</small>`
+      : v.trump
       ? `Козырь ${sym(v.trump)} ${SUIT_NAME[v.trump]}<small>заказ ${v.bid} — ${this.plain(v.bidder!)} · мелды ${v.meld.join(' : ')} · счёт ${v.score.join(' : ')}</small>`
       : `Торги${v.bid ? `: ${v.bid} — ${this.plain(v.bidder!)}` : ''}<small>счёт ${v.score.join(' : ')} · до ${v.cfg.target}</small>`;
     return {
@@ -40,6 +42,11 @@ class PinochleView extends TrickView<View, Event> {
       trump: v.trump ?? undefined,
       center,
     };
+  }
+
+  private cardTxt(c: Card) {
+    const r = c.r > 10 ? 'ВДКТ'[c.r - 11] : String(c.r);
+    return `<b class="${c.s === 'H' || c.s === 'D' ? 'red' : ''}">${r}${SUIT_SYM[c.s]}</b>`;
   }
 
   protected playAction(card: Card) {
@@ -71,6 +78,13 @@ class PinochleView extends TrickView<View, Event> {
     if (v.phase === 'trump') {
       this.btns.appendChild(h('<div class="tv-ask">Заказ ваш — назовите козырь.</div>'));
       for (const s of SUITS) this.button(`${sym(s)} ${SUIT_NAME[s]}`, '', () => this.send({ type: 'trump', suit: s }));
+      return true;
+    }
+    if (v.phase === 'meld') {
+      const opts = meldOptions(v, this.actSeat!);
+      this.btns.appendChild(h(`<div class="tv-ask">${opts.length ? 'Взятка ваша — можно объявить мелд (один, каждый вид — раз за сдачу).' : 'Взятка ваша. Объявить нечего — берите карту из колоды.'}</div>`));
+      opts.forEach((m, i) => this.button(`${m.what} — ${m.pts}`, i === 0 ? 'primary' : '', () => this.send({ type: 'meld', i })));
+      this.button(opts.length ? 'Не объявлять' : 'Взять карту', opts.length ? '' : 'primary', () => this.send({ type: 'meld', i: -1 }));
       return true;
     }
     if (v.phase === 'pass' || v.phase === 'return') {
@@ -129,6 +143,7 @@ class PinochleView extends TrickView<View, Event> {
     if (v.over) return 'Партия окончена';
     const who = toAct[0];
     if (!interactive.includes(who)) return `Ходит ${this.ctx.name(who)}…`;
+    if (v.phase === 'meld') return 'Мелд и добор';
     return v.phase === 'bid' ? 'Торги' : v.phase === 'trump' ? 'Назовите козырь' : v.phase === 'bury' ? 'Закопайте три карты' : v.phase === 'pass' || v.phase === 'return' ? 'Обмен с напарником' : 'Ваш ход';
   }
 

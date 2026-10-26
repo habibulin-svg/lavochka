@@ -10,6 +10,11 @@
  * Очки взяток: тузы, десятки и короли — по 10, последняя взятка — 10 (всего 250).
  * Взявшая сторона набрала мелды + взятки не меньше заказа — записывает всё; нет — минус заказ. Остальные — свои взятки и мелды
  * (мелды — только если взяли хоть одну взятку). Партия — до 1500 (втроём — до 1000).
+ *
+ * Вдвоём (по Википедии): по 12 карт, остальные 24 — колода; нижняя открыта, её масть — козырь (девятка-дикс — сдатчику 10).
+ * Торгов нет. Пока в колоде есть карты, масть не обязательна; взявший взятку может объявить один мелд (каждый вид — один раз,
+ * марьяжи — по разу на масть) и берёт карту из колоды первым, второй — следом (последним — открытый козырь).
+ * Колода кончилась — последние 12 взяток строго: в масть и старше, нет масти — козырем. Очки — мелды и взятки; партия до 1000.
  */
 import type { Options, Rng } from '../../core/types';
 import { makeDeck, SUITS, type Card, type Suit } from '../../cards/deck';
@@ -27,7 +32,7 @@ export interface Cfg {
 
 export function cfgFrom(o: Options, n = 4): Cfg {
   const t = Number(o.target);
-  return { target: [500, 1000, 1500].includes(t) ? t : n === 3 ? 1000 : 1500, exchange: o.exchange !== false };
+  return { target: [500, 1000, 1500].includes(t) ? t : n <= 3 ? 1000 : 1500, exchange: o.exchange !== false };
 }
 
 /** Сколько карт в обмене с напарником. */
@@ -78,7 +83,8 @@ export function melds(hand: Card[], trump: Suit): MeldLine[] {
 
 export const meldTotal = (hand: Card[], trump: Suit) => melds(hand, trump).reduce((x, m) => x + m.pts, 0);
 
-export type Phase = 'bid' | 'trump' | 'pass' | 'return' | 'bury' | 'play' | 'over';
+/** meld — вдвоём: взявший взятку объявляет мелд (или нет). */
+export type Phase = 'bid' | 'trump' | 'pass' | 'return' | 'bury' | 'play' | 'meld' | 'over';
 
 export interface State {
   cfg: Cfg;
@@ -107,13 +113,30 @@ export interface State {
   last: { lines: string[]; add: number[] } | null;
   over: boolean;
   winner: number | null;
+  /** Вдвоём: колода (верх — [0], последняя — открытый козырь) и объявленные мелды каждого. */
+  stock?: PCard[];
+  trumpCard?: PCard | null;
+  declared?: string[][];
 }
 
-export interface View extends State {
+/** Пинокль вдвоём. */
+export const duo = (s: { seats: number[] }) => s.seats.length === 2;
+
+export interface View extends Omit<State, 'stock'> {
   counts: number[];
+  /** Вдвоём: сколько карт в колоде. */
+  stockLeft: number;
 }
 
-export type Action = { type: 'bid'; n: number } | { type: 'pass' } | { type: 'trump'; suit: Suit } | { type: 'bury'; cards: PCard[] } | { type: 'give'; cards: PCard[] } | { type: 'play'; card: PCard };
+export type Action =
+  | { type: 'bid'; n: number }
+  | { type: 'pass' }
+  | { type: 'trump'; suit: Suit }
+  | { type: 'bury'; cards: PCard[] }
+  | { type: 'give'; cards: PCard[] }
+  | { type: 'play'; card: PCard }
+  /** Вдвоём: объявить мелд номер i из доступных (-1 — не объявлять). */
+  | { type: 'meld'; i: number };
 
 export type Event =
   | { type: 'deal'; deal: number; dealer: number; hands?: PCard[][] }
@@ -123,6 +146,8 @@ export type Event =
   | { type: 'trump'; seat: number; suit: Suit; melds: MeldLine[][]; meld: number[]; /** мелды — после обмена с напарником */ pending?: boolean }
   | { type: 'bury'; seat: number; n: number }
   | { type: 'give'; seat: number; to: number; n: number; cards?: PCard[] }
+  | { type: 'meld'; seat: number; what: string; pts: number }
+  | { type: 'drawn'; seat: number; card?: PCard }
   | { type: 'play'; seat: number; card: PCard }
   | { type: 'trick'; seat: number; cards: PCard[]; pts: number }
   | { type: 'hand'; lines: string[]; add: number[]; score: number[] }
@@ -167,11 +192,17 @@ function dealHand(s: State, rng: Rng, ev: Event[]) {
   s.deal++;
   if (s.deal > 1) s.dealer = nextIn(s.seats, s.dealer);
   const deck: PCard[] = shuffle([...makeDeck(24).map((c) => ({ ...c, d: 0 })), ...makeDeck(24).map((c) => ({ ...c, d: 1 }))], rng);
-  const n = pairs(s) ? 12 : 15;
+  const n = pairs(s) || duo(s) ? 12 : 15;
   for (const x of s.seats) s.hands[x] = deck.splice(0, n);
-  s.widow = deck;
+  s.widow = duo(s) ? [] : deck;
   s.phase = 'bid';
   s.turn = nextIn(s.seats, s.dealer);
+  if (duo(s)) {
+    // вдвоём: колода, нижняя карта открыта — козырь; торгов нет
+    s.stock = deck;
+    s.trumpCard = deck[deck.length - 1];
+    s.declared = s.seats.reduce((a, x) => ((a[x] = []), a), [] as string[][]);
+  }
   s.bid = 0;
   s.bidder = null;
   s.out = [];
@@ -185,6 +216,12 @@ function dealHand(s: State, rng: Rng, ev: Event[]) {
   for (const x of s.seats) s.tricks[x] = 0;
   s.buried = [];
   ev.push({ type: 'deal', deal: s.deal, dealer: s.dealer, hands: s.hands.map((h) => (h ? h.slice() : h)) });
+  if (duo(s)) {
+    s.trump = s.trumpCard!.s;
+    s.phase = 'play';
+    // открытая девятка-дикс — сдатчику 10
+    if (s.trumpCard!.r === 9) s.meld[teamOf(s, s.dealer)] += 10;
+  }
 }
 
 export function setup(seats: number[], opts: Options, rng: Rng): State {
@@ -215,9 +252,27 @@ function wonBid(s: State, seat: number, ev: Event[]) {
   s.turn = seat;
 }
 
+/** Вдвоём: какие мелды можно объявить (ещё не объявленные; один и тот же вид — один раз). */
+export function meldOptions(s: State | View, seat: number): MeldLine[] {
+  if (!s.trump) return [];
+  const used = (s.declared?.[seat] ?? []).slice();
+  const out: MeldLine[] = [];
+  for (const m of melds(s.hands[seat], s.trump)) {
+    const k = used.indexOf(m.what);
+    if (k >= 0) used.splice(k, 1);
+    else out.push(m);
+  }
+  return out;
+}
+
+/** Сколько карт в колоде (вдвоём). */
+export const stockLeft = (s: State | View) => ('stockLeft' in s ? (s as View).stockLeft : ((s as State).stock?.length ?? 0));
+
 export function legal(s: State | View, seat: number): PCard[] {
   const hand = s.hands[seat];
   if (!s.trick.length || !s.trump) return hand;
+  // вдвоём, пока есть колода, масть не обязательна
+  if (duo(s) && stockLeft(s) > 0) return hand;
   const T = s.trump;
   const lead = s.trick[0].card;
   const win = s.trick.reduce((b, t) => (beats(b.card, t.card, T) ? t : b));
@@ -258,6 +313,8 @@ function clone(s0: State): State {
     tricks: s0.tricks.slice(),
     buried: s0.buried.slice(),
     score: s0.score.slice(),
+    stock: s0.stock?.slice(),
+    declared: s0.declared?.map((d) => (d ? d.slice() : d)),
   };
 }
 
@@ -292,6 +349,28 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       wonBid(s, left[0], ev);
       return { state: s, events: ev };
     }
+    return { state: s, events: ev };
+  }
+  if (s.phase === 'meld') {
+    // вдвоём: взявший взятку объявляет мелд (или нет), потом оба берут по карте из колоды
+    if (a.type !== 'meld') return null;
+    if (a.i >= 0) {
+      const m = meldOptions(s, seat)[a.i];
+      if (!m) return null;
+      s.declared![seat].push(m.what);
+      s.meldLines[seat] = [...s.meldLines[seat], m];
+      s.meld[teamOf(s, seat)] += m.pts;
+      ev.push({ type: 'meld', seat, what: m.what, pts: m.pts });
+    }
+    const other = nextIn(s.seats, seat);
+    for (const p of [seat, other]) {
+      const c = s.stock!.shift();
+      if (!c) break;
+      s.hands[p].push(c);
+      ev.push({ type: 'drawn', seat: p, card: c });
+    }
+    s.phase = 'play';
+    s.turn = seat;
     return { state: s, events: ev };
   }
   if (s.phase === 'pass' || s.phase === 'return') {
@@ -364,6 +443,11 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   s.trick = [];
   s.turn = w;
   ev.push({ type: 'trick', seat: w, cards, pts });
+  // вдвоём, пока есть колода: мелд и добор
+  if (duo(s) && s.stock!.length) {
+    s.phase = 'meld';
+    return { state: s, events: ev };
+  }
   if (last) endHand(s, rng, ev);
   return { state: s, events: ev };
 }
@@ -382,6 +466,23 @@ function declareMelds(s: State, trump: Suit, seat: number, ev: Event[]) {
 
 function endHand(s: State, rng: Rng, ev: Event[]) {
   const n = nTeams(s);
+  if (duo(s)) {
+    // вдвоём торгов нет: каждому — взятки и мелды
+    const add = s.seats.map((x) => s.pts[teamOf(s, x)] + s.meld[teamOf(s, x)]);
+    for (let t = 0; t < n; t++) s.score[t] += add[t];
+    s.last = { lines: [], add };
+    ev.push({ type: 'hand', lines: [], add, score: s.score.slice() });
+    const top = Math.max(...s.score);
+    if (top >= s.cfg.target || s.deal >= 60) {
+      s.over = true;
+      s.phase = 'over';
+      s.winner = s.score.indexOf(top);
+      ev.push({ type: 'end', winner: s.winner, score: s.score.slice() });
+      return;
+    }
+    dealHand(s, rng, ev);
+    return;
+  }
   const bt = teamOf(s, s.bidder!);
   const add = Array(n).fill(0);
   const lines: string[] = [];
@@ -413,7 +514,15 @@ function endHand(s: State, rng: Rng, ev: Event[]) {
 export function makeView(s: State, seats: number[] | 'all'): View {
   const see = (x: number) => seats === 'all' || seats.includes(x);
   const v = s as Partial<View>;
-  return { ...s, hands: s.hands.map((h, i) => (h ? (see(i) ? h.slice() : []) : h)), widow: seats === 'all' ? s.widow.slice() : [], buried: seats === 'all' ? s.buried.slice() : [], counts: s.hands.map((h, i) => (h ? (v.counts?.[i] ?? h.length) : 0)) };
+  const { stock, ...rest } = s;
+  return {
+    ...rest,
+    hands: s.hands.map((h, i) => (h ? (see(i) ? h.slice() : []) : h)),
+    widow: seats === 'all' ? s.widow.slice() : [],
+    buried: seats === 'all' ? s.buried.slice() : [],
+    counts: s.hands.map((h, i) => (h ? (v.counts?.[i] ?? h.length) : 0)),
+    stockLeft: v.stockLeft ?? stock?.length ?? 0,
+  };
 }
 
 export const countOf = (s: State | View, seat: number) => ('counts' in s ? (s as View).counts[seat] : s.hands[seat].length);

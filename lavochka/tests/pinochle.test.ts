@@ -78,3 +78,29 @@ describe('Пинокль', () => {
     }
   }, 300000);
 });
+
+describe('пинокль вдвоём', () => {
+  it('по 12 и колода 24, козырь — нижняя; мелд после взятки, добор; масть не обязательна, пока есть колода', async () => {
+    const pn = await import('../src/games/pinochle/engine');
+    const { SeededRng } = await import('../src/core/rng');
+    let s = pn.setup([0, 1], {}, new SeededRng(3));
+    expect(s.hands[0]).toHaveLength(12);
+    expect(s.stock).toHaveLength(24);
+    expect(s.trump).toBe(s.trumpCard!.s);
+    expect(s.phase).toBe('play');
+    // первый ход — любая карта; ответ — тоже любая (колода не пуста)
+    const a = s.turn;
+    s = pn.apply(s, a, { type: 'play', card: s.hands[a][0] }, new SeededRng(1))!.state;
+    const b = s.turn;
+    expect(pn.legal(s, b)).toHaveLength(12);
+    s = pn.apply(s, b, { type: 'play', card: s.hands[b][0] }, new SeededRng(1))!.state;
+    expect(s.phase).toBe('meld');
+    const w = s.turn;
+    s = pn.apply(s, w, { type: 'meld', i: -1 }, new SeededRng(1))!.state;
+    expect(s.phase).toBe('play');
+    expect(s.hands[0]).toHaveLength(12);
+    expect(s.stock).toHaveLength(22);
+    // соперник не видит, что взял другой
+    expect(pn.makeView(s, [0]).hands[1]).toHaveLength(0);
+  });
+});

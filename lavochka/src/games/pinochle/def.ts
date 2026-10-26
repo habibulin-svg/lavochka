@@ -27,7 +27,10 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'trump':
       return ev.pending ? `Козырь — ${SUIT_SYM[ev.suit]}. Обмен с напарником: по ${PASS} карты.` : `Козырь — ${SUIT_SYM[ev.suit]}. Мелды: ${ev.meld.join(' : ')}.`;
     case 'give':
+    case 'drawn':
       return null;
+    case 'meld':
+      return `${name(ev.seat)} объявляет мелд: ${ev.what} — ${ev.pts}.`;
     case 'hand':
       return `Сдача: ${ev.add.map((x) => (x > 0 ? '+' : '') + x).join(' : ')}${ev.lines.length ? ` (${ev.lines.join(', ')})` : ''}. Счёт ${ev.score.join(' : ')}.`;
     case 'end':
@@ -40,6 +43,8 @@ function redact(ev: Event, seats: number[] | 'all'): Event | null {
   if (seats === 'all') return ev;
   if (ev.type === 'deal') return { ...ev, hands: ev.hands?.map((h, i) => (seats.includes(i) ? h : [])) };
   if (ev.type === 'give' && !seats.includes(ev.seat) && !seats.includes(ev.to)) return { ...ev, cards: undefined };
+  // добор из колоды видит только взявший (последняя — открытый козырь — видна всем)
+  if (ev.type === 'drawn' && !seats.includes(ev.seat)) return { ...ev, card: undefined };
   return ev;
 }
 
@@ -62,7 +67,7 @@ const A = (seat: number, a: Action, caption?: string) => ({ seat, action: a, cap
 export const def: GameDef<State, Action, Event, View> = {
   id: 'pinochle',
   title: 'Пинокль',
-  players: { min: 3, max: 4, default: 4 },
+  players: { min: 2, max: 4, default: 4 },
   teams: (_o, seats) => (seats.length === 4 ? [[seats[0], seats[2]], [seats[1], seats[3]]] : null),
   seats: SEATS,
   options: [
@@ -83,6 +88,7 @@ export const def: GameDef<State, Action, Event, View> = {
     { id: 'partners', label: 'Пара на пару', hint: 'Вчетвером, по 12 карт, торги от 250, до 1500', options: { target: 1500 } },
     { id: 'cutthroat', label: 'Втроём', hint: 'Каждый сам за себя, по 15 и прикуп 3, до 1000', options: { target: 1000 } },
     { id: 'quick', label: 'До 500', hint: 'Короткая партия', options: { target: 500 } },
+    { id: 'duo', label: 'Вдвоём', hint: 'По 12 карт и колода: мелд после взятой взятки, последние 12 взяток — строго в масть, до 1000', options: { target: 1000 } },
   ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng),
@@ -146,7 +152,15 @@ export const def: GameDef<State, Action, Event, View> = {
         title: 'Розыгрыш и счёт',
         html: `<p>Первым ходит взявший заказ. В масть и старше, если можно; нет масти — козырем (и старше козырей на столе); нет и козыря — любой.
           Из двух одинаковых карт старше та, что легла раньше. Тузы, десятки и короли во взятках — по 10, последняя взятка — 10.</p>
-          <p>Взявшая сторона набрала мелды + взятки не меньше заказа — записывает всё, иначе — минус заказ. Остальные — свои очки (мелды — если взяли хоть одну взятку).</p>`,
+          <p>Взявшая сторона набрала мелды + взятки не меньше заказа — записывает всё, иначе — минус заказ. Остальные — свои очки (мелды — если взяли хоть одну взятку).</p>
+          <p>Вчетвером после козыря — <b>обмен</b>: напарник отдаёт заказчику 4 карты, тот возвращает 4; мелды считают уже после обмена.</p>`,
+      },
+      {
+        title: 'Вдвоём',
+        html: `<p>По <b>12 карт</b>, остальные 24 — колода; нижнюю открывают — её масть козырь (девятка-дикс — сдатчику 10). Торгов нет.
+          Пока в колоде есть карты, в масть ходить не обязательно. Взявший взятку может <b>объявить один мелд</b> (каждый вид — раз за сдачу,
+          марьяжи — по разу), потом он и соперник берут по карте из колоды. Колода кончилась — последние 12 взяток строго: в масть и старше,
+          нет масти — козырем. Каждый пишет свои мелды и взятки; партия — до 1000.</p>`,
       },
     ],
   },
