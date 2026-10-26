@@ -6,7 +6,7 @@ import { MemoryMailer } from '../server/accounts/mail';
 import { MemoryAccountStore } from '../server/accounts/store';
 import { AiDesk } from '../server/ai';
 import { Dimon } from '../server/dimon';
-import { buildMessages, CRISIS_TEXT, PERSONA, Svetka, validAsk, type SvetkaAsk } from '../server/svetka';
+import { buildMessages, CRISIS_TEXT, HEALTH_TEXT, LAW_TEXT, MONEY_TEXT, PERSONA, stopIn, Svetka, validAsk, VIOLENCE_TEXT, type SvetkaAsk } from '../server/svetka';
 import { KARTY36 } from '../src/games/gadanie/reading';
 
 let ipN = 0;
@@ -83,6 +83,25 @@ describe('Светка: сервер', () => {
     expect(r.code).toBe(200);
     expect(r.body.text).toBe(CRISIS_TEXT);
     expect(CRISIS_TEXT).toContain('8-800-2000-122');
+    expect(sent).toHaveLength(0);
+  });
+
+  it('стоп-темы: аборт, суд, кредит, насилие — заготовка с телефонами; «судьба» и «вкладываться» — гадаем', async () => {
+    const q = (question: string) => stopIn({ ...three, question });
+    expect(q('Делать ли мне аборт?')).toBe(HEALTH_TEXT);
+    expect(q('Выиграю ли я суд?')).toBe(LAW_TEXT);
+    expect(q('Брать ли кредит на машину?')).toBe(MONEY_TEXT);
+    expect(q('Он меня бьёт, что делать')).toBe(VIOLENCE_TEXT);
+    expect(VIOLENCE_TEXT).toContain('8-800-7000-600');
+    expect(HEALTH_TEXT).toContain('103');
+    for (const ok of ['Что меня ждёт в судьбе?', 'Посуда бьётся к счастью?', 'Стоит ли вкладываться в отношения?', 'Рак — мой знак, повезёт?', 'Смертельно хочу на море'])
+      expect(q(ok), ok).toBeNull();
+    // и в уточнении после толкования — тоже
+    expect(stopIn({ ...three, ask: 'а если аборт?' })).toBe(HEALTH_TEXT);
+    const { svetka, acc, ctx, sent } = setup();
+    const u = await user(acc, ctx);
+    const r = await svetka.ask({ ...three, question: 'Делать ли мне аборт?' }, ctx(u.sid));
+    expect(r.body.text).toBe(HEALTH_TEXT);
     expect(sent).toHaveLength(0);
   });
 
