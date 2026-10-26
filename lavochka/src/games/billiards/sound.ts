@@ -4,6 +4,7 @@
  * Шар о шар — сухой «щелчок» фенольной смолы: короткий импульс + несколько быстро гаснущих мод 2,5–9 кГц, на сильных — ярче;
  * кий — кожаная наклейка: глуше, с «телом»; борт — резина: низкий глухой удар, на сильных — стук дерева рамы;
  * луза — удар в сетку (русский, снукер) или в резиновый карман и катание по жёлобу (пул); качение — тихий шорох по сукну.
+ * Записи чистятся от фона при загрузке (clean: срез гула и «ворота» по огибающей).
  * Зал — короткая реверберация, чтобы щелчки звучали в комнате, а не «в наушниках». */
 import { audioOut } from '../../core/audio';
 
@@ -41,6 +42,56 @@ function trimLead(ctx: AudioContext, b: AudioBuffer): AudioBuffer {
   return r;
 }
 
+/** Почистить запись от фона (шипение, гул зала): срез гула ниже ~70 Гц и «ворота» — где уровень у пола шума,
+ * звук плавно уходит в тишину; конец записи — мягкое затухание. Пол шума — тихие 20 % огибающей. */
+function clean(ctx: AudioContext, b: AudioBuffer): AudioBuffer {
+  const sr = b.sampleRate;
+  const src = b.getChannelData(0);
+  const n = src.length;
+  const d = new Float32Array(n);
+  // высокие частоты оставляем, гул срезаем: однополюсный фильтр верхних частот
+  const k = Math.exp((-2 * Math.PI * 70) / sr);
+  let px = 0;
+  let py = 0;
+  for (let i = 0; i < n; i++) {
+    py = k * (py + src[i] - px);
+    px = src[i];
+    d[i] = py;
+  }
+  // огибающая по окнам 5 мс
+  const w = Math.max(1, Math.round(sr * 0.005));
+  const env = new Float32Array(Math.ceil(n / w));
+  for (let j = 0; j < env.length; j++) {
+    let sum = 0;
+    const end = Math.min(n, (j + 1) * w);
+    for (let i = j * w; i < end; i++) sum += d[i] * d[i];
+    env[j] = Math.sqrt(sum / Math.max(1, end - j * w));
+  }
+  const sorted = Array.from(env).sort((a, c) => a - c);
+  const floor = sorted[Math.floor(sorted.length * 0.2)] || 0;
+  const peak = sorted[sorted.length - 1] || 1;
+  // ворота: ниже 3 полов шума — тишина, выше 8 — как есть; открываются сразу, закрываются плавно (без щелчков)
+  const lo = Math.max(floor * 3, peak * 0.004);
+  const hi = Math.max(floor * 8, lo * 2);
+  let g = 0;
+  const rel = Math.exp(-1 / (sr * 0.04));
+  for (let j = 0; j < env.length; j++) {
+    const t = Math.min(1, Math.max(0, (env[j] - lo) / (hi - lo)));
+    const want = t * t * (3 - 2 * t);
+    const end = Math.min(n, (j + 1) * w);
+    for (let i = j * w; i < end; i++) {
+      g = want > g ? want : want + (g - want) * rel;
+      d[i] *= g;
+    }
+  }
+  // мягкий конец
+  const fade = Math.min(n, Math.round(sr * 0.03));
+  for (let i = 0; i < fade; i++) d[n - 1 - i] *= i / fade;
+  const r = ctx.createBuffer(1, n, sr);
+  r.copyToChannel(d, 0);
+  return r;
+}
+
 function load(b: Bus) {
   for (const k of Object.keys(FILES) as Kind[]) {
     Promise.all(
@@ -48,7 +99,7 @@ function load(b: Bus) {
         fetch(`${import.meta.env.BASE_URL}billiards/${f}.mp3`)
           .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
           .then((a) => b.ctx.decodeAudioData(a))
-          .then((buf) => trimLead(b.ctx, buf)),
+          .then((buf) => clean(b.ctx, trimLead(b.ctx, buf))),
       ),
     )
       .then((list) => (b.rec[k] = list))
@@ -302,7 +353,7 @@ export function rolling(lv: number) {
     src.loop = true;
     const lp = b.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 380;
+    lp.frequency.value = 300;
     const bp = b.ctx.createBiquadFilter();
     bp.type = 'peaking';
     bp.frequency.value = 140;
@@ -314,7 +365,8 @@ export function rolling(lv: number) {
     b.roll = { src, gain };
   }
   if (b.roll) {
-    b.roll.gain.gain.setTargetAtTime(Math.min(1, lv) * 0.16, b.ctx.currentTime, 0.06);
+    // шорох по сукну — едва слышный: громче он звучит как шипение, а не как качение
+    b.roll.gain.gain.setTargetAtTime(Math.min(1, lv) * 0.07, b.ctx.currentTime, 0.06);
     if (lv <= 0.01) {
       const r = b.roll;
       b.roll = null;

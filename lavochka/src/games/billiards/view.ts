@@ -31,6 +31,7 @@ import {
 import { HIT_BALL, HIT_CUE, HIT_POCKET, HIT_RAIL, SIZE_FT, type Ball, type Geometry, type TableSpec } from './physics';
 import * as Sfx from './sound';
 import { drawTable, frameOf, lampsOf, onTableArt, styleOf } from './table2d';
+import '../../core/boardcam.css';
 import './billiards.css';
 
 /** Самая большая оттяжка кия, м. */
@@ -97,6 +98,13 @@ class BilliardsView implements GameView<View, Event> {
   private raf = 0;
   private ro!: ResizeObserver;
   private onKey = (e: KeyboardEvent) => this.key(e);
+  /** Приближение стола (телефон): масштаб к «столу целиком», точка стола в центре экрана, пальцы щипка. */
+  private zoomZ = 1;
+  private focus: [number, number] | null = null;
+  private baseS = 1;
+  private ptrs = new Map<number, { x: number; y: number }>();
+  private pinch: { d0: number; z0: number; tx: number; ty: number } | null = null;
+  private zoomBar!: HTMLElement;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -117,6 +125,29 @@ class BilliardsView implements GameView<View, Event> {
     };
     this.panel = h(`<div class="bl-panel"></div>`);
     ctx.controls.appendChild(this.panel);
+    this.zoomBar = h(`<div class="bc-cam zm-bar zm-bl"><span class="bc-zoom">
+        <button class="bc-cb" data-z="out" title="Отдалить">−</button><button class="bc-cb" data-z="all" title="Весь стол">⤢</button><button class="bc-cb" data-z="in" title="Приблизить">+</button>
+      </span></div>`);
+    this.zoomBar.hidden = !!ctx.demo;
+    this.wrap.appendChild(this.zoomBar);
+    this.zoomBar.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.zoomBar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const z = ((e.target as HTMLElement).closest('[data-z]') as HTMLElement | null)?.dataset.z;
+      if (z === 'all') this.setZoom(1);
+      else if (z) {
+        // приближаем к битку — к нему обычно и нужно присмотреться
+        const cb = this.balls().find((b) => b.id === this.cue && b.on);
+        if (z === 'in' && this.zoomZ === 1 && cb) this.focus = [cb.x, cb.y];
+        this.setZoom(this.zoomZ * (z === 'in' ? 1.5 : 1 / 1.5));
+      }
+    });
+    this.setZoom(1);
+    this.cv.addEventListener('wheel', (e) => this.wheel(e), { passive: false });
+    this.cv.addEventListener('pointerdown', (e) => this.touch(e, 'down'), true);
+    this.cv.addEventListener('pointermove', (e) => this.touch(e, 'move'), true);
+    this.cv.addEventListener('pointerup', (e) => this.touch(e, 'up'), true);
+    this.cv.addEventListener('pointercancel', (e) => this.touch(e, 'up'), true);
     this.cv.addEventListener('pointermove', (e) => this.pointer(e, 'move'));
     this.cv.addEventListener('pointerdown', (e) => this.pointer(e, 'down'));
     this.cv.addEventListener('pointerup', (e) => this.pointer(e, 'up'));
@@ -186,6 +217,27 @@ class BilliardsView implements GameView<View, Event> {
       this.ox = left + F * this.S;
       this.oy = tp + F * this.S;
     }
+    this.baseS = this.S;
+    if (this.zoomZ > 1) {
+      // приближение: точка focus — в центре холста, стол не уходит краем внутрь кадра
+      const S = (this.S *= this.zoomZ);
+      const cx = W / 2;
+      const cy = (top + H) / 2;
+      const f = this.focus ?? [this.spec.w / 2, this.spec.h / 2];
+      const hx = (this.rot ? H - top : W) / 2 / S;
+      const hy = (this.rot ? W : H - top) / 2 / S;
+      const clampTo = (v: number, half: number, size: number) => (size + 2 * F <= 2 * half ? size / 2 : Math.min(size + F - half, Math.max(-F + half, v)));
+      const fx = clampTo(f[0], hx, this.spec.w);
+      const fy = clampTo(f[1], hy, this.spec.h);
+      this.focus = [fx, fy];
+      if (this.rot) {
+        this.ox = cx + fy * S;
+        this.oy = cy - fx * S;
+      } else {
+        this.ox = cx - fx * S;
+        this.oy = cy - fy * S;
+      }
+    }
     this.lamps = lampsOf(this.geo);
     this.rim = linRGB(styleOf(v.cfg.variant).cloth).map((c) => c * 0.55) as [number, number, number];
     return true;
@@ -205,6 +257,69 @@ class BilliardsView implements GameView<View, Event> {
     const Y = ((e.clientY - r.top) / r.height) * this.cv.height;
     return this.rot ? { x: (Y - this.oy) / this.S, y: (this.ox - X) / this.S } : { x: (X - this.ox) / this.S, y: (Y - this.oy) / this.S };
   }
+  /** Масштаб стола (1 — весь стол). */
+  private setZoom(z: number) {
+    this.zoomZ = Math.min(4, Math.max(1, z));
+    if (this.zoomZ === 1) this.focus = null;
+    this.zoomBar.querySelector<HTMLButtonElement>('[data-z="out"]')!.disabled = this.zoomZ <= 1;
+    this.zoomBar.querySelector<HTMLButtonElement>('[data-z="all"]')!.disabled = this.zoomZ <= 1;
+    this.zoomBar.querySelector<HTMLButtonElement>('[data-z="in"]')!.disabled = this.zoomZ >= 4;
+    this.kick();
+  }
+
+  /** Точка стола p оказывается под точкой холста (mx, my) при масштабе z. */
+  private anchor(p: { x: number; y: number }, mx: number, my: number, z: number) {
+    const W = this.cv.width;
+    const H = this.cv.height;
+    const top = (this.ctx.demo ? 6 : 34) * this.dpr;
+    const S = this.baseS * z;
+    const cx = W / 2;
+    const cy = (top + H) / 2;
+    this.focus = this.rot ? [p.x - (my - cy) / S, p.y + (mx - cx) / S] : [p.x - (mx - cx) / S, p.y - (my - cy) / S];
+    this.setZoom(z);
+  }
+
+  private canvasXY(e: { clientX: number; clientY: number }) {
+    const r = this.cv.getBoundingClientRect();
+    return { X: ((e.clientX - r.left) / r.width) * this.cv.width, Y: ((e.clientY - r.top) / r.height) * this.cv.height };
+  }
+
+  private wheel(e: WheelEvent) {
+    if (this.ctx.demo) return;
+    e.preventDefault();
+    const { X, Y } = this.canvasXY(e);
+    this.anchor(this.local(e as unknown as PointerEvent), X, Y, this.zoomZ * Math.exp(-e.deltaY * 0.0015));
+  }
+
+  /** Два пальца — щипок и сдвиг стола (прицел при этом отменяется); один палец — как раньше, прицел. */
+  private touch(e: PointerEvent, kind: 'down' | 'move' | 'up') {
+    if (this.ctx.demo || e.pointerType === 'mouse') return;
+    if (kind === 'up') {
+      this.ptrs.delete(e.pointerId);
+      if (this.pinch) {
+        e.stopImmediatePropagation();
+        if (!this.ptrs.size) this.pinch = null;
+      }
+      return;
+    }
+    if (kind === 'down') this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    else if (this.ptrs.has(e.pointerId)) this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.ptrs.size < 2) return;
+    e.stopImmediatePropagation();
+    const [a, b] = [...this.ptrs.values()];
+    const mid = { clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 };
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (!this.pinch) {
+      this.drag = null;
+      this.dragPower = 0;
+      const p = this.local(mid as unknown as PointerEvent);
+      this.pinch = { d0: d, z0: this.zoomZ, tx: p.x, ty: p.y };
+      return;
+    }
+    const { X, Y } = this.canvasXY(mid);
+    this.anchor({ x: this.pinch.tx, y: this.pinch.ty }, X, Y, (this.pinch.z0 * d) / Math.max(1, this.pinch.d0));
+  }
+
   /** Направление прицела на экране (единичный вектор в пикселях). */
   private screenDir(a: number): [number, number] {
     return this.rot ? [-Math.sin(a), Math.cos(a)] : [Math.cos(a), Math.sin(a)];
@@ -538,7 +653,7 @@ class BilliardsView implements GameView<View, Event> {
     const W = this.cv.width;
     const H = this.cv.height;
     // статичный слой
-    const key = `${v.cfg.variant}:${v.cfg.size}:${v.cfg.wide}:${W}x${H}:${this.rot}`;
+    const key = `${v.cfg.variant}:${v.cfg.size}:${v.cfg.wide}:${W}x${H}:${this.rot}:${this.zoomZ.toFixed(3)}:${this.focus?.map((x) => x.toFixed(3)).join(',')}`;
     if (key !== this.layerKey || !this.layer) {
       this.layerKey = key;
       this.layer = this.layer ?? document.createElement('canvas');
