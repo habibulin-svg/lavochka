@@ -1,0 +1,40 @@
+/* Патолли: лист кодекса на тёмном столе, крест тушью, камешки, расписные чаши, нефритовые бусины, бобы в лотке. */
+.pt-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 40%, #5a3a22 0%, #3a2414 60%, #241409 100%);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
+}
+.pt-board { width: 100%; height: 100%; user-select: none; overflow: visible; }
+.pt-sheet { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55)); }
+.pt-fill { fill: #d8cdb9; }
+.pt-ink path { fill: none; stroke: #211813; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.pt-ink path.pt-edge { stroke-width: 5; }
+.pt-ink .pt-tri path { fill: #1c1410; stroke: none; }
+.pt-pc { cursor: default; }
+.pt-pc.anim { transition: transform 0.14s ease-out; }
+.pt-pc.anim.slow { transition: transform 0.4s ease-in; }
+.pt-pc.gone { transition: opacity 0.25s; opacity: 0; }
+.pt-ring { fill: transparent; stroke: transparent; stroke-width: 4; }
+.pt-none { display: none; }
+.pt-pc.can, .pt-bowl.can { cursor: pointer; }
+.pt-pc.can > .pt-ring, .pt-bowl.can > .pt-ring { fill: rgba(255, 196, 60, 0.4); stroke: #c46a00; stroke-width: 5; stroke-dasharray: 9 6; filter: drop-shadow(0 0 3px #fff6d0); animation: pt-glow 1s ease-in-out infinite; }
+.pt-pc.sel > .pt-ring, .pt-bowl.sel > .pt-ring { fill: rgba(255, 190, 40, 0.6); stroke: #8a3c00; stroke-dasharray: none; stroke-width: 5; animation: none; }
+.pt-bowl.out { opacity: 0.45; }
+.pt-done text { font: 700 16px 'PT Serif', Georgia, serif; fill: #fff6dc; text-anchor: middle; }
+.pt-lbl { font: 700 22px 'PT Serif', Georgia, serif; fill: #fff3d6; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; }
+.pt-fly { transition-property: transform; transition-timing-function: cubic-bezier(.3,.1,.3,1); pointer-events: none; }
+.pt-target { cursor: pointer; }
+.pt-target polygon { fill: rgba(255, 236, 140, 0.45); stroke: #fff6c8; stroke-width: 3; }
+.pt-target circle { fill: rgba(255, 250, 220, 0.35); stroke: #c46a00; stroke-width: 4; filter: drop-shadow(0 0 3px #3a1a04); animation: pt-glow 1s ease-in-out infinite; }
+.pt-target.hit polygon, .pt-target.hit circle { fill: rgba(255, 110, 80, 0.4); stroke: #ffd2b8; }
+.pt-target.tri polygon { fill: rgba(200, 120, 255, 0.3); }
+.pt-target.good polygon, .pt-target.good circle { fill: rgba(140, 255, 160, 0.4); }
+.pt-target:hover circle { fill: rgba(255, 250, 220, 0.7); }
+.pt-target text { font: 700 20px 'PT Serif', Georgia, serif; fill: #fff6dc; stroke: #2a1206; stroke-width: 5px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+@keyframes pt-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.pt-controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pt-tray { min-height: 64px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; padding: 6px 0; max-width: 100%; }
+.pt-bean { width: 34px; height: 51px; display: block; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45)); }
+.pt-tray.blank .pt-bean { opacity: 0.35; }
+.pt-val { text-align: center; font: 700 15px 'PT Serif', Georgia, serif; min-height: 20px; color: var(--panel-ink, #2a1206); }
