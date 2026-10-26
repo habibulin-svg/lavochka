@@ -20,7 +20,7 @@ export function openSettings() {
     <div class="set-row"><label><input type="checkbox" data-k="sound"> Звук</label>
       <input type="range" data-k="volume" min="0" max="1" step="0.05" title="Громкость"></div>
     <div class="set-row"><span>Скорость анимации</span><input type="range" data-k="speed" min="0.5" max="3" step="0.25"></div>
-    <label class="set-row"><input type="checkbox" data-k="autoSingle"> Ходить автоматически, если вариант один</label>
+    <label class="set-row"><input type="checkbox" data-k="autoMove"> Ходить автоматически, если вариант один</label>
     <h3>Колода</h3>
     <div class="deck-pick"></div>
     <h3>Сетевая игра</h3>
@@ -36,7 +36,7 @@ export function openSettings() {
     settings.name = inp('name').value.trim();
     saveSettings();
   };
-  for (const k of ['sound', 'autoSingle'] as const) {
+  for (const k of ['sound', 'autoMove'] as const) {
     inp(k).checked = settings[k];
     inp(k).onchange = () => {
       settings[k] = inp(k).checked;

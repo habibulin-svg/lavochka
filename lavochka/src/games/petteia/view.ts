@@ -115,6 +115,8 @@ class PetteiaView implements GameView<State, Event> {
   private info!: HTMLElement;
   private hint!: HTMLElement;
   private s: State | null = null;
+  private scatterBtn!: HTMLButtonElement;
+  private mySeat: number | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -122,6 +124,14 @@ class PetteiaView implements GameView<State, Event> {
     ctx.controls.appendChild(this.info);
     this.hint = h(`<div class="pt-hint"></div>`);
     if (!ctx.demo) ctx.controls.appendChild(this.hint);
+    // расставлять 16–17 фишек щелчками долго — можно разом, случайно на своей половине
+    this.scatterBtn = h<HTMLButtonElement>(`<button class="btn pt-scatter" hidden>Расставить случайно</button>`);
+    this.scatterBtn.onclick = () => {
+      if (this.mySeat == null) return;
+      this.scatterBtn.hidden = true;
+      this.ctx.act(this.mySeat, { type: 'scatter' });
+    };
+    if (!ctx.demo) ctx.controls.appendChild(this.scatterBtn);
     this.pb = new PointBoard<State, Action>(
       root,
       ctx,
@@ -170,7 +180,7 @@ class PetteiaView implements GameView<State, Event> {
       if (ev.type === 'place') {
         this.pb.show(v, null, [], ev.to);
         Sound.step();
-        await sleep(220 / this.ctx.speed());
+        await sleep((events.length > 3 ? 70 : 220) / this.ctx.speed());
       } else if (ev.type === 'move' || ev.type === 'stop') {
         const taken = ev.taken.map((p) => ({ p, kind: ev.seat === 0 ? 'b' : 'w' }));
         if (ev.type === 'move') this.pb.show(v, { from: ev.from, to: ev.to, kind: kindOf(ev.piece) }, taken);
@@ -187,7 +197,9 @@ class PetteiaView implements GameView<State, Event> {
 
   setTurn(toAct: number[], interactive: number[]) {
     const s = this.s;
-    this.pb.turn(s && !s.over && !this.ctx.demo ? (interactive.find((x) => toAct.includes(x)) ?? null) : null);
+    this.mySeat = s && !s.over && !this.ctx.demo ? (interactive.find((x) => toAct.includes(x)) ?? null) : null;
+    this.pb.turn(this.mySeat);
+    this.scatterBtn.hidden = !(s && s.phase === 'place' && this.mySeat != null);
     this.text();
   }
 

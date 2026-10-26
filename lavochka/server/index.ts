@@ -8,6 +8,8 @@
  *     TURN_URLS + TURN_SECRET                     — свой coturn (use-auth-secret): временные логины на сутки
  *     CF_TURN_KEY_ID + CF_TURN_API_TOKEN          — Cloudflare Realtime TURN (временные логины)
  *     TURN_URLS + TURN_USERNAME + TURN_CREDENTIAL — любой TURN с постоянным логином (адреса через запятую)
+ *   Запасной TURN (добавляется к основному, на случай строгой сети или если свой недоступен):
+ *     TURN2_URLS + TURN2_USERNAME + TURN2_CREDENTIAL — например, turn:free.expressturn.com:3478,turn:free.expressturn.com:443?transport=tcp
  */
 import { createHmac, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -339,7 +341,22 @@ interface RTCIceServerLike {
   credential?: string;
 }
 
+/** Запасной TURN с постоянным логином (TURN2_*) — дописывается к любому основному. */
+function backupTurn(): RTCIceServerLike[] {
+  const env = process.env;
+  if (!env.TURN2_URLS || !env.TURN2_USERNAME || !env.TURN2_CREDENTIAL) return [];
+  const urls = env.TURN2_URLS.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((u) => (/^(turns?|stun):/i.test(u) ? u : 'turn:' + u));
+  return urls.length ? [{ urls, username: env.TURN2_USERNAME, credential: env.TURN2_CREDENTIAL }] : [];
+}
+
 async function iceServers(): Promise<RTCIceServerLike[]> {
+  return [...(await mainIce()), ...backupTurn()];
+}
+
+async function mainIce(): Promise<RTCIceServerLike[]> {
   const env = process.env;
   // адрес без схемы («free.expressturn.com:3478») браузер не примет — дописываем turn:
   const turnUrls = () =>

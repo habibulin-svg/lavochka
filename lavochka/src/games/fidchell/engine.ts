@@ -7,11 +7,12 @@
  *     враждебен всем (годится вместо второй фишки клещей). Король вооружён — помогает брать.
  *   Ланнах: та же расстановка, первой ходит бронза, король ходит лишь на одну клетку и уходит в угол; углы — только для короля и
  *     враждебны, как пустой трон.
+ *   Ард-Ри, равные шансы: как Ард-Ри, но у бронзы 14 фишек — без передовых слева и справа (на малой доске бронза иначе сильнее).
  *   Равные силы: без короля, по 8 фишек (ряд у своего края и одна впереди); проигрывает оставшийся с одной фишкой.
  * Во всех — нет ходов — проигрыш; 200 ходов без исхода: в «равных силах» побеждает тот, у кого больше фишек, иначе ничья. */
 import type { Options } from '../../core/types';
 
-export type Kind = 'ardri' | 'lannach' | 'equal';
+export type Kind = 'ardri' | 'lannach' | 'equal' | 'fair';
 export type Look = 'ballinderry' | 'carved';
 
 export interface Cfg {
@@ -22,7 +23,7 @@ export interface Cfg {
 export function cfgFrom(o: Options): Cfg {
   const k = o.kind;
   return {
-    kind: k === 'lannach' || k === 'equal' ? k : 'ardri',
+    kind: k === 'lannach' || k === 'equal' || k === 'fair' ? k : 'ardri',
     look: o.look === 'carved' ? 'carved' : 'ballinderry',
   };
 }
@@ -40,12 +41,16 @@ export interface Rules {
   kingStep: boolean;
   /** Кто ходит первым. */
   first: number;
+  /** Бронзы по краям: 16 (с передовыми у всех четырёх сторон), 14 (передовые только сверху и снизу) или 12 (без них). */
+  bronze: 16 | 14 | 12;
 }
 
 export const RULES: Record<Kind, Rules> = {
-  ardri: { king: true, escape: 'edge', kingStep: false, first: 0 },
-  lannach: { king: true, escape: 'corner', kingStep: true, first: 0 },
-  equal: { king: false, escape: null, kingStep: false, first: 0 },
+  ardri: { king: true, escape: 'edge', kingStep: false, first: 0, bronze: 16 },
+  lannach: { king: true, escape: 'corner', kingStep: true, first: 0, bronze: 16 },
+  equal: { king: false, escape: null, kingStep: false, first: 0, bronze: 16 },
+  // уравненный Ард-Ри: без передовых бронзовых слева и справа (сложные боты — 6:6, 4 ничьи из 16)
+  fair: { king: true, escape: 'edge', kingStep: false, first: 0, bronze: 14 },
 };
 
 export const N = 7;
@@ -128,8 +133,12 @@ export function layout(kind: Kind): {
     [3, 0],
     [4, 0],
     [3, 1],
-  ])
-    b.push([x, y], [x, N - 1 - y], [y, x], [N - 1 - y, x]);
+  ]) {
+    const fwd = y === 1;
+    if (fwd && RULES[kind].bronze === 12) continue;
+    b.push([x, y], [x, N - 1 - y]);
+    if (!fwd || RULES[kind].bronze === 16) b.push([y, x], [N - 1 - y, x]);
+  }
   const w: [number, number][] = [];
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) w.push([C + dx, C + dy]);
   return { b, w, king: true };

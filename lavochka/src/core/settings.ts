@@ -38,7 +38,8 @@ export interface Settings {
   sound: boolean;
   volume: number;
   speed: number;
-  autoSingle: boolean;
+  /** Ходить самому за игрока, если ход один. По умолчанию выключено: игры не играют сами в себя (решение пользователя); ключ новый, чтобы старое «вкл» из хранилища не действовало. */
+  autoMove: boolean;
   deck: DeckStyle;
   net: NetMode;
   /** Адрес сервера; пусто — тот же адрес, откуда открыт сайт. */
@@ -52,7 +53,7 @@ const defaults: Settings = {
   sound: true,
   volume: 0.8,
   speed: 1,
-  autoSingle: true,
+  autoMove: false,
   deck: 'atlas',
   net: 'p2p',
   serverUrl: '',

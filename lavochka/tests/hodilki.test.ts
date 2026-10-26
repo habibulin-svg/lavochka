@@ -8,6 +8,13 @@ import { riddlesOf } from '../src/words/riddles';
 const seats = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
 
 /** Знак, сработавший в событиях хода («route», «again», … — что именно). */
+/** Партия без стартовых бросков «Лукоморья» (их бросают сами игроки, фаза 'dice'): боны по нулям, ходит первый. */
+function setupNoStart(...a: Parameters<typeof def.setup>): State {
+  const s = def.setup(...a) as State;
+  if (s.dice?.kind !== 'start') return s;
+  return { ...s, dice: null, phase: 'roll', turn: s.seats[0], coins: s.coins?.map(() => 0) };
+}
+
 function signKind(events: Event[]) {
   const ev = events.find((e) => e.type === 'sign');
   return ev && ev.type === 'sign' ? ev.sign.k : null;
@@ -65,7 +72,7 @@ describe('кинь-двинь: поля', () => {
 describe('кинь-двинь: ветка «туда и обратно»', () => {
   it('Подвески: с 8 — в Крей и обратно на 8, потом дальше', () => {
     const rng = new RiggedRng(new SeededRng(1));
-    let s = def.setup(seats, { map: 'podveski' }, rng) as State;
+    let s = setupNoStart(seats, { map: 'podveski' }, rng) as State;
     const b = BOARDS.find((x) => x.id === 'podveski')!;
     const i8 = b.cells.findIndex((c) => c.label === '8');
     // Вовка: 6 + 2 = 8 (клетка 6 — переход на 10; поэтому 2, потом 6)
@@ -91,7 +98,7 @@ describe('кинь-двинь: ветка «туда и обратно»', () =>
 
   it('Затерянный мир: пропуск двух ходов на 64', () => {
     const rng = new RiggedRng(new SeededRng(2));
-    const s0 = def.setup(seats, { map: 'zatmir' }, rng) as State;
+    const s0 = setupNoStart(seats, { map: 'zatmir' }, rng) as State;
     const b = BOARDS.find((x) => x.id === 'zatmir')!;
     const i64 = b.cells.findIndex((c) => c.label === '64');
     const s: State = { ...s0, pos: s0.pos.map((p, i) => (i === 0 ? i64 - 1 : p)) };
@@ -145,7 +152,7 @@ describe('кинь-двинь: «Шайба»', () => {
   it('в командах напарники через одного ходят одной шайбой', () => {
     const rng = new RiggedRng(new SeededRng(11));
     const four = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
-    const s0 = def.setup(four, { map: 'shayba' }, rng) as State;
+    const s0 = setupNoStart(four, { map: 'shayba' }, rng) as State;
     const track = race.race!.tracks[0];
     rng.rig([2]); // Вовка (место 0) — грань 3
     let r = def.apply(s0, 0, { type: 'roll' }, rng)!;
@@ -168,7 +175,7 @@ describe('кинь-двинь: «Шайба»', () => {
 
   it('очки ведут вперёд по своей дорожке, красная клюшка — назад, зелёная — вперёд', () => {
     const rng = new RiggedRng(new SeededRng(3));
-    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    let s = setupNoStart(two, { map: 'shayba' }, rng) as State;
     const track = race.race!.tracks[0];
     // грань 3
     rng.rig([2]);
@@ -196,7 +203,7 @@ describe('кинь-двинь: «Шайба»', () => {
 
   it('назад дальше центра шайба не уходит', () => {
     const rng = new RiggedRng(new SeededRng(4));
-    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    let s = setupNoStart(two, { map: 'shayba' }, rng) as State;
     const track = race.race!.tracks[0];
     s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? track[1] : p)) };
     rng.rig([4, 14]); // красная клюшка, квадратик на 3
@@ -207,7 +214,7 @@ describe('кинь-двинь: «Шайба»', () => {
 
   it('клетка 30 — гол: шайба в центр, счёт растёт, лишние очки пропадают', () => {
     const rng = new RiggedRng(new SeededRng(5));
-    let s = def.setup(two, { map: 'shayba' }, rng) as State;
+    let s = setupNoStart(two, { map: 'shayba' }, rng) as State;
     const track = race.race!.tracks[0];
     s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? track[28] : p)) };
     rng.rig([5]); // грань 6 — очков больше, чем осталось
@@ -222,7 +229,7 @@ describe('кинь-двинь: «Шайба»', () => {
   it('партия кончается по числу голов; в команде побеждают все, кто на дорожке', () => {
     const rng = new RiggedRng(new SeededRng(6));
     const four = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
-    let s = def.setup(four, { map: 'shayba', goals: '2' }, rng) as State;
+    let s = setupNoStart(four, { map: 'shayba', goals: '2' }, rng) as State;
     expect(s.target).toBe(2);
     const track = race.race!.tracks[0];
     s = { ...s, goals: [1, 0], pos: s.pos.map((p, i) => (i === 0 ? track[28] : p)) };
@@ -248,7 +255,7 @@ describe('кинь-двинь: «В путь, друзья!»', () => {
   const at = (label: string) => board.cells.findIndex((c) => c.label === label);
   /** Пуговица встаёт на нужное деление ленты: один ход с деления перед ним. */
   const landOn = (label: string, rng: RiggedRng) => {
-    const s = def.setup(seats, { map: 'vput' }, rng) as State;
+    const s = setupNoStart(seats, { map: 'vput' }, rng) as State;
     s.pos[0] = at(label) - 1;
     s.turn = 0;
     return turn(s, 0, 1, rng);
@@ -322,7 +329,7 @@ describe('кинь-двинь: «В путь, друзья!»', () => {
   it('красная полоска на серой дороге (97) уводит в петлю и выводит на 113', () => {
     const rng = new RiggedRng(new SeededRng(16));
     // 96 — зелёный кружок: пуговица встаёт на него, бросает ещё раз и попадает на серое 97
-    const s96 = def.setup(seats, { map: 'vput' }, rng) as State;
+    const s96 = setupNoStart(seats, { map: 'vput' }, rng) as State;
     s96.pos[0] = at('96') - 1;
     s96.turn = 0;
     let s = turn(s96, 0, 1, rng).state;
@@ -350,11 +357,27 @@ describe('кинь-двинь: «Лукоморье-1»', () => {
   const at = (label: string) => board.cells.findIndex((c) => c.label === label);
   const seats2 = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
   const start = (rng: RiggedRng) => {
-    const s = def.setup(seats2, { map: 'luk1' }, rng) as State;
+    const s = setupNoStart(seats2, { map: 'luk1' }, rng) as State;
     s.turn = 0;
     s.coins = [0, 0];
     return s;
   };
+
+  it('стартовые боны каждый бросает сам, первым ходит богатейший', () => {
+    const rng = new RiggedRng(new SeededRng(7));
+    let s = def.setup(seats2, { map: 'luk1' }, rng) as State;
+    expect(s.phase).toBe('dice');
+    expect(s.dice).toMatchObject({ seat: 0, kind: 'start', left: 3 });
+    expect(def.apply(s, 1, { type: 'roll' }, rng)).toBeNull(); // чужой бросок не принимается
+    for (const [seat, faces] of [[0, [0, 0, 0]], [1, [5, 5, 5]]] as [number, number[]][])
+      for (const f of faces) {
+        rng.rig([f]);
+        s = def.apply(s, seat, { type: 'roll' }, rng)!.state;
+      }
+    expect(s.coins?.slice(0, 2)).toEqual([3, 18]);
+    expect(s.phase).toBe('roll');
+    expect(s.turn).toBe(1);
+  });
 
   it('поле: «старт» в начале, избушка 13 в конце, у камня развилка из трёх дорог', () => {
     const end = board.end ?? board.cells.length - 1;
@@ -468,7 +491,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
   };
   const seats2 = [0, 1].map((seat) => ({ seat, kind: 'human' as const, name: 'x', level: 0 }));
   const start = (rng: RiggedRng, pos = 0) => {
-    const s = def.setup(seats2, { map: 'tests' }, rng) as State;
+    const s = setupNoStart(seats2, { map: 'tests' }, rng) as State;
     s.pos[0] = pos;
     s.turn = 0;
     return s;
@@ -588,7 +611,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
     };
     BOARDS.push(quiz);
     try {
-      const s = def.setup(seats2, { map: 'tests4' }, rng) as State;
+      const s = setupNoStart(seats2, { map: 'tests4' }, rng) as State;
       s.turn = 0;
       const r = turn(s, 0, 1, rng); // 1 → 2: загадка
       expect(r.state.phase).toBe('pick');
@@ -629,7 +652,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
     BOARDS.push(gate);
     try {
       // пуговица стоит на 2: с любым броском, кроме шестёрки, ход пропадает
-      const s = { ...(def.setup(seats2, { map: 'tests5' }, rng) as State), pos: [1, 0], turn: 0 };
+      const s = { ...(setupNoStart(seats2, { map: 'tests5' }, rng) as State), pos: [1, 0], turn: 0 };
       const stay = turn(s, 0, 3, rng);
       expect(signKind(stay.events)).toBe('wait');
       expect(stay.state.pos[0]).toBe(1);
@@ -665,7 +688,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
     };
     BOARDS.push(diffBoard);
     try {
-      const s = def.setup(seats2, { map: 'tests6' }, rng) as State;
+      const s = setupNoStart(seats2, { map: 'tests6' }, rng) as State;
       s.turn = 0;
       // бросок 5: до пункта «4» три кружка, пуговица встаёт на него и берёт разницу 2
       const r = turn(s, 0, 5, rng);
@@ -700,7 +723,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
     BOARDS.push(forkBoard);
     try {
       // бросок 2: развилка решается разницей 1 — дорога «прямо», лишнее очко идёт дальше на «3» с кладом
-      const s = def.setup(seats2, { map: 'tests7' }, rng) as State;
+      const s = setupNoStart(seats2, { map: 'tests7' }, rng) as State;
       s.turn = 0;
       const r = turn(s, 0, 2, rng);
       expect(r.state.pos[0]).toBe(2);
@@ -742,7 +765,7 @@ describe('кинь-двинь: боны, предметы и развилки', 
     };
     BOARDS.push(other, hop);
     try {
-      let s = def.setup(seats2, { map: 'tests3' }, rng) as State;
+      let s = setupNoStart(seats2, { map: 'tests3' }, rng) as State;
       s.turn = 0;
       const r = turn(s, 0, 1, rng);
       expect(r.state.maps?.[0]).toBe('tests2');
@@ -812,7 +835,7 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
   /** Партия на поле, пуговица Вовки стоит на клетке `cell`. */
   const stand = (id: string, cell: number, opts: { coins?: number; items?: ItemId[] } = {}) => {
     const rng = new RiggedRng(new SeededRng(9));
-    const s = def.setup(seats, { map: id }, rng) as State;
+    const s = setupNoStart(seats, { map: id }, rng) as State;
     return {
       ...s,
       pos: s.pos.map((_, i) => (i === 0 ? cell : 0)),
@@ -1060,13 +1083,13 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(startBoard({ map: 'luk3', lukStart: '1' }).id).toBe('luk3');
     // у поля не из серии — как было
     expect(startBoard({ map: 'krugosvet', lukStart: '3' }).id).toBe('krugosvet');
-    expect(def.setup(seats, { map: 'luk1', lukStart: '4' }, rng).map).toBe('luk4');
+    expect(setupNoStart(seats, { map: 'luk1', lukStart: '4' }, rng).map).toBe('luk4');
   });
 
   it('серия: игроки бывают на разных картах — каждый ходит по своей', () => {
     const rng = new RiggedRng(new SeededRng(41));
     // Вовка в первой части, Ленка — во второй (так бывает после «птицы» и «провала»)
-    let s = def.setup(seats, { map: 'luk1' }, rng) as State;
+    let s = setupNoStart(seats, { map: 'luk1' }, rng) as State;
     s = { ...s, maps: s.maps!.map((m, i) => (i === 1 ? 'luk2' : m)), pos: s.pos.map((p, i) => (i === 1 ? 0 : p)) };
     const a = def.apply(s, 0, { type: 'roll' }, rng)!;
     expect(a.state.map).toBe('luk1'); // Вовка ходит по первой части
@@ -1086,7 +1109,7 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     // остался от прежнего поля — и дальше движок вёл её по номерам чужой карты
     const rng = new RiggedRng(new SeededRng(43));
     const baba = at('luk1', '13');
-    let s = def.setup(seats, { map: 'luk1' }, rng) as State;
+    let s = setupNoStart(seats, { map: 'luk1' }, rng) as State;
     s = {
       ...s,
       pos: s.pos.map((p, i) => (i === 0 ? baba : p)), // стоим на (13): так бывает после переноса

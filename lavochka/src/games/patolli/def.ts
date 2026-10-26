@@ -85,7 +85,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'duran', label: 'по Дурану: 5 меток — 10, ни одной — подношение' },
         { value: 'modern', label: 'современные: ни одной — 10, пять — ещё бросок' },
       ],
-      default: 'duran',
+      default: 'modern',
     },
     {
       key: 'enter',
@@ -95,7 +95,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'one', label: 'только на единицу' },
         { value: 'any', label: 'любым броском' },
       ],
-      default: 'one',
+      default: 'any',
     },
     {
       key: 'hit',
@@ -105,7 +105,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'center', label: 'только в середине креста' },
         { value: 'any', label: 'везде, кроме полукруглых концов' },
       ],
-      default: 'center',
+      default: 'any',
     },
     {
       key: 'goal',
@@ -119,12 +119,12 @@ export const def: GameDef<State, Action, Event, State> = {
     },
     { key: 'pieces', label: 'Фишек у каждого', type: 'select', choices: [2, 3, 4, 6].map((v) => ({ value: v, label: String(v) })), default: 6 },
     { key: 'stakes', label: 'Ставок у каждого', type: 'select', choices: [4, 6, 10, 15].map((v) => ({ value: v, label: String(v) })), default: 10 },
-    { key: 'exact', label: 'Уйти с поля точным броском', type: 'toggle', default: true },
+    { key: 'exact', label: 'Уйти с поля точным броском', type: 'toggle', default: false },
   ],
   presets: [
-    { id: 'patolli', label: 'Патолли', hint: 'По Дурану: 6 фишек, вход на единицу, сбивают только в середине креста', options: { throws: 'duran', enter: 'one', hit: 'center', goal: 'race', pieces: 6, stakes: 10, exact: true } },
+    { id: 'modern', label: 'Патолли', hint: 'Современные правила: ни одной метки — 10, вход любым броском, сбивают везде, кроме концов лучей', options: { throws: 'modern', enter: 'any', hit: 'any', goal: 'race', pieces: 6, stakes: 10, exact: false } },
+    { id: 'patolli', label: 'По Дурану', hint: 'Хроника Дурана, XVI век: 6 фишек, вход на единицу, сбивают только в середине креста', options: { throws: 'duran', enter: 'one', hit: 'center', goal: 'race', pieces: 6, stakes: 10, exact: true } },
     { id: 'stakes', label: 'На все ставки', hint: 'Фишки ходят по кругу снова и снова, пока у одного не окажутся все ставки', options: { throws: 'duran', enter: 'one', hit: 'center', goal: 'stakes', pieces: 6, stakes: 6, exact: true } },
-    { id: 'modern', label: 'Современная', hint: 'Ни одной метки — 10, вход любым броском, сбивают везде, кроме концов лучей', options: { throws: 'modern', enter: 'any', hit: 'any', goal: 'race', pieces: 6, stakes: 10, exact: false } },
     { id: 'quick', label: 'Быстрая', hint: 'По три фишки, вход любым броском', options: { throws: 'duran', enter: 'any', hit: 'center', goal: 'race', pieces: 3, stakes: 6, exact: true } },
   ],
 

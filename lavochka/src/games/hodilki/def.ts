@@ -151,6 +151,21 @@ function rollBonus(s0: State, seat: number, rng: { int(n: number): number }): { 
   const ev: Event[] = [{ type: 'roll', seat, die, bonus: { k: d.of - left, of: d.of, sum, kind: d.kind } }];
   if (left > 0) return { state: { ...s0, last: die, dice: { ...d, left, sum } }, events: ev };
   const s: State = { ...s0, last: die, pos: s0.pos.slice(), skip: s0.skip.slice(), dice: null, phase: 'roll', ...bags(s0, s0.pos.length) };
+  if (d.kind === 'start') {
+    // «Лукоморье»: бон по сумме бросков; следующий бросает сам, когда все бросили — первым ходит богатейший
+    s.coins![seat] = sum;
+    ev.push({ type: 'coins', seat, delta: sum, total: sum });
+    const order = s.seats;
+    const nextSeat = order.find((x) => order.indexOf(x) > order.indexOf(seat) && !s.coins![x]);
+    if (nextSeat != null) {
+      s.turn = nextSeat;
+      s.phase = 'dice';
+      s.dice = { seat: nextSeat, left: d.of, of: d.of, sum: 0, kind: 'start' };
+      return { state: s, events: ev };
+    }
+    s.turn = order.reduce((best, x) => (s.coins![x] > s.coins![best] ? x : best), order[0]);
+    return { state: s, events: ev };
+  }
   if (d.kind === 'extra') {
     s.extra![seat] = (s.extra![seat] ?? 0) + sum;
     ev.push({ type: 'extra', seat, n: sum });
@@ -655,6 +670,23 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   return { state: s, events: ev };
 }
 
+/** Показ правил «Лукоморья»: сначала каждый сам бросает стартовые боны (у Вовки больше — он и ходит первым). */
+function startRolls(b: Board) {
+  if (!b.startCoins) return [];
+  const dice = [
+    [6, 5, 4],
+    [2, 3, 1],
+  ];
+  return [0, 1].flatMap((seat) =>
+    dice[seat].slice(0, b.startCoins).map((d, k) => ({
+      seat,
+      action: { type: 'roll' } as Action,
+      rig: [d - 1],
+      caption: k === 0 ? `${SEATS[seat].name} бросает кубик на стартовые боны…` : undefined,
+    })),
+  );
+}
+
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
 
 /** Запас карточек на партию: по числу игроков (2, 3, 4 и больше). */
@@ -728,16 +760,10 @@ export const def: GameDef<State, Action, Event, State> = {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     const board = startBoard(opts);
     const race = board.race;
-    // «Лукоморье»: перед игрой каждый берёт из банка бон по сумме трёх бросков, первым ходит богатейший
+    // «Лукоморье»: перед игрой каждый сам бросает три кубика — бон по сумме (фаза 'dice', вид start), первым ходит богатейший
     const coins = Array(10).fill(0);
-    if (board.startCoins) {
-      for (const s of ids) {
-        let sum = 0;
-        for (let i = 0; i < board.startCoins; i++) sum += rng.int(6) + 1;
-        coins[s] = sum;
-      }
-    }
-    const first = board.startCoins ? ids.reduce((best, s) => (coins[s] > coins[best] ? s : best), ids[0]) : ids[0];
+    const startDice = board.startCoins ? { seat: ids[0], left: board.startCoins, of: board.startCoins, sum: 0, kind: 'start' as const } : null;
+    const first = ids[0];
     // «Шёл солдат»: общий запас карточек, ярмарки и котомка у каждого
     const stock = board.deck ? stockFor(board, ids.length) : null;
     const cards: (CardId[] | null)[] = Array(10).fill(null);
@@ -756,7 +782,8 @@ export const def: GameDef<State, Action, Event, State> = {
       skip: Array(10).fill(0),
       route: Array(10).fill(null),
       turn: first,
-      phase: 'roll',
+      phase: startDice ? 'dice' : 'roll',
+      ...(startDice ? { dice: startDice } : {}),
       last: null,
       winner: null,
       ...(race ? { goals: race.tracks.map(() => 0), target: Math.max(1, Number(opts.goals ?? race.target) || race.target), kind: null, card: null, cardSlot: null } : {}),
@@ -847,7 +874,7 @@ export const def: GameDef<State, Action, Event, State> = {
         if (ev.kind === 'red') return `${name(ev.seat)} бросает: 🔴 красная клюшка, квадратик на <b>${ev.card}</b> — шайба назад.`;
         if (ev.kind === 'green') return `${name(ev.seat)} бросает: 🟢 зелёная клюшка, квадратик на <b>${ev.card}</b> — шайба вперёд.`;
         if (ev.bonus) {
-          const what = ev.bonus.kind === 'extra' ? 'за дополнительные ходы' : ev.bonus.kind === 'loss' ? 'сколько отдать' : 'за клад';
+          const what = ev.bonus.kind === 'extra' ? 'за дополнительные ходы' : ev.bonus.kind === 'loss' ? 'сколько отдать' : ev.bonus.kind === 'start' ? 'за стартовые боны' : 'за клад';
           return `🎲 ${name(ev.seat)} бросает ${what}: <b>${ev.die}</b>${ev.bonus.of > 1 ? ` (${ev.bonus.k}-й из ${ev.bonus.of}, всего ${ev.bonus.sum})` : ''}`;
         }
         return `${name(ev.seat)} бросает: <b>${ev.die}</b>`;
@@ -909,7 +936,7 @@ export const def: GameDef<State, Action, Event, State> = {
     sections: BOARDS.map((b) => ({
       title: b.title,
       html: `<p><i>${b.goal}</i></p>${b.rules}${b.credit ? `<p><small>${b.credit}</small></p>` : ''}`,
-      demo: b.demo ? { seats: demoSeats, options: { map: b.id }, steps: b.demo.flatMap((d, i) => {
+      demo: b.demo ? { seats: demoSeats, options: { map: b.id }, steps: [...startRolls(b), ...b.demo.flatMap((d, i) => {
             const seat = d.seat ?? i % 2;
             // не бросок, а действие на ярмарке или выбор на препятствии
             if (d.act) return [{ seat, action: d.act, caption: d.caption }];
@@ -917,7 +944,7 @@ export const def: GameDef<State, Action, Event, State> = {
               { seat, action: { type: 'roll' } as Action, rig: Array.isArray(d.rig) ? d.rig : [d.rig ?? 0], caption: `${SEATS[seat].name} бросает кубик…` },
               { seat, action: { type: 'move' } as Action, caption: d.caption },
             ];
-          }) } : undefined,
+          })] } : undefined,
     })),
   },
 };

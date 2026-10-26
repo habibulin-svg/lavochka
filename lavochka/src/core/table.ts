@@ -167,7 +167,7 @@ export class Table {
       controls: q('.game-controls'),
       name: (seat) => this.name(seat),
       speed: () => settings.speed,
-      autoSingle: () => settings.autoSingle,
+      autoSingle: () => settings.autoMove,
       hurry: (on) => {
         if (on === this.fast) return;
         this.fast = on;

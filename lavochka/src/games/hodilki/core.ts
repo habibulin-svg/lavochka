@@ -264,7 +264,8 @@ export interface State {
    * 'dice' — игрок сам бросает кубик за знак (клад «кубик три раза», разбойники, «Повезло»). */
   phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' | 'dice';
   /** Броски за знак (фаза 'dice'): сколько осталось из скольких, сумма и что она даёт. */
-  dice?: { seat: number; left: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' } | null;
+  /** start — стартовые боны «Лукоморья»: каждый бросает сам, потом первым ходит богатейший. */
+  dice?: { seat: number; left: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' | 'start' } | null;
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;
@@ -334,7 +335,7 @@ export interface RiddleState {
 
 export type Event =
   | { type: 'roll'; seat: number; die: number; /** Что выпало: очки или клюшка (гонка с голами). */ kind?: 'pips' | 'red' | 'green'; card?: number; slot?: number;
-      /** Бросок за знак: какой по счёту из скольких и сумма (фаза 'dice'). */ bonus?: { k: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' } }
+      /** Бросок за знак: какой по счёту из скольких и сумма (фаза 'dice'). */ bonus?: { k: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' | 'start' } }
   | { type: 'move'; seat: number; path: number[] }
   | { type: 'sign'; seat: number; sign: Sign; to: number; /** Текст клетки (что случилось). */ text?: string }
   | { type: 'skip'; seat: number }

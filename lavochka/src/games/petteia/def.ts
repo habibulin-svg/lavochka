@@ -95,7 +95,7 @@ export const def: GameDef<State, Action, Event, State> = {
 
   setup: (seats, opts) => setup(seats.map((x) => x.seat), opts),
   toAct,
-  apply: (s, seat, a) => apply(s, seat, a),
+  apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view: (s) => s,
   result(s) {
     if (!s.over) return null;

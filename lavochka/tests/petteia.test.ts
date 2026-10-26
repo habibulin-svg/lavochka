@@ -228,4 +228,19 @@ describe('боты', () => {
     }
     expect(wins).toBeGreaterThanOrEqual(2);
   }, 120_000);
+
+  it('«Расставить случайно»: все свои фишки разом на своей половине, соперник ставит дальше', () => {
+    const s = pt.newState(pt.cfgFrom({ kind: 'bell' }));
+    expect(s.phase).toBe('place');
+    const r = pt.apply(s, 0, { type: 'scatter' }, new SeededRng(5))!;
+    expect(r).not.toBeNull();
+    const n = r.state.board.filter((v, p) => (v === 1 || v === 3) && p >= (s.h / 2) * s.w).length;
+    expect(n).toBe(s.hand[0] + (s.duxHand[0] ? 1 : 0));
+    expect(r.state.turn).toBe(1);
+    expect(r.state.phase).toBe('place');
+    // соперник тоже разом — и партия начинается
+    const r2 = pt.apply(r.state, 1, { type: 'scatter' }, new SeededRng(6))!;
+    expect(r2.state.phase).toBe('play');
+    expect(pt.apply(r2.state, 0, { type: 'scatter' })).toBeNull();
+  });
 });

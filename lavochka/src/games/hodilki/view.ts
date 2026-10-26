@@ -1468,7 +1468,7 @@ class HodilkiView implements GameView<State, Event> {
     }
     if (ph === 'dice' && v.dice) {
       const d = v.dice;
-      const what = d.kind === 'extra' ? 'Повезло — сколько дополнительных ходов' : d.kind === 'loss' ? 'Сколько бон отдать' : 'Клад';
+      const what = d.kind === 'extra' ? 'Повезло — сколько дополнительных ходов' : d.kind === 'loss' ? 'Сколько бон отдать' : d.kind === 'start' ? 'Стартовые боны из банка' : 'Клад';
       const k = d.of - d.left + 1;
       const step = d.of > 1 ? ` — бросок ${k} из ${d.of}${d.sum ? `, пока ${d.sum}` : ''}` : '';
       return me ? `${what}: бросайте кубик${step}` : `${this.ctx.name(toAct[0])} бросает кубик: ${what.toLowerCase()}${step}…`;

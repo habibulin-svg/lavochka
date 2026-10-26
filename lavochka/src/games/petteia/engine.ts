@@ -9,7 +9,7 @@
  *     дукс может перепрыгнуть соседнего врага; после взятия — ещё ход; дукс берут как простую фишку.
  *   По Шедлеру — 8×8, по 16 фишек, расстановка по одной; ход на клетку или прыжок через соседнюю фишку (цепочкой).
  * Долго без взятий (quiet) — у кого больше фишек, тот и выиграл, поровну — ничья. */
-import type { Options } from '../../core/types';
+import type { Options, Rng } from '../../core/types';
 
 export type Kind = 'petteia' | 'kowalski' | 'bell' | 'schadler';
 export type Look = 'marble' | 'clay';
@@ -91,7 +91,8 @@ export interface State {
   lost: [number, number];
 }
 
-export type Action = { type: 'place'; to: number } | { type: 'move'; from: number; to: number } | { type: 'stop' };
+/** scatter — «Расставить случайно»: все оставшиеся свои фишки — на случайные пустые клетки своей половины. */
+export type Action = { type: 'place'; to: number } | { type: 'move'; from: number; to: number } | { type: 'stop' } | { type: 'scatter' };
 export type Why = 'all' | 'stuck' | 'dux' | 'quiet' | 'long';
 export type Event =
   | { type: 'place'; seat: number; to: number; piece: number }
@@ -338,6 +339,37 @@ function settle(s: State, events: Event[], seat: number, taken: number[]) {
   return { state: s, events };
 }
 
+/** «Расставить случайно»: все оставшиеся свои фишки (дукс — последним) разом — на пустые клетки своей половины доски. */
+function scatter(s0: State, seat: number, rng?: Rng): { state: State; events: Event[] } {
+  const s = clone(s0);
+  const events: Event[] = [];
+  const rand = (n: number) => (rng ? rng.int(n) : Math.floor(Math.random() * n));
+  const mine = (p: number) => (seat === 0 ? p >= (s.h / 2) * s.w : p < (s.h / 2) * s.w);
+  while (s.hand[seat] > 0 || s.duxHand[seat]) {
+    const free = placeSpots(s);
+    const spots = free.filter(mine).length ? free.filter(mine) : free;
+    const to = spots[rand(spots.length)];
+    const dux = s.hand[seat] === 0;
+    const piece = dux ? DUX[seat] : MAN[seat];
+    s.board[to] = piece;
+    if (dux) s.duxHand[seat] = false;
+    else s.hand[seat]--;
+    events.push({ type: 'place', seat, to, piece });
+  }
+  s.last = [];
+  s.placed = 0;
+  const foe = 1 - seat;
+  if (s.hand[foe] + (s.duxHand[foe] ? 1 : 0) > 0) {
+    s.turn = foe;
+    return { state: s, events };
+  }
+  s.phase = 'play';
+  s.turn = 0;
+  events.push({ type: 'phase' });
+  if (!hasMove(s)) return finish(s, events, 1, 'stuck');
+  return { state: s, events };
+}
+
 /** Применить ход без проверки. */
 export function step(s0: State, a: Action): { state: State; events: Event[] } {
   const s = clone(s0);
@@ -369,6 +401,7 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
     }
     return { state: s, events };
   }
+  if (a.type === 'scatter') return scatter(s0, seat);
   if (a.type === 'stop') {
     const to = s.chain;
     const taken = captures(s, to, seat);
@@ -398,8 +431,9 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
   return settle(s, events, seat, taken);
 }
 
-export function apply(s: State, seat: number, a: Action): { state: State; events: Event[] } | null {
+export function apply(s: State, seat: number, a: Action, rng?: Rng): { state: State; events: Event[] } | null {
   if (s.over || seat !== s.turn || !a) return null;
+  if (a.type === 'scatter') return s.phase === 'place' ? scatter(s, seat, rng) : null;
   const ok = legal(s).some((b) => b.type === a.type && (b.type === 'stop' || (b.to === (a as { to: number }).to && (b.type !== 'move' || b.from === (a as { from: number }).from))));
   return ok ? step(s, a) : null;
 }
