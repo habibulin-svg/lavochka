@@ -101,7 +101,7 @@ function rollRace(s0: State, b: Board, seat: number, rng: { int(n: number): numb
 }
 
 /** Ход в гонке с голами: шайба идёт по своей дорожке; дошла до ворот — гол и возврат в центр. */
-function moveRace(s0: State, b: Board, seat: number): { state: State; events: Event[] } {
+function moveRace(s0: State, b: Board, seat: number, now = Date.now()): { state: State; events: Event[] } {
   const race = b.race!;
   const track = trackOf(b, seat);
   const trail = race.tracks[track];
@@ -126,6 +126,21 @@ function moveRace(s0: State, b: Board, seat: number): { state: State; events: Ev
   } else {
     // у команды одна шайба: у напарников она там же
     for (const x of mates) if (x !== seat) s.pos[x] = to;
+  }
+  // игра на время: вышло — побеждает, кто забил больше; поровну — овертайм до гола
+  if (s.endsAt && now >= s.endsAt) {
+    const goals = s.goals!;
+    const best = Math.max(...goals);
+    const lead = goals.filter((g) => g === best).length === 1 ? goals.indexOf(best) : -1;
+    if (lead >= 0) {
+      s.winner = s.seats.find((x) => trackOf(b, x) === lead) ?? seat;
+      ev.push({ type: 'win', seat: s.winner, time: true });
+      return { state: s, events: ev };
+    }
+    if (!s.overtime) {
+      s.overtime = true;
+      ev.push({ type: 'overtime' });
+    }
   }
   s.turn = next(s, seat);
   return { state: s, events: ev };
@@ -750,6 +765,20 @@ export const def: GameDef<State, Action, Event, State> = {
     },
     // Настройка только для «Шайбы»: у остальных полей финиш, а не счёт по голам.
     {
+      key: 'time',
+      label: 'Игра на время',
+      hint: 'Только для «Шайбы»: вышло время — побеждает, кто забил больше; поровну — играют до гола.',
+      type: 'select',
+      choices: [
+        { value: '0', label: 'нет — до числа голов' },
+        { value: '5', label: '5 минут' },
+        { value: '10', label: '10 минут' },
+        { value: '20', label: '20 минут' },
+      ],
+      default: '0',
+      showIf: (opts) => !!boardOf(String(opts.map ?? BOARDS[0].id)).race,
+    },
+    {
       key: 'goals',
       label: 'Голов до победы',
       hint: 'Только для «Шайбы»: партия идёт до этого числа заброшенных шайб.',
@@ -790,7 +819,16 @@ export const def: GameDef<State, Action, Event, State> = {
       ...(startDice ? { dice: startDice } : {}),
       last: null,
       winner: null,
-      ...(race ? { goals: race.tracks.map(() => 0), target: Math.max(1, Number(opts.goals ?? race.target) || race.target), kind: null, card: null, cardSlot: null } : {}),
+      ...(race
+        ? {
+            goals: race.tracks.map(() => 0),
+            target: Math.max(1, Number(opts.goals ?? race.target) || race.target),
+            kind: null,
+            card: null,
+            cardSlot: null,
+            endsAt: Number(opts.time) > 0 ? Date.now() + Number(opts.time) * 60_000 : null,
+          }
+        : {}),
       // «Лукоморье»: боны, предметы и дополнительные ходы
       ...(board.coins ? { coins, items: Array(10).fill(null), extra: Array(10).fill(0) } : {}),
       // «Шёл солдат»: карточки в руке, общий запас, флаги и выбор на клетке
@@ -931,7 +969,9 @@ export const def: GameDef<State, Action, Event, State> = {
       case 'reward':
         return `⏩ ${name(ev.seat)} получает ${ev.extra} лишних хода за неотгаданную загадку.`;
       case 'win':
-        return `🏁 ${name(ev.seat)} — победа!`;
+        return ev.time ? `⏱ Время вышло! ${name(ev.seat)} — победа.` : `🏁 ${name(ev.seat)} — победа!`;
+      case 'overtime':
+        return '⏱ Время вышло, счёт равный — играют до гола.';
     }
     return null;
   },

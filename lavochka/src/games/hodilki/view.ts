@@ -1431,7 +1431,10 @@ class HodilkiView implements GameView<State, Event> {
     const b = boardOf(mapOf(v, toAct[0] ?? v.turn));
     const me = interactive.includes(toAct[0]);
     if (b.race) {
-      const score = `Счёт ${scoreText(v, b)}${v.target ? ` (до ${v.target})` : ''}.`;
+      const clock = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const score = `Счёт ${scoreText(v, b)}${
+        v.overtime ? ' — овертайм, до гола' : v.endsAt ? ` (до ${v.target} голов или до ${clock(v.endsAt)})` : v.target ? ` (до ${v.target})` : ''
+      }.`;
       if (v.winner != null) return `${this.ctx.name(v.winner)}: ${b.winText} — ${scoreText(v, b)}!`;
       if ((v.phase ?? 'roll') === 'move') {
         const what =

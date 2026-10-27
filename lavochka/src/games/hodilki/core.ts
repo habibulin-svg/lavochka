@@ -275,6 +275,10 @@ export interface State {
   goals?: number[];
   /** Гонка с голами: сколько голов до победы (настройка партии). */
   target?: number;
+  /** Игра на время («Шайба»): когда кончается время (мс, Date.now()). Вышло — побеждает, кто забил больше; поровну — до гола. */
+  endsAt?: number | null;
+  /** Время вышло при равном счёте: следующий гол решает. */
+  overtime?: boolean;
   /** Гонка с голами: что выпало на кубике — очки или клюшка. */
   kind?: 'pips' | 'red' | 'green' | null;
   /** Гонка с голами: очки на вытянутом квадратике (1–3). */
@@ -361,7 +365,8 @@ export type Event =
   | { type: 'riddle'; seat: number; solved: boolean; extra?: number; coins?: number }
   /** Награда за неотгаданную загадку (лишние ходы). */
   | { type: 'reward'; seat: number; extra: number }
-  | { type: 'win'; seat: number };
+  | { type: 'win'; seat: number; time?: boolean }
+  | { type: 'overtime' };
 
 export const SEATS = [
   { name: 'Вовка', color: '#d8241c', light: '#ff6a5a', dark: '#7a1210' },

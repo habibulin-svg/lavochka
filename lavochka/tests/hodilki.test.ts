@@ -242,6 +242,32 @@ describe('кинь-двинь: «Шайба»', () => {
     expect(res.text).toContain('2 : 0');
   });
 
+  it('игра на время: вышло — побеждает, кто забил больше; поровну — овертайм до гола', () => {
+    const rng = new RiggedRng(new SeededRng(8));
+    let s = setupNoStart(two, { map: 'shayba', time: '5' }, rng) as State;
+    expect(s.endsAt).toBeGreaterThan(Date.now());
+    const track = race.race!.tracks[0];
+    // время вышло, счёт 1 : 0 — после хода конец
+    s = { ...s, endsAt: Date.now() - 1, goals: [1, 0], pos: s.pos.map((p, i) => (i === 0 ? track[3] : p)) };
+    rng.rig([0]);
+    let r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.winner).toBe(0);
+    expect(r.events.some((e) => e.type === 'win' && e.time)).toBe(true);
+    // поровну — овертайм; следующий гол решает
+    s = { ...s, goals: [1, 1] };
+    rng.rig([0]);
+    r = def.apply(s, 0, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 0, { type: 'move' }, rng)!;
+    expect(r.state.winner).toBeNull();
+    expect(r.state.overtime).toBe(true);
+    const ot = { ...r.state, turn: 1, pos: r.state.pos.map((p, i) => (i === 1 ? race.race!.tracks[1][28] : p)) };
+    rng.rig([0]);
+    r = def.apply(ot, 1, { type: 'roll' }, rng)!;
+    r = def.apply(r.state, 1, { type: 'move' }, rng)!;
+    expect(r.state.winner).toBe(1);
+  });
+
   it('показ правил «Шайбы» включает клюшку с квадратиком', () => {
     const section = def.rules.sections.find((x) => x.title === 'Шайба')!;
     expect(section).toBeTruthy();
