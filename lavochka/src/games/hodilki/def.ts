@@ -54,6 +54,10 @@ function endTurn(s: State, seat: number, ev: Event[], board?: Board) {
   if (board?.deck) {
     const to = s.pos[seat];
     if (marketIdx(board).includes(to)) {
+      // как и при обычном ходе: на 48 Конь-огонь возвращается на ярмарку, а с ним и прибавка к броску
+      for (const c of board.deck.keep?.[to + 1] ?? []) if ((s.cards?.[seat] ?? []).includes(c)) unpack(s.cards![seat]!, s.stock!, c);
+      const drop = board.deck.dropFlags?.[to + 1] ?? [];
+      if (drop.length && s.flags) s.flags[seat] = (s.flags[seat] ?? []).filter((f) => !drop.includes(f));
       s.market = { seat, took: 0, bought: 0 };
       s.phase = 'market';
       const g = board.cells[to].sign;
