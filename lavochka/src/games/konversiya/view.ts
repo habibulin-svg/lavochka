@@ -7,10 +7,12 @@
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { SEATS } from './def';
+import { offerText, SEATS } from './def';
 import {
   buyPrice,
   BY_SEA,
+  canOffer,
+  canRent,
   capacity,
   CARD_KINDS,
   CONT_ITEM,
@@ -21,9 +23,11 @@ import {
   legal,
   LOAN_BACK,
   loadOf,
+  MAX_OFFERS,
   mineYield,
   produceYield,
   rate,
+  rentYield,
   ROW,
   sellPrice,
   toNextRate,
@@ -33,11 +37,13 @@ import {
   WORLD_PRICE,
   worth,
   type Action,
+  type Bundle,
   type Cont,
   type Event,
   type Key,
   type Mode,
   type Player,
+  type Work,
   type State,
 } from './engine';
 import TRACKS from './tracks.json';
@@ -135,6 +141,9 @@ function factories(pl: Player) {
   return o;
 }
 
+/** Имя без разметки (на кнопке цвет имени не читается). */
+const plain = (html: string) => html.replace(/<[^>]*>/g, '');
+
 class KonversiyaView implements GameView<State, Event> {
   private ctx!: ViewCtx;
   private root!: HTMLElement;
@@ -150,7 +159,11 @@ class KonversiyaView implements GameView<State, Event> {
   private panel!: HTMLElement;
   private v: State | null = null;
   private me: number | null = null;
-  private form: 'buy' | 'sell' | 'trip' | null = null;
+  private form: 'buy' | 'sell' | 'trip' | 'deal' | 'rent' | null = null;
+  /** Сделка: с кем, что отдаю и что прошу (rub, usd и собственность). */
+  private deal: { to: number; give: Record<string, number>; get: Record<string, number> } | null = null;
+  /** Аренда: у кого, что делать и за сколько. */
+  private rent: { to: number; work: Work; fee: number } | null = null;
   private qty: Partial<Record<Key, number>> = {};
   private trip: { to: string; mode: Mode; goods: number } | null = null;
   /** Показанное положение фишки-индикатора (во время анимации отстаёт от состояния). */
@@ -230,11 +243,45 @@ class KonversiyaView implements GameView<State, Event> {
     const k = b.dataset.k!;
     const v = this.v;
     if (k === 'form') {
-      const f = b.dataset.f as 'buy' | 'sell' | 'trip';
+      const f = b.dataset.f as 'buy' | 'sell' | 'trip' | 'deal' | 'rent';
       this.form = this.form === f ? null : f;
       this.qty = {};
       this.trip = null;
+      const others = v.p.flatMap((q, i) => (i !== this.me && q.alive ? [i] : []));
+      this.deal = f === 'deal' && others.length ? { to: others[0], give: {}, get: {} } : null;
+      this.rent = f === 'rent' ? this.rentDefault(v) : null;
       this.renderPanel();
+      return;
+    }
+    if (k === 'partner' && this.deal) {
+      this.deal = { to: Number(b.dataset.to), give: {}, get: {} };
+      this.renderPanel();
+      return;
+    }
+    if (k === 'dq' && this.deal) {
+      const side = b.dataset.side as 'give' | 'get';
+      const key = b.dataset.key!;
+      this.deal[side][key] = Math.max(0, Math.min(Number(b.dataset.max), (this.deal[side][key] ?? 0) + Number(b.dataset.d)));
+      this.renderPanel();
+      return;
+    }
+    if (k === 'rentset' && this.rent) {
+      if (b.dataset.to) this.rent.to = Number(b.dataset.to);
+      if (b.dataset.work) this.rent.work = b.dataset.work as Work;
+      if (b.dataset.d) this.rent.fee = Math.max(1, Math.min(v.p[this.me!].rub, this.rent.fee + Number(b.dataset.d)));
+      this.renderPanel();
+      return;
+    }
+    if (k === 'offer' && this.deal) {
+      const pack = (q: Record<string, number>): Bundle => {
+        const items = Object.fromEntries(Object.entries(q).filter(([key, n]) => key !== 'rub' && key !== 'usd' && n > 0));
+        return { ...(q.rub ? { rub: q.rub } : {}), ...(q.usd ? { usd: q.usd } : {}), ...(Object.keys(items).length ? { items } : {}) };
+      };
+      this.send({ type: 'offer', to: this.deal.to, give: pack(this.deal.give), get: pack(this.deal.get) });
+      return;
+    }
+    if (k === 'rentgo' && this.rent) {
+      this.send({ type: 'rent', to: this.rent.to, work: this.rent.work, fee: this.rent.fee });
       return;
     }
     if (k === 'q') {
@@ -268,7 +315,7 @@ class KonversiyaView implements GameView<State, Event> {
 
   private send(a: Action) {
     const seat = this.me;
-    if (seat == null || !this.v || this.v.turn !== seat) return;
+    if (seat == null || !this.v || (this.v.offer ? this.v.offer.to : this.v.turn) !== seat) return;
     Sound.unlock();
     const free = a.type === 'loan' || a.type === 'repay' || a.type === 'exchange';
     if (!free) {
@@ -419,7 +466,13 @@ class KonversiyaView implements GameView<State, Event> {
 
   private renderPanel() {
     const v = this.v;
-    if (!v || this.me == null || v.turn !== this.me || v.over) {
+    if (v?.offer && this.me === v.offer.to && !v.over) {
+      // предложение мне: принять или отказаться
+      this.panel.innerHTML = `<div class="kv-offer"><div class="kv-q">🤝 <b>${this.ctx.name(v.offer.from)}</b> предлагает вам сделку: ${offerText(v.offer)}.</div>
+        <div class="kv-acts">${this.btn({ type: 'answer', yes: true }, 'Согласиться', 'primary')}${this.btn({ type: 'answer', yes: false }, 'Отказаться')}</div></div>`;
+      return;
+    }
+    if (!v || this.me == null || v.turn !== this.me || v.over || v.offer) {
       this.panel.innerHTML = '';
       return;
     }
@@ -447,6 +500,10 @@ class KonversiyaView implements GameView<State, Event> {
     if (has('trip')) o += `<button class="btn ${this.form === 'trip' ? 'primary' : ''}" data-k="form" data-f="trip">${pl.loc === 'ussr' ? 'Поездка за границу…' : 'Домой, в СССР…'}</button>`;
     o += this.btn({ type: 'skip' }, 'Пропустить ход');
     o += `</div><div class="kv-free">`;
+    if ((v.offers ?? 0) < MAX_OFFERS && v.p.some((q, j) => j !== i && q.alive)) {
+      o += `<button class="btn small ${this.form === 'deal' ? 'primary' : ''}" data-k="form" data-f="deal" title="Частная сделка — не ход: после неё можно ходить">Сделка…</button>`;
+      if (this.rentDefault(v)) o += `<button class="btn small ${this.form === 'rent' ? 'primary' : ''}" data-k="form" data-f="rent" title="Аренда — это ваш ход">Аренда…</button>`;
+    }
     if (has('loan')) o += this.btn({ type: 'loan' }, 'Ссуда +100 (вернуть 150)', 'small');
     if (has('repay')) o += this.btn({ type: 'repay' }, `Вернуть ссуду ${LOAN_BACK}`, 'small');
     if (has('exchange')) o += this.btn({ type: 'exchange', usd: pl.usd }, `Обменять ${pl.usd} $ на рубли`, 'small');
@@ -461,9 +518,63 @@ class KonversiyaView implements GameView<State, Event> {
       <button class="btn small" data-k="q" data-key="${key}" data-d="-1" data-max="${max}">−</button><b>${n}</b><button class="btn small" data-k="q" data-key="${key}" data-d="1" data-max="${max}">+</button></div>`;
   }
 
+  /** У кого можно что-то арендовать (первый подходящий вариант) — или null. */
+  private rentDefault(v: State): { to: number; work: Work; fee: number } | null {
+    if (this.me == null) return null;
+    for (let to = 0; to < v.n; to++)
+      for (const work of ['produce', 'mine'] as Work[]) if (canRent(v, this.me, to, work, 1)) return { to, work, fee: 5 };
+    return null;
+  }
+
+  private dealStepper(side: 'give' | 'get', key: string, label: string, max: number, step = 1) {
+    const q = this.deal![side][key] ?? 0;
+    if (max <= 0 && !q) return '';
+    const btn = (d: number, t: string) => `<button class="btn small" data-k="dq" data-side="${side}" data-key="${key}" data-d="${d}" data-max="${max}">${t}</button>`;
+    return `<div class="kv-row"><span>${label} <small>до ${max}</small></span>${step > 1 ? btn(-step, `−${step}`) : ''}${btn(-1, '−')}<b>${q}</b>${btn(1, '+')}${step > 1 ? btn(step, `+${step}`) : ''}</div>`;
+  }
+
+  private dealHtml(v: State, i: number): string {
+    const d = this.deal!;
+    const me = v.p[i];
+    const them = v.p[d.to];
+    const same = me.loc === them.loc;
+    let o = `<div class="kv-q">Частная сделка — не ход: договоритесь, а потом ходите как обычно. Товар и имущество — только если вы в одном месте.</div><div class="kv-dests">`;
+    for (let j = 0; j < v.n; j++)
+      if (j !== i && v.p[j].alive) o += `<button class="btn small ${j === d.to ? 'primary' : ''}" data-k="partner" data-to="${j}">${plain(this.ctx.name(j))}</button>`;
+    o += '</div>';
+    const side = (s: 'give' | 'get', pl: typeof me, title: string) => {
+      let h = `<div class="kv-side"><b>${title}</b>`;
+      h += this.dealStepper(s, 'rub', 'рубли, тыс.', pl.rub, 10);
+      h += this.dealStepper(s, 'usd', 'доллары, тыс.', pl.usd, 5);
+      if (same) for (const k of KEYS) h += this.dealStepper(s, k, SHORT[k], pl.own[k]);
+      return h + '</div>';
+    };
+    o += `<div class="kv-deal">${side('give', me, 'Отдаю')}${side('get', them, `Прошу у: ${plain(this.ctx.name(d.to))}`)}</div>`;
+    const pack = (q: Record<string, number>): Bundle => ({ rub: q.rub ?? 0, usd: q.usd ?? 0, items: Object.fromEntries(Object.entries(q).filter(([k]) => k !== 'rub' && k !== 'usd')) });
+    const ok = canOffer(v, i, d.to, pack(d.give), pack(d.get));
+    return o + `<button class="btn primary" data-k="offer" ${ok ? '' : 'disabled'}>Предложить</button>${ok ? '' : ' <small>Обе стороны должны что-то отдать.</small>'}`;
+  }
+
+  private rentHtml(v: State, i: number): string {
+    const r = this.rent!;
+    let o = `<div class="kv-q">Аренда — это ваш ход: добыть сырьё или произвести товар на чужом оборудовании (своё сырьё и затраты — ваши), заплатив хозяину.</div><div class="kv-dests">`;
+    for (let to = 0; to < v.n; to++)
+      for (const work of ['produce', 'mine'] as Work[])
+        if (canRent(v, i, to, work, 1))
+          o += `<button class="btn small ${r.to === to && r.work === work ? 'primary' : ''}" data-k="rentset" data-to="${to}" data-work="${work}">${plain(this.ctx.name(to))} — ${work === 'mine' ? 'добыча' : 'производство'}</button>`;
+    o += '</div>';
+    const y = rentYield(v, i, r.to, r.work, r.fee);
+    o += `<div class="kv-row"><span>Плата хозяину, тыс. руб.</span><button class="btn small" data-k="rentset" data-d="-5">−5</button><button class="btn small" data-k="rentset" data-d="-1">−</button><b>${r.fee}</b><button class="btn small" data-k="rentset" data-d="1">+</button><button class="btn small" data-k="rentset" data-d="5">+5</button></div>`;
+    o += `<div class="kv-sum">${r.work === 'mine' ? 'Добудете' : 'Произведёте'} ${y.units} парт. ${r.work === 'mine' ? 'сырья' : 'товара'}, затраты ${y.cost} тыс.</div>`;
+    const ok = canRent(v, i, r.to, r.work, r.fee);
+    return o + `<button class="btn primary" data-k="rentgo" ${ok ? '' : 'disabled'}>Предложить аренду</button>`;
+  }
+
   private formHtml(v: State, i: number): string {
     const pl = v.p[i];
     let o = '';
+    if (this.form === 'deal' && this.deal) return this.dealHtml(v, i);
+    if (this.form === 'rent' && this.rent) return this.rentHtml(v, i);
     if (this.form === 'buy') {
       let sum = 0;
       if (pl.loc === 'ussr') {
@@ -583,6 +694,7 @@ class KonversiyaView implements GameView<State, Event> {
 
   status(v: State, toAct: number[], interactive: number[]) {
     if (v.over) return v.winner == null ? 'Поровну' : `Победа: ${this.ctx.name(v.winner)}`;
+    if (v.offer) return interactive.includes(v.offer.to) ? `${this.ctx.name(v.offer.from)} предлагает сделку` : `${this.ctx.name(v.offer.to)} думает над предложением…`;
     if (!interactive.includes(toAct[0])) return `Ходит ${this.ctx.name(toAct[0])}…`;
     return v.extra ? 'Ещё одна операция' : 'Ваш ход — выберите действие';
   }

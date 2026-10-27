@@ -136,3 +136,10 @@
   .kv-table { padding: 8px; gap: 10px; }
   .kv-players { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* частная сделка: «Отдаю» и «Прошу» друг под другом (панель узкая) */
+.kv-deal { display: flex; flex-direction: column; gap: 8px; }
+.kv-side { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 4px 6px; border-radius: 6px; background: rgba(0, 0, 0, 0.05); }
+.kv-side > b { font-size: 13px; }
+.kv-side .kv-row span { min-width: 0; }
+.kv-offer { display: flex; flex-direction: column; gap: 6px; }

@@ -3,7 +3,7 @@
  * длины — пресеты), карточки, жетоны, деньги; внутренний рынок СССР и пять континентов разложены по правилам. */
 import type { DemoStep, GameDef, Rng, SeatSpec } from '../../core/types';
 import { choose } from './ai';
-import { apply, CARD_KINDS, cfgFrom, newState, setup, step, toAct, worth, type Action, type Event, type Key, type State, NAMES, CONT_NAME } from './engine';
+import { apply, CARD_KINDS, cfgFrom, newState, setup, step, toAct, worth, type Action, type Bundle, type Event, type Key, type Offer, type State, NAMES, CONT_NAME } from './engine';
 
 export const SEATS = [
   { name: 'Красный', color: '#d8241c', light: '#ff7a6e', dark: '#7a0806' },
@@ -18,6 +18,20 @@ const list = (items: Partial<Record<Key, number>>) =>
   Object.entries(items)
     .map(([k, n]) => `${NAMES[k as Key]} × ${n}`)
     .join(', ');
+
+/** Что отдают по сделке: «3 сырья и 20 тыс. руб.». */
+export function bundleText(b: Bundle): string {
+  const parts: string[] = [];
+  const items = Object.entries(b.items ?? {}).filter(([, n]) => (n ?? 0) > 0);
+  if (items.length) parts.push(list(Object.fromEntries(items)));
+  if (b.rub) parts.push(`${b.rub} тыс. руб.`);
+  if (b.usd) parts.push(`${b.usd} тыс. $`);
+  return parts.join(' и ') || 'ничего';
+}
+export const offerText = (o: Offer) =>
+  o.kind === 'deal'
+    ? `отдаёт ${bundleText(o.give)} за ${bundleText(o.get)}`
+    : `плата ${o.fee} тыс. руб. за аренду — ${o.work === 'mine' ? 'добыть сырьё на его оборудовании' : 'произвести товар на его заводе'}`;
 
 function describe(ev: Event, name: (seat: number) => string): string | null {
   const m = (v: number, usd: boolean) => (usd ? `${v} тыс. $` : `${v} тыс. руб.`);
@@ -50,6 +64,12 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
       return `💸 ${name(ev.seat)} — банкрот.`;
     case 'end':
       return ev.winner == null ? '🏁 Поровну.' : `🏁 Победа: ${name(ev.winner)} — ${ev.worth[ev.winner]} тыс.`;
+    case 'offer':
+      return `🤝 Предложение: ${name(ev.offer.from)} → ${name(ev.offer.to)} — ${offerText(ev.offer).replace(/\.$/, '')}.`;
+    case 'answer':
+      return ev.yes ? `🤝 ${name(ev.offer.to)} согласен — по рукам.` : `✋ ${name(ev.offer.to)} отказывается.`;
+    case 'rented':
+      return `${name(ev.seat)} арендует у ${name(ev.owner)} ${ev.work === 'mine' ? 'оборудование и добывает' : 'завод со станками и производит'} ${ev.units} парт. ${ev.work === 'mine' ? 'сырья' : 'товара'} (аренда ${ev.fee} тыс., затраты ${ev.cost} тыс.).`;
   }
   return null;
 }
@@ -218,6 +238,31 @@ export const def: GameDef<State, Action, Event, State> = {
             }),
           intro: 'У Красного два грузовика.',
           steps: [Do(0, { type: 'load', n: 2 }, 'Погрузка двух партий государственного товара — 20 тыс. руб. за перевозку сразу.')],
+        },
+      },
+      {
+        title: 'Частные сделки и аренда',
+        html: `<p><b>Частная сделка</b> — не ход. В свой ход, до действия, можно предложить другому игроку обмен: собственность, сырьё,
+          товар, рубли или доллары — по любой цене, о которой договоритесь (за ход — до трёх предложений). Отдают обе стороны: даром
+          и в долг нельзя. Товар и имущество меняют, только если оба в одном месте; из разных мест — только деньги.
+          Выгоднее всего цепочка: добытчик продаёт сырьё производителю, производитель — товар перевозчику, мимо рынка.</p>
+          <p><b>Аренда</b> — это ход: добыть сырьё или произвести товар на чужом оборудовании (сырьё и затраты — свои), заплатив
+          хозяину договорную сумму. Хозяин может и отказаться — тогда ход не потерян.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () =>
+            pos((s) => {
+              s.p[0].own.raw = 4;
+              s.p[1].own.factory = 1;
+              s.p[1].own.machS = 3;
+            }),
+          intro: 'У Красного четыре партии сырья, у Синего — завод и три станка.',
+          steps: [
+            Do(0, { type: 'offer', to: 1, give: { items: { raw: 3 } }, get: { rub: 21 } }, 'Красный предлагает Синему три партии сырья за 21 тыс. — дешевле, чем на рынке.'),
+            Do(1, { type: 'answer', yes: true }, 'Синий согласен: сырьё у него, деньги у Красного. Это был не ход — Красный ходит дальше.'),
+            Do(0, { type: 'skip' }),
+            Do(1, { type: 'produce' }, 'Синий производит товар из купленного сырья.'),
+          ],
         },
       },
     ],

@@ -131,14 +131,87 @@ describe('Конверсия', () => {
       let s = kv.newState(kv.cfgFrom({ variant }), n, rng);
       let k = 0;
       while (!s.over && k < 20000) {
-        const a = choose(s, s.turn, lv, rng);
+        const seat = kv.toAct(s)[0];
+        const a = choose(s, seat, lv, rng);
         expect(a).not.toBeNull();
-        const r = kv.apply(s, s.turn, a!, rng);
+        const r = kv.apply(s, seat, a!, rng);
         expect(r, JSON.stringify(a)).not.toBeNull();
         s = r!.state;
         k++;
       }
       expect(s.over).toBe(true);
     }
+  });
+});
+
+describe('Конверсия: частные сделки и аренда', () => {
+  const r = new SeededRng(3);
+  const ap = (s: kv.State, seat: number, a: kv.Action) => kv.apply(s, seat, a, r);
+
+  it('сделка — не ход: обмен по согласию, после него ходит тот же игрок', () => {
+    const s = fresh();
+    s.p[0].own.raw = 4;
+    const o = ap(s, 0, { type: 'offer', to: 1, give: { items: { raw: 3 } }, get: { rub: 21 } })!.state;
+    expect(kv.toAct(o)).toEqual([1]);
+    expect(ap(o, 0, { type: 'skip' })).toBeNull(); // пока ждём ответа — ходить нельзя
+    const y = ap(o, 1, { type: 'answer', yes: true })!.state;
+    expect(y.p[0].own.raw).toBe(1);
+    expect(y.p[1].own.raw).toBe(3);
+    expect(y.p[0].rub).toBe(121);
+    expect(y.p[1].rub).toBe(79);
+    expect(kv.toAct(y)).toEqual([0]);
+    expect(y.turn).toBe(0);
+    const n = ap(o, 1, { type: 'answer', yes: false })!.state;
+    expect(n.p[0].own.raw).toBe(4);
+    expect(kv.toAct(n)).toEqual([0]);
+  });
+
+  it('отдают обе стороны; имущество — только в одном месте; не больше трёх предложений за ход', () => {
+    const s = fresh();
+    s.p[0].own.raw = 2;
+    expect(ap(s, 0, { type: 'offer', to: 1, give: { items: { raw: 2 } }, get: {} })).toBeNull();
+    expect(ap(s, 0, { type: 'offer', to: 1, give: { items: { raw: 5 } }, get: { rub: 1 } })).toBeNull();
+    expect(ap(s, 1, { type: 'offer', to: 0, give: { rub: 5 }, get: { items: { raw: 1 } } })).toBeNull(); // не его ход
+    const far = fresh();
+    far.p[0].own.raw = 2;
+    far.p[1].loc = 'europe';
+    far.p[1].usd = 10;
+    expect(ap(far, 0, { type: 'offer', to: 1, give: { items: { raw: 1 } }, get: { usd: 5 } })).toBeNull();
+    expect(ap(far, 0, { type: 'offer', to: 1, give: { rub: 5 }, get: { usd: 5 } })).not.toBeNull(); // деньги — можно
+    let t = fresh();
+    for (let k = 0; k < kv.MAX_OFFERS; k++) t = ap(ap(t, 0, { type: 'offer', to: 1, give: { rub: 1 }, get: { rub: 1 } })!.state, 1, { type: 'answer', yes: false })!.state;
+    expect(ap(t, 0, { type: 'offer', to: 1, give: { rub: 1 }, get: { rub: 1 } })).toBeNull();
+    expect(ap(t, 0, { type: 'skip' })!.state.offers).toBe(0);
+  });
+
+  it('аренда — ход: производство на чужом заводе со своим сырьём, плата хозяину', () => {
+    const s = fresh();
+    s.p[0].own.raw = 3;
+    s.p[1].own.factory = 1;
+    s.p[1].own.machS = 2;
+    expect(kv.canRent(s, 0, 1, 'mine', 5)).toBe(false); // у хозяина нет оборудования для добычи
+    const o = ap(s, 0, { type: 'rent', to: 1, work: 'produce', fee: 5 })!.state;
+    const y = ap(o, 1, { type: 'answer', yes: true })!.state;
+    expect(y.p[0].own.goods).toBe(2);
+    expect(y.p[0].own.raw).toBe(1);
+    expect(y.p[0].rub).toBe(100 - 5 - 4);
+    expect(y.p[1].rub).toBe(105);
+    expect(y.turn).toBe(1); // ход израсходован
+    const n = ap(o, 1, { type: 'answer', yes: false })!.state;
+    expect(n.turn).toBe(0); // отказ — ход не потерян
+  });
+
+  it('боты: добытчик предлагает сырьё производителю, тот соглашается — дешевле рынка', () => {
+    const s = fresh();
+    s.p[0].own.raw = 3;
+    s.p[1].own.factory = 1;
+    s.p[1].own.machS = 3;
+    const a = choose(s, 0, 2, r)!;
+    expect(a.type).toBe('offer');
+    const o = ap(s, 0, a)!.state;
+    expect(choose(o, 1, 2, r)).toEqual({ type: 'answer', yes: true });
+    // невыгодное — отказ
+    const bad = ap(s, 0, { type: 'offer', to: 1, give: { items: { raw: 1 } }, get: { rub: 50 } })!.state;
+    expect(choose(bad, 1, 2, r)).toEqual({ type: 'answer', yes: false });
   });
 });

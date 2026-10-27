@@ -3,7 +3,12 @@
  * Ход — одно действие: покупка, добыча сырья, производство товара, продажа, погрузка или разгрузка «государственного» груза,
  * поездка (с картой «События в пути») или пропуск. Вне хода — ссуда 100 → 150 и обмен долларов на рубли 1:1.
  * Перевозки двигают фишку-индикатор ввоза-вывоза: смена цвета — смена курса; переход на 5-й курс — конец игры,
- * имущество продаётся по 5-му курсу, побеждает самый богатый. Все суммы — в тысячах. */
+ * имущество продаётся по 5-му курсу, побеждает самый богатый. Все суммы — в тысячах.
+ *
+ * Частные сделки (правила: «не являются ходом и производятся между ходами»): тот, чей ход, до своего действия предлагает
+ * другому игроку обмен — собственность, рубли, доллары с обеих сторон; товарные сделки — только когда оба в одном месте.
+ * Пока предложение ждёт ответа, ход у адресата. Аренда («затрачивая свой ход, производить на чужом оборудовании»):
+ * добыча или производство на оборудовании другого игрока за договорную плату — если хозяин согласен, это и есть ход. */
 import type { Options, Rng } from '../../core/types';
 
 export type Key = 'equipS' | 'equipI' | 'factory' | 'machS' | 'machI' | 'truckS' | 'truckI' | 'fleetS' | 'fleetI' | 'comp' | 'raw' | 'goods';
@@ -136,8 +141,23 @@ export interface Player {
   lastMode: Mode | null;
 }
 
+/** Что отдаёт сторона сделки: рубли, доллары и собственность (тыс.). */
+export interface Bundle {
+  rub?: number;
+  usd?: number;
+  items?: Partial<Record<Key, number>>;
+}
+export type Work = 'mine' | 'produce';
+export type Offer = { kind: 'deal'; from: number; to: number; give: Bundle; get: Bundle } | { kind: 'rent'; from: number; to: number; work: Work; fee: number };
+/** Сколько предложений можно сделать за свой ход (чтобы не засыпать соседей). */
+export const MAX_OFFERS = 3;
+
 export interface State {
   cfg: Cfg;
+  /** Предложение ждёт ответа адресата. */
+  offer?: Offer | null;
+  /** Сколько предложений уже сделано в этот ход. */
+  offers?: number;
   n: number;
   p: Player[];
   /** Внутренний рынок СССР: сколько чего лежит (сырьё и товар — без счёта). */
@@ -199,7 +219,7 @@ export function newState(cfg: Cfg, n: number, rng: Rng): State {
 }
 
 export const setup = (seats: number[], o: Options, rng: Rng) => newState(cfgFrom(o), Math.max(2, seats.length), rng);
-export const toAct = (s: State) => (s.over ? [] : [s.turn]);
+export const toAct = (s: State) => (s.over ? [] : s.offer ? [s.offer.to] : [s.turn]);
 
 // ---------------------------------------------------------------- цены и счёт
 
@@ -297,7 +317,10 @@ export type Action =
   | { type: 'skip' }
   | { type: 'loan' }
   | { type: 'repay' }
-  | { type: 'exchange'; usd: number };
+  | { type: 'exchange'; usd: number }
+  | { type: 'offer'; to: number; give: Bundle; get: Bundle }
+  | { type: 'rent'; to: number; work: Work; fee: number }
+  | { type: 'answer'; yes: boolean };
 
 export type Event =
   | { type: 'buy'; seat: number; items: Partial<Record<Key, number>>; cost: number; usd: boolean }
@@ -315,7 +338,10 @@ export type Event =
   | { type: 'loan'; seat: number; back: boolean }
   | { type: 'exchange'; seat: number; usd: number }
   | { type: 'broke'; seat: number }
-  | { type: 'end'; winner: number | null; worth: number[] };
+  | { type: 'end'; winner: number | null; worth: number[] }
+  | { type: 'offer'; offer: Offer }
+  | { type: 'answer'; offer: Offer; yes: boolean }
+  | { type: 'rented'; seat: number; owner: number; work: Work; units: number; cost: number; fee: number };
 
 /** Где фишка может оказаться: занятые другими континенты закрыты. */
 export const contFree = (s: State, c: Cont, me: number) => !s.p.some((q, i) => i !== me && q.alive && q.loc === c);
@@ -414,8 +440,103 @@ function validBasket(s: State, i: number, a: Action & { items: Partial<Record<Ke
 /** За границей купленное грузится на тот транспорт, на котором приехали (гос. — без ограничений). */
 const freeCapFor = (pl: Player) => (pl.lastMode === 'state' ? 999 : Math.max(0, capacity(pl, pl.lastMode ?? 'truck') - loadOf(pl.cargo)));
 
+// ---------------------------------------------------------------- частные сделки и аренда
+
+const isCount = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
+/** Сторона сделки может это отдать. */
+export function bundleOk(pl: Player, b: Bundle): boolean {
+  if (!b || typeof b !== 'object') return false;
+  if (b.rub != null && (!isCount(b.rub) || b.rub > pl.rub)) return false;
+  if (b.usd != null && (!isCount(b.usd) || b.usd > pl.usd)) return false;
+  for (const [k, n] of Object.entries(b.items ?? {})) if (!KEYS.includes(k as Key) || !isCount(n) || (n as number) > pl.own[k as Key]) return false;
+  return true;
+}
+export const bundleEmpty = (b: Bundle) => !b.rub && !b.usd && !Object.values(b.items ?? {}).some((n) => (n ?? 0) > 0);
+const hasItems = (b: Bundle) => Object.values(b.items ?? {}).some((n) => (n ?? 0) > 0);
+/** Можно ли сейчас предлагать сделку игроку `to`: свой ход, не больше MAX_OFFERS, товар — только в одном месте. */
+export function canOffer(s: State, from: number, to: number, give: Bundle, get: Bundle): boolean {
+  if (s.over || s.offer || from !== s.turn || (s.offers ?? 0) >= MAX_OFFERS) return false;
+  if (!Number.isInteger(to) || to === from || !s.p[to]?.alive) return false;
+  if (!bundleOk(s.p[from], give) || !bundleOk(s.p[to], get)) return false;
+  // «любая услуга должна быть оплачена»: отдают обе стороны
+  if (bundleEmpty(give) || bundleEmpty(get)) return false;
+  if ((hasItems(give) || hasItems(get)) && s.p[from].loc !== s.p[to].loc) return false;
+  return true;
+}
+/** Оборудование хозяина в руках арендатора: добыча или производство с его сырьём и деньгами. */
+export function rentYield(s: State, from: number, to: number, work: Work, fee: number): { units: number; cost: number } {
+  const me = s.p[from];
+  const owner = s.p[to];
+  const own = { ...me.own, equipS: owner.own.equipS, equipI: owner.own.equipI, factory: owner.own.factory, machS: owner.own.machS, machI: owner.own.machI, comp: owner.own.comp };
+  const pl: Player = { ...me, own, rub: me.rub - fee };
+  return work === 'mine' ? mineYield(pl) : produceYield(pl);
+}
+export function canRent(s: State, from: number, to: number, work: Work, fee: number): boolean {
+  if (s.over || s.offer || from !== s.turn || (s.offers ?? 0) >= MAX_OFFERS) return false;
+  if (!Number.isInteger(to) || to === from || !s.p[to]?.alive || (work !== 'mine' && work !== 'produce')) return false;
+  if (!isCount(fee) || fee < 1 || fee > s.p[from].rub) return false;
+  if (s.p[from].loc !== 'ussr' || s.p[to].loc !== 'ussr') return false;
+  return rentYield(s, from, to, work, fee).units > 0;
+}
+
+function give(from: Player, to: Player, b: Bundle) {
+  from.rub -= b.rub ?? 0;
+  to.rub += b.rub ?? 0;
+  from.usd -= b.usd ?? 0;
+  to.usd += b.usd ?? 0;
+  for (const [k, n] of Object.entries(b.items ?? {})) {
+    from.own[k as Key] -= n ?? 0;
+    to.own[k as Key] += n ?? 0;
+  }
+}
+
+function dealStep(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
+  const s = clone(s0);
+  const ev: Event[] = [];
+  if (a.type === 'offer') {
+    if (!canOffer(s0, seat, a.to, a.give, a.get)) return null;
+    s.offer = { kind: 'deal', from: seat, to: a.to, give: a.give, get: a.get };
+  } else if (a.type === 'rent') {
+    if (!canRent(s0, seat, a.to, a.work, a.fee)) return null;
+    s.offer = { kind: 'rent', from: seat, to: a.to, work: a.work, fee: a.fee };
+  } else if (a.type === 'answer') {
+    const o = s0.offer;
+    if (!o || seat !== o.to) return null;
+    s.offer = null;
+    s.offers = (s0.offers ?? 0) + 1;
+    ev.push({ type: 'answer', offer: o, yes: !!a.yes });
+    if (!a.yes) return { state: s, events: ev };
+    const me = s.p[o.from];
+    const them = s.p[o.to];
+    if (o.kind === 'deal') {
+      if (!bundleOk(me, o.give) || !bundleOk(them, o.get)) return { state: s, events: ev };
+      give(me, them, o.give);
+      give(them, me, o.get);
+      return { state: s, events: ev };
+    }
+    // аренда — это ход арендатора
+    const y = rentYield(s0, o.from, o.to, o.work, o.fee);
+    me.rub -= o.fee + y.cost;
+    them.rub += o.fee;
+    if (o.work === 'mine') me.own.raw += y.units;
+    else {
+      me.own.raw -= y.units;
+      me.own.goods += y.units;
+    }
+    s.ply++;
+    ev.push({ type: 'rented', seat: o.from, owner: o.to, work: o.work, units: y.units, cost: y.cost, fee: o.fee });
+    endTurn(s, ev);
+    return { state: s, events: ev };
+  } else return null;
+  ev.push({ type: 'offer', offer: s.offer! });
+  return { state: s, events: ev };
+}
+
 export function apply(s: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
-  if (s.over || seat !== s.turn || !a || typeof a !== 'object') return null;
+  if (s.over || !a || typeof a !== 'object') return null;
+  if (s.offer) return a.type === 'answer' ? dealStep(s, seat, a) : null;
+  if (seat !== s.turn) return null;
+  if (a.type === 'offer' || a.type === 'rent' || a.type === 'answer') return dealStep(s, seat, a);
   const pl = s.p[seat];
   switch (a.type) {
     case 'buy':
@@ -673,6 +794,8 @@ function payRub(s: State, seat: number, v: number, ev: Event[]) {
 
 function endTurn(s: State, ev: Event[]) {
   s.extra = false;
+  s.offers = 0;
+  s.offer = null;
   if (s.p.filter((q) => q.alive).length <= 1) return finish(s, ev);
   let t = s.turn;
   for (let guard = 0; guard < 4 * s.n; guard++) {

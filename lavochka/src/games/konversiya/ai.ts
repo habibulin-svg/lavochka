@@ -2,7 +2,10 @@
  * ввозит импорт и продаёт вдвое дороже советского, догружается государственным грузом), производитель (завод, станки, сырьё →
  * товар) или добытчик сырья. Вне хода берут ссуду, когда денег нет, и возвращают, когда их много.
  * Перед последней сменой курса (после неё всё стоит гроши) распродают всё имущество: сложный — заранее, средний — в последний момент.
- * Лёгкий через раз делает что-нибудь случайное из допустимого. */
+ * Лёгкий через раз делает что-нибудь случайное из допустимого.
+ * Частные сделки: добытчик в свой ход предлагает сырьё производителю, производитель — товар перевозчику, по середине
+ * между ценами рынка (обоим выгоднее, чем через рынок). Отвечают по выгоде: нужное себе ценят по цене покупки у рынка,
+ * ненужное — по цене продажи; аренду своего оборудования сдают за любую плату (оборудование не изнашивается). */
 import type { Rng } from '../../core/types';
 import {
   buyPrice,
@@ -24,7 +27,11 @@ import {
   trips,
   tripGoods,
   WORLD_PRICE,
+  canOffer,
+  maxCap,
+  sellPrice,
   type Action,
+  type Bundle,
   type Cont,
   type Key,
   type Mode,
@@ -37,8 +44,53 @@ const ROLES: Role[] = ['trader', 'producer', 'trader', 'miner', 'trader', 'produ
 const basket = (items: Partial<Record<Key, number>>) => Object.fromEntries(Object.entries(items).filter(([, n]) => (n ?? 0) > 0)) as Partial<Record<Key, number>>;
 const empty = (b: Partial<Record<Key, number>>) => !Object.keys(b).length;
 
+/** Сколько стоит вещь для игрока: нужное в деле — как купить у рынка, остальное — как продать. */
+function worthTo(s: State, seat: number, k: Key): number {
+  const pl = s.p[seat];
+  const closing = rate(s) === 4 && toNextRate(s) <= 8;
+  const needs = !closing && ((k === 'raw' && pl.own.factory > 0 && pl.own.machS + pl.own.machI > 0) || (k === 'goods' && maxCap(pl) > 0));
+  return needs ? buyPrice(s, k) : sellPrice(s, k);
+}
+const bundleWorth = (s: State, seat: number, b: Bundle) =>
+  (b.rub ?? 0) + (b.usd ?? 0) + Object.entries(b.items ?? {}).reduce((sum, [k, n]) => sum + (n ?? 0) * worthTo(s, seat, k as Key), 0);
+
+/** Ответ на предложение. */
+function answer(s: State, seat: number, level: number, rng: Rng): Action {
+  const o = s.offer!;
+  if (o.kind === 'rent') return { type: 'answer', yes: o.fee >= 1 };
+  if (level <= 0) return { type: 'answer', yes: rng.next() < 0.5 };
+  // получаю o.give, отдаю o.get
+  const gain = bundleWorth(s, seat, o.give) - bundleWorth(s, seat, o.get);
+  return { type: 'answer', yes: gain >= (level >= 2 ? 1 : 0) };
+}
+
+/** Своё предложение: сбыть сырьё производителю или товар перевозчику дешевле рынка. */
+function propose(s: State, seat: number): Action | null {
+  const pl = s.p[seat];
+  if ((s.offers ?? 0) > 0 || pl.loc !== 'ussr' || (rate(s) === 4 && toNextRate(s) <= 8)) return null;
+  for (const k of ['raw', 'goods'] as Key[]) {
+    if (pl.own[k] <= 0) continue;
+    const price = Math.ceil((buyPrice(s, k) + sellPrice(s, k)) / 2);
+    for (let to = 0; to < s.n; to++) {
+      if (to === seat || worthTo(s, to, k) !== buyPrice(s, k) || worthTo(s, seat, k) === buyPrice(s, k)) continue;
+      const n = Math.min(pl.own[k], Math.floor(s.p[to].rub / price));
+      if (n <= 0) continue;
+      const give: Bundle = { items: { [k]: n } };
+      const get: Bundle = { rub: n * price };
+      if (canOffer(s, seat, to, give, get)) return { type: 'offer', to, give, get };
+    }
+  }
+  return null;
+}
+
 export function choose(s: State, seat: number, level: number, rng: Rng): Action | null {
-  if (s.over || s.turn !== seat) return null;
+  if (s.over) return null;
+  if (s.offer) return s.offer.to === seat ? answer(s, seat, level, rng) : null;
+  if (s.turn !== seat) return null;
+  if (level >= 1) {
+    const deal = propose(s, seat);
+    if (deal) return deal;
+  }
   const acts = legal(s);
   if (level <= 0 && rng.next() < 0.45) {
     const pick = acts.filter((a) => a.type !== 'loan' && a.type !== 'repay' && a.type !== 'exchange');
