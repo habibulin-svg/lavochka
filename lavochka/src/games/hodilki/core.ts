@@ -12,14 +12,20 @@ export type Sign =
   | { k: 'route'; cells: number[]; text: string }
   /** Боны («Лукоморье»): взять `n` или сумму `dice` бросков; loss — отдать столько же; skip — ещё и пропустить ходы.
    * `diff` — взять (или отдать) не число, а разницу «очки на кубике − кружки до этого пункта». */
-  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; diff?: boolean; /** И перенос на клетку (яма → Три сосны). */ to?: number; text: string }
+  | { k: 'coins'; n?: number; dice?: number; loss?: boolean; skip?: number; diff?: boolean; /** И перенос на клетку (яма → Три сосны). */ to?: number; text: string;
+      /** Отдать половину своих бон (кикиморы в чаще). */ half?: boolean;
+      /** Заодно взять предмет (Шапка-невидимка у клада, Аленький цветочек) или лишиться его (кикиморы отбирают цветочек). */
+      item?: ItemId; take?: ItemId;
+      /** Клад бросками: выпала хоть одна шестёрка — переход на клетку (25 → 30). */ six?: number;
+      /** Нет предмета — переход (Змей Горыныч без цветочка отправляет в «Лукоморье-2»). */ unless?: { item: ItemId; to: NeedTo } }
   /** Переброс на другое поле той же карточки (серия «Лукоморья»: части 1–4 связаны переходами). */
   | { k: 'field'; map: string; to: number; text: string }
   /** Предмет: взять себе в инвентарь. */
   | { k: 'item'; item: ItemId; text: string; /** и перейти на клетку (белая дорога со стрелкой) */ to?: number }
   /** Условие: есть предмет или хватает бон — один исход, иначе другой; yes: 'win' — победа,
    * а исходом бывает и переход на другую часть серии (Лукоморье: клубок — и дальше во вторую часть). */
-  | { k: 'need'; item?: ItemId; coins?: number; /** Боны не только нужны, но и отдаются (клубок за 20 бон, Орёл за 15). */ pay?: boolean; yes: NeedTo; no: NeedTo; text: string }
+  | { k: 'need'; item?: ItemId; coins?: number; /** Боны не только нужны, но и отдаются (клубок за 20 бон, Орёл за 15). */ pay?: boolean; yes: NeedTo; no: NeedTo; text: string;
+      /** Нет предмета — можно откупиться столько бонами (Снеговик: без Шапки — 40 бон), не хватает — исход no. */ or?: number }
   /** Развилка: дорога выбирается по разнице «очки на кубике − число кружков до развилки» (1…6).
    * byDiff[разница-1] — номер ветки, branches — сами ветки (клетки дороги и выход), roads — их названия. */
   | { k: 'fork'; byDiff: number[]; branches: number[][]; roads?: string[]; text: string;
@@ -265,7 +271,7 @@ export interface State {
   phase?: 'roll' | 'move' | 'pick' | 'ask' | 'answer' | 'judge' | 'market' | 'choose' | 'dice';
   /** Броски за знак (фаза 'dice'): сколько осталось из скольких, сумма и что она даёт. */
   /** start — стартовые боны «Лукоморья»: каждый бросает сам, потом первым ходит богатейший. */
-  dice?: { seat: number; left: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' | 'start' } | null;
+  dice?: { seat: number; left: number; of: number; sum: number; kind: 'coins' | 'loss' | 'extra' | 'start'; /** выпала шестёрка — переход на клетку */ six?: number; hit?: boolean } | null;
   /** Сколько шагов идти: у гонки с голами шаг бывает отрицательным (красная клюшка — назад). */
   last: number | null;
   winner: number | null;

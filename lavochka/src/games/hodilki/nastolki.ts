@@ -19,6 +19,23 @@ export interface Raw {
 /** Знак клетки из кода разметки. */
 export function signOf(code: string | undefined, i: number, label: string | undefined, routeText: string | undefined): Sign | null {
   if (!code) return null;
+  // «знак&item=cap&six=109» — к знаку бон добавки: взять/отобрать предмет, переход по шестёрке, переход без предмета
+  if (code.includes('&')) {
+    const [main, ...more] = code.split('&');
+    const g = signOf(main, i, label, routeText);
+    if (g?.k !== 'coins') return g;
+    for (const kv of more) {
+      const [k, v] = kv.split('=');
+      if (k === 'item') g.item = v as ItemId;
+      else if (k === 'take') g.take = v as ItemId;
+      else if (k === 'six') g.six = +v;
+      else if (k === 'unless') {
+        const [item, ...to] = v.split(':');
+        g.unless = { item: item as ItemId, to: to[0] === 'field' ? { map: to[1], to: +to[2] } : +to[0] };
+      }
+    }
+    return g;
+  }
   // «lose:5>40» — знак с бонами и потом перенос на клетку 40 (яма → Три сосны)
   const moved = /^((?:coins|coinsD|lose|loseD):[^>]*)>(\d+)$/.exec(code);
   if (moved) {
@@ -73,6 +90,7 @@ export function signOf(code: string | undefined, i: number, label: string | unde
       ...(p.item ? { item: p.item as ItemId } : {}),
       ...(p.coins ? { coins: +p.coins } : {}),
       ...(p.pay ? { pay: true } : {}),
+      ...(p.or ? { or: +p.or } : {}),
       yes: goal(p.yes),
       no: goal(p.no),
       text: routeText ?? 'проверка',
@@ -105,6 +123,10 @@ export function signOf(code: string | undefined, i: number, label: string | unde
   if (code.startsWith('coinsDiff:')) {
     const [skip] = code.slice(10).split('+');
     return { k: 'coins', diff: true, ...(skip ? { skip: +skip } : {}), text: routeText ?? 'берёт боны по разнице' };
+  }
+  if (code.startsWith('loseHalf:')) {
+    const [skip] = code.slice(9).split('+');
+    return { k: 'coins', half: true, loss: true, ...(+skip ? { skip: +skip } : {}), text: routeText ?? 'отдаёт половину бон' };
   }
   if (code.startsWith('loseDiff:')) {
     const [skip] = code.slice(9).split('+');

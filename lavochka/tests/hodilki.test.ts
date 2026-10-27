@@ -946,6 +946,76 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     expect(b.state.coins![0]).toBeGreaterThanOrEqual(3); // клад (30) сработал
   });
 
+  /** Клетка, с которой единица приводит на клетку `target` (знак там срабатывает). */
+  const before1 = (id: string, target: number, opts: { coins?: number; items?: ItemId[] } = {}) => {
+    for (let p = 0; p < luk(id).cells.length; p++) {
+      if (p === target) continue;
+      const rng = new RiggedRng(new SeededRng(1));
+      rng.rig([0]);
+      const r1 = def.apply(stand(id, p, opts), 0, { type: 'roll' }, rng);
+      if (r1?.state.phase !== 'move') continue;
+      const r2 = def.apply(r1.state, 0, { type: 'move' }, rng);
+      if (r2?.events.some((e) => e.type === 'move' && e.path[e.path.length - 1] === target)) return p;
+    }
+    throw new Error(`не нашлось клетки перед ${target} на ${id}`);
+  };
+
+  it('поле 2: клад (25) — Шапка-невидимка и два броска; выпала шестёрка — на клад (30)', () => {
+    const cap = at('luk2', '25');
+    const from = before1('luk2', cap);
+    const rng = new RiggedRng(new SeededRng(21));
+    rng.rig([0, 2, 3]); // ход единицей, клад: 3 + 4
+    let s = def.apply(stand('luk2', from, { coins: 0 }), 0, { type: 'roll' }, rng)!.state;
+    s = def.apply(s, 0, { type: 'move' }, rng)!.state;
+    expect(s.items?.[0]).toContain('cap');
+    s = def.apply(s, 0, { type: 'roll' }, rng)!.state;
+    s = def.apply(s, 0, { type: 'roll' }, rng)!.state;
+    expect(s.coins![0]).toBe(7);
+    expect(s.pos[0]).toBe(cap);
+    rng.rig([0, 5, 0]); // шестёрка в кладе
+    let t = def.apply(stand('luk2', from, { coins: 0 }), 0, { type: 'roll' }, rng)!.state;
+    t = def.apply(t, 0, { type: 'move' }, rng)!.state;
+    t = def.apply(t, 0, { type: 'roll' }, rng)!.state;
+    t = def.apply(t, 0, { type: 'roll' }, rng)!.state;
+    expect(t.pos[0]).toBe(at('luk2', '30'));
+  });
+
+  it('поле 2: Снеговик (31) — без Шапки 40 бон, не хватает — назад на развилку (18)', () => {
+    const rng = new RiggedRng(new SeededRng(22));
+    const man = at('luk2', '31');
+    const from = before1('luk2', man);
+    const paid = turn(stand('luk2', from, { coins: 45 }), 0, 1, rng).state;
+    expect(paid.pos[0]).toBe(man);
+    expect(paid.coins![0]).toBe(5);
+    const poor = turn(stand('luk2', from, { coins: 30 }), 0, 1, rng).state;
+    expect(poor.pos[0]).toBe(at('luk2', '18'));
+    const cap = turn(stand('luk2', from, { coins: 30, items: ['cap'] }), 0, 1, rng).state;
+    expect(cap.pos[0]).toBe(man);
+    expect(cap.coins![0]).toBe(30);
+  });
+
+  it('поле 3: кикиморы (52) — половина бон, цветочек и пропуск хода', () => {
+    const rng = new RiggedRng(new SeededRng(23));
+    const k = at('luk3', '52');
+    const s = turn(stand('luk3', before1('luk3', k), { coins: 21, items: ['flower', 'cap'] }), 0, 1, rng).state;
+    expect(s.pos[0]).toBe(k);
+    expect(s.coins![0]).toBe(10);
+    expect(s.items?.[0]).toEqual(['cap']);
+    expect(s.skip[0]).toBe(1);
+  });
+
+  it('поле 3: Змей Горыныч (54) — без цветочка в «Лукоморье-2» к Морскому царю (21), с цветочком ждать шестёрку', () => {
+    const rng = new RiggedRng(new SeededRng(24));
+    const z = at('luk3', '54');
+    const from = before1('luk3', z, { items: ['flower'] });
+    const no = turn(stand('luk3', from), 0, 1, rng).state;
+    expect(no.maps?.[0]).toBe('luk2');
+    expect(no.pos[0]).toBe(at('luk2', '21'));
+    const yes = turn(stand('luk3', from, { items: ['flower'] }), 0, 1, rng).state;
+    expect(yes.pos[0]).toBe(z);
+    expect(turn({ ...yes, turn: 0 }, 0, 3, rng).state.pos[0]).toBe(z);
+  });
+
   it('поле 3: Заоблачная даль (56) переносит в замок Кощея (поле 4)', () => {
     const rng = new RiggedRng(new SeededRng(13));
     // перед (56) — Облако (55): выход только шестёркой

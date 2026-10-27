@@ -3,7 +3,7 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { esc } from '../../core/util';
 import { answerMatches, diffForLevel, randomRiddle, ANSWER_CHANCE } from '../../words/riddles';
-import { canPack, finishOf, itemName, loopMove, mapOf, pathFor, SEATS, signText, skipsOf, trackOf, unpack, walkFor, type Action, type Board, type CardId, type Event, type NeedTo, type RiddleState, type Sign, type State } from './core';
+import { canPack, finishOf, itemName, loopMove, mapOf, pathFor, SEATS, signText, skipsOf, trackOf, unpack, walkFor, type Action, type Board, type CardId, type Event, type ItemId, type NeedTo, type RiddleState, type Sign, type State } from './core';
 import { board as kosmos } from './kosmos';
 import { board as krugosvet } from './krugosvet';
 import { board as put } from './put';
@@ -168,7 +168,8 @@ function rollBonus(s0: State, seat: number, rng: { int(n: number): number }): { 
   const left = d.left - 1;
   const sum = d.sum + die;
   const ev: Event[] = [{ type: 'roll', seat, die, bonus: { k: d.of - left, of: d.of, sum, kind: d.kind } }];
-  if (left > 0) return { state: { ...s0, last: die, dice: { ...d, left, sum } }, events: ev };
+  const hit = d.hit || (d.six != null && die === 6);
+  if (left > 0) return { state: { ...s0, last: die, dice: { ...d, left, sum, ...(hit ? { hit } : {}) } }, events: ev };
   const s: State = { ...s0, last: die, pos: s0.pos.slice(), skip: s0.skip.slice(), dice: null, phase: 'roll', ...bags(s0, s0.pos.length) };
   if (d.kind === 'start') {
     // «Лукоморье»: бон по сумме бросков; следующий бросает сам, когда все бросили — первым ходит богатейший
@@ -192,6 +193,13 @@ function rollBonus(s0: State, seat: number, rng: { int(n: number): number }): { 
     const delta = d.kind === 'loss' ? -sum : sum;
     s.coins![seat] = Math.max(0, (s.coins![seat] ?? 0) + delta);
     ev.push({ type: 'coins', seat, delta, total: s.coins![seat] });
+  }
+  // клад с условием «выпала хоть одна шестёрка — переход» (Шапка-невидимка у (25) → (30))
+  if (hit && d.six != null) {
+    s.pos[seat] = d.six;
+    if (s.route) s.route[seat] = null;
+    if (s.routeFor) s.routeFor[seat] = null;
+    ev.push({ type: 'sign', seat, sign: { k: 'jump', to: d.six, good: true, text: 'выпала шестёрка — переход' }, to: d.six });
   }
   return endTurn(s, seat, ev);
 }
@@ -417,6 +425,29 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) - g.coins);
     ev.push({ type: 'coins', seat, delta: -g.coins, total: s.coins[seat] });
   };
+  /** Взять предмет (если его ещё нет). */
+  const gainItem = (item: ItemId) => {
+    if ((s.items?.[seat] ?? []).includes(item)) return;
+    s.items = many(s.items, null);
+    s.items[seat] = [...(s.items[seat] ?? []), item];
+    ev.push({ type: 'item', seat, item });
+  };
+  /** Условие: есть предмет и бон — да; предмета нет, но можно откупиться (`or`) — платит и тоже да. */
+  const checkNeed = (g: Sign & { k: 'need' }): boolean => {
+    const hasItem = g.item ? (s.items?.[seat] ?? []).includes(g.item) : true;
+    const hasCoins = g.coins != null ? (s.coins?.[seat] ?? 0) >= g.coins : true;
+    if (hasItem && hasCoins) {
+      payNeed(g);
+      return true;
+    }
+    if (!hasItem && g.or != null && (s.coins?.[seat] ?? 0) >= g.or) {
+      s.coins = many(s.coins, 0);
+      s.coins[seat] -= g.or;
+      ev.push({ type: 'coins', seat, delta: -g.or, total: s.coins[seat] });
+      return true;
+    }
+    return false;
+  };
   /** Исход условия: победа, клетка этого поля или переход на другую часть серии. */
   const goNeed = (target: NeedTo) => {
     if (target === 'win') return winNow(s, ev, seat);
@@ -448,11 +479,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
   // загадка или переход (у знака клетки назначения правило не повторяется). Идти дальше некуда — спрашиваем
   // условие, иначе игрок застревает: «Баба Яга» на (13) требует 20 бон, а без них отправляет к Дубу.
   if (stand?.k === 'need' && s.pos[seat] >= finish) {
-    const hasItem = stand.item ? (s.items?.[seat] ?? []).includes(stand.item) : true;
-    const hasCoins = stand.coins != null ? (s.coins?.[seat] ?? 0) >= stand.coins : true;
     ev.push({ type: 'sign', seat, sign: stand, to: s.pos[seat], ...(board.cells[s.pos[seat]].text ? { text: board.cells[s.pos[seat]].text } : {}) });
-    if (hasItem && hasCoins) payNeed(stand);
-    return goNeed(hasItem && hasCoins ? stand.yes : stand.no);
+    return goNeed(checkNeed(stand) ? stand.yes : stand.no);
   }
   // клетка «выход только нужной гранью — и сразу на клетку»: не та грань — стоит, та — переносит (знак там срабатывает)
   const hold = board.cells[s.pos[seat]]?.hold;
@@ -571,17 +599,33 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     else if (sign.k === 'route') s.route![seat] = sign.cells.slice();
     else if (sign.k === 'coins' && !sign.diff && sign.n == null && sign.dice) {
       // клад «кубик три раза», разбойники «по кубику»: кубик бросает сам игрок, боны — после последнего броска
-      s.dice = { seat, left: sign.dice, of: sign.dice, sum: 0, kind: sign.loss ? 'loss' : 'coins' };
+      s.dice = { seat, left: sign.dice, of: sign.dice, sum: 0, kind: sign.loss ? 'loss' : 'coins', ...(sign.six != null ? { six: sign.six } : {}) };
       if (sign.skip) s.skip[seat] = sign.skip;
+      if (sign.item) gainItem(sign.item);
       if (sign.to != null) dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
     } else if (sign.k === 'coins') {
       // «разница» (Лукоморье): не число, а остаток очков — сколько не истрачено, пока пуговица дошла до пункта
-      const n = sign.diff ? Math.max(0, (s0.last ?? 0) - path.length) : (sign.n ?? diceSum(sign.dice ?? 1));
-      const delta = sign.loss ? -n : n;
       s.coins = many(s.coins, 0);
+      const n = sign.half
+        ? Math.ceil((s.coins[seat] ?? 0) / 2)
+        : sign.diff
+          ? Math.max(0, (s0.last ?? 0) - path.length)
+          : (sign.n ?? diceSum(sign.dice ?? 1));
+      const delta = sign.loss ? -n : n;
       s.coins[seat] = Math.max(0, (s.coins[seat] ?? 0) + delta);
       if (sign.skip) s.skip[seat] = sign.skip;
       ev.push({ type: 'coins', seat, delta, total: s.coins[seat] });
+      if (sign.item) gainItem(sign.item);
+      if (sign.take && (s.items?.[seat] ?? []).includes(sign.take)) {
+        s.items = many(s.items, null);
+        s.items[seat] = (s.items[seat] ?? []).filter((x) => x !== sign.take);
+        ev.push({ type: 'item', seat, item: sign.take, lost: true });
+      }
+      if (sign.unless && !(s.items?.[seat] ?? []).includes(sign.unless.item)) {
+        ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
+        s.pos[seat] = to;
+        return goNeed(sign.unless.to);
+      }
       if (sign.to != null) dest = Math.max(0, Math.min(board.cells.length - 1, sign.to));
     } else if (sign.k === 'field') {
       // серия «Лукоморья»: часть 1–4 — разные поля одной карточки, переход переносит пуговицу на другое поле
@@ -632,11 +676,8 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
       s.extra[seat] = (s.extra[seat] ?? 0) + n;
       ev.push({ type: 'extra', seat, n });
     } else if (sign.k === 'need') {
-      const hasItem = sign.item ? (s.items?.[seat] ?? []).includes(sign.item) : true;
-      const hasCoins = sign.coins != null ? (s.coins?.[seat] ?? 0) >= sign.coins : true;
       ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
-      if (hasItem && hasCoins) payNeed(sign);
-      return goNeed(hasItem && hasCoins ? sign.yes : sign.no);
+      return goNeed(checkNeed(sign) ? sign.yes : sign.no);
     } else if (sign.k === 'pick') {
       // загадка: ход прерывается, пока игрок не назовёт ответ
       ev.push({ type: 'sign', seat, sign, to, ...(board.cells[to].text ? { text: board.cells[to].text } : {}) });
