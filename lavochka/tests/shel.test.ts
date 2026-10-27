@@ -228,7 +228,7 @@ describe('Шёл солдат: препятствия и выбор', () => {
     expect(r.state.cards![0]).not.toContain('sword');
     expect(r.state.stock!.sword).toBe(b.deck!.stock.sword[0] + 1);
     expect(r.state.turn).toBe(1);
-    // без меча — выбор, но пройти нечем: доступен только «потерять ходы»
+    // без меча — выбор, но пройти нечем: разбойники прогоняют назад, на 38
     const bare = turn(stand(at(40), { cards: [] }), 0, 1, rng);
     expect(bare.state.pos[0]).toBe(at(41));
     expect(bare.state.phase).toBe('choose');
@@ -239,7 +239,7 @@ describe('Шёл солдат: препятствия и выбор', () => {
     expect(def.apply(bare.state, 0, { type: 'choose', pick: swordOpt }, rng)).toBeNull();
     const loss = bare.state.choose!.options.findIndex((o) => !o.need);
     const picked = def.apply(bare.state, 0, { type: 'choose', pick: loss }, rng)!;
-    expect(picked.state.skip[0]).toBe(2);
+    expect(picked.state.pos[0]).toBe(at(38));
     expect(picked.state.turn).toBe(1);
   });
 

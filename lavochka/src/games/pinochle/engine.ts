@@ -444,7 +444,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   s.turn = w;
   ev.push({ type: 'trick', seat: w, cards, pts });
   // вдвоём, пока есть колода: мелд и добор
-  if (duo(s) && s.stock!.length) {
+  if (duo(s) && stockLeft(s) > 0) {
     s.phase = 'meld';
     return { state: s, events: ev };
   }

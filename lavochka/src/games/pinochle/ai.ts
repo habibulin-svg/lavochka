@@ -60,8 +60,10 @@ function world(v: View, seat: number, rng: Rng): State {
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   const hands = v.hands.map((h, x) => (x === seat ? h.slice() : pool.splice(0, v.counts[x])));
-  const { counts: _c, ...rest } = v;
-  return { ...(rest as State), hands };
+  // вдвоём — и колода из оставшихся карт
+  const stock = v.stockLeft > 0 ? pool.splice(0, v.stockLeft) : undefined;
+  const { counts: _c, stockLeft: _s, ...rest } = v;
+  return { ...(rest as State), hands, stock };
 }
 
 function hard(v: View, seat: number, rng: Rng): PCard {

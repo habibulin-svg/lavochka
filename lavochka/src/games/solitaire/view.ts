@@ -12,6 +12,7 @@ import { bestTarget, upRun, type Board, type Ctx, type Move } from './engine';
 import { convergence, ctxFor, GAME_LABEL, hasLevel, LEVELS, seedKey, type Action, type Event, type View } from './def';
 import { geoOf, LAND, PORT, type Geo } from './layout';
 import { hint } from './solver';
+import { cascade, type Launch } from './cascade';
 import './solitaire.css';
 
 /** Рекорды на этом устройстве: по пасьянсу с настройками. */
@@ -76,6 +77,8 @@ class SolitaireView implements GameView<View, Event> {
   private tEnd = 0;
   private dealId = '';
   private tick = 0;
+  /** Идёт каскад победы — остановить. */
+  private stopCascade: (() => void) | null = null;
   private drag: { p: number; i: number; n: number; x0: number; y0: number; k: number; els: HTMLElement[]; moved: boolean; id: number } | null = null;
   private onKey = (e: KeyboardEvent) => {
     const t = e.target as HTMLElement;
@@ -265,6 +268,7 @@ class SolitaireView implements GameView<View, Event> {
         this.tEnd = Date.now();
         Sound.win();
         this.record(true, ev.moves);
+        if (!this.ctx.demo) this.startCascade();
         await this.showBanner(v.seats.length > 1 ? (ev.place === 1 ? 'Сошёлся первым!' : `Сошёлся — ${ev.place}-е место`) : 'Пасьянс сошёлся!', 1600);
       } else if (ev.type === 'won' && v.seats.length > 1) {
         await this.showBanner(`${this.plain(ev.seat)}: сошёлся!`, 1100);
@@ -285,6 +289,39 @@ class SolitaireView implements GameView<View, Event> {
 
   private plain(seat: number) {
     return this.ctx.name(seat).replace(/<[^>]+>/g, '');
+  }
+
+  /** Карты с баз слетают по очереди — по верхней с каждой базы, по кругу. */
+  private startCascade() {
+    const v = this.v;
+    const b = this.board;
+    if (!v || !b || !this.cs) return;
+    const kinds = this.c().kinds;
+    const piles = b.p.map((pile, p) => (kinds[p] === 'found' ? [...this.placed.values()].filter((it) => it.p === p && it.card).sort((a, c) => c.i - a.i) : [])).filter((x) => x.length);
+    const order: Launch[] = [];
+    const stage = this.cs.stage;
+    for (let r = 0; piles.some((x) => r < x.length); r++)
+      for (const pile of piles) {
+        const it = pile[r];
+        if (!it) continue;
+        order.push({
+          card: it.card!,
+          x: it.x,
+          y: it.y,
+          w: CW * it.s,
+          h: CH * it.s,
+          hide: () => {
+            const el = stage.querySelector(`[data-p="${it.p}"][data-i="${it.i}"]`) as HTMLElement | null;
+            if (el) el.style.visibility = 'hidden';
+          },
+        });
+      }
+    this.stopCascade?.();
+    this.stopCascade = cascade(this.cs.over, this.cs.W, this.cs.H, order, () => {
+      this.stopCascade = null;
+      stage.querySelectorAll<HTMLElement>('[data-p][data-i]').forEach((el) => (el.style.visibility = ''));
+      this.draw();
+    });
   }
 
   private async showBanner(text: string, ms: number) {
@@ -560,6 +597,7 @@ class SolitaireView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.stopCascade?.();
     this.cs?.destroy();
     clearInterval(this.tick);
     document.removeEventListener('keydown', this.onKey);

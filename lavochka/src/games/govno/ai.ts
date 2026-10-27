@@ -46,8 +46,8 @@ export function botInput(v: View, seat: number, level: number, mem0: Record<stri
   const delay = () => lo + rng.next() * (hi - lo) + (v.cfg.silent ? 250 : 0);
   let slap = mem.slap;
   if ((v.phase === 'look' || v.phase === 'pass') && hasFour(hand)) {
-    // собрал — хлопнуть, чуть помедлив
-    mem.at ??= v.t + delay() - (v.cfg.silent ? 250 : 0);
+    // собрал — хлопнуть, чуть помедлив, но до следующего такта: на такте четвёрка уйдёт соседу
+    mem.at ??= v.t + Math.min(delay() - (v.cfg.silent ? 250 : 0), v.cfg.tact * 0.8);
     if (v.t >= mem.at) slap = mem.slap + 1;
   } else if (v.phase === 'slap' && !v.slaps.some((x) => x.seat === seat)) {
     mem.at ??= v.slapAt + delay();
