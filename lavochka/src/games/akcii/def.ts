@@ -66,7 +66,7 @@ const RULES = [
       от 1 000 до 280 000. Патенты — залог для <b>кредита</b>: в первом банке — по <b>300 000</b> за каждый патент после третьего (после восьмого — по половине),
       во втором — по <b>500 000</b> после пятого (после десятого — по половине). Эти патенты отдаются банку насовсем.</p>
       <p>Кредит возвращают с процентами через оговорённое число своих ходов (по умолчанию <b>20 % через 15 ходов</b>). Не хватает денег — фирмы закладываются,
-      не хватило и этого — банкротство.</p>`,
+      не хватило и этого — банкротство. В пресете «Мягкий старт» у каждого 300 000 с начала, кредит под 10 %, а пока своих фирм нет, долг не разоряет — игрок отдаёт сколько есть.</p>`,
     demo: demo(
       (s) => {
         s.pos[0] = 20;
@@ -271,6 +271,7 @@ export const def: GameDef<State, Action, Event, State> = {
       ],
       default: 0,
     },
+    { key: 'mercy', label: 'Без разорения в малом бизнесе', hint: 'пока нет фирм, долг не разоряет — игрок отдаёт сколько есть', type: 'toggle', default: false },
     {
       key: 'key',
       label: 'Ключ от клада',
@@ -293,6 +294,7 @@ export const def: GameDef<State, Action, Event, State> = {
   presets: [
     { id: 'simple', label: 'Простой вариант', hint: 'без биржи, 30 кругов — для младших', options: { rounds: 30, exchange: false, auctions: true } },
     { id: 'full', label: 'С биржей', hint: 'указатель меняет курс компаний, 50 кругов', options: { rounds: 50, exchange: true, auctions: true } },
+    { id: 'soft', label: 'Мягкий старт', hint: '300 000 на старте, кредит под 10 %, в малом бизнесе не разоряются', options: { rounds: 50, exchange: true, auctions: true, start: 300000, credit: 10, mercy: true } },
     { id: 'long', label: 'Длинная партия', hint: 'с биржей, 80 кругов', options: { rounds: 80, exchange: true, auctions: true } },
   ],
   setup: (seats, opts) => {
@@ -307,6 +309,7 @@ export const def: GameDef<State, Action, Event, State> = {
       pct,
       term: pct === 10 ? 20 : pct === 30 ? 10 : 15,
       start: Number(opts.start) || 0,
+      mercy: opts.mercy === true,
     });
   },
   toAct,

@@ -110,7 +110,9 @@ class RazvedchikView implements GameView<State, Event> {
   private text() {
     const s = this.s;
     if (!s) return;
-    const order = s.cfg.order === 'box' ? 'все дозорные по номерам, потом разведчик' : 'дозорный — разведчик — следующий дозорный';
+    const order =
+      (s.cfg.order === 'box' ? 'все дозорные по номерам, потом разведчик' : 'дозорный — разведчик — следующий дозорный') +
+      (s.cfg.free ? '; дозор ходит любой своей фишкой' : '');
     this.info.innerHTML = `<div>Ходов разведчика: <b>${s.scoutMoves}</b> <small>(предел ${SCOUT_LIMIT})</small></div><small>Порядок: ${order}</small>`;
     this.hint.textContent =
       s.phase === 'place'

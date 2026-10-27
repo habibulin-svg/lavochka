@@ -1,7 +1,8 @@
 /* Точки — боты. Ходы ищут рядом с уже поставленными точками.
  *   Лёгкий — окружает, когда видит сразу, иначе ставит куда попало рядом;
  *   Средний — ещё и закрывает места, где соперник окружил бы следующим ходом, не лезет «в домик»;
- *   Сложный — для лучших ходов смотрит лучший ответ соперника и свои будущие угрозы. */
+ *   Сложный — для лучших ходов смотрит лучший ответ соперника и свои угрозы окружения, которые ход создаёт рядом;
+ *     «вилка» (две угрозы сразу — от обеих не закрыться) ценится особо. */
 import type { Rng } from '../../core/types';
 import { enclosures, free, nextSeat, placeDot, type Action, type State } from './engine';
 
@@ -178,10 +179,11 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     after.turn = opp;
     const near = candidates(after, 1);
     const reply = bestCapture(after, opp, near).g;
-    // свои угрозы на следующий ход
+    // свои угрозы на следующий ход — рядом с поставленной точкой
     let mine = 0;
-    if (!tuning.fast) for (const q of near.slice(0, 40)) if (gain(after, seat, q) > 0) mine++;
-    const v = x.v - reply * 95 + mine * 12;
+    if (!tuning.fast) for (const q of near) if (dist(s, q, x.p) <= 3 && gain(after, seat, q) > 0) mine++;
+    // вилка: две угрозы окружения сразу — соперник закроет только одну
+    const v = x.v - reply * 95 + mine * 40 + (mine >= 2 ? 150 : 0);
     if (v > bestV) {
       bestV = v;
       best = x;

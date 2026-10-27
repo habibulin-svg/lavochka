@@ -49,10 +49,12 @@ export interface Cfg {
   order: Order;
   /** Сколько дозорных. */
   dozors: number;
+  /** Дозор ходит любой своей фишкой, а номер только отмечает очередь игрока (вариант в пользу дозора). */
+  free?: boolean;
 }
 
 export function cfgFrom(o: Options): Cfg {
-  return { order: o.order === 'alt' ? 'alt' : 'box', dozors: Number(o.dozors) === 5 ? 5 : 6 };
+  return { order: o.order === 'alt' ? 'alt' : 'box', dozors: Number(o.dozors) === 5 ? 5 : 6, free: o.free === true };
 }
 
 /** Разведчик — фишка 0, дозорные — 1…dozors. */
@@ -122,6 +124,17 @@ export function freeNeighbors(s: State, p: number, occ = occupied(s)): number[] 
   return ADJ[p].filter((q) => !occ[q]);
 }
 
+/** Какими фишками можно сходить в очередь фишки cur: в свободном дозоре — любой фишкой того же игрока. */
+export function movers(s: State, cur = s.cur): number[] {
+  if (!s.cfg.free || cur === SCOUT) return [cur];
+  const who = owner(s, cur);
+  const out: number[] = [];
+  for (let i = 1; i <= s.cfg.dozors; i++) if (owner(s, i) === who) out.push(i);
+  return out;
+}
+
+const canMove = (s: State, cur: number, occ = occupied(s)) => movers(s, cur).some((i) => freeNeighbors(s, s.pos[i], occ).length > 0);
+
 export function legal(s: State): Action[] {
   if (s.over) return [];
   const occ = occupied(s);
@@ -129,8 +142,10 @@ export function legal(s: State): Action[] {
     const spots = s.cur === SCOUT ? YELLOW : RED;
     return spots.filter((p) => !occ[p]).map((to) => ({ type: 'place', to }));
   }
-  const from = s.pos[s.cur];
-  return freeNeighbors(s, from, occ).map((to) => ({ type: 'move', from, to }));
+  return movers(s).flatMap((i) => {
+    const from = s.pos[i];
+    return freeNeighbors(s, from, occ).map((to): Action => ({ type: 'move', from, to }));
+  });
 }
 
 /** Кто ходит после фишки piece. */
@@ -164,9 +179,10 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
     } else s.cur = piece === s.cfg.dozors ? SCOUT : piece + 1;
     return { state: s, events };
   }
-  s.pos[piece] = a.to;
+  const moved = s.cfg.free && piece !== SCOUT ? s.pos.indexOf(a.from) : piece;
+  s.pos[moved] = a.to;
   s.last = [a.from, a.to];
-  events.push({ type: 'move', seat, piece, from: a.from, to: a.to });
+  events.push({ type: 'move', seat, piece: moved, from: a.from, to: a.to });
   if (piece === SCOUT) {
     s.scoutMoves++;
     if (isRed(a.to)) return end(0, 'escaped');
@@ -180,7 +196,7 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
 /** Передать ход фишке next, пропуская дозорных без хода (разведчику ход всегда есть — иначе он уже пойман). */
 function settle(s: State, next: number, events: Event[]) {
   for (let guard = 0; guard <= s.cfg.dozors + 1; guard++) {
-    if (next === SCOUT || freeNeighbors(s, s.pos[next]).length) break;
+    if (next === SCOUT || canMove(s, next)) break;
     events.push({ type: 'skip', seat: owner(s, next), piece: next });
     if (s.cfg.order === 'alt') s.nextDozor = next === s.cfg.dozors ? 1 : next + 1;
     next = after(s, next);

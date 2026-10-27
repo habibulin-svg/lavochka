@@ -125,6 +125,8 @@ export interface State {
   /** Кредит: процент и срок в своих ходах. */
   pct: number;
   term: number;
+  /** Пока у игрока нет фирм, долг не разоряет: отдаёт сколько есть. */
+  mercy?: boolean;
   pos: number[];
   cash: number[];
   pats: Pat[][];
@@ -247,7 +249,7 @@ export const patMul = (s: State, seat: number, t: Pt) => (t === 'muzyka' && s.si
 
 export function newState(
   seats: number[],
-  o: { rounds?: number; exchange?: boolean; auctions?: boolean; key?: number; courtSkip?: number; pct?: number; term?: number; start?: number } = {}
+  o: { rounds?: number; exchange?: boolean; auctions?: boolean; key?: number; courtSkip?: number; pct?: number; term?: number; start?: number; mercy?: boolean } = {}
 ): State {
   const all = <T>(f: (i: number) => T) => Array.from({ length: MAXP }, (_, i) => f(i));
   const inGame = (i: number) => seats.includes(i);
@@ -272,6 +274,7 @@ export function newState(
     courtSkip: o.courtSkip ?? 3,
     pct: o.pct ?? 20,
     term: o.term ?? 15,
+    mercy: o.mercy ?? false,
     pos: all(() => START),
     cash: all((i) => (inGame(i) ? (o.start ?? 0) : 0)),
     pats: all(() => []),
@@ -410,7 +413,10 @@ function pay(x: Ctx, seat: number, amount: number, to: Who, why: string): number
   s.cash[seat] -= paid;
   if (to != null) s.cash[to] += paid;
   if (paid > 0) x.ev.push({ type: 'pay', from: seat, to, amount: paid, why });
-  if (paid < amount) bankrupt(x, seat, to);
+  if (paid < amount) {
+    if (s.mercy && !owned(s, seat).length) note(x, seat, 'фирм нет — остаток долга списан');
+    else bankrupt(x, seat, to);
+  }
   return paid;
 }
 

@@ -23,7 +23,8 @@ function schedule(s: State, maxK: number): number[][] {
       for (let i = 1; i <= n; i++) moves[i][k] = cnt[i];
       cur = s.cfg.order === 'box' ? 1 : nd;
     } else {
-      cnt[cur]++;
+      if (s.cfg.free) for (let i = 1; i <= n; i++) cnt[i]++;
+      else cnt[cur]++;
       if (s.cfg.order === 'box') cur = cur === n ? SCOUT : cur + 1;
       else {
         nd = cur === n ? 1 : cur + 1;
@@ -140,7 +141,7 @@ export function choose(s: State, level: number, rng: Rng): Action | null {
     return best;
   }
   if (level === 1) return onePly(s, rng, 30);
-  const depth = s.cfg.order === 'box' ? s.cfg.dozors + 1 : 4;
+  const depth = s.cfg.order === 'box' && !s.cfg.free ? s.cfg.dozors + 1 : 4;
   return bestMove(game, s, depth, rng, 0);
 }
 

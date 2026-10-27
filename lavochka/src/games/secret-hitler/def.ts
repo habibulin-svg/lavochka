@@ -94,7 +94,19 @@ export const def: GameDef<State, Action, Event, View> = {
   title: 'Тайный Гитлер',
   players: { min: 5, max: 10, default: 7 },
   seats: SEATS,
-  presets: [{ id: 'classic', label: 'Классика', hint: 'По правилам Secret Hitler: 5–10 игроков, поле фашистов по размеру стола', options: {} }],
+  options: [
+    {
+      key: 'rebalance',
+      label: 'Перебалансировка',
+      hint: 'поправка авторов: вшестером один фашистский закон уже принят, всемером фашистских карт 10, вдевятером 9',
+      type: 'toggle',
+      default: false,
+    },
+  ],
+  presets: [
+    { id: 'classic', label: 'Классика', hint: 'По правилам Secret Hitler: 5–10 игроков, поле фашистов по размеру стола', options: { rebalance: false } },
+    { id: 'rebalanced', label: 'Перебалансировка', hint: 'Поправка авторов для 6, 7 и 9 игроков — там фашистам легче', options: { rebalance: true } },
+  ],
 
   setup: (seats, opts, rng) => setup(seats.map((x) => x.seat).sort((a, b) => a - b), opts, rng, seats.filter((x) => x.kind !== 'bot').map((x) => x.seat)),
   toAct,
@@ -238,6 +250,11 @@ export const def: GameDef<State, Action, Event, View> = {
             act(4, { type: 'vetoAnswer', yes: true }, 'Президент Димон согласен — оба закона в сброс.'),
           ],
         },
+      },
+      {
+        title: 'Перебалансировка',
+        html: `<p>При 6, 7 и 9 игроках фашистам легче. Авторы предлагают поправку (пресет «Перебалансировка»): <b>вшестером</b> игра начинается
+          с одного уже принятого фашистского закона; <b>всемером</b> в колоде 10 фашистских законов вместо 11; <b>вдевятером</b> — 9.</p>`,
       },
       {
         title: 'Подсказки',

@@ -182,8 +182,14 @@ function shuffle<T>(a: T[], rng: Rng): T[] {
   return a;
 }
 
-export function setup(seats: number[], _opts: Options, rng: Rng, humans: number[] = []): State {
+/** Перебалансировка авторов: вшестером — один фашистский закон уже принят, всемером — фашистских карт 10, вдевятером — 9. */
+export function rebalance(n: number): { fas: number; deckF: number } {
+  return { fas: n === 6 ? 1 : 0, deckF: n === 7 ? 10 : n === 9 ? 9 : 11 };
+}
+
+export function setup(seats: number[], opts: Options, rng: Rng, humans: number[] = []): State {
   const n = seats.length;
+  const rb = opts.rebalance === true ? rebalance(n) : { fas: 0, deckF: 11 };
   const f = fascistsFor(n);
   const pack: Role[] = ['hitler', ...Array(f).fill('fascist'), ...Array(n - f - 1).fill('liberal')];
   shuffle(pack, rng);
@@ -204,10 +210,10 @@ export function setup(seats: number[], _opts: Options, rng: Rng, humans: number[
     roles,
     art,
     dead: [],
-    deck: shuffle([...Array(6).fill('L'), ...Array(11).fill('F')] as Party[], rng),
+    deck: shuffle([...Array(6).fill('L'), ...Array(rb.deckF).fill('F')] as Party[], rng),
     discard: [],
     lib: 0,
-    fas: 0,
+    fas: rb.fas,
     tracker: 0,
     phase: 'night',
     round: 0,
