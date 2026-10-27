@@ -4,6 +4,7 @@ import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/vkosmos/ai';
 import { apply, BIG, cfgFrom, isRight, makeQuestion, newState, rightOf, setup, START, toAct } from '../src/games/vkosmos/engine';
 import { CATEGORIES, PLANETS, TECH, WORDS } from '../src/games/vkosmos/quiz';
+import * as vk from '../src/games/vkosmos/engine';
 
 describe('В космос', () => {
   it('поле: 6/10/18 больших кружков, «Старт» на Земле; вопросы на месте', () => {
@@ -58,4 +59,28 @@ describe('В космос', () => {
       expect(s.phase).toBe('over');
     }
   }, 120000);
+});
+
+describe('В космос: уехал с Землёй — назад к «Старту» по орбите', () => {
+  it('после взлёта не со «Старта» маршруты идут только по земной орбите, пока не пройден «Старт»', () => {
+    const rng = new SeededRng(5);
+    let s = vk.newState(vk.cfgFrom({}), 2, rng);
+    // Земля сдвинулась: космолёт уехал с ней на соседний большой кружок
+    const away = vk.BIG.earth[(vk.BIG.earth.indexOf(vk.START) + 2) % vk.BIG.earth.length];
+    s.planets.earth = vk.BIG.earth.indexOf(away);
+    s.ships[0].node = away;
+    const q = s.question!;
+    s = vk.apply(s, 0, { type: 'answer', i: vk.rightOf(q) }, rng)!.state;
+    expect(s.ships[0].home).toBe(true);
+    const routes = vk.routesFor(s, s.ships[0], 3);
+    expect(routes.length).toBeGreaterThan(0);
+    for (const r of routes) {
+      const upto = r.path.includes(vk.START) ? r.path.slice(0, r.path.indexOf(vk.START) + 1) : r.path;
+      let prev = s.ships[0].node;
+      for (const n of upto) {
+        expect(vk.LINKS[prev].some(([m, ch]) => m === n && ch === 'earth'), `шаг ${prev}→${n}`).toBe(true);
+        prev = n;
+      }
+    }
+  });
 });

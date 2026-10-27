@@ -79,6 +79,8 @@ export interface Ship {
   /** Сколько кружков осталось до автоматической станции (−1 — не вызвана). */
   ac: number;
   extra: number;
+  /** Пришлось ехать с Землёй (взлетел не с первого вопроса): сначала по земной орбите вернуться к «Старту». */
+  home?: boolean;
 }
 
 export interface Cfg {
@@ -222,7 +224,7 @@ function canLand(s: State, sh: Ship, pl: Planet, node: number): boolean {
 export function routesFor(s: State, sh: Ship, k: number): Route[] {
   const out: Route[] = [];
   const seen = new Set<string>();
-  const walk = (node: number, from: number, via: string, path: number[], left: number, boost: boolean) => {
+  const walk = (node: number, from: number, via: string, path: number[], left: number, boost: boolean, home: boolean) => {
     if (left === 0) {
       const key = `${node}:${from}:${boost}`;
       if (!seen.has(key)) {
@@ -234,6 +236,8 @@ export function routesFor(s: State, sh: Ship, k: number): Route[] {
     for (const [nb, ch] of LINKS[node]) {
       if (nb === from || path.includes(nb) || nb === sh.node) continue;
       if (path.length && NODES[node].kind === 'junction' && ch !== via) continue;
+      // уехал с Землёй — до «Старта» только по земной орбите
+      if (home && ch !== 'earth') continue;
       const p = [...path, nb];
       const land = PLANETS_ORDER.find((pl) => canLand(s, sh, pl, nb));
       if (land && (!s.cfg.exact || left === 1)) {
@@ -244,11 +248,11 @@ export function routesFor(s: State, sh: Ship, k: number): Route[] {
         }
         continue;
       }
-      walk(nb, node, ch, p, left - 1, boost);
+      walk(nb, node, ch, p, left - 1, boost, home && nb !== START);
     }
   };
   // старт: с планеты или с остановки на оранжевом кружке — в любую сторону
-  walk(sh.node, sh.from, sh.from < 0 ? '' : sh.via, [], k, false);
+  walk(sh.node, sh.from, sh.from < 0 ? '' : sh.via, [], k, false, !!sh.home && sh.node !== START);
   // ускорение: +1 кружок, если хватает топлива и конец обычного хода не на кружке с цифрой
   if (sh.fuel >= 2 && !sh.free) {
     const base = out.filter((r) => !r.land && !NODES[r.path[r.path.length - 1]].incident);
@@ -257,6 +261,7 @@ export function routesFor(s: State, sh: Ship, k: number): Route[] {
       const prev = r.path.length > 1 ? r.path[r.path.length - 2] : sh.node;
       for (const [nb, ch] of LINKS[end]) {
         if (nb === prev || r.path.includes(nb) || nb === sh.node || NODES[nb].incident) continue;
+        if (sh.home && !r.path.includes(START) && ch !== 'earth') continue;
         if (NODES[end].kind === 'junction' && ch !== chainOf(prev, end)) continue;
         const land = PLANETS_ORDER.find((pl) => canLand(s, sh, pl, nb)) ?? null;
         const key = `B${nb}:${end}`;
@@ -476,6 +481,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       if (sh.on === 'mars' && sh.node === NEW_YEAR) return fin();
       if (sh.on !== 'earth') sh.fuel = Math.max(sh.fuel, FUEL);
       sh.failed = false;
+      // ответил не с первого раза — Земля уже увезла космолёт со «Старта»
+      if (sh.on === 'earth' && sh.node !== START) sh.home = true;
       sh.on = null;
       sh.from = -1;
       s.phase = 'roll';
@@ -535,6 +542,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   sh.from = r.path.length > 1 ? r.path[r.path.length - 2] : sh.node;
   sh.via = chainOf(sh.from, end);
   sh.node = end;
+  if (sh.home && (end === START || r.path.includes(START))) sh.home = false;
   s.routes = [];
   // остановился на оранжевом кружке — можно сменить направление
   if (NODES[end].kind === 'junction') sh.from = -1;
