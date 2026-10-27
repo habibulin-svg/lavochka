@@ -1,6 +1,6 @@
 /* «Поездом по СССР» — боты. Видят только свой view: руку, свои маршруты, открытые карты и поле.
  * Лёгкий — берёт маршруты наугад и строит, что получается; средний — кратчайшие пути к своим маршрутам, нужные цвета, новые маршруты,
- * когда старые готовы; сложный — ещё и выбор маршрутов с общими путями, контролёр, станции через перекрытые пути и спешка в конце. */
+ * когда старые готовы; сложный — ещё и выбор маршрутов с общими путями (перебор наборов) и тяга к длинным путям, а ходит как средний. */
 import type { Rng } from '../../core/types';
 import { CITIES, ROUTES } from './board';
 import { CTRL, LOCO, TICKETS } from './data';
@@ -165,9 +165,12 @@ export function choose(v: State, seat: number, level: number, rng: Rng): Action 
   LONG_BIAS = level === 2 ? 1 : 0;
   if (v.phase === 'start') return { type: 'keep', keep: chooseKeep(v, seat, level, rng, true) };
   if (v.phase === 'tickets') return { type: 'keep', keep: chooseKeep(v, seat, level, rng, false) };
+  // дальше сложный ходит как средний: его особые ходы (контролёр «по-крупному», станции, осторожность с тоннелями, ранняя
+  // спешка в конце) партиями не окупились — 18:22 против среднего; с игрой среднего и своим выбором маршрутов — 24:16
+  if (level === 2) level = 1;
   if (v.phase === 'tunnel') return { type: 'tunnel', pay: tunnelPayable(v, seat) && (level > 0 || rng.next() < 0.7) };
   const need = needed(v, seat);
-  const endgame = v.finalLeft != null || v.wagons.some((w) => w <= (level === 2 ? 9 : 6));
+  const endgame = v.finalLeft != null || v.wagons.some((w) => w <= 6);
   if (v.phase === 'second') return drawCard(v, seat, level, rng, need.routes, true);
 
   const keepColors = new Set<number>();
@@ -195,61 +198,25 @@ export function choose(v: State, seat: number, level: number, rng: Rng): Action 
   // контролёр: построить свой нужный путь (до 4 вагончиков) даром или разобрать мешающий
   if (h[CTRL] > 0) {
     const free = need.routes.filter((r) => ROUTES[r].len <= 4 && routeOpen(v, seat, r)).sort((a, b) => ROUTES[b].len + (ROUTES[b].tunnel ? 2 : 0) + ROUTES[b].ferry * 2 - (ROUTES[a].len + (ROUTES[a].tunnel ? 2 : 0) + ROUTES[a].ferry * 2));
-    if (free.length && (level === 2 ? ROUTES[free[0]].len >= 3 || endgame : true)) return { type: 'ctrl', route: free[0], mode: 'build' };
-    if (level === 2 && need.blocked.length) {
-      // перекрытый маршрут: снять чужой путь, через который прошёл бы кратчайший
-      for (const t of need.blocked) {
-        const p = shortest(v, seat, TICKETS[t].a, TICKETS[t].b, true);
-        const theirs = p.routes.find((r) => v.owner[r] != null && v.owner[r] !== seat && ROUTES[r].len <= 4);
-        if (theirs != null) return { type: 'ctrl', route: theirs, mode: 'remove' };
-      }
-    }
-  }
-
-  // станция для перекрытого маршрута (сложный)
-  if (level === 2 && v.cfg.stations && v.stations[seat] > 0 && need.blocked.length) {
-    for (const t of need.blocked) {
-      const p = shortest(v, seat, TICKETS[t].a, TICKETS[t].b, true);
-      const theirs = p.routes.find((r) => v.owner[r] != null && v.owner[r] !== seat);
-      if (theirs == null) continue;
-      for (const c of [ROUTES[theirs].a, ROUTES[theirs].b]) {
-        const o = stationOptions(v, seat, c);
-        if (o.length) return { type: 'station', city: c, ...o.sort((x, y) => x.locos - y.locos)[0] };
-      }
-    }
+    if (free.length) return { type: 'ctrl', route: free[0], mode: 'build' };
   }
 
   // строить нужный путь: длинные и «спорные» (мало обходов) — раньше
   const can = need.routes.filter((r) => routeOpen(v, seat, r) && payOptions(v, seat, r).length);
   if (can.length) {
-    const score = (r: number) => {
-      const R = ROUTES[r];
-      let k = R.len * 2;
-      if (level === 2) {
-        // занятый двойник или единственная дорога — спешить
-        const free = TWINS_FREE(v, r);
-        if (free === 0) k += 4;
-        if (R.tunnel) k -= 1;
-      }
-      return k + rng.next();
-    };
+    const score = (r: number) => ROUTES[r].len * 2 + rng.next();
     // средний не тратит много локомотивов на короткие пути, пока карт мало
     can.sort((a, b) => score(b) - score(a));
     for (const r of can) {
       const pay = bestPay(v, seat, r, keepColors)!;
       if (level === 1 && pay.locos > 1 && ROUTES[r].len <= 2 && !endgame) continue;
-      if (ROUTES[r].tunnel && level === 2 && !endgame) {
-        // тоннель — с запасом карт на доплату
-        const spare = (pay.color >= 0 ? h[pay.color] - (ROUTES[r].len - pay.locos) : 0) + h[LOCO] - pay.locos;
-        if (spare < 1 && v.handN[seat] < 10) continue;
-      }
       return { type: 'claim', route: r, ...pay };
     }
   }
 
   // маршруты выполнены — новые или очки за длинные пути
   if (!need.open.length) {
-    if (!endgame && v.tdeckN && v.wagons[seat] >= (level === 2 ? 20 : 18)) return { type: 'tickets' };
+    if (!endgame && v.tdeckN && v.wagons[seat] >= 18) return { type: 'tickets' };
     const any = ROUTES.map((_, i) => i).filter((r) => routeOpen(v, seat, r) && payOptions(v, seat, r).length);
     any.sort((a, b) => ROUTES[b].len - ROUTES[a].len);
     if (any.length && (ROUTES[any[0]].len >= 4 || endgame || v.handN[seat] > 12)) return { type: 'claim', route: any[0], ...bestPay(v, seat, any[0], keepColors)! };
@@ -264,11 +231,6 @@ export function choose(v: State, seat: number, level: number, rng: Rng): Action 
 
   if (canDrawDeck(v) || [0, 1, 2, 3, 4].some((i) => canDrawOpen(v, i))) return drawCard(v, seat, level, rng, need.routes, false);
   return fallback(v, seat);
-}
-
-function TWINS_FREE(v: State, r: number): number {
-  const R = ROUTES[r];
-  return ROUTES.filter((q, i) => i !== r && ((q.a === R.a && q.b === R.b) || (q.a === R.b && q.b === R.a)) && v.owner[i] == null).length;
 }
 
 function fallback(v: State, seat: number): Action {
@@ -312,7 +274,7 @@ function drawCard(v: State, seat: number, level: number, rng: Rng, routes: numbe
     for (const i of slots) {
       const c = v.open[i];
       let val = 0;
-      if (c === LOCO) val = !second && level === 2 && routes.some((r) => ROUTES[r].ferry || ROUTES[r].tunnel) ? 2.5 : !second && level === 2 ? 1.6 : 0;
+      if (c === LOCO) val = 0;
       else if ((want.get(c) ?? 0) > 0) val = 2 + Math.min(3, want.get(c)!) * 0.3;
       else if (c === grayColor) val = 1.2;
       if (val > bestV) {
