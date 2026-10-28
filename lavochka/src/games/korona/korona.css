@@ -47,8 +47,8 @@
 .kn-fc:hover .kn-fc-b { fill: #8a68c4; }
 .kn-fc-t { fill: #fff; font: 700 70px 'PT Sans', system-ui, sans-serif; pointer-events: none; }
 .kn-card hr { border: 0; border-top: 1px solid #bbb; margin: 12px 0; }
-.kn-ask { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 65; width: min(560px, calc(100% - 20px));
-  max-height: 55%; overflow: auto; padding: 10px 12px; border-radius: 10px; background: rgba(40, 22, 50, 0.94); color: #fff;
+.kn-ask { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 65; width: min(560px, calc(100% - 20px));
+  max-height: calc(100% - 140px); overflow: auto; padding: 10px 12px; border-radius: 10px; background: rgba(40, 22, 50, 0.94); color: #fff;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55); }
 .kn-ask-q { font: 600 15px/1.35 'PT Serif', serif; margin-bottom: 8px; }
 .kn-ask-b { display: flex; flex-direction: column; gap: 6px; }

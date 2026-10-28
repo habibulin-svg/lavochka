@@ -621,6 +621,9 @@ export function createClassicView(): GameView<V, CEvent> {
       const mine = shown.get(view.turn);
       if (mine && !pinned && mine.f !== field) buildField(mine.f);
       else render();
+      // первый вид приходит уже после монтирования: поле могло показаться раньше состояния (кадр без фишек пропущен)
+      if (board?.classList.contains('ready')) cam?.shown();
+      frame();
     },
 
     async play(events, view) {
