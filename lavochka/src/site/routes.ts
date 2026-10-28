@@ -106,6 +106,8 @@ export const SLUGS: Record<string, string> = {
   crocodile: 'krokodil',
   'secret-hitler': 'taynyy-gitler',
   cah: 'karty-protiv-chelovechestva',
+  shifrovka: 'shifrovka',
+  partizany: 'partizany',
   mafia: 'mafiya',
   // на бумаге
   seabattle: 'morskoy-boy',

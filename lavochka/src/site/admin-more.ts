@@ -273,7 +273,7 @@ async function drawGames(body: HTMLElement) {
       const state = (tr.querySelector('[name=state]') as HTMLSelectElement).value;
       const res = await call('/api/admin/games', {
         id: tr.dataset.id,
-        state: state === 'all' ? undefined : state,
+        state,
         new: (tr.querySelector('[name=new]') as HTMLInputElement).checked,
         order: (tr.querySelector('[name=order]') as HTMLInputElement).value,
       });

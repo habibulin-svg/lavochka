@@ -1,11 +1,15 @@
 /* Выход игр (админка → «Игры»): скрыта (видит только Мастер), ранний доступ (право early_access), «новинка», порядок на дворе.
- * Хранится в настройках сайта (site_settings 'games'), всем приходит вместе со счётчиками (/api/stats). Без записи — игра для всех. */
+ * Хранится в настройках сайта (site_settings 'games'), всем приходит вместе со счётчиками (/api/stats). Без записи — игра для всех,
+ * кроме новых игр из EARLY: они в раннем доступе, пока в админке не выбрано другое (тогда хранится явное «для всех»). */
 import { hasRight, type RightGrant } from './rights';
 
 export type ReleaseState = 'all' | 'early' | 'hidden';
 
+/** Новые игры — сразу в ранний доступ (решение пользователя 2026-10-29: срока нет, снимается в админке). */
+export const EARLY: string[] = ['shifrovka', 'partizany'];
+
 export interface GameRelease {
-  state?: 'early' | 'hidden';
+  state?: ReleaseState;
   /** Метка «новинка» на карточке. */
   new?: boolean;
   /** Место на дворе (меньше — выше); без него — как в каталоге. */
@@ -23,12 +27,19 @@ export function cleanRelease(x: unknown, known: (id: string) => boolean): Releas
   for (const [id, v] of Object.entries(x as Record<string, any>)) {
     if (!known(id) || !v || typeof v !== 'object') continue;
     const r: GameRelease = {};
-    if (v.state === 'early' || v.state === 'hidden') r.state = v.state;
+    if (v.state === 'early' || v.state === 'hidden' || v.state === 'all') r.state = v.state;
     if (v.new === true) r.new = true;
     const o = Number(v.order);
     if (v.order != null && v.order !== '' && Number.isInteger(o) && o >= 1 && o <= 999) r.order = o;
     if (Object.keys(r).length) out[id] = r;
   }
+  return out;
+}
+
+/** Новые игры без своего состояния в админке — в раннем доступе. */
+export function withDefaults(rel: Release, known: (id: string) => boolean = () => true): Release {
+  const out: Release = { ...rel };
+  for (const id of EARLY) if (known(id) && !out[id]?.state) out[id] = { ...out[id], state: 'early' };
   return out;
 }
 

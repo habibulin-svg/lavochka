@@ -109,6 +109,8 @@ export const NAMES: Record<string, Names> = {
   hat: { ru: ['элиас', 'алиас', 'объясни слово', 'скажи иначе', 'игра в шляпу'], en: ['Hat', 'Alias', 'Taboo', 'Fishbowl', 'Salad Bowl', 'Time’s Up'] },
   crocodile: { ru: ['шарады', 'покажи слово', 'пантомима', 'крокодил онлайн'], en: ['Charades', 'Crocodile', 'Pantomime'] },
   'secret-hitler': { ru: ['секретный гитлер', 'либералы и фашисты', 'тайный гитлер онлайн'], en: ['Secret Hitler'] },
+  shifrovka: { ru: ['игра в ассоциации', 'слова и капитаны', 'подсказка одним словом', 'шифровка онлайн', 'игра в шпионов со словами'], en: ['Word association game', 'Spymaster word game'] },
+  partizany: { ru: ['партизаны онлайн', 'предатели в отряде', 'игра на скрытые роли', 'миссии и предатели'], en: ['Hidden traitor game', 'Social deduction missions'] },
   cah: { ru: ['карты против всех', 'карты против человечности', 'КПЧ', 'карты против человечества онлайн'], en: ['Cards Against Humanity', 'CAH', 'Apples to Apples'] },
   mafia: { ru: ['мафия онлайн', 'город засыпает', 'мафия с ведущим', 'спортивная мафия', 'мафия с ботами'], en: ['Mafia', 'Werewolf', 'Lupus in Tabula'] },
   // — на бумаге —

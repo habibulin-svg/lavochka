@@ -139,6 +139,25 @@ describe('админка', () => {
     expect(bo.release).toEqual({});
   });
 
+  it('выход игр: новые игры — в раннем доступе по умолчанию, «для всех» в админке перебивает', async () => {
+    const { acc, ctx } = setup();
+    const known = (g: string) => ['durak', 'shifrovka', 'partizany'].includes(g);
+    const bo = new Backoffice(acc, () => ({ online: 0, rooms: 0, players: 0 }), () => {}, known);
+    await bo.loadRelease();
+    expect(bo.release).toEqual({ shifrovka: { state: 'early' }, partizany: { state: 'early' } });
+    expect(mayPlay(bo.release, 'shifrovka', [])).toBe(false);
+    const boss = await user(acc, ctx, 'boss@x.ru', true);
+    await bo.gamePost({ id: 'shifrovka', state: 'all', new: true }, ctx(boss.sid));
+    expect(bo.release.shifrovka).toEqual({ state: 'all', new: true });
+    expect(mayPlay(bo.release, 'shifrovka', [])).toBe(true);
+    const again = new Backoffice(acc, () => ({ online: 0, rooms: 0, players: 0 }), () => {}, known);
+    await again.loadRelease();
+    expect(again.release).toEqual(bo.release);
+    // «новинка» без состояния — всё равно ранний доступ
+    await bo.gamePost({ id: 'partizany', new: true }, ctx(boss.sid));
+    expect(bo.release.partizany).toEqual({ state: 'early', new: true });
+  });
+
   it('группы: права группы — у каждого участника, со сроком; убрали из группы — права нет', async () => {
     const { acc, bo, ctx } = setup();
     const boss = await user(acc, ctx, 'boss@x.ru', true);

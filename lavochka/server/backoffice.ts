@@ -16,7 +16,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
 import { RIGHTS } from '../src/core/rights';
-import { cleanRelease, type Release } from '../src/core/release';
+import { cleanRelease, withDefaults, type Release } from '../src/core/release';
 import { ExistsError } from './accounts/store';
 import { Limiter, type Accounts, type Ctx, type Reply } from './accounts/accounts';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
@@ -77,7 +77,7 @@ export class Backoffice {
   private visitors = { day: '', tabs: new Set<string>() };
 
   /** Выход игр — в памяти (берётся из настроек при старте), отдаётся всем в /api/stats. */
-  release: Release = {};
+  release: Release = withDefaults({});
 
   constructor(
     private acc: Accounts,
@@ -90,9 +90,9 @@ export class Backoffice {
   /** Прочитать выход игр из настроек (при старте, когда база готова). */
   async loadRelease() {
     try {
-      this.release = cleanRelease(JSON.parse((await this.acc.store.settings()).games || '{}'), this.known);
+      this.release = withDefaults(cleanRelease(JSON.parse((await this.acc.store.settings()).games || '{}'), this.known), this.known);
     } catch {
-      this.release = {};
+      this.release = withDefaults({}, this.known);
     }
   }
 
@@ -102,7 +102,7 @@ export class Backoffice {
     const id = String(b?.id ?? '');
     if (!this.known(id)) return err(400, 'game', 'Нет такой игры.');
     const next = { ...this.release, [id]: { state: b?.state, new: b?.new, order: b?.order } };
-    this.release = cleanRelease(next, this.known);
+    this.release = withDefaults(cleanRelease(next, this.known), this.known);
     await this.acc.store.setSetting('games', JSON.stringify(this.release), me.id);
     this.log(`админка: ${me.name} — выход ${id}: ${JSON.stringify(this.release[id] ?? 'для всех')}`);
     return { code: 200, body: { ok: true, release: this.release } };

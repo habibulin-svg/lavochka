@@ -1,0 +1,108 @@
+/* Партизаны: лесной стол (тёмная хвоя), карта операций — кружки на планшете, панель — выцветшая гимнастёрка. */
+.table--partizany {
+  --panel-bg: linear-gradient(180deg, #e7e2c8, #d3cca8);
+  --panel-ink: #1f2416;
+  --table-bg: #141a12;
+}
+.pz-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 18px; font-family: 'PT Sans', Arial, sans-serif;
+  background: radial-gradient(ellipse at 50% 30%, #2f3d27, #1b2417 70%, #131a10); }
+.pz-scroll { position: absolute; inset: 0; overflow: auto; padding: 10px 10px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pz-P { color: #2f7a3e; }
+.pz-T { color: #b3403a; }
+.pz-wrap .pz-P { color: #7fd08c; }
+.pz-wrap .pz-T { color: #ff8a7a; }
+
+/* игроки */
+.pz-seats { display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 96px)); justify-content: center; gap: 6px 4px; width: 100%; max-width: 1000px; }
+.pz-seat { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 2px; border-radius: 10px; }
+.pz-face { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--c); color: #fff; font: 700 20px/44px 'PT Sans', Arial, sans-serif; text-align: center;
+  border: 3px solid #e7e2c8; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.pz-badge { position: absolute; right: -8px; bottom: -6px; font-style: normal; font-size: 18px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
+.pz-name { background: #e7e2c8; color: #1f2416; padding: 0 7px; border-radius: 999px; font-size: 12px; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.pz-seat.pz-in { background: rgba(127, 208, 140, 0.16); }
+.pz-seat.pz-me .pz-face { border-color: #ffd24a; }
+.pz-seat.pz-turn .pz-face { box-shadow: 0 0 0 3px #ffd24a, 0 3px 8px rgba(0, 0, 0, 0.5); }
+.pz-seat.pz-can { cursor: pointer; }
+.pz-seat.pz-can:hover { background: rgba(255, 210, 74, 0.22); }
+.pz-seat.pz-can .pz-face { box-shadow: 0 0 0 3px rgba(255, 176, 32, 0.8), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.pz-tags { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
+.pz-tag { background: #4a5536; color: #fff; padding: 0 5px; border-radius: 5px; font: 700 10px 'PT Sans', Arial, sans-serif; white-space: nowrap; }
+.pz-tag-lead { background: #c48a12; }
+.pz-tag-P { background: #2f7a3e; }
+.pz-tag-T { background: #b3403a; }
+.pz-ballot { min-width: 46px; padding: 1px 6px; border-radius: 4px; background: #2f7a3e; color: #fff; font: 700 11px 'PT Sans', Arial, sans-serif; text-align: center; text-transform: uppercase;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); }
+.pz-ballot.pz-no { background: #b3403a; }
+.pz-ballot.pz-back { background: #59614a; }
+.pz-ballot.pz-flip { animation: pz-flip 0.35s ease-out; }
+@keyframes pz-flip { from { transform: rotateX(90deg); } to { transform: none; } }
+.pz-bubble { background: #fffaf0; color: #1f2416; border-radius: 8px; padding: 1px 6px; font-size: 10px; line-height: 1.3; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.pz-bubble .pz-P { color: #2f7a3e; }
+.pz-bubble .pz-T { color: #b3403a; }
+
+/* карта операций */
+.pz-map { width: 100%; max-width: 760px; background: linear-gradient(160deg, #cdbf8e, #b5a673); border-radius: 12px; padding: 14px 12px 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 0 3px #8f8256;
+  color: #2a2614; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pz-ops { display: flex; gap: clamp(6px, 2vw, 18px); justify-content: center; flex-wrap: wrap; }
+.pz-op { position: relative; width: clamp(56px, 13vw, 96px); aspect-ratio: 1; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 40% 35%, #f3ead0, #ddd0a6); border: 3px dashed #6d6340; }
+.pz-op b { font-size: clamp(20px, 5vw, 34px); line-height: 1; }
+.pz-op small { font-size: 10px; opacity: 0.8; text-align: center; }
+.pz-op i { position: absolute; bottom: -9px; background: #b3403a; color: #fff; font: 700 9px 'PT Sans', Arial, sans-serif; font-style: normal; padding: 0 5px; border-radius: 6px; white-space: nowrap; }
+.pz-op.pz-cur { border-style: solid; border-color: #c48a12; box-shadow: 0 0 0 4px rgba(196, 138, 18, 0.35); }
+.pz-op.pz-ok { background: radial-gradient(circle at 40% 35%, #5fae6d, #2f7a3e); color: #fff; border: 3px solid #1e4f28; }
+.pz-op.pz-fail { background: radial-gradient(circle at 40% 35%, #e07065, #a3342b); color: #fff; border: 3px solid #6a1a14; }
+.pz-track { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center; font-size: 12px; }
+.pz-rej { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #6d6340; display: inline-flex; align-items: center; justify-content: center; font: 700 11px 'PT Sans', Arial, sans-serif; font-style: normal; }
+.pz-rej-last { border-color: #a3342b; color: #a3342b; }
+.pz-rej-on { background: #c48a12; color: #fff; border-color: #8a5a0a; }
+.pz-note { margin-left: 8px; opacity: 0.8; }
+.pz-reveal { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.pz-card { width: 64px; padding: 18px 0; border-radius: 6px; background: #2f7a3e; color: #fff; text-align: center; font: 700 12px 'PT Sans', Arial, sans-serif; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  animation: pz-flip 0.4s ease-out both; }
+.pz-card-fail { background: #a3342b; }
+.pz-card:nth-child(2) { animation-delay: 0.15s; }
+.pz-card:nth-child(3) { animation-delay: 0.3s; }
+.pz-card:nth-child(4) { animation-delay: 0.45s; }
+.pz-card:nth-child(5) { animation-delay: 0.6s; }
+
+/* история */
+.pz-hist { width: 100%; max-width: 760px; }
+.pz-histt { width: 100%; border-collapse: collapse; color: #e7e2c8; font-size: 12px; }
+.pz-histt th { text-align: left; opacity: 0.7; font-weight: 400; padding: 2px 4px; }
+.pz-histt td { padding: 3px 4px; border-top: 1px solid rgba(231, 226, 200, 0.15); vertical-align: top; }
+.pz-dots { display: flex; gap: 2px; margin-top: 2px; }
+.pz-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px #7fd08c; }
+.pz-dot-no { box-shadow: 0 0 0 1.5px #ff8a7a; opacity: 0.6; }
+.pz-yes { color: #7fd08c; }
+.pz-noq { color: #ff8a7a; }
+.pz-dim { opacity: 0.6; }
+
+/* панель */
+.pz-panel { display: flex; flex-direction: column; gap: 8px; }
+.pz-ask { font-size: 14px; line-height: 1.35; }
+.pz-sub { font-size: 12px; opacity: 0.8; }
+.pz-info { font-size: 13px; }
+.pz-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pz-role { display: flex; flex-direction: column; gap: 4px; }
+.pz-role-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: #fff; font: 700 18px 'PT Sans', Arial, sans-serif; background: linear-gradient(135deg, #3f8a4c, #23552c); }
+.pz-role-card { font-size: 28px; }
+.pz-role-card span { font-size: 18px; }
+.pz-role-T .pz-role-card { background: linear-gradient(135deg, #c0504a, #7a231c); }
+.pz-role-t { font-size: 15px; }
+.pz-back { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: #59614a; color: #fff; cursor: pointer; }
+.pz-back span:first-child { font-size: 30px; }
+.pz-votes { display: flex; gap: 8px; }
+.pz-vote { flex: 1; padding: 14px 6px; border-radius: 8px; border: 0; background: #2f7a3e; color: #fff; font: 700 16px 'PT Sans', Arial, sans-serif; cursor: pointer; box-shadow: 0 3px 0 #1e4f28; }
+.pz-vote.pz-no { background: #b3403a; box-shadow: 0 3px 0 #6a1a14; }
+.pz-vote:active { transform: translateY(2px); box-shadow: none; }
+.pz-win { padding: 10px; border-radius: 10px; color: #fff; font: 700 18px 'PT Sans', Arial, sans-serif; text-align: center; background: #2f7a3e; }
+.pz-win small { display: block; font-weight: 400; font-size: 13px; }
+.pz-win-T { background: #b3403a; }
+.pz-revealr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 13px; }
+.pz-tab { border-collapse: collapse; margin: 6px 0; }
+.pz-tab th, .pz-tab td { border: 1px solid rgba(128, 128, 128, 0.4); padding: 2px 8px; text-align: center; }
+
+/* хот-сит */
+.pz-cover { position: absolute; inset: 0; background: rgba(15, 20, 12, 0.96); display: flex; align-items: center; justify-content: center; z-index: 5; }
+.pz-cover-box { text-align: center; color: #e7e2c8; display: flex; flex-direction: column; gap: 14px; font-size: 18px; }
