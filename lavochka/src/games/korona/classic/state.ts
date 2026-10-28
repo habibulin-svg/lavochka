@@ -163,4 +163,20 @@ export interface CState {
   winner: number | null;
   /** номер хода партии */
   round: number;
+  /** дуэль в процессе: вызвавший, вызванный, чем бьются, броски */
+  duel?: { a: number; b: number; stat: Stat; ra?: number } | null;
+  /** предложенная сделка, ждущая ответа */
+  trade?: Offer | null;
+  /** сколько сделок предложено в этот ход (не больше трёх) */
+  offers?: number;
+}
+
+/** Предложение торговой сделки: что отдаёт `from` и что просит у `to` (id вещей и талеры). */
+export interface Offer {
+  from: number;
+  to: number;
+  give: string[];
+  gg: number;
+  take: string[];
+  tg: number;
 }

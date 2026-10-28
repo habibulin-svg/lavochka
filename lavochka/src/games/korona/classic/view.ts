@@ -14,7 +14,8 @@ import { FIELD1, cellPx, sectorPx } from '../data';
 import { place2 } from '../engine';
 import { ITEMS, PRINCES, TRAVELLERS, advText, cellName } from './data';
 import { FALL_NEED } from './cells';
-import { capacity, counts, myPower, routes, thingName } from './engine';
+import { advOf, capacity, counts, distances, myPower, routes, thingName } from './engine';
+import { duelTargets, tradable, tradePartners } from './special-pvp';
 import { HIDDEN_THING, type CAction, type CEvent, type ClassicView as V } from './glue';
 import type { Status } from './script';
 import type { CHero, CState, Thing } from './state';
@@ -154,6 +155,9 @@ export function createClassicView(): GameView<V, CEvent> {
   /** раскрыто на панели: особенности путника, текст вещи (`things:id` / `friends:id`) */
   let openTr = false;
   let openThing: string | null = null;
+  /** окно сделки: открыто ли и с кем */
+  let tradeWith: number | null = null;
+  const tradeSel = { give: new Set<string>(), take: new Set<string>(), gg: 0, tg: 0 };
 
   // ---------- поле и камера ----------
 
@@ -449,6 +453,69 @@ export function createClassicView(): GameView<V, CEvent> {
     return out;
   }
 
+  /** Окно сделки: что отдаю и что прошу (вещи и талеры). */
+  function tradeWindow(me: number, st: V) {
+    const partners = tradePartners(asC(st), me);
+    if (tradeWith == null || !partners.includes(tradeWith)) {
+      tradeWith = null;
+      return false;
+    }
+    const mine = st.heroes[me];
+    const other = st.heroes[tradeWith];
+    const box = document.createElement('div');
+    box.className = 'kn-trade';
+    const col = (title: string, h: CHero, set: Set<string>, side: 'give' | 'take') => {
+      const items = h.things.filter((th) => th.id !== HIDDEN_THING && tradable(th));
+      const rows = items.length
+        ? items
+            .map((th) => `<label class="kn-trade-row"><input type="checkbox" data-side="${side}" data-id="${esc(th.id)}"${set.has(th.id) ? ' checked' : ''}> ${esc(thingInfo(th).name)}</label>`)
+            .join('')
+        : '<div class="hint small-hint">Нечего продать</div>';
+      return `<div class="kn-trade-col"><b>${esc(title)}</b>${rows}<label class="kn-trade-row">Талеры: <input type="number" min="0" max="${h.gold}" value="${side === 'give' ? tradeSel.gg : tradeSel.tg}" data-gold="${side}" style="width:70px"> из ${h.gold}</label></div>`;
+    };
+    const names = partners.map((o) => `<option value="${o}"${o === tradeWith ? ' selected' : ''}>${esc(v!.names[o] ?? String(o))}</option>`).join('');
+    box.innerHTML =
+      `<div class="kn-ask-q">Торговая сделка (не больше трёх предложений за ход: осталось ${3 - (st.offers ?? 0)})</div>` +
+      `<div class="kn-trade-who">С кем: <select data-with>${names}</select></div>` +
+      `<div class="kn-trade-cols">${col('Отдаю', mine, tradeSel.give, 'give')}${col(`Прошу у ${v!.names[tradeWith] ?? ''}`, other, tradeSel.take, 'take')}</div>` +
+      '<div class="kn-ask-b" style="flex-direction:row;gap:8px;margin-top:8px"><button class="btn primary" data-send>Предложить</button><button class="btn" data-cancel>Закрыть</button></div>';
+    box.querySelectorAll<HTMLInputElement>('input[type=checkbox]').forEach((c) =>
+      c.addEventListener('change', () => {
+        const set = c.dataset.side === 'give' ? tradeSel.give : tradeSel.take;
+        if (c.checked) set.add(c.dataset.id!);
+        else set.delete(c.dataset.id!);
+      }),
+    );
+    box.querySelectorAll<HTMLInputElement>('input[data-gold]').forEach((c) =>
+      c.addEventListener('input', () => {
+        const n = Math.max(0, Math.floor(Number(c.value) || 0));
+        if (c.dataset.gold === 'give') tradeSel.gg = n;
+        else tradeSel.tg = n;
+      }),
+    );
+    box.querySelector<HTMLSelectElement>('[data-with]')!.addEventListener('change', (e) => {
+      tradeWith = Number((e.target as HTMLSelectElement).value);
+      tradeSel.take.clear();
+      tradeSel.tg = 0;
+      panelRender();
+    });
+    box.querySelector('[data-cancel]')!.addEventListener('click', () => {
+      tradeWith = null;
+      panelRender();
+    });
+    box.querySelector('[data-send]')!.addEventListener('click', () => {
+      const a: CAction = { type: 'offer', to: tradeWith!, give: [...tradeSel.give], giveGold: Math.min(tradeSel.gg, mine.gold), take: [...tradeSel.take], takeGold: Math.min(tradeSel.tg, other.gold) };
+      tradeWith = null;
+      tradeSel.give.clear();
+      tradeSel.take.clear();
+      tradeSel.gg = tradeSel.tg = 0;
+      ctx?.act(me, a);
+    });
+    ask!.replaceChildren(box);
+    ask!.hidden = false;
+    return true;
+  }
+
   function panelRender() {
     if (!v || !sheet || !btns || !hint || !ask) return;
     const st = v;
@@ -545,6 +612,26 @@ export function createClassicView(): GameView<V, CEvent> {
       // вещи «в любой удобный момент»
       for (const t of st.heroes[me].things.concat(st.heroes[me].friends)) {
         if (usableNow(t)) add(`Применить: ${thingInfo(t).name}`, { type: 'use', id: t.id });
+      }
+      // путники на этом или соседнем поле: дуэль вместо хода, торговая сделка, граната
+      if (st.phase === 'roll') {
+        const cs = asC(st);
+        for (const o of duelTargets(cs, me)) add(`Вызвать на дуэль: ${st.names[o] ?? o}`, { type: 'duel', target: o });
+        if (tradePartners(cs, me).length) {
+          const b = document.createElement('button');
+          b.className = 'btn';
+          b.textContent = 'Предложить сделку';
+          b.onclick = () => {
+            tradeWith = tradePartners(cs, me)[0];
+            panelRender();
+          };
+          btns.append(b);
+        }
+        const gren = st.heroes[me].things.find((t) => advOf(t) === 69);
+        const reach = distances(st.heroes[me].cell);
+        const near = st.seats.some((o) => o !== me && st.heroes[o].zone === 'world' && (reach.get(st.heroes[o].cell) ?? 9) <= 1);
+        if (gren && near) add('Граната в путника или его друга', { type: 'use', id: gren.id });
+        if (tradeWith != null) tradeWindow(me, st);
       }
     }
     btns.append(sw);

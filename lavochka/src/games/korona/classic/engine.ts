@@ -17,6 +17,7 @@ import { STATS } from './script';
 import { SPECIAL } from './special-base';
 import './special';
 import { arrive1, before1, drawPick1, ghostDied1, meetSource1, pre1, post1, use1 } from './special-cards1';
+import { duelStart, offerTrade, sicOffer } from './special-pvp';
 import { arrived2, carefreeAsk, onDraw, onSameField, post2, pre2, thingLost, turnStart2, useThing } from './special-cards2';
 import type { CHero, CState, Fight, FieldCard, Frame, Prompt, Thing } from './state';
 
@@ -32,7 +33,11 @@ export type Action =
   | { type: 'go'; path: number[] }
   | { type: 'answer'; key: string }
   /** применить вещь в удобный момент (тюк с провизией, бурдюк, амулет №6, мухомор, пентаграмма, лофофора) */
-  | { type: 'use'; id: string };
+  | { type: 'use'; id: string }
+  /** вместо хода — вызвать на дуэль путника на том же или соседнем поле */
+  | { type: 'duel'; target: number }
+  /** до броска — предложить сделку путнику на том же или соседнем поле (вещи и талеры) */
+  | { type: 'offer'; to: number; give: string[]; giveGold: number; take: string[]; takeGold: number };
 
 export type Event =
   | { type: 'roll'; seat: number; die: number; dice?: number[]; why?: string }
@@ -1002,6 +1007,9 @@ export function moveTo(s: CState, x: X, seat: number, to: import('./script').Whe
 /** Поставить фишку на клетку (с дверьми подполей) и, если cond, выполнить её условия. */
 export function placeAt(s: CState, x: X, seat: number, target: number, cond: boolean) {
   const h = H(s, seat);
+  // карты, которые гонят по кругу (капуцин в замкнутом кольце полей, храм + импат), без конца наращивают стек
+  // сценариев: на глубине больше 40 кадров условия поля не выполняются — круг разорван
+  if (cond && s.run.length > 40) cond = false;
   const door = DOOR[target] ?? Object.values(DOOR).find((d) => d.sub === target);
   h.cell = target;
   x.ev.push({ type: 'step', seat, cell: target });
@@ -1015,6 +1023,7 @@ export function placeAt(s: CState, x: X, seat: number, target: number, cond: boo
   }
   arrived(s, x, seat);
   onSameField(s, x, seat);
+  sicOffer(s, x, seat);
   let base = s.run.length;
   if (cond) cellConditions(s, x, seat);
   if (cond) {
@@ -1396,6 +1405,7 @@ function shop(s: CState, x: X, seat: number) {
 export function pass(s: CState, x: X) {
   s.phase = 'roll';
   s.die = 0;
+  s.offers = 0;
   let i = s.seats.indexOf(s.turn);
   for (let k = 0; k < s.seats.length * 4; k++) {
     i = (i + 1) % s.seats.length;
@@ -1462,6 +1472,8 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
   }
   if (seat !== s.turn || s.prompt || s.fight) return null;
   const h = H(s, seat);
+  if (a.type === 'duel') return duelStart(s, x, seat, a.target) ? done() : null;
+  if (a.type === 'offer') return offerTrade(s, x, seat, a) ? { state: s, events: x.ev } : null;
   if (a.type === 'roll') {
     if (s.phase !== 'roll') return null;
     if (h.zone !== 'world') return SPECIAL.field2 ? (SPECIAL.field2(s, x, seat, { t: 'special', id: 'field2' }, { seat, ops: [], i: 0 }), done()) : null;

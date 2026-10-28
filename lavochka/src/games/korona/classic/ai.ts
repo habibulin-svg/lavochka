@@ -7,8 +7,9 @@ import type { Rng } from '../../../core/types';
 import { CELL_OPS, FALL_NEED } from './cells';
 import type { Action } from './engine';
 import { ADV } from './cards';
-import { cellsNamed } from './data';
-import { H, advOf, distances, itemOf, myPower, routes, statOfWorld, worldOf } from './engine';
+import { ITEMS, cellsNamed } from './data';
+import { H, advOf, distances, hasGun, itemOf, myPower, routes, statOfWorld, worldOf } from './engine';
+import { duelPower, duelStat, duelTargets, offerError, tradable, tradePartners } from './special-pvp';
 import type { Stat } from './script';
 import type { CHero, CState } from './state';
 
@@ -18,6 +19,8 @@ const FALLS = [22, 31, 54];
 const SPEND = /Отдать|Заплат|Откуп|талер| т\)|Купить|Плат|Пожертв|Ставк/i;
 const NO_LABEL = /^(Нет|Не |Отказ|Уйти|Ничего|Хватит|Остаться|Пусть)/;
 
+/** Сколько талеров копит бот азартом (автоматы, отель), прежде чем ехать в обменный пункт. */
+const GOLD_TRIP = 25;
 const hasDraw = (c: number) => JSON.stringify(CELL_OPS[c] ?? []).includes('"draw"');
 
 /** Готов ли путник к Провалу: все ПС, ПУ, ПМ и ПО не меньше порога. */
@@ -28,7 +31,7 @@ function ready(h: CHero, need: number = NEED): boolean {
 }
 
 /** Куда идти: список клеток-целей по важности (первая непустая группа выигрывает). */
-function goals(s: CState, h: CHero): number[] {
+function goals(s: CState, h: CHero, level = 2): number[] {
   if (s.king == null && ready(h)) {
     const ok = FALLS.filter((f) => ready(h, FALL_NEED[f as 22 | 31 | 54] as number));
     if (ok.length) return ok;
@@ -39,9 +42,14 @@ function goals(s: CState, h: CHero): number[] {
     if ('until' in st && st.until) aims.push(...cellsNamed(st.until));
   }
   if (aims.length) return aims;
-  if (h.st.ПУ === 0 || h.life <= 1) return [18];
+  if (h.st.ПУ === 0) return [18];
+  // жизнь — главное: смерть сбрасывает всё накопленное (в лазарете лечат до 4 за 2 т)
+  if (level > 0 && h.life < 4 && h.gold >= 2) return [18];
+  if (h.life <= 1) return [18];
   const need = STATS.some((p) => h.st[p] < NEED);
-  if (need && h.gold >= 5) return [1, 2];
+  // азарт с хорошим ожиданием: автоматы (80), отель (76), картежники (69, если не честный) — пока денег мало
+  if (level > 0 && need && h.gold >= 6 && h.gold < GOLD_TRIP) return h.honest ? [80, 76] : [80, 76, 69];
+  if (need && h.gold >= (level > 0 ? GOLD_TRIP : 5)) return [1, 2];
   return Object.keys(CELL_OPS).map(Number).filter(hasDraw);
 }
 
@@ -68,10 +76,12 @@ function choosePath(s: CState, seat: number, level: number, rng: Rng): Action | 
   let end: number;
   if (level === 0 && rng.next() < 0.5) end = pickRand();
   else {
-    const gs = goals(s, h);
+    const gs = goals(s, h, level);
+    // слабому здоровью опасные поля — вдвое страшнее
+    const fear = level > 0 && h.life <= 3 ? 2 : 1;
     const dist = ends.map((e) => {
       const d = distances(e);
-      return { e, d: Math.min(...gs.map((g) => d.get(g) ?? 99)) + (e === 26 || e === 29 ? 3 : 0) + (level > 0 ? dangerAt(s, h, e) : 0) + rng.next() * 0.5 };
+      return { e, d: Math.min(...gs.map((g) => d.get(g) ?? 99)) + (e === 26 || e === 29 ? 3 : 0) + (level > 0 ? dangerAt(s, h, e) * fear : 0) + rng.next() * 0.5 };
     });
     dist.sort((a, b) => a.d - b.d);
     end = dist[0].e;
@@ -111,6 +121,8 @@ function answerPrompt(s: CState, seat: number, level: number, rng: Rng): Action 
       return ans('accept');
     }
     case 'goldCell':
+      // в Мире Золота условия поля — по желанию: выполняем только там, где азарт выгоден (автоматы, отель, картежники)
+      if (level > 0) return ans([80, 76, 69].includes(h.cell) && h.gold >= 5 ? 'yes' : 'no');
       return ans(h.gold >= 10 && !random ? 'yes' : 'no');
     case 'exchange': {
       const def: Record<string, number> = {};
@@ -133,8 +145,40 @@ function answerPrompt(s: CState, seat: number, level: number, rng: Rng): Action 
     }
     case 'shop': {
       const ok = p.opts.filter((o) => o.key !== 'no');
-      if (ok.length && h.gold >= 25 && !random) return ans(ok[rng.int(ok.length)].key);
+      // по важности: шлем, кольт, броня, затем книги ума; покупать только то, чем сможем пользоваться
+      const has = (nm: string) => h.things.some((q) => itemOf(q)?.name === nm);
+      const score = (key: string): number => {
+        const i = ITEMS[Number(key)];
+        if (!i || i.price == null || h.gold < i.price || i.po > h.po) return -1;
+        if (i.name === 'шлем') return has('шлем') ? -1 : 9;
+        if (i.name === 'кольт') return hasGun(h) ? -1 : 8;
+        if (i.name === 'бронежилет' || i.name === 'кольчуга') return has('бронежилет') || has('кольчуга') || h.gold < i.price + 5 ? -1 : 7;
+        if (level > 1 && (i.name === 'книга' || i.name === 'папирус') && h.gold >= i.price + 10) return 3;
+        return -1;
+      };
+      const best = ok.map((o) => ({ key: o.key, v: score(o.key) })).sort((a, b) => b.v - a.v)[0];
+      if (level > 0 && best && best.v > 0) return ans(best.key);
+      return ans(ok.length && h.gold >= 25 && !random ? ok[rng.int(ok.length)].key : 'no');
+    }
+    case 'trade': {
+      const o = s.trade;
+      if (!o || level === 0) return ans('no');
+      const val = (th: { id: string }, mine: boolean) => {
+        const i = itemOf(th);
+        const base = i?.price ?? (advOf(th) != null ? 6 : 4);
+        return !mine || !i || h.po >= i.po ? base : base * 0.3;
+      };
+      const get = o.give.map((id) => val(H(s, o.from).things.find((q) => q.id === id) ?? { id }, true)).reduce((a, b) => a + b, 0) + o.gg;
+      const giv = o.take.map((id) => val(h.things.find((q) => q.id === id) ?? { id }, true)).reduce((a, b) => a + b, 0) + o.tg;
+      return ans(get - giv >= 1 ? 'yes' : 'no');
+    }
+    case 'sic':
       return ans('no');
+    case 'sicDef':
+      return ans(keys.find((k) => k !== 'obey') ?? 'obey');
+    case 'diceGo': {
+      const n = Number((p.data as { n?: number } | undefined)?.n ?? 0);
+      return ans(level > 0 && (n === 80 || n === 76 || (n === 69 && !h.honest)) ? 'y' : 'n');
     }
     case 'fallMenu': {
       if (has('go')) return ans('go');
@@ -200,6 +244,64 @@ function answerPrompt(s: CState, seat: number, level: number, rng: Rng): Action 
   }
 }
 
+
+/** Вероятность выиграть бросок «показатель + кубик» при перевесе `edge` (ничья — не победа). */
+function winProb(edge: number): [number, number] {
+  let w = 0;
+  let l = 0;
+  for (let a = 1; a <= 6; a++)
+    for (let b = 1; b <= 6; b++) {
+      if (a + edge > b) w++;
+      else if (a + edge < b) l++;
+    }
+  return [w / 36, l / 36];
+}
+
+/** Дуэль и торговля перед броском: бот вызывает слабого и предлагает выгодные сделки. */
+function pvpAction(s: CState, seat: number, level: number, rng: Rng): Action | null {
+  if (level === 0) return null;
+  const h = H(s, seat);
+  // дуэль: победа даёт +1 ПЖ (у соперника −1), поражение — −1 ПЖ; ход при этом пропадает, поэтому нужен ощутимый перевес
+  const foes = duelTargets(s, seat);
+  if (foes.length && h.life >= 3 && !ready(h)) {
+    const stat = duelStat(s, seat);
+    const mine = duelPower(s, seat, stat);
+    let best: { o: number; v: number } | null = null;
+    for (const o of foes) {
+      const [w, l] = winProb(mine - duelPower(s, o, stat));
+      // добить умирающего соперника — отдельная выгода: он потеряет всё накопленное
+      const v = w - l + (H(s, o).life <= 1 ? w * 0.6 : 0);
+      if (!best || v > best.v) best = { o, v };
+    }
+    if (best && best.v >= (level > 1 ? 0.4 : 0.6) && rng.next() < 0.8) return { type: 'duel', target: best.o };
+  }
+  // сделки: продать то, чем сам пользоваться не можешь; купить шлем или кольт у соседа, если нет своих
+  if ((s.offers ?? 0) === 0 && rng.next() < 0.5) {
+    for (const o of tradePartners(s, seat)) {
+      const oh = H(s, o);
+      for (const th of h.things) {
+        const i = itemOf(th);
+        if (!tradable(th) || !i || i.price == null || i.kind === 'amulet' || h.po >= i.po) continue;
+        const price = Math.max(1, Math.round(i.price * 0.8));
+        if (oh.gold < price || oh.po < i.po) continue;
+        const offer = { to: o, give: [th.id], giveGold: 0, take: [], takeGold: price };
+        if (!offerError(s, { from: seat, to: o, give: offer.give, gg: 0, take: [], tg: price })) return { type: 'offer', ...offer, takeGold: price };
+      }
+      if (level > 1) {
+        for (const th of oh.things) {
+          const i = itemOf(th);
+          if (!tradable(th) || !i || i.price == null || i.po > h.po) continue;
+          const want = (i.name === 'шлем' && !h.things.some((q) => itemOf(q)?.name === 'шлем')) || (i.name === 'кольт' && !hasGun(h));
+          const price = Math.round(i.price * 1.3);
+          if (!want || h.gold < price + 5) continue;
+          if (!offerError(s, { from: seat, to: o, give: [], gg: price, take: [th.id], tg: 0 })) return { type: 'offer', to: o, give: [], giveGold: price, take: [th.id], takeGold: 0 };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Следующее действие бота `seat`: `null`, если сейчас не его очередь (чужой вопрос, чужой ход) — или если играть
  * нечем (баг: при открытом вопросе своего места null быть не должно).
@@ -209,7 +311,7 @@ export function botAction(s: CState, seat: number, level: number, rng: Rng): Act
   if (s.prompt) return s.prompt.seat === seat ? answerPrompt(s, seat, level, rng) : null;
   if (s.fight) return null;
   if (s.turn !== seat) return null;
-  if (s.phase === 'roll') return { type: 'roll' };
+  if (s.phase === 'roll') return pvpAction(s, seat, level, rng) ?? { type: 'roll' };
   if (s.phase === 'pick') return choosePath(s, seat, level, rng);
   return null;
 }
