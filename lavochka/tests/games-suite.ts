@@ -11,6 +11,8 @@ import { botSeats, defaults, simulate } from './harness';
 const QUICK = process.env.GAMES_ONLY != null;
 /** Сколько партий на каждое число игроков. В полной проверке — 4, вручную можно больше: SIM_GAMES=50 npm test. */
 const GAMES = Number(process.env.SIM_GAMES || (QUICK ? 1 : 4));
+/** Сколько ходов сильный бот играет своим уровнем (каждый третий свой ход, остальные — лёгким, см. simulate). В длинном прогоне SIM_GAMES — без предела. */
+const STRONG_MOVES = process.env.SIM_GAMES ? Infinity : 4;
 
 /** Игры для быстрой проверки. Папка, которой нет среди игр (холдем живёт в «Покере»), — гоняем все. */
 function selected(all: string[]): string[] {
@@ -52,9 +54,12 @@ export function gameSuites(part: number) {
     it('боты доигрывают партии на любом числе игроков', async () => {
       const def = await load();
       for (let n = def.players.min; n <= def.players.max; n++) {
-        for (let k = 0; k < GAMES; k++) {
+        // промежуточные числа игроков (в «Яйцах» их семь) — одна партия, смесь уровней по кругу
+        const edge = n === def.players.min || n === def.players.max || n === def.players.default;
+        const games = edge || process.env.SIM_GAMES ? Array.from({ length: GAMES }, (_, k) => k) : [n % LEVEL_MIXES.length];
+        for (const k of games) {
           const levels = LEVEL_MIXES[k % LEVEL_MIXES.length];
-          const res = await simulate(def, botSeats(def, n, levels), defaults(def), 1000 * n + k);
+          const res = await simulate(def, botSeats(def, n, levels), defaults(def), 1000 * n + k, undefined, STRONG_MOVES);
           expect(res.error, `${n} игроков, партия ${k}`).toBeUndefined();
           expect(res.finished, `${n} игроков, партия ${k}: не закончилась за ${res.steps} ходов`).toBe(true);
         }

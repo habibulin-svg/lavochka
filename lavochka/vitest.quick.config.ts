@@ -1,7 +1,9 @@
-/* Быстрая проверка по ходу работы (npm run check:quick, Stop-хук): все тесты, кроме партий ботов по играм, —
- * их гоняем только для игр, чьи папки менялись (git status), по одной партии на число игроков. Задеты общие
- * core/cards/harness — все игры. Полная проверка (npm run check) — перед пушем в конце большого этапа. */
+/* Быстрая проверка по ходу работы (npm run check:quick, Stop-хук): общие тесты — все, а партии ботов по играм
+ * (games-N) и собственные тесты игр (tests/<игра>.test.ts, tests/<игра>-….test.ts) — только для игр, чьи папки
+ * менялись (git status), партии — по одной на число игроков. Задеты общие core/cards/harness — все игры.
+ * Полная проверка (npm run check) — перед пушем в конце большого этапа. */
 import { execSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import base from './vitest.config';
@@ -29,4 +31,26 @@ function touched(): string {
 // не успевает отвечать обработчикам («Timeout calling onTaskUpdate») и прогон падает при зелёных тестах.
 const workers = Math.max(1, availableParallelism() - 2);
 
-export default mergeConfig(base, defineConfig({ test: { passWithNoTests: true, maxWorkers: workers, minWorkers: 1, env: { GAMES_ONLY: process.env.GAMES_ONLY ?? touched() } } }));
+const only = process.env.GAMES_ONLY ?? touched();
+
+/** Тестовые файлы игр, которых правка не касалась: имя файла (или его начало до «-») — папка игры. */
+function untouchedGameTests(): string[] {
+  if (only === '*') return [];
+  const keep = new Set(only.split(',').filter(Boolean));
+  const games = new Set(readdirSync('src/games', { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name));
+  return readdirSync('tests')
+    .filter((f) => f.endsWith('.test.ts'))
+    .filter((f) => {
+      const name = f.slice(0, -'.test.ts'.length);
+      const id = games.has(name) ? name : name.split('-')[0];
+      return games.has(id) && !keep.has(id);
+    })
+    .map((f) => `tests/${f}`);
+}
+
+export default mergeConfig(
+  base,
+  defineConfig({
+    test: { passWithNoTests: true, maxWorkers: workers, minWorkers: 1, exclude: ['**/node_modules/**', ...untouchedGameTests()], env: { GAMES_ONLY: only } },
+  })
+);

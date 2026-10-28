@@ -16,7 +16,7 @@ Node установлен в `C:\Program Files\nodejs`; в Bash сначала `
 |---|---|
 | `npm run dev` | сайт на :5173 (в превью — конфигурация `lavochka` из `.claude/launch.json`) |
 | `npm run dev:server` | сервер комнат на :8787 (конфигурация `lavochka-server`); Vite проксирует к нему `/ws` и `/api` |
-| `npm run check:quick` | `tsc` + все тесты, но партии ботов — только в играх, чьи папки менялись (~2 мин); по ходу работы и в Stop-хуке |
+| `npm run check:quick` | `tsc` + общие тесты; партии ботов и собственные тесты игр — только тех игр, чьи папки менялись (~1 мин; задеты `core`/`cards`/харнесс — всё); по ходу работы и в Stop-хуке |
 | `npm run check` | `tsc` + все тесты полностью (~6 мин) — **перед пушем** |
 | `npm test` | только тесты; `SIM_GAMES=40 npx vitest run tests/games-` — длинный прогон ботов |
 | `npm run build` | `dist/` (сайт) + `dist-server/` (сервер) |

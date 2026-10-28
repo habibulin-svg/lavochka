@@ -26,8 +26,11 @@ export interface SimResult {
 /**
  * Партия ботов против ботов через Authority. Проверяет на каждом шаге:
  * кто-то должен ходить, бот находит допустимый ход, состояние и view сериализуются.
+ * strongMoves — сколько ходов сильный бот (уровень 2 и выше) делает своим уровнем — каждый третий свой ход, чтобы
+ * попасть и в дебют, и в концовку, — остальные лёгким: его перебор занимает почти всё время прогона, а сила
+ * проверяется тестами самих игр.
  */
-export async function simulate(def: GameDef, seats: SeatSpec[], options: Options, seed: number, maxSteps = 20000): Promise<SimResult> {
+export async function simulate(def: GameDef, seats: SeatSpec[], options: Options, seed: number, maxSteps = 20000, strongMoves = Infinity): Promise<SimResult> {
   const a = new Authority(def, seats, options);
   a.rng = new SeededRng(seed);
   a.state = def.setup(seats, options, a.rng);
@@ -35,6 +38,7 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   if (def.realtime) return simulateRealtime(def, a, seats, botRng);
   let steps = 0;
   let pause = Date.now();
+  const strong = new Map<number, number>();
   while (!a.result && steps < maxSteps) {
     // передышка потоку: долгий синхронный цикл не даёт vitest обмениваться с воркером («Timeout calling onTaskUpdate»)
     if (Date.now() - pause > 200) {
@@ -47,7 +51,13 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
     const spec = seats.find((s) => s.seat === seat)!;
     const view = a.viewFor([seat]);
     JSON.stringify(view);
-    const action = await def.bot.choose(view, seat, spec.level, botRng);
+    let level = spec.level;
+    if (level >= 2 && strongMoves < Infinity) {
+      const n = strong.get(seat) ?? 0;
+      strong.set(seat, n + 1);
+      if (n % 3 || n >= 3 * strongMoves) level = 0;
+    }
+    const action = await def.bot.choose(view, seat, level, botRng);
     if (action == null) return { steps, finished: false, winners: [], error: `бот места ${seat} не нашёл хода (шаг ${steps})` };
     const res = a.act(seat, action);
     if (!res) return { steps, finished: false, winners: [], error: `ход бота отклонён правилами: ${JSON.stringify(action)} (шаг ${steps})` };

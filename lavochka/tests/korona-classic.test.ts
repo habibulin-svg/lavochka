@@ -46,8 +46,10 @@ function play(seed: number, n: number): Played {
 describe('Корона Эмбера, Классика 1994: партии ботов', () => {
   const results: Played[] = [];
   const sizes = [2, 3, 4];
-  it('30 партий 2–4 мест: без исключений и зависаний, бот всегда отвечает', () => {
-    for (let k = 0; k < 30; k++) results.push(play(1000 + k * 7, sizes[k % 3]));
+  // 12 партий в обычной проверке (30 шли ~80 с), в длинном прогоне SIM_GAMES — 30
+  const games = process.env.SIM_GAMES ? 30 : 12;
+  it(`${games} партий 2–4 мест: без исключений и зависаний, бот всегда отвечает`, () => {
+    for (let k = 0; k < games; k++) results.push(play(1000 + k * 7, sizes[k % 3]));
     const won = results.filter((r) => r.s.winner != null);
     const avg = won.reduce((a, r) => a + r.turns, 0) / Math.max(1, won.length);
     // eslint-disable-next-line no-console
