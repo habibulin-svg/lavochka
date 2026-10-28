@@ -1,5 +1,6 @@
 /* Пентаго: поворот квадранта, ряд до и после поворота, ничья, большая доска на четверых, поворот по желанию, показы, боты. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/pentago/ai';
 import { def } from '../src/games/pentago/def';
@@ -101,7 +102,8 @@ describe('Пентаго', () => {
       if (sec.title === 'Пять в ряд') expect(s.winners).toEqual([0]);
     }
   });
-  it('боты доигрывают, сложный не проигрывает лёгкому', () => {
+  it('боты доигрывают, сложный не проигрывает лёгкому', async () => {
+    const breathe = breather();
     let hard = 0;
     let easy = 0;
     for (const [size, n] of [
@@ -114,6 +116,7 @@ describe('Пентаго', () => {
         let s = pt.setup(order, { size });
         const lv = order.map((i) => (i === g % n ? 2 : 0));
         for (let i = 0; i < 400 && !s.over; i++) {
+          await breathe();
           const a = choose(s, s.turn, lv[s.turn], rng);
           expect(a).not.toBeNull();
           s = pt.apply(s, s.turn, a!)!.state;

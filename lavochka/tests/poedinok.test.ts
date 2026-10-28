@@ -1,6 +1,7 @@
 /* «Поединок»: перекат кубика, стартовая раскладка, пути (ровно N шагов, один поворот, без перепрыгивания), взятие, дворец,
  * партии ботов. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/poedinok/ai';
 import { apply, cfgFrom, COLS, legal, newState, PALACE, roll, routes, type Die, type State } from '../src/games/poedinok/engine';
@@ -67,13 +68,15 @@ describe('Поединок', () => {
     expect(r!.state.why).toBe('palace');
   });
 
-  it('партии ботов доходят до конца; сложный сильнее лёгкого', () => {
+  it('партии ботов доходят до конца; сложный сильнее лёгкого', async () => {
+    const breathe = breather();
     let hard = 0;
     for (let k = 0; k < 4; k++) {
       const rng = new SeededRng(40 + k);
       const lv = k % 2 ? [2, 0] : [0, 2];
       let s: State = newState(cfgFrom({}));
       for (let i = 0; i < 400 && !s.over; i++) {
+        await breathe();
         const a = choose(s, s.turn, lv[s.turn], rng) ?? legal(s, s.turn)[0];
         s = apply(s, s.turn, a)!.state;
       }

@@ -1,5 +1,6 @@
 /* «Морская игра»: поле и расстановка, старшинство, удар в нос/борт/корму, подлодка, мины и береговые пушки, партии ботов. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/morskaya/ai';
 import { apply, at, canHit, cfgFrom, GUNS, legal, newState, senior, setup, toAct, type Kind, type State } from '../src/games/morskaya/engine';
@@ -62,13 +63,17 @@ describe('Морская игра', () => {
     expect(apply(sub, 0, { type: 'fwd', id: 0 }, rig(0))!.state.ships.length).toBe(2);
   });
 
-  it('партии ботов доходят до конца; средний сильнее лёгкого', () => {
+  it('партии ботов доходят до конца; средний сильнее лёгкого', async () => {
+    const breathe = breather();
     let hard = 0;
     for (let k = 0; k < 4; k++) {
       const rng = new SeededRng(50 + k);
       const lv = k % 2 ? [1, 0] : [0, 1];
       let s = setup({});
-      for (let i = 0; i < 3000 && !s.over; i++) s = apply(s, s.turn, choose(s, s.turn, lv[s.turn], rng)!, rng)!.state;
+      for (let i = 0; i < 3000 && !s.over; i++) {
+        await breathe();
+        s = apply(s, s.turn, choose(s, s.turn, lv[s.turn], rng)!, rng)!.state;
+      }
       expect(s.over).toBe(true);
       if (s.winner != null && lv[s.winner] === 1) hard++;
     }

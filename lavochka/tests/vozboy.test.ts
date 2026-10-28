@@ -1,6 +1,7 @@
 /* «Воздушный бой»: разметка полей, операции «Игрушки», удар в лоб/бок/хвост, зенитки обеих версий, штаб, очередь
  * вчетвером, партии ботов. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/vozboy/ai';
 import { apply, cfgFrom, fly, legal, newState, toAct, type Dir, type Kind, type State } from '../src/games/vozboy/engine';
@@ -89,12 +90,14 @@ describe('Воздушный бой', () => {
     expect(order).toEqual([0, 1, 2, 3]);
   });
 
-  it('партии ботов доходят до конца в обоих изданиях', () => {
+  it('партии ботов доходят до конца в обоих изданиях', async () => {
+    const breathe = breather();
     for (const ver of ['a', 'b'] as const)
       for (const n of [2, 4]) {
         const rng = new SeededRng(n * 10 + (ver === 'a' ? 1 : 2));
         let s = newState(cfgFrom({ ver }), n);
         for (let i = 0; i < 3000 && !s.over; i++) {
+          await breathe();
           const seat = toAct(s)[0];
           const a = choose(s, seat, i % 3, rng)!;
           s = apply(s, seat, a)!.state;

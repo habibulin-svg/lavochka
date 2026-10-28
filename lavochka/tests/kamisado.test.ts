@@ -1,5 +1,6 @@
 /* Камисадо: доска, обязательный цвет, ход на месте и тупик, сумо и толчок, серия и расстановка, показы правил, боты. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/kamisado/ai';
 import { def } from '../src/games/kamisado/def';
@@ -108,11 +109,13 @@ describe('Камисадо', () => {
       }
     }
   });
-  it('боты доигрывают раунд и серию', () => {
+  it('боты доигрывают раунд и серию', async () => {
+    const breathe = breather();
     for (const target of [1, 7]) {
       let s = km.newState(km.cfgFrom({ target }));
       const rng = new SeededRng(5);
       for (let i = 0; i < 3000 && !s.over; i++) {
+        await breathe();
         const a = choose(s, s.turn, s.turn ? 0 : 2, rng);
         expect(a).not.toBeNull();
         s = km.apply(s, s.turn, a!)!.state;

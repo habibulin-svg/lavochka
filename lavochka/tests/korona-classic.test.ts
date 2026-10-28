@@ -2,6 +2,7 @@
  * «Корона Эмбера», «Классика 1994»: партии ботов против ботов и точечные проверки правил движка.
  */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { botAction } from '../src/games/korona/classic/ai';
 import { ADV } from '../src/games/korona/classic/cards';
@@ -48,8 +49,12 @@ describe('Корона Эмбера, Классика 1994: партии бот�
   const sizes = [2, 3, 4];
   // 12 партий в обычной проверке (30 шли ~80 с), в длинном прогоне SIM_GAMES — 30
   const games = process.env.SIM_GAMES ? 30 : 12;
-  it(`${games} партий 2–4 мест: без исключений и зависаний, бот всегда отвечает`, () => {
-    for (let k = 0; k < games; k++) results.push(play(1000 + k * 7, sizes[k % 3]));
+  it(`${games} партий 2–4 мест: без исключений и зависаний, бот всегда отвечает`, async () => {
+    const breathe = breather();
+    for (let k = 0; k < games; k++) {
+      await breathe();
+      results.push(play(1000 + k * 7, sizes[k % 3]));
+    }
     const won = results.filter((r) => r.s.winner != null);
     const avg = won.reduce((a, r) => a + r.turns, 0) / Math.max(1, won.length);
     // eslint-disable-next-line no-console

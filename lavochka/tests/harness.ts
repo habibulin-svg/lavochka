@@ -16,6 +16,19 @@ export function botSeats(def: GameDef, n: number, levels?: number[]): SeatSpec[]
   }));
 }
 
+/**
+ * Передышка для долгих синхронных циклов тестов: раз в 200 мс отдаёт поток. Иначе воркер vitest не успевает
+ * принять ответ главного процесса и через 60 с падает с «Timeout calling onTaskUpdate» (таймер ответа — в воркере).
+ */
+export function breather(): () => Promise<void> {
+  let t = Date.now();
+  return async () => {
+    if (Date.now() - t < 200) return;
+    await new Promise((r) => setImmediate(r));
+    t = Date.now();
+  };
+}
+
 export interface SimResult {
   steps: number;
   finished: boolean;
@@ -37,14 +50,10 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   const botRng = new SeededRng(seed ^ 0x5bd1e995);
   if (def.realtime) return simulateRealtime(def, a, seats, botRng);
   let steps = 0;
-  let pause = Date.now();
+  const breathe = breather();
   const strong = new Map<number, number>();
   while (!a.result && steps < maxSteps) {
-    // передышка потоку: долгий синхронный цикл не даёт vitest обмениваться с воркером («Timeout calling onTaskUpdate»)
-    if (Date.now() - pause > 200) {
-      await new Promise((r) => setImmediate(r));
-      pause = Date.now();
-    }
+    await breathe();
     const toAct = a.toAct();
     if (!toAct.length) return { steps, finished: false, winners: [], error: 'никто не ходит, а результата нет' };
     const seat = toAct[0];

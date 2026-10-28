@@ -1,5 +1,6 @@
 /* Чапаев и карром: физика (трение, удар, падение за край, лузы), повторный удар, раунды и сдвиг рядов, карром — королева и штраф, боты. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/chapaev/ai';
 import * as cp from '../src/games/chapaev/engine';
@@ -73,11 +74,13 @@ describe('Чапаев', () => {
     expect(r.state.pocketed[0]).toBe(1);
   });
 
-  it('боты доигрывают Чапаева и карром', () => {
+  it('боты доигрывают Чапаева и карром', async () => {
+    const breathe = breather();
     for (const mode of ['chapaev', 'carrom']) {
       const r = new SeededRng(3);
       let s = cp.setup({ mode, target: 13 });
       for (let i = 0; i < 2000 && !s.over; i++) {
+        await breathe();
         const a = choose(s, s.turn, i % 2 ? 1 : 2, r)!;
         const res = cp.apply(s, s.turn, a);
         expect(res, `${mode} ${JSON.stringify(a)}`).not.toBeNull();

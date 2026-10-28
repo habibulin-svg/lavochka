@@ -1,5 +1,6 @@
 /* Суракарта: круги и петли, взятие через петлю и сквозь свою точку, серия на очки, показы правил, боты. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/surakarta/ai';
 import { def } from '../src/games/surakarta/def';
@@ -86,11 +87,13 @@ describe('Суракарта', () => {
       }
     }
   });
-  it('боты доигрывают партию и серию', () => {
+  it('боты доигрывают партию и серию', async () => {
+    const breathe = breather();
     for (const games of [1, 2]) {
       let s = sk.newState(sk.cfgFrom({ games }));
       const rng = new SeededRng(5);
       for (let i = 0; i < 3000 && !s.over; i++) {
+        await breathe();
         const a = choose(s, s.turn, s.turn ? 0 : 2, rng);
         expect(a).not.toBeNull();
         s = sk.apply(s, s.turn, a!)!.state;

@@ -1,5 +1,6 @@
 /* Китайские шашки: звезда на 121 лунку, дома по 10, шаги и цепочки прыжков, победа с «засевшим» чужим, халма, боты. */
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/chinesecheckers/ai';
 import { def } from '../src/games/chinesecheckers/def';
@@ -51,13 +52,15 @@ describe('китайские шашки', () => {
     expect(ms.length).toBeGreaterThan(0);
     expect(apply(s, 2, { type: 'move', from: ms[0].from, to: ms[0].to })).not.toBeNull();
   });
-  it('боты доигрывают на любом числе игроков', () => {
+  it('боты доигрывают на любом числе игроков', async () => {
+    const breathe = breather();
     for (const mode of ['romashka', 'halma']) {
       for (const n of def.countsFor!({ mode })) {
         const rng = new SeededRng(n);
         let s = newState(cfgFrom({ mode }, n), seatsFor(n));
         let i = 0;
         for (; i < 2000 && !s.over; i++) {
+          await breathe();
           const a = choose(s, s.turn, i % 3, rng);
           expect(a, `${mode}/${n}: ${i}`).not.toBeNull();
           const r = apply(s, s.turn, a!);

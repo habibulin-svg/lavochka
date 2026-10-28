@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { breather } from './harness';
 import { Authority } from '../src/core/authority';
 import { DAY, HELP_SUFFIX, prune, ranked, RECORD_GAMES, verifyReplay, withDefaults, type RecordColumn, type RecordEntry, type Replay } from '../src/core/records';
 import { SeededRng } from '../src/core/rng';
@@ -102,7 +103,9 @@ async function play(def: GameDef, opts: Options, seed: number, level: number, dt
   const t0 = 1_700_000_000_000;
   const a = new Authority(def, seats, opts, undefined, { seed, t0 });
   const rng = new SeededRng(seed ^ 0x9e3779b9);
+  const breathe = breather();
   for (let i = 0; i < max && !a.result; i++) {
+    await breathe();
     const seat = a.toAct()[0];
     const act = await def.bot.choose(a.viewFor([seat]), seat, level, rng);
     if (act == null || !a.act(seat, act, dt)) break;
