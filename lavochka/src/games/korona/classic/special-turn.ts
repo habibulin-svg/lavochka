@@ -20,10 +20,11 @@ import {
   thingName, toMiddle, usable, who, worldOf,
 } from './engine';
 import type { X } from './engine';
+import { alarmScheme1 } from './special-cards1';
 import { enterRoad } from './special-field2';
 import type { Op, Pts, Stat, Status } from './script';
-import { SPECIAL } from './special';
-import type { CHero, CState, Thing } from './state';
+import { SPECIAL } from './special-base';
+import type { CHero, CState, Frame, Thing } from './state';
 import { STATS } from './script';
 
 /** Разовые пометки путника. */
@@ -111,6 +112,11 @@ function endRoll(s: CState, die: number) {
 
 SPECIAL.moveRoll = (s, x, seat) => {
   const h = hx(s, seat);
+  // буря колдовства: в этом Мире все, кроме колдовавшего, ходят на 1 поле по часовой стрелке вместо броска
+  if (s.storm && s.storm.by !== seat && h.zone === 'world' && h.sector == null && worldOf(h.cell) === s.storm.world) {
+    say(s, x, seat, `${who(s, seat)}: буря колдовства уносит его на 1 поле.`);
+    return autoMove(s, x, seat, 1);
+  }
   const par = h.status.find((st) => st.k === 'paralysed') as Extract<Status, { k: 'paralysed' }> | undefined;
   if (par) {
     const sum = rollN(x, seat, 2, 'паралич');
@@ -373,6 +379,7 @@ SPECIAL.beforeTurn = (s, x, seat) => {
       if (fl.then) {
         placeAt(s, x, seat, to, false);
         push(s, { seat, ops: fl.then, at: to });
+        if (fl.adv) (s.run[s.run.length - 1] as Frame & { parent?: number }).parent = fl.adv;
       } else placeAt(s, x, seat, to, true);
     }
     return;
@@ -1038,7 +1045,7 @@ reg('robGo', (s, x, seat, key, d) => {
   if (key !== 'y') return;
   const n = d.n as number;
   startFight(s, x, seat, {
-    t: 'battle', foe: { name: n === 73 ? 'Боевик' : 'Полицейский', ПС: 14 }, stat: 'ПС', count: 3,
+    t: 'battle', foe: { name: n === 73 ? 'Боевик' : 'Полицейский', ПС: 14 - alarmScheme1(s, x, seat) }, stat: 'ПС', count: 3,
     win: [{ t: 'special', id: 'robWin', n }], lose: [{ t: 'add', p: 'ПЖ', n: -1 }], draw: [],
   });
 });
@@ -1246,50 +1253,34 @@ reg('caveRoll', (s, x, seat) => bump(s, x, seat, 'т', 5 + 5 * roll1(x, seat, '�
 // ---------- места торговли ----------
 
 SPECIAL.shop = (s, x, seat) => shopMenu(s, seat);
-/** Скидка юбилейного посетителя: карта №4 — оружейная лавка (два предмета), №37 — магшоп. */
-function jubilee(h: CHero, place: string): Thing | undefined {
-  const n = norm(place) === norm('Оружейная лавка') ? 4 : norm(place) === norm('Магшоп') ? 37 : 0;
-  return n ? h.things.find((t) => advOf(t) === n) : undefined;
-}
+// скидка юбилейного посетителя (карты №4, №37) — отдельный вопрос при приходе на поле, special-cards1 (`c1_at`)
 function shopMenu(s: CState, seat: number) {
   const h = H(s, seat);
   const place = cellName(h.cell);
-  const jub = jubilee(h, place);
   const full = h.things.filter(counts).length >= capacity(h);
   const seen = new Set<string>();
   const o: [string, string][] = [];
   for (const id of s.shelf) {
     const i = ITEMS[id];
     if (!i.place || norm(i.place) !== norm(place) || i.price == null || !['item', 'amulet', 'magic'].includes(i.kind)) continue;
-    const price = jub ? Math.ceil(i.price / 2) : i.price;
+    const price = i.price;
     const lbl = `${i.name} — ${price} т (нужно ${i.po} ПО)`;
     if (seen.has(lbl) || h.gold < price || full || !canHold(h, i)) continue;
     seen.add(lbl);
     o.push([lbl, String(id)]);
   }
   if (!o.length) return;
-  menu(s, seat, `«${place}»: купить?${jub ? ' (юбилейный посетитель — половина цены)' : ''}`, 'shop', [...o, ['Не надо', 'no']]);
+  menu(s, seat, `«${place}»: купить?`, 'shop', [...o, ['Не надо', 'no']]);
 }
 reg('shop', (s, x, seat, key) => {
   const h = H(s, seat);
-  const place = cellName(h.cell);
-  if (key === 'no') {
-    // юбилейный в магшопе — одно посещение
-    const j = jubilee(h, place);
-    if (j && advOf(j) === 37 && h.things.includes(j)) dropThing(s, x, seat, j, 'discard');
-    return;
-  }
+  if (key === 'no') return;
   const id = Number(key);
   const i = ITEMS[id];
   if (!s.shelf.includes(id)) return;
-  const jub = jubilee(h, place);
-  pay(s, x, seat, jub ? Math.ceil((i.price ?? 0) / 2) : i.price ?? 0);
+  pay(s, x, seat, i.price ?? 0);
   s.shelf.splice(s.shelf.indexOf(id), 1);
-  giveThing(s, x, seat, { id: `i${id}`, uses: i.uses ?? undefined });
-  if (jub && advOf(jub) === 4) {
-    jub.uses = (jub.uses ?? 2) - 1;
-    if (jub.uses <= 0) dropThing(s, x, seat, jub, 'discard');
-  }
+  giveThing(s, x, seat, { id: `i${id}`, uses: i.uses ?? undefined, from: h.cell });
   shopMenu(s, seat);
 });
 
@@ -1319,7 +1310,8 @@ SPECIAL.regent = (s, x, seat, op) => {
 
 // ---------- вещи «в любой удобный момент» ----------
 
-const CONVERT: Record<number, Stat> = { 163: 'ПС', 164: 'ПУ', 85: 'ПМ' };
+// мухомор и корень лофофоры — useThing (special-cards2), пентаграмма — use1 (special-cards1)
+const CONVERT: Record<number, Stat> = {};
 SPECIAL.use = (s, x, seat, op) => {
   const h = hx(s, seat);
   const t = h.things.find((q) => q.id === op.id);

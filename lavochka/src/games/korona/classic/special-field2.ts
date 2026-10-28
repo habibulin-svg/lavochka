@@ -22,8 +22,8 @@ import { TROPHIES, advOf, ask, bump, dropThing, H, itemOf, newHero, placeAt, say
 import type { X } from './engine';
 import { STATS } from './script';
 import type { Stat } from './script';
-import { SPECIAL } from './special';
-import type { SpecialFn } from './special';
+import { SPECIAL } from './special-base';
+import type { SpecialFn } from './special-base';
 import type { CHero, CState, Prompt, Thing } from './state';
 
 /** Провалы поля 1 (клетки, откуда можно вернуться из столицы). */

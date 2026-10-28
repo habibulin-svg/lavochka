@@ -231,7 +231,7 @@ export type Status =
   /** выбыл по своей воле на N ходов (легион) */
   | { k: 'legion'; turns: number; pay: number }
   /** следующим ходом окажешься на поле (золотоискатель, проклятие на дорогу, авиабилет) */
-  | { k: 'fly'; cell: string; then?: Op[] }
+  | { k: 'fly'; cell: string; then?: Op[]; adv?: number }
   /** книга/папирус: прибавка переходит по 1 за ход */
   | { k: 'study'; p: Stat; left: number };
 

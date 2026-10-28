@@ -35,7 +35,6 @@ const HYDRA_WIN: Op[] = [
   { t: 'add', p: 'ПМ', n: 1 },
   // шкура дракона: 20 т в Заготконторе, либо пропуск на «Пещера сокровищ»; ПО за победу — при сдаче
   { t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 20 }], po: 2, pass: true } },
-  DONE,
 ];
 const HYDRA_LOSE: Op[] = [{ t: 'add', p: 'ПЖ', n: -1 }];
 
@@ -71,7 +70,7 @@ export const CARDS_2: AdvDef[] = [
               {
                 t: 'battle',
                 hunt: true,
-                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }], po: 1 } }, DONE],
+                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }], po: 1 } }],
                 lose: [{ t: 'add', p: 'ПЖ', n: -1 }],
               },
             ],
@@ -81,7 +80,7 @@ export const CARDS_2: AdvDef[] = [
             ops: [
               {
                 t: 'battle',
-                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }], po: 1 } }, DONE],
+                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }], po: 1 } }],
                 lose: [{ t: 'add', p: 'ПЖ', n: -1 }],
               },
             ],
@@ -122,7 +121,7 @@ export const CARDS_2: AdvDef[] = [
             ops: [
               {
                 t: 'battle',
-                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }] } }, DONE],
+                win: [{ t: 'trophy', tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 8 }] } }],
                 lose: [{ t: 'add', p: 'ПЖ', n: -1 }],
               },
             ],
@@ -181,7 +180,6 @@ export const CARDS_2: AdvDef[] = [
                 tr: { name: 'шкура', sales: [{ cell: 'Заготконтора', т: 5 }], wear: 'добавляет 2 ПМ' },
               },
               { t: 'special', id: 'wear_bat_hide' },
-              DONE,
             ],
             lose: [{ t: 'add', p: 'ПЖ', n: -1 }],
           },
@@ -259,7 +257,7 @@ export const CARDS_2: AdvDef[] = [
         t: 'battle',
         // Приложение №61: без помощи предметов, магических предметов и амулетов
         without: ['items', 'magic', 'amulets'],
-        win: [{ t: 'trophy', tr: { name: 'крылья', sales: [{ cell: 'Заготконтора', т: 10 }], po: 1 } }, DONE],
+        win: [{ t: 'trophy', tr: { name: 'крылья', sales: [{ cell: 'Заготконтора', т: 10 }], po: 1 } }],
         lose: [
           { t: 'add', p: 'ПЖ', n: -1 },
           // ? «если нет 2 ПМ — теряешь 2 ПЖ»: читаю как дополнительную потерю к 1 ПЖ

@@ -151,10 +151,12 @@ export interface CState {
   mafia: number;
   run: Frame[];
   prompt: Prompt | null;
+  /** вопросы, заданные, пока висит другой (очередь) */
+  pending?: Prompt[];
   fight: Fight | null;
   /** зелёная комета: ходов без переходов между Мирами; буря колдовства: Мир и ходов */
   comet: number;
-  storm: { world: string; turns: number } | null;
+  storm: { world: string; turns: number; by?: number } | null;
   /** коронованный Король (место) — Провалы закрыты */
   king: number | null;
   log: string[];

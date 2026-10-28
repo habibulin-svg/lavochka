@@ -14,7 +14,10 @@ import { CELL_OPS, FALL_NEED, cellKind } from './cells';
 import { ADV_TEXT, ITEMS, PRINCES, TRAVELLERS, advText, cellName, cellsNamed, itemNamed, norm } from './data';
 import type { Align, Battle, Branch, Cond, Op, Pts, Stat, Status, World } from './script';
 import { STATS } from './script';
-import { SPECIAL } from './special';
+import { SPECIAL } from './special-base';
+import './special';
+import { arrive1, before1, drawPick1, ghostDied1, meetSource1, pre1, post1, use1 } from './special-cards1';
+import { arrived2, carefreeAsk, onDraw, onSameField, post2, pre2, thingLost, turnStart2, useThing } from './special-cards2';
 import type { CHero, CState, Fight, FieldCard, Frame, Prompt, Thing } from './state';
 
 export interface Seat {
@@ -313,6 +316,7 @@ export function dropThing(s: CState, x: X, seat: number, t: Thing, to: 'shelf' |
     if (f >= 0) h.friends.splice(f, 1);
   }
   x.ev.push({ type: 'thing', seat, id: t.id, gain: false });
+  thingLost(s, x, seat, t);
   const i = itemOf(t);
   const a = advOf(t);
   if (to === 'none') return;
@@ -364,9 +368,12 @@ export function toMiddle(s: CState, n: number) {
 }
 
 /** Верхняя карта колоды (колода кончилась — перетасовать отбой). */
+const DECK_MIN = 8;
 export function drawTop(s: CState, x: X): number | undefined {
-  if (!s.deck.length && s.discard.length) {
-    s.deck = shuffle(s.discard, x.rng);
+  // колода кончилась — отбой тасуется заново; и когда в ней осталась горстка карт (иначе карты, которые «возвращают
+  // в середину», ходили бы по кругу в пустой колоде и вытесняли остальные)
+  if (s.deck.length < DECK_MIN && s.discard.length) {
+    s.deck = shuffle([...s.deck, ...s.discard], x.rng);
     s.discard = [];
   }
   return s.deck.shift();
@@ -440,7 +447,10 @@ export function push(s: CState, f: Omit<Frame, 'i'>) {
 
 /** Задать вопрос и остановить исполнение. */
 export function ask(s: CState, p: Prompt) {
-  s.prompt = p;
+  if (!p.opts.length) return; // выбирать не из чего — вопрос не задаём
+  // уже задан другой вопрос (особенность путника при приходе на поле, потом условия поля) — встаёт в очередь
+  if (s.prompt) (s.pending ??= []).push(p);
+  else s.prompt = p;
 }
 
 /** Кнопка «Бросить кубик» для человека; бот и сам бросок — в ответе. */
@@ -461,6 +471,7 @@ function finishFrame(s: CState, f: Frame) {
  */
 export function run(s: CState, x: X): boolean {
   for (let guard = 0; guard < 2000; guard++) {
+    if (!s.prompt && s.pending?.length) s.prompt = s.pending.shift()!;
     if (s.prompt || s.fight?.stage) {
       if (s.fight && !s.prompt) fightStep(s, x);
       if (s.prompt) return false;
@@ -480,6 +491,7 @@ export function run(s: CState, x: X): boolean {
       putCard(s, f.at, { n: f.card });
       continue;
     }
+    if (f.i === 0 && f.card && onDraw(s, x, f.seat, f.card)) continue;
     if (f.i === 0 && f.card) {
       const t = advText(f.card)!;
       x.ev.push({ type: 'card', seat: f.seat, n: f.card, title: t.title, text: t.text });
@@ -608,8 +620,12 @@ export function exec(s: CState, x: X, f: Frame, op: Op) {
       const n = cardOf(s);
       if (!n) return;
       if (of) of.fated = true;
-      if (op.fate === 'discard') s.discard.push(n);
-      else if (op.fate === 'middle') toMiddle(s, n);
+      if (op.fate === 'discard') {
+        // карта лежит у путника в руке (оставил себе, а теперь отложил) — снять с него
+        const held = h.things.find((t) => t.id === `a${n}`);
+        if (held) dropThing(s, x, seat, held, 'discard');
+        else s.discard.push(n);
+      } else if (op.fate === 'middle') toMiddle(s, n);
       else if (op.fate === 'leave') putCard(s, h.cell, { n });
       else if (op.fate === 'keep') {
         if (!h.things.some((t) => advOf(t) === n)) giveThing(s, x, seat, { id: `a${n}` });
@@ -675,6 +691,8 @@ export function exec(s: CState, x: X, f: Frame, op: Op) {
       const st = JSON.parse(JSON.stringify(op.st)) as Status & { fresh?: boolean };
       // статус «на N ходов», взятый в свой ход, начинает считаться со следующего
       if ('turns' in st && seat === s.turn) st.fresh = true;
+      // полёт с продолжением: сценарий отложен, но карта (судьба — по `card`) та же
+      if (st.k === 'fly' && st.then) st.adv = cardOf(s);
       h.status.push(st);
       return;
     }
@@ -808,7 +826,8 @@ function loseThing(s: CState, x: X, seat: number, what: string, orElse: Op[] | u
       comp = ['ПС', 1];
       break;
     case 'items':
-      list = pickBy((t) => counts(t) && !isAmulet(t) && notOwned(t));
+      // магические предметы не отнимаются (Приложения 43, 84)
+      list = pickBy((t) => counts(t) && !isAmulet(t) && !isMagic(t) && notOwned(t));
       all = true;
       break;
     case 'amulets':
@@ -849,6 +868,7 @@ function loseThing(s: CState, x: X, seat: number, what: string, orElse: Op[] | u
 /** Выполнить то, что ждёт на клетке: карты на поле (по номерам) или условия поля. */
 export function cellConditions(s: CState, x: X, seat: number, again = false) {
   const h = H(s, seat);
+  if (!again) arrive1(s, x, seat);
   const here = (s.field[h.cell] ?? []).filter((c) => c.n > 0);
   if (here.length && !again) {
     for (const fc of [...here].sort((a, b) => b.n - a.n)) runFieldCard(s, x, seat, fc);
@@ -861,19 +881,29 @@ export function cellConditions(s: CState, x: X, seat: number, again = false) {
     ask(s, { seat, q: `«${cellName(h.cell)}»: выполнить условия поля?`, kind: 'goldCell', opts: [{ label: 'Да', key: 'yes' }, { label: 'Нет, жду хода', key: 'no' }] });
     return;
   }
+  if (carefreeAsk(s, x, seat, ops)) return;
   push(s, { seat, ops, cell: h.cell });
 }
 
 /** Сценарий карты, лежащей на поле: поселённый зверь — с места встречи. */
 export function runFieldCard(s: CState, x: X, seat: number, fc: FieldCard) {
   const h = H(s, seat);
+  // источники (62, 67, 148, 182): запас пунктов лежит на карте, карта остаётся на поле
+  if (SOURCES[fc.n]) {
+    SOURCES[fc.n](s, x, seat, fc);
+    return;
+  }
   takeCard(s, h.cell, fc.n);
   const def = ADV[fc.n];
   if (!def) return;
   let ops = def.ops;
-  if (fc.settled) {
+  // маркеры «on_settled» / «meet» / «settled_split»: при встрече с картой на поле сценарий идёт с места после маркера
+  const mk = ops.findIndex((o) => o.t === 'special' && (o.id === 'on_settled' || o.id === 'meet' || o.id === 'settled_split'));
+  if (mk >= 0) ops = ops.slice(mk + 1);
+  else if (fc.settled) {
+    // поселённый зверь: после верхней операции, содержащей `settle`; если она последняя (горилла) — сценарий целиком
     const k = ops.findIndex((o) => JSON.stringify(o).includes('"settle"'));
-    ops = ops.slice(k + 1);
+    if (k >= 0 && k < ops.length - 1) ops = ops.slice(k + 1);
   }
   push(s, { seat, ops, card: fc.n, at: h.cell });
   // деньги и вещи под охраной остаются при карте, пока её не победят (обработчики в special)
@@ -881,9 +911,43 @@ export function runFieldCard(s: CState, x: X, seat: number, fc: FieldCard) {
   top.guard = fc;
 }
 
+function dragonPick(s: CState, x: X, seat: number, left: number) {
+  const two: number[] = [];
+  for (let k = 0; k < 2; k++) {
+    const c = drawTop(s, x);
+    if (c != null) two.push(c);
+  }
+  if (two.length < 2) {
+    for (const c of two) push(s, { seat, ops: ADV[c].ops, card: c, at: H(s, seat).cell });
+    return;
+  }
+  ask(s, { seat, q: 'Дракон удачи: выбери одну из двух карт', kind: 'dragon', opts: two.map((c) => ({ label: `№${c} ${advText(c)?.title ?? ''}`, key: String(c) })), data: { two, left } });
+}
+SPECIAL['answer:dragon'] = (s, x, seat, _op, _f, p, key) => {
+  const two = (p?.data?.two ?? []) as number[];
+  const left = (p?.data?.left ?? 1) as number;
+  for (const c of two) if (String(c) !== key) toMiddle(s, c);
+  const c = Number(key);
+  push(s, { seat, ops: ADV[c].ops, card: c, at: H(s, seat).cell });
+  if (left > 1) dragonPick(s, x, seat, left - 1);
+};
+
+const SOURCES: Record<number, (s: CState, x: X, seat: number, fc: FieldCard) => void> = {
+  62: (s, x, seat, fc) => meetSource1(s, seat, fc, 'ПЖ', true),
+  67: (s, x, seat, fc) => meetSource1(s, seat, fc, 'ПС', false),
+  148: (s, x, seat, fc) => meetSource1(s, seat, fc, 'ПУ', false),
+  182: (s, x, seat, fc) => meetSource1(s, seat, fc, 'ПМ', false),
+};
+
 /** Взять n верхних карт и выполнить по возрастанию номеров. */
 export function drawCards(s: CState, x: X, seat: number, n: number) {
   const h = H(s, seat);
+  if (drawPick1(s, x, seat, n)) return;
+  // дракон удачи: из 2-х карт выбираешь одну (при 2–3 картах — выбор повторяешь)
+  if (h.zone === 'world' && h.status.some((st) => st.k === 'name' && st.cards)) {
+    dragonPick(s, x, seat, n);
+    return;
+  }
   const got: number[] = [];
   for (let k = 0; k < n; k++) {
     const c = drawTop(s, x);
@@ -927,6 +991,11 @@ export function moveTo(s: CState, x: X, seat: number, to: import('./script').Whe
     return;
   }
   if (target == null) return;
+  // уже стоишь на этом поле: карты, только что оставленные здесь, заново не встречаем — только условия поля
+  if (target === h.cell && cond && !DOOR[target]) {
+    cellConditions(s, x, seat, true);
+    return;
+  }
   placeAt(s, x, seat, target, cond);
 }
 
@@ -945,6 +1014,7 @@ export function placeAt(s: CState, x: X, seat: number, target: number, cond: boo
     return;
   }
   arrived(s, x, seat);
+  onSameField(s, x, seat);
   let base = s.run.length;
   if (cond) cellConditions(s, x, seat);
   if (cond) {
@@ -979,6 +1049,7 @@ export function arrived(s: CState, x: X, seat: number) {
       SPECIAL.regent?.(s, x, seat, { t: 'special', id: 'regent', n: route.adv }, s.run[s.run.length - 1]);
     }
   }
+  arrived2(s, x, seat);
 }
 
 // ---------- движение ----------
@@ -1007,6 +1078,8 @@ export function canPassStop(s: CState, seat: number, n: number): boolean {
   if (k === 'office' || k === 'exchange' || k === 'fall') return true;
   if (DOOR[n]) return false;
   const name = norm(cellName(n));
+  // на поле лежит источник — остановка проходом, чтобы взять пункт
+  if ((s.field[n] ?? []).some((c) => SOURCES[c.n])) return true;
   for (const t of h.things) {
     const a = advOf(t);
     if (a == null) continue;
@@ -1028,7 +1101,7 @@ export function canPassStop(s: CState, seat: number, n: number): boolean {
 /** Поля «останавливаешься там проходом» у карт, которые держишь в руке (документы, жетоны …) — из сценариев special. */
 export const PASS_STOP: Record<number, string[]> = {
   6: ['Детективное бюро'], 8: ['Игровые автоматы'], 37: ['Магшоп'], 4: ['Оружейная лавка'], 50: ['Казино'], 57: ['Отель'],
-  63: ['Кабак'], 64: ['Золотая шахта'], 68: ['Тараканьи бега'], 79: ['Покинутый дом'], 86: ['Биржа'], 117: ['Заготконтора', 'Банк', 'Черная касса мафии'],
+  63: ['Кабак'], 66: ['Оружейная лавка'], 64: ['Золотая шахта'], 68: ['Тараканьи бега'], 79: ['Покинутый дом'], 86: ['Биржа'], 117: ['Заготконтора', 'Банк', 'Черная касса мафии'],
   143: ['Банк'], 161: ['Банк'], 99: ['Конные варвары'], 140: ['Ведьмин луг'],
 };
 
@@ -1036,7 +1109,7 @@ export const PASS_STOP: Record<number, string[]> = {
 export function routes(s: CState, seat: number, from: number, die: number): Map<number, number[]> {
   const out = new Map<number, number[]>();
   const h = H(s, seat);
-  const lockedWorld = noLeave(s, h) ? worldOf(from) : undefined;
+  const lockedWorld = noLeave(s, h) ? worldOf(from) ?? undefined : undefined;
   const back = h.status.some((st) => st.k === 'reverse') && h.lastPath.length >= 2 ? h.lastPath[h.lastPath.length - 2] : undefined;
   const walk = (at: number, prev: number | null, left: number, path: number[]) => {
     if (path.length) {
@@ -1048,7 +1121,12 @@ export function routes(s: CState, seat: number, from: number, die: number): Map<
     }
     let next = neighbours(at).filter((m) => m !== prev);
     if (!next.length) next = neighbours(at);
-    if (lockedWorld !== undefined) next = next.filter((m) => worldOf(m) === lockedWorld);
+    if (lockedWorld !== undefined) next = next.filter((m) => worldOf(m) === lockedWorld || (worldOf(m) == null && cellKind(m) !== 'fall'));
+    // не покидающему Мир некуда идти (тупик в пределах Мира) — останавливается там, где упёрся
+    if (!next.length && path.length) {
+      if (!out.has(at)) out.set(at, path);
+      return;
+    }
     // чёрная кошка: первый шаг — назад, откуда пришёл
     if (path.length === 0 && back != null && next.includes(back)) next = [back];
     for (const m of next) walk(m, at, left - 1, [...path, m]);
@@ -1095,9 +1173,11 @@ export function startFight(s: CState, x: X, seat: number, b: Battle, card?: numb
     if (/МОНАХ/.test(tname) && kind === 'нечисть' && stat === 'ПМ') v -= 1;
     if (/СЛЕДОПЫТ/.test(tname) && kind === 'зверь' && (stat === 'ПУ' || stat === 'ПМ')) v -= 1;
   }
-  if (card && s.field[h.cell]?.some((c) => c.n === card && c.bewitched)) v *= 2;
+  if (card && outerFrame(s)?.card === card && (outerFrame(s) as Frame & { guard?: FieldCard }).guard?.bewitched) v *= 2;
   const count = b.count ?? 1;
   if (b.together) v *= count;
+  // Оборотень: звери сами на него никогда не нападают — только охота
+  if (h.zone === 'world' && /ОБОРОТЕНЬ/.test(tname) && kind === 'зверь' && !b.hunt) b = { ...b, hunt: true };
   // охота: только с огнестрельным оружием или с другом-охотником (Эльф-путник — без оружия)
   if (b.hunt && !hasGun(h) && !h.friends.some((f) => f.hunts) && !/ЭЛЬФ/.test(tname)) {
     say(s, x, seat, `${who(s, seat)}: охотиться не на кого — нужно огнестрельное оружие или друг-охотник.`);
@@ -1126,13 +1206,20 @@ export function stopCard(s: CState) {
   of.i = of.ops.length;
 }
 
+/** Качества друга: с карты приключений или с карты предмета (телохранитель, вакеро). */
+export function friendPower(fr: Thing | undefined, p: Stat): number {
+  if (!fr) return 0;
+  const a = advOf(fr);
+  if (a != null) return ADV[a]?.stats?.[p] ?? 0;
+  return itemOf(fr)?.stats?.[p] ?? 0;
+}
+
 /** Собственный показатель путника в бою + предметы + друзья ВМЕСТЕ. */
 export function myPower(s: CState, seat: number, fight: Fight): number {
   const h = H(s, seat);
   const p = fight.foe.stat;
   if (fight.champion.kind === 'friend') {
-    const fr = h.friends[fight.champion.i];
-    return ADV[advOf(fr)!]?.stats?.[p] ?? 0;
+    return friendPower(h.friends[fight.champion.i], p);
   }
   if (fight.champion.kind === 'ghost') return fight.champion.v;
   let v = h.st[p] * (fight.double ? 2 : 1) + fight.boost;
@@ -1148,7 +1235,7 @@ export function myPower(s: CState, seat: number, fight: Fight): number {
       }
     }
   }
-  if (!fight.without.includes('friends')) for (const fr of h.friends) if (fr.with === 'вместе') v += ADV[advOf(fr)!]?.stats?.[p] ?? 0;
+  if (!fight.without.includes('friends')) for (const fr of h.friends) if (fr.with === 'вместе') v += friendPower(fr, p);
   // Кладбище: злые +2 ПМ, нейтральные −1, добрые −2
   if (norm(cellName(h.cell)) === 'КЛАДБИЩЕ' && p === 'ПМ') v += h.align === 'злой' ? 2 : h.align === 'нейтральный' ? -1 : -2;
   return v;
@@ -1182,6 +1269,7 @@ function preFightOptions(s: CState, f: Fight): { label: string; key: string }[] 
   const h = H(s, f.seat);
   const out: { label: string; key: string }[] = [];
   if (f.used.length) return [];
+  const w0 = worldOf(h.cell);
   const noAmulets = f.without.includes('amulets') || norm(cellName(h.cell)) === 'ПОЛЫЕ ХОЛМЫ' || h.sector != null;
   const noItems = f.without.includes('items') || norm(cellName(h.cell)) === 'ПОЛЫЕ ХОЛМЫ' || h.sector != null;
   for (const t of h.things) {
@@ -1193,15 +1281,18 @@ function preFightOptions(s: CState, f: Fight): { label: string; key: string }[] 
     if (!noAmulets && i?.kind === 'amulet' && i.num === 3 && (f.foe.kind === 'враг' || f.foe.kind === 'нечисть')) out.push({ label: 'Амулет №3', key: `use:${t.id}` });
   }
   h.friends.forEach((fr, k) => {
+    // телепат бьётся умом — свой вариант в special-cards1 (`c1tchamp`)
+    if (advOf(fr) === 18) return;
+    if (itemOf(fr)?.name === 'вакеро' && w0 !== 'Сила') return;
     if (fr.with === 'вместо' || fr.charm) out.push({ label: `Пусть бьётся ${thingName(fr)}`, key: `champ:${k}` });
   });
   for (const extra of SPECIAL_PRE(s, f)) out.push(extra);
   return out;
 }
 /** Средства до боя у карт-предметов и особенностей путников — в special.ts. */
-let SPECIAL_PRE: (s: CState, f: Fight) => { label: string; key: string }[] = () => [];
+let SPECIAL_PRE: (s: CState, f: Fight) => { label: string; key: string }[] = (s, f) => [...pre1(s, f), ...pre2(s, f)];
 export const setSpecialPre = (fn: typeof SPECIAL_PRE) => (SPECIAL_PRE = fn);
-let SPECIAL_POST: (s: CState, f: Fight) => { label: string; key: string }[] = () => [];
+let SPECIAL_POST: (s: CState, f: Fight) => { label: string; key: string }[] = (s, f) => [...post1(s, f), ...post2(s, f)];
 export const setSpecialPost = (fn: typeof SPECIAL_POST) => (SPECIAL_POST = fn);
 
 /** Защита после поражения. */
@@ -1234,6 +1325,7 @@ export function endFight(s: CState, x: X, res: 'win' | 'lose' | 'draw') {
     frameOf(s, parent, f.win);
   } else if (res === 'lose') {
     if (f.champion.kind === 'friend') {
+      ghostDied1(s, x, f);
       // друг погиб: его карта в отбой, противник остаётся на поле, сам ничего не выполняешь
       const fr = h.friends[f.champion.i];
       if (fr) {
@@ -1244,6 +1336,7 @@ export function endFight(s: CState, x: X, res: 'win' | 'lose' | 'draw') {
       return;
     }
     if (f.champion.kind === 'ghost') {
+      ghostDied1(s, x, f);
       leaveFoe(s, f);
       return;
     }
@@ -1329,7 +1422,9 @@ export function pass(s: CState, x: X) {
 
 /** Перед ходом: потери «перед каждым ходом», преследователи, паралич (обработчики статусов — special). */
 function beforeTurn(s: CState, x: X, seat: number) {
-  SPECIAL.beforeTurn?.(s, x, seat, { t: 'special', id: 'beforeTurn' }, { seat, ops: [], i: 0 });
+  before1(s, x, seat);
+  // turnStart2: плен, ход Феи, взгляд на верхнюю карту; в конце зовёт SPECIAL.beforeTurn (потери, полёт, легион)
+  turnStart2(s, x, seat);
 }
 
 // ---------- действия ----------
@@ -1355,6 +1450,9 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
     return done();
   }
   if (a.type === 'use') {
+    if (s.prompt || s.fight) return null;
+    // пентаграмма, колдовство, граната, вор; затем мухомор и лофофора; затем тюк, бурдюк, амулет №6
+    if (use1(s, x, seat, a.id) || useThing(s, x, seat, a.id)) return done();
     const fn = SPECIAL.use;
     if (!fn) return null;
     // id вещи — в op.id

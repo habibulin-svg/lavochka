@@ -142,9 +142,11 @@ export interface ItemCard {
   bonus: Partial<Record<Stat, number>>;
   uses: number | null;
   text: string;
+  /** собственные качества друга-карты предмета (телохранитель, вакеро) */
+  stats?: Partial<Record<Stat, number>>;
 }
 
-type RawItem = { place: string | null; name: string; type: string; num: number | null; price: string | null; po: number | null; bonus: Record<string, number> | null; uses: string | null; text: string };
+type RawItem = { place: string | null; name: string; type: string; num: number | null; price: string | null; po: number | null; bonus: Record<string, number> | null; uses: string | null; text: string; stats?: Record<string, number> };
 const STAT_RU: Record<string, Stat> = { сила: 'ПС', ум: 'ПУ', магия: 'ПМ' };
 const kindOfItem = (t: string): ItemKind =>
   t.startsWith('амулет') ? 'amulet' : t.startsWith('заклинание') ? 'spell' : t.startsWith('контрабанда') ? 'smuggle' : t.startsWith('корона') ? 'crown' : t.startsWith('друг') ? 'friend' : t.includes('принадлежащий') ? 'owned' : t.includes('магический') ? 'magic' : 'item';
@@ -159,6 +161,7 @@ export const ITEMS: ItemCard[] = (itemsRaw as RawItem[]).map((r, id) => ({
   bonus: Object.fromEntries(Object.entries(r.bonus ?? {}).map(([k, v]) => [STAT_RU[k], v])) as Partial<Record<Stat, number>>,
   uses: r.uses ? Number(/\d+/.exec(r.uses)?.[0] ?? 1) : null,
   text: r.text,
+  ...(r.stats ? { stats: Object.fromEntries(Object.entries(r.stats).map(([k, v]) => [STAT_RU[k], v])) as Partial<Record<Stat, number>> } : {}),
 }));
 /** Карты предметов, лежащие на месте торговли (по названию поля). */
 export const itemsAt = (place: string) => ITEMS.filter((i) => i.place && norm(i.place) === norm(place));

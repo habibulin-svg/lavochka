@@ -17,12 +17,12 @@ import { ITEMS, TRAVELLERS, advText, cellName, cellsNamed, norm } from './data';
 import type { X } from './engine';
 import {
   H, TROPHIES, advOf, ask, bump, cardOf, counts, dropThing, giveThing, hasItem, isAmulet, isMagic, itemOf, leaveFoe, lose, myPower, neighbours,
-  pass, placeAt, push, putCard, say, startFight, stopCard, takeCard, thingName, toMiddle, usable, who, worldOf, distances,
+  cellConditions, pass, placeAt, push, putCard, say, startFight, stopCard, takeCard, thingName, toMiddle, usable, who, worldOf, distances,
 } from './engine';
 import type { Op, Stat, Status, World } from './script';
 import { STATS } from './script';
-import { SPECIAL } from './special';
-import type { SpecialFn } from './special';
+import { SPECIAL } from './special-base';
+import type { SpecialFn } from './special-base';
 import type { CHero, CState, FieldCard, Fight, Frame, Thing } from './state';
 
 void (null as unknown as Rng);
@@ -208,15 +208,11 @@ function ccwStep(n: number, prev?: number): number {
 const marker: SpecialFn = (s) => {
   const of = outer(s);
   if (!of || of.guard) return;
-  if (of.c2init != null) {
-    const h = H(s, of.seat);
-    const fc = (s.field[h.cell] ?? []).find((c) => c.n === of.card && c.pts == null);
-    if (fc) fc.pts = of.c2init;
-  }
   stopCard(s);
 };
 sp('on_settled', marker);
 sp('meet', marker);
+sp('settled_split', marker);
 
 /** Сфинксы: амулеты, магические предметы и заклинания не действуют (onDraw не предлагает их для NOSKIP). */
 sp('no_skip', () => {});
@@ -376,7 +372,9 @@ sp('ccw_to_lazaret', (s, x, seat) => {
     at = nx;
     x.ev.push({ type: 'step', seat, cell: at });
   }
-  placeAt(s, x, seat, 18, true);
+  // уже на «Лазарете» — карту импата, оставленную здесь, заново не встречаем: только условия поля
+  if (h.cell === 18) cellConditions(s, x, seat, true);
+  else placeAt(s, x, seat, 18, true);
 });
 sp('use_grenade', (s, x, seat) => {
   const t = H(s, seat).things.find((k) => itemOf(k)?.name === 'граната');
@@ -544,42 +542,6 @@ sp('discard_spell1', (s, x, seat) => {
 });
 sp('drop_spells12', (s, x, seat) => {
   for (const t of [...H(s, seat).things]) if (/^заклинание №[12]$/.test(itemOf(t)?.name ?? '')) dropThing(s, x, seat, t, 'shelf');
-});
-sp('source_init', (s, _x, _seat, op) => {
-  const of = outer(s);
-  if (of) of.c2init = op.n ?? 4;
-});
-sp('source_take', (s, x, seat) => {
-  const h = H(s, seat);
-  const n = cardOf(s)!;
-  const pts = outer(s)?.guard?.pts ?? 0;
-  fate(s);
-  if (pts <= 0) {
-    s.discard.push(n);
-    return;
-  }
-  bump(s, x, seat, 'ПУ', 1);
-  if (pts - 1 > 0) putCard(s, h.cell, { n, pts: pts - 1 });
-  else s.discard.push(n);
-});
-sp('spring', (s, _x, seat, op) => {
-  const h = H(s, seat);
-  const n = cardOf(s)!;
-  const g = outer(s)?.guard;
-  const fc = (s.field[h.cell] ?? []).find((c) => c.n === n && c.pts == null);
-  if (!g) {
-    if (fc) fc.pts = op.n ?? 4;
-    return;
-  }
-  // при встрече +1 ПМ уже выдала операция `add` перед `leave` сценария
-  const left = (g.pts ?? 0) - 1;
-  if (left > 0) {
-    if (fc) fc.pts = left;
-    else putCard(s, h.cell, { n, pts: left });
-  } else {
-    takeCard(s, h.cell, n);
-    s.discard.push(n);
-  }
 });
 sp('settle_prairie', (s, x, seat) => {
   const of = outer(s);
@@ -997,6 +959,7 @@ export function post2(s: CState, f: Fight): Opt[] {
   const h = H(s, f.seat);
   const out: Opt[] = [];
   if (h.sector != null || h.zone !== 'world') return out;
+  if (h.things.some((t) => itemOf(t)?.name === 'заклинание №1' && can(h, t))) out.push({ label: 'Заклинание №1', key: 'sp1' });
   if (isTr(h, /ЗНАХАРКА/)) out.push({ label: 'Знахарка: залечить раны', key: 'healer' });
   if (isTr(h, /ГЛАДИАТОР/) && nextSeat(s, f.seat) != null) out.push({ label: 'Гладиатор: судьбу решит следующий игрок', key: 'glad' });
   if (isTr(h, /ИНОПЛАНЕТЯНИН/)) out.push({ label: 'Инопланетянин: телепортироваться', key: 'alien' });
@@ -1134,6 +1097,18 @@ PICKS.moonpay = (s, x, seat, key, d) => {
 const postRoll = (tag: string, q: string, whoRolls?: (s: CState, seat: number) => number): SpecialFn => (s, _x, seat) => {
   const roller = whoRolls ? whoRolls(s, seat) : seat;
   askRoll(s, roller, tag, q, { who: seat });
+};
+sp('post:sp1', (s, x, seat) => {
+  const t = H(s, seat).things.find((k) => itemOf(k)?.name === 'заклинание №1');
+  if (t) consume(s, x, seat, t);
+  askRoll(s, seat, 'sp1', 'Заклинание №1: брось кубик (1–4 — невидим, 5–6 — +1 ПЖ и условия карты противника)', { who: seat });
+});
+ROLLS.sp1 = (s, x, seat, d) => {
+  if (!s.fight) return;
+  if (d <= 4) {
+    say(s, x, seat, 'Заклинание №1: путник невидим — условия карты противника не выполняются.');
+    foeStays(s, s.fight);
+  } else bump(s, x, seat, 'ПЖ', 1);
 };
 sp('post:healer', postRoll('healer', 'Знахарка лечит раны: брось кубик (5)'));
 sp('post:glad', postRoll('glad', 'Судьба Гладиатора: брось кубик (4 — помилован)', (s, seat) => nextSeat(s, seat) ?? seat));
@@ -1291,18 +1266,24 @@ PICKS.ack = (s, x, seat, _key, d) => {
 /** Перед ходом (вызывать из beforeTurn): плен, зачарованный, взгляд на верхнюю карту (Звездочёт, Эльф, Детектив, Шаман). */
 export function turnStart2(s: CState, x: X, seat: number) {
   const h = H(s, seat);
-  if (h.zone !== 'world') return;
+  if (h.zone !== 'world') return mainBefore(s, x, seat);
   hx(h).prep = { i: 0 };
   prepStep(s, x, seat);
+}
+/** Остальное «перед ходом» (потери, полёт, легион) — SPECIAL.beforeTurn из special-turn. */
+function mainBefore(s: CState, x: X, seat: number) {
+  SPECIAL.beforeTurn?.(s, x, seat, { t: 'special', id: 'beforeTurn' }, { seat, ops: [], i: 0 });
 }
 function prepStep(s: CState, x: X, seat: number) {
   const h = H(s, seat);
   const pr = hx(h).prep;
   if (!pr) return;
-  while (pr.i < 7) {
+  while (pr.i < 8) {
     const i = pr.i++;
     if (prepTask(s, x, seat, i)) return;
   }
+  delete hx(h).prep;
+  mainBefore(s, x, seat);
 }
 /** true — задан вопрос. */
 function prepTask(s: CState, x: X, seat: number, i: number): boolean {
@@ -1339,6 +1320,12 @@ function prepTask(s: CState, x: X, seat: number, i: number): boolean {
       if (pr.peeked || !isTr(h, /ЗВЕЗДОЧ/) || h.gold < 1) return false;
       pick(s, x, seat, 'pay1', 'Звездочёт: заплатить 1 талер и посмотреть верхнюю карту?', YN, { prep: true, noauto: true });
       return true;
+    case 7: {
+      const spy = h.things.find((t) => itemOf(t)?.name === 'карманный шпион' && can(h, t));
+      if (pr.peeked || !spy) return false;
+      pick(s, x, seat, 'spy', 'Карманный шпион: бросить кубик (1–5 — посмотреть верхнюю карту, 6 — шпион утерян)?', YN, { prep: true, noauto: true });
+      return true;
+    }
     default:
       if (pr.peeked || !h.friends.some((k) => advOf(k) === 154) || h.gold < 1) return false;
       pick(s, x, seat, 'pay1', 'Детектив: за 1 талер посмотреть верхнюю карту?', YN, { prep: true, noauto: true });
@@ -1352,6 +1339,17 @@ PICKS.pay1 = (s, x, seat, key, d) => {
   if (key !== 'yes') return resume(s, x, seat, d);
   bump(s, x, seat, 'т', -1);
   peek(s, x, seat, !!d.prep);
+};
+PICKS.spy = (s, x, seat, key, d) => {
+  if (key !== 'yes') return resume(s, x, seat, d);
+  askRoll(s, seat, 'spy', 'Карманный шпион: брось кубик', { prep: d.prep });
+};
+ROLLS.spy = (s, x, seat, d, data) => {
+  if (d <= 5) return peek(s, x, seat, !!data.prep);
+  const spy = H(s, seat).things.find((t) => itemOf(t)?.name === 'карманный шпион');
+  if (spy) dropThing(s, x, seat, spy, 'shelf');
+  say(s, x, seat, 'Карманный шпион утерян.');
+  resume(s, x, seat, data);
 };
 PICKS.elf = (s, x, seat, key, d) => {
   if (key !== 'yes') return resume(s, x, seat, d);

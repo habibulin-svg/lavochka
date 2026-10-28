@@ -14,8 +14,8 @@ import { ITEMS, TRAVELLERS, advText, cellName, itemsAt, norm } from './data';
 import type { ItemCard } from './data';
 import type { Op, Pts } from './script';
 import { STATS } from './script';
-import { SPECIAL } from './special';
-import type { SpecialFn } from './special';
+import { SPECIAL } from './special-base';
+import type { SpecialFn } from './special-base';
 import type { CHero, CState, Fight, FieldCard, Frame, Thing } from './state';
 import {
   H, TROPHIES, add, advOf, arrived, ask, bump, cardOf, counts, distances, dropThing, drawTop, friendOk, giveThing,
@@ -23,6 +23,7 @@ import {
   stopCard, takeCard, takeItem, thingName, toMiddle, who, worldOf,
 } from './engine';
 import type { X } from './engine';
+import { isImmune } from './special-cards2';
 
 type Opt = { label: string; key: string };
 type Ex = Thing & Record<string, unknown>;
@@ -296,11 +297,6 @@ ans('c1_friend_life', (s, x, seat, _o, _f, _p, key) => {
 });
 
 // ---------- карты, которые ждут на поле: деньги и вещи под охраной ----------
-
-reg('settled_split', (s) => {
-  // свежая карта из колоды: сценарий на маркере останавливается; встреча на поле (есть `guard`) — идём дальше
-  if (!guardOf(s)) stopCard(s);
-});
 
 reg('troll_pot', (s, x, seat) => {
   leaveGuard(s, seat, 31, { gold: 20 });
@@ -577,7 +573,7 @@ ans('c1_swap', (s, x, seat, _o, _f, p, key) => {
 
 reg('recruiter_send', (s, _x, seat) => {
   const h = H(s, seat);
-  const q = s.seats.filter((o) => o !== seat && alive(s, o) && H(s, o).cell === h.cell && H(s, o).sector == null);
+  const q = s.seats.filter((o) => o !== seat && alive(s, o) && !isImmune(s, o) && H(s, o).cell === h.cell && H(s, o).sector == null);
   if (q.length) recruitAsk(s, seat, q);
 });
 const recruitAsk = (s: CState, seat: number, queue: number[]) =>
@@ -825,7 +821,7 @@ ans('c1_repair', (s, x, seat, _o, _f, _p, key) => {
 // влюблённая ведьма отправляет женщину на постоялый двор
 reg('c1_witch', (s, _x, seat) => {
   const h = H(s, seat);
-  const q = s.seats.filter((o) => o !== seat && alive(s, o) && H(s, o).cell === h.cell && H(s, o).sex === 'ж');
+  const q = s.seats.filter((o) => o !== seat && alive(s, o) && !isImmune(s, o) && H(s, o).cell === h.cell && H(s, o).sex === 'ж');
   if (q.length && friendOf(h, 3)) askYes(s, seat, 'c1_witch', `Ведьма отправит ${who(s, q[0])} на постоялый двор?`, { target: q[0] }, 'Отправить', 'Нет');
 });
 ans('c1_witch', (s, x, seat, _o, _f, p, key) => {
@@ -1150,7 +1146,7 @@ export function use1(s: CState, x: X, seat: number, id: string): boolean {
       const opts: Opt[] = [];
       for (const o of s.seats) {
         const oh = H(s, o);
-        if (o === seat || !alive(s, o) || (d.get(oh.cell) ?? 9) > 1) continue;
+        if (o === seat || !alive(s, o) || isImmune(s, o) || (d.get(oh.cell) ?? 9) > 1) continue;
         opts.push({ label: `Граната в ${who(s, o)} (−1 ПЖ)`, key: `p:${o}` });
         for (const fr of oh.friends) opts.push({ label: `Граната в друга «${thingName(fr)}» (${who(s, o)})`, key: `f:${o}:${fr.id}` });
       }
@@ -1203,7 +1199,7 @@ ans('c1_thief_roll', (s, x, seat) => {
   const ok = (t: Thing) => counts(t) && itemOf(t)?.kind !== 'owned' && itemOf(t)?.kind !== 'crown';
   for (const o of s.seats) {
     const oh = H(s, o);
-    if (o === seat || !alive(s, o) || (near.get(oh.cell) ?? 9) > 3) continue;
+    if (o === seat || !alive(s, o) || isImmune(s, o) || (near.get(oh.cell) ?? 9) > 3) continue;
     for (const t of oh.things) if (ok(t)) opts.push({ label: `${thingName(t)} (у ${who(s, o)})`, key: `p:${o}:${t.id}` });
   }
   for (const [c, list] of Object.entries(s.field)) {
