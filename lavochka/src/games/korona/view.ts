@@ -13,7 +13,9 @@ import { esc, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from '../hodilki/core';
 import { FIELD1, FIELD2, PLACES2, ROAD_BY_ID, cell, cellPx, sectorPx } from './data';
-import type { KoronaView as KV } from './def';
+import type { KoronaView, OldView as KV } from './def';
+import { createClassicView } from './classic/view';
+import type { CEvent } from './classic/glue';
 import { kindOf, place2, routes, type Action, type Event, type Hero, type Zone } from './engine';
 import { STATS, type Stat } from './rules';
 
@@ -63,7 +65,7 @@ const svg = (tag: string, attrs: Record<string, string | number>): SVGElement =>
   return el;
 };
 
-export function createView(): GameView<KV, Event> {
+function createOldView(): GameView<KV, Event> {
   let ctx: ViewCtx<Action> | null = null;
   let root: HTMLElement | null = null;
   let wrap: HTMLElement | null = null;
@@ -584,6 +586,47 @@ export function createView(): GameView<KV, Event> {
       v = null;
       shown.clear();
       pieceEl.clear();
+    },
+  };
+}
+
+/**
+ * Вид игры: упрощённый (поле, пуговицы, панель обмена) или «Классика 1994» (classic/view.ts) — по состоянию партии
+ * (`'shelf' in view`). Выбирается при первом состоянии; смена правил («Сыграть ещё») пересоздаёт вид.
+ */
+export function createView(): GameView<KoronaView, Event | CEvent> {
+  type Any = GameView<any, any>;
+  let ctx: ViewCtx<any> | null = null;
+  let root: HTMLElement | null = null;
+  let impl: Any | null = null;
+  let mode: 'old' | 'classic' | null = null;
+  let turn: [number[], number[]] | null = null;
+  const pick = (view: KoronaView): Any => {
+    const m = 'shelf' in view ? 'classic' : 'old';
+    if (impl && mode === m) return impl;
+    impl?.destroy?.();
+    impl = m === 'classic' ? createClassicView() : createOldView();
+    mode = m;
+    impl.mount(root!, ctx!);
+    if (turn) impl.setTurn(turn[0], turn[1]);
+    return impl;
+  };
+  return {
+    mount(r, c) {
+      root = r;
+      ctx = c;
+    },
+    setView: (view) => pick(view).setView(view),
+    play: (events, view) => pick(view).play(events, view),
+    setTurn(toAct, interactive) {
+      turn = [toAct, interactive];
+      impl?.setTurn(toAct, interactive);
+    },
+    status: (view, toAct, interactive) => pick(view).status?.(view, toAct, interactive) ?? '',
+    playerStats: (view, seat) => pick(view).playerStats?.(view, seat) ?? '',
+    destroy() {
+      impl?.destroy?.();
+      impl = null;
     },
   };
 }

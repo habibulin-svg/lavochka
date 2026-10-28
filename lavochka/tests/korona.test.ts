@@ -178,14 +178,14 @@ describe('Корона Эмбера: ход', () => {
   });
 
   it('бот доводит партию двоих до коронации', () => {
-    let s = def.setup(seats, { need: '6', deck: 'all' }, new SeededRng(9));
+    let s = def.setup(seats, { rules: 'simple', need: '6', deck: 'all' }, new SeededRng(9)) as State;
     const rng = new SeededRng(4);
     let n = 0;
     while (s.winner == null && n < 20000) {
       const a = botAction(s, s.turn, 1, rng)!;
       const r = def.apply(s, s.turn, a, rng);
       expect(r, JSON.stringify(a)).not.toBeNull();
-      s = r!.state;
+      s = r!.state as State;
       n++;
     }
     expect(s.winner).not.toBeNull();

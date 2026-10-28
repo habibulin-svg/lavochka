@@ -40,3 +40,38 @@
 .kn-good { background: #d8f2dc; color: #1d6b2b; }
 .kn-bad { background: #f8dad6; color: #8c2116; }
 .kn-card-h { margin-top: 8px; font: 12px/1 'PT Sans', system-ui, sans-serif; color: #888; text-align: center; }
+
+/* «Классика 1994»: карты на полях, панель путника, вопрос и бой поверх поля */
+.kn-fc { cursor: pointer; pointer-events: auto; }
+.kn-fc-b { fill: #6b4fa0; stroke: #fffdf6; stroke-width: 9; }
+.kn-fc:hover .kn-fc-b { fill: #8a68c4; }
+.kn-fc-t { fill: #fff; font: 700 70px 'PT Sans', system-ui, sans-serif; pointer-events: none; }
+.kn-card hr { border: 0; border-top: 1px solid #bbb; margin: 12px 0; }
+.kn-ask { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 65; width: min(560px, calc(100% - 20px));
+  max-height: 55%; overflow: auto; padding: 10px 12px; border-radius: 10px; background: rgba(40, 22, 50, 0.94); color: #fff;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55); }
+.kn-ask-q { font: 600 15px/1.35 'PT Serif', serif; margin-bottom: 8px; }
+.kn-ask-b { display: flex; flex-direction: column; gap: 6px; }
+.kn-ask-b .btn { text-align: left; }
+.kn-fight { font: 14px/1.4 'PT Serif', serif; margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); }
+.kn-fight i { opacity: .75; }
+.kn-cpanel { gap: 10px; }
+.kn-sheet { display: flex; flex-direction: column; gap: 8px; font: 13px/1.35 'PT Serif', serif; }
+.kn-c-head { font-size: 14px; }
+.kn-c-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.kn-c-tags span { padding: 1px 7px; border-radius: 9px; background: rgba(255, 255, 255, 0.1); font: 12px/1.5 'PT Sans', system-ui, sans-serif; }
+.kn-nums { display: flex; flex-wrap: wrap; gap: 4px; }
+.kn-num { display: flex; flex-direction: column; align-items: center; min-width: 38px; padding: 3px 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); }
+.kn-num i { font: 11px/1 'PT Sans', system-ui, sans-serif; opacity: .7; }
+.kn-num b { font: 700 17px/1.2 'PT Sans', system-ui, sans-serif; }
+.kn-c-line { opacity: .9; }
+.kn-c-feat { cursor: pointer; font-size: 12px; }
+.kn-c-feat u { color: #ffd764; margin-left: 4px; }
+.kn-c-sec { display: flex; flex-direction: column; gap: 4px; }
+.kn-c-title { font: 700 12px/1.2 'PT Sans', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+.kn-c-title i { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.kn-thing { padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); cursor: pointer; }
+.kn-thing i { opacity: .7; font-size: 12px; }
+.kn-thing-on { background: rgba(255, 215, 100, 0.16); }
+.kn-thing-t { margin-top: 4px; font-size: 12px; opacity: .92; }
+.kn-fx { padding: 3px 8px; border-radius: 6px; background: rgba(200, 80, 60, 0.18); font-size: 12px; }

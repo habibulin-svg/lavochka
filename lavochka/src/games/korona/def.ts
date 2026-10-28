@@ -4,11 +4,25 @@
  */
 import type { BotDef, GameDef, Options, Rng, SeatSpec } from '../../core/types';
 import { DECK } from './data';
-import { apply, botAction, newState, progress, result, START_CELL, type Action, type Event, type State } from './engine';
+import { apply, botAction, newState, progress, result, START_CELL, type Action as OldAction, type Event as OldEvent, type State as OldState } from './engine';
 import { FALL_NEED_DEFAULT, START, STATS } from './rules';
+import { CLASSIC_RULES } from './classic/rules';
+import {
+  classicApply, classicBot, classicDescribe, classicRedact, classicResult, classicSetup, classicToAct, classicView,
+  type CAction, type CEvent, type CState, type ClassicView,
+} from './classic/glue';
 
-/** Что видит игрок: всё, кроме порядка колоды (в «Короне» нет скрытого — характеристики открыты). */
-export type KoronaView = Omit<State, 'deck'> & { deckLeft: number };
+/**
+ * Два движка в одной игре: «упрощённый» (engine.ts, пресеты main/short) и «Классика 1994» (classic/, пресет classic).
+ * Состояние классики отличается полем `shelf` — по нему методы def выбирают движок.
+ */
+export type State = OldState | CState;
+export type Action = OldAction | CAction;
+export type Event = OldEvent | CEvent;
+/** Что видит игрок: всё, кроме порядка колоды (в «Короне» нет скрытого — характеристики открыты; в «Классике» ещё и карты колдовства в руке). */
+export type OldView = Omit<OldState, 'deck'> & { deckLeft: number };
+export type KoronaView = OldView | ClassicView;
+export const isClassic = (s: State | KoronaView): s is CState | ClassicView => 'shelf' in s;
 
 const SEAT_LOOK = [
   { name: 'Красный', color: '#c0392b', light: '#f3b7ae', dark: '#7d2016' },
@@ -33,6 +47,17 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
 
   options: [
     {
+      key: 'rules',
+      label: 'Правила',
+      hint: '«Классика 1994» — путники с особенностями, предметы, друзья, бои и 200 карт приключений строго по правилам оригинала',
+      type: 'select',
+      choices: [
+        { value: 'simple', label: 'Упрощённые' },
+        { value: 'classic', label: 'Классика 1994' },
+      ],
+      default: 'simple',
+    },
+    {
       key: 'need',
       label: 'Порог Провала',
       hint: 'сколько нужно по каждой характеристике (ПС, ПУ, ПМ, ПО), чтобы уйти через ПРОВАЛ в Королевство Эмбер',
@@ -44,6 +69,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         { value: '13', label: '13 — как в оригинале (долго)' },
       ],
       default: String(FALL_NEED_DEFAULT),
+      showIf: (o) => o.rules !== 'classic',
     },
     {
       key: 'deck',
@@ -54,40 +80,49 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         { value: 'short', label: '60 карточек' },
       ],
       default: 'all',
+      showIf: (o) => o.rules !== 'classic',
     },
   ],
   presets: [
-    { id: 'main', label: 'Полный путь к короне', hint: 'порог Провала 6, вся колода', options: { need: '6', deck: 'all' } },
-    { id: 'short', label: 'Короткая партия', hint: 'порог Провала 4, 60 карточек', options: { need: '4', deck: 'short' } },
+    { id: 'main', label: 'Полный путь к короне', hint: 'порог Провала 6, вся колода', options: { rules: 'simple', need: '6', deck: 'all' } },
+    { id: 'classic', label: 'Классика 1994', hint: 'строго по правилам оригинала: путники, предметы, друзья, бои, 200 карт', options: { rules: 'classic' } },
+    { id: 'short', label: 'Короткая партия', hint: 'порог Провала 4, 60 карточек', options: { rules: 'simple', need: '4', deck: 'short' } },
   ],
 
   setup: (seats: SeatSpec[], opts: Options, rng: Rng): State =>
-    newState(
+    opts.rules === 'classic' ? classicSetup(seats, rng) : newState(
       seats.map((s) => ({ seat: s.seat, kind: s.kind === 'human' ? ('human' as const) : ('bot' as const), name: s.name, level: s.level })),
       opt(opts),
       rng,
     ),
 
-  toAct: (s) => (s.winner == null ? [s.turn] : []),
+  toAct: (s) => (isClassic(s) ? classicToAct(s) : s.winner == null ? [s.turn] : []),
 
-  apply: (s, seat, a, rng) => apply(s, seat, a, rng),
+  apply: (s, seat, a, rng) => (isClassic(s) ? classicApply(s, seat, a as CAction, rng) : apply(s, seat, a as OldAction, rng)),
 
-  view: (s): KoronaView => {
+  view: (s, seats): KoronaView => {
+    if (isClassic(s)) return classicView(s, seats);
     const { deck, ...rest } = s;
     return { ...rest, log: s.log.slice(-12), deckLeft: deck.length };
   },
 
+  redact: (ev, seats) => classicRedact(ev, seats),
+
   result: (s) => {
+    if (isClassic(s)) return classicResult(s);
     const r = result(s);
     return r ? { winners: [r.winner], text: r.text, scores: Object.fromEntries(s.seats.map((seat, i) => [seat, r.scores[i]])) } : null;
   },
 
   bot: {
     levels: ['Лёгкий', 'Средний', 'Сложный'],
-    choose: (v, seat, level, rng) => botAction({ ...v, deck: [] }, seat, level, rng),
+    choose: (v, seat, level, rng) => (isClassic(v) ? classicBot(v, seat, level, rng) : botAction({ ...v, deck: [] }, seat, level, rng)),
   } as BotDef<KoronaView, Action>,
 
-  describe: (ev, name) => {
+  describe: (e, name) => {
+    const cl = classicDescribe(e, name);
+    if (cl !== undefined) return cl;
+    const ev = e as OldEvent;
     const sg = (d: number) => (d > 0 ? `+${d}` : `−${-d}`);
     switch (ev.type) {
       case 'roll':
@@ -159,7 +194,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         demo: {
           seats: [seat(0, 'Красный'), seat(1, 'Синий')],
           setup: (d: GameDef<State, Action>, rng: Rng) => {
-            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { need: '6', deck: 'all' }, rng);
+            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { rules: 'simple', need: '6', deck: 'all' }, rng) as OldState;
             s.heroes[0] = { ...s.heroes[0], cell: 10 };
             return s;
           },
@@ -182,7 +217,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         demo: {
           seats: [seat(0, 'Красный'), seat(1, 'Синий')],
           setup: (d: GameDef<State, Action>, rng: Rng) => {
-            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { need: '6', deck: 'all' }, rng);
+            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { rules: 'simple', need: '6', deck: 'all' }, rng) as OldState;
             s.heroes[0] = { ...s.heroes[0], cell: 12, st: { ПС: 6, ПУ: 7, ПМ: 6, ПО: 6 } };
             s.heroes[1] = { ...s.heroes[1], cell: 64 };
             return s;
@@ -212,7 +247,7 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
         demo: {
           seats: [seat(0, 'Красный'), seat(1, 'Синий')],
           setup: (d: GameDef<State, Action>, rng: Rng) => {
-            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { need: '6', deck: 'all' }, rng);
+            const s = d.setup([seat(0, 'Красный'), seat(1, 'Синий')], { rules: 'simple', need: '6', deck: 'all' }, rng) as OldState;
             s.heroes[0] = { ...s.heroes[0], zone: 'capital', prince: true, pj: 8, thalers: 25 };
             s.heroes[1] = { ...s.heroes[1], zone: 'chambers', prince: true, pj: 4, room: 1 };
             return s;
@@ -229,11 +264,12 @@ export const def: GameDef<State, Action, Event, KoronaView> = {
           ],
         },
       },
+      ...CLASSIC_RULES,
     ],
   },
 };
 
 /** Для отладки и тестов: насколько продвинулся каждый. */
-export const progressOf = (s: State) => s.seats.map((seat) => progress(s.heroes[seat], s.need));
+export const progressOf = (s: OldState) => s.seats.map((seat) => progress(s.heroes[seat], s.need));
 export { START_CELL };
 export default def;
