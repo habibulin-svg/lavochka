@@ -99,7 +99,7 @@ export function clockwise(n: number, prev?: number): number {
 }
 
 /** Двери подполей: войдя, ход кончается, путник бродит по секторам. */
-const DOOR: Record<number, { sub: number; exit: number }> = { 26: { sub: 25, exit: 33 }, 29: { sub: 28, exit: 35 } };
+export const DOOR: Record<number, { sub: number; exit: number }> = { 26: { sub: 25, exit: 33 }, 29: { sub: 28, exit: 35 } };
 
 // ---------- партия ----------
 
@@ -178,7 +178,7 @@ export const itemOf = (t: Thing) => (t.id.startsWith('i') ? ITEMS[Number(t.id.sl
 export const advOf = (t: Thing) => (t.id.startsWith('a') ? Number(t.id.slice(1)) : undefined);
 
 /** До Провала — не больше 14 собственных ПС/ПУ/ПМ/ПО (корона регента своего мира при нужных ПО снимает предел). */
-function capOf(h: CHero, p: Pts): number {
+export function capOf(h: CHero, p: Pts): number {
   if (p === 'ПЖ' || p === 'т') return Infinity;
   if (h.zone !== 'world') return Infinity;
   const cap = h.status.find((x) => x.k === 'cap') as Extract<Status, { k: 'cap' }> | undefined;
@@ -444,11 +444,11 @@ export function ask(s: CState, p: Prompt) {
 }
 
 /** Кнопка «Бросить кубик» для человека; бот и сам бросок — в ответе. */
-function askRoll(s: CState, seat: number, kind: string, q: string, data?: Record<string, unknown>) {
+export function askRoll(s: CState, seat: number, kind: string, q: string, data?: Record<string, unknown>) {
   ask(s, { seat, q, kind, opts: [{ label: 'Бросить кубик', key: 'roll' }], data });
 }
 
-const rollDice = (x: X, n: number) => Array.from({ length: n }, () => 1 + x.rng.int(6));
+export const rollDice = (x: X, n: number) => Array.from({ length: n }, () => 1 + x.rng.int(6));
 
 /** Итог карты, у которой сценарий кончился без явной судьбы: в отбой. */
 function finishFrame(s: CState, f: Frame) {
@@ -497,7 +497,7 @@ export function run(s: CState, x: X): boolean {
   return true;
 }
 
-function frameOf(s: CState, f: Frame, ops: Op[]) {
+export function frameOf(s: CState, f: Frame, ops: Op[]) {
   // вложенные операции — тот же контекст карты, но судьбу карты решает внешний кадр
   push(s, { seat: f.seat, ops, card: undefined, at: f.at, cell: f.cell });
   (s.run[s.run.length - 1] as Frame & { parent?: number }).parent = f.card;
@@ -671,9 +671,13 @@ export function exec(s: CState, x: X, f: Frame, op: Op) {
     case 'lose':
       loseThing(s, x, seat, op.what, op.else, f);
       return;
-    case 'status':
-      h.status.push(JSON.parse(JSON.stringify(op.st)));
+    case 'status': {
+      const st = JSON.parse(JSON.stringify(op.st)) as Status & { fresh?: boolean };
+      // статус «на N ходов», взятый в свой ход, начинает считаться со следующего
+      if ('turns' in st && seat === s.turn) st.fresh = true;
+      h.status.push(st);
       return;
+    }
     case 'each': {
       const w = worldOf(h.cell);
       for (const o of s.seats) {
@@ -941,7 +945,18 @@ export function placeAt(s: CState, x: X, seat: number, target: number, cond: boo
     return;
   }
   arrived(s, x, seat);
+  let base = s.run.length;
   if (cond) cellConditions(s, x, seat);
+  if (cond) {
+    // обработчики `arrive:*` (контрабанда и т.п.): их кадры выполняются после условий поля
+    for (const k of Object.keys(SPECIAL)) {
+      if (!k.startsWith('arrive:')) continue;
+      const n0 = s.run.length;
+      SPECIAL[k](s, x, seat, { t: 'special', id: k }, { seat, ops: [], i: 0 });
+      const added = s.run.splice(n0);
+      s.run.splice(base, 0, ...added);
+    }
+  }
 }
 
 /** Что снимается приходом на поле (лазарет лечит сухотку, Храм Бааля снимает проклятия …) и маршрут регента. */
@@ -1006,7 +1021,7 @@ export function canPassStop(s: CState, seat: number, n: number): boolean {
   // контрабанда: пункт назначения
   for (const t of h.things) {
     const i = itemOf(t);
-    if (i?.kind === 'smuggle' && i.text.includes(cellName(n).replace(/[«»]/g, ''))) return true;
+    if (i?.kind === 'smuggle' && norm(/^(.*?)\s+ЗАЛОГ/.exec(i.text)?.[1] ?? '') === name) return true;
   }
   return false;
 }
@@ -1022,6 +1037,7 @@ export function routes(s: CState, seat: number, from: number, die: number): Map<
   const out = new Map<number, number[]>();
   const h = H(s, seat);
   const lockedWorld = noLeave(s, h) ? worldOf(from) : undefined;
+  const back = h.status.some((st) => st.k === 'reverse') && h.lastPath.length >= 2 ? h.lastPath[h.lastPath.length - 2] : undefined;
   const walk = (at: number, prev: number | null, left: number, path: number[]) => {
     if (path.length) {
       if (left === 0 || DOOR[at]) {
@@ -1033,6 +1049,8 @@ export function routes(s: CState, seat: number, from: number, die: number): Map<
     let next = neighbours(at).filter((m) => m !== prev);
     if (!next.length) next = neighbours(at);
     if (lockedWorld !== undefined) next = next.filter((m) => worldOf(m) === lockedWorld);
+    // чёрная кошка: первый шаг — назад, откуда пришёл
+    if (path.length === 0 && back != null && next.includes(back)) next = [back];
     for (const m of next) walk(m, at, left - 1, [...path, m]);
   };
   walk(from, null, die, []);
@@ -1249,7 +1267,7 @@ export function leaveFoe(s: CState, f: Fight) {
 // ---------- смерть ----------
 
 /** ПЖ = 0 — путник умирает: игрок берёт новую карту путника и начинает сначала (или выходит). */
-function deathCheck(s: CState, x: X, seat: number) {
+export function deathCheck(s: CState, x: X, seat: number) {
   const h = H(s, seat);
   if (h.life > 0 || h.zone === 'dead' || h.zone === 'out') return;
   if (h.zone !== 'world' && h.zone !== 'road') {
@@ -1312,15 +1330,6 @@ export function pass(s: CState, x: X) {
 /** Перед ходом: потери «перед каждым ходом», преследователи, паралич (обработчики статусов — special). */
 function beforeTurn(s: CState, x: X, seat: number) {
   SPECIAL.beforeTurn?.(s, x, seat, { t: 'special', id: 'beforeTurn' }, { seat, ops: [], i: 0 });
-  // ходы статусов
-  const h = H(s, seat);
-  h.status = h.status.filter((st) => {
-    if ('turns' in st && typeof st.turns === 'number') {
-      st.turns--;
-      return st.turns > 0;
-    }
-    return true;
-  });
 }
 
 // ---------- действия ----------
@@ -1330,7 +1339,11 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
   const s: CState = JSON.parse(JSON.stringify(s0));
   const x: X = { ev: [], rng };
   const done = () => {
-    if (run(s, x) && !s.prompt && !s.fight && s.phase === 'run') endTurn(s, x);
+    // после передачи хода крутим сценарии снова: перед ходом бывают бои, броски, автоходы
+    for (let k = 0; k < 12; k++) {
+      if (run(s, x) && !s.prompt && !s.fight && s.phase === 'run' && s.winner == null) endTurn(s, x);
+      else break;
+    }
     return { state: s, events: x.ev };
   };
   if (a.type === 'answer') {
@@ -1344,7 +1357,9 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
   if (a.type === 'use') {
     const fn = SPECIAL.use;
     if (!fn) return null;
-    fn(s, x, seat, { t: 'special', id: 'use' }, { seat, ops: [], i: 0, card: undefined, at: undefined, cell: Number(a.id.length) });
+    // id вещи — в op.id
+    fn(s, x, seat, { t: 'special', id: a.id }, { seat, ops: [], i: 0 });
+    if (!x.ev.length) return null;
     return done();
   }
   if (seat !== s.turn || s.prompt || s.fight) return null;
@@ -1355,6 +1370,13 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
     if (h.sector != null) {
       s.phase = 'run';
       push(s, { seat, ops: [{ t: 'special', id: 'rosette' }] });
+      return done();
+    }
+    if (SPECIAL.moveRoll) {
+      // обработчик сам ставит s.die и фазу (pick — выбор пути, run — ход без движения) или задаёт вопрос
+      s.phase = 'pick';
+      s.die = 0;
+      SPECIAL.moveRoll(s, x, seat, { t: 'special', id: 'moveRoll' }, { seat, ops: [], i: 0 });
       return done();
     }
     const die = moveRoll(s, x, seat);
@@ -1372,7 +1394,10 @@ export function apply(s0: CState, seat: number, a: Action, rng: Rng): { state: C
     h.lastPath = [h.cell, ...a.path];
     s.phase = 'run';
     const end = a.path[a.path.length - 1];
+    const rv = h.status.findIndex((st) => st.k === 'reverse');
+    if (rv >= 0) h.status.splice(rv, 1);
     placeAt(s, x, seat, end, true);
+    SPECIAL.afterMove?.(s, x, seat, { t: 'special', id: 'afterMove' }, { seat, ops: [], i: 0 });
     return done();
   }
   return null;
@@ -1393,6 +1418,20 @@ function moveRoll(s: CState, x: X, seat: number): number {
 
 /** Ход кончен: все сценарии исполнены. */
 function endTurn(s: CState, x: X) {
+  const seat = s.turn;
+  SPECIAL.endTurn?.(s, x, seat, { t: 'special', id: 'endTurn' }, { seat, ops: [], i: 0 });
+  // статусы «на N ходов» тают в конце своего хода (взятые в этом же ходу — со следующего)
+  const h = H(s, seat);
+  h.status = h.status.filter((st) => {
+    const f = st as Status & { fresh?: boolean };
+    if (st.k === 'legion' || !('turns' in st) || typeof st.turns !== 'number') return true;
+    if (f.fresh) {
+      delete f.fresh;
+      return true;
+    }
+    st.turns--;
+    return st.turns > 0;
+  });
   pass(s, x);
 }
 
