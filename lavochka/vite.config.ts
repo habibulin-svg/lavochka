@@ -9,7 +9,8 @@ export default defineConfig({
       '/api': 'http://localhost:8787',
     },
   },
-  build: { target: 'es2022', chunkSizeWarningLimit: 1500 },
+  // без подсчёта gzip: на прод-сервере (2 ГБ) он добирал память до OOM-убийцы
+  build: { target: 'es2022', chunkSizeWarningLimit: 1500, reportCompressedSize: false },
   // модули three.js, которые грузятся лениво (3D-холдем): заранее, иначе Vite перезагружает страницу посреди партии
   optimizeDeps: {
     include: [
