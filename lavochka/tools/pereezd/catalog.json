@@ -1,0 +1,559 @@
+{
+  "version": "2026-10-31",
+  "note": "Каталог программ и моделей для «Переезда». Версии моделей сверены с Hugging Face 2026-10-31: в каждом классе, что влезает в RTX 4070 12 ГБ + RTX 3070 8 ГБ + 32 ГБ RAM, — самая свежая. Программа при запуске пробует взять более новый каталог из GitHub.",
+  "repo": {
+    "https": "https://github.com/habibulin-svg/lavochka.git",
+    "ssh": "git@github.com:habibulin-svg/lavochka.git",
+    "raw_catalog": "https://raw.githubusercontent.com/habibulin-svg/lavochka/main/lavochka/tools/pereezd/catalog.json"
+  },
+  "base": [
+    {
+      "id": "nvidia",
+      "name": "Драйвер NVIDIA (Studio или Game Ready)",
+      "why": "без него видеокарты не работают для ИИ",
+      "page": "https://www.nvidia.com/ru-ru/drivers/",
+      "auto": null,
+      "manual": "Скачать на странице (или через NVIDIA App), установить, перезагрузить компьютер."
+    },
+    {
+      "id": "vcredist",
+      "name": "Microsoft Visual C++ Redistributable",
+      "why": "нужен llama.cpp, PyTorch и многим программам",
+      "page": "https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist",
+      "auto": {
+        "kind": "exe",
+        "url": "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+        "args": [
+          "/install",
+          "/passive",
+          "/norestart"
+        ]
+      }
+    },
+    {
+      "id": "git",
+      "name": "Git для Windows (с Git LFS)",
+      "why": "забрать код с GitHub; LFS — тяжёлые ассеты",
+      "page": "https://git-scm.com/download/win",
+      "auto": {
+        "kind": "gh",
+        "repo": "git-for-windows/git",
+        "asset": "^Git-[\\d.]+-64-bit\\.exe$",
+        "args": [
+          "/VERYSILENT",
+          "/NORESTART",
+          "/SP-"
+        ]
+      },
+      "check": [
+        "git",
+        "--version"
+      ]
+    },
+    {
+      "id": "node",
+      "name": "Node.js 24",
+      "why": "сборник (Vite, тесты, сервер); хуки Claude ждут его в C:\\Program Files\\nodejs",
+      "page": "https://nodejs.org/dist/latest-v24.x/",
+      "auto": {
+        "kind": "node_msi",
+        "index": "https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt",
+        "base": "https://nodejs.org/dist/latest-v24.x/",
+        "pattern": "node-v24\\.[\\d.]+-x64\\.msi"
+      },
+      "check": [
+        "node",
+        "-v"
+      ]
+    },
+    {
+      "id": "python",
+      "name": "Python 3.12",
+      "why": "инструменты сборника, ComfyUI, аудио-модели (3.12 — самая совместимая с PyTorch)",
+      "page": "https://www.python.org/downloads/release/python-31210/",
+      "auto": {
+        "kind": "exe",
+        "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe",
+        "args": [
+          "/passive",
+          "InstallAllUsers=0",
+          "PrependPath=1",
+          "Include_launcher=1",
+          "Include_test=0"
+        ]
+      },
+      "check": [
+        "py",
+        "-3.12",
+        "--version"
+      ]
+    },
+    {
+      "id": "chrome",
+      "name": "Google Chrome",
+      "why": "безголовые снимки превью игр",
+      "page": "https://www.google.com/chrome/",
+      "auto": {
+        "kind": "exe",
+        "url": "https://dl.google.com/chrome/install/latest/chrome_installer.exe",
+        "args": [
+          "/silent",
+          "/install"
+        ]
+      }
+    },
+    {
+      "id": "claude",
+      "name": "Claude (приложение)",
+      "why": "работа с Claude Code в папке проекта",
+      "page": "https://claude.ai/download",
+      "auto": null,
+      "manual": "Скачать, установить, войти тем же аккаунтом. Открыть папку проекта во вкладке Code."
+    }
+  ],
+  "ai_programs": [
+    {
+      "id": "llamacpp",
+      "name": "llama.cpp (llama-server, CUDA 12.4)",
+      "why": "локальные LLM с OpenAI-совместимым API, деление по двум картам",
+      "page": "https://github.com/ggml-org/llama.cpp/releases",
+      "size_gb": 0.6,
+      "default": true
+    },
+    {
+      "id": "comfyui",
+      "name": "ComfyUI + Manager + GGUF + MultiGPU",
+      "why": "картинки, видео, 3D, апскейл; API для пакетной генерации",
+      "page": "https://github.com/comfyanonymous/ComfyUI",
+      "size_gb": 7,
+      "default": true
+    },
+    {
+      "id": "uv",
+      "name": "uv (менеджер Python-окружений)",
+      "why": "нужен ACE-Step",
+      "page": "https://github.com/astral-sh/uv/releases",
+      "size_gb": 0.05,
+      "default": true
+    },
+    {
+      "id": "acestep",
+      "name": "ACE-Step 1.5 (музыка с вокалом, MIT)",
+      "why": "дворовые песни, фоновая музыка; модели скачает сам при первом запуске в HF_HOME",
+      "page": "https://github.com/ace-step/ACE-Step-1.5",
+      "size_gb": 25,
+      "default": true
+    },
+    {
+      "id": "audio",
+      "name": "Аудио-инструменты: audio-separator, Beat This!, Basic Pitch",
+      "why": "стемы, сетка битов, ноты — для ритм-игр",
+      "page": "https://github.com/nomadkaraoke/python-audio-separator",
+      "size_gb": 6,
+      "default": true
+    },
+    {
+      "id": "tts",
+      "name": "Chatterbox Multilingual (озвучка на русском, MIT)",
+      "why": "голоса персонажей с клонированием",
+      "page": "https://github.com/resemble-ai/chatterbox",
+      "size_gb": 8,
+      "default": true
+    },
+    {
+      "id": "ffmpeg",
+      "name": "FFmpeg",
+      "why": "звук и видео: перекодирование в Opus/WebM",
+      "page": "https://www.gyan.dev/ffmpeg/builds/",
+      "size_gb": 0.2,
+      "default": true
+    },
+    {
+      "id": "blender",
+      "name": "Blender",
+      "why": "3D → спрайты (рендер ракурсов и кадров из скрипта)",
+      "page": "https://www.blender.org/download/",
+      "size_gb": 1,
+      "default": true
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode (агент для мелкого кода на локальной модели)",
+      "why": "задачи по коду на llama-server",
+      "page": "https://opencode.ai",
+      "size_gb": 0.2,
+      "default": false
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio (по желанию)",
+      "why": "поболтать с моделью в окне",
+      "page": "https://lmstudio.ai/download",
+      "size_gb": 0.5,
+      "default": false
+    }
+  ],
+  "models": [
+    {
+      "id": "qwen38-27b",
+      "group": "LLM",
+      "name": "Qwen3.8-27B UD-Q4_K_M + зрение (код, промпты, тексты; авг. 2026)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": true,
+      "size_gb": 17.4,
+      "dest": "llm",
+      "repo": "unsloth/Qwen3.8-27B-GGUF",
+      "files": [
+        {
+          "path": "Qwen3.8-27B-UD-Q4_K_M.gguf"
+        },
+        {
+          "path": "mmproj-F16.gguf",
+          "as": "Qwen3.8-27B-mmproj-F16.gguf"
+        }
+      ],
+      "watch": {
+        "author": "unsloth",
+        "search": "Qwen3",
+        "since": "2026-08-13",
+        "hint": "dense ~27B, GGUF",
+        "match": "^unsloth/Qwen[\\d.]+-(2\\d|3[0-2])B(-MTP)?-GGUF$"
+      }
+    },
+    {
+      "id": "qwen36-35b-a3b",
+      "group": "LLM",
+      "name": "Qwen3.6-35B-A3B UD-IQ4_XS с MTP (MoE, в 1,5–2 раза быстрее; эксперты в RAM; без зрения)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": false,
+      "size_gb": 18.2,
+      "dest": "llm",
+      "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+      "files": [
+        {
+          "path": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+          "as": "Qwen3.6-35B-A3B-MTP-UD-IQ4_XS.gguf"
+        }
+      ],
+      "watch": {
+        "author": "unsloth",
+        "search": "A3B",
+        "since": "2026-05-11",
+        "hint": "MoE ~30–40B с 3B активных",
+        "match": "^unsloth/Qwen[\\d.]+-3\\dB-A3B(-MTP)?-GGUF$"
+      }
+    },
+    {
+      "id": "qwen35-9b",
+      "group": "LLM",
+      "name": "Qwen3.5-9B Q4_K_M + зрение (проверка картинок на 3070)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": true,
+      "size_gb": 7.1,
+      "dest": "llm",
+      "repo": "bartowski/Qwen_Qwen3.5-9B-GGUF",
+      "files": [
+        {
+          "path": "Qwen_Qwen3.5-9B-Q4_K_M.gguf"
+        },
+        {
+          "path": "mmproj-Qwen_Qwen3.5-9B-f16.gguf"
+        }
+      ],
+      "watch": {
+        "author": "unsloth",
+        "search": "Qwen",
+        "since": "2026-03-02",
+        "hint": "маленькая Qwen 4–14B со зрением",
+        "match": "^unsloth/Qwen[\\d.]+-([4-9]|1[0-4])B(-MTP)?-GGUF$"
+      }
+    },
+    {
+      "id": "gpt-oss-20b",
+      "group": "LLM",
+      "name": "gpt-oss-20b Q4_K_M (быстрые промпты целиком на 4070)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": false,
+      "size_gb": 11.6,
+      "dest": "llm",
+      "repo": "unsloth/gpt-oss-20b-GGUF",
+      "files": [
+        {
+          "path": "gpt-oss-20b-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "gemma4-26b",
+      "group": "LLM",
+      "name": "Gemma 4 26B-A4B UD-IQ4_XS (MoE, запасная)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": false,
+      "size_gb": 14.8,
+      "dest": "llm",
+      "repo": "unsloth/gemma-4-26B-A4B-it-GGUF",
+      "files": [
+        {
+          "path": "gemma-4-26B-A4B-it-UD-IQ4_XS.gguf"
+        },
+        {
+          "path": "mmproj-F16.gguf",
+          "as": "gemma-4-26B-A4B-mmproj-F16.gguf"
+        }
+      ]
+    },
+    {
+      "id": "z-image-turbo",
+      "group": "Картинки",
+      "name": "Z-Image-Turbo int8 + Qwen3-4B fp8 + VAE (основная, 8 шагов)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": true,
+      "size_gb": 12.2,
+      "dest": "comfy",
+      "repo": "Comfy-Org/z_image_turbo",
+      "files": [
+        {
+          "path": "split_files/diffusion_models/z_image_turbo_int8_convrot.safetensors",
+          "sub": "diffusion_models"
+        },
+        {
+          "path": "split_files/text_encoders/qwen_3_4b_fp8_mixed.safetensors",
+          "sub": "text_encoders"
+        },
+        {
+          "path": "split_files/vae/ae.safetensors",
+          "sub": "vae"
+        }
+      ],
+      "watch": {
+        "author": "Tongyi-MAI",
+        "search": "Z-Image",
+        "since": "2026-01-23"
+      }
+    },
+    {
+      "id": "z-image",
+      "group": "Картинки",
+      "name": "Z-Image (база, под обучение LoRA стиля)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": true,
+      "size_gb": 6.2,
+      "dest": "comfy",
+      "repo": "Comfy-Org/z_image",
+      "files": [
+        {
+          "path": "split_files/diffusion_models/z_image_int8_convrot.safetensors",
+          "sub": "diffusion_models"
+        }
+      ]
+    },
+    {
+      "id": "chroma2",
+      "group": "Картинки",
+      "name": "Chroma2 Kaleidoscope (янв. 2026, запасная)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": false,
+      "size_gb": 7.8,
+      "dest": "comfy",
+      "repo": "lodestones/Chroma2-Kaleidoscope",
+      "files": [
+        {
+          "path": "chroma2_kaleidoscope.safetensors",
+          "sub": "diffusion_models"
+        }
+      ],
+      "watch": {
+        "author": "lodestones",
+        "search": "Chroma",
+        "since": "2026-01-24"
+      }
+    },
+    {
+      "id": "flux3-klein",
+      "group": "Картинки",
+      "name": "FLUX 3 klein int8 (окт. 2026) — лицензия flux-kommunity, нужен токен HF, сверить лицензию",
+      "license": "flux-kommunity",
+      "ok": "warn",
+      "default": false,
+      "size_gb": 11,
+      "dest": "comfy",
+      "gated": true,
+      "repo": "black-forest-labs/flux-3-image-klein-comfy",
+      "files": [
+        {
+          "path": "diffusion_models/flux3-image-klein-int8-convrot.safetensors",
+          "sub": "diffusion_models"
+        },
+        {
+          "path": "text_encoders/qwen3vl_4b_int8_convrot.safetensors",
+          "sub": "text_encoders"
+        },
+        {
+          "path": "vae/flux2-vae.safetensors",
+          "sub": "vae"
+        }
+      ],
+      "watch": {
+        "author": "black-forest-labs",
+        "search": "klein",
+        "since": "2026-10-14"
+      }
+    },
+    {
+      "id": "wan22-5b",
+      "group": "Видео",
+      "name": "Wan 2.2 TI2V-5B + umt5 fp8 + VAE (катсцены, референсы движений)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": true,
+      "size_gb": 18.2,
+      "dest": "comfy",
+      "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+      "files": [
+        {
+          "path": "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+          "sub": "diffusion_models"
+        },
+        {
+          "path": "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+          "sub": "text_encoders"
+        },
+        {
+          "path": "split_files/vae/wan2.2_vae.safetensors",
+          "sub": "vae"
+        }
+      ],
+      "watch": {
+        "author": "Wan-AI",
+        "search": "Wan",
+        "since": "2026-08-06"
+      }
+    },
+    {
+      "id": "wan-animate2",
+      "group": "Видео",
+      "name": "Wan Animate 2 int8 (июль 2026, оживление персонажа по видео; 16,7 ГБ — на 4070 с выгрузкой)",
+      "license": "Apache-2.0",
+      "ok": true,
+      "default": false,
+      "size_gb": 18,
+      "dest": "comfy",
+      "repo": "Comfy-Org/Wan-Animate-2",
+      "files": [
+        {
+          "path": "diffusion_models/wan_animate_2_distill_int8_convrot.safetensors",
+          "sub": "diffusion_models"
+        },
+        {
+          "path": "clip_vision/clip_vision_h.safetensors",
+          "sub": "clip_vision"
+        }
+      ]
+    },
+    {
+      "id": "realesrgan",
+      "group": "Апскейл",
+      "name": "Real-ESRGAN x4plus",
+      "license": "BSD-3",
+      "ok": true,
+      "default": true,
+      "size_gb": 0.07,
+      "dest": "comfy",
+      "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
+      "sub": "upscale_models"
+    },
+    {
+      "id": "birefnet",
+      "group": "Апскейл",
+      "name": "BiRefNet (удаление фона)",
+      "license": "MIT",
+      "ok": true,
+      "default": true,
+      "size_gb": 0.9,
+      "dest": "models",
+      "snapshot": true,
+      "repo": "ZhengPeng7/BiRefNet",
+      "sub": "birefnet"
+    },
+    {
+      "id": "trellis2",
+      "group": "3D",
+      "name": "TRELLIS.2-4B (картинка → 3D с текстурой; на 12 ГБ — режим 512)",
+      "license": "MIT",
+      "ok": true,
+      "default": true,
+      "size_gb": 16,
+      "dest": "models",
+      "snapshot": true,
+      "repo": "microsoft/TRELLIS.2-4B",
+      "sub": "3d/TRELLIS.2-4B",
+      "watch": {
+        "author": "microsoft",
+        "search": "TRELLIS",
+        "since": "2025-12-01"
+      }
+    },
+    {
+      "id": "triposg",
+      "group": "3D",
+      "name": "TripoSG (картинка → 3D, лёгкая)",
+      "license": "MIT",
+      "ok": true,
+      "default": true,
+      "size_gb": 8,
+      "dest": "models",
+      "snapshot": true,
+      "repo": "VAST-AI/TripoSG",
+      "sub": "3d/TripoSG"
+    },
+    {
+      "id": "pixal3d",
+      "group": "3D",
+      "name": "Pixal3D (апр. 2026, на базе TRELLIS.2; тяжёлая)",
+      "license": "MIT",
+      "ok": true,
+      "default": false,
+      "size_gb": 40,
+      "dest": "models",
+      "snapshot": true,
+      "repo": "TencentARC/Pixal3D",
+      "sub": "3d/Pixal3D"
+    },
+    {
+      "id": "sa3-sfx",
+      "group": "Звук",
+      "name": "Stable Audio 3 Small SFX (май 2026) — нужен токен HF, бесплатно до $1 млн выручки",
+      "license": "stable-audio-community",
+      "ok": "warn",
+      "default": false,
+      "size_gb": 3.5,
+      "dest": "models",
+      "snapshot": true,
+      "gated": true,
+      "repo": "stabilityai/stable-audio-3-small-sfx",
+      "sub": "audio/stable-audio-3-small-sfx"
+    },
+    {
+      "id": "sa3-music",
+      "group": "Звук",
+      "name": "Stable Audio 3 Small Music (инструментал) — нужен токен HF, до $1 млн",
+      "license": "stable-audio-community",
+      "ok": "warn",
+      "default": false,
+      "size_gb": 3.5,
+      "dest": "models",
+      "snapshot": true,
+      "gated": true,
+      "repo": "stabilityai/stable-audio-3-small-music",
+      "sub": "audio/stable-audio-3-small-music"
+    }
+  ]
+}
