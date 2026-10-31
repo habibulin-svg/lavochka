@@ -30,3 +30,7 @@
 | Moscow Thunder [Russian Eurodance] | clarkfreemusic | 138 | нет | https://pixabay.com/music/dance-moscow-thunder-russian-eurodance-at-138-bpm-612842/ |
 
 **Content ID** — трек зарегистрирован в YouTube: видео и стримы по игре с этой музыкой могут получать претензии (обычно снимаются по ссылке на лицензию Pixabay, но это лишняя возня для стримеров). Для игры, которую будут стримить, лучше треки без Content ID.
+
+## Решение пользователя (2026-11-01)
+
+Из скачанного берём **только** Pixabay: BeatKitchen — Falling Into Time (145), I need you (143), Midnight Pulse (141), Unstoppable (150); clarkfreemusic — Moscow Thunder (138). CC0 с OpenGameArt и van_Wiese — не берём. Четыре трека BeatKitchen — с Content ID (предупреждение о претензиях на YouTube пользователь видел). Из своих (ACE-Step XL) пользователь пришлёт выбор отдельно.
