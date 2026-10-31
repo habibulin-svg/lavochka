@@ -1,0 +1,20 @@
+# ГОПС, партия 7: пробные треки (инструментал) — меню, бой во дворе, внезапная смерть.
+out: G:/temp/studio/out/gops/07-music
+duration: 60
+seeds: [1, 2]
+tracks:
+  - name: menu
+    bpm: 128
+    caption: >-
+      1990s Russian eurodance instrumental, cheap Casio synthesizer lead, drum machine, catchy keyboard riff,
+      cheerful and a bit cheesy, cassette tape sound
+  - name: yard-battle
+    bpm: 112
+    caption: >-
+      Comic 1990s Russian estrada instrumental, accordion and synth bass, bouncy swing rhythm, sneaky playful tension,
+      lo-fi cassette sound, cartoon artillery game music
+  - name: sudden-death
+    bpm: 150
+    caption: >-
+      Tense 1990s action movie synth instrumental, fast drum machine, pulsing bass, rising alarm-like synth stabs,
+      urgent and comic at the same time

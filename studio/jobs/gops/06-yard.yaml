@@ -1,0 +1,65 @@
+# ГОПС, партия 6: первая тема ландшафта — «Двор» (хрущёвки, качели, гаражи).
+# Стиль — как у гопника (a-toon3d): стилизованный 3D-рендер, toon-тени, мягкий свет, насыщенно, но по-90-му.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1024, height: 1024, steps: 8}
+seeds: [7, 8, 9]
+style: >-
+  Stylized cartoon 3D game art, soft toon shading, clean shapes, warm late-summer evening light,
+  Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+
+items:
+  # задний план: панорама двора (параллакс, ближний слой фона)
+  - name: bg-near
+    width: 1792
+    height: 768
+    prompt: >-
+      Wide side-view panorama of a Soviet courtyard: a row of five-storey grey panel khrushchevka buildings
+      with balconies and laundry on lines, rusty metal garages, tall poplar trees, a playground with a slide,
+      seen from far away at eye level, horizon in the lower third, golden evening sky with soft clouds. {style}
+
+  # дальний план: небо и силуэты высоток
+  - name: bg-far
+    width: 1792
+    height: 768
+    prompt: >-
+      Wide panorama of an evening sky over a Russian city: soft orange and violet gradient, a few fluffy clouds,
+      distant silhouettes of nine-storey panel blocks, a factory chimney and a TV tower on the horizon at the very bottom,
+      simple flat background for a 2D game. {style}
+
+  # грунт в разрезе: заливка разрушаемого ландшафта (потом делаем бесшовным)
+  - name: ground
+    prompt: >-
+      Flat texture of a cross-section of courtyard soil seen straight on, filling the whole frame edge to edge:
+      packed brown earth with embedded broken red bricks, gravel, pieces of old asphalt, rusty pipe fragments,
+      bottle caps and sunflower seed husks, hand-painted 2D game terrain texture, even lighting, no horizon, no sky. {style}
+
+  # верхний край ландшафта: трава/асфальт полосой
+  - name: crust
+    width: 1792
+    height: 512
+    prompt: >-
+      Horizontal strip texture of a courtyard ground edge seen from the side: a thin layer of cracked grey asphalt
+      with tufts of green grass and dandelions growing over the edge, dirt underneath, hand-painted 2D game terrain border,
+      plain grey background above and below. {style}
+
+  # предметы двора (вырезаются BiRefNet, ставятся на ландшафт)
+  - name: prop-swing
+    prompt: >-
+      Single object isolated on plain light grey background, side view: rusty Soviet playground swing with a metal frame painted blue and yellow. {style}
+  - name: prop-bench
+    prompt: >-
+      Single object isolated on plain light grey background, side view: old Soviet courtyard bench with green wooden slats and concrete legs. {style}
+  - name: prop-car
+    prompt: >-
+      Single object isolated on plain light grey background, side view: small old boxy Soviet sedan car, faded beige paint, rust spots, no brand logos. {style}
+  - name: prop-bin
+    prompt: >-
+      Single object isolated on plain light grey background, side view: rusty green metal garbage container with trash sticking out. {style}
+  - name: prop-tires
+    prompt: >-
+      Single object isolated on plain light grey background, side view: half-buried car tires painted in bright colors as a playground border. {style}
+  - name: prop-garage
+    prompt: >-
+      Single object isolated on plain light grey background, front view: rusty metal garage with a padlock and graffiti-free doors. {style}
