@@ -7,12 +7,18 @@ G:/ai/bin/uv.exe run --no-sync --project G:/ai/ACE-Step-1.5 python studio/runner
   duration: 60
   seeds: [1, 2]
   lm: true            # языковая модель ACE-Step строит структуру трека (вступление, брейк, раскачка)
+  lm_model: acestep-5Hz-lm-4B          # по умолчанию 1.7B
+  dit: acestep-v15-xl-sft              # по умолчанию acestep-v15-turbo
+  steps: 50                            # turbo — 8, base/sft — 32–64
+  guidance: 7.0                        # CFG, только не-turbo
+  offload: true                        # выгрузка в RAM между этапами + INT8 (XL на 12 ГБ)
   tracks:
     - name: menu
       caption: "..."
       bpm: 128          # необязательно
       keyscale: A minor # необязательно
       duration: 90      # необязательно
+      reference: G:/temp/Music/x.mp3   # образец звучания: тембр, сведение, характер (мелодия и ритм не берутся)
 Пишет <out>/<имя>-<сид>.flac, <out>/ogg/<имя>-<сид>.ogg (Opus 96k, −14 LUFS — все треки одной громкости,
 динамика — за аранжировкой) и manifest.json. Только инструментал (вокал на русском у модели не проверен).
 """
@@ -42,12 +48,22 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     tmp = out / '_raw'
 
+    offload = job.get('offload', False)
+    dit_name = job.get('dit', 'acestep-v15-turbo')
+    turbo = 'turbo' in dit_name
     dit = AceStepHandler()
-    dit.initialize_service(project_root=str(ACE), config_path='acestep-v15-turbo', device='cuda')
+    msg, ok = dit.initialize_service(project_root=str(ACE), config_path=dit_name, device='cuda',
+                                     offload_to_cpu=offload, offload_dit_to_cpu=offload,
+                                     quantization='int8_weight_only' if offload else None)
+    if not ok:
+        sys.exit(f'DiT не загрузился: {msg}')
     llm = LLMHandler()
     use_lm = job.get('lm', False)
     if use_lm:
-        llm.initialize(checkpoint_dir=str(ACE / 'checkpoints'), lm_model_path='acestep-5Hz-lm-1.7B', backend='pt', device='cuda')
+        msg, ok = llm.initialize(checkpoint_dir=str(ACE / 'checkpoints'), lm_model_path=job.get('lm_model', 'acestep-5Hz-lm-1.7B'),
+                                 backend='pt', device='cuda', offload_to_cpu=offload)
+        if not ok:
+            sys.exit(f'LM не загрузилась: {msg}')
     (out / 'ogg').mkdir(exist_ok=True)
 
     manifest = []
@@ -56,7 +72,9 @@ def main():
             params = GenerationParams(
                 caption=t['caption'], lyrics='[Instrumental]', instrumental=True,
                 bpm=t.get('bpm'), keyscale=t.get('keyscale', ''), duration=t.get('duration', job.get('duration', 60)),
-                inference_steps=8, seed=seed, thinking=use_lm,
+                inference_steps=job.get('steps', 8), seed=seed, thinking=use_lm,
+                guidance_scale=job.get('guidance', 7.0), shift=3.0 if turbo else 1.0,
+                reference_audio=t.get('reference'),
                 use_cot_metas=False, use_cot_caption=False, use_cot_language=False,
             )
             cfg = GenerationConfig(batch_size=1, audio_format='flac')
@@ -71,7 +89,8 @@ def main():
             shutil.move(str(files[0]), dst)
             subprocess.run(['G:/ai/ffmpeg/bin/ffmpeg.exe', '-v', 'error', '-y', '-i', str(dst), '-af', 'loudnorm=I=-14:TP=-1:LRA=9',
                             '-ar', '48000', '-c:a', 'libopus', '-b:a', '96k', str(out / 'ogg' / (dst.stem + '.ogg'))], check=True)
-            manifest.append({'file': dst.name, 'caption': t['caption'], 'seed': seed, 'model': 'ACE-Step 1.5 turbo', 'license': 'MIT'})
+            manifest.append({'file': dst.name, 'caption': t['caption'], 'seed': seed, 'model': f'ACE-Step 1.5 {dit_name}',
+                             'reference': t.get('reference'), 'license': 'MIT'})
             print('готово', dst.name, flush=True)
     (out / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding='utf-8')
 

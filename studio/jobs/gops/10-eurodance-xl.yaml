@@ -1,0 +1,40 @@
+# ГОПС, партия 10: евроданс на сильной связке ACE-Step (XL-sft 4B, 50 шагов, CFG + языковая модель 4B)
+# с образцами звучания из референсов пользователя (решение пользователя 2026-11-01: «дать референсы, усилия увеличить»;
+# риск сходства — на пользователе). Образец задаёт только тембр/сведение/характер, мелодия и ритм не берутся.
+# Партия 9 (turbo 2B) пользователю не понравилась, «более-менее» — только battle-main-11.
+out: G:/temp/studio/out/gops/10-eurodance-xl
+seeds: [101, 202, 303]
+lm: true
+lm_model: acestep-5Hz-lm-4B
+dit: acestep-v15-xl-sft
+steps: 50
+guidance: 7.0
+offload: true
+tracks:
+  - name: battle-main
+    bpm: 136
+    keyscale: E minor
+    duration: 120
+    reference: G:/temp/Music/2 Unlimited - No Limit.mp3
+    caption: >-
+      1990s eurodance instrumental, hard punchy four-on-the-floor kick, offbeat bass, big hoover synth stabs,
+      bright detuned saw lead with a memorable hook, rolling hi-hats, snare roll build-ups into energetic drops,
+      polished loud club mix, arcade fighting energy, no vocals
+
+  - name: menu
+    bpm: 136
+    keyscale: A minor
+    duration: 90
+    reference: G:/temp/Music/Maxx - Get A Way (Airplay Mix).mp3
+    caption: >-
+      1990s eurodance instrumental main theme, euphoric catchy saw lead melody, house piano chords, driving octave bass,
+      punchy kick, claps, rave stabs, breakdown with strings and a big build-up, polished radio mix, no vocals
+
+  - name: sudden-death
+    bpm: 145
+    keyscale: F minor
+    duration: 60
+    reference: G:/temp/Music/The Immortals - Mortal Kombat (OST Смертельная битва).mp3
+    caption: >-
+      aggressive 1990s techno-eurodance instrumental, relentless kick, dark hoover riff, alarm-like synth stabs,
+      fast arpeggios, constant snare rolls, urgent climactic tension, no vocals
