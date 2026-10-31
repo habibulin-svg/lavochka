@@ -1,0 +1,20 @@
+# ГОПС, партия 8: первые звуки (оружие, ландшафт, движение, интерфейс). По 2 варианта.
+out: G:/temp/studio/out/gops/08-sfx
+seeds: [1, 2]
+sounds:
+  - {name: explosion-small, duration: 2, prompt: "small cartoon explosion, firecracker pop with dirt debris falling, punchy"}
+  - {name: explosion-medium, duration: 3, prompt: "medium explosion in a courtyard, deep boom, dirt and gravel raining down, short echo off buildings"}
+  - {name: explosion-big, duration: 4, prompt: "huge cartoon explosion, massive boom with rumble and long debris rain, car alarm starts in the distance"}
+  - {name: rocket-launch, duration: 2, prompt: "shoulder rocket launcher firing, sharp whoosh and hiss of rocket flying away"}
+  - {name: grenade-bounce, duration: 1, prompt: "metal grenade bouncing once on packed dirt and gravel, dull clank"}
+  - {name: bottle-smash, duration: 2, prompt: "glass bottle smashing on asphalt, shards scattering"}
+  - {name: slingshot, duration: 1, prompt: "rubber slingshot snap release, short twang"}
+  - {name: punch, duration: 1, prompt: "cartoon punch hit, soft thud with a whoosh, comic"}
+  - {name: steps-gravel, duration: 2, prompt: "quick light footsteps of sneakers on gravel and dirt, short walking loop"}
+  - {name: jump, duration: 1, prompt: "small cartoon jump whoosh with cloth rustle of a tracksuit"}
+  - {name: splash, duration: 2, prompt: "small body falling into a muddy puddle, big splash, comic"}
+  - {name: rope-throw, duration: 1, prompt: "rope with metal hook thrown and catching on concrete, whip and clank"}
+  - {name: crate-drop, duration: 2, prompt: "wooden crate dropped from height landing on dirt, heavy thud with creak"}
+  - {name: wind-loop, duration: 6, prompt: "steady gusty wind in an empty courtyard, distant trees rustling, seamless ambience"}
+  - {name: pigeons, duration: 2, prompt: "flock of pigeons flapping wings taking off, cooing"}
+  - {name: timer-tick, duration: 1, prompt: "single short clock tick, clean, UI sound"}
