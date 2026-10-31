@@ -1,0 +1,26 @@
+# ГОПС, партия 2: эталон гопника под 3D (TripoSG → Blender).
+# Стиль выбран пользователем — a-toon3d. Нужна поза под риг: стоит прямо, руки чуть в стороны (A-поза),
+# ноги слегка расставлены, ничего не перекрывает тело.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1024, height: 1024, steps: 8}
+seeds: [101, 202, 303, 404, 505, 606]
+style: >-
+  Stylized low-poly 3D game character render, toon shading with clean black outline, flat colors, soft studio light.
+  Chibi proportions, head about 1/2.5 of body height. He wears a huge oversized eight-panel newsboy flat cap
+  in black-and-white herringbone wool tweed with a button on top, the cap is much wider than his shoulders
+  and pulled down so the eyes are in its shadow. Buzz-cut hair, nothing in the mouth,
+  black tracksuit with three white side stripes on sleeves and legs (no logos), white worn sneakers.
+  Comic and cute rather than menacing. Plain light grey background, no shadow on the floor, no text, no watermark.
+
+items:
+  - name: front-apose
+    prompt: >-
+      Full body of a tiny Russian 1990s gopnik standing straight facing the camera, symmetrical A-pose:
+      arms straight and slightly away from the body, empty open hands, feet slightly apart, centered. {style}
+
+  - name: threequarter-apose
+    prompt: >-
+      Full body of a tiny Russian 1990s gopnik in three-quarter front view, standing straight in A-pose:
+      arms slightly away from the body, empty hands, feet slightly apart, centered. {style}
