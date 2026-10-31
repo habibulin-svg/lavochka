@@ -12,8 +12,11 @@ from mathutils import Vector
 args = sys.argv[sys.argv.index('--') + 1:]
 src, dst = args[0], args[1]
 
-bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=src)
+if src.endswith('.blend'):
+    bpy.ops.wm.open_mainfile(filepath=src)
+else:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.gltf(filepath=src)
 objs = [o for o in bpy.context.scene.objects if o.type == 'MESH']
 
 # габариты всей модели
@@ -27,7 +30,7 @@ scene = bpy.context.scene
 scene.render.engine = 'BLENDER_WORKBENCH'
 shading = scene.display.shading
 shading.light = 'STUDIO'
-shading.color_type = 'SINGLE'
+shading.color_type = 'MATERIAL' if any(o.data.materials for o in objs) else 'SINGLE'
 shading.single_color = (0.82, 0.8, 0.76)
 shading.show_object_outline = True
 shading.show_cavity = True
