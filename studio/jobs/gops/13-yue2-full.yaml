@@ -1,0 +1,105 @@
+# ГОПС, партия 13: полный набор музыки на YuE2 без адаптера (решение пользователя 2026-11-01:
+# «отличные треки», адаптер не нужен; по несколько вариантов на ситуацию, чтобы не надоедало).
+# Ночной прогон. Порядок — по важности: если к утру не дойдёт до конца, главное уже есть.
+# menu и battle — те же промпты, что в партии 12 (сиды 11, 22 оттуда скопированы, не пересчитываются).
+out: G:/temp/studio/out/gops/13-yue2-full
+max_duration: 130
+tracks:
+  - name: menu
+    seeds: [11, 22, 33, 44]
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, euphoric, catchy supersaw lead melody, house piano chords,
+      driving octave bass, punchy kick, claps, rave stabs, big build-up, polished radio mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: menu-b
+    seeds: [11, 22]
+    style: >-
+      eurodance, 1990s, instrumental, 134 bpm, uplifting, bright piano riff, warm string pads, bouncy octave bass,
+      four on the floor kick, claps, catchy synth hook, feel-good summer radio mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: battle
+    seeds: [11, 22, 33, 44]
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, energetic, hard kick, offbeat bass, hoover synth lead,
+      rave stabs, snare rolls, arcade fighting game energy, loud club mix
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[bridge]\n[chorus]"
+
+  - name: battle-b
+    seeds: [11, 22, 33]
+    style: >-
+      eurodance, 1990s, instrumental, 138 bpm, driving, punchy four on the floor kick, rolling offbeat bass,
+      bright detuned saw lead with a memorable hook, rolling hi-hats, snare roll build-ups, big drops, loud club mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: calm
+    seeds: [11, 22, 33, 44]
+    max_duration: 120
+    style: >-
+      eurodance, 1990s, instrumental, 128 bpm, dark, minimal, muted kick, filtered pulsing bass,
+      sneaky minor synth riff, sparse stabs, airy pads, tension without climax, medium-low energy
+    lyrics: "[intro]\n[verse]\n[interlude]\n[verse]\n[outro]"
+
+  - name: team-select
+    seeds: [11, 22, 33]
+    max_duration: 90
+    style: >-
+      eurodance, 1990s, instrumental, 132 bpm, confident, cheeky, steady kick, offbeat bass groove,
+      warm organ house chords, plucky synth arpeggio, claps, medium energy, no big drops
+    lyrics: "[intro]\n[verse]\n[chorus]\n[outro]"
+
+  - name: sudden-death
+    seeds: [11, 22, 33, 44]
+    max_duration: 90
+    style: >-
+      hard eurodance, techno, 1990s, instrumental, 145 bpm, aggressive, dark hoover riff, alarm synth stabs,
+      fast arpeggios, constant snare rolls, urgent climax
+    lyrics: "[intro]\n[chorus]\n[bridge]\n[chorus]"
+
+  - name: timed
+    seeds: [11, 22, 33, 44]
+    max_duration: 90
+    style: >-
+      eurodance, rave, 1990s, instrumental, 150 bpm, frantic, fun, bouncy kick, tribal percussion,
+      rapid piano stabs, racing synth arpeggio, high energy, race against the clock
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]"
+
+  - name: victory
+    seeds: [11, 22, 33, 44, 55, 66]
+    max_duration: 20
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, triumphant, short victory jingle, big major key synth fanfare,
+      kick and bass, ends on a sustained chord
+    lyrics: "[intro]\n[outro]"
+
+  - name: defeat
+    seeds: [11, 22, 33, 44, 55, 66]
+    max_duration: 15
+    style: >-
+      eurodance, 1990s, instrumental, 110 bpm, comic, sad, short defeat jingle, detuned synth melody
+      falling down in pitch, slowing down, ends abruptly
+    lyrics: "[intro]\n[outro]"
+
+  # запас, если ночи хватит: ещё по варианту на главные ситуации
+  - name: menu-b
+    seeds: [33, 44]
+    style: >-
+      eurodance, 1990s, instrumental, 134 bpm, uplifting, bright piano riff, warm string pads, bouncy octave bass,
+      four on the floor kick, claps, catchy synth hook, feel-good summer radio mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: battle-b
+    seeds: [44, 55]
+    style: >-
+      eurodance, 1990s, instrumental, 138 bpm, driving, punchy four on the floor kick, rolling offbeat bass,
+      bright detuned saw lead with a memorable hook, rolling hi-hats, snare roll build-ups, big drops, loud club mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: calm
+    seeds: [55, 66]
+    max_duration: 120
+    style: >-
+      eurodance, 1990s, instrumental, 128 bpm, dark, minimal, muted kick, filtered pulsing bass,
+      sneaky minor synth riff, sparse stabs, airy pads, tension without climax, medium-low energy
+    lyrics: "[intro]\n[verse]\n[interlude]\n[verse]\n[outro]"
