@@ -19,6 +19,7 @@ CFG_DIR = os.path.join(os.environ.get("APPDATA", HOME), "Pereezd")
 CFG = os.path.join(CFG_DIR, "settings.json")
 UA = {"User-Agent": "pereezd/1.0"}
 NOWIN = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
+START_PATH = os.environ.get("PATH", "")
 
 
 def here(*p):
@@ -107,7 +108,14 @@ def refresh_path():
         except OSError:
             pass
     extra = [r"C:\Program Files\Git\cmd", r"C:\Program Files\nodejs", os.path.join(os.environ.get("APPDATA", ""), "npm")]
-    os.environ["PATH"] = ";".join(parts + extra + [os.environ.get("PATH", "")])
+    # заново от PATH при запуске и без повторов: раньше каждый вызов дописывал текущий PATH, он рос вдвое до предела Windows
+    seen, out = set(), []
+    for d in ";".join(parts + extra + [START_PATH]).split(";"):
+        k = d.strip().rstrip("\\").lower()
+        if k and k not in seen:
+            seen.add(k)
+            out.append(d.strip())
+    os.environ["PATH"] = ";".join(out)
 
 
 def decode_line(raw):
@@ -129,6 +137,8 @@ def run(cmd, log, cwd=None, env=None, check=True, timeout=None, shell=False):
     if env:
         e.update({k: str(v) for k, v in env.items()})
     shown = cmd if isinstance(cmd, str) else " ".join(f'"{c}"' if " " in str(c) else str(c) for c in cmd)
+    if isinstance(cmd, list) and len(cmd) > 2 and cmd[0] == "setx":
+        shown = f"setx {cmd[1]} ***"  # через setx идут токены и ключи — в журнал не пишем
     log(f"> {shown}" + (f"   (в {cwd})" if cwd else ""))
     try:
         p = subprocess.Popen(cmd, cwd=cwd, env=e, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -184,15 +194,35 @@ class _StripAuth(urllib.request.HTTPRedirectHandler):
 _opener = urllib.request.build_opener(_StripAuth)
 
 
+def net_retry(fn, tries=4, log=None):
+    """Обрывы связи (WinError 10054, таймауты) повторяем с паузой; ответы сервера вроде 403/404 — сразу наверх."""
+    for i in range(tries):
+        try:
+            return fn()
+        except urllib.error.HTTPError:
+            raise
+        except OSError as e:  # URLError, ConnectionResetError, таймаут
+            if i == tries - 1:
+                raise
+            if log:
+                log(f"  связь оборвалась ({e}), повтор через {3 * (i + 1)} с")
+            time.sleep(3 * (i + 1))
+
+
 def http_json(url, token=None, timeout=30):
     h = dict(UA)
     if token:
         h["Authorization"] = f"Bearer {token}"
-    return json.loads(_opener.open(urllib.request.Request(url, headers=h), timeout=timeout).read().decode("utf-8"))
+    return net_retry(lambda: json.loads(_opener.open(urllib.request.Request(url, headers=h), timeout=timeout).read().decode("utf-8")))
 
 
 def download(url, dest, log, token=None, size=None, stop=None):
-    """Скачивание с докачкой (.part + Range). Уже скачанный файл нужного размера пропускается."""
+    """Скачивание с докачкой (.part + Range); при обрыве связи само докачивает с места обрыва."""
+    return net_retry(lambda: _download(url, dest, log, token, size, stop), tries=6, log=log)
+
+
+def _download(url, dest, log, token=None, size=None, stop=None):
+    """Уже скачанный файл нужного размера пропускается."""
     if os.path.exists(dest) and (size is None or os.path.getsize(dest) == size):
         log(f"  уже есть: {os.path.basename(dest)}")
         return dest
@@ -211,7 +241,9 @@ def download(url, dest, log, token=None, size=None, stop=None):
             os.replace(part, dest)
             return dest
         if e.code in (401, 403):
-            raise RuntimeError(f"доступ закрыт ({e.code}): нужен токен Hugging Face и принятая лицензия на странице модели")
+            page = url.split("/resolve/")[0]
+            raise RuntimeError(f"доступ закрыт ({e.code}): " + ("токен есть, но" if token else "нужен токен Hugging Face, и") +
+                               f" лицензию надо принять на {page} (тем же аккаунтом, что и токен), потом запустить ещё раз")
         raise
     if have and r.status != 206:
         have = 0
@@ -234,7 +266,7 @@ def download(url, dest, log, token=None, size=None, stop=None):
                 pct = f"{done * 100 // total}%" if total else gb(done)
                 log(f"    {os.path.basename(dest)}: {pct}, {speed:.1f} МБ/с", replace=True)
     if total and done < total:
-        raise RuntimeError(f"оборвалось на {gb(done)} из {gb(total)} — запустите ещё раз, докачается")
+        raise ConnectionError(f"оборвалось на {gb(done)} из {gb(total)}")
     os.replace(part, dest)
     return dest
 
@@ -382,7 +414,7 @@ def install_base(item, log, stop=None):
         f = download(url, os.path.join(tmp, name), log, size=size, stop=stop)
         run([f] + a.get("args", []), log, check=False)
     elif a["kind"] == "node_msi":
-        txt = urllib.request.urlopen(urllib.request.Request(a["index"], headers=UA), timeout=30).read().decode()
+        txt = net_retry(lambda: urllib.request.urlopen(urllib.request.Request(a["index"], headers=UA), timeout=30).read().decode())
         name = re.search(a["pattern"], txt).group(0)
         f = download(a["base"] + name, os.path.join(tmp, name), log, stop=stop)
         run(["msiexec", "/i", f, "/passive", "/norestart"], log, check=False)
@@ -525,6 +557,10 @@ def restore(pack, project, part, log, stop=None):
             dst = os.path.join(project, it["rel"])
         elif it["root"] == "ABS" and part == "project":
             dst = it["rel"]
+            drive = os.path.splitdrive(dst)[0]
+            if drive and not os.path.exists(drive + os.sep):
+                log(f"  пропускаю {dst}: диска {drive} нет — скопируйте вручную из {src}")
+                continue
         else:
             continue
         if os.path.isfile(src) and os.path.isfile(dst) and dst.endswith("settings.json"):
