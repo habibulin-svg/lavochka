@@ -306,6 +306,7 @@ def collect_plan(project, log):
         (".ssh", True, "SSH-ключи: GitHub и прод-сервер (секрет!)"),
         (os.path.join(".claude", "projects", key, "memory"), True, "память Claude по проекту"),
         (os.path.join(".claude", "settings.json"), True, "общие настройки Claude"),
+        (os.path.join(".claude", "projects", key), False, "история сессий Claude по проекту (большая, по желанию)"),
         (".gitconfig", True, "настройки git"),
         (os.path.join(".config", "git"), True, "настройки git"),
     ]
