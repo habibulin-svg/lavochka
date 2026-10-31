@@ -1,0 +1,58 @@
+# ГОПС, партия 1: поиск облика гопника (концепты под выбор пользователя).
+# Решения: чиби ≈2,5 головы, кепка шире плеч, треники с лампасами, юмор без жестокости.
+# Отобранное пойдёт в TripoSG → Blender, поэтому нужен чистый силуэт на ровном фоне.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1024, height: 1024, steps: 8}
+seeds: [11, 22, 33, 44]
+style: >-
+  Chibi proportions, head about 1/2.5 of body height. He wears a huge oversized flat ivy cap
+  (low flat crown sloping forward to a short stiff brim sewn onto the crown, clearly visible black-and-white herringbone wool tweed pattern,
+  NOT a baseball cap, NOT a beanie), the cap is much wider than his shoulders and pulled down over his eyes.
+  Buzz-cut hair, slouching standing pose with hands in pockets, nothing in the mouth,
+  cheap tracksuit with three side stripes (no logos), worn sneakers.
+  Comic and cute rather than menacing, Russian 1990s courtyard vibe.
+  Full body standing, centered, plain light grey background, no text, no watermark.
+
+items:
+  - name: a-toon3d
+    prompt: >-
+      Stylized low-poly 3D game character render of a tiny Russian 1990s street hooligan (gopnik),
+      toon shading with clean black outline, flat colors, soft studio light. {style}
+
+  - name: b-clay
+    prompt: >-
+      Claymation figurine of a tiny Russian 1990s street hooligan (gopnik), plasticine texture,
+      handmade look, warm light. {style}
+
+  - name: c-cartoon2d
+    prompt: >-
+      2D cartoon game sprite concept of a tiny Russian 1990s street hooligan (gopnik), thick ink lines,
+      cel shading, bold readable silhouette like a classic 1990s artillery game. {style}
+
+  - name: d-turnaround
+    width: 1536
+    height: 768
+    prompt: >-
+      Character turnaround sheet, the same tiny Russian 1990s gopnik shown three times in a row:
+      front view, side profile view, back view, identical proportions and outfit, stylized low-poly 3D toon render,
+      orthographic, neutral T-pose-free standing pose. {style}
+
+  - name: e-crew
+    width: 1536
+    height: 768
+    prompt: >-
+      Lineup of four tiny chibi Russian 1990s gopniks standing side by side, each clearly different:
+      a skinny pale one with a hoarse sick look and a scarf, a ginger freckled one, a stocky big one like a boar,
+      a sly one with a toothpick. All wear oversized flat caps and tracksuits, stylized low-poly 3D toon render. {style}
+
+  - name: f-caps
+    width: 1536
+    height: 768
+    prompt: >-
+      Prop sheet of eight oversized cartoon flat caps for a chibi game character, arranged in a grid, all low and flat,
+      sloping forward with a short stiff brim: flat ivy cap in black-white herringbone tweed, flat ivy cap in grey herringbone,
+      eight-panel newsboy cap in dark grey speckled wool with a button on top, huge black leather flat cap,
+      brown checkered tweed flat cap, navy wool flat cap, light grey summer flat cap, worn-out patched flat cap.
+      Stylized low-poly 3D toon render, plain light grey background, no text.
