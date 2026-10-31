@@ -1,0 +1,70 @@
+# ГОПС, партия 9: музыка — ЕВРОДАНС как основной стиль (решение пользователя 2026-10-31).
+# Референсы пользователя (G:/temp/Music, только для замеров — в генерацию не идут): 123–144 BPM, чаще 136,
+# громкость −9…−11 LUFS, энергия ровная, брейк в середине. Динамика — по игровой ситуации.
+# Имена исполнителей в подписях не пишем: жанр и приёмы описываем словами.
+out: G:/temp/studio/out/gops/09-eurodance
+seeds: [11, 22]
+lm: true
+tracks:
+  - name: menu
+    bpm: 136
+    keyscale: A minor
+    duration: 90
+    caption: >-
+      1990s eurodance instrumental, main theme, 136 BPM, punchy four-on-the-floor kick, offbeat open hi-hats, handclaps,
+      driving octave-jumping synth bass, bright detuned saw lead with a catchy heroic hook, house piano chords,
+      rave stabs, snare roll build-ups, short breakdown with strings, euphoric and energetic, polished 90s club mix, no vocals
+
+  - name: brigade-select
+    bpm: 132
+    keyscale: C minor
+    duration: 60
+    caption: >-
+      1990s eurodance instrumental loop for a team select screen, 132 BPM, steady kick and bass groove, warm organ-house chords,
+      plucky arpeggio, light percussion, confident and cheeky, medium energy, no big drops, no vocals
+
+  - name: battle-calm
+    bpm: 136
+    keyscale: D minor
+    duration: 90
+    caption: >-
+      1990s eurodance instrumental for a turn-based battle, reduced arrangement, 136 BPM, muted kick with filtered bass,
+      sneaky pizzicato-like synth riff, sparse rave stabs, tension without climax, steady loop, medium-low energy, no vocals
+
+  - name: battle-main
+    bpm: 136
+    keyscale: E minor
+    duration: 120
+    caption: >-
+      1990s eurodance instrumental for an arcade battle, 136 BPM, full arrangement, hard kick and offbeat bass, big hoover synth stabs,
+      bright saw lead hook, rolling 16th hi-hats, snare build-ups into energetic drops, fighting-game energy, no vocals
+
+  - name: sudden-death
+    bpm: 145
+    keyscale: F minor
+    duration: 60
+    caption: >-
+      1990s hard eurodance rave instrumental, 145 BPM, relentless kick, aggressive hoover and alarm-like synth stabs,
+      fast arpeggios, constant snare rolls, urgent and climactic, maximum energy, no vocals
+
+  - name: time-attack
+    bpm: 150
+    keyscale: G minor
+    duration: 60
+    caption: >-
+      fast 1990s eurodance happy-hardcore instrumental for a race against the clock, 150 BPM, bouncy kick, rapid piano stabs,
+      racing synth arpeggio, upbeat and frantic, no vocals
+
+  - name: victory
+    bpm: 136
+    keyscale: A major
+    duration: 12
+    caption: >-
+      short 1990s eurodance victory jingle, triumphant major-key synth fanfare over a kick and bass, ends on a big sustained chord, no vocals
+
+  - name: defeat
+    bpm: 110
+    keyscale: A minor
+    duration: 10
+    caption: >-
+      short comic defeat jingle in 1990s eurodance style, synth melody slowing down and falling in pitch, sad trombone-like synth, ends abruptly, no vocals
