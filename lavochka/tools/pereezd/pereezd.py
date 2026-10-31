@@ -346,7 +346,7 @@ def collect_plan(project, log):
         p = os.path.join(HOME, rel)
         if os.path.exists(p):
             items.append(("Домашняя папка", "HOME", rel, p, d))
-    for extra in (r"D:\temp\фоны",):
+    for extra in (r"D:\temp\фоны", r"G:\temp\фоны"):
         if os.path.exists(extra):
             items.append(("Прочее", "ABS", extra, extra, True))
     return items
