@@ -54,7 +54,8 @@ def stage_demo():
     for sit, seed in items():
         song, pl = compose(sit, seed)
         name = f'{sit}-{seed}'
-        hook = ' '.join(f'{NAMES[p % 12]}{p // 12 - 1}' for _, _, p in song.hook[:12])
+        line = [n.pitch for n in song.notes if n.track == pl.lead][:12] if sit == 'defeat' else [p for _, _, p in song.hook[:12]]
+        hook = ' '.join(f'{NAMES[p % 12]}{p // 12 - 1}' for p in line)
         meta[name] = {'bpm': song.bpm, 'key': NAMES[song.key % 12] + ' minor', 'prog': [str(c) for c in song.prog],
                       'bars': song.bars, 'form': [f'{s}:{n}' for s, _, n in song.sections], 'lead': pl.lead, 'hook': hook}
         wav = OUT / 'demo' / f'{name}.wav'
