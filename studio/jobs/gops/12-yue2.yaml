@@ -1,0 +1,48 @@
+# ГОПС, партия 12: YuE2 (ComfyUI, int8) — переход с ACE-Step (решение пользователя 2026-11-01: «абсолютно другой уровень»).
+# Без адаптера Mothersuperior (CC BY-NC): инструментал — заглушкой голоса Vocal в партитуре.
+out: G:/temp/studio/out/gops/12-yue2
+seeds: [11, 22]
+max_duration: 130
+tracks:
+  - name: menu
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, euphoric, catchy supersaw lead melody, house piano chords,
+      driving octave bass, punchy kick, claps, rave stabs, big build-up, polished radio mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: battle
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, energetic, hard kick, offbeat bass, hoover synth lead,
+      rave stabs, snare rolls, arcade fighting game energy, loud club mix
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[bridge]\n[chorus]"
+
+  - name: sudden-death
+    style: >-
+      hard eurodance, techno, 1990s, instrumental, 145 bpm, aggressive, dark hoover riff, alarm synth stabs,
+      fast arpeggios, constant snare rolls, urgent climax
+    lyrics: "[intro]\n[chorus]\n[bridge]\n[chorus]"
+
+  # для сравнения: те же три — с адаптером Mothersuperior (CC BY-NC, ждём ответа автора о коммерции)
+  - name: menu-lora
+    lora: ar_lora_inst_v3abc_comfyui.safetensors
+    silence_vocal: false
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, euphoric, catchy supersaw lead melody, house piano chords,
+      driving octave bass, punchy kick, claps, rave stabs, big build-up, polished radio mix
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: battle-lora
+    lora: ar_lora_inst_v3abc_comfyui.safetensors
+    silence_vocal: false
+    style: >-
+      eurodance, 1990s, instrumental, 136 bpm, energetic, hard kick, offbeat bass, hoover synth lead,
+      rave stabs, snare rolls, arcade fighting game energy, loud club mix
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[bridge]\n[chorus]"
+
+  - name: sudden-death-lora
+    lora: ar_lora_inst_v3abc_comfyui.safetensors
+    silence_vocal: false
+    style: >-
+      hard eurodance, techno, 1990s, instrumental, 145 bpm, aggressive, dark hoover riff, alarm synth stabs,
+      fast arpeggios, constant snare rolls, urgent climax
+    lyrics: "[intro]\n[chorus]\n[bridge]\n[chorus]"
