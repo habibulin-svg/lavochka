@@ -1,0 +1,55 @@
+# ГОПС, партия 11: остальные игровые ситуации на той же связке, что партия 10 (XL-sft + LM 4B + образцы).
+# Пользователь 2026-11-01: «да, делай все».
+out: G:/temp/studio/out/gops/11-eurodance-xl-rest
+seeds: [101, 202, 303]
+lm: true
+lm_model: acestep-5Hz-lm-4B
+dit: acestep-v15-xl-sft
+steps: 50
+guidance: 7.0
+offload: true
+tracks:
+  - name: brigade-select
+    bpm: 132
+    keyscale: C minor
+    duration: 60
+    reference: G:/temp/Music/3-O-Matic - Success.mp3
+    caption: >-
+      1990s eurodance instrumental loop for a team select screen, steady kick and offbeat bass groove,
+      warm organ-house chords, plucky synth arpeggio, claps, confident and cheeky, medium energy, no big drops, no vocals
+
+  - name: battle-calm
+    bpm: 136
+    keyscale: D minor
+    duration: 90
+    reference: G:/temp/Music/Culture beat - Mr. Vain.mp3
+    caption: >-
+      dark 1990s eurodance instrumental, reduced arrangement for aiming and thinking, muted kick, filtered pulsing bass,
+      sneaky minor synth riff, sparse stabs, airy pads, tension without climax, medium-low energy, no vocals
+
+  - name: time-attack
+    bpm: 150
+    keyscale: G minor
+    duration: 60
+    reference: G:/temp/Music/2 Unlimited - Tribal Dance.mp3
+    caption: >-
+      fast 1990s eurodance rave instrumental for a race against the clock, bouncy kick, tribal percussion,
+      rapid piano stabs, racing synth arpeggio, frantic and fun, high energy, no vocals
+
+  - name: victory
+    bpm: 136
+    keyscale: A major
+    duration: 12
+    reference: G:/temp/Music/2 Unlimited - Get Ready For This.mp3
+    caption: >-
+      short triumphant 1990s eurodance victory jingle, big major-key synth fanfare over kick and bass,
+      ends on a sustained chord, no vocals
+
+  - name: defeat
+    bpm: 110
+    keyscale: A minor
+    duration: 10
+    reference: G:/temp/Music/Culture beat - Mr. Vain.mp3
+    caption: >-
+      short comic defeat jingle in 1990s eurodance style, synth melody slowing down and falling in pitch,
+      sad detuned synth, ends abruptly, no vocals
