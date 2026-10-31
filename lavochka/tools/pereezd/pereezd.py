@@ -67,7 +67,11 @@ def load_catalog(log=None):
 
 
 def gb(n):
-    return f"{n / 1e9:.1f} ГБ"
+    if n >= 1e9:
+        return f"{n / 1e9:.1f} ГБ"
+    if n >= 1e6:
+        return f"{n / 1e6:.0f} МБ"
+    return f"{max(1, round(n / 1e3))} КБ" if n else "0"
 
 
 def du(path):
