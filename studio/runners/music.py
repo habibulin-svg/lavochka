@@ -19,6 +19,8 @@ G:/ai/bin/uv.exe run --no-sync --project G:/ai/ACE-Step-1.5 python studio/runner
       keyscale: A minor # необязательно
       duration: 90      # необязательно
       reference: G:/temp/Music/x.mp3   # образец звучания: тембр, сведение, характер (мелодия и ритм не берутся)
+      src: G:/.../demo.wav             # cover: взять из исходника мелодию, аккорды, ритм и форму
+      strength: 0.5                    # cover: сила следования исходнику 0..1
 Пишет <out>/<имя>-<сид>.flac, <out>/ogg/<имя>-<сид>.ogg (Opus 96k, −14 LUFS — все треки одной громкости,
 динамика — за аранжировкой) и manifest.json. Только инструментал (вокал на русском у модели не проверен).
 """
@@ -37,6 +39,7 @@ import subprocess  # noqa: E402
 
 import yaml  # noqa: E402
 from acestep.handler import AceStepHandler  # noqa: E402
+from acestep.constants import TASK_INSTRUCTIONS  # noqa: E402
 from acestep.inference import GenerationConfig, GenerationParams, generate_music  # noqa: E402
 from acestep.llm_inference import LLMHandler  # noqa: E402
 
@@ -69,12 +72,18 @@ def main():
     manifest = []
     for t in job['tracks']:
         for seed in t.get('seeds', job.get('seeds', [1])):
+            if (out / f"{t['name']}-{seed}.flac").exists():
+                continue   # уже сделано (перезапуск после обрыва)
             params = GenerationParams(
                 caption=t['caption'], lyrics='[Instrumental]', instrumental=True,
                 bpm=t.get('bpm'), keyscale=t.get('keyscale', ''), duration=t.get('duration', job.get('duration', 60)),
                 inference_steps=job.get('steps', 8), seed=seed, thinking=use_lm,
                 guidance_scale=job.get('guidance', 7.0), shift=3.0 if turbo else 1.0,
                 reference_audio=t.get('reference'),
+                task_type='cover' if t.get('src') else 'text2music', src_audio=t.get('src'),
+                # инструкция — по задаче: по умолчанию в параметрах стоит инструкция text2music, и cover без неё не держит исходник
+                instruction=TASK_INSTRUCTIONS['cover' if t.get('src') else 'text2music'],
+                audio_cover_strength=t.get('strength', 1.0),
                 use_cot_metas=False, use_cot_caption=False, use_cot_language=False,
             )
             cfg = GenerationConfig(batch_size=1, audio_format='flac')
