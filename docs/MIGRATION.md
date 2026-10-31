@@ -36,6 +36,8 @@ ssh -T git@github.com
 ssh lavochka "uptime"
 ```
 
+Перед клонированием выполнить `git lfs install` (ассеты крупных игр будут в Git LFS).
+
 ## 3. Клонировать — тот же путь `D:\Claude\Shish`
 
 Путь важен: память Claude лежит в папке, названной по пути проекта (`~/.claude/projects/D--Claude-Shish/`). Если путь другой, Claude не найдёт память.
