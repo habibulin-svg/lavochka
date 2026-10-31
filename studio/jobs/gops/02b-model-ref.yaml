@@ -1,0 +1,27 @@
+# ГОПС, партия 2б: эталон под 3D, правки пользователя к 02 (2026-10-31):
+# козырёк короче (форма кепки — норм), кепка крупнее, силуэт гопника, а не игрушки-малыша.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1024, height: 1024, steps: 8}
+seeds: [111, 222, 333, 444, 555, 666]
+style: >-
+  Stylized low-poly 3D game character render, toon shading with clean black outline, flat colors, soft studio light.
+  Chibi proportions, head about 1/2.5 of body height. He wears a HUGE oversized eight-panel newsboy flat cap
+  in black-and-white herringbone wool tweed with a button on top, the cap crown is about twice as wide as his shoulders,
+  pulled low over his eyes, with a very SHORT stubby brim that barely sticks out (no long baseball brim).
+  Gopnik attitude: slouched hunched posture, round shoulders, head pushed forward, narrow sloping shoulders,
+  squinting suspicious eyes in the cap shadow, bored cheeky smirk, buzz-cut hair, nothing in the mouth.
+  Black tracksuit with three white side stripes on sleeves and legs (no logos), baggy trousers, white worn sneakers.
+  Comic, not menacing. Plain light grey background, no shadow on the floor, no text, no watermark.
+
+items:
+  - name: front-apose
+    prompt: >-
+      Full body of a tiny Russian 1990s gopnik standing facing the camera, slouched A-pose:
+      arms hanging slightly away from the body, empty open hands, feet apart, knees a bit bent, centered. {style}
+
+  - name: threequarter-apose
+    prompt: >-
+      Full body of a tiny Russian 1990s gopnik in three-quarter front view, slouched A-pose:
+      arms hanging slightly away from the body, empty hands, feet apart, knees a bit bent, centered. {style}
