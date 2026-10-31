@@ -647,7 +647,8 @@ def install_ai_program(pid, root, log, stop=None):
     tmp = os.path.join(root, "_downloads")
     if pid == "llamacpp":
         d = os.path.join(root, "llama.cpp")
-        for pat in (r"^llama-b\d+-bin-win-cuda-12\.\d+-x64\.zip$", r"^cudart-llama-bin-win-cuda-12\.\d+-x64\.zip$"):
+        # сборка под CUDA 13: в 12.x нет кода для Blackwell (RTX 50xx) — без него 5060 работала в сто раз медленнее
+        for pat in (r"^llama-b\d+-bin-win-cuda-13\.\d+-x64\.zip$", r"^cudart-llama-bin-win-cuda-13\.\d+-x64\.zip$"):
             url, name, size = gh_release_asset("ggml-org/llama.cpp", pat, log, all_releases=True)
             unzip(download(url, os.path.join(tmp, name), log, size=size, stop=stop), d, log)
     elif pid == "comfyui":
@@ -779,16 +780,18 @@ def write_start_scripts(root, cat, log):
     ts = f"-ts {big['mem_gb']},{sm['mem_gb']}" if small else ""
     comfy = os.path.join(root, "ComfyUI")
     scripts = {
-        "llm-code.cmd": f'{head}title lav-llm-code\r\nset CUDA_VISIBLE_DEVICES={two}\r\n"{srv}" -m "{llm}\\Qwen3.8-27B-UD-Q4_K_M.gguf" --mmproj "{llm}\\Qwen3.8-27B-mmproj-F16.gguf" -ngl 999 {ts} -sm layer -c 32768 -fa on --jinja --temp 0.6 --top-p 0.95 --top-k 20 --host 127.0.0.1 --port 8080\r\n',
-        "llm-moe.cmd": f'{head}title lav-llm-code\r\nset CUDA_VISIBLE_DEVICES={big["index"]}\r\nrem эксперты MoE в оперативной памяти; если не влезает в видеопамять — увеличить --n-cpu-moe\r\n"{srv}" -m "{llm}\\Qwen3.6-35B-A3B-MTP-UD-IQ4_XS.gguf" -ngl 999 --n-cpu-moe 24 --spec-type draft-mtp --spec-draft-n-max 2 -c 65536 -fa on --jinja --temp 0.6 --top-p 0.95 --top-k 20 --host 127.0.0.1 --port 8080\r\n',
+        "llm-code.cmd": f'{head}title lav-llm-code\r\nset CUDA_VISIBLE_DEVICES={two}\r\n"{srv}" -m "{llm}\\Qwen3.8-27B-UD-Q4_K_M.gguf" --mmproj "{llm}\\Qwen3.8-27B-mmproj-F16.gguf" -ngl 999 {ts} -sm layer -np 1 -c 32768 -ctk q8_0 -ctv q8_0 -fa on --jinja --temp 0.6 --top-p 0.95 --top-k 20 --host 127.0.0.1 --port 8080\r\n',
+        "llm-moe.cmd": f'{head}title lav-llm-code\r\nset CUDA_VISIBLE_DEVICES={big["index"]}\r\nrem слои и экспертов MoE llama.cpp раскладывает сам: что не влезло в видеопамять — в оперативную\r\n"{srv}" -m "{llm}\\Qwen3.6-35B-A3B-MTP-UD-IQ4_XS.gguf" --spec-type draft-mtp --spec-draft-n-max 2 -c 65536 -fa on --jinja --temp 0.6 --top-p 0.95 --top-k 20 --host 127.0.0.1 --port 8080\r\n',
         "vlm-check.cmd": f'{head}title lav-vlm\r\nset CUDA_VISIBLE_DEVICES={sm["index"]}\r\n"{srv}" -m "{llm}\\Qwen_Qwen3.5-9B-Q4_K_M.gguf" --mmproj "{llm}\\mmproj-Qwen_Qwen3.5-9B-f16.gguf" -ngl 999 -c 16384 -fa on --jinja --host 127.0.0.1 --port 8081\r\n',
         "comfy-big.cmd": f'{head}title lav-comfy-big\r\ncd /d "{comfy}"\r\nvenv\\Scripts\\python.exe main.py --cuda-device {big["index"]} --port 8188 --output-directory "{root}\\out\\comfy-big" --user-directory "{root}\\comfy-user-big"\r\n',
         "comfy-small.cmd": f'{head}title lav-comfy-small\r\ncd /d "{comfy}"\r\nvenv\\Scripts\\python.exe main.py --cuda-device {sm["index"]} --port 8189 --output-directory "{root}\\out\\comfy-small" --user-directory "{root}\\comfy-user-small" --lowvram\r\n',
-        "acestep.cmd": f'{head}title lav-acestep\r\nset CUDA_VISIBLE_DEVICES={big["index"]}\r\ncd /d "{root}\\ACE-Step-1.5"\r\n"{root}\\bin\\uv.exe" run acestep\r\n',
+        "acestep.cmd": f'{head}title lav-acestep\r\nset CUDA_VISIBLE_DEVICES={big["index"]}\r\ncd /d "{root}\\ACE-Step-1.5"\r\n"{root}\\bin\\uv.exe" run --no-sync acestep\r\n',
         "stop-all.cmd": '@echo off\r\nfor %%t in (lav-llm-code lav-vlm lav-comfy-big lav-comfy-small lav-acestep) do taskkill /FI "WINDOWTITLE eq %%t*" /T /F >nul 2>&1\r\ntaskkill /IM llama-server.exe /F >nul 2>&1\r\necho Всё остановлено.\r\n',
     }
     scripts["mode-code.cmd"] = f'@echo off\r\ncall "{d}\\stop-all.cmd"\r\nstart "lav-llm-code" cmd /k "{d}\\llm-code.cmd"\r\n'
     scripts["mode-content.cmd"] = f'@echo off\r\ncall "{d}\\stop-all.cmd"\r\nstart "lav-comfy-big" cmd /k "{d}\\comfy-big.cmd"\r\nstart "lav-comfy-small" cmd /k "{d}\\comfy-small.cmd"\r\n'
+    for sub in ("comfy-user-big", "comfy-user-small", os.path.join("out", "comfy-big"), os.path.join("out", "comfy-small")):
+        os.makedirs(os.path.join(root, sub), exist_ok=True)  # ComfyUI не стартует, если --user-directory нет
     for name, body in scripts.items():
         with open(os.path.join(d, name), "w", encoding="utf-8", newline="") as f:
             f.write(body)
