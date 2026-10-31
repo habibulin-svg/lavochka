@@ -228,7 +228,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'treasures', added: '2026-10-21', title: 'Клад', sub: 'три в ряд, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '💎', tint: '#1a6a5a', thumb: 'treasures.webp', arcade: true, net: true, load: () => import('./treasures'), variants: ['сто уровней', 'откопать клад', 'дуэль по сети', 'битва до 10'] },
   { id: 'shariki', added: '2026-10-21', title: 'Шарики', sub: 'цепочка катится к яме, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '🐸', tint: '#4a7a10', thumb: 'shariki.webp', arcade: true, net: true, load: () => import('./shariki'), variants: ['сто уровней', 'комбо', 'дуэль по сети', 'битва до 10'] },
   { id: 'eggs', added: '2026-10-21', title: 'Яйца динозавров', sub: 'лопни три одинаковых, 100 уровней', cat: 'arcade', players: '1–10', wave: 6, icon: '🦕', tint: '#7a5a10', thumb: 'eggs.webp', arcade: true, net: true, load: () => import('./eggs'), variants: ['сто уровней', 'дуэль по сети', 'битва до 10', 'падлянки сопернику'] },
-  { id: 'gops', added: '2026-10-10', title: 'ГОПС', sub: 'гопники в кепках, 10 районов', cat: 'electronics', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./gops'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
+  { id: 'petardy', added: '2026-10-10', title: 'Петарды', sub: 'гопники в кепках и петарды, 10 районов', cat: 'electronics', players: '1–4', wave: 6, icon: '🧢', tint: '#2a2a2a', arcade: true, shelved: true, load: () => import('./petardy'), variants: ['десять районов', 'стенка на стенку', 'вдвоём за одной клавиатурой'] },
 ];
 
 /** Карточки лаунчера — без отложенных и без тех, что живут внутри групп. */

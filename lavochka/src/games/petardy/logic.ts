@@ -1,4 +1,4 @@
-/* ГОПС — «Бомбермен» во дворе, логика без DOM. Поле 15×11 клеток: по краю забор, внутри через клетку — гаражи (не ломаются),
+/* Петарды (бывший ГОПС) — «Бомбермен» во дворе, логика без DOM. Поле 15×11 клеток: по краю забор, внутри через клетку — гаражи (не ломаются),
  * остальное — ящики (ломаются) и проходы. Игроки — гопники в кепках: ходят по клеткам, кладут петарду; через 2,2 с она рвётся крестом
  * на дальность (ящик гасит взрыв и ломается, гараж — гасит), от взрыва рвутся соседние петарды. Попал под взрыв — выбыл.
  * Под ящиками — бонусы: +петарда, +дальность, кеды (быстрее). «Районы»: десять уровней с дворовыми собаками и дворниками;
@@ -52,7 +52,7 @@ export interface Flame {
   t: number;
 }
 
-export type GopsMode = 'story' | 'battle';
+export type PetardyMode = 'story' | 'battle';
 
 export const DISTRICTS = ['Черёмушки', 'Гаражи', 'Стройка', 'Рынок', 'Школьный двор', 'Промзона', 'Железка', 'Парк', 'Пятиэтажки', 'Центр'];
 
@@ -69,7 +69,7 @@ const DIRS: [number, number][] = [
   [0, -1],
 ];
 
-export class Gops {
+export class Petardy {
   grid: Cell[][] = [];
   bonus: (Bonus | null)[][] = [];
   players: Player[] = [];
@@ -89,7 +89,7 @@ export class Gops {
   private prevBomb: boolean[] = [];
 
   constructor(
-    readonly mode: GopsMode,
+    readonly mode: PetardyMode,
     /** Люди: сколько (1–2), всего игроков в битве (2–4). */
     readonly humans = 1,
     readonly total = 1,
@@ -133,7 +133,7 @@ export class Gops {
     // старты свободны
     const n = this.mode === 'battle' ? this.total : this.humans;
     for (let i = 0; i < 4; i++) {
-      const [sx, sy] = Gops.starts[i];
+      const [sx, sy] = Petardy.starts[i];
       for (const [dx, dy] of [
         [0, 0],
         [1, 0],
@@ -168,7 +168,7 @@ export class Gops {
     const old = this.players;
     this.players = [];
     for (let i = 0; i < n; i++) {
-      const [x, y] = Gops.starts[i];
+      const [x, y] = Petardy.starts[i];
       const o = old[i];
       this.players.push({ id: i, x, y, fx: x, fy: y, t: 0, alive: true, bombs: o?.bombs ?? 1, fire: o?.fire ?? 2, speed: o?.speed ?? 4, human: i < this.humans ? i : null, wins: o?.wins ?? 0 });
     }

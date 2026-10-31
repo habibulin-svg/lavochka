@@ -67,7 +67,7 @@ export const DAY = 24 * 3600 * 1000;
 export const periodStart = (p: RecordPeriod, now = Date.now()) => (p === 'week' ? now - 7 * DAY : p === 'month' ? now - 30 * DAY : 0);
 
 /** Аркады с рекордами (своя отрисовка, без def — сервер их не переигрывает): столбец «очки», таблица — игра серии. */
-export const ARCADE_RECORDS = ['treasures', 'shariki', 'eggs', 'gops'];
+export const ARCADE_RECORDS = ['treasures', 'shariki', 'eggs', 'petardy'];
 /** Пошаговые игры с таблицами рекордов (их def сервер загружает при старте; тест сверяет список с `def.records`). */
 export const RECORD_GAMES = ['saper', 'g2048', 'pipes', 'solitaire', 'mahjong', 'puzzles', 'dvor', 'geo'];
 export const SCORE_COLUMNS: RecordColumn[] = [{ key: 'score', label: 'Очки', sort: 'desc', format: 'score' }];

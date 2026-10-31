@@ -1,11 +1,11 @@
-/* ГОПС — экран: двор сверху (асфальт, гаражи, ящики, люк), гопники в кепках, собаки и дворники, петарды с фитилём, огонь крестом.
+/* Петарды (бывший ГОПС) — экран: двор сверху (асфальт, гаражи, ящики, люк), гопники в кепках, собаки и дворники, петарды с фитилём, огонь крестом.
  * Один: стрелки или WASD, петарда — пробел или Enter. Вдвоём: первый — WASD и пробел, второй — стрелки и Enter. На телефоне — крестовина и кнопка.
  * «Районы» — десять дворов подряд (все враги прогнаны — открыт люк), «Стенка на стенку» — до трёх побед против ботов. */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
 import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
-import { DISTRICTS, FUSE, GH, Gops, GW, type Input, type Mover } from './logic';
-import './gops.css';
+import { DISTRICTS, FUSE, GH, Petardy, GW, type Input, type Mover } from './logic';
+import './petardy.css';
 
 const T = 48;
 const CW = GW * T;
@@ -18,7 +18,7 @@ class Yard {
   private el: HTMLElement;
   private cv: HTMLCanvasElement;
   private g: CanvasRenderingContext2D;
-  private game: Gops;
+  private game: Petardy;
   private keys = new Set<string>();
   private pad = { dx: 0, dy: 0, bomb: false };
   private raf = 0;
@@ -71,7 +71,7 @@ class Yard {
 
   private fresh(level = 1) {
     const two = this.mode.endsWith('2');
-    return new Gops(this.mode.startsWith('story') ? 'story' : 'battle', two ? 2 : 1, 4, level, (Math.random() * 1e9) | 0);
+    return new Petardy(this.mode.startsWith('story') ? 'story' : 'battle', two ? 2 : 1, 4, level, (Math.random() * 1e9) | 0);
   }
 
   private restart() {
@@ -363,8 +363,8 @@ class Yard {
 
 const mod: ArcadeModule = {
   kind: 'arcade',
-  id: 'gops',
-  title: 'ГОПС',
+  id: 'petardy',
+  title: 'Петарды',
   about: 'Гопники в кепках против дворовых собак и дворников: петарды рвут ящики и всё, что рядом. Десять районов или «стенка на стенку».',
   controls: `<p>Один: стрелки или <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, петарда — <kbd>Пробел</kbd> или <kbd>Enter</kbd>.</p>
     <p>Вдвоём: первый — <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> и <kbd>Пробел</kbd>, второй — стрелки и <kbd>Enter</kbd>.</p>

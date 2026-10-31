@@ -98,7 +98,7 @@ describe('подписка «Лавочка+»', () => {
     // продлили за 10 дней до конца — месяц прибавился к сроку, а не к сегодня
     const t1 = t0 + 20 * DAY_MS;
     await plus.result(note(invOf(await plus.start({}, ctx(u.sid)))), t1);
-    const end = addMonths(t0, 2);
+    const end = addMonths(addMonths(t0, 1), 1); // от конца срока: 31.10 → 30.11 → 30.12, а не 31.12
     expect((await acc.store.subscription(u.id))?.until).toBe(end);
     expect((await acc.store.rights(u.id, t1)).find((r) => r.right === 'video')?.until).toBe(end);
     // срок прошёл, оплатили через неделю — от дня оплаты

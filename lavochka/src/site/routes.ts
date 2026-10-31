@@ -176,7 +176,7 @@ export const SLUGS: Record<string, string> = {
   treasures: 'klad',
   shariki: 'shariki',
   eggs: 'yayca-dinozavrov',
-  gops: 'gops',
+  petardy: 'petardy',
 };
 
 /** Разделы двора — свои страницы со своим текстом (src/site/sections.ts); во дворе — кнопки над карточками. */

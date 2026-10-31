@@ -1,4 +1,4 @@
-/* ГОПС: двор на канве, кнопки для телефона. */
+/* Петарды (бывший ГОПС): двор на канве, кнопки для телефона. */
 .gp-dev { width: min(100%, 900px, calc((100vh - 230px) * 1.36)); margin: 0 auto; touch-action: none; user-select: none; }
 .gp-hud { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; color: #f0f0e0; font: 14px 'PT Sans', Arial, sans-serif; margin-bottom: 6px; }
 .gp-dev canvas { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 12px 26px rgba(0,0,0,.5); }

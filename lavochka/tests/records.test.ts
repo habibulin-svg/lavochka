@@ -58,10 +58,10 @@ describe('таблица', () => {
 describe('хранение', () => {
   it('переносит старые рекорды аркад из records.json и пишет новый файл', () => {
     const dir = mkdtempSync(join(tmpdir(), 'recs-'));
-    writeFileSync(join(dir, 'records.json'), JSON.stringify({ 'treasures-A': [{ name: 'Вовка', score: 5000, at: 1 }, { name: 'Ленка', score: 7000, at: 2 }], 'gops-story': [{ name: 'Пашка', score: 300, at: 3 }] }));
+    writeFileSync(join(dir, 'records.json'), JSON.stringify({ 'treasures-A': [{ name: 'Вовка', score: 5000, at: 1 }, { name: 'Ленка', score: 7000, at: 2 }], 'petardy-story': [{ name: 'Пашка', score: 300, at: 3 }] }));
     const store = new FileRecordStore(dir, () => {});
     expect(store.get('treasures/A').map((e) => e.values.score)).toEqual([5000, 7000]);
-    expect(store.get('gops/story')[0].name).toBe('Пашка');
+    expect(store.get('petardy/story')[0].name).toBe('Пашка');
     const recs = new Records(store, {});
     expect(recs.list('treasures', 'A', 'all')!.rows.map((r) => r.name)).toEqual(['Ленка', 'Вовка']);
     store.flush();

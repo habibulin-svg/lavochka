@@ -180,7 +180,7 @@ export const NAMES: Record<string, Names> = {
   treasures: { ru: ['три в ряд', 'клад три в ряд', 'собери три в ряд', 'три в ряд сокровища', 'самоцветы'], en: ['Match 3', 'Treasure match', 'Bejeweled', 'Jewels', 'Match three'] },
   shariki: { ru: ['зума', 'шарики зума', 'лягушка шарики', 'зума делюкс', 'шарики стрелялка', 'цепочка шариков'], en: ['Zuma', 'Marble shooter', 'Zuma Deluxe', 'Ball shooter'] },
   eggs: { ru: ['лопни шарики', 'пузыри', 'бабл шутер', 'пузырьки стрелялка', 'стрелять шариками'], en: ['Bubble shooter', 'Puzzle Bobble', 'Bust-a-Move'] },
-  gops: { ru: ['гопники', 'стенка на стенку'], en: ['Beat em up'] },
+  petardy: { ru: ['гопники', 'стенка на стенку', 'петарды'], en: ['Beat em up'] },
 };
 
 /** Все названия игры одной строкой — для поиска. */

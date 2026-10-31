@@ -1,18 +1,18 @@
 /* ГОПС: взрыв крестом ломает первый ящик и гаснет на гараже, цепная реакция, битва ботов доходит до трёх побед, в районе — люк открывается без врагов. */
 import { describe, expect, it } from 'vitest';
-import { Gops, GW, GH } from '../src/games/gops/logic';
+import { Petardy, GW, GH } from '../src/games/petardy/logic';
 
 const idle = [{ dx: 0, dy: 0, bomb: false }, { dx: 0, dy: 0, bomb: false }];
 
 describe('ГОПС', () => {
   it('поле: забор по краю, гаражи через клетку, старты свободны', () => {
-    const g = new Gops('battle', 0, 4, 1, 5);
+    const g = new Petardy('battle', 0, 4, 1, 5);
     for (let x = 0; x < GW; x++) expect(g.grid[0][x]).toBe('wall');
     expect(g.grid[2][2]).toBe('wall');
-    for (const [x, y] of Gops.starts) expect(g.grid[y][x]).toBe('floor');
+    for (const [x, y] of Petardy.starts) expect(g.grid[y][x]).toBe('floor');
   });
   it('взрыв: ломает ящик, не проходит гараж, рвёт соседнюю петарду', () => {
-    const g = new Gops('story', 1, 1, 1, 7);
+    const g = new Petardy('story', 1, 1, 1, 7);
     g.enemies = [];
     for (let y = 1; y < GH - 1; y++) for (let x = 1; x < GW - 1; x++) if (g.grid[y][x] === 'crate') g.grid[y][x] = 'floor';
     g.grid[1][5] = 'crate';
@@ -27,7 +27,7 @@ describe('ГОПС', () => {
     expect(g.bombs.length).toBe(0); // вторая взорвалась цепью
   });
   it('битва четырёх ботов: раунды кончаются, кто-то набирает три победы', () => {
-    const g = new Gops('battle', 0, 4, 1, 11);
+    const g = new Petardy('battle', 0, 4, 1, 11);
     let rounds = 0;
     for (let i = 0; i < 60 * 60 * 15 && !g.over; i++) {
       g.update(16, []);
@@ -40,7 +40,7 @@ describe('ГОПС', () => {
     expect(g.over).toBe(true);
   });
   it('район без врагов — люк открыт, вход в него — следующий район', () => {
-    const g = new Gops('story', 1, 1, 1, 3);
+    const g = new Petardy('story', 1, 1, 1, 3);
     g.enemies = [];
     g.update(16, idle);
     expect(g.exitOpen).toBe(true);
