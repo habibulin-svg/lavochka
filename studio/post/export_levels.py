@@ -51,6 +51,9 @@ def main():
         (OUT / f"{m['id']}.json").write_text(body, encoding='utf-8')
         total += len(body)
         print(m['id'], m['terrain']['archetype'], 'точек', len(meta['spawns']), f'{len(body) // 1024} КБ')
+    # список миссий для меню и выбора темы (без брифингов — их игра берёт из missions.json при кампании)
+    idx = [{'id': m['id'], 'title': m['title'], 'mode': m['mode'], 'theme': m['theme'], 'time': m.get('time')} for m in ms]
+    (OUT / 'missions-index.json').write_text(json.dumps(idx, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'итого {total // 1024} КБ -> {OUT}')
 
 

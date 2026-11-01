@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
 // Сервер (npm run dev:server) слушает 8787; в разработке Vite проксирует к нему WebSocket и API.
 export default defineConfig({
@@ -8,9 +8,17 @@ export default defineConfig({
       '/ws': { target: 'ws://localhost:8787', ws: true },
       '/api': 'http://localhost:8787',
     },
+    // ГОПС в разработке берёт ассеты прямо с выхода конвейера (src/gops/assets.ts) — до отбора и раскладки в public/gops
+    fs: { allow: [searchForWorkspaceRoot(process.cwd()), 'G:/temp/studio/out/gops'] },
   },
   // без подсчёта gzip: на прод-сервере (2 ГБ) он добирал память до OOM-убийцы
-  build: { target: 'es2022', chunkSizeWarningLimit: 1500, reportCompressedSize: false },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 1500,
+    reportCompressedSize: false,
+    // ГОПС — отдельное полноэкранное приложение (docs/gops/CODE.md)
+    rollupOptions: { input: { main: 'index.html', gops: 'gops.html' } },
+  },
   // модули three.js, которые грузятся лениво (3D-холдем): заранее, иначе Vite перезагружает страницу посреди партии
   optimizeDeps: {
     include: [

@@ -1,0 +1,41 @@
+html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; touch-action: none; user-select: none; }
+#gops { position: fixed; inset: 0; }
+#gops canvas { display: block; }
+
+.hud { position: absolute; inset: 0; pointer-events: none; font-family: 'PT Sans', sans-serif; color: #fff; }
+.hud > * { pointer-events: auto; }
+.hud-timer { position: absolute; left: 16px; bottom: 16px; min-width: 64px; padding: 6px 12px; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55); font: 700 34px 'Russo One', sans-serif; text-align: center; }
+.hud-timer:empty { display: none; }
+.hud-timer.retreat { color: #ffd166; }
+.hud-timer.hurry { color: #ff5a5a; }
+.hud-wind { position: absolute; right: 16px; bottom: 20px; width: 180px; height: 14px; border-radius: 7px;
+  background: rgba(0, 0, 0, 0.55); border: 2px solid rgba(255, 255, 255, 0.25); display: flex; justify-content: center; }
+.hud-wind-l, .hud-wind-r { height: 100%; transition: width 0.3s; }
+.hud-wind-l { background: linear-gradient(90deg, #5aa9e6, #a8dadc); margin-left: auto; border-radius: 7px 0 0 7px; }
+.hud-wind-r { background: linear-gradient(90deg, #a8dadc, #5aa9e6); margin-right: auto; border-radius: 0 7px 7px 0; }
+.hud-teams { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 3px; width: min(360px, 50vw); }
+.hud-team { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; text-shadow: 0 1px 2px #000; opacity: 0.8; }
+.hud-team.on { opacity: 1; }
+.hud-team span { width: 96px; text-align: right; }
+.hud-team i { display: block; height: 9px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.6); transition: width 0.5s; }
+.hud-weapon { position: absolute; right: 16px; top: 16px; padding: 8px 14px; border-radius: 10px; background: rgba(0, 0, 0, 0.55);
+  font-weight: 700; cursor: pointer; }
+.hud-menu { position: absolute; right: 16px; top: 60px; display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 6px;
+  padding: 10px; border-radius: 12px; background: rgba(15, 18, 28, 0.92); border: 1px solid rgba(255, 255, 255, 0.15); }
+.hud-menu[hidden] { display: none; }
+.hud-wpn { display: flex; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06); color: #fff; font: 600 14px 'PT Sans', sans-serif; cursor: pointer; }
+.hud-wpn.on { border-color: #ffd166; }
+.hud-wpn:disabled { opacity: 0.35; cursor: default; }
+.hud-wpn b { color: #ffd166; }
+.hud-banner { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); padding: 18px 32px; border-radius: 16px;
+  background: rgba(0, 0, 0, 0.7); font: 700 clamp(22px, 4vw, 44px) 'Russo One', sans-serif; text-align: center; }
+.hud-banner[hidden] { display: none; }
+.hud-pad { position: absolute; bottom: 70px; display: none; gap: 10px; }
+.hud-pad button { width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(0, 0, 0, 0.45);
+  color: #fff; font: 700 22px 'PT Sans', sans-serif; touch-action: none; }
+.hud-pad.l { left: 16px; }
+.hud-pad.r { right: 16px; }
+.hud-pad .fire { width: 84px; height: 84px; background: rgba(214, 40, 40, 0.6); }
+@media (pointer: coarse) { .hud-pad { display: flex; } }

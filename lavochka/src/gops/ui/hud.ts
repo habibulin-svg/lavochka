@@ -1,0 +1,97 @@
+/* Интерфейс боя поверх холста (DOM): таймер хода, ветер, здоровье бригад, выбранное оружие,
+ * сетка оружия (Tab / кнопка), экранные кнопки для телефона, итог партии. */
+import { BRIGADES } from '../assets';
+import { TICK_HZ, type World } from '../sim/world';
+import { WEAPONS } from '../sim/weapons';
+import './hud.css';
+
+/** Названия из docs/gops/texts/weapons.json (подмножество ядра; полный список — при сборке ассетов). */
+export const WEAPON_NAMES: Record<string, string> = {
+  mukha: '«Муха»', limonka: 'Лимонка', sling: 'Рогатка', obrez: 'Обрез', makarov: '«Макаров»', tnt: 'Тротиловая шашка',
+  mine: 'Мина-растяжка', tychok: 'Тычок', armatura: 'Арматура', kuryu: 'Курю (пропуск)', pas: 'Я пас (сдаться)',
+};
+
+export class Hud {
+  readonly el: HTMLElement;
+  private timer: HTMLElement;
+  private wind: HTMLElement;
+  private teams: HTMLElement;
+  private weapon: HTMLElement;
+  private menu: HTMLElement;
+  private banner: HTMLElement;
+  onPick: (id: string) => void = () => {};
+
+  constructor(host: HTMLElement, private brigades: string[]) {
+    this.el = div('hud');
+    this.timer = div('hud-timer');
+    this.wind = div('hud-wind');
+    this.wind.innerHTML = '<div class="hud-wind-l"></div><div class="hud-wind-r"></div>';
+    this.teams = div('hud-teams');
+    this.weapon = div('hud-weapon');
+    this.menu = div('hud-menu');
+    this.menu.hidden = true;
+    this.banner = div('hud-banner');
+    this.banner.hidden = true;
+    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner);
+    host.appendChild(this.el);
+    this.weapon.addEventListener('click', () => this.toggleMenu());
+  }
+
+  toggleMenu(w?: World): void {
+    this.menu.hidden = !this.menu.hidden;
+    if (!this.menu.hidden && w) this.fillMenu(w);
+  }
+
+  private menuFor = -1;
+
+  private fillMenu(w: World): void {
+    const team = w.teams[w.team];
+    this.menuFor = w.team;
+    this.menu.replaceChildren(
+      ...Object.keys(WEAPONS).map((id) => {
+        const n = team.ammo[id] ?? 0;
+        const b = document.createElement('button');
+        b.className = 'hud-wpn' + (id === w.weapon ? ' on' : '');
+        b.disabled = n === 0;
+        b.innerHTML = `<span>${WEAPON_NAMES[id] ?? id}</span><b>${n < 0 ? '∞' : n}</b>`;
+        b.onclick = () => {
+          this.onPick(id);
+          this.menu.hidden = true;
+        };
+        return b;
+      }),
+    );
+  }
+
+  update(w: World): void {
+    const turn = w.phase === 'turn' || w.phase === 'retreat';
+    this.timer.textContent = turn ? String(Math.ceil(w.left / TICK_HZ)) : '';
+    this.timer.classList.toggle('retreat', w.phase === 'retreat');
+    this.timer.classList.toggle('hurry', w.phase === 'turn' && w.left < 5 * TICK_HZ);
+    const k = Math.abs(w.wind) / 100;
+    (this.wind.children[0] as HTMLElement).style.width = w.wind < 0 ? `${k * 50}%` : '0';
+    (this.wind.children[1] as HTMLElement).style.width = w.wind > 0 ? `${k * 50}%` : '0';
+    const total = w.teams.map((t) => t.worms.reduce((s, id) => s + Math.max(0, w.worms.find((x) => x.id === id)!.hp), 0));
+    const max = Math.max(1, ...total);
+    this.teams.innerHTML = w.teams
+      .map((t, i) => {
+        const b = BRIGADES.find((x) => x.id === this.brigades[i]);
+        const col = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
+        return `<div class="hud-team${i === w.team && turn ? ' on' : ''}"><span style="color:${col}">${b?.name ?? i + 1}</span><i style="width:${(total[i] / max) * 100}%;background:${col}"></i></div>`;
+      })
+      .join('');
+    this.weapon.textContent = WEAPON_NAMES[w.weapon] ?? w.weapon;
+    if (!this.menu.hidden && this.menuFor !== w.team) this.menu.hidden = true;
+    if (w.phase === 'over' && this.banner.hidden) {
+      const b = BRIGADES.find((x) => x.id === this.brigades[w.winner]);
+      this.banner.textContent = w.winner < 0 ? 'Ничья — все сдулись' : `${b?.name ?? 'Бригада'} держит район!`;
+      this.banner.hidden = false;
+    }
+  }
+}
+
+function div(cls: string): HTMLElement {
+  const d = document.createElement('div');
+  d.className = cls;
+  return d;
+}

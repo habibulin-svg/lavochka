@@ -26,10 +26,12 @@ export interface Worm extends Body {
   state: WormState;
   /** Накопленный дробный шаг ходьбы, Q8. */
   stride: number;
+  /** Кадров подряд «в воздухе», но почти без движения и с землёй под ногами (зажат в углу). */
+  stuck: number;
 }
 
 export function makeWorm(id: number, team: number, xPx: number, yPx: number, hp = 100): Worm {
-  return { id, team, hp, x: xPx * ONE, y: yPx * ONE, vx: 0, vy: 0, r: WORM_R, bounce: 0, slide: 0, facing: 1, state: 'air', stride: 0 };
+  return { id, team, hp, x: xPx * ONE, y: yPx * ONE, vx: 0, vy: 0, r: WORM_R, bounce: 0, slide: 0, facing: 1, state: 'air', stride: 0, stuck: 0 };
 }
 
 /** Что случилось с бойцом за кадр. */
@@ -102,8 +104,12 @@ export function tickWorm(w: Worm, mask: Mask, waterY: number, out: WormEvent[], 
     if (free(mask, w.x, w.y + ONE, w.r)) w.state = 'air';
     else return;
   }
+  const x0 = w.x, y0 = w.y;
   const hit = stepBody(w, mask, gravity);
-  if (!hit) return;
+  if (!hit) {
+    w.stuck = 0;
+    return;
+  }
   if (hit.speed > SAFE) {
     const dmg = Math.trunc((hit.speed - SAFE) / FALL_DIV);
     if (dmg > 0) {
@@ -111,11 +117,14 @@ export function tickWorm(w: Worm, mask: Mask, waterY: number, out: WormEvent[], 
       out.push({ kind: 'fall-damage', id: w.id, value: dmg });
     }
   }
-  // на крутом склоне не стоим — съезжаем дальше
+  // на крутом склоне не стоим — съезжаем дальше; зажатый в углу (не едет, а земля под ногами) — встаёт
   const n = groundNormal(mask, w.x, w.y, w.r);
-  if (n && n[1] < -TRIG_ONE / 2 && resting(w, mask)) {
+  const still = Math.abs(w.x - x0) + Math.abs(w.y - y0) < ONE / 2;
+  w.stuck = still ? w.stuck + 1 : 0;
+  if ((n && n[1] < -TRIG_ONE / 2 && resting(w, mask)) || w.stuck > 8) {
     w.vx = 0;
     w.vy = 0;
+    w.stuck = 0;
     w.state = 'stand';
     out.push({ kind: 'land', id: w.id });
   } else if (n) {

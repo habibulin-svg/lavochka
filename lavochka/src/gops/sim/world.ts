@@ -27,11 +27,14 @@ export interface Scheme {
   retreat: number;
   /** Наибольшая сила ветра 0…1. */
   wind: number;
-  /** Множитель урона от падения 0…1 (в сотых, целое 0…100). */
+  /** Урон от падения, % (0…100). */
   fallDamage: number;
+  /** Время раунда, с; после него — внезапная смерть: жидкость поднимается каждый ход на riseStep px. */
+  roundTime: number;
+  riseStep: number;
 }
 
-export const DEFAULT_SCHEME: Scheme = { turnTime: 45, retreat: 3, wind: 1, fallDamage: 100 };
+export const DEFAULT_SCHEME: Scheme = { turnTime: 45, retreat: 3, wind: 1, fallDamage: 100, roundTime: 600, riseStep: 24 };
 
 export interface Team {
   id: number;
@@ -75,6 +78,7 @@ export type SimEvent =
   | { t: 'drown'; worm: number }
   | { t: 'deflate'; worm: number }
   | { t: 'land'; worm: number }
+  | { t: 'rise'; y: number }
   | { t: 'over'; winner: number };
 
 export interface World {
@@ -110,6 +114,8 @@ export interface World {
   /** Здоровье активного бойца в начале хода — ранен в свой ход → ход окончен. */
   hpAtTurn: number;
   winner: number;
+  /** Кадров до внезапной смерти (идёт только в ходы, как в жанре). */
+  roundLeft: number;
   events: SimEvent[];
 }
 
@@ -139,8 +145,9 @@ export function createWorld(s: WorldSetup): World {
     tick: 0, mask: s.mask, rng: new Rng(s.seed), waterY: s.waterY, scheme: s.scheme ?? DEFAULT_SCHEME,
     wind: 0, worms: [], teams: [], projs: [], caps: [], nextId: 1, phase: 'settle', left: SETTLE_MAX,
     team: s.teams.length - 1, active: -1, aim: -128, weapon: 'mukha', fuse: 3, charge: 0, shots: 0,
-    firePrev: false, hpAtTurn: 0, winner: -1, events: [],
+    firePrev: false, hpAtTurn: 0, winner: -1, roundLeft: 0, events: [],
   };
+  w.roundLeft = w.scheme.roundTime * TICK_HZ;
   s.teams.forEach((t, ti) => {
     const team: Team = { id: ti, worms: [], last: -1, ammo: { ...t.ammo } };
     for (const [x, y] of t.spawns) {
@@ -169,6 +176,7 @@ export function step(w: World, input: Input): void {
   const worm = wormById(w, w.active);
   if (w.phase === 'turn' || w.phase === 'retreat') {
     if (worm && alive(worm)) control(w, worm, input, w.phase === 'turn');
+    if (w.roundLeft > 0) w.roundLeft--;
     if (--w.left <= 0) {
       w.phase = 'settle';
       w.left = SETTLE_MAX;
@@ -466,6 +474,10 @@ function endTurn(w: World): void {
     w.events.push({ t: 'over', winner: w.winner });
     return;
   }
+  if (w.roundLeft <= 0 && w.scheme.riseStep > 0) {
+    w.waterY = Math.max(40, w.waterY - w.scheme.riseStep);
+    w.events.push({ t: 'rise', y: w.waterY });
+  }
   // следующая бригада, у которой есть живые, и её следующий живой боец
   let ti = w.team;
   do ti = (ti + 1) % w.teams.length;
@@ -495,7 +507,7 @@ export function worldHash(w: World): number {
     h = Math.imul(h ^ (v & 0xffff), 0x01000193);
     h = Math.imul(h ^ ((v >>> 16) & 0xffff), 0x01000193);
   };
-  mix(w.tick); mix(w.rng.s); mix(w.wind); mix(w.left); mix(w.active); mix(w.aim); mix(w.charge);
+  mix(w.tick); mix(w.rng.s); mix(w.waterY); mix(w.roundLeft); mix(w.wind); mix(w.left); mix(w.active); mix(w.aim); mix(w.charge);
   for (const x of w.worms) { mix(x.x); mix(x.y); mix(x.vx); mix(x.vy); mix(x.hp); }
   for (const p of w.projs) { mix(p.x); mix(p.y); mix(p.vx); mix(p.vy); mix(p.fuse); }
   return h >>> 0;
