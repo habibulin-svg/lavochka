@@ -32,6 +32,11 @@ def stress(text: str) -> str:
         _accent = RUAccent()
         _accent.load(omograph_model_size='turbo3.1', use_dictionary=True, tiny_mode=False)
     t = text if '+' in text else _accent.process_all(text)
+    # ruaccent сам меняет е → ё («все» → «всё»): буквы возвращаем из исходника, берём только «+»
+    plain = t.replace('+', '')
+    if t is not text and len(plain) == len(text):
+        it = iter(text)
+        t = ''.join(c if c == '+' else next(it) for c in t)
     out, i = [], 0
     while i < len(t):
         if t[i] == '+' and i + 1 < len(t) and t[i + 1] in VOWELS:
