@@ -185,7 +185,19 @@ async function pustyr(daily: boolean): Promise<void> {
     barrels: Math.floor(rnd() * 7),
   });
   game = g;
+  g.onOver = (winner) => {
+    if (game !== g || !daily) return;
+    // очки: победа 1000 + оставшееся здоровье ×2 + за быстроту (500 − 10 за ход)
+    const w = g.world;
+    const hp = w.teams[0].worms.reduce((sum, id) => sum + Math.max(0, w.worms.find((x) => x.id === id)!.hp), 0);
+    const score = 1000 + hp * 2 + Math.max(0, 500 - w.teams[0].turns * 10);
+    void menu.dayResult(winner === 0, score, () => {
+      stop();
+      menu.pustyr();
+    }, () => void pustyr(true));
+  };
   await g.start();
+  g.hud.quietOver = daily; // у карты дня свой итог с очками
   g.hud.flash(daily ? `Карта дня · ${day}` : 'Пустырь', 2500);
   (window as unknown as { gops: Game }).gops = g;
 }

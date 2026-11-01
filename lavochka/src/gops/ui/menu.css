@@ -60,3 +60,6 @@
 .gm-side { align-items: center; }
 .gm-error { color: #ff6b6b; font-weight: 700; }
 .gm-btn:disabled { opacity: 0.5; cursor: default; }
+.gm-top { display: flex; flex-direction: column; gap: 3px; font-size: 16px; }
+.gm-top-row { padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); }
+.gm-top-row.me { color: #ffd166; font-weight: 700; }

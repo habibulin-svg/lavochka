@@ -58,6 +58,9 @@ export class Game {
   /** Ход миссии (если это миссия) и чем кончилась партия. */
   run: MissionRun | null = null;
   onEnd: (run: MissionRun, stars: number) => void = () => {};
+  /** Быстрый бой кончился: победившая бригада (−1 — никто). */
+  onOver: (winner: number) => void = () => {};
+  private overSeen = false;
   private ended = false;
   /** Сеть: следующий кадр к шагу, номер хода (для сверки хеша), чья бригада последней слала ввод. */
   private frameNo = 0;
@@ -204,6 +207,11 @@ export class Game {
     this.audio.view = { x: c.x, y: c.y, half: this.view.app.screen.width / 2 / c.zoom };
     this.hud.update(this.world);
     if (this.run) this.hud.setGoal(objectiveText(this.world, this.run));
+    else if (this.world.phase === 'over' && !this.overSeen) {
+      this.overSeen = true;
+      const winner = this.world.winner;
+      window.setTimeout(() => this.onOver(winner), 1800);
+    }
     this.raf = requestAnimationFrame(this.frame);
   };
 

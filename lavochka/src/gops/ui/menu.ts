@@ -1,6 +1,8 @@
 /* Меню ГОПС (DOM поверх холста): заглавный экран, списки миссий (кампания по главам, обучение, испытания) со звёздами,
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
 import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
+import { serverBase } from '../../core/net/ws';
+import type { Claim } from '../../core/records';
 import type { NetClient } from '../net/client';
 import type { NetSetup } from '../net/protocol';
 import type { MissionDef, MissionRun } from '../sim/mission';
@@ -85,6 +87,38 @@ const BOTS: [Who, string][] = [['easy', 'Бот: лёгкий'], ['medium', 'Б�
 const WHO: [Who, string][] = [['human', 'Человек'], ...BOTS];
 const WHO_NET: [Who, string][] = [['net', 'Сетевой игрок'], ['human', 'За моим экраном'], ...BOTS];
 const NAME_KEY = 'gops-name';
+
+/** Рекорды — тот же сервер, что у сборника (/api/records), без его интерфейса; устройство — своя метка браузера. */
+function device(): string {
+  try {
+    let d = localStorage.getItem('gops-device');
+    if (!d) localStorage.setItem('gops-device', (d = Math.random().toString(36).slice(2, 12)));
+    return d;
+  } catch {
+    return 'none';
+  }
+}
+
+async function fetchBoard(game: string, table: string, period: string): Promise<{ rows: { name: string; values: Record<string, number>; me?: boolean }[] } | null> {
+  try {
+    const r = await fetch(`${serverBase()}/api/records?${new URLSearchParams({ game, table, period, device: device() })}`);
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function postClaim(claim: Claim): Promise<{ ok: boolean; place?: number } | null> {
+  try {
+    const r = await fetch(`${serverBase()}/api/records`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...claim, device: device() }) });
+    return await r.json().catch(() => null);
+  } catch {
+    return null;
+  }
+}
+
+/** Таблица «карты дня»: day-ГГГГ-ММ-ДД (по UTC — одна на всех). */
+export const dayTable = (): string => `day-${new Date().toISOString().slice(0, 10)}`;
 
 export function loadName(): string {
   try {
@@ -220,8 +254,40 @@ export class Menu {
     );
     const row = h('div', 'gm-row');
     row.append(button('Случайная', () => this.onPustyr(false)), button('Карта дня', () => this.onPustyr(true), 'big'));
-    box.append(row);
+    const top = h('div', 'gm-top');
+    box.append(row, h('h3', 'gm-chapter', 'Лучшие сегодня'), top);
     this.screen(brandArt('menu-bg-3'), head, box);
+    void this.fillTop(top);
+  }
+
+  /** Десятка лучших «карты дня» (сервер рекордов; нет связи — пусто). */
+  private async fillTop(el: HTMLElement): Promise<void> {
+    el.textContent = '…';
+    const b = await fetchBoard('gops', dayTable(), 'all');
+    const rows = b?.rows ?? [];
+    el.replaceChildren(...(rows.length
+      ? rows.slice(0, 10).map((r, i) => h('div', 'gm-top-row' + (r.me ? ' me' : ''), `${i + 1}. ${r.name} — ${r.values.score ?? 0}`))
+      : [h('div', 'gm-tip', 'Пока никого — будь первым.')]));
+  }
+
+  /** Итог «карты дня»: очки (победа) и место в таблице. */
+  async dayResult(won: boolean, score: number, back: () => void, again: () => void): Promise<void> {
+    const box = h('div', 'gm-brief gm-result');
+    box.append(h('h2', won ? 'win' : 'lose', won ? 'Пустырь наш!' : 'Не устоял'));
+    if (won) {
+      box.append(h('div', 'gm-big-stars', String(score)), h('p', 'gm-tip', 'очков за карту дня'));
+      const place = h('p', '', 'Записываем…');
+      box.append(place);
+      void postClaim({ game: 'gops', table: dayTable(), label: `Карта дня ${dayTable().slice(4)}`, name: loadName(), values: { score } }).then((r) => {
+        place.textContent = r?.ok ? `Место за сегодня: ${r.place}` : 'Не записалось (нет связи с сервером)';
+      });
+    } else box.append(h('p', '', 'Очки дают только за победу. Ещё раз?'));
+    const row = h('div', 'gm-row');
+    row.append(button('Ещё раз', again), button('В меню', back, 'big'));
+    box.append(row);
+    this.el.hidden = false;
+    this.el.style.background = 'rgba(8, 10, 16, 0.5)';
+    this.el.replaceChildren(box);
   }
 
   /** По сети: имя, создать комнату, войти по коду. */
