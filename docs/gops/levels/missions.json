@@ -1,0 +1,4788 @@
+[
+ {
+  "id": "t01",
+  "mode": "training",
+  "chapter": 0,
+  "title": "Ножки, ножки",
+  "theme": "yard",
+  "time": "grey",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 8019,
+   "water": 0.2,
+   "props": 0.3
+  },
+  "briefing": "Для начала научимся ходить — это проще, чем кажется, но кепку придётся придерживать. Добеги до трёх флажков, перепрыгни лужу и не упади в неё: лужа здесь не для купания.",
+  "objective": {
+   "type": "reach_point",
+   "points": [
+    [
+     0.25,
+     0.5
+    ],
+    [
+     0.55,
+     0.45
+    ],
+    [
+     0.9,
+     0.4
+    ]
+   ],
+   "ordered": true
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "tychok": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 6
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Стрелки — бегать, пробел — прыжок, двойное нажатие — прыжок назад с кувырком.",
+  "new": "Ходьба, прыжок, кувырок",
+  "difficulty": 0
+ },
+ {
+  "id": "t02",
+  "mode": "training",
+  "chapter": 0,
+  "title": "Муха и ветер",
+  "theme": "garages",
+  "time": "day",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 15938,
+   "water": 0.1,
+   "props": 0.3
+  },
+  "briefing": "Вот «Муха»: труба на плечо — и в дело. Ветер сносит её, как фантик, так что целься с поправкой. Сбей три банки с забора и узнаешь, что такое «на глаз».",
+  "objective": {
+   "type": "targets",
+   "count": 3,
+   "kind": "cans_fence",
+   "turns": 6
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "mukha": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 90,
+   "round_time": 600,
+   "wind": 0.6,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 4
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Стрелка у ветра показывает, куда сдует ракету: целься против ветра.",
+  "new": "«Муха»: сила удержанием, ветер",
+  "difficulty": 0
+ },
+ {
+  "id": "t03",
+  "mode": "training",
+  "chapter": 0,
+  "title": "Лимонка с характером",
+  "theme": "construction",
+  "time": "day",
+  "terrain": {
+   "archetype": "pit",
+   "seed": 23857,
+   "water": 0.2,
+   "props": 0.4
+  },
+  "briefing": "Лимонку не просто кидают — её ещё нужно уговорить. Выбери таймер от одного до пяти секунд, дай ей отскочить от плиты и закатиться за угол. Три бочки за стенкой ждут сюрприза.",
+  "objective": {
+   "type": "targets",
+   "count": 3,
+   "kind": "barrels_behind_wall",
+   "turns": 6
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 90,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 4
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Цифры 1–5 — таймер лимонки; чем сильнее бросок, тем дальше она катится.",
+  "new": "Лимонка: таймер и отскок",
+  "difficulty": 0
+ },
+ {
+  "id": "t04",
+  "mode": "training",
+  "chapter": 0,
+  "title": "Верёвка и крюк",
+  "theme": "dacha",
+  "time": "day",
+  "terrain": {
+   "archetype": "cliff",
+   "seed": 31776,
+   "water": 0.5,
+   "props": 0.3
+  },
+  "briefing": "Верёвка с крюком — это когда ты Тарзан, а вокруг дачи. Зацепись за ветку яблони, раскачайся и прыгни на тот берег. Главное — отпустить вовремя.",
+  "objective": {
+   "type": "reach_point",
+   "points": [
+    [
+     0.5,
+     0.35
+    ],
+    [
+     0.92,
+     0.45
+    ]
+   ],
+   "ordered": true
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 4
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Пробел во время качания — отпустить; вверх/вниз — подтянуться или отпустить длиннее.",
+  "new": "Верёвка с крюком",
+  "difficulty": 0
+ },
+ {
+  "id": "t05",
+  "mode": "training",
+  "chapter": 0,
+  "title": "Мишени на время",
+  "theme": "school",
+  "time": "day",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 39695,
+   "water": 0.1,
+   "props": 0.4
+  },
+  "briefing": "Школьный тир: мишени встают и падают быстрее, чем физрук говорит «отставить». Восемь штук за минуту — и ты принят в кружок. «Макаров» бьёт точно, но мишени не ждут.",
+  "objective": {
+   "type": "targets",
+   "count": 8,
+   "kind": "pop_up",
+   "time_limit": 60
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "makarov": -1,
+    "sling": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 60,
+   "round_time": 60,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "time_max",
+    "value": 40
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Пули ветром не сносит: целься прямо, а промах пересчитывай на глаз.",
+  "new": "«Макаров», рогатка, счёт по времени",
+  "difficulty": 0
+ },
+ {
+  "id": "m01",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Первый двор",
+  "theme": "yard",
+  "time": "grey",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 9919,
+   "water": 0.15,
+   "props": 0.5
+  },
+  "briefing": "Расточка заняла наш двор и уже лузгает семки на нашей лавочке. Их двое, нас трое — арифметика на нашей стороне. Выгони гостей поскорее, пока бабушки с балконов не начали давать советы.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 70,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "obrez": 3,
+    "rope": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0.2,
+   "mines": 0,
+   "barrels": 0.1,
+   "fall_damage": 0.3,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 8
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Первый ход не торопи: оглядись, откуда ветер, и только потом целься.",
+  "new": "«Обрез» — два выстрела за ход",
+  "difficulty": 1
+ },
+ {
+  "id": "m02",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Бочки не виноваты",
+  "theme": "garages",
+  "time": "day",
+  "terrain": {
+   "archetype": "objects",
+   "seed": 17838,
+   "water": 0.1,
+   "props": 0.7
+  },
+  "briefing": "У гаражей стоят бочки с чем-то подозрительно пахучим, и Расточка хочет их увезти. Если бочки взорвутся сами, они уж точно никому не достанутся. Помоги им взорваться, пока их не погрузили в «Москвич».",
+  "objective": {
+   "type": "destroy_objects",
+   "object": "barrel",
+   "count": 5
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 1,
+    "hp": 60,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "obrez": 3,
+    "mine": 3,
+    "rope": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0.2,
+   "mines": 0,
+   "barrels": 0.8,
+   "fall_damage": 0.3,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 7
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Бочки взрываются цепочкой: поставь одну точно в центр и смотри, как остальные сами договорятся.",
+  "new": "Растяжка (мина)",
+  "difficulty": 1
+ },
+ {
+  "id": "m03",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Прогул с последствиями",
+  "theme": "school",
+  "time": "evening",
+  "terrain": {
+   "archetype": "staircase",
+   "seed": 25757,
+   "water": 0.1,
+   "props": 0.5
+  },
+  "briefing": "Физрук ушёл за кефиром, а со склада посыпались ящики с инвентарём. Расточка уже лезет на трибуны с мешками. Собери четыре ящика первым — как за последней булкой в буфете.",
+  "objective": {
+   "type": "collect_crates",
+   "count": 4
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 70,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "sling": -1,
+    "makarov": -1,
+    "obrez": 2,
+    "mine": 2,
+    "rope": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0.9,
+   "mines": 0,
+   "barrels": 0.1,
+   "fall_damage": 0.3,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 7
+   }
+  },
+  "music": "calm",
+  "cutscene_after": "s02-crate",
+  "tip": "Ящик падает на парашюте — подбегай к месту падения до того, как он коснётся земли.",
+  "new": "Ящики: подобрал — получил оружие; рогатка, «Макаров»",
+  "difficulty": 2
+ },
+ {
+  "id": "m04",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Бабка на грядках",
+  "theme": "dacha",
+  "time": "day",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 33676,
+   "water": 0.1,
+   "props": 0.5
+  },
+  "briefing": "Бабка Шура копает картошку, а Расточка уже подбирается к её грядкам. Бабку лучше не трогать: она сама кого хочешь тронет, но помочь ей не грех. Продержись пять ходов, а потом — огурцы и сметана.",
+  "objective": {
+   "type": "protect",
+   "ward": "babka",
+   "ward_hp": 120,
+   "turns": 5
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 3,
+    "hp": 60,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "carbide": 2,
+    "makarov": -1,
+    "rope": 2,
+    "zontik": 1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.1,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 60
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Подопечный стоит на месте и ждёт защиты: закрой его собой или выгони врагов подальше.",
+  "new": "Банка с карбидом; подопечный",
+  "difficulty": 2
+ },
+ {
+  "id": "m05",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Кран на небо",
+  "theme": "construction",
+  "time": "grey",
+  "terrain": {
+   "archetype": "towers",
+   "seed": 41595,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Кто-то повесил на башенный кран флаг Расточки, и он развевается над всей стройкой, как наглое бельё. Забрось на кран нашего бойца и смени флаг, пока прораб не вернулся с обеда. Плиты и отбойный молоток на стройке всегда под рукой.",
+  "objective": {
+   "type": "reach_point",
+   "position": [
+    0.5,
+    0.05
+   ],
+   "label": "флаг на кране"
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 70,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "plita": 4,
+    "otboinik": 3,
+    "rope": -1,
+    "limonka": 3,
+    "mukha": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 8
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Плита — это мост и ступенька одновременно; отбойник пробивает путь вниз.",
+  "new": "Бетонная плита и отбойный молоток",
+  "difficulty": 2
+ },
+ {
+  "id": "m06",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Базарная площадь",
+  "theme": "market",
+  "time": "day",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 49514,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Рынок поделили на сотки, а нам нужен свой ларёк с газировкой. Займи пятачок у ларька и держи его, пока Расточка бегает за семечками. Три хода — и ларёк наш, а вместе с ним и вся газировка.",
+  "objective": {
+   "type": "king_of_hill",
+   "zone": [
+    0.5,
+    0.55,
+    0.08
+   ],
+   "hold_turns": 3
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 3,
+    "hp": 70,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "korsar": 2,
+    "makarov": -1,
+    "obrez": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 9
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s09-kvass",
+  "tip": "Зону держит тот, кто в ней один: выгони чужих взрывом и стой.",
+  "new": "Ящик петард «Корсар»; режим «царь горы»",
+  "difficulty": 3
+ },
+ {
+  "id": "m07",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Форт-Ночь",
+  "theme": "yard",
+  "time": "night",
+  "terrain": {
+   "archetype": "fortress",
+   "seed": 57433,
+   "water": 0.2,
+   "props": 0.6
+  },
+  "briefing": "Ночью строили форты из шин и поддонов: свой у них, свой у нас. Победит тот, у кого стенка крепче, а голова горячее. Фонарик не забудь — он не поможет, но так красивее.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 3,
+    "hp": 70,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "pigeon": 2,
+    "obrez": 2,
+    "plita": 2,
+    "makarov": -1
+   },
+   "delays": {
+    "pigeon": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.4,
+   "sudden_death": "water",
+   "forts": true
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Форт можно разобрать по кирпичику, но тот, кто разберёт, сам окажется на виду.",
+  "new": "Голубь с петардой; режим «форты»",
+  "difficulty": 3
+ },
+ {
+  "id": "m08",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Курьерский",
+  "theme": "depot",
+  "time": "evening",
+  "terrain": {
+   "archetype": "bridge",
+   "seed": 65352,
+   "water": 0.3,
+   "props": 0.6
+  },
+  "briefing": "На депо ждут товарняк с семками, а Расточка решила встретить его без нас. Продержись шесть ходов, пока не загудит паровоз. Рельсы — не только дорога, но и отличное укрытие, если не стоять на них.",
+  "objective": {
+   "type": "survive_turns",
+   "turns": 6
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 4,
+    "hp": 60,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "tnt": 3,
+    "mine": 3,
+    "makarov": -1,
+    "zontik": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.4,
+   "mines": 2,
+   "barrels": 0.2,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 50
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Тротил можно оставить на дорожке и убежать — шашка взорвётся сама.",
+  "new": "Тротиловая шашка, зонтик",
+  "difficulty": 3
+ },
+ {
+  "id": "m09",
+  "mode": "mission",
+  "chapter": 1,
+  "title": "Бугор Расточки",
+  "theme": "garages",
+  "time": "evening",
+  "terrain": {
+   "archetype": "cliff",
+   "seed": 73271,
+   "water": 0.2,
+   "props": 0.7
+  },
+  "briefing": "Сам Бугор вышел на крышу гаража: кепка размером с таз, самомнение размером с гараж. У него 300 ХП, и он твёрдо уверен, что это мало. Спусти его с небес на землю — желательно без обид.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 1,
+    "hp": 300,
+    "bot": "medium",
+    "boss": true,
+    "name": "Бугор"
+   },
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 60,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "tnt": 2,
+    "korsar": 2,
+    "pigeon": 2,
+    "obrez": -1,
+    "rope": 3,
+    "plita": 2
+   },
+   "delays": {
+    "tnt": 2,
+    "pigeon": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 14
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s17-garage-door",
+  "tip": "У босса много ХП — не трать лучшее оружие на его охрану, береги к его выходу.",
+  "new": "Первый босс: 300 ХП",
+  "difficulty": 4,
+  "boss": true
+ },
+ {
+  "id": "m10",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Остров невезения",
+  "theme": "beach",
+  "time": "day",
+  "terrain": {
+   "archetype": "islands",
+   "seed": 81190,
+   "water": 0.5,
+   "props": 0.3
+  },
+  "briefing": "Наш Рыжий уплыл на надувном матрасе и застрял на островке посреди Затона. Верни его на берег, пока он не запел. Верёвка и огнетушитель — твои лучшие друзья, а Затон — не самый добрый сосед.",
+  "objective": {
+   "type": "rescue",
+   "count": 1,
+   "where": "island"
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 70,
+    "bot": "easy"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": 3,
+    "mukha": -1,
+    "limonka": -1,
+    "makarov": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.1,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "no_losses"
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Спасаемый присоединится к бригаде, если до него дотронуться; береги его — он слабенький, зато с характером.",
+  "new": "Огнетушитель-ранец; спасение с острова",
+  "difficulty": 3
+ },
+ {
+  "id": "m11",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Смена трансформаторов",
+  "theme": "factory",
+  "time": "grey",
+  "terrain": {
+   "archetype": "pit",
+   "seed": 89109,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Затон держит завод на свету, а нам нужна тёмная ночь. Раздолбай четыре трансформатора, пока смена не вернулась с обеда. Ракета с наводкой найдёт, куда стукнуть, а ты — что сказать мастеру.",
+  "objective": {
+   "type": "destroy_objects",
+   "object": "transformer",
+   "count": 4
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "homing": 3,
+    "mukha": -1,
+    "limonka": -1,
+    "tnt": 3,
+    "mine": 2,
+    "rope": 2
+   },
+   "delays": {
+    "homing": 1
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 9
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Ракета с наводкой летит туда, куда ткнёшь, — но ветер сносит и её, чуть-чуть.",
+  "new": "Ракета с наводкой",
+  "difficulty": 4
+ },
+ {
+  "id": "m12",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Скидки на хлам",
+  "theme": "market",
+  "time": "evening",
+  "terrain": {
+   "archetype": "maze",
+   "seed": 97028,
+   "water": 0.3,
+   "props": 0.9
+  },
+  "briefing": "На рынке распродажа: ящики падают с неба, как шоколадки с ёлки. Затон тянет руки, мы тянем их быстрее. Собери шесть ящиков и считай себя почти олигархом.",
+  "objective": {
+   "type": "collect_crates",
+   "count": 6
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 3,
+    "hp": 70,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "dog": 2,
+    "mukha": -1,
+    "korsar": 2,
+    "limonka": -1,
+    "rope": 2,
+    "makarov": -1,
+    "sling": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 1.0,
+   "mines": 3,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 9
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s08-dog",
+  "tip": "В ящиках бывают мины — не таскай всё подряд, смотри под ноги.",
+  "new": "Дворняга с петардой",
+  "difficulty": 3
+ },
+ {
+  "id": "m13",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Мусорный регламент",
+  "theme": "dump",
+  "time": "grey",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 4956,
+   "water": 0.4,
+   "props": 0.8
+  },
+  "briefing": "Свалка — вечный спор: чей это холм. Затон решил, что их, нам это решение не нравится. Продержись восемь ходов и докажи, что ты тут сидел раньше.",
+  "objective": {
+   "type": "survive_turns",
+   "turns": 8
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 4,
+    "hp": 70,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mortar": 3,
+    "mukha": -1,
+    "carbide": 2,
+    "limonka": -1,
+    "obrez": -1,
+    "tnt": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 50
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Миномёт бьёт навесом через стены, но осколки летят и в тебя.",
+  "new": "Миномёт из трубы",
+  "difficulty": 4
+ },
+ {
+  "id": "m14",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Контрольная по физике",
+  "theme": "school",
+  "time": "day",
+  "terrain": {
+   "archetype": "staircase",
+   "seed": 12875,
+   "water": 0.1,
+   "props": 0.6
+  },
+  "briefing": "Физичка велела попасть в мишени, не вставая с места. Восемь штук за шесть ходов — и получишь пятёрку и «Калаш» в придачу. Промажешь — тройка и замечание в дневник.",
+  "objective": {
+   "type": "targets",
+   "count": 8,
+   "kind": "moving",
+   "turns": 6
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "kalash": -1,
+    "makarov": -1,
+    "sling": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 40,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0.3,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 4
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Автомат стреляет очередью: держи клавишу и веди прицел вслед за мишенью.",
+  "new": "«Калаш» (очередь)",
+  "difficulty": 3
+ },
+ {
+  "id": "m15",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Дача держит оборону",
+  "theme": "dacha",
+  "time": "evening",
+  "terrain": {
+   "archetype": "floating",
+   "seed": 20794,
+   "water": 0.3,
+   "props": 0.8
+  },
+  "briefing": "На дачах оружия нет — зато есть козы и бабка. Затон считает, что огурцы теперь их, козы вытянули шеи и громко не согласны. Защити пасеку пять ходов — пчёлы потом расплатятся мёдом.",
+  "objective": {
+   "type": "protect",
+   "ward": "beehive",
+   "ward_hp": 150,
+   "turns": 5
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 3,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "kozy": 2,
+    "babka": 2,
+    "mukha": -1,
+    "limonka": -1,
+    "rope": -1,
+    "dog": 1
+   },
+   "delays": {
+    "kozy": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 70
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s03-babushka",
+  "tip": "Козы бегут вперёд и бодают всё, что на пути, — в том числе и своих.",
+  "new": "Бабка с авоськой, стадо коз",
+  "difficulty": 4
+ },
+ {
+  "id": "m16",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Горячая точка",
+  "theme": "heating",
+  "time": "night",
+  "terrain": {
+   "archetype": "cavern",
+   "seed": 28713,
+   "water": 0.35,
+   "props": 0.5
+  },
+  "briefing": "В теплотрассе прорвало трубу: горячая вода лезет вверх, а нам нужно к вентилю в самом конце. Добеги и закрути, пока не сварились все. Паяльная лампа прожжёт там, где ходить нельзя.",
+  "objective": {
+   "type": "reach_point",
+   "position": [
+    0.93,
+    0.3
+   ],
+   "label": "вентиль"
+  },
+  "player": {
+   "count": 3,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "payalnik": -1,
+    "otboinik": 3,
+    "rope": -1,
+    "ognetushitel": 2,
+    "mukha": -1,
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water",
+   "rising_water": 0.5
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 8
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": null,
+  "tip": "Вода поднимается каждый ход: чем выше ты, тем дольше живёшь.",
+  "new": "Паяльная лампа",
+  "difficulty": 4
+ },
+ {
+  "id": "m17",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Один ход — всех",
+  "theme": "construction",
+  "time": "day",
+  "terrain": {
+   "archetype": "maze",
+   "seed": 36632,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Четверо затонских умников выстроились у забора на стройке: фото на память. У тебя один ход, много взрывчатки и ни одной второй попытки. Продумай траекторию и ничего не перепутай.",
+  "objective": {
+   "type": "one_turn_kill",
+   "turns": 1
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 4,
+    "hp": 40,
+    "bot": "easy",
+    "clustered": true
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "tnt": 4,
+    "korsar": 3,
+    "limonka": 3,
+    "mukha": 3,
+    "mine": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 90,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0.5,
+   "fall_damage": 0.0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "shots_max",
+    "value": 3
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Бочки и мины тоже считаются: подожги одну, и остальное придёт само.",
+  "new": "Режим «один ход — всех»",
+  "difficulty": 5
+ },
+ {
+  "id": "m18",
+  "mode": "mission",
+  "chapter": 2,
+  "title": "Смотрящий пирса",
+  "theme": "beach",
+  "time": "evening",
+  "terrain": {
+   "archetype": "bridge",
+   "seed": 44551,
+   "water": 0.6,
+   "props": 0.4
+  },
+  "briefing": "Босс Затона держит мол: триста ХП, кепка как зонтик и взгляд заведующей. Вода вокруг тоже на его стороне, поэтому лучше в неё не падать. Столкни его с насиженного места — аккуратно.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 1,
+    "hp": 300,
+    "bot": "medium",
+    "boss": true,
+    "name": "Смотрящий"
+   },
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 70,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "homing": 2,
+    "mortar": 2,
+    "kalash": -1,
+    "rope": -1,
+    "ognetushitel": 1,
+    "dog": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 14
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s13-map",
+  "tip": "Босс стоит рядом с водой — подталкивай его к ней, а не бей в лоб.",
+  "new": "Босс главы 2: 300 ХП",
+  "difficulty": 6,
+  "boss": true
+ },
+ {
+  "id": "m19",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Ёлка на льду",
+  "theme": "winter",
+  "time": "winter",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 52470,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Первомайка залила каток и притворяется, что он их. Займи центр и держи четыре хода: ледобур и заморозка на нашей стороне. Мандарины — по традиции, но уже после победы.",
+  "objective": {
+   "type": "king_of_hill",
+   "zone": [
+    0.5,
+    0.6,
+    0.09
+   ],
+   "hold_turns": 4
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 3,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "auger": 3,
+    "holodilnik": 2,
+    "sling": -1,
+    "limonka": -1,
+    "mukha": -1,
+    "rope": -1
+   },
+   "delays": {
+    "holodilnik": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Заморозка останавливает бойца на ход; заморозь того, кто стоит в зоне.",
+  "new": "Ледобур и «Заморозка»",
+  "difficulty": 4
+ },
+ {
+  "id": "m20",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Тупик",
+  "theme": "depot",
+  "time": "night",
+  "terrain": {
+   "archetype": "objects",
+   "seed": 60389,
+   "water": 0.3,
+   "props": 0.7
+  },
+  "briefing": "Старый тепловоз — гордость депо, и Первомайка метит на его гудок. Постереги шесть ходов, пока придёт мастер. Кукурузник сегодня на нашей стороне — единственный день в году.",
+  "objective": {
+   "type": "protect",
+   "ward": "locomotive",
+   "ward_hp": 200,
+   "turns": 6
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 4,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "kukuruznik": 2,
+    "mukha": -1,
+    "limonka": -1,
+    "tnt": 2,
+    "rope": -1,
+    "makarov": -1
+   },
+   "delays": {
+    "kukuruznik": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 70
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Тепловоз крепкий, но кукурузник бьёт сверху — не упусти, когда он зайдёт на круг.",
+  "new": "Кукурузник с кирпичами",
+  "difficulty": 5
+ },
+ {
+  "id": "m21",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Через овраг",
+  "theme": "yard",
+  "time": "night",
+  "terrain": {
+   "archetype": "cliff",
+   "seed": 68308,
+   "water": 0.4,
+   "props": 0.4
+  },
+  "briefing": "Овраг между дворами: ходить некуда, да и незачем — у нас артиллерия. Сидим на краях и стреляем, как положено культурным людям. Ветер сегодня главный, а ты — просто очень точный.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 4,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "mortar": -1,
+    "homing": 3,
+    "kukuruznik": 1,
+    "limonka": -1
+   },
+   "delays": {
+    "kukuruznik": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.6,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0,
+   "sudden_death": "water",
+   "no_walk": true
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s06-staring",
+  "tip": "Ходить нельзя: бойцы стоят на местах, и вся игра — в расчёте угла.",
+  "new": "Режим «артиллерия»: ходить нельзя",
+  "difficulty": 5
+ },
+ {
+  "id": "m22",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Котельная",
+  "theme": "factory",
+  "time": "evening",
+  "terrain": {
+   "archetype": "towers",
+   "seed": 76227,
+   "water": 0.35,
+   "props": 0.8
+  },
+  "briefing": "Первомайка гоняет котлы, а нам мёрзнуть. Разбей пять котлов — только не все сразу, а то весь район останется без чая. Чугунная ванна для этих дел самое то, хоть и тяжеловата.",
+  "objective": {
+   "type": "destroy_objects",
+   "object": "boiler",
+   "count": 5
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "vanna": 2,
+    "tnt": 3,
+    "mukha": -1,
+    "limonka": -1,
+    "rope": 2,
+    "homing": 2
+   },
+   "delays": {
+    "vanna": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.3,
+   "mines": 0,
+   "barrels": 0.5,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Ванна падает с неба там, куда ты ткнул, — следи, чтобы под ней не оказался свой.",
+  "new": "Чугунная ванна",
+  "difficulty": 5
+ },
+ {
+  "id": "m23",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Гаражи не выпускают",
+  "theme": "garages",
+  "time": "night",
+  "terrain": {
+   "archetype": "maze",
+   "seed": 84146,
+   "water": 0.2,
+   "props": 0.9
+  },
+  "briefing": "Двоих наших пацанов закрыли в гаражах: Первомайка спутала их с хламом. Найди обоих по крышам и верни на воздух. Кеды и резинка — для храбрых, а храбрые у нас кончились.",
+  "objective": {
+   "type": "rescue",
+   "count": 2,
+   "where": "garage"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "rezinka": -1,
+    "ognetushitel": 2,
+    "kedy": 2,
+    "makarov": -1,
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0.4,
+   "mines": 2,
+   "barrels": 0.3,
+   "fall_damage": 0.4,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "no_losses"
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Резинка от трусов: растянул, отпустил — и ты на крыше. Только не промахнись.",
+  "new": "Резинка от трусов, кеды",
+  "difficulty": 5
+ },
+ {
+  "id": "m24",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Паводок на трассе",
+  "theme": "heating",
+  "time": "grey",
+  "terrain": {
+   "archetype": "pit",
+   "seed": 92065,
+   "water": 0.5,
+   "props": 0.4
+  },
+  "briefing": "Трубу прорвало, кипяток лезет вверх, а выхода всё меньше. Держись повыше: восемь ходов — и сантехник придёт. Плиты и верёвка — наш спасательный круг и всё его удобство.",
+  "objective": {
+   "type": "survive_turns",
+   "turns": 8
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 3,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "plita": 4,
+    "ognetushitel": 3,
+    "zontik": 2,
+    "mukha": -1,
+    "limonka": -1,
+    "mawashi": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 35,
+   "round_time": 300,
+   "wind": "none",
+   "crates": 0.5,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water",
+   "rising_water": 1.0
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 50
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s07-rope",
+  "tip": "Вода поднимается каждый ход, так что высокая позиция — лучший щит.",
+  "new": "Вода поднимается с первого хода",
+  "difficulty": 6
+ },
+ {
+  "id": "m25",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Сладкая невесомость",
+  "theme": "dump",
+  "time": "evening",
+  "terrain": {
+   "archetype": "floating",
+   "seed": 99984,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Кто-то разлил «Буратино» на свалку, и всё поплыло. Гравитации почти нет, а холодильников — шесть, и все они мешают. Разбей их, пока никто не улетел в космос вместе с кепкой.",
+  "objective": {
+   "type": "destroy_objects",
+   "object": "fridge",
+   "count": 6
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "buratino": 3,
+    "mukha": -1,
+    "limonka": -1,
+    "mortar": 2,
+    "kedy": 2,
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.2,
+   "sudden_death": "water",
+   "gravity": 0.4
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "В низкой гравитации всё летит выше и дальше — снижай силу броска вдвое.",
+  "new": "Газировка «Буратино», низкая гравитация",
+  "difficulty": 5
+ },
+ {
+  "id": "m26",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Драка без оружия",
+  "theme": "market",
+  "time": "day",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 7912,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "На рынке запретили всё громкое: остались кулаки, ноги и арматура. Займи центр и не пускай никого: четыре хода — и ты хозяин всех прилавков. Только без «за пацанов!» — хотя нет, с ним.",
+  "objective": {
+   "type": "king_of_hill",
+   "zone": [
+    0.5,
+    0.55,
+    0.1
+   ],
+   "hold_turns": 4
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 4,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "uppercut": -1,
+    "mawashi": -1,
+    "armatura": -1,
+    "zapacanov": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0.2,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.3,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 10
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Бить можно только вплотную: подбеги, ударь — и отходи, пока не ответили.",
+  "new": "Ближний бой: апперкот, маваши, арматура, «За пацанов!»",
+  "difficulty": 5
+ },
+ {
+  "id": "m27",
+  "mode": "mission",
+  "chapter": 3,
+  "title": "Король льда",
+  "theme": "winter",
+  "time": "night",
+  "terrain": {
+   "archetype": "fortress",
+   "seed": 15831,
+   "water": 0.4,
+   "props": 0.6
+  },
+  "briefing": "Король Первомайки сидит в ледяном форте. Триста ХП и привычка жаловаться на холод. Взломай форт и сдуй короля — он и так уже надутый.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 1,
+    "hp": 300,
+    "bot": "hard",
+    "boss": true,
+    "name": "Король Первомайки"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 80,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "homing": 2,
+    "mortar": 2,
+    "auger": 3,
+    "holodilnik": 2,
+    "truba": 1,
+    "kirpichi": 1,
+    "rope": -1
+   },
+   "delays": {
+    "truba": 5,
+    "kirpichi": 5
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water",
+   "forts": true
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 15
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s10-winter",
+  "tip": "Прорыв трубы и кирпичный град дают по разу за бой — береги к решающему ходу.",
+  "new": "Босс главы 3: 300 ХП; труба и кирпичи",
+  "difficulty": 7,
+  "boss": true
+ },
+ {
+  "id": "m28",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Две бригады, один мост",
+  "theme": "construction",
+  "time": "evening",
+  "terrain": {
+   "archetype": "bridge",
+   "seed": 23750,
+   "water": 0.4,
+   "props": 0.6
+  },
+  "briefing": "Чемской и Ленинский встретились на мосту и сразу поссорились — классика. Собери восемь ящиков, пока они меряются кепками. Если повезёт, они сами друг друга сдуют.",
+  "objective": {
+   "type": "collect_crates",
+   "count": 8
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "chemskoy",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "pulemet": 3,
+    "kalash": -1,
+    "mukha": -1,
+    "homing": 2,
+    "limonka": -1,
+    "rope": -1
+   },
+   "delays": {
+    "pulemet": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 1.0,
+   "mines": 2,
+   "barrels": 0.3,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 12
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Бригады враждуют и друг с другом — не мешай им, пока собираешь ящики.",
+  "new": "Пулемёт; два вражеских района сразу",
+  "difficulty": 6
+ },
+ {
+  "id": "m29",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Дачи объединились",
+  "theme": "dacha",
+  "time": "day",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 31669,
+   "water": 0.3,
+   "props": 0.8
+  },
+  "briefing": "Чемской и Ленинский договорились и пошли на дачи вместе — пока одни дерутся, у других бабка с самогоном. Нам тут только лавочку поставить. Пойдём разберёмся, чьи огурцы.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "chemskoy",
+    "count": 3,
+    "hp": 90,
+    "bot": "hard"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 3,
+    "hp": 90,
+    "bot": "medium"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "samogon": 1,
+    "babka": 1,
+    "kozy": 1,
+    "dog": 2,
+    "pigeon": 2,
+    "sling": -1,
+    "obrez": -1,
+    "mukha": -1,
+    "limonka": -1
+   },
+   "delays": {
+    "samogon": 4,
+    "kozy": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 13
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Самогон делит ХП всех присутствующих поровну: выгодно, когда ты самый слабый.",
+  "new": "Бабкин самогон (раз за бой)",
+  "difficulty": 6
+ },
+ {
+  "id": "m30",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Тир, но на островах",
+  "theme": "beach",
+  "time": "day",
+  "terrain": {
+   "archetype": "islands",
+   "seed": 39588,
+   "water": 0.5,
+   "props": 0.3
+  },
+  "briefing": "Ленинский разложился на островках: красиво, как на открытке. Один ход, один шанс — открыток больше не будет. Посылку с минами никто не отменял.",
+  "objective": {
+   "type": "one_turn_kill",
+   "turns": 1
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "leninsky",
+    "count": 4,
+    "hp": 50,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "posylka": 2,
+    "homing": 4,
+    "mortar": 4,
+    "kukuruznik": 2,
+    "tnt": 3
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "shots_max",
+    "value": 4
+   }
+  },
+  "music": "calm",
+  "cutscene_after": "s04-pigeon",
+  "tip": "Посылка с минами ложится в одну точку и разлетается — считай радиус.",
+  "new": "Посылка с минами",
+  "difficulty": 7
+ },
+ {
+  "id": "m31",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Последняя маршрутка",
+  "theme": "depot",
+  "time": "grey",
+  "terrain": {
+   "archetype": "staircase",
+   "seed": 47507,
+   "water": 0.3,
+   "props": 0.7
+  },
+  "briefing": "Чемской на станции махнул рукой уходящей маршрутке — и больше её никто не видел. Нам нужно добраться до вагона номер три, пока и он не ушёл. Телепорт на колёсах, но не бесплатный.",
+  "objective": {
+   "type": "reach_point",
+   "position": [
+    0.95,
+    0.15
+   ],
+   "label": "вагон №3"
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "chemskoy",
+    "count": 3,
+    "hp": 90,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": 3,
+    "marshrutka": 2,
+    "kedy": -1,
+    "plita": 3,
+    "mukha": -1,
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 9
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Маршрутка — телепорт: выбери точку на видимом участке карты, и боец уже там.",
+  "new": "Маршрутка (телепорт)",
+  "difficulty": 6
+ },
+ {
+  "id": "m32",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Невидимый мороз",
+  "theme": "winter",
+  "time": "winter",
+  "terrain": {
+   "archetype": "cavern",
+   "seed": 55426,
+   "water": 0.4,
+   "props": 0.5
+  },
+  "briefing": "Мороз, снег, и Ленинский решил, что нас не видно. Мы тоже решили, но невидимку себе купили. Продержись семь ходов, не вылезая из пещеры, — в тепле, но без чая.",
+  "objective": {
+   "type": "survive_turns",
+   "turns": 7
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "leninsky",
+    "count": 5,
+    "hp": 80,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "nevidimka": 2,
+    "yagga": 3,
+    "holodilnik": 2,
+    "auger": 3,
+    "sling": -1,
+    "limonka": -1,
+    "mukha": -1,
+    "rope": -1
+   },
+   "delays": {
+    "nevidimka": 2
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.2,
+   "fall_damage": 0.5,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 60
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Невидимку не видят только на твоём ходу: с её помощью можно подойти вплотную.",
+  "new": "Невидимка, энергетик",
+  "difficulty": 7
+ },
+ {
+  "id": "m33",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Школьный тир",
+  "theme": "school",
+  "time": "evening",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 63345,
+   "water": 0.1,
+   "props": 0.6
+  },
+  "briefing": "В школе Чемского открыт стрелковый кружок. Лазерная указка у физрука — наша, надо только выиграть. Попади в десять мишеней за восемь ходов и получи грамоту.",
+  "objective": {
+   "type": "targets",
+   "count": 10,
+   "kind": "moving",
+   "turns": 8
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "ukazka": -1,
+    "kalash": -1,
+    "makarov": -1,
+    "sling": -1,
+    "pulemet": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 40,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0.3,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 6
+   }
+  },
+  "music": "timed",
+  "cutscene_after": "s05-sling",
+  "tip": "Лазерная указка показывает траекторию — но только для пули, а не для гранаты.",
+  "new": "Лазерная указка",
+  "difficulty": 6
+ },
+ {
+  "id": "m34",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Верёвочный человек",
+  "theme": "yard",
+  "time": "night",
+  "terrain": {
+   "archetype": "cliff",
+   "seed": 71264,
+   "water": 0.5,
+   "props": 0.5
+  },
+  "briefing": "Только верёвка, больше ничего. Добеги до флага на крышах двора: ходить можно, прыгать тоже, но по-настоящему здесь качаются. Времени мало, зато голова чистая.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 4,
+   "time_limit": 120
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 120,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none",
+   "rope_only": true
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "time_max",
+    "value": 70
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Раскачивайся с длинной верёвкой: чем выше точка крюка, тем дальше полёт.",
+  "new": "Режим «только верёвка»",
+  "difficulty": 6
+ },
+ {
+  "id": "m35",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Вывоз по-ленински",
+  "theme": "dump",
+  "time": "grey",
+  "terrain": {
+   "archetype": "objects",
+   "seed": 79183,
+   "water": 0.4,
+   "props": 0.9
+  },
+  "briefing": "Ленинский вывозит свалку на своих рельсах и думает, что это бизнес. Сломай пять холодильников, пока их не погрузили. «Почта России» поможет — посылками прямо с неба.",
+  "objective": {
+   "type": "destroy_objects",
+   "object": "fridge",
+   "count": 5
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "leninsky",
+    "count": 4,
+    "hp": 90,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "pochta": 2,
+    "kirpichi": 2,
+    "vanna": 2,
+    "tnt": 4,
+    "mukha": -1,
+    "limonka": -1,
+    "rope": -1
+   },
+   "delays": {
+    "pochta": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.5,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 11
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Почта сбрасывает посылки ряд за рядом — выстрели в начало, чтобы не оставить дыр.",
+  "new": "«Почта России»",
+  "difficulty": 7
+ },
+ {
+  "id": "m36",
+  "mode": "mission",
+  "chapter": 4,
+  "title": "Смотрящий Чемского",
+  "theme": "heating",
+  "time": "night",
+  "terrain": {
+   "archetype": "pit",
+   "seed": 87102,
+   "water": 0.5,
+   "props": 0.5
+  },
+  "briefing": "Босс Чемского сидит в котельной: триста ХП, кепка до потолка и привычка грозить кипятком. Ленинский стоит рядом и ухмыляется. Загони обоих в пар — вежливо.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "chemskoy",
+    "count": 1,
+    "hp": 300,
+    "bot": "hard",
+    "boss": true,
+    "name": "Смотрящий Чемского"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 2,
+    "hp": 90,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 1,
+    "hp": 90,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "mukha": -1,
+    "limonka": -1,
+    "napalm": 1,
+    "pulemet": 2,
+    "homing": 3,
+    "payalnik": -1,
+    "rope": -1,
+    "truba": 1
+   },
+   "delays": {
+    "napalm": 4,
+    "truba": 6
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.5,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 16
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s14-plane",
+  "tip": "В котельной нет ветра — зато есть горячие трубы: используй их, а не только оружие.",
+  "new": "Босс главы 4: 300 ХП; кукурузник-химик",
+  "difficulty": 8,
+  "boss": true
+ },
+ {
+  "id": "m37",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Всё выручат гаражи",
+  "theme": "garages",
+  "time": "evening",
+  "terrain": {
+   "archetype": "towers",
+   "seed": 95021,
+   "water": 0.3,
+   "props": 0.9
+  },
+  "briefing": "Двоих наших прижали в гаражах, и теперь все районы смотрят, кто кого. Спаси обоих по крышам, а потом разбирайся со зрителями. Оружие здесь — только то, что можно носить в кармане.",
+  "objective": {
+   "type": "rescue",
+   "count": 2,
+   "where": "rooftop"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 90,
+    "bot": "hard"
+   },
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 90,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": 3,
+    "marshrutka": 2,
+    "kedy": 2,
+    "rezinka": -1,
+    "zontik": 2,
+    "makarov": -1,
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "no_losses"
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Спасённый идёт за тобой следом — не давай ему отставать.",
+  "new": "Вся мобильность вместе",
+  "difficulty": 7
+ },
+ {
+  "id": "m38",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Завод, ночная смена",
+  "theme": "factory",
+  "time": "night",
+  "terrain": {
+   "archetype": "fortress",
+   "seed": 2949,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Завод держат трое, и центр цеха — их гордость. Займи его на пять ходов и расставь всё по понятиям. Получится — заберёшь не только цех, но и пару кепок в подарок.",
+  "objective": {
+   "type": "king_of_hill",
+   "zone": [
+    0.5,
+    0.5,
+    0.1
+   ],
+   "hold_turns": 5
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "full",
+   "weapons": {
+    "ponyatiya": 1
+   },
+   "delays": {
+    "ponyatiya": 3
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.5,
+   "mines": 2,
+   "barrels": 0.5,
+   "fall_damage": 0.6,
+   "sudden_death": "water",
+   "forts": true
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 14
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "«По понятиям» уравнивает ХП всех: выгодно, когда ты не лидер.",
+  "new": "«По понятиям» (делим ХП поровну)",
+  "difficulty": 8
+ },
+ {
+  "id": "m39",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Дача против всех",
+  "theme": "dacha",
+  "time": "evening",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 10868,
+   "water": 0.3,
+   "props": 0.8
+  },
+  "briefing": "Три района разом пошли на наши дачи — видно, кто-то им рассказал про клубнику. Выдержи натиск и сдуй всех троих. Козы и бабка тоже в игре, и мнение у них радикальное.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "full",
+   "weapons": {
+    "napalm": 0
+   },
+   "delays": {
+    "kozy": 4,
+    "samogon": 5
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.5,
+   "mines": 0,
+   "barrels": 0.3,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 16
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s01-backfire",
+  "tip": "Врагов трое: пока они дерутся друг с другом, береги ХП.",
+  "new": "Три района вместе",
+  "difficulty": 8
+ },
+ {
+  "id": "m40",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Ящики с неба",
+  "theme": "dump",
+  "time": "grey",
+  "terrain": {
+   "archetype": "floating",
+   "seed": 18787,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Над свалкой раскачивается кран, и из него сыплются ящики по два за ход. Собери десять, но не забывай про воду внизу. Из оружия — только то, что умеет летать или лазить.",
+  "objective": {
+   "type": "collect_crates",
+   "count": 10
+  },
+  "player": {
+   "count": 4,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "leninsky",
+    "count": 3,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 3,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": 4,
+    "buratino": 3,
+    "zontik": -1,
+    "kedy": -1,
+    "rezinka": -1,
+    "mukha": -1,
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 1.0,
+   "mines": 3,
+   "barrels": 0.3,
+   "fall_damage": 0.6,
+   "sudden_death": "water",
+   "gravity": 0.7
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 14
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Ящики падают на платформы, не только на землю — следи за всеми.",
+  "new": "Ящики с неба на платформы",
+  "difficulty": 7
+ },
+ {
+  "id": "m41",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Льдины",
+  "theme": "winter",
+  "time": "night",
+  "terrain": {
+   "archetype": "islands",
+   "seed": 26706,
+   "water": 0.5,
+   "props": 0.3
+  },
+  "briefing": "Пять бригад расселись по льдинам, как чайки. Один ход — и никого. Кукурузник, кирпичи и «Почта» помогут, но придётся порядком попотеть.",
+  "objective": {
+   "type": "one_turn_kill",
+   "turns": 1
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 1,
+    "hp": 60,
+    "bot": "hard"
+   },
+   {
+    "brigade": "zaton",
+    "count": 1,
+    "hp": 60,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 1,
+    "hp": 60,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 1,
+    "hp": 60,
+    "bot": "hard"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 1,
+    "hp": 60,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "kukuruznik": 2,
+    "kirpichi": 2,
+    "korsar": 4,
+    "tnt": 4,
+    "pochta": 2,
+    "posylka": 2,
+    "homing": 4
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "shots_max",
+    "value": 5
+   }
+  },
+  "music": "calm",
+  "cutscene_after": null,
+  "tip": "Цели далеко — используй лёгкую авиацию и дальние выстрелы.",
+  "new": "Один ход против пятерых",
+  "difficulty": 9
+ },
+ {
+  "id": "m42",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Ларёк на всех",
+  "theme": "market",
+  "time": "day",
+  "terrain": {
+   "archetype": "bridge",
+   "seed": 34625,
+   "water": 0.3,
+   "props": 0.9
+  },
+  "briefing": "Последний ларёк на рынке, и за него дерутся все районы. Тебе нужно просто продержаться восемь ходов, не дав им его разнести. Покупатели уже собрались и ждут.",
+  "objective": {
+   "type": "protect",
+   "ward": "kiosk",
+   "ward_hp": 250,
+   "turns": 8
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "full",
+   "weapons": {},
+   "delays": {
+    "kozy": 4,
+    "samogon": 5
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.4,
+   "crates": 0.5,
+   "mines": 2,
+   "barrels": 0.4,
+   "fall_damage": 0.6,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 60
+   }
+  },
+  "music": "battle",
+  "cutscene_after": "s15-marshrutka",
+  "tip": "Ларёк крепче, чем кажется, но четыре района его таки разберут: стреляй первым.",
+  "new": "Четыре района одновременно",
+  "difficulty": 8
+ },
+ {
+  "id": "m43",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Вокзал на ночь",
+  "theme": "depot",
+  "time": "evening",
+  "terrain": {
+   "archetype": "cavern",
+   "seed": 42544,
+   "water": 0.3,
+   "props": 0.7
+  },
+  "briefing": "Вокзальная ночь долгая: десять ходов, пока придёт поезд с утренней булкой. Пещера под перроном вроде ничья, но все районы считают иначе. Держись и сохрани кепку.",
+  "objective": {
+   "type": "survive_turns",
+   "turns": 10
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "rastochka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "full",
+   "weapons": {},
+   "delays": {
+    "kozy": 3,
+    "samogon": 5,
+    "napalm": 4
+   }
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0.5,
+   "mines": 3,
+   "barrels": 0.5,
+   "fall_damage": 0.7,
+   "sudden_death": "water",
+   "rising_water": 0.5
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "hp_percent_min",
+    "value": 50
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": null,
+  "tip": "Вода всё-таки поднимется, так что пещера — не навсегда.",
+  "new": "Десять ходов против четырёх районов",
+  "difficulty": 9
+ },
+ {
+  "id": "m44",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Стройка последнего дня",
+  "theme": "construction",
+  "time": "grey",
+  "terrain": {
+   "archetype": "staircase",
+   "seed": 50463,
+   "water": 0.35,
+   "props": 0.9
+  },
+  "briefing": "Последний этаж, последний флаг, последний выговор от прораба. Забирайся наверх и ставь наш флаг, пока никто не спохватился. Плиты и отбойник — для самых нетерпеливых.",
+  "objective": {
+   "type": "reach_point",
+   "position": [
+    0.5,
+    0.04
+   ],
+   "label": "флаг на крыше"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "zaton",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "leninsky",
+    "count": 2,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "limited",
+   "weapons": {
+    "plita": 6,
+    "otboinik": 6,
+    "rope": -1,
+    "ognetushitel": 3,
+    "mukha": -1,
+    "limonka": -1,
+    "homing": 2,
+    "marshrutka": 1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 45,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.4,
+   "mines": 0,
+   "barrels": 0.4,
+   "fall_damage": 0.7,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 12
+   }
+  },
+  "music": "battle",
+  "cutscene_after": null,
+  "tip": "Плиту можно положить боком и пройти по ней, как по мосту.",
+  "new": "Все утилиты на одном уровне",
+  "difficulty": 8
+ },
+ {
+  "id": "m45",
+  "mode": "mission",
+  "chapter": 5,
+  "title": "Авторитет",
+  "theme": "factory",
+  "time": "night",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 58382,
+   "water": 0.5,
+   "props": 0.6
+  },
+  "briefing": "Все пять районов вышли на завод, и посреди арены стоит сам Авторитет: триста ХП и кепка размером с трактор. Если ты его сдуешь, все сядут на лавочку и поделят семки. Если нет — всё равно сядут, но без тебя.",
+  "objective": {
+   "type": "eliminate"
+  },
+  "player": {
+   "count": 5,
+   "hp": 100
+  },
+  "enemies": [
+   {
+    "brigade": "leninsky",
+    "count": 1,
+    "hp": 300,
+    "bot": "hard",
+    "boss": true,
+    "name": "Авторитет"
+   },
+   {
+    "brigade": "rastochka",
+    "count": 1,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "zaton",
+    "count": 1,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "pervomayka",
+    "count": 1,
+    "hp": 100,
+    "bot": "hard"
+   },
+   {
+    "brigade": "chemskoy",
+    "count": 1,
+    "hp": 100,
+    "bot": "hard"
+   }
+  ],
+  "arsenal": {
+   "preset": "full",
+   "weapons": {},
+   "delays": {
+    "napalm": 4,
+    "samogon": 5,
+    "kozy": 3,
+    "truba": 6,
+    "kirpichi": 6
+   }
+  },
+  "scheme": {
+   "turn_time": 40,
+   "round_time": 600,
+   "wind": 0.5,
+   "crates": 0.6,
+   "mines": 3,
+   "barrels": 0.5,
+   "fall_damage": 0.7,
+   "sudden_death": "water"
+  },
+  "stars": {
+   "1": {
+    "type": "win"
+   },
+   "2": {
+    "type": "no_losses"
+   },
+   "3": {
+    "type": "turns_max",
+    "value": 20
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": "s16-finale",
+  "tip": "Финал: оружие не жалей, но сначала сдуй мелочь — Авторитета она прикрывает.",
+  "new": "Финальный босс: 300 ХП",
+  "difficulty": 10,
+  "boss": true
+ },
+ {
+  "id": "r01",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Верёвочный забег",
+  "theme": "garages",
+  "time": "evening",
+  "terrain": {
+   "archetype": "cliff",
+   "seed": 47919,
+   "water": 0.4,
+   "props": 0.3
+  },
+  "briefing": "Крыши гаражей, верёвка, и ни одной ступеньки. Добеги до финиша, пока не стемнело — это вам не лавочка.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 5
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none",
+   "rope_only": true
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 100
+   },
+   "2": {
+    "type": "time_max",
+    "value": 75
+   },
+   "3": {
+    "type": "time_max",
+    "value": 55
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Не тормози на крюке: отпускай в верхней точке качания.",
+  "new": null,
+  "difficulty": 1,
+  "medals_seconds": {
+   "gold": 55,
+   "silver": 75,
+   "bronze": 100
+  }
+ },
+ {
+  "id": "r02",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Реактивные кеды",
+  "theme": "depot",
+  "time": "evening",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 55838,
+   "water": 0.3,
+   "props": 0.3
+  },
+  "briefing": "Огнетушитель-ранец бьёт пеной не хуже реактивной тяги. Лети над депо от флага к флагу, пока топливо не кончилось.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 6
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "ognetushitel": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 95
+   },
+   "2": {
+    "type": "time_max",
+    "value": 70
+   },
+   "3": {
+    "type": "time_max",
+    "value": 50
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Короткие импульсы экономят топливо: не держи кнопку всё время.",
+  "new": null,
+  "difficulty": 2,
+  "medals_seconds": {
+   "gold": 50,
+   "silver": 70,
+   "bronze": 95
+  }
+ },
+ {
+  "id": "r03",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Мишени во дворе",
+  "theme": "yard",
+  "time": "grey",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 63757,
+   "water": 0.1,
+   "props": 0.4
+  },
+  "briefing": "Во дворе выросли десять мишеней, как грибы после дождя. «Макаров» и терпение — вот и весь рецепт.",
+  "objective": {
+   "type": "targets",
+   "count": 10,
+   "kind": "pop_up"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "makarov": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 65
+   },
+   "2": {
+    "type": "time_max",
+    "value": 45
+   },
+   "3": {
+    "type": "time_max",
+    "value": 30
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Не стой на месте: подползай к мишеням ближе — точность растёт.",
+  "new": null,
+  "difficulty": 1,
+  "medals_seconds": {
+   "gold": 30,
+   "silver": 45,
+   "bronze": 65
+  }
+ },
+ {
+  "id": "r04",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Школьная полоса",
+  "theme": "school",
+  "time": "day",
+  "terrain": {
+   "archetype": "staircase",
+   "seed": 71676,
+   "water": 0.1,
+   "props": 0.5
+  },
+  "briefing": "Полоса препятствий на стадионе: бег, прыжки, лазанье. Физрук с секундомером смотрит из окна.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 7
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1,
+    "kedy": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 105
+   },
+   "2": {
+    "type": "time_max",
+    "value": 80
+   },
+   "3": {
+    "type": "time_max",
+    "value": 60
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Кеды ускоряют бег, но не прыжок: не форсируй перед ямой.",
+  "new": null,
+  "difficulty": 2,
+  "medals_seconds": {
+   "gold": 60,
+   "silver": 80,
+   "bronze": 105
+  }
+ },
+ {
+  "id": "r05",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Стройка вверх",
+  "theme": "construction",
+  "time": "day",
+  "terrain": {
+   "archetype": "towers",
+   "seed": 79595,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Башни, леса, краны — всё вверх. Добеги до верхней точки, пока прораб не позвал на обед.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 5
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1,
+    "plita": 3,
+    "otboinik": 2
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 110
+   },
+   "2": {
+    "type": "time_max",
+    "value": 85
+   },
+   "3": {
+    "type": "time_max",
+    "value": 65
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Плиту клади на нужной высоте, а не там, где стоишь.",
+  "new": null,
+  "difficulty": 3,
+  "medals_seconds": {
+   "gold": 65,
+   "silver": 85,
+   "bronze": 110
+  }
+ },
+ {
+  "id": "r06",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Тир на свалке",
+  "theme": "dump",
+  "time": "grey",
+  "terrain": {
+   "archetype": "objects",
+   "seed": 87514,
+   "water": 0.3,
+   "props": 0.9
+  },
+  "briefing": "Двенадцать банок и бутылок на разных высотах. «Калаш» заряжен, настроение боевое.",
+  "objective": {
+   "type": "targets",
+   "count": 12,
+   "kind": "cans"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "kalash": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 80
+   },
+   "2": {
+    "type": "time_max",
+    "value": 55
+   },
+   "3": {
+    "type": "time_max",
+    "value": 40
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Очередь рассеивается: стреляй короткими, прицел держи на цели.",
+  "new": null,
+  "difficulty": 3,
+  "medals_seconds": {
+   "gold": 40,
+   "silver": 55,
+   "bronze": 80
+  }
+ },
+ {
+  "id": "r07",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Над рекой",
+  "theme": "beach",
+  "time": "day",
+  "terrain": {
+   "archetype": "islands",
+   "seed": 95433,
+   "water": 0.6,
+   "props": 0.3
+  },
+  "briefing": "Пляж с островами и огнетушителем: перелетай от острова к острову, не искупавшись.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 6
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "ognetushitel": -1,
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 100
+   },
+   "2": {
+    "type": "time_max",
+    "value": 75
+   },
+   "3": {
+    "type": "time_max",
+    "value": 55
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Приземляйся на плоское: на склоне скатишься в воду.",
+  "new": null,
+  "difficulty": 3,
+  "medals_seconds": {
+   "gold": 55,
+   "silver": 75,
+   "bronze": 100
+  }
+ },
+ {
+  "id": "r08",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Квас на выстрел",
+  "theme": "market",
+  "time": "evening",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 3361,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Рынок кипит, и в мишени превратились все: шарики, самовары и пустые бутылки. Пулемёт тоже не лишний.",
+  "objective": {
+   "type": "targets",
+   "count": 15,
+   "kind": "moving"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "pulemet": -1,
+    "makarov": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 85
+   },
+   "2": {
+    "type": "time_max",
+    "value": 60
+   },
+   "3": {
+    "type": "time_max",
+    "value": 45
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Упреждай движущуюся цель: стреляй туда, где она будет.",
+  "new": null,
+  "difficulty": 4,
+  "medals_seconds": {
+   "gold": 45,
+   "silver": 60,
+   "bronze": 85
+  }
+ },
+ {
+  "id": "r09",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Тепло-трасса",
+  "theme": "heating",
+  "time": "night",
+  "terrain": {
+   "archetype": "cavern",
+   "seed": 11280,
+   "water": 0.4,
+   "props": 0.5
+  },
+  "briefing": "Узкий лаз в трубе, верёвка и огнетушитель — но кипяток поднимается. Успей добежать до выхода.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 6
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": -1,
+    "payalnik": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "water",
+   "rising_water": 1.0
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 120
+   },
+   "2": {
+    "type": "time_max",
+    "value": 90
+   },
+   "3": {
+    "type": "time_max",
+    "value": 70
+   }
+  },
+  "music": "sudden",
+  "cutscene_after": null,
+  "tip": "Паяльной лампой прожги перегородку, а не обходи её.",
+  "new": null,
+  "difficulty": 5,
+  "medals_seconds": {
+   "gold": 70,
+   "silver": 90,
+   "bronze": 120
+  }
+ },
+ {
+  "id": "r10",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Снайпер на льду",
+  "theme": "winter",
+  "time": "winter",
+  "terrain": {
+   "archetype": "hills",
+   "seed": 19199,
+   "water": 0.3,
+   "props": 0.5
+  },
+  "briefing": "На проруби выставлены поплавки — их надо сбить рогаткой. Тишина, мороз и чёткий глаз.",
+  "objective": {
+   "type": "targets",
+   "count": 12,
+   "kind": "floats"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "sling": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": 0.2,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 90
+   },
+   "2": {
+    "type": "time_max",
+    "value": 65
+   },
+   "3": {
+    "type": "time_max",
+    "value": 50
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Рогатка летит по дуге: дальние поплавки бери с запасом.",
+  "new": null,
+  "difficulty": 4,
+  "medals_seconds": {
+   "gold": 50,
+   "silver": 65,
+   "bronze": 90
+  }
+ },
+ {
+  "id": "r11",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Дачный слалом",
+  "theme": "dacha",
+  "time": "evening",
+  "terrain": {
+   "archetype": "valley",
+   "seed": 27118,
+   "water": 0.2,
+   "props": 0.8
+  },
+  "briefing": "Грядки, заборы и козы в качестве препятствий. Проскочи слалом на кедах — и не забудь вернуться за пустым ведром.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 8
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "kedy": -1,
+    "rope": -1,
+    "zontik": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 100
+   },
+   "2": {
+    "type": "time_max",
+    "value": 75
+   },
+   "3": {
+    "type": "time_max",
+    "value": 55
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Зонтик замедляет падение — используй его над ямами.",
+  "new": null,
+  "difficulty": 4,
+  "medals_seconds": {
+   "gold": 55,
+   "silver": 75,
+   "bronze": 100
+  }
+ },
+ {
+  "id": "r12",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Мишени с неба",
+  "theme": "factory",
+  "time": "night",
+  "terrain": {
+   "archetype": "pit",
+   "seed": 35037,
+   "water": 0.3,
+   "props": 0.7
+  },
+  "briefing": "Мишени ездят по подвесным рельсам над заводом. Миномёт навесом достанет любую, было бы время.",
+  "objective": {
+   "type": "targets",
+   "count": 10,
+   "kind": "rails"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "mortar": -1,
+    "mukha": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": 0.3,
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 100
+   },
+   "2": {
+    "type": "time_max",
+    "value": 75
+   },
+   "3": {
+    "type": "time_max",
+    "value": 55
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Миномёт требует расчёта: бей в то место, куда мишень приедет.",
+  "new": null,
+  "difficulty": 5,
+  "medals_seconds": {
+   "gold": 55,
+   "silver": 75,
+   "bronze": 100
+  }
+ },
+ {
+  "id": "r13",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Крыши гаражей",
+  "theme": "garages",
+  "time": "night",
+  "terrain": {
+   "archetype": "maze",
+   "seed": 42956,
+   "water": 0.3,
+   "props": 0.8
+  },
+  "briefing": "Ночной забег по лабиринту из гаражных крыш. Ни ступенек, ни перил — только верёвка и отвага.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 8
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1,
+    "rezinka": -1,
+    "kedy": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 120
+   },
+   "2": {
+    "type": "time_max",
+    "value": 90
+   },
+   "3": {
+    "type": "time_max",
+    "value": 70
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Резинка выкидывает вверх, верёвка — вперёд; чередуй.",
+  "new": null,
+  "difficulty": 5,
+  "medals_seconds": {
+   "gold": 70,
+   "silver": 90,
+   "bronze": 120
+  }
+ },
+ {
+  "id": "r14",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Гонка с плитами",
+  "theme": "construction",
+  "time": "grey",
+  "terrain": {
+   "archetype": "bridge",
+   "seed": 50875,
+   "water": 0.4,
+   "props": 0.7
+  },
+  "briefing": "Между башнями — пропасть, а у тебя только плиты. Кладёшь, бежишь, снова кладёшь.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 5
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "plita": 6,
+    "rope": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 110
+   },
+   "2": {
+    "type": "time_max",
+    "value": 80
+   },
+   "3": {
+    "type": "time_max",
+    "value": 60
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Плит всего шесть: клади их внахлёст, по две на пропасть.",
+  "new": null,
+  "difficulty": 5,
+  "medals_seconds": {
+   "gold": 60,
+   "silver": 80,
+   "bronze": 110
+  }
+ },
+ {
+  "id": "r15",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Дартс лимонками",
+  "theme": "school",
+  "time": "evening",
+  "terrain": {
+   "archetype": "arena",
+   "seed": 58794,
+   "water": 0.1,
+   "props": 0.6
+  },
+  "briefing": "Лимонки отскакивают от стен и катятся в корзины-мишени. Восемь штук, пока не прозвенел звонок.",
+  "objective": {
+   "type": "targets",
+   "count": 8,
+   "kind": "baskets"
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "limonka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "none"
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 80
+   },
+   "2": {
+    "type": "time_max",
+    "value": 55
+   },
+   "3": {
+    "type": "time_max",
+    "value": 40
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Бросай так, чтобы лимонка отскочила от стены: таймер подбирай по расстоянию.",
+  "new": null,
+  "difficulty": 4,
+  "medals_seconds": {
+   "gold": 40,
+   "silver": 55,
+   "bronze": 80
+  }
+ },
+ {
+  "id": "r16",
+  "mode": "trial",
+  "chapter": 0,
+  "title": "Марафон двора",
+  "theme": "depot",
+  "time": "night",
+  "terrain": {
+   "archetype": "floating",
+   "seed": 66713,
+   "water": 0.5,
+   "props": 0.6
+  },
+  "briefing": "Длинная трасса на всю карту: верёвка, ранец, зонтик, плиты — всё сразу. Для настоящих пацанов, которые ещё и без остановок.",
+  "objective": {
+   "type": "race_time",
+   "checkpoints": 12
+  },
+  "player": {
+   "count": 1,
+   "hp": 100
+  },
+  "enemies": [],
+  "arsenal": {
+   "preset": "custom",
+   "weapons": {
+    "rope": -1,
+    "ognetushitel": -1,
+    "zontik": -1,
+    "plita": 4,
+    "kedy": -1,
+    "rezinka": -1
+   },
+   "delays": {}
+  },
+  "scheme": {
+   "turn_time": 120,
+   "round_time": 600,
+   "wind": "none",
+   "crates": 0,
+   "mines": 0,
+   "barrels": 0,
+   "fall_damage": 0,
+   "sudden_death": "water",
+   "rising_water": 0.5
+  },
+  "stars": {
+   "1": {
+    "type": "time_max",
+    "value": 190
+   },
+   "2": {
+    "type": "time_max",
+    "value": 150
+   },
+   "3": {
+    "type": "time_max",
+    "value": 120
+   }
+  },
+  "music": "timed",
+  "cutscene_after": null,
+  "tip": "Пройди без остановок: не заходи в тупики, плиту ставь заранее.",
+  "new": null,
+  "difficulty": 7,
+  "medals_seconds": {
+   "gold": 120,
+   "silver": 150,
+   "bronze": 190
+  }
+ }
+]
