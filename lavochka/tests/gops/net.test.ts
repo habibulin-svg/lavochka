@@ -185,3 +185,47 @@ describe('gops/net: чат и голос через комнату', () => {
     expect(b.box.some((m) => m.t === 'rtc' && m.from === '1')).toBe(true);
   });
 });
+
+describe('gops/net: восстановление после рассинхрона', () => {
+  it('сервер стопит часы, хозяин шлёт снимок частями, гость накладывает — миры снова одинаковые, часы идут с того же кадра', async () => {
+    const { applySnapshot, takeSnapshot } = await import('../../src/gops/sim/snapshot');
+    const relay = new GopsRelay(SETUP, 11);
+    const host = peer(1, 'Х'), guest = peer(2, 'Г');
+    relay.add(host, true);
+    relay.add(guest, false);
+    relay.message(guest, { t: 'claim', side: 1 });
+    relay.message(host, { t: 'start' });
+    const a = new Sim(11, host.box), b = new Sim(11, guest.box);
+    let t = 0;
+    for (let i = 0; i < 300; i++) {
+      t += 1000 / 60;
+      relay.tick(t);
+      a.run(-1);
+      b.run(-1);
+    }
+    b.w.worms[1].hp = 7; // мир гостя «разошёлся»
+    relay.message(host, { t: 'hash', turn: 50, h: worldHash(a.w) });
+    relay.message(guest, { t: 'hash', turn: 50, h: worldHash(b.w) });
+    const d = guest.box.find((m) => m.t === 'desync');
+    expect(d?.t === 'desync' && d.from).toBe(1);
+    a.run(-1);
+    b.run(-1);
+    const upto = d?.t === 'desync' ? d.upto : -1;
+    expect(a.frame).toBe(upto);
+    // хозяин: снимок частями по 40000 знаков
+    const json = JSON.stringify(takeSnapshot(a.w));
+    const n = Math.ceil(json.length / 40000);
+    for (let i = 0; i < n; i++) relay.message(host, { t: 'snap', frame: upto, turn: 50, i, n, data: json.slice(i * 40000, (i + 1) * 40000) });
+    expect(relay.desynced).toBe(false);
+    const parts = guest.box.filter((m) => m.t === 'snap');
+    expect(parts.length).toBe(n);
+    applySnapshot(b.w, JSON.parse(parts.map((m) => (m.t === 'snap' ? m.data : '')).join('')));
+    expect(worldHash(b.w)).toBe(worldHash(a.w));
+    // часы — дальше с того же кадра, без скачка
+    t += 5000;
+    relay.tick(t);
+    relay.tick(t + 60);
+    const f = guest.box.filter((m) => m.t === 'f').at(-1);
+    expect(f?.t === 'f' && f.upto - upto).toBeLessThan(8);
+  });
+});

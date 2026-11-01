@@ -117,6 +117,15 @@ export class Hud {
     );
   }
 
+  /** Короткое сообщение посередине (как «Ходит …»). */
+  flash(text: string, ms = 2500): void {
+    this.who.textContent = text;
+    this.who.style.color = '#ffd166';
+    this.who.hidden = false;
+    clearTimeout(this.whoTimer);
+    this.whoTimer = window.setTimeout(() => (this.who.hidden = true), ms);
+  }
+
   /** Строка цели миссии сверху. */
   setGoal(text: string): void {
     if (this.goal.textContent !== text) this.goal.textContent = text;

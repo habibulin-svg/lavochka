@@ -199,6 +199,11 @@ export class GameView {
     this.far.position.set(sw / 2 - c.x * fz * 0.85 - (w.mask.w * fz * 0.15) / 2, sh / 2 - c.y * fz * 0.9 - (w.mask.h * fz * 0.1) / 2);
   }
 
+  /** Маска сменилась целиком (снимок мира) — пересобрать ландшафт. */
+  rebuildTerrain(): void {
+    this.terrain.rebuild();
+  }
+
   /** Экран → координаты мира (px). */
   toWorld(sx: number, sy: number): [number, number] {
     return [(sx - this.world.position.x) / this.cam.zoom, (sy - this.world.position.y) / this.cam.zoom];

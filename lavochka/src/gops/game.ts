@@ -10,6 +10,7 @@ import { type MissionDef, type MissionRun, buildMission, missionStars, objective
 import { ARSENAL_AMMO, WEAPONS } from './sim/weapons';
 import type { NetClient } from './net/client';
 import { Rng } from './sim/rng';
+import { type Snapshot, applySnapshot, takeSnapshot } from './sim/snapshot';
 import { type Input, type Scheme, TICK_HZ, type World, createWorld, step, worldHash } from './sim/world';
 import { Hud } from './ui/hud';
 import { Talk } from './ui/talk';
@@ -59,6 +60,8 @@ export class Game {
   private frameNo = 0;
   private turnNo = 0;
   private sentSide = -1;
+  /** Рассинхрон: ждём кадра snapAt (свой снимок отправить) или чужой снимок. */
+  private resync: { at: number; mine: boolean; sent: boolean } | null = null;
   private talk: Talk | null = null;
 
   constructor(private host: HTMLElement, private setup: GameSetup) {}
@@ -97,7 +100,23 @@ export class Game {
     this.hud.quietOver = !!s.mission;
     // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
     this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
-    if (s.net) this.talk = new Talk(this.host, s.net.client);
+    if (s.net) {
+      this.talk = new Talk(this.host, s.net.client);
+      const c = s.net.client;
+      c.onDesync = (_turn, upto, mine) => {
+        this.resync = { at: upto, mine, sent: false };
+        this.hud.flash('Миры разошлись — сверяемся…', 4000);
+      };
+      c.onSnapshot = (frame, turn, json) => {
+        applySnapshot(this.world, JSON.parse(json) as Snapshot);
+        this.frameNo = frame;
+        this.turnNo = turn;
+        this.resetBots(frame);
+        this.view.rebuildTerrain();
+        this.resync = null;
+        this.hud.flash('Сверились, играем дальше');
+      };
+    }
     this.hud.onPick = (id) => this.controls.selectWeapon(id);
     this.controls.onMenu = () => this.hud.toggleMenu(this.world);
     this.hud.bindPad(this.controls);
@@ -132,10 +151,26 @@ export class Game {
     return dt;
   };
 
+  /** Боты заново от сида партии и кадра — после снимка у всех одинаковые. */
+  private resetBots(frame: number): void {
+    const s = this.setup;
+    this.bots = s.sides.map((x, i) => (x.bot ? new Bot(x.bot, seeded(s.seed * 31 + i * 977 + frame)) : null));
+  }
+
   /** Лок-степ: свой ввод — на сервер, мир шагает ровно по пришедшим кадрам. */
   private netPump(net: { client: NetClient; mine: number[] }): void {
     const w = this.world;
     const c = net.client;
+    const rs = this.resync;
+    if (rs && rs.mine && !rs.sent && this.frameNo >= rs.at) {
+      // мой мир — общий: снимок на кадре остановки часов, боты заново
+      rs.sent = true;
+      c.sendSnapshot(this.frameNo, this.turnNo, JSON.stringify(takeSnapshot(w)));
+      this.resetBots(this.frameNo);
+      this.resync = null;
+      this.hud.flash('Сверились, играем дальше');
+    }
+    if (this.resync && !this.resync.mine && this.frameNo >= this.resync.at) return; // ждём снимок
     const myTurn = net.mine.includes(w.team) && !this.bots[w.team];
     const local = this.controls.take();
     if (myTurn) {

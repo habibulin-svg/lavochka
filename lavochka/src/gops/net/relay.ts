@@ -31,6 +31,9 @@ export class GopsRelay {
   /** Кто в голосовом чате (id участника строкой). */
   private talking = new Set<number>();
   desynced = false;
+  /** Кто шлёт снимок после рассинхрона; после последней части часы идут дальше с того же кадра. */
+  private snapFrom = -1;
+  private resume = false;
 
   constructor(public setup: NetSetup, private seed: number) {}
 
@@ -133,8 +136,24 @@ export class GopsRelay {
         const first = this.hashes.get(m.turn);
         if (first === undefined) this.hashes.set(m.turn, m.h >>> 0);
         else if (first !== m.h >>> 0 && !this.desynced) {
+          // стоп часам: досылаем накопленные кадры, просим снимок у хозяина (нет его — у первого в комнате)
           this.desynced = true;
-          this.broadcast({ t: 'desync', turn: m.turn });
+          this.broadcast({ t: 'f', upto: this.frame, ins: this.pending });
+          this.pending = [];
+          const src = this.peers.find((x) => x.host) ?? this.peers[0];
+          this.snapFrom = src.p.id;
+          this.broadcast({ t: 'desync', turn: m.turn, upto: this.frame, from: src.p.id });
+        }
+        return;
+      }
+      case 'snap': {
+        if (!this.desynced || p.id !== this.snapFrom || m.frame !== this.frame) return;
+        const part = { t: 'snap' as const, frame: m.frame, turn: m.turn, i: m.i, n: m.n, data: String(m.data) };
+        for (const x of this.peers) if (x.p !== p) x.p.send(part);
+        if (m.i === m.n - 1) {
+          this.desynced = false;
+          this.hashes.clear();
+          this.resume = true;
         }
         return;
       }
@@ -163,6 +182,11 @@ export class GopsRelay {
   /** Часы: дошагать кадры до now (мс), разослать пачку, если пора. Первый вызов после старта запускает отсчёт. */
   tick(now: number): void {
     if (!this.started || this.desynced) return;
+    if (this.resume) {
+      // после восстановления — с того же кадра, без рывка за время простоя
+      this.resume = false;
+      this.t0 = now - this.frame * FRAME_MS;
+    }
     if (!this.t0) {
       this.t0 = now;
       this.sentAt = now;

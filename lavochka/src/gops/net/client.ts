@@ -13,7 +13,11 @@ export class NetClient {
   private frames = new Map<number, FrameIn[]>();
   onLobby: () => void = () => {};
   onStart: (setup: NetSetup, seed: number) => void = () => {};
-  onDesync: (turn: number) => void = () => {};
+  /** Миры разошлись: upto — кадр снимка, mine — снимок шлю я. */
+  onDesync: (turn: number, upto: number, mine: boolean) => void = () => {};
+  /** Пришёл весь снимок (JSON) — наложить на кадре frame. */
+  onSnapshot: (frame: number, turn: number, json: string) => void = () => {};
+  private parts: string[] = [];
   onLeft: (name: string) => void = () => {};
   onClose: (why: string) => void = () => {};
   onChat: (name: string, text: string) => void = () => {};
@@ -93,7 +97,12 @@ export class NetClient {
         this.upto = m.upto;
         break;
       case 'desync':
-        this.onDesync(m.turn);
+        this.parts = [];
+        this.onDesync(m.turn, m.upto, m.from === this.you);
+        break;
+      case 'snap':
+        this.parts[m.i] = m.data;
+        if (m.i === m.n - 1) this.onSnapshot(m.frame, m.turn, this.parts.join(''));
         break;
       case 'left':
         this.onLeft(m.name);
@@ -124,6 +133,13 @@ export class NetClient {
 
   rtc(to: string, data: unknown): void {
     this.send({ t: 'rtc', to, data });
+  }
+
+  /** Отправить снимок частями (у сервера предел сообщения 64 КБ). */
+  sendSnapshot(frame: number, turn: number, json: string): void {
+    const size = 40000;
+    const n = Math.ceil(json.length / size);
+    for (let i = 0; i < n; i++) this.send({ t: 'snap', frame, turn, i, n, data: json.slice(i * size, (i + 1) * size) });
   }
 
   chat(text: string): void {

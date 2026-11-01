@@ -58,7 +58,7 @@ async function connect(first: NetClientMsg): Promise<void> {
     stop();
     menu.network(why);
   };
-  c.onDesync = () => menu.notice('Миры у игроков разошлись (рассинхрон) — партию пришлось остановить. Мы уже знаем.', leave);
+  // рассинхрон партия чинит сама снимком мира (Game, onDesync/onSnapshot)
   c.onLeft = (name) => console.info(`${name} вышел — его бригада стоит`);
 }
 

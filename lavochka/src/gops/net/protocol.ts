@@ -49,6 +49,8 @@ export type NetClientMsg =
   | { t: 'in'; side: number; held?: Held; once?: Once }
   /** Хеш мира в начале хода номер turn — для сверки. */
   | { t: 'hash'; turn: number; h: number }
+  /** Снимок мира на кадре frame (часть i из n) — от того, кого попросили после рассинхрона. */
+  | { t: 'snap'; frame: number; turn: number; i: number; n: number; data: string }
   /** Чат и голос (сигналы WebRTC идут через комнату, звук — напрямую между браузерами). */
   | { t: 'chat'; text: string }
   | { t: 'voice'; on: boolean; video?: boolean }
@@ -66,7 +68,9 @@ export type NetServerMsg =
   | { t: 'start'; setup: NetSetup; seed: number }
   /** Кадры до upto (не включая) готовы; ins — ввод в них. */
   | { t: 'f'; upto: number; ins: FrameIn[] }
-  | { t: 'desync'; turn: number }
+  /** Миры разошлись: часы стоят на кадре upto; from — чей снимок станет общим. */
+  | { t: 'desync'; turn: number; upto: number; from: number }
+  | { t: 'snap'; frame: number; turn: number; i: number; n: number; data: string }
   | { t: 'left'; name: string }
   | { t: 'chat'; name: string; text: string }
   | { t: 'voice'; members: VoiceMember[] }
