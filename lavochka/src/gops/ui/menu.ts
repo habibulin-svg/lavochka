@@ -175,6 +175,22 @@ export class Menu {
     this.el.replaceChildren(...kids.map((k) => (typeof k === 'string' ? h('div', '', k) : k)));
   }
 
+  /** Ранний доступ: играть нельзя — что делать дальше (подписка, вход — на странице игры на сайте). */
+  locked(signedIn: boolean): void {
+    const logo = h('div', 'gm-logo');
+    logo.append(h('b', '', 'ГОПС'), h('span', '', 'война районов'));
+    const text = h('div', 'gm-note',
+      signedIn
+        ? 'ГОПС пока в раннем доступе — первыми в него играют подписчики «Лавочки+». Для всех игра откроется чуть позже.'
+        : 'ГОПС пока в раннем доступе — первыми в него играют подписчики «Лавочки+». Уже подписаны — войдите на сайте.');
+    const btns = h('div', 'gm-col');
+    btns.append(
+      button(signedIn ? 'Оформить «Лавочку+»' : 'Войти или оформить «Лавочку+»', () => (location.href = '/gops/'), 'big'),
+      button('Во двор, к другим играм', () => (location.href = '/')),
+    );
+    this.screen(brandArt('title-keyart-1'), logo, text, btns, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
+  }
+
   title(): void {
     const logo = h('div', 'gm-logo');
     logo.append(h('b', '', 'ГОПС'), h('span', '', 'война районов'));

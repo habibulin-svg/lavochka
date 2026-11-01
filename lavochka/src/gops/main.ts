@@ -14,6 +14,8 @@ import { NetClient } from './net/client';
 import type { NetClientMsg, NetSetup } from './net/protocol';
 import { Menu, type QuickConfig } from './ui/menu';
 import { MenuMusic } from './ui/menu-music';
+import { mayPlay, type Release } from '../core/release';
+import type { RightGrant } from '../core/rights';
 
 const MISSIONS = missionsJson as unknown as MissionDef[];
 const botLevel = (v: string): BotLevel | null => (v === 'easy' || v === 'medium' || v === 'hard' ? v : null);
@@ -212,7 +214,23 @@ menu.onNetCreate = (cfg, name) => {
 };
 menu.onNetJoin = (code, name) => void connect({ t: 'join', game: 'gops', code, name });
 
+/** Ранний доступ (как во дворе, src/core/release.ts): права — /api/auth/me, выход игр — /api/stats. Нет связи — пускаем,
+ * как и двор. В разработке (npm run dev) не проверяем. */
+async function access(): Promise<{ ok: boolean; signedIn: boolean }> {
+  if (import.meta.env.DEV) return { ok: true, signedIn: true };
+  const get = (url: string) =>
+    fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  const [me, stats] = await Promise.all([get('/api/auth/me'), get('/api/stats')]);
+  const rights: RightGrant[] = me?.user?.rights ?? [];
+  const release: Release = stats?.release ?? {};
+  return { ok: mayPlay(release, 'gops', rights), signedIn: !!me?.user };
+}
+
 async function main(): Promise<void> {
+  const a = await access();
+  if (!a.ok) return menu.locked(a.signedIn);
   const mission = q.get('mission');
   if (mission) {
     const def = MISSIONS.find((m) => m.id === mission);
