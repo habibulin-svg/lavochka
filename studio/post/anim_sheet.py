@@ -83,7 +83,7 @@ def main():
         y = r * (ch + label)
         m = meta['anims'].get(name, {})
         if title:
-            dr.text((4, y + 3), f"{name}  {len(anims[name])} кадр., {m.get('fps', '?')} fps{', цикл' if m.get('loop') else ''}", fill=(0, 0, 0))
+            dr.text((4, y + 3), f"{name}  {len(anims[name])} fr, {m.get('fps', '?')} fps{', loop' if m.get('loop') else ''}", fill=(0, 0, 0))
         for i, f in enumerate(files):
             sheet.alpha_composite(frame(name, r0 + i, f), (i * cw, y + label))
     sheet.save(a.out)

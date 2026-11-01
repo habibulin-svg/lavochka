@@ -85,8 +85,11 @@ for o in meshes:
 
 # --- позы: углы в градусах; кость вниз (руки, ноги): + — вперёд; кость вверх (корпус, голова): + — наклон вперёд ---
 pb = rig.pose.bones
+UP_ROT = {'root', 'hips', 'spine', 'head'}
 for p in pb:
-    p.rotation_mode = 'XYZ'
+    # руки и ноги: сначала отведение (Z), потом взмах (X) — отведённая рука остаётся снаружи при любом взмахе,
+    # иначе поднятая вверх рука уходит внутрь огромной головы
+    p.rotation_mode = 'XYZ' if p.name in UP_ROT else 'ZYX'
 UP = {'hips', 'spine', 'head'}
 SLOTS = {o.name[5:]: o for o in meshes if o.name.startswith('slot_')}
 
@@ -94,8 +97,8 @@ SLOTS = {o.name[5:]: o for o in meshes if o.name.startswith('slot_')}
 bpy.ops.mesh.primitive_cube_add(size=1)
 ice = bpy.context.active_object
 ice.name = 'ice'
-ice.scale = (0.62 * H, 0.62 * H, 1.08 * H)
-ice.location = (0, 0, 0.53 * H)
+ice.scale = (0.96 * H, 0.62 * H, 1.12 * H)
+ice.location = (-0.05 * H, 0, 0.55 * H)
 bev = ice.modifiers.new('bevel', 'BEVEL')
 bev.width = 0.06 * H
 bev.segments = 2
@@ -109,7 +112,7 @@ mx = nt.nodes.new('ShaderNodeMixShader')
 tr = nt.nodes.new('ShaderNodeBsdfTransparent')
 em = nt.nodes.new('ShaderNodeEmission')
 em.inputs['Color'].default_value = (0.55, 0.85, 1.0, 1)
-mx.inputs['Fac'].default_value = 0.38
+mx.inputs['Fac'].default_value = 0.32
 nt.links.new(tr.outputs[0], mx.inputs[1])
 nt.links.new(em.outputs[0], mx.inputs[2])
 nt.links.new(mx.outputs[0], o_.inputs[0])
@@ -122,7 +125,7 @@ def side_vec(v):
 
 
 def apply(pose):
-    """Поза → кости. Ключи: кости (угол или (вперёд, кручение, наружу)), lean, z, fwd (доли H), rot (всё тело,
+    """Поза → кости. Ключи: кости (угол или (вперёд, кручение, наружу)), lean, reach.R/L (растяжка руки), z, fwd (доли H), rot (всё тело,
     + — вперёд, вокруг точки pivot по высоте), scale (число или (вширь, вверх, вперёд)), only/hide (слоты), ice."""
     for p in pb:
         p.rotation_euler = (0, 0, 0)
@@ -138,6 +141,11 @@ def apply(pose):
             x = -x  # у кости вниз (руки, ноги) локальная ось Z смотрит назад
         pb[name].rotation_euler = (math.radians(x), math.radians(y) * sgn, math.radians(z) * sgn)
     pb['spine'].rotation_euler.x += math.radians(pose.get('lean', 0))
+    # «резиновая» рука: плечо тянется, кисть сжимается обратно, чтобы кулак не раздувался
+    for s in ('L', 'R'):
+        k = pose.get('reach.' + s, 1)
+        pb['upper_arm.' + s].scale = (1, k, 1)
+        pb['hand.' + s].scale = (1, 1 / k, 1)
     # root: локальные оси X — вбок (в глубину кадра), Y — вверх, Z — вперёд
     rot = math.radians(pose.get('rot', 0))
     sc = pose.get('scale', 1)

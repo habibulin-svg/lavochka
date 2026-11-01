@@ -4,7 +4,8 @@
   кость: угол в градусах или (вперёд, кручение, наружу). Руки и ноги (кость вниз): 0 — висит, 90 — вперёд,
          180 — вверх, −90 — назад; предплечье + — сгиб в локте вперёд; бедро + — колено вперёд, голень − — сгиб назад.
          Корпус и голова (кость вверх): + — наклон вперёд (голова: + — смотрит вниз).
-  lean  — добавка к наклону корпуса (spine);
+  lean  — добавка к наклону корпуса (spine); руки — дети корпуса: наклон вперёд на L уводит их назад на L;
+  reach.R / reach.L — «резиновая» рука: растяжка плеча (1 — как есть), чтобы короткие руки доставали над головой;
   rot   — поворот всего тела в плоскости кадра, + — вперёд (по часовой), вокруг точки pivot (доля роста, 0.5);
   yaw   — поворот вокруг вертикали (разворот к зрителю), градусы;
   z, fwd — сдвиг тела вверх и вперёд в долях роста; scale — число или (вглубь, вверх, вперёд), от pivot;
@@ -17,7 +18,7 @@
 import math
 
 DISCRETE = {'only', 'hide', 'ice'}
-DEFAULT = {'scale': 1.0, 'pivot': 0.5}
+DEFAULT = {'scale': 1.0, 'pivot': 0.5, 'reach.R': 1.0, 'reach.L': 1.0}
 IDLE = {'head': 3, 'lean': 6, 'forearm.R': 8, 'forearm.L': 8}
 
 
@@ -129,15 +130,15 @@ ANIMS['idle'] = A(8, True, [
 ANIMS['bored-yawn'] = A(10, False, tween(14, [
     (0, IDLE),
     (3, P(both((60, 0, 10), 90), head=10, lean=10, z=-0.01)),
-    (6, P(both((165, 0, 25), 30), head=-28, lean=-10, z=0.012)),
-    (9, P(both((172, 0, 28), 20), head=-32, lean=-12, z=0.016)),
+    (6, P(both((165, 0, 38), 10), head=-28, lean=-10, z=0.012, **{'reach.R': 1.5, 'reach.L': 1.5})),
+    (9, P(both((172, 0, 40), 5), head=-32, lean=-12, z=0.016, **{'reach.R': 1.75, 'reach.L': 1.75})),
     (11, P(both((120, 0, 20), 60), head=-10, lean=-2)),
     (13, IDLE),
 ]))
 
 # скучает: чешет кепку
-_scr = P(IDLE, head=8, **{'upper_arm.R': (145, 0, 30), 'forearm.R': 105, 'upper_arm.L': -5})
-_scr2 = P(_scr, head=12, **{'forearm.R': 125})
+_scr = P(IDLE, head=10, **{'upper_arm.R': (168, 0, 25), 'forearm.R': 25, 'reach.R': 1.45, 'upper_arm.L': -5})
+_scr2 = P(_scr, head=14, **{'upper_arm.R': (160, 0, 25), 'forearm.R': 50})
 ANIMS['bored-scratch'] = A(10, False, tween(12, [
     (0, IDLE), (3, _scr), (4, _scr2), (5, _scr), (6, _scr2), (7, _scr), (8, _scr2), (9, _scr), (11, IDLE),
 ]))
@@ -300,10 +301,18 @@ ANIMS['teleport-in'] = A(15, False, _tp[::-1][:-1] + [P(IDLE, scale=(0.94, 1.08,
 # ---------------- оружие: позы рук, само оружие игра рисует в руке ----------------
 
 
+# поправка прицела: замеренный угол кисти минус заданный (рука не строго по оси кости) — по кадрам −90…+90
+_AIM_FIX = [-1, -1, -2, -3, -3, -4, -4, -4, -4, -4, -3, -3, -1, 1, 2, 3, 4, 5, 6]
+
+
+def _fix(a):
+    return _AIM_FIX[(a + 90) // 10]
+
+
 def _aim(a):
-    lean = 4 - a * 0.12
-    return plant(P(legs(14, -10, -10, -4), both((a + 90 - lean, 0, max(0, a - 30) * 0.35), 0),
-                   head=-a * 0.3 + 2, lean=lean))
+    lean = 3 - a * 0.1
+    return plant(P(legs(14, -10, -10, -4), both(a + 90 + lean - _fix(a), 0),
+                   head=-a * 0.25 + 2, lean=lean, **{'reach.R': 1.3, 'reach.L': 1.3}))
 
 
 ANIMS['aim'] = A(12, False, [_aim(a) for a in range(-90, 91, 10)])
@@ -311,9 +320,9 @@ ANIMS['aim'] = A(12, False, [_aim(a) for a in range(-90, 91, 10)])
 
 def _pistol(a):
     lean = 3 - a * 0.08
-    return plant(P(legs(12, -8, -8, -4), {'upper_arm.R': (a + 90 - lean, 0, max(0, a - 30) * 0.35), 'forearm.R': 0,
+    return plant(P(legs(12, -8, -8, -4), {'upper_arm.R': a + 90 + lean - _fix(a), 'forearm.R': 0, 'reach.R': 1.3,
                                           'upper_arm.L': -12, 'forearm.L': 35},
-                   head=-a * 0.3 + 2, lean=lean))
+                   head=-a * 0.25 + 2, lean=lean))
 
 
 ANIMS['aim-pistol'] = A(12, False, [_pistol(a) for a in range(-90, 91, 10)])
@@ -337,13 +346,13 @@ ANIMS['throw'] = A(15, False, tween(10, [
 
 # удар арматурой/битой двумя руками: замах за голову — удар сверху вперёд-вниз
 _sw0 = P(IDLE, both(55, 45))
-_sww = plant(P(legs(25, -15, -15, -8), both((200, 0, 10), 50), lean=-14, head=-12))
+_sww = plant(P(legs(25, -15, -15, -8), both((200, 0, 10), 40), lean=-14, head=-12, **{'reach.R': 1.25, 'reach.L': 1.25}))
 ANIMS['swing'] = A(15, False, tween(10, [
     (0, _sw0),
     (3, _sww),
     (4, P(_sww, both((205, 0, 10), 55))),
     (5, plant(P(legs(30, -18, -20, -8), both((130, 0, 5), 10), lean=8, head=0)), 'lin'),
-    (6, plant(P(legs(32, -20, -22, -8), both(65, 0), lean=26, head=8, scale=(1, 0.97, 1), pivot=0))),
+    (6, plant(P(legs(32, -20, -22, -8), both(80, 0), lean=26, head=8, scale=(1, 0.97, 1), pivot=0, **{'reach.R': 1.25, 'reach.L': 1.25}))),
     (7, plant(P(legs(32, -20, -22, -8), both(35, 5), lean=30, head=10))),
     (9, _sw0),
 ]))
@@ -355,8 +364,8 @@ ANIMS['punch-uppercut'] = A(15, False, tween(10, [
     (2, plant(P(legs(40, -70, 30, -60), _guard, {'upper_arm.R': -35, 'forearm.R': 100}, lean=24, head=6))),
     (3, plant(P(legs(45, -80, 35, -65), _guard, {'upper_arm.R': -40, 'forearm.R': 105}, lean=28, head=8)), 'lin'),
     (4, P(legs(5, -5, -5, -5), _guard, {'upper_arm.R': 110, 'forearm.R': 80}, lean=-4, head=-8, z=0.03)),
-    (5, P(legs(10, -20, -5, -15), _guard, {'upper_arm.R': (165, 0, 15), 'forearm.R': 30}, lean=-12, head=-16, z=0.07)),
-    (6, P(legs(10, -20, -5, -15), _guard, {'upper_arm.R': (170, 0, 15), 'forearm.R': 25}, lean=-12, head=-16, z=0.06)),
+    (5, P(legs(10, -20, -5, -15), _guard, {'upper_arm.R': (165, 0, 15), 'forearm.R': 30, 'reach.R': 1.3}, lean=-12, head=-16, z=0.07)),
+    (6, P(legs(10, -20, -5, -15), _guard, {'upper_arm.R': (170, 0, 15), 'forearm.R': 25, 'reach.R': 1.3}, lean=-12, head=-16, z=0.06)),
     (8, plant(P(legs(15, -25, 10, -20), _guard, {'upper_arm.R': 50, 'forearm.R': 100}, lean=8))),
     (9, P(IDLE, _guard, **{'upper_arm.R': 30, 'forearm.R': 110})),
 ]))
@@ -365,11 +374,11 @@ ANIMS['punch-uppercut'] = A(15, False, tween(10, [
 _bal = {'upper_arm.R': (-50, 0, 25), 'upper_arm.L': (110, 0, 20), 'forearm.L': 40, 'forearm.R': 20}
 ANIMS['kick-mawashi'] = A(15, False, tween(10, [
     (0, P(IDLE, both(40, 90))),
-    (2, P(_bal, legs(95, -110, -5, -5), lean=-8, head=-4, rot=-6, pivot=0, yaw=-15)),
-    (3, P(_bal, legs(110, -40, -5, -5), lean=-18, head=-6, rot=-12, pivot=0, yaw=-25), 'lin'),
-    (4, P(_bal, legs(120, 0, -5, -5), lean=-24, head=-8, rot=-16, pivot=0, yaw=-20)),
-    (5, P(_bal, legs(118, 0, -5, -5), lean=-24, head=-8, rot=-16, pivot=0, yaw=-15)),
-    (7, P(_bal, legs(80, -100, -5, -5), lean=-8, rot=-6, pivot=0, yaw=-5)),
+    (2, P(_bal, legs(95, -110, -5, -5), lean=-6, head=-4, rot=-4, pivot=0)),
+    (3, P(_bal, legs(110, -40, -5, -5), lean=-12, head=-6, rot=-7, pivot=0), 'lin'),
+    (4, P(_bal, legs(122, 0, -5, -5), lean=-16, head=-8, rot=-9, pivot=0)),
+    (5, P(_bal, legs(120, 0, -5, -5), lean=-16, head=-8, rot=-9, pivot=0)),
+    (7, P(_bal, legs(80, -100, -5, -5), lean=-6, rot=-4, pivot=0)),
     (9, P(IDLE, both(40, 90))),
 ]))
 
@@ -378,8 +387,8 @@ _pk0 = plant(P(legs(15, -10, -10, -5), both(25, 95), lean=4))
 ANIMS['poke'] = A(15, False, tween(8, [
     (0, _pk0),
     (2, plant(P(legs(10, -15, -15, -10), both(-5, 110), lean=-6, head=-2))),
-    (3, plant(P(legs(40, -20, -30, -5), both(90, 0), lean=22, fwd=0.05, head=-4)), 'lin'),
-    (4, plant(P(legs(42, -20, -32, -5), both(92, 0), lean=24, fwd=0.06, head=-4))),
+    (3, plant(P(legs(40, -20, -30, -5), both(108, 0), lean=20, fwd=0.05, head=-4, **{'reach.R': 1.3, 'reach.L': 1.3})), 'lin'),
+    (4, plant(P(legs(42, -20, -32, -5), both(112, 0), lean=22, fwd=0.06, head=-4, **{'reach.R': 1.35, 'reach.L': 1.35}))),
     (6, plant(P(legs(25, -15, -15, -5), both(50, 60), lean=10, fwd=0.02))),
     (7, _pk0),
 ]))
@@ -387,7 +396,7 @@ ANIMS['poke'] = A(15, False, tween(8, [
 # камикадзе «за пацанов»: разбег, кулак вперёд-вверх, корпус вперёд
 ANIMS['dash'] = A(16, True, cycle(8, lambda a: P(
     legs(45 * math.sin(a), -40 - 50 * max(0, -math.sin(a)), -45 * math.sin(a), -40 - 50 * max(0, math.sin(a))),
-    {'upper_arm.R': (150, 0, 15), 'forearm.R': 15, 'upper_arm.L': 40 * math.sin(a) - 10, 'forearm.L': 90},
+    {'upper_arm.R': 125, 'forearm.R': 10, 'reach.R': 1.25, 'upper_arm.L': 40 * math.sin(a) - 10, 'forearm.L': 90},
     lean=26, head=-18, z=0.03 * abs(math.cos(a)) - 0.02)))
 
 # достать и включить: рука в карман — пульт перед собой — жмёт кнопку — поднимает «готово»
@@ -403,7 +412,7 @@ ANIMS['use-item'] = A(12, False, tween(12, [
 
 # авиаудар: рация у рта, кричит, второй рукой показывает в небо
 _rad = P(IDLE, head=-6, lean=-4, **{'upper_arm.R': (40, 0, 20), 'forearm.R': 135})
-_shout = P(_rad, head=-14, lean=-8, z=0.008, **{'upper_arm.L': (155, 0, 15), 'forearm.L': 5})
+_shout = P(_rad, head=-14, lean=-8, z=0.008, **{'upper_arm.L': (155, 0, 15), 'forearm.L': 5, 'reach.L': 1.4})
 _calm = P(_rad, head=-4, **{'upper_arm.L': (140, 0, 15), 'forearm.L': 20})
 ANIMS['use-radio'] = A(10, False, tween(12, [
     (0, IDLE), (2, _rad), (3, _shout), (4, _calm), (5, _shout), (6, _calm),
@@ -424,19 +433,19 @@ ANIMS['torch'] = A(10, True, cycle(8, lambda a: plant(P(
 
 # висит на верёвке: руки вверх над головой, раскачка, ноги болтаются с запаздыванием
 ANIMS['rope-hang'] = A(8, True, cycle(12, lambda a: P(
-    both((180, 0, 12), 0), legs(8 + 14 * math.sin(a - 0.8), -15 - 10 * math.cos(a), 4 + 14 * math.sin(a - 1.1), -25),
+    both((180, 0, 40), 0), {'reach.R': 1.9, 'reach.L': 1.9}, legs(8 + 14 * math.sin(a - 0.8), -15 - 10 * math.cos(a), 4 + 14 * math.sin(a - 1.1), -25),
     rot=14 * math.sin(a), pivot=0.72, head=-8, lean=-2, z=0.12)))
 
 # банджи: вниз головой на резинке, подпрыгивает, руками болтает
 ANIMS['bungee'] = A(10, True, cycle(10, lambda a: P(
-    {'upper_arm.R': (170 + 25 * math.sin(a), 0, 25), 'upper_arm.L': (170 - 25 * math.sin(a), 0, 25),
-     'forearm.R': 15, 'forearm.L': 15},
+    {'upper_arm.R': (170 + 25 * math.sin(a), 0, 45), 'upper_arm.L': (170 - 25 * math.sin(a), 0, 45),
+     'forearm.R': 15, 'forearm.L': 15, 'reach.R': 1.5, 'reach.L': 1.5},
     legs(-3, 0, 3, 0), head=-15, rot=180 + 6 * math.sin(a + 0.5),
     z=0.12 + 0.07 * math.cos(a), scale=(1, 1 + 0.06 * math.cos(a), 1))))
 
 # зонтик: рука с зонтом вверх, вторая в сторону, ноги скрестил, плавно покачивается
 ANIMS['umbrella-float'] = A(8, True, cycle(10, lambda a: P(
-    {'upper_arm.R': (178, 0, 15), 'forearm.R': 0, 'upper_arm.L': (70 + 8 * math.sin(a), 0, 15), 'forearm.L': 45},
+    {'upper_arm.R': (178, 0, 40), 'forearm.R': 0, 'reach.R': 1.9, 'upper_arm.L': (70 + 8 * math.sin(a), 0, 15), 'forearm.L': 45},
     legs(14 + 5 * math.sin(a - 0.7), -25, -6 + 5 * math.sin(a - 1.0), -35),
     rot=5 * math.sin(a), pivot=0.75, head=-4, lean=-2, z=0.1 + 0.015 * math.sin(a))))
 
@@ -463,7 +472,7 @@ ANIMS['drink'] = A(10, False, tween(14, [
 ]))
 
 # ставит плиту: присел, поднял над головой (кряхтит), шаг и опустил перед собой
-_lift = plant(P(legs(10, -15, -10, -8), both((175, 0, 20), 5), lean=-8, head=-10))
+_lift = plant(P(legs(10, -15, -10, -8), both((175, 0, 20), 5), lean=-8, head=-10, **{'reach.R': 1.45, 'reach.L': 1.45}))
 ANIMS['place-slab'] = A(12, False, tween(12, [
     (0, IDLE),
     (2, plant(P(legs(55, -95, 50, -90), both(60, 10), lean=36, head=10))),
@@ -503,10 +512,10 @@ ANIMS['taunt'] = A(10, True, cycle(12, lambda a: plant(P(
     head=-10 + 10 * math.sin(2 * a), lean=-4 + 6 * math.sin(a), fwd=0.01 * math.sin(a)))))
 
 # сдался: поднимает руки (в правой — белый флаг), голову опустил, флагом машет
-_up = P(both((178, 0, 18), 0), legs(8, -12, 8, -12), head=16, lean=4)
-_wave = P(_up, **{'upper_arm.R': (165, 0, 18), 'forearm.R': 25})
+_up = P(both((178, 0, 40), 0), legs(8, -12, 8, -12), head=-4, lean=2, **{'reach.R': 1.9, 'reach.L': 1.8})
+_wave = P(_up, **{'upper_arm.R': (165, 0, 40), 'forearm.R': 25})
 ANIMS['surrender'] = A(10, False, tween(12, [
-    (0, IDLE), (3, P(_up, **{'upper_arm.R': (160, 0, 18), 'forearm.R': 30})),
+    (0, IDLE), (3, P(_up, **{'upper_arm.R': (160, 0, 40), 'forearm.R': 30})),
     (5, _up), (6, _wave), (7, _up), (8, _wave), (9, _up), (10, _wave), (11, _up),
 ]))
 
@@ -527,7 +536,7 @@ ANIMS['scared'] = A(15, True, [plant(P(
     head=26 + (3 if i % 2 else -3), lean=-16, fwd=-0.04, rot=-4, pivot=0), 0.006 * (i % 2)) for i in range(8)])
 
 # попал: кулак вверх — рывок к себе «есть!» — ещё раз
-_fist_up = P(legs(5, -5, 5, -5), {'upper_arm.R': (178, 0, 12), 'forearm.R': 0, 'upper_arm.L': 20}, head=-12, lean=-6)
+_fist_up = P(legs(5, -5, 5, -5), {'upper_arm.R': (178, 0, 40), 'forearm.R': 0, 'reach.R': 1.85, 'upper_arm.L': 20}, head=-12, lean=-6)
 _yes = plant(P(legs(25, -40, 20, -35), {'upper_arm.R': 55, 'forearm.R': 125, 'upper_arm.L': -20}, head=10, lean=18))
 ANIMS['celebrate-hit'] = A(12, False, tween(12, [
     (0, IDLE), (2, P(_fist_up, z=0.05)), (3, P(_fist_up, z=0.03)), (5, _yes), (6, _yes),
