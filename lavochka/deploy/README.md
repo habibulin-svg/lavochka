@@ -26,7 +26,7 @@ ssh lavochka sh /srv/lavochka/app/lavochka/deploy/deploy.sh
 
 Установка таймеров (один раз): `cp lavochka-*.service lavochka-*.timer /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now lavochka-autodeploy.timer lavochka-backup.timer`.
 
-**Память.** `vite build` берёт ~1,5 ГБ, а у VPS 2 ГБ, и рядом работают сервер игр и Postgres. Поэтому сборка идёт в своей cgroup (`MemoryMax=1300M`, остальное — в подкачку) и нужен файл подкачки на диске (один раз): `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw,pri=10 0 0' >> /etc/fstab`. Без этого 02.11.2026 VPS завис намертво (не отвечал даже ssh) и спасла только перезагрузка из панели FirstVDS. Если и так тесно — выносить сборку с сервера (CI собирает `dist/`, сервер только забирает).
+**Память.** `vite build` берёт ~1,5 ГБ; рядом работают сервер игр и Postgres (~500 МБ). С 02.11.2026 тариф NVMe-Разгон (2 ядра, 4 ГБ, 60 ГБ, 1069 ₽), до того «Старт» с 2 ГБ, на котором сборка вешала VPS. Сборка идёт в своей cgroup (`MemoryMax=2500M`, остальное — в подкачку), чтобы не выдавить сервер игр, и нужен файл подкачки на диске (один раз): `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw,pri=10 0 0' >> /etc/fstab`. Без этого 02.11.2026 VPS завис намертво (не отвечал даже ssh) и спасла только перезагрузка из панели FirstVDS. Если и так тесно — выносить сборку с сервера (CI собирает `dist/`, сервер только забирает).
 
 ## Яндекс
 

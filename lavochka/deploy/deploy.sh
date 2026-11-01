@@ -10,9 +10,9 @@ sudo -u lavochka git pull -q --ff-only
 # ассеты крупных игр — в Git LFS (docs/PRODUCTION.md §4): без git-lfs на сервере вместо картинок были бы файлы-указатели
 if command -v git-lfs >/dev/null 2>&1; then sudo -u lavochka -H git lfs pull; else echo "ВНИМАНИЕ: нет git-lfs — ассеты ГОПС не скачаны"; fi
 cd lavochka
-# Сборка — в своей cgroup: живой памяти не больше 1300 МБ, остальное — в файл подкачки на диске (/swapfile, 2 ГБ,
+# Сборка — в своей cgroup: живой памяти не больше 2500 МБ (VPS «Разгон», 4 ГБ), остальное — в подкачку (/swapfile, 2 ГБ,
 # deploy/README.md). Без потолка vite build (~1,5 ГБ кучи) выдавливал сервер игр и sshd, и VPS вис намертво (02.11.2026).
-LIMIT="systemd-run --scope -q -p MemoryMax=1300M -p MemorySwapMax=2G nice -n 10"
+LIMIT="systemd-run --scope -q -p MemoryMax=2500M -p MemorySwapMax=2G nice -n 10"
 build() {
   $LIMIT sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&
   # Как npm run build, но без tsc: типы проверены перед пушем (npm run check, Stop-хук), а на 2 ГБ памяти tsc падает.
