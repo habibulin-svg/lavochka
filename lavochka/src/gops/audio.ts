@@ -6,7 +6,14 @@ import { type SimEvent, TICK_HZ, type World, wormById } from './sim/world';
 
 const SFX = '/@fs/G:/temp/studio/out/gops/08-sfx/ogg/';
 const ARSENAL = '/@fs/G:/temp/studio/out/gops/26-sfx-arsenal/ogg/';
+/** Озвучка реплик: 32-voices — Chatterbox, 33-voices-qwen — Qwen3-TTS (выбор модели — за пользователем, STATE.md).
+ * picks.json в папке — лучший дубль каждой фразы по разборчивости (studio/post/asr_score.py); без него — дубль наугад. */
 const VOICES = '/@fs/G:/temp/studio/out/gops/32-voices/';
+let picks: Record<string, string> | null = null;
+void fetch(`${VOICES}picks.json`)
+  .then((r) => (r.ok ? r.json() : null))
+  .then((p) => (picks = p))
+  .catch(() => {});
 const MUSIC = '/@fs/G:/ai/out/studio/gops/music/';
 
 /** Звук → папка (08 — базовые, остальное — 26-sfx-arsenal). У каждого два варианта: -1, -2. */
@@ -146,8 +153,11 @@ export class GopsAudio {
     const now = this.ctx.currentTime;
     if (!force && now < this.voiceBusyUntil) return;
     const set = this.voices[team] ?? VOICE_SETS[team % VOICE_SETS.length];
-    const n = 1 + Math.floor(Math.random() * 3), take = 1 + Math.floor(Math.random() * 2);
-    const url = `${VOICES}${set}/ogg/${key}-${String(n).padStart(2, '0')}-${take}.ogg`;
+    const n = 1 + Math.floor(Math.random() * 3);
+    const phrase = `${set}/${key}-${String(n).padStart(2, '0')}`;
+    // лучший дубль фразы, если отобран; иначе любой из двух
+    const best = picks?.[phrase]?.replace(/^.*\//, '').replace(/\.wav$/, '');
+    const url = `${VOICES}${set}/ogg/${best ?? `${key}-${String(n).padStart(2, '0')}-${1 + Math.floor(Math.random() * 2)}`}.ogg`;
     this.voiceBusyUntil = now + 2.2;
     void this.play(url, 0.95);
   }
