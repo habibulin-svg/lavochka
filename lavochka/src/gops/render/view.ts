@@ -1,8 +1,8 @@
 /* Отрисовка партии ГОПС на PixiJS v8: фон с параллаксом, ландшафт, кепки, бойцы из атласов бригад,
  * снаряды, эффекты, жидкость, прицел. Состояние берётся из World, эффекты — из событий кадра.
  * Логику не трогает: только читает мир (docs/gops/CODE.md). */
-import { AnimatedSprite, Application, Assets, Container, Graphics, Sprite, type Spritesheet, Text, type Texture } from 'pixi.js';
-import { BRIGADES, atlasUrl, themeArt } from '../assets';
+import { AnimatedSprite, Application, Assets, Container, Graphics, Rectangle, Sprite, type Spritesheet, Text, Texture } from 'pixi.js';
+import { BRIGADES, WORLD_ART, atlasUrl, themeArt } from '../assets';
 import { ONE, cosQ, sinQ, toPx } from '../sim/fx';
 import { WEAPONS } from '../sim/weapons';
 import { type SimEvent, type World, CHARGE_MAX, aimAngle, wormById } from '../sim/world';
@@ -37,6 +37,13 @@ export class GameView {
   private caps = new Container();
   private wormLayer = new Container();
   private projLayer = new Graphics();
+  /** Картинки снарядов, ящиков, предметов (WORLD_ART); пул спрайтов на кадр. */
+  private artLayer = new Container();
+  private art: Record<string, Texture> = {};
+  /** Ящик на земле — нижняя часть той же картинки, без парашюта/шариков. */
+  private artLanded: Record<string, Texture> = {};
+  private pool: Sprite[] = [];
+  private used = 0;
   private fxLayer = new Container();
   private water = new Graphics();
   private aimG = new Graphics();
@@ -62,6 +69,16 @@ export class GameView {
       ...brigades.map((b) => Assets.load<Spritesheet>({ src: atlasUrl(b), data: { cachePrefix: `${b}/` } })),
     ]);
     this.sheets = sheets as Spritesheet[];
+    // картинки в мире: нет файла — останется рисованная заглушка
+    await Promise.all(Object.entries(WORLD_ART).map(async ([k, a]) => {
+      const t = await Assets.load<Texture>(a.url).catch(() => null);
+      if (!t) return;
+      this.art[k] = t;
+      if (k.startsWith('crate-')) {
+        const f = t.frame;
+        this.artLanded[k] = new Texture({ source: t.source, frame: new Rectangle(f.x, f.y + f.height * 0.56, f.width, f.height * 0.44) });
+      }
+    }));
     if (far) this.far.addChild(cover(far as Texture, w.mask.w, w.mask.h));
     if (near) {
       const s = cover(near as Texture, w.mask.w, w.mask.h);
@@ -69,7 +86,7 @@ export class GameView {
       this.near.addChild(s);
     }
     this.terrain = new TerrainLayer(w.mask, ground);
-    this.world.addChild(this.near, this.terrain.sprite, this.caps, this.wormLayer, this.projLayer, this.fxLayer, this.aimG, this.water);
+    this.world.addChild(this.near, this.terrain.sprite, this.caps, this.wormLayer, this.projLayer, this.artLayer, this.fxLayer, this.aimG, this.water);
     this.app.stage.addChild(this.far, this.world);
     this.drawWater(w, art.liquid);
     this.waterColor = art.liquid;
@@ -122,6 +139,7 @@ export class GameView {
     this.t += dt;
     this.drawWorms(w);
     this.drawProjs(w);
+    for (let i = this.used; i < this.pool.length; i++) this.pool[i].visible = false;
     this.drawAim(w);
     this.drawCaps(w);
     this.stepFx(dt);
@@ -250,9 +268,37 @@ export class GameView {
     }
   }
 
+  /** Спрайт из пула с картинкой key: по центру (x, y), высота по WORLD_ART, поворот, отражение. */
+  private put(key: string, x: number, y: number, rot = 0, flip = false, landed = false): boolean {
+    const tex = landed ? this.artLanded[key] : this.art[key];
+    if (!tex) return false;
+    let s = this.pool[this.used];
+    if (!s) {
+      s = new Sprite();
+      s.anchor.set(0.5);
+      this.pool.push(s);
+      this.artLayer.addChild(s);
+    }
+    this.used++;
+    s.visible = true;
+    s.texture = tex;
+    const h = WORLD_ART[key].h * (landed ? 0.44 : 1);
+    const k = h / tex.height;
+    s.scale.set(flip ? -k : k, k);
+    s.rotation = rot;
+    s.position.set(x, y);
+    return true;
+  }
+
   private drawProjs(w: World): void {
     const g = this.projLayer.clear();
-    for (const c of w.crates) this.drawCrate(g, c.x / ONE, c.y / ONE, c.kind, c.falling);
+    this.used = 0;
+    for (const c of w.crates) {
+      const key = c.kind === 'weapon' ? 'crate-weapon' : c.kind === 'health' ? 'crate-health' : 'crate-util';
+      // падает — с парашютом (низ картинки — ящик), лежит — только ящик
+      const ok = c.falling ? this.put(key, c.x / ONE, c.y / ONE - WORLD_ART[key].h * 0.28, 0) : this.put(key, c.x / ONE, c.y / ONE - 1, 0, false, true);
+      if (!ok) this.drawCrate(g, c.x / ONE, c.y / ONE, c.kind, c.falling);
+    }
     this.drawObjs(g, w);
     const a = wormById(w, w.active);
     if (a && w.thrust) {
@@ -264,6 +310,22 @@ export class GameView {
     for (const p of w.projs) {
       const x = p.x / ONE, y = p.y / ONE;
       const kind = WEAPONS[p.weapon].kind;
+      const art = WORLD_ART[p.weapon];
+      if (art) {
+        const moving = Math.abs(p.vx) + Math.abs(p.vy) > 60;
+        let rot = 0;
+        if (art.turn && moving) rot = Math.atan2(p.vy, p.vx) + (art.turn === 'up' ? Math.PI / 2 : 0);
+        else if (art.turn === 'up' && kind === 'missile') rot = Math.PI / 2;
+        else if (kind === 'grenade' || p.weapon === 'holodilnik') rot = p.age * 0.15 * Math.sign(p.vx || 1) * (moving ? 1 : 0);
+        const flip = kind === 'walker' ? p.dir < 0 : kind === 'flyer' && p.weapon !== 'kite' ? Math.cos((p.ang / 4096) * Math.PI * 2) < 0 : false;
+        const bob = kind === 'walker' ? -((p.age >> 2) & 1) : 0;
+        // бегуна ставим ногами на землю: низ картинки — по низу тела
+        if (this.put(p.weapon, x, y + bob - (kind === 'walker' ? art.h / 2 - p.r - 1 : 0), rot, flip)) {
+          if (p.weapon === 'tnt' && (p.fuse >> 3) & 1) g.circle(x, y - 8, 2).fill(0xffd166);
+          if (p.weapon === 'mine' && (p.state === 'armed' || (p.state === 'fuse' && (p.fuse >> 2) & 1))) g.circle(x, y - 3, 1.4).fill(0xff2222);
+          continue;
+        }
+      }
       if (kind === 'walker') {
         // заглушки до спрайтов: дворняга, бабка, коза
         const d = p.dir, bob = (p.age >> 2) & 1;
@@ -353,6 +415,9 @@ export class GameView {
         continue;
       }
       if (!o.alive) continue;
+      if (o.kind === 'barrel' && this.put('barrel', x, y)) continue;
+      if (o.kind === 'target' && o.look === 'plate' && this.put('plate', x, y + 4)) continue;
+      if (o.kind === 'target' && (o.look === 'barrel' || o.look === 'gas') && this.put(o.look, x, y)) continue;
       if (o.kind === 'target') {
         if (o.look === 'can' || o.look === 'keg') {
           g.roundRect(x - 4, y - 6, 8, 12, 1.5).fill(o.look === 'can' ? 0xb0b6bb : 0x8d6e4a).stroke({ color: 0x333333, width: 0.8 });

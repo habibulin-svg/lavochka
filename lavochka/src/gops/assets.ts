@@ -74,3 +74,41 @@ export function weaponIcon(id: string): string | null {
   const v = ICON_PICK[id];
   return v ? `${DEV}22-arsenal/cut/icon-${id}-${v}.png` : null;
 }
+
+/** Картинки в мире (отбор 2026-11-02): снаряды и бегуны — 22-arsenal/cut, ящики и предметы — 23-common/cut.
+ * h — высота на карте, px; turn — поворачивать по скорости (картинка смотрит вверх — rot90). */
+export interface WorldArt {
+  url: string;
+  h: number;
+  turn?: 'up' | 'right';
+}
+
+const A = `${DEV}22-arsenal/cut/`;
+const C = `${DEV}23-common/cut/`;
+export const WORLD_ART: Record<string, WorldArt> = {
+  limonka: { url: `${A}world-limonka-1.png`, h: 10 },
+  carbide: { url: `${A}world-carbide-2.png`, h: 10 },
+  korsar: { url: `${A}world-korsar-1.png`, h: 13, turn: 'up' },
+  petarda: { url: `${A}world-korsar-2.png`, h: 7, turn: 'up' },
+  posylka: { url: `${A}world-posylka-1.png`, h: 12 },
+  samogon: { url: `${A}world-samogon-1.png`, h: 12 },
+  tnt: { url: `${A}world-tnt-1.png`, h: 14 },
+  mine: { url: `${A}world-mine-1.png`, h: 8 },
+  'kite-bomb': { url: `${A}world-mine-2.png`, h: 9 },
+  mukha: { url: `${A}world-homing-2.png`, h: 15, turn: 'up' },
+  homing: { url: `${A}world-homing-1.png`, h: 16, turn: 'up' },
+  kite: { url: `${A}world-kite-1.png`, h: 24 },
+  pigeon: { url: `${A}world-pigeon-1.png`, h: 18 },
+  dog: { url: `${A}world-dog-1.png`, h: 16 },
+  babka: { url: `${A}world-babka-1.png`, h: 22 },
+  kozy: { url: `${A}world-kozy-1.png`, h: 15 },
+  'vanna-drop': { url: `${A}world-vanna-1.png`, h: 18 },
+  brick: { url: `${A}world-kirpichi-2.png`, h: 10 },
+  holodilnik: { url: `${A}icon-holodilnik-1.png`, h: 12 },
+  'crate-weapon': { url: `${C}crate-weapon-1.png`, h: 40 },
+  'crate-health': { url: `${C}crate-health-2.png`, h: 40 },
+  'crate-util': { url: `${C}crate-utility-1.png`, h: 40 },
+  barrel: { url: `${C}fuel-barrel-2.png`, h: 17 },
+  gas: { url: `${C}gas-cylinder-1.png`, h: 20 },
+  plate: { url: `${C}target-2.png`, h: 20 },
+};
