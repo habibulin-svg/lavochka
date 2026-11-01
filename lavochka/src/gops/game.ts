@@ -88,6 +88,7 @@ export class Game {
     this.bots = s.sides.map((x, i) => (x.bot ? new Bot(x.bot, s.net ? seeded(s.seed * 31 + i * 977) : undefined) : null));
     this.audio = new GopsAudio(s.theme, s.sides.map((x, i) => x.voice ?? VOICE_SETS[i % VOICE_SETS.length]));
     this.audio.humans = s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
+    if (s.mission) this.audio.setMissionMusic(s.mission.music);
     BRIGADE_IDS.splice(0, BRIGADE_IDS.length, ...s.sides.map((x) => x.brigade));
     this.view = new GameView(this.host);
     await this.view.init(this.world, s.sides.map((x) => x.brigade), s.theme, s.time);

@@ -114,6 +114,8 @@ function select<T extends string | number>(label: string, value: T, opts: [T, st
 export class Menu {
   readonly el: HTMLElement;
   onPlay: (def: MissionDef) => void = () => {};
+  /** Показан экран меню (музыка меню). */
+  onShow: () => void = () => {};
   onQuick: (c: QuickConfig) => void = () => {};
   /** Сеть: создать комнату с настройкой / войти по коду. */
   onNetCreate: (c: QuickConfig, name: string) => void = () => {};
@@ -131,6 +133,7 @@ export class Menu {
   }
 
   private screen(bg: string, ...kids: (HTMLElement | string)[]): void {
+    this.onShow();
     this.el.hidden = false;
     this.el.style.background = `linear-gradient(rgba(8,10,16,.55), rgba(8,10,16,.8)), #0d1018 url("${bg}") center / cover no-repeat`;
     this.el.replaceChildren(...kids.map((k) => (typeof k === 'string' ? h('div', '', k) : k)));

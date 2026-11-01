@@ -13,6 +13,7 @@ import { DEFAULT_SCHEME } from './sim/world';
 import { NetClient } from './net/client';
 import type { NetClientMsg, NetSetup } from './net/protocol';
 import { Menu, type QuickConfig } from './ui/menu';
+import { MenuMusic } from './ui/menu-music';
 
 const MISSIONS = missionsJson as unknown as MissionDef[];
 const botLevel = (v: string): BotLevel | null => (v === 'easy' || v === 'medium' || v === 'hard' ? v : null);
@@ -20,10 +21,13 @@ const host = document.getElementById('gops')!;
 const q = new URLSearchParams(location.search);
 let game: Game | null = null;
 const menu = new Menu(host, MISSIONS);
+const music = new MenuMusic();
+menu.onShow = () => music.start();
 
 let net: NetClient | null = null;
 
 function stop(): void {
+  music.stop();
   game?.destroy();
   game = null;
   net?.close();
@@ -59,6 +63,7 @@ async function connect(first: NetClientMsg): Promise<void> {
 }
 
 async function startNet(c: NetClient, setup: NetSetup, seed: number): Promise<void> {
+  music.stop();
   menu.hide();
   const me = c.peers.find((p) => p.id === c.you);
   const level = await loadLevel(setup.level);

@@ -35,7 +35,21 @@ const FIRE_SFX: Record<string, string> = {
 /** Голосовые наборы (docs/gops/texts/voices.json) — по бригаде партии. */
 export const VOICE_SETS = ['sipliy', 'batya', 'maloy', 'sibiryak', 'botan', 'intelligent'];
 
-const MUSIC_COUNT: Record<string, number> = { 'battle-calm': 6, battle: 9, 'sudden-death': 4, victory: 6, defeat: 6 };
+/** Сколько треков у ситуации (G:/ai/out/studio/gops/music, README там же). */
+export const MUSIC_COUNT: Record<string, number> = {
+  menu: 8, 'brigade-select': 3, 'battle-calm': 6, battle: 9, 'time-attack': 4, 'sudden-death': 4, victory: 6, defeat: 6,
+};
+/** Музыка миссии (missions.json → music) → ситуация. */
+const MISSION_MUSIC: Record<string, string> = { calm: 'battle-calm', battle: 'battle', timed: 'time-attack' };
+const FADE = 1.5;
+
+/** Случайный трек ситуации, не тот же, что играл. */
+export function pickTrack(kind: string, last: string): string {
+  const n = MUSIC_COUNT[kind] ?? 1;
+  let track = '';
+  for (let i = 0; i < 6 && (!track || track === last); i++) track = `${kind}-${String(1 + Math.floor(Math.random() * n)).padStart(2, '0')}`;
+  return track;
+}
 
 export class GopsAudio {
   private ctx: AudioContext | null = null;
@@ -43,7 +57,9 @@ export class GopsAudio {
   private musicGain!: GainNode;
   private cache = new Map<string, Promise<AudioBuffer | null>>();
   private voiceBusyUntil = 0;
-  private music: AudioBufferSourceNode | null = null;
+  private music: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  /** Музыка боя по умолчанию (у миссии — своя). */
+  battleMusic = 'battle-calm';
   private musicKind = '';
   private lastTrack = '';
   private amb: AudioBufferSourceNode | null = null;
@@ -89,7 +105,7 @@ export class GopsAudio {
       this.musicGain.gain.value = 0.35;
       this.musicGain.connect(this.out);
       this.startAmbience();
-      this.playMusic('battle-calm');
+      this.playMusic(this.battleMusic);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     return this.ctx;
@@ -162,23 +178,45 @@ export class GopsAudio {
     void this.play(url, 0.95);
   }
 
-  playMusic(kind: string): void {
-    if (!this.ctx || this.musicKind === kind) return;
+  /** Музыка миссии: calm / battle / timed. */
+  setMissionMusic(m: string): void {
+    this.battleMusic = MISSION_MUSIC[m] ?? 'battle-calm';
+  }
+
+  /** Сменить ситуацию: старый трек гаснет, новый нарастает (FADE с); кончился трек — следующий той же ситуации. */
+  playMusic(kind: string, force = false): void {
+    const ctx = this.ctx;
+    if (!ctx || (this.musicKind === kind && !force)) return;
     this.musicKind = kind;
-    const n = MUSIC_COUNT[kind] ?? 1;
-    let track = '';
-    for (let i = 0; i < 4 && (!track || track === this.lastTrack); i++) track = `${kind}-${String(1 + Math.floor(Math.random() * n)).padStart(2, '0')}`;
+    const track = pickTrack(kind, this.lastTrack);
     this.lastTrack = track;
     const old = this.music;
     if (old) {
+      const t = ctx.currentTime;
+      old.gain.gain.setValueAtTime(old.gain.gain.value, t);
+      old.gain.gain.linearRampToValueAtTime(0, t + FADE);
+      old.src.onended = null;
       try {
-        old.stop(this.ctx.currentTime + 0.6);
+        old.src.stop(t + FADE + 0.05);
       } catch {
         /* уже остановлен */
       }
+      this.music = null;
     }
-    const loop = kind !== 'victory' && kind !== 'defeat';
-    void this.play(`${MUSIC}${track}.ogg`, 1, 0, this.musicGain, loop).then((s) => (this.music = s));
+    const once = kind === 'victory' || kind === 'defeat';
+    void this.load(`${MUSIC}${track}.ogg`).then((buf) => {
+      if (!buf || this.ctx !== ctx || this.musicKind !== kind) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(1, ctx.currentTime + (old ? FADE : 0.3));
+      src.connect(gain).connect(this.musicGain);
+      src.start();
+      // трек кончился — следующий той же ситуации (победа и поражение — один раз)
+      if (!once) src.onended = () => this.music?.src === src && this.playMusic(kind, true);
+      this.music = { src, gain };
+    });
   }
 
   private startAmbience(): void {
