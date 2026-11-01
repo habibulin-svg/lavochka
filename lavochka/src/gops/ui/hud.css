@@ -69,3 +69,13 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-weapon img { width: 30px; height: 30px; object-fit: contain; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
 .hud-menu { max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
 @media (min-width: 1000px) and (pointer: fine) { .hud-menu { grid-template-columns: repeat(3, minmax(170px, 1fr)); } }
+/* узкий телефон стоя: две группы кнопок должны поместиться в 360 px */
+@media (pointer: coarse) and (max-width: 480px) {
+  .hud-pad { gap: 8px; }
+  .hud-pad.l { left: 10px; }
+  .hud-pad.r { right: 10px; }
+  .hud-pad button { width: 52px; height: 52px; font-size: 18px; }
+  .hud-pad-col { gap: 8px; }
+  .hud-pad .fire { width: 68px; height: 68px; }
+  .hud-who { white-space: nowrap; font-size: 22px; }
+}
