@@ -65,6 +65,12 @@ export class Game {
   /** Сеть: следующий кадр к шагу, номер хода (для сверки хеша), чья бригада последней слала ввод. */
   private frameNo = 0;
   private turnNo = 0;
+  /** За одним экраном несколько людей (не сеть): между их ходами — экран передачи. */
+  private hotseat = false;
+  /** Чей человек сейчас за экраном (−1 — ещё никто). */
+  private seated = -1;
+  /** Ждём «Я готов» — мир не шагает. */
+  private waiting = false;
   private sentSide = -1;
   /** Рассинхрон: ждём кадра snapAt (свой снимок отправить) или чужой снимок. */
   private resync: { at: number; mine: boolean; sent: boolean } | null = null;
@@ -113,6 +119,7 @@ export class Game {
     if (bosses.length) window.setTimeout(() => this.hud.flash(`Босс: ${bosses.map(([, n]) => n).join(', ')}`, 3000), 600);
     // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
     this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
+    this.hotseat = !s.net && s.sides.filter((x) => !x.bot).length > 1;
     if (s.net) {
       this.talk = new Talk(this.host, s.net.client);
       const c = s.net.client;
@@ -149,6 +156,10 @@ export class Game {
       this.netPump(this.setup.net);
       return dt;
     }
+    if (this.waiting) {
+      this.acc = 0; // мир стоит, таймер хода тоже, пока следующий человек не сел за экран
+      return dt;
+    }
     this.acc += dt;
     const tick = 1000 / TICK_HZ;
     while (this.acc >= tick) {
@@ -160,9 +171,26 @@ export class Game {
       if (this.run) this.checkMission(this.run);
       this.view.onEvents(this.world, this.world.events);
       this.audio.onEvents(this.world, this.world.events);
+      if (this.handoff()) break;
     }
     return dt;
   };
+
+  /** За одним экраном больше одного человека: ход другого человека начинается с «передай устройство». */
+  private handoff(): boolean {
+    if (!this.hotseat) return false;
+    const e = this.world.events.find((x) => x.t === 'turn');
+    if (!e || e.t !== 'turn' || this.bots[e.team] || e.team === this.seated) return false;
+    this.waiting = true;
+    this.acc = 0;
+    this.hud.handoff(e.team, () => {
+      this.controls.take(); // нажатия, пока стоял экран передачи, — в никуда
+      this.seated = e.team;
+      this.waiting = false;
+      this.last = performance.now();
+    });
+    return true;
+  }
 
   /** Боты заново от сида партии и кадра — после снимка у всех одинаковые. */
   private resetBots(frame: number): void {

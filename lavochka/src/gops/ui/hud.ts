@@ -126,6 +126,36 @@ export class Hud {
     this.whoTimer = window.setTimeout(() => (this.who.hidden = true), ms);
   }
 
+  /** За одним экраном: «передай устройство» перед ходом другого человека; мир стоит, пока не нажмут «Я готов» (или Enter). */
+  handoff(team: number, go: () => void): void {
+    const b = BRIGADES.find((x) => x.id === this.brigades[team]);
+    const box = div('hud-handoff');
+    const card = div('hud-handoff-card');
+    const name = div('hud-handoff-name');
+    name.textContent = `Ходит ${b?.name ?? `бригада ${team + 1}`}`;
+    name.style.color = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
+    const tip = div('hud-handoff-tip');
+    tip.textContent = 'Передай телефон или пересядь за клавиатуру';
+    const btn = document.createElement('button');
+    btn.className = 'hud-handoff-go';
+    btn.textContent = 'Я готов';
+    card.append(tip, name, btn);
+    box.append(card);
+    this.el.append(box);
+    this.who.hidden = true; // «Ходит …» уже крупно на экране передачи
+    const done = () => {
+      window.removeEventListener('keydown', key, true);
+      box.remove();
+      go();
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.code === 'Enter' || e.code === 'NumpadEnter') done();
+    };
+    btn.addEventListener('click', done);
+    window.addEventListener('keydown', key, true);
+    btn.focus();
+  }
+
   /** Подсказка внизу (совет миссии) — гаснет через ms. */
   hint(text: string, ms = 8000): void {
     const el = div('hud-hint');
@@ -143,7 +173,7 @@ export class Hud {
   update(w: World): void {
     const turn = w.phase === 'turn' || w.phase === 'retreat';
     // новый ход — на полторы секунды «Ходит Расточка» цветом бригады
-    if (w.phase === 'turn' && this.lastPhase !== 'turn') {
+    if (w.phase === 'turn' && this.lastPhase !== 'turn' && !this.el.querySelector('.hud-handoff')) {
       const b = BRIGADES.find((x) => x.id === this.brigades[w.team]);
       this.who.textContent = `Ходит ${b?.name ?? `бригада ${w.team + 1}`}`;
       this.who.style.color = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
