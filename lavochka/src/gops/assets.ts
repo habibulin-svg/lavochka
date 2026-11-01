@@ -12,8 +12,9 @@ export interface Brigade {
 
 /** Бригады — docs/gops/texts/brigades.json, цвета — по трико (studio/blender/liveries.py). */
 export const BRIGADES: Brigade[] = [
-  { id: 'zatulinka', name: 'Затулинка', color: 0x2ec4b6 },
-  { id: 'rastochka', name: 'Расточка', color: 0xe63946 },
+  // по костюму: Затулинка — тёмно-синяя с красными рукавами, Расточка — бирюзовая (было наоборот, 2026-11-02)
+  { id: 'zatulinka', name: 'Затулинка', color: 0xe63946 },
+  { id: 'rastochka', name: 'Расточка', color: 0x2ec4b6 },
   { id: 'zaton', name: 'Затон', color: 0x5aa9e6 },
   { id: 'pervomayka', name: 'Первомайка', color: 0x3d5a98 },
   { id: 'chemskoy', name: 'Чемской', color: 0x52b788 },
