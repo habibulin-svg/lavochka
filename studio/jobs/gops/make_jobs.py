@@ -399,6 +399,39 @@ FX = [
 FX_STYLE = 'Stylized cartoon game visual effect, toon shading, clean shapes, no text.'
 
 
+# Переделка эффектов после отбора 2026-11-02: в ключах всплеска и пыли была полоса воды/земли (её Wan оставил и нарезка
+# не вырезала), большой взрыв почти пустой, кирпич ломался только в конце. Ключ — уже само действие, без линий, 4 сида.
+FX_FIX = [
+    ('fx2-explosion-l', 'a big round cartoon fireball explosion in the center of a pure black background, orange and yellow fire, dark smoke ring, dirt chunks',
+     'the fireball expands fast, dirt chunks fly outward, thick smoke rises and dissolves, pure black background, static camera'),
+    ('fx2-splash', 'a crown-shaped cartoon splash of blue water drops at the bottom center of a pure black background, no water surface, no line',
+     'the water splash shoots up and the drops fall back down and vanish, pure black background, static camera'),
+    ('fx2-dust', 'a small cloud of beige cartoon dust and pebbles at the bottom center of a pure black background, no ground, no line',
+     'the dust cloud puffs up, pebbles fly out, then it settles and fades away, pure black background, static camera'),
+    ('fx2-bricks', 'red brick fragments and orange dust flying apart from the center of a pure black background',
+     'the brick pieces fly outward and fall, the dust fades, pure black background, static camera'),
+]
+# Ролик «квас»: на бочке вышла абракадабра — бочка без надписей.
+KVASS_FIX = ('s09b-kvass', f'A queue of {GOPNIK} in teal tracksuits at a plain yellow barrel on wheels on a sunny street, the barrel has no text, no letters, '
+             'a red-tracksuit lad sneaks in front',
+             'the red lad cuts the queue, the teal lads turn their heads slowly and stare at him, he freezes with a mug in hand and smiles awkwardly, no text on the barrel')
+
+
+def fix_keys_job() -> dict:
+    items = [{'name': fid, 'width': 704, 'height': 704, 'prompt': f'{key}. {FX_STYLE}'} for fid, key, _ in FX_FIX]
+    items.append({'name': KVASS_FIX[0], 'prompt': f'{KVASS_FIX[1]}. {CHAR_STYLE}'})
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': 'Apache-2.0 (Z-Image-Turbo)',
+            'defaults': {'width': 1280, 'height': 704, 'steps': 8}, 'seeds': [1, 2], 'items': items}
+
+
+def fix_videos_job() -> dict:
+    clips = [{'name': fid, 'keys': [f'{fid}-1', f'{fid}-2'], 'width': 704, 'height': 704, 'frames': 49, 'prompt': motion} for fid, _, motion in FX_FIX]
+    clips.append({'name': KVASS_FIX[0], 'keys': [f'{KVASS_FIX[0]}-1', f'{KVASS_FIX[0]}-2'],
+                  'prompt': f'{KVASS_FIX[2]}. Stylized 3D cartoon animation, toon shading, funny slapstick, smooth motion.'})
+    return {'keys': 'G:/temp/studio/out/gops/24c-fix-keys', 'server': 'comfy-big',
+            'defaults': {'width': 1280, 'height': 704, 'frames': 121, 'steps': 30}, 'seeds': [1], 'clips': clips}
+
+
 def cutscene_keys_job() -> dict:
     items = [{'name': sid, 'prompt': f'{key}. {CHAR_STYLE}'} for sid, key, _ in SKETCHES]
     items.append({'name': LOGO_ANIM[0], 'prompt': f'{LOGO_ANIM[1]}. {ENV}'})
@@ -467,6 +500,8 @@ if __name__ == '__main__':
     dump('23-common.yaml', 'ГОПС, партия 23: ящики, бочки, кепки-надгробия, интерфейс', common_job())
     dump('24-cutscene-keys.yaml', 'ГОПС, партия 24: ключевые кадры роликов, заставки и эффектов', cutscene_keys_job())
     dump('25-videos.yaml', 'ГОПС, партия 25: ролики (Wan 2.2), заставка, эффекты', videos_job())
+    dump('24c-fix-keys.yaml', 'ГОПС, партия 24c: ключи переделки эффектов (взрыв, всплеск, пыль, кирпичи) и ролика «квас»', fix_keys_job())
+    dump('25c-fix-videos.yaml', 'ГОПС, партия 25c: ролики переделки эффектов и «кваса»', fix_videos_job())
     dump('29-actors.yaml', 'ГОПС, партия 29: живые снаряды (собака, голубь, бабка, козы, кукурузник…) — ролик на месте → спрайт', actors_job())
     dump('30-liquids.yaml', 'ГОПС, партия 30: волны смертельной жидкости по темам — петля', liquids_job())
     n = sum(len(theme_job(t, THEMES[t])['items']) for t in THEMES)

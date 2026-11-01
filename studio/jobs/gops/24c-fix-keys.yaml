@@ -1,0 +1,35 @@
+# ГОПС, партия 24c: ключи переделки эффектов (взрыв, всплеск, пыль, кирпичи) и ролика «квас»
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 1
+- 2
+items:
+- name: fx2-explosion-l
+  width: 704
+  height: 704
+  prompt: a big round cartoon fireball explosion in the center of a pure black background, orange and yellow fire, dark smoke ring, dirt chunks. Stylized cartoon game visual effect, toon shading, clean
+    shapes, no text.
+- name: fx2-splash
+  width: 704
+  height: 704
+  prompt: a crown-shaped cartoon splash of blue water drops at the bottom center of a pure black background, no water surface, no line. Stylized cartoon game visual effect, toon shading, clean shapes, no
+    text.
+- name: fx2-dust
+  width: 704
+  height: 704
+  prompt: a small cloud of beige cartoon dust and pebbles at the bottom center of a pure black background, no ground, no line. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx2-bricks
+  width: 704
+  height: 704
+  prompt: red brick fragments and orange dust flying apart from the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: s09b-kvass
+  prompt: A queue of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in teal tracksuits at a plain yellow barrel on wheels on a sunny street, the barrel has no text, no letters, a red-tracksuit lad sneaks in
+    front. Stylized low-poly 3D cartoon render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.

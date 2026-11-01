@@ -1,0 +1,50 @@
+# ГОПС, партия 25c: ролики переделки эффектов и «кваса»
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/gops/24c-fix-keys
+server: comfy-big
+defaults:
+  width: 1280
+  height: 704
+  frames: 121
+  steps: 30
+seeds:
+- 1
+clips:
+- name: fx2-explosion-l
+  keys:
+  - fx2-explosion-l-1
+  - fx2-explosion-l-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the fireball expands fast, dirt chunks fly outward, thick smoke rises and dissolves, pure black background, static camera
+- name: fx2-splash
+  keys:
+  - fx2-splash-1
+  - fx2-splash-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the water splash shoots up and the drops fall back down and vanish, pure black background, static camera
+- name: fx2-dust
+  keys:
+  - fx2-dust-1
+  - fx2-dust-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the dust cloud puffs up, pebbles fly out, then it settles and fades away, pure black background, static camera
+- name: fx2-bricks
+  keys:
+  - fx2-bricks-1
+  - fx2-bricks-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the brick pieces fly outward and fall, the dust fades, pure black background, static camera
+- name: s09b-kvass
+  keys:
+  - s09b-kvass-1
+  - s09b-kvass-2
+  prompt: the red lad cuts the queue, the teal lads turn their heads slowly and stare at him, he freezes with a mug in hand and smiles awkwardly, no text on the barrel. Stylized 3D cartoon animation, toon
+    shading, funny slapstick, smooth motion.
