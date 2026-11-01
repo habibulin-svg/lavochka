@@ -50,3 +50,13 @@ export function themeArt(theme: string, time = 'night'): ThemeArt {
     sky: t === 'night' ? 0x141a2e : 0x6d7480,
   };
 }
+
+/** Картинки меню, заглавия, загрузки (20-brand), имя — без расширения: title-keyart-1, menu-bg-1, loading-2-1… */
+export function brandArt(name: string): string {
+  return `${DEV}20-brand/${name}.png`;
+}
+
+/** Межигровой ролик по имени из missions.json (cutscene_after): первый вариант первого ключа (до отбора). */
+export function cutsceneUrl(name: string): string {
+  return `${DEV}25-videos/${name}-1-v1.mp4`;
+}

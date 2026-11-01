@@ -54,3 +54,7 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
   .hud-pad .fire { width: 68px; height: 68px; }
   .hud-teams { bottom: 8px; }
 }
+.hud-goal { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); max-width: 60vw; padding: 6px 14px; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55); font-weight: 700; text-align: center; }
+.hud-goal:empty { display: none; }
+@media (pointer: coarse) { .hud-goal { top: 52px; font-size: 14px; } }

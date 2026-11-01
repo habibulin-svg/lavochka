@@ -9,7 +9,7 @@ export default defineConfig({
       '/api': 'http://localhost:8787',
     },
     // ГОПС в разработке берёт ассеты прямо с выхода конвейера (src/gops/assets.ts) — до отбора и раскладки в public/gops
-    fs: { allow: [searchForWorkspaceRoot(process.cwd()), 'G:/temp/studio/out/gops', 'G:/ai/out/studio/gops/music'] },
+    fs: { allow: [searchForWorkspaceRoot(process.cwd()), '../docs/gops', 'G:/temp/studio/out/gops', 'G:/ai/out/studio/gops/music'] },
   },
   // без подсчёта gzip: на прод-сервере (2 ГБ) он добирал память до OOM-убийцы
   build: {

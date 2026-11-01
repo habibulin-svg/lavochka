@@ -51,11 +51,21 @@ export class GopsAudio {
       /* без хранилища — со звуком */
     }
     const wake = () => this.ensure();
-    window.addEventListener('pointerdown', wake);
+    const sig = { signal: this.off.signal };
+    window.addEventListener('pointerdown', wake, sig);
     window.addEventListener('keydown', (e) => {
       wake();
       if (e.code === 'KeyM') this.toggleMute();
-    });
+    }, sig);
+  }
+
+  private off = new AbortController();
+
+  /** Конец партии: тишина и никаких слушателей. */
+  dispose(): void {
+    this.off.abort();
+    void this.ctx?.close();
+    this.ctx = null;
   }
 
   /** Браузер разрешает звук только после жеста пользователя. */

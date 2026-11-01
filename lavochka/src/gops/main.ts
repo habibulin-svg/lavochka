@@ -1,24 +1,72 @@
-/* Вход ГОПС. Пока — быстрый бой для разработки: /gops.html?level=m03&vs=medium&n=3
+/* Вход ГОПС. Без параметров — меню (кампания, обучение, испытания, быстрый бой).
+ * Для разработки: /gops.html?mission=m06 — сразу миссия; /gops.html?level=m03&vs=medium&n=3 — быстрый бой
  * (vs: easy|medium|hard|human — второй стороной бот или человек за этим же экраном; p1 — то же для первой
- * стороны, p1=hard&vs=hard — смотреть бой ботов). Меню и кампания — дальше. */
+ * стороны, p1=hard&vs=hard — смотреть бой ботов). */
+import missionsJson from '../../../docs/gops/levels/missions.json';
 import type { BotLevel } from './bot/bot';
 import { Game } from './game';
 import { loadLevel } from './level';
+import type { MissionDef } from './sim/mission';
 import './ui/hud.css';
+import { Menu } from './ui/menu';
 
+const MISSIONS = missionsJson as unknown as MissionDef[];
 const botLevel = (v: string): BotLevel | null => (v === 'easy' || v === 'medium' || v === 'hard' ? v : null);
+const host = document.getElementById('gops')!;
+const q = new URLSearchParams(location.search);
+let game: Game | null = null;
+const menu = new Menu(host, MISSIONS);
 
-async function main(): Promise<void> {
-  const q = new URLSearchParams(location.search);
-  const id = q.get('level') ?? 'm03';
+function stop(): void {
+  game?.destroy();
+  game = null;
+}
+
+/** Миссия: бой, итог, ролик после победы, следующая миссия списка. */
+async function play(def: MissionDef): Promise<void> {
+  stop();
+  menu.hide();
+  const level = await loadLevel(def.id);
+  const g = new Game(host, {
+    level, theme: def.theme, time: def.time, seed: (def.terrain.seed * 31 + Date.now()) % 100000,
+    sides: [{ brigade: q.get('me') ?? 'zatulinka', bot: null, count: def.player.count, hp: def.player.hp }],
+    mission: def,
+  });
+  game = g;
+  g.onEnd = (run, stars) => {
+    if (game !== g) return;
+    const list = MISSIONS.filter((m) => m.mode === def.mode);
+    const nextDef = list[list.indexOf(def) + 1];
+    menu.result(run, stars, {
+      retry: () => void play(def),
+      menu: () => {
+        stop();
+        menu.list(def.mode);
+      },
+      next: nextDef
+        ? () => {
+            stop();
+            const go = () => menu.briefing(nextDef);
+            if (def.cutscene_after) menu.cutscene(def.cutscene_after, go);
+            else go();
+          }
+        : null,
+    });
+  };
+  await g.start();
+  (window as unknown as { gops: Game }).gops = g;
+}
+
+/** Быстрый бой: уровень и стороны из адреса (разработка) или случайная карта против среднего бота (меню). */
+async function quick(): Promise<void> {
+  stop();
+  menu.hide();
+  const id = q.get('level') ?? MISSIONS.filter((m) => m.mode === 'mission')[Math.floor(Math.random() * 45)].id;
   const vs = q.get('vs') ?? 'medium';
   const n = Math.max(1, Math.min(8, Number(q.get('n') ?? 3)));
   const level = await loadLevel(id);
-  const missions: { id: string; theme: string; time?: string }[] = await fetch('/gops/levels/missions-index.json')
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
-  const m = missions.find((x) => x.id === id);
-  const game = new Game(document.getElementById('gops')!, {
+  const m = MISSIONS.find((x) => x.id === id);
+  const g = new Game(host, {
     level,
     theme: m?.theme ?? 'yard',
     time: m?.time,
@@ -28,8 +76,31 @@ async function main(): Promise<void> {
       { brigade: q.get('them') ?? 'rastochka', bot: botLevel(vs), count: n, hp: 100 },
     ],
   });
-  await game.start();
-  (window as unknown as { gops: Game }).gops = game;
+  game = g;
+  await g.start();
+  (window as unknown as { gops: Game }).gops = g;
+}
+
+// Esc в бою — выйти в меню (из миссии — к её списку)
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape' || !game) return;
+  const mode = game.run?.def.mode;
+  stop();
+  if (mode) menu.list(mode);
+  else menu.title();
+});
+
+menu.onPlay = (def) => void play(def);
+menu.onQuick = () => void quick();
+
+async function main(): Promise<void> {
+  const mission = q.get('mission');
+  if (mission) {
+    const def = MISSIONS.find((m) => m.id === mission);
+    if (!def) throw new Error(`нет миссии ${mission}`);
+    await play(def);
+  } else if (q.get('level')) await quick();
+  else menu.title();
 }
 
 main().catch((e) => {

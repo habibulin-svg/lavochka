@@ -1,0 +1,45 @@
+.gm { position: absolute; inset: 0; z-index: 10; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 18px;
+  padding: max(24px, env(safe-area-inset-top)) 16px 32px; box-sizing: border-box; background: #0d1018 center / cover no-repeat;
+  font-family: 'PT Sans', sans-serif; color: #f1ece2; }
+.gm[hidden] { display: none; }
+.gm-logo { margin-top: 8vh; text-align: center; text-shadow: 0 4px 0 #000, 0 0 24px rgba(0, 0, 0, 0.8); }
+.gm-logo b { display: block; font: 400 clamp(64px, 14vw, 150px)/0.9 'Russo One', sans-serif; color: #ffd166; letter-spacing: 0.04em;
+  -webkit-text-stroke: 3px #3b2a1a; }
+.gm-logo span { font: 400 clamp(18px, 3.4vw, 32px) 'Russo One', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; }
+.gm-col { display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); margin-top: 3vh; }
+.gm-foot { margin-top: auto; opacity: 0.6; font-size: 13px; }
+.gm-btn { padding: 12px 18px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.18); background: rgba(20, 24, 36, 0.85);
+  color: #f1ece2; font: 700 17px 'PT Sans', sans-serif; cursor: pointer; transition: transform 0.08s, border-color 0.15s; }
+.gm-btn:hover { border-color: #ffd166; }
+.gm-btn:active { transform: translateY(1px); }
+.gm-btn.big { background: #c1121f; border-color: #ff6b6b; font: 400 22px 'Russo One', sans-serif; }
+.gm-head { display: flex; align-items: center; gap: 14px; width: min(900px, 100%); }
+.gm-head h2 { margin: 0; flex: 1; font: 400 clamp(22px, 4vw, 34px) 'Russo One', sans-serif; text-shadow: 0 2px 0 #000; }
+.gm-total { color: #ffd166; font-weight: 700; }
+.gm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; width: min(900px, 100%); }
+.gm-chapter { grid-column: 1 / -1; margin: 14px 0 2px; font: 400 18px 'Russo One', sans-serif; color: #ffd166; text-shadow: 0 2px 0 #000; }
+.gm-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 18, 28, 0.86); color: #f1ece2; font: 600 15px 'PT Sans', sans-serif; text-align: left; cursor: pointer; }
+.gm-card:hover { border-color: #ffd166; }
+.gm-card i { font: 400 15px 'Russo One', sans-serif; font-style: normal; color: #8d99ae; min-width: 22px; }
+.gm-card span { flex: 1; }
+.gm-card em { font-style: normal; color: #ffd166; letter-spacing: 1px; }
+.gm-card.locked { opacity: 0.45; cursor: default; }
+.gm-brief { width: min(640px, 100%); margin: auto 0; padding: 22px 24px; border-radius: 16px; background: rgba(12, 14, 22, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.14); box-sizing: border-box; }
+.gm-brief h2 { margin: 0 0 10px; font: 400 clamp(24px, 4.5vw, 36px) 'Russo One', sans-serif; color: #ffd166; }
+.gm-brief p { margin: 0 0 12px; font-size: 17px; line-height: 1.45; }
+.gm-new { color: #a8dadc; font-weight: 700; }
+.gm-arsenal { font-size: 15px !important; opacity: 0.85; }
+.gm-tip { font-style: italic; opacity: 0.85; }
+.gm-stars { margin: 0 0 12px; padding: 0; list-style: none; }
+.gm-stars li { padding: 2px 0; }
+.gm-stars li::first-letter { color: #ffd166; }
+.gm-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.gm-result { text-align: center; }
+.gm-result h2.win { color: #ffd166; }
+.gm-result h2.lose { color: #ff6b6b; }
+.gm-result .gm-row { justify-content: center; }
+.gm-big-stars { font-size: 52px; color: #ffd166; letter-spacing: 6px; text-shadow: 0 3px 0 #000; margin-bottom: 8px; }
+.gm-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.gm-skip { position: absolute; right: 16px; bottom: 16px; opacity: 0.6; font-size: 14px; }

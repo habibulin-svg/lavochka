@@ -28,6 +28,9 @@ export class Hud {
   private weapon: HTMLElement;
   private menu: HTMLElement;
   private banner: HTMLElement;
+  private goal: HTMLElement;
+  /** Свой итог показывает миссия — общий баннер «держит район» не нужен. */
+  quietOver = false;
   onPick: (id: string) => void = () => {};
 
   constructor(host: HTMLElement, private brigades: string[]) {
@@ -41,7 +44,8 @@ export class Hud {
     this.menu.hidden = true;
     this.banner = div('hud-banner');
     this.banner.hidden = true;
-    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner);
+    this.goal = div('hud-goal');
+    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal);
     host.appendChild(this.el);
     this.weapon.addEventListener('click', () => this.toggleMenu());
   }
@@ -105,6 +109,11 @@ export class Hud {
     );
   }
 
+  /** Строка цели миссии сверху. */
+  setGoal(text: string): void {
+    if (this.goal.textContent !== text) this.goal.textContent = text;
+  }
+
   update(w: World): void {
     const turn = w.phase === 'turn' || w.phase === 'retreat';
     this.timer.textContent = turn ? String(Math.ceil(w.left / TICK_HZ)) : '';
@@ -125,7 +134,7 @@ export class Hud {
     const need = WEAPONS[w.weapon]?.target && !w.target && w.phase === 'turn';
     this.weapon.textContent = (WEAPON_NAMES[w.weapon] ?? w.weapon) + (need ? ' — ткни в точку' : '');
     if (!this.menu.hidden && this.menuFor !== w.team) this.menu.hidden = true;
-    if (w.phase === 'over' && this.banner.hidden) {
+    if (w.phase === 'over' && this.banner.hidden && !this.quietOver) {
       const b = BRIGADES.find((x) => x.id === this.brigades[w.winner]);
       this.banner.textContent = w.winner < 0 ? 'Ничья — все сдулись' : `${b?.name ?? 'Бригада'} держит район!`;
       this.banner.hidden = false;

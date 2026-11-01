@@ -12,7 +12,10 @@ export class Controls {
   touchAim: -1 | 0 | 1 = 0;
   onMenu: () => void = () => {};
 
+  private off = new AbortController();
+
   constructor(target: Window = window) {
+    const sig = { signal: this.off.signal };
     target.addEventListener('keydown', (e) => {
       if (e.repeat && e.code !== 'Space') return;
       const k = e.code;
@@ -22,9 +25,13 @@ export class Controls {
       else if (k === 'Backspace') this.once.jump = 2;
       else if (k === 'Tab') this.onMenu();
       else if (/^Digit[1-5]$/.test(k)) this.once.fuse = Number(k.slice(5));
-    });
-    target.addEventListener('keyup', (e) => this.held.delete(e.code));
-    target.addEventListener('blur', () => this.held.clear());
+    }, sig);
+    target.addEventListener('keyup', (e) => this.held.delete(e.code), sig);
+    target.addEventListener('blur', () => this.held.clear(), sig);
+  }
+
+  dispose(): void {
+    this.off.abort();
   }
 
   /** Точка на карте (px мира) — для наводки, авиаудара, маршрутки, плиты. */

@@ -45,6 +45,8 @@ export class GameView {
   private fx: Fx[] = [];
   /** Камера: центр (px мира) и масштаб; цель — куда плавно едем. */
   cam = { x: 0, y: 0, zoom: 1, tx: 0, ty: 0, follow: true };
+  /** Зона «царя горы» (px), если миссия такая. */
+  zone: [number, number, number] | null = null;
   private t = 0;
 
   constructor(private readonly host: HTMLElement) {}
@@ -251,6 +253,7 @@ export class GameView {
   private drawProjs(w: World): void {
     const g = this.projLayer.clear();
     for (const c of w.crates) this.drawCrate(g, c.x / ONE, c.y / ONE, c.kind, c.falling);
+    this.drawObjs(g, w);
     const a = wormById(w, w.active);
     if (a && w.thrust) {
       // огонь из сопла ранца
@@ -326,6 +329,59 @@ export class GameView {
         if (p.state === 'armed' || (p.state === 'fuse' && (p.fuse >> 2) & 1)) g.circle(x, y - 2, 1.4).fill(0xff2222);
       } else {
         g.circle(x, y, 2).fill(0x9a8c7a);
+      }
+    }
+  }
+
+  /** Предметы миссии и зона (заглушки до спрайтов): флажки, мишени, бочки, подопечный, свои в беде. */
+  private drawObjs(g: Graphics, w: World): void {
+    if (this.zone) {
+      const [cx, cy, r] = this.zone;
+      g.circle(cx, cy, r).fill({ color: 0xffd166, alpha: 0.08 }).stroke({ color: 0xffd166, width: 2, alpha: 0.6 });
+    }
+    const flags = w.objs.filter((o) => o.kind === 'flag' && o.alive);
+    for (const o of w.objs) {
+      const { x, y } = o;
+      if (o.kind === 'flag') {
+        if (!o.alive) continue;
+        const next = o === flags[0];
+        g.moveTo(x, y + 8).lineTo(x, y - 18).stroke({ color: 0xdddddd, width: 1.5 });
+        if (o.look === 'finish') {
+          for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) g.rect(x + i * 3, y - 18 + j * 3, 3, 3).fill((i + j) & 1 ? 0x111111 : 0xffffff);
+        } else g.moveTo(x, y - 18).lineTo(x + 12, y - 14).lineTo(x, y - 10).fill(next ? 0xe63946 : 0x8d99ae);
+        if (next) g.circle(x, y, 14).stroke({ color: 0xffd166, width: 1.5, alpha: 0.5 + 0.4 * Math.sin(this.t / 200) });
+        continue;
+      }
+      if (!o.alive) continue;
+      if (o.kind === 'target') {
+        if (o.look === 'can' || o.look === 'keg') {
+          g.roundRect(x - 4, y - 6, 8, 12, 1.5).fill(o.look === 'can' ? 0xb0b6bb : 0x8d6e4a).stroke({ color: 0x333333, width: 0.8 });
+        } else if (o.look === 'plate') {
+          g.moveTo(x, y + 6).lineTo(x, y + 14).stroke({ color: 0x555555, width: 1.5 });
+          g.circle(x, y, 6).fill(0xffffff).circle(x, y, 4).fill(0xe63946).circle(x, y, 2).fill(0xffffff);
+        } else {
+          // разнести: котёл, трансформатор, холодильник… — коробка своего цвета
+          const col: Record<string, number> = { barrel: 0xc1121f, boiler: 0x6c757d, transformer: 0x52796f, fridge: 0xe9ecef, gas: 0xd62828 };
+          g.roundRect(x - 9, y - 10, 18, 20, 3).fill(col[o.look] ?? 0x9a8c7a).stroke({ color: 0x222222, width: 1 });
+        }
+      } else if (o.kind === 'barrel') {
+        g.roundRect(x - 6, y - 8, 12, 16, 2).fill(0xc1121f).stroke({ color: 0x5a0a0a, width: 1 });
+        g.rect(x - 6, y - 3, 12, 1.5).rect(x - 6, y + 2, 12, 1.5).fill(0x7a0c0c);
+      } else if (o.kind === 'ward') {
+        const lookCol: Record<string, number> = { babka: 0x6a4c93, beehive: 0xe9c46a, locomotive: 0x2a9d8f };
+        if (o.look === 'locomotive') g.roundRect(x - 22, y - 12, 44, 24, 4).fill(lookCol.locomotive).stroke({ color: 0x111111, width: 1.2 });
+        else if (o.look === 'beehive') g.roundRect(x - 10, y - 14, 20, 28, 6).fill(lookCol.beehive).stroke({ color: 0x6b4f2a, width: 1 });
+        else {
+          g.roundRect(x - 6, y - 10, 12, 22, 4).fill(lookCol.babka);
+          g.circle(x, y - 13, 5).fill(0xf1d3b3);
+          g.moveTo(x - 6, y - 15).arc(x, y - 14, 6, Math.PI, 0).fill(0xc1121f);
+        }
+        const k = Math.max(0, o.hp) / (o.look === 'locomotive' ? 200 : o.look === 'beehive' ? 150 : 120);
+        g.rect(x - 14, y - 26, 28, 4).fill(0x000000).rect(x - 14, y - 26, 28 * Math.min(1, k), 4).fill(0x52b788);
+      } else if (o.kind === 'hostage') {
+        g.circle(x, y, 9).fill(0xcfd8dc).stroke({ color: 0x333333, width: 1 });
+        g.moveTo(x, y - 26).lineTo(x, y - 17).stroke({ color: 0xffd166, width: 3 });
+        g.circle(x, y - 13, 1.6).fill(0xffd166);
       }
     }
   }
