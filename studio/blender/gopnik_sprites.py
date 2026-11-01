@@ -1,18 +1,30 @@
 """Гопник: собранная модель (.blend из gopnik_build.py) → скелет, анимации, toon-рендер сбоку по кадрам.
 
-blender -b -P studio/blender/gopnik_sprites.py -- <модель.blend> <папка кадров> [высота кадра, px]
+blender -b -P studio/blender/gopnik_sprites.py -- <модель.blend> <папка кадров> [высота кадра, px] [--only имя,имя]
 
 Кадры: <папка>/<анимация>_<NN>.png, фон прозрачный, персонаж смотрит вправо. Атлас собирает post/atlas.py.
+Позы и тайминги — gopnik_anims.py (без bpy). Рядом с кадрами пишется meta.json: fps, loop и точки
+каждого кадра — рука к камере — правая (для оружия), дальняя рука, голова (для кепки), в пикселях кадра.
 Кости ставятся по долям роста H — та же разметка, что BODY в gopnik_build.py.
 """
+import json
 import math
 import os
 import sys
 
 import bpy
-from mathutils import Vector
+from bpy_extras.object_utils import world_to_camera_view
+from mathutils import Euler, Matrix, Vector
+
+sys.path.insert(0, os.path.dirname(__file__))
+from gopnik_anims import ANIMS  # noqa: E402
 
 args = sys.argv[sys.argv.index('--') + 1:]
+ONLY = None
+if '--only' in args:
+    i = args.index('--only')
+    ONLY = set(args[i + 1].split(','))
+    del args[i:i + 2]
 SRC, OUT = args[0], args[1]
 FRAME_H = int(args[2]) if len(args) > 2 else 96
 
@@ -48,6 +60,7 @@ for name, h, t, parent in BONES:
     b = arm_data.edit_bones.new(name)
     b.head = Vector(h) * H
     b.tail = Vector(t) * H
+    b.roll = 0
     if parent:
         b.parent = arm_data.edit_bones[parent]
         b.use_connect = (b.head - b.parent.tail).length < 1e-4
@@ -62,7 +75,6 @@ bpy.context.view_layer.objects.active = rig
 bpy.ops.object.parent_set(type='ARMATURE_AUTO')
 # кепка и голова выше шеи — жёстко на кость головы, иначе между ними щель при наклоне
 for o in meshes:
-    vgs = {g.index: g for g in o.vertex_groups}
     head = o.vertex_groups.get('head') or o.vertex_groups.new(name='head')
     rigid = [v.index for v in o.data.vertices if o.name == 'slot_cap' or v.co.z > 0.47 * H]
     for g in o.vertex_groups:
@@ -71,80 +83,80 @@ for o in meshes:
     if rigid:
         head.add(rigid, 1.0, 'REPLACE')
 
-# --- анимации: углы в градусах по локальной оси X кости (кость вниз: + — вперёд), позиция root ---
+# --- позы: углы в градусах; кость вниз (руки, ноги): + — вперёд; кость вверх (корпус, голова): + — наклон вперёд ---
 pb = rig.pose.bones
 for p in pb:
     p.rotation_mode = 'XYZ'
+UP = {'hips', 'spine', 'head'}
+SLOTS = {o.name[5:]: o for o in meshes if o.name.startswith('slot_')}
+
+# лёд для «заморожен»: полупрозрачный голубой брусок вокруг бойца
+bpy.ops.mesh.primitive_cube_add(size=1)
+ice = bpy.context.active_object
+ice.name = 'ice'
+ice.scale = (0.62 * H, 0.62 * H, 1.08 * H)
+ice.location = (0, 0, 0.53 * H)
+bev = ice.modifiers.new('bevel', 'BEVEL')
+bev.width = 0.06 * H
+bev.segments = 2
+im = bpy.data.materials.new('ice')
+im.use_nodes = True
+im.surface_render_method = 'BLENDED'
+nt = im.node_tree
+nt.nodes.clear()
+o_ = nt.nodes.new('ShaderNodeOutputMaterial')
+mx = nt.nodes.new('ShaderNodeMixShader')
+tr = nt.nodes.new('ShaderNodeBsdfTransparent')
+em = nt.nodes.new('ShaderNodeEmission')
+em.inputs['Color'].default_value = (0.55, 0.85, 1.0, 1)
+mx.inputs['Fac'].default_value = 0.38
+nt.links.new(tr.outputs[0], mx.inputs[1])
+nt.links.new(em.outputs[0], mx.inputs[2])
+nt.links.new(mx.outputs[0], o_.inputs[0])
+ice.data.materials.append(im)
+ice.hide_render = True
 
 
-def key(frame, pose, root_z=0.0, lean=0.0):
-    scene.frame_set(frame)
+def side_vec(v):
+    return v if isinstance(v, (tuple, list)) else (v, 0, 0)
+
+
+def apply(pose):
+    """Поза → кости. Ключи: кости (угол или (вперёд, кручение, наружу)), lean, z, fwd (доли H), rot (всё тело,
+    + — вперёд, вокруг точки pivot по высоте), scale (число или (вширь, вверх, вперёд)), only/hide (слоты), ice."""
     for p in pb:
         p.rotation_euler = (0, 0, 0)
-    pb['root'].location = (0, 0, 0)
-    for name, deg in pose.items():
-        pb[name].rotation_euler = (math.radians(deg), 0, 0)
-    pb['root'].location = (0, root_z * H, 0)  # у root локальный Y = вверх
-    pb['spine'].rotation_euler.x += math.radians(lean)
-    for p in pb:
-        p.keyframe_insert('rotation_euler', frame=frame)
-    pb['root'].keyframe_insert('location', frame=frame)
+        p.location = (0, 0, 0)
+        p.scale = (1, 1, 1)
+    for name, v in pose.items():
+        if name not in pb:
+            continue
+        x, y, z = side_vec(v)
+        # «наружу» у левой и правой стороны — в разные стороны
+        sgn = -1 if name.endswith('.L') else 1
+        if name not in UP:
+            x = -x  # у кости вниз (руки, ноги) локальная ось Z смотрит назад
+        pb[name].rotation_euler = (math.radians(x), math.radians(y) * sgn, math.radians(z) * sgn)
+    pb['spine'].rotation_euler.x += math.radians(pose.get('lean', 0))
+    # root: локальные оси X — вбок (в глубину кадра), Y — вверх, Z — вперёд
+    rot = math.radians(pose.get('rot', 0))
+    sc = pose.get('scale', 1)
+    sc = sc if isinstance(sc, (tuple, list)) else (sc, sc, sc)
+    yaw = math.radians(pose.get('yaw', 0))
+    M = Euler((rot, yaw, 0), 'XYZ').to_matrix() @ Matrix.Diagonal(sc)
+    piv = Vector((0, pose.get('pivot', 0.5) * H, 0))
+    loc = piv - M @ piv + Vector((0, pose.get('z', 0) * H, pose.get('fwd', 0) * H))
+    pb['root'].location = loc
+    pb['root'].rotation_euler = (rot, yaw, 0)
+    pb['root'].scale = sc
+    only, hide = pose.get('only'), set(pose.get('hide', ()))
+    for s, o in SLOTS.items():
+        o.hide_render = (only is not None and s not in only) or s in hide
+    ice.hide_render = not pose.get('ice')
+    bpy.context.view_layer.update()
 
 
-def sym(a, b, **extra):
-    """Шаг: левая сторона a, правая b (бёдра, голени, руки)."""
-    t, s, ar = a
-    t2, s2, ar2 = b
-    d = {'thigh.L': t, 'shin.L': s, 'upper_arm.R': ar, 'thigh.R': t2, 'shin.R': s2, 'upper_arm.L': ar2}
-    d.update(extra)
-    return d
-
-
-ANIMS = {}
-
-# стоит: дышит, голова чуть кивает, сутулится
-start = 1
-n = 16
-for i in range(n + 1):
-    ph = math.sin(2 * math.pi * i / n)
-    key(start + i, {'head': 3 + 2 * ph, 'upper_arm.L': 2 * ph, 'upper_arm.R': 2 * ph}, root_z=-0.004 * (1 + ph), lean=6)
-ANIMS['idle'] = (start, start + n - 1)
-
-# идёт: вразвалку, 12 кадров
-start = 30
-n = 12
-for i in range(n + 1):
-    a = 2 * math.pi * i / n
-    sw = math.sin(a)
-    bob = abs(math.cos(a))
-    key(start + i, {
-        'thigh.L': -28 * sw, 'thigh.R': 28 * sw,
-        'shin.L': 35 * max(0, -math.cos(a + 0.6)), 'shin.R': 35 * max(0, math.cos(a + 0.6)),
-        'upper_arm.L': 22 * sw, 'upper_arm.R': -22 * sw,
-        'forearm.L': -15, 'forearm.R': -15, 'head': 4,
-    }, root_z=0.02 * bob - 0.01, lean=8)
-ANIMS['walk'] = (start, start + n - 1)
-
-# прыжок: присел — оттолкнулся — в воздухе — приземлился
-start = 50
-JUMP = [
-    ({'thigh.L': -30, 'thigh.R': -30, 'shin.L': 55, 'shin.R': 55, 'upper_arm.L': 20, 'upper_arm.R': 20}, -0.05, 15),
-    ({'thigh.L': 10, 'thigh.R': 10, 'shin.L': 5, 'shin.R': 5, 'upper_arm.L': -60, 'upper_arm.R': -60}, 0.06, -4),
-    ({'thigh.L': -40, 'thigh.R': -20, 'shin.L': 60, 'shin.R': 40, 'upper_arm.L': -90, 'upper_arm.R': -80}, 0.22, 0),
-    ({'thigh.L': -45, 'thigh.R': -35, 'shin.L': 70, 'shin.R': 60, 'upper_arm.L': -100, 'upper_arm.R': -95}, 0.28, 0),
-    ({'thigh.L': -30, 'thigh.R': -25, 'shin.L': 50, 'shin.R': 45, 'upper_arm.L': -70, 'upper_arm.R': -60}, 0.2, 2),
-    ({'thigh.L': -10, 'thigh.R': -10, 'shin.L': 15, 'shin.R': 15, 'upper_arm.L': -30, 'upper_arm.R': -30}, 0.07, 4),
-    ({'thigh.L': -35, 'thigh.R': -35, 'shin.L': 60, 'shin.R': 60, 'upper_arm.L': 25, 'upper_arm.R': 25}, -0.06, 18),
-    ({'thigh.L': -10, 'thigh.R': -10, 'shin.L': 15, 'shin.R': 15}, -0.01, 8),
-]
-for i, (pose, z, lean) in enumerate(JUMP):
-    key(start + i, pose, root_z=z, lean=lean)
-ANIMS['jump'] = (start, start + len(JUMP) - 1)
-for fc in (rig.animation_data.action.fcurves if hasattr(rig.animation_data.action, 'fcurves') else []):
-    for kp in fc.keyframe_points:
-        kp.interpolation = 'LINEAR'
-
-# --- повернуть персонажа лицом вправо (вперёд −Y → +X) ---
+# --- повернуть персонажа лицом вправо (перёд −Y → +X); к камере — правая сторона (.R) ---
 rig.rotation_euler = (0, 0, math.radians(90))
 
 # --- toon-материалы: две ступени света + Freestyle-контур ---
@@ -195,7 +207,7 @@ ls.linestyle.color = (0.04, 0.04, 0.05)
 ls.linestyle.thickness = 1.0
 scene.view_settings.view_transform = 'Standard'
 
-# камера: орто сбоку, кадр с запасом под прыжок и руки вверх
+# камера: орто сбоку, кадр с запасом под прыжок, сальто и руки вверх
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam'))
 scene.collection.objects.link(cam)
 cam.data.type = 'ORTHO'
@@ -209,11 +221,46 @@ scene.render.resolution_y = FRAME_H
 scene.render.resolution_percentage = 100
 scene.render.filter_size = 0.8
 
+
+def px(world):
+    u = world_to_camera_view(scene, cam, world)
+    return round(u.x * FRAME_H, 1), round((1 - u.y) * FRAME_H, 1)
+
+
+def bone_point(name, t):
+    """Точка на кости (t: 0 — начало, 1 — конец) и её угол в кадре: 0 — вправо, + — против часовой."""
+    b = pb[name]
+    a = rig.matrix_world @ b.head
+    c = rig.matrix_world @ b.tail
+    x0, y0 = px(a)
+    x1, y1 = px(c)
+    x, y = px(a.lerp(c, t))
+    return [x, y, round(math.degrees(math.atan2(y0 - y1, x1 - x0)))]
+
+
 os.makedirs(OUT, exist_ok=True)
-for name, (a, b) in ANIMS.items():
-    for k, f in enumerate(range(a, b + 1)):
-        scene.frame_set(f)
+meta_path = os.path.join(OUT, 'meta.json')
+meta = json.load(open(meta_path, encoding='utf-8')) if os.path.exists(meta_path) and ONLY else {}
+meta.setdefault('frameH', FRAME_H)
+bpy.context.view_layer.update()
+meta['origin'] = list(px(rig.matrix_world @ Vector((0, 0, 0))))  # точка подошв в покое
+meta.setdefault('anims', {})
+for name, a in ANIMS.items():
+    if ONLY and name not in ONLY:
+        continue
+    for f in os.listdir(OUT):
+        if f.startswith(name + '_') and f[len(name) + 1:-4].isdigit():
+            os.remove(os.path.join(OUT, f))
+    pts = []
+    for k, pose in enumerate(a['frames']):
+        apply(pose)
         scene.render.filepath = os.path.join(OUT, f'{name}_{k:02d}.png')
         bpy.ops.render.render(write_still=True)
+        # кисть — середина кости hand: там кулак; голова — у верха лба, под кепку
+        pts.append({'hand': bone_point('hand.R', 0.45), 'hand2': bone_point('hand.L', 0.45),
+                    'head': bone_point('head', 0.62), 'foot': bone_point('foot.R', 0)})
+    meta['anims'][name] = {'fps': a['fps'], 'loop': a['loop'], 'points': pts}
+    print('готово', name, len(a['frames']), flush=True)
+json.dump(meta, open(meta_path, 'w', encoding='utf-8'), ensure_ascii=False)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'rigged.blend'))
-print('кадры:', {k: b - a + 1 for k, (a, b) in ANIMS.items()}, '→', OUT)
+print('кадры:', {k: len(v['frames']) for k, v in ANIMS.items() if not ONLY or k in ONLY}, '→', OUT)
