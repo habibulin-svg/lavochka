@@ -166,3 +166,22 @@ describe('gops/net: возврат в идущую партию', () => {
     expect(last?.t === 'f' && last.ins.some((x) => x[1] === 1)).toBe(true);
   });
 });
+
+describe('gops/net: чат и голос через комнату', () => {
+  it('чат — всем с именем; сигнал голоса — только между теми, кто в голосе', () => {
+    const relay = new GopsRelay(SETUP, 5);
+    const a = peer(1, 'А'), b = peer(2, 'Б');
+    relay.add(a, true);
+    relay.add(b, false);
+    relay.message(a, { t: 'chat', text: '  здорово  ' });
+    expect(b.box.some((m) => m.t === 'chat' && m.name === 'А' && m.text === 'здорово')).toBe(true);
+    relay.message(a, { t: 'voice', on: true });
+    relay.message(a, { t: 'rtc', to: '2', data: { x: 1 } });
+    expect(b.box.some((m) => m.t === 'rtc')).toBe(false); // Б ещё не в голосе
+    relay.message(b, { t: 'voice', on: true });
+    const v = b.box.filter((m) => m.t === 'voice').at(-1);
+    expect(v?.t === 'voice' && v.members.map((x) => x.name)).toEqual(['А', 'Б']);
+    relay.message(a, { t: 'rtc', to: '2', data: { x: 1 } });
+    expect(b.box.some((m) => m.t === 'rtc' && m.from === '1')).toBe(true);
+  });
+});

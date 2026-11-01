@@ -1,6 +1,7 @@
 /* Сеть ГОПС: лок-степ через ретранслятор (docs/gops/CODE.md). Сервер физику не считает — он ведёт часы кадров,
  * ставит на ввод мест номер кадра и рассылает всем; каждый браузер считает мир сам от общего сида.
  * Боты считаются в каждом браузере одинаково (их rng — от сида), по сети от них ничего не идёт. */
+import type { VoiceMember } from '../../core/protocol';
 import type { Input } from '../sim/world';
 
 /** Кто ведёт бригаду: хозяин (за его экраном), сетевой игрок, бот. */
@@ -48,6 +49,10 @@ export type NetClientMsg =
   | { t: 'in'; side: number; held?: Held; once?: Once }
   /** Хеш мира в начале хода номер turn — для сверки. */
   | { t: 'hash'; turn: number; h: number }
+  /** Чат и голос (сигналы WebRTC идут через комнату, звук — напрямую между браузерами). */
+  | { t: 'chat'; text: string }
+  | { t: 'voice'; on: boolean; video?: boolean }
+  | { t: 'rtc'; to: string; data: unknown }
   | { t: 'ping' };
 
 /** Кадр: [номер кадра, бригада, ввод] — только непустые. */
@@ -63,6 +68,9 @@ export type NetServerMsg =
   | { t: 'f'; upto: number; ins: FrameIn[] }
   | { t: 'desync'; turn: number }
   | { t: 'left'; name: string }
+  | { t: 'chat'; name: string; text: string }
+  | { t: 'voice'; members: VoiceMember[] }
+  | { t: 'rtc'; from: string; data: unknown }
   | { t: 'pong' };
 
 export const FRAME_MS = 1000 / 60;

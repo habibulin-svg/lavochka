@@ -12,6 +12,7 @@ import type { NetClient } from './net/client';
 import { Rng } from './sim/rng';
 import { type Input, type Scheme, TICK_HZ, type World, createWorld, step, worldHash } from './sim/world';
 import { Hud } from './ui/hud';
+import { Talk } from './ui/talk';
 
 export interface Side {
   brigade: string;
@@ -58,6 +59,7 @@ export class Game {
   private frameNo = 0;
   private turnNo = 0;
   private sentSide = -1;
+  private talk: Talk | null = null;
 
   constructor(private host: HTMLElement, private setup: GameSetup) {}
 
@@ -94,6 +96,7 @@ export class Game {
     this.hud.quietOver = !!s.mission;
     // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
     this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
+    if (s.net) this.talk = new Talk(this.host, s.net.client);
     this.hud.onPick = (id) => this.controls.selectWeapon(id);
     this.controls.onMenu = () => this.hud.toggleMenu(this.world);
     this.hud.bindPad(this.controls);
@@ -257,6 +260,7 @@ export class Game {
     this.controls.dispose();
     this.audio.dispose();
     this.hud.el.remove();
+    this.talk?.destroy();
     this.view.destroy();
   }
 }

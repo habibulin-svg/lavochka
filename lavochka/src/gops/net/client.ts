@@ -16,6 +16,9 @@ export class NetClient {
   onDesync: (turn: number) => void = () => {};
   onLeft: (name: string) => void = () => {};
   onClose: (why: string) => void = () => {};
+  onChat: (name: string, text: string) => void = () => {};
+  /** Подписчики на сообщения голоса (core/voice.ts ждёт клиента с on/voice/rtc/id). */
+  private listeners = new Set<(m: NetServerMsg) => void>();
   private lastHeld = '';
   private ping = 0;
 
@@ -98,7 +101,33 @@ export class NetClient {
       case 'error':
         this.onClose(m.text);
         break;
+      case 'chat':
+        this.onChat(m.name, m.text);
+        break;
     }
+    if (m.t === 'voice' || m.t === 'rtc') for (const l of this.listeners) l(m);
+  }
+
+  /** Для голосового чата: свой id, подписка, вход/выход, сигнал собеседнику. */
+  get id(): string {
+    return String(this.you);
+  }
+
+  on(h: (m: NetServerMsg) => void): () => void {
+    this.listeners.add(h);
+    return () => this.listeners.delete(h);
+  }
+
+  voice(on: boolean, video = false): void {
+    this.send({ t: 'voice', on, video });
+  }
+
+  rtc(to: string, data: unknown): void {
+    this.send({ t: 'rtc', to, data });
+  }
+
+  chat(text: string): void {
+    this.send({ t: 'chat', text });
   }
 
   /** Ввод кадра по бригадам (и забыть кадр). */

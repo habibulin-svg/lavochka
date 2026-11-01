@@ -28,6 +28,8 @@ export class GopsRelay {
   /** Кто за какой бригадой сидел и кто хозяин — чтобы вернувшийся по имени сел на своё место. */
   private claims = new Map<number, string>();
   private hostName = '';
+  /** Кто в голосовом чате (id участника строкой). */
+  private talking = new Set<number>();
   desynced = false;
 
   constructor(public setup: NetSetup, private seed: number) {}
@@ -62,6 +64,7 @@ export class GopsRelay {
     const i = this.peers.findIndex((x) => x.p === p);
     if (i < 0) return;
     const [gone] = this.peers.splice(i, 1);
+    if (this.talking.delete(gone.p.id)) this.voiceList();
     // его бригады стоят: ввод — пустой
     for (const s of this.sidesOf(gone)) {
       this.held[s] = {};
@@ -135,6 +138,22 @@ export class GopsRelay {
         }
         return;
       }
+      case 'chat': {
+        const text = String(m.text ?? '').trim().slice(0, 200);
+        if (text) this.broadcast({ t: 'chat', name: p.name, text });
+        return;
+      }
+      case 'voice':
+        if (m.on) this.talking.add(p.id);
+        else this.talking.delete(p.id);
+        this.voiceList();
+        return;
+      case 'rtc': {
+        // сигнал — только тому, кто тоже в голосе
+        const to = this.peers.find((x) => String(x.p.id) === String(m.to));
+        if (to && this.talking.has(p.id) && this.talking.has(to.p.id)) to.p.send({ t: 'rtc', from: String(p.id), data: m.data });
+        return;
+      }
       case 'ping':
         p.send({ t: 'pong' });
         return;
@@ -166,6 +185,12 @@ export class GopsRelay {
       this.broadcast({ t: 'f', upto: this.frame, ins: this.pending });
       this.pending = [];
     }
+  }
+
+  /** Голос — без камеры (в ГОПС экран занят боем). */
+  private voiceList(): void {
+    const members = this.peers.filter((x) => this.talking.has(x.p.id)).map((x) => ({ id: String(x.p.id), name: x.p.name, seat: x.side, video: false }));
+    this.broadcast({ t: 'voice', members });
   }
 
   private peerList(): NetPeer[] {

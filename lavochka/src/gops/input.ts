@@ -17,6 +17,8 @@ export class Controls {
   constructor(target: Window = window) {
     const sig = { signal: this.off.signal };
     target.addEventListener('keydown', (e) => {
+      // печатают в чате — это не управление
+      if ((e.target as HTMLElement | null)?.closest?.('input, textarea')) return;
       if (e.repeat && e.code !== 'Space') return;
       const k = e.code;
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'Tab', 'Enter', 'Backspace'].includes(k)) e.preventDefault();
