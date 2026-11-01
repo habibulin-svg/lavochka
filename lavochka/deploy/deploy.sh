@@ -10,17 +10,24 @@ sudo -u lavochka git pull -q --ff-only
 # ассеты крупных игр — в Git LFS (docs/PRODUCTION.md §4): без git-lfs на сервере вместо картинок были бы файлы-указатели
 if command -v git-lfs >/dev/null 2>&1; then sudo -u lavochka -H git lfs pull; else echo "ВНИМАНИЕ: нет git-lfs — ассеты ГОПС не скачаны"; fi
 cd lavochka
+# Сборка — в своей cgroup: живой памяти не больше 1300 МБ, остальное — в файл подкачки на диске (/swapfile, 2 ГБ,
+# deploy/README.md). Без потолка vite build (~1,5 ГБ кучи) выдавливал сервер игр и sshd, и VPS вис намертво (02.11.2026).
+LIMIT="systemd-run --scope -q -p MemoryMax=1300M -p MemorySwapMax=2G nice -n 10"
 build() {
-  sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&
+  $LIMIT sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&
   # Как npm run build, но без tsc: типы проверены перед пушем (npm run check, Stop-хук), а на 2 ГБ памяти tsc падает.
-  # Кучу всё равно побольше — на рост проекта (остальное добирает zram).
-  sudo -u lavochka -H env NODE_OPTIONS=--max-old-space-size=1600 sh -c 'npx vite build && npx tsx tools/prerender.ts && npm run build:server' >/tmp/lavochka-build.log 2>&1
+  $LIMIT sudo -u lavochka -H env NODE_OPTIONS=--max-old-space-size=1800 sh -c 'npx vite build && npx tsx tools/prerender.ts && npm run build:server' >/tmp/lavochka-build.log 2>&1
 }
+# прежний сайт — в запас: vite build стирает dist/, и если не соберётся и откат, сайт остался бы без страниц
+rm -rf /tmp/lavochka-dist-prev && cp -a dist /tmp/lavochka-dist-prev 2>/dev/null || true
 if ! build; then
   tail -30 /tmp/lavochka-build.log
   echo "сборка не удалась — откат на $PREV"
   sudo -u lavochka git reset -q --hard "$PREV"
-  build
+  if ! build && [ -d /tmp/lavochka-dist-prev ]; then
+    echo "и откат не собрался — возвращаю прежний dist/"
+    rm -rf dist && cp -a /tmp/lavochka-dist-prev dist
+  fi
   systemctl restart lavochka
   exit 1
 fi

@@ -26,6 +26,8 @@ ssh lavochka sh /srv/lavochka/app/lavochka/deploy/deploy.sh
 
 Установка таймеров (один раз): `cp lavochka-*.service lavochka-*.timer /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now lavochka-autodeploy.timer lavochka-backup.timer`.
 
+**Память.** `vite build` берёт ~1,5 ГБ, а у VPS 2 ГБ, и рядом работают сервер игр и Postgres. Поэтому сборка идёт в своей cgroup (`MemoryMax=1300M`, остальное — в подкачку) и нужен файл подкачки на диске (один раз): `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw,pri=10 0 0' >> /etc/fstab`. Без этого 02.11.2026 VPS завис намертво (не отвечал даже ssh) и спасла только перезагрузка из панели FirstVDS. Если и так тесно — выносить сборку с сервера (CI собирает `dist/`, сервер только забирает).
+
 ## Яндекс
 
 Метрика — номер счётчика в `src/site/metrika.ts` (`YM_ID`; 0 — выключена), работает только на `https://lavochka-games.ru`. Просмотры шлёт сам сайт на каждый новый адрес (одностраничник).
