@@ -417,6 +417,23 @@ KVASS_FIX = ('s09b-kvass', f'A queue of {GOPNIK} in teal tracksuits at a plain y
              'the red lad cuts the queue, the teal lads turn their heads slowly and stare at him, he freezes with a mug in hand and smiles awkwardly, no text on the barrel')
 
 
+# Вторая попытка всплеска: «crown-shaped» модель поняла буквально (вышла корона) — только брызги, 4 сида.
+SPLASH_FIX = ('fx3-splash', 'a burst of blue water droplets splashing upward from the bottom center of a pure black background, cartoon liquid drops, no objects',
+              'the water droplets fly up in a fountain and fall back down, then vanish, pure black background, static camera')
+
+
+def splash_keys_job() -> dict:
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': 'Apache-2.0 (Z-Image-Turbo)',
+            'defaults': {'width': 704, 'height': 704, 'steps': 8}, 'seeds': [21, 22, 23, 24],
+            'items': [{'name': SPLASH_FIX[0], 'prompt': f'{SPLASH_FIX[1]}. {FX_STYLE}'}]}
+
+
+def splash_videos_job() -> dict:
+    return {'keys': 'G:/temp/studio/out/gops/24d-splash-keys', 'server': 'comfy-big',
+            'defaults': {'width': 704, 'height': 704, 'frames': 49, 'steps': 30}, 'seeds': [1],
+            'clips': [{'name': SPLASH_FIX[0], 'keys': [f'{SPLASH_FIX[0]}-{k}' for k in (21, 22, 23, 24)], 'prompt': SPLASH_FIX[2]}]}
+
+
 def fix_keys_job() -> dict:
     items = [{'name': fid, 'width': 704, 'height': 704, 'prompt': f'{key}. {FX_STYLE}'} for fid, key, _ in FX_FIX]
     items.append({'name': KVASS_FIX[0], 'prompt': f'{KVASS_FIX[1]}. {CHAR_STYLE}'})
@@ -502,6 +519,8 @@ if __name__ == '__main__':
     dump('25-videos.yaml', 'ГОПС, партия 25: ролики (Wan 2.2), заставка, эффекты', videos_job())
     dump('24c-fix-keys.yaml', 'ГОПС, партия 24c: ключи переделки эффектов (взрыв, всплеск, пыль, кирпичи) и ролика «квас»', fix_keys_job())
     dump('25c-fix-videos.yaml', 'ГОПС, партия 25c: ролики переделки эффектов и «кваса»', fix_videos_job())
+    dump('24d-splash-keys.yaml', 'ГОПС, партия 24d: вторая попытка всплеска — ключи', splash_keys_job())
+    dump('25d-splash-videos.yaml', 'ГОПС, партия 25d: вторая попытка всплеска — ролики', splash_videos_job())
     dump('29-actors.yaml', 'ГОПС, партия 29: живые снаряды (собака, голубь, бабка, козы, кукурузник…) — ролик на месте → спрайт', actors_job())
     dump('30-liquids.yaml', 'ГОПС, партия 30: волны смертельной жидкости по темам — петля', liquids_job())
     n = sum(len(theme_job(t, THEMES[t])['items']) for t in THEMES)

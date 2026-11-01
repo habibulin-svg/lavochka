@@ -1,0 +1,18 @@
+# ГОПС, партия 24d: вторая попытка всплеска — ключи
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 704
+  height: 704
+  steps: 8
+seeds:
+- 21
+- 22
+- 23
+- 24
+items:
+- name: fx3-splash
+  prompt: a burst of blue water droplets splashing upward from the bottom center of a pure black background, cartoon liquid drops, no objects. Stylized cartoon game visual effect, toon shading, clean shapes,
+    no text.

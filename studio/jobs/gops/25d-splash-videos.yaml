@@ -1,0 +1,19 @@
+# ГОПС, партия 25d: вторая попытка всплеска — ролики
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/gops/24d-splash-keys
+server: comfy-big
+defaults:
+  width: 704
+  height: 704
+  frames: 49
+  steps: 30
+seeds:
+- 1
+clips:
+- name: fx3-splash
+  keys:
+  - fx3-splash-21
+  - fx3-splash-22
+  - fx3-splash-23
+  - fx3-splash-24
+  prompt: the water droplets fly up in a fountain and fall back down, then vanish, pure black background, static camera
