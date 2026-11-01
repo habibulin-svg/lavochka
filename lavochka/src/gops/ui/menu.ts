@@ -1,6 +1,6 @@
 /* Меню ГОПС (DOM поверх холста): заглавный экран, списки миссий (кампания по главам, обучение, испытания) со звёздами,
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
-import { brandArt, cutsceneUrl } from '../assets';
+import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
 import type { MissionDef, MissionRun } from '../sim/mission';
 import { WEAPON_NAMES } from './hud';
 import './menu.css';
@@ -40,10 +40,66 @@ function saveStars(id: string, n: number): void {
 
 const stars = (n: number, of = 3) => '★'.repeat(n) + '☆'.repeat(of - n);
 
+/** Настройка быстрого боя (запоминается между заходами). */
+export interface QuickConfig {
+  sides: { brigade: string; who: 'human' | 'easy' | 'medium' | 'hard'; count: number }[];
+  /** id уровня или 'random'. */
+  map: string;
+  arsenal: 'full' | 'core';
+  hp: number;
+  turn: number;
+  wind: number;
+  sudden: boolean;
+  crates: boolean;
+}
+
+const QUICK_KEY = 'gops-quick';
+const QUICK_DEFAULT: QuickConfig = {
+  sides: [{ brigade: 'zatulinka', who: 'human', count: 4 }, { brigade: 'rastochka', who: 'medium', count: 4 }],
+  map: 'random', arsenal: 'full', hp: 100, turn: 45, wind: 1, sudden: true, crates: true,
+};
+
+export function loadQuick(): QuickConfig {
+  try {
+    const c = JSON.parse(localStorage.getItem(QUICK_KEY) ?? 'null');
+    if (c && Array.isArray(c.sides) && c.sides.length >= 2) return { ...QUICK_DEFAULT, ...c };
+  } catch {
+    /* без хранилища — по умолчанию */
+  }
+  return structuredClone(QUICK_DEFAULT);
+}
+
+function saveQuick(c: QuickConfig): void {
+  try {
+    localStorage.setItem(QUICK_KEY, JSON.stringify(c));
+  } catch {
+    /* не запомним */
+  }
+}
+
+const WHO: [QuickConfig['sides'][number]['who'], string][] = [['human', 'Человек'], ['easy', 'Бот: лёгкий'], ['medium', 'Бот: средний'], ['hard', 'Бот: сложный']];
+
+/** Выпадающий список: варианты [значение, подпись]. */
+function select<T extends string | number>(label: string, value: T, opts: [T, string][], set: (v: T) => void): HTMLElement {
+  const wrap = h('label', 'gm-field');
+  wrap.append(h('span', '', label));
+  const sel = document.createElement('select');
+  for (const [v, t] of opts) {
+    const o = document.createElement('option');
+    o.value = String(v);
+    o.textContent = t;
+    o.selected = v === value;
+    sel.append(o);
+  }
+  sel.onchange = () => set(opts[sel.selectedIndex][0]);
+  wrap.append(sel);
+  return wrap;
+}
+
 export class Menu {
   readonly el: HTMLElement;
   onPlay: (def: MissionDef) => void = () => {};
-  onQuick: () => void = () => {};
+  onQuick: (c: QuickConfig) => void = () => {};
 
   constructor(host: HTMLElement, private missions: MissionDef[]) {
     this.el = document.createElement('div');
@@ -70,9 +126,60 @@ export class Menu {
       button('Кампания', () => this.list('mission'), 'big'),
       button('Обучение', () => this.list('training')),
       button('Испытания', () => this.list('trial')),
-      button('Быстрый бой', () => this.onQuick()),
+      button('Быстрый бой', () => this.quick()),
     );
     this.screen(brandArt('title-keyart-1'), logo, btns, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
+  }
+
+  /** Быстрый бой: бригады (2–4), кто за них, сколько бойцов, карта и схема. */
+  quick(c: QuickConfig = loadQuick()): void {
+    const head = h('div', 'gm-head');
+    head.append(button('← Назад', () => this.title()), h('h2', '', 'Быстрый бой'));
+    const box = h('div', 'gm-brief gm-quick');
+    const sides = h('div', 'gm-sides');
+    c.sides.forEach((sd, i) => {
+      const row = h('div', 'gm-side');
+      const b = BRIGADES.find((x) => x.id === sd.brigade);
+      row.style.borderLeftColor = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
+      row.append(
+        select('Бригада', sd.brigade, BRIGADES.map((x) => [x.id, x.name] as [string, string]), (v) => {
+          sd.brigade = v;
+          this.quick(c);
+        }),
+        select('Кто', sd.who, WHO, (v) => (sd.who = v)),
+        select('Бойцов', sd.count, [1, 2, 3, 4, 5, 6, 8].map((n) => [n, String(n)] as [number, string]), (v) => (sd.count = v)),
+      );
+      if (c.sides.length > 2) row.append(button('✕', () => {
+        c.sides.splice(i, 1);
+        this.quick(c);
+      }, 'small'));
+      sides.append(row);
+    });
+    if (c.sides.length < 4) {
+      sides.append(button('+ бригада', () => {
+        const free = BRIGADES.find((x) => !c.sides.some((s2) => s2.brigade === x.id))!;
+        c.sides.push({ brigade: free.id, who: 'medium', count: c.sides[0].count });
+        this.quick(c);
+      }, 'small'));
+    }
+    const maps: [string, string][] = [['random', 'Случайная'], ...this.missions.map((m) => [m.id, `${m.title} (${m.id})`] as [string, string])];
+    const scheme = h('div', 'gm-scheme');
+    scheme.append(
+      select('Карта', c.map, maps, (v) => (c.map = v)),
+      select('Арсенал', c.arsenal, [['full', 'Весь'], ['core', 'Ядро (без экзотики)']], (v) => (c.arsenal = v)),
+      select('Здоровье', c.hp, [[50, '50'], [100, '100'], [150, '150'], [200, '200']], (v) => (c.hp = v)),
+      select('Ход, с', c.turn, [[20, '20'], [30, '30'], [45, '45'], [60, '60'], [90, '90']], (v) => (c.turn = v)),
+      select('Ветер', c.wind, [[0, 'нет'], [0.5, 'слабый'], [1, 'сильный']], (v) => (c.wind = v)),
+      select('Внезапная смерть', c.sudden ? 1 : 0, [[1, 'да'], [0, 'нет']], (v) => (c.sudden = v === 1)),
+      select('Ящики', c.crates ? 1 : 0, [[1, 'да'], [0, 'нет']], (v) => (c.crates = v === 1)),
+    );
+    const row = h('div', 'gm-row');
+    row.append(button('В бой!', () => {
+      saveQuick(c);
+      this.onQuick(c);
+    }, 'big'));
+    box.append(sides, scheme, row);
+    this.screen(brandArt('brigade-select-bg-1'), head, box);
   }
 
   /** Открыта ли миссия: обучение и испытания — все, кампания — по порядку. */

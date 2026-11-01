@@ -8,7 +8,7 @@ import { type LevelData, dealSpawns, decodeMask } from './level';
 import { BRIGADE_IDS, GameView } from './render/view';
 import { type MissionDef, type MissionRun, buildMission, missionStars, objectiveText, tickMission, zonePx } from './sim/mission';
 import { ARSENAL_AMMO, WEAPONS } from './sim/weapons';
-import { type Input, TICK_HZ, type World, createWorld, step } from './sim/world';
+import { type Input, type Scheme, TICK_HZ, type World, createWorld, step } from './sim/world';
 import { Hud } from './ui/hud';
 
 export interface Side {
@@ -28,6 +28,8 @@ export interface GameSetup {
   sides: Side[];
   seed: number;
   ammo?: Record<string, number>;
+  /** Схема быстрого боя (время хода, ветер, ящики, внезапная смерть). */
+  scheme?: Scheme;
   /** Миссия: стороны берутся из неё (игрок — бригада sides[0].brigade, человек). */
   mission?: MissionDef;
 }
@@ -68,6 +70,7 @@ export class Game {
         mask: decodeMask(s.level),
         waterY: s.level.water_y,
         seed: s.seed,
+        scheme: s.scheme,
         teams: s.sides.map((side, i) => ({ spawns: spawns[i].slice(0, side.count), hp: side.hp, ammo: { ...(s.ammo ?? ARSENAL_AMMO) } })),
       });
     }

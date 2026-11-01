@@ -29,6 +29,9 @@ export class Hud {
   private menu: HTMLElement;
   private banner: HTMLElement;
   private goal: HTMLElement;
+  private who: HTMLElement;
+  private lastPhase = '';
+  private whoTimer = 0;
   /** Свой итог показывает миссия — общий баннер «держит район» не нужен. */
   quietOver = false;
   onPick: (id: string) => void = () => {};
@@ -45,7 +48,9 @@ export class Hud {
     this.banner = div('hud-banner');
     this.banner.hidden = true;
     this.goal = div('hud-goal');
-    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal);
+    this.who = div('hud-who');
+    this.who.hidden = true;
+    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal, this.who);
     host.appendChild(this.el);
     this.weapon.addEventListener('click', () => this.toggleMenu());
   }
@@ -116,6 +121,16 @@ export class Hud {
 
   update(w: World): void {
     const turn = w.phase === 'turn' || w.phase === 'retreat';
+    // новый ход — на полторы секунды «Ходит Расточка» цветом бригады
+    if (w.phase === 'turn' && this.lastPhase !== 'turn') {
+      const b = BRIGADES.find((x) => x.id === this.brigades[w.team]);
+      this.who.textContent = `Ходит ${b?.name ?? `бригада ${w.team + 1}`}`;
+      this.who.style.color = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
+      this.who.hidden = false;
+      clearTimeout(this.whoTimer);
+      this.whoTimer = window.setTimeout(() => (this.who.hidden = true), 1500);
+    }
+    this.lastPhase = w.phase;
     this.timer.textContent = turn ? String(Math.ceil(w.left / TICK_HZ)) : '';
     this.timer.classList.toggle('retreat', w.phase === 'retreat');
     this.timer.classList.toggle('hurry', w.phase === 'turn' && w.left < 5 * TICK_HZ);

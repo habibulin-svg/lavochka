@@ -8,7 +8,9 @@ import { Game } from './game';
 import { loadLevel } from './level';
 import type { MissionDef } from './sim/mission';
 import './ui/hud.css';
-import { Menu } from './ui/menu';
+import { CORE_AMMO } from './sim/weapons';
+import { DEFAULT_SCHEME } from './sim/world';
+import { Menu, type QuickConfig } from './ui/menu';
 
 const MISSIONS = missionsJson as unknown as MissionDef[];
 const botLevel = (v: string): BotLevel | null => (v === 'easy' || v === 'medium' || v === 'hard' ? v : null);
@@ -57,24 +59,32 @@ async function play(def: MissionDef): Promise<void> {
   (window as unknown as { gops: Game }).gops = g;
 }
 
-/** Быстрый бой: уровень и стороны из адреса (разработка) или случайная карта против среднего бота (меню). */
-async function quick(): Promise<void> {
+/** Быстрый бой: из экрана настройки (cfg) или из адреса (разработка). */
+async function quick(cfg?: QuickConfig): Promise<void> {
   stop();
   menu.hide();
-  const id = q.get('level') ?? MISSIONS.filter((m) => m.mode === 'mission')[Math.floor(Math.random() * 45)].id;
-  const vs = q.get('vs') ?? 'medium';
+  const battles = MISSIONS.filter((m) => m.mode === 'mission');
+  const pick = cfg?.map && cfg.map !== 'random' ? cfg.map : q.get('level');
+  const id = pick ?? battles[Math.floor(Math.random() * battles.length)].id;
   const n = Math.max(1, Math.min(8, Number(q.get('n') ?? 3)));
   const level = await loadLevel(id);
   const m = MISSIONS.find((x) => x.id === id);
+  const sides = cfg
+    ? cfg.sides.map((sd) => ({ brigade: sd.brigade, bot: botLevel(sd.who), count: sd.count, hp: cfg.hp }))
+    : [
+        { brigade: q.get('me') ?? 'zatulinka', bot: botLevel(q.get('p1') ?? 'human'), count: n, hp: 100 },
+        { brigade: q.get('them') ?? 'rastochka', bot: botLevel(q.get('vs') ?? 'medium'), count: n, hp: 100 },
+      ];
   const g = new Game(host, {
     level,
     theme: m?.theme ?? 'yard',
     time: m?.time,
     seed: Number(q.get('seed') ?? Date.now() % 100000),
-    sides: [
-      { brigade: q.get('me') ?? 'zatulinka', bot: botLevel(q.get('p1') ?? 'human'), count: n, hp: 100 },
-      { brigade: q.get('them') ?? 'rastochka', bot: botLevel(vs), count: n, hp: 100 },
-    ],
+    sides,
+    ammo: cfg?.arsenal === 'core' ? CORE_AMMO : undefined,
+    scheme: cfg
+      ? { ...DEFAULT_SCHEME, turnTime: cfg.turn, wind: cfg.wind, riseStep: cfg.sudden ? 24 : 0, crates: cfg.crates ? 60 : 0 }
+      : undefined,
   });
   game = g;
   await g.start();
@@ -91,7 +101,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 menu.onPlay = (def) => void play(def);
-menu.onQuick = () => void quick();
+menu.onQuick = (c) => void quick(c);
 
 async function main(): Promise<void> {
   const mission = q.get('mission');

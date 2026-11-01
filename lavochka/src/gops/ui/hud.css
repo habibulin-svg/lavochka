@@ -58,3 +58,6 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
   background: rgba(0, 0, 0, 0.55); font-weight: 700; text-align: center; }
 .hud-goal:empty { display: none; }
 @media (pointer: coarse) { .hud-goal { top: 52px; font-size: 14px; } }
+.hud-who { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 10px 26px; border-radius: 14px;
+  background: rgba(0, 0, 0, 0.6); font: 400 clamp(22px, 4vw, 40px) 'Russo One', sans-serif; text-shadow: 0 2px 0 #000; pointer-events: none; }
+.hud-who[hidden] { display: none; }
