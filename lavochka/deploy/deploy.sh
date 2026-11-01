@@ -7,6 +7,8 @@ set -e
 cd /srv/lavochka/app
 PREV=$(sudo -u lavochka git rev-parse HEAD)
 sudo -u lavochka git pull -q --ff-only
+# ассеты крупных игр — в Git LFS (docs/PRODUCTION.md §4): без git-lfs на сервере вместо картинок были бы файлы-указатели
+if command -v git-lfs >/dev/null 2>&1; then sudo -u lavochka -H git lfs pull; else echo "ВНИМАНИЕ: нет git-lfs — ассеты ГОПС не скачаны"; fi
 cd lavochka
 build() {
   sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&

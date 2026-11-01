@@ -1,0 +1,8 @@
+# Тяжёлые ассеты крупных игр — в Git LFS (решение пользователя 2026-10-31, docs/PRODUCTION.md §4).
+# Только папки новых игр: нынешний public/ сборника не переносим (пришлось бы переписывать историю).
+lavochka/public/gops/a/**/*.webp filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gops/a/**/*.png filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gops/a/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gops/a/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gops/a/**/*.webm filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gops/a/**/*.glb filter=lfs diff=lfs merge=lfs -text

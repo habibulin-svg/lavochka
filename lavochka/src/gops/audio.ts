@@ -4,17 +4,17 @@
 import { WEAPONS } from './sim/weapons';
 import { type SimEvent, TICK_HZ, type World, wormById } from './sim/world';
 
-const SFX = '/@fs/G:/temp/studio/out/gops/08-sfx/ogg/';
-const ARSENAL = '/@fs/G:/temp/studio/out/gops/26-sfx-arsenal/ogg/';
+const SFX = '/gops/a/08-sfx/ogg/';
+const ARSENAL = '/gops/a/26-sfx-arsenal/ogg/';
 /** Озвучка реплик — Qwen3-TTS (33-voices-qwen; решение пользователя 2026-11-02; прежняя Chatterbox — 32-voices).
  * picks.json в папке — лучший дубль каждой фразы по разборчивости (studio/post/asr_score.py); без него — дубль наугад. */
-const VOICES = '/@fs/G:/temp/studio/out/gops/33-voices-qwen/';
+const VOICES = '/gops/a/33-voices-qwen/';
 let picks: Record<string, string> | null = null;
 void fetch(`${VOICES}picks.json`)
   .then((r) => (r.ok ? r.json() : null))
   .then((p) => (picks = p))
   .catch(() => {});
-const MUSIC = '/@fs/G:/ai/out/studio/gops/music/';
+const MUSIC = '/gops/a/music/';
 
 /** Звук → папка (08 — базовые, остальное — 26-sfx-arsenal). У каждого два варианта: -1, -2. */
 const BASE = new Set(['bottle-smash', 'crate-drop', 'explosion-big', 'explosion-medium', 'explosion-small', 'grenade-bounce', 'jump', 'pigeons', 'punch', 'rocket-launch', 'rope-throw', 'slingshot', 'splash', 'steps-gravel', 'timer-tick', 'wind-loop']);

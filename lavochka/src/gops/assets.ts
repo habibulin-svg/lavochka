@@ -1,7 +1,11 @@
-/* Где лежат картинки ГОПС. Пока ассеты не отобраны и не разложены в public/gops (CONTENT.md §4),
- * в разработке берём их прямо с выхода конвейера через Vite (/@fs/, разрешено в vite.config.ts). */
+/* Где лежат ассеты ГОПС: public/gops/a/ (Git LFS) — отобранное с выхода конвейера, сжатое studio/post/pack_gops.py
+ * (раскладка папок та же, что у G:/temp/studio/out/gops; картинки — WebP). Отбор ниже и в pack_gops.py — одинаковый,
+ * сверяет tests/gops/assets.test.ts. */
 
-const DEV = '/@fs/G:/temp/studio/out/gops/';
+export const BASE = '/gops/a/';
+/** Путь картинки в public/gops/a: PNG с выхода конвейера лежит как WebP. */
+const DEV = BASE;
+const webp = (url: string) => url.replace(/\.png$/, '.webp');
 
 export interface Brigade {
   id: string;
@@ -54,9 +58,9 @@ export function themeArt(theme: string, time = 'night'): ThemeArt {
     market: 0x55603a, depot: 0x2a2620, dacha: 0x4f6b3a, winter: 0x9fc4d8, heating: 0xc8d6d8, school: 0x5a6b48, beach: 0x5f7f86,
   };
   return {
-    ground: `${DEV}21-themes/seamless/${th}-ground-1.png`,
-    far: `${DEV}21-themes/${th}-far-${t}-1.png`,
-    near: `${DEV}21-themes/${th}-near-${t}-1.png`,
+    ground: webp(`${DEV}21-themes/seamless/${th}-ground-1.png`),
+    far: webp(`${DEV}21-themes/${th}-far-${t}-1.png`),
+    near: webp(`${DEV}21-themes/${th}-near-${t}-1.png`),
     liquid: liquid[th] ?? 0x4a5a3a,
     sky: SKY[t] ?? 0x141a2e,
   };
@@ -64,7 +68,7 @@ export function themeArt(theme: string, time = 'night'): ThemeArt {
 
 /** Картинки меню, заглавия, загрузки (20-brand), имя — без расширения: title-keyart-1, menu-bg-1, loading-2-1… */
 export function brandArt(name: string): string {
-  return `${DEV}20-brand/${name}.png`;
+  return webp(`${DEV}20-brand/${name}.png`);
 }
 
 /** Межигровой ролик по имени из missions.json (cutscene_after): первый вариант первого ключа (до отбора). */
@@ -85,9 +89,9 @@ const ICON_PICK: Record<string, number> = {
 const ICON_FIX: Record<string, number> = { auger: 12, mortar: 13, otboinik: 11, plita: 12, ponyatiya: 12, rezinka: 13, tyidi: 12, yagga: 12 };
 
 export function weaponIcon(id: string): string | null {
-  if (ICON_FIX[id]) return `${DEV}22b-arsenal-fix/cut/icon-${id}-${ICON_FIX[id]}.png`;
+  if (ICON_FIX[id]) return webp(`${DEV}22b-arsenal-fix/cut/icon-${id}-${ICON_FIX[id]}.png`);
   const v = ICON_PICK[id];
-  return v ? `${DEV}22-arsenal/cut/icon-${id}-${v}.png` : null;
+  return v ? webp(`${DEV}22-arsenal/cut/icon-${id}-${v}.png`) : null;
 }
 
 /** Картинки в мире (отбор 2026-11-02): снаряды и бегуны — 22-arsenal/cut, ящики и предметы — 23-common/cut.
@@ -101,31 +105,31 @@ export interface WorldArt {
 const A = `${DEV}22-arsenal/cut/`;
 const C = `${DEV}23-common/cut/`;
 export const WORLD_ART: Record<string, WorldArt> = {
-  limonka: { url: `${A}world-limonka-1.png`, h: 10 },
-  carbide: { url: `${A}world-carbide-2.png`, h: 10 },
-  korsar: { url: `${A}world-korsar-1.png`, h: 13, turn: 'up' },
-  petarda: { url: `${A}world-korsar-2.png`, h: 7, turn: 'up' },
-  posylka: { url: `${A}world-posylka-1.png`, h: 12 },
-  samogon: { url: `${A}world-samogon-1.png`, h: 12 },
-  tnt: { url: `${A}world-tnt-1.png`, h: 14 },
-  mine: { url: `${A}world-mine-1.png`, h: 8 },
-  'kite-bomb': { url: `${A}world-mine-2.png`, h: 9 },
-  mukha: { url: `${A}world-homing-2.png`, h: 15, turn: 'up' },
-  homing: { url: `${A}world-homing-1.png`, h: 16, turn: 'up' },
-  kite: { url: `${A}world-kite-1.png`, h: 24 },
-  pigeon: { url: `${A}world-pigeon-1.png`, h: 18 },
-  dog: { url: `${A}world-dog-1.png`, h: 16 },
-  babka: { url: `${A}world-babka-1.png`, h: 22 },
-  kozy: { url: `${A}world-kozy-1.png`, h: 15 },
-  'vanna-drop': { url: `${A}world-vanna-1.png`, h: 18 },
-  brick: { url: `${A}world-kirpichi-2.png`, h: 10 },
-  holodilnik: { url: `${A}icon-holodilnik-1.png`, h: 12 },
-  'crate-weapon': { url: `${C}crate-weapon-1.png`, h: 40 },
-  'crate-health': { url: `${C}crate-health-2.png`, h: 40 },
-  'crate-util': { url: `${C}crate-utility-1.png`, h: 40 },
-  barrel: { url: `${C}fuel-barrel-2.png`, h: 17 },
-  gas: { url: `${C}gas-cylinder-1.png`, h: 20 },
-  plate: { url: `${C}target-2.png`, h: 20 },
+  limonka: { url: `${A}world-limonka-1.webp`, h: 10 },
+  carbide: { url: `${A}world-carbide-2.webp`, h: 10 },
+  korsar: { url: `${A}world-korsar-1.webp`, h: 13, turn: 'up' },
+  petarda: { url: `${A}world-korsar-2.webp`, h: 7, turn: 'up' },
+  posylka: { url: `${A}world-posylka-1.webp`, h: 12 },
+  samogon: { url: `${A}world-samogon-1.webp`, h: 12 },
+  tnt: { url: `${A}world-tnt-1.webp`, h: 14 },
+  mine: { url: `${A}world-mine-1.webp`, h: 8 },
+  'kite-bomb': { url: `${A}world-mine-2.webp`, h: 9 },
+  mukha: { url: `${A}world-homing-2.webp`, h: 15, turn: 'up' },
+  homing: { url: `${A}world-homing-1.webp`, h: 16, turn: 'up' },
+  kite: { url: `${A}world-kite-1.webp`, h: 24 },
+  pigeon: { url: `${A}world-pigeon-1.webp`, h: 18 },
+  dog: { url: `${A}world-dog-1.webp`, h: 16 },
+  babka: { url: `${A}world-babka-1.webp`, h: 22 },
+  kozy: { url: `${A}world-kozy-1.webp`, h: 15 },
+  'vanna-drop': { url: `${A}world-vanna-1.webp`, h: 18 },
+  brick: { url: `${A}world-kirpichi-2.webp`, h: 10 },
+  holodilnik: { url: `${A}icon-holodilnik-1.webp`, h: 12 },
+  'crate-weapon': { url: `${C}crate-weapon-1.webp`, h: 40 },
+  'crate-health': { url: `${C}crate-health-2.webp`, h: 40 },
+  'crate-util': { url: `${C}crate-utility-1.webp`, h: 40 },
+  barrel: { url: `${C}fuel-barrel-2.webp`, h: 17 },
+  gas: { url: `${C}gas-cylinder-1.webp`, h: 20 },
+  plate: { url: `${C}target-2.webp`, h: 20 },
 };
 
 /** Эффекты — полосы кадров из 31-sprites/fx (ролик Wan → прозрачность по яркости), отбор 2026-11-02:

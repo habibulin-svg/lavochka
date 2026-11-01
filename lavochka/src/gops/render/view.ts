@@ -76,7 +76,7 @@ export class GameView {
     await Promise.all(Object.entries({ ...FX_ART, ...ANIM_ART }).map(async ([k, base]) => {
       try {
         const meta = (await fetch(`${base}.json`).then((r) => r.json())) as { frames: number };
-        const t = await Assets.load<Texture>(`${base}.png`);
+        const t = await Assets.load<Texture>(`${base}.webp`);
         const fw = t.width / meta.frames;
         this.fxFrames[k] = Array.from({ length: meta.frames }, (_, i) => new Texture({ source: t.source, frame: new Rectangle(i * fw, 0, fw, t.height) }));
       } catch {

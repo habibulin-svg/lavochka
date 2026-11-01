@@ -2,7 +2,7 @@
  * Браузер даёт звук только после жеста — до первого щелчка/клавиши молчим. M в бою — общий выключатель (gops-mute). */
 import { MUSIC_COUNT, pickTrack } from '../audio';
 
-const MUSIC = '/@fs/G:/ai/out/studio/gops/music/';
+const MUSIC = '/gops/a/music/';
 const VOL = 0.35;
 
 export class MenuMusic {
