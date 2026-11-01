@@ -2,7 +2,7 @@
  * снаряды, эффекты, жидкость, прицел. Состояние берётся из World, эффекты — из событий кадра.
  * Логику не трогает: только читает мир (docs/gops/CODE.md). */
 import { AnimatedSprite, Application, Assets, Container, Graphics, Rectangle, Sprite, type Spritesheet, Text, Texture } from 'pixi.js';
-import { BRIGADES, FX_ART, WORLD_ART, atlasUrl, themeArt } from '../assets';
+import { ANIM_ART, BRIGADES, FX_ART, WORLD_ART, atlasUrl, themeArt } from '../assets';
 import { ONE, cosQ, sinQ, toPx } from '../sim/fx';
 import { WEAPONS } from '../sim/weapons';
 import { type SimEvent, type World, CHARGE_MAX, aimAngle, wormById } from '../sim/world';
@@ -71,7 +71,7 @@ export class GameView {
       ...brigades.map((b) => Assets.load<Spritesheet>({ src: atlasUrl(b), data: { cachePrefix: `${b}/` } })),
     ]);
     this.sheets = sheets as Spritesheet[];
-    await Promise.all(Object.entries(FX_ART).map(async ([k, base]) => {
+    await Promise.all(Object.entries({ ...FX_ART, ...ANIM_ART }).map(async ([k, base]) => {
       try {
         const meta = (await fetch(`${base}.json`).then((r) => r.json())) as { frames: number };
         const t = await Assets.load<Texture>(`${base}.png`);
@@ -131,6 +131,8 @@ export class GameView {
         this.terrain.girder(e.x0, e.y0, e.x1, e.y1, e.r);
       } else if (e.t === 'freeze') {
         this.frost(e.x, e.y, e.r);
+      } else if (e.t === 'fire' && (e.weapon === 'kukuruznik' || e.weapon === 'pochta' || e.weapon === 'napalm') && w.target) {
+        this.flyby(w.target[0], Math.max(30, w.target[1] - 220));
       } else if (e.t === 'teleport') {
         this.boom(e.x, e.y, 10);
         this.cam.follow = true;
@@ -333,10 +335,13 @@ export class GameView {
         if (art.turn && moving) rot = Math.atan2(p.vy, p.vx) + (art.turn === 'up' ? Math.PI / 2 : 0);
         else if (art.turn === 'up' && kind === 'missile') rot = Math.PI / 2;
         else if (kind === 'grenade' || p.weapon === 'holodilnik') rot = p.age * 0.15 * Math.sign(p.vx || 1) * (moving ? 1 : 0);
-        const flip = kind === 'walker' ? p.dir < 0 : kind === 'flyer' && p.weapon !== 'kite' ? Math.cos((p.ang / 4096) * Math.PI * 2) < 0 : false;
+        // бабка нарисована лицом влево, остальные — вправо
+        const flip = kind === 'walker' ? (p.dir < 0) !== (p.weapon === 'babka') : kind === 'flyer' && p.weapon !== 'kite' ? Math.cos((p.ang / 4096) * Math.PI * 2) < 0 : false;
         const bob = kind === 'walker' ? -((p.age >> 2) & 1) : 0;
-        // бегуна ставим ногами на землю: низ картинки — по низу тела
-        if (this.put(p.weapon, x, y + bob - (kind === 'walker' ? art.h / 2 - p.r - 1 : 0), rot, flip)) {
+        // бегуна ставим ногами на землю: низ картинки — по низу тела; есть анимация — кадрами
+        const yy = y + bob - (kind === 'walker' ? art.h / 2 - p.r - 1 : 0);
+        const anim = this.fxFrames[p.weapon];
+        if (anim ? this.putTex(anim[(p.age >> 2) % anim.length], x, yy - bob, art.h, rot, flip) : this.put(p.weapon, x, yy, rot, flip)) {
           if (p.weapon === 'tnt' && (p.fuse >> 3) & 1) g.circle(x, y - 8, 2).fill(0xffd166);
           if (p.weapon === 'mine' && (p.state === 'armed' || (p.state === 'fuse' && (p.fuse >> 2) & 1))) g.circle(x, y - 3, 1.4).fill(0xff2222);
           continue;
@@ -589,6 +594,25 @@ export class GameView {
       },
     });
     return true;
+  }
+
+  /** Кукурузник пролетает над точкой слева направо (1,6 с). */
+  private flyby(x: number, y: number): void {
+    const frames = this.fxFrames.plane;
+    if (!frames || this.fxLayer.destroyed) return;
+    const s = new Sprite(frames[0]);
+    s.anchor.set(0.5);
+    s.scale.set(70 / frames[0].width);
+    this.fxLayer.addChild(s);
+    const life = 1600;
+    this.fx.push({
+      g: s, age: 0, life,
+      update(t) {
+        const k = t / life;
+        s.texture = frames[Math.floor(t / 60) % frames.length];
+        s.position.set(x - 420 + 840 * k, y - Math.sin(k * Math.PI) * 12);
+      },
+    });
   }
 
   private boom(x: number, y: number, r: number): void {

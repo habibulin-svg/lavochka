@@ -121,3 +121,12 @@ export const FX_ART: Record<string, string> = {
   fire: `${DEV}31-sprites/fx/fx-fire-2-v1`,
   smoke: `${DEV}31-sprites/fx/fx-smoke-2-v1`,
 };
+
+/** Анимации бегунов и летунов — полосы кадров 31-sprites/actors (отбор 2026-11-02); кукурузник — пролёт при авиаударе. */
+export const ANIM_ART: Record<string, string> = {
+  dog: `${DEV}31-sprites/actors/world-dog-1-v1`,
+  babka: `${DEV}31-sprites/actors/world-babka-1-v1`,
+  kozy: `${DEV}31-sprites/actors/world-kozy-1-v1`,
+  pigeon: `${DEV}31-sprites/actors/world-pigeon-1-v1`,
+  plane: `${DEV}31-sprites/actors/world-kukuruznik-1-v1`,
+};
