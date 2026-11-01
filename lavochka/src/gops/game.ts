@@ -11,7 +11,7 @@ import { ARSENAL_AMMO, WEAPONS } from './sim/weapons';
 import type { NetClient } from './net/client';
 import { Rng } from './sim/rng';
 import { type Snapshot, applySnapshot, takeSnapshot } from './sim/snapshot';
-import { type Input, type Scheme, TICK_HZ, type World, createWorld, step, worldHash } from './sim/world';
+import { type Input, type Scheme, TICK_HZ, type World, addMine, createWorld, step, worldHash } from './sim/world';
 import { Hud } from './ui/hud';
 import { Talk } from './ui/talk';
 
@@ -32,6 +32,9 @@ export interface GameSetup {
   sides: Side[];
   seed: number;
   ammo?: Record<string, number>;
+  /** Мины и взрывные бочки на карте (Пустырь) — раскладка от сида. */
+  mines?: number;
+  barrels?: number;
   /** Схема быстрого боя (время хода, ветер, ящики, внезапная смерть). */
   scheme?: Scheme;
   /** Сетевая партия: кадры идут от сервера; mine — бригады, которыми правит этот экран. */
@@ -86,6 +89,7 @@ export class Game {
         scheme: s.scheme,
         teams: s.sides.map((side, i) => ({ spawns: spawns[i].slice(0, side.count), hp: side.hp, ammo: { ...(s.ammo ?? ARSENAL_AMMO) } })),
       });
+      scatter(this.world, s.seed, s.mines ?? 0, s.barrels ?? 0);
     }
     // в сети боты считаются в каждом браузере одинаково — их случайность от сида партии
     this.bots = s.sides.map((x, i) => (x.bot ? new Bot(x.bot, s.net ? seeded(s.seed * 31 + i * 977) : undefined) : null));
@@ -305,4 +309,30 @@ export class Game {
 function seeded(seed: number): () => number {
   const r = new Rng(seed >>> 0);
   return () => r.f();
+}
+
+/** Мины и бочки по поверхности суши, подальше от бойцов и друг от друга (от сида — одинаково у всех в сети). */
+function scatter(w: World, seed: number, mines: number, barrels: number): void {
+  const r = new Rng((seed * 7919 + 13) >>> 0);
+  const used = w.worms.map((x) => [Math.floor(x.x / 256), Math.floor(x.y / 256)]);
+  const spot = (): [number, number] | null => {
+    for (let t = 0; t < 60; t++) {
+      const x = 40 + r.below(w.mask.w - 80);
+      const sy = w.mask.surfaceBelow(x, 0);
+      if (sy < 0 || sy > w.waterY - 16) continue;
+      if (used.every(([ux, uy]) => Math.abs(ux - x) + Math.abs(uy - sy) > 70)) {
+        used.push([x, sy]);
+        return [x, sy];
+      }
+    }
+    return null;
+  };
+  for (let i = 0; i < mines; i++) {
+    const p = spot();
+    if (p) addMine(w, p[0], p[1] - 4);
+  }
+  for (let i = 0; i < barrels; i++) {
+    const p = spot();
+    if (p) w.objs.push({ id: 1000 + i, kind: 'barrel', look: 'barrel', x: p[0], y: p[1] - 9, r: 8, hp: 20, alive: true, explosive: true, bx: p[0], swing: 0 });
+  }
 }

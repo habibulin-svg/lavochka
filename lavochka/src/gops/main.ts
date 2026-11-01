@@ -160,6 +160,35 @@ window.addEventListener('keydown', (e) => {
 
 menu.onPlay = (def) => void play(def);
 menu.onQuick = (c) => void quick(c);
+menu.onPustyr = (daily) => void pustyr(daily);
+
+/** Пустырь: карта из pustyr-index.json; условия — от сида (у карты дня — от даты, одинаково у всех). */
+async function pustyr(daily: boolean): Promise<void> {
+  stop();
+  menu.hide();
+  const list: { id: string; theme: string; time: string }[] = await fetch('/gops/levels/pustyr-index.json').then((r) => r.json());
+  const day = new Date().toISOString().slice(0, 10);
+  let seed = daily ? [...day].reduce((h, ch) => (Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0), 0x811c9dc5) : (Date.now() * 2654435761) >>> 0;
+  const rnd = () => ((seed = (Math.imul(seed ^ (seed >>> 15), 0x2c1b3c6d) + 0x6d2b79f5) >>> 0) / 4294967296);
+  const map = list[Math.floor(rnd() * list.length)];
+  const foes = 1 + Math.floor(rnd() * 3);
+  const brigades = ['rastochka', 'zaton', 'pervomayka', 'chemskoy', 'leninsky'];
+  const levels = ['medium', 'hard', 'medium'] as const;
+  const g = new Game(host, {
+    level: await loadLevel(map.id), theme: map.theme, time: map.time, seed: seed % 100000,
+    sides: [
+      { brigade: q.get('me') ?? 'zatulinka', bot: null, count: 4, hp: 100 },
+      ...Array.from({ length: foes }, (_, i) => ({ brigade: brigades[i], bot: levels[i], count: foes === 1 ? 4 : 3, hp: 100 })),
+    ],
+    scheme: { ...DEFAULT_SCHEME, wind: Math.round(rnd() * 10) / 10, riseStep: rnd() < 0.7 ? 24 : 0, crates: 40 + Math.floor(rnd() * 50) },
+    mines: Math.floor(rnd() * 5),
+    barrels: Math.floor(rnd() * 7),
+  });
+  game = g;
+  await g.start();
+  g.hud.flash(daily ? `Карта дня · ${day}` : 'Пустырь', 2500);
+  (window as unknown as { gops: Game }).gops = g;
+}
 menu.onNetCreate = (cfg, name) => {
   const battles = MISSIONS.filter((x) => x.mode === 'mission');
   const setup: NetSetup = {

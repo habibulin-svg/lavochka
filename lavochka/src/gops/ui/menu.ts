@@ -120,6 +120,8 @@ export class Menu {
   /** Сеть: создать комнату с настройкой / войти по коду. */
   onNetCreate: (c: QuickConfig, name: string) => void = () => {};
   onNetJoin: (code: string, name: string) => void = () => {};
+  /** Пустырь: карта дня (true) или случайная. */
+  onPustyr: (daily: boolean) => void = () => {};
 
   constructor(host: HTMLElement, private missions: MissionDef[]) {
     this.el = document.createElement('div');
@@ -148,6 +150,7 @@ export class Menu {
       button('Обучение', () => this.list('training')),
       button('Испытания', () => this.list('trial')),
       button('Быстрый бой', () => this.quick()),
+      button('Пустырь', () => this.pustyr()),
       button('По сети', () => this.network()),
     );
     this.screen(brandArt('title-keyart-1'), logo, btns, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
@@ -204,6 +207,21 @@ export class Menu {
     }, 'big'));
     box.append(sides, scheme, row);
     this.screen(brandArt('brigade-select-bg-1'), head, box);
+  }
+
+  /** Пустырь: процедурные карты и случайные условия; карта дня — одна на всех. */
+  pustyr(): void {
+    const head = h('div', 'gm-head');
+    head.append(button('← Назад', () => this.title()), h('h2', '', 'Пустырь'));
+    const box = h('div', 'gm-brief');
+    box.append(
+      h('p', '', 'Случайная карта, случайный ветер, мины и бочки, от одной до трёх бригад против тебя. Никакого сюжета — просто разборки.'),
+      h('p', 'gm-tip', '«Карта дня» одна на всех сегодня — сравни с пацанами, кто сколько продержался.'),
+    );
+    const row = h('div', 'gm-row');
+    row.append(button('Случайная', () => this.onPustyr(false)), button('Карта дня', () => this.onPustyr(true), 'big'));
+    box.append(row);
+    this.screen(brandArt('menu-bg-3'), head, box);
   }
 
   /** По сети: имя, создать комнату, войти по коду. */

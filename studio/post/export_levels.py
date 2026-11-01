@@ -2,6 +2,7 @@
 
 python studio/post/export_levels.py                     — все 66 уровней из docs/gops/levels/missions.json
 python studio/post/export_levels.py --only m01,m03
+python studio/post/export_levels.py --pustyr 48          — карты «Пустыря»: p001… (все архетипы по кругу, случайные вода/предметы/тема)
 
 Маска — длины серий по всей карте построчно (сверху вниз, слева направо), первая серия — воздух (может быть 0),
 дальше чередуются земля/воздух; каждая длина — uint32 little-endian, всё вместе в base64 (поле "rle").
@@ -36,7 +37,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--missions', default=str(ROOT / 'docs/gops/levels/missions.json'))
     ap.add_argument('--only', default='')
+    ap.add_argument('--pustyr', type=int, default=0)
     a = ap.parse_args()
+    if a.pustyr:
+        return pustyr(a.pustyr)
     ms = json.loads(pathlib.Path(a.missions).read_text(encoding='utf-8'))
     only = set(filter(None, a.only.split(',')))
     OUT.mkdir(parents=True, exist_ok=True)
@@ -55,6 +59,41 @@ def main():
     idx = [{'id': m['id'], 'title': m['title'], 'mode': m['mode'], 'theme': m['theme'], 'time': m.get('time')} for m in ms]
     (OUT / 'missions-index.json').write_text(json.dumps(idx, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'итого {total // 1024} КБ -> {OUT}')
+
+
+# темы и времена суток, что есть в 21-themes (как THEME_TIMES в lavochka/src/gops/assets.ts)
+THEME_TIMES = {
+    'yard': ['grey', 'night'], 'garages': ['day', 'evening', 'night'], 'construction': ['day', 'evening', 'grey'], 'dacha': ['day', 'evening'],
+    'depot': ['evening', 'grey', 'night'], 'dump': ['evening', 'grey'], 'factory': ['evening', 'grey', 'night'], 'heating': ['grey', 'night'],
+    'market': ['day', 'evening'], 'school': ['day', 'evening'], 'beach': ['day', 'evening'], 'winter': ['night', 'winter'],
+}
+
+
+def pustyr(n: int):
+    """Карты «Пустыря»: детерминированно от номера (одна и та же p017 у всех), список — pustyr-index.json."""
+    rng = terrain.Rng(terrain.fnv1a('pustyr'))
+    themes = list(THEME_TIMES)
+    idx, total = [], 0
+    for i in range(n):
+        arch = terrain.ARCHETYPES[i % len(terrain.ARCHETYPES)]
+        recipe = {'archetype': arch, 'seed': 100000 + int(rng.f() * 900000), 'water': round(0.12 + rng.f() * 0.3, 2), 'props': round(0.3 + rng.f() * 0.6, 2)}
+        theme = themes[int(rng.f() * len(themes))]
+        times = THEME_TIMES[theme]
+        time = times[int(rng.f() * len(times))]
+        lid = f'p{i + 1:03d}'
+        mask, meta = terrain.generate(recipe)
+        if len(meta['spawns']) < 8:
+            print(lid, arch, 'мало точек высадки — пропуск')
+            continue
+        meta['id'] = lid
+        meta['rle'] = rle(mask)
+        body = json.dumps(meta, ensure_ascii=False, separators=(',', ':'))
+        (OUT / f'{lid}.json').write_text(body, encoding='utf-8')
+        total += len(body)
+        idx.append({'id': lid, 'archetype': arch, 'theme': theme, 'time': time})
+        print(lid, arch, theme, time, 'точек', len(meta['spawns']), f'{len(body) // 1024} КБ')
+    (OUT / 'pustyr-index.json').write_text(json.dumps(idx, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    print(f'Пустырь: карт {len(idx)}, {total // 1024} КБ -> {OUT}')
 
 
 if __name__ == '__main__':
