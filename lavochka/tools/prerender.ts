@@ -29,7 +29,7 @@ const abs = (p: string) => SITE + p;
 
 // ------------------------------------------------------------------ данные
 
-const ready = (g: CatalogEntry) => !g.shelved && (!!g.load || !!g.of || membersOf(g).length > 0);
+const ready = (g: CatalogEntry) => !g.shelved && (!!g.load || !!g.of || !!g.page || membersOf(g).length > 0);
 const catTitle = (g: CatalogEntry) => CATEGORIES.find((c) => c.id === g.cat)?.title ?? '';
 
 // новости и блог (content/*.md), свежие сначала
@@ -304,7 +304,10 @@ async function gamePages(g: CatalogEntry) {
   const description = t.description;
   const cr = crumbs(trail(g));
   const faq = faqBlock(t.faq);
-  const intro = shot(g, `${name} — ${g.sub}`) + t.intro + akaBlock(g.id);
+  // отдельное приложение (ГОПС): игра — на своей странице, здесь кнопка «Играть» (ранний доступ проверяет main.ts)
+  const play = g.page ? `<p><a class="seo-play" data-game="${esc(g.id)}" href="${esc(g.page)}">Играть в «${esc(name)}»</a></p>
+` : '';
+  const intro = shot(g, `${name} — ${g.sub}`) + play + t.intro + akaBlock(g.id);
   const variantsHtml = def && !g.of ? presetList(g, def) : g.variants?.length ? `<h2>Варианты</h2>\n<ul class="seo-links">${g.variants.map((v) => `<li>${esc(v)}</li>`).join('')}</ul>` : '';
   const rulesHtml = def
     ? `<h2>Как играть</h2>\n<p><b>Цель игры.</b> ${def.rules.goal}</p>\n<p>${def.rules.sections.map((s) => esc(s.title)).join(' · ')}</p>\n<p><a href="${rulesPath(g.of ?? g.id)}">Правила игры «${esc(def.title)}» полностью — с показом на доске</a></p>`

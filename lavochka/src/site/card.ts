@@ -6,7 +6,7 @@ import { gamePath } from './routes';
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Готова ли карточка: своя игра, ярлык на готовую игру или группа, где есть готовое. */
-export const isReady = (g: CatalogEntry): boolean => !!g.load || (!!g.of && !!byId(g.of)?.load) || membersOf(g).some(isReady);
+export const isReady = (g: CatalogEntry): boolean => !!g.load || !!g.page || (!!g.of && !!byId(g.of)?.load) || membersOf(g).some(isReady);
 
 export interface CardOpts {
   /** Есть сохранённая партия (только в браузере). */

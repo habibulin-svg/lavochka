@@ -207,6 +207,16 @@ function openPage(r: Extract<Route, { kind: 'page' }>) {
   showScreen('page');
   const body = el.querySelector('.page-body') as HTMLElement;
   void attachSeo(body, r.path).then((ok) => {
+    // страница отдельного приложения (ГОПС): «Играть» — с проверкой раннего доступа
+    body.querySelectorAll<HTMLAnchorElement>('a.seo-play[data-game]').forEach((a) => {
+      const g = byId(a.dataset.game!);
+      a.onclick = (e) => {
+        if (g && !canPlay(g.id)) {
+          e.preventDefault();
+          earlyNote(g);
+        }
+      };
+    });
     if (ok || !body.isConnected) return;
     const list = r.tab === 'blog' ? ['/blog/', 'Все статьи блога'] : ['/novosti/', 'Все новости'];
     document.title = 'Страница не найдена — Вечером на лавочке';
@@ -236,6 +246,7 @@ function render(r: Route) {
       yard.show();
       return yard.openGroup(g);
     }
+    if (g?.page) return openPage({ kind: 'page', tab: 'doc', path: gamePath(g.id) });
     if (g && (g.load || g.of)) return void openGame(g, r);
   }
   yard.group = null;
