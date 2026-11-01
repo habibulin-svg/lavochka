@@ -573,7 +573,7 @@ export class GameView {
   /** Проиграть полосу кадров один раз: размер — по ширине, в конце гаснет; dy — снос вверх за жизнь (дым). */
   private playFx(key: string, x: number, y: number, width: number, life: number, dy = 0): boolean {
     const frames = this.fxFrames[key];
-    if (!frames) return false;
+    if (!frames || this.fxLayer.destroyed) return false;
     const s = new Sprite(frames[0]);
     s.anchor.set(0.5, 0.6);
     s.scale.set(width / frames[0].width);
