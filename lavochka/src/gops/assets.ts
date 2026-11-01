@@ -71,9 +71,14 @@ export function brandArt(name: string): string {
   return webp(`${DEV}20-brand/${name}.png`);
 }
 
-/** Межигровой ролик по имени из missions.json (cutscene_after): первый вариант первого ключа (до отбора). */
+/** Переделанные ролики (отбор 2026-11-02): «квас» — 25c, вариант 2 (без абракадабры на бочке, лица не плывут). */
+const CUTSCENE_FIX: Record<string, string> = {
+  's09-kvass': '25c-fix-videos/s09b-kvass-2-v1.mp4',
+};
+
+/** Межигровой ролик по имени из missions.json (cutscene_after): переделка, иначе первый вариант первого ключа. */
 export function cutsceneUrl(name: string): string {
-  return `${DEV}25-videos/${name}-1-v1.mp4`;
+  return `${DEV}${CUTSCENE_FIX[name] ?? `25-videos/${name}-1-v1.mp4`}`;
 }
 
 /** Иконки оружия: отобранный вариант из 22-arsenal/cut (отбор 2026-11-02); 0 — пока без картинки (переделка — партия 22b). */
@@ -135,7 +140,8 @@ export const WORLD_ART: Record<string, WorldArt> = {
 /** Эффекты — полосы кадров из 31-sprites/fx (ролик Wan → прозрачность по яркости), отбор 2026-11-02:
  * взрыв (маленький, вариант 2 — для любого радиуса), огонь (вариант 2, без земли), дым (вариант 2).
  * Переделка (партия 25c → 31-sprites/fx2): большой взрыв — вариант 2 (шар → кольцо). Всплеск вышел короной (буквально «crown»),
- * кирпичи — вяло; они и пыль рисуются кодом. */
+ * кирпичи — вяло; они и пыль рисуются кодом. Вторая попытка всплеска (24d/25d → fx3) — тоже мимо: капли стоят, за ними
+ * видеомодель дорисовала водопад; всплеск остаётся кодом. */
 export const FX_ART: Record<string, string> = {
   boom: `${DEV}31-sprites/fx/fx-explosion-s-2-v1`,
   bigboom: `${DEV}31-sprites/fx2/fx2-explosion-l-2-v1`,

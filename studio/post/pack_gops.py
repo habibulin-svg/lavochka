@@ -132,6 +132,9 @@ def main():
     if 'videos' in want:
         for mp4 in sorted((SRC / '25-videos').glob('s[0-9][0-9]-*-1-v1.mp4')) + [SRC / '25-videos/logo-anim-1-v1.mp4']:
             done += video(mp4, f'25-videos/{mp4.name}')
+        # переделки (CUTSCENE_FIX в assets.ts)
+        for rel in ['25c-fix-videos/s09b-kvass-2-v1.mp4']:
+            done += video(SRC / rel, rel)
     if 'music' in want:
         for f in sorted(MUSIC.glob('*.ogg')):
             done += copy(f, DST / 'music' / f.name)
