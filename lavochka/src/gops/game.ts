@@ -99,12 +99,14 @@ export class Game {
     this.audio = new GopsAudio(s.theme, s.sides.map((x, i) => x.voice ?? VOICE_SETS[i % VOICE_SETS.length]));
     this.audio.humans = s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
     if (s.mission) this.audio.setMissionMusic(s.mission.music);
+    const tip = s.mission?.tip;
     BRIGADE_IDS.splice(0, BRIGADE_IDS.length, ...s.sides.map((x) => x.brigade));
     this.view = new GameView(this.host);
     await this.view.init(this.world, s.sides.map((x) => x.brigade), s.theme, s.time);
     if (s.mission?.objective.type === 'king_of_hill') this.view.zone = zonePx(this.world, s.mission.objective.zone);
     this.hud = new Hud(this.host, s.sides.map((x) => x.brigade));
     this.hud.quietOver = !!s.mission;
+    if (tip) window.setTimeout(() => this.hud.hint(`Совет: ${tip}`), 2500);
     // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
     this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
     if (s.net) {

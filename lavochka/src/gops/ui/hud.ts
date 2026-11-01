@@ -126,6 +126,15 @@ export class Hud {
     this.whoTimer = window.setTimeout(() => (this.who.hidden = true), ms);
   }
 
+  /** Подсказка внизу (совет миссии) — гаснет через ms. */
+  hint(text: string, ms = 8000): void {
+    const el = div('hud-hint');
+    el.textContent = text;
+    this.el.append(el);
+    window.setTimeout(() => el.classList.add('gone'), ms);
+    window.setTimeout(() => el.remove(), ms + 1200);
+  }
+
   /** Строка цели миссии сверху. */
   setGoal(text: string): void {
     if (this.goal.textContent !== text) this.goal.textContent = text;

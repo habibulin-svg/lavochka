@@ -79,3 +79,7 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
   .hud-pad .fire { width: 68px; height: 68px; }
   .hud-who { white-space: nowrap; font-size: 22px; }
 }
+.hud-hint { position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%); max-width: min(640px, 86vw); padding: 8px 14px;
+  border-radius: 10px; background: rgba(0, 0, 0, 0.62); font-size: 16px; text-align: center; pointer-events: none; transition: opacity 1s; }
+.hud-hint.gone { opacity: 0; }
+@media (pointer: coarse) { .hud-hint { bottom: auto; top: 96px; font-size: 14px; } }
