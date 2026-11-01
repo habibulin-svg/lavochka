@@ -623,6 +623,11 @@ export class GameView {
   }
 
   private boom(x: number, y: number, r: number): void {
+    // крупный (самогон, тротил, ванна) — свой ролик: шар, потом кольцо
+    if (r >= 60 && this.playFx('bigboom', x, y, r * 2.6, 900)) {
+      window.setTimeout(() => this.playFx('smoke', x, y - r * 0.3, r * 1.8, 1800, r), 300);
+      return;
+    }
     if (this.playFx('boom', x, y, r * 2.8, 700)) {
       // дым — после вспышки
       if (r >= 40) window.setTimeout(() => this.playFx('smoke', x, y - r * 0.3, r * 1.6, 1600, r * 0.8), 250);
