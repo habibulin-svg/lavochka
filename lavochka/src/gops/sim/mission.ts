@@ -40,7 +40,7 @@ export interface MissionDef {
   cutscene_after: string | null;
   difficulty: number;
   player: { count: number; hp: number };
-  enemies: { brigade: string; count: number; hp: number; bot: 'easy' | 'medium' | 'hard'; clustered?: boolean }[];
+  enemies: { brigade: string; count: number; hp: number; bot: 'easy' | 'medium' | 'hard'; clustered?: boolean; boss?: boolean; name?: string }[];
   arsenal: { preset: string; weapons: Record<string, number>; delays: Record<string, number> };
   scheme: {
     turn_time: number; round_time: number; wind: number | 'none'; fall_damage: number; crates: number; barrels: number; mines: number;

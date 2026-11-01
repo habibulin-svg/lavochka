@@ -54,6 +54,8 @@ export class GameView {
   private fx: Fx[] = [];
   /** Камера: центр (px мира) и масштаб; цель — куда плавно едем. */
   cam = { x: 0, y: 0, zoom: 1, tx: 0, ty: 0, follow: true };
+  /** Боссы миссии: бригада → имя (крупнее, имя над головой). */
+  bosses = new Map<number, string>();
   /** Зона «царя горы» (px), если миссия такая. */
   zone: [number, number, number] | null = null;
   private t = 0;
@@ -240,6 +242,8 @@ export class GameView {
       }
       const px = x.x / ONE, py = x.y / ONE;
       s.root.position.set(px, py + WORM_R);
+      const boss = this.bosses.get(x.team);
+      s.root.scale.set(boss ? 1.4 : 1);
       s.body.scale.x = WORM_SCALE * x.facing;
       const active = x.id === w.active && (w.phase === 'turn' || w.phase === 'retreat');
       let anim = 'idle';
@@ -257,7 +261,7 @@ export class GameView {
         const n = s.body.totalFrames;
         s.body.gotoAndStop(Math.round(((w.aim + 960) / 1920) * (n - 1)));
       }
-      s.label.text = `${x.hp}`;
+      s.label.text = boss ? `${boss} · ${x.hp}` : `${x.hp}`;
       s.label.position.set(0, -32);
     }
   }

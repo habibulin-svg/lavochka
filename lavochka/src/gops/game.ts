@@ -104,9 +104,13 @@ export class Game {
     this.view = new GameView(this.host);
     await this.view.init(this.world, s.sides.map((x) => x.brigade), s.theme, s.time);
     if (s.mission?.objective.type === 'king_of_hill') this.view.zone = zonePx(this.world, s.mission.objective.zone);
+    // боссы: бригада врага с boss — крупнее и с именем; при старте — баннер
+    const bosses = (s.mission?.enemies ?? []).flatMap((e, i) => (e.boss ? [[i + 1, e.name ?? 'Босс'] as [number, string]] : []));
+    for (const [t, n] of bosses) this.view.bosses.set(t, n);
     this.hud = new Hud(this.host, s.sides.map((x) => x.brigade));
     this.hud.quietOver = !!s.mission;
     if (tip) window.setTimeout(() => this.hud.hint(`Совет: ${tip}`), 2500);
+    if (bosses.length) window.setTimeout(() => this.hud.flash(`Босс: ${bosses.map(([, n]) => n).join(', ')}`, 3000), 600);
     // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
     this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
     if (s.net) {
