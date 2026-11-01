@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ONE, toPx } from '../../src/gops/sim/fx';
 import { Mask } from '../../src/gops/sim/mask';
 import { ARSENAL_AMMO, WEAPONS } from '../../src/gops/sim/weapons';
-import { DEFAULT_SCHEME, type Input, type World, createWorld, step, wormById, worldHash } from '../../src/gops/sim/world';
+import { DEFAULT_SCHEME, type Input, type World, createWorld, explode, step, wormById, worldHash } from '../../src/gops/sim/world';
 
 /** Плоская карта 1200×500, земля с y=400, жидкость на 480; бригады — бойцы по x. Ящиков и ветра нет. */
 function duel(xs: number[][] = [[300], [700]], hp = 100): World {
@@ -229,3 +229,156 @@ describe('gops/arsenal: оружие и утилиты второй волны',
     expect(play()).toBe(play());
   });
 });
+
+describe('gops/arsenal: третья волна — бегущие, летуны, ранец, заморозка, огонь', () => {
+  it('дворняга бежит к врагу, повторное нажатие — взрыв; ход кончается', () => {
+    const w = duel([[300], [420]]);
+    const e = enemy(w);
+    me(w).facing = 1;
+    take(w, 'dog');
+    shoot(w);
+    expect(w.ctrl).toBe('dog');
+    const dog = w.projs[0];
+    run(w, {}, 80);
+    expect(toPx(dog.x)).toBeGreaterThan(350);
+    step(w, { fire: true });
+    expect(w.projs.length).toBe(0);
+    step(w, {});
+    expect(w.phase).toBe('retreat');
+    expect(e.hp).toBeLessThan(100);
+  });
+
+  it('дворняга перепрыгивает стенку', () => {
+    const w = duel([[300], [700]]);
+    w.mask.fillRect(400, 385, 10, 15);
+    me(w).facing = 1;
+    take(w, 'dog');
+    shoot(w);
+    run(w, {}, 300);
+    expect(toPx(w.projs[0].x)).toBeGreaterThan(410);
+  });
+
+  it('козы стадом: три штуки, взрываются о бойца сами', () => {
+    const w = duel([[300], [460]]);
+    const e = enemy(w);
+    me(w).facing = 1;
+    take(w, 'kozy');
+    shoot(w);
+    expect(w.projs.filter((p) => p.weapon === 'kozy').length).toBe(3);
+    finish(w);
+    expect(e.hp).toBeLessThan(100);
+  });
+
+  it('голубя рулят стрелками, о землю — взрыв', () => {
+    const w = duel();
+    me(w).facing = 1;
+    w.aim = -400;
+    take(w, 'pigeon');
+    shoot(w);
+    const p = w.projs[0];
+    const a0 = p.ang;
+    run(w, { move: 1 }, 5);
+    expect(p.ang).not.toBe(a0);
+    let boom = false;
+    for (let i = 0; i < 600 && !boom; i++) {
+      step(w, { move: 1 });
+      boom = w.events.some((e) => e.t === 'explode');
+    }
+    expect(boom).toBe(true);
+  });
+
+  it('змей сбрасывает бомбу и улетает', () => {
+    const w = duel();
+    me(w).facing = 1;
+    w.aim = -500;
+    take(w, 'kite');
+    shoot(w);
+    run(w, {}, 40);
+    step(w, { fire: true });
+    expect(w.projs.map((p) => p.weapon)).toEqual(['kite-bomb']);
+  });
+
+  it('ледобур ввинчивается в грунт и рвётся глубже точки касания', () => {
+    const w = duel();
+    w.aim = 200;
+    take(w, 'auger');
+    shoot(w, 60);
+    let at = 0;
+    for (let i = 0; i < 600 && !at; i++) {
+      step(w, {});
+      const e = w.events.find((x) => x.t === 'explode');
+      if (e && e.t === 'explode') at = e.y;
+    }
+    expect(at).toBeGreaterThan(415); // пологий курс: ~0,6 px за кадр × 150 кадров под углом
+  });
+
+  it('«За пацанов!»: боец летит, взрыв, сам выбывает', () => {
+    const w = duel([[300], [500]]);
+    const e = enemy(w);
+    const m = me(w);
+    m.facing = 1;
+    w.aim = 0;
+    take(w, 'zapacanov');
+    shoot(w);
+    finish(w);
+    expect(m.state).toBe('dead');
+    expect(e.hp).toBeLessThan(100);
+  });
+
+  it('ранец: ↑ — взлёт, топливо тратится, ход не кончается', () => {
+    const w = duel();
+    const m = me(w);
+    take(w, 'ognetushitel');
+    shoot(w);
+    const fuel = w.jet;
+    const y0 = m.y;
+    run(w, { aim: -1 }, 30);
+    expect(m.y).toBeLessThan(y0 - 20 * ONE);
+    expect(w.jet).toBe(fuel - 30);
+    expect(w.phase).toBe('turn');
+  });
+
+  it('резинка ловит при падении с обрыва', () => {
+    const w = duel();
+    const m = me(w);
+    take(w, 'rezinka');
+    shoot(w);
+    m.y = 100 * ONE;
+    m.state = 'air';
+    run(w, {}, 60);
+    expect(m.state).toBe('rope');
+  });
+
+  it('заморозка: замороженного не ранить, невидимок бот не видит', () => {
+    const w = duel([[300], [360]]);
+    const e = enemy(w);
+    take(w, 'holodilnik');
+    step(w, { fuse: 1 });
+    me(w).facing = 1;
+    w.aim = 200;
+    shoot(w, 8);
+    run(w, {}, 120);
+    expect(e.frozen).toBeGreaterThan(0);
+    explodeNear(w, e);
+    expect(e.hp).toBe(100);
+    const w2 = duel();
+    take(w2, 'nevidimka');
+    shoot(w2);
+    expect(w2.teams[w2.team].hidden).toBe(true);
+  });
+
+  it('кукурузник-химик: огонь горит и жжёт', () => {
+    const w = duel();
+    const e = enemy(w);
+    take(w, 'napalm', [toPx(e.x), toPx(e.y)]);
+    shoot(w);
+    expect(w.projs.filter((p) => p.weapon === 'flame').length).toBe(10);
+    finish(w);
+    expect(e.hp).toBeLessThan(100);
+    expect(w.projs.length).toBe(0);
+  });
+});
+
+function explodeNear(w: World, x: { x: number; y: number }) {
+  explode(w, toPx(x.x) + 10, toPx(x.y), 40, 50);
+}

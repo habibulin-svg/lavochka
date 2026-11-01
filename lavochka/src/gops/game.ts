@@ -38,6 +38,7 @@ export class Game {
   private acc = 0;
   private last = 0;
   private raf = 0;
+  private timer = 0;
 
   constructor(private host: HTMLElement, private setup: GameSetup) {}
 
@@ -63,10 +64,14 @@ export class Game {
     this.bindPointer();
     this.last = performance.now();
     this.raf = requestAnimationFrame(this.frame);
+    // мир шагает и без кадров отрисовки: в фоновой вкладке rAF стоит, таймер (пусть и придушенный до 1 с) догоняет
+    this.timer = window.setInterval(this.pump, 50);
   }
 
-  private frame = (now: number): void => {
-    const dt = Math.min(250, now - this.last);
+  /** Шаги мира за прошедшее время (фиксированные 60 Гц); возвращает прошедшее время, мс. */
+  private pump = (): number => {
+    const now = performance.now();
+    const dt = Math.min(2000, now - this.last);
     this.last = now;
     this.acc += dt;
     const tick = 1000 / TICK_HZ;
@@ -76,6 +81,11 @@ export class Game {
       this.view.onEvents(this.world, this.world.events);
       this.audio.onEvents(this.world, this.world.events);
     }
+    return dt;
+  };
+
+  private frame = (): void => {
+    const dt = this.pump();
     this.view.draw(this.world, dt);
     const c = this.view.cam;
     this.audio.view = { x: c.x, y: c.y, half: this.view.app.screen.width / 2 / c.zoom };
@@ -162,6 +172,7 @@ export class Game {
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
+    clearInterval(this.timer);
     this.view.destroy();
   }
 }

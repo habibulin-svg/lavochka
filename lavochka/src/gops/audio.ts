@@ -20,7 +20,9 @@ const FIRE_SFX: Record<string, string> = {
   kalash: 'rifle-burst', pulemet: 'machinegun', uppercut: 'punch', mawashi: 'kick', kukuruznik: 'plane-fly', pochta: 'plane-fly',
   vanna: 'bathtub-fall', kirpichi: 'bricks-fall', truba: 'pipe-burst', ponyatiya: 'scales', marshrutka: 'minibus', plita: 'slab-place',
   otboinik: 'jackhammer', payalnik: 'blowtorch', zontik: 'umbrella-open', buratino: 'soda-gulp', kedy: 'ui-select', yagga: 'can-hiss',
-  ukazka: 'ui-click', tyidi: 'ui-select',
+  ukazka: 'ui-click', tyidi: 'ui-select', ognetushitel: 'jetpack', rezinka: 'bungee', nevidimka: 'ui-select', dog: 'dog-bark',
+  babka: 'grandma-steps', kozy: 'goats', pigeon: 'pigeon-flap', kite: 'throw', auger: 'drill', zapacanov: 'jump', napalm: 'plane-fly',
+  holodilnik: 'throw',
 };
 
 /** Голосовые наборы (docs/gops/texts/voices.json) — по бригаде партии. */
@@ -174,6 +176,9 @@ export class GopsAudio {
           break;
         case 'buff':
           this.sfx(FIRE_SFX[e.weapon] ?? 'ui-click');
+          break;
+        case 'freeze':
+          this.sfx('freeze', e.x, e.y);
           break;
         case 'fire': {
           const a = wormById(w, e.worm);

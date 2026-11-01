@@ -98,6 +98,8 @@ export class GameView {
         this.terrain.carve(e.x, e.y, e.r, false);
       } else if (e.t === 'girder') {
         this.terrain.girder(e.x0, e.y0, e.x1, e.y1, e.r);
+      } else if (e.t === 'freeze') {
+        this.frost(e.x, e.y, e.r);
       } else if (e.t === 'teleport') {
         this.boom(e.x, e.y, 10);
         this.cam.follow = true;
@@ -200,7 +202,10 @@ export class GameView {
       s.body.scale.x = WORM_SCALE * x.facing;
       const active = x.id === w.active && (w.phase === 'turn' || w.phase === 'retreat');
       let anim = 'idle';
+      s.root.alpha = w.teams[x.team].hidden ? 0.25 : 1;
+      s.body.tint = x.frozen > 0 ? 0x9fd8ff : 0xffffff;
       if (x.state === 'rope') anim = 'rope-hang';
+      else if (x.state === 'fly') anim = 'hurt-fly';
       else if (x.state === 'air') anim = x.bounce > 0 ? 'hurt-fly' : x.vy < 0 ? 'jump' : 'fall';
       else if (x.x !== s.lastX) anim = 'walk';
       else if (active && w.phase === 'turn' && WEAPONS[w.weapon]?.kind !== 'skip') anim = WEAPONS[w.weapon]?.kind === 'hitscan' ? 'aim-pistol' : 'aim';
@@ -246,10 +251,58 @@ export class GameView {
   private drawProjs(w: World): void {
     const g = this.projLayer.clear();
     for (const c of w.crates) this.drawCrate(g, c.x / ONE, c.y / ONE, c.kind, c.falling);
+    const a = wormById(w, w.active);
+    if (a && w.thrust) {
+      // огонь из сопла ранца
+      const fx = a.x / ONE - a.facing * 6, fy = a.y / ONE + 6;
+      g.moveTo(fx - 3, fy).lineTo(fx, fy + 10 + Math.random() * 6).lineTo(fx + 3, fy).fill({ color: 0xffb703, alpha: 0.9 });
+      g.circle(fx, fy + 14, 3 + Math.random() * 2).fill({ color: 0xdddddd, alpha: 0.5 });
+    }
     for (const p of w.projs) {
       const x = p.x / ONE, y = p.y / ONE;
       const kind = WEAPONS[p.weapon].kind;
-      if (p.weapon === 'brick') {
+      if (kind === 'walker') {
+        // заглушки до спрайтов: дворняга, бабка, коза
+        const d = p.dir, bob = (p.age >> 2) & 1;
+        if (p.weapon === 'babka') {
+          g.roundRect(x - 4, y - 9 - bob, 8, 13, 3).fill(0x6a4c93);
+          g.circle(x + d * 1, y - 11 - bob, 3).fill(0xf1d3b3);
+          g.moveTo(x - 4, y - 13 - bob).arc(x + d * 1, y - 12 - bob, 3.4, Math.PI, 0).fill(0xc1121f);
+          g.rect(x + d * 5, y - 4, 4, 5).stroke({ color: 0x2b9348, width: 1 });
+        } else {
+          const col = p.weapon === 'kozy' ? 0xf1f1e6 : 0x8d6e4a;
+          g.ellipse(x, y - 1 - bob, 6, 3.5).fill(col);
+          g.circle(x + d * 6, y - 4 - bob, 2.6).fill(col);
+          g.moveTo(x - 4, y + 1).lineTo(x - 4, y + 4).moveTo(x + 4, y + 1).lineTo(x + 4, y + 4).stroke({ color: 0x3b2a1a, width: 1 });
+          if (p.weapon === 'kozy') g.moveTo(x + d * 6, y - 6).lineTo(x + d * 4, y - 10).stroke({ color: 0x777777, width: 1 });
+          else g.rect(x - 1, y - 7, 3, 4).fill(0xd62828);
+        }
+      } else if (kind === 'flyer') {
+        const ang = (p.ang / 4096) * Math.PI * 2;
+        if (p.weapon === 'kite') {
+          const c = Math.cos(ang), s = Math.sin(ang);
+          g.moveTo(x + c * 8, y + s * 8).lineTo(x - s * 6, y + c * 6).lineTo(x - c * 8, y - s * 8).lineTo(x + s * 6, y - c * 6).fill(0xffd166).stroke({ color: 0xd62828, width: 1 });
+          g.moveTo(x - c * 8, y - s * 8).quadraticCurveTo(x - c * 14, y - s * 14 + 5, x - c * 20, y - s * 20).stroke({ color: 0xd62828, width: 1 });
+          g.rect(x - 2, y + 6, 4, 4).fill(0x222222);
+        } else {
+          const flap = (p.age >> 2) & 1 ? 4 : -4;
+          g.ellipse(x, y, 5, 3).fill(0x8d99ae);
+          g.moveTo(x - 2, y).lineTo(x - 5, y + flap).lineTo(x + 2, y).fill(0x5c677d);
+          g.circle(x + Math.cos(ang) * 5, y + Math.sin(ang) * 5, 2).fill(0x5c677d);
+          g.rect(x - 1, y + 2, 2, 3).fill(0xd62828);
+        }
+      } else if (kind === 'flame') {
+        const r = p.state === 'fuse' ? 2.5 + Math.random() * 2 : 2;
+        g.circle(x, y - r / 2, r).fill({ color: Math.random() < 0.5 ? 0xf77f00 : 0xffb703, alpha: 0.9 });
+      } else if (p.weapon === 'auger') {
+        const a2 = Math.atan2(p.vy, p.vx);
+        const c = Math.cos(a2), s = Math.sin(a2);
+        g.moveTo(x + c * 7, y + s * 7).lineTo(x - s * 3, y + c * 3).lineTo(x + s * 3, y - c * 3).fill(0x9aa5b1);
+      } else if (p.weapon === 'holodilnik') {
+        g.roundRect(x - 3, y - 4, 6, 8, 1).fill(0xe8f1f2).stroke({ color: 0x5fa8d3, width: 1 });
+      } else if (p.weapon === 'kite-bomb') {
+        g.circle(x, y, 3.5).fill(0x222222);
+      } else if (p.weapon === 'brick') {
         g.rect(x - 4, y - 2.5, 8, 5).fill(0xa4442b).stroke({ color: 0x5a2416, width: 0.8 });
       } else if (p.weapon === 'vanna-drop') {
         g.roundRect(x - 9, y - 5, 18, 10, 4).fill(0xf4f1ea).stroke({ color: 0x777777, width: 1 });
@@ -330,7 +383,8 @@ export class GameView {
       const ang = aimAngle(w, a);
       g.moveTo(a.x / ONE, a.y / ONE).lineTo(a.x / ONE + (cosQ(ang) / 16384) * 600, a.y / ONE + (sinQ(ang) / 16384) * 600).stroke({ color: 0xff2020, width: 1, alpha: 0.55 });
     }
-    const noAim = ['skip', 'surrender', 'placed', 'mine', 'strike', 'teleport', 'buff', 'select', 'justice', 'flood'];
+    const noAim = ['skip', 'surrender', 'placed', 'mine', 'strike', 'teleport', 'buff', 'select', 'justice', 'flood', 'walker'];
+    if (w.ctrl) return;
     if (noAim.includes(def.kind) || (def.kind === 'dig' && def.down)) return;
     if (def.kind === 'rope' && a.state === 'rope') return;
     const ang = aimAngle(w, a);
@@ -362,6 +416,21 @@ export class GameView {
   }
 
   // --- эффекты (процедурные заглушки до спрайт-листов из 25-videos)
+  /** Заморозка: голубой круг инея (заглушка до спрайта). */
+  private frost(x: number, y: number, r: number): void {
+    const g = new Graphics();
+    g.circle(x, y, r).fill({ color: 0xbde0fe, alpha: 0.35 }).stroke({ color: 0xffffff, width: 2, alpha: 0.8 });
+    this.fxLayer.addChild(g);
+    let t = 0;
+    const tick = () => {
+      t += 1 / 60;
+      g.alpha = Math.max(0, 1 - t);
+      if (t < 1) requestAnimationFrame(tick);
+      else g.destroy();
+    };
+    requestAnimationFrame(tick);
+  }
+
   private boom(x: number, y: number, r: number): void {
     const g = new Graphics();
     this.fxLayer.addChild(g);

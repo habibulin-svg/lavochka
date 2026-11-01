@@ -15,7 +15,9 @@ export const WEAPON_NAMES: Record<string, string> = {
   mawashi: 'Маваши', kukuruznik: 'Кукурузник с кирпичами', pochta: 'Почта', vanna: 'Чугунная ванна', kirpichi: 'Кирпичный град',
   truba: 'Прорыв трубы', ponyatiya: 'По понятиям', marshrutka: 'Маршрутка', plita: 'Бетонная плита', otboinik: 'Отбойный молоток',
   payalnik: 'Паяльная лампа', zontik: 'Зонтик', buratino: 'Газировка «Буратино»', kedy: 'Кеды', yagga: 'Энергетик',
-  ukazka: 'Лазерная указка', tyidi: 'Ты иди',
+  ukazka: 'Лазерная указка', tyidi: 'Ты иди', ognetushitel: 'Огнетушитель-ранец', rezinka: 'Резинка от трусов', nevidimka: 'Невидимка',
+  dog: 'Дворняга с петардой', babka: 'Бабка с авоськой', kozy: 'Стадо коз', pigeon: 'Голубь с петардой', kite: 'Воздушный змей',
+  auger: 'Ледобур', zapacanov: '«За пацанов!»', napalm: 'Кукурузник-химик', holodilnik: 'Заморозка',
 };
 
 export class Hud {

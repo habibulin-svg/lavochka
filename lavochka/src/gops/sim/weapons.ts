@@ -18,6 +18,10 @@ export type WeaponKind =
   | 'select'    // «ты иди» — другой боец бригады
   | 'justice'   // «по понятиям» — здоровье всех поровну
   | 'flood'     // прорыв трубы — жидкость поднимается
+  | 'walker'    // бежит по земле (дворняга, бабка, козы); огонь ещё раз — взрыв (refire)
+  | 'flyer'     // летит с постоянной скоростью, ←/→ — руль (голубь, змей)
+  | 'kamikaze'  // «за пацанов!»: боец сам летит по прицелу и взрывается
+  | 'flame'     // огонь: падает, горит на месте, жжёт рядом
   | 'skip'      // пропуск хода
   | 'surrender';
 
@@ -62,10 +66,19 @@ export interface WeaponDef {
   drops?: number;
   drop?: string;
   gap?: number;
+  /** walker: прыжок через препятствие (Q8 за кадр), сколько бежит (count), взрыв при касании бойца, по повторному нажатию. */
+  jump?: number;
+  count?: number;
+  contact?: boolean;
+  refire?: boolean;
+  /** Ледобур: сколько кадров ввинчивается в грунт после касания. */
+  drill?: number;
+  /** Заморозка: радиус, px (вместо взрыва). */
+  freeze?: number;
   /** dig: отбойник роет вниз, лампа — по прицелу. */
   down?: boolean;
   /** buff: что даёт. */
-  buff?: 'lowgrav' | 'fast' | 'double' | 'laser' | 'chute';
+  buff?: 'lowgrav' | 'fast' | 'double' | 'laser' | 'chute' | 'jet' | 'bungee' | 'invisible';
   /** Только осколок/падающий снаряд: нет в арсенале и меню. */
   hidden?: boolean;
 }
@@ -115,12 +128,28 @@ export const WEAPONS: Record<string, WeaponDef> = {
   yagga: { kind: 'buff', buff: 'double' },
   ukazka: { kind: 'buff', buff: 'laser' },
   tyidi: { kind: 'select' },
+  ognetushitel: { kind: 'buff', buff: 'jet', fuse: 6 },
+  rezinka: { kind: 'buff', buff: 'bungee' },
+  nevidimka: { kind: 'buff', buff: 'invisible' },
+
+  // третья волна: бегущие, управляемые, ледобур, огонь, заморозка
+  dog: { kind: 'walker', speed: 260, jump: 950, fuse: 8, radius: 60, damage: 60, r: 4, refire: true },
+  babka: { kind: 'walker', speed: 110, jump: 700, fuse: 10, radius: 80, damage: 75, r: 5, refire: true },
+  kozy: { kind: 'walker', speed: 200, jump: 850, fuse: 7, radius: 45, damage: 40, r: 5, count: 3, contact: true },
+  pigeon: { kind: 'flyer', speed: 620, fuse: 8, radius: 50, damage: 50, r: 3, refire: true },
+  kite: { kind: 'flyer', speed: 420, fuse: 10, r: 4, refire: true, drop: 'kite-bomb' },
+  auger: { kind: 'missile', charged: true, speed: 3800, radius: 40, damage: 40, r: 3, drill: 150 },
+  zapacanov: { kind: 'kamikaze', speed: 1500, fuse: 2, radius: 50, damage: 50 },
+  napalm: { kind: 'strike', target: true, drops: 10, drop: 'flame', gap: 7 },
+  holodilnik: { kind: 'grenade', charged: true, speed: 3200, bounce: 120, slide: 200, fuse: 3, r: 4, freeze: 70 },
 
   // осколки и то, что падает с неба
   shard: { kind: 'missile', hidden: true, radius: 16, damage: 12, r: 2 },
   petarda: { kind: 'missile', hidden: true, radius: 30, damage: 26, r: 2 },
   brick: { kind: 'missile', hidden: true, radius: 22, damage: 22, r: 3 },
   'vanna-drop': { kind: 'missile', hidden: true, radius: 60, damage: 70, r: 7 },
+  'kite-bomb': { kind: 'missile', hidden: true, radius: 50, damage: 50, r: 4 },
+  flame: { kind: 'flame', hidden: true, damage: 2, fuse: 4, r: 2 },
 };
 
 
@@ -135,4 +164,5 @@ export const ARSENAL_AMMO: Record<string, number> = {
   homing: 1, mortar: 2, carbide: 2, korsar: 1, posylka: 1, samogon: 1, kalash: 2, pulemet: 1, uppercut: 2, mawashi: 2,
   kukuruznik: 1, pochta: 1, vanna: 1, kirpichi: 0, truba: 0, ponyatiya: 0,
   marshrutka: 2, plita: 3, otboinik: 2, payalnik: 2, zontik: 2, buratino: 1, kedy: 1, yagga: 1, ukazka: 1, tyidi: 1,
+  ognetushitel: 1, rezinka: 1, nevidimka: 1, dog: 1, babka: 1, kozy: 1, pigeon: 1, kite: 1, auger: 2, zapacanov: 1, napalm: 1, holodilnik: 1,
 };

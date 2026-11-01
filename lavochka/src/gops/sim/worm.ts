@@ -16,8 +16,8 @@ export const FLIP: readonly [number, number] = [-160, -1350];
 const SAFE = 1500;
 const FALL_DIV = 40;
 
-/** rope — висит на верёвке (физику ведёт world.ts). */
-export type WormState = 'stand' | 'air' | 'rope' | 'dead';
+/** rope — висит на верёвке, fly — летит «за пацанов!» (физику того и другого ведёт world.ts). */
+export type WormState = 'stand' | 'air' | 'rope' | 'fly' | 'dead';
 
 export interface Worm extends Body {
   id: number;
@@ -29,10 +29,12 @@ export interface Worm extends Body {
   stride: number;
   /** Кадров подряд «в воздухе», но почти без движения и с землёй под ногами (зажат в углу). */
   stuck: number;
+  /** Заморожен: сколько ходов ещё не берёт урон и толчки. */
+  frozen: number;
 }
 
 export function makeWorm(id: number, team: number, xPx: number, yPx: number, hp = 100): Worm {
-  return { id, team, hp, x: xPx * ONE, y: yPx * ONE, vx: 0, vy: 0, r: WORM_R, bounce: 0, slide: 0, facing: 1, state: 'air', stride: 0, stuck: 0 };
+  return { id, team, hp, x: xPx * ONE, y: yPx * ONE, vx: 0, vy: 0, r: WORM_R, bounce: 0, slide: 0, facing: 1, state: 'air', stride: 0, stuck: 0, frozen: 0 };
 }
 
 /** Что случилось с бойцом за кадр. */
@@ -93,7 +95,7 @@ export function jump(w: Worm, back = false): void {
 
 /** Кадр бойца: полёт, приземление, вылет в жидкость (waterY — верх жидкости, px). */
 export function tickWorm(w: Worm, mask: Mask, waterY: number, out: WormEvent[], gravity = GRAVITY): void {
-  if (w.state === 'dead' || w.state === 'rope') return;
+  if (w.state === 'dead' || w.state === 'rope' || w.state === 'fly') return;
   if (toPx(w.y) - w.r > waterY) {
     w.state = 'dead';
     w.hp = 0;

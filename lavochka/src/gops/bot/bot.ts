@@ -16,12 +16,21 @@ interface Plan {
   charge: number;
   fuse: number;
   score: number;
+  /** Точка на карте (авиаудар, наводка), px. */
+  target?: [number, number];
 }
 
 const LEVEL = {
-  easy: { angles: 10, powers: 4, jitterAim: 70, jitterPow: 14, weapons: ['mukha', 'limonka', 'makarov'] },
-  medium: { angles: 20, powers: 7, jitterAim: 30, jitterPow: 6, weapons: ['mukha', 'limonka', 'obrez', 'sling', 'makarov'] },
-  hard: { angles: 40, powers: 12, jitterAim: 6, jitterPow: 2, weapons: ['mukha', 'limonka', 'obrez', 'sling', 'armatura', 'tnt'] },
+  easy: { angles: 10, powers: 4, jitterAim: 70, jitterPow: 14, jitterTarget: 40, weapons: ['mukha', 'limonka', 'makarov', 'carbide'] },
+  medium: {
+    angles: 20, powers: 7, jitterAim: 30, jitterPow: 6, jitterTarget: 18,
+    weapons: ['mukha', 'limonka', 'obrez', 'sling', 'makarov', 'mortar', 'carbide', 'kalash', 'uppercut', 'kukuruznik'],
+  },
+  hard: {
+    angles: 40, powers: 12, jitterAim: 6, jitterPow: 2, jitterTarget: 4,
+    weapons: ['mukha', 'limonka', 'obrez', 'sling', 'armatura', 'tnt', 'mortar', 'korsar', 'samogon', 'kalash', 'pulemet',
+      'uppercut', 'mawashi', 'homing', 'kukuruznik', 'vanna', 'pochta'],
+  },
 };
 
 /** Бот одного хода: план считается на первом кадре хода, дальше выдаёт ввод по кадрам. */
@@ -66,10 +75,12 @@ export class Bot {
     }
     const p = this.plan!;
     if (w.weapon !== p.weapon) return { weapon: p.weapon, fuse: p.fuse };
+    if (p.target && (!w.target || w.target[0] !== p.target[0] || w.target[1] !== p.target[1])) return { target: p.target };
     if (me.facing !== p.facing) return { move: p.facing };
     if (me.state !== 'stand') return {};
     if (Math.abs(w.aim - p.aim) > 6) return { aim: w.aim < p.aim ? 1 : -1, fuse: p.fuse };
     const def = WEAPONS[p.weapon];
+    if (def.auto) return { fire: true };
     if (!def.charged) return { fire: !w.firePrev };
     return { fire: w.charge < p.charge };
   }
@@ -78,7 +89,7 @@ export class Bot {
 function nearestFoe(w: World, me: Worm): Worm | undefined {
   let best: Worm | undefined, bd = Infinity;
   for (const x of w.worms) {
-    if (x.state === 'dead' || x.team === me.team) continue;
+    if (x.state === 'dead' || x.team === me.team || w.teams[x.team].hidden) continue;
     const d = len(toPx(x.x) - toPx(me.x), toPx(x.y) - toPx(me.y));
     if (d < bd) [best, bd] = [x, d];
   }
@@ -92,6 +103,17 @@ function think(w: World, me: Worm, level: BotLevel, rand: () => number): Plan {
   for (const id of L.weapons) {
     if ((ammo[id] ?? 0) === 0) continue;
     const def = WEAPONS[id];
+    if (def.target) {
+      // по точке: над каждым видимым врагом
+      for (const foe of w.worms) {
+        if (foe.state === 'dead' || foe.team === me.team || w.teams[foe.team].hidden) continue;
+        const target: [number, number] = [toPx(foe.x), toPx(foe.y)];
+        const score = def.kind === 'strike' ? strikeScore(w, me, id, target[0]) : blast(w, me, target[0], target[1], def.radius!, def.damage!) * 0.8;
+        const facing = target[0] < toPx(me.x) ? -1 : 1;
+        if (score > best.score) best = { weapon: id, facing, aim: -640, charge: Math.round(CHARGE_MAX * 0.6), fuse: 3, score, target };
+      }
+      continue;
+    }
     const powers = def.charged ? L.powers : 1;
     for (const facing of [1, -1] as const) {
       for (let ai = 0; ai < L.angles; ai++) {
@@ -106,6 +128,7 @@ function think(w: World, me: Worm, level: BotLevel, rand: () => number): Plan {
     }
   }
   // дрожание руки
+  if (best.target) best.target = [best.target[0] + Math.round((rand() * 2 - 1) * L.jitterTarget), best.target[1]];
   best.aim = Math.max(-AIM_MAX, Math.min(AIM_MAX, best.aim + Math.round((rand() * 2 - 1) * L.jitterAim)));
   if (WEAPONS[best.weapon].charged) best.charge = Math.max(4, Math.min(CHARGE_MAX - 1, best.charge + Math.round((rand() * 2 - 1) * L.jitterPow)));
   if (best.score <= 0) best.weapon = (ammo.kuryu ?? 0) !== 0 ? 'kuryu' : best.weapon;
@@ -115,7 +138,8 @@ function think(w: World, me: Worm, level: BotLevel, rand: () => number): Plan {
 /** Ожидаемая польза выстрела: урон врагам минус урон своим (свой боец — дороже). */
 function evaluate(w: World, me: Worm, id: string, facing: 1 | -1, aim: number, charge: number, fuse: number): number {
   const def = WEAPONS[id];
-  const ang = facing === 1 ? (aim + ANG_FULL) % ANG_FULL : (ANG_FULL / 2 - aim + ANG_FULL) % ANG_FULL;
+  const tilt = def.meleeAim ?? aim;
+  const ang = facing === 1 ? (tilt + ANG_FULL) % ANG_FULL : (ANG_FULL / 2 - tilt + ANG_FULL) % ANG_FULL;
   const mx = toPx(me.x), my = toPx(me.y);
   if (def.kind === 'hitscan' || def.kind === 'melee') {
     const range = def.range!;
@@ -130,7 +154,8 @@ function evaluate(w: World, me: Worm, id: string, facing: 1 | -1, aim: number, c
       if (along < 0 || along > lim + WORM_R) continue;
       const off = Math.abs(dx * Math.sin((ang / ANG_FULL) * 2 * Math.PI) - dy * Math.cos((ang / ANG_FULL) * 2 * Math.PI));
       if (off > WORM_R) continue;
-      const dmg = (def.damage ?? 0) * (def.kind === 'hitscan' ? def.shots ?? 1 : 1) + (def.push ?? 0) / 200;
+      // очередь разлетается — в цель идёт примерно половина
+      const dmg = (def.damage ?? 0) * (def.kind === 'hitscan' ? (def.shots ?? 1) * (def.auto ? 0.5 : 1) : 1) + (def.push ?? 0) / 200;
       s += value(w, me, x, dmg);
       break; // пуля останавливается на первом
     }
@@ -165,6 +190,22 @@ function evaluate(w: World, me: Worm, id: string, facing: 1 | -1, aim: number, c
   return def.kind === 'grenade' ? blast(w, me, toPx(b.x), toPx(b.y), def.radius!, def.damage!) : 0;
 }
 
+/** Польза удара с неба над x: каждый груз падает до первой земли сверху. */
+function strikeScore(w: World, me: Worm, id: string, x: number): number {
+  const def = WEAPONS[id];
+  const drop = WEAPONS[def.drop!];
+  const n = def.drops!;
+  let s = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = Math.trunc(((i * 2 - (n - 1)) * def.gap!) / 2);
+    const sy = w.mask.surfaceBelow(x + dx, 0);
+    if (sy < 0) continue;
+    // мина с почты лежит и ждёт — половина цены
+    s += drop.kind === 'mine' ? blast(w, me, x + dx, sy, drop.radius!, drop.damage!) * 0.5 : blast(w, me, x + dx, sy, drop.radius!, drop.damage!);
+  }
+  return s;
+}
+
 function blast(w: World, me: Worm, cx: number, cy: number, r: number, damage: number): number {
   const reach = r + WORM_R;
   let s = 0;
@@ -181,6 +222,7 @@ function blast(w: World, me: Worm, cx: number, cy: number, r: number, damage: nu
 }
 
 function value(w: World, me: Worm, x: Worm, dmg: number): number {
+  if (x.frozen > 0 || (x.team !== me.team && w.teams[x.team].hidden)) return 0;
   const kill = dmg >= x.hp ? 30 : 0;
   return x.team === me.team ? -(dmg + kill) * 1.6 : dmg + kill;
 }
