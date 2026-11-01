@@ -2,7 +2,7 @@
  * снаряды, эффекты, жидкость, прицел. Состояние берётся из World, эффекты — из событий кадра.
  * Логику не трогает: только читает мир (docs/gops/CODE.md). */
 import { AnimatedSprite, Application, Assets, Container, Graphics, Rectangle, Sprite, type Spritesheet, Text, Texture } from 'pixi.js';
-import { BRIGADES, WORLD_ART, atlasUrl, themeArt } from '../assets';
+import { BRIGADES, FX_ART, WORLD_ART, atlasUrl, themeArt } from '../assets';
 import { ONE, cosQ, sinQ, toPx } from '../sim/fx';
 import { WEAPONS } from '../sim/weapons';
 import { type SimEvent, type World, CHARGE_MAX, aimAngle, wormById } from '../sim/world';
@@ -22,7 +22,7 @@ interface WormSprite {
 }
 
 interface Fx {
-  g: Graphics;
+  g: Container;
   age: number;
   life: number;
   update(t: number): void;
@@ -43,6 +43,8 @@ export class GameView {
   /** Ящик на земле — нижняя часть той же картинки, без парашюта/шариков. */
   private artLanded: Record<string, Texture> = {};
   private pool: Sprite[] = [];
+  /** Кадры эффектов (FX_ART): взрыв, огонь, дым; нет — рисуем кодом. */
+  private fxFrames: Record<string, Texture[]> = {};
   private used = 0;
   private fxLayer = new Container();
   private water = new Graphics();
@@ -69,6 +71,16 @@ export class GameView {
       ...brigades.map((b) => Assets.load<Spritesheet>({ src: atlasUrl(b), data: { cachePrefix: `${b}/` } })),
     ]);
     this.sheets = sheets as Spritesheet[];
+    await Promise.all(Object.entries(FX_ART).map(async ([k, base]) => {
+      try {
+        const meta = (await fetch(`${base}.json`).then((r) => r.json())) as { frames: number };
+        const t = await Assets.load<Texture>(`${base}.png`);
+        const fw = t.width / meta.frames;
+        this.fxFrames[k] = Array.from({ length: meta.frames }, (_, i) => new Texture({ source: t.source, frame: new Rectangle(i * fw, 0, fw, t.height) }));
+      } catch {
+        /* нет эффекта — рисуем кодом */
+      }
+    }));
     // картинки в мире: нет файла — останется рисованная заглушка
     await Promise.all(Object.entries(WORLD_ART).map(async ([k, a]) => {
       const t = await Assets.load<Texture>(a.url).catch(() => null);
@@ -272,6 +284,11 @@ export class GameView {
   private put(key: string, x: number, y: number, rot = 0, flip = false, landed = false): boolean {
     const tex = landed ? this.artLanded[key] : this.art[key];
     if (!tex) return false;
+    return this.putTex(tex, x, y, WORLD_ART[key].h * (landed ? 0.44 : 1), rot, flip);
+  }
+
+  /** Спрайт из пула: текстура tex высотой h по центру (x, y). */
+  private putTex(tex: Texture, x: number, y: number, h: number, rot = 0, flip = false): boolean {
     let s = this.pool[this.used];
     if (!s) {
       s = new Sprite();
@@ -282,7 +299,6 @@ export class GameView {
     this.used++;
     s.visible = true;
     s.texture = tex;
-    const h = WORLD_ART[key].h * (landed ? 0.44 : 1);
     const k = h / tex.height;
     s.scale.set(flip ? -k : k, k);
     s.rotation = rot;
@@ -356,6 +372,8 @@ export class GameView {
           g.circle(x + Math.cos(ang) * 5, y + Math.sin(ang) * 5, 2).fill(0x5c677d);
           g.rect(x - 1, y + 2, 2, 3).fill(0xd62828);
         }
+      } else if (kind === 'flame' && this.fxFrames.fire && this.putTex(this.fxFrames.fire[(p.age >> 2) % this.fxFrames.fire.length], x, y - 5, p.state === 'fuse' ? 14 : 9)) {
+        // огонь — кадрами ролика
       } else if (kind === 'flame') {
         const r = p.state === 'fuse' ? 2.5 + Math.random() * 2 : 2;
         g.circle(x, y - r / 2, r).fill({ color: Math.random() < 0.5 ? 0xf77f00 : 0xffb703, alpha: 0.9 });
@@ -552,7 +570,33 @@ export class GameView {
     requestAnimationFrame(tick);
   }
 
+  /** Проиграть полосу кадров один раз: размер — по ширине, в конце гаснет; dy — снос вверх за жизнь (дым). */
+  private playFx(key: string, x: number, y: number, width: number, life: number, dy = 0): boolean {
+    const frames = this.fxFrames[key];
+    if (!frames) return false;
+    const s = new Sprite(frames[0]);
+    s.anchor.set(0.5, 0.6);
+    s.scale.set(width / frames[0].width);
+    s.position.set(x, y);
+    this.fxLayer.addChild(s);
+    this.fx.push({
+      g: s, age: 0, life,
+      update(t) {
+        const k = t / life;
+        s.texture = frames[Math.min(frames.length - 1, Math.floor(k * frames.length))];
+        s.alpha = k < 0.65 ? 1 : Math.max(0, 1 - (k - 0.65) / 0.35);
+        s.y = y - dy * k;
+      },
+    });
+    return true;
+  }
+
   private boom(x: number, y: number, r: number): void {
+    if (this.playFx('boom', x, y, r * 2.8, 700)) {
+      // дым — после вспышки
+      if (r >= 40) window.setTimeout(() => this.playFx('smoke', x, y - r * 0.3, r * 1.6, 1600, r * 0.8), 250);
+      return;
+    }
     const g = new Graphics();
     this.fxLayer.addChild(g);
     this.fx.push({

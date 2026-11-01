@@ -112,3 +112,12 @@ export const WORLD_ART: Record<string, WorldArt> = {
   gas: { url: `${C}gas-cylinder-1.png`, h: 20 },
   plate: { url: `${C}target-2.png`, h: 20 },
 };
+
+/** Эффекты — полосы кадров из 31-sprites/fx (ролик Wan → прозрачность по яркости), отбор 2026-11-02:
+ * взрыв (маленький, вариант 2 — для любого радиуса), огонь (вариант 2, без земли), дым (вариант 2).
+ * Большой взрыв, всплеск, пыль, кирпичи не годятся (в кадре полоса воды/земли) — рисуются кодом, на переделку. */
+export const FX_ART: Record<string, string> = {
+  boom: `${DEV}31-sprites/fx/fx-explosion-s-2-v1`,
+  fire: `${DEV}31-sprites/fx/fx-fire-2-v1`,
+  smoke: `${DEV}31-sprites/fx/fx-smoke-2-v1`,
+};
