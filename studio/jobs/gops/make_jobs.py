@@ -299,6 +299,28 @@ def common_job() -> dict:
             'defaults': {'width': 1024, 'height': 1024, 'steps': 8}, 'seeds': [1, 2, 3], 'items': items}
 
 
+# ---------------------------------------------------------------- предметы миссий (вместо заглушек в render/view.ts)
+MISSION_PROPS = [
+    ('prop-can', 'dented tin can of condensed milk with a plain blue and white label'),
+    ('prop-keg', 'small wooden beer keg with dark metal hoops, standing upright'),
+    ('prop-boiler', 'old cast-iron Soviet water boiler (titan) on short legs with a round pressure gauge and a pipe on top'),
+    ('prop-transformer', 'small grey Soviet electrical transformer box on short legs with ceramic insulators on top and a yellow lightning bolt pictogram'),
+    ('prop-beehive', 'wooden village beehive box painted light blue with a little pitched roof, a few cartoon bees around'),
+    ('prop-locomotive', 'small Soviet shunting diesel locomotive painted red and cream, side view, short and chunky'),
+    ('prop-kiosk', 'small 1990s Russian street kiosk with a window full of colorful snacks, bottles and chewing gum, metal shutters raised'),
+]
+HOSTAGE = ('prop-hostage', 'Single character isolated on plain light grey background, side view, whole figure in frame: tiny chibi Russian lad '
+           'with ginger hair and a flat herringbone cap, red tracksuit, sitting on a pink inflatable air mattress and waving for help. '
+           'Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no watermark.')
+
+
+def mission_props_job() -> dict:
+    items = [{'name': n, 'prompt': ISO + p + '. ' + OBJ} for n, p in MISSION_PROPS]
+    items.append({'name': HOSTAGE[0], 'prompt': HOSTAGE[1]})
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': 'Apache-2.0 (Z-Image-Turbo)',
+            'defaults': {'width': 1024, 'height': 1024, 'steps': 8}, 'seeds': [1, 2, 3], 'items': items}
+
+
 # ---------------------------------------------------------------- логотип, заставка, меню
 LOGO_STYLE = 'clean vector-like game studio logo, centered on a plain background, high contrast, crisp edges, no other text'
 LOGO = [
@@ -515,6 +537,7 @@ if __name__ == '__main__':
     dump('22-arsenal.yaml', 'ГОПС, партия 22: иконки оружия и предметы в мире (снаряды, оружие в руке)', arsenal_job())
     dump('22b-arsenal-fix.yaml', 'ГОПС, партия 22b: переделка неудачных иконок оружия (после отбора)', arsenal_fix_job())
     dump('23-common.yaml', 'ГОПС, партия 23: ящики, бочки, кепки-надгробия, интерфейс', common_job())
+    dump('23e-mission-props.yaml', 'ГОПС, партия 23e: предметы миссий — банка, кега, котёл, трансформатор, улей, тепловоз, ларёк, Рыжий на матрасе', mission_props_job())
     dump('24-cutscene-keys.yaml', 'ГОПС, партия 24: ключевые кадры роликов, заставки и эффектов', cutscene_keys_job())
     dump('25-videos.yaml', 'ГОПС, партия 25: ролики (Wan 2.2), заставка, эффекты', videos_job())
     dump('24c-fix-keys.yaml', 'ГОПС, партия 24c: ключи переделки эффектов (взрыв, всплеск, пыль, кирпичи) и ролика «квас»', fix_keys_job())

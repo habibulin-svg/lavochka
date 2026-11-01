@@ -1,0 +1,39 @@
+# ГОПС, партия 23e: предметы миссий — банка, кега, котёл, трансформатор, улей, тепловоз, ларёк, Рыжий на матрасе
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 1
+- 2
+- 3
+items:
+- name: prop-can
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: dented tin can of condensed milk with a plain blue and white label. Stylized cartoon 3D game art, soft
+    toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-keg
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small wooden beer keg with dark metal hoops, standing upright. Stylized cartoon 3D game art, soft toon
+    shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-boiler
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old cast-iron Soviet water boiler (titan) on short legs with a round pressure gauge and a pipe on top.
+    Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-transformer
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small grey Soviet electrical transformer box on short legs with ceramic insulators on top and a yellow
+    lightning bolt pictogram. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos,
+    no watermark.'
+- name: prop-beehive
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden village beehive box painted light blue with a little pitched roof, a few cartoon bees around. Stylized
+    cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-locomotive
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small Soviet shunting diesel locomotive painted red and cream, side view, short and chunky. Stylized cartoon
+    3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-kiosk
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small 1990s Russian street kiosk with a window full of colorful snacks, bottles and chewing gum, metal
+    shutters raised. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: prop-hostage
+  prompt: 'Single character isolated on plain light grey background, side view, whole figure in frame: tiny chibi Russian lad with ginger hair and a flat herringbone cap, red tracksuit, sitting on a pink
+    inflatable air mattress and waving for help. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no watermark.'

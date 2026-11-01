@@ -2,7 +2,7 @@
  * снаряды, эффекты, жидкость, прицел. Состояние берётся из World, эффекты — из событий кадра.
  * Логику не трогает: только читает мир (docs/gops/CODE.md). */
 import { AnimatedSprite, Application, Assets, Container, Graphics, Rectangle, Sprite, type Spritesheet, Text, Texture } from 'pixi.js';
-import { ANIM_ART, BRIGADES, FX_ART, WORLD_ART, atlasUrl, themeArt } from '../assets';
+import { ANIM_ART, BRIGADES, FX_ART, OBJ_ART, WORLD_ART, atlasUrl, themeArt } from '../assets';
 import { ONE, cosQ, sinQ, toPx } from '../sim/fx';
 import { WEAPONS } from '../sim/weapons';
 import { type SimEvent, type World, CHARGE_MAX, aimAngle, wormById } from '../sim/world';
@@ -452,6 +452,11 @@ export class GameView {
       if (o.kind === 'barrel' && this.put('barrel', x, y)) continue;
       if (o.kind === 'target' && o.look === 'plate' && this.put('plate', x, y + 4)) continue;
       if (o.kind === 'target' && (o.look === 'barrel' || o.look === 'gas') && this.put(o.look, x, y)) continue;
+      const art = OBJ_ART[o.kind === 'hostage' ? 'hostage' : o.look];
+      const drawn = !!art && this.put(art, x, y + o.r - WORLD_ART[art].h / 2);
+      if (drawn && o.kind !== 'ward' && o.kind !== 'hostage') continue;
+      // у подопечного и своего в беде поверх картинки — полоска здоровья и маркер
+      const top = drawn ? y + o.r - WORLD_ART[art].h : y - 14;
       if (o.kind === 'target') {
         if (o.look === 'can' || o.look === 'keg') {
           g.roundRect(x - 4, y - 6, 8, 12, 1.5).fill(o.look === 'can' ? 0xb0b6bb : 0x8d6e4a).stroke({ color: 0x333333, width: 0.8 });
@@ -468,19 +473,22 @@ export class GameView {
         g.rect(x - 6, y - 3, 12, 1.5).rect(x - 6, y + 2, 12, 1.5).fill(0x7a0c0c);
       } else if (o.kind === 'ward') {
         const lookCol: Record<string, number> = { babka: 0x6a4c93, beehive: 0xe9c46a, locomotive: 0x2a9d8f };
-        if (o.look === 'locomotive') g.roundRect(x - 22, y - 12, 44, 24, 4).fill(lookCol.locomotive).stroke({ color: 0x111111, width: 1.2 });
+        if (drawn) {
+          // картинка уже стоит
+        } else if (o.look === 'locomotive') g.roundRect(x - 22, y - 12, 44, 24, 4).fill(lookCol.locomotive).stroke({ color: 0x111111, width: 1.2 });
         else if (o.look === 'beehive') g.roundRect(x - 10, y - 14, 20, 28, 6).fill(lookCol.beehive).stroke({ color: 0x6b4f2a, width: 1 });
         else {
           g.roundRect(x - 6, y - 10, 12, 22, 4).fill(lookCol.babka);
           g.circle(x, y - 13, 5).fill(0xf1d3b3);
           g.moveTo(x - 6, y - 15).arc(x, y - 14, 6, Math.PI, 0).fill(0xc1121f);
         }
-        const k = Math.max(0, o.hp) / (o.look === 'locomotive' ? 200 : o.look === 'beehive' ? 150 : 120);
-        g.rect(x - 14, y - 26, 28, 4).fill(0x000000).rect(x - 14, y - 26, 28 * Math.min(1, k), 4).fill(0x52b788);
+        const k = Math.max(0, o.hp) / ({ locomotive: 200, beehive: 150, kiosk: 250 }[o.look] ?? 120);
+        g.rect(x - 14, top - 8, 28, 4).fill(0x000000).rect(x - 14, top - 8, 28 * Math.min(1, k), 4).fill(0x52b788);
       } else if (o.kind === 'hostage') {
-        g.circle(x, y, 9).fill(0xcfd8dc).stroke({ color: 0x333333, width: 1 });
-        g.moveTo(x, y - 26).lineTo(x, y - 17).stroke({ color: 0xffd166, width: 3 });
-        g.circle(x, y - 13, 1.6).fill(0xffd166);
+        if (!drawn) g.circle(x, y, 9).fill(0xcfd8dc).stroke({ color: 0x333333, width: 1 });
+        const my = drawn ? top - 4 : y - 13;
+        g.moveTo(x, my - 13).lineTo(x, my - 4).stroke({ color: 0xffd166, width: 3 });
+        g.circle(x, my, 1.6).fill(0xffd166);
       }
     }
   }

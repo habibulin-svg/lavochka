@@ -38,6 +38,9 @@ WORLD = [
     '22-arsenal/cut/world-vanna-1', '22-arsenal/cut/world-kirpichi-2', '22-arsenal/cut/icon-holodilnik-1',
     '23-common/cut/crate-weapon-1', '23-common/cut/crate-health-2', '23-common/cut/crate-utility-1', '23-common/cut/fuel-barrel-2',
     '23-common/cut/gas-cylinder-1', '23-common/cut/target-2',
+    '23e-mission-props/cut/prop-can-2', '23e-mission-props/cut/prop-keg-2', '23e-mission-props/cut/prop-boiler-2',
+    '23e-mission-props/cut/prop-transformer-2', '23e-mission-props/cut/prop-beehive-2', '23e-mission-props/cut/prop-locomotive-2',
+    '23e-mission-props/cut/prop-kiosk-3', '23e-mission-props/cut/prop-hostage-2',
 ]
 # полосы кадров — FX_ART и ANIM_ART
 STRIPS = [

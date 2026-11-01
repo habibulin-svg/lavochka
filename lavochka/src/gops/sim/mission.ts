@@ -101,7 +101,7 @@ export function missionAmmo(def: MissionDef, enemy: boolean): Record<string, num
   return { ...base, ...def.arsenal.weapons, kuryu: -1, pas: -1 };
 }
 
-const WARD_LOOK: Record<string, string> = { babka: 'бабку', beehive: 'улей', locomotive: 'тепловоз' };
+const WARD_LOOK: Record<string, string> = { babka: 'бабку', beehive: 'улей', locomotive: 'тепловоз', kiosk: 'ларёк' };
 const EXPLOSIVE = ['barrel', 'boiler', 'transformer', 'gas'];
 
 /** Мир по миссии: бригады, схема, задержки оружия, предметы цели, бочки и мины схемы, ящики «собери». */

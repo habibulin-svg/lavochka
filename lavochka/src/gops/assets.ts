@@ -109,6 +109,7 @@ export interface WorldArt {
 
 const A = `${DEV}22-arsenal/cut/`;
 const C = `${DEV}23-common/cut/`;
+const P = `${DEV}23e-mission-props/cut/`;
 export const WORLD_ART: Record<string, WorldArt> = {
   limonka: { url: `${A}world-limonka-1.webp`, h: 10 },
   carbide: { url: `${A}world-carbide-2.webp`, h: 10 },
@@ -135,6 +136,23 @@ export const WORLD_ART: Record<string, WorldArt> = {
   barrel: { url: `${C}fuel-barrel-2.webp`, h: 17 },
   gas: { url: `${C}gas-cylinder-1.webp`, h: 20 },
   plate: { url: `${C}target-2.webp`, h: 20 },
+  // предметы миссий (23e, отбор 2026-11-02): мишени, «разнести», подопечные, свой на матрасе — OBJ_ART
+  'obj-can': { url: `${P}prop-can-2.webp`, h: 13 },
+  'obj-keg': { url: `${P}prop-keg-2.webp`, h: 14 },
+  'obj-boiler': { url: `${P}prop-boiler-2.webp`, h: 24 },
+  'obj-transformer': { url: `${P}prop-transformer-2.webp`, h: 22 },
+  'obj-fridge': { url: `${A}icon-holodilnik-1.webp`, h: 24 },
+  'obj-beehive': { url: `${P}prop-beehive-2.webp`, h: 30 },
+  'obj-locomotive': { url: `${P}prop-locomotive-2.webp`, h: 22 },
+  'obj-kiosk': { url: `${P}prop-kiosk-3.webp`, h: 34 },
+  'obj-babka': { url: `${A}world-babka-1.webp`, h: 30 },
+  'obj-hostage': { url: `${P}prop-hostage-2.webp`, h: 22 },
+};
+
+/** Предмет миссии (Obj.look; у «своего в беде» — kind) → картинка из WORLD_ART; стоит низом на земле. */
+export const OBJ_ART: Record<string, string> = {
+  can: 'obj-can', keg: 'obj-keg', boiler: 'obj-boiler', transformer: 'obj-transformer', fridge: 'obj-fridge',
+  beehive: 'obj-beehive', locomotive: 'obj-locomotive', kiosk: 'obj-kiosk', babka: 'obj-babka', hostage: 'obj-hostage',
 };
 
 /** Эффекты — полосы кадров из 31-sprites/fx (ролик Wan → прозрачность по яркости), отбор 2026-11-02:
