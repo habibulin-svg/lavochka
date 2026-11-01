@@ -35,19 +35,29 @@ export interface ThemeArt {
   sky: number;
 }
 
-/** Темы уровней (CONTENT.md §3). Пока есть только картинки двора; остальные — двор с другой жидкостью. */
+/** Темы уровней (CONTENT.md §3) — картинки 21-themes: дальний и ближний фоны по времени суток, бесшовный грунт.
+ * Времена, что есть у темы (первое — запасное); отбор — первый вариант (2026-11-02, до ручного отбора листов). */
+const THEME_TIMES: Record<string, string[]> = {
+  yard: ['grey', 'night'], garages: ['day', 'evening', 'night'], construction: ['day', 'evening', 'grey'], dacha: ['day', 'evening'],
+  depot: ['evening', 'grey', 'night'], dump: ['evening', 'grey'], factory: ['evening', 'grey', 'night'], heating: ['grey', 'night'],
+  market: ['day', 'evening'], school: ['day', 'evening'], beach: ['day', 'evening'], winter: ['night', 'winter'],
+};
+const SKY: Record<string, number> = { day: 0x9cc3e6, evening: 0xc98a6b, grey: 0x7c8590, night: 0x141a2e, winter: 0xb8c8d8 };
+
 export function themeArt(theme: string, time = 'night'): ThemeArt {
-  const t = time === 'grey' ? 'grey' : 'night';
+  const times = THEME_TIMES[theme] ?? THEME_TIMES.yard;
+  const th = THEME_TIMES[theme] ? theme : 'yard';
+  const t = times.includes(time) ? time : times[times.length - 1];
   const liquid: Record<string, number> = {
     yard: 0x4a5a3a, garages: 0x2b2b2b, construction: 0x8d8d86, dump: 0x7a9a2a, factory: 0x1f1f24,
     market: 0x55603a, depot: 0x2a2620, dacha: 0x4f6b3a, winter: 0x9fc4d8, heating: 0xc8d6d8, school: 0x5a6b48, beach: 0x5f7f86,
   };
   return {
-    ground: `${DEV}21-themes/yard-ground-1.png`,
-    far: `${DEV}21-themes/yard-far-${t}-1.png`,
-    near: `${DEV}21-themes/yard-near-${t}-1.png`,
-    liquid: liquid[theme] ?? 0x4a5a3a,
-    sky: t === 'night' ? 0x141a2e : 0x6d7480,
+    ground: `${DEV}21-themes/seamless/${th}-ground-1.png`,
+    far: `${DEV}21-themes/${th}-far-${t}-1.png`,
+    near: `${DEV}21-themes/${th}-near-${t}-1.png`,
+    liquid: liquid[th] ?? 0x4a5a3a,
+    sky: SKY[t] ?? 0x141a2e,
   };
 }
 

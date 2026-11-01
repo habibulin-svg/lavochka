@@ -91,9 +91,11 @@ export class GameView {
         this.artLanded[k] = new Texture({ source: t.source, frame: new Rectangle(f.x, f.y + f.height * 0.56, f.width, f.height * 0.44) });
       }
     }));
-    if (far) this.far.addChild(cover(far as Texture, w.mask.w, w.mask.h));
+    // низ фонов — у воды: в панорамах всё интересное внизу, под землёй карты его не видно
+    const bgH = Math.min(w.mask.h, w.waterY + 40);
+    if (far) this.far.addChild(cover(far as Texture, w.mask.w, bgH));
     if (near) {
-      const s = cover(near as Texture, w.mask.w, w.mask.h);
+      const s = cover(near as Texture, w.mask.w, bgH);
       s.alpha = 0.9;
       this.near.addChild(s);
     }
@@ -682,10 +684,12 @@ export class GameView {
 /** Бригады партии по индексу команды (заполняет игра перед init). */
 export const BRIGADE_IDS: string[] = [];
 
+/** Картинка на всю ширину w, нижним краем — на высоте h (выше — небо). */
 function cover(tex: Texture, w: number, h: number): Sprite {
   const s = new Sprite(tex);
   const k = Math.max(w / tex.width, h / tex.height);
   s.scale.set(k);
+  s.y = h - tex.height * k;
   return s;
 }
 
