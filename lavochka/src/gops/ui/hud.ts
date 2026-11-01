@@ -34,6 +34,8 @@ export class Hud {
   private whoTimer = 0;
   /** Свой итог показывает миссия — общий баннер «держит район» не нужен. */
   quietOver = false;
+  /** Чьи бригады правит этот экран (подсказки — только в свой ход); null — все. */
+  mine: number[] | null = null;
   onPick: (id: string) => void = () => {};
 
   constructor(host: HTMLElement, private brigades: string[]) {
@@ -146,7 +148,7 @@ export class Hud {
         return `<div class="hud-team${i === w.team && turn ? ' on' : ''}"><span style="color:${col}">${b?.name ?? i + 1}</span><i style="width:${(total[i] / max) * 100}%;background:${col}"></i></div>`;
       })
       .join('');
-    const need = WEAPONS[w.weapon]?.target && !w.target && w.phase === 'turn';
+    const need = WEAPONS[w.weapon]?.target && !w.target && w.phase === 'turn' && (!this.mine || this.mine.includes(w.team));
     this.weapon.textContent = (WEAPON_NAMES[w.weapon] ?? w.weapon) + (need ? ' — ткни в точку' : '');
     if (!this.menu.hidden && this.menuFor !== w.team) this.menu.hidden = true;
     if (w.phase === 'over' && this.banner.hidden && !this.quietOver) {

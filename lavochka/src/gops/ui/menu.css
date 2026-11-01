@@ -52,3 +52,11 @@
 .gm-field select { padding: 7px 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: #161a26; color: #f1ece2;
   font: 600 15px 'PT Sans', sans-serif; min-width: 120px; }
 .gm-btn.small { padding: 7px 12px; font-size: 14px; }
+.gm-input { padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: #161a26; color: #f1ece2;
+  font: 600 17px 'PT Sans', sans-serif; }
+.gm-input.code { width: 150px; font: 400 24px 'Russo One', sans-serif; letter-spacing: 0.15em; text-align: center; }
+.gm-code { font: 400 clamp(40px, 9vw, 72px) 'Russo One', sans-serif; letter-spacing: 0.18em; color: #ffd166; text-align: center; text-shadow: 0 3px 0 #000; }
+.gm-side-name { min-width: 150px; }
+.gm-side { align-items: center; }
+.gm-error { color: #ff6b6b; font-weight: 700; }
+.gm-btn:disabled { opacity: 0.5; cursor: default; }

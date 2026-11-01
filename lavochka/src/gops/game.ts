@@ -8,7 +8,9 @@ import { type LevelData, dealSpawns, decodeMask } from './level';
 import { BRIGADE_IDS, GameView } from './render/view';
 import { type MissionDef, type MissionRun, buildMission, missionStars, objectiveText, tickMission, zonePx } from './sim/mission';
 import { ARSENAL_AMMO, WEAPONS } from './sim/weapons';
-import { type Input, type Scheme, TICK_HZ, type World, createWorld, step } from './sim/world';
+import type { NetClient } from './net/client';
+import { Rng } from './sim/rng';
+import { type Input, type Scheme, TICK_HZ, type World, createWorld, step, worldHash } from './sim/world';
 import { Hud } from './ui/hud';
 
 export interface Side {
@@ -30,6 +32,8 @@ export interface GameSetup {
   ammo?: Record<string, number>;
   /** Схема быстрого боя (время хода, ветер, ящики, внезапная смерть). */
   scheme?: Scheme;
+  /** Сетевая партия: кадры идут от сервера; mine — бригады, которыми правит этот экран. */
+  net?: { client: NetClient; mine: number[] };
   /** Миссия: стороны берутся из неё (игрок — бригада sides[0].brigade, человек). */
   mission?: MissionDef;
 }
@@ -50,6 +54,10 @@ export class Game {
   run: MissionRun | null = null;
   onEnd: (run: MissionRun, stars: number) => void = () => {};
   private ended = false;
+  /** Сеть: следующий кадр к шагу, номер хода (для сверки хеша), чья бригада последней слала ввод. */
+  private frameNo = 0;
+  private turnNo = 0;
+  private sentSide = -1;
 
   constructor(private host: HTMLElement, private setup: GameSetup) {}
 
@@ -74,7 +82,8 @@ export class Game {
         teams: s.sides.map((side, i) => ({ spawns: spawns[i].slice(0, side.count), hp: side.hp, ammo: { ...(s.ammo ?? ARSENAL_AMMO) } })),
       });
     }
-    this.bots = s.sides.map((x) => (x.bot ? new Bot(x.bot) : null));
+    // в сети боты считаются в каждом браузере одинаково — их случайность от сида партии
+    this.bots = s.sides.map((x, i) => (x.bot ? new Bot(x.bot, s.net ? seeded(s.seed * 31 + i * 977) : undefined) : null));
     this.audio = new GopsAudio(s.theme, s.sides.map((x, i) => x.voice ?? VOICE_SETS[i % VOICE_SETS.length]));
     this.audio.humans = s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
     BRIGADE_IDS.splice(0, BRIGADE_IDS.length, ...s.sides.map((x) => x.brigade));
@@ -83,6 +92,8 @@ export class Game {
     if (s.mission?.objective.type === 'king_of_hill') this.view.zone = zonePx(this.world, s.mission.objective.zone);
     this.hud = new Hud(this.host, s.sides.map((x) => x.brigade));
     this.hud.quietOver = !!s.mission;
+    // свои бригады: в сети — по рассадке, иначе — все, за которых не бот
+    this.hud.mine = s.net ? s.net.mine : s.sides.flatMap((x, i) => (x.bot ? [] : [i]));
     this.hud.onPick = (id) => this.controls.selectWeapon(id);
     this.controls.onMenu = () => this.hud.toggleMenu(this.world);
     this.hud.bindPad(this.controls);
@@ -98,6 +109,10 @@ export class Game {
     const now = performance.now();
     const dt = Math.min(2000, now - this.last);
     this.last = now;
+    if (this.setup.net) {
+      this.netPump(this.setup.net);
+      return dt;
+    }
     this.acc += dt;
     const tick = 1000 / TICK_HZ;
     while (this.acc >= tick) {
@@ -112,6 +127,30 @@ export class Game {
     }
     return dt;
   };
+
+  /** Лок-степ: свой ввод — на сервер, мир шагает ровно по пришедшим кадрам. */
+  private netPump(net: { client: NetClient; mine: number[] }): void {
+    const w = this.world;
+    const c = net.client;
+    const myTurn = net.mine.includes(w.team) && !this.bots[w.team];
+    const local = this.controls.take();
+    if (myTurn) {
+      c.input(w.team, local);
+      this.sentSide = w.team;
+    } else if (this.sentSide >= 0) {
+      // ход ушёл — отпустить всё, что было зажато за прошлую бригаду
+      c.input(this.sentSide, {});
+      this.sentSide = -1;
+    }
+    while (this.frameNo < c.upto) {
+      const ins = c.take(this.frameNo++);
+      const bot = this.bots[this.world.team];
+      step(this.world, bot ? bot.input(this.world) : ins.get(this.world.team) ?? {});
+      for (const e of this.world.events) if (e.t === 'turn') c.send({ t: 'hash', turn: ++this.turnNo, h: worldHash(this.world) });
+      this.view.onEvents(this.world, this.world.events);
+      this.audio.onEvents(this.world, this.world.events);
+    }
+  }
 
   private frame = (): void => {
     const dt = this.pump();
@@ -218,4 +257,10 @@ export class Game {
     this.hud.el.remove();
     this.view.destroy();
   }
+}
+
+/** Случайность бота в сети: одна и та же во всех браузерах партии. */
+function seeded(seed: number): () => number {
+  const r = new Rng(seed >>> 0);
+  return () => r.f();
 }

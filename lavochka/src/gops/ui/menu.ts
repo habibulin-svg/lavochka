@@ -1,6 +1,8 @@
 /* Меню ГОПС (DOM поверх холста): заглавный экран, списки миссий (кампания по главам, обучение, испытания) со звёздами,
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
 import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
+import type { NetClient } from '../net/client';
+import type { NetSetup } from '../net/protocol';
 import type { MissionDef, MissionRun } from '../sim/mission';
 import { WEAPON_NAMES } from './hud';
 import './menu.css';
@@ -42,7 +44,8 @@ const stars = (n: number, of = 3) => '★'.repeat(n) + '☆'.repeat(of - n);
 
 /** Настройка быстрого боя (запоминается между заходами). */
 export interface QuickConfig {
-  sides: { brigade: string; who: 'human' | 'easy' | 'medium' | 'hard'; count: number }[];
+  /** human — за этим экраном (в сети — у хозяина), net — сетевой игрок. */
+  sides: { brigade: string; who: 'human' | 'net' | 'easy' | 'medium' | 'hard'; count: number }[];
   /** id уровня или 'random'. */
   map: string;
   arsenal: 'full' | 'core';
@@ -77,7 +80,19 @@ function saveQuick(c: QuickConfig): void {
   }
 }
 
-const WHO: [QuickConfig['sides'][number]['who'], string][] = [['human', 'Человек'], ['easy', 'Бот: лёгкий'], ['medium', 'Бот: средний'], ['hard', 'Бот: сложный']];
+type Who = QuickConfig['sides'][number]['who'];
+const BOTS: [Who, string][] = [['easy', 'Бот: лёгкий'], ['medium', 'Бот: средний'], ['hard', 'Бот: сложный']];
+const WHO: [Who, string][] = [['human', 'Человек'], ...BOTS];
+const WHO_NET: [Who, string][] = [['net', 'Сетевой игрок'], ['human', 'За моим экраном'], ...BOTS];
+const NAME_KEY = 'gops-name';
+
+export function loadName(): string {
+  try {
+    return localStorage.getItem(NAME_KEY) || 'Пацан';
+  } catch {
+    return 'Пацан';
+  }
+}
 
 /** Выпадающий список: варианты [значение, подпись]. */
 function select<T extends string | number>(label: string, value: T, opts: [T, string][], set: (v: T) => void): HTMLElement {
@@ -100,6 +115,9 @@ export class Menu {
   readonly el: HTMLElement;
   onPlay: (def: MissionDef) => void = () => {};
   onQuick: (c: QuickConfig) => void = () => {};
+  /** Сеть: создать комнату с настройкой / войти по коду. */
+  onNetCreate: (c: QuickConfig, name: string) => void = () => {};
+  onNetJoin: (code: string, name: string) => void = () => {};
 
   constructor(host: HTMLElement, private missions: MissionDef[]) {
     this.el = document.createElement('div');
@@ -127,14 +145,16 @@ export class Menu {
       button('Обучение', () => this.list('training')),
       button('Испытания', () => this.list('trial')),
       button('Быстрый бой', () => this.quick()),
+      button('По сети', () => this.network()),
     );
     this.screen(brandArt('title-keyart-1'), logo, btns, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
   }
 
   /** Быстрый бой: бригады (2–4), кто за них, сколько бойцов, карта и схема. */
-  quick(c: QuickConfig = loadQuick()): void {
+  quick(c: QuickConfig = loadQuick(), net = false): void {
+    if (net && !c.sides.some((x) => x.who === 'net')) c.sides[1].who = 'net';
     const head = h('div', 'gm-head');
-    head.append(button('← Назад', () => this.title()), h('h2', '', 'Быстрый бой'));
+    head.append(button('← Назад', () => (net ? this.network() : this.title())), h('h2', '', net ? 'Новая комната' : 'Быстрый бой'));
     const box = h('div', 'gm-brief gm-quick');
     const sides = h('div', 'gm-sides');
     c.sides.forEach((sd, i) => {
@@ -144,22 +164,22 @@ export class Menu {
       row.append(
         select('Бригада', sd.brigade, BRIGADES.map((x) => [x.id, x.name] as [string, string]), (v) => {
           sd.brigade = v;
-          this.quick(c);
+          this.quick(c, net);
         }),
-        select('Кто', sd.who, WHO, (v) => (sd.who = v)),
+        select('Кто', sd.who, net ? WHO_NET : WHO, (v) => (sd.who = v)),
         select('Бойцов', sd.count, [1, 2, 3, 4, 5, 6, 8].map((n) => [n, String(n)] as [number, string]), (v) => (sd.count = v)),
       );
       if (c.sides.length > 2) row.append(button('✕', () => {
         c.sides.splice(i, 1);
-        this.quick(c);
+        this.quick(c, net);
       }, 'small'));
       sides.append(row);
     });
     if (c.sides.length < 4) {
       sides.append(button('+ бригада', () => {
         const free = BRIGADES.find((x) => !c.sides.some((s2) => s2.brigade === x.id))!;
-        c.sides.push({ brigade: free.id, who: 'medium', count: c.sides[0].count });
-        this.quick(c);
+        c.sides.push({ brigade: free.id, who: net ? 'net' : 'medium', count: c.sides[0].count });
+        this.quick(c, net);
       }, 'small'));
     }
     const maps: [string, string][] = [['random', 'Случайная'], ...this.missions.map((m) => [m.id, `${m.title} (${m.id})`] as [string, string])];
@@ -174,12 +194,99 @@ export class Menu {
       select('Ящики', c.crates ? 1 : 0, [[1, 'да'], [0, 'нет']], (v) => (c.crates = v === 1)),
     );
     const row = h('div', 'gm-row');
-    row.append(button('В бой!', () => {
-      saveQuick(c);
-      this.onQuick(c);
+    row.append(button(net ? 'Создать комнату' : 'В бой!', () => {
+      saveQuick({ ...c, sides: c.sides.map((x) => ({ ...x, who: x.who === 'net' ? 'medium' : x.who })) });
+      if (net) this.onNetCreate(c, loadName());
+      else this.onQuick(c);
     }, 'big'));
     box.append(sides, scheme, row);
     this.screen(brandArt('brigade-select-bg-1'), head, box);
+  }
+
+  /** По сети: имя, создать комнату, войти по коду. */
+  network(error = ''): void {
+    const head = h('div', 'gm-head');
+    head.append(button('← Назад', () => this.title()), h('h2', '', 'По сети'));
+    const box = h('div', 'gm-brief');
+    const name = document.createElement('input');
+    name.className = 'gm-input';
+    name.maxLength = 24;
+    name.value = loadName();
+    const keepName = () => {
+      try {
+        localStorage.setItem(NAME_KEY, name.value.trim() || 'Пацан');
+      } catch {
+        /* не запомним */
+      }
+    };
+    const code = document.createElement('input');
+    code.className = 'gm-input code';
+    code.maxLength = 6;
+    code.placeholder = 'КОД';
+    code.oninput = () => (code.value = code.value.toUpperCase());
+    const nameRow = h('label', 'gm-field');
+    nameRow.append(h('span', '', 'Как тебя звать'), name);
+    const joinRow = h('div', 'gm-row');
+    joinRow.append(code, button('Войти', () => {
+      keepName();
+      if (code.value.length >= 4) this.onNetJoin(code.value, name.value.trim() || 'Пацан');
+    }, 'big'));
+    box.append(nameRow);
+    if (error) box.append(h('p', 'gm-error', error));
+    box.append(h('h3', 'gm-chapter', 'Позвать пацанов'), h('p', '', 'Выбери бригады и кто за них — получишь код комнаты, скажи его друзьям.'),
+      button('Новая комната', () => {
+        keepName();
+        this.quick(loadQuick(), true);
+      }, 'big'), h('h3', 'gm-chapter', 'Зайти к пацанам'), joinRow);
+    this.screen(brandArt('menu-bg-2'), head, box);
+  }
+
+  /** Лобби сетевой комнаты: код, бригады, кто за ними; гость садится, хозяин начинает. */
+  lobby(c: NetClient, leave: () => void): void {
+    const setup = c.setup as NetSetup;
+    const me = c.peers.find((p) => p.id === c.you);
+    const head = h('div', 'gm-head');
+    head.append(button('← Выйти', leave), h('h2', '', 'Комната'));
+    const box = h('div', 'gm-brief');
+    box.append(h('div', 'gm-code', c.code), h('p', 'gm-tip', 'Скажи этот код друзьям: «По сети» → «Зайти к пацанам».'));
+    const list = h('div', 'gm-sides');
+    let free = 0;
+    setup.sides.forEach((sd, i) => {
+      const b = BRIGADES.find((x) => x.id === sd.brigade);
+      const row = h('div', 'gm-side');
+      row.style.borderLeftColor = '#' + (b?.color ?? 0xffffff).toString(16).padStart(6, '0');
+      const who = sd.who === 'host' ? `${c.peers.find((p) => p.host)?.name ?? 'хозяин'} (за экраном хозяина)`
+        : sd.who === 'net' ? c.peers.find((p) => p.side === i)?.name ?? 'свободно'
+        : BOTS.find(([k]) => k === sd.who)?.[1] ?? sd.who;
+      row.append(h('b', 'gm-side-name', `${b?.name ?? sd.brigade} ×${sd.count}`), h('span', '', who));
+      if (sd.who === 'net' && !c.peers.some((p) => p.side === i)) {
+        free++;
+        if (!me?.host) row.append(button('Сесть', () => c.send({ t: 'claim', side: i }), 'small'));
+      }
+      if (sd.who === 'net' && me?.side === i) row.append(button('Встать', () => c.send({ t: 'claim', side: null }), 'small'));
+      list.append(row);
+    });
+    box.append(list, h('p', 'gm-tip', `В комнате: ${c.peers.map((p) => p.name).join(', ')}`));
+    const row = h('div', 'gm-row');
+    if (me?.host) {
+      const go = button(free ? `Ждём игроков: ${free}` : 'Начать!', () => c.send({ t: 'start' }), 'big');
+      (go as HTMLButtonElement).disabled = free > 0;
+      row.append(go);
+    } else row.append(h('span', 'gm-tip', 'Ждём, когда хозяин начнёт…'));
+    box.append(row);
+    this.screen(brandArt('brigade-select-bg-2'), head, box);
+  }
+
+  /** Сообщение поверх (рассинхрон, обрыв): кнопка — в меню. */
+  notice(text: string, back: () => void): void {
+    const box = h('div', 'gm-brief gm-result');
+    box.append(h('h2', 'lose', 'Стоп'), h('p', '', text));
+    const row = h('div', 'gm-row');
+    row.append(button('В меню', back, 'big'));
+    box.append(row);
+    this.el.hidden = false;
+    this.el.style.background = 'rgba(8, 10, 16, 0.6)';
+    this.el.replaceChildren(box);
   }
 
   /** Открыта ли миссия: обучение и испытания — все, кампания — по порядку. */

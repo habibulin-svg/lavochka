@@ -10,6 +10,8 @@ import type { MissionDef } from './sim/mission';
 import './ui/hud.css';
 import { CORE_AMMO } from './sim/weapons';
 import { DEFAULT_SCHEME } from './sim/world';
+import { NetClient } from './net/client';
+import type { NetClientMsg, NetSetup } from './net/protocol';
 import { Menu, type QuickConfig } from './ui/menu';
 
 const MISSIONS = missionsJson as unknown as MissionDef[];
@@ -19,9 +21,58 @@ const q = new URLSearchParams(location.search);
 let game: Game | null = null;
 const menu = new Menu(host, MISSIONS);
 
+let net: NetClient | null = null;
+
 function stop(): void {
   game?.destroy();
   game = null;
+  net?.close();
+  net = null;
+}
+
+/** Сеть: создать комнату или войти; дальше — лобби, по «Начать» — партия у всех. */
+async function connect(first: NetClientMsg): Promise<void> {
+  stop();
+  let c: NetClient;
+  try {
+    c = await NetClient.open(first);
+  } catch (e) {
+    menu.network(String((e as Error).message ?? e));
+    return;
+  }
+  net = c;
+  const leave = () => {
+    stop();
+    menu.network();
+  };
+  c.onLobby = () => {
+    if (!game) menu.lobby(c, leave);
+  };
+  c.onStart = (setup, seed) => void startNet(c, setup, seed);
+  c.onClose = (why) => {
+    if (net !== c) return;
+    stop();
+    menu.network(why);
+  };
+  c.onDesync = () => menu.notice('Миры у игроков разошлись (рассинхрон) — партию пришлось остановить. Мы уже знаем.', leave);
+  c.onLeft = (name) => console.info(`${name} вышел — его бригада стоит`);
+}
+
+async function startNet(c: NetClient, setup: NetSetup, seed: number): Promise<void> {
+  menu.hide();
+  const me = c.peers.find((p) => p.id === c.you);
+  const level = await loadLevel(setup.level);
+  const m = MISSIONS.find((x) => x.id === setup.level);
+  const g = new Game(host, {
+    level, theme: m?.theme ?? 'yard', time: m?.time, seed,
+    sides: setup.sides.map((sd) => ({ brigade: sd.brigade, bot: botLevel(sd.who), count: sd.count, hp: setup.hp })),
+    ammo: setup.arsenal === 'core' ? CORE_AMMO : undefined,
+    scheme: { ...DEFAULT_SCHEME, turnTime: setup.turn, wind: setup.wind, riseStep: setup.sudden ? 24 : 0, crates: setup.crates ? 60 : 0 },
+    net: { client: c, mine: setup.sides.flatMap((sd, i) => ((sd.who === 'host' && me?.host) || (sd.who === 'net' && me?.side === i) ? [i] : [])) },
+  });
+  game = g;
+  await g.start();
+  (window as unknown as { gops: Game }).gops = g;
 }
 
 /** Миссия: бой, итог, ролик после победы, следующая миссия списка. */
@@ -95,13 +146,25 @@ async function quick(cfg?: QuickConfig): Promise<void> {
 window.addEventListener('keydown', (e) => {
   if (e.code !== 'Escape' || !game) return;
   const mode = game.run?.def.mode;
+  const wasNet = !!net;
   stop();
   if (mode) menu.list(mode);
+  else if (wasNet) menu.network();
   else menu.title();
 });
 
 menu.onPlay = (def) => void play(def);
 menu.onQuick = (c) => void quick(c);
+menu.onNetCreate = (cfg, name) => {
+  const battles = MISSIONS.filter((x) => x.mode === 'mission');
+  const setup: NetSetup = {
+    level: cfg.map !== 'random' ? cfg.map : battles[Math.floor(Math.random() * battles.length)].id,
+    sides: cfg.sides.map((sd) => ({ brigade: sd.brigade, who: sd.who === 'human' ? 'host' : sd.who, count: sd.count })),
+    arsenal: cfg.arsenal, hp: cfg.hp, turn: cfg.turn, wind: cfg.wind, sudden: cfg.sudden, crates: cfg.crates,
+  };
+  void connect({ t: 'create', game: 'gops', name, setup });
+};
+menu.onNetJoin = (code, name) => void connect({ t: 'join', game: 'gops', code, name });
 
 async function main(): Promise<void> {
   const mission = q.get('mission');

@@ -20,12 +20,22 @@ MODEL = 'G:/ai/models/asr/whisper-large-v3-turbo'
 
 def norm(t: str) -> str:
     t = t.lower().replace('ё', 'е').replace('\u0301', '').replace('+', '')
+    t = re.sub(r'\bсейчас\b', 'щас', t)
     t = re.sub(r'(.)\1{2,}', r'\1', t)  # «Мама-а-а» и протяжки — не ошибка
     return re.sub(r'[^а-яa-z0-9]+', '', t)
 
 
+def dedup(t: str) -> str:
+    """Whisper на коротких клипах повторяет фразу («Лови. Лови.») — это не ошибка озвучки: подряд одинаковое — один раз."""
+    out: list[str] = []
+    for p in re.split(r'(?<=[.!?…])\s+', t.strip()):
+        if p and (not out or norm(p) != norm(out[-1])):
+            out.append(p)
+    return ' '.join(out)
+
+
 def cer(ref: str, hyp: str) -> float:
-    a, b = norm(ref), norm(hyp)
+    a, b = norm(ref), norm(dedup(hyp))
     if not a:
         return 0.0
     prev = list(range(len(b) + 1))
@@ -47,6 +57,8 @@ def main():
         man = json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
         out_path = d / 'asr.json'
         res = json.loads(out_path.read_text(encoding='utf-8')) if out_path.exists() else {}
+        for r in res.values():  # пересчёт по сохранённому распознаванию — правила метрики могли поменяться
+            r['cer'] = round(cer(r['text'], r['heard']), 3)
         for m in man:
             if m['file'] in res:
                 continue

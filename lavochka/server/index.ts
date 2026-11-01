@@ -21,6 +21,7 @@ import type { Link } from '../src/core/protocol';
 import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
+import { gopsFirst, gopsRooms } from './gops';
 import type { GameDef } from '../src/core/types';
 import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
@@ -54,12 +55,12 @@ const EMPTY_ROOM_TTL = 10 * 60 * 1000;
 const rooms = new Map<string, Room>();
 const emptyTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-function genCode(): string {
+function genCode(taken: (c: string) => boolean = () => false): string {
   for (;;) {
     let s = '';
     const b = randomBytes(6);
     for (let i = 0; i < 6; i++) s += CODE_ALPH[b[i] % CODE_ALPH.length];
-    if (!rooms.has(s)) return s;
+    if (!rooms.has(s) && !taken(s)) return s;
   }
 }
 
@@ -107,6 +108,12 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     ws.close();
     return null;
   };
+  // ГОПС — своя комната-ретранслятор (server/gops.ts)
+  if (msg?.game === 'gops') {
+    const link = gopsFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode);
+    if (link) log(`ГОПС: ${msg.t === 'create' ? 'новая комната' : 'вход'}, комнат ${gopsRooms()}`);
+    return link;
+  }
   if (msg?.t === 'create') {
     const load = DEFS[String(msg.game)];
     if (!load) return fail('Сервер не знает эту игру — возможно, он старее сайта.');
