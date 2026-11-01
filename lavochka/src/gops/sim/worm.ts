@@ -16,7 +16,8 @@ export const FLIP: readonly [number, number] = [-160, -1350];
 const SAFE = 1500;
 const FALL_DIV = 40;
 
-export type WormState = 'stand' | 'air' | 'dead';
+/** rope — висит на верёвке (физику ведёт world.ts). */
+export type WormState = 'stand' | 'air' | 'rope' | 'dead';
 
 export interface Worm extends Body {
   id: number;
@@ -92,7 +93,7 @@ export function jump(w: Worm, back = false): void {
 
 /** Кадр бойца: полёт, приземление, вылет в жидкость (waterY — верх жидкости, px). */
 export function tickWorm(w: Worm, mask: Mask, waterY: number, out: WormEvent[], gravity = GRAVITY): void {
-  if (w.state === 'dead') return;
+  if (w.state === 'dead' || w.state === 'rope') return;
   if (toPx(w.y) - w.r > waterY) {
     w.state = 'dead';
     w.hp = 0;

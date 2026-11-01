@@ -5,17 +5,17 @@ import { type LevelData, dealSpawns, decodeMask } from '../../src/gops/level';
 import { toFx, toPx } from '../../src/gops/sim/fx';
 import { Mask } from '../../src/gops/sim/mask';
 import { CORE_AMMO } from '../../src/gops/sim/weapons';
-import { CHARGE_MAX, type Input, type World, createWorld, step, wormById, worldHash } from '../../src/gops/sim/world';
+import { CHARGE_MAX, DEFAULT_SCHEME, type Input, type World, createWorld, dropCrate, explode, step, wormById, worldHash } from '../../src/gops/sim/world';
 
 const level = (id: string): LevelData =>
   JSON.parse(readFileSync(join(__dirname, `../../public/gops/levels/${id}.json`), 'utf8'));
 
 /** Плоская карта 1200×500, земля с y=400, жидкость на 480; бригады по одному бойцу. */
-function duel(xs: number[][] = [[300], [700]], hp = 100): World {
+function duel(xs: number[][] = [[300], [700]], hp = 100, crates = 0): World {
   const m = new Mask(1200, 500);
   m.fillRect(0, 400, 1200, 100);
   return createWorld({
-    mask: m, waterY: 480, seed: 7,
+    mask: m, waterY: 480, seed: 7, scheme: { ...DEFAULT_SCHEME, crates },
     teams: xs.map((t) => ({ spawns: t.map((x) => [x, 400] as [number, number]), hp, ammo: { ...CORE_AMMO } })),
   });
 }
@@ -156,5 +156,125 @@ describe('gops/world: партия', () => {
     const a = play();
     expect(play()).toEqual(a);
     expect(toPx(1)).toBe(0);
+  });
+});
+
+describe('gops/world: верёвка', () => {
+  /** Пол на 400 и потолок-балка 100…120 над всей картой. */
+  function cave(): World {
+    const w = duel([[300], [1000]]);
+    w.mask.fillRect(0, 100, 1200, 20);
+    return w;
+  }
+
+  it('крюк в потолок: висит, раскачивается, подтягивается, отцепляется — ход не кончился', () => {
+    const w = cave();
+    untilTurn(w);
+    const me = wormById(w, w.active)!;
+    step(w, { weapon: 'rope' });
+    w.aim = -960; // почти вертикально вверх
+    step(w, { fire: true });
+    step(w, { fire: false });
+    expect(me.state).toBe('rope');
+    expect(w.rope).not.toBeNull();
+    expect(toPx(w.rope!.ay)).toBeLessThan(121);
+    const len0 = w.rope!.len;
+    run(w, { aim: -1 }, 40); // подтянуться
+    expect(w.rope!.len).toBeLessThan(len0);
+    const x0 = me.x;
+    run(w, { move: 1 }, 120); // раскачка вправо
+    expect(me.x).not.toBe(x0);
+    expect(me.state).toBe('rope');
+    step(w, { jump: 1 });
+    expect(me.state).toBe('air');
+    expect(w.rope).toBeNull();
+    for (let i = 0; i < 600 && me.state === 'air'; i++) step(w, {});
+    expect(me.state).toBe('stand');
+    // верёвка ход не кончает (кончит только урон от падения после высокого отцепа)
+    if (me.hp === 100) expect(w.active).toBe(me.id);
+    expect(w.teams[me.team].ammo.rope).toBe(4); // списано один раз
+  });
+
+  it('цепочка крюков в полёте бесплатна; промах крюка — ничего не списано', () => {
+    const w = cave();
+    untilTurn(w);
+    const me = wormById(w, w.active)!;
+    step(w, { weapon: 'rope' });
+    w.aim = 0; // по горизонтали — до стены не долетает
+    step(w, { fire: true });
+    step(w, { fire: false });
+    expect(me.state).toBe('stand');
+    expect(w.teams[w.team].ammo.rope).toBe(5);
+    w.aim = -900;
+    step(w, { fire: true });
+    step(w, { fire: false });
+    expect(me.state).toBe('rope');
+    step(w, { fire: true }); // новый крюк прямо с верёвки
+    step(w, { fire: false });
+    expect(me.state).toBe('rope');
+    expect(w.teams[w.team].ammo.rope).toBe(4);
+  });
+
+  it('конец хода на верёвке — отцепляется и падает', () => {
+    const w = cave();
+    untilTurn(w);
+    const me = wormById(w, w.active)!;
+    step(w, { weapon: 'rope' });
+    w.aim = -960;
+    step(w, { fire: true });
+    step(w, { fire: false });
+    w.left = 1;
+    step(w, {});
+    step(w, {});
+    expect(me.state).not.toBe('rope');
+    expect(w.rope).toBeNull();
+  });
+});
+
+describe('gops/world: ящики', () => {
+  it('падает медленно, приземляется; боец подбирает — оружие в запас', () => {
+    const w = duel([[300], [1000]]);
+    untilTurn(w);
+    const c = dropCrate(w, 'weapon', 'tnt', 360)!;
+    let t = 0;
+    for (; t < 1200 && c.falling; t++) step(w, {});
+    expect(t).toBeGreaterThan(80); // с зонтом — не камнем
+    expect(toPx(c.y)).toBeGreaterThan(385);
+    const before = w.teams[0].ammo.tnt;
+    const got: string[] = [];
+    for (let i = 0; i < 900 && w.crates.length; i++) {
+      step(w, { move: 1 });
+      for (const e of w.events) if (e.t === 'crate') got.push(e.content);
+    }
+    expect(got).toEqual(['tnt']);
+    expect(w.teams[0].ammo.tnt).toBe(before + 1);
+  });
+
+  it('аптечка лечит, взрыв уничтожает ящик', () => {
+    const w = duel([[300], [1000]]);
+    untilTurn(w);
+    const me = wormById(w, w.active)!;
+    me.hp = 40;
+    dropCrate(w, 'health', '25', toPx(me.x));
+    for (let i = 0; i < 1500 && w.crates.length; i++) step(w, {});
+    expect(me.hp).toBe(65);
+    const c = dropCrate(w, 'weapon', 'mine', 700)!;
+    for (let i = 0; i < 1500 && c.falling; i++) step(w, {});
+    explode(w, toPx(c.x), toPx(c.y), 30, 10);
+    expect(w.crates.length).toBe(0);
+  });
+
+  it('по схеме ящики падают перед ходами', () => {
+    const w = duel([[300], [1000]], 100, 100);
+    let drops = 0;
+    for (let k = 0; k < 4; k++) {
+      untilTurn(w);
+      step(w, { weapon: 'kuryu' });
+      for (let i = 0; i < 6; i++) {
+        step(w, i === 0 ? { fire: true } : {});
+        drops += w.events.filter((e) => e.t === 'crate-drop').length;
+      }
+    }
+    expect(drops).toBeGreaterThanOrEqual(3);
   });
 });

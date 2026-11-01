@@ -1,6 +1,7 @@
 /* Интерфейс боя поверх холста (DOM): таймер хода, ветер, здоровье бригад, выбранное оружие,
  * сетка оружия (Tab / кнопка), экранные кнопки для телефона, итог партии. */
 import { BRIGADES } from '../assets';
+import type { Controls } from '../input';
 import { TICK_HZ, type World } from '../sim/world';
 import { WEAPONS } from '../sim/weapons';
 import './hud.css';
@@ -8,7 +9,7 @@ import './hud.css';
 /** Названия из docs/gops/texts/weapons.json (подмножество ядра; полный список — при сборке ассетов). */
 export const WEAPON_NAMES: Record<string, string> = {
   mukha: '«Муха»', limonka: 'Лимонка', sling: 'Рогатка', obrez: 'Обрез', makarov: '«Макаров»', tnt: 'Тротиловая шашка',
-  mine: 'Мина-растяжка', tychok: 'Тычок', armatura: 'Арматура', kuryu: 'Курю (пропуск)', pas: 'Я пас (сдаться)',
+  mine: 'Мина-растяжка', tychok: 'Тычок', armatura: 'Арматура', rope: 'Верёвка с крюком', kuryu: 'Курю (пропуск)', pas: 'Я пас (сдаться)',
 };
 
 export class Hud {
@@ -35,6 +36,39 @@ export class Hud {
     this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner);
     host.appendChild(this.el);
     this.weapon.addEventListener('click', () => this.toggleMenu());
+  }
+
+  /** Экранные кнопки для телефона (видны при pointer: coarse): слева — ходьба, справа — прицел, прыжок, огонь. */
+  bindPad(c: Controls): void {
+    const btn = (label: string, cls: string, down: () => void, up: () => void) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (cls) b.className = cls;
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        b.setPointerCapture(e.pointerId);
+        down();
+      });
+      const off = () => up();
+      b.addEventListener('pointerup', off);
+      b.addEventListener('pointercancel', off);
+      b.addEventListener('lostpointercapture', off);
+      return b;
+    };
+    const left = div('hud-pad l');
+    left.append(
+      btn('◀', '', () => (c.touchMove = -1), () => (c.touchMove = 0)),
+      btn('▶', '', () => (c.touchMove = 1), () => (c.touchMove = 0)),
+      btn('⤴', '', () => c.jump(), () => {}),
+    );
+    const right = div('hud-pad r');
+    const aim = div('hud-pad-col');
+    aim.append(
+      btn('▲', '', () => (c.touchAim = -1), () => (c.touchAim = 0)),
+      btn('▼', '', () => (c.touchAim = 1), () => (c.touchAim = 0)),
+    );
+    right.append(aim, btn('💥', 'fire', () => (c.touchFire = true), () => (c.touchFire = false)));
+    this.el.append(left, right);
   }
 
   toggleMenu(w?: World): void {

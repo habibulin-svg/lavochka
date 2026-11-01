@@ -32,10 +32,25 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-banner { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); padding: 18px 32px; border-radius: 16px;
   background: rgba(0, 0, 0, 0.7); font: 700 clamp(22px, 4vw, 44px) 'Russo One', sans-serif; text-align: center; }
 .hud-banner[hidden] { display: none; }
-.hud-pad { position: absolute; bottom: 70px; display: none; gap: 10px; }
+.hud-pad { position: absolute; bottom: 70px; display: none; gap: 10px; align-items: center; }
 .hud-pad button { width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(0, 0, 0, 0.45);
   color: #fff; font: 700 22px 'PT Sans', sans-serif; touch-action: none; }
-.hud-pad.l { left: 16px; }
+.hud-pad.l { left: 16px; align-items: flex-end; }
+.hud-pad-col { display: flex; flex-direction: column; gap: 10px; }
 .hud-pad.r { right: 16px; }
 .hud-pad .fire { width: 84px; height: 84px; background: rgba(214, 40, 40, 0.6); }
 @media (pointer: coarse) { .hud-pad { display: flex; } }
+@media (pointer: coarse) {
+  .hud-timer { bottom: auto; top: 12px; left: 12px; font-size: 26px; }
+  .hud-wind { bottom: auto; top: 60px; right: 12px; width: 130px; }
+  .hud-weapon { top: 12px; right: 12px; }
+  .hud-menu { grid-template-columns: repeat(3, 1fr); left: 12px; right: 12px; top: 56px; }
+  .hud-wpn { padding: 14px 10px; font-size: 15px; }
+}
+@media (pointer: coarse) and (max-height: 420px) {
+  .hud-pad { bottom: 52px; gap: 8px; }
+  .hud-pad button { width: 50px; height: 50px; font-size: 18px; }
+  .hud-pad-col { gap: 8px; }
+  .hud-pad .fire { width: 68px; height: 68px; }
+  .hud-teams { bottom: 8px; }
+}

@@ -9,6 +9,7 @@ export type WeaponKind =
   | 'placed'    // кладётся под ноги, взрыв по таймеру
   | 'mine'      // кладётся, взводится и ждёт, кто подойдёт
   | 'melee'     // удар перед собой
+  | 'rope'      // верёвка с крюком: ход не кончает
   | 'skip'      // пропуск хода
   | 'surrender';
 
@@ -49,11 +50,12 @@ export const WEAPONS: Record<string, WeaponDef> = {
   mine: { kind: 'mine', radius: 48, damage: 50, bounce: 40, slide: 120, fuse: 2, r: 3 },
   tychok: { kind: 'melee', range: 22, damage: 0, push: 900 },
   armatura: { kind: 'melee', range: 24, damage: 30, push: 2600 },
+  rope: { kind: 'rope', range: 320 },
   kuryu: { kind: 'skip' },
   pas: { kind: 'surrender' },
 };
 
 /** Полный набор ядра с бесконечным запасом (−1) — для быстрого боя. */
 export const CORE_AMMO: Record<string, number> = {
-  mukha: -1, limonka: -1, sling: -1, obrez: -1, makarov: -1, tnt: 2, mine: 3, tychok: -1, armatura: 1, kuryu: -1, pas: -1,
+  mukha: -1, limonka: -1, sling: -1, obrez: -1, makarov: -1, tnt: 2, mine: 3, tychok: -1, armatura: 1, rope: 5, kuryu: -1, pas: -1,
 };

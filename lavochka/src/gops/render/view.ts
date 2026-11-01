@@ -57,7 +57,7 @@ export class GameView {
       loadImage(art.ground),
       Assets.load<Texture>(art.far).catch(() => null),
       Assets.load<Texture>(art.near).catch(() => null),
-      ...brigades.map((b) => Assets.load<Spritesheet>(atlasUrl(b))),
+      ...brigades.map((b) => Assets.load<Spritesheet>({ src: atlasUrl(b), data: { cachePrefix: `${b}/` } })),
     ]);
     this.sheets = sheets as Spritesheet[];
     if (far) this.far.addChild(cover(far as Texture, w.mask.w, w.mask.h));
@@ -193,7 +193,8 @@ export class GameView {
       s.body.scale.x = WORM_SCALE * x.facing;
       const active = x.id === w.active && (w.phase === 'turn' || w.phase === 'retreat');
       let anim = 'idle';
-      if (x.state === 'air') anim = x.bounce > 0 ? 'hurt-fly' : x.vy < 0 ? 'jump' : 'fall';
+      if (x.state === 'rope') anim = 'rope-hang';
+      else if (x.state === 'air') anim = x.bounce > 0 ? 'hurt-fly' : x.vy < 0 ? 'jump' : 'fall';
       else if (x.x !== s.lastX) anim = 'walk';
       else if (active && w.phase === 'turn' && WEAPONS[w.weapon]?.kind !== 'skip') anim = WEAPONS[w.weapon]?.kind === 'hitscan' ? 'aim-pistol' : 'aim';
       s.lastX = x.x;
@@ -237,6 +238,7 @@ export class GameView {
 
   private drawProjs(w: World): void {
     const g = this.projLayer.clear();
+    for (const c of w.crates) this.drawCrate(g, c.x / ONE, c.y / ONE, c.kind, c.falling);
     for (const p of w.projs) {
       const x = p.x / ONE, y = p.y / ONE;
       const kind = WEAPONS[p.weapon].kind;
@@ -259,12 +261,45 @@ export class GameView {
     }
   }
 
+  /** Ящик (заглушка до спрайтов из 23-common): оружие — на полосатом зонте, аптечка — на шариках, утилиты — на простыне. */
+  private drawCrate(g: Graphics, x: number, y: number, kind: string, falling: boolean): void {
+    const top = y - 26;
+    if (falling) {
+      if (kind === 'weapon') {
+        for (let i = 0; i < 6; i++) {
+          const a0 = Math.PI + (i / 6) * Math.PI, a1 = Math.PI + ((i + 1) / 6) * Math.PI;
+          g.moveTo(x, top).arc(x, top, 15, a0, a1).lineTo(x, top).fill(i % 2 ? 0xffffff : 0xd62828);
+        }
+        g.moveTo(x - 15, top).lineTo(x - 5, y - 6).moveTo(x + 15, top).lineTo(x + 5, y - 6).stroke({ color: 0x333333, width: 0.8 });
+      } else if (kind === 'health') {
+        for (const [dx, col] of [[-6, 0xe63946], [0, 0x2ec4b6], [6, 0xffd166]] as const) {
+          g.moveTo(x + dx, top + 6).lineTo(x, y - 6).stroke({ color: 0x555555, width: 0.7 });
+          g.ellipse(x + dx, top - 2 + Math.abs(dx) / 3, 4.5, 5.5).fill(col);
+        }
+      } else {
+        g.moveTo(x - 14, top + 4).quadraticCurveTo(x, top - 10, x + 14, top + 4).lineTo(x + 10, top + 8).lineTo(x - 10, top + 8).fill(0xf1f1e6);
+        g.moveTo(x - 10, top + 8).lineTo(x - 5, y - 6).moveTo(x + 10, top + 8).lineTo(x + 5, y - 6).stroke({ color: 0x555555, width: 0.7 });
+      }
+    }
+    const col = kind === 'weapon' ? 0x8d6e4a : kind === 'health' ? 0xf1f1f1 : 0x4f6b8a;
+    g.roundRect(x - 7, y - 6, 14, 13, 1.5).fill(col).stroke({ color: 0x2b2118, width: 1 });
+    if (kind === 'health') g.rect(x - 1.5, y - 4, 3, 9).rect(x - 4.5, y - 1, 9, 3).fill(0xd62828);
+    else g.moveTo(x - 7, y - 6).lineTo(x + 7, y + 7).moveTo(x + 7, y - 6).lineTo(x - 7, y + 7).stroke({ color: 0x2b2118, width: 0.8, alpha: 0.6 });
+  }
+
   private drawAim(w: World): void {
     const g = this.aimG.clear();
     const a = wormById(w, w.active);
-    if (!a || w.phase !== 'turn' || a.state !== 'stand') return;
+    if (a && w.rope && a.state === 'rope') {
+      const hx = a.x / ONE, hy = a.y / ONE - 6;
+      g.moveTo(hx, hy).lineTo(w.rope.ax / ONE, w.rope.ay / ONE).stroke({ color: 0xd8c3a5, width: 1.6 });
+      g.circle(w.rope.ax / ONE, w.rope.ay / ONE, 2.2).fill(0x777777);
+    }
+    const canAim = a && (a.state === 'stand' || (a.state !== 'dead' && WEAPONS[w.weapon]?.kind === 'rope'));
+    if (!a || w.phase !== 'turn' || !canAim) return;
     const def = WEAPONS[w.weapon];
     if (!def || def.kind === 'skip' || def.kind === 'surrender' || def.kind === 'placed' || def.kind === 'mine') return;
+    if (def.kind === 'rope' && a.state === 'rope') return;
     const ang = aimAngle(w, a);
     const cx = a.x / ONE, cy = a.y / ONE;
     const ux = cosQ(ang) / 16384, uy = sinQ(ang) / 16384;
