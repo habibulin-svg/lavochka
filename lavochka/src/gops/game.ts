@@ -142,7 +142,9 @@ export class Game {
       c.input(this.sentSide, {});
       this.sentSide = -1;
     }
-    while (this.frameNo < c.upto) {
+    // догонять журнал (вернулся в идущую партию) — порциями, чтобы вкладка не вставала
+    let budget = 3000;
+    while (this.frameNo < c.upto && budget-- > 0) {
       const ins = c.take(this.frameNo++);
       const bot = this.bots[this.world.team];
       step(this.world, bot ? bot.input(this.world) : ins.get(this.world.team) ?? {});

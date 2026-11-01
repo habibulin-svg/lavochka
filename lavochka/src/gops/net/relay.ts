@@ -23,6 +23,11 @@ export class GopsRelay {
   private pending: FrameIn[] = [];
   /** Хеш первого присланного для хода — с ним сверяются остальные. */
   private hashes = new Map<number, number>();
+  /** Журнал всех непустых кадров — для вернувшихся и опоздавших. */
+  private log: FrameIn[] = [];
+  /** Кто за какой бригадой сидел и кто хозяин — чтобы вернувшийся по имени сел на своё место. */
+  private claims = new Map<number, string>();
+  private hostName = '';
   desynced = false;
 
   constructor(public setup: NetSetup, private seed: number) {}
@@ -36,8 +41,21 @@ export class GopsRelay {
   }
 
   add(p: RelayPeer, host: boolean): void {
-    this.peers.push({ p, side: null, host });
-    this.lobby();
+    if (host) this.hostName = p.name;
+    const me = { p, side: null as number | null, host };
+    this.peers.push(me);
+    if (!this.started) {
+      this.lobby();
+      return;
+    }
+    // идущая партия: вернувшийся по имени — на своё место (хозяин — хозяином), остальные смотрят
+    for (const [side, name] of this.claims) if (name === p.name && !this.peers.some((x) => x.side === side)) me.side = side;
+    if (p.name === this.hostName && !this.peers.some((x) => x.host && x !== me)) me.host = true;
+    p.send({ t: 'lobby', setup: this.setup, peers: this.peerList(), you: p.id });
+    p.send({ t: 'start', setup: this.setup, seed: this.seed });
+    // pending уже в журнале и уйдёт всем со следующей пачкой — новому отдаём журнал до них
+    const sent = this.log.length - this.pending.length;
+    p.send({ t: 'f', upto: this.pending.length ? this.pending[0][0] : this.frame, ins: this.log.slice(0, sent) });
   }
 
   remove(p: RelayPeer): void {
@@ -85,6 +103,7 @@ export class GopsRelay {
       case 'start': {
         if (!me.host || this.started) return;
         this.started = true;
+        for (const x of this.peers) if (x.side != null) this.claims.set(x.side, x.p.name);
         this.held = this.setup.sides.map(() => ({}));
         this.once = this.setup.sides.map(() => []);
         this.broadcast({ t: 'start', setup: this.setup, seed: this.seed });
@@ -135,7 +154,10 @@ export class GopsRelay {
     while (this.frame < Math.floor((now - this.t0) / FRAME_MS)) {
       for (let s = 0; s < this.held.length; s++) {
         const inp: Input = { ...this.held[s], ...(this.once[s].shift() ?? {}) };
-        if (!emptyInput(inp)) this.pending.push([this.frame, s, inp]);
+        if (!emptyInput(inp)) {
+          this.pending.push([this.frame, s, inp]);
+          this.log.push([this.frame, s, inp]);
+        }
       }
       this.frame++;
     }
@@ -146,8 +168,12 @@ export class GopsRelay {
     }
   }
 
+  private peerList(): NetPeer[] {
+    return this.peers.map((x) => ({ id: x.p.id, name: x.p.name, side: x.side, host: x.host }));
+  }
+
   private lobby(): void {
-    const peers: NetPeer[] = this.peers.map((x) => ({ id: x.p.id, name: x.p.name, side: x.side, host: x.host }));
+    const peers = this.peerList();
     for (const x of this.peers) x.p.send({ t: 'lobby', setup: this.setup, peers, you: x.p.id });
   }
 

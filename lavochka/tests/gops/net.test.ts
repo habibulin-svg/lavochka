@@ -139,3 +139,30 @@ describe('gops/net: лок-степ через ретранслятор', () => 
 function pickHeld(i: Input) {
   return { move: i.move, aim: i.aim, fire: i.fire };
 }
+
+describe('gops/net: возврат в идущую партию', () => {
+  it('вернувшийся по имени садится за свою бригаду и получает журнал кадров', () => {
+    const relay = new GopsRelay(SETUP, 3);
+    const host = peer(1, 'Х'), guest = peer(2, 'Гость');
+    relay.add(host, true);
+    relay.add(guest, false);
+    relay.message(guest, { t: 'claim', side: 1 });
+    relay.message(host, { t: 'start' });
+    relay.message(host, { t: 'in', side: 0, held: { move: 1 } });
+    relay.tick(10);
+    relay.tick(10 + 500);
+    relay.remove(guest);
+    const back = peer(3, 'Гость');
+    relay.add(back, false);
+    const lobby = back.box.find((m) => m.t === 'lobby');
+    expect(lobby?.t === 'lobby' && lobby.peers.find((p) => p.id === 3)?.side).toBe(1);
+    expect(back.box.some((m) => m.t === 'start')).toBe(true);
+    const f = back.box.find((m) => m.t === 'f');
+    expect(f?.t === 'f' && f.ins.length).toBeGreaterThan(20);
+    // теперь он снова правит своей бригадой
+    relay.message(back, { t: 'in', side: 1, held: { aim: -1 } });
+    relay.tick(10 + 600);
+    const last = back.box.filter((m) => m.t === 'f').at(-1);
+    expect(last?.t === 'f' && last.ins.some((x) => x[1] === 1)).toBe(true);
+  });
+});

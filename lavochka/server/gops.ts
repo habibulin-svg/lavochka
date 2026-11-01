@@ -20,8 +20,15 @@ function ensureClock(): void {
   }, 8);
 }
 
-function sweep(code: string): void {
+/** Пустую комнату — убрать; начатую партию ждём две минуты (вернутся после обновления страницы). */
+const GRACE_MS = 120_000;
+
+function sweep(code: string, waited = false): void {
   const r = rooms.get(code);
+  if (r && r.isEmpty && r.isStarted && !waited) {
+    setTimeout(() => sweep(code, true), GRACE_MS);
+    return;
+  }
   if (r && r.isEmpty) rooms.delete(code);
   if (!rooms.size && clock) {
     clearInterval(clock);
@@ -57,7 +64,6 @@ export function gopsFirst(
     code = String(msg.code || '').toUpperCase();
     const r = rooms.get(code);
     if (!r) return fail('Комната не найдена. Проверьте код.');
-    if (r.isStarted) return fail('Партия уже идёт.');
     room = r;
     send({ t: 'joined', code });
   } else return fail('Непонятный запрос.');
