@@ -24,7 +24,7 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-menu { position: absolute; right: 16px; top: 60px; display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 6px;
   padding: 10px; border-radius: 12px; background: rgba(15, 18, 28, 0.92); border: 1px solid rgba(255, 255, 255, 0.15); }
 .hud-menu[hidden] { display: none; }
-.hud-wpn { display: flex; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12);
+.hud-wpn { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06); color: #fff; font: 600 14px 'PT Sans', sans-serif; cursor: pointer; }
 .hud-wpn.on { border-color: #ffd166; }
 .hud-wpn:disabled { opacity: 0.35; cursor: default; }
@@ -61,3 +61,11 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-who { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 10px 26px; border-radius: 14px;
   background: rgba(0, 0, 0, 0.6); font: 400 clamp(22px, 4vw, 40px) 'Russo One', sans-serif; text-shadow: 0 2px 0 #000; pointer-events: none; }
 .hud-who[hidden] { display: none; }
+/* иконки оружия: светлая подложка — тёмные силуэты не теряются на тёмном меню */
+.hud-wpn img, .hud-wpn i { width: 34px; height: 34px; flex: none; border-radius: 8px; object-fit: contain;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12) 70%); }
+.hud-wpn span { flex: 1; text-align: left; }
+.hud-weapon { display: flex; align-items: center; gap: 8px; }
+.hud-weapon img { width: 30px; height: 30px; object-fit: contain; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
+.hud-menu { max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
+@media (min-width: 1000px) and (pointer: fine) { .hud-menu { grid-template-columns: repeat(3, minmax(170px, 1fr)); } }

@@ -60,3 +60,17 @@ export function brandArt(name: string): string {
 export function cutsceneUrl(name: string): string {
   return `${DEV}25-videos/${name}-1-v1.mp4`;
 }
+
+/** Иконки оружия: отобранный вариант из 22-arsenal/cut (отбор 2026-11-02); 0 — пока без картинки (переделка — партия 22b). */
+const ICON_PICK: Record<string, number> = {
+  armatura: 2, auger: 1, babka: 1, buratino: 1, carbide: 2, dog: 1, holodilnik: 1, homing: 1, kalash: 1, kedy: 2, kirpichi: 1, kite: 1,
+  korsar: 2, kozy: 1, kukuruznik: 1, kuryu: 1, limonka: 1, makarov: 2, marshrutka: 1, mawashi: 2, mine: 1, mortar: 0, mukha: 1, napalm: 1,
+  nevidimka: 1, obrez: 1, ognetushitel: 1, otboinik: 1, pas: 1, payalnik: 1, pigeon: 1, plita: 0, pochta: 1, ponyatiya: 1, posylka: 1,
+  pulemet: 1, rezinka: 0, rope: 1, samogon: 1, sling: 2, tnt: 1, truba: 1, tychok: 1, tyidi: 1, ukazka: 2, uppercut: 1, vanna: 1,
+  yagga: 0, zapacanov: 1, zontik: 1,
+};
+
+export function weaponIcon(id: string): string | null {
+  const v = ICON_PICK[id];
+  return v ? `${DEV}22-arsenal/cut/icon-${id}-${v}.png` : null;
+}

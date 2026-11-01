@@ -1,6 +1,6 @@
 /* Интерфейс боя поверх холста (DOM): таймер хода, ветер, здоровье бригад, выбранное оружие,
  * сетка оружия (Tab / кнопка), экранные кнопки для телефона, итог партии. */
-import { BRIGADES } from '../assets';
+import { BRIGADES, weaponIcon } from '../assets';
 import type { Controls } from '../input';
 import { TICK_HZ, type World } from '../sim/world';
 import { WEAPONS } from '../sim/weapons';
@@ -106,7 +106,8 @@ export class Hud {
         const b = document.createElement('button');
         b.className = 'hud-wpn' + (id === w.weapon ? ' on' : '');
         b.disabled = n === 0;
-        b.innerHTML = `<span>${WEAPON_NAMES[id] ?? id}</span><b>${n < 0 ? '∞' : n}</b>`;
+        const icon = weaponIcon(id);
+        b.innerHTML = `${icon ? `<img src="${icon}" alt="">` : '<i></i>'}<span>${WEAPON_NAMES[id] ?? id}</span><b>${n < 0 ? '∞' : n}</b>`;
         b.onclick = () => {
           this.onPick(id);
           this.menu.hidden = true;
@@ -149,7 +150,13 @@ export class Hud {
       })
       .join('');
     const need = WEAPONS[w.weapon]?.target && !w.target && w.phase === 'turn' && (!this.mine || this.mine.includes(w.team));
-    this.weapon.textContent = (WEAPON_NAMES[w.weapon] ?? w.weapon) + (need ? ' — ткни в точку' : '');
+    const label = (WEAPON_NAMES[w.weapon] ?? w.weapon) + (need ? ' — ткни в точку' : '');
+    if (this.weapon.dataset.label !== label) {
+      this.weapon.dataset.label = label;
+      const icon = weaponIcon(w.weapon);
+      this.weapon.innerHTML = `${icon ? `<img src="${icon}" alt="">` : ''}<span></span>`;
+      (this.weapon.querySelector('span') as HTMLElement).textContent = label;
+    }
     if (!this.menu.hidden && this.menuFor !== w.team) this.menu.hidden = true;
     if (w.phase === 'over' && this.banner.hidden && !this.quietOver) {
       const b = BRIGADES.find((x) => x.id === this.brigades[w.winner]);

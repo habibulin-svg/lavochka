@@ -243,6 +243,26 @@ def arsenal_job() -> dict:
             'defaults': {'width': 1024, 'height': 1024, 'steps': 8}, 'seeds': [1, 2], 'items': items}
 
 
+# Переделка иконок после отбора 2026-11-02: миномёт вышел ступкой, плита и резинка — с пистолетом, энергетик — с чужим
+# логотипом; отбойник, ледобур, «ты иди», весы — тёмные, теряются на тёмном меню. Описание жёстче, 4 сида.
+ICON_FIX = [
+    ('mortar', 'military mortar: a short rusty water pipe on a two-legged stand, angled up, a round shell flying out with a puff of smoke'),
+    ('plita', 'one plain rectangular grey reinforced concrete beam, lying horizontally, nothing else'),
+    ('rezinka', 'loop of white elastic underwear waistband stretched between two fingers like a rubber band, pink and white'),
+    ('yagga', 'plain aluminium drink can, smooth silver with one big yellow lightning bolt, generic, no brand, no claws, no letters, no logo'),
+    ('otboinik', 'bright yellow pneumatic jackhammer with a steel chisel tip, light colours'),
+    ('auger', 'bright orange hand ice auger drill with a shiny spiral blade, light colours'),
+    ('tyidi', 'friendly open hand pointing forward with the index finger, light skin tone, light colours'),
+    ('ponyatiya', 'shiny golden balance scales, both pans level, light colours'),
+]
+
+
+def arsenal_fix_job() -> dict:
+    items = [{'name': f'icon-{wid}', 'prompt': f'{desc}. {ICON}'} for wid, desc in ICON_FIX]
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': 'Apache-2.0 (Z-Image-Turbo)',
+            'defaults': {'width': 1024, 'height': 1024, 'steps': 8}, 'seeds': [11, 12, 13, 14], 'items': items}
+
+
 # ---------------------------------------------------------------- общее: ящики, объекты, интерфейс
 COMMON = [
     ('crate-weapon', 'wooden crate with a big red star and metal corners, hanging on a small parachute made of a striped umbrella'),
@@ -443,6 +463,7 @@ if __name__ == '__main__':
     dump('21-themes.yaml', 'ГОПС, партия 21: 12 тем уровней — фоны по времени суток, грунт, кромка, жидкость, предметы',
          {**theme_job('_', THEMES['yard']), 'items': [it for tid, t in THEMES.items() for it in theme_job(tid, t)['items']]})
     dump('22-arsenal.yaml', 'ГОПС, партия 22: иконки оружия и предметы в мире (снаряды, оружие в руке)', arsenal_job())
+    dump('22b-arsenal-fix.yaml', 'ГОПС, партия 22b: переделка неудачных иконок оружия (после отбора)', arsenal_fix_job())
     dump('23-common.yaml', 'ГОПС, партия 23: ящики, бочки, кепки-надгробия, интерфейс', common_job())
     dump('24-cutscene-keys.yaml', 'ГОПС, партия 24: ключевые кадры роликов, заставки и эффектов', cutscene_keys_job())
     dump('25-videos.yaml', 'ГОПС, партия 25: ролики (Wan 2.2), заставка, эффекты', videos_job())

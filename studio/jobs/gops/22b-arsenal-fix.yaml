@@ -1,0 +1,39 @@
+# ГОПС, партия 22b: переделка неудачных иконок оружия (после отбора)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 12
+- 13
+- 14
+items:
+- name: icon-mortar
+  prompt: 'military mortar: a short rusty water pipe on a two-legged stand, angled up, a round shell flying out with a puff of smoke. Game UI weapon icon, single object centered on a plain dark teal background,
+    bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.'
+- name: icon-plita
+  prompt: one plain rectangular grey reinforced concrete beam, lying horizontally, nothing else. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon
+    3D render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-rezinka
+  prompt: loop of white elastic underwear waistband stretched between two fingers like a rubber band, pink and white. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette,
+    stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-yagga
+  prompt: plain aluminium drink can, smooth silver with one big yellow lightning bolt, generic, no brand, no claws, no letters, no logo. Game UI weapon icon, single object centered on a plain dark teal
+    background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-otboinik
+  prompt: bright yellow pneumatic jackhammer with a steel chisel tip, light colours. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render,
+    soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-auger
+  prompt: bright orange hand ice auger drill with a shiny spiral blade, light colours. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render,
+    soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-tyidi
+  prompt: friendly open hand pointing forward with the index finger, light skin tone, light colours. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized
+    cartoon 3D render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-ponyatiya
+  prompt: shiny golden balance scales, both pans level, light colours. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon
+    shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
