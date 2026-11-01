@@ -14,6 +14,7 @@ import json
 import pathlib
 import subprocess
 
+import numpy as np
 import torch
 import torchaudio
 
@@ -31,6 +32,15 @@ def stress(text: str) -> str:
     if _accent is None:
         _accent = RUAccent()
         _accent.load(omograph_model_size='turbo3.1', use_dictionary=True, tiny_mode=False)
+        # transformers 5 не отдаёт token_type_ids, а модель ударений для слов вне словаря их требует — нули
+        tok = _accent.accent_model.tokenizer
+
+        def tok_with_types(*args, **kw):
+            r = tok(*args, **kw)
+            if 'token_type_ids' not in r:
+                r['token_type_ids'] = np.zeros_like(r['input_ids'])
+            return r
+        _accent.accent_model.tokenizer = tok_with_types
     t = text if '+' in text else _accent.process_all(text)
     # ruaccent сам меняет е → ё («все» → «всё»): буквы возвращаем из исходника, берём только «+»
     plain = t.replace('+', '')
