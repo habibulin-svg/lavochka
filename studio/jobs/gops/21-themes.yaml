@@ -1,0 +1,1446 @@
+# ГОПС, партия 21: 12 тем уровней — фоны по времени суток, грунт, кромка, жидкость, предметы
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 1
+- 2
+- 3
+items:
+- name: yard-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: distant silhouettes of nine-storey panel blocks, a factory chimney and a TV tower on the horizon, simple, low detail, horizon at the
+    very bottom. night scene, deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of
+    the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: yard-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a row of five-storey grey panel khrushchevka buildings with balconies and laundry, rusty garages, poplars, a playground, horizon in the
+    lower third. night scene, deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of
+    the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: yard-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: distant silhouettes of nine-storey panel blocks, a factory chimney and a TV tower on the horizon, simple, low detail, horizon at the
+    very bottom. overcast grey autumn day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: yard-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a row of five-storey grey panel khrushchevka buildings with balconies and laundry, rusty garages, poplars, a playground, horizon in the
+    lower third. overcast grey autumn day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: yard-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of packed brown earth with broken red bricks, gravel, asphalt chunks, rusty pipe fragments, bottle caps, seen straight on, filling the whole frame edge to edge,
+    hand-painted 2D game terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.
+- name: yard-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: cracked grey asphalt with tufts of grass and dandelions, hand-painted 2D game terrain border, plain grey background above and below.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: yard-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a huge muddy brown puddle with floating leaves and a paper boat, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: yard-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: metal climbing frame shaped like a rocket. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: Soviet carousel roundabout. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: sandbox with a wooden mushroom roof. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: clothes drying rack with laundry. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: telephone booth, red and cracked glass. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: street lamp post, concrete. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: carpet beating rack (metal frame). Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: yard-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: abandoned baby stroller, Soviet style. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: flat landscape with power line towers and distant panel blocks, simple, low detail, horizon at the very bottom. warm late-summer evening
+    light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: garages-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: endless rows of rusty corrugated metal garages with mismatched doors, tar roofs, satellite dishes, birch trees behind, horizon in the
+    lower third. warm late-summer evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: garages-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: flat landscape with power line towers and distant panel blocks, simple, low detail, horizon at the very bottom. bright clear midday
+    light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: garages-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: endless rows of rusty corrugated metal garages with mismatched doors, tar roofs, satellite dishes, birch trees behind, horizon in the
+    lower third. bright clear midday light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: garages-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: flat landscape with power line towers and distant panel blocks, simple, low detail, horizon at the very bottom. night scene, deep blue
+    sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: garages-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: endless rows of rusty corrugated metal garages with mismatched doors, tar roofs, satellite dishes, birch trees behind, horizon in the
+    lower third. night scene, deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of
+    the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: garages-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of oily dark soil with buried car parts, bolts, broken bricks, old batteries, tire chunks, seen straight on, filling the whole frame edge to edge, hand-painted
+    2D game terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people,
+    no text, no logos, no watermark.
+- name: garages-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: crumbling concrete slab edge with weeds and puddle stains, hand-painted 2D game terrain border, plain grey background above and below.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: garages-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a black oily puddle of used motor oil with rainbow sheen, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: garages-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old boxy Soviet sedan on bricks with no wheels. Stylized cartoon 3D game art, soft toon shading, clean
+    dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: garage door painted green, slightly open. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: stack of old car tires. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty metal barrel of fuel. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: car engine block on a pallet. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: homemade wooden ladder leaning. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small Soviet motorcycle with sidecar. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: workbench with vise. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: gas cylinder red. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: car hood leaning on a wall. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old Soviet minivan, light blue, rusted. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: garages-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: dog house with a chain. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: new microdistrict under construction, several cranes on the horizon, simple, low detail, horizon at the very bottom. bright clear midday
+    light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: construction-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: unfinished panel building skeleton with a tower crane, concrete slabs, scaffolding, a blue fence, horizon in the lower third. bright clear
+    midday light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no
+    logos, no watermark.'
+- name: construction-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: new microdistrict under construction, several cranes on the horizon, simple, low detail, horizon at the very bottom. warm late-summer
+    evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: construction-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: unfinished panel building skeleton with a tower crane, concrete slabs, scaffolding, a blue fence, horizon in the lower third. warm late-summer
+    evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: construction-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: new microdistrict under construction, several cranes on the horizon, simple, low detail, horizon at the very bottom. overcast grey autumn
+    day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: construction-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: unfinished panel building skeleton with a tower crane, concrete slabs, scaffolding, a blue fence, horizon in the lower third. overcast
+    grey autumn day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no
+    logos, no watermark.'
+- name: construction-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of layered sand and clay with concrete chunks, rebar, broken tiles, gravel layers, seen straight on, filling the whole frame edge to edge, hand-painted 2D game
+    terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.
+- name: construction-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: rough concrete edge with sand and rebar sticking out, hand-painted 2D game terrain border, plain grey background above and below.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: construction-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a pit of grey wet cement slurry, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon 3D game art, soft
+    toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: construction-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: concrete mixer, orange. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: stack of concrete slabs. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big concrete ring for wells. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wheelbarrow with sand. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden cable spool. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: construction trailer cabin (bytovka). Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of red bricks on a pallet. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: steel I-beam. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: traffic barrier striped red white. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small yellow excavator, toy-like. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: tower crane hook with chain. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: construction-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: portable toilet booth blue. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: hazy horizon with a landfill hill and seagulls, distant chimneys, simple, low detail, horizon at the very bottom. overcast grey autumn
+    day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dump-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: mountains of garbage, old fridges and cars, crows, smoke from burning heaps, horizon in the lower third. overcast grey autumn day, moody
+    soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dump-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: hazy horizon with a landfill hill and seagulls, distant chimneys, simple, low detail, horizon at the very bottom. warm late-summer evening
+    light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dump-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: mountains of garbage, old fridges and cars, crows, smoke from burning heaps, horizon in the lower third. warm late-summer evening light,
+    golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dump-ground
+  seeds:
+  - 1
+  - 2
+  prompt: 'Flat texture of a cross-section of compressed trash layers: plastic bags, cans, old shoes, newspapers, glass, dirt, seen straight on, filling the whole frame edge to edge, hand-painted 2D game
+    terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: dump-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: crust of crumpled cans, bottles and rags with a few weeds, hand-painted 2D game terrain border, plain grey background above and below.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dump-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a green toxic sludge pool with bubbles, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon 3D game art,
+    soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: dump-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old white Soviet fridge lying on its side. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: broken tube TV set. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old sofa with springs out. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of garbage bags. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty car body crushed. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old bathtub cast iron. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: burning barrel with small fire. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: broken piano upright. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: shopping cart rusty. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of old tires smoking. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: washing machine old round Soviet. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dump-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: mattress stained. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: industrial skyline of chimneys with smoke and red warning lights, simple, low detail, horizon at the very bottom. overcast grey autumn
+    day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: factory-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: Soviet factory buildings with sawtooth roofs, huge pipes, cooling towers, overpasses, broken windows, horizon in the lower third. overcast
+    grey autumn day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no
+    logos, no watermark.'
+- name: factory-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: industrial skyline of chimneys with smoke and red warning lights, simple, low detail, horizon at the very bottom. night scene, deep
+    blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but
+    cozy, no people, no text, no logos, no watermark.'
+- name: factory-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: Soviet factory buildings with sawtooth roofs, huge pipes, cooling towers, overpasses, broken windows, horizon in the lower third. night
+    scene, deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly
+    shabby but cozy, no people, no text, no logos, no watermark.'
+- name: factory-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: industrial skyline of chimneys with smoke and red warning lights, simple, low detail, horizon at the very bottom. warm late-summer evening
+    light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: factory-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: Soviet factory buildings with sawtooth roofs, huge pipes, cooling towers, overpasses, broken windows, horizon in the lower third. warm
+    late-summer evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: factory-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of dark slag and coal layers with metal scraps, gears, pipes and concrete blocks, seen straight on, filling the whole frame edge to edge, hand-painted 2D game terrain
+    texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.
+- name: factory-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: steel grating and rusty metal plates edge with oil stains, hand-painted 2D game terrain border, plain grey background above and below.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: factory-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a pool of black fuel oil (mazut) with slow ripples, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon
+    3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: factory-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big rusty gear wheel. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: industrial pipe valve with red wheel. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: metal container shipping rusty. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: electric transformer box with danger sign (no text). Stylized cartoon 3D game art, soft toon shading,
+    clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pallet stack. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: forklift old Soviet yellow. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big metal hook on chain. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty water tower. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: control panel with dials. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: coal cart on rails. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: steel drums stacked. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: factory-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: factory lamp hanging. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: city center with a Stalinist building and a church dome, trams, simple, low detail, horizon at the very bottom. bright clear midday
+    light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: market-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a 1990s open-air market: rows of stalls under tarps, kiosks with bars, crowds of umbrellas, a bus stop, horizon in the lower third. bright
+    clear midday light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: market-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: city center with a Stalinist building and a church dome, trams, simple, low detail, horizon at the very bottom. warm late-summer evening
+    light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: market-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a 1990s open-air market: rows of stalls under tarps, kiosks with bars, crowds of umbrellas, a bus stop, horizon in the lower third. warm
+    late-summer evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: market-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of trampled soil with cardboard, crates, fruit peels, coins, bottle caps and sunflower husks, seen straight on, filling the whole frame edge to edge, hand-painted
+    2D game terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people,
+    no text, no logos, no watermark.
+- name: market-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: broken paving tiles with litter and puddles, hand-painted 2D game terrain border, plain grey background above and below. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: market-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a deep river of rain water rushing along the market street, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: market-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: metal street kiosk with small windows. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: market stall with watermelons. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: kvass yellow barrel on wheels. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden crates with apples. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big checkered plastic bag (chelnok bag). Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old scales with weights. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: striped market umbrella. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: shawarma stand with a grill. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: soda water vending machine Soviet. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of cabbages. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: stack of VHS tapes on a folding table. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: market-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: ice cream cart. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: steppe horizon with a long freight train and power lines, simple, low detail, horizon at the very bottom. warm late-summer evening light,
+    golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: depot-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a railway yard with freight cars, tanks, semaphores, a footbridge and a little station, horizon in the lower third. warm late-summer evening
+    light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: depot-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: steppe horizon with a long freight train and power lines, simple, low detail, horizon at the very bottom. overcast grey autumn day,
+    moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: depot-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a railway yard with freight cars, tanks, semaphores, a footbridge and a little station, horizon in the lower third. overcast grey autumn
+    day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: depot-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: steppe horizon with a long freight train and power lines, simple, low detail, horizon at the very bottom. night scene, deep blue sky
+    with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no
+    people, no text, no logos, no watermark.'
+- name: depot-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a railway yard with freight cars, tanks, semaphores, a footbridge and a little station, horizon in the lower third. night scene, deep
+    blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but
+    cozy, no people, no text, no logos, no watermark.'
+- name: depot-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of railway ballast gravel over dark soil with sleepers, rails, spikes and coal, seen straight on, filling the whole frame edge to edge, hand-painted 2D game terrain
+    texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.
+- name: depot-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: rail track on wooden sleepers and gravel, hand-painted 2D game terrain border, plain grey background above and below. Stylized cartoon
+    3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: depot-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a flooded drainage ditch with dark water and reeds, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon
+    3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: depot-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: freight boxcar red brown. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: railway tank car black. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old green diesel locomotive. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: railway semaphore signal. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: hand draisine (handcar). Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of railway sleepers. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: switch lever. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: railway buffer stop. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: water column for steam engines. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small booth of a switchman. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: flatcar with logs. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: depot-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old steam locomotive black red. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: forest and fields with a river bend, a village church, simple, low detail, horizon at the very bottom. bright clear midday light, blue
+    sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dacha-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: Soviet dacha village: small wooden houses, greenhouses, fences, apple trees, a water tower, horizon in the lower third. bright clear midday
+    light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: dacha-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: forest and fields with a river bend, a village church, simple, low detail, horizon at the very bottom. warm late-summer evening light,
+    golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dacha-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: Soviet dacha village: small wooden houses, greenhouses, fences, apple trees, a water tower, horizon in the lower third. warm late-summer
+    evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: dacha-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of rich black garden soil with potatoes, carrots, roots, worms and pebbles, seen straight on, filling the whole frame edge to edge, hand-painted 2D game terrain
+    texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.
+- name: dacha-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: green grass edge with garden beds and strawberries, hand-painted 2D game terrain border, plain grey background above and below. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: dacha-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a pond with water lilies and frogs, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon 3D game art, soft
+    toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: dacha-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small wooden dacha house with a veranda. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: greenhouse with plastic film. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden outhouse. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: garden scarecrow. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big barrel for rain water. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden bathhouse banya. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: apple tree with red apples. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old bicycle Soviet. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: garden wheelbarrow with potatoes. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: beehive. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian
+    provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: well with a wooden crank. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: dacha-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of firewood. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-far-winter
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: snowy city skyline with smoke from chimneys rising straight up, simple, low detail, horizon at the very bottom. frosty winter day, pale
+    pink sunset sky, snow everywhere. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: winter-near-winter
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: snowy courtyard with panel buildings, an ice slide, a frozen hockey box, snowmen and spruce trees, horizon in the lower third. frosty
+    winter day, pale pink sunset sky, snow everywhere. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: winter-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: snowy city skyline with smoke from chimneys rising straight up, simple, low detail, horizon at the very bottom. night scene, deep blue
+    sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy,
+    no people, no text, no logos, no watermark.'
+- name: winter-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: snowy courtyard with panel buildings, an ice slide, a frozen hockey box, snowmen and spruce trees, horizon in the lower third. night scene,
+    deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby
+    but cozy, no people, no text, no logos, no watermark.'
+- name: winter-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of packed snow and ice layers with frozen dirt, buried sleds and mittens, seen straight on, filling the whole frame edge to edge, hand-painted 2D game terrain texture,
+    even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: winter-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: snowdrift edge with icicles and snow crust, hand-painted 2D game terrain border, plain grey background above and below. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: winter-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of an ice hole (prorub) of freezing black water with ice shards, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: winter-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: snowman with a bucket hat. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden sled Soviet. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: ice slide wooden. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: hockey goal net. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: decorated spruce New Year tree. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: snow-covered bench. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: frozen car under snow. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: ice sculpture of a bear. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: snow fort wall. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pile of snow with a shovel. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: tangerine crate. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: winter-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: skating rink lamp post. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-far-night
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: dark concrete tunnel depth with pipes fading into steam, simple, low detail, horizon at the very bottom. night scene, deep blue sky
+    with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no
+    people, no text, no logos, no watermark.'
+- name: heating-near-night
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: underground heating tunnel with huge insulated pipes, valves, steam, dim lamps and graffiti-free concrete walls, horizon in the lower
+    third. night scene, deep blue sky with stars and a big moon, warm yellow lit windows and street lamps. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s,
+    slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: heating-far-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: dark concrete tunnel depth with pipes fading into steam, simple, low detail, horizon at the very bottom. overcast grey autumn day, moody
+    soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: heating-near-grey
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: underground heating tunnel with huge insulated pipes, valves, steam, dim lamps and graffiti-free concrete walls, horizon in the lower
+    third. overcast grey autumn day, moody soft light, drizzle haze. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people,
+    no text, no logos, no watermark.'
+- name: heating-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of wet concrete and clay with pipes, cables, rusted brackets and rat holes, seen straight on, filling the whole frame edge to edge, hand-painted 2D game terrain
+    texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.
+- name: heating-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: concrete ledge with pipes running along it and dripping water, hand-painted 2D game terrain border, plain grey background above and
+    below. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: heating-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of steaming hot water from a burst pipe, boiling with bubbles, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: heating-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: big insulated pipe section with steam leak. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty valve wheel. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: manhole ladder. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old mattress and a kettle (cozy corner). Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: electric cable spool. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: pressure gauge on pipe. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden crate as a table with candles. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: concrete pillar cracked. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: red fire extinguisher old. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: flashlight on the floor. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rat sitting on a pipe (cute). Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: heating-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: metal hatch door. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: city outskirts with panel blocks and a water tower, simple, low detail, horizon at the very bottom. bright clear midday light, blue
+    sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: school-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a typical Soviet school building, stadium with a running track, football goals, a monument-free square, birches, horizon in the lower
+    third. bright clear midday light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no
+    people, no text, no logos, no watermark.'
+- name: school-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: city outskirts with panel blocks and a water tower, simple, low detail, horizon at the very bottom. warm late-summer evening light,
+    golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: school-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: a typical Soviet school building, stadium with a running track, football goals, a monument-free square, birches, horizon in the lower
+    third. warm late-summer evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no
+    people, no text, no logos, no watermark.'
+- name: school-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of sports ground soil with red running track rubber, chalk, lost balls, pencils and erasers, seen straight on, filling the whole frame edge to edge, hand-painted
+    2D game terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people,
+    no text, no logos, no watermark.
+- name: school-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: red running track edge with white lines and grass, hand-painted 2D game terrain border, plain grey background above and below. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: school-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of a flooded school basement water, murky with floating balls, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized
+    cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: school-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: school desk wooden with a chair. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: blackboard on wheels. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: vaulting horse (gym). Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: basketball hoop. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: globe on a stand. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: football goal. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: skeleton model from biology class (cartoon, cute). Stylized cartoon 3D game art, soft toon shading, clean
+    dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: school bus yellow old. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: piano in an assembly hall. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: stack of books. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: gym mat stack. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: school-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: chalk and sponge on a shelf. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-far-day
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: wide river with a long bridge and the city skyline on the far bank, simple, low detail, horizon at the very bottom. bright clear midday
+    light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: beach-near-day
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: city river beach: boat rental station, piers, a rusty barge, sun umbrellas, a bridge over the Ob river, horizon in the lower third. bright
+    clear midday light, blue sky with small fluffy clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: beach-far-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide panorama for a side-scrolling 2D game far background: wide river with a long bridge and the city skyline on the far bank, simple, low detail, horizon at the very bottom. warm late-summer
+    evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos,
+    no watermark.'
+- name: beach-near-evening
+  width: 1792
+  height: 768
+  prompt: 'Wide side-view panorama seen at eye level from far away: city river beach: boat rental station, piers, a rusty barge, sun umbrellas, a bridge over the Ob river, horizon in the lower third. warm
+    late-summer evening light, golden sky with soft clouds. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.'
+- name: beach-ground
+  seeds:
+  - 1
+  - 2
+  prompt: Flat texture of a cross-section of wet river sand with shells, pebbles, driftwood, bottle caps and a lost slipper, seen straight on, filling the whole frame edge to edge, hand-painted 2D game
+    terrain texture, even lighting, no horizon, no sky. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text,
+    no logos, no watermark.
+- name: beach-crust
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: 'Horizontal strip texture of a ground edge seen from the side: sandy edge with reeds and a few shells, hand-painted 2D game terrain border, plain grey background above and below. Stylized cartoon
+    3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.'
+- name: beach-liquid
+  seeds:
+  - 1
+  - 2
+  width: 1792
+  height: 512
+  prompt: Side view strip of river water, greenish blue with small waves, surface line at the top third, seamless horizontally, 2D game deadly liquid, plain dark background above. Stylized cartoon 3D game
+    art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: beach-prop01
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rowing boat wooden. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop02
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: lifeguard tower. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop03
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: beach umbrella striped. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop04
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: inflatable ring. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop05
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: catamaran pedal boat. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop06
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: kvass barrel. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop07
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old rusty anchor. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop08
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: beach changing booth. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop09
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: fishing rod with a bucket. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop10
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: sand castle. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop11
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: deck chair. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: beach-prop12
+  seeds:
+  - 1
+  - 2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small pier section on stilts. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'

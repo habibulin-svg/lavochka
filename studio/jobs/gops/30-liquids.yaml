@@ -1,0 +1,94 @@
+# ГОПС, партия 30: волны смертельной жидкости по темам — петля
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/gops/21-themes
+server: comfy-big
+defaults:
+  frames: 49
+  steps: 25
+seeds:
+- 1
+clips:
+- name: yard-liquid
+  keys:
+  - yard-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a huge muddy brown puddle with floating leaves and a paper boat, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: garages-liquid
+  keys:
+  - garages-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a black oily puddle of used motor oil with rainbow sheen, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: construction-liquid
+  keys:
+  - construction-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a pit of grey wet cement slurry, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: dump-liquid
+  keys:
+  - dump-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a green toxic sludge pool with bubbles, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: factory-liquid
+  keys:
+  - factory-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a pool of black fuel oil (mazut) with slow ripples, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: market-liquid
+  keys:
+  - market-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a deep river of rain water rushing along the market street, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: depot-liquid
+  keys:
+  - depot-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a flooded drainage ditch with dark water and reeds, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: dacha-liquid
+  keys:
+  - dacha-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a pond with water lilies and frogs, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: winter-liquid
+  keys:
+  - winter-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: an ice hole (prorub) of freezing black water with ice shards, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: heating-liquid
+  keys:
+  - heating-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: steaming hot water from a burst pipe, boiling with bubbles, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: school-liquid
+  keys:
+  - school-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: a flooded school basement water, murky with floating balls, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.
+- name: beach-liquid
+  keys:
+  - beach-liquid-1
+  width: 1280
+  height: 352
+  frames: 49
+  prompt: river water, greenish blue with small waves, gentle waves moving from left to right, small bubbles and ripples, seamless looping motion, static camera.

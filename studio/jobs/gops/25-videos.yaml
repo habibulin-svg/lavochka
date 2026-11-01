@@ -1,0 +1,181 @@
+# ГОПС, партия 25: ролики (Wan 2.2), заставка, эффекты
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/gops/24-cutscene-keys
+server: comfy-big
+defaults:
+  width: 1280
+  height: 704
+  frames: 121
+  steps: 30
+seeds:
+- 1
+clips:
+- name: s00-intro
+  keys:
+  - s00-intro-1
+  - s00-intro-2
+  prompt: dramatic western standoff, the plastic bag tumbles between the gangs, the lads squint and lean forward, the camera slowly pushes in, then a pigeon lands in the middle and everyone flinches. Stylized
+    3D cartoon animation, toon shading, funny slapstick, smooth motion.
+- name: s01-backfire
+  keys:
+  - s01-backfire-1
+  - s01-backfire-2
+  prompt: he fires the rocket launcher but it shoots backwards, a puff of smoke, his huge cap spins in the air and lands back on his head, he blinks surprised. Stylized 3D cartoon animation, toon shading,
+    funny slapstick, smooth motion.
+- name: s02-crate
+  keys:
+  - s02-crate-1
+  - s02-crate-2
+  prompt: the crate slowly falls and lands right on him with a puff of dust, then the lid opens and he pops out dizzy holding a grenade, smiling. Stylized 3D cartoon animation, toon shading, funny slapstick,
+    smooth motion.
+- name: s03-babushka
+  keys:
+  - s03-babushka-1
+  - s03-babushka-2
+  prompt: the grandma stands up and swats both lads with her string bag, they run away in opposite directions holding their caps, she sits back down calmly. Stylized 3D cartoon animation, toon shading,
+    funny slapstick, smooth motion.
+- name: s04-pigeon
+  keys:
+  - s04-pigeon-1
+  - s04-pigeon-2
+  prompt: the pigeon grabs his huge flat cap and flies away with it, the lad jumps and chases it along the roof, waving his arms. Stylized 3D cartoon animation, toon shading, funny slapstick, smooth motion.
+- name: s05-sling
+  keys:
+  - s05-sling-1
+  - s05-sling-2
+  prompt: he shoots the slingshot, the pebble bounces off the lamp post and flies back, bonk on his cap, little stars circle above his head, he wobbles. Stylized 3D cartoon animation, toon shading, funny
+    slapstick, smooth motion.
+- name: s06-staring
+  keys:
+  - s06-staring-1
+  - s06-staring-2
+  prompt: they stare intensely without blinking, the camera circles them, then one of them sneezes violently and both fall backwards. Stylized 3D cartoon animation, toon shading, funny slapstick, smooth
+    motion.
+- name: s07-rope
+  keys:
+  - s07-rope-1
+  - s07-rope-2
+  prompt: he swings heroically, the rope slips, he falls into the muddy puddle with a big splash, only his cap floats on the water, then he pops up spitting water. Stylized 3D cartoon animation, toon shading,
+    funny slapstick, smooth motion.
+- name: s08-dog
+  keys:
+  - s08-dog-1
+  - s08-dog-2
+  prompt: the dog runs forward happily, stops, turns around and runs back to the lad wagging its tail, the lad panics and runs away, the dog chases him joyfully. Stylized 3D cartoon animation, toon shading,
+    funny slapstick, smooth motion.
+- name: s09-kvass
+  keys:
+  - s09-kvass-1
+  - s09-kvass-2
+  prompt: the red lad cuts in line, the teal lads slowly turn their heads toward him, tense silence, the kvass seller lady pours a mug, everybody freezes, the camera zooms on the mug. Stylized 3D cartoon
+    animation, toon shading, funny slapstick, smooth motion.
+- name: s10-winter
+  keys:
+  - s10-winter-1
+  - s10-winter-2
+  prompt: he slides down the ice slide standing on his feet, spins, flies off the end and plunges head first into a snowdrift, only his legs stick out and kick. Stylized 3D cartoon animation, toon shading,
+    funny slapstick, smooth motion.
+- name: s11-victory
+  keys:
+  - s11-victory-1
+  - s11-victory-2
+  prompt: the lads dance a silly squat dance on the garage roof, kicking their legs, one of them waves a flag made of a tracksuit, fireworks in the sky. Stylized 3D cartoon animation, toon shading, funny
+    slapstick, smooth motion.
+- name: s12-deflate
+  keys:
+  - s12-deflate-1
+  - s12-deflate-2
+  prompt: he slowly deflates like a balloon with a whistle, shrinking and flying around in circles, until only his huge cap is left lying on the ground, a leaf falls on it. Stylized 3D cartoon animation,
+    toon shading, funny slapstick, smooth motion.
+- name: s13-map
+  keys:
+  - s13-map-1
+  - s13-map-2
+  prompt: they turn the map around several times, argue silently, point in different directions, then one of them crumples the map and they all walk off in different directions. Stylized 3D cartoon animation,
+    toon shading, funny slapstick, smooth motion.
+- name: s14-plane
+  keys:
+  - s14-plane-1
+  - s14-plane-2
+  prompt: the biplane drops red bricks, the bricks bounce off the umbrella one after another, the lad smiles smugly, then the last brick is a whole bathtub and he runs away. Stylized 3D cartoon animation,
+    toon shading, funny slapstick, smooth motion.
+- name: s15-marshrutka
+  keys:
+  - s15-marshrutka-1
+  - s15-marshrutka-2
+  prompt: the minibus doors close right in front of him and it drives away splashing a puddle onto him, he stands soaking wet, then another minibus passes and splashes him again. Stylized 3D cartoon animation,
+    toon shading, funny slapstick, smooth motion.
+- name: s16-finale
+  keys:
+  - s16-finale-1
+  - s16-finale-2
+  prompt: the lads from different districts shake hands, share sunflower seeds from a paper bag and laugh, the camera pulls back slowly to show the night city, fireflies. Stylized 3D cartoon animation,
+    toon shading, funny slapstick, smooth motion.
+- name: s17-garage-door
+  keys:
+  - s17-garage-door-1
+  - s17-garage-door-2
+  prompt: the door is stuck, he pulls harder and harder, finally the whole garage door falls flat on him with a bang, he slowly crawls out from under it holding his cap. Stylized 3D cartoon animation, toon
+    shading, funny slapstick, smooth motion.
+- name: logo-anim
+  keys:
+  - logo-anim-1
+  - logo-anim-2
+  prompt: the street lamp flickers and turns on with a warm glow, two pigeons land on the bench, a flat cap falls from above onto the bench, the camera slowly pushes in. Stylized 3D cartoon animation, smooth
+    motion.
+- name: fx-explosion-s
+  keys:
+  - fx-explosion-s-1
+  - fx-explosion-s-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the spark bursts into a small round cartoon explosion with orange fire and grey smoke puffs, then fades out, pure black background, static camera
+- name: fx-explosion-l
+  keys:
+  - fx-explosion-l-1
+  - fx-explosion-l-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: a huge cartoon mushroom explosion grows from the center with fire, dirt chunks and thick smoke, then the smoke dissipates, pure black background, static camera
+- name: fx-smoke
+  keys:
+  - fx-smoke-1
+  - fx-smoke-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the smoke puff expands and drifts upward, slowly dissolving, pure black background, static camera
+- name: fx-splash
+  keys:
+  - fx-splash-1
+  - fx-splash-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: something falls into the water, a big cartoon splash of water drops shoots up and falls back, pure black background, static camera
+- name: fx-dust
+  keys:
+  - fx-dust-1
+  - fx-dust-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: a puff of dust and pebbles kicks up from the ground and settles, pure black background, static camera
+- name: fx-fire
+  keys:
+  - fx-fire-1
+  - fx-fire-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the flame grows and flickers as a looping cartoon campfire fire, pure black background, static camera
+- name: fx-bricks
+  keys:
+  - fx-bricks-1
+  - fx-bricks-2
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the brick shatters into pieces flying outward with dust, pure black background, static camera

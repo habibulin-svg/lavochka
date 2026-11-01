@@ -1,0 +1,262 @@
+# ГОПС, партия 22: иконки оружия и предметы в мире (снаряды, оружие в руке)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 1
+- 2
+items:
+- name: icon-mukha
+  prompt: olive green Soviet disposable rocket launcher tube RPG-18. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-mukha
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: olive green rocket launcher tube. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-homing
+  prompt: small cartoon rocket with a red nose and a little antenna. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-homing
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small cartoon rocket with fins. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-mortar
+  prompt: homemade mortar made of a rusty water pipe on a stand. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-mortar
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small round mortar shell. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-pigeon
+  prompt: grey city pigeon with a red firecracker tied to its back. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-pigeon
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: flying grey pigeon carrying a firecracker. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-limonka
+  prompt: cartoon F1 hand grenade, green, ribbed. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: world-limonka
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: green ribbed hand grenade. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-carbide
+  prompt: tin can with a lid tied with wire, white smoke seeping. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-carbide
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: tin can with smoke. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-korsar
+  prompt: cardboard box full of colorful firecrackers. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-korsar
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: colorful cardboard firecracker tube. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-tnt
+  prompt: yellow TNT block with a fuse. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat
+    saturated colors, no text, no letters, no logos.
+- name: world-tnt
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: yellow explosive block with a lit fuse. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-mine
+  prompt: small round metal landmine with a blinking red light. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-mine
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: round metal mine with a red light. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-dog
+  prompt: cute scruffy mongrel dog with a firecracker on its collar, running. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft
+    toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-dog
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: cute running mongrel dog. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-kite
+  prompt: diamond-shaped paper kite with a firecracker tail. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-kite
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: paper kite flying. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-auger
+  prompt: ice auger drill with a bomb on top, spinning. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-auger
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: spinning ice auger bomb. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-obrez
+  prompt: sawn-off double barrel shotgun, wooden stock, cartoon. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-obrez
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: sawn-off shotgun. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-makarov
+  prompt: cartoon Makarov pistol, black. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: world-makarov
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: black pistol. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-kalash
+  prompt: cartoon assault rifle with a wooden stock and curved magazine. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon
+    shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-kalash
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: assault rifle with wooden stock. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-pulemet
+  prompt: cartoon heavy machine gun with an ammo belt. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-pulemet
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: heavy machine gun with ammo belt. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-sling
+  prompt: wooden slingshot with a red rubber band. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: world-sling
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden slingshot. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-uppercut
+  prompt: boxing glove red with motion lines. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-mawashi
+  prompt: sneaker kicking with motion swoosh. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-armatura
+  prompt: rusty steel rebar bar. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated
+    colors, no text, no letters, no logos.
+- name: world-armatura
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty rebar bar. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-tychok
+  prompt: pointing finger hand, cartoon. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-zapacanov
+  prompt: flat cap flying with an explosion star. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-kukuruznik
+  prompt: green Soviet biplane crop duster dropping red bricks. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-kukuruznik
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: green Soviet biplane flying. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-napalm
+  prompt: biplane spraying orange burning liquid. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-posylka
+  prompt: brown parcel box tied with string, with a mine sticking out. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon
+    shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-posylka
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: parcel box tied with string. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-pochta
+  prompt: stack of brown parcels with stamps, falling. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-pochta
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: brown parcel box with stamps. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-samogon
+  prompt: glass jar of homemade moonshine with a cloth lid, glowing golden. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft
+    toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-samogon
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: glass jar with a cloth lid, glowing. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-babka
+  prompt: cute old grandma with a headscarf and a string bag full of potatoes, walking. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D
+    render, soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-babka
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: cute old grandma in a headscarf walking with a string bag. Stylized cartoon 3D game art, soft toon shading,
+    clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-kozy
+  prompt: cute white goat jumping. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated
+    colors, no text, no letters, no logos.
+- name: world-kozy
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: cute white goat running. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-vanna
+  prompt: old white cast iron bathtub falling. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: world-vanna
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: old cast iron bathtub. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-truba
+  prompt: burst pipe with a fountain of water. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-kirpichi
+  prompt: red bricks falling from a stormy cloud. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: world-kirpichi
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: red brick. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-ponyatiya
+  prompt: old balance scales with two flat caps on the pans. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading,
+    clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-rope
+  prompt: coiled rope with a three-pronged metal hook. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-rope
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: three-pronged metal grappling hook. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-rezinka
+  prompt: stretched white elastic band. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat
+    saturated colors, no text, no letters, no logos.
+- name: icon-zontik
+  prompt: black folding umbrella open. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat
+    saturated colors, no text, no letters, no logos.
+- name: world-zontik
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: black umbrella open. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-marshrutka
+  prompt: yellow Russian minibus Gazelle, cartoon, no text. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-marshrutka
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: yellow minibus, cartoon. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-ognetushitel
+  prompt: two red fire extinguishers strapped as a jetpack, white foam blasting. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render,
+    soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: world-ognetushitel
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: red fire extinguisher jetpack. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat
+    saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-plita
+  prompt: grey concrete slab beam. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated
+    colors, no text, no letters, no logos.
+- name: world-plita
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: grey concrete slab. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-otboinik
+  prompt: pneumatic jackhammer. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated
+    colors, no text, no letters, no logos.
+- name: world-otboinik
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: jackhammer. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-payalnik
+  prompt: brass blowtorch with blue flame. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: world-payalnik
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: brass blowtorch. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors,
+    Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: icon-buratino
+  prompt: glass bottle of orange lemonade with bubbles and a wooden nose shaped cork. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render,
+    soft toon shading, clean dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-kedy
+  prompt: white canvas sneakers with speed lines. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-ukazka
+  prompt: small laser pointer with a red beam. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-nevidimka
+  prompt: flat cap half transparent, ghostly. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-yagga
+  prompt: tin can of energy drink with lightning, no text. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean
+    dark outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-holodilnik
+  prompt: old Soviet fridge with ice crystals. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.
+- name: icon-kuryu
+  prompt: park bench with a thermos and a cup of tea. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark
+    outline, flat saturated colors, no text, no letters, no logos.
+- name: icon-pas
+  prompt: white flag on a stick. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline, flat saturated
+    colors, no text, no letters, no logos.
+- name: icon-tyidi
+  prompt: hand waving forward, come on gesture. Game UI weapon icon, single object centered on a plain dark teal background, bold silhouette, stylized cartoon 3D render, soft toon shading, clean dark outline,
+    flat saturated colors, no text, no letters, no logos.

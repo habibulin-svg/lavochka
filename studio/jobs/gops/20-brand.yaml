@@ -1,0 +1,108 @@
+# ГОПС, партия 20: логотип Lavochka Games, титульный арт, фоны меню, карта кампании, экраны загрузки
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 1
+- 2
+- 3
+items:
+- name: logo-a
+  prompt: 'Logo of a game studio: a green Soviet park bench with curved wooden slats seen from the side, below it bold rounded letters "LAVOCHKA GAMES", warm orange and teal colors, dark navy background.
+    clean vector-like game studio logo, centered on a plain background, high contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: logo-b
+  prompt: 'Round emblem badge: a park bench under a glowing street lamp at dusk inside a circle, text "LAVOCHKA GAMES" curved along the bottom of the circle, retro 1990s style, dark background. clean vector-like
+    game studio logo, centered on a plain background, high contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: logo-c
+  prompt: 'Game studio logo: stylized bench made of three thick strokes forming the letter L, next to it the words "LAVOCHKA" big and "GAMES" small, flat design, white background. clean vector-like game
+    studio logo, centered on a plain background, high contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: logo-d
+  prompt: 'Playful logo: cartoon wooden bench with a flat cap lying on it and a few sunflower seeds, chunky 3D letters "LAVOCHKA GAMES" above, toon shading, light background. clean vector-like game studio
+    logo, centered on a plain background, high contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: logo-e
+  prompt: 'Neon sign logo on a brick wall at night: a bench pictogram and the words "LAVOCHKA GAMES" in pink and cyan neon tubes. clean vector-like game studio logo, centered on a plain background, high
+    contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: logo-f
+  prompt: 'Retro Soviet poster-style emblem: red star shape replaced by a bench silhouette, bold condensed letters "LAVOCHKA GAMES", red cream and black palette. clean vector-like game studio logo, centered
+    on a plain background, high contrast, crisp edges, no other text'
+  seeds:
+  - 1
+  - 2
+  - 3
+  - 4
+- name: title-keyart
+  width: 1792
+  height: 768
+  prompt: 'Epic funny standoff: two gangs of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two
+    side stripes, worn sneakers, buzz cuts, squinting cheeky grins, cute and funny, not scary, one team in teal tracksuits on the left hill, one team in red tracksuits on the right hill, a rocket launcher,
+    a slingshot and a grenade, a Soviet courtyard with panel buildings at sunset between them. Stylized low-poly 3D cartoon render, toon shading with clean black outline, flat colors, soft light, cinematic
+    wide shot, no text, no logos, no watermark.'
+- name: menu-bg
+  width: 1792
+  height: 768
+  prompt: Empty Soviet courtyard at dusk with a green park bench in the center under a street lamp, a flat cap left on the bench, panel buildings with lit windows, cozy and calm, room for menu on the left.
+    Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: brigade-select-bg
+  width: 1792
+  height: 768
+  prompt: Row of six empty rusty garages with doors painted in different colors (teal, red, light blue, navy, green, white) at evening, empty asphalt in front. Stylized cartoon 3D game art, soft toon shading,
+    clean shapes, Russian provincial town of the 1990s, slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: campaign-map
+  width: 1792
+  height: 1024
+  prompt: Hand-drawn cartoon map of a big Siberian city split by a wide river with a long bridge, districts as colored patches, little icons of garages, factory, market, railway depot, dachas, school stadium,
+    beach, construction crane, landfill, no labels, no text, top-down illustrated game world map, warm paper texture, toon style
+- name: loading-1
+  width: 1792
+  height: 768
+  prompt: tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers, buzz
+    cuts, squinting cheeky grins, cute and funny, not scary, three of them sitting on a park bench at night eating from a bag of sunflower seeds, watching the city lights. Stylized low-poly 3D cartoon render,
+    toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: loading-2
+  width: 1792
+  height: 768
+  prompt: tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers, buzz
+    cuts, squinting cheeky grins, cute and funny, not scary, one of them aiming an olive rocket launcher backwards while the others duck, courtyard at day. Stylized low-poly 3D cartoon render, toon shading
+    with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: loading-3
+  width: 1792
+  height: 768
+  prompt: tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers, buzz
+    cuts, squinting cheeky grins, cute and funny, not scary, swinging on a rope with a hook between two garage roofs over a muddy puddle. Stylized low-poly 3D cartoon render, toon shading with clean black
+    outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: loading-4
+  width: 1792
+  height: 768
+  prompt: tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers, buzz
+    cuts, squinting cheeky grins, cute and funny, not scary, a wooden crate on a striped umbrella parachute is landing among them, they look up amazed. Stylized low-poly 3D cartoon render, toon shading
+    with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.

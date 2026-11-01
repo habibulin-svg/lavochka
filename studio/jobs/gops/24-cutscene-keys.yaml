@@ -1,0 +1,116 @@
+# ГОПС, партия 24: ключевые кадры роликов, заставки и эффектов
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 1
+- 2
+items:
+- name: s00-intro
+  prompt: Two gangs of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn
+    sneakers, buzz cuts, squinting cheeky grins, cute and funny, not scary face each other across a Soviet courtyard at sunset, teal tracksuits on the left, red on the right, everyone squinting dramatically,
+    wind blowing a plastic bag between them. Stylized low-poly 3D cartoon render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s01-backfire
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a teal tracksuit holds an olive green rocket launcher tube on his shoulder near a garage, aiming. Stylized low-poly 3D cartoon render,
+    toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s02-crate
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a red tracksuit stands in a courtyard looking up at a wooden crate falling on a striped umbrella parachute. Stylized low-poly 3D cartoon
+    render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s03-babushka
+  prompt: Two of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in teal and red tracksuits arguing next to a park bench where a cute old grandma in a headscarf sits with a string bag. Stylized low-poly
+    3D cartoon render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s04-pigeon
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary proudly posing on a garage roof, a fat grey pigeon sits on the edge next to him. Stylized low-poly 3D cartoon render, toon shading with clean
+    black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s05-sling
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a red tracksuit aiming a wooden slingshot at a street lamp post. Stylized low-poly 3D cartoon render, toon shading with clean black outline,
+    flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s06-staring
+  prompt: Two of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary squatting face to face in a staring contest on an asphalt courtyard, teal versus red. Stylized low-poly 3D cartoon render, toon shading with
+    clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s07-rope
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary swinging on a rope with a metal hook between two garage roofs above a big muddy puddle. Stylized low-poly 3D cartoon render, toon shading
+    with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s08-dog
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a teal tracksuit releases a cute scruffy dog that has a small red firecracker on its collar. Stylized low-poly 3D cartoon render, toon
+    shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s09-kvass
+  prompt: A queue of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in teal tracksuits at a yellow kvass barrel on wheels on a sunny street, a red-tracksuit lad sneaks in front. Stylized low-poly 3D cartoon
+    render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s10-winter
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a red tracksuit and a fur hat standing at the top of a snowy ice slide in a winter courtyard. Stylized low-poly 3D cartoon render, toon
+    shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s11-victory
+  prompt: A team of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in teal tracksuits on a garage roof at sunset, arms raised in victory. Stylized low-poly 3D cartoon render, toon shading with clean black
+    outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s12-deflate
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a red tracksuit standing alone on a courtyard, sad face. Stylized low-poly 3D cartoon render, toon shading with clean black outline, flat
+    colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s13-map
+  prompt: Three of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn
+    sneakers, buzz cuts, squinting cheeky grins, cute and funny, not scary gathered around a big paper city map on the hood of an old boxy Soviet car. Stylized low-poly 3D cartoon render, toon shading with
+    clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s14-plane
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary with an open black umbrella in a courtyard, a green Soviet biplane flying low overhead. Stylized low-poly 3D cartoon render, toon shading
+    with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s15-marshrutka
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary running toward a yellow minibus at a bus stop in the rain. Stylized low-poly 3D cartoon render, toon shading with clean black outline, flat
+    colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s16-finale
+  prompt: Gangs of tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in teal, red, light blue, navy, green and white tracksuits sitting together on long benches at night under street lamps. Stylized low-poly
+    3D cartoon render, toon shading with clean black outline, flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: s17-garage-door
+  prompt: One of the tiny chibi Russian 1990s street lads (gopniks), 2.5 heads tall, huge wide flat herringbone caps pulled over the eyes, wider than shoulders, tracksuits with two side stripes, worn sneakers,
+    buzz cuts, squinting cheeky grins, cute and funny, not scary in a teal tracksuit pulling the handle of a rusty garage door. Stylized low-poly 3D cartoon render, toon shading with clean black outline,
+    flat colors, soft light, cinematic wide shot, no text, no logos, no watermark.
+- name: logo-anim
+  prompt: A green Soviet park bench under a street lamp in an empty courtyard at dusk, night slowly falls. Stylized cartoon 3D game art, soft toon shading, clean shapes, Russian provincial town of the 1990s,
+    slightly shabby but cozy, no people, no text, no logos, no watermark.
+- name: fx-explosion-s
+  width: 704
+  height: 704
+  prompt: a tiny orange spark in the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-explosion-l
+  width: 704
+  height: 704
+  prompt: a small glowing ember in the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-smoke
+  width: 704
+  height: 704
+  prompt: a small puff of grey smoke in the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-splash
+  width: 704
+  height: 704
+  prompt: a calm dark water surface line at the bottom of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-dust
+  width: 704
+  height: 704
+  prompt: a flat ground line at the bottom of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-fire
+  width: 704
+  height: 704
+  prompt: a small flame on the ground in the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.
+- name: fx-bricks
+  width: 704
+  height: 704
+  prompt: a red brick in the center of a pure black background. Stylized cartoon game visual effect, toon shading, clean shapes, no text.

@@ -1,0 +1,76 @@
+# ГОПС, партия 26: звуки всего арсенала, ящиков, бойцов, интерфейса и окружения тем. По 2 варианта.
+# Уровни громкости и длины — как в 08-sfx (LEVELS в runners/sfx.py).
+out: G:/temp/studio/out/gops/26-sfx-arsenal
+seeds: [1, 2]
+sounds:
+  # оружие
+  - {name: mortar-fire, duration: 2, level: loud, max: 1.0, prompt: "mortar tube firing, hollow thump and whistle of a shell leaving"}
+  - {name: shell-whistle, duration: 2, level: normal, max: 1.5, prompt: "falling bomb whistle, descending cartoon tone"}
+  - {name: pigeon-flap, duration: 2, level: normal, max: 1.2, prompt: "pigeon wings flapping fast with a fizzing firecracker fuse"}
+  - {name: fuse-hiss, duration: 2, level: quiet, max: 1.5, prompt: "burning fuse hissing and sparkling"}
+  - {name: pin-pull, duration: 1, level: normal, max: 0.4, prompt: "grenade pin pulled, metallic click and ping"}
+  - {name: throw, duration: 1, level: normal, max: 0.5, prompt: "quick throw whoosh of an object through the air"}
+  - {name: firecrackers, duration: 3, level: loud, max: 2.5, prompt: "string of firecrackers popping rapidly, crackling chain"}
+  - {name: can-hiss, duration: 2, level: normal, max: 1.2, prompt: "tin can hissing with pressure then a pop"}
+  - {name: mine-beep, duration: 1, level: ui, max: 0.4, prompt: "small electronic beep of a landmine arming"}
+  - {name: dog-bark, duration: 2, level: normal, max: 1.0, prompt: "small happy mongrel dog barking twice"}
+  - {name: dog-run, duration: 2, level: quiet, max: 1.2, prompt: "small dog paws running quickly on dirt, panting"}
+  - {name: drill, duration: 3, level: normal, max: 2.0, prompt: "ice auger drilling into frozen ground, grinding"}
+  - {name: shotgun, duration: 2, level: loud, max: 1.0, prompt: "shotgun blast with a short echo in a courtyard"}
+  - {name: shotgun-reload, duration: 1, level: normal, max: 0.7, prompt: "break-action shotgun opening and closing, shells clinking"}
+  - {name: pistol, duration: 1, level: normal, max: 0.5, prompt: "single pistol shot, sharp crack"}
+  - {name: rifle-burst, duration: 2, level: loud, max: 1.2, prompt: "assault rifle short burst of five shots, casings tinkling"}
+  - {name: machinegun, duration: 3, level: loud, max: 2.5, prompt: "heavy machine gun firing a long burst, rattling"}
+  - {name: ricochet, duration: 1, level: normal, max: 0.6, prompt: "bullet ricochet whine off metal"}
+  - {name: bat-swing, duration: 1, level: normal, max: 0.5, prompt: "heavy metal bar swing whoosh and clang hit"}
+  - {name: kick, duration: 1, level: normal, max: 0.5, prompt: "martial arts kick whoosh and cartoon thwack"}
+  - {name: poke, duration: 1, level: quiet, max: 0.3, prompt: "soft finger poke, comic boop"}
+  - {name: plane-fly, duration: 4, level: normal, max: 3.0, prompt: "old propeller biplane flying over, engine buzz doppler"}
+  - {name: bricks-fall, duration: 2, level: loud, max: 1.5, prompt: "bricks falling and crashing on ground, crumbling"}
+  - {name: fire-burn, duration: 4, level: quiet, max: 4.0, prompt: "small fire burning and crackling, loopable"}
+  - {name: parcel-drop, duration: 1, level: normal, max: 0.6, prompt: "cardboard parcel box landing with a thud"}
+  - {name: holy-choir, duration: 3, level: normal, max: 2.5, prompt: "short comic choir chord hallelujah, angelic, then a glass jar clink"}
+  - {name: grandma-steps, duration: 2, level: quiet, max: 1.5, prompt: "slow shuffling old lady footsteps with a rustling string bag"}
+  - {name: goats, duration: 2, level: normal, max: 1.5, prompt: "several goats bleating and hooves galloping"}
+  - {name: bathtub-fall, duration: 2, level: loud, max: 1.5, prompt: "cast iron bathtub falling and hitting the ground with a huge metallic clang"}
+  - {name: pipe-burst, duration: 3, level: normal, max: 2.5, prompt: "water pipe bursting, gushing water and hissing steam"}
+  - {name: scales, duration: 2, level: normal, max: 1.2, prompt: "metal scales tipping and settling, chime"}
+  # утилиты и движение
+  - {name: rope-swing, duration: 1, level: quiet, max: 0.6, prompt: "rope creaking under tension while swinging"}
+  - {name: bungee, duration: 1, level: normal, max: 0.7, prompt: "elastic band stretching and boinging"}
+  - {name: umbrella-open, duration: 1, level: normal, max: 0.6, prompt: "umbrella opening with a fabric snap"}
+  - {name: minibus, duration: 3, level: normal, max: 2.0, prompt: "old minibus doors closing and engine driving away"}
+  - {name: jetpack, duration: 3, level: normal, max: 3.0, prompt: "fire extinguisher spraying foam continuously, pressurized hiss, loopable"}
+  - {name: slab-place, duration: 1, level: normal, max: 0.8, prompt: "heavy concrete slab placed down with a thud and dust"}
+  - {name: jackhammer, duration: 3, level: normal, max: 2.5, prompt: "pneumatic jackhammer breaking concrete"}
+  - {name: blowtorch, duration: 3, level: normal, max: 2.5, prompt: "blowtorch roaring flame cutting through dirt, loopable"}
+  - {name: soda-gulp, duration: 2, level: normal, max: 1.0, prompt: "bottle of soda opened, fizz and a big gulp, ahh"}
+  - {name: freeze, duration: 2, level: normal, max: 1.2, prompt: "magical ice freezing crackle, crystals forming"}
+  - {name: fall-thud, duration: 1, level: normal, max: 0.5, prompt: "small body landing on dirt from height, soft thud oof"}
+  - {name: deflate, duration: 2, level: normal, max: 1.8, prompt: "balloon deflating with a long comic whistle and flapping"}
+  - {name: crate-open, duration: 1, level: normal, max: 0.7, prompt: "wooden crate lid popping open with a creak and a cheerful ding"}
+  - {name: health-pickup, duration: 1, level: ui, max: 0.5, prompt: "cheerful pickup chime with a gulp"}
+  - {name: parachute, duration: 2, level: quiet, max: 1.5, prompt: "parachute fabric fluttering in the wind"}
+  - {name: barrel-explode, duration: 3, level: loud, max: 2.0, prompt: "metal fuel barrel exploding with a deep boom and burning whoosh"}
+  - {name: gas-cylinder, duration: 3, level: loud, max: 2.0, prompt: "gas cylinder hissing then exploding loudly"}
+  - {name: drown, duration: 2, level: normal, max: 1.5, prompt: "comic bubbling and gurgling sinking underwater"}
+  - {name: water-rise, duration: 4, level: ambience, max: 4.0, prompt: "water rising and flowing, rumbling flood, loopable"}
+  # окружение тем
+  - {name: amb-yard, duration: 8, level: ambience, max: 8.0, prompt: "summer evening courtyard ambience, distant kids, a dog, birds, a car passing far away"}
+  - {name: amb-garages, duration: 8, level: ambience, max: 8.0, prompt: "garage row ambience, a radio playing far away, a mechanic tinkering, a dog on a chain"}
+  - {name: amb-construction, duration: 8, level: ambience, max: 8.0, prompt: "construction site ambience, crane motor, distant hammering, wind"}
+  - {name: amb-dump, duration: 8, level: ambience, max: 8.0, prompt: "landfill ambience, crows cawing, flies buzzing, wind over trash"}
+  - {name: amb-factory, duration: 8, level: ambience, max: 8.0, prompt: "industrial factory ambience, distant machinery hum, steam hiss, metal clanks"}
+  - {name: amb-market, duration: 8, level: ambience, max: 8.0, prompt: "busy outdoor market ambience, crowd murmur, distant radio, plastic bags"}
+  - {name: amb-depot, duration: 8, level: ambience, max: 8.0, prompt: "railway yard ambience, distant train horn, rails clanking, wind"}
+  - {name: amb-dacha, duration: 8, level: ambience, max: 8.0, prompt: "countryside garden ambience, crickets, birds, bees buzzing, a distant rooster"}
+  - {name: amb-winter, duration: 8, level: ambience, max: 8.0, prompt: "cold winter wind ambience, snow crunching far away, quiet"}
+  - {name: amb-heating, duration: 8, level: ambience, max: 8.0, prompt: "underground tunnel ambience, dripping water, pipe hiss, echo"}
+  - {name: amb-school, duration: 8, level: ambience, max: 8.0, prompt: "school stadium ambience, a whistle, distant kids playing ball, birds"}
+  - {name: amb-beach, duration: 8, level: ambience, max: 8.0, prompt: "river beach ambience, small waves, seagulls, distant people"}
+  # интерфейс
+  - {name: ui-click, duration: 1, level: ui, max: 0.15, prompt: "short wooden click button sound"}
+  - {name: ui-select, duration: 1, level: ui, max: 0.3, prompt: "soft metallic select blip"}
+  - {name: ui-turn, duration: 1, level: ui, max: 0.8, prompt: "short whistle signaling start of turn, like a sports referee"}
+  - {name: ui-hurry, duration: 2, level: ui, max: 1.0, prompt: "urgent alarm clock bell ringing briefly"}
+  - {name: ui-star, duration: 1, level: ui, max: 0.8, prompt: "reward sparkle chime for earning a star"}

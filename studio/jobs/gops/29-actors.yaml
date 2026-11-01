@@ -1,0 +1,108 @@
+# ГОПС, партия 29: живые снаряды (собака, голубь, бабка, козы, кукурузник…) — ролик на месте → спрайт
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/gops/22-arsenal
+server: comfy-big
+defaults:
+  frames: 49
+  steps: 25
+seeds:
+- 1
+clips:
+- name: actor-dog
+  keys:
+  - world-dog-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the dog runs in place, side view, legs cycling, tail wagging, ears bouncing, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-pigeon
+  keys:
+  - world-pigeon-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the pigeon flaps its wings in place, flying, side view, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-babka
+  keys:
+  - world-babka-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the old grandma walks in place with small shuffling steps, swinging the string bag, side view, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-kozy
+  keys:
+  - world-kozy-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the goat gallops in place, side view, bouncy jumping, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-kukuruznik
+  keys:
+  - world-kukuruznik-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the biplane flies in place, propeller spinning fast, slight bobbing, side view, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-kite
+  keys:
+  - world-kite-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the kite flutters in the wind, tail waving, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-auger
+  keys:
+  - world-auger-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the ice auger spins fast in place, drilling motion, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-homing
+  keys:
+  - world-homing-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the rocket flies in place, flame and smoke from the nozzle flickering, side view, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-ognetushitel
+  keys:
+  - world-ognetushitel-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the extinguisher jetpack blasts white foam downward, shaking slightly, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-marshrutka
+  keys:
+  - world-marshrutka-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the minibus drives in place, wheels spinning, bouncing on the suspension, side view, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-zontik
+  keys:
+  - world-zontik-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the umbrella sways gently as if floating down, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-samogon
+  keys:
+  - world-samogon-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the glowing jar pulses with golden light and sparkles, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-mine
+  keys:
+  - world-mine-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the red light on the mine blinks on and off, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.
+- name: actor-tnt
+  keys:
+  - world-tnt-1
+  width: 704
+  height: 704
+  frames: 49
+  prompt: the fuse burns with sparks, getting shorter, plain light grey background, static camera, stylized 3D cartoon animation, smooth loop.

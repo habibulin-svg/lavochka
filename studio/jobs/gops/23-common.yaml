@@ -1,0 +1,71 @@
+# ГОПС, партия 23: ящики, бочки, кепки-надгробия, интерфейс
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 1
+- 2
+- 3
+items:
+- name: crate-weapon
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: wooden crate with a big red star and metal corners, hanging on a small parachute made of a striped umbrella.
+    Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: crate-health
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: white first-aid box with a red cross, Soviet style, tied to a bunch of balloons. Stylized cartoon 3D game
+    art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: crate-utility
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: blue wooden crate with a question mark sign, tied to a parachute made of a bedsheet. Stylized cartoon
+    3D game art, soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: gas-cylinder
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: red Soviet propane gas cylinder, slightly dented. Stylized cartoon 3D game art, soft toon shading, clean
+    dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: fuel-barrel
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: rusty metal oil barrel with a hazard stripe. Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: cap-grave-1
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: flat herringbone cap lying on the ground with a tiny wilted flower on top. Stylized cartoon 3D game art,
+    soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: cap-grave-2
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: eight-panel newsboy cap on a small pile of dirt with a candle. Stylized cartoon 3D game art, soft toon
+    shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: target
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: round shooting target made of plywood on a stick, red and white rings. Stylized cartoon 3D game art, soft
+    toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: girder-short
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: short grey concrete beam. Stylized cartoon 3D game art, soft toon shading, clean dark outline, flat saturated
+    colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: sunflower-seeds-bag
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small paper cone of sunflower seeds (semki). Stylized cartoon 3D game art, soft toon shading, clean dark
+    outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: brigade-flag
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: small hand-made flag on a stick made of a striped tracksuit fabric, blank. Stylized cartoon 3D game art,
+    soft toon shading, clean dark outline, flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: trophy
+  prompt: 'Single object isolated on plain light grey background, side view, whole object in frame: golden cup trophy made of a samovar. Stylized cartoon 3D game art, soft toon shading, clean dark outline,
+    flat saturated colors, Russian provincial town of the 1990s, no people, no text, no letters, no logos, no watermark.'
+- name: ui-panel-wood
+  prompt: Game UI panel frame made of painted plywood with screws in the corners, empty center, flat front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text,
+    no letters.
+- name: ui-button-green
+  prompt: Game UI rounded button made of a green painted metal plate with rivets, empty, flat front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-button-red
+  prompt: Game UI rounded button made of a red painted metal plate with rivets, empty, flat front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-wind-sock
+  prompt: orange striped windsock on a pole, side view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-timer-clock
+  prompt: Soviet alarm clock with two bells, front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-star
+  prompt: shiny golden five-pointed star badge, flat front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-star-empty
+  prompt: empty dull grey five-pointed star outline badge, flat front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-seeds-coin
+  prompt: single big sunflower seed as a coin icon, golden glow, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-lock
+  prompt: rusty padlock, front view, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
+- name: ui-health-heart
+  prompt: red heart drawn like a tattoo-free sticker, cartoon, plain background. Stylized cartoon 3D game art, toon shading, clean dark outline, no text, no letters.
