@@ -1,4 +1,4 @@
-"""Озвучка реплик бойцов: Chatterbox Multilingual (MIT), русский, клонирование голоса по образцу.
+"""[УСТАРЕЛО — озвучка теперь Qwen3-TTS, runners/tts_qwen.py; решение пользователя 2026-11-02] Озвучка реплик бойцов: Chatterbox Multilingual (MIT), русский, клонирование голоса по образцу.
 
 G:/ai/venvs/tts/Scripts/python.exe -X utf8 studio/runners/tts.py <реплики.json> <выход> [--sets sipliy,maloy] [--only ситуация] [--takes 2] [--test]
 

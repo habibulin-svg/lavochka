@@ -6,9 +6,9 @@ import { type SimEvent, TICK_HZ, type World, wormById } from './sim/world';
 
 const SFX = '/@fs/G:/temp/studio/out/gops/08-sfx/ogg/';
 const ARSENAL = '/@fs/G:/temp/studio/out/gops/26-sfx-arsenal/ogg/';
-/** Озвучка реплик: 32-voices — Chatterbox, 33-voices-qwen — Qwen3-TTS (выбор модели — за пользователем, STATE.md).
+/** Озвучка реплик — Qwen3-TTS (33-voices-qwen; решение пользователя 2026-11-02; прежняя Chatterbox — 32-voices).
  * picks.json в папке — лучший дубль каждой фразы по разборчивости (studio/post/asr_score.py); без него — дубль наугад. */
-const VOICES = '/@fs/G:/temp/studio/out/gops/32-voices/';
+const VOICES = '/@fs/G:/temp/studio/out/gops/33-voices-qwen/';
 let picks: Record<string, string> | null = null;
 void fetch(`${VOICES}picks.json`)
   .then((r) => (r.ok ? r.json() : null))
