@@ -70,7 +70,11 @@ const ICON_PICK: Record<string, number> = {
   yagga: 0, zapacanov: 1, zontik: 1,
 };
 
+/** Переделанные (партия 22b, отбор 2026-11-02) — важнее первого отбора. */
+const ICON_FIX: Record<string, number> = { auger: 12, mortar: 13, otboinik: 11, plita: 12, ponyatiya: 12, rezinka: 13, tyidi: 12, yagga: 12 };
+
 export function weaponIcon(id: string): string | null {
+  if (ICON_FIX[id]) return `${DEV}22b-arsenal-fix/cut/icon-${id}-${ICON_FIX[id]}.png`;
   const v = ICON_PICK[id];
   return v ? `${DEV}22-arsenal/cut/icon-${id}-${v}.png` : null;
 }
