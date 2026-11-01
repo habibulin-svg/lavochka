@@ -18,6 +18,29 @@ import torch
 import torchaudio
 
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+from ruaccent import RUAccent
+
+VOWELS = 'аеёиоуыэюяАЕЁИОУЫЭЮЯ'
+_accent = None
+
+
+def stress(text: str) -> str:
+    """Ударения автоматически (ruaccent, омографы по контексту): «+» перед гласной → знак ударения U+0301 после неё,
+    как в словаре Chatterbox. Ручное «+» в тексте реплики уважается."""
+    global _accent
+    if _accent is None:
+        _accent = RUAccent()
+        _accent.load(omograph_model_size='turbo3.1', use_dictionary=True, tiny_mode=False)
+    t = text if '+' in text else _accent.process_all(text)
+    out, i = [], 0
+    while i < len(t):
+        if t[i] == '+' and i + 1 < len(t) and t[i + 1] in VOWELS:
+            out += [t[i + 1], '́']
+            i += 2
+        else:
+            out.append(t[i])
+            i += 1
+    return ''.join(out)
 
 CKPT = pathlib.Path('G:/ai/models/tts/chatterbox')
 VOICES = pathlib.Path(__file__).parent.parent / 'voices'
@@ -79,11 +102,11 @@ def main():
                     if file in done:
                         continue
                     torch.manual_seed(1000 * i + take)
-                    wav = model.generate(text, language_id='ru', audio_prompt_path=str(ref) if ref.exists() else None,
+                    wav = model.generate(stress(text), language_id='ru', audio_prompt_path=str(ref) if ref.exists() else None,
                                          exaggeration=exag, cfg_weight=0.5, temperature=0.8)
                     torchaudio.save(str(out / file), wav, model.sr)
                     finish(out / file, d / 'ogg' / (pathlib.Path(file).stem + '.ogg'), semi, tempo)
-                    manifest.append({'file': file, 'set': s, 'key': key, 'text': text, 'take': take + 1,
+                    manifest.append({'file': file, 'set': s, 'key': key, 'text': text, 'stressed': stress(text), 'take': take + 1,
                                      'ref': ref.name if ref.exists() else None, 'license': 'MIT (Chatterbox Multilingual)'})
                     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding='utf-8')
                     print('готово', file, text, flush=True)
