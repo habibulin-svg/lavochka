@@ -5,7 +5,7 @@ import { Bot, type BotLevel } from './bot/bot';
 import { Controls } from './input';
 import { type LevelData, dealSpawns, decodeMask } from './level';
 import { BRIGADE_IDS, GameView } from './render/view';
-import { CORE_AMMO } from './sim/weapons';
+import { ARSENAL_AMMO, WEAPONS } from './sim/weapons';
 import { type Input, TICK_HZ, type World, createWorld, step } from './sim/world';
 import { Hud } from './ui/hud';
 
@@ -48,7 +48,7 @@ export class Game {
       mask: decodeMask(s.level),
       waterY: s.level.water_y,
       seed: s.seed,
-      teams: s.sides.map((side, i) => ({ spawns: spawns[i].slice(0, side.count), hp: side.hp, ammo: { ...(s.ammo ?? CORE_AMMO) } })),
+      teams: s.sides.map((side, i) => ({ spawns: spawns[i].slice(0, side.count), hp: side.hp, ammo: { ...(s.ammo ?? ARSENAL_AMMO) } })),
     });
     this.bots = s.sides.map((x) => (x.bot ? new Bot(x.bot) : null));
     this.audio = new GopsAudio(s.theme, s.sides.map((x, i) => x.voice ?? VOICE_SETS[i % VOICE_SETS.length]));
@@ -133,6 +133,14 @@ export class Game {
     });
     el.addEventListener('pointerdown', (e) => {
       if (e.button === 0 && touches.size < 2) drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
+    });
+    // щелчок/тап без перетаскивания — точка для оружия, которому она нужна
+    el.addEventListener('pointerup', (e) => {
+      if (!drag || pinch || e.button !== 0 || Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) return;
+      if (!WEAPONS[this.world.weapon]?.target || this.bots[this.world.team]) return;
+      const r = el.getBoundingClientRect();
+      const [x, y] = this.view.toWorld(e.clientX - r.left, e.clientY - r.top);
+      this.controls.setTarget(x, y);
     });
     window.addEventListener('pointermove', (e) => {
       if (!drag || pinch) return;

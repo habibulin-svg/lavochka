@@ -7,7 +7,7 @@ import { type Body, GRAVITY, free, stepBody } from './body';
 import { ANG_FULL, ONE, fromAngle, len, toPx, trunc } from './fx';
 import type { Mask } from './mask';
 import { Rng } from './rng';
-import { WEAPONS } from './weapons';
+import { type WeaponDef, WEAPONS } from './weapons';
 import { WORM_R, type Worm, type WormEvent, jump, makeWorm, tickWorm, walk } from './worm';
 
 export const TICK_HZ = 60;
@@ -22,6 +22,14 @@ const WIND_K = 12;
 const ROPE_MIN = 16 * ONE;
 const ROPE_REEL = 2 * ONE;
 const ROPE_PUSH = 14;
+/** Наводка: скорость к точке (Q8 за кадр), доля поворота за кадр (из 256), через сколько кадров ракета рвётся сама. */
+const HOMING_SPEED = 2200;
+const HOMING_TURN = 28;
+const HOMING_LIFE = 360;
+/** Зонтик: предел скорости падения. */
+const CHUTE_VY = 160;
+/** Кирпичи и посылки появляются над картой на этой высоте, px. */
+const SKY_Y = -30;
 /** Дольше этого «оседание» не ждём (10 с). */
 const SETTLE_MAX = 600;
 
@@ -62,6 +70,9 @@ export interface Proj extends Body {
   fuse: number;
   state: ProjState;
   age: number;
+  /** Точка наводки, px (−1 — нет). */
+  tx: number;
+  ty: number;
 }
 
 export type CrateKind = 'weapon' | 'health' | 'util';
@@ -79,8 +90,11 @@ export interface Crate {
 }
 
 /** Что бывает в ящиках (только то, что есть в WEAPONS). */
-export const CRATE_WEAPONS = ['mukha', 'limonka', 'sling', 'obrez', 'tnt', 'mine', 'armatura'];
-export const CRATE_UTILS = ['rope'];
+export const CRATE_WEAPONS = [
+  'mukha', 'limonka', 'sling', 'obrez', 'tnt', 'mine', 'armatura', 'homing', 'mortar', 'carbide', 'korsar', 'posylka', 'samogon',
+  'kalash', 'pulemet', 'uppercut', 'mawashi', 'kukuruznik', 'pochta', 'vanna',
+];
+export const CRATE_UTILS = ['rope', 'marshrutka', 'plita', 'otboinik', 'payalnik', 'zontik', 'buratino', 'kedy', 'yagga', 'ukazka', 'tyidi'];
 const CRATE_R = 8;
 const CRATE_FALL = 200;
 const HEALTH = 25;
@@ -110,6 +124,11 @@ export type SimEvent =
   | { t: 'crate-drop'; x: number; kind: CrateKind }
   | { t: 'crate'; worm: number; kind: CrateKind; content: string }
   | { t: 'unrope'; worm: number }
+  /** Земля убрана без взрыва (отбойник, лампа) или добавлена (плита). */
+  | { t: 'carve'; x: number; y: number; r: number }
+  | { t: 'girder'; x0: number; y0: number; x1: number; y1: number; r: number }
+  | { t: 'teleport'; worm: number; x: number; y: number }
+  | { t: 'buff'; worm: number; weapon: string }
   | { t: 'over'; winner: number };
 
 export interface World {
@@ -152,6 +171,18 @@ export interface World {
   rope: { ax: number; ay: number; len: number } | null;
   /** Верёвку в этот ход уже брали (запас списывается раз за ход, цепочка крюков — бесплатно). */
   ropeUsed: boolean;
+  /** Точка на карте для наводки, авиаудара, маршрутки, плиты (px); null — не выбрана. */
+  target: [number, number] | null;
+  /** Усилители этого хода: гравитация (Q8 за кадр²), быстрый шаг, множитель урона, лазер, зонтик. */
+  grav: number;
+  fast: boolean;
+  dmgMul: number;
+  laser: boolean;
+  chute: boolean;
+  /** Отбойник/лампа в работе: кадров осталось. */
+  dig: { left: number } | null;
+  /** Очередь: кадров до следующего выстрела; −1 — очередь не начата. */
+  burst: number;
   events: SimEvent[];
 }
 
@@ -165,6 +196,8 @@ export interface Input {
   fire?: boolean;
   weapon?: string;
   fuse?: number;
+  /** Точка на карте, px (щелчок/тап). */
+  target?: [number, number];
 }
 
 export interface WorldSetup {
@@ -181,7 +214,8 @@ export function createWorld(s: WorldSetup): World {
     tick: 0, mask: s.mask, rng: new Rng(s.seed), waterY: s.waterY, scheme: s.scheme ?? DEFAULT_SCHEME,
     wind: 0, worms: [], teams: [], projs: [], crates: [], caps: [], nextId: 1, phase: 'settle', left: SETTLE_MAX,
     team: s.teams.length - 1, active: -1, aim: -128, weapon: 'mukha', fuse: 3, charge: 0, shots: 0,
-    firePrev: false, hpAtTurn: 0, winner: -1, roundLeft: 0, rope: null, ropeUsed: false, events: [],
+    firePrev: false, hpAtTurn: 0, winner: -1, roundLeft: 0, rope: null, ropeUsed: false, target: null,
+    grav: GRAVITY, fast: false, dmgMul: 1, laser: false, chute: false, dig: null, burst: -1, events: [],
   };
   w.roundLeft = w.scheme.roundTime * TICK_HZ;
   s.teams.forEach((t, ti) => {
@@ -202,7 +236,12 @@ const alive = (x: Worm) => x.state !== 'dead';
 
 /** Направление прицела в мировой угол (0 — вправо, по часовой, y вниз). */
 export function aimAngle(w: World, worm: Worm): number {
-  return worm.facing === 1 ? (w.aim + ANG_FULL) % ANG_FULL : (ANG_FULL / 2 - w.aim + ANG_FULL) % ANG_FULL;
+  return tiltAngle(w.aim, worm.facing);
+}
+
+/** Наклон от горизонтали (как у прицела) в мировой угол для взгляда facing. */
+function tiltAngle(tilt: number, facing: 1 | -1): number {
+  return facing === 1 ? (tilt + ANG_FULL) % ANG_FULL : (ANG_FULL / 2 - tilt + ANG_FULL) % ANG_FULL;
 }
 
 /** Один кадр мира. События кадра — в w.events (очищаются в начале шага). */
@@ -224,8 +263,15 @@ export function step(w: World, input: Input): void {
     else unrope(w, worm);
   }
 
+  if (worm && w.chute) {
+    if (worm.state === 'air') {
+      // зонтик: падает медленно, ветер сносит
+      worm.vy = Math.min(worm.vy, CHUTE_VY);
+      worm.vx = trunc((worm.vx * 240) / 256) + trunc((w.wind * WIND_K) / 200);
+    } else if (worm.state !== 'rope') w.chute = false;
+  }
   const wev: WormEvent[] = [];
-  for (const x of w.worms) tickWorm(x, w.mask, w.waterY, wev);
+  for (const x of w.worms) tickWorm(x, w.mask, w.waterY, wev, w.grav);
   for (const e of wev) {
     if (e.kind === 'fall-damage') {
       const x = wormById(w, e.id)!;
@@ -262,8 +308,14 @@ function calm(w: World): boolean {
 
 function control(w: World, worm: Worm, inp: Input, canFire: boolean): void {
   const team = w.teams[w.team];
+  if (w.dig) {
+    if (inp.aim) w.aim = Math.max(-AIM_MAX, Math.min(AIM_MAX, w.aim + inp.aim * AIM_STEP));
+    tickDig(w, worm, inp);
+    return;
+  }
+  if (inp.target && canFire) w.target = [inp.target[0] | 0, inp.target[1] | 0];
   const fresh = w.shots === (WEAPONS[w.weapon]?.shots ?? 1); // после первого выстрела обреза оружие не меняют
-  if (canFire && fresh && inp.weapon && inp.weapon !== w.weapon && WEAPONS[inp.weapon] && (team.ammo[inp.weapon] ?? 0) !== 0 && w.charge === 0) {
+  if (canFire && fresh && w.burst < 0 && inp.weapon && inp.weapon !== w.weapon && WEAPONS[inp.weapon] && (team.ammo[inp.weapon] ?? 0) !== 0 && w.charge === 0) {
     w.weapon = inp.weapon;
     w.shots = WEAPONS[inp.weapon].shots ?? 1;
   }
@@ -278,12 +330,27 @@ function control(w: World, worm: Worm, inp: Input, canFire: boolean): void {
   if (inp.aim) w.aim = Math.max(-AIM_MAX, Math.min(AIM_MAX, w.aim + inp.aim * AIM_STEP));
   if (worm.state === 'stand' && w.charge === 0) {
     if (inp.jump) jump(worm, inp.jump === 2);
-    else if (inp.move) walk(worm, w.mask, inp.move, []);
+    else if (inp.move) {
+      walk(worm, w.mask, inp.move, []);
+      if (w.fast) walk(worm, w.mask, inp.move, []);
+    }
   }
   if (!canFire) return;
   const def = WEAPONS[w.weapon];
-  if (!def || (worm.state !== 'stand' && !(def.kind === 'rope' && worm.state === 'air'))) return;
-  if (def.charged) {
+  if (!def) return;
+  // в воздухе — только верёвка и зонтик; зонтик — только в воздухе
+  const inAir = worm.state === 'air' && (def.kind === 'rope' || def.buff === 'chute');
+  if ((worm.state !== 'stand' && !inAir) || (def.buff === 'chute' && worm.state !== 'air')) return;
+  if (def.auto) {
+    if (w.burst < 0) {
+      if (inp.fire && !w.firePrev) fire(w, worm);
+    } else if (!inp.fire) {
+      // отпустил — очередь кончилась, остаток пропал
+      if ((team.ammo[w.weapon] ?? 0) > 0) team.ammo[w.weapon]--;
+      w.shots = 0;
+      endAttack(w, false);
+    } else if (--w.burst <= 0) fire(w, worm);
+  } else if (def.charged) {
     if (inp.fire) w.charge++;
     if ((w.firePrev && !inp.fire && w.charge > 0) || w.charge >= CHARGE_MAX) fire(w, worm);
   } else if (inp.fire && !w.firePrev) fire(w, worm);
@@ -304,7 +371,17 @@ function fire(w: World, worm: Worm): void {
     }
     return;
   }
-  w.events.push({ t: 'fire', weapon: w.weapon, worm: worm.id });
+  if (def.target && !w.target) return; // сначала точка на карте
+  // ход не кончают: усилитель, другой боец, начало копки
+  if (def.kind === 'buff' || def.kind === 'select' || def.kind === 'dig') {
+    if (def.kind === 'buff') applyBuff(w, def);
+    else if (def.kind === 'select' && !selectNext(w, worm)) return;
+    else if (def.kind === 'dig') w.dig = { left: def.fuse! * TICK_HZ };
+    if (ammo > 0) team.ammo[w.weapon] = ammo - 1;
+    w.events.push(def.kind === 'buff' ? { t: 'buff', worm: worm.id, weapon: w.weapon } : { t: 'fire', weapon: w.weapon, worm: worm.id });
+    if (def.kind !== 'dig') pickAfterUse(w);
+    return;
+  }
   switch (def.kind) {
     case 'missile':
     case 'grenade':
@@ -312,18 +389,38 @@ function fire(w: World, worm: Worm): void {
       const sp = trunc((def.speed! * Math.max(8, w.charge)) / CHARGE_MAX);
       const [vx, vy] = fromAngle(ang, sp);
       const [ox, oy] = fromAngle(ang, (WORM_R + 4) * ONE);
-      spawnProj(w, def.kind === 'grenade' ? w.fuse * TICK_HZ : -1, worm, worm.x + ox, worm.y + oy, vx, vy);
+      const fuse = def.kind === 'grenade' ? (def.fixedFuse ? def.fuse! : w.fuse) * TICK_HZ : -1;
+      const p = spawnProj(w, w.weapon, fuse, worm.id, worm.x + ox, worm.y + oy, vx, vy);
+      if (def.homing && w.target) [p.tx, p.ty] = w.target;
       break;
     }
     case 'placed':
     case 'mine':
-      spawnProj(w, def.kind === 'placed' ? def.fuse! * TICK_HZ : -1, worm, worm.x + worm.facing * 6 * ONE, worm.y, 0, 0);
+      spawnProj(w, w.weapon, def.kind === 'placed' ? def.fuse! * TICK_HZ : -1, worm.id, worm.x + worm.facing * 6 * ONE, worm.y, 0, 0);
       break;
-    case 'hitscan':
-      shoot(w, worm, wx, wy, ang, def.range!);
+    case 'hitscan': {
+      const a = def.spread ? (ang + w.rng.int(-def.spread, def.spread) + ANG_FULL) % ANG_FULL : ang;
+      shoot(w, worm, wx, wy, a, def.range!);
       break;
+    }
     case 'melee':
-      melee(w, worm, ang);
+      melee(w, worm, def.meleeAim === undefined ? ang : tiltAngle(def.meleeAim, worm.facing));
+      break;
+    case 'strike':
+      strike(w, worm, def);
+      break;
+    case 'teleport':
+      if (!teleport(w, worm)) return;
+      break;
+    case 'girder':
+      if (!placeGirder(w, worm, def)) return;
+      break;
+    case 'justice':
+      justice(w);
+      break;
+    case 'flood':
+      w.waterY = Math.max(40, w.waterY - def.range!);
+      w.events.push({ t: 'rise', y: w.waterY });
       break;
     case 'surrender':
       for (const id of team.worms) wormById(w, id)!.hp = 0;
@@ -331,22 +428,158 @@ function fire(w: World, worm: Worm): void {
     case 'skip':
       break;
   }
+  w.events.push({ t: 'fire', weapon: w.weapon, worm: worm.id });
   w.charge = 0;
   w.shots--;
   if (ammo > 0 && (w.shots <= 0 || def.kind !== 'hitscan')) team.ammo[w.weapon] = ammo - 1;
-  if (w.shots <= 0 || def.kind === 'skip' || def.kind === 'surrender') {
-    const retreat = def.kind === 'skip' || def.kind === 'surrender' ? 0 : w.scheme.retreat * TICK_HZ;
-    w.phase = retreat > 0 ? 'retreat' : 'settle';
-    w.left = retreat > 0 ? retreat : SETTLE_MAX;
+  const instant = def.kind === 'skip' || def.kind === 'surrender' || def.kind === 'justice' || def.kind === 'flood';
+  if (w.shots <= 0 || instant) endAttack(w, instant);
+  else if (def.auto) w.burst = def.auto;
+}
+
+/** Атака закончена: отход (или сразу оседание). */
+function endAttack(w: World, noRetreat: boolean): void {
+  const retreat = noRetreat ? 0 : w.scheme.retreat * TICK_HZ;
+  w.phase = retreat > 0 ? 'retreat' : 'settle';
+  w.left = retreat > 0 ? retreat : SETTLE_MAX;
+  w.burst = -1;
+  w.dig = null;
+}
+
+/** Утилита кончилась — в руки то, что ещё есть (иначе следующий огонь — впустую). */
+function pickAfterUse(w: World): void {
+  const team = w.teams[w.team];
+  if ((team.ammo[w.weapon] ?? 0) !== 0) return;
+  w.weapon = Object.keys(team.ammo).find((k) => team.ammo[k] !== 0 && WEAPONS[k] && !WEAPONS[k].hidden) ?? 'kuryu';
+  w.shots = WEAPONS[w.weapon].shots ?? 1;
+}
+
+function applyBuff(w: World, def: WeaponDef): void {
+  if (def.buff === 'lowgrav') w.grav = GRAVITY >> 1;
+  else if (def.buff === 'fast') w.fast = true;
+  else if (def.buff === 'double') w.dmgMul = 2;
+  else if (def.buff === 'laser') w.laser = true;
+  else if (def.buff === 'chute') w.chute = true;
+}
+
+/** «Ты иди»: ход переходит следующему живому бойцу бригады. */
+function selectNext(w: World, worm: Worm): boolean {
+  const team = w.teams[w.team];
+  const i0 = team.worms.indexOf(worm.id);
+  for (let k = 1; k < team.worms.length; k++) {
+    const i = (i0 + k) % team.worms.length;
+    const next = wormById(w, team.worms[i])!;
+    if (!alive(next) || next.hp <= 0) continue;
+    unrope(w, worm);
+    team.last = i;
+    w.active = next.id;
+    w.hpAtTurn = next.hp;
+    w.events.push({ t: 'turn', team: w.team, worm: next.id });
+    return true;
+  }
+  return false;
+}
+
+/** «По понятиям»: здоровье всех стоящих — поровну. */
+function justice(w: World): void {
+  const live = w.worms.filter((x) => alive(x) && x.hp > 0);
+  if (!live.length) return;
+  const avg = trunc(live.reduce((s, x) => s + x.hp, 0) / live.length);
+  for (const x of live) x.hp = avg;
+}
+
+/** С неба: над точкой рядком через gap px, либо (без точки) вразброс по всей карте и с разной высоты. */
+function strike(w: World, worm: Worm, def: WeaponDef): void {
+  const n = def.drops!;
+  for (let i = 0; i < n; i++) {
+    let x: number, y: number;
+    if (def.target) {
+      x = w.target![0] + trunc(((i * 2 - (n - 1)) * def.gap!) / 2);
+      y = SKY_Y - (i & 1) * 8;
+    } else {
+      x = 30 + w.rng.below(w.mask.w - 60);
+      y = SKY_Y - i * 50;
+    }
+    spawnProj(w, def.drop!, -1, worm.id, x * ONE, y * ONE, 0, 200);
   }
 }
 
-function spawnProj(w: World, fuse: number, worm: Worm, x: number, y: number, vx: number, vy: number): void {
+/** Маршрутка: в точку, если там свободно и не в жидкости. */
+function teleport(w: World, worm: Worm): boolean {
+  const [tx, ty] = w.target!;
+  if (tx < WORM_R || tx >= w.mask.w - WORM_R || ty < WORM_R || ty >= w.waterY - WORM_R) return false;
+  if (!free(w.mask, tx * ONE, ty * ONE, WORM_R)) return false;
+  unrope(w, worm);
+  worm.x = tx * ONE;
+  worm.y = ty * ONE;
+  worm.vx = worm.vy = 0;
+  worm.state = 'air';
+  w.events.push({ t: 'teleport', worm: worm.id, x: tx, y: ty });
+  return true;
+}
+
+/** Бетонная плита: капсула длиной 2·range по направлению прицела; не на бойца. */
+function placeGirder(w: World, worm: Worm, def: WeaponDef): boolean {
+  const [tx, ty] = w.target!;
+  const [dx, dy] = fromAngle(aimAngle(w, worm), def.range! * ONE);
+  const x0 = tx - toPx(dx), y0 = ty - toPx(dy), x1 = tx + toPx(dx), y1 = ty + toPx(dy);
+  const R = 4;
+  if (wormOnPath(w, x0 * ONE, y0 * ONE, x1 * ONE, y1 * ONE, R + 1, -1)) return false;
+  w.mask.fillSegment(x0, y0, x1, y1, R);
+  w.events.push({ t: 'girder', x0, y0, x1, y1, r: R });
+  return true;
+}
+
+/** Кадр копки: отбойник — вниз, лампа — по прицелу; огонь ещё раз — стоп. */
+function tickDig(w: World, worm: Worm, inp: Input): void {
   const def = WEAPONS[w.weapon];
-  w.projs.push({
-    id: w.nextId++, weapon: w.weapon, owner: worm.id, x, y, vx, vy, r: def.r ?? 3,
+  const d = w.dig!;
+  if ((inp.fire && !w.firePrev) || --d.left <= 0 || !alive(worm) || worm.state === 'rope') {
+    endAttack(w, false);
+    return;
+  }
+  if (inp.move) worm.facing = inp.move;
+  const ang = def.down ? ANG_FULL / 4 : aimAngle(w, worm);
+  const [dx, dy] = fromAngle(ang, 6 * ONE);
+  if (w.tick % 3 === 0) {
+    const cx = toPx(worm.x + dx), cy = toPx(worm.y + dy);
+    w.mask.carveCircle(cx, cy, def.range!);
+    w.events.push({ t: 'carve', x: cx, y: cy, r: def.range! });
+  }
+  if (!def.down) {
+    // лампа ведёт бойца по прорезанному ходу
+    const [mx, my] = fromAngle(ang, 96);
+    if (free(w.mask, worm.x + mx, worm.y + my, worm.r)) {
+      worm.x += mx;
+      worm.y += my;
+    }
+    worm.vx = worm.vy = 0;
+  }
+}
+
+function spawnProj(w: World, weapon: string, fuse: number, owner: number, x: number, y: number, vx: number, vy: number): Proj {
+  const def = WEAPONS[weapon];
+  const p: Proj = {
+    id: w.nextId++, weapon, owner, x, y, vx, vy, r: def.r ?? 3,
     bounce: def.bounce ?? 0, slide: def.slide ?? 0, fuse, state: def.kind === 'mine' ? 'fly' : fuse >= 0 ? 'fuse' : 'fly', age: 0,
-  });
+    tx: -1, ty: -1,
+  };
+  w.projs.push(p);
+  return p;
+}
+
+/** Взрыв снаряда и осколки веером вверх. */
+function detonate(w: World, p: Proj): void {
+  const def = WEAPONS[p.weapon];
+  explode(w, toPx(p.x), toPx(p.y), def.radius!, def.damage!);
+  remove(w, p);
+  const c = def.cluster;
+  if (!c) return;
+  for (let i = 0; i < c.n; i++) {
+    const ang = (ANG_FULL * 3) / 4 + w.rng.int(-640, 640);
+    const [vx, vy] = fromAngle(ang, trunc((c.speed * (192 + w.rng.below(128))) / 256));
+    spawnProj(w, c.fragment, -1, p.owner, p.x, p.y - 4 * ONE, vx, vy);
+  }
 }
 
 function tickProjs(w: World): void {
@@ -366,8 +599,19 @@ function tickProjs(w: World): void {
       }
       p.state = 'fly'; // земля ушла из-под мины
     }
+    if (def.homing && p.tx >= 0 && p.age > 20) {
+      // наводка: скорость плавно поворачивает к точке, гравитация погашена
+      if (p.age > HOMING_LIFE) {
+        detonate(w, p);
+        continue;
+      }
+      const dx = p.tx - toPx(p.x), dy = p.ty - toPx(p.y);
+      const l = len(dx, dy) || 1;
+      p.vx += trunc(((trunc((dx * HOMING_SPEED) / l) - p.vx) * HOMING_TURN) / 256);
+      p.vy += trunc(((trunc((dy * HOMING_SPEED) / l) - p.vy) * HOMING_TURN) / 256) - w.grav;
+    }
     const px = p.x, py = p.y;
-    const hit = stepBody(p, w.mask, undefined, def.wind ? windAcc : 0);
+    const hit = stepBody(p, w.mask, w.grav, def.wind ? windAcc : 0);
     if (toPx(p.y) > w.waterY) {
       w.events.push({ t: 'splash', x: toPx(p.x) });
       remove(w, p);
@@ -380,8 +624,7 @@ function tickProjs(w: World): void {
     // по бойцу — проверка вдоль пути за кадр (быстрый снаряд не проскакивает)
     const victim = p.age > 3 || def.kind === 'stone' ? wormOnPath(w, px, py, p.x, p.y, p.r, p.age <= 6 ? p.owner : -1) : undefined;
     if (def.kind === 'missile' && (hit || victim)) {
-      explode(w, toPx(p.x), toPx(p.y), def.radius!, def.damage!);
-      remove(w, p);
+      detonate(w, p);
       continue;
     }
     if (def.kind === 'stone' && (hit || victim)) {
@@ -397,10 +640,7 @@ function tickProjs(w: World): void {
       p.vx = p.vy = 0;
       p.state = 'idle';
     }
-    if (p.state === 'fuse' && --p.fuse <= 0) {
-      explode(w, toPx(p.x), toPx(p.y), def.radius!, def.damage!);
-      remove(w, p);
-    }
+    if (p.state === 'fuse' && --p.fuse <= 0) detonate(w, p);
   }
 }
 
@@ -437,6 +677,7 @@ function wormOnPath(w: World, x0: number, y0: number, x1: number, y1: number, r:
 /** Урон и толчок бойцу: здоровье сразу, выбывание — в конце хода. */
 function hurt(w: World, x: Worm, dmg: number, vx: number, vy: number): void {
   if (!alive(x)) return;
+  dmg *= w.dmgMul;
   if (dmg > 0) {
     x.hp = Math.max(0, x.hp - dmg);
     w.events.push({ t: 'hit', worm: x.id, dmg });
@@ -607,7 +848,7 @@ function tickRope(w: World, worm: Worm, inp: Input): void {
   const maxLen = (WEAPONS.rope.range ?? 320) * ONE;
   if (inp.aim) r.len = Math.max(ROPE_MIN, Math.min(maxLen, r.len + inp.aim * ROPE_REEL));
   if (inp.move) worm.vx += inp.move * ROPE_PUSH;
-  worm.vy += GRAVITY;
+  worm.vy += w.grav;
   worm.bounce = 60;
   worm.slide = 230;
   stepBody(worm, w.mask, 0);
@@ -666,10 +907,16 @@ function endTurn(w: World): void {
   w.charge = 0;
   w.rope = null;
   w.ropeUsed = false;
+  w.target = null;
+  w.grav = GRAVITY;
+  w.fast = w.laser = w.chute = false;
+  w.dmgMul = 1;
+  w.dig = null;
+  w.burst = -1;
   w.hpAtTurn = worm.hp;
   w.wind = trunc((w.rng.int(-100, 100) * w.scheme.wind * 100) / 100);
   if (w.rng.below(100) < w.scheme.crates) dropCrate(w);
-  if ((team.ammo[w.weapon] ?? 0) === 0) w.weapon = Object.keys(team.ammo).find((k2) => team.ammo[k2] !== 0 && WEAPONS[k2]) ?? 'kuryu';
+  if ((team.ammo[w.weapon] ?? 0) === 0) w.weapon = Object.keys(team.ammo).find((k2) => team.ammo[k2] !== 0 && WEAPONS[k2] && !WEAPONS[k2].hidden) ?? 'kuryu';
   w.shots = WEAPONS[w.weapon].shots ?? 1;
   w.events.push({ t: 'turn', team: ti, worm: worm.id });
 }
@@ -681,7 +928,7 @@ export function worldHash(w: World): number {
     h = Math.imul(h ^ (v & 0xffff), 0x01000193);
     h = Math.imul(h ^ ((v >>> 16) & 0xffff), 0x01000193);
   };
-  mix(w.tick); mix(w.rng.s); mix(w.waterY); mix(w.roundLeft); mix(w.wind); mix(w.left); mix(w.active); mix(w.aim); mix(w.charge); if (w.rope) { mix(w.rope.ax); mix(w.rope.ay); mix(w.rope.len); }
+  mix(w.tick); mix(w.rng.s); mix(w.waterY); mix(w.roundLeft); mix(w.wind); mix(w.left); mix(w.active); mix(w.aim); mix(w.charge); mix(w.grav); mix(w.dmgMul); if (w.target) { mix(w.target[0]); mix(w.target[1]); } if (w.rope) { mix(w.rope.ax); mix(w.rope.ay); mix(w.rope.len); }
   for (const x of w.worms) { mix(x.x); mix(x.y); mix(x.vx); mix(x.vy); mix(x.hp); }
   for (const p of w.projs) { mix(p.x); mix(p.y); mix(p.vx); mix(p.vy); mix(p.fuse); }
   for (const c of w.crates) { mix(c.x); mix(c.y); mix(c.id); }

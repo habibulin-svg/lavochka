@@ -6,10 +6,16 @@ import { TICK_HZ, type World } from '../sim/world';
 import { WEAPONS } from '../sim/weapons';
 import './hud.css';
 
-/** Названия из docs/gops/texts/weapons.json (подмножество ядра; полный список — при сборке ассетов). */
+/** Названия из docs/gops/texts/weapons.json (готовое; полный список — при сборке ассетов). */
 export const WEAPON_NAMES: Record<string, string> = {
   mukha: '«Муха»', limonka: 'Лимонка', sling: 'Рогатка', obrez: 'Обрез', makarov: '«Макаров»', tnt: 'Тротиловая шашка',
   mine: 'Мина-растяжка', tychok: 'Тычок', armatura: 'Арматура', rope: 'Верёвка с крюком', kuryu: 'Курю (пропуск)', pas: 'Я пас (сдаться)',
+  homing: 'Ракета с наводкой', mortar: 'Миномёт из трубы', carbide: 'Банка с карбидом', korsar: 'Ящик петард «Корсар»',
+  posylka: 'Посылка с минами', samogon: 'Бабкин самогон', kalash: '«Калаш»', pulemet: 'Пулемёт', uppercut: 'Апперкот',
+  mawashi: 'Маваши', kukuruznik: 'Кукурузник с кирпичами', pochta: 'Почта', vanna: 'Чугунная ванна', kirpichi: 'Кирпичный град',
+  truba: 'Прорыв трубы', ponyatiya: 'По понятиям', marshrutka: 'Маршрутка', plita: 'Бетонная плита', otboinik: 'Отбойный молоток',
+  payalnik: 'Паяльная лампа', zontik: 'Зонтик', buratino: 'Газировка «Буратино»', kedy: 'Кеды', yagga: 'Энергетик',
+  ukazka: 'Лазерная указка', tyidi: 'Ты иди',
 };
 
 export class Hud {
@@ -82,7 +88,7 @@ export class Hud {
     const team = w.teams[w.team];
     this.menuFor = w.team;
     this.menu.replaceChildren(
-      ...Object.keys(WEAPONS).map((id) => {
+      ...Object.keys(WEAPONS).filter((id) => !WEAPONS[id].hidden).map((id) => {
         const n = team.ammo[id] ?? 0;
         const b = document.createElement('button');
         b.className = 'hud-wpn' + (id === w.weapon ? ' on' : '');
@@ -114,7 +120,8 @@ export class Hud {
         return `<div class="hud-team${i === w.team && turn ? ' on' : ''}"><span style="color:${col}">${b?.name ?? i + 1}</span><i style="width:${(total[i] / max) * 100}%;background:${col}"></i></div>`;
       })
       .join('');
-    this.weapon.textContent = WEAPON_NAMES[w.weapon] ?? w.weapon;
+    const need = WEAPONS[w.weapon]?.target && !w.target && w.phase === 'turn';
+    this.weapon.textContent = (WEAPON_NAMES[w.weapon] ?? w.weapon) + (need ? ' — ткни в точку' : '');
     if (!this.menu.hidden && this.menuFor !== w.team) this.menu.hidden = true;
     if (w.phase === 'over' && this.banner.hidden) {
       const b = BRIGADES.find((x) => x.id === this.brigades[w.winner]);

@@ -16,6 +16,11 @@ const BASE = new Set(['bottle-smash', 'crate-drop', 'explosion-big', 'explosion-
 const FIRE_SFX: Record<string, string> = {
   mukha: 'rocket-launch', limonka: 'throw', sling: 'slingshot', obrez: 'shotgun', makarov: 'pistol', tnt: 'fuse-hiss',
   mine: 'mine-beep', tychok: 'poke', armatura: 'bat-swing', kuryu: 'ui-click', pas: 'ui-click',
+  homing: 'rocket-launch', mortar: 'mortar-fire', carbide: 'throw', korsar: 'throw', posylka: 'throw', samogon: 'holy-choir',
+  kalash: 'rifle-burst', pulemet: 'machinegun', uppercut: 'punch', mawashi: 'kick', kukuruznik: 'plane-fly', pochta: 'plane-fly',
+  vanna: 'bathtub-fall', kirpichi: 'bricks-fall', truba: 'pipe-burst', ponyatiya: 'scales', marshrutka: 'minibus', plita: 'slab-place',
+  otboinik: 'jackhammer', payalnik: 'blowtorch', zontik: 'umbrella-open', buratino: 'soda-gulp', kedy: 'ui-select', yagga: 'can-hiss',
+  ukazka: 'ui-click', tyidi: 'ui-select',
 };
 
 /** Голосовые наборы (docs/gops/texts/voices.json) — по бригаде партии. */
@@ -167,8 +172,14 @@ export class GopsAudio {
           this.sfx('ui-turn', undefined, undefined, 0.6);
           this.voice(e.team, 'turn_start');
           break;
+        case 'buff':
+          this.sfx(FIRE_SFX[e.weapon] ?? 'ui-click');
+          break;
         case 'fire': {
           const a = wormById(w, e.worm);
+          const def = WEAPONS[e.weapon];
+          // очередь: звук очереди — один раз, на первом выстреле
+          if (def?.auto && w.shots < (def.shots ?? 1) - 1) break;
           this.sfx(FIRE_SFX[e.weapon] ?? 'throw', a && a.x / 256, a && a.y / 256);
           const kind = WEAPONS[e.weapon]?.kind;
           if (a && kind === 'grenade') this.voice(a.team, 'throw');

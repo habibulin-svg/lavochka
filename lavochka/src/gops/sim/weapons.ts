@@ -10,6 +10,14 @@ export type WeaponKind =
   | 'mine'      // кладётся, взводится и ждёт, кто подойдёт
   | 'melee'     // удар перед собой
   | 'rope'      // верёвка с крюком: ход не кончает
+  | 'strike'    // с неба над точкой (target) или по всей карте: drops снарядов drop
+  | 'teleport'  // маршрутка: боец переносится в точку
+  | 'girder'    // бетонная плита в точку, поворот — прицелом
+  | 'dig'       // отбойник (вниз) / паяльная лампа (по прицелу) — fuse секунд, повторное нажатие — стоп
+  | 'buff'      // усилитель на этот ход (ход не кончает)
+  | 'select'    // «ты иди» — другой боец бригады
+  | 'justice'   // «по понятиям» — здоровье всех поровну
+  | 'flood'     // прорыв трубы — жидкость поднимается
   | 'skip'      // пропуск хода
   | 'surrender';
 
@@ -37,6 +45,29 @@ export interface WeaponDef {
   push?: number;
   /** Радиус снаряда, px. */
   r?: number;
+  /** Разрыв на осколки: n снарядов fragment со скоростью speed (Q8) веером вверх. */
+  cluster?: { n: number; fragment: string; speed: number };
+  /** Очередь: выстрел каждые auto кадров, пока держат огонь; разброс прицела ± spread (1/4096 оборота). */
+  auto?: number;
+  spread?: number;
+  /** Удар под своим углом, а не по прицелу (наклон как у прицела: − вверх). */
+  meleeAim?: number;
+  /** Нужна точка на карте (Input.target). */
+  target?: boolean;
+  /** Наводится на точку после взлёта. */
+  homing?: boolean;
+  /** Таймер не выбирают (самогон). */
+  fixedFuse?: boolean;
+  /** strike: сколько и чего падает, шаг по x (px); 0 — по всей карте вразброс. */
+  drops?: number;
+  drop?: string;
+  gap?: number;
+  /** dig: отбойник роет вниз, лампа — по прицелу. */
+  down?: boolean;
+  /** buff: что даёт. */
+  buff?: 'lowgrav' | 'fast' | 'double' | 'laser' | 'chute';
+  /** Только осколок/падающий снаряд: нет в арсенале и меню. */
+  hidden?: boolean;
 }
 
 /** Ядро арсенала (DESIGN.md §3.1). Остальные позиции — по мере готовности. */
@@ -53,9 +84,55 @@ export const WEAPONS: Record<string, WeaponDef> = {
   rope: { kind: 'rope', range: 320 },
   kuryu: { kind: 'skip' },
   pas: { kind: 'surrender' },
+
+  // артиллерия и взрывчатка
+  homing: { kind: 'missile', charged: true, speed: 3600, target: true, homing: true, radius: 48, damage: 50, r: 3 },
+  mortar: { kind: 'missile', charged: true, speed: 4400, wind: true, radius: 24, damage: 20, r: 3, cluster: { n: 6, fragment: 'shard', speed: 900 } },
+  carbide: { kind: 'grenade', charged: true, speed: 3600, radius: 24, damage: 20, bounce: 150, slide: 200, fuse: 3, r: 3, cluster: { n: 5, fragment: 'shard', speed: 1000 } },
+  korsar: { kind: 'grenade', charged: true, speed: 3400, radius: 40, damage: 30, bounce: 170, slide: 210, fuse: 3, r: 4, cluster: { n: 6, fragment: 'petarda', speed: 1300 } },
+  posylka: { kind: 'missile', charged: true, speed: 3200, radius: 10, damage: 5, r: 4, cluster: { n: 3, fragment: 'mine', speed: 500 } },
+  samogon: { kind: 'grenade', charged: true, speed: 3000, radius: 100, damage: 100, bounce: 90, slide: 160, fuse: 3, fixedFuse: true, r: 4 },
+  // огнестрел и ближний бой
+  kalash: { kind: 'hitscan', shots: 12, auto: 5, spread: 40, range: 900, radius: 3, damage: 5, push: 160 },
+  pulemet: { kind: 'hitscan', shots: 30, auto: 3, spread: 70, range: 900, radius: 3, damage: 4, push: 120 },
+  uppercut: { kind: 'melee', range: 22, damage: 30, push: 3000, meleeAim: -820 },
+  mawashi: { kind: 'melee', range: 26, damage: 15, push: 2400, meleeAim: -120 },
+  // с воздуха
+  kukuruznik: { kind: 'strike', target: true, drops: 5, drop: 'brick', gap: 16 },
+  pochta: { kind: 'strike', target: true, drops: 4, drop: 'mine', gap: 22 },
+  vanna: { kind: 'strike', target: true, drops: 1, drop: 'vanna-drop', gap: 0 },
+  kirpichi: { kind: 'strike', drops: 24, drop: 'brick', gap: 0 },
+  truba: { kind: 'flood', range: 48 },
+  ponyatiya: { kind: 'justice' },
+  // утилиты
+  marshrutka: { kind: 'teleport', target: true },
+  plita: { kind: 'girder', target: true, range: 30 },
+  otboinik: { kind: 'dig', fuse: 4, range: 11, down: true },
+  payalnik: { kind: 'dig', fuse: 4, range: 11 },
+  zontik: { kind: 'buff', buff: 'chute' },
+  buratino: { kind: 'buff', buff: 'lowgrav' },
+  kedy: { kind: 'buff', buff: 'fast' },
+  yagga: { kind: 'buff', buff: 'double' },
+  ukazka: { kind: 'buff', buff: 'laser' },
+  tyidi: { kind: 'select' },
+
+  // осколки и то, что падает с неба
+  shard: { kind: 'missile', hidden: true, radius: 16, damage: 12, r: 2 },
+  petarda: { kind: 'missile', hidden: true, radius: 30, damage: 26, r: 2 },
+  brick: { kind: 'missile', hidden: true, radius: 22, damage: 22, r: 3 },
+  'vanna-drop': { kind: 'missile', hidden: true, radius: 60, damage: 70, r: 7 },
 };
 
-/** Полный набор ядра с бесконечным запасом (−1) — для быстрого боя. */
+
+/** Полный набор ядра с бесконечным запасом (−1). */
 export const CORE_AMMO: Record<string, number> = {
   mukha: -1, limonka: -1, sling: -1, obrez: -1, makarov: -1, tnt: 2, mine: 3, tychok: -1, armatura: 1, rope: 5, kuryu: -1, pas: -1,
+};
+
+/** Весь готовый арсенал — для быстрого боя: сильное — поштучно. */
+export const ARSENAL_AMMO: Record<string, number> = {
+  ...CORE_AMMO,
+  homing: 1, mortar: 2, carbide: 2, korsar: 1, posylka: 1, samogon: 1, kalash: 2, pulemet: 1, uppercut: 2, mawashi: 2,
+  kukuruznik: 1, pochta: 1, vanna: 1, kirpichi: 0, truba: 0, ponyatiya: 0,
+  marshrutka: 2, plita: 3, otboinik: 2, payalnik: 2, zontik: 2, buratino: 1, kedy: 1, yagga: 1, ukazka: 1, tyidi: 1,
 };

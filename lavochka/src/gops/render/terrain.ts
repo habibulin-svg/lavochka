@@ -83,6 +83,27 @@ export class TerrainLayer {
     this.tex.source.update();
   }
 
+  /** Бетонная плита по маске (капсула). */
+  girder(x0: number, y0: number, x1: number, y1: number, r: number): void {
+    const c = this.ctx;
+    c.save();
+    c.lineCap = 'round';
+    c.strokeStyle = '#8f8d86';
+    c.lineWidth = r * 2 + 1;
+    c.beginPath();
+    c.moveTo(x0, y0);
+    c.lineTo(x1, y1);
+    c.stroke();
+    c.strokeStyle = '#b9b6ad';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(x0, y0 - r + 1);
+    c.lineTo(x1, y1 - r + 1);
+    c.stroke();
+    c.restore();
+    this.tex.source.update();
+  }
+
   /** Маска поменялась целиком (новая карта или правка) — собрать заново. */
   rebuild(): void {
     this.compose();

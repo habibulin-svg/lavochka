@@ -117,9 +117,18 @@ export class Mask {
 
   /** Капсула: всё, что ближе r к отрезку (x0,y0)–(x1,y1). */
   carveSegment(x0: number, y0: number, x1: number, y1: number, r: number): number {
+    return this.paintSegment(x0, y0, x1, y1, r, 0);
+  }
+
+  /** Залить капсулу землёй (бетонная плита); возвращает число новых пикселей земли. */
+  fillSegment(x0: number, y0: number, x1: number, y1: number, r: number): number {
+    return this.paintSegment(x0, y0, x1, y1, r, 1);
+  }
+
+  private paintSegment(x0: number, y0: number, x1: number, y1: number, r: number, v: 0 | 1): number {
     const dx = x1 - x0, dy = y1 - y0;
     const L = dx * dx + dy * dy;
-    if (L === 0) return this.carveCircle(x0, y0, r);
+    if (L === 0) return v ? this.fillCircle(x0, y0, r) : this.carveCircle(x0, y0, r);
     const rr = r * r;
     const xa = Math.max(0, Math.min(x0, x1) - r), xb = Math.min(this.w - 1, Math.max(x0, x1) + r);
     const ya = Math.max(0, Math.min(y0, y1) - r), yb = Math.min(this.h - 1, Math.max(y0, y1) + r);
@@ -127,7 +136,7 @@ export class Mask {
     for (let y = ya; y <= yb; y++) {
       for (let x = xa; x <= xb; x++) {
         const i = y * this.w + x;
-        if (this.d[i] === 0) continue;
+        if (this.d[i] === v) continue;
         const px = x - x0, py = y - y0;
         const t = px * dx + py * dy;
         let inside: boolean;
@@ -138,7 +147,7 @@ export class Mask {
           inside = cross * cross <= rr * L;
         }
         if (inside) {
-          this.d[i] = 0;
+          this.d[i] = v;
           n++;
         }
       }

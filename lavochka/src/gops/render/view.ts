@@ -94,6 +94,13 @@ export class GameView {
       } else if (e.t === 'shot') {
         this.terrain.carve(e.x1, e.y1, 10, false);
         this.tracer(e.x0, e.y0, e.x1, e.y1);
+      } else if (e.t === 'carve') {
+        this.terrain.carve(e.x, e.y, e.r, false);
+      } else if (e.t === 'girder') {
+        this.terrain.girder(e.x0, e.y0, e.x1, e.y1, e.r);
+      } else if (e.t === 'teleport') {
+        this.boom(e.x, e.y, 10);
+        this.cam.follow = true;
       } else if (e.t === 'splash') {
         this.splash(e.x, w.waterY);
       } else if (e.t === 'rise') {
@@ -242,13 +249,22 @@ export class GameView {
     for (const p of w.projs) {
       const x = p.x / ONE, y = p.y / ONE;
       const kind = WEAPONS[p.weapon].kind;
-      if (kind === 'missile') {
+      if (p.weapon === 'brick') {
+        g.rect(x - 4, y - 2.5, 8, 5).fill(0xa4442b).stroke({ color: 0x5a2416, width: 0.8 });
+      } else if (p.weapon === 'vanna-drop') {
+        g.roundRect(x - 9, y - 5, 18, 10, 4).fill(0xf4f1ea).stroke({ color: 0x777777, width: 1 });
+      } else if (p.weapon === 'shard' || p.weapon === 'petarda') {
+        g.circle(x, y, p.weapon === 'petarda' ? 2.6 : 1.8).fill(p.weapon === 'petarda' ? 0xd62828 : 0x555555);
+      } else if (p.weapon === 'posylka') {
+        g.rect(x - 4, y - 4, 8, 8).fill(0xc8a26b).stroke({ color: 0x6b4f2a, width: 0.8 });
+      } else if (kind === 'missile') {
         const a = Math.atan2(p.vy, p.vx);
         const dx = Math.cos(a) * 7, dy = Math.sin(a) * 7;
         g.moveTo(x - dx, y - dy).lineTo(x + dx, y + dy).stroke({ color: 0x4b5320, width: 4, cap: 'round' });
         g.circle(x - dx * 1.3, y - dy * 1.3, 2.5).fill({ color: 0xffb703, alpha: 0.9 });
       } else if (kind === 'grenade') {
-        g.circle(x, y, 3.5).fill(0x3a5a40).stroke({ color: 0x111111, width: 1 });
+        const col = p.weapon === 'samogon' ? 0xdfe7e1 : p.weapon === 'carbide' ? 0xb0b6bb : p.weapon === 'korsar' ? 0xd62828 : 0x3a5a40;
+        g.circle(x, y, p.r + 0.5).fill(col).stroke({ color: 0x111111, width: 1 });
       } else if (kind === 'placed') {
         g.rect(x - 2.5, y - 6, 5, 10).fill(0xc1121f);
         if ((p.fuse >> 3) & 1) g.circle(x, y - 7, 2).fill(0xffd166);
@@ -298,7 +314,24 @@ export class GameView {
     const canAim = a && (a.state === 'stand' || (a.state !== 'dead' && WEAPONS[w.weapon]?.kind === 'rope'));
     if (!a || w.phase !== 'turn' || !canAim) return;
     const def = WEAPONS[w.weapon];
-    if (!def || def.kind === 'skip' || def.kind === 'surrender' || def.kind === 'placed' || def.kind === 'mine') return;
+    if (!def) return;
+    if (def.target && w.target) {
+      // выбранная точка: крестик; у плиты — сама плита-призрак по прицелу
+      const [tx, ty] = w.target;
+      if (def.kind === 'girder') {
+        const ang = aimAngle(w, a), r = def.range!;
+        const ux = (cosQ(ang) / 16384) * r, uy = (sinQ(ang) / 16384) * r;
+        g.moveTo(tx - ux, ty - uy).lineTo(tx + ux, ty + uy).stroke({ color: 0xb9b6ad, width: 9, alpha: 0.45, cap: 'round' });
+      }
+      g.moveTo(tx - 7, ty - 7).lineTo(tx + 7, ty + 7).moveTo(tx + 7, ty - 7).lineTo(tx - 7, ty + 7).stroke({ color: 0xff3b30, width: 2 });
+      g.circle(tx, ty, 10).stroke({ color: 0xff3b30, width: 1, alpha: 0.6 });
+    }
+    if (w.laser && (def.kind === 'hitscan' || def.kind === 'missile' || def.kind === 'stone')) {
+      const ang = aimAngle(w, a);
+      g.moveTo(a.x / ONE, a.y / ONE).lineTo(a.x / ONE + (cosQ(ang) / 16384) * 600, a.y / ONE + (sinQ(ang) / 16384) * 600).stroke({ color: 0xff2020, width: 1, alpha: 0.55 });
+    }
+    const noAim = ['skip', 'surrender', 'placed', 'mine', 'strike', 'teleport', 'buff', 'select', 'justice', 'flood'];
+    if (noAim.includes(def.kind) || (def.kind === 'dig' && def.down)) return;
     if (def.kind === 'rope' && a.state === 'rope') return;
     const ang = aimAngle(w, a);
     const cx = a.x / ONE, cy = a.y / ONE;

@@ -27,6 +27,11 @@ export class Controls {
     target.addEventListener('blur', () => this.held.clear());
   }
 
+  /** Точка на карте (px мира) — для наводки, авиаудара, маршрутки, плиты. */
+  setTarget(x: number, y: number): void {
+    this.once.target = [Math.round(x), Math.round(y)];
+  }
+
   selectWeapon(id: string): void {
     this.once.weapon = id;
   }
