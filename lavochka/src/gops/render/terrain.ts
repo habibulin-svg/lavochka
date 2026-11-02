@@ -7,6 +7,9 @@ import type { Mask } from '../sim/mask';
 const CRUST = 5;
 const SHADE = 7;
 
+/** Масштаб узора земли в мире (плитка 1024 px → ~460 px). */
+const GROUND_SCALE = 0.45;
+
 export class TerrainLayer {
   readonly sprite: Sprite;
   private readonly canvas: HTMLCanvasElement;
@@ -29,7 +32,10 @@ export class TerrainLayer {
   private paintBase(ground: HTMLImageElement | null): void {
     const { ctx, mask } = this;
     if (ground) {
-      ctx.fillStyle = ctx.createPattern(ground, 'repeat')!;
+      // плитка 1024 px нарисована «крупным планом»: в мире её мельче, иначе кирпич выше бойца (рост ~27 px)
+      const pat = ctx.createPattern(ground, 'repeat')!;
+      pat.setTransform(new DOMMatrix().scale(GROUND_SCALE));
+      ctx.fillStyle = pat;
     } else {
       ctx.fillStyle = '#5b4a36';
     }

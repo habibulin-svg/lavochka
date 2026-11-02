@@ -108,10 +108,17 @@ export class GameView {
     this.waterColor = art.liquid;
     this.cam.x = this.cam.tx = w.mask.w / 2;
     this.cam.y = this.cam.ty = w.mask.h / 2;
-    this.cam.zoom = this.fitZoom(w);
+    this.cam.zoom = this.startZoom(w);
   }
 
   private waterColor = 0x334455;
+
+  /** Обычный масштаб боя — как в жанре: в кадре ~440 px мира по высоте (Worms на 640×480 показывал 480),
+   * боец ростом ~27 px занимает 6 % экрана; вся карта — колесом или щипком. */
+  startZoom(w: World): number {
+    const fit = this.fitZoom(w);
+    return Math.min(fit * 4, Math.max(fit, this.app.screen.height / 440));
+  }
 
   /** Масштаб, при котором карта влезает по высоте (и не мельче, чем по ширине). */
   fitZoom(w: World): number {
