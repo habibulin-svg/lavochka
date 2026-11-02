@@ -10,6 +10,7 @@ import {
   dateText, dealById, eraOf, yearOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
 import { money, type Action, type Ask, type Event, type View } from './engine';
+import { Music, eraMusic } from './music';
 import roadsJson from './roads.json';
 import './kommersy.css';
 
@@ -125,6 +126,8 @@ class KommersyView implements GameView<View, Event> {
   private shownPos = new Map<number, number>();
   private road = 0;
   private bgSrc = '';
+  private music = new Music();
+  private musicBtn!: HTMLButtonElement;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -133,6 +136,7 @@ class KommersyView implements GameView<View, Event> {
         <svg class="km-road" viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice"></svg>
         <div class="km-tokens"></div>
         <div class="km-date"></div>
+        <button class="km-music" title="Музыка"></button>
         <div class="km-banner" hidden></div>
         <div class="km-card" hidden></div>
       </div></div>`);
@@ -144,6 +148,12 @@ class KommersyView implements GameView<View, Event> {
     this.dateEl = this.wrap.querySelector('.km-date') as HTMLElement;
     this.cardEl = this.wrap.querySelector('.km-card') as HTMLElement;
     this.banner = this.wrap.querySelector('.km-banner') as HTMLElement;
+    this.musicBtn = this.wrap.querySelector('.km-music') as HTMLButtonElement;
+    this.musicBtn.textContent = this.music.on() ? '♪' : '🔇';
+    this.musicBtn.onclick = () => {
+      this.musicBtn.textContent = this.music.toggle() ? '♪' : '🔇';
+      if (this.v) this.music.set(eraMusic(this.v));
+    };
     this.svg.addEventListener('click', (e) => {
       const g = (e.target as Element).closest('[data-cell]');
       if (g && this.canMove() && Number(g.getAttribute('data-cell')) === this.v!.target) this.send({ type: 'move' });
@@ -242,6 +252,7 @@ class KommersyView implements GameView<View, Event> {
     this.rollBtn.hidden = !(this.mineTurn() && v.phase === 'roll');
     this.moveBtn.hidden = !this.canMove();
     this.drawSheet();
+    this.music.set(eraMusic(v));
   }
 
   private setBg(src: string) {
@@ -419,6 +430,7 @@ class KommersyView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.music.stop();
     this.panel?.remove();
   }
 }

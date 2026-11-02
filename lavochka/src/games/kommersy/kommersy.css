@@ -91,3 +91,5 @@
   .km-card { position: absolute; left: 2%; right: 2%; width: auto; top: auto; bottom: 2%; transform: none; max-height: 70%; }
   .km-npc { width: 56px; height: 56px; }
 }
+.km-music { position: absolute; right: 1.2%; top: 2%; width: 40px; height: 40px; border: 0; border-radius: 8px; background: rgba(20, 16, 12, 0.78); color: #ffd54a;
+  font-size: 20px; cursor: pointer; z-index: 4; }
