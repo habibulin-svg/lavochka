@@ -194,6 +194,27 @@ describe('Коммерсы: торги и «Бухгалтерия»', () => {
     expect(s.players[0].stats.heat).toBeLessThan(s.players[1].stats.heat);
   });
 
+  it('соперники: демпинг бьёт по общей нише, донос — по органам соперника и совести стукача; раз за отрезок', () => {
+    let s = newState([0, 1]);
+    const biz = (uid: number) => ({ uid, id: 'larek', name: 'Ларёк', kind: 'biz' as const, value: 3000, income: 900, hours: 60, manager: false, mul: 1 });
+    s.players[0].assets = [biz(1)];
+    s.players[1].assets = [biz(2)];
+    s.players[0].cash = s.players[1].cash = 5000;
+    s = act(s, 0, { type: 'rival', kind: 'demping', target: 1 });
+    expect(s.players[1].assets[0].mul).toBeCloseTo(0.8);
+    expect(s.players[0].assets[0].mul).toBeCloseTo(0.95);
+    expect(apply(s, 0, { type: 'rival', kind: 'donos', target: 1 }, new SeededRng(1))).toBeNull();
+    expect(view(s, [0]).my!.rivals[0].acts.find((x) => x.kind === 'donos')!.why).toBe('уже было в этом отрезке');
+    // наезд — только с братвой
+    let t = newState([0, 1]);
+    expect(apply(t, 0, { type: 'rival', kind: 'naezd', target: 1 }, new SeededRng(1))).toBeNull();
+    const heat = t.players[1].stats.heat;
+    const sov = t.players[0].stats.sovest;
+    t = act(t, 0, { type: 'rival', kind: 'donos', target: 1 });
+    expect(t.players[1].stats.heat).toBe(heat + 15);
+    expect(t.players[0].stats.sovest).toBe(sov - 10);
+  });
+
   it('партии ботов с «Бухгалтерией» доходят до конца', async () => {
     const r = await simulate(def, botSeats(def, 3, [0, 1, 2]), { start: mm(1998, 9), diff: 1, chance: 0, buh: true }, 5, 60000);
     expect(r.error).toBeUndefined();

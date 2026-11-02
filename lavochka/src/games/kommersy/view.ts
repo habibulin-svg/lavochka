@@ -9,7 +9,7 @@ import {
   CELL_COLOR, CELL_NAME, CLUB, ERA_NAME, HEROES, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, TIERS, TIER_ID,
   dateText, dealById, eraOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
-import { money, type Action, type Ask, type Books, type Event, type View } from './engine';
+import { RIVAL_DARK, RIVAL_NAME, money, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
@@ -188,6 +188,7 @@ class KommersyView implements GameView<View, Event> {
       else if (act === 'repay') this.send({ type: 'repay' });
       else if (act === 'quit') this.send({ type: 'quit' });
       else if (act === 'krysha') this.send({ type: 'krysha', to: el.dataset.to as Krysha });
+      else if (act === 'rival') this.send({ type: 'rival', kind: el.dataset.kind as Rival, target: Number(el.dataset.target) });
     });
   }
 
@@ -395,6 +396,18 @@ class KommersyView implements GameView<View, Event> {
       .map((k) => `<button class="km-mini txt" data-act="krysha" data-to="${k}"${dis}>${KRYSHA_NAME[k]}</button>`)
       .join('');
     const club = my?.club.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✔' : '○'} ${esc(c.label)}</li>`).join('') ?? '';
+    const RICON: Record<Rival, string> = { demping: '📉', peremanit: '👔', naezd: '🩸', donos: '✉' };
+    const rivals = (my?.rivals ?? [])
+      .map((r) => {
+        const btns = r.acts
+          .map((a) => {
+            const tip = `${RIVAL_NAME[a.kind]} · ${money(a.cost)}${a.why ? ` — ${a.why}` : ''}`;
+            return `<button class="km-mini${RIVAL_DARK[a.kind] ? ' dark' : ''}" data-act="rival" data-kind="${a.kind}" data-target="${r.seat}" title="${esc(tip)}"${free && !a.why ? '' : ' disabled'}>${RICON[a.kind]}</button>`;
+          })
+          .join('');
+        return `<li><b>${this.ctx.name(r.seat)}</b>${btns}</li>`;
+      })
+      .join('');
     const hoursPct = my ? Math.min(100, (my.hours.used / my.hours.avail) * 100) : 0;
     this.sheet.innerHTML = `
       <div class="km-me"><div><b>${esc(HEROES.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${TIERS[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
@@ -408,6 +421,7 @@ class KommersyView implements GameView<View, Event> {
       <div class="km-skills">${skills}</div>
       <h4>Дела</h4><ul class="km-assets">${assets}</ul>
       <div class="km-krysha">Крыша: <b>${KRYSHA_NAME[me.krysha]}</b> ${kr}</div>
+      ${rivals ? `<h4>Соперники</h4><ul class="km-assets km-rivals">${rivals}</ul>` : ''}
       <h4>«${CLUB}»</h4><ul class="km-club">${club}</ul>
       ${me.falls.length ? `<div class="km-falls">Падал ${me.falls.length} раз${me.falls.length % 10 >= 2 && me.falls.length % 10 <= 4 && (me.falls.length < 10 || me.falls.length > 20) ? 'а' : ''} — и поднимался</div>` : ''}`;
   }

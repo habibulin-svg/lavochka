@@ -2,7 +2,7 @@
  * (готовится к датам, выходит из МММ и ГКО вовремя) и бережёт хвост для лондонских юристов. Бот видит только свой view. */
 import type { Rng } from '../../core/types';
 import { CLUB_PRICE, SCALE, dealById, mm, type Fx, type Stat } from './data';
-import { bookSum, type Action, type AskChoice, type View } from './engine';
+import { bookSum, type Action, type AskChoice, type Rival, type View } from './engine';
 
 const W: Record<Stat, number> = { health: 0.3, mood: 0.2, stress: -0.2, name: 0.6, avt: 0.25, svyazi: 0.7, heat: -0.6, blizkie: 0.3, sovest: 0.15 };
 
@@ -128,5 +128,21 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
     if (dying) return { type: 'sell', uid: dying.uid };
     if (me.debt > 0 && me.cash > me.debt * 1.5) return { type: 'repay' };
   }
-  return { type: 'roll' };
+  return rivalPick(v, level, rng) ?? { type: 'roll' };
+}
+
+/** Соперник побогаче: Средний сбивает цены в общей нише, Сложный ещё и переманивает людей и до 1998-го наезжает на тех, кто без крыши;
+ * Лёгкий иногда стучит. Раз за отрезок — это держит движок. */
+function rivalPick(v: View, level: number, rng: Rng): Action | null {
+  const me = v.players.find((p) => p.seat === v.me)!;
+  const lead = v.players.filter((p) => p.seat !== me.seat).sort((a, b) => b.worth - a.worth)[0];
+  if (!lead || lead.worth < me.worth * 0.8) return null;
+  const acts = v.my!.rivals.find((r) => r.seat === lead.seat)?.acts ?? [];
+  const can = (k: Rival) => acts.some((a) => a.kind === k && a.why === null);
+  const go = (kind: Rival): Action => ({ type: 'rival', kind, target: lead.seat });
+  if (level === 0) return can('donos') && rng.next() < 0.03 ? go('donos') : null;
+  if (can('demping') && rng.next() < 0.15) return go('demping');
+  if (level >= 2 && can('naezd') && v.m < mm(1998, 1) && lead.krysha === 'none' && rng.next() < 0.4) return go('naezd');
+  if (level >= 2 && can('peremanit') && rng.next() < 0.1) return go('peremanit');
+  return null;
 }

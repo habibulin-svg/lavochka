@@ -57,7 +57,12 @@ export interface Player {
   ending: Ending | null;
   /** «Бухгалтерия»: сколько раз разноска сошлась. */
   books?: number;
+  /** Отрезок (его месяц), в котором уже ходил против соперника: раз за отрезок. */
+  rivalM?: number;
 }
+export type Rival = 'demping' | 'peremanit' | 'naezd' | 'donos';
+export const RIVAL_NAME: Record<Rival, string> = { demping: 'Сбить цены', peremanit: 'Переманить управляющего', naezd: 'Наехать через крышу', donos: 'Донести' };
+export const RIVAL_DARK: Record<Rival, boolean> = { demping: false, peremanit: false, naezd: true, donos: true };
 
 export interface AskChoice {
   label: string;
@@ -146,7 +151,8 @@ export type Action =
   | { type: 'repay' }
   | { type: 'quit' }
   | { type: 'krysha'; to: Krysha }
-  | { type: 'buh'; sum: number };
+  | { type: 'buh'; sum: number }
+  | { type: 'rival'; kind: Rival; target: number };
 
 export type Event =
   | { t: 'roll'; seat: number; d: number }
@@ -164,6 +170,7 @@ export type Event =
   | { t: 'resold'; seat: number; from: number; name: string; fee: number }
   | { t: 'unsold'; name: string }
   | { t: 'buh'; seat: number; ok: boolean; sum: number; ans: number }
+  | { t: 'rival'; seat: number; target: number; kind: Rival; ok: boolean }
   | { t: 'over' };
 
 // ---------------------------------------------------------------- помощники
@@ -500,9 +507,13 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (!p) return null;
   const mine = s.players[s.turn].seat === seat;
 
-  if (a.type === 'sell' || a.type === 'manager' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha') {
+  if (a.type === 'sell' || a.type === 'manager' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha' || a.type === 'rival') {
     if (!mine || s.phase !== 'roll') return null;
-    if (a.type === 'sell') {
+    if (a.type === 'rival') {
+      const q = s.players.find((x) => x.seat === a.target);
+      if (!q || rivalWhy(s, p, q, a.kind) !== null) return null;
+      rival(s, p, q, a.kind, rng, ev);
+    } else if (a.type === 'sell') {
       const x = p.assets.find((q) => q.uid === a.uid);
       if (!x) return null;
       const sum = x.kind === 'paper' ? x.value : assetValue(s, p, x) * (x.kind === 'estate' ? 0.9 : 0.85 + 0.03 * p.skills.bazar);
@@ -637,6 +648,68 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     return { state: s, events: ev };
   }
   return null;
+}
+
+// ---------------------------------------------------------------- соперники (сеть)
+// общая ниша, где у соперника цены ещё не на дне
+const shared = (p: Player, q: Player) => p.assets.find((a) => a.kind === 'biz' && q.assets.some((b) => b.id === a.id && b.mul > 0.65));
+export const rivalCost = (s: State, p: Player, k: Rival) => round(({ demping: 1, peremanit: 3, naezd: 1, donos: 0.5 } as const)[k] * unitOf(s, p));
+
+/** Можно ли пойти против соперника — раз за отрезок, со своими условиями; null — можно. */
+export function rivalWhy(s: State, p: Player, q: Player, k: Rival): string | null {
+  if (p === q) return 'это вы';
+  if (p.rivalM === s.m) return 'уже было в этом отрезке';
+  if (p.cash < rivalCost(s, p, k)) return 'не хватает денег';
+  if (k === 'demping' && !shared(p, q)) return 'нет общей ниши';
+  if (k === 'peremanit' && !q.assets.some((a) => a.manager)) return 'нет управляющих';
+  if (k === 'naezd' && p.krysha !== 'bandit') return 'нужна братва';
+  return null;
+}
+
+/** Ход против соперника: демпинг бьёт по общей нише обоих, переманивание — по его часам, наезд и донос — тёмные, с последствиями для себя. */
+function rival(s: State, p: Player, q: Player, k: Rival, rng: Rng, ev: Event[]) {
+  p.rivalM = s.m;
+  p.cash -= rivalCost(s, p, k);
+  let ok = true;
+  if (k === 'demping') {
+    const mine = shared(p, q)!;
+    for (const b of q.assets) if (b.id === mine.id) b.mul *= 0.8 + 0.03 * q.skills.trade;
+    mine.mul *= 0.95;
+    addStat(p, 'stress', 3);
+  } else if (k === 'peremanit') {
+    const b = [...q.assets].filter((a) => a.manager).sort((x, y) => y.income - x.income)[0];
+    b.manager = false;
+    addStat(q, 'stress', 6);
+    p.incomeBoost = Math.min(2, p.incomeBoost * 1.03);
+  } else if (k === 'naezd') {
+    // без крыши соперник почти беззащитен; братва слабеет к двухтысячному
+    ok = rng.next() < (q.krysha === 'none' ? 0.8 : 0.35) * (s.m > 147 ? 0.6 : 1) + 0.04 * p.skills.sila;
+    p.enemies++;
+    if (ok) {
+      const big = [...q.assets].filter((a) => a.kind === 'biz').sort((x, y) => y.income - x.income)[0];
+      q.cash -= 2 * (big ? assetIncome(s, q, big) : unitOf(s, q));
+      addStat(q, 'stress', 8);
+      addStat(q, 'mood', -5);
+      addStat(p, 'avt', 4);
+      addStat(p, 'heat', 6);
+    } else {
+      addStat(p, 'avt', -3);
+      addStat(p, 'heat', 4);
+    }
+    addStat(p, 'sovest', -8);
+  } else {
+    addStat(q, 'heat', 15 + (q.assets.some((a) => dealById(a.id)?.heat) ? 10 : 0));
+    addStat(p, 'sovest', -10);
+    addStat(p, 'name', -3);
+    // стукача вычисляют
+    if (rng.next() < 0.3) {
+      ok = false;
+      addStat(p, 'name', -8);
+      addStat(p, 'avt', -6);
+      p.enemies++;
+    }
+  }
+  ev.push({ t: 'rival', seat: p.seat, target: q.seat, kind: k, ok });
 }
 
 /** Торги: право на сделку предлагается по кругу тому, кто может её взять (с наценкой). Никто — сделка уходит. */
@@ -931,6 +1004,8 @@ export interface MyView {
   over: boolean;
   job: Player['job'];
   loanLimit: number;
+  /** Что можно сделать против каждого соперника (и почему нельзя). */
+  rivals: { seat: number; acts: { kind: Rival; why: string | null; cost: number }[] }[];
 }
 export interface View {
   me: number | null;
@@ -975,6 +1050,9 @@ export function view(s: State, seats: number[] | 'all'): View {
         club: clubCheck(s, mp), heatHint: hint(mp.stats.heat, ['тихо', 'присматриваются', 'под колпаком', 'вот-вот возьмут']),
         sovestHint: hint(mp.stats.sovest, ['спит плохо', 'неспокойно', 'нормально', 'спит спокойно']), prep: [...mp.prep], advisor: mp.advisor, insurance: mp.insurance,
         upkeep: round(mp.upkeep), over: mp.over, job: mp.job, loanLimit: round(loanLimit(mp)),
+        rivals: s.players
+          .filter((q) => q !== mp)
+          .map((q) => ({ seat: q.seat, acts: (Object.keys(RIVAL_NAME) as Rival[]).map((kind) => ({ kind, why: rivalWhy(s, mp, q, kind), cost: rivalCost(s, mp, kind) })) })),
       }
     : null;
   return {

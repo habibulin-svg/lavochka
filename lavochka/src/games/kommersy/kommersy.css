@@ -105,3 +105,5 @@
 .km-buh td.neg { color: #b03a2a; }
 .km-buh-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .km-buh-in { width: 110px; padding: 6px 8px; border-radius: 8px; border: 2px solid #8a7a5a; font: inherit; font-size: 16px; }
+.km-rivals li { grid-template-columns: 1fr repeat(4, auto); }
+.km-mini.dark:not([disabled]) { border-color: #b03a2a; }
