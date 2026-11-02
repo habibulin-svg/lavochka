@@ -1,0 +1,86 @@
+# Коммерсы, партия 1: поиск стиля (концепты под выбор пользователя).
+# Решения: смесь — дорога и фоны рисованные (как Timeflow: изометрический город, по нему вьётся дорожка из цветных клеток),
+# Колян и NPC в панели — фото/видео, как в холдеме (эталон — G:/temp/kommersy/kolyan-ref.png, ему там ~38).
+# Кириллицу Z-Image рисует абракадаброй — везде «no text».
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1536, height: 864, steps: 8}
+seeds: [101, 202]
+style: >-
+  High isometric bird's-eye view of a Soviet residential district in Novosibirsk, Siberia, late 1980s, early autumn:
+  grey prefab nine-storey panel apartment blocks and five-storey khrushchyovka buildings, rows of rusty metal garages,
+  birch trees with yellow leaves, a courtyard with a playground and benches, an old Zhiguli car and a yellow kvass barrel,
+  a bus stop pavilion. A winding board-game path made of colored square tiles (green, orange, yellow, purple, blue, red)
+  snakes across the whole scene from the bottom left to the top right, like a giant board game laid over the city.
+  Rich detail, readable, warm light, no people close-up, no text, no letters, no signs with writing, no watermark.
+
+items:
+  # --- дорога: Затулинка-1988, три стиля
+  - name: road-a-painted
+    prompt: >-
+      Detailed painted digital illustration in the style of a premium board game city map, semi-realistic,
+      crisp edges, like a hand-painted isometric strategy game background. {style}
+  - name: road-b-diorama
+    prompt: >-
+      Tilt-shift miniature diorama photo, stylized low-poly 3D models with soft toon shading,
+      like a handcrafted tabletop model of the city. {style}
+  - name: road-c-gouache
+    prompt: >-
+      Soviet 1980s children's book illustration in gouache, soft textured brushwork, muted nostalgic palette,
+      slightly naive perspective. {style}
+
+  # --- та же дорога, другая местность (рынок-барахолка 1992) — показать смену фона
+  - name: bazar-a-painted
+    seeds: [303]
+    prompt: >-
+      Detailed painted digital illustration in the style of a premium board game city map, semi-realistic, crisp edges.
+      High isometric bird's-eye view of a huge open-air flea market in Siberia in 1992, winter slush: rows of shipping containers,
+      market stalls with tarpaulin roofs, kiosks with bright imported goods, crowds of tiny shoppers with checkered bags,
+      old cars and a bus. A winding board-game path made of colored square tiles (green, orange, yellow, purple, blue, red)
+      snakes through the market. No text, no letters, no watermark.
+  - name: bazar-b-diorama
+    seeds: [303]
+    prompt: >-
+      Tilt-shift miniature diorama photo, stylized low-poly 3D models with soft toon shading.
+      High isometric view of a huge open-air flea market in Siberia in 1992, winter slush: rows of shipping containers,
+      market stalls with tarpaulin roofs, kiosks with bright imported goods, crowds of tiny shoppers with checkered bags.
+      A winding board-game path made of colored square tiles snakes through the market. No text, no letters, no watermark.
+  - name: bazar-c-gouache
+    seeds: [303]
+    prompt: >-
+      Soviet-style children's book illustration in gouache, soft textured brushwork, muted palette.
+      High isometric view of a huge open-air flea market in Siberia in 1992, winter slush: rows of shipping containers,
+      market stalls with tarpaulin roofs, kiosks with bright goods, crowds of tiny shoppers with checkered bags.
+      A winding board-game path made of colored square tiles snakes through the market. No text, no letters, no watermark.
+
+  # --- Колян молодой: тот же человек, что в холдеме, но 21 год (фото, кадр как у холдема — для панели)
+  - name: kolyan-1988-demb
+    width: 1024
+    height: 1024
+    seeds: [11, 22, 33]
+    prompt: >-
+      Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 21-year-old Russian young man just back from the army in 1988:
+      stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks, very short dark buzz cut,
+      thick neck, a cocky lopsided half-smile. He wears a Soviet army dress uniform jacket with a white braided aiguillette
+      and badges, unbuttoned collar. He sits at a table, framed from the waist up, forearms and hands resting on the table edge.
+      Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface,
+      warm soft overhead light. No text, no logos.
+  - name: kolyan-1988-street
+    seeds: [44, 55]
+    prompt: >-
+      Photorealistic color film photo, 1988 Soviet amateur snapshot look, slight grain. A 21-year-old Russian young man just back
+      from the army: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, very short dark buzz cut,
+      cocky lopsided half-smile, Soviet army dress uniform with a white braided aiguillette, a small suitcase in hand,
+      standing at the entrance of a grey nine-storey panel apartment block in Novosibirsk, birch trees, autumn. Full body.
+      No text, no letters, no watermark.
+  - name: kolyan-1990-coop
+    width: 1024
+    height: 1024
+    seeds: [66, 77]
+    prompt: >-
+      Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 23-year-old Russian young cooperative businessman in 1990:
+      stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, very short dark buzz cut, thick neck,
+      a sly confident half-smile. He wears an acid-wash denim jacket over a striped polo shirt, a thin gold chain.
+      He sits at a table, framed from the waist up, forearms and hands resting on the table edge. Natural skin texture, realistic.
+      Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No text, no logos.

@@ -1,0 +1,38 @@
+# Коммерсы, партия 2: стиль фонов дороги (выбор — мой, решение пользователя «по своему усмотрению»).
+# Урок партии 1: клетки модель рисует узором — клеток на фоне НЕТ, их кладёт код по сплайну дороги.
+# Фон — широкая панорама 2:1, по ней слева направо вьётся одна ясная дорога (асфальт/тропинка), камера едет вдоль неё.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1792, height: 896, steps: 8}
+seeds: [111, 222]
+style: >-
+  Wide panoramic high-angle three-quarter view of Zatulinka, a Soviet residential district on the outskirts of Novosibirsk, Siberia,
+  in autumn 1988. A single clear winding asphalt road with cracked edges enters from the left edge, curves in a gentle S-shape
+  through the middle of the picture and leaves at the right edge; the road is empty and clearly visible along its whole length.
+  Along the road: grey prefab nine-storey panel apartment blocks with laundry on balconies, a row of rusty metal garages,
+  a steaming heating pipe on concrete supports, a small kiosk, a yellow kvass barrel, a bus stop with an old Ikarus bus,
+  birch trees with yellow leaves, puddles, a courtyard playground with metal climbing frames, tiny distant people.
+  No text, no letters, no signs with writing, no watermark, no board game tiles.
+
+items:
+  - name: a-painted
+    prompt: >-
+      Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic,
+      rich textures, warm late-afternoon sunlight, long shadows. {style}
+  - name: b-watercolor
+    prompt: >-
+      Loose watercolor and ink sketch illustration, visible paper texture, soft washes, expressive pen lines,
+      nostalgic travel-sketchbook feel. {style}
+  - name: c-comic
+    prompt: >-
+      European ligne claire comic book illustration, clean uniform ink outlines, flat bright colors, detailed backgrounds
+      like a classic Franco-Belgian album. {style}
+  - name: d-cinematic
+    prompt: >-
+      Stylized cinematic 3D animated film still, soft global illumination, slightly exaggerated cute proportions of buildings
+      and cars, warm golden hour light, shallow haze. {style}
+  - name: e-postcard
+    prompt: >-
+      Soviet 1980s printed postcard illustration in gouache, matte grainy offset print texture, muted palette of ochre,
+      grey-blue and faded red, slightly naive drawing. {style}
