@@ -3,5 +3,5 @@ import { def } from './def';
 import { createView } from './view';
 
 // словарь грузит каталог вместе с модулем (withDict) — движку он нужен синхронно
-const mod: GameModule = { def, createView };
+const mod: GameModule = { def, createView, ownEsc: true };
 export default mod;

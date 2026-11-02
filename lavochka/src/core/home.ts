@@ -5,6 +5,7 @@ import { allowedCounts, matchPreset, optionsEditor } from './optsui';
 import { openRules, defaultOptions } from './rules';
 import { dropSave, hostGame, loadSave, startLocal } from './session';
 import { settings, store } from './settings';
+import { hasSlots, pickSlot } from './slots';
 import type { Options, SeatKind, SeatSpec } from './types';
 import { mountScreen, showScreen } from './ui';
 import { esc, h, plural } from './util';
@@ -74,7 +75,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
         <div class="seat-rows"></div>
         <div class="prefs"></div>
         <p class="hint">«Человек» — игра за этим экраном (по очереди). «Сеть» — место для друга: он подключится по коду комнаты.</p>
-        <div class="row buttons"><button class="btn primary big" data-a="start">Начать</button></div>
+        <div class="row buttons"><button class="btn big" data-a="load" hidden>Загрузить…</button><button class="btn primary big" data-a="start">Начать</button></div>
         <p class="err"></p>
       </div>
       <div class="sheet home-card opts-card" hidden>
@@ -126,6 +127,18 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
       resume.hidden = true;
     };
   }
+
+  // ---------- ячейки сохранения (сохраняют из паузы за столом)
+  const loadBtn = q<HTMLButtonElement>('[data-a=load]');
+  loadBtn.hidden = !!mod.ownSaves || !hasSlots(def.id);
+  loadBtn.onclick = () => {
+    Sound.ui();
+    pickSlot(def.id, 'load', (_i, s) => {
+      if (!s) return;
+      Sound.unlock();
+      startLocal(mod, s.snap.seats, s.snap.options, s.snap);
+    });
+  };
 
   // ---------- число игроков и места
   const seg = q('.count-seg');

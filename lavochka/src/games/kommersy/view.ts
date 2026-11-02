@@ -224,6 +224,11 @@ class KommersyView implements GameView<View, Event> {
     return mine ? 'Бросайте кубик' : `${who} бросает кубик`;
   }
 
+  saveTitle(v: View) {
+    const p = v.players.find((x) => x.seat === (v.me ?? this.me())) ?? v.players[0];
+    return `${dateText(v.m)} · ${TIERS[p.tier]} · ${money(p.worth)}`;
+  }
+
   playerStats(v: View, seat: number) {
     const p = v.players.find((x) => x.seat === seat);
     if (!p) return '';

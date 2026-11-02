@@ -51,6 +51,8 @@ export interface GameView<V = any, E = any> {
   realtime?(view: V, events: E[]): void;
   /** toAct — кто ходит; interactive — места этого экрана, которые могут действовать прямо сейчас. */
   setTurn(toAct: number[], interactive: number[]): void;
+  /** Подпись ячейки сохранения («Май 1990 · Ларёк»); без неё — номер хода. */
+  saveTitle?(view: V): string;
   /** Строка статуса под полем («Красный: бросайте кости»). */
   status?(view: V, toAct: number[], interactive: number[]): string;
   /** Короткая сводка по игроку для боковой панели (HTML). */
@@ -83,6 +85,10 @@ export interface GameModule {
   def: GameDef;
   createView(): GameView;
   prefs?: ViewPref[];
+  /** Esc в игре свой (снять выбор) — пауза по Esc не открывается. */
+  ownEsc?: boolean;
+  /** Справка по управлению (HTML): кнопка «?» на панели стола, закрыта по умолчанию. */
+  help?: string;
   /** Игра сама хранит свои незаконченные партии (головоломки — по штуке на каждую): общий «Продолжить» не нужен. */
   ownSaves?: boolean;
   /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */

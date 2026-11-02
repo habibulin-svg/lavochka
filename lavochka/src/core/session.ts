@@ -180,9 +180,14 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
     owner: true,
     record: () => (room.auth ? offerFrom(room.auth) : null),
     options: () => room.auth?.options ?? room.options,
+    ...(mod.ownSaves ? {} : { saves: { snapshot: () => (room.auth && !room.auth.result ? (JSON.parse(JSON.stringify(room.auth.snapshot())) as Snapshot) : null), load: (snap: Snapshot) => startLocal(mod, snap.seats, snap.options, snap) } }),
     onLeave: () => {
       closeActive();
       nav.home(def.id);
+    },
+    onYard: () => {
+      closeActive();
+      nav.yard();
     },
   });
   client.release();

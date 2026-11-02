@@ -390,3 +390,9 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .rt-pref { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; font-size: 14px; }
 .rt-pref > span { min-width: 64px; }
 .rt-pref .seg button { padding: 3px 8px; font-size: 13px; }
+
+/* ячейки сохранения и справка по управлению (core/slots.ts, Table.help) */
+.slot-list { display: flex; flex-direction: column; gap: 8px; }
+.slot-btn { text-align: left; justify-content: flex-start; }
+.help-text { line-height: 1.5; }
+.help-text kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; font: inherit; font-size: 0.9em; text-align: center; opacity: 0.85; }

@@ -1,12 +1,14 @@
 /* Игровой стол — общий для всех игр: поле игры, панель игроков, статус, журнал и чат. */
 import { avatarHtml } from './avatars';
 import { Sound } from './audio';
+import type { Snapshot } from './authority';
 import type { RoomClient } from './client';
 import type { RoomMsg, SeatStatus } from './protocol';
 import { offerBlock, openRecords, type Offer } from './records-ui';
 import { openRules } from './rules';
 import { openSettings } from './settings-ui';
 import { saveSettings, settings } from './settings';
+import { pickSlot, writeSlot } from './slots';
 import type { GameResult, Options } from './types';
 import { closeAllModals, modal, mountScreen, removeScreen, showScreen, toast } from './ui';
 import { esc, h, sleep } from './util';
@@ -32,6 +34,10 @@ export interface TableOpts {
   record?(): Offer | null;
   /** Настройки партии (для таблицы рекордов в меню). */
   options?(): Options;
+  /** Локальная партия: снимок для ячейки сохранения и загрузка из ячейки (новая комната со снимком). */
+  saves?: { snapshot(): Snapshot | null; load(snap: Snapshot): void };
+  /** Уйти со стола во двор, минуя экран игры. */
+  onYard?(): void;
 }
 
 type StepMsg = Extract<RoomMsg, { t: 'step' }>;
@@ -101,6 +107,7 @@ export class Table {
         <div class="panel-top">
           <button class="icon-btn" data-act="menu" title="Меню">☰</button>
           <div class="panel-title">${esc(def.title)}</div>
+          ${o.mod.help ? '<button class="icon-btn" data-act="help" title="Управление">?</button>' : ''}
           <button class="icon-btn" data-act="sound" title="Звук"></button>
         </div>
         <div class="room-badge" hidden></div>
@@ -122,6 +129,7 @@ export class Table {
 
     const q = <T extends HTMLElement>(s: string) => this.el.querySelector(s) as T;
     q('[data-act=menu]').onclick = () => this.menu();
+    if (o.mod.help) q('[data-act=help]').onclick = () => this.help();
     const sb = q<HTMLButtonElement>('[data-act=sound]');
     const upd = () => (sb.textContent = settings.sound ? '🔊' : '🔇');
     upd();
@@ -192,6 +200,8 @@ export class Table {
     });
     // пробел — та же главная кнопка хода (бросок), как в кинь-двинь и нардах; игры со своим пробелом гасят событие сами
     window.addEventListener('keydown', this.onSpace);
+    window.addEventListener('keydown', this.escSeen, true);
+    window.addEventListener('keydown', this.onEsc);
 
     this.unsub = o.client.on((m) => this.onMsg(m));
     o.client.onLost = () => this.lost();
@@ -699,14 +709,18 @@ export class Table {
 
   private menu() {
     const net = this.o.mode !== 'local';
+    const sv = this.o.saves && !this.result ? this.o.saves : null;
     modal(
       `<h2>Пауза</h2><p>${net ? 'Пока вы в меню, партия идёт дальше.' : 'Партия сохраняется автоматически — её можно продолжить позже.'}</p>`,
       [
+        ...(sv ? [{ text: 'Сохранить', action: () => this.saveSlot() }, { text: 'Загрузить', action: () => pickSlot(this.o.mod.def.id, 'load', (_i, s) => s && sv.load(s.snap)) }] : []),
         { text: 'Правила', action: () => void openRules(this.o.mod) },
+        ...(this.o.mod.help ? [{ text: 'Управление', action: () => this.help() }] : []),
         ...(this.o.mod.def.records ? [{ text: 'Рекорды', action: () => openRecords(this.o.mod.def.id, this.o.mod.def.title, this.recTable()) }] : []),
         { text: 'Настройки', action: () => openSettings() },
         { text: 'Ошибка?', action: () => this.reportBug() },
-        { text: 'Выйти', action: () => this.confirmLeave() },
+        { text: 'В меню игры', action: () => this.confirmLeave() },
+        ...(this.o.onYard ? [{ text: 'Во двор', action: () => this.confirmLeave(true) }] : []),
         { text: 'Продолжить', primary: true },
       ]
     );
@@ -732,10 +746,34 @@ export class Table {
     return { table: t?.id, label: t?.label, columns: rec?.columns };
   }
 
-  confirmLeave() {
-    if (this.o.mode === 'local' || this.result) return this.leave();
+  /** Справка по управлению игры (GameModule.help). */
+  private help() {
+    modal(`<h2>Управление</h2><div class="help-text">${this.o.mod.help}</div>`, [{ text: 'Понятно', primary: true }]);
+  }
+
+  /** В ячейку — свежий снимок партии и подпись от вида игры. */
+  private saveSlot() {
+    const snap = this.o.saves?.snapshot();
+    if (!snap) return toast('Сохранить не получилось.');
+    const title = (this.current ? this.view.saveTitle?.(this.current) : null) || `Ход ${snap.seq}`;
+    pickSlot(this.o.mod.def.id, 'save', (i) => {
+      writeSlot(this.o.mod.def.id, i, { at: Date.now(), title, snap });
+      toast(`Сохранено в ячейку ${i + 1}.`);
+    });
+  }
+
+  confirmLeave(yard = false) {
+    const go = () => (yard ? this.leaveToYard() : this.leave());
+    if (this.o.mode === 'local' || this.result) return go();
     const txt = this.o.owner && this.o.mode === 'p2p' ? 'Вы хозяин стола: если выйти, партия закончится у всех.' : 'Ваше место займёт бот. Вернуться можно по тому же коду.';
-    modal(`<h2>Выйти из партии?</h2><p>${txt}</p>`, [{ text: 'Остаться' }, { text: 'Выйти', primary: true, action: () => this.leave() }]);
+    modal(`<h2>Выйти из партии?</h2><p>${txt}</p>`, [{ text: 'Остаться' }, { text: 'Выйти', primary: true, action: go }]);
+  }
+
+  private leaveToYard() {
+    if (this.closed) return;
+    this.o.client.leaving = true;
+    this.destroy();
+    this.o.onYard!();
   }
 
   private lost() {
@@ -759,6 +797,19 @@ export class Table {
     this.destroy();
     this.o.onLeave();
   }
+
+  /** Было ли открыто окно, когда нажали Esc: окно закрывается по Esc само, раньше, чем Esc дойдёт до onEsc. */
+  private escModal = false;
+  private escSeen = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') this.escModal = !!document.querySelector('.modal');
+  };
+  /** Esc — пауза; у игр, где Esc снимает выбор (ownEsc), — только кнопка ☰. */
+  private onEsc = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape' || e.defaultPrevented || e.repeat || this.escModal || this.o.mod.ownEsc) return;
+    const t = e.target as HTMLElement;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    this.menu();
+  };
 
   private onSpace = (e: KeyboardEvent) => {
     if (e.code !== 'Space' || e.defaultPrevented || e.repeat) return;
@@ -786,6 +837,8 @@ export class Table {
     this.cams = null;
     this.view.destroy?.();
     window.removeEventListener('keydown', this.onSpace);
+    window.removeEventListener('keydown', this.escSeen, true);
+    window.removeEventListener('keydown', this.onEsc);
     closeAllModals();
     removeScreen('table');
     setErrorGame(null);
