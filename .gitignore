@@ -31,3 +31,6 @@ lavochka/tools/seo/*.log
 
 # поручения программе «Переезд» и их итоги — только на машине, где она работает
 studio/tasks/
+
+# сборка качалки вкладышей
+lavochka/tools/wrappers/dist/
