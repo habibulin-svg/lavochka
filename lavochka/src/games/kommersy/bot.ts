@@ -2,7 +2,7 @@
  * (готовится к датам, выходит из МММ и ГКО вовремя) и бережёт хвост для лондонских юристов. Бот видит только свой view. */
 import type { Rng } from '../../core/types';
 import { CLUB_PRICE, SCALE, dealById, mm, type Fx, type Stat } from './data';
-import type { Action, AskChoice, View } from './engine';
+import { bookSum, type Action, type AskChoice, type View } from './engine';
 
 const W: Record<Stat, number> = { health: 0.3, mood: 0.2, stress: -0.2, name: 0.6, avt: 0.25, svyazi: 0.7, heat: -0.6, blizkie: 0.3, sovest: 0.15 };
 
@@ -63,7 +63,7 @@ function dealPick(v: View, level: number, rng: Rng): number {
       if (level < 2 || !t || (t.dies && t.dies - v.m < 4) || (t.id === 'mmm' && v.m > mm(1994, 5))) continue;
       score = 40;
     } else {
-      const payback = o.price / Math.max(1, o.income * (o.mgr ? 0.76 : 1));
+      const payback = (o.price + (o.fee ?? 0)) / Math.max(1, o.income * (o.mgr ? 0.76 : 1));
       const limit = o.loan > 0 ? (level >= 2 ? 16 : 10) : 30;
       if (payback > limit) continue;
       score = (o.income * 12) / Math.max(1, o.price) * Math.log10(10 + o.income);
@@ -73,11 +73,22 @@ function dealPick(v: View, level: number, rng: Rng): number {
       best = i;
     }
   }
+  // не по карману — выставить право на торги: наценка достанется даром, если кто-то купит
+  const auc = ask.choices.findIndex((c) => c.buy === 'auction');
+  if (best === pass && auc >= 0 && (level >= 1 || rng.next() < 0.3)) return auc;
   return best;
 }
 
 export function choose(v: View, seat: number, level: number, rng: Rng): Action | null {
   if (v.phase === 'over') return null;
+  if (v.phase === 'buh') {
+    const b = v.books.find((x) => x.seat === seat && x.ans == null);
+    if (!b || !v.booksWait.includes(seat)) return null;
+    const sum = bookSum(b);
+    // Лёгкий путается в разноске, Средний — изредка, Сложный считает точно
+    const slip = rng.next() < [0.3, 0.08, 0][level] ? 1.3 : 1;
+    return { type: 'buh', sum: Math.round(sum * slip + (slip > 1 ? 50 : 0)) };
+  }
   if (v.phase === 'choose' && v.ask && v.ask.seat === seat) {
     if (v.ask.deals) return { type: 'choose', i: dealPick(v, level, rng) };
     const okIdx = v.ask.choices.map((c, i) => (c.ok ? i : -1)).filter((i) => i >= 0);

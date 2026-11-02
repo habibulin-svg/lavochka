@@ -4,7 +4,7 @@ import { RiggedRng, SeededRng } from '../src/core/rng';
 import { CLUB_PRICE, LAST, SEG_CELLS, dateText, mm, segMonths } from '../src/games/kommersy/data';
 import { def } from '../src/games/kommersy/def';
 import { choose } from '../src/games/kommersy/bot';
-import { apply, clubCheck, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
+import { apply, bookSum, clubCheck, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
 import { botSeats, simulate } from './harness';
 
 function act(s: State, seat: number, a: Action, rig?: number[]): State {
@@ -134,6 +134,71 @@ describe('Коммерсы: эпоха и падения', () => {
     expect(v.players[1].stats.sovest).toBeUndefined();
     expect(v.my!.heatHint).toBeTruthy();
   });
+});
+
+describe('Коммерсы: торги и «Бухгалтерия»', () => {
+  it('не по карману — право на торги: купивший платит наценку продавцу; никто — сделка уходит', () => {
+    let s = newState([0, 1, 2]);
+    s.players[0].cash = 0;
+    s.players[0].stats.name = 0;
+    s.players[1].cash = 0;
+    s.players[1].stats.name = 0;
+    s.players[2].cash = 5000;
+    s = act(s, 0, { type: 'roll' }, [0]);
+    s = act(s, 0, { type: 'move' }, [0, 15, 15]);
+    const auc = s.ask!.choices.findIndex((c) => c.buy === 'auction');
+    expect(auc).toBeGreaterThan(-1);
+    const price = s.ask!.deals![s.ask!.choices[auc].di!].price;
+    s = act(s, 0, { type: 'choose', i: auc });
+    // Серёге не по карману — право сразу у третьего
+    expect(s.ask?.auction?.seller).toBe(0);
+    expect(s.ask!.seat).toBe(2);
+    s = act(s, 2, { type: 'choose', i: 0 });
+    const fee = Math.round(price * 0.1);
+    expect(s.players[0].cash).toBe(fee);
+    expect(s.players[2].assets).toHaveLength(1);
+    expect(s.players[2].cash).toBe(5000 - price - fee);
+    expect(s.turn).toBe(1);
+  });
+
+  it('один — торгов нет', () => {
+    let s = newState([0]);
+    s.players[0].cash = 0;
+    s.players[0].stats.name = 0;
+    s = act(s, 0, { type: 'roll' }, [0]);
+    s = act(s, 0, { type: 'move' }, [0, 15, 15]);
+    expect(s.ask!.choices.some((c) => c.buy === 'auction')).toBe(false);
+  });
+
+  it('конец отрезка ждёт разноски всех; сошлось — органы спокойнее, нет — внимание растёт', () => {
+    let s = newState([0, 1], { buh: true });
+    s.players[0].pos = SEG_CELLS;
+    s.players[1].pos = SEG_CELLS + 1;
+    s.players[0].stats.heat = 20;
+    s.players[1].stats.heat = 20;
+    s = act(s, 0, { type: 'roll' }, [0]);
+    s = act(s, 0, { type: 'move' });
+    expect(s.phase).toBe('buh');
+    expect(def.toAct(s).sort()).toEqual([0, 1]);
+    const v = view(s, [0]);
+    expect(v.books.map((b) => b.seat)).toEqual([0]);
+    const right = bookSum(v.books[0]);
+    expect(right).toBe(3 * (55 - 32));
+    s = act(s, 1, { type: 'buh', sum: -999 });
+    expect(s.phase).toBe('buh');
+    expect(def.toAct(s)).toEqual([0]);
+    const m = s.m;
+    s = act(s, 0, { type: 'buh', sum: right });
+    expect(s.phase).toBe('roll');
+    expect(s.m).toBe(m + 3);
+    expect(s.players[0].stats.heat).toBeLessThan(s.players[1].stats.heat);
+  });
+
+  it('партии ботов с «Бухгалтерией» доходят до конца', async () => {
+    const r = await simulate(def, botSeats(def, 3, [0, 1, 2]), { start: mm(1998, 9), diff: 1, chance: 0, buh: true }, 5, 60000);
+    expect(r.error).toBeUndefined();
+    expect(r.finished).toBe(true);
+  }, 60000);
 });
 
 describe('Коммерсы: партии ботов', () => {

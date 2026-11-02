@@ -9,7 +9,7 @@ import {
   CELL_COLOR, CELL_NAME, CLUB, ERA_NAME, HEROES, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, TIERS, TIER_ID,
   dateText, dealById, eraOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
-import { money, type Action, type Ask, type Event, type View } from './engine';
+import { money, type Action, type Ask, type Books, type Event, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
@@ -160,6 +160,10 @@ class KommersyView implements GameView<View, Event> {
     this.cardEl.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest('[data-choice]') as HTMLElement | null;
       if (b && !b.hasAttribute('disabled')) this.send({ type: 'choose', i: Number(b.dataset.choice) });
+      if ((e.target as HTMLElement).closest('[data-buh]')) this.sendBooks();
+    });
+    this.cardEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.target as HTMLElement).matches('.km-buh-in')) this.sendBooks();
     });
     this.panel = h(`<div class="km-panel">
         <div class="km-tray"></div>
@@ -196,6 +200,20 @@ class KommersyView implements GameView<View, Event> {
     Sound.ui();
     this.ctx.act(seat, a);
   }
+  /** «Бухгалтерия»: сдать свою разноску. */
+  private sendBooks() {
+    const v = this.v;
+    const b = v?.books.find((x) => x.ans == null && this.interactive.includes(x.seat));
+    const inp = this.cardEl.querySelector('.km-buh-in') as HTMLInputElement | null;
+    if (!b || !inp) return;
+    const sum = Number(inp.value.replace(/[\s$]/g, '').replace(',', '.').replace('−', '-'));
+    if (!inp.value.trim() || !Number.isFinite(sum)) {
+      inp.focus();
+      return;
+    }
+    Sound.ui();
+    this.ctx.act(b.seat, { type: 'buh', sum });
+  }
   private mineTurn() {
     return !!this.v && this.v.phase !== 'over' && this.interactive.includes(this.v.turn);
   }
@@ -219,6 +237,7 @@ class KommersyView implements GameView<View, Event> {
     if (v.phase === 'over') return 'Июль 2003-го. Итоги.';
     const who = this.ctx.name(toAct[0] ?? v.turn).replace(/<[^>]+>/g, '');
     const mine = interactive.includes(toAct[0]);
+    if (v.phase === 'buh') return v.booksWait.some((x) => interactive.includes(x)) ? 'Сведите баланс за отрезок' : 'Бухгалтерия: ждём остальных';
     if (v.phase === 'choose') return mine ? 'Выбирайте' : `${who} думает`;
     if (v.phase === 'move') return mine ? 'Поставьте фишку на подсвеченную клетку' : `${who} ходит`;
     return mine ? 'Бросайте кубик' : `${who} бросает кубик`;
@@ -325,6 +344,17 @@ class KommersyView implements GameView<View, Event> {
 
   private drawCard() {
     const v = this.v!;
+    if (v.phase === 'buh') {
+      const b = v.books.find((x) => x.ans == null && this.interactive.includes(x.seat));
+      // карточку не перерисовываем, пока игрок вписывает число
+      if (b && this.cardEl.dataset.buh === String(b.seat) && !this.cardEl.hidden) return;
+      this.cardEl.hidden = false;
+      this.cardEl.dataset.buh = b ? String(b.seat) : '';
+      this.cardEl.innerHTML = booksHtml(b, this.ctx.name(b?.seat ?? this.me()));
+      (this.cardEl.querySelector('.km-buh-in') as HTMLInputElement | null)?.focus();
+      return;
+    }
+    this.cardEl.dataset.buh = '';
     const ask = v.ask;
     if (!ask || v.phase !== 'choose') {
       this.cardEl.hidden = true;
@@ -428,6 +458,17 @@ class KommersyView implements GameView<View, Event> {
           sfx(ev.t);
           await sleep(300 / speed);
           break;
+        case 'buh':
+          if (this.interactive.includes(ev.seat))
+            await this.showBanner(
+              ev.ok ? `<b>Баланс сошёлся</b><p>${money(ev.sum)} за отрезок. Органы спокойнее.</p>` : `<b>Не сошлось</b><p>Записано ${money(ev.ans)}, а вышло ${money(ev.sum)}. Налоговая заметила.</p>`,
+              'hist', 1800
+            );
+          break;
+        case 'resold':
+          sfx('buy');
+          await sleep(300 / speed);
+          break;
         case 'out':
           if (ev.kind === 'hosp') sfx('out-hosp');
           break;
@@ -452,6 +493,16 @@ class KommersyView implements GameView<View, Event> {
     this.kolyan.stop();
     this.panel?.remove();
   }
+}
+
+function booksHtml(b: Books | undefined, who: string) {
+  const head = `<div class="km-card-head">📒 Бухгалтерия${b ? ` · ${who}` : ''}</div>`;
+  if (!b) return `<div class="km-card-in" style="--cc:#8a7a5a">${head}<p>Баланс сдан. Ждём, пока сведут остальные.</p></div>`;
+  const rows = b.lines.map((l) => `<tr><td>${esc(l.label)}</td><td class="${l.sum < 0 ? 'neg' : ''}">${l.sum < 0 ? '−' : '+'}$${Math.abs(l.sum)}</td></tr>`).join('');
+  return `<div class="km-card-in" style="--cc:#8a7a5a">${head}
+    <div class="km-card-body"><div><h3>Свести баланс</h3><p>Статьи за месяц. Сколько прибавится (или убудет) за ${b.len === 1 ? 'месяц' : `${b.len} мес.`}? Расход — с минусом.</p></div></div>
+    <table class="km-buh">${rows}</table>
+    <div class="km-buh-row"><span>Итого × ${b.len} =</span><input class="km-buh-in" inputmode="numeric" placeholder="$" autocomplete="off"><button class="btn primary" data-buh>Сдать</button></div></div>`;
 }
 
 function cardHtml(ask: Ask, mine: boolean, who: string) {

@@ -97,3 +97,11 @@
 }
 .km-music { position: absolute; right: 1.2%; top: 2%; width: 40px; height: 40px; border: 0; border-radius: 8px; background: rgba(20, 16, 12, 0.78); color: #ffd54a;
   font-size: 20px; cursor: pointer; z-index: 4; }
+
+/* «Бухгалтерия» */
+.km-buh { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+.km-buh td { padding: 3px 4px; border-bottom: 1px dashed #d8ccb4; }
+.km-buh td:last-child { text-align: right; font-weight: 600; color: #3f7a45; white-space: nowrap; }
+.km-buh td.neg { color: #b03a2a; }
+.km-buh-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.km-buh-in { width: 110px; padding: 6px 8px; border-radius: 8px; border: 2px solid #8a7a5a; font: inherit; font-size: 16px; }

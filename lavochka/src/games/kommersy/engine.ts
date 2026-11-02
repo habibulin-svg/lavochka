@@ -55,6 +55,8 @@ export interface Player {
   club: boolean;
   pos: number;
   ending: Ending | null;
+  /** «Бухгалтерия»: сколько раз разноска сошлась. */
+  books?: number;
 }
 
 export interface AskChoice {
@@ -65,7 +67,7 @@ export interface AskChoice {
   /** Для ботов и подсказок: что даёт выбор. */
   fx?: Fx;
   risk?: Choice['risk'];
-  buy?: 'deal' | 'pass' | 'club';
+  buy?: 'deal' | 'pass' | 'club' | 'auction';
   /** Номер предложения в ask.deals. */
   di?: number;
 }
@@ -81,6 +83,8 @@ export interface Offer {
   risk: number;
   mgr: boolean;
   loan: number;
+  /** Торги: наценка, которую покупатель права платит продавцу. */
+  fee?: number;
 }
 export interface Ask {
   seat: number;
@@ -90,6 +94,19 @@ export interface Ask {
   card?: string;
   deals?: Offer[];
   choices: AskChoice[];
+  /** Торги: кто выставил право и кто ещё не ответил. */
+  auction?: { seller: number; rest: number[] };
+}
+/** Строка «Бухгалтерии»: статья и сумма в месяц (доход +, расход −). */
+export interface BookLine {
+  label: string;
+  sum: number;
+}
+export interface Books {
+  seat: number;
+  len: number;
+  lines: BookLine[];
+  ans: number | null;
 }
 
 export interface Opts {
@@ -108,7 +125,7 @@ export interface State {
   cells: Cell[];
   turn: number;
   first: number;
-  phase: 'roll' | 'move' | 'choose' | 'over';
+  phase: 'roll' | 'move' | 'choose' | 'buh' | 'over';
   roll: number | null;
   target: number | null;
   ask: Ask | null;
@@ -116,6 +133,8 @@ export interface State {
   crisisUntil: number;
   fired: string[];
   uid: number;
+  /** «Бухгалтерия»: разноска за отрезок, пока все не сдали. */
+  books?: Books[] | null;
 }
 
 export type Action =
@@ -126,7 +145,8 @@ export type Action =
   | { type: 'manager'; uid: number; on: boolean }
   | { type: 'repay' }
   | { type: 'quit' }
-  | { type: 'krysha'; to: Krysha };
+  | { type: 'krysha'; to: Krysha }
+  | { type: 'buh'; sum: number };
 
 export type Event =
   | { t: 'roll'; seat: number; d: number }
@@ -140,6 +160,10 @@ export type Event =
   | { t: 'fall'; seat: number; kind: Fall['kind'] }
   | { t: 'out'; seat: number; kind: 'jail' | 'hosp' | 'away'; months: number }
   | { t: 'club'; seat: number }
+  | { t: 'auction'; seat: number; name: string; fee: number }
+  | { t: 'resold'; seat: number; from: number; name: string; fee: number }
+  | { t: 'unsold'; name: string }
+  | { t: 'buh'; seat: number; ok: boolean; sum: number; ans: number }
   | { t: 'over' };
 
 // ---------------------------------------------------------------- помощники
@@ -382,19 +406,24 @@ function dealAsk(s: State, p: Player, rng: Rng): Ask | null {
     deals.push({ id: d.id, name: d.name, text: d.text, price, income: inc, hours: d.hours, kind: d.kind, risk: d.risk, mgr: false, loan: 0 });
   }
   const choices = deals.map((o, di) => offerChoice(s, p, o, di));
+  // сетевая партия: не тянешь сделку — выставь право на неё другим с наценкой (торги)
+  if (s.players.some((q) => q !== p && q.out === 0))
+    deals.forEach((o, di) => {
+      if (!choices[di].ok) choices.push({ label: `На торги: «${o.name}» (+${money(round(o.price * 0.1))})`, ok: true, buy: 'auction', di });
+    });
   choices.push({ label: 'Мимо', ok: true, buy: 'pass' });
   return { seat: p.seat, cell: 'deal', title: deals.length > 1 ? 'Сделки' : deals[0].name, text: deals.length > 1 ? 'Что подвернулось:' : deals[0].text, deals, choices };
 }
 
 /** Можно ли взять предложение и как: сам, если часы позволяют и остаётся запас, иначе — управляющий; не хватает денег — кредит. */
-function offerChoice(s: State, p: Player, o: Offer, di: number): AskChoice {
+function offerChoice(s: State, p: Player, o: Offer, di: number, fee = 0): AskChoice {
   const d = dealById(o.id)!;
   const bad = needFail(s, p, d);
   const free = hoursFree(p);
   const mgrH = Math.ceil(o.hours * 0.15);
   o.mgr = o.kind === 'biz' && (o.hours > free || free - o.hours < 40);
   const h = o.mgr ? mgrH : o.hours;
-  o.loan = Math.max(0, o.price - Math.max(0, p.cash));
+  o.loan = Math.max(0, o.price + fee - Math.max(0, p.cash));
   const why = bad ?? (h > free ? 'не хватает часов' : o.loan > 0 && (p.stats.name < 15 || o.loan > loanLimit(p)) ? 'не хватает денег' : undefined);
   const how = [o.mgr ? 'с управляющим' : '', o.loan > 0 ? `в кредит ${money(o.loan)}` : ''].filter(Boolean).join(', ');
   return { label: `${o.name}${how ? ` — ${how}` : ''}`, ok: !why, why, buy: 'deal', di };
@@ -457,6 +486,7 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
 export function toAct(s: State): number[] {
   if (s.phase === 'over') return [];
   if (s.phase === 'choose' && s.ask) return [s.ask.seat];
+  if (s.phase === 'buh') return (s.books ?? []).filter((b) => b.ans == null).map((b) => b.seat);
   return [s.players[s.turn].seat];
 }
 
@@ -503,6 +533,18 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
         p.cash -= pay;
       }
       p.loans = p.loans.filter((l) => l.left > 1);
+    }
+    return { state: s, events: ev };
+  }
+
+  if (a.type === 'buh') {
+    const b = s.phase === 'buh' ? s.books?.find((x) => x.seat === seat && x.ans == null) : undefined;
+    if (!b || !Number.isFinite(a.sum)) return null;
+    b.ans = Math.round(a.sum);
+    if (s.books!.every((x) => x.ans != null)) {
+      for (const x of s.books!) audit(s, P(s, x.seat), x, ev);
+      s.books = null;
+      periods(s, ev, rng, true);
     }
     return { state: s, events: ev };
   }
@@ -554,6 +596,31 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       finish(s, ev);
       return { state: s, events: ev };
     }
+    if (ch.buy === 'auction' && ask.deals && ch.di != null) {
+      const o = ask.deals[ch.di];
+      const fee = round(o.price * 0.1);
+      ev.push({ t: 'auction', seat, name: o.name, fee });
+      const n = s.players.length;
+      const at = s.players.indexOf(p);
+      const rest = Array.from({ length: n - 1 }, (_, k) => s.players[(at + 1 + k) % n]).filter((q) => q.out === 0).map((q) => q.seat);
+      s.ask = null;
+      if (bid(s, { ...o, fee }, seat, rest, ev)) return { state: s, events: ev };
+      next(s, ev, rng);
+      return { state: s, events: ev };
+    }
+    if (ask.auction) {
+      const o = ask.deals![0];
+      s.ask = null;
+      if (ch.buy === 'deal') {
+        const seller = P(s, ask.auction.seller);
+        p.cash -= o.fee!;
+        seller.cash += o.fee!;
+        buy(s, p, o, ev);
+        ev.push({ t: 'resold', seat, from: seller.seat, name: o.name, fee: o.fee! });
+      } else if (bid(s, o, ask.auction.seller, ask.auction.rest, ev)) return { state: s, events: ev };
+      next(s, ev, rng);
+      return { state: s, events: ev };
+    }
     if (ch.buy === 'deal' && ask.deals && ch.di != null) buy(s, p, ask.deals[ch.di], ev);
     if (ch.fx) {
       applyFx(s, p, ch.fx, rng, ev);
@@ -570,6 +637,58 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     return { state: s, events: ev };
   }
   return null;
+}
+
+/** Торги: право на сделку предлагается по кругу тому, кто может её взять (с наценкой). Никто — сделка уходит. */
+function bid(s: State, o: Offer, seller: number, rest: number[], ev: Event[]): boolean {
+  const queue = [...rest];
+  while (queue.length) {
+    const q = P(s, queue.shift()!);
+    const offer: Offer = { ...o, mgr: false, loan: 0 };
+    const ch = offerChoice(s, q, offer, 0, o.fee!);
+    if (!ch.ok) continue;
+    const how = ch.label.split(' — ')[1];
+    ch.label = `Купить право за ${money(o.fee!)}${how ? ` — ${how}` : ''}`;
+    s.ask = {
+      seat: q.seat, cell: 'deal', title: 'Торги', text: `Право на «${o.name}» выставлено с наценкой ${money(o.fee!)} — она уходит продавцу.`,
+      deals: [offer], choices: [ch, { label: 'Мимо', ok: true, buy: 'pass' }], auction: { seller, rest: queue },
+    };
+    s.phase = 'choose';
+    return true;
+  }
+  ev.push({ t: 'unsold', name: o.name });
+  return false;
+}
+
+/** «Бухгалтерия»: статьи за месяц — зарплата, доход каждого дела, жизнь, доля крыши, кредиты, содержание. */
+export function bookLines(s: State, p: Player): BookLine[] {
+  const L: BookLine[] = [];
+  if (p.job) L.push({ label: `Зарплата: ${p.job.name}`, sum: p.job.salary });
+  for (const a of p.assets) if (a.kind !== 'paper') L.push({ label: a.name, sum: round(assetIncome(s, p, a)) });
+  const biz = p.assets.reduce((t, a) => t + assetIncome(s, p, a), 0);
+  L.push({ label: 'Жизнь: еда, одежда, квартира', sum: -round(25 + 0.12 * (biz + (p.job?.salary ?? 0))) });
+  const dan = round(biz * ({ none: 0, bandit: 0.2, police: 0.25, own: 0.1 } as Record<Krysha, number>)[p.krysha]);
+  if (dan) L.push({ label: p.krysha === 'own' ? 'Охрана' : 'Крыше', sum: -dan });
+  const loans = round(p.loans.reduce((t, l) => t + l.pay, 0));
+  if (loans) L.push({ label: 'Кредиты', sum: -loans });
+  if (p.upkeep) L.push({ label: 'Содержание: машина, дача, привычки', sum: -round(p.upkeep) });
+  return L;
+}
+export const bookSum = (b: { len: number; lines: BookLine[] }) => b.len * b.lines.reduce((t, l) => t + l.sum, 0);
+
+/** Проверка разноски: сошлось (±5 %) — порядок в бумагах, органы спокойнее, с опытом растёт «Счёт»; не сошлось — налоговая заметила. */
+function audit(s: State, p: Player, b: Books, ev: Event[]) {
+  const sum = bookSum(b);
+  const ok = Math.abs(b.ans! - sum) <= Math.max(20, Math.abs(sum) * 0.05);
+  if (ok) {
+    addStat(p, 'heat', -2);
+    p.books = (p.books ?? 0) + 1;
+    if (p.books % 4 === 0) p.skills.schet = clamp(p.skills.schet + 1, 0, SKILL_MAX);
+  } else {
+    addStat(p, 'heat', 4);
+    addStat(p, 'stress', 3);
+  }
+  ev.push({ t: 'buh', seat: p.seat, ok, sum, ans: b.ans! });
 }
 
 function buy(s: State, p: Player, o: Offer, ev: Event[]) {
@@ -594,7 +713,20 @@ function next(s: State, ev: Event[], rng: Rng) {
       return;
     }
   }
+  periods(s, ev, rng);
+}
+
+/** Конец отрезка: «Бухгалтерия» (если включена), «Новый квартал» — и так, пока кто-нибудь не выйдет на дорогу. */
+function periods(s: State, ev: Event[], rng: Rng, booked = false) {
+  const n = s.players.length;
   for (let guard = 0; guard < 400; guard++) {
+    if (s.opts.buh && !booked) {
+      s.phase = 'buh';
+      s.books = s.players.map((p) => ({ seat: p.seat, len: s.len, lines: bookLines(s, p), ans: null }));
+      return;
+    }
+    booked = false;
+    s.phase = 'roll';
     period(s, ev, rng);
     if ((s.phase as State['phase']) === 'over') return;
     s.first = (s.first + 1) % n;
@@ -816,6 +948,9 @@ export interface View {
   diff: number;
   buh: boolean;
   fired: string[];
+  /** «Бухгалтерия» своих мест (чужие статьи не видны) и кто ещё не сдал. */
+  books: Books[];
+  booksWait: number[];
 }
 
 const hint = (v: number, words: string[]) => words[Math.min(words.length - 1, Math.floor(v / (101 / words.length)))];
@@ -845,5 +980,7 @@ export function view(s: State, seats: number[] | 'all'): View {
   return {
     me, m: s.m, len: s.len, cells: [...s.cells], turn: s.players[s.turn].seat, phase: s.phase, roll: s.roll, target: s.target, ask: clone(s.ask), players, my,
     crisis: inCrisis(s.m) || s.m < s.crisisUntil, diff: s.opts.diff, buh: s.opts.buh, fired: [...s.fired],
+    books: clone((s.books ?? []).filter((b) => seats === 'all' || seats.includes(b.seat))),
+    booksWait: (s.books ?? []).filter((b) => b.ans == null).map((b) => b.seat),
   };
 }
