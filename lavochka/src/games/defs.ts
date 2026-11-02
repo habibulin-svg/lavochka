@@ -10,6 +10,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   vorona: () => import('./vorona/def').then((m) => m.def),
   western: () => import('./western/def').then((m) => m.def),
   akcii: () => import('./akcii/def').then((m) => m.def),
+  kommersy: () => import('./kommersy/def').then((m) => m.def),
   poezd: () => import('./poezd/def').then((m) => m.def),
   galaktika: () => import('./galaktika/def').then((m) => m.def),
   borodino: () => import('./borodino/def').then((m) => m.def),

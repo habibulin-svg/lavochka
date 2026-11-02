@@ -1,0 +1,95 @@
+/* «Коммерсы»: панорама с дорогой, фишки, карточка клетки, плашки событий, панель Коляна. */
+.km-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #1d1a16; }
+.km-scene { position: relative; width: 100%; max-height: 100%; aspect-ratio: 2 / 1; overflow: hidden; border-radius: 10px; }
+.km-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; }
+.km-bg2 { opacity: 0; transition: opacity 0.9s ease; }
+.km-bg2.on { opacity: 1; }
+.km-road { position: absolute; inset: 0; width: 100%; height: 100%; }
+.km-path-edge { fill: none; stroke: rgba(30, 24, 18, 0.55); stroke-width: 96; stroke-linecap: round; }
+.km-path { fill: none; stroke: #e8dcc0; stroke-width: 78; stroke-linecap: round; opacity: 0.88; }
+.km-start { fill: #fff; stroke: #333; stroke-width: 5; }
+.km-cell rect { stroke: rgba(0, 0, 0, 0.55); stroke-width: 5; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35)); }
+.km-cell text { pointer-events: none; }
+.km-cell.hot rect { stroke: #fff; stroke-width: 9; animation: km-pulse 0.9s ease-in-out infinite alternate; }
+.km-cell.tap { cursor: pointer; }
+@keyframes km-pulse { from { opacity: 0.75; } to { opacity: 1; } }
+
+.km-tokens { position: absolute; inset: 0; pointer-events: none; }
+.km-token { position: absolute; width: 7%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid var(--c); background: #f4ead6;
+  overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45); transition: left 0.18s ease, top 0.18s ease; display: flex; align-items: center; justify-content: center; }
+.km-token img { width: 160%; margin-top: 30%; }
+.km-token span { font: 700 clamp(12px, 2.2vw, 26px) / 1 system-ui, sans-serif; color: var(--c); }
+.km-token.on { outline: 4px solid #ffd54a; outline-offset: 2px; z-index: 2; }
+.km-token.out { filter: grayscale(1); opacity: 0.6; }
+
+.km-date { position: absolute; left: 1.2%; top: 2%; padding: 6px 12px; border-radius: 8px; background: rgba(20, 16, 12, 0.78); color: #f3e7cf;
+  font: 500 clamp(11px, 1.5vw, 16px) / 1.3 system-ui, sans-serif; }
+.km-date b { color: #ffd54a; }
+.km-crisis { margin-left: 6px; padding: 1px 6px; border-radius: 5px; background: #c9383a; color: #fff; font-size: 0.85em; }
+.km-place { margin-left: 10px; opacity: 0.75; }
+
+.km-card { position: absolute; right: 2%; top: 50%; transform: translateY(-50%); width: min(46%, 520px); max-height: 92%; overflow: auto; z-index: 5; }
+.km-card-in { background: #fbf5e8; border-radius: 12px; border-top: 8px solid var(--cc); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); padding: 10px 14px 12px; color: #2a241c; }
+.km-card-head { font: 600 13px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; color: #7a6b55; margin-bottom: 6px; }
+.km-card-body { display: flex; gap: 10px; align-items: flex-start; }
+.km-npc { width: 84px; height: 84px; object-fit: cover; object-position: top; border-radius: 10px; background: #e5d8bd; flex: none; }
+.km-card-body h3 { margin: 0 0 4px; font-size: 19px; }
+.km-card-body p { margin: 0; font-size: 14px; line-height: 1.35; }
+.km-offers { display: grid; gap: 6px; margin-top: 8px; }
+.km-offer { text-align: left; display: grid; gap: 2px; padding: 8px 10px; border-radius: 9px; border: 2px solid #3f9b4a; background: #fff; cursor: pointer; font: inherit; color: inherit; }
+.km-offer:hover:not([disabled]) { background: #eef8ef; }
+.km-offer[disabled] { border-color: #cdbfa6; opacity: 0.7; cursor: default; }
+.km-offer small { color: #6a5d48; font-size: 12px; }
+.km-offer span { font-weight: 600; font-size: 13px; }
+.km-offer em { font-style: normal; font-size: 12px; color: #3f7a45; }
+.km-offer[disabled] em { color: #a0523a; }
+.km-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.km-choice { display: flex; flex-direction: column; align-items: flex-start; }
+.km-choice small { font-size: 11px; opacity: 0.8; }
+.km-choice.dark { border-color: #a32a2a; color: #a32a2a; }
+.km-choice.club { background: #1b3f8f; color: #fff; }
+
+.km-banner { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; min-width: 46%; max-width: 80%; padding: 18px 26px; border-radius: 14px;
+  text-align: center; color: #fff; background: rgba(20, 16, 12, 0.9); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); }
+.km-banner b { display: block; font-size: clamp(20px, 3vw, 34px); margin: 4px 0; }
+.km-banner p { margin: 0; font-size: clamp(13px, 1.6vw, 17px); }
+.km-banner small { opacity: 0.7; }
+.km-banner.hist { border-top: 6px solid #3b7fc4; }
+.km-banner.fall { border-top: 6px solid #c9383a; }
+.km-banner.club { border-top: 6px solid #ffd54a; background: rgba(15, 35, 90, 0.94); }
+
+.km-panel { display: grid; gap: 8px; }
+.km-sheet { display: grid; gap: 8px; font-size: 13px; }
+.km-sheet h4 { margin: 4px 0 0; font-size: 13px; }
+.km-me { display: flex; gap: 8px; align-items: center; }
+.km-me img { width: 56px; height: 56px; object-fit: cover; object-position: top; border-radius: 50%; background: #e5d8bd; }
+.km-me small { display: block; opacity: 0.75; }
+.km-money { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.km-money span { display: block; font-size: 11px; opacity: 0.7; }
+.km-money b { font-size: 15px; }
+.km-money .plus { color: #3f9b4a; }
+.km-money .minus { color: #b2463a; }
+.km-hours i, .km-stat i { display: block; height: 7px; border-radius: 4px; background: rgba(127, 127, 127, 0.25); overflow: hidden; }
+.km-hours b, .km-stat b { display: block; height: 100%; background: #3b7fc4; }
+.km-hours b.bad, .km-stat b.bad { background: #c9383a; }
+.km-stats { display: grid; gap: 3px; }
+.km-stat { display: grid; grid-template-columns: 7.5em 1fr 2.5em; align-items: center; gap: 6px; }
+.km-stat em { font-style: normal; text-align: right; opacity: 0.8; }
+.km-hint { font-size: 12px; opacity: 0.85; }
+.km-skills { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 12px; }
+.km-assets, .km-club { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.km-assets li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; }
+.km-assets li small { grid-column: 1; display: block; opacity: 0.75; }
+.km-assets li b { grid-column: 1; }
+.km-assets .km-none { display: block; opacity: 0.6; }
+.km-club li { opacity: 0.7; }
+.km-club li.ok { opacity: 1; color: #3f9b4a; }
+.km-mini { border: 1px solid rgba(127, 127, 127, 0.45); background: transparent; border-radius: 6px; padding: 2px 6px; cursor: pointer; font: inherit; color: inherit; }
+.km-mini.on { background: #3f9b4a33; border-color: #3f9b4a; }
+.km-mini[disabled] { opacity: 0.45; cursor: default; }
+.km-falls { color: #b2463a; font-weight: 600; }
+
+@media (max-width: 700px) {
+  .km-card { position: absolute; left: 2%; right: 2%; width: auto; top: auto; bottom: 2%; transform: none; max-height: 70%; }
+  .km-npc { width: 56px; height: 56px; }
+}
