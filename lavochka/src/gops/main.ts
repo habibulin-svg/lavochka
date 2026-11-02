@@ -13,6 +13,7 @@ import { DEFAULT_SCHEME } from './sim/world';
 import { NetClient } from './net/client';
 import type { NetClientMsg, NetSetup } from './net/protocol';
 import { Menu, loadStars, type QuickConfig } from './ui/menu';
+import type { Save } from './save';
 import { MenuMusic } from './ui/menu-music';
 import { mayPlay, type Release } from '../core/release';
 import type { RightGrant } from '../core/rights';
@@ -79,22 +80,24 @@ async function startNet(c: NetClient, setup: NetSetup, seed: number): Promise<vo
   });
   game = g;
   g.onQuit = quit;
+  g.onLoad = (sv) => void resume(sv);
   await g.start();
   (window as unknown as { gops: Game }).gops = g;
 }
 
 /** Миссия: бой, итог, ролик после победы, следующая миссия списка. */
-async function play(def: MissionDef): Promise<void> {
+async function play(def: MissionDef, sv?: Save): Promise<void> {
   stop();
   menu.hide();
   const level = await loadLevel(def.id);
   const g = new Game(host, {
-    level, theme: def.theme, time: def.time, seed: (def.terrain.seed * 31 + Date.now()) % 100000,
-    sides: [{ brigade: q.get('me') ?? 'zatulinka', bot: null, count: def.player.count, hp: def.player.hp }],
-    mission: def,
+    level, theme: def.theme, time: def.time, seed: sv?.setup.seed ?? (def.terrain.seed * 31 + Date.now()) % 100000,
+    sides: [{ brigade: sv?.setup.sides[0]?.brigade ?? q.get('me') ?? 'zatulinka', bot: null, count: def.player.count, hp: def.player.hp }],
+    mission: def, kind: 'mission', title: def.title, restore: sv,
   });
   game = g;
   g.onQuit = quit;
+  g.onLoad = (sv) => void resume(sv);
   g.onEnd = (run, stars) => {
     if (game !== g) return;
     const list = MISSIONS.filter((m) => m.mode === def.mode);
@@ -141,6 +144,8 @@ async function quick(cfg?: QuickConfig): Promise<void> {
     time: m?.time,
     seed: Number(q.get('seed') ?? Date.now() % 100000),
     sides,
+    kind: 'quick',
+    title: `Быстрый бой · ${m?.title ?? id}`,
     ammo: cfg?.arsenal === 'core' ? CORE_AMMO : undefined,
     scheme: cfg
       ? { ...DEFAULT_SCHEME, turnTime: cfg.turn, wind: cfg.wind, riseStep: cfg.sudden ? 24 : 0, crates: cfg.crates ? 60 : 0 }
@@ -148,6 +153,7 @@ async function quick(cfg?: QuickConfig): Promise<void> {
   });
   game = g;
   g.onQuit = quit;
+  g.onLoad = (sv) => void resume(sv);
   await g.start();
   (window as unknown as { gops: Game }).gops = g;
 }
@@ -175,6 +181,24 @@ menu.onPlay = (def) => {
   menu.cutscene('s00-intro', () => void play(def));
 };
 menu.onMusic = () => music.toggle();
+menu.onLoad = (sv) => void resume(sv);
+
+/** Загрузить сохранение: миссия — со своим итогом и роликами; быстрый бой и Пустырь — как были (без таблицы дня). */
+async function resume(sv: Save): Promise<void> {
+  const def = sv.setup.mission ? MISSIONS.find((m) => m.id === sv.setup.mission) : undefined;
+  if (def) return play(def, sv);
+  stop();
+  menu.hide();
+  const { level, mission, ...rest } = sv.setup;
+  void mission;
+  const g = new Game(host, { ...rest, level: await loadLevel(level), kind: sv.kind, title: sv.title, restore: sv });
+  game = g;
+  g.onQuit = quit;
+  g.onLoad = (s) => void resume(s);
+  await g.start();
+  g.hud.flash('Загружено', 1500);
+  (window as unknown as { gops: Game }).gops = g;
+}
 menu.onQuick = (c) => void quick(c);
 menu.onPustyr = (daily) => void pustyr(daily);
 
@@ -192,6 +216,7 @@ async function pustyr(daily: boolean): Promise<void> {
   const levels = ['medium', 'hard', 'medium'] as const;
   const g = new Game(host, {
     level: await loadLevel(map.id), theme: map.theme, time: map.time, seed: seed % 100000,
+    kind: 'pustyr', title: daily ? `Пустырь · карта дня ${day}` : 'Пустырь',
     sides: [
       { brigade: q.get('me') ?? 'zatulinka', bot: null, count: 4, hp: 100 },
       ...Array.from({ length: foes }, (_, i) => ({ brigade: brigades[i], bot: levels[i], count: foes === 1 ? 4 : 3, hp: 100 })),
@@ -202,6 +227,7 @@ async function pustyr(daily: boolean): Promise<void> {
   });
   game = g;
   g.onQuit = quit;
+  g.onLoad = (sv) => void resume(sv);
   g.onOver = (winner) => {
     if (game !== g || !daily) return;
     // очки: победа 1000 + оставшееся здоровье ×2 + за быстроту (500 − 10 за ход)

@@ -114,4 +114,7 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-pause-btn { padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.07); color: #fff;
   font: 700 17px 'PT Sans', sans-serif; cursor: pointer; }
 .hud-pause-btn:hover { background: rgba(255, 255, 255, 0.15); }
+.hud-pause-btn.slot { text-align: left; font-weight: 600; font-size: 15px; }
+.hud-pause-btn:disabled { opacity: 0.4; cursor: default; }
+.hud-pause-card { max-width: min(92vw, 420px); }
 .hud-pause-btn.go { background: #2a9d8f; border-color: #2a9d8f; }

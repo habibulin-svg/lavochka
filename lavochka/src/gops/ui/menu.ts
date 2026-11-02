@@ -2,6 +2,7 @@
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
 import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
 import { musicOff } from '../audio';
+import { type Save, loadSaves, slotLabel } from '../save';
 import { serverBase } from '../../core/net/ws';
 import type { Claim } from '../../core/records';
 import type { NetClient } from '../net/client';
@@ -157,6 +158,8 @@ export class Menu {
   onNetJoin: (code: string, name: string) => void = () => {};
   /** Пустырь: карта дня (true) или случайная. */
   onPustyr: (daily: boolean) => void = () => {};
+  /** Загрузить сохранённую партию. */
+  onLoad: (sv: Save) => void = () => {};
   /** Кнопка «Музыка»: переключить, вернуть «выключена». */
   onMusic: () => boolean = () => false;
 
@@ -205,6 +208,7 @@ export class Menu {
       button('Быстрый бой', () => this.quick()),
       button('Пустырь', () => this.pustyr()),
       button('По сети', () => this.network()),
+      ...(loadSaves().some(Boolean) ? [button('Загрузить', () => this.saves())] : []),
       button('Во двор, к другим играм', () => (location.href = '/')),
     );
     const mus = button('', () => setMus(this.onMusic()), 'gm-music');
@@ -214,6 +218,19 @@ export class Menu {
     };
     setMus(musicOff());
     this.screen(brandArt('title-keyart-1'), logo, btns, mus, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
+  }
+
+  /** Сохранённые партии: щелчок — продолжить с того места. */
+  saves(): void {
+    const head = h('div', 'gm-head');
+    head.append(button('← Назад', () => this.title()), h('h2', '', 'Загрузить'));
+    const btns = h('div', 'gm-col');
+    loadSaves().forEach((sv, i) => {
+      const b = button(slotLabel(sv, i), () => sv && this.onLoad(sv));
+      (b as HTMLButtonElement).disabled = !sv;
+      btns.append(b);
+    });
+    this.screen(brandArt('menu-bg-1'), head, btns);
   }
 
   /** Быстрый бой: бригады (2–4), кто за них, сколько бойцов, карта и схема. */

@@ -2,6 +2,7 @@
  * сетка оружия (Tab / кнопка), экранные кнопки для телефона, итог партии. */
 import { BRIGADES, weaponIcon } from '../assets';
 import { musicOff } from '../audio';
+import { type Save, loadSaves, slotLabel, writeSave } from '../save';
 import type { Controls } from '../input';
 import { TICK_HZ, type World } from '../sim/world';
 import { WEAPONS } from '../sim/weapons';
@@ -59,6 +60,10 @@ export class Hud {
   onMusic: () => boolean = () => false;
   /** Выйти из боя в меню игры. */
   onQuit: () => void = () => {};
+  /** Сохранение партии; строка — почему нельзя. */
+  onSave: () => Save | string = () => 'Нельзя';
+  /** Загрузить партию из ячейки. */
+  onLoad: (sv: Save) => void = () => {};
   /** Бой по сети: пауза не останавливает мир. */
   net = false;
   private bar: HTMLElement;
@@ -184,6 +189,36 @@ export class Hud {
     if (item) item.textContent = off ? 'Музыка: выключена' : 'Музыка: включена';
   }
 
+  /** Ячейки сохранений поверх окна паузы: записать в любую или загрузить непустую. */
+  private slots(card: HTMLElement, mode: 'save' | 'load'): void {
+    const kids = [...card.children];
+    const back = () => card.replaceChildren(...kids);
+    const head = div('hud-pause-head');
+    head.textContent = mode === 'save' ? 'Сохранить' : 'Загрузить';
+    const note = div('hud-pause-note');
+    const list = loadSaves();
+    const btns = list.map((sv, i) => {
+      const b = document.createElement('button');
+      b.className = 'hud-pause-btn slot';
+      b.textContent = slotLabel(sv, i);
+      b.disabled = mode === 'load' && !sv;
+      b.addEventListener('click', () => {
+        if (mode === 'load') return sv && this.onLoad(sv);
+        const r = this.onSave();
+        if (typeof r === 'string') return void (note.textContent = r);
+        if (!writeSave(i, r)) return void (note.textContent = 'Не удалось записать: браузер не даёт места');
+        b.textContent = slotLabel(r, i);
+        note.textContent = 'Сохранено';
+      });
+      return b;
+    });
+    const ret = document.createElement('button');
+    ret.className = 'hud-pause-btn';
+    ret.textContent = '← Назад';
+    ret.addEventListener('click', back);
+    card.replaceChildren(head, ...btns, note, ret);
+  }
+
   get paused(): boolean {
     return !!this.pauseBox;
   }
@@ -217,6 +252,10 @@ export class Hud {
     };
     item('Продолжить', 'go', () => this.togglePause(false));
     item('', 'music', () => this.setMusic(this.onMusic()));
+    if (!this.net) {
+      item('Сохранить', '', () => this.slots(card, 'save'));
+      item('Загрузить', '', () => this.slots(card, 'load'));
+    }
     item('Выйти в меню игры', '', () => this.onQuit());
     item('Во двор, к другим играм', '', () => (location.href = '/'));
     box.append(card);

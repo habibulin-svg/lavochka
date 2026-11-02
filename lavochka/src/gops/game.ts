@@ -12,6 +12,7 @@ import type { NetClient } from './net/client';
 import { Rng } from './sim/rng';
 import { type Snapshot, applySnapshot, takeSnapshot } from './sim/snapshot';
 import { type Input, type Scheme, TICK_HZ, type World, addMine, createWorld, step, worldHash } from './sim/world';
+import type { Save, SaveKind } from './save';
 import { Hud } from './ui/hud';
 import { Talk } from './ui/talk';
 
@@ -41,6 +42,11 @@ export interface GameSetup {
   net?: { client: NetClient; mine: number[] };
   /** Миссия: стороны берутся из неё (игрок — бригада sides[0].brigade, человек). */
   mission?: MissionDef;
+  /** Для сохранения: что за партия и как назвать ячейку. */
+  kind?: SaveKind;
+  title?: string;
+  /** Загрузка сохранения: мир и ход миссии — из ячейки. */
+  restore?: Save;
 }
 
 export class Game {
@@ -60,6 +66,8 @@ export class Game {
   onEnd: (run: MissionRun, stars: number) => void = () => {};
   /** «Выйти в меню игры» из окна паузы. */
   onQuit: () => void = () => {};
+  /** «Загрузить» из окна паузы — партию из ячейки начинает main. */
+  onLoad: (sv: Save) => void = () => {};
   /** Окно паузы открыто: мир стоит (кроме сети). */
   private paused = false;
   /** Быстрый бой кончился: победившая бригада (−1 — никто). */
@@ -104,6 +112,10 @@ export class Game {
       });
       scatter(this.world, s.seed, s.mines ?? 0, s.barrels ?? 0);
     }
+    if (s.restore) {
+      applySnapshot(this.world, s.restore.snap);
+      if (this.run && s.restore.run) Object.assign(this.run, s.restore.run);
+    }
     // в сети боты считаются в каждом браузере одинаково — их случайность от сида партии
     this.bots = s.sides.map((x, i) => (x.bot ? new Bot(x.bot, s.net ? seeded(s.seed * 31 + i * 977) : undefined) : null));
     this.audio = new GopsAudio(s.theme, s.sides.map((x, i) => x.voice ?? VOICE_SETS[i % VOICE_SETS.length]));
@@ -145,6 +157,8 @@ export class Game {
     this.hud.net = !!s.net;
     this.hud.onMusic = () => this.audio.toggleMusic();
     this.hud.onQuit = () => this.onQuit();
+    this.hud.onSave = () => this.save();
+    this.hud.onLoad = (sv) => this.onLoad(sv);
     this.hud.onPause = (open) => {
       this.paused = open && !s.net;
       this.controls.take(); // нажатия за паузой — в никуда
@@ -267,6 +281,28 @@ export class Game {
     this.ended = true;
     const stars = missionStars(this.world, run);
     window.setTimeout(() => this.onEnd(run, stars), 1600);
+  }
+
+  /** Сохранение партии (окно паузы); строка — почему сейчас нельзя. Сеть не сохраняется. */
+  save(): Save | string {
+    const s = this.setup;
+    const w = this.world;
+    if (s.net) return 'Бой по сети не сохраняется';
+    if (this.ended || w.phase === 'over') return 'Бой уже кончился';
+    if (w.phase !== 'turn' || w.projs.length > 0 || w.charge > 0) return 'Сохранить можно, когда всё улеглось и идёт ход';
+    const { def, ...run } = this.run ?? ({} as MissionRun);
+    void def;
+    return {
+      at: Date.now(),
+      kind: s.kind ?? (s.mission ? 'mission' : 'quick'),
+      title: s.title ?? s.mission?.title ?? 'Быстрый бой',
+      setup: {
+        level: s.level.id, theme: s.theme, time: s.time, sides: s.sides, seed: s.seed, ammo: s.ammo,
+        mines: s.mines, barrels: s.barrels, scheme: s.scheme, mission: s.mission?.id,
+      },
+      snap: takeSnapshot(w),
+      run: this.run ? run : undefined,
+    };
   }
 
   /** Ввод кадра: от бота бригады, чей ход, иначе — от человека. */
