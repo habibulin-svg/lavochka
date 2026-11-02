@@ -20,6 +20,26 @@ export const WEAPON_NAMES: Record<string, string> = {
   auger: 'Ледобур', zapacanov: '«За пацанов!»', napalm: 'Кукурузник-химик', holodilnik: 'Заморозка',
 };
 
+/** Шпаргалка по клавишам (src/gops/input.ts, game.ts, audio.ts). */
+const KEYS = `<b>Клавиши</b>
+  <span><kbd>←</kbd><kbd>→</kbd> идти</span>
+  <span><kbd>↑</kbd><kbd>↓</kbd> прицел</span>
+  <span><kbd>Enter</kbd> прыжок вперёд</span>
+  <span><kbd>Backspace</kbd> сальто назад</span>
+  <span><kbd>Пробел</kbd> огонь — держать: сильнее</span>
+  <span><kbd>1</kbd>–<kbd>5</kbd> таймер гранаты</span>
+  <span><kbd>Tab</kbd> или правая кнопка — оружие</span>
+  <span>колесо — масштаб, <kbd>C</kbd> — камера к бойцу</span>
+  <span><kbd>M</kbd> звук · <kbd>H</kbd> свернуть</span>`;
+
+function keysHidden(): boolean {
+  try {
+    return localStorage.getItem('gops-keys') === 'min';
+  } catch {
+    return false;
+  }
+}
+
 export class Hud {
   readonly el: HTMLElement;
   private timer: HTMLElement;
@@ -30,6 +50,8 @@ export class Hud {
   private banner: HTMLElement;
   private goal: HTMLElement;
   private who: HTMLElement;
+  /** Шпаргалка по клавишам (ПК): свёрнута/развёрнута — запоминается. */
+  private keys: HTMLElement;
   private lastPhase = '';
   private whoTimer = 0;
   /** Свой итог показывает миссия — общий баннер «держит район» не нужен. */
@@ -52,7 +74,12 @@ export class Hud {
     this.goal = div('hud-goal');
     this.who = div('hud-who');
     this.who.hidden = true;
-    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal, this.who);
+    this.keys = div('hud-keys');
+    this.keys.innerHTML = KEYS;
+    this.keys.title = 'H — свернуть или развернуть';
+    this.keys.classList.toggle('min', keysHidden());
+    this.keys.addEventListener('click', () => this.toggleKeys());
+    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal, this.who, this.keys);
     host.appendChild(this.el);
     this.weapon.addEventListener('click', () => this.toggleMenu());
   }
@@ -90,10 +117,13 @@ export class Hud {
     this.el.append(left, right);
   }
 
-  toggleMenu(w?: World): void {
+  toggleMenu(w: World | null = this.world): void {
     this.menu.hidden = !this.menu.hidden;
     if (!this.menu.hidden && w) this.fillMenu(w);
   }
+
+  /** Последний показанный мир: кнопке оружия (щелчок, тап) нужен список своей бригады. */
+  private world: World | null = null;
 
   private menuFor = -1;
 
@@ -115,6 +145,17 @@ export class Hud {
         return b;
       }),
     );
+  }
+
+  /** Свернуть или развернуть шпаргалку по клавишам (H, щелчок). */
+  toggleKeys(): void {
+    const min = !this.keys.classList.contains('min');
+    this.keys.classList.toggle('min', min);
+    try {
+      localStorage.setItem('gops-keys', min ? 'min' : '');
+    } catch {
+      /* без хранилища — просто на этот раз */
+    }
   }
 
   /** Короткое сообщение посередине (как «Ходит …»). */
@@ -171,6 +212,7 @@ export class Hud {
   }
 
   update(w: World): void {
+    this.world = w;
     const turn = w.phase === 'turn' || w.phase === 'retreat';
     // новый ход — на полторы секунды «Ходит Расточка» цветом бригады
     if (w.phase === 'turn' && this.lastPhase !== 'turn' && !this.el.querySelector('.hud-handoff')) {

@@ -61,6 +61,7 @@ export class GopsAudio {
   /** Музыка боя по умолчанию (у миссии — своя). */
   battleMusic = 'battle-calm';
   private musicKind = '';
+  private musicSeq = 0;
   private lastTrack = '';
   private amb: AudioBufferSourceNode | null = null;
   muted = false;
@@ -204,8 +205,10 @@ export class GopsAudio {
       this.music = null;
     }
     const once = kind === 'victory' || kind === 'defeat';
+    // играет только последний заказанный трек: пока грузился, могли заказать другой
+    const my = ++this.musicSeq;
     void this.load(`${MUSIC}${track}.ogg`).then((buf) => {
-      if (!buf || this.ctx !== ctx || this.musicKind !== kind) return;
+      if (!buf || this.ctx !== ctx || my !== this.musicSeq) return;
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const gain = ctx.createGain();

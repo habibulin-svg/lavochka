@@ -332,6 +332,7 @@ export class Game {
     }, { passive: false });
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyC') cam.follow = true;
+      else if (e.code === 'KeyH' && !(e.target as HTMLElement | null)?.closest?.('input, textarea')) this.hud.toggleKeys();
     }, sig);
   }
 

@@ -90,3 +90,11 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-handoff-tip { font-size: 16px; opacity: 0.8; }
 .hud-handoff-name { font: 400 clamp(26px, 5vw, 48px) 'Russo One', sans-serif; text-shadow: 0 2px 0 #000; }
 .hud-handoff-go { padding: 12px 34px; border: 0; border-radius: 12px; background: #2a9d8f; color: #fff; font: 700 22px 'PT Sans', sans-serif; cursor: pointer; }
+/* шпаргалка по клавишам — только с мышью и клавиатурой; свёрнутая — одна строка «Клавиши» */
+.hud-keys { position: absolute; left: 16px; top: 16px; display: none; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.5); font-size: 13px; line-height: 1.35; cursor: pointer; user-select: none; max-width: 260px; }
+.hud-keys b { font-size: 13px; opacity: 0.85; }
+.hud-keys kbd { display: inline-block; min-width: 18px; padding: 0 5px; margin-right: 3px; border-radius: 4px; background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25); font: 600 12px 'PT Sans', sans-serif; text-align: center; }
+.hud-keys.min span { display: none; }
+@media (pointer: fine) { .hud-keys { display: flex; } }

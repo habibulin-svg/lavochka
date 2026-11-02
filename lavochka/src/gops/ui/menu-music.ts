@@ -9,7 +9,8 @@ export class MenuMusic {
   private el: HTMLAudioElement | null = null;
   private last = '';
   private want = false;
-  private fade = 0;
+  /** Затухание — своё у каждого трека: иначе новый трек обрывал бы затухание старого, и тот играл бы дальше. */
+  private fades = new WeakMap<HTMLAudioElement, number>();
 
   constructor() {
     const wake = () => {
@@ -39,22 +40,24 @@ export class MenuMusic {
       }
     };
     this.el = el;
-    void el.play().then(() => this.ramp(el, VOL)).catch(() => {
+    // запуск асинхронный: пока он шёл, меню могло замолчать (начался бой) — тогда трек не нужен
+    void el.play().then(() => (this.el === el ? this.ramp(el, VOL) : el.pause())).catch(() => {
       // жеста ещё не было — дождёмся
       if (this.el === el) this.el = null;
     });
   }
 
   private ramp(el: HTMLAudioElement, to: number, then?: () => void): void {
-    clearInterval(this.fade);
-    this.fade = window.setInterval(() => {
+    clearInterval(this.fades.get(el));
+    const id = window.setInterval(() => {
       const v = el.volume + (to > el.volume ? 0.02 : -0.03);
       el.volume = Math.max(0, Math.min(VOL, v));
       if ((to > 0 && el.volume >= to) || (to === 0 && el.volume <= 0)) {
-        clearInterval(this.fade);
+        clearInterval(id);
         then?.();
       }
     }, 40);
+    this.fades.set(el, id);
   }
 
   start(): void {
