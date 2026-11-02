@@ -11,6 +11,7 @@ studio/run.cmd runners/video.py <задание.yaml> [--only имя] [--dry]
     - name: s01-garage
       keys: [s01-garage-11, s01-garage-12]            # имена файлов без .png; по ролику на каждый
       prompt: "..."
+  per_clip: true                                      # необязательно: файлы <ролик>-<ключ>-v<сид>.mp4
 Выход: G:/temp/studio/out/<игра>/<партия>/<ключ>-<сид>.mp4 + manifest.json.
 """
 import argparse
@@ -85,7 +86,8 @@ def main():
             continue
         for key in clip['keys']:
             for seed in clip.get('seeds', job.get('seeds', [1])):
-                file = f'{key}-v{seed}.mp4'
+                # per_clip: один ключ на несколько роликов (реакции) — имя ролика в начало файла
+                file = f"{clip['name'] + '-' if job.get('per_clip') else ''}{key}-v{seed}.mp4"
                 if file in done:
                     continue
                 src = keys / f'{key}.png'

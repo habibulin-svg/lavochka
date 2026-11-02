@@ -1,0 +1,76 @@
+# Коммерсы, партия 05-npc — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 22
+items:
+- name: mother
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 50-year-old Russian woman in the late 1980s, a factory worker, kind tired face, short permed hair, a knitted cardigan over a floral
+    dress. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat
+    chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: girl
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 21-year-old Russian young woman in 1988, light brown hair in a ponytail with a scrunchie, a striped sweater, warm teasing smile.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: brigadir
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 30-year-old Russian gang leader in 1993, short haircut, heavy gaze, black leather jacket, thick gold chain, scar on the eyebrow.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: byk
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 24-year-old huge Russian gang enforcer in 1993, shaved head, thick neck, tracksuit jacket, blank intimidating stare. He or she
+    sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green
+    background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: oper
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 40-year-old Russian police detective in 1994, tired cynical face, mustache, worn grey jacket over a sweater. He or she sits at
+    a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background
+    (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: uchastkovy
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 45-year-old Russian district police officer in 1990, grey Soviet police uniform shirt, cap on the table, sly face. He or she sits
+    at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background
+    (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: nalogovik
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 35-year-old Russian tax police officer in 1996, neat side-parted hair, glasses, dark suit, cold attentive look. He or she sits
+    at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background
+    (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: chinovnik
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 50-year-old Russian city hall official in 1995, balding, plump, grey suit and wide tie, a polite but greedy smile. He or she sits
+    at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background
+    (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: bankir
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 38-year-old Russian banker in 1995, slicked-back hair, expensive suit, gold-rimmed glasses, confident smirk. He or she sits at
+    a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background
+    (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: direktor
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 58-year-old Russian factory director in 1993, heavy build, grey hair combed back, old Soviet suit with a badge on the lapel, stern.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: chelnochnitsa
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 40-year-old Russian woman shuttle trader in 1992, dyed red hair, puffy jacket, gold earrings, energetic tough look. He or she
+    sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green
+    background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: konkurent
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 30-year-old Russian rival businessman in 1994, curly hair, crimson jacket, gold chain, mocking grin. He or she sits at a table,
+    framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background (#00B140)
+    and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: zhurnalist
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 33-year-old Russian investigative journalist in 1997, messy hair, round glasses, corduroy jacket, notebook-ready look. He or she
+    sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green
+    background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: reshala
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 45-year-old Russian Moscow fixer in 2000, perfectly groomed grey hair, black turtleneck under an expensive jacket, unreadable
+    look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat
+    chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: yurist
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 50-year-old English solicitor in London in 2003, thin silver hair, pinstripe suit, tortoiseshell glasses, reserved polite expression.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: drug
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 22-year-old Russian young man in 1988, army friend, lanky, big ears, wide friendly grin, a striped sailor undershirt under a jacket.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.

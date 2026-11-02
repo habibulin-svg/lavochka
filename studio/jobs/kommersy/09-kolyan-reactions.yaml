@@ -1,0 +1,54 @@
+# Коммерсы, партия 09-kolyan-reactions — сгенерировано make_jobs.py, правки — там.
+keys: G:/temp/studio/out/kommersy/09-keys
+server: comfy-big
+per_clip: true
+defaults:
+  width: 704
+  height: 704
+  frames: 97
+  steps: 30
+seeds:
+- 1
+style: 'The person starts and ends in the same neutral pose: sitting upright, hands resting on the table, looking at the camera. Locked-off static camera on a tripod, no camera movement, no zoom, no cuts.
+  Photorealistic, natural skin, realistic natural micro-movements. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, evenly lit. No objects in hands, no text, no logos.'
+clips:
+- name: idle
+  keys:
+  - kolyan-1988
+  - kolyan-1990
+  - kolyan-1993
+  - kolyan-1996
+  - kolyan-2003
+  prompt: The person waits calmly, breathes, blinks, glances to the side and back at the camera, slightly shifts in the chair. Subtle, seamless loop. {style}
+- name: think
+  keys:
+  - kolyan-1988
+  - kolyan-1990
+  - kolyan-1993
+  - kolyan-1996
+  - kolyan-2003
+  prompt: 'The person thinks hard about a business offer: frowns, rubs the chin with one hand, taps fingers on the table, looks down and then back at the camera. {style}'
+- name: deal
+  keys:
+  - kolyan-1988
+  - kolyan-1990
+  - kolyan-1993
+  - kolyan-1996
+  - kolyan-2003
+  prompt: The person nods with a sly satisfied smile, reaches one hand forward across the table as if for a firm handshake, shakes it once, then pulls the hand back. {style}
+- name: win
+  keys:
+  - kolyan-1988
+  - kolyan-1990
+  - kolyan-1993
+  - kolyan-1996
+  - kolyan-2003
+  prompt: The person grins widely, clenches a fist in small celebration, laughs, then leans back pleased with himself. {style}
+- name: lose
+  keys:
+  - kolyan-1988
+  - kolyan-1990
+  - kolyan-1993
+  - kolyan-1996
+  - kolyan-2003
+  prompt: The person freezes, closes eyes, rubs face with both hands in frustration, shakes head, exhales and slowly returns to the neutral pose. {style}

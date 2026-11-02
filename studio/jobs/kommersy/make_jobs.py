@@ -111,14 +111,38 @@ def people(table, seeds):
             'items': [{'name': k, 'prompt': PORTRAIT.format(who=v)} for k, v in table.items()]}
 
 
+# Реакции Коляна (Wan 2.2 i2v) — по одному эталону на облик (bible/kolyan.md), кадр как в холдеме: по пояс, руки на столе.
+KEYS = {'1988': '01-concepts/kolyan-1988-demb-22', '1990': '01-concepts/kolyan-1990-coop-66', '1993': '03-kolyan-looks/1993-leather-22',
+        '1996': '03-kolyan-looks/1996-blazer-33', '2003': '03-kolyan-looks/2003-suit-33'}
+REACT_STYLE = ('The person starts and ends in the same neutral pose: sitting upright, hands resting on the table, looking at the camera. '
+               'Locked-off static camera on a tripod, no camera movement, no zoom, no cuts. Photorealistic, natural skin, realistic natural '
+               'micro-movements. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, evenly lit. '
+               'No objects in hands, no text, no logos.')
+REACTIONS = {
+    'idle': 'The person waits calmly, breathes, blinks, glances to the side and back at the camera, slightly shifts in the chair. Subtle, seamless loop.',
+    'think': 'The person thinks hard about a business offer: frowns, rubs the chin with one hand, taps fingers on the table, looks down and then back at the camera.',
+    'deal': 'The person nods with a sly satisfied smile, reaches one hand forward across the table as if for a firm handshake, shakes it once, then pulls the hand back.',
+    'win': 'The person grins widely, clenches a fist in small celebration, laughs, then leans back pleased with himself.',
+    'lose': 'The person freezes, closes eyes, rubs face with both hands in frustration, shakes head, exhales and slowly returns to the neutral pose.',
+}
+
+
+def reactions():
+    return {'keys': 'G:/temp/studio/out/kommersy/09-keys', 'server': 'comfy-big', 'per_clip': True,
+            'defaults': {'width': 704, 'height': 704, 'frames': 97, 'steps': 30}, 'seeds': [1],
+            'style': REACT_STYLE,
+            'clips': [{'name': r, 'keys': [f'kolyan-{y}' for y in KEYS], 'prompt': f'{a} {{style}}'} for r, a in REACTIONS.items()]}
+
+
 JOBS = {
     '03-kolyan-looks': people(LOOKS, [11, 22, 33]),
     '04-panoramas': panoramas(),
     '05-npc': people(NPC, [11, 22]),
+    '09-kolyan-reactions': reactions(),
 }
 
 if __name__ == '__main__':
     for name, job in JOBS.items():
         head = f'# Коммерсы, партия {name} — сгенерировано make_jobs.py, правки — там.\n'
         (HERE / f'{name}.yaml').write_text(head + yaml.safe_dump(job, allow_unicode=True, sort_keys=False, width=200), encoding='utf-8')
-        print(name, sum(len(i.get('seeds', job['seeds'])) for i in job['items']) if 'seeds' in job else '')
+        print(name, len(job.get('items', job.get('clips', []))))

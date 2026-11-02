@@ -7,9 +7,10 @@ import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import {
   CELL_COLOR, CELL_NAME, CLUB, ERA_NAME, HEROES, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, TIERS, TIER_ID,
-  dateText, dealById, eraOf, yearOf, type Cell, type Krysha, type Skill, type Stat,
+  dateText, dealById, eraOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
 import { money, type Action, type Ask, type Event, type View } from './engine';
+import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
 import roadsJson from './roads.json';
@@ -89,12 +90,6 @@ function pano(tier: number, m: number) {
   return { src: `${A}/pano/${place}-${e}-${(Math.floor(m / 3) % 3) + 1}.webp`, road: Math.floor(m / 3) % 3 };
 }
 
-/** Облик Коляна по году. */
-const kolyanImg = (m: number) => {
-  const y = yearOf(m);
-  return `${A}/people/kolyan-${y >= 2001 ? 2003 : y >= 1996 ? 1996 : y >= 1993 ? 1993 : y >= 1990 ? 1990 : 1988}.webp`;
-};
-
 /** Кто смотрит с карточки. */
 const NPC_BY_CARD: Record<string, string> = {
   'k-reket': 'byk', 'k-strelka': 'brigadir', 'k-krysha-dan': 'brigadir', 'k-zakaz': 'konkurent', 'k-kinul': 'konkurent', 'k-reyd': 'reshala', 'k-pokushenie': 'byk',
@@ -104,6 +99,8 @@ const NPC_BY_CARD: Record<string, string> = {
   'e-mat': 'mother', 'e-rebenok': 'girl', 'e-drug': 'drug', 'r-dolg': 'drug', 'r-kabak': 'drug', 'r-podarok': 'mother', 's-english': 'zhurnalist', 's-london': 'yurist', 's-buh': 'chelnochnitsa',
 };
 const NPC_BY_CELL: Partial<Record<Cell, string>> = { deal: 'chelnochnitsa', routine: 'drug', study: 'drug', rest: 'girl', news: 'zhurnalist', event: 'mother', naezd: 'brigadir', check: 'nalogovik' };
+/** Реакция Коляна на свои события. */
+const REACT: Partial<Record<Event['t'], Reaction>> = { buy: 'deal', risk: 'lose', fall: 'lose', out: 'lose', club: 'win' };
 const SHOW_STATS: Stat[] = ['health', 'mood', 'stress', 'name', 'avt', 'svyazi', 'blizkie'];
 const FALL: Record<string, string> = { razor: 'Разорился', jail: 'Сел', pokushenie: 'Покушение', zapoi: 'Запой' };
 
@@ -129,6 +126,7 @@ class KommersyView implements GameView<View, Event> {
   private bgSrc = '';
   private music = new Music();
   private musicBtn!: HTMLButtonElement;
+  private kolyan = new KolyanCam();
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -174,6 +172,7 @@ class KommersyView implements GameView<View, Event> {
     this.rollBtn = this.panel.querySelector('.km-roll') as HTMLButtonElement;
     this.moveBtn = this.panel.querySelector('.km-move') as HTMLButtonElement;
     this.sheet = this.panel.querySelector('.km-sheet') as HTMLElement;
+    this.panel.insertBefore(this.kolyan.el, this.sheet);
     this.rollBtn.onclick = () => this.send({ type: 'roll' });
     this.moveBtn.onclick = () => this.send({ type: 'move' });
     this.sheet.addEventListener('click', (e) => {
@@ -253,6 +252,10 @@ class KommersyView implements GameView<View, Event> {
     this.setBg(pn.src);
     this.dateEl.innerHTML = `<b>${dateText(v.m)}</b> · ${ERA_NAME[eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${TIERS[me.tier]}</span>`;
     this.drawRoad();
+    this.kolyan.set(me.hero === 'kolyan' ? v.m : null);
+    const thinking = v.phase === 'choose' && v.ask?.seat === me.seat;
+    if (thinking) this.kolyan.play('think');
+    else if (this.kolyan.now === 'think') this.kolyan.play('idle');
     this.drawTokens();
     this.drawCard();
     this.rollBtn.hidden = !(this.mineTurn() && v.phase === 'roll');
@@ -364,7 +367,7 @@ class KommersyView implements GameView<View, Event> {
     const club = my?.club.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✔' : '○'} ${esc(c.label)}</li>`).join('') ?? '';
     const hoursPct = my ? Math.min(100, (my.hours.used / my.hours.avail) * 100) : 0;
     this.sheet.innerHTML = `
-      <div class="km-me">${me.hero === 'kolyan' ? `<img src="${kolyanImg(v.m)}" alt="">` : ''}<div><b>${esc(HEROES.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${TIERS[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
+      <div class="km-me"><div><b>${esc(HEROES.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${TIERS[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
       <div class="km-money"><div><span>Наличные</span><b>${money(me.cash)}</b></div><div><span>Капитал</span><b>${money(me.worth)}</b></div>
         ${my ? `<div><span>Доход/мес</span><b class="plus">+${money(my.income)}</b></div><div><span>Расход/мес</span><b class="minus">−${money(my.expenses)}</b></div>` : ''}</div>
       ${my ? `<div class="km-hours"><span>Часы ${my.hours.used}/${my.hours.avail}</span><i><b style="width:${hoursPct}%"${my.hours.used > my.hours.avail ? ' class="bad"' : ''}></b></i></div>` : ''}
@@ -382,7 +385,10 @@ class KommersyView implements GameView<View, Event> {
   // ---------------------------------------------------------------- события
   async play(events: Event[], v: View) {
     const speed = this.ctx.speed();
+    const mine = this.myPlayer().seat;
     for (const ev of events) {
+      const r = 'seat' in ev && ev.seat === mine ? REACT[ev.t] : undefined;
+      if (r) this.kolyan.play(r);
       switch (ev.t) {
         case 'roll':
           Sound.diceRoll();
@@ -443,6 +449,7 @@ class KommersyView implements GameView<View, Event> {
 
   destroy() {
     this.music.stop();
+    this.kolyan.stop();
     this.panel?.remove();
   }
 }

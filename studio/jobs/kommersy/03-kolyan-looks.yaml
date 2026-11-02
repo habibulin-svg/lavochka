@@ -1,0 +1,28 @@
+# Коммерсы, партия 03-kolyan-looks — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 22
+- 33
+items:
+- name: 1993-leather
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 26-year-old Russian man in 1993: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks,
+    very short dark buzz cut, thick neck, a cocky lopsided half-smile. He wears a black leather jacket over a dark turtleneck, a thick gold chain over the turtleneck. He or she sits at a table, framed from
+    the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a
+    chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 1996-blazer
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 29-year-old Russian businessman in 1996: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full
+    cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, slightly heavier. He wears a dark double-breasted blazer with gold buttons, a white shirt, a gold signet ring, a pager on the
+    belt. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat
+    chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 2003-suit
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 36-year-old Russian oligarch in 2003: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks,
+    very short dark buzz cut, thick neck, a cocky lopsided half-smile, heavier, calm and self-assured, neatly groomed. He wears an expensive tailored dark navy suit, white shirt, silk tie, a luxury wristwatch,
+    no chain. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid
+    flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'

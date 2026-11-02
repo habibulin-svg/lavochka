@@ -1,0 +1,221 @@
+# Коммерсы, партия 04-panoramas — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1792
+  height: 896
+  steps: 8
+seeds:
+- 111
+- 222
+items:
+- name: dvor-soviet-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka district on the outskirts of Novosibirsk: grey prefab nine-storey panel blocks with laundry on balconies, a courtyard playground with metal climbing frames, benches with old women. late Soviet
+    era 1988-1991: old Zhiguli and Volga cars, red propaganda banners without letters, queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves
+    in a pronounced S-shape through the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text,
+    no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: dvor-soviet-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka: a long row of rusty metal garages, a steaming heating pipe on concrete supports, birch trees, puddles, a dog. late Soviet era 1988-1991: old Zhiguli and Volga cars, red propaganda banners
+    without letters, queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: dvor-soviet-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka: a school and a kindergarten behind fences, a bus stop with an old Ikarus bus, a small grocery shop, poplars. late Soviet era 1988-1991: old Zhiguli and Volga cars, red propaganda banners
+    without letters, queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: dvor-wild-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka district on the outskirts of Novosibirsk: grey prefab nine-storey panel blocks with laundry on balconies, a courtyard playground with metal climbing frames, benches with old women. wild 1990s
+    1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road
+    enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length.
+    Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: dvor-wild-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka: a long row of rusty metal garages, a steaming heating pipe on concrete supports, birch trees, puddles, a dog. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars,
+    satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the
+    middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: dvor-wild-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Zatulinka: a school and a kindergarten behind fences, a bus stop with an old Ikarus bus, a small grocery shop, poplars. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars,
+    satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the
+    middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: kiosk-soviet-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a busy bus stop square in a Siberian residential district: a cluster of small street kiosks, a kvass barrel, a newspaper stand. late Soviet era 1988-1991: old Zhiguli and Volga cars, red propaganda
+    banners without letters, queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kiosk-soviet-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a video salon in a basement with a crowd at the door, a cooperative cafe in a converted shop, parked cars. late Soviet era 1988-1991: old Zhiguli and Volga cars, red propaganda banners without letters,
+    queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: kiosk-soviet-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a small open market by the metro entrance: folding tables, women selling goods from bags, a phone booth. late Soviet era 1988-1991: old Zhiguli and Volga cars, red propaganda banners without letters,
+    queues, drab colors, golden autumn, warm afternoon sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: kiosk-wild-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a busy bus stop square in a Siberian residential district: a cluster of small street kiosks, a kvass barrel, a newspaper stand. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign
+    cars, satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through
+    the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: kiosk-wild-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a video salon in a basement with a crowd at the door, a cooperative cafe in a converted shop, parked cars. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite
+    dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: kiosk-wild-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a small open market by the metro entrance: folding tables, women selling goods from bags, a phone booth. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite dishes,
+    advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: bazar-wild-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a huge open-air flea market in Novosibirsk: endless rows of shipping containers turned into shops, tarpaulin roofs, checkered bags. wild 1990s 1992-1997: metal kiosks with bright imported goods, used
+    foreign cars, satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape
+    through the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with
+    writing, no logos, no watermark, no board game tiles.'
+- name: bazar-wild-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the flea market wholesale zone: trucks and vans unloading boxes, forklifts, warehouses, a cafe trailer. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite dishes,
+    advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: bazar-wild-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the edge of the flea market: currency exchange booth, car parking full of used foreign cars, a fenced lot with Japanese cars for sale. wild 1990s 1992-1997: metal kiosks with bright imported goods,
+    used foreign cars, satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced
+    S-shape through the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no
+    signs with writing, no logos, no watermark, no board game tiles.'
+- name: bazar-new-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a huge open-air flea market in Novosibirsk: endless rows of shipping containers turned into shops, tarpaulin roofs, checkered bags. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign
+    cars, billboards without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: bazar-new-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the flea market wholesale zone: trucks and vans unloading boxes, forklifts, warehouses, a cafe trailer. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards without
+    letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: bazar-new-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the edge of the flea market: currency exchange booth, car parking full of used foreign cars, a fenced lot with Japanese cars for sale. early 2000s 1999-2003: renovated facades, glass shop fronts, new
+    foreign cars, billboards without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of
+    the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: center-wild-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: a wide avenue with Stalinist buildings, a big domed opera theatre in the distance, trolleybuses. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars,
+    satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the
+    middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: center-wild-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: a business street with a bank with columns, an office building, a restaurant with a canopy, black cars. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign
+    cars, satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through
+    the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: center-wild-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: an embankment of the wide Ob river with a long bridge, a park, a bathhouse building. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite
+    dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: center-new-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: a wide avenue with Stalinist buildings, a big domed opera theatre in the distance, trolleybuses. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: center-new-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: a business street with a bank with columns, an office building, a restaurant with a canopy, black cars. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign
+    cars, billboards without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: center-new-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: an embankment of the wide Ob river with a long bridge, a park, a bathhouse building. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards without
+    letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: oblast-wild-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    an old Soviet factory on the outskirts of a Siberian city: chimneys, workshops, railway sidings, a checkpoint gate. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars,
+    satellite dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the
+    middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: oblast-wild-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a huge open-pit coal mine in Kuzbass, Siberia: terraced pit, giant dump trucks, conveyor belts, taiga around. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite
+    dishes, advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: oblast-wild-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a regional airport in Siberia: a modest terminal, a few airliners on the apron, a road with taxis. wild 1990s 1992-1997: metal kiosks with bright imported goods, used foreign cars, satellite dishes,
+    advertising boards without letters, late winter, dirty snow and slush, low pale sun. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: oblast-new-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    an old Soviet factory on the outskirts of a Siberian city: chimneys, workshops, railway sidings, a checkpoint gate. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: oblast-new-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a huge open-pit coal mine in Kuzbass, Siberia: terraced pit, giant dump trucks, conveyor belts, taiga around. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: oblast-new-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a regional airport in Siberia: a modest terminal, a few airliners on the apron, a road with taxis. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards without letters,
+    cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right edge
+    at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: moscow-new-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow around 2000: a wide avenue with Stalinist high-rise, traffic of black luxury cars, a big shopping center. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: moscow-new-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow around 2000: an embankment with a red-brick fortress wall and golden church domes in the distance, a bridge. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: moscow-new-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow suburbs around 2000: a road through pine forest with large private mansions behind high fences. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards without
+    letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: london-new-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London around 2003: a street of white Georgian townhouses, red double-decker buses, black taxis. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards without letters,
+    cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right edge
+    at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: london-new-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London around 2003: the Thames embankment with a big bridge and towers in the distance, grey sky with sun breaks. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars, billboards
+    without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at
+    the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game
+    tiles.'
+- name: london-new-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London around 2003: a football stadium with blue seats seen from above next to a bridge and railway lines, crowds of fans. early 2000s 1999-2003: renovated facades, glass shop fronts, new foreign cars,
+    billboards without letters, cleaner streets, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and
+    leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no
+    board game tiles.'
