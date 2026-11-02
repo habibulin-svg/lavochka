@@ -1,0 +1,515 @@
+# ГОПС, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob из 41-cutscene-mix.yaml — правки вносить туда.
+out: G:/temp/studio/out/gops/41-cutscene-sfx
+seeds:
+- 1
+sounds:
+- duration: 2
+  level: loud
+  max: 1.2
+  prompt: short cartoon dramatic whoosh into a punchy comedic hit, trailer impact
+  name: shared--sting
+- name: logo-anim--logo-whoosh
+  duration: 2
+  level: loud
+  max: 1.2
+  prompt: airy cartoon whoosh, quick swoosh with a bright sparkle
+- name: logo-anim--pigeon-flap
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: pigeon wings flapping quickly as it flies in, light flutter
+- name: logo-anim--logo-ding
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: single bright glassy bell ding, clean chime, no melody
+- name: logo-anim--pigeons-land
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: two pigeons landing on a wooden bench, feathers rustle and a soft coo
+- name: logo-anim--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet dusk street ambience, light wind and distant birds, faint lamp hum
+- name: s00-intro--bag-rustle
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: thin plastic shopping bag crinkling and rustling in a hand
+- name: s00-intro--crow-flap
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: large black crow wings flapping heavily in the air
+- name: s00-intro--footsteps-run
+  duration: 1
+  level: quiet
+  max: 0.8
+  prompt: two sneakers running on dusty pavement, quick steps
+- name: s00-intro--crow-dive
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: bird diving down fast with a rushing whoosh of wings
+- name: s00-intro--feather-burst
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: pile of feathers and dust bursting outward with a soft explosion puff
+- name: s00-intro--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: dusty town square ambience, light wind and distant birds
+- name: s01-backfire--launcher-fire
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: shoulder rocket launcher firing backwards, sharp pop and hiss of exhaust
+- name: s01-backfire--cap-whoosh
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: heavy cap spinning through the air, fast whoosh
+- name: s01-backfire--smoke-puff
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: small puff of smoke with a cartoon sizzle of sparks
+- name: s01-backfire--cap-flop
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: soft cloth cap flopping down onto a head, thump
+- name: s01-backfire--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet courtyard ambience, light wind and distant birds
+- name: s02-crate--parachute-swish
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: fabric parachute canopy rustling and swishing as a crate drifts down
+- name: s02-crate--crate-land
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: wooden crate landing hard on pavement, heavy thud with a wooden crack
+- name: s02-crate--lid-creak
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: wooden lid creaking open slowly, old hinge squeak
+- name: s02-crate--dust-puff
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: dust cloud puffing out from the ground, soft heavy whumph
+- name: s02-crate--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: dusty street ambience, light wind and distant birds
+- name: s03-babushka--lads-run
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: two sneakers running in panic on a paved path, quick steps
+- name: s03-babushka--bag-swing
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: string shopping bag swinging through the air, whoosh
+- name: s03-babushka--swat-hit
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: soft cartoon swat hit, rubbery whap with a comic thump
+- name: s03-babushka--tumble-thump
+  duration: 1
+  level: normal
+  max: 0.7
+  prompt: body tumbling and landing on the ground, soft comic thump
+- name: s03-babushka--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: sunny city park ambience, birds and light breeze, distant traffic
+- name: s04-pigeon--pigeon-flap
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: pigeon wings flapping loudly, quick flutter
+- name: s04-pigeon--cap-snatch
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: cloth cap being snatched off a head, quick grab and rustle
+- name: s04-pigeon--roof-running
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: sneakers running on a tin rooftop, quick clanking steps
+- name: s04-pigeon--wings-chase
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: big pigeon wings beating hard as it flies away, whoosh of flapping
+- name: s04-pigeon--roof-tumble
+  duration: 1
+  level: normal
+  max: 0.7
+  prompt: body rolling and landing on a tin roof, soft thump
+- name: s04-pigeon--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet rooftop ambience, light wind and distant city hum
+- name: s05-sling--twang
+  duration: 1
+  level: normal
+  max: 0.5
+  prompt: rubber slingshot snap release, short twang
+- name: s05-sling--pebble-whistle
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: small pebble whistling through the air
+- name: s05-sling--bonk
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: cartoon bonk on the head, hollow wooden knock
+- name: s05-sling--dizzy-chime
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: cartoon dizzy twinkle, little bright sparkles circling, light chime
+- name: s05-sling--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet courtyard ambience, distant birds and kids, light wind
+- name: s06-staring--steps-stare
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: two quick sneaker steps on pavement, tense shuffle
+- name: s06-staring--tense-whoosh
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: two bodies pitching backwards, fast cartoon whoosh
+- name: s06-staring--flop-one
+  duration: 1
+  level: normal
+  max: 0.7
+  prompt: tracksuit body flopping onto pavement, comic thump
+- name: s06-staring--flop-two
+  duration: 1
+  level: normal
+  max: 0.7
+  prompt: second body falling face first onto asphalt, soft thud
+- name: s06-staring--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet park ambience, gentle breeze in trees, distant birds
+- name: s07-rope--rope-creak
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: heavy rope creaking as a body swings on it, slow sway
+- name: s07-rope--rope-slip
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: rope slipping quickly through hands with a fast zipping whoosh
+- name: s07-rope--mud-splash
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: body falling into a muddy puddle, big heavy splash
+- name: s07-rope--mud-bubble
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: thick mud bubbling and gurgling in a puddle, gloopy squelch
+- name: s07-rope--spit-splash
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: water splashing and spattering off a head, short sputter
+- name: s07-rope--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: sunny courtyard ambience, light breeze, distant birds
+- name: s08-dog--paws-trot
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: small dog paws trotting on pavement, light patter
+- name: s08-dog--dog-yip
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: small happy dog yip with a little collar jingle
+- name: s08-dog--sneakers-run
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: sneakers running away fast on pavement, panicked quick steps
+- name: s08-dog--chase-patter
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: dog paws running after, quick playful pitter-patter
+- name: s08-dog--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet pale courtyard ambience, light breeze, distant birds
+- name: s09-kvass--keg-roll
+  duration: 3
+  level: normal
+  max: 1.8
+  prompt: heavy metal keg rolling on wheels over pavement, rumbling
+- name: s09-kvass--crowd-shuffle
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: several sneakers shuffling on pavement in a line, quiet shuffle
+- name: s09-kvass--mug-clink
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: tin mug set down with a light metallic clink
+- name: s09-kvass--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: busy street ambience, distant traffic and light wind
+- name: s10-winter--slide-whoosh
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: smooth ice slide, long fast whoosh of sliding on ice
+- name: s10-winter--launch-whoosh
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: body flying off a ramp, airy whoosh
+- name: s10-winter--snow-impact
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: soft heavy body plunging into deep snow, puffy thump with a snow burst
+- name: s10-winter--snow-kick
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: legs kicking in deep snow, muffled flutter and crunch
+- name: s10-winter--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: cold winter street ambience, light wind, distant muffled traffic
+- name: s11-victory--firework-whistle
+  duration: 1
+  level: quiet
+  max: 0.7
+  prompt: firework rocket whistling up into the sky, fizzy trail
+- name: s11-victory--firework-pop
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: firework burst, bright pop with crackling sparkles
+- name: s11-victory--feet-stomp
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: sneakers stomping on pavement in a quick group dance rhythm
+- name: s11-victory--flag-flutter
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: cloth flag flapping and fluttering in the wind
+- name: s11-victory--sparkle-fizz
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: sparkling firework crackle and fizzle, short
+- name: s11-victory--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: evening street ambience, light wind, distant city hum
+- name: s12-deflate--inflate-hiss
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: air hissing as a balloon inflates, long rubbery hiss
+- name: s12-deflate--deflate-squeal
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: air escaping from a balloon with a high whistling squeal, rubber flutter
+- name: s12-deflate--spin-whoosh
+  duration: 1
+  level: normal
+  max: 0.7
+  prompt: fast spinning whoosh with a rubbery flutter
+- name: s12-deflate--cap-roll
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: heavy cap rolling on the pavement and wobbling, dull rumble
+- name: s12-deflate--leaf-fall
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: dry autumn leaf landing with a soft rustle
+- name: s12-deflate--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: autumn afternoon courtyard ambience, light wind and rustling leaves
+- name: s13-map--map-unfold
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: large paper map unfolding with a loud rustle
+- name: s13-map--car-tap
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: knuckles tapping on a car hood, short knock
+- name: s13-map--map-flap
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: big paper map crumpling and flapping, loud rustle
+- name: s13-map--run-steps
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: sneakers sprinting on pavement, fast steps
+- name: s13-map--car-pass
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: car driving past quickly, short whoosh and tyre hum
+- name: s13-map--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: street ambience with distant traffic and light breeze
+- name: s14-plane--plane-drone
+  duration: 4
+  level: quiet
+  max: 3.0
+  prompt: vintage propeller biplane engine drone passing overhead
+- name: s14-plane--brick-fall
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: red clay brick falling and whistling through the air, then a dull landing
+- name: s14-plane--brick-stack
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: bricks stacked with a clunky dull knock
+- name: s14-plane--brick-bounce
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: clay brick bouncing off stretched fabric, dull boing
+- name: s14-plane--sprint
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: sneakers sprinting away on pavement, fast steps
+- name: s14-plane--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: sunny street ambience, light wind
+- name: s15-marshrutka--puddle-splash
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: car driving fast through a puddle, watery splash spray
+- name: s15-marshrutka--bus-engine
+  duration: 2
+  level: quiet
+  max: 1.2
+  prompt: heavy bus engine rumbling past on wet asphalt
+- name: s15-marshrutka--big-splash
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: heavy bus wheel plowing through a deep puddle, big water wave splash
+- name: s15-marshrutka--drip
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: water dripping off wet clothes, light drips
+- name: s15-marshrutka--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: steady light rain on a city street, distant traffic, wet asphalt
+- name: s16-finale--bag-rustle
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: paper bag crinkling and rustling as it is opened
+- name: s16-finale--handshake-slap
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: two hands slapping together in a friendly handshake, soft clap
+- name: s16-finale--seed-crunch
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: sunflower seeds being cracked, tiny crunch and rustle
+- name: s16-finale--firefly-chime
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: tiny magical twinkling chime of fireflies, soft sparkles
+- name: s16-finale--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: warm summer night city ambience, crickets and distant traffic, light breeze
+- name: s17-garage-door--chain-rattle
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: metal chain rattling and clinking as someone tugs on it
+- name: s17-garage-door--door-strain
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: heavy metal garage door straining and creaking under tension, squeal
+- name: s17-garage-door--door-crash
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: heavy metal garage door slamming down flat, loud metallic bang
+- name: s17-garage-door--crawl-scrape
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: body dragging and crawling on pavement, soft scrape
+- name: s17-garage-door--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet street ambience, light wind and distant birds

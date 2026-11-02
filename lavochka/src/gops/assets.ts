@@ -76,14 +76,12 @@ export function brandArt(name: string): string {
   return webp(`${DEV}20-brand/${name}.png`);
 }
 
-/** Переделанные ролики (отбор 2026-11-02): «квас» — 25c, вариант 2 (без абракадабры на бочке, лица не плывут). */
-const CUTSCENE_FIX: Record<string, string> = {
-  's09-kvass': '25c-fix-videos/s09b-kvass-2-v1.mp4',
-};
-
-/** Межигровой ролик по имени из missions.json (cutscene_after): переделка, иначе первый вариант первого ключа. */
+/**
+ * Межигровой ролик по имени из missions.json (cutscene_after): смонтированный со звуком и апскейлом (studio/post/cutscenes.py).
+ * Исходники — первый вариант первого ключа из 25-videos, «квас» — переделка 25c, вариант 2 (без абракадабры на бочке).
+ */
 export function cutsceneUrl(name: string): string {
-  return `${DEV}${CUTSCENE_FIX[name] ?? `25-videos/${name}-1-v1.mp4`}`;
+  return `${DEV}40-cutscenes/${name}.mp4`;
 }
 
 /** Иконки оружия: отобранный вариант из 22-arsenal/cut (отбор 2026-11-02); 0 — пока без картинки (переделка — партия 22b). */

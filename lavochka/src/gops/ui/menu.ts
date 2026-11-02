@@ -489,32 +489,66 @@ export class Menu {
     this.el.replaceChildren(box);
   }
 
-  /** Ролик на весь экран; щелчок или любая клавиша — пропустить, нет файла — сразу дальше. caption — надпись поверх (заставка студии). */
+  /**
+   * Ролик со звуком на весь экран (40-cutscenes, studio/post/cutscenes.py); щелчок или клавиша — пропустить, нет файла — сразу дальше.
+   * Досмотрел — «↻ Ещё раз» или «Дальше →» (Enter, пробел, Esc — дальше). caption — надпись поверх: заставка студии, она без повтора.
+   * Браузер не даёт звук без жеста (заставка при входе) — «▶ Щёлкни, чтобы начать», щелчок заодно будит звук игры.
+   */
   cutscene(name: string, done: () => void, caption?: string): void {
     const v = document.createElement('video');
     v.className = 'gm-video';
     v.src = cutsceneUrl(name);
-    v.autoplay = true;
     v.playsInline = true;
+    try {
+      v.muted = localStorage.getItem('gops-mute') === '1';
+    } catch {
+      // без localStorage — со звуком
+    }
     let over = false;
-    const end = () => {
+    const finish = () => {
       if (over) return;
       over = true;
-      window.removeEventListener('keydown', end);
+      window.removeEventListener('keydown', key);
       v.remove();
       done();
     };
-    v.onended = end;
-    v.onerror = end;
-    v.onclick = end;
-    window.addEventListener('keydown', end);
+    let state: 'start' | 'play' | 'end' = 'play';
+    const extras: HTMLElement[] = caption ? [h('div', 'gm-caption', caption)] : [];
+    const skip = h('div', 'gm-skip', 'щёлкни — пропустить');
+    const start = h('div', 'gm-video-start', '▶ Щёлкни, чтобы начать');
+    const again = h('div', 'gm-video-end');
+    const run = () => {
+      state = 'play';
+      start.remove();
+      again.remove();
+      skip.hidden = false;
+      v.currentTime = 0;
+      void v.play().catch(finish);
+    };
+    const ended = () => {
+      if (caption) return finish();
+      state = 'end';
+      skip.hidden = true;
+      again.replaceChildren(button('↻ Ещё раз', run), button('Дальше →', finish, 'big'));
+      this.el.append(again);
+    };
+    function key(e: KeyboardEvent) {
+      if (state === 'start') run();
+      else if (state === 'play' || ['Enter', 'Space', 'Escape'].includes(e.code)) finish();
+    }
+    v.onended = ended;
+    v.onerror = finish;
+    v.onclick = () => (state === 'start' ? run() : finish());
+    start.onclick = run;
+    window.addEventListener('keydown', key);
     this.el.hidden = false;
     this.el.style.background = '#000';
-    this.el.replaceChildren(v, ...(caption ? [h('div', 'gm-caption', caption)] : []), h('div', 'gm-skip', 'щёлкни — пропустить'));
+    this.el.replaceChildren(v, ...extras, skip);
     void v.play().catch(() => {
-      // без жеста браузер может не дать звук — пробуем без звука
-      v.muted = true;
-      void v.play().catch(end);
+      // нет жеста — ждём щелчка, со звуком
+      state = 'start';
+      skip.hidden = true;
+      this.el.append(start);
     });
   }
 }

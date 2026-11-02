@@ -1,9 +1,9 @@
 """Сборка ассетов ГОПС для игры: отобранное с выхода конвейера → lavochka/public/gops/a/ (Git LFS).
 
-G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/pack_gops.py [--only icons,world,fx,themes,brand,atlases,videos,music,voices,sfx]
+G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/pack_gops.py [--only icons,world,fx,themes,brand,atlases,music,voices,sfx]
 
 Раскладка — та же, что на выходе конвейера (G:/temp/studio/out/gops/<партия>/…), картинки PNG → WebP (имя то же, расширение .webp),
-ролики → MP4 960 px без звука, звук — как есть (Opus). Отбор — тот же, что в lavochka/src/gops/assets.ts
+звук — как есть (Opus); ролики собирает studio/post/cutscenes.py (40-cutscenes, со звуком и апскейлом). Отбор — тот же, что в lavochka/src/gops/assets.ts
 (тест tests/gops/assets.test.ts сверяет, что всё, на что ссылается код, лежит здесь). Готовое не пересжимается.
 """
 import argparse
@@ -87,21 +87,12 @@ def strip(rel: str) -> int:
     return n + copy(SRC / f'{rel}.json', DST / f'{rel}.json')
 
 
-def video(src: pathlib.Path, rel: str) -> int:
-    out = DST / rel
-    if out.exists():
-        return 0
-    out.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run([FFMPEG, '-v', 'error', '-y', '-i', str(src), '-an', '-vf', 'scale=960:-2', '-c:v', 'libx264', '-preset', 'slow', '-crf', '30',
-                    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(out)], check=True)
-    return 1
-
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', default='')
     a = ap.parse_args()
-    want = set(filter(None, a.only.split(','))) or {'icons', 'world', 'fx', 'themes', 'brand', 'atlases', 'videos', 'music', 'voices', 'sfx'}
+    want = set(filter(None, a.only.split(','))) or {'icons', 'world', 'fx', 'themes', 'brand', 'atlases', 'music', 'voices', 'sfx'}
     done = 0
     if 'icons' in want:
         for wid, v in ICON_PICK.items():
@@ -132,12 +123,6 @@ def main():
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(meta, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
             done += copy(SRC / f'28-anims/{b}-atlas.webp', DST / f'28-anims/{b}-atlas.webp')
-    if 'videos' in want:
-        for mp4 in sorted((SRC / '25-videos').glob('s[0-9][0-9]-*-1-v1.mp4')) + [SRC / '25-videos/logo-anim-1-v1.mp4']:
-            done += video(mp4, f'25-videos/{mp4.name}')
-        # переделки (CUTSCENE_FIX в assets.ts)
-        for rel in ['25c-fix-videos/s09b-kvass-2-v1.mp4']:
-            done += video(SRC / rel, rel)
     if 'music' in want:
         for f in sorted(MUSIC.glob('*.ogg')):
             done += copy(f, DST / 'music' / f.name)
