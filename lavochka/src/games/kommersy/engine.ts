@@ -252,7 +252,7 @@ export function makeCells(m: number, rng?: Rng): Cell[] {
   const bag: Cell[] = [];
   for (const [c, n] of Object.entries(w)) for (let i = 0; i < n!; i++) bag.push(c as Cell);
   const out: Cell[] = [];
-  const fixed: Cell[] = ['deal', 'routine', 'news', 'deal', 'rest', 'study'];
+  const fixed: Cell[] = ['deal', 'routine', 'news', 'deal', 'rest', 'study', 'deal', 'event', 'news', 'naezd'];
   for (let i = 0; i < SEG_CELLS; i++) {
     let c = rng ? bag[rng.int(bag.length)] : fixed[i];
     if (rng && i > 0 && c === out[i - 1] && c !== 'deal') c = bag[rng.int(bag.length)];

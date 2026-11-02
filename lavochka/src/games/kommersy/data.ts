@@ -44,7 +44,8 @@ export const CELL_WEIGHTS: Record<Era, Partial<Record<Cell, number>>> = {
   late: { deal: 9, routine: 2, study: 2, rest: 2, news: 3, event: 1, naezd: 2, check: 2 },
   new: { deal: 9, routine: 2, study: 2, rest: 2, news: 3, event: 1, naezd: 1, check: 3 },
 };
-export const SEG_CELLS = 6;
+/** Клеток в отрезке до «Нового квартала» (решение пользователя: плотнее, плиткой встык по дороге). */
+export const SEG_CELLS = 10;
 
 // ---------------------------------------------------------------- уровни (местности дороги)
 export const TIERS = ['Двор', 'Ларёк', 'Барахолка', 'Центр', 'Область', 'Москва', 'Лондон'];

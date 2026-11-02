@@ -10,17 +10,15 @@ import {
   dateText, dealById, eraOf, yearOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
 import { money, type Action, type Ask, type Event, type View } from './engine';
+import roadsJson from './roads.json';
 import './kommersy.css';
 
 const A = '/kommersy/a';
 const ICON: Record<Cell, string> = { deal: '💼', routine: '🧾', study: '📚', rest: '🌿', news: '📰', event: '❗', naezd: '🚘', check: '🔍', period: '☀' };
 
-/** Три изгиба дороги — по очереди на каждую часть местности. Две кубические кривые слева направо, viewBox 1600×800. */
-const ROADS: number[][] = [
-  [80, 620, 400, 620, 420, 250, 800, 330, 1180, 410, 1200, 700, 1520, 520],
-  [80, 300, 380, 280, 450, 650, 800, 560, 1150, 470, 1200, 220, 1520, 300],
-  [80, 500, 330, 700, 560, 280, 800, 400, 1040, 520, 1250, 280, 1520, 420],
-];
+/** Дорога — те же кривые, по которым нарисован асфальт на панорамах (roads.json, общий с studio/post/road_templates.py). */
+const ROADS: number[][] = roadsJson.roads;
+const ROAD_W: number = roadsJson.width;
 function bez(p: number[], t: number): [number, number] {
   const seg = t < 0.5 ? 0 : 1;
   const u = t < 0.5 ? t * 2 : (t - 0.5) * 2;
@@ -28,14 +26,54 @@ function bez(p: number[], t: number): [number, number] {
   const k = [(1 - u) ** 3, 3 * (1 - u) ** 2 * u, 3 * (1 - u) * u ** 2, u ** 3];
   return [k[0] * p[o] + k[1] * p[o + 2] + k[2] * p[o + 4] + k[3] * p[o + 6], k[0] * p[o + 1] + k[1] * p[o + 3] + k[2] * p[o + 5] + k[3] * p[o + 7]];
 }
-/** Точки дороги через равные отрезки длины: 0 — старт отрезка, 1…7 — клетки. */
-function roadPoints(p: number[]): [number, number][] {
-  const N = 400;
+interface RoadGeo {
+  /** Центр клетки: 0 — старт, 1…SEG_CELLS+1 — клетки. */
+  centers: [number, number][];
+  /** Плитка клетки — многоугольник по краям дороги. */
+  tiles: string[];
+}
+const geoCache = new Map<number, RoadGeo>();
+/** Плитки встык по дороге: равные отрезки длины от входа до выхода, края — по нормали на ширину полотна. */
+function roadGeo(r: number): RoadGeo {
+  const hit = geoCache.get(r);
+  if (hit) return hit;
+  const p = ROADS[r];
+  const N = 600;
   const pts = Array.from({ length: N + 1 }, (_, i) => bez(p, i / N));
   const len = [0];
   for (let i = 1; i <= N; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-  const at = (f: number) => pts[Math.max(0, len.findIndex((l) => l >= f * len[N]))];
-  return [at(0.03), ...Array.from({ length: SEG_CELLS + 1 }, (_, i) => at((i + 1) / (SEG_CELLS + 1.4)))];
+  const total = len[N];
+  const idx = (f: number) => Math.min(N, Math.max(0, len.findIndex((l) => l >= f * total)));
+  const norm = (i: number): [number, number] => {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(N, i + 1)];
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [-(b[1] - a[1]) / d, (b[0] - a[0]) / d];
+  };
+  const n = SEG_CELLS + 2;
+  const from = 0.035;
+  const step = (1 - 2 * from) / n;
+  const hw = ROAD_W * 0.42;
+  const gap = 2.5 / total;
+  const centers: [number, number][] = [];
+  const tiles: string[] = [];
+  for (let k = 0; k < n; k++) {
+    const a = from + k * step + gap;
+    const b = from + (k + 1) * step - gap;
+    centers.push(pts[idx((a + b) / 2)]);
+    const left: string[] = [];
+    const right: string[] = [];
+    for (let j = 0; j <= 6; j++) {
+      const i = idx(a + ((b - a) * j) / 6);
+      const [nx, ny] = norm(i);
+      left.push(`${(pts[i][0] + nx * hw).toFixed(1)},${(pts[i][1] + ny * hw).toFixed(1)}`);
+      right.unshift(`${(pts[i][0] - nx * hw).toFixed(1)},${(pts[i][1] - ny * hw).toFixed(1)}`);
+    }
+    tiles.push(`M${left.join(' L')} L${right.join(' L')} Z`);
+  }
+  const geo = { centers, tiles };
+  geoCache.set(r, geo);
+  return geo;
 }
 
 /** Панорама: местность по уровню, вариант по эпохе (где у местности его нет — ближайший), часть — по отрезку. */
@@ -224,32 +262,26 @@ class KommersyView implements GameView<View, Event> {
 
   private drawRoad() {
     const v = this.v!;
-    const p = ROADS[this.road];
-    const pts = roadPoints(p);
-    const d = `M${p[0]},${p[1]} C${p.slice(2, 8).join(',')} C${p.slice(8, 14).join(',')}`;
-    const cells = v.cells
-      .map((c, i) => {
-        const [x, y] = pts[i + 1];
-        const hot = v.phase === 'move' && v.target === i + 1;
-        const r = c === 'period' ? 46 : 38;
-        return `<g class="km-cell${hot ? ' hot' : ''}${hot && this.canMove() ? ' tap' : ''}" data-cell="${i + 1}" transform="translate(${x},${y})">
-          <rect x="${-r}" y="${-r}" width="${r * 2}" height="${r * 2}" rx="12" fill="${CELL_COLOR[c]}"/>
-          <text y="12" text-anchor="middle" font-size="${c === 'period' ? 40 : 34}">${ICON[c]}</text>
-          <title>${CELL_NAME[c]}</title></g>`;
-      })
-      .join('');
-    this.svg.innerHTML = `<path d="${d}" class="km-path-edge"/><path d="${d}" class="km-path"/>
-      <g transform="translate(${pts[0][0]},${pts[0][1]})"><circle r="16" class="km-start"/></g>${cells}`;
+    const g = roadGeo(this.road);
+    const tile = (i: number, c: Cell | 'start') => {
+      const [x, y] = g.centers[i];
+      const hot = c !== 'start' && v.phase === 'move' && v.target === i;
+      const color = c === 'start' ? '#efe6d2' : CELL_COLOR[c];
+      const icon = c === 'start' ? '' : `<text x="${x}" y="${y + 18}" text-anchor="middle" font-size="${c === 'period' ? 58 : 50}">${ICON[c]}</text>`;
+      return `<g class="km-cell${hot ? ' hot' : ''}${hot && this.canMove() ? ' tap' : ''}" data-cell="${i}">
+        <path d="${g.tiles[i]}" class="km-tile-shadow"/><path d="${g.tiles[i]}" fill="${color}" class="km-tile"/>${icon}<title>${c === 'start' ? 'Начало отрезка' : CELL_NAME[c]}</title></g>`;
+    };
+    this.svg.innerHTML = tile(0, 'start') + v.cells.map((c, i) => tile(i + 1, c)).join('');
   }
 
   private tokenXY(seat: number) {
-    const pts = roadPoints(ROADS[this.road]);
+    const g = roadGeo(this.road);
     const pos = Math.min(this.shownPos.get(seat) ?? 0, SEG_CELLS + 1);
     const v = this.v!;
     const same = v.players.filter((q) => Math.min(this.shownPos.get(q.seat) ?? 0, SEG_CELLS + 1) === pos);
     const k = same.findIndex((q) => q.seat === seat);
-    const [x, y] = pts[pos];
-    return { x: ((x + (k - (same.length - 1) / 2) * 34) / 1600) * 100, y: ((y - 58) / 800) * 100 };
+    const [x, y] = g.centers[pos];
+    return { x: ((x + (k - (same.length - 1) / 2) * 30) / 1600) * 100, y: ((y - 46) / 800) * 100 };
   }
 
   private drawTokens() {

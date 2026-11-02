@@ -115,7 +115,7 @@ function showcase(): State {
   s.players[0].pos = 3;
   s.players[1].pos = 5;
   s.players[2].pos = 2;
-  s.cells = ['deal', 'naezd', 'news', 'deal', 'rest', 'check', 'period'];
+  s.cells = ['deal', 'routine', 'naezd', 'news', 'deal', 'study', 'rest', 'deal', 'check', 'news', 'period'];
   s.uid = 3;
   return s;
 }

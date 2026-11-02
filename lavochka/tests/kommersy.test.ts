@@ -1,7 +1,7 @@
 /* «Коммерсы»: календарь и дорога, сделки и часы, исторические даты, падения, покупка клуба; партии ботов и прикидка баланса. */
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { CLUB_PRICE, LAST, dateText, mm, segMonths } from '../src/games/kommersy/data';
+import { CLUB_PRICE, LAST, SEG_CELLS, dateText, mm, segMonths } from '../src/games/kommersy/data';
 import { def } from '../src/games/kommersy/def';
 import { choose } from '../src/games/kommersy/bot';
 import { apply, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
@@ -42,8 +42,8 @@ describe('Коммерсы: ход', () => {
 
   it('дальше конца отрезка не уйти; дошли все — новый квартал, доходы и новая дорога', () => {
     let s = newState([0, 1]);
-    s.players[0].pos = 6;
-    s.players[1].pos = 7;
+    s.players[0].pos = SEG_CELLS;
+    s.players[1].pos = SEG_CELLS + 1;
     const cash = s.players[0].cash;
     s = act(s, 0, { type: 'roll' }, [5]);
     s = act(s, 0, { type: 'move' });
@@ -72,10 +72,10 @@ describe('Коммерсы: эпоха и падения', () => {
     for (const p of s.players) {
       p.cash = 10000;
       p.job = null;
-      p.pos = 7;
+      p.pos = SEG_CELLS + 1;
     }
     s.players[1].prep.push('pavlov');
-    s.players[0].pos = 6;
+    s.players[0].pos = SEG_CELLS;
     s = act(s, 0, { type: 'roll' }, [5]);
     s = act(s, 0, { type: 'move' });
     expect(s.fired).toContain('pavlov');
@@ -86,7 +86,7 @@ describe('Коммерсы: эпоха и падения', () => {
     let s = newState([0]);
     s.players[0].cash = -50000;
     s.players[0].stats.name = 0;
-    s.players[0].pos = 6;
+    s.players[0].pos = SEG_CELLS;
     s = act(s, 0, { type: 'roll' }, [5]);
     s = act(s, 0, { type: 'move' });
     expect(s.players[0].falls.map((f) => f.kind)).toContain('razor');

@@ -41,7 +41,9 @@ def main():
     for place, parts in PANO.items():
         for i, p in enumerate(parts, 1):
             part, seed = p.split('-')
-            Image.open(SRC / '04-panoramas' / f'{place}-{part}-{seed}.png').convert('RGB').resize((1600, 800), Image.LANCZOS).save(OUT / 'pano' / f'{place}-{i}.webp', quality=80)
+            # с дорогой по roads.json (партия 07), пока её нет — исходная панорама
+            road = SRC / '07-road-panos' / f'{place}-{i}-{seed}.png'
+            Image.open(road if road.exists() else SRC / '04-panoramas' / f'{place}-{part}-{seed}.png').convert('RGB').resize((1600, 800), Image.LANCZOS).save(OUT / 'pano' / f'{place}-{i}.webp', quality=80)
     for year, src in KOLYAN.items():
         key(Image.open(SRC / f'{src}.png')).resize((512, 512), Image.LANCZOS).save(OUT / 'people' / f'kolyan-{year}.webp', quality=85)
     for n in NPC:
@@ -50,4 +52,5 @@ def main():
     print('готово', sum(1 for _ in OUT.rglob('*.webp')), 'файлов,', round(sum(f.stat().st_size for f in OUT.rglob('*.webp')) / 1e6, 1), 'МБ')
 
 
-main()
+if __name__ == "__main__":
+    main()
