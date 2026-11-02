@@ -1,0 +1,28 @@
+# Коммерсы: звуки клеток, сделок, событий и падений. По 2 варианта, в игру — оба (случайный).
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/sfx.py studio/jobs/kommersy/08-sfx.yaml
+# Упаковка: studio/post/pack_kommersy.py (SFX) → lavochka/public/kommersy/a/sfx/<имя>-<сид>.ogg
+out: G:/temp/studio/out/kommersy/08-sfx
+seeds: [1, 2]
+sounds:
+  # клетки — когда открывается карточка
+  - {name: cell-deal, duration: 1, level: normal, max: 0.6, prompt: "leather briefcase metal latches snapping open, two clicks, close up"}
+  - {name: cell-routine, duration: 1, level: normal, max: 0.6, prompt: "rubber stamp pressed hard on paper on a wooden office desk, single thump"}
+  - {name: cell-study, duration: 1, level: quiet, max: 0.8, prompt: "turning a page of an old paper textbook, crisp page flip"}
+  - {name: cell-rest, duration: 2, level: quiet, max: 1.5, prompt: "summer park, sparrows chirping and gentle leaves rustle, calm short ambience"}
+  - {name: cell-news, duration: 2, level: normal, max: 1.2, prompt: "unfolding and shaking a large newspaper, paper rustle"}
+  - {name: cell-event, duration: 2, level: normal, max: 1.5, prompt: "old soviet rotary telephone ringing, mechanical bell ring, single ring"}
+  - {name: cell-naezd, duration: 3, level: normal, max: 2.0, prompt: "car tires screeching to a stop on asphalt, then a heavy car door slams"}
+  - {name: cell-check, duration: 2, level: normal, max: 1.2, prompt: "loud knocking on a wooden door, three firm knocks, authority"}
+  - {name: cell-period, duration: 1, level: ui, max: 0.5, prompt: "tearing a sheet off a paper wall calendar, quick paper rip"}
+  # деньги
+  - {name: buy, duration: 2, level: normal, max: 1.2, prompt: "old mechanical cash register, cha-ching bell and drawer opening"}
+  - {name: sell, duration: 2, level: normal, max: 1.2, prompt: "counting a thick stack of paper banknotes by hand, fast flicking"}
+  - {name: dark, duration: 2, level: quiet, max: 1.2, prompt: "low ominous cinematic hit, dark tension sting, short"}
+  # история и итоги
+  - {name: hist, duration: 3, level: normal, max: 2.0, prompt: "old radio tuning static then a short news broadcast jingle on a transistor radio"}
+  - {name: fall-razor, duration: 2, level: normal, max: 1.5, prompt: "handful of coins dropped and scattering on a concrete floor"}
+  - {name: fall-jail, duration: 2, level: normal, max: 1.5, prompt: "heavy steel prison cell door slamming shut with a key turning in the lock, echo"}
+  - {name: fall-pokushenie, duration: 3, level: loud, max: 2.0, prompt: "car bomb explosion on a city street, deep boom with glass shattering and car alarms"}
+  - {name: fall-zapoi, duration: 2, level: normal, max: 1.2, prompt: "vodka bottle clinking against glass shots, pouring liquid, kitchen"}
+  - {name: out-hosp, duration: 3, level: quiet, max: 2.5, prompt: "soviet ambulance siren passing by in the distance on a city street"}
+  - {name: club, duration: 4, level: loud, max: 3.5, prompt: "huge football stadium crowd cheering and chanting after a goal"}

@@ -1,9 +1,10 @@
 """Коммерсы: отобранное с выхода конвейера → lavochka/public/kommersy/a/ (WebP, LFS).
 
-Отбор — studio/bible/kolyan.md. Панорамы 1600×800; портреты — ключ по хромакею (зелёный → прозрачный), 512×512.
+Отбор — studio/bible/kolyan.md. Звуки (08-sfx, уже Opus после runners/sfx.py) — копируются в sfx/ как есть. Панорамы 1600×800; портреты — ключ по хромакею (зелёный → прозрачный), 512×512.
   G:/ai/ComfyUI/venv/Scripts/python.exe -I studio/post/pack_kommersy.py
 """
 import pathlib
+import shutil
 
 import numpy as np
 from PIL import Image
@@ -49,6 +50,10 @@ def main():
     for n in NPC:
         seed = '22' if n == 'nalogovik' else '11'
         key(Image.open(SRC / '05-npc' / f'{n}-{seed}.png')).resize((512, 512), Image.LANCZOS).save(OUT / 'people' / f'{n}.webp', quality=85)
+    (OUT / 'sfx').mkdir(parents=True, exist_ok=True)
+    for f in sorted((SRC / '08-sfx' / 'ogg').glob('*.ogg')):
+        shutil.copyfile(f, OUT / 'sfx' / f.name)
+    print('звуков', len(list((OUT / 'sfx').glob('*.ogg'))))
     print('готово', sum(1 for _ in OUT.rglob('*.webp')), 'файлов,', round(sum(f.stat().st_size for f in OUT.rglob('*.webp')) / 1e6, 1), 'МБ')
 
 

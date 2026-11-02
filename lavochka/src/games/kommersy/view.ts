@@ -11,6 +11,7 @@ import {
 } from './data';
 import { money, type Action, type Ask, type Event, type View } from './engine';
 import { Music, eraMusic } from './music';
+import { sfx } from './sfx';
 import roadsJson from './roads.json';
 import './kommersy.css';
 
@@ -397,28 +398,35 @@ class KommersyView implements GameView<View, Event> {
             await sleep(160 / speed);
           }
           Sound.place();
+          if (ev.cell !== 'period') sfx(`cell-${ev.cell}`, 0.8);
           break;
         }
         case 'pick':
+          if (ev.dark) sfx('dark');
           await sleep(250 / speed);
           break;
         case 'hist':
+          sfx('hist', 0.8);
           await this.showBanner(`<small>${dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
         case 'fall':
+          sfx(`fall-${ev.kind}`);
           await this.showBanner(`<b>${FALL[ev.kind]}</b><p>${this.ctx.name(ev.seat)} — падал, но поднимался.</p>`, 'fall', 2200);
           break;
         case 'club':
-          Sound.win();
+          sfx('club');
           await this.showBanner(`<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
           break;
         case 'buy':
         case 'sell':
-          Sound.card();
+          sfx(ev.t);
           await sleep(300 / speed);
           break;
+        case 'out':
+          if (ev.kind === 'hosp') sfx('out-hosp');
+          break;
         case 'period':
-          Sound.turn();
+          sfx('cell-period', 0.5);
           break;
       }
     }
@@ -429,7 +437,6 @@ class KommersyView implements GameView<View, Event> {
     this.banner.className = `km-banner ${kind}`;
     this.banner.innerHTML = html;
     this.banner.hidden = false;
-    Sound.card();
     await (this.ctx.read ? this.ctx.read(ms) : sleep(ms / this.ctx.speed()));
     this.banner.hidden = true;
   }

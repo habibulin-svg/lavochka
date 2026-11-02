@@ -2,6 +2,7 @@
 
 G:/ai/venvs/3d/Scripts/python.exe studio/runners/sfx.py <задание.yaml> [--renorm]
 
+--cpu — считать на процессоре (видеокарты заняты): медленнее, но без VRAM.
 --renorm — не генерировать, а заново нормализовать уже готовые .wav (после правки уровней в задании).
 
 Задание:
@@ -71,15 +72,18 @@ def encode(wav, ogg, level, max_len):
     tmp.unlink()
 
 
+DEV = 'cpu' if '--cpu' in sys.argv else 'cuda'
+
+
 def load():
     cfg = json.loads((MODEL / 'model_config.json').read_text(encoding='utf-8'))
     for c in cfg['model']['conditioning']['configs']:
         if c['type'] == 't5gemma':
             c['config']['model_path'] = str(MODEL)  # + subfolder t5gemma-b-b-ul2 из конфига
-    model = load_diffusion_cond(cfg, str(MODEL / 'model.safetensors'), device='cuda', model_half=True)
+    model = load_diffusion_cond(cfg, str(MODEL / 'model.safetensors'), device=DEV, model_half=DEV == 'cuda')
     model.use_lora = False
     model.lora_names = []
-    return StableAudioModel(model, cfg, 'cuda', True), cfg['sample_rate']
+    return StableAudioModel(model, cfg, DEV, DEV == 'cuda'), cfg['sample_rate']
 
 
 def main():
