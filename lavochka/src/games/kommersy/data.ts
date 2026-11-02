@@ -354,6 +354,136 @@ export const CARDS: CardT[] = [
   C('c-uchastkovy', 'check', 'Участковый', 'Участковый интересуется: «На какие шиши живём?»', [
     ok('Угостить', { cashT: -0.15, stats: { svyazi: 2 } }), ok('Показать трудовую', { stats: { heat: -2 } }),
   ], { to: mm(1993, 12) }),
+  // ==== пополнение колоды: писали агенты Sonnet, вычитано и выверено по балансу (2026-11-02)
+  // ---- рутина
+  C('r-talony', 'routine', 'Талоны на водку', 'Талоны на месяц отоварили. Водка — валюта: ею платят сантехнику и гаишнику.', [ok('Отоварить и держать для дела', { cashT: -0.2, stats: { svyazi: 3 } }), ok('Выпить с пацанами', { cashT: -0.1, stats: { mood: 5, health: -3 } }), ok('Продать с наценкой', { cashT: 0.2, stats: { sovest: -1 } })], { to: mm(1991, 12), maxTier: 1 }),
+  C('r-ochered', 'routine', 'Очередь', 'Выбросили колбасу. Очередь на квартал, а дел полно.', [ok('Отстоять', { studyHours: 15, cashT: -0.1, stats: { stress: 4, blizkie: 3 } }), ok('Нанять бабку в очередь', { cashT: -0.25 }), ok('Плюнуть, есть макароны', { stats: { mood: -3 } })], { to: mm(1991, 12), maxTier: 1 }),
+  C('r-videosalon', 'routine', 'Видеосалон', 'Сосед открыл видеосалон в подвале: боевики с гнусавым переводом.', [ok('Сходить всей толпой', { cashT: -0.15, stats: { mood: 6, stress: -4 } }), ok('Вложиться в кассеты', { cashT: -0.4, stats: { svyazi: 2 }, asset: 'good' }, { need: { asset: true } }), ok('Некогда', { stats: { mood: -1 } })], { from: mm(1989, 6), to: mm(1995, 12), maxTier: 2 }),
+  C('r-sneakers', 'routine', 'Сникерс', 'У ларька дети давятся слюной над «Сникерсом». Свой пацан смотрит так же.', [ok('Купить коробку на всю семью', { cashT: -0.3, stats: { mood: 5, blizkie: 6 } }), ok('По одному', { cashT: -0.1, stats: { mood: 2 } }), ok('Сласти — это баловство', { stats: { blizkie: -2 } })], { from: mm(1992, 1), to: mm(1996, 12), maxTier: 1 }),
+  C('r-stiralka', 'routine', 'Стиралка', 'Дома сдохла «Вятка». Мать стирает руками и молчит.', [ok('Импортную с Барахолки', { cashT: -0.8, stats: { blizkie: 8, mood: 3 } }), ok('Отремонтировать «Вятку»', { cashT: -0.25, stats: { blizkie: 2 } }), ok('Потерпят', { stats: { blizkie: -6, sovest: -2 } })], { from: mm(1989, 1), to: mm(1996, 12), maxTier: 2 }),
+  C('r-gai', 'routine', 'ГАИшник', 'Гаишник машет жезлом: «Превысили, командир». Торопишься.', [ok('Сунуть сотню', { cashT: -0.25, stats: { heat: 2 } }, { dark: true }), ok('Оформить штраф', { cashT: -0.1, studyHours: 10, stats: { stress: 3 } }), ok('Позвонить знакомому в УВД', { stats: { svyazi: -2 } }, { need: { stat: { svyazi: 25 } } })], { from: mm(1992, 1), minTier: 1, maxTier: 4 }),
+  C('r-internet', 'routine', 'Интернет-кафе', 'На Красном открылось интернет-кафе. Почта, «аська», картинки грузятся по часу.', [ok('Посидеть часок', { cashT: -0.15, stats: { mood: 3 } }), ok('Завести почту и сайт', { cashT: -0.5, hoursBonus: 3, stats: { name: 2 } }), ok('Не моё', {})], { from: mm(1998, 6), maxTier: 4 }),
+  C('r-remont', 'routine', 'Евроремонт', 'Пора обновить квартиру. Бригада из Турции берёт дорого, сделает как у людей.', [ok('Евроремонт под ключ', { cashT: -1.5, stats: { mood: 10, blizkie: 6, avt: 2 } }), ok('Косметика своими руками', { cashT: -0.4, studyHours: 15, stats: { stress: 5, health: -2 } }), ok('Ещё годик так', { stats: { blizkie: -3 } })], { from: mm(1996, 1), minTier: 2, maxTier: 4 }),
+  C('r-kostyum', 'routine', 'Костюм на заказ', 'Портной из ателье для начальства зовёт на примерку: пиджак, жилет и три галстука.', [ok('Заказать пять костюмов', { cashT: -1.2, stats: { avt: 4, mood: 5 } }), ok('Один, но хороший', { cashT: -0.5, stats: { avt: 2 } }), ok('Хожу как хожу', { stats: { avt: -1 } })], { from: mm(1996, 1), minTier: 4 }),
+  C('r-restoran', 'routine', 'Деловой обед', 'Партнёр зовёт в ресторан: сказал, что платит, но смотрит на меню по-хозяйски.', [ok('Заплатить за всех', { cashT: -1, stats: { name: 4, svyazi: 3 } }), ok('Разделить счёт', { cashT: -0.4, stats: { name: -1 } }), ok('Отказаться', { stats: { svyazi: -2 } })], { from: mm(1995, 1), minTier: 3 }),
+  C('r-golf', 'routine', 'Гольф-клуб', 'В Лондоне деловые вопросы решаются на траве: членство стоит как квартира.', [ok('Вступить в клуб', { cashT: -2.5, stats: { svyazi: 9, name: 5, mood: 3 } }), ok('Играть как гость', { cashT: -0.8, stats: { svyazi: 3 } }), ok('Деньги лучше вложить', { stats: { svyazi: -1 } })], { minTier: 5 }),
+  // ---- события
+  C('e-zaliv', 'event', 'Соседи залили', 'Сверху прорвало трубу: обои плывут, по стенам ручьи.', [ok('Выставить счёт соседям', { cashT: -0.2, stats: { stress: 5, blizkie: -2 } }), ok('Починить самому', { cashT: -0.5, studyHours: 15, stats: { stress: 3 } }), ok('Вызвать ЖЭК', { cashT: -0.1, stats: { stress: 8, mood: -3 } })], { to: mm(2003, 7), maxTier: 3 }),
+  C('e-avariya', 'event', 'Авария', 'Подрезала иномарка — крыло в лепёшку. Водитель делает вид, что глухой.', [ok('Решить на месте', { cashT: -0.6, stats: { stress: 5 } }, { risk: { p: 0.25, skill: 'sila', fx: { hosp: 1, stats: { health: -12 } }, text: 'Разговор перешёл в мордобой.' } }), ok('Вызвать ГАИ', { cashT: -1, studyHours: 20, stats: { mood: -4 } }), ok('Плюнуть и ехать', { stats: { mood: -6, avt: -2 } })], { from: mm(1992, 1), minTier: 1 }),
+  C('e-ugon', 'event', 'Угнали', 'Утром под окном пусто. Новенькая машина — ушла на разборку.', [ok('Искать через братву', { cashT: -0.4, stats: { avt: 3, heat: 2 } }, { need: { krysha: true } }), ok('Ждать милицию', { cashT: -1, stats: { mood: -8, stress: 8 } }), ok('Купить такую же', { cashT: -2.5, stats: { mood: 3 } }, { need: { cashT: 3 } })], { from: mm(1992, 6), minTier: 2 }),
+  C('e-teshcha', 'event', 'Тёща', 'Тёща приехала «на недельку». Сидит уже второй месяц.', [ok('Терпеть и улыбаться', { stats: { stress: 8, blizkie: 3 } }), ok('Купить ей путёвку в санаторий', { cashT: -0.5, stats: { blizkie: 5, stress: -4 } }), ok('Объясниться', { stats: { blizkie: -8, stress: 4 } })], { from: mm(1990, 1), maxTier: 4 }),
+  C('e-infarkt', 'event', 'Сердце', 'Прихватило в кабинете: «Скорая», капельница, сухие врачи.', [ok('Лечиться как положено', { hosp: 2, cashT: -0.8, stats: { health: -8, stress: -20 } }), ok('Выписаться под расписку', { hosp: 1, stats: { health: -15, stress: 5 } })], { from: mm(1996, 1), minTier: 3 }),
+  C('e-brat', 'event', 'Брат из армии', 'Младший брат вернулся из армии. Работы нет, глаза голодные.', [ok('Взять к себе', { cashT: -0.3, stats: { blizkie: 8, sovest: 3, svyazi: 2 } }), ok('Дать денег на первое время', { cashT: -0.5, stats: { blizkie: 3 } }), ok('Пусть сам', { stats: { blizkie: -8, sovest: -3 } })], { to: mm(2002, 12), maxTier: 3 }),
+  C('e-shkola', 'event', 'Школа звонит', 'Классная вызывает: сын подрался и выбил зуб однокласснику.', [ok('Пойти и заплатить за зуб', { cashT: -0.3, stats: { blizkie: 4, name: 2 } }), ok('Выпороть пацана', { stats: { blizkie: -4, stress: 3 } }), ok('Научить давать сдачи', { stats: { blizkie: 3, avt: 1 } })], { from: mm(1993, 9), maxTier: 3 }),
+  C('e-lotereya', 'event', 'Лотерея', 'Купил билет «Русского лото» на сдачу — и там три цифры сошлись.', [ok('Забрать выигрыш', { cashT: 1.5, stats: { mood: 10 } })], { from: mm(1994, 6) }),
+  C('e-nasledstvo', 'event', 'Наследство', 'Умерла дальняя тётка в Кемерове. Оставила дом и сад, а в серванте — кое-что в долларах.', [ok('Продать дом', { cashT: 1.2, stats: { mood: 4, sovest: -1 } }), ok('Оставить, ездить на дачу', { cashT: 0.4, stats: { blizkie: 5, mood: 6 } })], { from: mm(1990, 1), maxTier: 4 }),
+  C('e-dolg-vernul', 'event', 'Вернули долг', 'Знакомый, у кого ты занимал два года назад, вдруг приехал и вернул всё с благодарностью.', [ok('Принять', { cashT: 0.8, stats: { name: 3, mood: 5 } }), ok('Отказаться, угостить его', { cashT: 0.2, stats: { svyazi: 4, blizkie: 3 } })], { maxTier: 4 }),
+  C('e-pai', 'event', 'Свой человек', 'Старый приятель уезжает за границу и отдаёт тебе долю в мелком деле — «на, пригодится».', [ok('Принять долю', { cashT: 0.6, stats: { svyazi: 4, mood: 4 } }), ok('Выкупить его место за доллары', { cashT: -0.4, stats: { name: 3 }, asset: 'grow' }, { need: { growable: true } })], { from: mm(1991, 1), to: mm(1999, 12), maxTier: 4 }),
+  C('e-krestiny', 'event', 'Крестины', 'Позвали крёстным к племяннику. Отказаться — обидеть, прийти — вложиться.', [ok('Приехать с подарком', { cashT: -0.4, stats: { blizkie: 7, mood: 4 } }), ok('Отправить деньги в конверте', { cashT: -0.25, stats: { blizkie: 2 } }), ok('Отговориться делами', { stats: { blizkie: -6, sovest: -2 } })], { maxTier: 4 }),
+  // ---- наезды
+  C('k-sportsmeny', 'naezd', 'Спортсмены', 'В кооператив зашли двое в трениках и кожанках: «Охрана нужна? Недорого».', [
+    ok('Заплатить', { cashT: -0.4, stats: { mood: -3, avt: -2 } }, { need: { noKrysha: true } }),
+    ok('Взять в долю', { krysha: 'bandit', stats: { avt: 3, heat: 4 } }, { need: { noKrysha: true } }),
+    ok('Сказать «я сам спортсмен»', { stats: { avt: 6 } }, { need: { noKrysha: true }, risk: { p: 0.45, skill: 'sila', fx: { hosp: 1, cashT: -0.5, stats: { health: -15 } }, text: 'Объяснили кулаками.' } }),
+  ], { from: mm(1989, 1), to: mm(1991, 12), maxTier: 1 }),
+  C('k-vaucher', 'naezd', 'Ваучеры сюда', 'Двое советуют сдать им ваучеры по «справедливой цене». Цена смешная.', [
+    ok('Отдать', { cashT: 0.3, stats: { mood: -4, avt: -3 } }),
+    ok('Спрятать и уйти', { stats: { avt: -2, stress: 6 } }),
+    ok('Позвонить своим', { stats: { avt: 4, heat: 4 } }, { need: { krysha: true } }),
+  ], { from: mm(1992, 10), to: mm(1994, 6), maxTier: 2 }),
+  C('k-kidala', 'naezd', 'Предоплата', 'Поставщик взял предоплату и пропал. Телефон не отвечает, склад пустой.', [
+    ok('Искать с братвой', { cashT: 0.6, stats: { avt: 4, heat: 6, sovest: -4 } }, { need: { krysha: true }, dark: true, risk: { p: 0.35, skill: 'bazar', fx: { cashT: -0.5, enemy: 1 }, text: 'Нашли не того.' } }),
+    ok('Подать в милицию', { cashT: -1.2, stats: { name: 2, stress: 6 } }),
+    ok('Списать убыток', { cashT: -1.2, stats: { mood: -4 } }),
+  ], { from: mm(1992, 3), to: mm(1999, 12), minTier: 1 }),
+  C('k-razborka', 'naezd', 'Разборка', 'Чужая бригада предъявляет: «Это наша территория». Ваши пацаны не согласны.', [
+    ok('Идти на стрелку', { stats: { avt: 8, heat: 8, sovest: -3 } }, { need: { krysha: true }, dark: true, risk: { p: 0.35, skill: 'sila', fx: { hosp: 2, stats: { health: -25 }, enemy: 1 }, text: 'Приехали с «волынами».' } }),
+    ok('Откупиться', { cashT: -1.2, stats: { mood: -4 } }),
+    ok('Сдать точку', { asset: 'bad', stats: { avt: -8, mood: -5 } }),
+  ], { from: mm(1993, 1), to: mm(1997, 12), minTier: 1 }),
+  C('k-obshchak', 'naezd', 'В общак', 'Смотрящий просит «поучаствовать». Сумма круглая, отказ не принимается.', [
+    ok('Дать', { cashT: -1.2, stats: { avt: 3, heat: 3 } }),
+    ok('Дать меньше', { cashT: -0.5, stats: { avt: -3, stress: 6 } }, { risk: { p: 0.4, skill: 'bazar', fx: { cashT: -1, stats: { health: -10 } }, text: 'Обиделись, взяли своё.' } }),
+    ok('Откажу', { stats: { avt: 6 } }, { need: { krysha: true } }),
+  ], { from: mm(1994, 1), to: mm(1999, 12), minTier: 2 }),
+  C('k-chop', 'naezd', 'Охранное предприятие', 'Бывшие бандиты открыли ЧОП и пришли с договором: «Теперь всё по закону».', [
+    ok('Подписать', { cashT: -0.9, stats: { mood: -3, heat: -3 } }, { need: { noKrysha: true } }),
+    ok('Взять охрану у полиции', { krysha: 'police', cashT: -0.8, stats: { svyazi: 4, avt: -2 } }),
+    ok('Нанять своих', { krysha: 'own', cashT: -2.5, stats: { avt: 4 } }, { need: { cashT: 3 } }),
+  ], { from: mm(1997, 6), minTier: 2 }),
+  C('k-reyder', 'naezd', 'Чужой реестр', 'Фирму «законно» переписали на однодневку. Печать уже не твоя.', [
+    ok('Нанять юристов', { cashT: -2, stats: { stress: 10, name: 3 } }, { risk: { p: 0.4, skill: 'schet', fx: { asset: 'bad', cashT: -1 }, text: 'Судья на их стороне.' } }),
+    ok('Заплатить', { cashT: -3, stats: { avt: -5, mood: -6 } }),
+    ok('Перехватить', { cashT: 1.5, stats: { sovest: -8, heat: 10 } }, { dark: true, need: { stat: { svyazi: 30 } } }),
+  ], { from: mm(1999, 1), minTier: 3 }),
+  C('k-maski', 'naezd', 'Маски-шоу', 'В офис вошли люди в масках: «Оперативное мероприятие». Изъяли компьютеры и бумаги.', [
+    ok('Звонок наверх', { stats: { svyazi: -4, heat: -4 } }, { need: { stat: { svyazi: 35 } } }),
+    ok('Откупить бумаги', { cashT: -2.5, stats: { heat: 6 } }, { dark: true }),
+    ok('Ждать суда', { cashT: -1, stats: { stress: 12, name: -4 } }),
+  ], { from: mm(2000, 1), minTier: 3 }),
+  // ---- проверки
+  C('c-torgovaya', 'check', 'Торговая инспекция', 'Инспектор со значком проверяет весы, ценники и срок годности.', [
+    ok('Договориться', { cashT: -0.2, stats: { heat: 2 } }, { dark: true }),
+    ok('Всё по закону', { cashT: -0.3, stats: { name: 2 } }),
+    ok('Показать документы', { stats: { heat: -2 } }, { need: { skill: { poryadok: 1 } } }),
+  ], { from: mm(1991, 1), maxTier: 3 }),
+  C('c-tamozhnya', 'check', 'Таможня', 'Фуру с товаром задержали на границе: «Декларация не сходится».', [
+    ok('Занести', { cashT: -1, stats: { heat: 6, sovest: -3 } }, { dark: true }),
+    ok('Платить пошлину', { cashT: -1.8, stats: { name: 3 } }),
+    ok('Подождать неделю', { cashT: -0.4, stats: { stress: 8 } }, { risk: { p: 0.35, skill: 'schet', fx: { cashT: -1.2 }, text: 'Товар обесценился.' } }),
+  ], { from: mm(1992, 1), minTier: 1 }),
+  C('c-kkm', 'check', 'Кассовый аппарат', 'Налоговый инспектор проверяет ККМ. Кассы нет, чеки на салфетках.', [
+    ok('Купить аппарат', { cashT: -0.8, stats: { heat: -4 } }),
+    ok('Откупиться', { cashT: -0.3, stats: { heat: 4 } }, { dark: true }),
+    ok('Пообещать завтра', { stats: { stress: 4 } }, { risk: { p: 0.5, skill: 'poryadok', fx: { cashT: -1 }, text: 'Выписали штраф.' } }),
+  ], { from: mm(1993, 6), to: mm(2003, 7), maxTier: 3 }),
+  C('c-sanknizhka', 'check', 'Санкнижки', 'СЭС проверяет у продавцов санкнижки. У половины их нет.', [
+    ok('Быстро оформить', { cashT: -0.3, stats: { name: 2 } }),
+    ok('Сунуть конверт', { cashT: -0.2, stats: { heat: 3 } }, { dark: true }),
+    ok('Закрыть на день', { cashT: -0.5, stats: { mood: -3 } }),
+  ], { minTier: 1, maxTier: 3 }),
+  C('c-pozharka', 'check', 'Пожарный надзор', 'Пожарный инспектор: огнетушители просрочены, запасный выход заперт, проводка самодельная.', [
+    ok('Исправить', { cashT: -1, stats: { name: 3 } }),
+    ok('Договориться', { cashT: -0.4, stats: { heat: 3 } }, { dark: true }),
+    ok('Спорить', { stats: { stress: 6 } }, { risk: { p: 0.4, skill: 'bazar', fx: { cashT: -1.5, stats: { heat: 5 } }, text: 'Опечатали склад.' } }),
+  ], { from: mm(1993, 1), minTier: 2 }),
+  C('c-licenziya', 'check', 'Лицензия', 'Лицензионная палата проверяет разрешения. Без лицензии торговать спиртным нельзя.', [
+    ok('Оформить лицензию', { cashT: -1.5, stats: { heat: -6, name: 4 } }),
+    ok('Заплатить посреднику', { cashT: -0.7, stats: { svyazi: 3, heat: 4 } }, { dark: true }),
+    ok('Убрать водку с полок', { cashT: -0.8, stats: { mood: -4 } }),
+  ], { from: mm(1995, 1), minTier: 1 }),
+  C('c-ocheredi', 'check', 'Проверки пошли косяком', 'За месяц зашли пожарные, труд, налоговая и санитары. Каждый чего-то хочет.', [
+    ok('Нанять юриста', { cashT: -2, stats: { stress: -4, heat: -6 } }),
+    ok('Всем занести', { cashT: -1, stats: { heat: 8, sovest: -4 } }, { dark: true }),
+    ok('Принимать по очереди', { cashT: -0.6, stats: { stress: 12 } }),
+  ], { from: mm(1999, 6), minTier: 2 }),
+  C('c-prokuratura', 'check', 'Прокуратура', 'Следователь вызывает по «заявлению о нарушениях». Заявил кто-то конкурентный.', [
+    ok('Нанять адвоката', { cashT: -2, stats: { heat: -8, stress: 5 } }),
+    ok('Решить вопрос', { cashT: -1.2, stats: { heat: 8, sovest: -4 } }, { dark: true }),
+    ok('Звонок наверх', { stats: { svyazi: -5 } }, { need: { stat: { svyazi: 40 } } }),
+  ], { from: mm(2000, 1), minTier: 3 }),
+  // ---- учёба
+  C('s-zaochka', 'study', 'Заочка', 'Экономфак в НИНХ, заочное. Сессия два раза в год, зато диплом и дебет с кредитом.', [ok('Поступить', { cashT: -0.5, skills: { schet: 1 }, studyHours: 45 }), ok('Диплом мне ни к чему', { stats: { mood: 1 } })], { from: mm(1990, 9), maxTier: 3 }),
+  C('s-kursy', 'study', 'Курсы менеджеров', 'Объявление на столбе: «Станьте менеджером за 3 месяца». Диплом с печатью.', [ok('Записаться', { cashT: -0.4, skills: { trade: 1 }, studyHours: 35 }), ok('Столб — не авторитет')], { from: mm(1993, 1), to: mm(2000, 12), maxTier: 3 }),
+  C('s-kniga', 'study', 'Книжка про людей', 'Сосед отдал зачитанную книжку: как располагать к себе и вести переговоры.', [ok('Прочесть от корки до корки', { skills: { bazar: 1 }, studyHours: 20, stats: { stress: -2 } }), ok('Лучше телевизор')], { from: mm(1991, 1), maxTier: 2 }),
+  C('s-borba', 'study', 'Секция борьбы', 'Старый тренер набирает группу в спортзале школы. Кулаки в нашем деле не лишние.', [ok('Ходить', { cashT: -0.1, skills: { sila: 1 }, studyHours: 30, stats: { health: 4, avt: 2 } }), ok('Здоровье дороже')], { maxTier: 3 }),
+  C('s-school', 'study', 'Бизнес-школа', 'Вечерняя «Бизнес-школа» при университете: планирование, отчётность, расписание.', [ok('Записаться', { cashT: -1, skills: { poryadok: 1 }, studyHours: 40, stats: { name: 2 } }), ok('Некогда учиться')], { from: mm(1995, 1), minTier: 2, maxTier: 4 }),
+  C('s-mba', 'study', 'MBA', 'Двухлетний курс в Лондоне для тех, кому есть что терять. Английский — до зубов.', [ok('Уехать на сессию', { cashT: -2.5, skills: { english: 1 }, studyHours: 60, stats: { svyazi: 4, name: 3 } }), ok('Время — деньги')], { from: mm(1996, 1), minTier: 5 }),
+  // ---- выходной
+  C('w-shashlyk', 'rest', 'Шашлыки на Оби', 'Пацаны зовут на берег: мангал, водка, гитара. Комары не в счёт.', [ok('Поехать', { cashT: -0.2, stats: { mood: 8, stress: -8, blizkie: 4, health: -1 } }), ok('Остаться на работе', { stats: { stress: 3 } })], { maxTier: 3 }),
+  C('w-klass', 'rest', 'Встреча выпускников', 'Бывшие одноклассники собираются в кафе. Кто-то уже при делах, кто-то просит в долг.', [ok('Прийти при параде', { cashT: -0.4, stats: { svyazi: 5, mood: 4, avt: 2 } }), ok('Не пойду', { stats: { blizkie: -3 } })], { maxTier: 3 }),
+  C('w-akadem', 'rest', 'Академгородок', 'Вечер в Академе: барды, физики и девчонки в свитерах. Разговоры до утра.', [ok('Съездить', { cashT: -0.1, stats: { mood: 6, stress: -8, svyazi: 3 } }), ok('Далеко')], { maxTier: 3 }),
+  C('w-beloku', 'rest', 'Белокуриха', 'Санаторий на Алтае: грязи, горы, режим. Спина скажет спасибо.', [ok('Взять путёвку', { cashT: -0.8, stats: { health: 8, stress: -12, mood: 5 } }), ok('Не время', { stats: { stress: 2 } })], { minTier: 2, maxTier: 4 }),
+  C('w-teatr', 'rest', 'Опера в оперном', 'Директор банка пригласил в ложу на премьеру. Фрак, шампанское, нужные люди.', [ok('Пойти во фраке', { cashT: -0.7, stats: { svyazi: 8, name: 3, mood: 3 } }), ok('Я не театрал', { stats: { name: -1 } })], { minTier: 3, maxTier: 4 }),
+  C('w-kipr', 'rest', 'Кипр с яхтой', 'Партнёр приглашает на яхту у берегов Кипра: бизнес под парусом.', [ok('Поплыть', { cashT: -1.5, stats: { svyazi: 10, mood: 10, stress: -14 } }), ok('Укачивает', { stats: { svyazi: -1 } })], { from: mm(1995, 1), minTier: 5 }),
+  C('w-kurshevel', 'rest', 'Куршевель', 'Горнолыжный сезон: шубы, икра, всё столичное общество. Чтоб видели.', [ok('Заказать шале', { cashT: -3, stats: { avt: 8, svyazi: 10, mood: 12, stress: -15 } }), ok('Обойдусь Шерегешем', { cashT: -0.5, stats: { mood: 6, stress: -8 } })], { from: mm(1998, 12), minTier: 5 }),
+  C('w-cirk', 'rest', 'С детьми в цирк', 'Вырвался на воскресенье: цирк, мороженое, воздушные шарики.', [ok('Пойти всей семьёй', { cashT: -0.2, stats: { blizkie: 9, mood: 7, stress: -6 } }), ok('Дела не ждут', { stats: { blizkie: -6, stress: 3 } })], { from: mm(1991, 1), maxTier: 4 }),
+  // ---- новости
+  C('n-vaucher', 'news', 'Ваучеры', 'Все получили ваучеры. Кто-то сдаёт за бутылку, кто-то скупает пачками.', [ok('Скупать пачками', { cashT: 0.8, stats: { svyazi: 2 } }, { risk: { p: 0.4, skill: 'trade', fx: { cashT: -1.3, stats: { mood: -4 } }, text: 'Ваучеры упали в цене.' } }), ok('Продать свой за пару бутылок', { cashT: 0.1 })], { from: mm(1992, 10), to: mm(1994, 6) }),
+  C('n-mmm', 'news', 'Пирамида «МММ»', 'Всё метро в рекламе: деньги растут как на дрожжах. Вся страна в очереди.', [ok('Вложить', { cashT: 1, stats: { mood: 4 } }, { risk: { p: 0.55, skill: 'schet', fx: { cashT: -2.2, stats: { mood: -10 } }, text: 'Пирамида рухнула.' } }), ok('Здравый смысл', { stats: { sovest: 2 } })], { from: mm(1994, 2), to: mm(1994, 7) }),
+  C('n-privat', 'news', 'Приватизация', 'Завод идёт с молотка. Говорят, директор уже всё поделил, но можно влезть.', [ok('Купить долю', { cashT: 2, stats: { svyazi: 4, name: 3 } }, { need: { cashT: 3 }, risk: { p: 0.45, skill: 'bazar', fx: { cashT: -3, stats: { mood: -6 } }, text: 'Директор оставил себе всё.' } }), ok('Не моё')], { from: mm(1993, 1), to: mm(1996, 12), minTier: 2 }),
+  C('n-chelnok', 'news', 'Челноки', 'Сосед привёз из Польши сумки: «Вези кожу из Стамбула — на барахолке с руками отрывают».', [ok('Съездить в Стамбул', { cashT: 0.8, stats: { stress: 5 } }, { risk: { p: 0.3, skill: 'trade', fx: { cashT: -1.2, stats: { mood: -5 } }, text: 'Таможня всё забрала.' } }), ok('Пусть сами ездят')], { from: mm(1991, 6), to: mm(1996, 12), maxTier: 2 }),
+  C('n-evroremont', 'news', 'Евроремонт', 'Все хотят «как у людей»: гипсокартон, обои, натяжные потолки. Бригадиры нарасхват.', [ok('Сделать у себя', { cashT: -1, stats: { mood: 8, avt: 3, stress: -4 } }), ok('Старые обои тоже ничего', { stats: { mood: -1 } })], { from: mm(1993, 1), to: mm(2003, 12) }),
 ];
 export const cardById = (id: string) => CARDS.find((c) => c.id === id);
 

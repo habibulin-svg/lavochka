@@ -5,7 +5,7 @@
 
   python tools/thumbs/variant.py nardy/dlinnye nardy long [--steps 20] [--n 2] [--seed 7] [--top 150] [--size 800] [--wait 8000]
 
-Полный снимок кладётся рядом в D:/temp/vthumbs/<имя>.png — посмотреть и подобрать --top/--steps.
+Полный снимок кладётся рядом в G:/temp/vthumbs/<имя>.png — посмотреть и подобрать --top/--steps.
 
 Превью карточки игры (def.showcase(), без пресета): --main → public/thumbs/<игра>.webp
   python tools/thumbs/variant.py manager manager - --main
@@ -19,9 +19,10 @@ from pathlib import Path
 
 from PIL import Image
 
-CHROME = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+# Chrome — общий или в профиле пользователя (так он стоит после переезда)
+CHROME = next((p for p in [r'C:\Program Files\Google\Chrome\Application\chrome.exe', os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe')] if os.path.exists(p)), 'chrome')
 ROOT = Path(__file__).resolve().parents[2]
-TMP = Path('D:/temp/vthumbs')
+TMP = Path('G:/temp/vthumbs')
 
 ap = argparse.ArgumentParser()
 ap.add_argument('path')
