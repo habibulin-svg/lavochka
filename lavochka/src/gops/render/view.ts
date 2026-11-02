@@ -264,9 +264,9 @@ export class GameView {
       s.lastX = x.x;
       this.setAnim(s, x.team, anim);
       if (anim.startsWith('aim')) {
-        // кадр прицела по наклону: 0 — вверх, середина — горизонт, последний — вниз
+        // кадр прицела по наклону: в атласе 0 — вниз, середина — горизонт, последний — вверх (w.aim < 0 — вверх)
         const n = s.body.totalFrames;
-        s.body.gotoAndStop(Math.round(((w.aim + 960) / 1920) * (n - 1)));
+        s.body.gotoAndStop(Math.round(((960 - w.aim) / 1920) * (n - 1)));
       }
       s.label.text = boss ? `${boss} · ${x.hp}` : `${x.hp}`;
       s.label.position.set(0, -32);

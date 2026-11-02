@@ -1,6 +1,6 @@
 /* Музыка меню ГОПС: случайный трек «menu», по окончании — следующий (без повтора подряд), плавное включение и выключение.
  * Браузер даёт звук только после жеста — до первого щелчка/клавиши молчим. M в бою — общий выключатель (gops-mute). */
-import { MUSIC_COUNT, pickTrack } from '../audio';
+import { MUSIC_COUNT, musicOff, pickTrack, setMusicOff } from '../audio';
 
 const MUSIC = '/gops/a/music/';
 const VOL = 0.35;
@@ -22,10 +22,22 @@ export class MenuMusic {
 
   private muted(): boolean {
     try {
-      return localStorage.getItem('gops-mute') === '1';
+      return localStorage.getItem('gops-mute') === '1' || musicOff();
     } catch {
       return false;
     }
+  }
+
+  /** Кнопка «Музыка» в меню: выключить/включить (запоминается, общая с боем); true — выключена. */
+  toggle(): boolean {
+    const off = !musicOff();
+    setMusicOff(off);
+    if (off) {
+      const el = this.el;
+      this.el = null;
+      if (el) this.ramp(el, 0, () => el.pause());
+    } else if (this.want && !this.el) this.next();
+    return off;
   }
 
   private next(): void {

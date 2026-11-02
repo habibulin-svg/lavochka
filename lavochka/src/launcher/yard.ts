@@ -203,7 +203,6 @@ function card(g: CatalogEntry): HTMLElement {
     Sound.ui();
     if (g.members) yard.openGroup(g);
     else if (ready && !canPlay(id)) earlyNote(g);
-    else if (g.page) location.href = g.page;
     else if (ready) yard.openGame(g);
     else
       modal(

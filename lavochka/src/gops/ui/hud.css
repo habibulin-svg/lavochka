@@ -90,11 +90,28 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-handoff-tip { font-size: 16px; opacity: 0.8; }
 .hud-handoff-name { font: 400 clamp(26px, 5vw, 48px) 'Russo One', sans-serif; text-shadow: 0 2px 0 #000; }
 .hud-handoff-go { padding: 12px 34px; border: 0; border-radius: 12px; background: #2a9d8f; color: #fff; font: 700 22px 'PT Sans', sans-serif; cursor: pointer; }
-/* шпаргалка по клавишам — только с мышью и клавиатурой; свёрнутая — одна строка «Клавиши» */
-.hud-keys { position: absolute; left: 16px; top: 16px; display: none; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 10px;
-  background: rgba(0, 0, 0, 0.5); font-size: 13px; line-height: 1.35; cursor: pointer; user-select: none; max-width: 260px; }
+/* панель в углу: ☰ пауза и меню, ♪ музыка, ? шпаргалка (она — только с мышью и клавиатурой) */
+.hud-bar { position: absolute; left: 16px; top: 16px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; max-width: 280px; }
+.hud-tool { width: 36px; height: 36px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff;
+  font: 700 18px 'PT Sans', sans-serif; cursor: pointer; padding: 0; line-height: 1; }
+.hud-tool:hover, .hud-bar.keys .hud-tool.help { background: rgba(255, 255, 255, 0.2); }
+.hud-tool.off { opacity: 0.55; text-decoration: line-through; }
+.hud-tool.help { display: none; }
+@media (pointer: fine) { .hud-tool.help { display: block; } }
+.hud-keys { display: none; flex-basis: 100%; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 10px; background: rgba(0, 0, 0, 0.6);
+  font-size: 13px; line-height: 1.35; cursor: pointer; user-select: none; max-width: 260px; }
+.hud-bar.keys .hud-keys { display: flex; }
 .hud-keys b { font-size: 13px; opacity: 0.85; }
 .hud-keys kbd { display: inline-block; min-width: 18px; padding: 0 5px; margin-right: 3px; border-radius: 4px; background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.25); font: 600 12px 'PT Sans', sans-serif; text-align: center; }
-.hud-keys.min span { display: none; }
-@media (pointer: fine) { .hud-keys { display: flex; } }
+@media (pointer: coarse) { .hud-bar { left: 100px; top: 12px; } }
+/* окно паузы */
+.hud-pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5, 8, 14, 0.6); z-index: 5; }
+.hud-pause-card { display: flex; flex-direction: column; gap: 10px; min-width: 260px; padding: 22px 26px; border-radius: 16px;
+  background: rgba(15, 18, 28, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); }
+.hud-pause-head { font: 400 30px 'Russo One', sans-serif; text-align: center; margin-bottom: 4px; }
+.hud-pause-note { font-size: 14px; opacity: 0.75; text-align: center; }
+.hud-pause-btn { padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.07); color: #fff;
+  font: 700 17px 'PT Sans', sans-serif; cursor: pointer; }
+.hud-pause-btn:hover { background: rgba(255, 255, 255, 0.15); }
+.hud-pause-btn.go { background: #2a9d8f; border-color: #2a9d8f; }

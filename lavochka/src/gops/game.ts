@@ -58,6 +58,10 @@ export class Game {
   /** Ход миссии (если это миссия) и чем кончилась партия. */
   run: MissionRun | null = null;
   onEnd: (run: MissionRun, stars: number) => void = () => {};
+  /** «Выйти в меню игры» из окна паузы. */
+  onQuit: () => void = () => {};
+  /** Окно паузы открыто: мир стоит (кроме сети). */
+  private paused = false;
   /** Быстрый бой кончился: победившая бригада (−1 — никто). */
   onOver: (winner: number) => void = () => {};
   private overSeen = false;
@@ -138,6 +142,14 @@ export class Game {
       };
     }
     this.hud.onPick = (id) => this.controls.selectWeapon(id);
+    this.hud.net = !!s.net;
+    this.hud.onMusic = () => this.audio.toggleMusic();
+    this.hud.onQuit = () => this.onQuit();
+    this.hud.onPause = (open) => {
+      this.paused = open && !s.net;
+      this.controls.take(); // нажатия за паузой — в никуда
+      this.last = performance.now();
+    };
     this.controls.onMenu = () => this.hud.toggleMenu(this.world);
     this.hud.bindPad(this.controls);
     this.bindPointer();
@@ -156,8 +168,8 @@ export class Game {
       this.netPump(this.setup.net);
       return dt;
     }
-    if (this.waiting) {
-      this.acc = 0; // мир стоит, таймер хода тоже, пока следующий человек не сел за экран
+    if (this.waiting || this.paused) {
+      this.acc = 0; // мир стоит, таймер хода тоже: пауза или следующий человек ещё не сел за экран
       return dt;
     }
     this.acc += dt;

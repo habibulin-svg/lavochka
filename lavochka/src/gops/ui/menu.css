@@ -64,3 +64,10 @@
 .gm-top { display: flex; flex-direction: column; gap: 3px; font-size: 16px; }
 .gm-top-row { padding: 3px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); }
 .gm-top-row.me { color: #ffd166; font-weight: 700; }
+/* музыка в главном меню — внизу справа; надпись студии поверх заставки */
+.gm-music { position: absolute; right: 16px; bottom: 16px; font-size: 14px !important; padding: 8px 14px !important; }
+.gm-music.off { opacity: 0.6; }
+.gm-caption { position: absolute; left: 0; right: 0; bottom: 14%; text-align: center; font: 400 clamp(30px, 6vw, 64px) 'Russo One', sans-serif;
+  color: #ffd166; text-shadow: 0 3px 0 #000, 0 0 30px rgba(0, 0, 0, 0.9); letter-spacing: 0.06em; pointer-events: none;
+  animation: gm-caption 2.4s ease-out both; }
+@keyframes gm-caption { from { opacity: 0; transform: translateY(12px); } 40% { opacity: 0; } to { opacity: 1; transform: none; } }

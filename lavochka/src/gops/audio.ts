@@ -51,6 +51,26 @@ export function pickTrack(kind: string, last: string): string {
   return track;
 }
 
+const MUSIC_VOL = 0.35;
+const MUSIC_KEY = 'gops-music-off';
+
+/** Музыка выключена кнопкой «Музыка» — и в бою, и в меню (ui/menu-music.ts). */
+export function musicOff(): boolean {
+  try {
+    return localStorage.getItem(MUSIC_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setMusicOff(off: boolean): void {
+  try {
+    localStorage.setItem(MUSIC_KEY, off ? '1' : '0');
+  } catch {
+    /* без хранилища — на этот раз */
+  }
+}
+
 export class GopsAudio {
   private ctx: AudioContext | null = null;
   private out!: GainNode;
@@ -103,7 +123,7 @@ export class GopsAudio {
       const comp = this.ctx.createDynamicsCompressor();
       this.out.connect(comp).connect(this.ctx.destination);
       this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.value = 0.35;
+      this.musicGain.gain.value = musicOff() ? 0 : MUSIC_VOL;
       this.musicGain.connect(this.out);
       this.startAmbience();
       this.playMusic(this.battleMusic);
@@ -120,6 +140,14 @@ export class GopsAudio {
       /* ничего */
     }
     if (this.ctx) this.out.gain.value = this.muted ? 0 : 1;
+  }
+
+  /** Кнопка «Музыка» (пауза, панель боя): выключает только музыку, звуки боя остаются. */
+  toggleMusic(): boolean {
+    const off = !musicOff();
+    setMusicOff(off);
+    if (this.ctx) this.musicGain.gain.value = off ? 0 : MUSIC_VOL;
+    return off;
   }
 
   private load(url: string): Promise<AudioBuffer | null> {

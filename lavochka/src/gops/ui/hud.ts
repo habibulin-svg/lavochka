@@ -1,6 +1,7 @@
 /* Интерфейс боя поверх холста (DOM): таймер хода, ветер, здоровье бригад, выбранное оружие,
  * сетка оружия (Tab / кнопка), экранные кнопки для телефона, итог партии. */
 import { BRIGADES, weaponIcon } from '../assets';
+import { musicOff } from '../audio';
 import type { Controls } from '../input';
 import { TICK_HZ, type World } from '../sim/world';
 import { WEAPONS } from '../sim/weapons';
@@ -30,15 +31,8 @@ const KEYS = `<b>Клавиши</b>
   <span><kbd>1</kbd>–<kbd>5</kbd> таймер гранаты</span>
   <span><kbd>Tab</kbd> или правая кнопка — оружие</span>
   <span>колесо — масштаб, <kbd>C</kbd> — камера к бойцу</span>
-  <span><kbd>M</kbd> звук · <kbd>H</kbd> свернуть</span>`;
-
-function keysHidden(): boolean {
-  try {
-    return localStorage.getItem('gops-keys') === 'min';
-  } catch {
-    return false;
-  }
-}
+  <span><kbd>Esc</kbd> пауза и меню · <kbd>M</kbd> весь звук</span>
+  <span><kbd>H</kbd> эта подсказка</span>`;
 
 export class Hud {
   readonly el: HTMLElement;
@@ -59,6 +53,17 @@ export class Hud {
   /** Чьи бригады правит этот экран (подсказки — только в свой ход); null — все. */
   mine: number[] | null = null;
   onPick: (id: string) => void = () => {};
+  /** Окно паузы открыто/закрыто (Game останавливает мир, кроме сети). */
+  onPause: (open: boolean) => void = () => {};
+  /** Музыка: переключить, вернуть «выключена». */
+  onMusic: () => boolean = () => false;
+  /** Выйти из боя в меню игры. */
+  onQuit: () => void = () => {};
+  /** Бой по сети: пауза не останавливает мир. */
+  net = false;
+  private bar: HTMLElement;
+  private music!: HTMLButtonElement;
+  private pauseBox: HTMLElement | null = null;
 
   constructor(host: HTMLElement, private brigades: string[]) {
     this.el = div('hud');
@@ -74,12 +79,32 @@ export class Hud {
     this.goal = div('hud-goal');
     this.who = div('hud-who');
     this.who.hidden = true;
+    // панель в углу: меню и пауза, музыка, «?» — шпаргалка по клавишам (закрыта, пока не попросят)
+    this.bar = div('hud-bar');
+    const tool = (label: string, title: string, cls: string, act: () => void) => {
+      const b = document.createElement('button');
+      b.className = `hud-tool ${cls}`;
+      b.textContent = label;
+      b.title = title;
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        b.blur(); // иначе пробел и Enter нажимали бы кнопку, а не стреляли
+        act();
+      });
+      this.bar.append(b);
+      return b;
+    };
+    tool('☰', 'Пауза и меню (Esc)', '', () => this.togglePause());
+    this.music = tool('♪', '', 'music', () => this.setMusic(this.onMusic()));
+    this.setMusic(musicOff());
+    tool('?', 'Клавиши (H)', 'help', () => this.toggleKeys());
     this.keys = div('hud-keys');
     this.keys.innerHTML = KEYS;
-    this.keys.title = 'H — свернуть или развернуть';
-    this.keys.classList.toggle('min', keysHidden());
-    this.keys.addEventListener('click', () => this.toggleKeys());
-    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal, this.who, this.keys);
+    this.keys.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.keys.addEventListener('click', () => this.toggleKeys(false));
+    this.bar.append(this.keys);
+    this.el.append(this.timer, this.wind, this.teams, this.weapon, this.menu, this.banner, this.goal, this.who, this.bar);
     host.appendChild(this.el);
     this.weapon.addEventListener('click', () => this.toggleMenu());
   }
@@ -147,15 +172,62 @@ export class Hud {
     );
   }
 
-  /** Свернуть или развернуть шпаргалку по клавишам (H, щелчок). */
-  toggleKeys(): void {
-    const min = !this.keys.classList.contains('min');
-    this.keys.classList.toggle('min', min);
-    try {
-      localStorage.setItem('gops-keys', min ? 'min' : '');
-    } catch {
-      /* без хранилища — просто на этот раз */
+  /** Открыть или закрыть шпаргалку по клавишам (H, «?», щелчок по ней); open — задать явно. */
+  toggleKeys(open = !this.bar.classList.contains('keys')): void {
+    this.bar.classList.toggle('keys', open);
+  }
+
+  private setMusic(off: boolean): void {
+    this.music.classList.toggle('off', off);
+    this.music.title = off ? 'Включить музыку' : 'Выключить музыку (звуки боя останутся)';
+    const item = this.pauseBox?.querySelector<HTMLButtonElement>('.music');
+    if (item) item.textContent = off ? 'Музыка: выключена' : 'Музыка: включена';
+  }
+
+  get paused(): boolean {
+    return !!this.pauseBox;
+  }
+
+  /** Пауза (☰, Esc): продолжить, музыка, выйти в меню игры или во двор. В сети бой идёт дальше. */
+  togglePause(open = !this.pauseBox): void {
+    if (!open) {
+      this.pauseBox?.remove();
+      this.pauseBox = null;
+      this.onPause(false);
+      return;
     }
+    if (this.pauseBox) return;
+    this.menu.hidden = true;
+    const box = div('hud-pause');
+    const card = div('hud-pause-card');
+    const head = div('hud-pause-head');
+    head.textContent = this.net ? 'Меню' : 'Пауза';
+    card.append(head);
+    if (this.net) {
+      const note = div('hud-pause-note');
+      note.textContent = 'Бой по сети не останавливается — ход идёт.';
+      card.append(note);
+    }
+    const item = (label: string, cls: string, act: () => void) => {
+      const b = document.createElement('button');
+      b.className = `hud-pause-btn ${cls}`;
+      b.textContent = label;
+      b.addEventListener('click', act);
+      card.append(b);
+    };
+    item('Продолжить', 'go', () => this.togglePause(false));
+    item('', 'music', () => this.setMusic(this.onMusic()));
+    item('Выйти в меню игры', '', () => this.onQuit());
+    item('Во двор, к другим играм', '', () => (location.href = '/'));
+    box.append(card);
+    box.addEventListener('pointerdown', (e) => e.stopPropagation());
+    box.addEventListener('click', (e) => {
+      if (e.target === box) this.togglePause(false);
+    });
+    this.el.append(box);
+    this.pauseBox = box;
+    this.setMusic(musicOff());
+    this.onPause(true);
   }
 
   /** Короткое сообщение посередине (как «Ходит …»). */

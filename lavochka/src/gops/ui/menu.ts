@@ -1,6 +1,7 @@
 /* Меню ГОПС (DOM поверх холста): заглавный экран, списки миссий (кампания по главам, обучение, испытания) со звёздами,
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
 import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
+import { musicOff } from '../audio';
 import { serverBase } from '../../core/net/ws';
 import type { Claim } from '../../core/records';
 import type { NetClient } from '../net/client';
@@ -156,6 +157,8 @@ export class Menu {
   onNetJoin: (code: string, name: string) => void = () => {};
   /** Пустырь: карта дня (true) или случайная. */
   onPustyr: (daily: boolean) => void = () => {};
+  /** Кнопка «Музыка»: переключить, вернуть «выключена». */
+  onMusic: () => boolean = () => false;
 
   constructor(host: HTMLElement, private missions: MissionDef[]) {
     this.el = document.createElement('div');
@@ -202,8 +205,15 @@ export class Menu {
       button('Быстрый бой', () => this.quick()),
       button('Пустырь', () => this.pustyr()),
       button('По сети', () => this.network()),
+      button('Во двор, к другим играм', () => (location.href = '/')),
     );
-    this.screen(brandArt('title-keyart-1'), logo, btns, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
+    const mus = button('', () => setMus(this.onMusic()), 'gm-music');
+    const setMus = (off: boolean) => {
+      mus.textContent = off ? '♪ Музыка выключена' : '♪ Музыка включена';
+      mus.classList.toggle('off', off);
+    };
+    setMus(musicOff());
+    this.screen(brandArt('title-keyart-1'), logo, btns, mus, h('div', 'gm-foot', 'Lavochka Games · ранний доступ'));
   }
 
   /** Быстрый бой: бригады (2–4), кто за них, сколько бойцов, карта и схема. */
@@ -460,7 +470,8 @@ export class Menu {
   }
 
   /** Межигровой ролик на весь экран; щелчок или любая клавиша — пропустить. Нет файла — сразу дальше. */
-  cutscene(name: string, done: () => void): void {
+  /** Ролик на весь экран; caption — надпись поверх (заставка студии). */
+  cutscene(name: string, done: () => void, caption?: string): void {
     const v = document.createElement('video');
     v.className = 'gm-video';
     v.src = cutsceneUrl(name);
@@ -480,7 +491,7 @@ export class Menu {
     window.addEventListener('keydown', end);
     this.el.hidden = false;
     this.el.style.background = '#000';
-    this.el.replaceChildren(v, h('div', 'gm-skip', 'щёлкни — пропустить'));
+    this.el.replaceChildren(v, ...(caption ? [h('div', 'gm-caption', caption)] : []), h('div', 'gm-skip', 'щёлкни — пропустить'));
     void v.play().catch(() => {
       // без жеста браузер может не дать звук — пробуем без звука
       v.muted = true;

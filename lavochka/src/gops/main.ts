@@ -12,7 +12,7 @@ import { CORE_AMMO } from './sim/weapons';
 import { DEFAULT_SCHEME } from './sim/world';
 import { NetClient } from './net/client';
 import type { NetClientMsg, NetSetup } from './net/protocol';
-import { Menu, type QuickConfig } from './ui/menu';
+import { Menu, loadStars, type QuickConfig } from './ui/menu';
 import { MenuMusic } from './ui/menu-music';
 import { mayPlay, type Release } from '../core/release';
 import type { RightGrant } from '../core/rights';
@@ -78,6 +78,7 @@ async function startNet(c: NetClient, setup: NetSetup, seed: number): Promise<vo
     net: { client: c, mine: setup.sides.flatMap((sd, i) => ((sd.who === 'host' && me?.host) || (sd.who === 'net' && me?.side === i) ? [i] : [])) },
   });
   game = g;
+  g.onQuit = quit;
   await g.start();
   (window as unknown as { gops: Game }).gops = g;
 }
@@ -93,6 +94,7 @@ async function play(def: MissionDef): Promise<void> {
     mission: def,
   });
   game = g;
+  g.onQuit = quit;
   g.onEnd = (run, stars) => {
     if (game !== g) return;
     const list = MISSIONS.filter((m) => m.mode === def.mode);
@@ -145,22 +147,34 @@ async function quick(cfg?: QuickConfig): Promise<void> {
       : undefined,
   });
   game = g;
+  g.onQuit = quit;
   await g.start();
   (window as unknown as { gops: Game }).gops = g;
 }
 
-// Esc в бою — выйти в меню (из миссии — к её списку)
-window.addEventListener('keydown', (e) => {
-  if (e.code !== 'Escape' || !game) return;
+/** Выйти из боя в меню (из миссии — к её списку). */
+function quit(): void {
+  if (!game) return;
   const mode = game.run?.def.mode;
   const wasNet = !!net;
   stop();
   if (mode) menu.list(mode);
   else if (wasNet) menu.network();
   else menu.title();
+}
+
+// Esc в бою — пауза и меню (☰), там же «Выйти в меню игры»
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' && game && menu.el.hidden) game.hud.togglePause();
 });
 
-menu.onPlay = (def) => void play(def);
+// первая миссия, пока не пройдена, начинается вступительным роликом (docs/gops/LEVELS.md: s00-intro — кодом перед m01)
+menu.onPlay = (def) => {
+  if (def.id !== 'm01' || loadStars().m01) return void play(def);
+  music.stop();
+  menu.cutscene('s00-intro', () => void play(def));
+};
+menu.onMusic = () => music.toggle();
 menu.onQuick = (c) => void quick(c);
 menu.onPustyr = (daily) => void pustyr(daily);
 
@@ -187,6 +201,7 @@ async function pustyr(daily: boolean): Promise<void> {
     barrels: Math.floor(rnd() * 7),
   });
   game = g;
+  g.onQuit = quit;
   g.onOver = (winner) => {
     if (game !== g || !daily) return;
     // очки: победа 1000 + оставшееся здоровье ×2 + за быстроту (500 − 10 за ход)
@@ -237,7 +252,12 @@ async function main(): Promise<void> {
     if (!def) throw new Error(`нет миссии ${mission}`);
     await play(def);
   } else if (q.get('level')) await quick();
-  else menu.title();
+  else if (sessionStorage.getItem('gops-logo')) menu.title();
+  else {
+    // заставка студии — раз за вкладку
+    sessionStorage.setItem('gops-logo', '1');
+    menu.cutscene('logo-anim', () => menu.title(), 'Lavochka Games');
+  }
 }
 
 main().catch((e) => {

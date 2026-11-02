@@ -157,7 +157,9 @@ function toYard() {
 yard.makeBar = () => siteBar({ onSearch: searchFromBar, yard: true });
 yard.openGame = (g) => {
   go(gamePath(g.id));
-  void openGame(g);
+  // отдельное приложение (ГОПС) — сначала его страница на сайте, «Играть» — там
+  if (g.page) openPage({ kind: 'page', tab: 'doc', path: gamePath(g.id) });
+  else void openGame(g);
 };
 yard.onGroup = (g) => {
   go(g ? gamePath(g.id) : sectionPath(yard.cat === 'all' ? null : yard.cat));
