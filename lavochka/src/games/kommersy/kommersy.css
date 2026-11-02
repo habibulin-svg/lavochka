@@ -33,7 +33,7 @@
 .km-npc { width: 84px; height: 84px; object-fit: cover; object-position: top; border-radius: 10px; background: #e5d8bd; flex: none; }
 .km-card-body h3 { margin: 0 0 4px; font-size: 19px; }
 .km-card-body p { margin: 0; font-size: 14px; line-height: 1.35; }
-.km-offers { display: grid; gap: 6px; margin-top: 8px; }
+.km-offers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 8px; }
 .km-offer { text-align: left; display: grid; gap: 2px; padding: 8px 10px; border-radius: 9px; border: 2px solid #3f9b4a; background: #fff; cursor: pointer; font: inherit; color: inherit; }
 .km-offer:hover:not([disabled]) { background: #eef8ef; }
 .km-offer[disabled] { border-color: #cdbfa6; opacity: 0.7; cursor: default; }
@@ -42,7 +42,7 @@
 .km-offer em { font-style: normal; font-size: 12px; color: #3f7a45; }
 .km-offer[disabled] em { color: #a0523a; }
 .km-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.km-choice { display: flex; flex-direction: column; align-items: flex-start; }
+.km-choice { display: flex; flex-direction: column; align-items: flex-start; white-space: normal; text-align: left; max-width: 100%; }
 .km-choice small { font-size: 11px; opacity: 0.8; }
 .km-choice.dark { border-color: #a32a2a; color: #a32a2a; }
 .km-choice.club { background: #1b3f8f; color: #fff; }
@@ -107,3 +107,16 @@
 .km-buh-in { width: 110px; padding: 6px 8px; border-radius: 8px; border: 2px solid #8a7a5a; font: inherit; font-size: 16px; }
 .km-rivals li { grid-template-columns: 1fr repeat(4, auto); }
 .km-mini.dark:not([disabled]) { border-color: #b03a2a; }
+
+/* иллюстрации карточек */
+.km-art { display: block; width: 100%; aspect-ratio: 3 / 2; max-height: 190px; object-fit: cover; border-radius: 8px; margin: 2px 0 8px; background: #e5d8bd; }
+.km-banner .km-art { max-height: 240px; margin: 0 0 8px; }
+.km-offer { min-width: 0; grid-template-columns: 84px minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.km-offer:not(:has(.km-thumb)) { grid-template-columns: 1fr; }
+.km-offer > div { display: grid; gap: 2px; }
+.km-thumb { width: 84px; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 6px; background: #e5d8bd; }
+@media (max-width: 700px) { .km-art { max-height: 120px; } .km-offer { grid-template-columns: 60px 1fr; } .km-thumb { width: 60px; } }
+/* узкая карточка (показ правил, телефон) — миниатюра поменьше, длинные слова переносятся */
+.km-card-in { container-type: inline-size; }
+.km-offer b { overflow-wrap: anywhere; }
+@container (max-width: 240px) { .km-offer { grid-template-columns: 44px minmax(0, 1fr); column-gap: 7px; padding: 6px 7px; } .km-thumb { width: 44px; } }

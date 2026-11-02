@@ -2,6 +2,7 @@
 
 Отбор — studio/bible/kolyan.md. Звуки (08-sfx, уже Opus после runners/sfx.py) — копируются в sfx/ как есть. Панорамы 1600×800; портреты — ключ по хромакею (зелёный → прозрачный), 512×512.
   G:/ai/ComfyUI/venv/Scripts/python.exe -I studio/post/pack_kommersy.py [--voice]
+--cards — только иллюстрации карточек (партия 11-cards): сид 55, кроме отобранных в CARD_PICK → cards/<id>.webp 576×384.
 --voice — только голос Коляна: лучший дубль каждой фразы (picks.json от asr_score.py) → voice/<ситуация>-<NN>.ogg
 и число фраз по ситуациям → src/games/kommersy/voice.json.
 """
@@ -17,6 +18,19 @@ OUT = pathlib.Path(__file__).resolve().parents[2] / 'lavochka/public/kommersy/a'
 SRC = pathlib.Path('G:/temp/studio/out/kommersy')
 VOICE = pathlib.Path('G:/temp/kommersy-voice')
 COUNTS = OUT.parents[2] / 'src/games/kommersy/voice.json'
+
+
+# Иллюстрации: другой сид, если у первого рамка или надписи (по листам)
+CARD_PICK: dict[str, str] = {'e-krestiny': '66', 'h-black': '66', 'h-gkchp': '66', 'k-kinul': '66', 'k-zakaz': '66', 'n-bad': '66', 'n-ceny': '66', 'r-shik': '66', 's-bazar': '66', 's-sport': '66', 'set-magazinov': '66', 'telekanal': '66', 'w-akadem': '66', 'w-klass': '66', 'w-moskva': '66', 'w-teatr': '66'}
+
+
+def cards():
+    (OUT / 'cards').mkdir(parents=True, exist_ok=True)
+    src = SRC / '11-cards'
+    names = sorted({f.stem.rsplit('-', 1)[0] for f in src.glob('*.png')})
+    for n in names:
+        Image.open(src / f'{n}-{CARD_PICK.get(n, "55")}.png').convert('RGB').resize((576, 384), Image.LANCZOS).save(OUT / 'cards' / f'{n}.webp', quality=78)
+    print('иллюстраций', len(names), round(sum(f.stat().st_size for f in (OUT / 'cards').glob('*.webp')) / 1e6, 1), 'МБ')
 
 
 def voice():
@@ -77,4 +91,4 @@ def main():
 
 
 if __name__ == "__main__":
-    voice() if '--voice' in sys.argv else main()
+    voice() if '--voice' in sys.argv else cards() if '--cards' in sys.argv else main()

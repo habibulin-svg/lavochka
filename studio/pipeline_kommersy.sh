@@ -13,7 +13,7 @@ want() { [ -z "$SEL" ] || [[ " $SEL " == *" $1 "* ]]; }
 SEL="${*:-}"
 
 $PY -X utf8 jobs/kommersy/make_jobs.py
-for b in 03-kolyan-looks 05-npc 04-panoramas; do
+for b in 03-kolyan-looks 05-npc 04-panoramas 11-cards; do
   want "${b%%-*}" || continue
   step "картинки $b"
   $PY -X utf8 run.py "jobs/kommersy/$b.yaml" || step "ОШИБКА $b"

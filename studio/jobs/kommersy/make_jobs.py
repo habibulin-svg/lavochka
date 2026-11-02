@@ -4,6 +4,7 @@ python studio/jobs/kommersy/make_jobs.py      (перезаписывает 0x-*
 
 Стиль: фоны — `a-painted` (партия 02), Колян и NPC — фото по пояс на хромакее, как в холдеме (bible/kolyan.md).
 """
+import json
 import pathlib
 
 import yaml
@@ -134,11 +135,31 @@ def reactions():
             'clips': [{'name': r, 'keys': [f'kolyan-{y}' for y in KEYS], 'prompt': f'{a} {{style}}'} for r, a in REACTIONS.items()]}
 
 
+# ---------------------------------------------------------------- иллюстрации карточек, сделок и исторических дат
+# Сцены писали агенты Sonnet по G:/temp/kommersy-cards/BRIEF-ART.md (карточки выгружены из data.ts в cards.json) → prompts-*.json.
+# Первый заход (сиды 11/22) с «tycoon board game card art» дал рамки и игровые поля на столах. Z-Image-Turbo не слышит отрицаний:
+# «no board game», «police uniforms» в хвосте сами тянут игровые поля и полицию в каждую сцену — ненужное просто не называем.
+CARD_ART = ('Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. '
+            'A full-bleed scene filling the whole image edge to edge, set in Russia unless stated otherwise. ')
+CARD_TAIL = ' No text, no letters, no logos.'
+CARD_PROMPTS = pathlib.Path('G:/temp/kommersy-cards')
+
+
+def cards():
+    scenes: dict[str, str] = {}
+    for f in sorted(CARD_PROMPTS.glob('prompts-*.json')):
+        scenes.update(json.loads(f.read_text(encoding='utf-8')))
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': LICENSE,
+            'defaults': {'width': 1152, 'height': 768, 'steps': 8}, 'seeds': [55, 66],
+            'items': [{'name': k, 'prompt': f'{CARD_ART}{v.strip()}{CARD_TAIL}'} for k, v in scenes.items()]}
+
+
 JOBS = {
     '03-kolyan-looks': people(LOOKS, [11, 22, 33]),
     '04-panoramas': panoramas(),
     '05-npc': people(NPC, [11, 22]),
     '09-kolyan-reactions': reactions(),
+    '11-cards': cards(),
 }
 
 if __name__ == '__main__':

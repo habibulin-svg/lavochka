@@ -464,7 +464,7 @@ class KommersyView implements GameView<View, Event> {
           break;
         case 'hist':
           sfx('hist', 0.8);
-          await this.showBanner(`<small>${dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
+          await this.showBanner(`${art(`h-${ev.id}`)}<small>${dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
         case 'fall':
           sfx(`fall-${ev.kind}`);
@@ -516,6 +516,9 @@ class KommersyView implements GameView<View, Event> {
   }
 }
 
+/** Иллюстрация карточки, сделки или исторической даты (studio/jobs/kommersy 11-cards → pack_kommersy.py); нет файла — не показывается. */
+const art = (id: string, cls = 'km-art') => `<img class="${cls}" src="${A}/cards/${id}.webp" alt="" onerror="this.remove()">`;
+
 function booksHtml(b: Books | undefined, who: string) {
   const head = `<div class="km-card-head">📒 Бухгалтерия${b ? ` · ${who}` : ''}</div>`;
   if (!b) return `<div class="km-card-in" style="--cc:#8a7a5a">${head}<p>Баланс сдан. Ждём, пока сведут остальные.</p></div>`;
@@ -535,10 +538,10 @@ function cardHtml(ask: Ask, mine: boolean, who: string) {
           const ch = ask.choices.find((c) => c.di === i)!;
           const ci = ask.choices.indexOf(ch);
           const pay = o.kind === 'paper' ? 'бумаги: цена растёт' : `окупится за ${Math.max(1, Math.round(o.price / Math.max(1, o.income)))} мес`;
-          return `<button class="km-offer" data-choice="${ci}"${!mine || !ch.ok ? ' disabled' : ''}>
+          return `<button class="km-offer" data-choice="${ci}"${!mine || !ch.ok ? ' disabled' : ''}>${art(o.id, 'km-thumb')}<div>
             <b>${esc(o.name)}</b><small>${esc(o.text)}</small>
             <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(o.income)}/мес · `}${o.mgr ? 'управляющий' : `${o.hours} ч`}</span>
-            <em>${ch.ok ? (o.loan ? `в кредит ${money(o.loan)} · ` : '') + pay : esc(ch.why ?? '')}</em></button>`;
+            <em>${ch.ok ? (o.loan ? `в кредит ${money(o.loan)} · ` : '') + pay : esc(ch.why ?? '')}</em></div></button>`;
         })
         .join('')}</div>`
     : '';
@@ -547,7 +550,7 @@ function cardHtml(ask: Ask, mine: boolean, who: string) {
     .join('');
   return `<div class="km-card-in" style="--cc:${CELL_COLOR[ask.cell]}">
     <div class="km-card-head">${ICON[ask.cell]} ${CELL_NAME[ask.cell]}${mine ? '' : ` · ${who}`}</div>
-    <div class="km-card-body">${face}<div><h3>${esc(ask.title)}</h3><p>${esc(ask.text)}</p></div></div>
+    ${ask.card ? art(ask.card) : ''}<div class="km-card-body">${face}<div><h3>${esc(ask.title)}</h3><p>${esc(ask.text)}</p></div></div>
     ${offers}<div class="km-choices">${choices}</div></div>`;
 }
 
