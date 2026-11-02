@@ -327,14 +327,14 @@ def gui():
     stop = threading.Event()
     jobs: queue.Queue = queue.Queue()
 
-    def ui(fn, *args):
-        ui_q.put((fn, args))
+    def ui(fn, *args, **kw):
+        ui_q.put((fn, args, kw))
 
     def pump():
         try:
             while True:
-                fn, args = ui_q.get_nowait()
-                fn(*args)
+                fn, args, kw = ui_q.get_nowait()
+                fn(*args, **kw)
         except queue.Empty:
             pass
         root.after(80, pump)
@@ -562,9 +562,9 @@ def gui():
         out = Path(out_var.get())
         save_settings()
         stop.clear()
+        log(f'В очередь: {c.name} — {len(sel)} шт.')
         jobs.put((c, sel, out, full_var.get()))
         queue_var.set(f'в очереди: {jobs.qsize()}')
-        log(f'В очередь: {c.name} — {len(sel)} шт.')
 
     def worker():
         while True:
