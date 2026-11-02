@@ -71,3 +71,18 @@
   color: #ffd166; text-shadow: 0 3px 0 #000, 0 0 30px rgba(0, 0, 0, 0.9); letter-spacing: 0.06em; pointer-events: none;
   animation: gm-caption 2.4s ease-out both; }
 @keyframes gm-caption { from { opacity: 0; transform: translateY(12px); } 40% { opacity: 0; } to { opacity: 1; transform: none; } }
+/* превью карты: в карточке кампании — сверху на всю ширину, в брифинге — над заголовком */
+.gm-card { flex-wrap: wrap; }
+.gm-card .gm-thumb { flex-basis: 100%; width: 100%; aspect-ratio: 640 / 235; object-fit: cover; border-radius: 6px; margin-bottom: 2px; }
+.gm-brief .gm-thumb { display: block; width: 100%; aspect-ratio: 640 / 235; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
+/* низкий экран (телефон лёжа): логотип мельче, кнопки главного меню — в два столбца */
+@media (max-height: 500px) {
+  .gm { padding-top: 12px; gap: 10px; }
+  .gm-logo { margin-top: 0; }
+  .gm-logo b { font-size: 54px; }
+  .gm-logo span { font-size: 15px; }
+  .gm-col { display: grid; grid-template-columns: 1fr 1fr; width: min(560px, 100%); gap: 8px; margin-top: 0; }
+  .gm-col .gm-btn { padding: 8px 12px; font-size: 15px; }
+  .gm-col .gm-btn.big { grid-column: 1 / -1; font-size: 18px; }
+  .gm-music { position: static; }
+}

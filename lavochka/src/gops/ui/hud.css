@@ -118,3 +118,11 @@ html, body { margin: 0; height: 100%; background: #0d1018; overflow: hidden; tou
 .hud-pause-btn:disabled { opacity: 0.4; cursor: default; }
 .hud-pause-card { max-width: min(92vw, 420px); }
 .hud-pause-btn.go { background: #2a9d8f; border-color: #2a9d8f; }
+/* низкий экран (телефон лёжа): окно паузы — в два столбца, не выше экрана */
+.hud-pause-card { max-height: calc(100vh - 16px); overflow-y: auto; box-sizing: border-box; }
+@media (max-height: 500px) {
+  .hud-pause-card { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: min(560px, 92vw); max-width: none; padding: 14px 16px; }
+  .hud-pause-head, .hud-pause-note, .hud-pause-btn.slot { grid-column: 1 / -1; }
+  .hud-pause-head { font-size: 22px; margin: 0; }
+  .hud-pause-btn { padding: 9px 12px; font-size: 15px; }
+}

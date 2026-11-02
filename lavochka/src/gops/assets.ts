@@ -67,6 +67,11 @@ export function themeArt(theme: string, time = 'night'): ThemeArt {
 }
 
 /** Картинки меню, заглавия, загрузки (20-brand), имя — без расширения: title-keyart-1, menu-bg-1, loading-2-1… */
+/** Превью уровня — снимок карты в её теме (tools/thumbs/gops-levels.mjs). */
+export function levelThumb(id: string): string {
+  return `${DEV}levels/${id}.webp`;
+}
+
 export function brandArt(name: string): string {
   return webp(`${DEV}20-brand/${name}.png`);
 }

@@ -102,7 +102,9 @@ async function play(def: MissionDef, sv?: Save): Promise<void> {
     if (game !== g) return;
     const list = MISSIONS.filter((m) => m.mode === def.mode);
     const nextDef = list[list.indexOf(def) + 1];
-    menu.result(run, stars, {
+    // общие ролики итога (docs/gops/LEVELS.md): победа — s11-victory, поражение — s12-deflate; потом итог поверх боя
+    menu.cutscene(run.result === 'win' ? 's11-victory' : 's12-deflate', () => game === g && showResult());
+    const showResult = () => menu.result(run, stars, {
       retry: () => void play(def),
       menu: () => {
         stop();
@@ -115,7 +117,13 @@ async function play(def: MissionDef, sv?: Save): Promise<void> {
             if (def.cutscene_after) menu.cutscene(def.cutscene_after, go);
             else go();
           }
-        : null,
+        : def.cutscene_after
+          ? () => {
+              // последняя миссия — финальный ролик, потом список
+              stop();
+              menu.cutscene(def.cutscene_after!, () => menu.list(def.mode));
+            }
+          : null,
     });
   };
   await g.start();
@@ -272,6 +280,14 @@ async function access(): Promise<{ ok: boolean; signedIn: boolean }> {
 async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
+  const shot = q.get('shot');
+  if (shot) {
+    // снимок карты для превью уровня (tools/thumbs/gops_levels.py)
+    const def = MISSIONS.find((m) => m.id === shot);
+    if (!def) throw new Error(`нет уровня ${shot}`);
+    await play(def);
+    return game?.shot();
+  }
   const mission = q.get('mission');
   if (mission) {
     const def = MISSIONS.find((m) => m.id === mission);

@@ -37,10 +37,20 @@ export function decodeMask(lv: Pick<LevelData, 'size' | 'rle'>): Mask {
   return m;
 }
 
+/** Генератор (terrain.py) в лабиринтах ставит старт или финиш гонки под воду (испытание r13 нельзя было пройти: боец тонул
+ * при высадке). Точки высадки под водой выбрасываем, старт и финиш гонки — на ближайшую сухую точку высадки. */
+export function dryLevel(lv: LevelData): LevelData {
+  const dry = (p: [number, number]) => p[1] < lv.water_y;
+  const spawns = lv.spawns.filter(dry);
+  const near = (p: [number, number]): [number, number] =>
+    dry(p) ? p : spawns.reduce((a, b) => (Math.hypot(b[0] - p[0], b[1] - p[1]) < Math.hypot(a[0] - p[0], a[1] - p[1]) ? b : a));
+  return { ...lv, spawns, race: lv.race && { ...lv.race, start: near(lv.race.start), finish: near(lv.race.finish) } };
+}
+
 export async function loadLevel(id: string, base = '/gops/levels/'): Promise<LevelData> {
   const r = await fetch(`${base}${id}.json`);
   if (!r.ok) throw new Error(`уровень ${id}: ${r.status}`);
-  return r.json();
+  return dryLevel(await r.json());
 }
 
 /** Раздать точки высадки бригадам: первые teams·perTeam, по кругу (как deal_spawns в terrain.py, без перемешивания). */

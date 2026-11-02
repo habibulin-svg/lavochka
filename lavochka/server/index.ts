@@ -108,8 +108,18 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     ws.close();
     return null;
   };
+  // выход игр (админка → «Игры»): скрытую открывает только Мастер, раннюю — с правом; гостей по коду хозяин зовёт сам
+  const closed = async (game: string): Promise<string | null> => {
+    if (!backoffice.release[game]) return null;
+    const u = await userOf(req);
+    const rights = u ? await accounts.store.rights(u.id, Date.now()).catch(() => []) : [];
+    if (mayPlay(backoffice.release, game, rights)) return null;
+    return backoffice.release[game].state === 'hidden' ? 'Эта игра пока скрыта.' : 'Эта игра пока в раннем доступе — для тех, у кого он есть.';
+  };
   // ГОПС — своя комната-ретранслятор (server/gops.ts)
   if (msg?.game === 'gops') {
+    const no = msg.t === 'create' ? await closed('gops') : null;
+    if (no) return fail(no);
     const link = gopsFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode);
     if (link) log(`ГОПС: ${msg.t === 'create' ? 'новая комната' : 'вход'}, комнат ${gopsRooms()}`);
     return link;
@@ -117,13 +127,8 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
   if (msg?.t === 'create') {
     const load = DEFS[String(msg.game)];
     if (!load) return fail('Сервер не знает эту игру — возможно, он старее сайта.');
-    // выход игр (админка → «Игры»): скрытую открывает только Мастер, раннюю — с правом; гостей по коду хозяин зовёт сам
-    if (backoffice.release[String(msg.game)]) {
-      const u = await userOf(req);
-      const rights = u ? await accounts.store.rights(u.id, Date.now()).catch(() => []) : [];
-      if (!mayPlay(backoffice.release, String(msg.game), rights))
-        return fail(backoffice.release[String(msg.game)].state === 'hidden' ? 'Эта игра пока скрыта.' : 'Эта игра пока в раннем доступе — для тех, у кого он есть.');
-    }
+    const no = await closed(String(msg.game));
+    if (no) return fail(no);
     const def = await load();
     const seats = sanitizeSeats(msg.seats, def.seats.length);
     if (!seats || seats.length < def.players.min || seats.length > def.players.max) return fail('Неверная рассадка.');

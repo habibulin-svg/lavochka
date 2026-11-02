@@ -283,6 +283,21 @@ export class Game {
     window.setTimeout(() => this.onEnd(run, stars), 1600);
   }
 
+  /** Снимок карты для превью (?shot=<уровень>, tools/thumbs/gops_levels.py): без HUD, вся карта, мир встаёт, когда бойцы приземлились. */
+  shot(): void {
+    this.hud.el.style.display = 'none';
+    this.onEnd = () => {}; // никаких роликов итога поверх снимка
+    const c = this.view.cam;
+    c.follow = false;
+    c.zoom = this.view.fitZoom(this.world);
+    c.x = c.tx = this.world.mask.w / 2;
+    c.y = c.ty = this.world.mask.h / 2;
+    window.setTimeout(() => {
+      this.paused = true;
+      document.title = 'shot-ready';
+    }, 2500);
+  }
+
   /** Сохранение партии (окно паузы); строка — почему сейчас нельзя. Сеть не сохраняется. */
   save(): Save | string {
     const s = this.setup;

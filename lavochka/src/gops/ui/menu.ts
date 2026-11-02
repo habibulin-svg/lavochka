@@ -1,7 +1,7 @@
 /* Меню ГОПС (DOM поверх холста): заглавный экран, списки миссий (кампания по главам, обучение, испытания) со звёздами,
  * брифинг, итог миссии, межигровой ролик. Прогресс — звёзды по миссиям в localStorage (без него игра идёт, просто не помнит). */
-import { BRIGADES, brandArt, cutsceneUrl } from '../assets';
-import { musicOff } from '../audio';
+import { BRIGADES, brandArt, cutsceneUrl, levelThumb } from '../assets';
+import { musicOff, uiSound } from '../audio';
 import { type Save, loadSaves, slotLabel } from '../save';
 import { serverBase } from '../../core/net/ws';
 import type { Claim } from '../../core/records';
@@ -441,7 +441,7 @@ export class Menu {
       }
       const open = this.open(def, list, got);
       const card = h('button', 'gm-card' + (open ? '' : ' locked'));
-      card.append(h('i', '', def.id.replace(/^[mtr]0?/, '')), h('span', '', def.title), h('em', '', open ? stars(got[def.id] ?? 0) : '🔒'));
+      card.append(thumb(def.id), h('i', '', def.id.replace(/^[mtr]0?/, '')), h('span', '', def.title), h('em', '', open ? stars(got[def.id] ?? 0) : '🔒'));
       if (open) card.onclick = () => this.briefing(def);
       else (card as HTMLButtonElement).disabled = true;
       body.append(card);
@@ -451,7 +451,7 @@ export class Menu {
 
   briefing(def: MissionDef): void {
     const box = h('div', 'gm-brief');
-    box.append(h('h2', '', def.title), h('p', '', def.briefing));
+    box.append(thumb(def.id), h('h2', '', def.title), h('p', '', def.briefing));
     if (def.new) box.append(h('p', 'gm-new', `Новое: ${def.new}`));
     const weapons = Object.keys(def.arsenal.weapons).map((id) => WEAPON_NAMES[id] ?? id);
     if (def.arsenal.preset !== 'full' && weapons.length) box.append(h('p', 'gm-arsenal', `Арсенал: ${weapons.join(', ')}`));
@@ -476,7 +476,10 @@ export class Menu {
       h('h2', run.result === 'win' ? 'win' : 'lose', run.result === 'win' ? 'Победа!' : 'Не вышло'),
       h('p', '', run.reason),
     );
-    if (run.result === 'win') box.append(h('div', 'gm-big-stars', stars(Math.max(1, got))));
+    if (run.result === 'win') {
+      box.append(h('div', 'gm-big-stars', stars(Math.max(1, got))));
+      uiSound('ui-star');
+    }
     const row = h('div', 'gm-row');
     row.append(button('Ещё раз', act.retry), button('К списку', act.menu));
     if (act.next && run.result === 'win') row.append(button('Дальше →', act.next, 'big'));
@@ -486,8 +489,7 @@ export class Menu {
     this.el.replaceChildren(box);
   }
 
-  /** Межигровой ролик на весь экран; щелчок или любая клавиша — пропустить. Нет файла — сразу дальше. */
-  /** Ролик на весь экран; caption — надпись поверх (заставка студии). */
+  /** Ролик на весь экран; щелчок или любая клавиша — пропустить, нет файла — сразу дальше. caption — надпись поверх (заставка студии). */
   cutscene(name: string, done: () => void, caption?: string): void {
     const v = document.createElement('video');
     v.className = 'gm-video';
@@ -522,6 +524,17 @@ function h(tag: string, cls: string, text?: string): HTMLElement {
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
+}
+
+/** Превью карты уровня; нет снимка — картинка просто прячется. */
+function thumb(id: string): HTMLElement {
+  const img = document.createElement('img');
+  img.className = 'gm-thumb';
+  img.src = levelThumb(id);
+  img.alt = '';
+  img.loading = 'lazy';
+  img.onerror = () => img.remove();
+  return img;
 }
 
 function button(text: string, fn: () => void, cls = ''): HTMLElement {

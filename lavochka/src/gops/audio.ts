@@ -23,7 +23,7 @@ const BASE = new Set(['bottle-smash', 'crate-drop', 'explosion-big', 'explosion-
 const FIRE_SFX: Record<string, string> = {
   mukha: 'rocket-launch', limonka: 'throw', sling: 'slingshot', obrez: 'shotgun', makarov: 'pistol', tnt: 'fuse-hiss',
   mine: 'mine-beep', tychok: 'poke', armatura: 'bat-swing', kuryu: 'ui-click', pas: 'ui-click',
-  homing: 'rocket-launch', mortar: 'mortar-fire', carbide: 'throw', korsar: 'throw', posylka: 'throw', samogon: 'holy-choir',
+  homing: 'rocket-launch', mortar: 'mortar-fire', carbide: 'throw', korsar: 'firecrackers', posylka: 'parcel-drop', samogon: 'holy-choir',
   kalash: 'rifle-burst', pulemet: 'machinegun', uppercut: 'punch', mawashi: 'kick', kukuruznik: 'plane-fly', pochta: 'plane-fly',
   vanna: 'bathtub-fall', kirpichi: 'bricks-fall', truba: 'pipe-burst', ponyatiya: 'scales', marshrutka: 'minibus', plita: 'slab-place',
   otboinik: 'jackhammer', payalnik: 'blowtorch', zontik: 'umbrella-open', buratino: 'soda-gulp', kedy: 'ui-select', yagga: 'can-hiss',
@@ -69,6 +69,18 @@ export function setMusicOff(off: boolean): void {
   } catch {
     /* без хранилища — на этот раз */
   }
+}
+
+/** Звук интерфейса вне боя (звёзды в итоге миссии) — простым <audio>, общий выключатель M (gops-mute) уважает. */
+export function uiSound(name: string, vol = 0.8): void {
+  try {
+    if (localStorage.getItem('gops-mute') === '1') return;
+  } catch {
+    /* без хранилища — со звуком */
+  }
+  const a = new Audio(`${ARSENAL}${name}-${1 + Math.floor(Math.random() * 2)}.ogg`);
+  a.volume = vol;
+  void a.play().catch(() => {});
 }
 
 export class GopsAudio {
@@ -274,8 +286,15 @@ export class GopsAudio {
           const def = WEAPONS[e.weapon];
           // очередь: звук очереди — один раз, на первом выстреле
           if (def?.auto && w.shots < (def.shots ?? 1) - 1) break;
-          this.sfx(FIRE_SFX[e.weapon] ?? 'throw', a && a.x / 256, a && a.y / 256);
+          const ax = a && a.x / 256, ay = a && a.y / 256;
+          this.sfx(FIRE_SFX[e.weapon] ?? 'throw', ax, ay);
           const kind = WEAPONS[e.weapon]?.kind;
+          // довески к выстрелу: чека у гранат, перезарядка обреза, свист мины, бег дворняги, огонь после напалма
+          if (kind === 'grenade') this.sfx('pin-pull', ax, ay, 0.7);
+          if (e.weapon === 'obrez' && w.shots > 0) this.later(450, 'shotgun-reload', ax, ay, 0.8);
+          if (e.weapon === 'mortar') this.later(500, 'shell-whistle', ax, ay, 0.7);
+          if (e.weapon === 'dog') this.later(300, 'dog-run', ax, ay, 0.8);
+          if (e.weapon === 'napalm') this.later(1600, 'fire-burn', w.target?.[0], w.target?.[1], 0.8);
           if (a && kind === 'grenade') this.voice(a.team, 'throw');
           else if (a && kind === 'skip') this.voice(a.team, 'skip', true);
           else if (a && kind === 'surrender') this.voice(a.team, 'surrender', true);
@@ -286,7 +305,19 @@ export class GopsAudio {
           this.sfx(e.r >= 60 ? 'explosion-big' : e.r >= 40 ? 'explosion-medium' : 'explosion-small', e.x, e.y);
           break;
         case 'shot':
+          this.sfx('ricochet', e.x1, e.y1, 0.45);
           break;
+        case 'land':
+          if (w.phase !== 'settle') {
+            const v = wormById(w, e.worm);
+            if (v) this.sfx('fall-thud', v.x / 256, v.y / 256, 0.5);
+          }
+          break;
+        case 'unrope': {
+          const v = wormById(w, e.worm);
+          if (v) this.sfx('rope-swing', v.x / 256, v.y / 256, 0.6);
+          break;
+        }
         case 'bounce': {
           const p = w.projs.find((q) => q.id === e.proj);
           if (p) this.sfx('grenade-bounce', p.x / 256, p.y / 256, 0.6);
@@ -348,11 +379,28 @@ export class GopsAudio {
           break;
       }
     }
+    // взорвалась бочка — свой звук поверх взрыва
+    for (const o of w.objs) {
+      if (o.kind !== 'barrel' || o.alive || this.gone.has(o.id)) continue;
+      this.gone.add(o.id);
+      this.sfx('barrel-explode', o.x, o.y);
+    }
     // последние 5 секунд хода — тиканье и «время!»
     if (w.phase === 'turn' && w.left <= 5 * TICK_HZ && w.left % TICK_HZ === 0 && w.left > 0) {
       this.sfx('timer-tick', undefined, undefined, 0.5);
-      if (w.left === 5 * TICK_HZ) this.voice(w.team, 'time_low');
+      if (w.left === 5 * TICK_HZ) {
+        this.sfx('ui-hurry', undefined, undefined, 0.6);
+        this.voice(w.team, 'time_low');
+      }
     }
+  }
+
+  /** Бочки, чей взрыв уже прозвучал. */
+  private gone = new Set<number>();
+
+  /** Звук с задержкой (перезарядка после выстрела, свист падающей мины). */
+  private later(ms: number, name: string, x?: number, y?: number, vol = 1): void {
+    window.setTimeout(() => this.ctx && this.sfx(name, x, y, vol), ms);
   }
 
   /** Бригады, за которые играют люди на этом устройстве. */
