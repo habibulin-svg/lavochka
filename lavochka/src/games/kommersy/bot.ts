@@ -11,7 +11,9 @@ function fxScore(fx: Fx | undefined, v: View, level: number): number {
   const me = v.players.find((p) => p.seat === v.me)!;
   // Сложный с середины пути тянет то, чего не хватает для Лондона
   const lack = new Set(level >= 2 && me.tier >= 3 ? (v.my?.club ?? []).filter((c) => !c.ok).map((c) => c.id) : []);
-  const boost = (k: string) => (lack.has(k) ? (k === 'english' ? 4 : 3) : 1);
+  // связи забываются — держать запас над порогом клуба, а не ловить его в последний момент
+  if (level >= 2 && me.tier >= 3 && (me.stats.svyazi ?? 0) < 65) lack.add('svyazi');
+  const boost = (k: string) => (lack.has(k) ? (k === 'english' ? 4 : k === 'svyazi' ? 4 : 3) : 1);
   const scale = SCALE[me.tier] * 100;
   let s = 0;
   s += ((fx.cash ?? 0) / scale) * 10 + (fx.cashT ?? 0) * 10 + (fx.cashPct ?? 0) * 30;

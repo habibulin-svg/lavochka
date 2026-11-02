@@ -265,6 +265,8 @@ export function makeCells(m: number, rng?: Rng): Cell[] {
 // ---------------------------------------------------------------- последствия
 function addStat(p: Player, k: Stat, v: number) {
   const [a, b] = STAT_RANGE[k];
+  // связи насыщаются: с 50 прибавка тает, у сотни — ноль (иначе к середине партии у всех 100)
+  if (k === 'svyazi' && v > 0) v *= Math.min(1, (100 - p.stats.svyazi) / 50);
   p.stats[k] = clamp(Math.round(p.stats[k] + v), a, b);
 }
 
@@ -649,6 +651,8 @@ function history(s: State, h: (typeof HISTORY)[number], ev: Event[]) {
     if (h.fx) applyFx(s, p, h.fx, { next: () => 0.5, int: () => 0, getState: () => 0 }, ev);
     if (h.bandit && p.krysha === 'bandit') applyFx(s, p, h.bandit, { next: () => 0.5, int: () => 0, getState: () => 0 }, ev);
     if (h.id === 'vybory') addStat(p, 'svyazi', ready ? 15 : -5);
+    // смена власти: старые покровители сняты — треть связей (ГКЧП, обкомы) или пятая часть (новая власть) сгорает
+    if (h.id === 'gkchp' || h.id === 'ravno') p.stats.svyazi = Math.round(p.stats.svyazi * (h.id === 'gkchp' ? 0.65 : 0.8));
     if (h.id === 'default') for (const a of p.assets) if (a.id === 'bank') a.mul *= ready ? 0.6 : 0.25;
   }
   // обвалы бумаг: МММ и ГКО сгорают, ваучеры обращаются в деньги
@@ -676,6 +680,8 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
   // кто на виду — обрастает связями
   const t = tier(p);
   if (t >= 3 && s.m % 6 < s.len) addStat(p, 'svyazi', t >= 5 ? 2 : 1);
+  // связи забываются: раз в квартал уходит часть — чем их больше, тем быстрее; их надо поддерживать (баня, охота, Москва)
+  if (p.stats.svyazi > 30 && s.m % 3 < s.len) addStat(p, 'svyazi', -(1 + Math.floor((p.stats.svyazi - 30) / 30)));
   // дрейф: стресс спадает, настроение к нулю, совесть давит
   addStat(p, 'stress', -5 + (p.stats.sovest < 30 ? 6 : 0));
   addStat(p, 'mood', p.stats.mood > 0 ? -2 : 2);

@@ -4,7 +4,7 @@ import { RiggedRng, SeededRng } from '../src/core/rng';
 import { CLUB_PRICE, LAST, SEG_CELLS, dateText, mm, segMonths } from '../src/games/kommersy/data';
 import { def } from '../src/games/kommersy/def';
 import { choose } from '../src/games/kommersy/bot';
-import { apply, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
+import { apply, clubCheck, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
 import { botSeats, simulate } from './harness';
 
 function act(s: State, seat: number, a: Action, rig?: number[]): State {
@@ -140,7 +140,8 @@ describe('Коммерсы: партии ботов', () => {
       }
       const p = s.players[0];
       if (p.club) clubs++;
-      rows.push(`${seed}: ${dateText(Math.min(s.m, LAST))} ${p.ending} капитал ${Math.round(worth(p)).toLocaleString('ru')} падений ${p.falls.length} имя ${p.stats.name} связи ${p.stats.svyazi} англ ${p.skills.english}`);
+      const miss = p.club ? '' : ' нет: ' + clubCheck(s, p).filter((c) => !c.ok).map((c) => c.id).join(',');
+      rows.push(`${seed}: ${dateText(Math.min(s.m, LAST))} ${p.ending} капитал ${Math.round(worth(p)).toLocaleString('ru')} падений ${p.falls.length} имя ${p.stats.name} связи ${p.stats.svyazi} англ ${p.skills.english}${miss}`);
     }
     console.log(`клуб в ${clubs}/12\n` + rows.join('\n'));
     expect(rows.length).toBe(12);
