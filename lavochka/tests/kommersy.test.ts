@@ -109,6 +109,24 @@ describe('Коммерсы: эпоха и падения', () => {
     expect(def.result(s)!.text).toContain('Лондон Юнайтед');
   });
 
+  it('клуб: всё готово — купить можно и в конце квартала; «Ещё не время» — квартал идёт дальше', () => {
+    const ready = () => {
+      const s = newState([0]);
+      Object.assign(s.players[0], { cash: CLUB_PRICE + 1e6, job: null, advisor: true, pos: SEG_CELLS });
+      Object.assign(s.players[0].stats, { name: 80, svyazi: 80, heat: 0 });
+      return act(act(s, 0, { type: 'roll' }, [5]), 0, { type: 'move' });
+    };
+    let s = ready();
+    expect(s.ask!.cell).toBe('period');
+    expect(s.ask!.choices[0].buy).toBe('club');
+    s = act(s, 0, { type: 'choose', i: 0 });
+    expect(s.phase).toBe('over');
+    const m = ready().m;
+    s = act(ready(), 0, { type: 'choose', i: 1 });
+    expect(s.phase).toBe('roll');
+    expect(s.m).toBeGreaterThan(m);
+  });
+
   it('совесть и внимание органов соперникам не видны', () => {
     const s = newState([0, 1]);
     const v = view(s, [0]);

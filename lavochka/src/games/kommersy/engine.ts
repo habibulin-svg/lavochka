@@ -437,7 +437,9 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
   const list = CARDS.filter((c) => c.cell === cell && cardOk(s, p, c));
   const bag: CardT[] = [];
   for (const c of list) {
-    const w = c.id === 'k-pokushenie' ? Math.min(4, p.enemies) : c.choices.some((x) => x.need?.asset || x.need?.growable) && !p.assets.length ? 0 : 2;
+    // собрался в Лондон (с «Центра») — английский и советник попадаются вдвое чаще
+    const london = tier(p) >= 3 && c.choices.some((x) => x.fx.skills?.english || x.fx.advisor);
+    const w = c.id === 'k-pokushenie' ? Math.min(4, p.enemies) : c.choices.some((x) => x.need?.asset || x.need?.growable) && !p.assets.length ? 0 : london ? 4 : 2;
     for (let i = 0; i < w; i++) bag.push(c);
   }
   const card = bag.length ? bag[rng.int(bag.length)] : null;
@@ -522,6 +524,12 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     const cell = s.cells[p.pos - 1];
     ev.push({ t: 'move', seat, cell });
     if (cell === 'period') {
+      // всё для клуба готово — купить можно и в конце квартала, не дожидаясь «Выходного»
+      if (clubReady(s, p)) {
+        s.ask = { seat: p.seat, cell, title: 'Лондон ждёт', text: 'Всё готово: деньги, имя, связи, язык. Лондонские юристы ждут звонка.', choices: [{ label: 'Купить «Лондон Юнайтед»', ok: true, buy: 'club' }, { label: 'Ещё не время', ok: true }] };
+        s.phase = 'choose';
+        return { state: s, events: ev };
+      }
       next(s, ev, rng);
       return { state: s, events: ev };
     }
