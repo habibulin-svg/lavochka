@@ -41,6 +41,10 @@ INSTRUCT = {
                 'the "o" sounds, unhurried and good-natured. Russian.',
     'botan': 'Teenage boy, 15 years old, slightly nasal tenor, speaks fast and very precisely like a know-it-all, sometimes stumbles '
              'from excitement, "let me explain" tone, quiet nerdy chuckle. Russian.',
+    # «Коммерсы»: Колян с Затулинки — от дембеля до Лондона
+    'kolyan': 'Male, 27 years old, Siberian working-class guy from a Novosibirsk district, medium-low baritone with a slight rasp. '
+              'Confident, laconic, cheeky half-smile in the voice, street manner with business sense; short plain phrases, '
+              'calm and unhurried, never shouts. Russian.',
 }
 # Что говорит образец (8–12 с, по-русски, в характере набора).
 REF_TEXT = {
@@ -50,6 +54,7 @@ REF_TEXT = {
     'batya': 'Значит так, сынки. Я в этом дворе тридцать лет живу. Видал и не такое. Без суеты, по-взрослому. Пошли.',
     'sibiryak': 'Однако, паря, хорошо пошло! У нас в деревне так-то на медведя ходят, а тут, вишь, на соседей. Ядрёна вошь!',
     'botan': 'Так, секундочку, я вам сейчас объясню. По законам баллистики, хе-хе, снаряд должен... ой. Ну, в общем, попал.',
+    'kolyan': 'Короче, слушай сюда. Ларёк на остановке — это только начало. Через пару лет весь район будет наш. Без суеты, по уму.',
 }
 
 

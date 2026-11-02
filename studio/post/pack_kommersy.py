@@ -1,9 +1,13 @@
 """Коммерсы: отобранное с выхода конвейера → lavochka/public/kommersy/a/ (WebP, LFS).
 
 Отбор — studio/bible/kolyan.md. Звуки (08-sfx, уже Opus после runners/sfx.py) — копируются в sfx/ как есть. Панорамы 1600×800; портреты — ключ по хромакею (зелёный → прозрачный), 512×512.
-  G:/ai/ComfyUI/venv/Scripts/python.exe -I studio/post/pack_kommersy.py
+  G:/ai/ComfyUI/venv/Scripts/python.exe -I studio/post/pack_kommersy.py [--voice]
+--voice — только голос Коляна: лучший дубль каждой фразы (picks.json от asr_score.py) → voice/<ситуация>-<NN>.ogg
+и число фраз по ситуациям → src/games/kommersy/voice.json.
 """
+import json
 import pathlib
+import sys
 import shutil
 
 import numpy as np
@@ -11,6 +15,21 @@ from PIL import Image
 
 OUT = pathlib.Path(__file__).resolve().parents[2] / 'lavochka/public/kommersy/a'
 SRC = pathlib.Path('G:/temp/studio/out/kommersy')
+VOICE = pathlib.Path('G:/temp/kommersy-voice')
+COUNTS = OUT.parents[2] / 'src/games/kommersy/voice.json'
+
+
+def voice():
+    picks = json.loads((VOICE / 'picks.json').read_text(encoding='utf-8'))
+    (OUT / 'voice').mkdir(parents=True, exist_ok=True)
+    counts: dict[str, int] = {}
+    for phrase, wav in sorted(picks.items()):
+        name = phrase.split('/', 1)[1]  # kolyan/start-01 → start-01
+        key, n = name.rsplit('-', 1)
+        counts[key] = max(counts.get(key, 0), int(n))
+        shutil.copyfile(VOICE / 'kolyan' / 'ogg' / (pathlib.Path(wav).stem + '.ogg'), OUT / 'voice' / f'{name}.ogg')
+    COUNTS.write_text(json.dumps(counts, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+    print('реплик', len(picks), 'ситуаций', len(counts), round(sum(f.stat().st_size for f in (OUT / 'voice').glob('*.ogg')) / 1e6, 1), 'МБ')
 
 PANO = {
     'dvor-soviet': ['1-222', '2-111', '3-111'], 'dvor-wild': ['1-111', '2-111', '3-111'],
@@ -58,4 +77,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    voice() if '--voice' in sys.argv else main()

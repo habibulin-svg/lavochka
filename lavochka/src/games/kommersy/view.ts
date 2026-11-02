@@ -13,6 +13,7 @@ import { RIVAL_DARK, RIVAL_NAME, money, type Action, type Ask, type Books, type 
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
+import { say, voiceKey } from './voice';
 import roadsJson from './roads.json';
 import './kommersy.css';
 
@@ -223,7 +224,9 @@ class KommersyView implements GameView<View, Event> {
   }
 
   setView(v: View) {
+    const fresh = !this.v && v.phase === 'roll' && v.players.every((p) => p.pos === 0 && !p.assets.length);
     this.v = v;
+    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => say('start', true), 800);
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
     if (v.roll) this.tray.show([v.roll]);
     this.render();
@@ -430,9 +433,13 @@ class KommersyView implements GameView<View, Event> {
   async play(events: Event[], v: View) {
     const speed = this.ctx.speed();
     const mine = this.myPlayer().seat;
+    const kolyan = v.players.find((p) => p.hero === 'kolyan')?.seat;
+    const old = this.v;
     for (const ev of events) {
       const r = 'seat' in ev && ev.seat === mine ? REACT[ev.t] : undefined;
       if (r) this.kolyan.play(r);
+      const line = kolyan == null ? null : voiceKey(ev, kolyan, old, v);
+      if (line) say(...line);
       switch (ev.t) {
         case 'roll':
           Sound.diceRoll();
