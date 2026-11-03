@@ -1,0 +1,196 @@
+# Герои, партия 10: эталоны существ под 3D (4 фракции × 14 + 10 нейтралов)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 41
+- 42
+style: Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, bright but refined colors. Full body, whole
+  figure in frame with margin, standing in a three-quarter view facing right, seen slightly from above, centered, plain light grey background.
+items:
+- name: zatulye-militia
+  prompt: A sturdy peasant militiaman with a wooden pitchfork, padded linen jacket and a simple cap, creature of the river free-folk of a fantasy northern land, linen,
+    leather and river-blue cloth. {style}
+- name: zatulye-spearman
+  prompt: A veteran militia spearman with a long boar spear, round wooden shield with a blue stripe and padded armor, creature of the river free-folk of a fantasy
+    northern land, linen, leather and river-blue cloth. {style}
+- name: zatulye-slinger
+  prompt: A young slinger whirling a leather sling, linen shirt, a pouch of stones on the belt, creature of the river free-folk of a fantasy northern land, linen,
+    leather and river-blue cloth. {style}
+- name: zatulye-strelets
+  prompt: A crossbowman in a long blue caftan and fur-trimmed cap holding a heavy crossbow, creature of the river free-folk of a fantasy northern land, linen, leather
+    and river-blue cloth. {style}
+- name: zatulye-vataga
+  prompt: A burly river raider with a long boat hook pole and a rough fur vest, creature of the river free-folk of a fantasy northern land, linen, leather and river-blue
+    cloth. {style}
+- name: zatulye-brodnik
+  prompt: A fearless ford-walker warrior in chainmail with a heavy hooked polearm, creature of the river free-folk of a fantasy northern land, linen, leather and
+    river-blue cloth. {style}
+- name: zatulye-boatman
+  prompt: A river boatman warrior with a broad oar-shaped axe and a small round shield, creature of the river free-folk of a fantasy northern land, linen, leather
+    and river-blue cloth. {style}
+- name: zatulye-ushkuynik
+  prompt: A river pirate warrior with a long bearded axe, riveted conical helmet and chainmail, creature of the river free-folk of a fantasy northern land, linen,
+    leather and river-blue cloth. {style}
+- name: zatulye-herbalist
+  prompt: A village herbalist woman in an embroidered linen dress holding a bundle of herbs and a glowing clay bowl, creature of the river free-folk of a fantasy
+    northern land, linen, leather and river-blue cloth. {style}
+- name: zatulye-wisewoman
+  prompt: A wise healer woman with a carved birch staff, flowing scarf and softly glowing herbs, creature of the river free-folk of a fantasy northern land, linen,
+    leather and river-blue cloth. {style}
+- name: zatulye-rider
+  prompt: A light horseman on a sturdy steppe horse with a lance and a fur hat, creature of the river free-folk of a fantasy northern land, linen, leather and river-blue
+    cloth. {style}
+- name: zatulye-vityaz
+  prompt: An armored knight on a heavy horse, scale armor, long lance with a red and blue pennant, creature of the river free-folk of a fantasy northern land, linen,
+    leather and river-blue cloth. {style}
+- name: zatulye-tur
+  prompt: A giant aurochs bull with huge curved horns ridden by a champion with a war banner, creature of the river free-folk of a fantasy northern land, linen, leather
+    and river-blue cloth. {style}
+- name: zatulye-thundertur
+  prompt: An enormous storm aurochs with glowing blue runes on its horns, ridden by an armored champion, creature of the river free-folk of a fantasy northern land,
+    linen, leather and river-blue cloth. {style}
+- name: zatonye-reedling
+  prompt: A small reed-folk creature woven of reeds and mud holding a sharpened reed spear, creature of the misty swamp folk, moss green, murky teal and reed ochre.
+    {style}
+- name: zatonye-sedgeling
+  prompt: A sedge warrior made of tough reeds with a sickle-like blade and a woven reed shield, creature of the misty swamp folk, moss green, murky teal and reed
+    ochre. {style}
+- name: zatonye-frog
+  prompt: An upright stocky frog humanoid with mossy green skin and a pale belly, big golden eyes, woven reed vest and a reed hat, holding a long bamboo blowpipe,
+    creature of the misty swamp folk, moss green, murky teal and reed ochre. {style}
+- name: zatonye-toad
+  prompt: A toad sharpshooter with warty brown-green skin, an ornate long blowpipe, a quiver of darts and reed armor, creature of the misty swamp folk, moss green,
+    murky teal and reed ochre. {style}
+- name: zatonye-wisp
+  prompt: 'A floating will-o-wisp: a glowing pale green flame spirit with a faint gentle face, creature of the misty swamp folk, moss green, murky teal and reed ochre.
+    {style}'
+- name: zatonye-wanderwisp
+  prompt: A bright blue-green will-o-wisp with trailing sparks and a lantern-like glowing core, creature of the misty swamp folk, moss green, murky teal and reed
+    ochre. {style}
+- name: zatonye-willow
+  prompt: A walking weeping willow tree giant with drooping branches like hair and a sad bark face, creature of the misty swamp folk, moss green, murky teal and reed
+    ochre. {style}
+- name: zatonye-oldwillow
+  prompt: An ancient massive willow giant with mossy bark, roots as legs and glowing eyes, creature of the misty swamp folk, moss green, murky teal and reed ochre.
+    {style}
+- name: zatonye-vodyanitsa
+  prompt: A swamp water maiden with pale green skin, long wet hair with water lilies and a driftwood staff, creature of the misty swamp folk, moss green, murky teal
+    and reed ochre. {style}
+- name: zatonye-omutnitsa
+  prompt: A dark pool witch with teal skin, robes of waterweed and a glowing whirlpool orb, creature of the misty swamp folk, moss green, murky teal and reed ochre.
+    {style}
+- name: zatonye-catfish
+  prompt: A giant whiskered catfish walking on stubby fin-legs with a huge mouth, river mud on its sides, creature of the misty swamp folk, moss green, murky teal
+    and reed ochre. {style}
+- name: zatonye-kingcatfish
+  prompt: A king catfish giant with a crown of river shells and very long whiskers, creature of the misty swamp folk, moss green, murky teal and reed ochre. {style}
+- name: zatonye-mistserpent
+  prompt: A long coiled serpent dragon of green scales wrapped in mist, without wings, creature of the misty swamp folk, moss green, murky teal and reed ochre. {style}
+- name: zatonye-phantomserpent
+  prompt: A phantom mist serpent dragon, half transparent, with glowing pale eyes, creature of the misty swamp folk, moss green, murky teal and reed ochre. {style}
+- name: kuznya-apprentice
+  prompt: A young forge apprentice with a leather apron, soot on the face and a heavy hammer, creature of the forge clans of an ash land, copper, bronze, soot black
+    and ember orange. {style}
+- name: kuznya-smith
+  prompt: A burly master blacksmith with a huge war hammer and riveted leather armor, creature of the forge clans of an ash land, copper, bronze, soot black and ember
+    orange. {style}
+- name: kuznya-wasp
+  prompt: A mechanical copper wasp the size of a dog with brass wings and a sharp stinger, creature of the forge clans of an ash land, copper, bronze, soot black
+    and ember orange. {style}
+- name: kuznya-stingwasp
+  prompt: A bigger clockwork bronze wasp with a glowing furnace abdomen, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}
+- name: kuznya-riveter
+  prompt: A riveter in goggles with a heavy steam bolt-thrower on his shoulder, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}
+- name: kuznya-repeater
+  prompt: An armored gunner with a repeating copper bolt-thrower and pipes on his back, creature of the forge clans of an ash land, copper, bronze, soot black and
+    ember orange. {style}
+- name: kuznya-steamhound
+  prompt: A steam-powered iron hound with a boiler belly and smoking vents, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}
+- name: kuznya-forgehound
+  prompt: A furnace hound with glowing coals inside a bronze body, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange. {style}
+- name: kuznya-founder
+  prompt: A foundry woman in heat-proof leather holding a ladle of glowing molten metal, creature of the forge clans of an ash land, copper, bronze, soot black and
+    ember orange. {style}
+- name: kuznya-firemistress
+  prompt: A fire mistress of the foundry with flowing whips of molten metal, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}
+- name: kuznya-walkcannon
+  prompt: 'A walking cannon: a heavy bronze cannon on four mechanical legs, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}'
+- name: kuznya-walkmortar
+  prompt: A squat walking mortar with six iron legs and a wide barrel, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange. {style}
+- name: kuznya-colossus
+  prompt: A giant copper colossus knight-machine with a furnace chest, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange. {style}
+- name: kuznya-forgecolossus
+  prompt: A huge bronze colossus with glowing molten joints and a hammer arm, creature of the forge clans of an ash land, copper, bronze, soot black and ember orange.
+    {style}
+- name: akademiya-student
+  prompt: A young academy student in a dark blue robe carrying a glowing star lantern on a pole, creature of the star academy in a pine forest, night blue, silver,
+    pine green and warm gold. {style}
+- name: akademiya-adept
+  prompt: An apprentice mage with an armillary charm and a glowing lantern staff, creature of the star academy in a pine forest, night blue, silver, pine green and
+    warm gold. {style}
+- name: akademiya-owl
+  prompt: A large owl with a satchel of scrolls and wise eyes, standing, creature of the star academy in a pine forest, night blue, silver, pine green and warm gold.
+    {style}
+- name: akademiya-seerowl
+  prompt: A great silver owl with starry feathers and glowing runes, standing, creature of the star academy in a pine forest, night blue, silver, pine green and warm
+    gold. {style}
+- name: akademiya-crystal
+  prompt: 'A crystal guardian: a humanoid of clear quartz with a crystal shield, creature of the star academy in a pine forest, night blue, silver, pine green and
+    warm gold. {style}'
+- name: akademiya-prism
+  prompt: A prism guardian of rainbow crystal facets with a refracting shield, creature of the star academy in a pine forest, night blue, silver, pine green and warm
+    gold. {style}
+- name: akademiya-centaur
+  prompt: A centaur astrologer with a bow and a cloak embroidered with star charts, creature of the star academy in a pine forest, night blue, silver, pine green
+    and warm gold. {style}
+- name: akademiya-astrologer
+  prompt: A centaur astronomer archer in silver armor with a starlight bow, creature of the star academy in a pine forest, night blue, silver, pine green and warm
+    gold. {style}
+- name: akademiya-pineguard
+  prompt: A gentle tall giant of pine bark and needles carrying a lantern, creature of the star academy in a pine forest, night blue, silver, pine green and warm
+    gold. {style}
+- name: akademiya-borguard
+  prompt: An ancient pine forest guardian with moss, cones and glowing amber sap, creature of the star academy in a pine forest, night blue, silver, pine green and
+    warm gold. {style}
+- name: akademiya-skywhale
+  prompt: A flying sky whale with soft blue skin, star-like spots and small fins, creature of the star academy in a pine forest, night blue, silver, pine green and
+    warm gold. {style}
+- name: akademiya-starwhale
+  prompt: A majestic star whale glowing with constellations, creature of the star academy in a pine forest, night blue, silver, pine green and warm gold. {style}
+- name: akademiya-fallenstar
+  prompt: 'A star elemental: a humanoid of white-gold starlight fire with a glowing core, creature of the star academy in a pine forest, night blue, silver, pine
+    green and warm gold. {style}'
+- name: akademiya-wanderstar
+  prompt: A wandering star spirit, a radiant figure with a trailing comet tail, creature of the star academy in a pine forest, night blue, silver, pine green and
+    warm gold. {style}
+- name: neutral-wolf
+  prompt: A grey forest wolf, lean and alert, fantasy creature. {style}
+- name: neutral-boar
+  prompt: A wild boar with big tusks and bristly dark fur, fantasy creature. {style}
+- name: neutral-bandit
+  prompt: A forest bandit in a hood with a knotted club, fantasy creature. {style}
+- name: neutral-leshak
+  prompt: A small forest spirit of moss, bark and twigs with glowing eyes, fantasy creature. {style}
+- name: neutral-kikimora
+  prompt: A swamp hag with a long nose, a mossy shawl and a crooked stick, fantasy creature. {style}
+- name: neutral-salamander
+  prompt: A fire salamander lizard with glowing ember spots, fantasy creature. {style}
+- name: neutral-bear
+  prompt: A huge brown bear standing on all fours, fantasy creature. {style}
+- name: neutral-sirin
+  prompt: A mythical bird with a gentle woman face and colorful long feathers, standing, fantasy creature. {style}
+- name: neutral-stonegiant
+  prompt: A giant of mossy grey boulders with a flat calm face, fantasy creature. {style}
+- name: neutral-poloz
+  prompt: A giant golden-scaled serpent with a jeweled crest, fantasy creature. {style}

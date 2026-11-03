@@ -1,0 +1,532 @@
+# Герои, партия 19: звуки (озвучки нет)
+# Сгенерировано make_jobs.py — правки вносить туда.
+out: G:/temp/studio/out/geroi/19-sfx
+seeds:
+- 1
+- 2
+sounds:
+- name: horse-grass
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking on soft grass, hoof steps, a few steps
+- name: horse-road
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse trotting on a packed dirt road, clear hoof beats
+- name: horse-swamp
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking through mud and shallow water, squelching hooves
+- name: horse-ash
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking on gravel and ash, crunchy hooves
+- name: horse-snort
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: a horse snorting and shaking its head
+- name: boat-row
+  duration: 3
+  level: quiet
+  max: 2.0
+  prompt: wooden boat oars rowing in calm water
+- name: pickup-res
+  duration: 1
+  level: ui
+  max: 0.6
+  prompt: picking up a sack, soft thud and rustle
+- name: pickup-semki
+  duration: 1
+  level: ui
+  max: 0.8
+  prompt: pouring a handful of dry seeds into a sack
+- name: chest-open
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: old wooden chest creaking open with coins inside
+- name: artifact
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: magical shimmering chime, a treasure found
+- name: flag
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: cloth banner flapping in the wind as it is raised
+- name: mine-capture
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: pickaxe hits on rock and a cart rolling
+- name: shrine
+  duration: 2
+  level: normal
+  max: 1.8
+  prompt: ethereal choir swell and magic chime
+- name: levelup
+  duration: 2
+  level: normal
+  max: 1.8
+  prompt: heroic short brass and bell sting, level up
+- name: newday
+  duration: 2
+  level: ui
+  max: 1.5
+  prompt: a rooster crows in the distance at dawn
+- name: newweek
+  duration: 3
+  level: normal
+  max: 2.5
+  prompt: festive wooden drum roll and a bright flute flourish
+- name: teleport
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: magical whoosh portal teleport
+- name: dig
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: shovel digging into soil
+- name: learn
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: page turning with a soft magical sparkle
+- name: water-splash
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: small splash in water
+- name: build
+  duration: 3
+  level: normal
+  max: 2.0
+  prompt: 'construction sounds: hammering wood and a saw'
+- name: recruit
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: soldiers marching a few steps and armor clinking
+- name: market
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: coins clinking on a wooden counter
+- name: gate
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: heavy wooden town gate creaking open
+- name: forge
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: hammer striking an anvil twice with a hiss of steam
+- name: owl
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: an owl hooting once
+- name: frogs
+  duration: 2
+  level: quiet
+  max: 2.0
+  prompt: swamp frogs croaking chorus
+- name: river
+  duration: 3
+  level: ambience
+  max: 3.0
+  prompt: calm river flowing, gentle ambience
+- name: hit-blade
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: sword slash hitting leather armor
+- name: hit-blunt
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: heavy wooden club hit, thud
+- name: hit-metal
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: hammer hitting metal armor, clang
+- name: hit-claw
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: animal claw swipe and bite
+- name: hit-spear
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: spear thrust impact
+- name: hit-crystal
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: crystal shattering hit, glassy
+- name: hit-wood
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: heavy tree branch whipping hit
+- name: hit-magic
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: magical energy impact burst
+- name: shot-sling
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: sling whirling and releasing a stone
+- name: shot-crossbow
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: crossbow firing a bolt, twang
+- name: shot-blowpipe
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: blowpipe dart puff
+- name: shot-bow
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: bow string release, arrow whoosh
+- name: shot-bolt-steam
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: steam powered bolt launcher hiss and thunk
+- name: shot-cannon
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: bronze cannon firing, deep boom
+- name: shot-mortar
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: mortar launching with a hollow thump
+- name: impact-stone
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: stone hitting the ground
+- name: impact-arrow
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: arrow thudding into wood
+- name: impact-boom
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: explosion of a cannonball
+- name: miss
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: whoosh of a missed swing
+- name: defend
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: shield raised and braced, wooden thud
+- name: death-human
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: body falling to the ground in armor, no voice
+- name: death-creature
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: large creature collapsing heavily
+- name: death-machine
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: machine breaking apart, metal parts falling, steam hiss
+- name: death-spirit
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: ghostly spirit fading away with a sigh of wind
+- name: move-foot
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: soldiers footsteps on grass
+- name: move-hoof
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: cavalry galloping short
+- name: move-hop
+  duration: 1
+  level: quiet
+  max: 0.8
+  prompt: a frog hopping, wet slap
+- name: move-fly
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: wings flapping
+- name: move-mech
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: mechanical steps with clanking gears
+- name: move-float
+  duration: 1
+  level: quiet
+  max: 1.0
+  prompt: soft magical floating hum
+- name: move-heavy
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: giant creature heavy footsteps shaking the ground
+- name: morale
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: triumphant short horn call
+- name: luck
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: sparkling lucky chime
+- name: badmorale
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: sad low horn, discouraged
+- name: catapult
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: wooden siege ram hitting a wall, crumbling stones
+- name: wall-break
+  duration: 2
+  level: loud
+  max: 1.8
+  prompt: stone wall collapsing
+- name: tower-shot
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: arrow volley from a tower
+- name: battle-start
+  duration: 2
+  level: normal
+  max: 2.0
+  prompt: war drums and horn signaling the start of battle
+- name: battle-win
+  duration: 2
+  level: normal
+  max: 2.0
+  prompt: victory cheer of a crowd without words and drums
+- name: battle-lose
+  duration: 2
+  level: normal
+  max: 2.0
+  prompt: low gloomy drum and wind, defeat
+- name: voice-frog
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a big frog croak
+- name: voice-wolf
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a wolf growl and short howl
+- name: voice-boar
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a wild boar grunt
+- name: voice-bear
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a bear roar
+- name: voice-bird
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a large bird screech
+- name: voice-owl
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: an owl screech
+- name: voice-bull
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a giant bull bellowing
+- name: voice-horse
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a war horse neighing
+- name: voice-tree
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: creaking groaning old tree
+- name: voice-water
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: gurgling water spirit hiss
+- name: voice-fish
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: deep underwater rumble and bubbles
+- name: voice-serpent
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: serpent dragon hiss and low roar
+- name: voice-wasp
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: mechanical buzzing of a big wasp
+- name: voice-hound
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: metal hound bark with steam hiss
+- name: voice-colossus
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: giant metal machine groan and furnace roar
+- name: voice-crystal
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: crystal resonance chime
+- name: voice-whale
+  duration: 2
+  level: normal
+  max: 2.0
+  prompt: whale song low call
+- name: voice-star
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: shimmering cosmic hum rising
+- name: voice-salamander
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: lizard hiss with crackling fire
+- name: voice-stone
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: grinding rocks rumble
+- name: voice-war
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: group battle shout of warriors without words
+- name: spell-fire
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: fireball whoosh and fiery burst
+- name: spell-water
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: ice crystals forming and shattering
+- name: spell-earth
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: earth rumble with rocks rising
+- name: spell-air
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: lightning strike with crackle
+- name: spell-buff
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: bright ascending magical chime, blessing
+- name: spell-curse
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: dark descending magical whisper sound, curse
+- name: spell-heal
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: soft warm healing shimmer
+- name: spell-summon
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: magical summoning swirl
+- name: spell-fail
+  duration: 1
+  level: ui
+  max: 0.8
+  prompt: fizzle of failed magic
+- name: ui-click
+  duration: 1
+  level: ui
+  max: 0.3
+  prompt: soft wooden button click
+- name: ui-open
+  duration: 1
+  level: ui
+  max: 0.6
+  prompt: opening a leather book
+- name: ui-close
+  duration: 1
+  level: ui
+  max: 0.5
+  prompt: closing a leather book
+- name: ui-scroll
+  duration: 1
+  level: ui
+  max: 0.8
+  prompt: unrolling a parchment scroll
+- name: ui-error
+  duration: 1
+  level: ui
+  max: 0.5
+  prompt: dull wooden knock, denied
+- name: ui-turn
+  duration: 2
+  level: ui
+  max: 1.5
+  prompt: short warm horn call, your turn
+- name: text-type
+  duration: 1
+  level: ui
+  max: 0.4
+  prompt: quill scratching on parchment, short

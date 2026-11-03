@@ -1,0 +1,30 @@
+# Герои, партия 5: доводка выбранного стиля B «гуашь» (studio/bible/geroi.md).
+# 1) Пустое поле боя: в 01 ракурс низкий, с горизонтом, камни лезут под отряды — камера выше, середина ровная.
+# 2) Замок Затулья: у b-town-101 шпили «под собор» — деревянное зодчество без церковных форм.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1536, height: 864, steps: 8}
+seeds: [301, 302, 303, 304]
+style: >-
+  Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes,
+  saturated but harmonious colors, warm sunlight and soft shadows.
+
+items:
+  - name: field-meadow
+    prompt: >-
+      {style} Battlefield background seen from high above at a steep angle, almost top-down:
+      a wide flat even summer meadow with short grass filling the whole picture, gentle variation of green tones,
+      a few scattered wildflowers, small patches of clover, a thin strip of birch forest edge along the very top.
+      The middle of the meadow is open, flat and clear.
+  - name: field-meadow-river
+    prompt: >-
+      {style} Battlefield background seen from high above at a steep angle, almost top-down:
+      a wide flat even summer meadow with short grass, a narrow sandy riverbank with reeds along the very top edge,
+      a few scattered wildflowers along the borders. The middle of the meadow is open, flat and clear.
+  - name: town-zatulye
+    prompt: >-
+      {style} Wide panorama of a free riverside settlement in a fantasy world inspired by old northern wooden architecture:
+      log-built halls with steep plank roofs and carved gables, a tall square timber watchtower with a small flag,
+      a log palisade with a gate, a covered market with awnings, river boats at a long wooden pier, fishing nets drying on poles,
+      horses grazing on the meadow in front, birch groves behind, summer evening light, calm and inviting.

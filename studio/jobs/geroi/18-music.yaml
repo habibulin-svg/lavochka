@@ -1,0 +1,234 @@
+# Герои, партия 18: музыка YuE2 — полный набор первого выпуска (к пробе 02)
+# Сгенерировано make_jobs.py — правки вносить туда.
+out: G:/temp/studio/out/geroi/18-music
+max_duration: 150
+tracks:
+- name: town-kuznya
+  seeds:
+  - 11
+  - 22
+  style: industrial new age, downtempo, early 1990s, instrumental, 92 bpm, rhythmic anvil hits and metal percussion in the beat, deep breakbeat, warm synth pads,
+    low brass drones, smoky and proud
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: town-akademiya
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 88 bpm, glass bells, celtic harp arpeggios, airy synth pads, soft breakbeat, starry and wondrous, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-swamp
+  seeds:
+  - 11
+  - 22
+  style: dark ambient new age, downtempo, early 1990s, instrumental, 84 bpm, muffled drums, breathy flute, watery textures, frogs-like percussion clicks, mysterious
+    and calm
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-ash
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, deep taiko, slow breakbeat, low drones, distant metal chimes, dusty and tense
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-pine
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, pan flute, kalimba, soft breakbeat, warm pads, peaceful forest journey, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: battle-b
+  seeds:
+  - 11
+  - 22
+  style: epic new age, downtempo, early 1990s, instrumental, 118 bpm, big drums, hard breakbeat, ethnic flute lead, low synth brass, choir pad stabs, minor key, heroic
+  lyrics: '[intro]
+
+    [chorus]
+
+    [verse]
+
+    [chorus]
+
+    [bridge]
+
+    [chorus]'
+- name: battle-c
+  seeds:
+  - 11
+  - 22
+  style: epic new age, downtempo, early 1990s, instrumental, 120 bpm, driving taiko, pulsing bass, shakuhachi lead, tense strings pad, minor key
+  lyrics: '[intro]
+
+    [chorus]
+
+    [verse]
+
+    [chorus]
+
+    [bridge]
+
+    [chorus]'
+- name: siege
+  seeds:
+  - 11
+  - 22
+  style: cinematic new age, downtempo, early 1990s, instrumental, 104 bpm, war drums, heavy breakbeat, horn calls, dark choir pads, relentless
+  lyrics: '[intro]
+
+    [chorus]
+
+    [verse]
+
+    [chorus]
+
+    [bridge]
+
+    [chorus]'
+- name: villain
+  seeds:
+  - 11
+  - 22
+  style: dark cinematic new age, downtempo, early 1990s, instrumental, 80 bpm, deep male choir humming, low organ drones, slow heavy beat, menacing and majestic,
+    minor key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: campaign1
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 94 bpm, gusli, wooden flute, frame drum, warm pads, hopeful adventure theme, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: campaign2
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 92 bpm, music box bells, harp, airy pads, curious and clever, starry, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: intro
+  seeds:
+  - 11
+  - 22
+  style: cinematic new age, downtempo, early 1990s, instrumental, 90 bpm, slow build from soft pads to big drums, bamboo flute, mysterious then majestic
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: finale
+  seeds:
+  - 11
+  - 22
+  style: cinematic new age, downtempo, early 1990s, instrumental, 96 bpm, triumphant, big drums, choir pads, flute melody, warm and emotional, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: victory
+  seeds:
+  - 11
+  - 22
+  style: triumphant new age, downtempo, early 1990s, instrumental, 100 bpm, short fanfare, drums and flute, bright major key
+  lyrics: '[intro]
+
+    [outro]'
+  max_duration: 40
+- name: defeat
+  seeds:
+  - 11
+  - 22
+  style: sad new age, downtempo, early 1990s, instrumental, 70 bpm, short, low pads and lonely flute, minor key
+  lyrics: '[intro]
+
+    [outro]'
+  max_duration: 40
