@@ -34,6 +34,7 @@ export class Music {
   private queue: string[] = [];
   private vol = 0.3;
   private blocked = false;
+  private fades = new Map<HTMLAudioElement, number>();
   on(): boolean {
     return store.get<string>(PREF_MUSIC, 'on') !== 'off';
   }
@@ -63,16 +64,20 @@ export class Music {
     this.fade(a, this.vol, 2000);
     if (old) this.fade(old, 0, 1500, () => old.pause());
   }
+  /** Плавно к громкости to; на таймере, а не на кадрах: в фоновой вкладке кадров нет, и трек не останавливался. */
   private fade(a: HTMLAudioElement, to: number, ms: number, done?: () => void): void {
+    clearInterval(this.fades.get(a));
     const from = a.volume;
     const t0 = performance.now();
-    const step = () => {
+    const id = window.setInterval(() => {
       const k = Math.min(1, (performance.now() - t0) / ms);
       a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-      if (k < 1) requestAnimationFrame(step);
-      else done?.();
-    };
-    requestAnimationFrame(step);
+      if (k < 1) return;
+      clearInterval(id);
+      this.fades.delete(a);
+      done?.();
+    }, 40);
+    this.fades.set(a, id);
   }
   stop(): void {
     if (this.cur) {

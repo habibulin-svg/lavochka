@@ -149,6 +149,8 @@ class KommersyView implements GameView<View, Event> {
     this.cardEl = this.wrap.querySelector('.km-card') as HTMLElement;
     this.banner = this.wrap.querySelector('.km-banner') as HTMLElement;
     this.musicBtn = this.wrap.querySelector('.km-music') as HTMLButtonElement;
+    // у показа правил своей музыки нет: она шла поверх партии, и ♪ партии её не выключал
+    this.musicBtn.hidden = ctx.demo;
     this.musicBtn.textContent = this.music.on() ? '♪' : '🔇';
     this.musicBtn.onclick = () => {
       this.musicBtn.textContent = this.music.toggle() ? '♪' : '🔇';
@@ -284,7 +286,7 @@ class KommersyView implements GameView<View, Event> {
     this.rollBtn.hidden = !(this.mineTurn() && v.phase === 'roll');
     this.moveBtn.hidden = !this.canMove();
     this.drawSheet();
-    this.music.set(eraMusic(v));
+    if (!this.ctx.demo) this.music.set(eraMusic(v));
   }
 
   private setBg(src: string) {
