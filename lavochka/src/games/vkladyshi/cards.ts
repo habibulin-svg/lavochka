@@ -133,14 +133,11 @@ function carCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | 'spell
   if (kind === 'moto') hpv = Math.max(1, hpv - 1);
   if (kind === 'truck') hpv += 2;
   const kw: Kw[] = [];
-  const rushAt = coll === 'bomb' ? 215 : 245;
+  const rushAt = coll === 'bomb' ? 230 : 245;
   if (speed >= rushAt || kind === 'f1') kw.push('rush');
   if (kind === 'truck' || cc >= 5500) kw.push('wall');
   if (kind === 'plane' || kind === 'boat') kw.push('armor');
-  if (coll === 'bomb') {
-    atk += 1;
-    hpv = Math.max(1, hpv - 1);
-  }
+  if (coll === 'bomb') hpv = Math.max(1, hpv - 1); // BomBibom — жесть потоньше: хрупкие, зато дешевле (цена — от бюджета)
   atk = clamp(atk, 1, 8);
   hpv = clamp(hpv, 1, 9);
   let rarity: Rarity = 0;
@@ -150,7 +147,7 @@ function carCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | 'spell
   if (rarity >= 2) hpv += 1;
   if (rarity === 3 && !kw.includes('armor')) kw.push('armor');
   // цена: бюджет «2 × цена + 1» на атаку и здоровье, ключевое слово — ещё одно очко
-  const budget = atk + hpv + kw.length - (rarity >= 2 ? 1 : 0);
+  const budget = atk + hpv + kw.length + (kw.includes('rush') ? 1 : 0) - (rarity >= 2 ? 1 : 0); // Рывок — два очка: бьёт сразу
   let cost = clamp(Math.round((budget - 1) / 2), 1, 9);
   const parts = [f.cc ? `${f.cc} см³` : '', f.hp ? `${f.hp} л.с.` : '', f.speed ? `${f.speed} км/ч` : ''].filter(Boolean);
   return { ...base, sub: parts.join(' · ') || (f.year ? String(f.year) : ''), cost, atk, hp: hpv, kw, spell: false, rarity };
@@ -182,12 +179,12 @@ function footballCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | '
 
 // ---------------------------------------------------------------- Love is: приёмы
 const LOVE_FX: { fx: Fx; cost: number; text: string }[] = [
-  { fx: { k: 'heal', n: 5, to: 'none' }, cost: 1, text: 'вернуть 5 терпения' },
-  { fx: { k: 'buff', n: 1, m: 2, to: 'allyUnit' }, cost: 1, text: '+1 к атаке и +2 к здоровью своему' },
-  { fx: { k: 'armor', n: 1, to: 'allyUnit' }, cost: 1, text: 'своему — «Броня»' },
+  { fx: { k: 'heal', n: 6, to: 'none' }, cost: 1, text: 'вернуть 6 терпения' },
+  { fx: { k: 'buff', n: 2, m: 2, to: 'allyUnit' }, cost: 1, text: '+2/+2 своему' },
+  { fx: { k: 'armor', n: 1, to: 'allyUnit' }, cost: 0, text: 'своему — «Броня»' },
   { fx: { k: 'draw', n: 2, to: 'none' }, cost: 1, text: 'взять 2 вкладыша' },
-  { fx: { k: 'all', n: 1, m: 1, to: 'none' }, cost: 3, text: 'всем своим +1/+1' },
-  { fx: { k: 'buff', n: 2, m: 2, to: 'allyUnit' }, cost: 2, text: '+2/+2 своему' },
+  { fx: { k: 'all', n: 1, m: 1, to: 'none' }, cost: 2, text: 'всем своим +1/+1' },
+  { fx: { k: 'buff', n: 3, m: 3, to: 'allyUnit' }, cost: 2, text: '+3/+3 своему' },
   { fx: { k: 'stun', n: 1, to: 'enemyUnit' }, cost: 1, text: 'чужой пропускает ход — загляделся' },
   { fx: { k: 'mana', n: 1, to: 'none' }, cost: 0, text: '+1 копейка в этот ход' },
 ];
@@ -210,16 +207,18 @@ function militaryCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | '
   const sub = [f.spd, f.range].filter(Boolean).join(' · ');
   if (kind === 'missile') return { ...base, sub, cost: 3, atk: 0, hp: 0, kw: [], spell: true, rarity, play: { k: 'dmg', n: 4, to: 'enemy' } };
   if (kind === 'ship' || kind === 'submarine')
-    return { ...base, sub, cost: 7, atk: 4, hp: 8, kw: ['wall', 'armor'].slice(0, kind === 'ship' ? 2 : 1) as Kw[], spell: false, rarity, death: { k: 'aoe', n: 1, to: 'enemyUnit' } };
+    return { ...base, sub, cost: 8, atk: 4, hp: 8, kw: ['wall', 'armor'].slice(0, kind === 'ship' ? 2 : 1) as Kw[], spell: false, rarity, death: { k: 'aoe', n: 1, to: 'enemyUnit' } };
   if (kind === 'plane') return { ...base, sub, cost: 5, atk: 5, hp: 3, kw: ['rush'], spell: false, rarity };
-  if (kind === 'helicopter') return { ...base, sub, cost: 4, atk: 3, hp: 3, kw: [], spell: false, rarity, play: { k: 'dmg', n: 2, to: 'enemyUnit' } };
-  if (kind === 'tank') return { ...base, sub, cost: 5, atk: 4, hp: 6, kw: ['armor'], spell: false, rarity };
+  if (kind === 'helicopter') return { ...base, sub, cost: 4, atk: 3, hp: 2, kw: [], spell: false, rarity, play: { k: 'dmg', n: 2, to: 'enemyUnit' } };
+  if (kind === 'tank') return { ...base, sub, cost: 5, atk: 4, hp: 5, kw: ['armor'], spell: false, rarity };
   return { ...base, sub, cost: 4, atk: 3, hp: 5, kw: [], spell: false, rarity };
 }
 
+const KIND_RU: Record<string, string> = { ship: 'Корабль', submarine: 'Подлодка', plane: 'Самолёт', helicopter: 'Вертолёт', tank: 'Танк', missile: 'Ракета' };
+
 function build(f: Fact): Card {
   const s = setInfo(f.set);
-  const base = { id: f.id, set: f.set, coll: s.coll, n: f.n, img: f.img, name: f.name || f.player || `№${f.n}`, sub: '' };
+  const base = { id: f.id, set: f.set, coll: s.coll, n: f.n, img: f.img, name: f.name || f.player || (s.coll === 'lazer' ? KIND_RU[f.kind ?? ''] ?? 'Техника' : `№${f.n}`), sub: '' };
   switch (s.coll) {
     case 'turbo':
     case 'bomb':
@@ -283,7 +282,7 @@ export const STARTERS: Starter[] = [
   { id: 'race', label: 'Гонка (BomBibom)', hint: COLL_STYLE.bomb, colls: ['bomb', 'turbo'] },
   { id: 'team', label: 'Сборная (Final + Love is)', hint: COLL_STYLE.final, colls: ['final', 'love'], share: 0.8 },
   { id: 'army', label: 'Техника (Lazer + Turbo)', hint: COLL_STYLE.lazer, colls: ['lazer', 'turbo'] },
-  { id: 'love', label: 'Любовь (Love is + Turbo)', hint: COLL_STYLE.love, colls: ['love', 'turbo'], share: 0.4 },
+  { id: 'love', label: 'Любовь (Love is + Turbo)', hint: COLL_STYLE.love, colls: ['love', 'turbo'], share: 0.3 },
 ];
 
 /** Кривая цены стартовой колоды: сколько карт какой цены (сумма 20). */
@@ -292,7 +291,8 @@ const CURVE = [0, 3, 4, 4, 3, 3, 2, 1, 0, 0];
 /** Стартовая колода: обычные и нечастые карты своих коллекций по кривой цены; выбор детерминирован (одна и та же у всех). */
 export function starterDeck(id: string): string[] {
   const st = STARTERS.find((s) => s.id === id) ?? STARTERS[0];
-  const pool = CARDS.filter((c) => st.colls.includes(c.coll) && c.rarity <= 1);
+  // в стартовые — из Love is только сильные приёмы (усиления, «всем своим», добор): лечение и копейка у ботов уходят впустую
+  const pool = CARDS.filter((c) => st.colls.includes(c.coll) && c.rarity <= 1 && (c.coll !== 'love' || ['buff', 'all', 'draw', 'stun'].includes(c.play?.k ?? '')));
   // основная коллекция — 2/3 колоды
   const main = st.colls[0];
   const deck: string[] = [];

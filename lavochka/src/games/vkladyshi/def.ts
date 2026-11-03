@@ -3,7 +3,7 @@
 import type { DemoScript, GameDef, GameResult, Options, Rng, SeatSpec } from '../../core/types';
 import { choose } from './bot';
 import { CARDS, COLL_NAME, STARTERS, card, fxText, KW_NAME, starterDeck } from './cards';
-import { apply, newState, redact, toAct, view, HERO_HP, type Action, type Event, type State, type Unit, type View } from './engine';
+import { apply, newState, redact, toAct, view, HERO_HP, SECOND_BONUS, type Action, type Event, type State, type Unit, type View } from './engine';
 
 export const SEATS = [
   { name: 'Я', color: '#c8302a', light: '#f2a8a0', dark: '#7a1a14' },
@@ -69,7 +69,8 @@ const RULES = [
       <b>копейка</b> (до десяти) и берётся вкладыш. На копейки выкладывают вкладыши: цена — в кружке слева вверху.
       Выложенный вкладыш ждёт до следующего хода, а потом бьёт вкладыш соперника или его самого. Терпение кончилось — проиграл.</p>
       <p>Атака — в левом нижнем углу, здоровье — в правом. Вкладыши бьют друг друга одновременно: оба получают урон, у кого здоровье
-      кончилось — уходит с лавочки. Колода кончилась — каждый пустой добор отнимает всё больше терпения.</p>`,
+      кончилось — уходит с лавочки. Колода кончилась — каждый пустой добор отнимает всё больше терпения.</p>
+      <p>Кто ходит первым, тот в первый ход не берёт вкладыш; второй начинает с лишним вкладышем и ${SECOND_BONUS} очками терпения сверху.</p>`,
     demo: demo(
       (s) => {
         s.players[0].hand = [SMALL, RUSH];
@@ -191,18 +192,18 @@ export const def: GameDef<State, Action, Event, View> = {
       hint: 'сколько ударов выдержит игрок',
       type: 'select',
       choices: [
-        { value: 15, label: '15 — быстрая партия' },
-        { value: 20, label: '20 — обычная' },
-        { value: 30, label: '30 — долгая' },
+        { value: 20, label: '20 — быстрая партия' },
+        { value: 30, label: '30 — обычная' },
+        { value: 40, label: '40 — долгая' },
       ],
-      default: 20,
+      default: 30,
     },
   ],
   presets: [
-    { id: 'turbo', label: 'Turbo', hint: 'Гараж против Гонки', options: { deck0: 'garage', deck1: 'race', hero: 20 } },
-    { id: 'final', label: 'Final', hint: 'Сборная против Гаража', options: { deck0: 'team', deck1: 'garage', hero: 20 } },
-    { id: 'love', label: 'Love is', hint: 'Любовь против Техники', options: { deck0: 'love', deck1: 'army', hero: 20 } },
-    { id: 'quick', label: 'Быстрая', hint: 'случайные колоды, терпение 15', options: { deck0: 'rand', deck1: 'rand', hero: 15 } },
+    { id: 'turbo', label: 'Turbo', hint: 'Гараж против Гонки', options: { deck0: 'garage', deck1: 'race', hero: 30 } },
+    { id: 'final', label: 'Final', hint: 'Сборная против Гаража', options: { deck0: 'team', deck1: 'garage', hero: 30 } },
+    { id: 'love', label: 'Love is', hint: 'Любовь против Техники', options: { deck0: 'love', deck1: 'army', hero: 30 } },
+    { id: 'quick', label: 'Быстрая', hint: 'случайные колоды, терпение 20', options: { deck0: 'rand', deck1: 'rand', hero: 20 } },
   ],
   setup: (seats, o, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);

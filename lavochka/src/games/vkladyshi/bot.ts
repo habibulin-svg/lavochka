@@ -51,17 +51,18 @@ function medium(s: State, seat: number, acts: Action[], rng: Rng): Action {
   const F = s.players[1 - me];
   // 1) самое дорогое, что по карману; цель приёма — по оценке
   const plays = acts.filter((a): a is Extract<Action, { t: 'play' }> => a.t === 'play');
-  if (plays.length) {
-    const best = Math.max(...plays.map((a) => card(P.hand[a.i]).cost));
-    const top = plays.filter((a) => card(P.hand[a.i]).cost === best);
-    let pick = top[0];
-    let pv = -Infinity;
-    for (const a of top) {
+  const base = evaluate(s, me);
+  // от дорогих к дешёвым; приём впустую (лечиться при полном терпении) — пропускаем
+  for (const cost of [...new Set(plays.map((a) => card(P.hand[a.i]).cost))].sort((a, b) => b - a)) {
+    let pick: Action | null = null;
+    let pv = base - 0.7;
+    for (const a of plays) {
+      if (card(P.hand[a.i]).cost !== cost) continue;
       const n = step(s, seat, a, rng);
       const v = n ? evaluate(n, me) : -Infinity;
       if (v > pv) [pv, pick] = [v, a];
     }
-    if (pv > -Infinity) return pick;
+    if (pick) return pick;
   }
   // 2) размен: убить и выжить; иначе — в лицо
   const attacks = acts.filter((a): a is Extract<Action, { t: 'attack' }> => a.t === 'attack');

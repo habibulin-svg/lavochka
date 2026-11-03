@@ -4,13 +4,15 @@
 import type { Rng } from '../../core/types';
 import { card, deckFrom, type Card, type Fx, type Kw } from './cards';
 
-export const HERO_HP = 20;
+export const HERO_HP = 30;
 export const MAX_MANA = 10;
 export const HAND_MAX = 7;
 export const BOARD_MAX = 5;
 export const START_HAND = 3;
+/** Сколько терпения сверху получает второй игрок. */
+export const SECOND_BONUS = 2;
 /** Ходов всего (на двоих): дальше — по терпению, чтобы партия не тянулась вечно. */
-export const TURN_LIMIT = 60;
+export const TURN_LIMIT = 80;
 
 export interface Unit {
   uid: number;
@@ -107,7 +109,9 @@ export function newState(seats: number[], decks: string[], rng: Rng, heroHp = HE
   // первый — START_HAND, второй — на одну больше (компенсация хода)
   for (let k = 0; k < START_HAND; k++) for (const p of players) p.hand.push(p.deck.shift()!);
   players[1]?.hand.push(players[1].deck.shift()!);
-  startTurn(s, []);
+  // второму — ещё и терпения побольше: первый ход в жанре — большое преимущество (по прогонам ботов ~70 % побед)
+  if (players[1]) players[1].hero += SECOND_BONUS;
+  startTurn(s, [], true);
   return s;
 }
 
@@ -143,7 +147,7 @@ function draw(s: State, pi: number, ev: Event[]) {
   ev.push({ t: 'draw', p: pi, seat: p.seat, id });
 }
 
-function startTurn(s: State, ev: Event[]) {
+function startTurn(s: State, ev: Event[], first = false) {
   s.turnNo += 1;
   const p = s.players[s.cur];
   p.maxMana = Math.min(MAX_MANA, p.maxMana + 1);
@@ -157,7 +161,7 @@ function startTurn(s: State, ev: Event[]) {
     }
   }
   ev.push({ t: 'turn', p: s.cur, turnNo: s.turnNo });
-  draw(s, s.cur, ev);
+  if (!first) draw(s, s.cur, ev); // первый игрок в самый первый ход не берёт
   checkOver(s, ev);
 }
 

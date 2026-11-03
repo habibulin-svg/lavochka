@@ -55,7 +55,7 @@ export function home(box: HTMLElement, launch: (options: Options, table?: Launch
     q('play').onclick = () => {
       const d2 = c.decks[c.active];
       if (!d2 || deckValid(c, d2.ids)) return;
-      launch({ deck0: deckSpec(d2.ids), deck1: 'rand', hero: 20 }, { count: 2 });
+      launch({ deck0: deckSpec(d2.ids), deck1: 'rand', hero: 30 }, { count: 2 });
     };
   };
   draw();
