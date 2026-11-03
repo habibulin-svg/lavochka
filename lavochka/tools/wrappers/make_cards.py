@@ -113,6 +113,8 @@ def main():
                 f.update(name=title(r.get('name')), kind=kind, cc=clean_int(r.get('cc'), 49, 30000),
                          hp=clean_int(r.get('hp'), 3, 2000), speed=clean_int(r.get('speed'), 20, 600),
                          year=clean_int(r.get('year'), 1900, 2000))
+                if kind in ('car', 'truck', 'f1') and f.get('cc') and f['cc'] < 600:
+                    f['cc'] = None  # у легковой меньше 600 см³ не бывает — модель потеряла цифру
             elif coll == 'final':
                 photo = bool(r.get('is_team_photo')) or not r.get('player')
                 f.update(player=None if photo else title(r.get('player')), team=title(r.get('team_en')) or title(r.get('team')),

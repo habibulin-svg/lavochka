@@ -12,7 +12,7 @@ export type Target = 'enemy' | 'enemyUnit' | 'allyUnit' | 'anyUnit' | 'none';
 /** Эффект карты: при выкладывании («Выход»), при уходе со стола («Прощание») или сам по себе (заклинание — «приём»). */
 export interface Fx {
   /** что делает */
-  k: 'dmg' | 'heal' | 'buff' | 'draw' | 'armor' | 'stun' | 'team' | 'aoe' | 'mana';
+  k: 'dmg' | 'heal' | 'buff' | 'draw' | 'armor' | 'stun' | 'team' | 'aoe' | 'mana' | 'all';
   n: number;
   m?: number;
   /** на кого (для heal 'none' — свой герой) */
@@ -152,7 +152,6 @@ function carCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | 'spell
   // цена: бюджет «2 × цена + 1» на атаку и здоровье, ключевое слово — ещё одно очко
   const budget = atk + hpv + kw.length - (rarity >= 2 ? 1 : 0);
   let cost = clamp(Math.round((budget - 1) / 2), 1, 9);
-  if (coll === 'bomb') cost = clamp(cost - (r > 0.5 ? 1 : 0), 1, 9);
   const parts = [f.cc ? `${f.cc} см³` : '', f.hp ? `${f.hp} л.с.` : '', f.speed ? `${f.speed} км/ч` : ''].filter(Boolean);
   return { ...base, sub: parts.join(' · ') || (f.year ? String(f.year) : ''), cost, atk, hp: hpv, kw, spell: false, rarity };
 }
@@ -170,7 +169,7 @@ function footballCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | '
   const star = STARS.some((s) => up.includes(s));
   const cost = star ? 5 + Math.round(r * 2) : 1 + Math.floor(r * 5); // 1…5
   let atk = Math.max(1, Math.round(cost * (0.7 + r * 0.6)));
-  let hp = Math.max(1, 2 * cost + 1 - atk - 1); // «Пара» стоит очко
+  let hp = Math.max(1, 2 * cost + 2 - atk); // полный бюджет: «Пара» — бонус сборной, а не плата
   const kw: Kw[] = ['pair'];
   if (star) {
     atk += 1;
@@ -183,11 +182,11 @@ function footballCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | '
 
 // ---------------------------------------------------------------- Love is: приёмы
 const LOVE_FX: { fx: Fx; cost: number; text: string }[] = [
-  { fx: { k: 'heal', n: 4, to: 'none' }, cost: 1, text: 'вернуть 4 терпения' },
+  { fx: { k: 'heal', n: 5, to: 'none' }, cost: 1, text: 'вернуть 5 терпения' },
   { fx: { k: 'buff', n: 1, m: 2, to: 'allyUnit' }, cost: 1, text: '+1 к атаке и +2 к здоровью своему' },
   { fx: { k: 'armor', n: 1, to: 'allyUnit' }, cost: 1, text: 'своему — «Броня»' },
-  { fx: { k: 'draw', n: 2, to: 'none' }, cost: 2, text: 'взять 2 вкладыша' },
-  { fx: { k: 'heal', n: 8, to: 'none' }, cost: 3, text: 'вернуть 8 терпения' },
+  { fx: { k: 'draw', n: 2, to: 'none' }, cost: 1, text: 'взять 2 вкладыша' },
+  { fx: { k: 'all', n: 1, m: 1, to: 'none' }, cost: 3, text: 'всем своим +1/+1' },
   { fx: { k: 'buff', n: 2, m: 2, to: 'allyUnit' }, cost: 2, text: '+2/+2 своему' },
   { fx: { k: 'stun', n: 1, to: 'enemyUnit' }, cost: 1, text: 'чужой пропускает ход — загляделся' },
   { fx: { k: 'mana', n: 1, to: 'none' }, cost: 0, text: '+1 копейка в этот ход' },
@@ -261,6 +260,8 @@ export function fxText(fx: Fx): string {
       return `${fx.n} урона всем чужим`;
     case 'mana':
       return `+${fx.n} копейка в этот ход`;
+    case 'all':
+      return `всем своим +${fx.n}/+${fx.m ?? 0}`;
   }
 }
 
@@ -273,14 +274,16 @@ export interface Starter {
   label: string;
   hint: string;
   colls: Coll[];
+  /** доля основной (первой) коллекции в колоде */
+  share?: number;
 }
 
 export const STARTERS: Starter[] = [
   { id: 'garage', label: 'Гараж (Turbo)', hint: COLL_STYLE.turbo, colls: ['turbo'] },
   { id: 'race', label: 'Гонка (BomBibom)', hint: COLL_STYLE.bomb, colls: ['bomb', 'turbo'] },
-  { id: 'team', label: 'Сборная (Final + Love is)', hint: COLL_STYLE.final, colls: ['final', 'love'] },
+  { id: 'team', label: 'Сборная (Final + Love is)', hint: COLL_STYLE.final, colls: ['final', 'love'], share: 0.8 },
   { id: 'army', label: 'Техника (Lazer + Turbo)', hint: COLL_STYLE.lazer, colls: ['lazer', 'turbo'] },
-  { id: 'love', label: 'Любовь (Love is + Turbo)', hint: COLL_STYLE.love, colls: ['love', 'turbo'] },
+  { id: 'love', label: 'Любовь (Love is + Turbo)', hint: COLL_STYLE.love, colls: ['love', 'turbo'], share: 0.4 },
 ];
 
 /** Кривая цены стартовой колоды: сколько карт какой цены (сумма 20). */
@@ -300,7 +303,7 @@ export function starterDeck(id: string): string[] {
   for (let cost = 0; cost < CURVE.length; cost++) {
     const n = CURVE[cost];
     if (!n) continue;
-    const nMain = st.colls.length > 1 ? Math.ceil((n * 2) / 3) : n;
+    const nMain = st.colls.length > 1 ? Math.round(n * (st.share ?? 2 / 3)) : n;
     take((c) => c.coll === main && c.cost === cost, nMain);
   }
   // добор второй коллекцией и чем придётся до 20

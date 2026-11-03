@@ -320,6 +320,14 @@ function runFx(s: State, pi: number, fx: Fx, tgt: Tgt | undefined, ev: Event[], 
       }
       break;
     }
+    case 'all':
+      for (const u of p.board) {
+        u.atk += fx.n;
+        u.hp += fx.m ?? 0;
+        u.maxHp += fx.m ?? 0;
+        ev.push({ t: 'buff', tgt: { p: pi, uid: u.uid }, atk: fx.n, hp: fx.m ?? 0 });
+      }
+      break;
     case 'mana':
       p.mana = Math.min(MAX_MANA, p.mana + fx.n);
       ev.push({ t: 'mana', p: pi, n: fx.n });
@@ -334,6 +342,7 @@ export function canPlay(s: State, pi: number, c: Card): boolean {
   if (c.spell) {
     const t = fxTargets(s, pi, c.play);
     if (t && !t.length) return false;
+    if (c.play?.k === 'all' && !p.board.length) return false; // усиливать некого
   }
   return true;
 }
