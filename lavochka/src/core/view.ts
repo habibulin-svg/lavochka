@@ -93,6 +93,8 @@ export interface GameModule {
   ownSaves?: boolean;
   /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */
   home?(box: HTMLElement, launch: (options: Options, table?: LaunchTable) => void): void;
+  /** Сетевые комнаты — только через сервер, что бы ни стояло в настройках (у «Вкладышей» там кон и колоды игроков). */
+  serverRooms?: boolean;
   /** Свой блок в лобби сетевой комнаты (кон во «Вкладышах»); mode 'server' — комната на сервере. Блок сам следит, жив ли он (isConnected). */
   lobby?(box: HTMLElement, room: { code: string; mode: 'server' | 'p2p' }): void;
   /** Персонажи, которых игрок выбирает себе в лобби (холдем 3D). По умолчанию место i — looks[i]. */

@@ -10,5 +10,5 @@ const help = `<p><b>Выложить вкладыш.</b> Щёлкните вкл
 <p><b>На кон</b> — в сетевой комнате «через сервер» (нужно войти на сайт): в лобби оба кладут дворовые вкладыши и жмут «Согласен на кон». Победитель забирает весь кон. Домашние вкладыши (из жвачек за купленные монеты) на кон и в обмен не идут.</p>
 <p><b>Пауза</b> — <kbd>Esc</kbd> или ☰: сохранить, загрузить, правила, в меню игры или во двор. ♪ — музыка, 🔊 на панели — звуки.</p>`;
 
-const mod: GameModule = { def, createView, help, home, lobby: stakePanel };
+const mod: GameModule = { def, createView, help, home, lobby: stakePanel, serverRooms: true };
 export default mod;

@@ -199,7 +199,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
 export async function hostGame(mod: GameModule, seats: SeatSpec[], options: Options) {
   closeActive();
   const def = mod.def;
-  const mode: NetMode = settings.net;
+  const mode: NetMode = mod.serverRooms ? 'server' : settings.net;
   showLobbyLoading(mode);
   try {
     let client: RoomClient;

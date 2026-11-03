@@ -160,7 +160,7 @@ describe('обмен', () => {
     const done = await vk.tradeOk({ code, sig: p.body.sig }, ctx(b.sid));
     expect(done.body.done).toBeTruthy();
     expect(count(collOf(await vk.get(ctx(b.sid))), give[0])).toBe(before + 1);
-    expect(collOf(await vk.get(ctx(a.sid))).log?.[0].text).toMatch(/Обмен с Женя/);
+    expect(collOf(await vk.get(ctx(a.sid))).log?.[0].text).toMatch(/Обмен \(с кем — Женя\)/);
   });
 
   it('третьему за стол не сесть, домашнее не выложить', async () => {

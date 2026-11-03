@@ -229,3 +229,47 @@ describe('голосовой чат', () => {
     expect(noVideoSend({ candidate: { candidate: 'x' } })).toEqual({ candidate: { candidate: 'x' } });
   });
 });
+
+describe('комната: аккаунты по местам (кон «Вкладышей»)', () => {
+  it('onStart видит аккаунты мест и меняет правила партии, onResult — один раз в конце', async () => {
+    const def = await DEFS.vkladyshi();
+    const seats: SeatSpec[] = [
+      { seat: 0, kind: 'human', name: 'Хозяин', level: 1 },
+      { seat: 1, kind: 'remote', name: '', level: 1 },
+    ];
+    const starts: (number | null)[][] = [];
+    const results: { winners: number[]; users: (number | null)[] }[] = [];
+    let closed = 0;
+    const room = new Room({
+      def,
+      options: { hero: 30 },
+      seats,
+      code: 'VK',
+      ownerKey: 'key',
+      botDelay: 0,
+      onStart: (users, o) => (starts.push(users), { ...o, hero: 20 }),
+      onResult: (r, users) => results.push({ winners: r.winners, users }),
+      onClose: () => closed++,
+    });
+    rooms.push(room);
+    const join = (name: string, user: number, ownerKey?: string, seed = 1) => {
+      const [a, b] = localPair();
+      a.user = user;
+      room.connect(a);
+      return new AutoClient(def, b, name, ownerKey, seed);
+    };
+    const owner = join('Хозяин', 7, 'key', 1);
+    join('Гость', 8, undefined, 2);
+    await until(() => owner.log.some((m) => m.t === 'lobby' && m.seats.every((s) => s.filled)), 5000, 'гость в лобби');
+    owner.client.start(false);
+    await until(() => owner.has('start'), 5000, 'старт');
+    expect(starts).toEqual([[7, 8]]);
+    expect(Math.max(...(owner.view as any).players.map((p: any) => p.hero))).toBeLessThanOrEqual(22); // терпение 20 (+2 второму)
+    await until(() => !!owner.result, 60000, 'конец партии');
+    await until(() => results.length > 0, 2000, 'итог');
+    expect(results).toHaveLength(1);
+    expect(results[0].users).toEqual([7, 8]);
+    room.close();
+    expect(closed).toBe(1);
+  }, 90_000);
+});

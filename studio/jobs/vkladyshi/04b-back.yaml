@@ -1,0 +1,18 @@
+# Вкладыши, 4б: рубашка вкладыша — только узор (в 04-art модель рисовала пейзаж).
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 768, height: 1024, steps: 8}
+seeds: [21, 22, 23, 24]
+style: >-
+  flat graphic print design, vivid 1990s colors, no scenery, no buildings, no people, no text, no letters, no logos, no watermark.
+
+items:
+  - name: card-back
+    prompt: >-
+      Seamless abstract repeating pattern filling the entire frame edge to edge: diagonal red and yellow stripes with small white stars
+      and pink bubble gum bubbles, printed on glossy paper, like the reverse side of a 1990s bubble gum insert. {style}
+  - name: card-back-b
+    prompt: >-
+      Seamless abstract repeating pattern filling the entire frame edge to edge: bright pink background with white polka dots,
+      small red hearts and yellow lightning bolts, retro 1990s candy wrapper print on glossy paper. {style}

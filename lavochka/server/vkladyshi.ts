@@ -359,8 +359,8 @@ export class Vk {
           const bad = checkYard(from, pot, this.held(loser));
           if (!bad) {
             moveYard(from, to, pot);
-            addLog(to, `Кон выигран у ${st.sides.get(loser)!.name}: ${names(pot)}`);
-            addLog(from, `Кон проигран ${st.sides.get(w)?.name ?? 'сопернику'}: ${names(pot)}`);
+            addLog(to, `Кон выигран (соперник — ${st.sides.get(loser)!.name}): ${names(pot)}`);
+            addLog(from, `Кон проигран (соперник — ${st.sides.get(w)?.name ?? '?'}): ${names(pot)}`);
             this.log(`вкладыши ${room}: кон ${pot.length} шт. ${loser} → ${w}`);
           } else this.log(`вкладыши ${room}: кон не передан — ${bad}`);
         }
@@ -466,7 +466,7 @@ export class Vk {
         }
         moveYard(ca, cb, a.ids);
         moveYard(cb, ca, bb.ids);
-        const line = (me: Side, foe: Side) => `Обмен с ${foe.name}: отдал ${me.ids.length ? names(me.ids) : 'ничего'}, получил ${foe.ids.length ? names(foe.ids) : 'ничего'}`;
+        const line = (me: Side, foe: Side) => `Обмен (с кем — ${foe.name}): отдано ${me.ids.length ? names(me.ids) : 'ничего'}, получено ${foe.ids.length ? names(foe.ids) : 'ничего'}`;
         addLog(ca, line(a, bb));
         addLog(cb, line(bb, a));
         await this.put([a.uid, ca], [bb.uid, cb]);

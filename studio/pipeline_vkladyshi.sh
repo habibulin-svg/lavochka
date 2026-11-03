@@ -19,4 +19,10 @@ if want 03; then
   step "музыка 03-music"
   $PY3D -X utf8 runners/yue2.py jobs/vkladyshi/03-music.yaml || step "ОШИБКА 03-music"
 fi
+if want 04; then
+  step "оформление 04-art + 04b-back (Z-Image, comfy-big должен быть запущен)"
+  G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 run.py jobs/vkladyshi/04-art.yaml || step "ОШИБКА 04-art"
+  G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 run.py jobs/vkladyshi/04b-back.yaml || step "ОШИБКА 04b-back"
+  CUDA_VISIBLE_DEVICES=0 $PY3D -X utf8 post/ui_vkladyshi.py || step "ОШИБКА упаковки оформления"
+fi
 step "конвейер vkladyshi закончен"

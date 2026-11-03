@@ -1,7 +1,7 @@
 /* «Вкладыши» — стол: лавочки двух игроков, рука, терпение и копейки. Карта — настоящий вкладыш в рамке: цена, атака, здоровье.
  * Выложить: щелчок по вкладышу в руке → (место на лавочке) → (цель приёма). Ударить: свой вкладыш → цель. Зажать/правый щелчок — увеличить. */
 import type { GameView, ViewCtx } from '../../core/view';
-import { card, COLL_NAME, fxText, KW_HINT, KW_NAME, RARITY_NAME, setInfo, type Card } from './cards';
+import { card, COLL_NAME, fxLong, fxText, KW_HINT, KW_NAME, RARITY_NAME, setInfo, type Card } from './cards';
 import { atkOf, BOARD_MAX, type Action, type Event, type Tgt, type Unit, type View } from './engine';
 import { reward } from './bank';
 import { sfx } from './sfx';
@@ -29,18 +29,30 @@ export function cardHtml(c: Card, u?: Unit, atk?: number, extra = ''): string {
   </div>`;
 }
 
-/** Подробная справка по карте (увеличение). */
+/** Подробная справка по карте (увеличение): что это и что делает — человеческим языком. */
 export function cardInfo(c: Card): string {
   const s = setInfo(c.set);
-  const fx = [c.play && (c.spell ? fxText(c.play) : `выход: ${fxText(c.play)}`), c.death && `прощание: ${fxText(c.death)}`].filter(Boolean);
+  const what: string[] = [];
+  if (c.spell) {
+    what.push(`<b>Приём</b> за ${c.cost} коп. Разыгрывается сразу и уходит — на лавочку не ложится.`);
+    if (c.play) what.push(fxLong(c.play));
+  } else {
+    what.push(`<b>Вкладыш</b> за ${c.cost} коп. Ложится на лавочку и со следующего хода бьёт на <b>${c.atk}</b>; выдерживает <b>${c.hp}</b> урона.`);
+    if (c.play) what.push(`<b>Сразу при выходе:</b> ${fxLong(c.play)}`);
+    if (c.death) what.push(`<b>Прощание</b> — когда его побьют: ${fxLong(c.death)}`);
+  }
   return `<div class="vk-zoom-info">
     <h3>${esc(c.coll === 'love' ? `Love is ${c.name}` : c.name)}</h3>
-    <p class="vk-zoom-set">${esc(s.title)} · №${c.n} · ${RARITY_NAME[c.rarity]}${c.sub ? ` · ${esc(c.sub)}` : ''}</p>
-    <p>${c.spell ? `Приём, ${c.cost} коп.` : `${c.cost} коп. · атака ${c.atk} · здоровье ${c.hp}`}</p>
-    ${c.kw.map((k) => `<p><b>${KW_NAME[k]}</b> — ${KW_HINT[k]}</p>`).join('')}
-    ${fx.map((f) => `<p>${esc(f!)}</p>`).join('')}
+    <p class="vk-zoom-set">${esc(s.title)} · №${c.n} · ${RARITY_NAME[c.rarity]}${c.sub && !c.spell ? ` · ${esc(c.sub)}` : ''}</p>
+    <div class="vk-what">${what.map((w) => `<p>${w}</p>`).join('')}</div>
+    ${c.kw.length ? `<ul class="vk-kwlist">${c.kw.map((k) => `<li><b>${KW_NAME[k]}</b> — ${KW_HINT[k]}</li>`).join('')}</ul>` : ''}
+    <p class="vk-zoom-close">щёлкните, чтобы закрыть</p>
   </div>`;
 }
+
+/** Портреты героев — по месту. */
+const HEROES = ['hero-boy', 'hero-girl', 'hero-boy2', 'hero-girl2'];
+const UI = '/vkladyshi/ui/';
 
 export function zoom(c: Card) {
   const ov = document.createElement('div');
@@ -62,6 +74,10 @@ export function createView(): GameView<View, Event> {
   let musicBtn: HTMLButtonElement;
   const music = new Music();
   let rewarded = false;
+  let ro: ResizeObserver | null = null;
+  /** Размер карты по месту на экране (считается в mount, зовётся и при каждой отрисовке — экран мог только что показаться). */
+  let fit = () => {};
+  let offFit = () => {};
 
   /** Индекс «моего» игрока: первый, чьи карты видит экран (хот-сит — тот, чей ход). */
   const meIdx = () => {
@@ -75,10 +91,11 @@ export function createView(): GameView<View, Event> {
     const p = v!.players[pi];
     const pips = Array.from({ length: Math.max(p.maxMana, 1) }, (_, i) => `<i class="${i < p.mana ? 'on' : ''}"></i>`).join('');
     return `<div class="vk-hero ${top ? 'top' : 'bottom'}${v!.cur === pi && !v!.over ? ' now' : ''}" data-hero="${pi}">
-      <div class="vk-face" data-cam="${p.seat}">${ctx.name(p.seat)}</div>
-      <div class="vk-patience" title="Терпение"><b>${p.hero}</b><small>терпение</small></div>
-      <div class="vk-mana" title="Копейки"><span>${p.mana}/${p.maxMana}</span><div class="vk-pips">${pips}</div></div>
-      <div class="vk-deck" title="Колода">🂠 ${p.deck}</div>
+      <div class="vk-ava" data-cam="${p.seat}" style="--ava:url('${UI}${HEROES[p.seat % HEROES.length]}.webp')"></div>
+      <div class="vk-who"><div class="vk-face">${ctx.name(p.seat)}</div>${v!.cur === pi && !v!.over ? '<small>ходит</small>' : ''}</div>
+      <div class="vk-patience" title="Терпение: кончится — проигрыш"><b>${p.hero}</b><small>терпение</small></div>
+      <div class="vk-mana" title="Копейки: каждый ход +1, на них выкладывают вкладыши"><span><b>${p.mana}</b>/${p.maxMana} коп.</span><div class="vk-pips">${pips}</div></div>
+      <div class="vk-deck" title="Вкладышей в колоде"><i></i>${p.deck}</div>
     </div>`;
   }
 
@@ -137,6 +154,7 @@ export function createView(): GameView<View, Event> {
 
   function render() {
     if (!v) return;
+    fit();
     const me = meIdx();
     const foe = 1 - me;
     root.innerHTML = `<div class="vk-table">
@@ -270,6 +288,26 @@ export function createView(): GameView<View, Event> {
       root = r;
       ctx = c;
       root.classList.add('vk-root');
+      fit = () => {
+        const W = root.clientWidth;
+        if (!W) return; // экран ещё скрыт — посчитаем, когда покажется
+        // высоту берём от окна: у контейнера она растёт вместе с картами (иначе круг)
+        // на телефоне доска — квадрат, его задаёт стол: берём его высоту
+        const phone = window.innerWidth <= 700;
+        const top = (root.parentElement ?? root).getBoundingClientRect().top;
+        const H = phone ? root.parentElement?.clientHeight || W : Math.max(260, window.innerHeight - Math.max(0, top) - 8);
+        // по высоте: две лавочки (h + поля), своя рука 0.95h, чужая 0.4h, две плашки героев и строка хода
+        const fixed = phone ? 160 : 235;
+        const h = Math.min((H - fixed) / (phone ? 3.15 : 3.72), (W / (phone ? 5.5 : 6.4)) * 1.36);
+        root.style.setProperty('--vk-w', `${Math.max(40, Math.min(170, h / 1.36)).toFixed(1)}px`);
+      };
+      ro = new ResizeObserver(fit);
+      ro.observe(root);
+      if (root.parentElement) ro.observe(root.parentElement);
+      window.addEventListener('resize', fit);
+      requestAnimationFrame(fit);
+      offFit = () => window.removeEventListener('resize', fit);
+      fit();
       endBtn = document.createElement('button');
       endBtn.className = 'btn vk-end';
       endBtn.textContent = 'Конец хода';
@@ -328,14 +366,17 @@ export function createView(): GameView<View, Event> {
         if (!v) break;
         switch (e.t) {
           case 'play': {
-            sfx(card(e.id).spell ? 'spell' : 'place');
+            const c = card(e.id);
+            const prev = v;
+            sfx(c.spell ? 'spell' : 'place');
             const tmp = { ...view };
             v = tmp;
             render();
             const el = e.uid !== undefined ? root.querySelector(`[data-uid="${e.uid}"]`) : null;
             fly(el, 'landed', 450);
-            if (card(e.id).spell && !ctx.demo && !v.me.includes(e.p)) zoomBrief(card(e.id));
-            await sleep(380 / sp);
+            // чужой приём или вкладыш с эффектом — крупно: что разыграно, что делает и на кого
+            if (!ctx.demo && !prev.me.includes(e.p) && (c.spell || c.play)) await cast(c, e.p, e.tgt, prev, sp);
+            else await sleep(380 / sp);
             break;
           }
           case 'attack': {
@@ -361,6 +402,19 @@ export function createView(): GameView<View, Event> {
             break;
           case 'buff':
             floatNum(elOf(e.tgt), `+${e.atk}/+${e.hp}`, 'heal');
+            fly(elOf(e.tgt), 'buffed', 700);
+            break;
+          case 'armor':
+            floatNum(elOf(e.tgt), 'броня!', 'armor');
+            break;
+          case 'stun':
+            floatNum(elOf(e.tgt), 'загляделся!', 'stun');
+            break;
+          case 'mana':
+            floatNum(root.querySelector(`[data-hero="${e.p}"] .vk-mana`), `+${e.n} коп.`, 'heal');
+            break;
+          case 'draw':
+            if (!ctx.demo && e.burn) floatNum(root.querySelector(`[data-hero="${e.p}"]`), 'рука полна — сгорел', 'dmg');
             break;
           case 'die':
             fly(root.querySelector(`[data-uid="${e.uid}"]`), 'dying', 500);
@@ -405,6 +459,8 @@ export function createView(): GameView<View, Event> {
       return p ? `♥ ${p.hero} · 🪙 ${p.mana}/${p.maxMana} · 🂠 ${p.deck}` : '';
     },
     destroy() {
+      ro?.disconnect();
+      offFit();
       music.stop();
       document.removeEventListener('keydown', onKey);
       document.querySelectorAll('.vk-zoom, .vk-toast').forEach((x) => x.remove());
@@ -415,12 +471,33 @@ export function createView(): GameView<View, Event> {
     if (e.key === 'Enter' && myTurn() && !(e.target instanceof HTMLInputElement)) send({ t: 'end' });
   }
 
-  function zoomBrief(c: Card) {
+  /** Соперник разыграл приём (или вкладыш с эффектом): плашка с картой, словами и целью; цель мигает. */
+  async function cast(c: Card, p: number, tgt: Tgt | undefined, prev: View, sp: number) {
+    const who = ctx.name(prev.players[p].seat);
+    let on = '';
+    if (tgt) {
+      const meSide = prev.me.includes(tgt.p);
+      if (tgt.uid === undefined) on = meSide ? 'по вам' : `по ${esc(ctx.name(prev.players[tgt.p].seat))}`;
+      else {
+        const u = prev.players[tgt.p].board.find((x) => x.uid === tgt.uid);
+        if (u) on = `на ${meSide ? 'ваш' : 'свой'} «${esc(card(u.id).name)}»`;
+      }
+    }
     const el = document.createElement('div');
-    el.className = 'vk-brief';
-    el.innerHTML = cardHtml(c);
+    el.className = 'vk-cast';
+    el.innerHTML = `<div class="vk-cast-box">${cardHtml(c)}<div class="vk-cast-text">
+      <small>${esc(who)} ${c.spell ? 'разыгрывает приём' : 'выкладывает'}</small>
+      <h3>${esc(c.coll === 'love' ? `Love is ${c.name}` : c.name)}</h3>
+      <p>${c.play ? fxLong(c.play) : ''}</p>
+      ${on ? `<p class="vk-cast-on">→ ${on}</p>` : ''}
+    </div></div>`;
     root.appendChild(el);
-    setTimeout(() => el.remove(), 1400);
+    const aim = tgt ? elOf(tgt) : null;
+    aim?.classList.add('aimed');
+    await sleep(Math.max(900, 2300 / sp));
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+    setTimeout(() => aim?.classList.remove('aimed'), 1400);
   }
 
   function toast(text: string) {

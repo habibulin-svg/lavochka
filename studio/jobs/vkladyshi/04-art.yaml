@@ -1,0 +1,119 @@
+# Вкладыши, партия 4: оформление стола и ларька. Стиль — тёплая «материальная» фактура 90-х (доски, асфальт, бумага),
+# рисованно-фотографично, без текста и логотипов: сами вкладыши — настоящие сканы, оформление их не перебивает.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1024, height: 1024, steps: 8}
+seeds: [11, 12, 13]
+style: >-
+  Highly detailed painterly game art texture, warm late-summer evening light, Russian courtyard of the 1990s,
+  nostalgic and cozy, rich natural colors, no text, no letters, no logos, no watermark.
+
+items:
+  # стол: доски лавочки сверху (фон всей доски)
+  - name: bench
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down flat view filling the whole frame: wide old wooden park bench planks running horizontally,
+      painted in faded green paint that is peeling and chipped showing grey weathered wood underneath,
+      rusty bolt heads, small knots and cracks, a few sunflower seed husks, even soft lighting, seamless flat surface. {style}
+
+  # вокруг стола: асфальт двора с меловыми следами
+  - name: asphalt
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down flat texture of old cracked grey courtyard asphalt filling the whole frame, faint traces of children's chalk drawings,
+      small pebbles, a few fallen yellow poplar leaves, soft even evening light, seamless surface. {style}
+
+  # рубашка вкладыша в руке соперника и в колоде
+  - name: card-back
+    width: 768
+    height: 1024
+    prompt: >-
+      Back side of a 1990s bubble gum insert card filling the whole frame: glossy pink and cream paper with a repeating pattern
+      of small bubble gum balls, stars and swirls, slightly worn edges, flat front view. {style}
+
+  # обёртки жвачек в ларьке (по коллекциям, без надписей)
+  - name: wrap-turbo
+    width: 1024
+    height: 640
+    prompt: >-
+      A single wrapped rectangular bubble gum piece lying flat, front view, wrapper in bright red, yellow and black
+      with a dynamic drawing of a sports car and speed lines, waxed paper with twisted ends, isolated on plain light grey background. {style}
+  - name: wrap-bomb
+    width: 1024
+    height: 640
+    prompt: >-
+      A single wrapped rectangular bubble gum piece lying flat, front view, wrapper in bright orange and blue with a cartoon
+      racing car and an explosion burst, waxed paper with twisted ends, isolated on plain light grey background. {style}
+  - name: wrap-final
+    width: 1024
+    height: 640
+    prompt: >-
+      A single wrapped rectangular bubble gum piece lying flat, front view, wrapper in green and white with a football ball
+      and stadium lines, waxed paper with twisted ends, isolated on plain light grey background. {style}
+  - name: wrap-love
+    width: 1024
+    height: 640
+    prompt: >-
+      A single wrapped rectangular bubble gum piece lying flat, front view, wrapper in soft pink and white with little red hearts
+      and a cute cartoon couple silhouette, waxed paper with twisted ends, isolated on plain light grey background. {style}
+  - name: wrap-lazer
+    width: 1024
+    height: 640
+    prompt: >-
+      A single wrapped rectangular bubble gum piece lying flat, front view, wrapper in khaki green and steel blue with a fighter jet
+      and laser beams, waxed paper with twisted ends, isolated on plain light grey background. {style}
+
+  # ларёк — шапка окна магазина
+  - name: kiosk
+    width: 1536
+    height: 640
+    prompt: >-
+      Front view of a 1990s Russian street kiosk at evening, small glass windows lit warmly from inside, packed with colorful
+      bubble gum, chocolate bars, soda bottles and cigarettes boxes, metal frame painted blue, a small serving window, wet asphalt in front,
+      cozy nostalgic mood, no readable signs. {style}
+
+  # копейка — ресурс хода
+  - name: coin
+    width: 768
+    height: 768
+    prompt: >-
+      A single old Soviet copper kopeck coin seen straight from above, worn shiny copper, embossed wheat ears ornament,
+      no readable text, isolated on plain light grey background, sharp studio light. {style}
+
+  # бумага альбома
+  - name: album
+    width: 1024
+    height: 1024
+    prompt: >-
+      Flat texture of a page of an old children's sticker album from the 1990s, slightly yellowed thick paper with faint printed
+      grid of empty rectangular frames and soft stains, filling the whole frame, even light. {style}
+
+  # герои: пацаны и девчонки двора (портреты в кружке)
+  - name: hero-boy
+    width: 768
+    height: 768
+    prompt: >-
+      Head and shoulders portrait of a cheerful 12-year-old Russian boy from the 1990s in a baseball cap turned backwards and an
+      Adidas-style tracksuit jacket, freckles, grinning, stylized painterly illustration, plain warm background. {style}
+  - name: hero-girl
+    width: 768
+    height: 768
+    prompt: >-
+      Head and shoulders portrait of a confident 12-year-old Russian girl from the 1990s with two big white hair bows and a denim jacket,
+      sly smile, stylized painterly illustration, plain warm background. {style}
+  - name: hero-boy2
+    width: 768
+    height: 768
+    prompt: >-
+      Head and shoulders portrait of a serious 13-year-old Russian boy from the 1990s with a buzz cut, a striped t-shirt and a scraped
+      cheek plaster, squinting, stylized painterly illustration, plain cool background. {style}
+  - name: hero-girl2
+    width: 768
+    height: 768
+    prompt: >-
+      Head and shoulders portrait of a cheerful 11-year-old Russian girl from the 1990s with a short bob haircut and a bright knitted
+      sweater, chewing bubble gum blowing a pink bubble, stylized painterly illustration, plain cool background. {style}

@@ -419,14 +419,14 @@ function trade(onClose: () => void) {
     if (!t) return start();
     const tv = t;
     if (tv.done) {
-      root.innerHTML = `<div class="vk-trade-done"><h3>Обмен состоялся!</h3><p>Отдали:</p>${strip(tv.mine.ids, false)}<p>Получили от ${esc(tv.foe?.name ?? '')}:</p>${strip(tv.foe?.ids ?? [], false)}<p><small>Записано в журнал у обоих.</small></p></div>`;
+      root.innerHTML = `<div class="vk-trade-done"><h3>Обмен состоялся!</h3><p>Отдали:</p>${strip(tv.mine.ids, false)}<p>Получили (с кем меняли — ${esc(tv.foe?.name ?? '')}):</p>${strip(tv.foe?.ids ?? [], false)}<p><small>Записано в журнал у обоих.</small></p></div>`;
       bindStrip(root);
       return;
     }
     root.innerHTML = `<p class="vk-trade-code">Код стола: <b>${esc(tv.code)}</b> <small>— скажите его тому, с кем меняетесь</small></p>
       <div class="vk-trade-sides">
         <section><h3>Вы даёте ${tv.mine.ok ? '<span class="vk-ok">✔ согласны</span>' : ''}</h3><div data-a="mine">${strip(tv.mine.ids, true)}</div></section>
-        <section><h3>${tv.foe ? `${esc(tv.foe.name)} даёт ${tv.foe.ok ? '<span class="vk-ok">✔ согласен</span>' : ''}` : 'Ждём второго…'}</h3><div data-a="foe">${tv.foe ? strip(tv.foe.ids, false) : ''}</div></section>
+        <section><h3>${tv.foe ? `${esc(tv.foe.name)} даёт ${tv.foe.ok ? '<span class="vk-ok">✔ согласие</span>' : ''}` : 'Ждём второго…'}</h3><div data-a="foe">${tv.foe ? strip(tv.foe.ids, false) : ''}</div></section>
       </div>
       <div class="row buttons"><button class="btn" data-a="leave">Встать из-за стола</button><button class="btn primary" data-a="ok" ${!tv.foe || tv.mine.ok || (!tv.mine.ids.length && !tv.foe.ids.length) ? 'disabled' : ''}>Меняемся</button></div>
       <h3>Свои дворовые — щёлкните, чтобы выложить (до ${STAKE_MAX})</h3>
@@ -510,7 +510,7 @@ export function stakePanel(box: HTMLElement, room: { code: string; mode: 'server
       <h3>На кон ${sv.locked ? '<span class="vk-ok">— партия идёт на кон</span>' : both ? '<span class="vk-ok">— договорились: победитель забирает всё</span>' : ''}</h3>
       <div class="vk-trade-sides">
         <section><h4>Вы ставите ${sv.mine?.ok ? '<span class="vk-ok">✔</span>' : ''}</h4><div data-a="mine">${strip(mine, !sv.locked)}</div></section>
-        <section><h4>${sv.foe ? `${esc(sv.foe.name)} ставит ${sv.foe.ok ? '<span class="vk-ok">✔</span>' : ''}` : sv.others.length ? `${esc(sv.others.join(', '))} пока ничего не поставил` : 'Соперник ещё не вошёл'}</h4><div data-a="foe">${sv.foe ? strip(sv.foe.ids, false) : ''}</div></section>
+        <section><h4>${sv.foe ? `${esc(sv.foe.name)} ставит ${sv.foe.ok ? '<span class="vk-ok">✔</span>' : ''}` : sv.others.length ? `${esc(sv.others.join(', '))}: на кону пока пусто` : 'Соперник ещё не вошёл'}</h4><div data-a="foe">${sv.foe ? strip(sv.foe.ids, false) : ''}</div></section>
       </div>
       ${
         sv.locked
