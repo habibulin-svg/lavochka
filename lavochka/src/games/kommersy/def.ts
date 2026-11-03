@@ -204,6 +204,8 @@ export const def: GameDef<State, Action, Event, View> = {
   showcase,
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, level, rng) => choose(v, seat, level, rng) },
   describe: (ev, name) => describe(ev, name),
+  // совесть и органы в итоге выбора — только самому игроку
+  redact: (ev, seats) => (ev.t === 'fx' && ev.secret && seats !== 'all' && !seats.includes(ev.seat) ? { ...ev, secret: undefined } : ev),
   rules: {
     goal: `Пройти путь от ларька на Затулинке (май 1988) до покупки лондонского клуба «${CLUB}» (июль 2003): сделки, крыша и чиновники, учёба и близкие — и не потерять себя.`,
     sections: RULES,
@@ -223,6 +225,10 @@ export function describe(ev: Event, name: (seat: number) => string): string | nu
       return `${ev.dark ? '🩸 ' : ''}${name(ev.seat)} — «${ev.title}»: ${ev.label}`;
     case 'risk':
       return `⚠ ${name(ev.seat)}: <i>${ev.text}</i>`;
+    case 'fx': {
+      const all = [...ev.lines, ...(ev.secret ?? [])];
+      return `↳ ${name(ev.seat)}: ${all.length ? all.join(' · ') : 'без последствий'}`;
+    }
     case 'buy':
       return `💼 ${name(ev.seat)}: «${ev.name}» за ${money(ev.sum)}`;
     case 'sell':

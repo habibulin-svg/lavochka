@@ -437,6 +437,7 @@ class KommersyView implements GameView<View, Event> {
     const mine = this.myPlayer().seat;
     const kolyan = v.players.find((p) => p.hero === 'kolyan')?.seat;
     const old = this.v;
+    let risk: string | null = null;
     for (const ev of events) {
       const r = 'seat' in ev && ev.seat === mine ? REACT[ev.t] : undefined;
       if (r) this.kolyan.play(r);
@@ -463,6 +464,20 @@ class KommersyView implements GameView<View, Event> {
         case 'pick':
           if (ev.dark) sfx('dark');
           await sleep(250 / speed);
+          break;
+        case 'risk':
+          risk = ev.text;
+          break;
+        case 'fx':
+          // пока идут события, стол никому не даёт ходить (interactive пуст) — смотрим на своё место
+          if (ev.seat === mine || this.interactive.includes(ev.seat)) {
+            const all = [...ev.lines, ...(ev.secret ?? [])];
+            await this.showBanner(
+              `<small>${esc(ev.title)} — ${esc(ev.label)}</small>${risk ? `<p class="km-res-risk">⚠ ${esc(risk)}</p>` : ''}<ul class="km-res">${all.length ? all.map((l) => `<li class="${tone(l)}">${esc(l)}</li>`).join('') : '<li>Ничего не изменилось</li>'}</ul>`,
+              'res', 1400 + 350 * all.length
+            );
+          }
+          risk = null;
           break;
         case 'hist':
           sfx('hist', 0.8);
@@ -531,6 +546,21 @@ function booksHtml(b: Books | undefined, who: string) {
     <div class="km-buh-row"><span>Итого × ${b.len} =</span><input class="km-buh-in" inputmode="numeric" placeholder="$" autocomplete="off"><button class="btn primary" data-buh>Сдать</button></div></div>`;
 }
 
+/** Хорошо это или плохо: плюс — хорошо, кроме стресса, расхода и органов; плюс/минус перед деньгами или числом. */
+function tone(l: string) {
+  const worse = /^(Стресс|расход|органы)/.test(l);
+  const good = /\+|↑|спокойнее|отстали|сбыл|сбуд|страх|советник|меньше|дороже|двойной|расширить/.test(l);
+  const bad = /−|↓|нажил|наживёшь|нет дела|тюрьма|больница|нечиста|пристальнее|пострадает|убыточный|уехать|нет в городе/.test(l);
+  const g = good && !bad ? 1 : bad && !good ? -1 : 0;
+  return (worse ? -g : g) > 0 ? 'up' : (worse ? -g : g) < 0 ? 'down' : '';
+}
+
+/** Что даст вариант: значки эффектов и риск под надписью кнопки. */
+function fxChips(c: Ask['choices'][number]) {
+  const chips = c.hint && !c.hint.length && !c.riskHint ? '<i>без последствий</i>' : (c.hint ?? []).map((h) => `<i class="${tone(h)}">${esc(h)}</i>`).join('');
+  return (chips ? `<span class="km-fx">${chips}</span>` : '') + (c.riskHint ? `<small class="km-risk">⚠ ${esc(c.riskHint)}</small>` : '');
+}
+
 function cardHtml(ask: Ask, mine: boolean, who: string) {
   const npc = (ask.card && NPC_BY_CARD[ask.card]) || NPC_BY_CELL[ask.cell];
   const face = npc ? `<img class="km-npc" src="${A}/people/${npc}.webp" alt="">` : '';
@@ -548,7 +578,7 @@ function cardHtml(ask: Ask, mine: boolean, who: string) {
         .join('')}</div>`
     : '';
   const choices = ask.choices
-    .map((c, i) => (c.buy === 'deal' ? '' : `<button class="btn km-choice${c.dark ? ' dark' : ''}${c.buy === 'club' ? ' club' : ''}" data-choice="${i}"${!mine || !c.ok ? ' disabled' : ''}>${c.dark ? '🩸 ' : ''}${esc(c.label)}${c.ok ? '' : `<small>${esc(c.why ?? '')}</small>`}</button>`))
+    .map((c, i) => (c.buy === 'deal' ? '' : `<button class="btn km-choice${c.dark ? ' dark' : ''}${c.buy === 'club' ? ' club' : ''}" data-choice="${i}"${!mine || !c.ok ? ' disabled' : ''}>${c.dark ? '🩸 ' : ''}${esc(c.label)}${c.ok ? fxChips(c) : `<small>${esc(c.why ?? '')}</small>`}</button>`))
     .join('');
   return `<div class="km-card-in" style="--cc:${CELL_COLOR[ask.cell]}">
     <div class="km-card-head">${ICON[ask.cell]} ${CELL_NAME[ask.cell]}${mine ? '' : ` · ${who}`}</div>

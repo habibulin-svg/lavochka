@@ -2,7 +2,7 @@
  * параметры Коляна, силы среды, исторические даты, падения («Падал, но поднимался») и покупка клуба. */
 import type { Rng } from '../../core/types';
 import {
-  CARDS, CELL_WEIGHTS, CLUB_NEED, CLUB_PRICE, DEALS, HEROES, HISTORY, LAST, SEG_CELLS, SKILL_MAX, STAT_RANGE, BASE,
+  CARDS, CELL_WEIGHTS, CLUB_NEED, CLUB_PRICE, DEALS, HEROES, HISTORY, KRYSHA_NAME, LAST, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, STAT_RANGE, BASE,
   dealById, eraOf, inCrisis, nicheMul, segMonths, tierOf,
   type CardT, type Cell, type Choice, type DealT, type Ending, type Fx, type Kind, type Krysha, type Skill, type Stat,
 } from './data';
@@ -72,6 +72,9 @@ export interface AskChoice {
   /** Для ботов и подсказок: что даёт выбор. */
   fx?: Fx;
   risk?: Choice['risk'];
+  /** Что даст выбор и чем рискуешь — для кнопки (fxHint). */
+  hint?: string[];
+  riskHint?: string;
   buy?: 'deal' | 'pass' | 'club' | 'auction';
   /** Номер предложения в ask.deals. */
   di?: number;
@@ -159,6 +162,8 @@ export type Event =
   | { t: 'move'; seat: number; cell: Cell }
   | { t: 'pick'; seat: number; title: string; label: string; dark?: boolean }
   | { t: 'risk'; seat: number; text: string }
+  /** Итог выбора на карточке: что изменилось. secret — совесть и органы, только самому (redact). */
+  | { t: 'fx'; seat: number; title: string; label: string; lines: string[]; secret?: string[] }
   | { t: 'buy'; seat: number; name: string; sum: number }
   | { t: 'sell'; seat: number; name: string; sum: number }
   | { t: 'period'; m: number; len: number }
@@ -482,11 +487,105 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
   if (!card) return { seat: p.seat, cell, title: 'Тихо', text: 'Ничего не случилось.', choices: [{ label: 'Дальше', ok: true }] };
   const choices: AskChoice[] = card.choices.map((ch) => {
     const why = choiceWhy(s, p, ch);
-    return { label: ch.label, ok: !why, why, dark: ch.dark, fx: ch.fx, risk: ch.risk };
+    const hint = fxHint(s, p, ch.fx);
+    const rp = ch.risk && Math.round(100 * Math.max(0.05, ch.risk.p - 0.08 * (ch.risk.skill ? p.skills[ch.risk.skill] : 0)));
+    const riskHint = ch.risk ? `риск ${rp} %: ${[...fxHint(s, p, ch.risk.fx)].join(', ') || ch.risk.text}` : undefined;
+    return { label: ch.label, ok: !why, why, dark: ch.dark, fx: ch.fx, risk: ch.risk, hint, riskHint };
   });
   if (!choices.some((c) => c.ok)) choices.push({ label: 'Дальше', ok: true });
   if (cell === 'rest' && clubReady(s, p)) choices.unshift({ label: 'Купить «Лондон Юнайтед»', ok: true, buy: 'club' });
   return { seat: p.seat, cell, title: card.title, text: card.text, card: card.id, choices };
+}
+
+// ---------------------------------------------------------------- что даёт выбор
+const signed = (v: number) => (v > 0 ? `+${v}` : `−${-v}`);
+const plusMoney = (v: number) => (v > 0 ? `+${money(v)}` : money(v));
+const arrow = (v: number) => (v > 0 ? '↑' : '↓');
+const ASSET_HINT = { good: 'одно дело — двойной доход за месяц', bad: 'одно дело — убыточный месяц', grow: 'расширить дело (с доплатой)', sell: 'продать дело дороже рынка', fire: 'одно дело пострадает' } as const;
+
+/** Что даст выбор — коротко, для кнопки: деньги (в долларах уровня игрока), параметры, навыки, прочее. Совесть и органы — только направлением. */
+export function fxHint(s: State, p: Player, fx: Fx): string[] {
+  const out: string[] = [];
+  const sc = unitOf(s, p);
+  const cash = round((fx.cash ?? 0) + (fx.cashT ?? 0) * sc);
+  if (cash) out.push(plusMoney(cash));
+  if (fx.cashPct) out.push(`${fx.cashPct > 0 ? '+' : '−'}${Math.round(Math.abs(fx.cashPct) * 100)} % наличных`);
+  if (fx.asset) out.push(ASSET_HINT[fx.asset]);
+  if (fx.incomeBoost) out.push(`доход дел ${signed(Math.round((fx.incomeBoost - 1) * 100))} %`);
+  for (const [k, v] of Object.entries(fx.stats ?? {}) as [Stat, number][]) {
+    if (!v) continue;
+    if (k === 'heat') out.push(`органы ${arrow(v)}`);
+    else if (k === 'sovest') out.push(`совесть ${arrow(v)}`);
+    else out.push(`${STAT_NAME[k]} ${signed(v)}`);
+  }
+  for (const [k, v] of Object.entries(fx.skills ?? {}) as [Skill, number][]) if (v) out.push(`${SKILL_NAME[k]} ${signed(v)}`);
+  if (fx.krysha) out.push(`крыша: ${KRYSHA_NAME[fx.krysha]}`);
+  if (fx.enemy) out.push(fx.enemy > 0 ? 'наживёшь врага' : 'минус враг');
+  if (fx.hoursBonus) out.push(`${signed(fx.hoursBonus)} ч в месяц`);
+  if (fx.upkeepT) out.push(`расход ${plusMoney(round(fx.upkeepT * sc))}/мес`);
+  if (fx.studyHours) out.push(`учёба ${fx.studyHours} ч`);
+  if (fx.dream) out.push('мечта сбудется');
+  if (fx.insurance) out.push('страховка дел');
+  if (fx.advisor) out.push('советник');
+  if (fx.prep) out.push('пригодится потом');
+  if (fx.jail) out.push(`тюрьма ${fx.jail} мес`);
+  if (fx.hosp) out.push(`больница ${fx.hosp} мес`);
+  if (fx.away) out.push(`уехать на ${fx.away} мес`);
+  return out;
+}
+
+interface Snap {
+  cash: number;
+  income: number;
+  upkeep: number;
+  hoursBonus: number;
+  stats: Record<Stat, number>;
+  skills: Record<Skill, number>;
+  krysha: Krysha;
+  enemies: number;
+  assets: Map<number, string>;
+  out: number;
+  insurance: boolean;
+  advisor: boolean;
+  dreams: number;
+  study: number;
+}
+const snap = (s: State, p: Player): Snap => ({
+  cash: p.cash, income: income(s, p), upkeep: p.upkeep, hoursBonus: p.hoursBonus, stats: { ...p.stats }, skills: { ...p.skills }, krysha: p.krysha, enemies: p.enemies,
+  assets: new Map(p.assets.map((a) => [a.uid, a.name])), out: p.out, insurance: p.insurance, advisor: p.advisor, dreams: p.dreams.length, study: p.study,
+});
+
+/** Что изменилось у игрока после выбора: [видно всем, только ему самому]. */
+function fxDiff(s: State, a: Snap, p: Player): [string[], string[]] {
+  const b = snap(s, p);
+  const out: string[] = [];
+  const secret: string[] = [];
+  const cash = round(b.cash - a.cash);
+  if (cash) out.push(`наличные ${plusMoney(cash)}`);
+  const inc = round(b.income - a.income);
+  if (inc) out.push(`доход ${plusMoney(inc)}/мес`);
+  const up = round(b.upkeep - a.upkeep);
+  if (up) out.push(`расход ${plusMoney(up)}/мес`);
+  if (b.hoursBonus !== a.hoursBonus) out.push(`${signed(b.hoursBonus - a.hoursBonus)} ч в месяц`);
+  for (const k of Object.keys(b.stats) as Stat[]) {
+    const d = b.stats[k] - a.stats[k];
+    if (!d) continue;
+    if (k === 'heat') secret.push(d > 0 ? 'органы присматриваются пристальнее' : 'органы отстали');
+    else if (k === 'sovest') secret.push(d > 0 ? 'на душе спокойнее' : 'совесть нечиста');
+    else out.push(`${STAT_NAME[k]} ${signed(d)}`);
+  }
+  for (const k of Object.keys(b.skills) as Skill[]) if (b.skills[k] !== a.skills[k]) out.push(`${SKILL_NAME[k]} ${signed(b.skills[k] - a.skills[k])}`);
+  if (b.krysha !== a.krysha) out.push(`крыша: ${KRYSHA_NAME[b.krysha]}`);
+  if (b.enemies > a.enemies) out.push('нажил врага');
+  if (b.enemies < a.enemies) out.push('одним врагом меньше');
+  for (const [uid, name] of a.assets) if (!b.assets.has(uid)) out.push(`нет дела «${name}»`);
+  for (const [uid, name] of b.assets) if (a.assets.get(uid) !== name) out.push(`дело «${name}»`);
+  if (b.insurance && !a.insurance) out.push('дела застрахованы');
+  if (b.advisor && !a.advisor) out.push('появился советник');
+  if (b.dreams > a.dreams) out.push('мечта сбылась');
+  if (b.study > a.study) out.push(`учёба +${b.study - a.study} ч`);
+  if (b.out > a.out) out.push(`${p.outKind === 'jail' ? 'тюрьма' : p.outKind === 'hosp' ? 'больница' : 'нет в городе'} ${b.out} мес`);
+  return [out, secret];
 }
 
 // ---------------------------------------------------------------- ход
@@ -634,6 +733,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     }
     if (ch.buy === 'deal' && ask.deals && ch.di != null) buy(s, p, ask.deals[ch.di], ev);
     if (ch.fx) {
+      const before = snap(s, p);
       applyFx(s, p, ch.fx, rng, ev);
       if (ch.risk) {
         const sk = ch.risk.skill ? p.skills[ch.risk.skill] : 0;
@@ -642,6 +742,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
           ev.push({ t: 'risk', seat, text: ch.risk.text });
         }
       }
+      const [lines, secret] = fxDiff(s, before, p);
+      ev.push({ t: 'fx', seat, title: ask.title, label: ch.label, lines, ...(secret.length ? { secret } : {}) });
     }
     s.ask = null;
     next(s, ev, rng);

@@ -120,3 +120,15 @@
 .km-card-in { container-type: inline-size; }
 .km-offer b { overflow-wrap: anywhere; }
 @container (max-width: 240px) { .km-offer { grid-template-columns: 44px minmax(0, 1fr); column-gap: 7px; padding: 6px 7px; } .km-thumb { width: 44px; } }
+
+/* что даст вариант и итог выбора */
+.km-fx { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.km-fx i { font-style: normal; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 8px; background: rgba(255, 255, 255, 0.16); color: #fbf1dc; }
+.km-fx i.up { background: rgba(110, 200, 100, 0.25); color: #c8f5bf; }
+.km-fx i.down { background: rgba(240, 90, 80, 0.25); color: #ffd0cb; }
+.km-choice small.km-risk { color: #ffd38a; opacity: 1; margin-top: 3px; }
+.km-banner.res { border-top: 6px solid #8a7a5a; text-align: left; }
+.km-res { list-style: none; margin: 8px 0 0; padding: 0; font-size: clamp(14px, 1.7vw, 18px); line-height: 1.5; }
+.km-res li.up { color: #8fe08f; }
+.km-res li.down { color: #ff8f86; }
+.km-res-risk { color: #ffc062; font-weight: 600; margin-top: 6px !important; }
