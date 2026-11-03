@@ -1,0 +1,28 @@
+lgs: 1
+name: voices
+title: "Озвучка: голос по описанию, два дубля, лучший — по Whisper"
+project: demo
+steps:
+  - id: say
+    title: Реплики
+    uses: tts
+    language: Russian
+    voices:
+      kolyan:
+        describe: >
+          Male, 27 years old, Siberian working-class guy, medium-low baritone with a slight rasp. Confident, laconic,
+          cheeky half-smile in the voice, short plain phrases, calm and unhurried, never shouts. Russian.
+        sample: "Короче, слушай сюда. Дело верное, я тебе отвечаю, без кидалова."
+    seeds: [1, 2]
+    items:
+      - {name: hello, voice: kolyan, text: "Здорово, братишка! Чё, по делу или так, потрещать?"}
+      - {name: deal, voice: kolyan, text: "Беру всю партию. Деньги вечером, у ларька."}
+      - {name: lose, voice: kolyan, text: "Ну всё, приплыли. Опять без штанов остались."}
+
+  - id: check
+    title: Проверка дублей
+    uses: asr
+    items_from: "${steps.say.dir}/manifest.json"   # у каждого дубля — файл и текст реплики
+    with:
+      input: "${file}"
+      expected: "${text}"

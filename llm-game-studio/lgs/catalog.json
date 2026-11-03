@@ -1,0 +1,520 @@
+{
+ "_about": "Каталог моделей LLM Game Studio. kind — для чего модель; engine — чем запускается; files — что скачать и куда (dest: comfy:<папка> | llm | models:<подпапка>); names — какие имена файла считать «уже есть» (свои кванты и сборки). quality/speed — 1..10 для автоподбора. verify: true — источник не проверен руками, кнопка «Проверить источники» скажет, доступен ли.",
+ "models": [
+  {
+   "id": "z-image-turbo",
+   "kind": "image",
+   "title": "Z-Image-Turbo",
+   "engine": "comfy",
+   "workflow": "z_image_turbo",
+   "license": "Apache-2.0",
+   "vram_gb": 8,
+   "ram_gb": 16,
+   "quality": 9,
+   "speed": 8,
+   "sec_per_item": 12,
+   "notes": "Основная рабочая лошадь: 8 шагов. Латиницу пишет, кириллицу — нет (надписи кодом поверх).",
+   "defaults": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 8
+   },
+   "files": [
+    {
+     "role": "unet",
+     "repo": "Comfy-Org/z_image_turbo",
+     "path": "split_files/diffusion_models/z_image_turbo_bf16.safetensors",
+     "dest": "comfy:diffusion_models",
+     "size_gb": 12.3,
+     "names": [
+      "z_image_turbo_int8_convrot.safetensors",
+      "z_image_turbo_bf16.safetensors",
+      "z_image_turbo_fp8_e4m3fn.safetensors"
+     ]
+    },
+    {
+     "role": "clip",
+     "repo": "Comfy-Org/z_image_turbo",
+     "path": "split_files/text_encoders/qwen_3_4b.safetensors",
+     "dest": "comfy:text_encoders",
+     "size_gb": 8.0,
+     "names": [
+      "qwen_3_4b_fp8_mixed.safetensors",
+      "qwen_3_4b.safetensors"
+     ]
+    },
+    {
+     "role": "vae",
+     "repo": "Comfy-Org/z_image_turbo",
+     "path": "split_files/vae/ae.safetensors",
+     "dest": "comfy:vae",
+     "size_gb": 0.33,
+     "names": [
+      "ae.safetensors"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sdxl-base",
+   "kind": "image",
+   "title": "Stable Diffusion XL 1.0",
+   "engine": "comfy",
+   "workflow": "sdxl",
+   "license": "CreativeML OpenRAIL++-M",
+   "vram_gb": 6,
+   "ram_gb": 12,
+   "quality": 6,
+   "speed": 7,
+   "sec_per_item": 15,
+   "notes": "Запасной вариант для карт 6–8 ГБ.",
+   "defaults": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 25,
+    "cfg": 7
+   },
+   "files": [
+    {
+     "role": "ckpt",
+     "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+     "path": "sd_xl_base_1.0.safetensors",
+     "dest": "comfy:checkpoints",
+     "size_gb": 6.9,
+     "names": [
+      "sd_xl_base_1.0.safetensors"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "wan22-ti2v-5b",
+   "kind": "video",
+   "title": "Wan 2.2 TI2V-5B",
+   "engine": "comfy",
+   "workflow": "wan22_i2v",
+   "license": "Apache-2.0",
+   "vram_gb": 8,
+   "ram_gb": 24,
+   "quality": 7,
+   "speed": 4,
+   "sec_per_item": 600,
+   "notes": "Ролики, огонь/дым/взрывы на чёрном. 1280×704, 5 с (121 кадр). Простые эффекты лучше рисовать кодом. Надписи в кадре — абракадабра.",
+   "defaults": {
+    "width": 1280,
+    "height": 704,
+    "frames": 121,
+    "steps": 30,
+    "negative": "text, letters, watermark, blurry, static"
+   },
+   "files": [
+    {
+     "role": "unet",
+     "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+     "path": "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+     "dest": "comfy:diffusion_models",
+     "size_gb": 10.0,
+     "names": [
+      "wan2.2_ti2v_5B_fp16.safetensors"
+     ]
+    },
+    {
+     "role": "vae",
+     "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+     "path": "split_files/vae/wan2.2_vae.safetensors",
+     "dest": "comfy:vae",
+     "size_gb": 1.4,
+     "names": [
+      "wan2.2_vae.safetensors"
+     ]
+    },
+    {
+     "role": "clip",
+     "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+     "path": "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+     "dest": "comfy:text_encoders",
+     "size_gb": 6.7,
+     "names": [
+      "umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "yue2-3b",
+   "kind": "music",
+   "title": "YuE2 3B int8",
+   "engine": "comfy",
+   "workflow": "yue2",
+   "license": "CC BY-NC 4.0 (+ разрешение авторам-физлицам)",
+   "vram_gb": 10,
+   "ram_gb": 16,
+   "quality": 10,
+   "speed": 3,
+   "sec_per_item": 900,
+   "notes": "Песни и инструментал по партитуре: сначала ABC, потом звук. max_duration — с запасом (обрывает на громком месте).",
+   "defaults": {
+    "max_duration": 150,
+    "silence_vocal": false
+   },
+   "files": [
+    {
+     "role": "ckpt",
+     "repo": "Comfy-Org/YuE2",
+     "path": "checkpoints/yue2_3b_int8_convrot.safetensors",
+     "dest": "comfy:checkpoints",
+     "size_gb": 3.7,
+     "names": [
+      "yue2_3b_int8_convrot.safetensors"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "stable-audio-3-music",
+   "kind": "music",
+   "title": "Stable Audio 3 Small Music",
+   "engine": "python",
+   "runner": "stable_audio",
+   "python": "venv:3d",
+   "license": "Stability Community (< $1M)",
+   "vram_gb": 4,
+   "ram_gb": 8,
+   "quality": 5,
+   "speed": 8,
+   "sec_per_item": 30,
+   "notes": "Короткие петли и подложки без вокала. Репозиторий закрытый (нужен токен HF и согласие на сайте); из РФ — через VPN.",
+   "defaults": {
+    "duration": 30,
+    "level": "ambience"
+   },
+   "files": [
+    {
+     "repo": "stabilityai/stable-audio-3-small-music",
+     "snapshot": true,
+     "dest": "models:audio/stable-audio-3-small-music",
+     "size_gb": 2.5,
+     "check": "model.safetensors",
+     "gated": true
+    }
+   ]
+  },
+  {
+   "id": "stable-audio-3-sfx",
+   "kind": "sfx",
+   "title": "Stable Audio 3 Small SFX",
+   "engine": "python",
+   "runner": "stable_audio",
+   "python": "venv:3d",
+   "license": "Stability Community (< $1M)",
+   "vram_gb": 4,
+   "ram_gb": 8,
+   "quality": 8,
+   "speed": 9,
+   "sec_per_item": 6,
+   "notes": "Звуки с нормализацией громкости по классам (loud/normal/quiet/ui/ambience). Закрытый репозиторий, из РФ — через VPN.",
+   "defaults": {
+    "duration": 2,
+    "level": "normal"
+   },
+   "files": [
+    {
+     "repo": "stabilityai/stable-audio-3-small-sfx",
+     "snapshot": true,
+     "dest": "models:audio/stable-audio-3-small-sfx",
+     "size_gb": 2.5,
+     "check": "model.safetensors",
+     "gated": true
+    }
+   ]
+  },
+  {
+   "id": "qwen3-tts",
+   "kind": "tts",
+   "title": "Qwen3-TTS 1.7B (VoiceDesign + Base)",
+   "engine": "python",
+   "runner": "qwen_tts",
+   "python": "venv:qwentts",
+   "license": "Apache-2.0",
+   "vram_gb": 6,
+   "ram_gb": 8,
+   "quality": 9,
+   "speed": 6,
+   "sec_per_item": 8,
+   "notes": "Голос по описанию (VoiceDesign) → образец → клон (Base) на все фразы: голос не плывёт. По-русски 3 % ошибок против 11 % у Chatterbox.",
+   "files": [
+    {
+     "repo": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+     "snapshot": true,
+     "dest": "models:tts/qwen3/Qwen3-TTS-12Hz-1.7B-Base",
+     "size_gb": 4.3,
+     "check": "config.json"
+    },
+    {
+     "repo": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+     "snapshot": true,
+     "dest": "models:tts/qwen3/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+     "size_gb": 4.3,
+     "check": "config.json"
+    },
+    {
+     "repo": "Qwen/Qwen3-TTS-Tokenizer-12Hz",
+     "snapshot": true,
+     "dest": "models:tts/qwen3/Qwen3-TTS-Tokenizer-12Hz",
+     "size_gb": 0.7,
+     "check": "config.json"
+    }
+   ],
+   "pip": [
+    "qwen-tts",
+    "soundfile"
+   ]
+  },
+  {
+   "id": "whisper-large-v3-turbo",
+   "kind": "asr",
+   "title": "Whisper large-v3-turbo",
+   "engine": "python",
+   "runner": "whisper",
+   "python": "venv:3d",
+   "license": "MIT",
+   "vram_gb": 3,
+   "ram_gb": 6,
+   "quality": 9,
+   "speed": 8,
+   "sec_per_item": 3,
+   "notes": "Распознавание речи; проверка дублей озвучки по ошибке символов (CER) — лучший дубль.",
+   "files": [
+    {
+     "repo": "openai/whisper-large-v3-turbo",
+     "snapshot": true,
+     "dest": "models:asr/whisper-large-v3-turbo",
+     "size_gb": 1.6,
+     "check": "model.safetensors"
+    }
+   ],
+   "pip": [
+    "transformers",
+    "soundfile"
+   ]
+  },
+  {
+   "id": "birefnet",
+   "kind": "cutout",
+   "title": "BiRefNet",
+   "engine": "python",
+   "runner": "birefnet",
+   "python": "venv:3d",
+   "license": "MIT",
+   "vram_gb": 3,
+   "ram_gb": 6,
+   "quality": 9,
+   "speed": 9,
+   "sec_per_item": 1,
+   "notes": "Вырезка фона → PNG с прозрачностью, обрезанный по содержимому.",
+   "files": [
+    {
+     "repo": "ZhengPeng7/BiRefNet",
+     "snapshot": true,
+     "dest": "models:birefnet",
+     "size_gb": 0.9,
+     "check": "model.safetensors"
+    }
+   ],
+   "pip": [
+    "transformers",
+    "torchvision",
+    "pillow",
+    "timm",
+    "kornia",
+    "einops"
+   ]
+  },
+  {
+   "id": "realesrgan-x4plus",
+   "kind": "upscale",
+   "title": "Real-ESRGAN x4plus",
+   "engine": "comfy",
+   "workflow": "upscale",
+   "license": "BSD-3-Clause",
+   "vram_gb": 2,
+   "ram_gb": 4,
+   "quality": 7,
+   "speed": 9,
+   "sec_per_item": 2,
+   "notes": "Апскейл ×4 картинок и кадров роликов (960 → 1920 обязателен для роликов на весь экран).",
+   "files": [
+    {
+     "role": "upscaler",
+     "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
+     "dest": "comfy:upscale_models",
+     "size_gb": 0.07,
+     "names": [
+      "RealESRGAN_x4plus.pth"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "triposg",
+   "kind": "to3d",
+   "title": "TripoSG",
+   "engine": "python",
+   "runner": null,
+   "license": "MIT",
+   "vram_gb": 8,
+   "ram_gb": 16,
+   "quality": 8,
+   "speed": 6,
+   "sec_per_item": 50,
+   "notes": "Картинка → 3D (~50 с на 8000 треуг.). Эталон давать в ¾, не спереди. Запуск — шагом python со своим скриптом.",
+   "files": [
+    {
+     "repo": "VAST-AI/TripoSG",
+     "snapshot": true,
+     "dest": "models:3d/TripoSG",
+     "size_gb": 6.0,
+     "check": "model_index.json"
+    }
+   ]
+  },
+  {
+   "id": "qwen3.8-27b",
+   "kind": "llm",
+   "title": "Qwen3.8 27B",
+   "engine": "llama.cpp",
+   "license": "Apache-2.0",
+   "params_b": 27,
+   "active_b": 27,
+   "vision": true,
+   "ctx_max": 262144,
+   "quality": 9,
+   "tasks": [
+    "code",
+    "text",
+    "vision"
+   ],
+   "repo": "unsloth/Qwen3.8-27B-GGUF",
+   "quants": [
+    "UD-Q3_K_XL",
+    "UD-IQ4_XS",
+    "UD-Q4_K_M",
+    "UD-Q4_K_XL",
+    "UD-Q5_K_M",
+    "UD-Q6_K",
+    "Q8_0"
+   ],
+   "mmproj": "mmproj-F16.gguf",
+   "local": [
+    "Qwen3.8-27B-UD-Q4_K_M.gguf",
+    "Qwen3.8-27B-Q4_K_M.gguf"
+   ],
+   "local_mmproj": [
+    "Qwen3.8-27B-mmproj-F16.gguf",
+    "mmproj-Qwen3.8-27B-BF16.gguf"
+   ],
+   "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+   },
+   "notes": "Лучшая локальная для кода и текстов; Q4 (16,5 ГБ) — только на две карты. ~22 ток/с на 4070+5060."
+  },
+  {
+   "id": "qwen3.6-35b-a3b",
+   "kind": "llm",
+   "title": "Qwen3.6 35B-A3B (MoE)",
+   "engine": "llama.cpp",
+   "license": "Apache-2.0",
+   "params_b": 35,
+   "active_b": 3,
+   "moe": true,
+   "vision": false,
+   "ctx_max": 262144,
+   "quality": 8,
+   "tasks": [
+    "code",
+    "text"
+   ],
+   "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
+   "quants": [
+    "UD-Q3_K_XL",
+    "UD-IQ4_XS",
+    "UD-Q4_K_M",
+    "UD-Q4_K_XL",
+    "UD-Q5_K_M",
+    "UD-Q6_K"
+   ],
+   "local": [
+    "Qwen3.6-35B-A3B-MTP-UD-IQ4_XS.gguf"
+   ],
+   "extra_args": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "2"
+   ],
+   "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+   },
+   "notes": "Эксперты можно держать в оперативной памяти (--n-cpu-moe): работает на одной карте рядом с ComfyUI. ~37 ток/с."
+  },
+  {
+   "id": "qwen3.5-9b",
+   "kind": "llm",
+   "title": "Qwen3.5 9B",
+   "engine": "llama.cpp",
+   "license": "Apache-2.0",
+   "params_b": 9,
+   "active_b": 9,
+   "vision": true,
+   "ctx_max": 262144,
+   "quality": 6,
+   "tasks": [
+    "text",
+    "vision",
+    "code"
+   ],
+   "repo": "bartowski/Qwen_Qwen3.5-9B-GGUF",
+   "quants": [
+    "Q4_K_M",
+    "Q5_K_M",
+    "Q6_K",
+    "Q8_0"
+   ],
+   "mmproj": "mmproj-Qwen_Qwen3.5-9B-f16.gguf",
+   "local": [
+    "Qwen_Qwen3.5-9B-Q4_K_M.gguf"
+   ],
+   "local_mmproj": [
+    "mmproj-Qwen_Qwen3.5-9B-f16.gguf"
+   ],
+   "notes": "Влезает в 8 ГБ рядом с другими задачами. VLM-отбор картинок, простые тексты; код «модуль с тестами» не тянет. ~48 ток/с."
+  },
+  {
+   "id": "qwen3-4b",
+   "kind": "llm",
+   "title": "Qwen3 4B",
+   "engine": "llama.cpp",
+   "license": "Apache-2.0",
+   "params_b": 4,
+   "active_b": 4,
+   "vision": false,
+   "ctx_max": 32768,
+   "quality": 4,
+   "tasks": [
+    "text"
+   ],
+   "repo": "Qwen/Qwen3-4B-GGUF",
+   "quants": [
+    "Q4_K_M",
+    "Q5_K_M",
+    "Q6_K",
+    "Q8_0"
+   ],
+   "notes": "Для слабого железа и процессора: черновые тексты, разметка."
+  }
+ ]
+}

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Game Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffb547'/%3E%3Cpath d='M8 22V10h3v9h6v3zm11 0V10h3v12z' fill='%23181410'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo">LG</span><div><b>LLM Game Studio</b><small id="ver"></small></div></div>
+    <nav id="nav">
+      <a data-tab="overview" class="on"><i>◉</i>Обзор</a>
+      <a data-tab="script"><i>✎</i>Скрипт</a>
+      <a data-tab="runs"><i>▶</i>Запуски <em id="runs-badge"></em></a>
+      <a data-tab="hw"><i>▦</i>Железо и подбор</a>
+      <a data-tab="models"><i>◫</i>Модели <em id="dl-badge"></em></a>
+      <a data-tab="services"><i>⚙</i>Сервисы и движки</a>
+      <a data-tab="format"><i>❏</i>Формат скрипта</a>
+      <a data-tab="settings"><i>☰</i>Настройки</a>
+    </nav>
+    <div class="side-gpus" id="side-gpus"></div>
+  </aside>
+
+  <main>
+    <!-- ОБЗОР -->
+    <section id="tab-overview" class="tab on">
+      <header class="head"><h1>Обзор</h1><p>Что сейчас делает машина: карты, серверы моделей, запуски и загрузки.</p></header>
+      <div class="grid2">
+        <div class="card"><h3>Видеокарты и память</h3><div id="ov-gpus"></div></div>
+        <div class="card"><h3>Серверы моделей</h3><div id="ov-services"></div></div>
+      </div>
+      <div class="card"><h3>Запуски</h3><div id="ov-runs"></div></div>
+      <div class="card" id="ov-dl-card"><h3>Загрузки</h3><div id="ov-downloads"></div></div>
+    </section>
+
+    <!-- СКРИПТ -->
+    <section id="tab-script" class="tab">
+      <header class="head"><h1>Скрипт</h1><p>Вставьте скрипт LGS (от Claude, ChatGPT, локальной модели — формат на вкладке «Формат скрипта»), перетащите файл или выберите из примеров.</p></header>
+      <div class="script-wrap">
+        <div class="card editor-card" id="drop">
+          <div class="toolbar">
+            <label class="btn ghost">Открыть файл…<input type="file" id="file-in" accept=".yaml,.yml,.json,.txt,.md" hidden></label>
+            <select id="script-list"><option value="">Примеры и сохранённые…</option></select>
+            <span class="grow"></span>
+            <button class="btn ghost" id="btn-save">Сохранить</button>
+            <button class="btn" id="btn-plan">Проверить</button>
+          </div>
+          <textarea id="editor" spellcheck="false" placeholder="lgs: 1&#10;name: my-assets&#10;steps:&#10;  - id: art&#10;    uses: image&#10;    items:&#10;      - name: bench&#10;        prompt: &quot;wooden bench, flat cartoon&quot;"></textarea>
+          <div class="drop-hint">Отпустите файл, чтобы загрузить</div>
+        </div>
+        <div class="card plan-card">
+          <h3>План</h3>
+          <div id="plan"><p class="muted">Нажмите «Проверить»: студия разберёт скрипт, подберёт модели под железо и скажет, что нужно докачать.</p></div>
+          <div class="actions">
+            <button class="btn ghost" id="btn-fetch" disabled>Скачать недостающее</button>
+            <button class="btn primary" id="btn-run" disabled>Запустить ▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ЗАПУСКИ -->
+    <section id="tab-runs" class="tab">
+      <header class="head"><h1>Запуски</h1><p>Прогресс по шагам, журнал и результаты — в реальном времени.</p></header>
+      <div class="runs-wrap">
+        <div class="card runs-list" id="runs-list"></div>
+        <div class="run-detail" id="run-detail"><div class="card"><p class="muted">Выберите запуск слева.</p></div></div>
+      </div>
+    </section>
+
+    <!-- ЖЕЛЕЗО -->
+    <section id="tab-hw" class="tab">
+      <header class="head"><h1>Железо и подбор</h1><p>Что стоит в машине и какие модели на нём лучше всего пойдут. Для LLM — готовая настройка llama-server под ваши карты.</p></header>
+      <div class="card"><h3>Машина</h3><div id="hw-info"></div></div>
+      <div class="card"><h3>Подбор моделей по задачам</h3><div id="hw-rec"></div></div>
+      <div class="card">
+        <div class="row"><h3 class="grow">Языковая модель: настройка под железо</h3>
+          <select id="llm-purpose"><option value="code">для кода</option><option value="text">для текстов</option><option value="vision">для зрения (VLM)</option></select></div>
+        <p class="muted">«Все карты» — окно под LLM (ComfyUI остановлен). «Рядом с генерацией» — LLM на малой карте и в оперативной памяти, большая карта остаётся картинкам и видео. Скорость — оценка; «Замерить» даст настоящую.</p>
+        <div id="hw-llm"></div>
+      </div>
+    </section>
+
+    <!-- МОДЕЛИ -->
+    <section id="tab-models" class="tab">
+      <header class="head"><h1>Модели</h1><p>Каталог: что есть на диске, что подходит железу, что скачать. Источник — Hugging Face, при сбое — зеркала и ModelScope, загрузка докачивается с места обрыва.</p></header>
+      <div class="row chips" id="kind-chips"></div>
+      <div class="cards" id="models"></div>
+      <div class="card">
+        <h3>Добавить модель с Hugging Face</h3>
+        <div class="row"><input id="hf-repo" placeholder="владелец/репозиторий, например Qwen/Qwen3-4B-GGUF" class="grow"><button class="btn" id="btn-hf">Показать файлы</button></div>
+        <div id="hf-files"></div>
+      </div>
+    </section>
+
+    <!-- СЕРВИСЫ -->
+    <section id="tab-services" class="tab">
+      <header class="head"><h1>Сервисы и движки</h1><p>Серверы студия поднимает сама, когда шагу нужно. Здесь — вручную, с журналом.</p></header>
+      <div class="cards" id="services"></div>
+      <div class="card"><h3>Журнал</h3><div class="row"><select id="log-svc"></select><span class="grow"></span><button class="btn ghost" id="btn-log">Обновить</button></div><pre class="log" id="svc-log"></pre></div>
+      <div class="card"><h3>Движки</h3><div id="engines"></div></div>
+    </section>
+
+    <!-- ФОРМАТ -->
+    <section id="tab-format" class="tab">
+      <header class="head"><h1>Формат скрипта</h1><p>Отдайте этот текст любой LLM — она напишет скрипт для студии. Кнопка ниже добавляет к нему список моделей и железа этой машины.</p></header>
+      <div class="row"><button class="btn primary" id="btn-prompt">Скопировать промпт для LLM</button><span id="copied" class="muted"></span></div>
+      <article class="card md" id="format-doc"></article>
+    </section>
+
+    <!-- НАСТРОЙКИ -->
+    <section id="tab-settings" class="tab">
+      <header class="head"><h1>Настройки</h1><p>Пути найдены сами (G:\ai\ai.json, если есть). Пустое поле — значение по умолчанию.</p></header>
+      <form class="card form" id="settings"></form>
+    </section>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox" hidden><div class="lb-body" id="lb-body"></div><button class="lb-close" id="lb-close">✕</button></div>
+<div class="toast" id="toast" hidden></div>
+<script src="/ui/app.js"></script>
+</body>
+</html>

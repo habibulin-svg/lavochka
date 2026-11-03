@@ -57,6 +57,15 @@
         "--strictPort"
       ],
       "port": 5175
+    },
+    {
+      "name": "llm-game-studio",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "llm-game-studio/run.py",
+        "--no-browser"
+      ],
+      "port": 7870
     }
   ]
 }

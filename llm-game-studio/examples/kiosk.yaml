@@ -1,0 +1,48 @@
+lgs: 1
+name: kiosk
+title: "Ларёк: идеи → картинки → отбор → вырезка → звуки"
+description: "Локальная LLM придумывает товары ларька 90-х, Z-Image рисует, человек отбирает, BiRefNet вырезает фон, Stable Audio озвучивает."
+project: demo
+vars:
+  style: "flat cartoon, thick outlines, warm colors, 90s russian street kiosk, white background, no text"
+steps:
+  - id: ideas
+    title: Придумать товары
+    uses: llm
+    json: true
+    think: false
+    prompt: >
+      Придумай 6 товаров уличного ларька 90-х (жвачка, газировка, сигареты не надо). Верни JSON
+      {"items": [{"name": латиница-через-дефис, "subject": "описание предмета по-английски для генератора картинок",
+      "sound": "звук, который он издаёт, по-английски"}]}.
+
+  - id: art
+    title: Картинки
+    uses: image
+    items_from: "${steps.ideas.dir}/results.json"
+    seeds: [1, 2]
+    with:
+      prompt: "${subject}, single object, ${style}"
+
+  - id: pick
+    title: Отбор
+    uses: approve
+    show: [art]
+    message: "Отметьте по одной лучшей картинке на товар"
+
+  - id: cut
+    title: Вырезка фона
+    uses: cutout
+    items_from: "${steps.pick.dir}/selected.json"
+    with:
+      input: "${file}"
+      pad: 8
+
+  - id: sounds
+    title: Звуки товаров
+    uses: sfx
+    items_from: "${steps.ideas.dir}/results.json"
+    with:
+      prompt: "${sound}, close mic, clean, no music"
+      duration: 2
+      level: normal

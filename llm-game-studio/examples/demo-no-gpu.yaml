@@ -1,0 +1,34 @@
+lgs: 1
+name: demo-no-gpu
+title: "Демо без видеокарты: параллельные шаги, прогресс, превью, отбор"
+description: >
+  Проверка студии без моделей: два шага рисуют SVG параллельно, человек отмечает лучшие,
+  последний шаг собирает выбранное в список. Показывает формат, протокол @progress/@output и шаг approve.
+project: demo
+vars:
+  count: 5
+steps:
+  - id: trees
+    title: Деревья
+    uses: python
+    script: "${studio.dir}/examples/demo_art.py"
+    args: [tree, "${count}"]
+
+  - id: houses
+    title: Дома
+    uses: python
+    script: "${studio.dir}/examples/demo_art.py"
+    args: [house, 4]
+
+  - id: pick
+    title: Отбор
+    uses: approve
+    show: [trees, houses]
+    message: "Отметьте понравившиеся картинки"
+
+  - id: report
+    title: Сводка
+    uses: python
+    after: pick
+    script: "${studio.dir}/examples/demo_report.py"
+    args: ["${steps.pick.dir}/selected.json"]

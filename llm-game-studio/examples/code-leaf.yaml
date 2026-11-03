@@ -1,0 +1,36 @@
+lgs: 1
+name: code-leaf
+title: "Код-лист: локальная LLM пишет модуль под готовый тест"
+description: "Окно «все карты под LLM», модель пишет файл, тест проверяет, ошибки — обратно модели (до 4 попыток)."
+project: demo
+vars:
+  work: "${run.dir}/work"
+steps:
+  - id: setup
+    title: Подготовить тест
+    uses: python
+    script: "${studio.dir}/examples/code_leaf_setup.py"
+    args: ["${work}"]
+
+  - id: window
+    title: Окно под LLM
+    uses: service
+    after: setup
+    stop: [comfy-big, comfy-small]
+    start: [llm]
+    llm: exclusive
+
+  - id: code
+    title: Модуль погонял
+    uses: code
+    after: window
+    workdir: "${work}"
+    task: |
+      Напиши nicknames.py: функция nickname(seed: int) -> str — дворовое погоняло из прилагательного и существительного
+      (по 20 слов в списках, по-русски, с заглавной буквы, через пробел). Одинаковый seed — одинаковый результат
+      (используй random.Random(seed)). Функция all_unique(n: int) -> bool — правда, если для seed 0..n-1 нет повторов.
+    files: ["nicknames.py"]
+    context: ["test_nicknames.py"]
+    test: "python -m unittest test_nicknames -q"
+    max_iters: 4
+    think: false
