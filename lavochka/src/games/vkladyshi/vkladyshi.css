@@ -212,9 +212,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.vk-card.spell .vk-name { white-space: normal; top: 65%; height: 31%; font-size: calc(var(--vk-w) * 0.1); font-style: italic; overflow: hidden; }
+.vk-card.spell .vk-name { white-space: normal; top: 65%; height: 13%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; place-items: unset; font-size: calc(var(--vk-w) * 0.068); line-height: 1.05; font-weight: 600; font-style: italic; overflow: hidden; }
 .vk-kw { position: absolute; z-index: 2; bottom: 4%; left: 29%; right: 29%; height: 22%; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 2px; }
-.vk-card.spell .vk-kw { display: none; }
+/* у приёма вместо атаки и стойкости — что он делает, во всю ширину */
+.vk-card.spell .vk-kw { left: 4%; right: 4%; bottom: 3%; height: 19%; }
+.vk-card.spell .vk-kw i.fx { font-size: calc(var(--vk-w) * 0.085); padding: 2px 5px; }
 .vk-kw i { font-style: normal; font-weight: 700; font-size: calc(var(--vk-w) * 0.095); background: rgba(30, 20, 10, 0.85); color: #ffe9b0; padding: 1px 4px; border-radius: 4px; }
 .vk-kw i.fx { white-space: normal; text-align: center; font-size: calc(var(--vk-w) * 0.075); line-height: 1.05; }
 .vk-atk { bottom: 2%; left: 2%; border-radius: 6px 6px 6px 12px; background: radial-gradient(circle at 35% 35%, #ffd080, #d8701a 60%, #7a3008); }

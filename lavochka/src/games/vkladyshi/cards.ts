@@ -248,17 +248,17 @@ export function fxText(fx: Fx): string {
     case 'buff':
       return `+${fx.n}/+${fx.m ?? 0} ${who}`;
     case 'draw':
-      return `взять ${fx.n}`;
+      return `взять ${fx.n} из колоды`;
     case 'armor':
-      return `${who} — «Броня»`;
+      return `«Броня» ${who}: первый удар мимо`;
     case 'stun':
-      return `${who} пропускает ход`;
+      return `${{ enemy: 'чужой вкладыш', enemyUnit: 'чужой вкладыш', allyUnit: 'свой вкладыш', anyUnit: 'вкладыш', none: '' }[fx.to]} пропускает ход`;
     case 'team':
       return `своим той же сборной +${fx.n}/+${fx.m ?? 0}`;
     case 'aoe':
       return `${fx.n} урона всем чужим`;
     case 'mana':
-      return `+${fx.n} копейка в этот ход`;
+      return `+${fx.n} ${fx.n === 1 ? 'копейка' : fx.n < 5 ? 'копейки' : 'копеек'} в этот ход`;
     case 'all':
       return `всем своим +${fx.n}/+${fx.m ?? 0}`;
   }
