@@ -477,7 +477,7 @@ export function createView(): GameView<View, Event> {
     let on = '';
     if (tgt) {
       const meSide = prev.me.includes(tgt.p);
-      if (tgt.uid === undefined) on = meSide ? 'по вам' : `по ${esc(ctx.name(prev.players[tgt.p].seat))}`;
+      if (tgt.uid === undefined) on = meSide ? 'по вам' : `по ${ctx.name(prev.players[tgt.p].seat)}`;
       else {
         const u = prev.players[tgt.p].board.find((x) => x.uid === tgt.uid);
         if (u) on = `на ${meSide ? 'ваш' : 'свой'} «${esc(card(u.id).name)}»`;
@@ -486,7 +486,7 @@ export function createView(): GameView<View, Event> {
     const el = document.createElement('div');
     el.className = 'vk-cast';
     el.innerHTML = `<div class="vk-cast-box">${cardHtml(c)}<div class="vk-cast-text">
-      <small>${esc(who)} ${c.spell ? 'разыгрывает приём' : 'выкладывает'}</small>
+      <small>${who} ${c.spell ? 'разыгрывает приём' : 'выкладывает'}</small>
       <h3>${esc(c.coll === 'love' ? `Love is ${c.name}` : c.name)}</h3>
       <p>${c.play ? fxLong(c.play) : ''}</p>
       ${on ? `<p class="vk-cast-on">→ ${on}</p>` : ''}
