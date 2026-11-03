@@ -1,0 +1,123 @@
+# Герои кастета и семок, партия 1: поиск стиля (этап 1, docs/geroi/DESIGN.md §8).
+# Три направления × четыре экрана (карта, замок Затулья, бой, портрет пацана) × 2 сида — пользователь выбирает.
+# Задача — «ярко, но без вычурности, с высоким вкусом». Интерфейса и надписей на картинках нет: их делаем кодом.
+# Z-Image-Turbo тянет в кадр всё названное, даже с «no» (урок «Коммерсов»), — в промптах только то, что должно быть.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults: {width: 1536, height: 864, steps: 8}
+seeds: [101, 202]
+
+items:
+  # ---------- a: акварельная книга
+  - name: a-map
+    prompt: >-
+      Hand-painted watercolor and ink illustration, fantasy storybook style, luminous transparent washes, fine pen outlines,
+      soft paper texture, harmonious limited palette of fresh greens, river blues and warm ochre.
+      Top-down three-quarter view of a fantasy adventure map: green meadows cut by a winding river with fords and a wooden bridge,
+      a small wooden riverside town with a palisade and watchtowers, a dirt road, a sawmill, a stone quarry, birch groves,
+      a lone mounted hero with a banner on the road, a treasure chest and a campfire. Clear readable shapes, bright daylight.
+  - name: a-town
+    prompt: >-
+      Hand-painted watercolor and ink illustration, fantasy storybook style, luminous transparent washes, fine pen outlines,
+      soft paper texture, harmonious limited palette of fresh greens, river blues and warm ochre.
+      Wide panorama of a free riverside settlement in a fantasy world inspired by old northern wooden architecture:
+      carved timber halls with steep roofs, a tall wooden watchtower, a log palisade, river boats at a pier, a marketplace,
+      fishing nets drying, a meadow with horses, summer evening light, calm and inviting.
+  - name: a-battle
+    prompt: >-
+      Hand-painted watercolor and ink illustration, fantasy storybook style, luminous transparent washes, fine pen outlines,
+      soft paper texture, harmonious palette.
+      Turn-based tactical battle on a flat summer meadow seen from a high three-quarter angle, a faint hexagonal grid on the grass:
+      on the left a company of militia with long spears, slingers and riders in simple leather armor with river-blue banners;
+      on the right swamp creatures: frog-like warriors with blowpipes, will-o'-wisps glowing above, a walking willow tree giant.
+      A few rocks and a fallen log on the field. Clear silhouettes, readable unit groups.
+  - name: a-portrait
+    width: 1024
+    height: 1024
+    prompt: >-
+      Hand-painted watercolor and ink portrait, fantasy storybook style, luminous transparent washes, fine pen outlines,
+      soft paper texture. A sixteen-year-old Russian boy from 1995 with a buzz cut and a cheeky confident smile,
+      wearing a worn sports tracksuit jacket under a fantasy leather jerkin and a fur-trimmed cloak,
+      a brass knuckle glowing with warm golden light on his hand. Head and shoulders, plain soft background.
+
+  # ---------- b: живописная гуашь
+  - name: b-map
+    prompt: >-
+      Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes,
+      saturated but harmonious colors, warm sunlight and soft shadows.
+      Top-down three-quarter view of a fantasy adventure map: green meadows cut by a winding river with fords and a wooden bridge,
+      a small wooden riverside town with a palisade and watchtowers, a dirt road, a sawmill, a stone quarry, birch groves,
+      a lone mounted hero with a banner on the road, a treasure chest and a campfire. Clear readable shapes.
+  - name: b-town
+    prompt: >-
+      Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes,
+      saturated but harmonious colors, warm sunlight and soft shadows.
+      Wide panorama of a free riverside settlement in a fantasy world inspired by old northern wooden architecture:
+      carved timber halls with steep roofs, a tall wooden watchtower, a log palisade, river boats at a pier, a marketplace,
+      fishing nets drying, a meadow with horses, summer evening light, calm and inviting.
+  - name: b-battle
+    prompt: >-
+      Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes,
+      saturated but harmonious colors.
+      Turn-based tactical battle on a flat summer meadow seen from a high three-quarter angle, a faint hexagonal grid on the grass:
+      on the left a company of militia with long spears, slingers and riders in simple leather armor with river-blue banners;
+      on the right swamp creatures: frog-like warriors with blowpipes, will-o'-wisps glowing above, a walking willow tree giant.
+      A few rocks and a fallen log on the field. Clear silhouettes, readable unit groups.
+  - name: b-portrait
+    width: 1024
+    height: 1024
+    prompt: >-
+      Rich gouache portrait painting, refined fantasy game hero portrait, confident brush strokes, warm light.
+      A sixteen-year-old Russian boy from 1995 with a buzz cut and a cheeky confident smile,
+      wearing a worn sports tracksuit jacket under a fantasy leather jerkin and a fur-trimmed cloak,
+      a brass knuckle glowing with warm golden light on his hand. Head and shoulders, plain dark warm background.
+
+  # ---------- c: чистый стилизованный 3D
+  - name: c-map
+    prompt: >-
+      Clean stylized 3D game render, soft global illumination, gentle ambient occlusion, simplified sculpted shapes,
+      bright fresh colors with a refined restrained palette, slight tilt-shift miniature look.
+      Top-down three-quarter view of a fantasy adventure map: green meadows cut by a winding river with fords and a wooden bridge,
+      a small wooden riverside town with a palisade and watchtowers, a dirt road, a sawmill, a stone quarry, birch groves,
+      a lone mounted hero with a banner on the road, a treasure chest and a campfire. Clear readable shapes, bright daylight.
+  - name: c-town
+    prompt: >-
+      Clean stylized 3D game render, soft global illumination, gentle ambient occlusion, simplified sculpted shapes,
+      bright fresh colors with a refined restrained palette.
+      Wide panorama of a free riverside settlement in a fantasy world inspired by old northern wooden architecture:
+      carved timber halls with steep roofs, a tall wooden watchtower, a log palisade, river boats at a pier, a marketplace,
+      fishing nets drying, a meadow with horses, summer evening light, calm and inviting.
+  - name: c-battle
+    prompt: >-
+      Clean stylized 3D game render, soft global illumination, simplified sculpted shapes, toon shading with thin outlines,
+      bright fresh colors with a refined restrained palette.
+      Turn-based tactical battle on a flat summer meadow seen from a high three-quarter angle, a faint hexagonal grid on the grass:
+      on the left a company of militia with long spears, slingers and riders in simple leather armor with river-blue banners;
+      on the right swamp creatures: frog-like warriors with blowpipes, will-o'-wisps glowing above, a walking willow tree giant.
+      A few rocks and a fallen log on the field. Clear silhouettes, readable unit groups.
+  - name: c-portrait
+    width: 1024
+    height: 1024
+    prompt: >-
+      Clean stylized 3D character portrait render, soft studio light, subtle subsurface skin, refined colors.
+      A sixteen-year-old Russian boy from 1995 with a buzz cut and a cheeky confident smile,
+      wearing a worn sports tracksuit jacket under a fantasy leather jerkin and a fur-trimmed cloak,
+      a brass knuckle glowing with warm golden light on his hand. Head and shoulders, plain soft background.
+
+  # ---------- пустые поля боя под макет (отряды ставит mockup_geroi.py из кадров Blender)
+  - name: a-field
+    prompt: >-
+      Hand-painted watercolor and ink illustration, fantasy storybook style, luminous transparent washes, soft paper texture.
+      An empty flat summer meadow battlefield seen from a high three-quarter angle, short even grass, a few wildflowers,
+      a couple of mossy rocks near the edges, a river and birch forest along the far horizon, soft daylight, calm open middle ground.
+  - name: b-field
+    prompt: >-
+      Rich gouache painting, refined fantasy strategy game art, confident brush strokes, saturated but harmonious colors.
+      An empty flat summer meadow battlefield seen from a high three-quarter angle, short even grass, a few wildflowers,
+      a couple of mossy rocks near the edges, a river and birch forest along the far horizon, warm daylight, calm open middle ground.
+  - name: c-field
+    prompt: >-
+      Clean stylized 3D game render, soft global illumination, simplified sculpted shapes, bright refined palette.
+      An empty flat summer meadow battlefield seen from a high three-quarter angle, short even grass, a few wildflowers,
+      a couple of mossy rocks near the edges, a river and birch forest along the far horizon, soft daylight, calm open middle ground.

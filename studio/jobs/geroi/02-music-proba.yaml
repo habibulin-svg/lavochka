@@ -1,0 +1,63 @@
+# Герои кастета и семок, партия 2: проба музыки (этап 1, docs/geroi/DESIGN.md §9.1).
+# Пожелание пользователя: без слов, «энигматика» начала 90-х — медленный даунтемпо-бит с «дыханием», пэды, этнические флейты,
+# хоровые вокализы как инструмент, соборная реверберация. Чужих мелодий и семплов не берём — только жанр.
+# Инструментал — заглушённый голос в партитуре (silence_vocal, по умолчанию); у menu-vox голос оставлен,
+# поются только гласные — проверка, выйдет ли вокализ без слов.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/geroi/02-music-proba.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/geroi/02-music-proba
+max_duration: 150
+tracks:
+  - name: menu
+    seeds: [11, 22]
+    style: >-
+      new age, downtempo, early 1990s, instrumental, 96 bpm, mysterious and majestic, slow breakbeat with deep kick,
+      lush analog synth pads, breathy ethnic bamboo flute lead, distant choir pads, cathedral reverb, deep sub bass, cinematic
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"
+
+  - name: menu-vox
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      new age, downtempo, early 1990s, 96 bpm, mysterious and majestic, slow breakbeat, lush synth pads, bamboo flute,
+      wordless ethereal female vocalise, low male choir humming, cathedral reverb, cinematic
+    lyrics: |
+      [intro]
+      [verse]
+      Аа-а-а, аа-а-а
+      О-о-о, о-о-о
+      Аа-а-а, аа-а-а
+      О-о-о
+      [chorus]
+      Аа-аа-а, аа-аа-а
+      О-о-о-о
+      Аа-аа-а, аа-аа-а
+      О-о-о-о
+      [outro]
+
+  - name: zatulye
+    seeds: [11, 22]
+    style: >-
+      new age, ethnic downtempo, early 1990s, instrumental, 92 bpm, warm and open, slavic folk feel, plucked gusli zither,
+      jaw harp, wooden flute, soft frame drum, slow breakbeat, warm synth pads, river ambience, reverb, hopeful
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: zatonye
+    seeds: [11, 22]
+    style: >-
+      dark new age, ambient downtempo, early 1990s, instrumental, 84 bpm, misty and mysterious, muffled deep drums,
+      slow heavy breakbeat, low drones, breathy flute, watery synth textures, minor key, deep reverb, hypnotic
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: battle
+    seeds: [11, 22]
+    style: >-
+      epic new age, cinematic downtempo, early 1990s, instrumental, 116 bpm, tense and driving, big taiko drums,
+      hard breakbeat, low brass synth, pulsing bass, ethnic flute lead, choir pad stabs, minor key, reverb, heroic
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[bridge]\n[chorus]"
+
+  - name: map
+    seeds: [11, 22]
+    style: >-
+      new age, ambient downtempo, early 1990s, instrumental, 90 bpm, adventurous and calm, soft breakbeat, shakuhachi flute,
+      pan flute, bell chimes, airy synth pads, warm bass, wide reverb, journey mood, major key
+    lyrics: "[intro]\n[verse]\n[chorus]\n[interlude]\n[chorus]\n[outro]"

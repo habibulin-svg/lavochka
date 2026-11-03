@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Герои: проба шрифтов</title>
+<!-- Проба этапа 1 (docs/geroi/DESIGN.md §8). Все шрифты — SIL OFL с кириллицей; в игре будут лежать локально, здесь — с Google Fonts для просмотра. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;1,400&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans+SC:wght@500;700&family=Cormorant+Garamond:wght@600;700&family=Fira+Sans+Condensed:wght@500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Prata&family=Ruslan+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17130f; --panel: #2a221a; --panel2: #352b21; --line: #b9924f; --ink: #efe3cc; --mute: #b7a68a; --accent: #e8c27a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; padding: 24px 16px 48px; }
+  h1.page { font: 600 14px system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin: 0 auto 20px; max-width: 1180px; }
+  .pair { max-width: 1180px; margin: 0 auto 40px; border-top: 1px solid #4a3c2c; padding-top: 18px; }
+  .pair > header { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 14px; }
+  .pair > header b { font: 700 13px system-ui; letter-spacing: .1em; color: var(--accent); }
+  .pair > header span { font: 13px system-ui; color: var(--mute); }
+  .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .title { grid-column: 1 / -1; text-align: center; padding: 18px 8px 6px; }
+  .title .t1 { font-size: 54px; line-height: 1; color: var(--accent); }
+  .title .t2 { font-size: 20px; color: var(--mute); margin-top: 6px; }
+
+  .cut { background: #000; border: 1px solid var(--line); border-radius: 3px; padding: 12px; }
+  .cut .frame { aspect-ratio: 16/9; background: radial-gradient(ellipse at 50% 40%, #6f8a6a, #2a3a30 70%, #0d120f); border: 1px solid #5a4a33; display: grid; place-items: center; color: #ffffff55; font: 12px system-ui; }
+  .cut .line { margin-top: 12px; font-size: 21px; line-height: 1.45; color: #f3ead8; text-shadow: 0 1px 2px #000; min-height: 3em; }
+
+  .panel { background: linear-gradient(var(--panel2), var(--panel)); border: 1px solid var(--line); border-radius: 3px; padding: 14px 16px; }
+  .panel h2 { margin: 0 0 2px; font-size: 26px; color: var(--accent); font-weight: inherit; }
+  .panel .sub { color: var(--mute); font-size: 15px; margin-bottom: 10px; }
+  .panel p { margin: 0 0 10px; font-size: 16px; }
+  .res { display: flex; flex-wrap: wrap; gap: 6px 16px; border-top: 1px solid #5a4a33; padding-top: 8px; font-size: 16px; }
+  .res i { font-style: normal; color: var(--mute); }
+
+  .unit { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+  .unit .pic { width: 96px; height: 96px; background: radial-gradient(circle at 50% 35%, #7c9b62, #2d3a24); border: 1px solid var(--line); position: relative; }
+  .unit .pic b { position: absolute; right: 3px; bottom: 2px; font-size: 20px; color: #fff; text-shadow: 0 0 3px #000, 0 1px 0 #000; }
+  .stats { display: grid; grid-template-columns: auto auto; gap: 1px 14px; font-size: 16px; }
+  .stats span:nth-child(odd) { color: var(--mute); }
+  .tip { margin-top: 12px; background: #f1e6cf; color: #2a1e12; border-radius: 3px; padding: 9px 12px; font-size: 15px; box-shadow: 0 4px 12px #0008; }
+  .tip b { font-weight: 600; }
+  .btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btns span { border: 1px solid var(--line); background: #1e1813; padding: 6px 14px; border-radius: 3px; font-size: 16px; color: var(--accent); }
+
+  /* пары */
+  .p1 .hd { font-family: 'Cormorant Garamond', serif; font-weight: 700; }
+  .p1 .tx { font-family: 'Alegreya', serif; }
+  .p1 .nm { font-family: 'Alegreya Sans SC', sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .p2 .hd { font-family: 'Prata', serif; }
+  .p2 .t1.hd { font-family: 'Ruslan Display', serif; letter-spacing: .02em; }
+  .p2 .tx { font-family: 'PT Serif', serif; }
+  .p2 .nm { font-family: 'Fira Sans Condensed', sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .p3 .hd { font-family: 'Alegreya SC', serif; font-weight: 700; }
+  .p3 .tx { font-family: 'Lora', serif; }
+  .p3 .nm { font-family: 'Fira Sans Condensed', sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<h1 class="page">Герои кастета и семок — проба шрифтов · три пары</h1>
+
+<template id="sample">
+  <div class="grid">
+    <div class="title"><div class="t1 hd">Герои кастета и семок</div><div class="t2 tx"><i>Глава первая. За Тулой</i></div></div>
+    <div class="cut">
+      <div class="frame">окно ролика</div>
+      <div class="line tx">Вспышка погасла. Серёга открыл глаза — над ним шумели сосны, которых в Затулинке отродясь не было, а в кулаке теплел осколок кастета.</div>
+    </div>
+    <div class="panel">
+      <h2 class="hd">Затулье</h2>
+      <div class="sub tx">Ратная изба · построена</div>
+      <p class="tx">Ополченцы приходят каждую неделю. Сход может удвоить прирост, если выбрать указ «Сбор ополчения».</p>
+      <div class="unit">
+        <div class="pic"><b class="nm">37</b></div>
+        <div>
+          <div class="hd" style="font-size:21px;color:var(--accent)">Стрельцы</div>
+          <div class="stats tx"><span>Атака</span><span class="nm">6</span><span>Защита</span><span class="nm">3</span><span>Урон</span><span class="nm">2–4</span><span>Здоровье</span><span class="nm">10</span><span>Скорость</span><span class="nm">5</span><span>Выстрелы</span><span class="nm">12</span></div>
+        </div>
+      </div>
+      <div class="tip tx"><b>Стенка.</b> Пехота, стоящая плечом к плечу, отвечает на удар вся: каждый сосед по разу.</div>
+      <div class="btns tx"><span>Нанять</span><span>Улучшить</span><span>Закрыть</span></div>
+      <div class="res tx" style="margin-top:12px"><span><i>Семки</i> <b class="nm">12 450</b></span><span><i>Лес</i> <b class="nm">18</b></span><span><i>Камень</i> <b class="nm">9</b></span><span><i>Соль</i> <b class="nm">4</b></span><span><i>День</i> <b class="nm">3 · нед. 2</b></span></div>
+    </div>
+  </div>
+</template>
+
+<section class="pair p1"><header><b>1 · КНИЖНАЯ</b><span>заголовки Cormorant Garamond · текст Alegreya · цифры Alegreya Sans SC</span></header></section>
+<section class="pair p2"><header><b>2 · ЛЕТОПИСНАЯ</b><span>название Ruslan Display · заголовки Prata · текст PT Serif · цифры Fira Sans Condensed</span></header></section>
+<section class="pair p3"><header><b>3 · СТРОГАЯ</b><span>заголовки Alegreya SC · текст Lora · цифры Fira Sans Condensed</span></header></section>
+
+<script>
+  const t = document.getElementById('sample');
+  document.querySelectorAll('.pair').forEach((s) => s.appendChild(t.content.cloneNode(true)));
+</script>
+</body>
+</html>
