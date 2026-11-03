@@ -70,6 +70,8 @@ export interface Donation {
   amount: number;
   createdAt: number;
   paidAt: number | null;
+  /** null — пожертвование; иначе покупка (см. createDonation). */
+  purpose?: string | null;
 }
 
 /** Заказ подписки «Лавочка+» (src/core/plus.ts): создаётся до оплаты, оплаченным его отмечает уведомление Robokassa. */
@@ -242,7 +244,8 @@ export interface AccountStore {
   setSetting(key: string, value: string | null, by: number | null): Promise<void>;
 
   /** Новый донат (ещё не оплачен) — его номер уходит в платёжный сервис. */
-  createDonation(d: { userId: number | null; amount: number }): Promise<number>;
+  /** purpose — не пожертвование, а покупка (например, 'vk' — монеты «Вкладышей»): в сбор и в список донатов не идёт. */
+  createDonation(d: { userId: number | null; amount: number; purpose?: string | null }): Promise<number>;
   donation(id: number): Promise<Donation | null>;
   /** Отметить оплаченным; false — уже был отмечен (повторное уведомление) или его нет. */
   markDonationPaid(id: number, now: number): Promise<boolean>;
@@ -279,6 +282,8 @@ export interface AccountStore {
   getSave(userId: number, game: string): Promise<{ at: number; data: string | null } | null>;
   /** Записать, если at новее записанного; true — записано. */
   putSave(userId: number, game: string, at: number, data: string | null): Promise<boolean>;
+  /** Записать несколько снимков разом — всё или ничего (переход вкладышей между игроками), без проверки времени. */
+  putSaves(rows: { userId: number; game: string; at: number; data: string | null }[]): Promise<void>;
   /** Все сохранения игрока: игра, время, есть ли партия. */
   listSaves(userId: number): Promise<{ game: string; at: number; has: boolean }[]>;
 
@@ -549,6 +554,10 @@ export class MemoryAccountStore implements AccountStore {
     return true;
   }
 
+  async putSaves(rows: { userId: number; game: string; at: number; data: string | null }[]) {
+    for (const r of rows) this.saves.set(r.userId + ':' + r.game, { at: r.at, data: r.data });
+  }
+
   async listSaves(userId: number) {
     const p = userId + ':';
     return [...this.saves].filter(([k]) => k.startsWith(p)).map(([k, v]) => ({ game: k.slice(p.length), at: v.at, has: v.data != null }));
@@ -572,9 +581,9 @@ export class MemoryAccountStore implements AccountStore {
     else this.site.set(key, value);
   }
 
-  async createDonation(d: { userId: number | null; amount: number }) {
+  async createDonation(d: { userId: number | null; amount: number; purpose?: string | null }) {
     const id = ++this.donSeq;
-    this.donations.set(id, { id, userId: d.userId, amount: d.amount, createdAt: Date.now(), paidAt: null });
+    this.donations.set(id, { id, userId: d.userId, amount: d.amount, createdAt: Date.now(), paidAt: null, purpose: d.purpose ?? null });
     return id;
   }
 
@@ -592,13 +601,13 @@ export class MemoryAccountStore implements AccountStore {
 
   async donatedSince(since: number) {
     let sum = 0;
-    for (const d of this.donations.values()) if (d.paidAt != null && d.paidAt >= since) sum += d.amount;
+    for (const d of this.donations.values()) if (d.paidAt != null && d.paidAt >= since && !d.purpose) sum += d.amount;
     return sum;
   }
 
   async recentDonations(limit: number) {
     return [...this.donations.values()]
-      .filter((d) => d.paidAt != null)
+      .filter((d) => d.paidAt != null && !d.purpose)
       .sort((a, b) => b.paidAt! - a.paidAt!)
       .slice(0, limit)
       .map((d) => ({ ...d, userName: d.userId == null ? null : this.users.get(d.userId)?.name ?? null }));

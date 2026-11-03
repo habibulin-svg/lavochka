@@ -1,11 +1,8 @@
-/* «Вкладыши» — коллекция игрока: копилка монет, вкладыши, жвачки, колоды. Пока хранится в браузере (store);
- * перенос на сервер — вместе с игрой на кон и обменом (DESIGN.md §8). У каждого экземпляра — происхождение:
- * «дворовые» (выиграны, наградные, из жвачек за заработанные монеты) и «домашние» (из жвачек за купленные — когда появится покупка):
- * домашние не ставятся на кон и не меняются (решение 2026-11-02). */
-import { store } from '../../core/settings';
+/* «Вкладыши» — коллекция игрока: копилка монет, вкладыши, жвачки, колоды. Здесь — чистые правила над объектом Collection;
+ * где он хранится, решает bank.ts (браузер у гостя, сервер у вошедшего — server/vkladyshi.ts считает теми же функциями).
+ * У каждого экземпляра — происхождение: «дворовые» (выиграны, наградные, из жвачек за заработанные монеты) и «домашние»
+ * (из жвачек за купленные монеты): домашние не ставятся на кон и не меняются (решение 2026-11-02). */
 import { CARDS, DECK_SIZE, MAX_COPIES, SETS, card, hash, starterDeck, type Card, type Coll } from './cards';
-
-const KEY = 'vk.collection';
 
 export interface Owned {
   /** дворовые экземпляры */
@@ -17,9 +14,16 @@ export interface Deck {
   name: string;
   ids: string[];
 }
+export interface LogLine {
+  at: number;
+  text: string;
+}
 export interface Collection {
   v: 1;
+  /** заработанные монеты */
   coins: number;
+  /** купленные за рубли монеты: тратятся первыми, вкладыши из таких жвачек — домашние */
+  hcoins?: number;
   owned: Record<string, Owned>;
   /** жвачек без редкого подряд — по серии жвачки */
   pity: Record<string, number>;
@@ -29,6 +33,10 @@ export interface Collection {
   games: number;
   /** открытые жвачки (для альбома «новое») */
   opened: number;
+  /** журнал конов, обменов и покупок (последние LOG_KEEP) — защита от «развели» */
+  log?: LogLine[];
+  /** браузерная коллекция уже перенесена на сервер */
+  imported?: boolean;
 }
 
 /** Жвачка в ларьке — по одной на группу серий. */
@@ -55,8 +63,17 @@ export const PITY = 10;
 /** Сколько монет дают за повтор сверх двух — по редкости. */
 export const DUST = [5, 10, 30, 120];
 export const REWARD = { win: 40, loss: 10 };
+/** Монеты за рубли (ларёк). Цены разные — по сумме платежа сервер сверяет набор. */
+export const COIN_PACKS = [
+  { id: 's', rub: 99, coins: 300 },
+  { id: 'm', rub: 249, coins: 900 },
+  { id: 'l', rub: 499, coins: 2000 },
+];
+export const LOG_KEEP = 50;
+/** Сколько вкладышей можно поставить на кон / выложить в обмен за раз. */
+export const STAKE_MAX = 5;
 
-function fresh(): Collection {
+export function fresh(): Collection {
   const owned: Record<string, Owned> = {};
   // стартовый набор — две колоды «из старых запасов», дворовые
   for (const id of [...starterDeck('garage'), ...starterDeck('team')]) {
@@ -66,30 +83,68 @@ function fresh(): Collection {
   return { v: 1, coins: 200, owned, pity: {}, decks: [{ name: 'Гараж', ids: starterDeck('garage') }, { name: 'Сборная', ids: starterDeck('team') }], active: 0, wins: 0, games: 0, opened: 0 };
 }
 
-export function load(): Collection {
-  const c = store.get<Collection | null>(KEY, null);
-  if (!c || c.v !== 1) return fresh();
-  // вкладыши, которых больше нет в данных (пересборка), — тихо выкидываем
-  for (const id of Object.keys(c.owned)) if (!CARDS.some((x) => x.id === id)) delete c.owned[id];
-  c.decks = c.decks.map((d) => ({ ...d, ids: d.ids.filter((id) => c.owned[id]) }));
+const KNOWN = new Set(CARDS.map((x) => x.id));
+
+/** Привести прочитанное к делу: нет такого — свежая; вкладышей, которых больше нет в данных (пересборка), — тихо выкидываем. */
+export function normalize(c: Collection | null | undefined): Collection {
+  if (!c || c.v !== 1 || !c.owned || typeof c.owned !== 'object') return fresh();
+  for (const id of Object.keys(c.owned)) if (!KNOWN.has(id)) delete c.owned[id];
+  c.decks = (Array.isArray(c.decks) ? c.decks : []).map((d) => ({ name: String(d.name ?? 'Колода'), ids: (d.ids ?? []).filter((id) => c.owned[id]) }));
+  if (!c.decks.length) c.decks = [{ name: 'Колода', ids: [] }];
+  if (!(c.active >= 0 && c.active < c.decks.length)) c.active = 0;
   return c;
 }
 
-export function save(c: Collection) {
-  store.set(KEY, c);
+export const count = (c: Collection, id: string) => (c.owned[id]?.y ?? 0) + (c.owned[id]?.h ?? 0);
+/** Сколько дворовых этого номера свободно (не лежит на кону / в обмене). */
+export const free = (c: Collection, id: string, reserved?: Map<string, number>) => Math.max(0, (c.owned[id]?.y ?? 0) - (reserved?.get(id) ?? 0));
+export const coinsOf = (c: Collection) => c.coins + (c.hcoins ?? 0);
+
+export function addLog(c: Collection, text: string, at = Date.now()) {
+  c.log = [{ at, text }, ...(c.log ?? [])].slice(0, LOG_KEEP);
 }
 
-export const count = (c: Collection, id: string) => (c.owned[id]?.y ?? 0) + (c.owned[id]?.h ?? 0);
-
-/** Награда за партию с ботом — возвращает, сколько монет начислено. */
-export function reward(win: boolean): number {
-  const c = load();
+/** Награда за партию — возвращает, сколько монет начислено. */
+export function reward(c: Collection, win: boolean): number {
   const coins = win ? REWARD.win : REWARD.loss;
   c.coins += coins;
   c.games += 1;
   if (win) c.wins += 1;
-  save(c);
   return coins;
+}
+
+/** Есть ли у игрока эти дворовые вкладыши (с повторами), не считая отложенных; текст ошибки или null. */
+export function checkYard(c: Collection, ids: string[], reserved?: Map<string, number>): string | null {
+  const n = new Map<string, number>();
+  for (const id of ids) n.set(id, (n.get(id) ?? 0) + 1);
+  for (const [id, k] of n) {
+    if (!KNOWN.has(id)) return 'нет такого вкладыша';
+    if (k > free(c, id, reserved)) return (c.owned[id]?.h ?? 0) > 0 ? `«${card(id).name}» — домашний, на кон и в обмен не идёт` : `«${card(id).name}» — столько свободных нет`;
+  }
+  return null;
+}
+
+/** Передать дворовые вкладыши: у from убрать, to — добавить дворовыми. Проверка — до вызова (checkYard). */
+export function moveYard(from: Collection, to: Collection, ids: string[]) {
+  for (const id of ids) {
+    const o = from.owned[id];
+    if (!o || o.y <= 0) throw new Error('нечего передать: ' + id);
+    o.y -= 1;
+    if (o.y + o.h <= 0) delete from.owned[id];
+    (to.owned[id] ??= { y: 0, h: 0 }).y += 1;
+  }
+  // колода, где теперь не хватает, — без лишних копий
+  from.decks = from.decks.map((d) => {
+    const used = new Map<string, number>();
+    return {
+      ...d,
+      ids: d.ids.filter((id) => {
+        const k = (used.get(id) ?? 0) + 1;
+        used.set(id, k);
+        return k <= count(from, id);
+      }),
+    };
+  });
 }
 
 function rollRarity(r: number): number {
@@ -101,13 +156,18 @@ function rollRarity(r: number): number {
   return 0;
 }
 
-/** Открыть жвачку: списать монеты, выдать PACK_SIZE вкладышей. rand — источник случайности (в браузере Math.random). */
+/** Открыть жвачку: списать монеты, выдать PACK_SIZE вкладышей. rand — источник случайности (в браузере Math.random, на сервере — crypto).
+ * Купленные монеты тратятся первыми; если в оплату пошла хоть одна купленная монета — вкладыши домашние (смешанную оплату не «отмываем»). */
 export function openGum(c: Collection, gumId: string, rand: () => number = Math.random): Card[] | null {
   const g = GUMS.find((x) => x.id === gumId);
-  if (!g || c.coins < g.price) return null;
+  if (!g || coinsOf(c) < g.price) return null;
   const pool = CARDS.filter((x) => g.sets.includes(x.set));
   if (!pool.length) return null;
-  c.coins -= g.price;
+  const hc = c.hcoins ?? 0;
+  const home = hc > 0;
+  const fromH = Math.min(hc, g.price);
+  c.hcoins = hc - fromH;
+  c.coins -= g.price - fromH;
   const got: Card[] = [];
   const pity = (c.pity[g.id] ?? 0) + 1;
   for (let i = 0; i < PACK_SIZE; i++) {
@@ -119,25 +179,30 @@ export function openGum(c: Collection, gumId: string, rand: () => number = Math.
     const pick = cand[Math.floor(rand() * cand.length)];
     got.push(pick);
     const o = (c.owned[pick.id] ??= { y: 0, h: 0 });
-    o.y += 1;
+    if (home) o.h += 1;
+    else o.y += 1;
   }
   c.pity[g.id] = got.some((x) => x.rarity >= 2) ? 0 : pity;
   c.opened += 1;
-  save(c);
   return got;
 }
 
-/** Сдать повторы сверх двух в обменный фонд — монеты. */
-export function dustExtras(c: Collection): number {
+/** Сдать повторы сверх двух в обменный фонд — монеты. Сначала уходят домашние (за них — купленные монеты), дворовые на кону не трогаем. */
+export function dustExtras(c: Collection, reserved?: Map<string, number>): number {
   let coins = 0;
   for (const [id, o] of Object.entries(c.owned)) {
-    const extra = o.y - MAX_COPIES;
+    let extra = o.y + o.h - MAX_COPIES;
     if (extra <= 0) continue;
-    o.y -= extra;
-    coins += extra * DUST[card(id).rarity];
+    const price = DUST[card(id).rarity];
+    const h = Math.min(extra, o.h);
+    o.h -= h;
+    extra -= h;
+    c.hcoins = (c.hcoins ?? 0) + h * price;
+    const y = Math.min(extra, free(c, id, reserved));
+    o.y -= y;
+    c.coins += y * price;
+    coins += (h + y) * price;
   }
-  c.coins += coins;
-  save(c);
   return coins;
 }
 
@@ -146,6 +211,7 @@ export function deckValid(c: Collection, ids: string[]): string | null {
   const n = new Map<string, number>();
   for (const id of ids) n.set(id, (n.get(id) ?? 0) + 1);
   for (const [id, k] of n) {
+    if (!KNOWN.has(id)) return 'нет такого вкладыша';
     if (k > MAX_COPIES) return `«${card(id).name}» — больше двух`;
     if (k > count(c, id)) return `«${card(id).name}» — столько нет в альбоме`;
   }

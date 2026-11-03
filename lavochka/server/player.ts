@@ -78,7 +78,7 @@ export class Player {
     const u = await this.acc.current(ctx);
     if (!u) return err(401, 'auth', 'Войдите заново.');
     const game = q.get('game');
-    if (!game) return { code: 200, body: { saves: (await this.acc.store.listSaves(u.id)).filter((s) => !s.game.startsWith('seen:') && !s.game.startsWith('kz:') && !s.game.startsWith('pk:')) } };
+    if (!game) return { code: 200, body: { saves: (await this.acc.store.listSaves(u.id)).filter((s) => !s.game.startsWith('seen:') && !s.game.startsWith('kz:') && !s.game.startsWith('pk:') && !s.game.startsWith('vk:')) } };
     if (!this.known(game)) return err(400, 'game', 'Нет такой игры.');
     const s = await this.acc.store.getSave(u.id, game);
     let snap: unknown = null;

@@ -232,6 +232,8 @@ export const MIGRATIONS: string[] = [
   `insert into user_rights (user_id, right_id, until)
      select user_id, 'cosmetics', until from subscriptions where until > now()
    on conflict (user_id, right_id) do nothing;`,
+  // 14 — покупки через ту же Robokassa (монеты «Вкладышей»): не пожертвования, в сбор не идут
+  `alter table donations add column purpose text;`,
 ];
 
 const ms = (d: Date | null) => (d ? d.getTime() : null);
@@ -254,7 +256,7 @@ function toUser(r: any): User {
 }
 
 function toDonation(r: any): Donation {
-  return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at) };
+  return { id: Number(r.id), userId: r.user_id == null ? null : Number(r.user_id), amount: Number(r.amount_kop), createdAt: ms(r.created_at)!, paidAt: ms(r.paid_at), purpose: r.purpose ?? null };
 }
 
 function toPlusOrder(r: any): PlusOrder {
@@ -539,6 +541,25 @@ export class PgAccountStore implements AccountStore {
     return (r.rowCount ?? 0) > 0;
   }
 
+  async putSaves(rows: { userId: number; game: string; at: number; data: string | null }[]) {
+    const c = await this.pool.connect();
+    try {
+      await c.query('begin');
+      for (const r of rows)
+        await c.query(
+          `insert into game_saves (user_id, game, data, at) values ($1, $2, $3, $4)
+           on conflict (user_id, game) do update set data = excluded.data, at = excluded.at`,
+          [r.userId, r.game, r.data, date(r.at)]
+        );
+      await c.query('commit');
+    } catch (e) {
+      await c.query('rollback');
+      throw e;
+    } finally {
+      c.release();
+    }
+  }
+
   async listSaves(userId: number) {
     const r = await this.pool.query('select game, at, data is not null as has from game_saves where user_id = $1', [userId]);
     return r.rows.map((x) => ({ game: x.game as string, at: ms(x.at)!, has: !!x.has }));
@@ -585,8 +606,8 @@ export class PgAccountStore implements AccountStore {
       );
   }
 
-  async createDonation(d: { userId: number | null; amount: number }) {
-    const r = await this.pool.query('insert into donations (user_id, amount_kop) values ($1, $2) returning id', [d.userId, d.amount]);
+  async createDonation(d: { userId: number | null; amount: number; purpose?: string | null }) {
+    const r = await this.pool.query('insert into donations (user_id, amount_kop, purpose) values ($1, $2, $3) returning id', [d.userId, d.amount, d.purpose ?? null]);
     return Number(r.rows[0].id);
   }
 
@@ -601,13 +622,13 @@ export class PgAccountStore implements AccountStore {
   }
 
   async donatedSince(since: number) {
-    const r = await this.pool.query('select coalesce(sum(amount_kop), 0) as s from donations where paid_at >= $1', [date(since)]);
+    const r = await this.pool.query('select coalesce(sum(amount_kop), 0) as s from donations where paid_at >= $1 and purpose is null', [date(since)]);
     return Number(r.rows[0].s);
   }
 
   async recentDonations(limit: number) {
     const r = await this.pool.query(
-      'select d.*, u.name as user_name from donations d left join users u on u.id = d.user_id where d.paid_at is not null order by d.paid_at desc limit $1',
+      'select d.*, u.name as user_name from donations d left join users u on u.id = d.user_id where d.paid_at is not null and d.purpose is null order by d.paid_at desc limit $1',
       [limit]
     );
     return r.rows.map((x) => ({ ...toDonation(x), userName: x.user_name ?? null }));

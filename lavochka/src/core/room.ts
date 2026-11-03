@@ -13,7 +13,7 @@ import { AVATARS, PHOTO_RE } from './avatars';
 import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
 import { startTicker, type Ticker } from './ticker';
-import type { GameDef, Options, SeatKind, SeatSpec } from './types';
+import type { GameDef, GameResult, Options, SeatKind, SeatSpec } from './types';
 
 const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
@@ -100,6 +100,12 @@ export interface RoomConfig {
   botDelay?: number;
   /** Сколько ждать отключившегося до бота (по умолчанию DROP_GRACE_MS). */
   dropGraceMs?: number;
+  /** Партия начинается (сервер): аккаунты по местам (null — бот или гость); можно вернуть правила этой партии (свои колоды). */
+  onStart?(seatUsers: (number | null)[], options: Options): Options | void;
+  /** Партия закончилась — один раз на партию (сервер: кон, награды). */
+  onResult?(result: GameResult, seatUsers: (number | null)[]): void;
+  /** Комната закрыта. */
+  onClose?(): void;
 }
 
 export class Room {
@@ -132,6 +138,9 @@ export class Room {
   private rtBotMem = new Map<number, Record<string, any>>();
   private rtEvents: unknown[] = [];
   private rtSaveAt = 0;
+  /** Аккаунты по местам на начало партии и сообщён ли уже итог. */
+  private seatUsers: (number | null)[] = [];
+  private reported = false;
 
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
@@ -642,11 +651,35 @@ export class Room {
       s.look = o.look;
       if (s.kind === 'remote') s.name = this.seatName(s.seat);
     }
-    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.options);
+    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.gameOptions());
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
     this.rtStart();
+  }
+
+  /** Аккаунт за каждым местом (сервер ставит link.user); правила партии — с поправкой onStart. */
+  private gameOptions(): Options {
+    const owner = [...this.conns].find((c) => c.owner);
+    const users: (number | null)[] = [];
+    for (const s of this.seats) {
+      const conn = s.kind === 'human' ? owner : s.kind === 'remote' ? [...this.conns].find((c) => c.clientId && c.clientId === this.holders.get(s.seat)?.clientId) : undefined;
+      users[s.seat] = conn?.link.user ?? null;
+    }
+    this.seatUsers = users;
+    this.reported = false;
+    return this.cfg.onStart?.(users, this.options) ?? this.options;
+  }
+
+  private report() {
+    const a = this.auth;
+    if (!a?.result || this.reported) return;
+    this.reported = true;
+    try {
+      this.cfg.onResult?.(a.result, this.seatUsers);
+    } catch (e) {
+      roomErrorHook?.(e, 'итог партии', this.def.id);
+    }
   }
 
   /** После партии — обратно в лобби: места и правила снова можно менять. */
@@ -661,7 +694,7 @@ export class Room {
   private restart() {
     this.botToken++;
     if (this.def.again) this.options = this.def.again(this.options);
-    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.options);
+    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.gameOptions());
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
@@ -720,6 +753,7 @@ export class Room {
       this.rtStop();
       this.broadcastStep({ seq: a.seq, actor: -1, events: [] });
       this.save();
+      this.report();
     } else if (t > this.rtSaveAt) {
       this.rtSaveAt = t + 3000;
       this.save();
@@ -782,6 +816,7 @@ export class Room {
     if (!res) return;
     this.broadcastStep(res);
     this.save();
+    this.report();
     this.pumpBots();
   }
 
@@ -866,6 +901,7 @@ export class Room {
     if (this.closed) return;
     this.broadcast({ t: 'closed', reason });
     this.closed = true;
+    this.cfg.onClose?.();
     this.botToken++;
     clearInterval(this.heartbeat);
     clearTimeout(this.graceTimer);

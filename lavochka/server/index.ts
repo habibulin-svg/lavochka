@@ -22,6 +22,7 @@ import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
 import { gopsFirst, gopsRooms } from './gops';
+import { Vk, vkApi } from './vkladyshi';
 import type { GameDef } from '../src/core/types';
 import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
@@ -142,34 +143,41 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
       code,
       ownerKey,
       onEmpty: () => scheduleEmpty(code),
+      // «Вкладыши»: свои колоды вошедших, кон и награды (server/vkladyshi.ts)
+      ...(def.id === 'vkladyshi'
+        ? {
+            onStart: (users, opts) => vk.start(code, users, opts),
+            onResult: (r, users) => void vk.settle(code, r.winners, users).catch((e) => log('вкладыши: итог — ' + e)),
+            onClose: () => vk.drop(code),
+          }
+        : {}),
     });
     rooms.set(code, room);
     ws.send(JSON.stringify({ t: 'created', code, ownerKey }));
     log(`комната ${code}: ${def.id}, мест ${seats.length}`);
-    return attach(ws, room, await mayVideo(req));
+    return attach(ws, room, req);
   }
   if (msg?.t === 'join') {
     const code = String(msg.code || '').toUpperCase();
     const room = rooms.get(code);
     if (!room || room.isClosed) return fail('Комната не найдена. Проверьте код.');
     ws.send(JSON.stringify({ t: 'joined', code }));
-    return attach(ws, room, await mayVideo(req));
+    return attach(ws, room, req);
   }
   return fail('Непонятный запрос.');
 }
 
-/** Камера за столом — по праву video (подписка «Лавочка+»); голос — всем. База недоступна — не мешаем. */
-async function mayVideo(req: IncomingMessage): Promise<boolean> {
-  if (!accountsReady) return true;
+/** Камера за столом — по праву video (подписка «Лавочка+»); голос — всем. База недоступна — не мешаем.
+ * Вошедший игрок соединения — link.user (кон и колоды «Вкладышей»). */
+async function attach(ws: WebSocket, room: Room, req: IncomingMessage): Promise<Link> {
   const u = await userOf(req);
-  return !!u && hasRight(await accounts.store.rights(u.id, Date.now()).catch(() => []), 'video');
-}
-
-function attach(ws: WebSocket, room: Room, video: boolean): Link {
+  const video = !accountsReady || (!!u && hasRight(await accounts.store.rights(u.id, Date.now()).catch(() => []), 'video'));
   clearTimeout(emptyTimers.get(room.code));
   emptyTimers.delete(room.code);
   const link = wsLink(ws);
   link.video = video;
+  link.user = u?.id ?? null;
+  if (u && room.def.id === 'vkladyshi') vk.join(room.code, u.id, u.name);
   room.connect(link);
   return link;
 }
@@ -228,6 +236,9 @@ const player = new Player(accounts, (g) => Object.hasOwn(SLUGS, g));
 setInterval(() => accountsReady && player.refresh().catch(() => {}), 600_000).unref();
 // донат (server/donate.ts): без ключей Robokassa кнопка есть, но оплата отвечает «ещё не подключена»
 const donate = new Donate(accounts, robokassaFromEnv(), log);
+// «Вкладыши» (server/vkladyshi.ts): коллекция под аккаунтом, кон, обмен; монеты за рубли — через ту же Robokassa
+const vk = new Vk(accounts, robokassaFromEnv(), log);
+donate.onPaid = (d) => vk.paid(d);
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
 // подписка «Лавочка+» (server/plus.ts): та же Robokassa; повторные списания — только при ROBOKASSA_RECURRING=1
 const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
@@ -451,6 +462,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, plus)) return;
+  }
+  if (path === '/api/vk' || path.startsWith('/api/vk/')) {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await vkApi(vk, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/plus' || path === '/api/plus/autorenew' || path === '/api/plus/link' || path === '/api/admin/plus') {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });

@@ -8,6 +8,7 @@
  *   GET|POST /api/admin/donate          — Мастеру: настройки и последние донаты */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Accounts, Limiter, type Ctx, type Reply } from './accounts/accounts';
+import type { Donation } from './accounts/store';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 import { checkResult, payForm, type RobokassaConf } from './pay/robokassa';
 import { isPlusInv, type Plus } from './plus';
@@ -26,6 +27,8 @@ const err = (code: number, error: string, message: string): Reply => ({ code, bo
 
 export class Donate {
   private byIp = new Limiter(20, 3600_000);
+  /** Покупка через ту же кассу (purpose у заказа, например монеты «Вкладышей») оплачена; зовётся один раз на заказ. */
+  onPaid: ((d: Donation) => Promise<void>) | null = null;
 
   constructor(
     private acc: Accounts,
@@ -71,8 +74,15 @@ export class Donate {
       this.log(`донат: уведомление не сходится с базой (№${r.invId}, ${r.amount} коп.)`);
       return null;
     }
-    if (await this.acc.store.markDonationPaid(d.id, now)) this.log(`донат №${d.id}: оплачено ${d.amount / 100} ₽`);
+    if (await this.acc.store.markDonationPaid(d.id, now)) {
+      this.log(`${d.purpose ? 'покупка (' + d.purpose + ')' : 'донат'} №${d.id}: оплачено ${d.amount / 100} ₽`);
+      if (d.purpose) await this.onPaid?.(d);
+    }
     return 'OK' + d.id;
+  }
+
+  async purposeOf(id: number): Promise<string | null> {
+    return (await this.acc.store.donation(id).catch(() => null))?.purpose ?? null;
   }
 
   private async master(ctx: Ctx) {
@@ -145,7 +155,10 @@ export async function donateApi(
     } else {
       // возврат с Robokassa: оплата засчитывается уведомлением, здесь только «спасибо» или «не вышло»
       const q = sub ? 'plus' : 'donate';
-      res.writeHead(303, { location: `/?${q}=${m[1] === 'success' ? 'spasibo' : 'otmena'}`, 'cache-control': 'no-store' });
+      // покупка монет «Вкладышей» — обратно в игру
+      const vk = !sub && /^\d+$/.test(String(p.InvId ?? '')) && (await don.purposeOf(Number(p.InvId))) === 'vk';
+      const ok = m[1] === 'success' ? 'spasibo' : 'otmena';
+      res.writeHead(303, { location: vk ? `/vkladyshi/?coins=${ok}` : `/?${q}=${ok}`, 'cache-control': 'no-store' });
       res.end();
     }
     return true;

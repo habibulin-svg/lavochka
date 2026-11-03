@@ -3,7 +3,7 @@
 import type { GameView, ViewCtx } from '../../core/view';
 import { card, COLL_NAME, fxText, KW_HINT, KW_NAME, RARITY_NAME, setInfo, type Card } from './cards';
 import { atkOf, BOARD_MAX, type Action, type Event, type Tgt, type Unit, type View } from './engine';
-import { reward } from './collection';
+import { reward } from './bank';
 import { sfx } from './sfx';
 import { Music } from './music';
 import './vkladyshi.css';
@@ -376,8 +376,9 @@ export function createView(): GameView<View, Event> {
               sfx(e.winner !== null && e.winner === mine ? 'win' : 'lose');
               if (!rewarded && mine >= 0 && !ctx.online) {
                 rewarded = true;
-                const coins = reward(e.winner === mine);
-                setTimeout(() => toast(`+${coins} монет в копилку`), 600);
+                void reward(e.winner === mine)
+                  .then((coins) => setTimeout(() => toast(coins ? `+${coins} монет в копилку` : 'Монеты за партии с ботом — не чаще раза в минуту'), 600))
+                  .catch(() => {});
               }
             }
             break;

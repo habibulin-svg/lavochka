@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { CARDS, DECK_SIZE, MAX_COPIES, STARTERS, card, deckFrom, starterDeck } from '../src/games/vkladyshi/cards';
-import { GUMS, PITY, autoDeck, deckValid, openGum, load, type Collection } from '../src/games/vkladyshi/collection';
+import { GUMS, PITY, autoDeck, deckValid, openGum, fresh as load, type Collection } from '../src/games/vkladyshi/collection';
 import { choose } from '../src/games/vkladyshi/bot';
 import { apply, legal, newState, view, type Action, type State, type Unit } from '../src/games/vkladyshi/engine';
 

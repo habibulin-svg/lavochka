@@ -349,6 +349,7 @@ function buildLobby(mod: GameModule, client: RoomClient, mode: NetMode, code: st
       <div class="presets seg-wrap"></div>
       <div class="opts"></div>
     </div>
+    ${mod.lobby ? '<div class="lobby-game"></div>' : ''}
     <div class="status-line"></div>
     <ul class="lobby-seats"></ul>
     ${owner ? '<div class="row lobby-host"><button class="btn small" data-a="shuffle">🎲 Рассадить случайно</button><small class="swap-hint">⇅ — поменять двух игроков местами</small></div>' : ''}
@@ -362,6 +363,7 @@ function buildLobby(mod: GameModule, client: RoomClient, mode: NetMode, code: st
       ${owner ? '<button class="btn" data-a="bots">Пустые места — ботам</button><button class="btn primary" data-a="start" disabled>Начать игру</button>' : ''}
     </div>`;
   const q = <T extends HTMLElement = HTMLButtonElement>(sel: string) => s.querySelector(sel) as T;
+  if (mod.lobby) mod.lobby(q<HTMLElement>('.lobby-game'), { code, mode: mode === 'server' ? 'server' : 'p2p' });
   q('[data-a=copy]').onclick = () => navigator.clipboard?.writeText(code).then(() => toast('Код скопирован'), () => {});
   q('[data-a=back]').onclick = () => {
     removeScreen('lobby');
