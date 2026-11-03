@@ -1,0 +1,210 @@
+# Вкладыши: «магнитофон во дворе» — песни YuE2 в духе 90-х, тексты оригинальные (про вкладыши, жвачку, лавочку, двор).
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/vkladyshi/03-music.yaml   (нужен comfy-big на :8188)
+# Упаковка: sh studio/post/music_vkladyshi.sh → lavochka/public/vkladyshi/a/music/*.ogg + list.json
+# Лицензия — как в docstring studio/runners/yue2.py (CC BY-NC 4.0 + разрешение YuE2 для индивидуальных авторов).
+out: G:/temp/studio/out/vkladyshi/03-music
+max_duration: 150
+tracks:
+  - name: turbo
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, eurodance, 1994, 136 bpm, four on the floor kick, rave synth stabs, catchy hook,
+      energetic, female vocalist chorus, male rap verse, nostalgic
+    lyrics: |
+      [intro]
+      [verse]
+      У ларька стоит пацан
+      Жвачка «Турбо» — весь карман
+      Развернул — а там «Феррари»
+      Красный, как огонь в угаре
+      Двести девяносто в час
+      Это лучший вкладыш в нас
+      Поменяю на «Ламбу»
+      Только ты не говори маме
+      [chorus]
+      Турбо, турбо, вкладыш мой
+      Ты летишь по мостовой
+      Турбо, турбо, скорость, свет
+      Лучше вкладыша нет
+      [verse]
+      Мы стучали по стене
+      Перевернул — и он во мне
+      Целый день на перемене
+      Мы играли на колене
+      [chorus]
+      Турбо, турбо, вкладыш мой
+      Ты летишь по мостовой
+      Турбо, турбо, скорость, свет
+      Лучше вкладыша нет
+      [outro]
+
+  - name: love-is
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, 1990s russian pop, 118 bpm, drum machine, synth strings, sweet melody, romantic,
+      young female vocalist, soft and tender, major key
+    lyrics: |
+      [intro]
+      [verse]
+      Розовый квадратик в кармане
+      Мальчик с девочкой на диване
+      «Любовь — это…» написано там
+      Я читаю по слогам
+      Я собрала целый альбом
+      Где мы вдвоём, где мы вдвоём
+      Только где же ты, мой герой
+      С вкладышем номер сто
+      [chorus]
+      Love is, love is, это ты
+      Жвачка, сердце и мечты
+      Love is, love is, навсегда
+      Как в квадратике, да
+      [verse]
+      Подружке отдала повтор
+      За твой случайный взгляд во двор
+      Ты прошёл, не обернулся
+      Только ветер улыбнулся
+      [chorus]
+      Love is, love is, это ты
+      Жвачка, сердце и мечты
+      Love is, love is, навсегда
+      Как в квадратике, да
+      [outro]
+
+  - name: lavochka
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, russian yard song, acoustic guitar strumming, 1990s, 96 bpm, simple chords, minor key,
+      warm, nostalgic, young male vocalist, slightly husky voice, campfire feeling
+    lyrics: |
+      [intro]
+      [verse]
+      Вечер, лавочка, подъезд
+      Кто-то с кем-то, кто-то здесь
+      Мы раскладываем в ряд
+      Вкладыши, как миллиард
+      Кто-то ставит на кону
+      «Мерседес» за тишину
+      А Серёга хитрый жук
+      Всё забрал одним из рук
+      [chorus]
+      Ой, двор, мой двор
+      Наш бесконечный разговор
+      Ой, двор, мой двор
+      Не повзрослеем до сих пор
+      [verse]
+      Мама крикнет из окна
+      Что домой пора, весна
+      Но ещё одну игру
+      Доиграем поутру
+      [chorus]
+      Ой, двор, мой двор
+      Наш бесконечный разговор
+      Ой, двор, мой двор
+      Не повзрослеем до сих пор
+      [outro]
+
+  - name: zhvachka
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, bubblegum pop, 1995, 128 bpm, bouncy synth bass, playful synth melody, handclaps,
+      cheerful, female vocalist, bright voice, funny
+    lyrics: |
+      [intro]
+      [verse]
+      Жвачка в ларьке за сто рублей
+      Пузырь надула всех больней
+      Он лопнул прямо на носу
+      Я в школу запах донесу
+      А в обёртке, а в обёртке
+      Вкладыш новый, как в лотерее
+      Мне попался редкий самый
+      Я покажу его всем сразу
+      [chorus]
+      Жвачка, жвачка, бабл-гам
+      Я тебе её не дам
+      Жвачка, жвачка, сладкий сон
+      Вкладыш — мой миллион
+      [verse]
+      Учительница злится, ой
+      Опять приклеила косой
+      Но я не плачу, я пою
+      Я вкладыши свои люблю
+      [chorus]
+      Жвачка, жвачка, бабл-гам
+      Я тебе её не дам
+      Жвачка, жвачка, сладкий сон
+      Вкладыш — мой миллион
+      [outro]
+
+  - name: final
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, 1990s pop rock, 132 bpm, driving drums, electric guitar riff, stadium chant chorus,
+      energetic, male vocalist, strong voice, sport anthem
+    lyrics: |
+      [intro]
+      [verse]
+      На коробке во дворе
+      Мы играем в сентябре
+      У меня в кармане «Финал»
+      Там Маттеус и Бранко Стал
+      Кто ворота, кто вперёд
+      Кто за «Спартак», кто за народ
+      А вкладыш с целой сборной
+      Я храню, как флаг упорный
+      [chorus]
+      Финал, финал, гол, гол, гол
+      Весь наш двор идёт на штурм
+      Финал, финал, мы с тобой
+      Вкладыши — наш золотой
+      [verse]
+      Стёрлась краска, мяч пробит
+      Но никто не говорит
+      Что мы маленькие тут
+      Мы как Роналдо бегут
+      [chorus]
+      Финал, финал, гол, гол, гол
+      Весь наш двор идёт на штурм
+      Финал, финал, мы с тобой
+      Вкладыши — наш золотой
+      [outro]
+
+  - name: kasseta
+    seeds: [11, 22]
+    silence_vocal: false
+    style: >-
+      russian vocals, slow synth-pop ballad, 1992, 92 bpm, drum machine, warm analog pads, reverb, dreamy,
+      melancholic, male vocalist, gentle tenor, cassette tape feeling
+    lyrics: |
+      [intro]
+      [verse]
+      Старый альбом на антресоли
+      Вкладыши, будто кадры с воли
+      Пожелтевший мой «Феррари»
+      Стёртый «Love is» в чёрном кадре
+      Мы менялись на ступенях
+      Мы не знали о потерях
+      Нам казалось, лето вечно
+      И дворы бесконечны
+      [chorus]
+      Перемотай кассету назад
+      Туда, где двор и листопад
+      Где вкладыш был дороже всех
+      И звонкий детский смех
+      [verse]
+      Я открою этот ящик
+      Там мой самый настоящий
+      Номер сто и десять — легенда
+      Не видел никто, а я — бы где-то
+      [chorus]
+      Перемотай кассету назад
+      Туда, где двор и листопад
+      Где вкладыш был дороже всех
+      И звонкий детский смех
+      [outro]

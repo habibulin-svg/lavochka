@@ -9,3 +9,5 @@ lavochka/public/gops/a/**/*.glb filter=lfs diff=lfs merge=lfs -text
 lavochka/public/kommersy/a/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/kommersy/a/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
 lavochka/public/kommersy/a/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+lavochka/public/vkladyshi/**/*.webp filter=lfs diff=lfs merge=lfs -text
+lavochka/public/vkladyshi/a/**/*.ogg filter=lfs diff=lfs merge=lfs -text

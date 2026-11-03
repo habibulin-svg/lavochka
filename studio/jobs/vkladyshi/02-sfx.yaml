@@ -1,0 +1,15 @@
+# Вкладыши: звуки стола. По 2 варианта, в игру — оба (случайный).
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/sfx.py studio/jobs/vkladyshi/02-sfx.yaml
+# Упаковка: копия <out>/ogg/*.ogg → lavochka/public/vkladyshi/a/sfx/<имя>-<сид>.ogg (studio/post/music_vkladyshi.sh)
+out: G:/temp/studio/out/vkladyshi/02-sfx
+seeds: [1, 2]
+sounds:
+  - {name: place, duration: 1, level: normal, max: 0.4, prompt: "a small thick paper card slapped down firmly on a wooden bench, single sharp slap, close up"}
+  - {name: spell, duration: 1, level: quiet, max: 0.8, prompt: "magical soft chime sparkle, short bright twinkle"}
+  - {name: hit, duration: 1, level: normal, max: 0.5, prompt: "palm hitting a stack of paper cards on a wooden table, punchy thwack"}
+  - {name: die, duration: 1, level: normal, max: 0.8, prompt: "paper card being crumpled and flicked away, quick paper crunch"}
+  - {name: turn, duration: 1, level: ui, max: 0.5, prompt: "single bicycle bell ring, short and bright, outdoor"}
+  - {name: win, duration: 3, level: normal, max: 2.5, prompt: "kids in a courtyard cheering and clapping, short happy shout, outdoor summer"}
+  - {name: lose, duration: 2, level: quiet, max: 1.5, prompt: "disappointed sad trombone wah wah, short comedic"}
+  - {name: wrap, duration: 2, level: normal, max: 1.2, prompt: "unwrapping a chewing gum wrapper, crinkly foil and paper rustle, close up"}
+  - {name: coin, duration: 1, level: ui, max: 0.6, prompt: "a few coins dropped into a metal piggy bank, clink"}

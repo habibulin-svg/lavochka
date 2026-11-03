@@ -178,6 +178,7 @@ export const SLUGS: Record<string, string> = {
   eggs: 'yayca-dinozavrov',
   gops: 'gops',
   kommersy: 'kommersy',
+  vkladyshi: 'vkladyshi',
   petardy: 'petardy',
 };
 
