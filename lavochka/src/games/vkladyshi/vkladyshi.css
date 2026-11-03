@@ -53,8 +53,9 @@
   background: linear-gradient(180deg, rgba(255, 230, 180, 0.08), rgba(0, 0, 0, 0.12));
 }
 .vk-empty { color: rgba(255, 240, 210, 0.35); font-style: italic; font-size: 13px; }
-.vk-mid { text-align: center; color: rgba(255, 240, 210, 0.5); font-size: 12px; border-top: 1px dashed rgba(255, 240, 210, 0.25); line-height: 0; margin: 6px 0; }
-.vk-mid span { background: #5e4126; padding: 0 8px; position: relative; top: 0; }
+.vk-mid { display: flex; align-items: center; gap: 8px; color: rgba(255, 240, 210, 0.6); font-size: 12px; }
+.vk-mid::before, .vk-mid::after { content: ''; flex: 1 1 10px; border-top: 1px dashed rgba(255, 240, 210, 0.25); }
+.vk-mid span { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vk-gap {
   width: 18px;
   height: var(--vk-h);
@@ -249,9 +250,16 @@
 .vk-line b { display: inline-block; width: 16px; text-align: center; border-radius: 50%; background: #e8b040; }
 
 @media (max-width: 700px) {
-  .vk-root { --vk-w: clamp(52px, 17vw, 86px); }
-  .vk-table { padding: 4px; gap: 3px; }
-  .vk-bench { gap: 3px; padding: 3px; }
+  /* на телефоне доска — квадрат по ширине экрана: всё ужимаем под его высоту, панель стола под доской остаётся видна */
+  .vk-root { --vk-w: clamp(44px, 14vw, 66px); height: 100%; }
+  .vk-table { padding: 4px; gap: 2px; min-height: 0; height: 100%; box-sizing: border-box; }
+  .vk-bench { gap: 3px; padding: 2px; min-height: calc(var(--vk-h) + 4px); }
+  .vk-hand { min-height: calc(var(--vk-h) * 0.8); padding-top: 0; }
+  .vk-hand.backs { min-height: calc(var(--vk-h) * 0.3); }
+  .vk-hero { padding: 2px 6px; }
+  .vk-pips { display: none; }
+  .vk-name { font-size: 8px; }
+  .vk-kw i { font-size: 7px; }
   .vk-face { min-width: 60px; }
   .vk-hero { gap: 6px; font-size: 12px; }
   .vk-patience b { font-size: 18px; }

@@ -125,6 +125,9 @@ def main():
                 kind = r.get('kind') if r.get('kind') in KIND_RU else 'other'
                 f.update(name=title(r.get('name')), kind=kind, spd=title(r.get('speed')), range=title(r.get('range')))
             facts.append({k: v for k, v in f.items() if v is not None})
+    order = [v[0] for v in SETS.values()]  # порядок альбома — как в словаре SETS
+    sets.sort(key=lambda s: order.index(s['key']))
+    facts.sort(key=lambda f: (order.index(f['set']), f['n']))
     OUT_JSON.write_text(json.dumps({'sets': sets, 'facts': facts}, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'Серий {len(sets)}, вкладышей {len(facts)}, картинок обновлено {n_img}')
     for s in sets:

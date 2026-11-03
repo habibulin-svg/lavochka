@@ -154,11 +154,11 @@ const RULES = [
 function showcase(): State {
   const rng = { s: 7, next() { this.s = (this.s * 16807) % 2147483647; return this.s / 2147483647; }, int(n: number) { return Math.floor(this.next() * n); }, getState() { return this.s; } };
   const s = newState([0, 1], ['garage', 'team'], rng);
-  const g = starterDeck('garage');
-  const t = starterDeck('team');
+  const g = starterDeck('garage').filter((id) => !card(id).spell);
+  const t = starterDeck('team').filter((id) => !card(id).spell);
   s.players[0].board = [unit(201, g[12]), unit(202, g[15]), unit(203, g[7])];
-  s.players[1].board = [unit(204, t[10]), unit(205, t[14])];
-  s.players[0].hand = [g[3], g[9], g[17], t[2]];
+  s.players[1].board = [unit(204, t[8]), unit(205, t[11])];
+  s.players[0].hand = [g[3], g[9], g[13], t[2]];
   s.players[0].maxMana = s.players[0].mana = 6;
   s.players[1].maxMana = 6;
   s.players[0].hero = 14;
