@@ -1,0 +1,19 @@
+# Герои, переделки партии 17-videos после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/geroi/16-cutscene-keys
+server: comfy-big
+defaults:
+  width: 1280
+  height: 704
+  frames: 121
+  steps: 30
+seeds:
+- 1
+clips:
+- name: intro-2
+  keys:
+  - intro-2-4
+  prompt: the teenagers lean a little closer, the brass knuckle lies perfectly still in the clay, only its warm golden glow pulses softly, slow gentle push in. Painterly
+    gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+  seeds:
+  - 2

@@ -67,8 +67,8 @@ _Сгенерировано `studio/jobs/geroi/make_jobs.py` — правки в
 | `akademiya-seerowl` | akademiya | 2 | да | |
 | `akademiya-crystal` | akademiya | 3 |  | |
 | `akademiya-prism` | akademiya | 3 | да | |
-| `akademiya-centaur` | akademiya | 4 |  | |
-| `akademiya-astrologer` | akademiya | 4 | да | |
+| `akademiya-stag` | akademiya | 4 |  | |
+| `akademiya-moonstag` | akademiya | 4 | да | |
 | `akademiya-pineguard` | akademiya | 5 |  | |
 | `akademiya-borguard` | akademiya | 5 | да | |
 | `akademiya-skywhale` | akademiya | 6 |  | |
@@ -91,7 +91,7 @@ _Сгенерировано `studio/jobs/geroi/make_jobs.py` — правки в
 | Ролик | Где | Ключ | Движение |
 |---|---|---|---|
 | `intro-1` | вступление | Summer evening in 1995 in a Siberian city: rows of grey nine-storey panel apartment blocks… | slow pan across the panel blocks toward the construction site, birds fly, warm evening light |
-| `intro-2` | вступление | Teenagers in 1990s tracksuits looking down into a clay construction pit at sunset, at the … | the teenagers lean forward, the brass knuckle pulses with warm golden light, slow push in |
+| `intro-2` | вступление | Four different teenagers in mixed summer clothes of the 1990s (a striped t-shirt, a faded … | the teenagers lean a little closer, the brass knuckle lies perfectly still in the clay, only its warm golden glow pulses softly, slow gentle push in |
 | `intro-3` | вступление | A solar eclipse over a construction pit and panel houses, the sun becomes a black disc wit… | the sun darkens into the eclipse, dust swirls in the wind, eerie light flickers |
 | `intro-4` | вступление | A blinding white flash bursting from a construction pit, light rays engulfing the city at … | a burst of white light expands from the pit and floods everything, shards of light fly outward |
 | `intro-5` | вступление | a sixteen-year-old boy with a light brown buzz cut, freckles and a cheeky confident smile … | he slowly opens his eyes and looks up, grass sways in the wind, the shard glows |

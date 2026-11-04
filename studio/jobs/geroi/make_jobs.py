@@ -20,7 +20,7 @@ ISOLATED = 'Single isolated object, centered, whole object in frame with margin,
 ICON = ('Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, '
         'like an inventory item in a classic 1990s fantasy strategy game, centered and filling most of the square.')
 SPELL_ART = ('Rich gouache miniature painting filling the whole square, a small dramatic scene with depth and glowing light, '
-             'like a spell card picture in a classic 1990s fantasy strategy game:')
+             'painted like the spell art of a classic 1990s fantasy strategy game:')
 CREATURE3D = ('Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, '
               'bright but refined colors. Full body, whole figure in frame with margin, standing in a three-quarter view facing right, '
               'seen slightly from above, centered, plain light grey background.')
@@ -348,6 +348,21 @@ SPELLS = {
     'earth': ['stone skin', 'slow', 'quicksand', 'earthquake', 'meteor shower', 'resurrection', 'shield of earth', 'sorrow', 'animate stone', 'view of the earth'],
     'air': ['lightning bolt', 'chain lightning', 'haste', 'precision', 'disrupting ray', 'flight', 'town portal', 'view of the air', 'protection from air', 'wind gust'],
 }
+# что нарисовано на иконке заклинания (название в промпт не идёт: модель вписывает его буквами)
+SPELL_SCENE = {
+    'fire': ['a flaming arrow streaking through the night air', 'a huge fireball bursting over a battlefield', 'a tall wall of roaring flames across a field',
+             'burning meteors falling from a red sky onto hills', 'a blinding white-gold flash exploding in the dark', 'a snarling warrior with eyes glowing red and fiery aura',
+             'a round shield made of swirling flames', 'a raised sword dripping with red fiery glow', 'glowing embers swirling around a cowering silhouette', 'a sea of fire engulfing a valley'],
+    'water': ['a sharp shard of blue ice flying through the air', 'a ring of frost and icicles bursting outward on the ground', 'soft white light pouring from above onto an open palm',
+              'a radiant blue halo over a kneeling knight', 'a drooping limp sword wrapped in grey mist', 'a crackling magic sigil shattering into blue shards',
+              'a blank faded scroll dissolving into blue mist', 'a giant towering wave about to crash', 'a figure fading into thick white mist', 'a small boat rising out of glowing blue water'],
+    'earth': ['a fist turning into grey granite', 'a giant snail shell glowing green over the grass', 'a hand sinking into swirling quicksand', 'the ground cracking open with rocks flying up',
+              'green-glowing meteors striking a rocky plain', 'a green light lifting a fallen warrior from the earth', 'a dome of stone slabs rising from the ground',
+              'a weeping stone face with green tears', 'a stone statue coming alive with glowing green eyes', 'a glowing green map of hills and rivers carved in stone'],
+    'air': ['a single bolt of lightning striking a hill', 'lightning jumping between several dark silhouettes', 'a running figure with swift white wind streaks behind',
+            'an arrow flying straight along a glowing violet line to a target', 'a violet beam shattering a shield', 'a figure soaring high on violet wings of wind',
+            'a swirling violet portal on a town square', 'a violet glowing map of clouds and mountains', 'a violet whirlwind barrier around a knight', 'a strong gust of wind bending trees and scattering leaves'],
+}
 SPELL_TINT = {'fire': 'red and orange flames', 'water': 'blue and white water and ice', 'earth': 'green and brown earth and stone', 'air': 'pale violet wind and lightning'}
 SKILLS = ['logistics: a horse hoof with a wing', 'pathfinding: a forest trail with arrows', 'scouting: an eye over a hill', 'wisdom: an open book with a star',
           'fire magic: a flame dancing over a bronze bowl', 'water magic: a spinning water sphere over a silver bowl', 'earth magic: a floating mossy stone', 'air magic: a glass orb with a tiny storm inside',
@@ -366,7 +381,7 @@ def icons():
     for school, names in SPELLS.items():
         for i, d in enumerate(names):
             items.append({'name': f'spell-{school}-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51],
-                          'prompt': f'{SPELL_ART} the magic spell «{d}» in action, {SPELL_TINT[school]}.'})
+                          'prompt': f'{SPELL_ART} {SPELL_SCENE[school][i]}, {SPELL_TINT[school]}.'})
     for i, d in enumerate(SKILLS):
         items.append({'name': f'skill-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51], 'prompt': f'{ICON} The item: {d.split(": ", 1)[1]}.'})
     for i, d in enumerate(PRIMARY):
@@ -382,7 +397,7 @@ CUTSCENES = [  # (id, кадр, движение)
     ('intro-1', 'Summer evening in 1995 in a Siberian city: rows of grey nine-storey panel apartment blocks, a construction site with a crane by a small river, warm sunset sky',
      'slow pan across the panel blocks toward the construction site, birds fly, warm evening light'),
     ('intro-2', f'Four different teenagers in mixed summer clothes of the 1990s (a striped t-shirt, a faded sports jacket, a sleeveless shirt) and a small girl with braids and glasses, looking down into a clay construction pit at sunset, at the bottom an old brass knuckle glows warmly in the clay; one of them is {SER}',
-     'the teenagers lean forward, the brass knuckle pulses with warm golden light, slow push in'),
+     'the teenagers lean a little closer, the brass knuckle lies perfectly still in the clay, only its warm golden glow pulses softly, slow gentle push in'),
     ('intro-3', 'A solar eclipse over a construction pit and panel houses, the sun becomes a black disc with a bright ring, eerie green light, wind lifting dust',
      'the sun darkens into the eclipse, dust swirls in the wind, eerie light flickers'),
     ('intro-4', 'A blinding white flash bursting from a construction pit, light rays engulfing the city at dusk',
@@ -607,7 +622,10 @@ REDO = {
                + ['obj-learnstone', 'obj-shrine3', 'obj-keytent', 'ground-pine'], [32, 33]),
     '14-battle': (['obstacle-3', 'obstacle-5', 'obstacle-6', 'obstacle-9'], [42, 43]),
     '15-icons': (None, [52, 53]),  # все: ночные вышли плоскими пиктограммами с буквами
+    '15-icons#2': ([f'spell-{sc}-{i:02d}' for sc in SPELLS for i in range(1, 11)], [54, 55]),  # в redo вписаны названия буквами, сцены однообразны
     '16-cutscene-keys': (['intro-2'], [3, 4]),
+    '17-videos': ({'intro-2': ('intro-2-4', 1), 'c2-3b': ('c2-3b-1', 2)}, None),
+    '17-videos#2': ({'intro-2': ('intro-2-4', 2)}, None),  # в первой переделке кастет превращался в трубку  # intro-2-4 — из 16-cutscene-keys-redo; c2-3b: вор появлялся из ниоткуда
     '19-sfx': (['death-spirit', 'learn', 'market', 'move-hop', 'pickup-res', 'shot-sling', 'voice-star'], [3, 4]),  # тихие: почти один шум
 }
 
@@ -616,6 +634,10 @@ def redo_jobs():
     for key, (names, seeds) in REDO.items():
         batch, _, n = key.partition('#')
         job = yaml.safe_load((HERE / f'{batch}.yaml').read_text(encoding='utf-8'))
+        if 'clips' in job:  # ролики: names — {ролик: (ключ, сид)}; ключ из переделок копируется к ключам партии 16
+            job['clips'] = [{**c, 'keys': [names[c['name']][0]], 'seeds': [names[c['name']][1]]} for c in job['clips'] if c['name'] in names]
+            write(f'{batch}-redo{n}.yaml', f'переделки партии {batch} после отбора', job)
+            continue
         key = 'sounds' if 'sounds' in job else 'items'
         job[key] = [{k: v for k, v in i.items() if k != 'seeds'} for i in job[key] if names is None or i['name'] in names]
         if key == 'sounds':
