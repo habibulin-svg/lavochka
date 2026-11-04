@@ -85,8 +85,14 @@ export class NetMap {
         sel(Object.entries(GUARDS).map(([k, v]): [GuardId, string] => [k as GuardId, v.name]), g.guard, (v) => ({ ...g, guard: v })),
         button('🎲 Другая карта', () => c.gen({ ...g, seed: (Date.now() % 999999) + 1 }), 'g-btn small'),
       );
-      box.append(row1, row2);
-    } else box.append(h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}`));
+      const simul = h('label', 'g-check');
+      const box2 = h('input');
+      box2.type = 'checkbox';
+      box2.checked = m.simul;
+      box2.onchange = () => c.simul(box2.checked);
+      simul.append(box2, h('span', '', ' Одновременные ходы — пока армии далеко, все ходят разом'));
+      box.append(row1, row2, simul);
+    } else box.append(h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}${m.simul ? ' · ходы одновременные' : ' · ходы по очереди'}`));
 
     m.seats.forEach((s, i) => {
       const row = h('div', 'g-rand-side');

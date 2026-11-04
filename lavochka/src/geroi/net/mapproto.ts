@@ -32,8 +32,12 @@ export interface MapSeatView {
 export interface MapClock {
   /** Запас хода по местам, мс. */
   bank: number[];
-  /** Чьи часы идут; −1 — стоят (бой, ход бота). */
-  running: number;
+  /** Чьи часы идут (в общий день — у всех, кто ещё ходит; бой и боты — стоят). */
+  running: number[];
+  /** Общий день: все ходят разом, пока армии далеко. */
+  free: boolean;
+  /** Кто закончил день (в общий день и в очереди после сближения). */
+  done: boolean[];
 }
 
 export type MapClientMsg =
@@ -45,6 +49,8 @@ export type MapClientMsg =
   | { t: 'mgen'; gen: GenOptions }
   /** Хозяин: место — бот такого уровня или свободно для человека. */
   | { t: 'mbot'; seat: number; bot: BotLevel | null }
+  /** Хозяин: одновременные ходы. */
+  | { t: 'msimul'; on: boolean }
   | { t: 'start' }
   | { t: 'adv'; a: AdvAction }
   /** Ход в бою на карте. */
@@ -62,7 +68,9 @@ export type MapServerMsg =
   | { t: 'created'; code: string }
   | { t: 'joined'; code: string }
   | { t: 'error'; text: string }
-  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean }
+  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean }
+  /** Объявление всем: «армии сблизились — ходим по очереди». */
+  | { t: 'mnote'; text: string }
   | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string }
   | { t: 'mstep'; events: AdvEvent[]; world: World; clock: MapClock; seats: MapSeatView[]; actor: number }
   /** Что сейчас происходит у других: «Идёт бой…», «Ходит Петя». Пусто — ничего. */

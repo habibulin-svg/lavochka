@@ -452,13 +452,15 @@ export class AdvGame {
     const bot = foreign ?? !!w.players[w.current].bot;
     const flush = async (): Promise<void> => {
       // ход бота: шаги видно, только если герой на виду; «быстрее» — без шагов
-      const seen = !bot || (!this.fast && steps.some((x) => this.fogOf < 0 || w.players[this.fogOf].explored[x.to]));
+      // общий день по сети: чужой шаг в свой ход не держит руки
+      const mine = !!this.net && !this.botTurn;
+      const seen = !bot || (!this.fast && !mine && steps.some((x) => this.fogOf < 0 || w.players[this.fogOf].explored[x.to]));
       if (steps.length && walker && seen) {
         // герой бота за краем экрана: камера к нему
         const v = this.view.viewRect();
         const x = xOf(w, steps[0].from);
         const y = yOf(w, steps[0].from);
-        if (bot && (x < v.x + 2 || y < v.y + 2 || x > v.x + v.w - 2 || y > v.y + v.h - 2)) this.view.centerOn(steps[0].from);
+        if (bot && !mine && (x < v.x + 2 || y < v.y + 2 || x > v.x + v.w - 2 || y > v.y + v.h - 2)) this.view.centerOn(steps[0].from);
         await this.view.walk(walker, steps, false);
       }
       steps = [];
@@ -747,6 +749,7 @@ export class AdvGame {
     };
     c.onFight = (m) => this.queueNet(() => this.netFight(m));
     c.onOver = () => this.queueNet(async () => this.afterAction());
+    c.onNote = (text) => this.queueNet(async () => this.message('По очереди', text));
     c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : `${name} пропал со связи: через минуту за него сходит бот`);
     this.talk?.destroy();
     this.talk = new Talk(this.root, c);
@@ -770,6 +773,7 @@ export class AdvGame {
     if (this.dead) return;
     this.town?.draw();
     next();
+    this.showOtherBar();
   }
 
   /** Бой на карте по сети: тот же Game, что в Арене; мир после боя придёт с сервера. */
@@ -807,10 +811,14 @@ export class AdvGame {
     const w = this.world;
     this.botBar.replaceChildren();
     if (w.over) return this.hideBotBar();
-    const left = net.clock.running === w.current ? ` · ${fmtMs(net.clock.bank[w.current] - (Date.now() - this.clockAt))}` : '';
+    const left = net.clock.running.includes(w.current) ? ` · ${fmtMs(net.clock.bank[w.current] - (Date.now() - this.clockAt))}` : '';
     if (net.busy) this.botBar.append(h('span', '', net.busy));
-    else if (!this.botTurn) this.botBar.append(h('b', '', 'Твой ход'), h('span', 'dim', left));
-    else {
+    else if (!this.botTurn) this.botBar.append(h('b', '', 'Твой ход'), h('span', 'dim', left + (net.clock.free ? ' · все ходят разом' : '')));
+    else if (net.clock.free) {
+      // общий день: свой закончен, ждём остальных
+      const wait = net.seats.filter((_, i) => w.players[i]?.alive && !net.clock.done[i]);
+      this.botBar.append(h('span', '', 'День закончен. Ждём: '), h('b', '', wait.map((s) => s.name).join(', ')));
+    } else {
       const s = net.seats[w.current];
       const name = h('b', '', s?.name ?? w.players[w.current].name);
       name.style.color = `#${PLAYER_COLORS[w.current].toString(16).padStart(6, '0')}`;

@@ -21,6 +21,7 @@ export class MapClient implements BattleNet {
   onBusy: (text: string) => void = () => {};
   onMapNope: (why: string) => void = () => {};
   onOver: (m: Of<'mover'>) => void = () => {};
+  onNote: (text: string) => void = () => {};
   /** Бой на карте начался для этого места. */
   onFight: (m: Of<'start'>) => void = () => {};
   onStep: BattleNet['onStep'] = () => {};
@@ -85,6 +86,9 @@ export class MapClient implements BattleNet {
   bot(seat: number, bot: BotLevel | null): void {
     this.send({ t: 'mbot', seat, bot });
   }
+  simul(on: boolean): void {
+    this.send({ t: 'msimul', on });
+  }
   start(): void {
     this.send({ t: 'start' });
   }
@@ -129,6 +133,9 @@ export class MapClient implements BattleNet {
         break;
       case 'mover':
         this.onOver(m);
+        break;
+      case 'mnote':
+        this.onNote(m.text);
         break;
       case 'start':
         this.onFight(m);
