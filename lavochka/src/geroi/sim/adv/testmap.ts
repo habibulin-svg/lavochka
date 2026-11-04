@@ -13,7 +13,8 @@ export const TEST_SIZE = 48;
 
 export interface GameSpec {
   seed: number;
-  players: { name: string; faction: TownFaction; hero: HeroPick }[];
+  /** `bot` — уровень бота на этом месте; нет — человек. */
+  players: { name: string; faction: TownFaction; hero: HeroPick; bot?: 'easy' | 'medium' | 'hard' }[];
 }
 
 export const TOWN_NAMES: Record<TownFaction, string> = { zatulye: 'Заречье', zatonye: 'Сомов омут', kuznya: 'Горн', akademiya: 'Сосновый купол' };
@@ -64,7 +65,7 @@ export function makeTestMap(spec: GameSpec): World {
   const w: World = {
     seed: spec.seed, rng: r.u32(), w: S, h: S, levels: 1, terrain: Array<number>(n).fill(0), road: Array<number>(n).fill(0), block: Array<number>(n).fill(0), decor: [], objects: [], entries: {}, towns: [], heroes: [],
     players: spec.players.map((p, id): Player => ({
-      id, name: p.name, faction: p.faction, res: { semki: 15000, wood: 20, stone: 20, amber: 8, salt: 8, stariron: 8, resin: 8 }, explored: Array<number>(n).fill(0), alive: true, townless: 0, keys: [], obelisks: [], scrap: {},
+      id, name: p.name, faction: p.faction, res: { semki: 15000, wood: 20, stone: 20, amber: 8, salt: 8, stariron: 8, resin: 8 }, explored: Array<number>(n).fill(0), alive: true, townless: 0, keys: [], obelisks: [], scrap: {}, ...(p.bot ? { bot: p.bot } : {}),
     })),
     day: 0, current: 0, pending: null, nextObj: 1, nextHero: 1, shard: -1, shardHint: [0, 0], winner: -1, over: false, weekNote: '',
   };

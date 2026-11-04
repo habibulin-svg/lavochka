@@ -180,7 +180,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   const w: World = {
     seed: o.seed, rng: r.u32(), w: S, h: S, levels: 1, terrain: Array<number>(N).fill(0), road: Array<number>(N).fill(0), block: Array<number>(N).fill(0), decor: [], objects: [], entries: {}, towns: [], heroes: [],
     players: spec.players.map((p, id): Player => ({
-      id, name: p.name, faction: p.faction, res: { semki: 15000, wood: 20, stone: 20, amber: 8, salt: 8, stariron: 8, resin: 8 }, explored: Array<number>(N).fill(0), alive: true, townless: 0, keys: [], obelisks: [], scrap: {},
+      id, name: p.name, faction: p.faction, res: { semki: 15000, wood: 20, stone: 20, amber: 8, salt: 8, stariron: 8, resin: 8 }, explored: Array<number>(N).fill(0), alive: true, townless: 0, keys: [], obelisks: [], scrap: {}, ...(p.bot ? { bot: p.bot } : {}),
     })),
     day: 0, current: 0, pending: null, nextObj: 1, nextHero: 1, shard: -1, shardHint: [0, 0], winner: -1, over: false, weekNote: '',
     name: `${t.name}, ${MAP_SIZES[o.size].name.toLowerCase()}`,

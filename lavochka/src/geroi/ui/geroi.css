@@ -192,6 +192,10 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-resbar-map { position: absolute; left: 16px; bottom: 14px; pointer-events: auto; }
 .a-icon { vertical-align: middle; border-radius: 3px; }
 .a-tip { position: absolute; left: 16px; top: 14px; max-width: 1200px; padding: 8px 16px; background: #1f1812ee; border: 1px solid #5d4a2d; border-radius: 5px; color: var(--ink); font: 400 21px 'Geroi Text', Georgia, serif; }
+.a-botbar { position: absolute; left: calc((1920px - 320px) / 2); top: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 20px; background: #1f1812ee; border: 1px solid var(--brass); border-radius: 5px; color: var(--ink); font: 400 22px 'Geroi Text', Georgia, serif; pointer-events: auto; white-space: nowrap; }
+.a-botbar b { font: 700 24px 'Geroi Title', Georgia, serif; }
+.a-botbar .g-btn { margin-left: 8px; }
+.g-who { min-width: 180px; }
 .a-pass { padding: 40px 70px; text-align: center; font-family: 'Geroi Text', Georgia, serif; color: var(--ink); }
 .a-pass h2 { font: 700 44px 'Geroi Title', Georgia, serif; margin: 0 0 12px; color: var(--brass2); }
 .a-pass .g-btn { margin-top: 18px; }

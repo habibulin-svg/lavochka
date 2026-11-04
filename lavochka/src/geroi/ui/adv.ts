@@ -1,10 +1,13 @@
 /* Партия на карте: выбор героя, путь, панель, события мира, передача хода за одним экраном, бой, пауза, сохранения. Правила — в sim/adv, картинка — в render/mapview. */
 import type { Audio2, Situation } from '../audio';
 import { type BotLevel, botAction } from '../bot/bot';
+import { type BotMem, newMem } from '../bot/advbot';
+import { battleLevels } from '../bot/advplay';
+import { MapBotClient } from '../bot/remote';
 import { Game, type Who } from '../game';
 import { MapView, PLAYER_COLORS } from '../render/mapview';
 import { SLOTS, type Save, loadSaves, slotLabel, writeAuto, writeSave } from '../save';
-import { act as battleAct, type BattleState, createBattle } from '../sim/battle';
+import { act as battleAct, type BattleState, createBattle, currentUnit } from '../sim/battle';
 import { CREATURES } from '../sim/creatures';
 import { classOf, heroName } from '../sim/heroes';
 import { SPELLS, spellIcon } from '../sim/spells';
@@ -17,6 +20,7 @@ import { ArmyPicker, heroSheet, icon, marketDialog, portrait, priceRow, resBar }
 import { button, h, modal } from './common';
 import { TownScreen } from './town';
 
+const BOT_WORD: Record<BotLevel, string> = { easy: 'лёгкий', medium: 'средний', hard: 'сложный' };
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 const MINI = 280;
@@ -63,6 +67,18 @@ export class AdvGame {
   private dead = false;
   private lastDay = -1;
   private resumeBattle: BattleState | null;
+  /** Места людей: за ними панель и туман; пусто — смотрим партию ботов. */
+  private humans: number[];
+  private lastHuman: number;
+  /** Неделя, о которой уже сказали. */
+  private weekShown: number;
+  private bots: MapBotClient | null = null;
+  private mems: BotMem[] = [];
+  /** Ход бота без показа шагов. */
+  private fast = false;
+  private botBar = h('div', 'a-botbar');
+  /** Бой посреди хода бота: ход продолжится, когда он кончится. */
+  private battleDone: (() => void) | null = null;
   /** Тела объектов и городов → вход: щелчок по зданию идёт к его воротам. */
   private bodies = new Map<number, number>();
   private readonly onKey = (e: KeyboardEvent): void => this.key(e);
@@ -74,6 +90,9 @@ export class AdvGame {
     this.world = o.world;
     this.view = new MapView(this.canvasHost, audio);
     this.resumeBattle = o.battle ?? null;
+    this.humans = this.world.players.filter((p) => !p.bot).map((p) => p.id);
+    this.weekShown = Math.trunc(this.world.day / 7);
+    this.lastHuman = this.humans.includes(this.world.current) ? this.world.current : (this.humans[0] ?? 0);
   }
 
   async start(): Promise<void> {
@@ -125,7 +144,8 @@ export class AdvGame {
     this.musicBtn.classList.toggle('off', this.audio.musicOff);
     this.panel.append(this.miniBox, this.info, this.heroes, this.towns, buttons, button('Следующий герой', () => this.nextHero(), 'g-btn small'), button('Конец хода', () => this.endTurn(), 'g-btn main'));
     this.tipEl.hidden = true;
-    this.hud.append(this.panel, this.resbar, this.tipEl, this.overlay);
+    this.botBar.hidden = true;
+    this.hud.append(this.panel, this.resbar, this.tipEl, this.botBar, this.overlay);
   }
 
   private collectBodies(): void {
@@ -139,8 +159,18 @@ export class AdvGame {
     }
   }
 
+  /** Чьими глазами смотрим: ходящий человек, а в ход бота — последний человек; в партии ботов — ходящий. */
   private get me(): number {
-    return this.world.current;
+    const c = this.world.current;
+    if (!this.humans.length || !this.world.players[c].bot) return c;
+    return this.lastHuman;
+  }
+  /** Туман: у зрителя партии ботов его нет. */
+  private get fogOf(): number {
+    return this.humans.length ? this.me : -1;
+  }
+  private get botTurn(): boolean {
+    return !!this.world.players[this.world.current].bot;
   }
   private get hero(): AdvHero | undefined {
     return this.selected !== null ? heroById(this.world, this.selected) : undefined;
@@ -150,7 +180,7 @@ export class AdvGame {
     await this.view.syncObjects(this.world);
     await this.view.syncHeroes(this.world);
     this.collectBodies();
-    this.view.syncFog(this.world, this.me);
+    this.view.syncFog(this.world, this.fogOf);
     this.drawPanel();
   }
 
@@ -160,7 +190,7 @@ export class AdvGame {
     const w = this.world;
     const week = Math.trunc(w.day / 7);
     const p = w.players[this.me];
-    this.view.drawMinimap(this.mini, w, this.me);
+    this.view.drawMinimap(this.mini, w, this.fogOf);
     this.drawMiniFrame();
     this.info.replaceChildren();
     const who = h('b', '', p.name);
@@ -205,17 +235,28 @@ export class AdvGame {
   /** Начало хода: экран передачи, если людей несколько; герой под рукой. */
   private startTurn(pass: boolean): void {
     const w = this.world;
+    if (this.botTurn && !w.over) {
+      void this.runBot();
+      return;
+    }
+    // передать экран — только между разными людьми
+    const passed = pass && this.lastHuman !== w.current && this.humans.length > 1;
+    this.lastHuman = w.current;
     this.selected = null;
     this.target = -1;
     this.view.clearPath();
     this.view.selectHero(null);
     const first = playerHeroes(w, this.me).find((x) => x.mp > 0) ?? playerHeroes(w, this.me)[0];
+    const week = Math.trunc(w.day / 7);
+    const note = week > this.weekShown && w.day % 7 === 0 && !!w.weekNote;
+    this.weekShown = Math.max(this.weekShown, week);
     const begin = (): void => {
       if (first) this.select(first.id, true);
       else this.centerTown();
       this.playMusic();
+      if (note && !passed) this.message('Новая неделя', w.weekNote);
     };
-    if (!pass || w.players.filter((p) => p.alive).length < 2) return begin();
+    if (!passed || w.players.filter((p) => p.alive).length < 2) return begin();
     // за одним экраном чужой туман не показываем
     this.canvasHost.style.visibility = 'hidden';
     this.view.frozen = true;
@@ -229,7 +270,7 @@ export class AdvGame {
       });
     });
     box.append(h('h2', '', `Ходит: ${w.players[this.me].name}`), h('p', 'dim', 'Передай управление и нажми, когда будешь готов.'));
-    if (w.weekNote && w.day % 7 === 0) box.append(h('p', '', w.weekNote));
+    if (note) box.append(h('p', '', w.weekNote));
     box.append(button('Начать ход', close, 'g-btn main'));
   }
 
@@ -267,7 +308,7 @@ export class AdvGame {
   }
 
   private blocked(): boolean {
-    return this.busy || !!this.town || !!this.battle || !!this.overlay.querySelector('.g-modal');
+    return this.busy || this.botTurn || !!this.town || !!this.battle || !!this.overlay.querySelector('.g-modal');
   }
 
   private click(cell: number, right: boolean): void {
@@ -364,8 +405,18 @@ export class AdvGame {
     const w = this.world;
     let steps: { to: number; from: number; dir: number }[] = [];
     let walker: AdvHero | undefined;
+    const bot = !!w.players[w.current].bot;
     const flush = async (): Promise<void> => {
-      if (steps.length && walker) await this.view.walk(walker, steps, false);
+      // ход бота: шаги видно, только если герой на виду; «быстрее» — без шагов
+      const seen = !bot || (!this.fast && steps.some((x) => this.fogOf < 0 || w.players[this.fogOf].explored[x.to]));
+      if (steps.length && walker && seen) {
+        // герой бота за краем экрана: камера к нему
+        const v = this.view.viewRect();
+        const x = xOf(w, steps[0].from);
+        const y = yOf(w, steps[0].from);
+        if (bot && (x < v.x + 2 || y < v.y + 2 || x > v.x + v.w - 2 || y > v.y + v.h - 2)) this.view.centerOn(steps[0].from);
+        await this.view.walk(walker, steps, false);
+      }
       steps = [];
     };
     const msgs: { title: string; text: string }[] = [];
@@ -379,32 +430,32 @@ export class AdvGame {
           steps.push({ to: e.to, from: e.from, dir: dirOf(w, e.from, e.to) });
           break;
         case 'sfx':
-          this.audio.sfx(e.name);
+          if (!bot || !this.fast) this.audio.sfx(e.name);
           break;
         case 'msg':
-          msgs.push({ title: e.title ?? '', text: e.text });
+          if (!bot) msgs.push({ title: e.title ?? '', text: e.text });
           break;
         case 'gain':
           await flush();
-          this.gainFloat(e.player, e.res, walker);
+          if (!bot) this.gainFloat(e.player, e.res, walker);
           break;
         case 'level':
           this.audio.sfx('levelup');
           break;
         case 'open':
-          opened = e;
+          if (!bot) opened = e;
           break;
         case 'meet':
-          met = { a: e.a, b: e.b };
+          if (!bot) met = { a: e.a, b: e.b };
           break;
         case 'turn':
           newTurn = true;
           break;
         case 'day':
-          if (e.week && e.note) msgs.push({ title: 'Новая неделя', text: e.note });
+          // о неделе говорит начало хода человека: иначе за ходы ботов копится стопка окон
           break;
         case 'lost':
-          msgs.push({ title: 'Игрок выбыл', text: w.players[e.player].name });
+          if (!bot) msgs.push({ title: 'Игрок выбыл', text: w.players[e.player].name });
           break;
         default:
           break;
@@ -422,7 +473,7 @@ export class AdvGame {
         for (const m of msgs) this.message(m.title, m.text);
       };
     }
-    if (walker) this.view.selectHero(walker);
+    if (walker && !bot) this.view.selectHero(walker);
     return () => {
       for (const m of msgs) this.message(m.title, m.text);
       if (opened) this.handleOpen(opened);
@@ -625,6 +676,113 @@ export class AdvGame {
 
   // ------------------------------------------------------------------ бой
 
+  /** Кто играет каждую сторону боя: люди — сами, боты — своим уровнем, нейтралы и гарнизоны без хозяина-человека — Средний. */
+  private battleWho(p: PendingBattle): [Who, Who] {
+    const w = this.world;
+    const lv = (owner: number): Who => (owner < 0 ? 'medium' : (w.players[owner].bot ?? 'human'));
+    const att = lv(heroById(w, p.hero)!.owner);
+    if (p.def.k === 'hero') return [att, lv(heroById(w, p.def.id)!.owner)];
+    if (p.def.k === 'town') {
+      const owner = townById(w, p.def.id)!.owner;
+      return [att, owner >= 0 && !w.players[owner].bot ? 'human' : 'medium'];
+    }
+    return [att, 'medium'];
+  }
+
+  /** Ход бота: действия считает воркер, мир меняется здесь же, шаги показываются. */
+  private async runBot(): Promise<void> {
+    const w = this.world;
+    const me = w.current;
+    const level = w.players[me].bot!;
+    this.bots ??= new MapBotClient();
+    this.mems[me] ??= newMem();
+    this.busy = true;
+    this.selected = null;
+    this.view.clearPath();
+    this.view.selectHero(null);
+    this.showBotBar();
+    this.drawPanel();
+    for (let guard = 0; guard < 1500 && !this.dead && !w.over && w.current === me; guard++) {
+      if (w.pending?.t === 'battle') {
+        const pend = w.pending;
+        if (this.battleWho(pend).includes('human')) {
+          // напали на человека: он защищается сам или отдаёт бой автобою
+          this.busy = false;
+          await new Promise<void>((done) => {
+            this.battleDone = done;
+            this.defendPrompt(pend);
+          });
+          this.busy = true;
+          continue;
+        }
+        const state = await this.bots.fight(battleSetup(w).setup, battleLevels(w, w.players.map((x) => x.bot ?? 'medium')));
+        if (this.dead) return;
+        await this.play(applyBattle(w, state));
+        continue;
+      }
+      const { action, mem } = await this.bots.step(w, level, this.mems[me]);
+      if (this.dead) return;
+      this.mems[me] = mem;
+      // мир тот же, что видел воркер; на всякий случай чужое действие — конец хода
+      const next = await this.play(act(w, actionError(w, action) ? { t: 'end' } : action));
+      if (w.current !== me || w.over) {
+        this.hideBotBar();
+        this.busy = false;
+        next();
+        if (w.over) this.afterAction();
+        return;
+      }
+    }
+    if (this.dead) return;
+    if (w.over) {
+      // партию кончил бой посреди хода
+      this.hideBotBar();
+      this.busy = false;
+      this.afterAction();
+    } else if (w.current === me) {
+      const next = await this.play(act(w, { t: 'end' }));
+      this.hideBotBar();
+      this.busy = false;
+      next();
+    }
+  }
+
+  private showBotBar(): void {
+    const w = this.world;
+    const p = w.players[w.current];
+    this.botBar.replaceChildren();
+    const name = h('b', '', p.name);
+    name.style.color = `#${PLAYER_COLORS[w.current].toString(16).padStart(6, '0')}`;
+    const fast = button(this.fast ? 'Показывать ходы' : 'Быстрее', () => {
+      this.fast = !this.fast;
+      fast.textContent = this.fast ? 'Показывать ходы' : 'Быстрее';
+    }, 'g-btn small');
+    this.botBar.append(h('span', '', 'Ходит '), name, h('span', 'dim', ` — бот, ${BOT_WORD[p.bot!]}`), fast);
+    this.botBar.hidden = false;
+  }
+
+  private hideBotBar(): void {
+    this.botBar.hidden = true;
+  }
+
+  /** Бот напал на человека. */
+  private defendPrompt(p: PendingBattle): void {
+    const w = this.world;
+    const attacker = heroById(w, p.hero)!;
+    const { box, close } = modal(this.overlay, 'a-battleask');
+    box.parentElement!.onpointerdown = null;
+    const what = p.def.k === 'town' ? `Осада: ${townById(w, p.def.id)?.name}` : `Напали на героя ${heroName(heroById(w, p.def.id)!.pick)}`;
+    box.append(h('h2', '', 'Нападение!'), h('p', '', `${what}. Нападает ${heroName(attacker.pick)} (${w.players[attacker.owner].name}).`), portrait(attacker, 96));
+    box.append(button('Защищаться', () => {
+      close();
+      void this.playBattle(null);
+    }, 'g-btn main'));
+    box.append(button('Автобой без показа', () => {
+      close();
+      void this.autoBattle();
+    }));
+  }
+
   private battleTitle(p: PendingBattle): string {
     const w = this.world;
     if (p.def.k === 'hero') {
@@ -658,8 +816,9 @@ export class AdvGame {
     const w = this.world;
     const pend = w.pending as PendingBattle;
     const b = createBattle(battleSetup(w).setup);
-    const level: BotLevel = 'medium';
-    for (let i = 0; i < 6000 && !b.over; i++) battleAct(b, botAction(b, level));
+    // люди в автобое — Средний, боты — своим уровнем
+    const levels = this.battleWho(pend).map((x) => (x === 'human' || x === 'remote' ? 'medium' : x)) as BotLevel[];
+    for (let i = 0; i < 6000 && !b.over; i++) battleAct(b, botAction(b, levels[currentUnit(b)!.side]));
     const lines: string[] = [];
     for (const u of b.units) if (u.side === 0 && u.start > u.count) lines.push(`${CREATURES[u.cre].name}: −${u.start - u.count}`);
     const text = b.winner !== 0 ? 'Герой пал.' : lines.length ? `Потери: ${lines.join(', ')}.` : 'Без потерь.';
@@ -672,7 +831,7 @@ export class AdvGame {
     const w = this.world;
     const pend = w.pending as PendingBattle;
     if (!pend || pend.t !== 'battle') return;
-    const who: [Who, Who] = ['human', pend.def.k === 'hero' ? 'human' : 'medium'];
+    const who = this.battleWho(pend);
     this.root.style.display = 'none';
     this.view.frozen = true;
     const g = new Game(this.host, this.audio, saved ? { who, restore: { at: 0, title: '', state: saved, who } } : { who, setup: battleSetup(w).setup });
@@ -705,6 +864,14 @@ export class AdvGame {
     const next = await this.play(applyBattle(this.world, s));
     this.busy = false;
     if (this.dead) return;
+    if (this.battleDone) {
+      // бой посреди хода бота: ход бота продолжается
+      const done = this.battleDone;
+      this.battleDone = null;
+      this.playMusic();
+      done();
+      return;
+    }
     const list = playerHeroes(this.world, this.me);
     if (this.selected !== null && !list.some((x) => x.id === this.selected)) {
       if (list[0]) this.select(list[0].id, true);
@@ -931,6 +1098,7 @@ export class AdvGame {
 
   destroy(): void {
     this.dead = true;
+    this.bots?.destroy();
     this.battle?.destroy();
     this.town?.destroy();
     window.removeEventListener('keydown', this.onKey);

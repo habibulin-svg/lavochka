@@ -472,9 +472,10 @@ export class MapView {
   }
 
   /** Туман и кто виден текущему игроку. */
+  /** Туман игрока; −1 — зритель партии ботов, видно всё. */
   syncFog(w: World, player: number): void {
     this.w = w;
-    const ex = w.players[player].explored;
+    const ex = player < 0 ? w.terrain.map(() => 1) : w.players[player].explored;
     for (let c = 0; c < w.w * w.h; c++) this.fogData[c * 4] = ex[c] ? 255 : 0;
     this.fogSource.update();
     for (const d of this.decorSprites) d.sp.visible = !!ex[d.cell];
@@ -488,7 +489,7 @@ export class MapView {
     }
     for (const h of w.heroes) {
       const sp = this.heroSprites.get(h.id);
-      if (sp) sp.root.visible = !!ex[h.cell] && !heroHiddenFrom(w, h, player);
+      if (sp) sp.root.visible = !!ex[h.cell] && (player < 0 || !heroHiddenFrom(w, h, player));
     }
   }
 
@@ -645,7 +646,7 @@ export class MapView {
   drawMinimap(canvas: HTMLCanvasElement, w: World, player: number): void {
     const ctx = canvas.getContext('2d')!;
     const img = ctx.createImageData(w.w, w.h);
-    const ex = w.players[player].explored;
+    const ex = player < 0 ? w.terrain.map(() => 1) : w.players[player].explored;
     const put = (c: number, color: number): void => {
       img.data[c * 4] = (color >> 16) & 255;
       img.data[c * 4 + 1] = (color >> 8) & 255;
@@ -665,7 +666,7 @@ export class MapView {
         for (const c of [t.cell, t.cell - 1, t.cell + 1, t.cell - w.w, t.cell - w.w - 1, t.cell - w.w + 1]) put(c, t.owner >= 0 ? PLAYER_COLORS[t.owner] : 0xc9c2a8);
       }
     }
-    for (const h of w.heroes) if (ex[h.cell] && !heroHiddenFrom(w, h, player)) put(h.cell, 0xffffff);
+    for (const h of w.heroes) if (ex[h.cell] && (player < 0 || !heroHiddenFrom(w, h, player))) put(h.cell, 0xffffff);
     canvas.width = w.w;
     canvas.height = w.h;
     ctx.putImageData(img, 0, 0);

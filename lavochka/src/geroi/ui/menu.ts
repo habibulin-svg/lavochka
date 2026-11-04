@@ -30,6 +30,17 @@ export interface QuickConfig {
   who: [Who, Who];
 }
 
+/** Кто на месте карты: человек или бот (этап 5). */
+export type MapWho = 'human' | 'easy' | 'medium' | 'hard';
+const WHO_LABEL: [MapWho, string][] = [['human', 'Человек'], ['easy', 'Бот: лёгкий'], ['medium', 'Бот: средний'], ['hard', 'Бот: сложный']];
+function whoSelect(value: MapWho, onChange: (v: MapWho) => void): HTMLSelectElement {
+  const sel = h('select', 'g-select g-who');
+  for (const [id, label] of WHO_LABEL) sel.append(new Option(label, id, false, id === value));
+  sel.onchange = () => onChange(sel.value as MapWho);
+  return sel;
+}
+const botOf = (who: MapWho): { bot?: 'easy' | 'medium' | 'hard' } => (who === 'human' ? {} : { bot: who });
+
 export class Menu {
   readonly el = h('div', 'g-menu');
   onQuick: (c: QuickConfig) => void = () => {};
@@ -96,11 +107,11 @@ export class Menu {
     this.screen(col);
   }
 
-  /** Партия на карте «Две реки»: двое за одним экраном; боты на карте — этап 5. */
+  /** Партия на карте «Две реки»: люди за одним экраном и боты. */
   mapSetup(): void {
-    const sides: { faction: Faction; hero: HeroPick; name: string }[] = [
-      { faction: 'zatulye', hero: { cls: factionClasses('zatulye')[0].id, n: 1 }, name: 'Первый' },
-      { faction: 'zatonye', hero: { cls: factionClasses('zatonye')[0].id, n: 1 }, name: 'Второй' },
+    const sides: { faction: Faction; hero: HeroPick; name: string; who: MapWho }[] = [
+      { faction: 'zatulye', hero: { cls: factionClasses('zatulye')[0].id, n: 1 }, name: 'Первый', who: 'human' },
+      { faction: 'zatonye', hero: { cls: factionClasses('zatonye')[0].id, n: 1 }, name: 'Второй', who: 'medium' },
     ];
     const cols = h('div', 'g-quick');
     const draw = (): void => {
@@ -119,7 +130,7 @@ export class Menu {
           draw();
         };
         const row = h('div', 'g-row');
-        row.append(name, fac);
+        row.append(name, fac, whoSelect(s.who, (v) => (s.who = v)));
         col.append(row, h('p', 'dim g-mech', FACTIONS.find((f) => f.id === s.faction)!.mechanic));
         const heroes = h('div', 'g-heroes');
         for (const cls of factionClasses(s.faction)) for (let n = 1; n <= 4; n++) {
@@ -144,7 +155,7 @@ export class Menu {
     const bar = h('div', 'g-quickbar');
     bar.append(button('Назад', () => this.title()), button('На карту!', () => {
       if (sides[0].hero.cls === sides[1].hero.cls && sides[0].hero.n === sides[1].hero.n) return;
-      this.onMap({ seed: Date.now() % 2147483647, players: sides.map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero })) });
+      this.onMap({ seed: Date.now() % 2147483647, players: sides.map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero, ...botOf(s.who) })) });
     }, 'g-btn main'));
     this.screen(h('h2', 'g-quick-title', 'Карта «Две реки»'), cols, bar);
   }
@@ -154,7 +165,7 @@ export class Menu {
     const o: GenOptions = pre ? { ...pre } : { template: 'duel', size: 'm', water: 'lakes', guard: 'normal', seed: (Date.now() % 999999) + 1 };
     const START: Faction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
     const NAMES = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
-    const sides = START.map((f, i) => ({ faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) } as HeroPick, name: NAMES[i] }));
+    const sides = START.map((f, i) => ({ faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) } as HeroPick, name: NAMES[i], who: (i ? 'medium' : 'human') as MapWho }));
     const today = (): string => {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -169,10 +180,10 @@ export class Menu {
     const players = (): number => TEMPLATES[o.template].players;
     const spec = (): GameSpec => ({
       seed: o.seed,
-      players: sides.slice(0, players()).map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero })),
+      players: sides.slice(0, players()).map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero, ...botOf(s.who) })),
     });
     const url = (): string => {
-      const fs = sides.slice(0, players()).map((s, i) => `&${'abcd'[i]}=${s.faction}`).join('');
+      const fs = sides.slice(0, players()).map((s, i) => `&${'abcd'[i]}=${s.faction}${s.who === 'human' ? '' : `&w${'abcd'[i]}=${s.who}`}`).join('');
       return `${location.origin}/geroi.html?map=1&${genQuery(o)}${fs}`;
     };
     const free = (f: Faction, i: number): HeroPick => {
@@ -255,7 +266,10 @@ export class Menu {
           s.hero = { cls, n: Number(n) };
           draw();
         };
-        row.append(name, fac, hero);
+        row.append(name, fac, hero, whoSelect(s.who, (v) => {
+          s.who = v;
+          link.value = url();
+        }));
         list.append(row);
       });
 

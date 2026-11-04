@@ -230,6 +230,13 @@ async function access(): Promise<{ ok: boolean; signedIn: boolean }> {
   return { ok: mayPlay(release, 'geroi', rights), signedIn: !!me?.user };
 }
 
+const BOT_NAMES = { easy: 1, medium: 1, hard: 1 };
+/** Бот из ссылки: wa=medium — первое место за Среднего. */
+function botParam(key: string): { bot?: 'easy' | 'medium' | 'hard' } {
+  const v = q.get(key);
+  return v && v in BOT_NAMES ? { bot: v as 'easy' | 'medium' | 'hard' } : {};
+}
+
 async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
@@ -241,7 +248,7 @@ async function main(): Promise<void> {
     const names = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
     const players = Array.from({ length: TEMPLATES[gen.template].players }, (_, i) => {
       const f = (q.get('abcd'[i]) ?? def[i]) as TownFaction;
-      return { name: names[i], faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) } };
+      return { name: names[i], faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) }, ...botParam(`w${'abcd'[i]}`) };
     });
     return startAdv(generateMap({ seed: gen.seed, players }, gen));
   }
@@ -252,8 +259,8 @@ async function main(): Promise<void> {
     return startAdv(makeTestMap({
       seed: Number(q.get('seed') ?? 5),
       players: [
-        { name: 'Первый', faction: f0, hero: { cls: factionClasses(f0)[0].id, n: 1 } },
-        { name: 'Второй', faction: f1, hero: { cls: factionClasses(f1)[0].id, n: 2 } },
+        { name: 'Первый', faction: f0, hero: { cls: factionClasses(f0)[0].id, n: 1 }, ...botParam('wa') },
+        { name: 'Второй', faction: f1, hero: { cls: factionClasses(f1)[0].id, n: 2 }, ...botParam('wb') },
       ],
     }));
   }

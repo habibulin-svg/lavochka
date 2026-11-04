@@ -72,6 +72,8 @@ export interface Player {
   obelisks: number[];
   /** Лом Кузни: разбитые механизмы, вид → число. */
   scrap: Record<string, number>;
+  /** Бот и его уровень; нет — человек. */
+  bot?: 'easy' | 'medium' | 'hard';
 }
 
 export type BattleSide = { k: 'hero'; id: number } | { k: 'obj'; id: number } | { k: 'town'; id: number };
