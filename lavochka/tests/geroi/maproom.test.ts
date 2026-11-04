@@ -290,4 +290,80 @@ describe('geroi/maproom: сеть карты', () => {
     expect(cleanAdvAction({ t: 'tavern', town: 0, hero: null, pick: { cls: 'zatulye-sotnik', n: 2 } })).toEqual({ t: 'tavern', town: 0, hero: null, pick: { cls: 'zatulye-sotnik', n: 2 } });
     expect(cleanAdvAction({ t: '__proto__' })).toBeNull();
   });
+
+  it('драфт: баны и выбор по очереди, фракции без повторов, недоступное отбрасывается, потом карта', () => {
+    const { room, a, b, adv } = setup();
+    room.message(a, { t: 'mdraftopt', on: true });
+    expect(a.last('mlobby').draft).toBe(true);
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('draft');
+    const peers = [a, b];
+    const steps = a.last('mdraft').d.steps;
+    // дуэль: 2 бана героя, 1 бан фракции (вторым), 2 выбора
+    expect(steps.map((s) => s.kind)).toEqual(['hero', 'hero', 'faction', 'pick', 'pick']);
+    expect(steps[2].seat).toBe(steps[1].seat);
+    expect(new Set(steps.slice(3).map((s) => s.seat)).size).toBe(2);
+    const first = peers[steps[0].seat];
+    const second = peers[steps[1].seat];
+    // не в свой черёд — нельзя
+    room.message(second, { t: 'mdraft', hero: { cls: factionClasses('zatulye')[0].id, n: 1 } });
+    expect(second.last('mnope').why).toMatch(/другой/);
+    const banned = { cls: factionClasses('zatulye')[0].id, n: 1 };
+    room.message(first, { t: 'mdraft', hero: banned });
+    expect(a.last('mdraft').d.heroes).toEqual([banned]);
+    room.message(second, { t: 'mdraft', hero: banned });
+    expect(second.last('mnope').why).toMatch(/забанить/);
+    room.message(second, { t: 'mdraft', hero: { cls: factionClasses('kuznya')[0].id, n: 2 } });
+    room.message(second, { t: 'mdraft', faction: 'akademiya' });
+    expect(a.last('mdraft').d.factions).toEqual(['akademiya']);
+    // выбор: забаненная фракция и забаненный герой — нельзя
+    room.message(first, { t: 'mdraft', faction: 'akademiya', hero: { cls: factionClasses('akademiya')[0].id, n: 1 } });
+    expect(first.last('mnope').why).toMatch(/недоступен/);
+    room.message(first, { t: 'mdraft', faction: 'zatulye', hero: banned });
+    expect(first.last('mnope').why).toMatch(/недоступен/);
+    const pick1 = { cls: factionClasses('zatulye')[0].id, n: 2 };
+    room.message(first, { t: 'mdraft', faction: 'zatulye', hero: pick1 });
+    // второй не может взять ту же фракцию; не успел — выбирают за него
+    room.message(second, { t: 'mdraft', faction: 'zatulye', hero: { cls: factionClasses('zatulye')[0].id, n: 3 } });
+    expect(second.last('mnope').why).toMatch(/недоступен/);
+    adv(29_000);
+    room.tick();
+    expect(room.phase).toBe('draft');
+    adv(2_000);
+    room.tick();
+    expect(room.phase).toBe('map');
+    const w = room.world!;
+    const me = steps[0].seat;
+    const other = steps[1].seat;
+    expect(w.players[me].faction).toBe('zatulye');
+    expect(w.heroes.find((h) => h.owner === me)!.pick).toEqual(pick1);
+    expect(['zatonye', 'kuznya']).toContain(w.players[other].faction);
+    expect(a.last('mstart').world.players.length).toBe(2);
+  });
+
+  it('драфт с ботами: бот выбирает сам; четыре места — фракции без банов и без повторов', () => {
+    let t = 1000;
+    const room = new MapRoom({ ...GEN, template: 'four', size: 'm' }, () => t);
+    const a = peer(1, 'a');
+    room.add(a);
+    for (let i = 1; i < 4; i++) room.message(a, { t: 'mbot', seat: i, bot: 'easy' });
+    room.message(a, { t: 'mdraftopt', on: true });
+    room.message(a, { t: 'start' });
+    const steps = a.last('mdraft').d.steps;
+    expect(steps.filter((s) => s.kind === 'faction')).toEqual([]);
+    for (let i = 0; i < 40 && room.phase === 'draft'; i++) {
+      const d = a.last('mdraft').d;
+      if (d.steps[d.i].seat === 0) {
+        const f = (['zatulye', 'zatonye', 'kuznya', 'akademiya'] as const).find((x) => !d.steps.slice(0, d.i).some((s) => s.kind === 'pick' && a.last('mdraft').seats[s.seat].faction === x))!;
+        const cls = factionClasses(f)[0].id;
+        const n = [1, 2, 3, 4].find((k) => !d.heroes.some((x) => x.cls === cls && x.n === k))!;
+        room.message(a, { t: 'mdraft', ...(d.steps[d.i].kind === 'pick' ? { faction: f } : {}), hero: { cls, n } });
+      } else {
+        t += 1_500;
+        room.tick();
+      }
+    }
+    expect(room.phase).toBe('map');
+    expect(new Set(room.world!.players.map((p) => p.faction)).size).toBe(4);
+  });
 });

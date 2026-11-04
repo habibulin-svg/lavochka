@@ -16,6 +16,7 @@ export class MapClient implements BattleNet {
   code = '';
   you = -1;
   onLobby: (m: Of<'mlobby'>) => void = () => {};
+  onDraft: (m: Of<'mdraft'>) => void = () => {};
   onStart: (m: Of<'mstart'>) => void = () => {};
   onMapStep: (m: Of<'mstep'>) => void = () => {};
   onBusy: (text: string) => void = () => {};
@@ -89,6 +90,13 @@ export class MapClient implements BattleNet {
   simul(on: boolean): void {
     this.send({ t: 'msimul', on });
   }
+  draftOpt(on: boolean): void {
+    this.send({ t: 'mdraftopt', on });
+  }
+  /** Шаг драфта: бан героя, бан фракции или выбор. */
+  draft(faction?: TownFaction, hero?: HeroPick): void {
+    this.send({ t: 'mdraft', faction, hero });
+  }
   start(): void {
     this.send({ t: 'start' });
   }
@@ -117,6 +125,9 @@ export class MapClient implements BattleNet {
       case 'mlobby':
         this.you = m.you;
         this.onLobby(m);
+        break;
+      case 'mdraft':
+        this.onDraft(m);
         break;
       case 'mstart':
         this.you = m.you;

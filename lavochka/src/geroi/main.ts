@@ -214,6 +214,9 @@ function wireMap(c: MapClient, name: string): void {
   c.onLobby = (m) => {
     if (!adv) netMap.lobby(c, m);
   };
+  c.onDraft = (m) => {
+    if (!adv) netMap.draft(c, m);
+  };
   // начало партии и возврат после обрыва: мир целиком с сервера
   c.onStart = (m) => void startNetMap(c, m);
   c.onClose = (why) => {

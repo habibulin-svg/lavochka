@@ -40,6 +40,23 @@ export interface MapClock {
   done: boolean[];
 }
 
+/** Шаг драфта: забанить героя, забанить фракцию, выбрать фракцию и героя. */
+export interface MapDraftStep {
+  seat: number;
+  kind: 'hero' | 'faction' | 'pick';
+}
+
+export interface MapDraftView {
+  steps: MapDraftStep[];
+  /** Текущий шаг. */
+  i: number;
+  /** Забаненное. */
+  factions: TownFaction[];
+  heroes: HeroPick[];
+  /** Сколько осталось на шаг, мс. */
+  ms: number;
+}
+
 export type MapClientMsg =
   | { t: 'mcreate'; game: 'geroi'; name: string; token: string; gen: GenOptions }
   | { t: 'join'; game: 'geroi'; code: string; name: string; token: string }
@@ -51,6 +68,10 @@ export type MapClientMsg =
   | { t: 'mbot'; seat: number; bot: BotLevel | null }
   /** Хозяин: одновременные ходы. */
   | { t: 'msimul'; on: boolean }
+  /** Хозяин: драфт фракций и героев перед картой. */
+  | { t: 'mdraftopt'; on: boolean }
+  /** Шаг драфта: бан героя (hero), бан фракции (faction), выбор (оба). */
+  | { t: 'mdraft'; faction?: TownFaction; hero?: HeroPick }
   | { t: 'start' }
   | { t: 'adv'; a: AdvAction }
   /** Ход в бою на карте. */
@@ -68,7 +89,8 @@ export type MapServerMsg =
   | { t: 'created'; code: string }
   | { t: 'joined'; code: string }
   | { t: 'error'; text: string }
-  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean }
+  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean }
+  | { t: 'mdraft'; d: MapDraftView; seat: number | null; seats: MapSeatView[] }
   /** Объявление всем: «армии сблизились — ходим по очереди». */
   | { t: 'mnote'; text: string }
   | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string }

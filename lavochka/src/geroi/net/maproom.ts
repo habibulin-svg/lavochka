@@ -4,7 +4,9 @@
  * Сблизились (или кто-то напал на чужого) — до конца дня по очереди: сблизивший доходит, за ним остальные, кто не закончил.
  * Своё «начатое» (выбор, бой) у каждого места своё: комната держит его в `pend`, мир получает его на время действия (`as`).
  * Бой на карте: стороны-люди ходят сами (как в Арене, с часами), остальные — бот; бой без людей считается сразу.
- * В общий день боёв с нейтралами может идти несколько: у каждого места свой. */
+ * В общий день боёв с нейтралами может идти несколько: у каждого места свой.
+ * Драфт (по желанию хозяина): между лобби и картой каждый по очереди банит героя, в дуэли второй банит ещё фракцию,
+ * потом по очереди выбирают фракцию (без повторов) и её героя. Бот и не успевший — случайно из доступного. */
 import { botAction } from '../bot/bot';
 import { type BotMem, botStep, newMem } from '../bot/advbot';
 import { fightOut } from '../bot/advplay';
@@ -13,8 +15,9 @@ import { type BattleEvent, type BattleState, act as battleAct, actionError as ba
 import { type GenOptions, generateMap } from '../sim/adv/gen';
 import { TEMPLATES } from '../sim/adv/templates';
 import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, actionError, applyBattle, battleSetup, heroById, objById, townById } from '../sim/adv/world';
-import { factionClasses } from '../sim/heroes';
-import { type MapClientMsg, type MapClock, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
+import { type HeroPick, factionClasses } from '../sim/heroes';
+import type { TownFaction } from '../sim/adv/town';
+import { type MapClientMsg, type MapClock, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
 import { type ClockView, cleanAction } from './protocol';
 
 /** Запас хода на всю партию и прибавка в начале каждого своего хода. */
@@ -30,6 +33,9 @@ export const MAP_GONE_MS = 60_000;
 /** Общий день начинается, только если чужие герои и города дальше этого (клеток); внутри дня сближение до CONTACT — по очереди. */
 export const FREE_GAP = 20;
 export const CONTACT = 12;
+/** Драфт: время на шаг человеку; бот думает для вида. */
+export const DRAFT_STEP_MS = 30_000;
+const DRAFT_BOT_MS = 1_200;
 /** На показ события боя: часы ходящего стоят. */
 const EVENT_MS = 420;
 const MAX_SHOW_MS = 6_000;
@@ -64,9 +70,34 @@ interface Fight {
   since: number;
 }
 
-type Phase = 'lobby' | 'map' | 'over';
+type Phase = 'lobby' | 'draft' | 'map' | 'over';
 /** Как идёт день: по очереди (мир сам передаёт ход), общий, по очереди после сближения (очередь держит комната). */
 type Day = 'seq' | 'free' | 'late';
+
+interface Draft {
+  steps: MapDraftStep[];
+  i: number;
+  since: number;
+  factions: TownFaction[];
+  heroes: HeroPick[];
+}
+
+/** Шаги драфта: порядок мест — от сида карты; баны героев по порядку, лишние фракции (больше, чем мест + 1) банят последние, выбор — по порядку. */
+export function draftSteps(n: number, seed: number): MapDraftStep[] {
+  const order = [...Array(n).keys()];
+  let r = seed >>> 0 || 1;
+  for (let i = n - 1; i > 0; i--) {
+    r = (Math.imul(r, 1664525) + 1013904223) >>> 0;
+    const j = r % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const steps: MapDraftStep[] = order.map((seat) => ({ seat, kind: 'hero' }));
+  for (let k = 0; k < Math.max(0, MAP_FACTIONS.length - n - 1); k++) steps.push({ seat: order[n - 1 - (k % n)], kind: 'faction' });
+  for (const seat of order) steps.push({ seat, kind: 'pick' });
+  return steps;
+}
+
+const sameHero = (a: HeroPick, b: HeroPick): boolean => a.cls === b.cls && a.n === b.n;
 
 /** Ближе всего друг к другу чужие герои и города (по клеткам, на одном уровне). */
 export function enemyGap(w: World): number {
@@ -95,6 +126,9 @@ export class MapRoom {
   gen: GenOptions;
   /** Одновременные ходы (хозяин выбирает в лобби). */
   simul = true;
+  /** Драфт фракций и героев перед картой (хозяин выбирает в лобби). */
+  draftOn = false;
+  draft: Draft | null = null;
   world: World | null = null;
   day: Day = 'seq';
   private mems: BotMem[] = [];
@@ -184,6 +218,7 @@ export class MapRoom {
       this.broadcast({ t: 'peer', name: p.name, on: true });
     }
     if (this.phase === 'lobby') return this.sendLobby();
+    if (this.phase === 'draft') return this.sendDraft();
     this.sendStart(p);
     this.sendFightStart(p);
   }
@@ -240,9 +275,24 @@ export class MapRoom {
         if (this.phase !== 'lobby' || !this.isHost(p)) return;
         this.simul = !!m.on;
         return this.sendLobby();
+      case 'mdraftopt':
+        if (this.phase !== 'lobby' || !this.isHost(p)) return;
+        this.draftOn = !!m.on;
+        return this.sendLobby();
       case 'start':
-        if (this.phase === 'lobby' && this.isHost(p) && this.seats.every((s) => s.bot || s.token)) this.startMap();
+        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token)) return;
+        if (this.draftOn) this.startDraft();
+        else this.startMap();
         return;
+      case 'mdraft': {
+        if (this.phase !== 'draft' || seat === null) return;
+        const f = MAP_FACTIONS.includes(m.faction as TownFaction) ? m.faction : undefined;
+        const pk = m.hero === undefined ? null : cleanPick(m.hero);
+        const err = this.draftError(seat, f, pk);
+        if (err) return p.send({ t: 'mnope', why: err });
+        this.draftDo(f, pk);
+        return;
+      }
       case 'adv': {
         if (this.phase !== 'map' || seat === null || this.fightOf(seat)) return p.send({ t: 'mnope', why: 'сейчас нельзя' });
         if (!this.mayAct(seat)) return p.send({ t: 'mnope', why: this.day === 'free' ? 'ты уже закончил день' : 'не твой ход' });
@@ -298,6 +348,7 @@ export class MapRoom {
 
   /** Часы комнаты: ход ботов, запас хода, бои. */
   tick(): void {
+    if (this.phase === 'draft') return this.tickDraft();
     if (this.phase !== 'map') return;
     const w = this.world!;
     const t = this.now();
@@ -499,6 +550,83 @@ export class MapRoom {
     }
   }
 
+  // ------------------------------------------------------------------ драфт
+
+  private startDraft(): void {
+    this.phase = 'draft';
+    this.draft = { steps: draftSteps(this.seats.length, this.gen.seed), i: 0, since: this.now(), factions: [], heroes: [] };
+    this.sendDraft();
+  }
+
+  /** Фракции, уже выбранные на драфте. */
+  private draftTaken(): TownFaction[] {
+    const d = this.draft!;
+    return d.steps.slice(0, d.i).filter((s) => s.kind === 'pick').map((s) => this.seats[s.seat].faction);
+  }
+
+  /** Что можно сделать на текущем шаге: пары (фракция, герой); для бана фракции герой не нужен. */
+  private draftChoices(): { faction?: TownFaction; hero?: HeroPick }[] {
+    const d = this.draft!;
+    const kind = d.steps[d.i].kind;
+    const open = MAP_FACTIONS.filter((f) => !d.factions.includes(f) && (kind !== 'pick' || !this.draftTaken().includes(f)));
+    if (kind === 'faction') return open.map((faction) => ({ faction }));
+    const out: { faction?: TownFaction; hero?: HeroPick }[] = [];
+    for (const faction of open)
+      for (const cls of factionClasses(faction))
+        for (let n = 1; n <= 4; n++) if (!d.heroes.some((x) => sameHero(x, { cls: cls.id, n }))) out.push({ faction, hero: { cls: cls.id, n } });
+    return out;
+  }
+
+  private draftError(seat: number, faction: TownFaction | undefined, hero: HeroPick | null): string | null {
+    const d = this.draft!;
+    const st = d.steps[d.i];
+    if (st.seat !== seat) return 'сейчас выбирает другой';
+    const ok = this.draftChoices().some(
+      (c) => (st.kind === 'hero' || c.faction === faction) && (st.kind === 'faction' || (!!hero && sameHero(c.hero!, hero))),
+    );
+    return ok ? null : st.kind === 'pick' ? 'такой выбор недоступен' : 'это не забанить';
+  }
+
+  private draftDo(faction: TownFaction | undefined, hero: HeroPick | null): void {
+    const d = this.draft!;
+    const st = d.steps[d.i];
+    if (st.kind === 'hero') d.heroes.push(hero!);
+    else if (st.kind === 'faction') d.factions.push(faction!);
+    else {
+      this.seats[st.seat].faction = faction!;
+      this.seats[st.seat].hero = hero!;
+    }
+    d.i++;
+    d.since = this.now();
+    if (d.i < d.steps.length) return this.sendDraft();
+    this.draft = null;
+    this.startMap();
+  }
+
+  private draftWait(seat: number): number {
+    return this.botFor(seat) ? DRAFT_BOT_MS : DRAFT_STEP_MS;
+  }
+
+  /** Бот и не успевший выбирают случайно из доступного (от сида — партию можно повторить). */
+  private tickDraft(): void {
+    const d = this.draft!;
+    const st = d.steps[d.i];
+    if (this.now() - d.since < this.draftWait(st.seat)) return;
+    const all = this.draftChoices();
+    const r = (Math.imul(this.gen.seed ^ 0x9e3779b9, d.i + 1) >>> 0) % all.length;
+    const c = all[r];
+    this.draftDo(c.faction, c.hero ?? null);
+  }
+
+  private sendDraft(): void {
+    const d = this.draft!;
+    const st = d.steps[d.i];
+    const ms = Math.max(0, this.draftWait(st.seat) - (this.now() - d.since));
+    const view = { steps: d.steps, i: d.i, factions: d.factions, heroes: d.heroes, ms };
+    const seats = this.view();
+    for (const p of this.peers) p.send({ t: 'mdraft', d: view, seat: this.seatOf(p), seats });
+  }
+
   private startMap(): void {
     const players = this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, ...(s.bot ? { bot: s.bot } : {}) }));
     const w = generateMap({ seed: this.gen.seed, players }, this.gen);
@@ -680,7 +808,7 @@ export class MapRoom {
 
   private sendLobby(): void {
     const seats = this.view();
-    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul });
+    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul, draft: this.draftOn });
   }
 
   private voiceList(): void {
