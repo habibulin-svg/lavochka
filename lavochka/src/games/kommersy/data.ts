@@ -525,9 +525,9 @@ export const CLUB = 'Лондон Юнайтед';
 export const CLUB_PRICE = 230e6;
 /** Пороги условий по сложности (0 — лёгкая, 2 — сложная). */
 export const CLUB_NEED = [
-  { name: 40, svyazi: 40, heat: 60, english: 2, hours: 40 },
-  { name: 55, svyazi: 55, heat: 45, english: 3, hours: 60 },
-  { name: 70, svyazi: 70, heat: 30, english: 3, hours: 80 },
+  { name: 40, svyazi: 50, heat: 60, english: 2, hours: 60 },
+  { name: 55, svyazi: 65, heat: 45, english: 3, hours: 80 },
+  { name: 70, svyazi: 75, heat: 30, english: 3, hours: 100 },
 ];
 
 /** Финалы «не успел» (решение пользователя). */

@@ -317,7 +317,7 @@ function growTarget(s: State, p: Player) {
   return p.assets.find((a) => {
     const d = dealById(a.id);
     const n = d?.next ? dealById(d.next) : undefined;
-    return !!n && s.m >= n.from && p.cash >= (n.price - a.value) * 0.8;
+    return !!n && !hasBiz(p, n) && s.m >= n.from && p.cash >= (n.price - a.value) * 0.8;
   });
 }
 
@@ -397,8 +397,11 @@ function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
 }
 
 // ---------------------------------------------------------------- клетки → вопрос игроку
+/** Дело каждого вида — одно на игрока (завод не покупают дважды); недвижимость и бумаги можно копить. */
+const hasBiz = (p: Player, d: DealT) => d.kind === 'biz' && p.assets.some((a) => a.id === d.id);
+
 export function availableDeals(s: State, p: Player) {
-  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies));
+  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d));
   // капитал обогнал время (100 млн в 1998-м, а дел для «Лондона» ещё нет) — предлагаем самые крупные из живых
   const t = Math.min(tier(p), Math.max(...alive.map((d) => d.tier)));
   return alive.filter((d) => d.tier >= t - 1 && d.tier <= t + 1);
@@ -447,6 +450,7 @@ function offerChoice(s: State, p: Player, o: Offer, di: number, fee = 0): AskCho
 }
 
 function needFail(s: State, p: Player, d: DealT): string | null {
+  if (hasBiz(p, d)) return 'уже есть';
   const n = d.need;
   if (!n) return null;
   if (n.svyazi && p.stats.svyazi < n.svyazi) return `нужны связи ${n.svyazi}`;
@@ -779,6 +783,7 @@ export function rivalWhy(s: State, p: Player, q: Player, k: Rival): string | nul
   if (k === 'demping' && !shared(p, q)) return 'нет общей ниши';
   if (k === 'peremanit' && !q.assets.some((a) => a.manager)) return 'нет управляющих';
   if (k === 'naezd' && p.krysha !== 'bandit') return 'нужна братва';
+  if (k === 'donos' && q.outKind === 'jail') return 'уже сидит';
   return null;
 }
 
@@ -949,6 +954,9 @@ function period(s: State, ev: Event[], rng: Rng) {
   for (const p of s.players) p.pos = p.out > 0 ? SEG_CELLS + 1 : 0;
 }
 
+/** Внимание органов на выходе из тюрьмы — не выше этого. */
+const HEAT_AFTER_JAIL = 30;
+
 function month(s: State, p: Player, m: number) {
   const inc = (p.job?.salary ?? 0) + p.assets.reduce((t, a) => t + assetIncome(s, p, a, m), 0);
   p.cash += inc - expenses(s, p);
@@ -959,11 +967,16 @@ function month(s: State, p: Player, m: number) {
   for (const a of p.assets) {
     const d = dealById(a.id);
     if (a.kind === 'paper' && d?.grow) a.value *= 1 + d.grow;
-    if (d?.heat) addStat(p, 'heat', d.heat / 3);
+    // за решёткой тёмное дело органы на него не вешают
+    if (d?.heat && p.outKind !== 'jail') addStat(p, 'heat', d.heat / 3);
   }
   if (p.out > 0) {
     p.out--;
-    if (p.out === 0) p.outKind = null;
+    if (p.out === 0) {
+      // отсидел — с чистого листа: органы отстают, из ворот обратно не забирают
+      if (p.outKind === 'jail') p.stats.heat = Math.min(p.stats.heat, HEAT_AFTER_JAIL);
+      p.outKind = null;
+    }
   }
 }
 

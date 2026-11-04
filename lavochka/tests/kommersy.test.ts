@@ -110,6 +110,58 @@ describe('Коммерсы: что предлагают клетки', () => {
   });
 });
 
+describe('Коммерсы: одно дело каждого вида', () => {
+  it('своё дело второй раз не предлагают, недвижимость и бумаги — можно', () => {
+    const s = newState([0], { start: mm(1996, 1) });
+    const p = s.players[0];
+    p.cash = 1e6;
+    const asset = (id: string, kind: 'biz' | 'estate') => ({ uid: s.uid++, id, name: id, kind, value: 1000, income: 100, hours: 1, manager: false, mul: 1 });
+    expect(availableDeals(s, p).some((d) => d.id === 'dolya-zavoda')).toBe(true);
+    p.assets = [asset('dolya-zavoda', 'biz'), asset('ofis', 'estate')];
+    const ids = availableDeals(s, p).map((d) => d.id);
+    expect(ids).not.toContain('dolya-zavoda');
+    expect(ids).toContain('ofis');
+  });
+
+  it('расширить дело в то, что уже есть, нельзя', () => {
+    const s = newState([0], { start: mm(1996, 1) });
+    const p = s.players[0];
+    p.cash = 1e7;
+    const asset = (id: string) => ({ uid: s.uid++, id, name: id, kind: 'biz' as const, value: 1000, income: 100, hours: 1, manager: false, mul: 1 });
+    p.assets = [asset('magazin')];
+    expect(cardOk(s, p, CARDS.find((c) => c.id === 'n-grow')!)).toBe(true);
+    p.assets.push(asset('set-magazinov'));
+    expect(cardOk(s, p, CARDS.find((c) => c.id === 'n-grow')!)).toBe(false);
+  });
+});
+
+describe('Коммерсы: тюрьма', () => {
+  // второй игрок сидит, первый доводит отрезок до «Нового квартала»
+  const jailed = (out: number, heat: number) => {
+    const s = newState([0, 1], { start: mm(1996, 1) });
+    s.players[0].pos = SEG_CELLS;
+    Object.assign(s.players[1], { pos: SEG_CELLS + 1, out, outKind: 'jail' });
+    s.players[1].stats.heat = heat;
+    return s;
+  };
+  const quarter = (s: State) => act(act(s, 0, { type: 'roll' }, [5]), 0, { type: 'move' });
+
+  it('вышел с любым вниманием органов — обратно сразу не забирают, внимание падает', () => {
+    const p = quarter(jailed(1, 100)).players[1];
+    expect(p.out).toBe(0);
+    expect(p.falls).toHaveLength(0);
+    expect(p.stats.heat).toBeLessThanOrEqual(30);
+  });
+
+  it('за решёткой водочный цех внимания не добавляет', () => {
+    const s = jailed(9, 40);
+    s.players[1].assets = [1, 2, 3].map((uid) => ({ uid, id: 'palenka', name: 'Водочный цех', kind: 'biz' as const, value: 40000, income: 15000, hours: 50, manager: true, mul: 1 }));
+    const p = quarter(s).players[1];
+    expect(p.outKind).toBe('jail');
+    expect(p.stats.heat).toBeLessThanOrEqual(40);
+  });
+});
+
 describe('Коммерсы: эпоха и падения', () => {
   it('павловская реформа: неподготовленный теряет треть наличных, подготовленный — нет', () => {
     let s = newState([0, 1]);
