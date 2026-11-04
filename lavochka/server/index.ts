@@ -636,8 +636,9 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, path: string) {
   }
   const ext = extname(file);
   const immutable = file.includes(join(DIST, 'assets'));
-  res.writeHead(status, { 'content-type': MIME[ext] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', ...headers });
+  // читаем до заголовков: нет файла — ответит 503 из обработчика запроса
   let body: Buffer | string = readFileSync(file);
+  res.writeHead(status, { 'content-type': MIME[ext] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache', ...headers });
   // страница игры: пререндер оставил место под рекорды — вписываем свежие (живой текст для поисковиков)
   if (ext === '.html' && body.includes('<!--records:')) body = body.toString('utf8').replace(/<!--records:([a-z]\w*)-->/g, (_, g: string) => records.html(g));
   res.end(body);
@@ -657,7 +658,14 @@ const server = createServer((req, res) => {
     });
     return;
   }
-  serveStatic(req, res, path);
+  // файла нет (например, сборка ещё пишет dist/) — не повод ронять сервер со всеми комнатами
+  try {
+    serveStatic(req, res, path);
+  } catch (e) {
+    log(`статика ${path}: ${String(e)}`);
+    if (!res.headersSent) res.writeHead(503, { 'retry-after': '30', 'content-type': 'text/plain; charset=utf-8' });
+    res.end('Сайт обновляется, зайдите через минуту.');
+  }
 });
 
 // ------------------------------------------------------------------ WebSocket

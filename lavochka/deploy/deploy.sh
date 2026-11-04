@@ -16,9 +16,10 @@ LIMIT="systemd-run --scope -q -p MemoryMax=2500M -p MemorySwapMax=2G nice -n 10"
 build() {
   $LIMIT sudo -u lavochka -H npm ci --include=dev --no-audit --no-fund --loglevel=error &&
   # Как npm run build, но без tsc: типы проверены перед пушем (npm run check, Stop-хук), а на 2 ГБ памяти tsc падает.
-  $LIMIT sudo -u lavochka -H env NODE_OPTIONS=--max-old-space-size=1800 sh -c 'npx vite build && npx tsx tools/prerender.ts && npm run build:server' >/tmp/lavochka-build.log 2>&1
+  $LIMIT sudo -u lavochka -H env NODE_OPTIONS=--max-old-space-size=1800 sh -c 'npx vite build --emptyOutDir=false && npx tsx tools/prerender.ts && npm run build:server' >/tmp/lavochka-build.log 2>&1
 }
-# прежний сайт — в запас: vite build стирает dist/, и если не соберётся и откат, сайт остался бы без страниц
+# dist/ при сборке не стираем (--emptyOutDir=false): сервер всё это время раздаёт сайт, без файлов он отдавал бы ошибки (502, 04.11.2026)
+# прежний сайт — в запас: если не соберётся и откат, сайт остался бы без страниц
 rm -rf /tmp/lavochka-dist-prev && cp -a dist /tmp/lavochka-dist-prev 2>/dev/null || true
 if ! build; then
   tail -30 /tmp/lavochka-build.log
@@ -32,6 +33,8 @@ if ! build; then
   exit 1
 fi
 systemctl restart lavochka
+# старые чанки с хешем: неделю нужны открытым вкладкам, потом только занимают место
+find dist/assets -type f -mtime +7 -delete 2>/dev/null || true
 sleep 2
 curl -fsS http://127.0.0.1:8787/api/health && echo
 # IndexNow: сообщить поисковикам изменившиеся страницы, lastmod в sitemap.xml (не вышло — не беда)
