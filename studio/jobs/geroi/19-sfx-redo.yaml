@@ -1,0 +1,42 @@
+# Герои, переделки партии 19-sfx после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+out: G:/temp/studio/out/geroi/19-sfx
+seeds:
+- 3
+- 4
+sounds:
+- name: pickup-res
+  duration: 1
+  level: ui
+  max: 0.6
+  prompt: 'close-up, clear and present: picking up a sack, soft thud and rustle'
+- name: learn
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: 'close-up, clear and present: page turning with a soft magical sparkle'
+- name: market
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: 'close-up, clear and present: coins clinking on a wooden counter'
+- name: shot-sling
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: 'close-up, clear and present: sling whirling and releasing a stone'
+- name: death-spirit
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: 'close-up, clear and present: ghostly spirit fading away with a sigh of wind'
+- name: move-hop
+  duration: 1
+  level: quiet
+  max: 0.8
+  prompt: 'close-up, clear and present: a frog hopping, wet slap'
+- name: voice-star
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: 'close-up, clear and present: shimmering cosmic hum rising'

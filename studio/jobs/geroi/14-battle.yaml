@@ -52,14 +52,15 @@ items:
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle: a flat open ground in front of town walls on the right side, old
-    northern wooden architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades; no churches, no domes. The middle and left
-    are open, flat and clear.'
+    northern wooden architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped
+    plank roofs, roof ridges ending in carved horse heads. The middle and left are open, flat and clear.'
 - name: siege-zatonye
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle: a flat open ground in front of town walls on the right side, swamp
-    architecture: houses on stilts, reed roofs, boardwalks over water, willow arches, lanterns in mist. The middle and left are open, flat and clear.'
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle: a flat open ground in front of town walls on the right side, northern
+    swamp architecture: houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist. The middle and left are open,
+    flat and clear.'
 - name: siege-kuznya
   width: 1536
   height: 864
@@ -79,77 +80,77 @@ items:
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a big mossy boulder. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a big mossy boulder on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-2
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a fallen birch log. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a fallen birch log on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-3
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a thorny bush. Single isolated object, centered, whole object in frame
-    with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a thorny bush on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-4
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a tree stump. Single isolated object, centered, whole object in frame
-    with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a tree stump on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-5
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a muddy puddle. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a muddy puddle on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-6
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a small smoking crater. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a small smoking crater on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-7
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a blue crystal cluster. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a blue crystal cluster on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-8
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a pile of mechanical scrap. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a pile of mechanical scrap on a tiny patch of its own ground. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-9
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a dead tree. Single isolated object, centered, whole object in frame
-    with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a dead tree on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: obstacle-10
   width: 1024
   height: 1024
   seeds:
   - 41
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Battlefield obstacle seen from above in three-quarter view: a heap of stones. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a heap of stones on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'

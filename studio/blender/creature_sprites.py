@@ -45,6 +45,64 @@ zs = [v.co.z for v in me.vertices]
 shift = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, min(zs)))
 for v in me.vertices:
     v.co -= shift
+
+# --- поворот вокруг Z под силуэт эталона: TripoSG ставит животных и всадников «лицом к нам», а эталон — боком ---
+import numpy as np  # noqa: E402
+
+N = 64
+img = bpy.data.images.load(REF)
+w, h = img.size
+alpha = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)[:, :, 3] > 0.5  # строки снизу вверх, как z
+
+
+def fit(mask_pts_x, mask_pts_z):
+    """Точки → маска N×N: рамка вписана в квадрат с сохранением пропорций, по центру."""
+    x0, x1, z0, z1 = mask_pts_x.min(), mask_pts_x.max(), mask_pts_z.min(), mask_pts_z.max()
+    s = (N - 3) / max(x1 - x0, z1 - z0, 1e-6)
+    ix = ((mask_pts_x - (x0 + x1) / 2) * s + N / 2).astype(int).clip(0, N - 1)
+    iz = ((mask_pts_z - (z0 + z1) / 2) * s + N / 2).astype(int).clip(0, N - 1)
+    m = np.zeros((N, N), bool)
+    m[iz, ix] = True
+    return m
+
+
+def dilate(m):
+    d = m.copy()
+    d[1:] |= m[:-1]
+    d[:-1] |= m[1:]
+    d[:, 1:] |= m[:, :-1]
+    d[:, :-1] |= m[:, 1:]
+    return d
+
+
+ry, rx = np.nonzero(alpha)
+ref_m = fit(rx.astype(np.float32), ry.astype(np.float32))
+co = np.array([v.co[:] for v in me.vertices], dtype=np.float32)
+fc = np.array([p.center[:] for p in me.polygons], dtype=np.float32)
+pts = np.concatenate([co, fc])
+best = (-1, 0)
+for deg in range(0, 360, 10):
+    a = math.radians(deg)
+    x = pts[:, 0] * math.cos(a) - pts[:, 1] * math.sin(a)
+    m = dilate(dilate(fit(x, pts[:, 2])))
+    iou = (m & ref_m).sum() / max((m | ref_m).sum(), 1)
+    if iou > best[0]:
+        best = (iou, deg)
+iou0 = (dilate(dilate(fit(pts[:, 0], pts[:, 2]))) & ref_m).sum() / max((dilate(dilate(fit(pts[:, 0], pts[:, 2]))) | ref_m).sum(), 1)
+TURN = best[1] if best[0] > iou0 + 0.04 else 0  # поворачиваем, только если заметно лучше «как есть»
+print(f'поворот {TURN}° (совпадение {best[0]:.2f}, без поворота {iou0:.2f})', flush=True)
+if TURN:
+    a = math.radians(TURN)
+    for v in me.vertices:
+        x, y = v.co.x, v.co.y
+        v.co.x, v.co.y = x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a)
+    xs = [v.co.x for v in me.vertices]
+    ys = [v.co.y for v in me.vertices]
+    c = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, 0))
+    for v in me.vertices:
+        v.co -= c
+me.update()
+
 xs = [v.co.x for v in me.vertices]
 zs = [v.co.z for v in me.vertices]
 X0, X1, H = min(xs), max(xs), max(zs)

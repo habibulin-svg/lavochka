@@ -1,0 +1,37 @@
+# Герои, переделки партии 14-battle после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 42
+- 43
+items:
+- name: obstacle-3
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a thorny bush on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-5
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a muddy puddle on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-6
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a small smoking crater on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-9
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a dead tree on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'

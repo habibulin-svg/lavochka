@@ -147,14 +147,14 @@ items:
   width: 1024
   height: 1024
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a large stone temple shrine with three glowing runes. Single isolated
-    object, centered, whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a large stone shrine with three glowing round blue gems in its arch.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: obj-learnstone
   width: 1024
   height: 1024
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a standing stone carved with glowing letters. Single isolated object,
-    centered, whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a tall standing stone carved with glowing spiral patterns. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: obj-wisewell
   width: 1024
   height: 1024
@@ -249,8 +249,8 @@ items:
   width: 1024
   height: 1024
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a keymaster tent with a big key sign. Single isolated object, centered,
-    whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a round canvas tent with a flat top and a large brass key hanging
+    over the entrance. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: obj-signpost
   width: 1024
   height: 1024
@@ -358,64 +358,64 @@ items:
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a white birch tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a white birch tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-2
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a broad oak tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a broad oak tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-3
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a green bush. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a green bush on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-4
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a mossy grey rock. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a mossy grey rock on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-5
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a haystack. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a haystack on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-6
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a clump of birch trees. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a clump of birch trees on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-7
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a fallen log. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a fallen log on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-meadow-8
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a wooden fence piece. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a wooden fence piece on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: ground-swamp
   width: 1024
   height: 1024
@@ -428,64 +428,64 @@ items:
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a dead twisted tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a dead twisted tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-2
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a clump of reeds. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a clump of reeds on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-3
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a lily pond. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a lily pond on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-4
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a mossy log. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a mossy log on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-5
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a weeping willow. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a weeping willow on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-6
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a hummock with grass. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a hummock with grass on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-7
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: bog cotton tufts. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: bog cotton tufts on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-swamp-8
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a rotten tree stump. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a rotten tree stump on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: ground-ash
   width: 1024
   height: 1024
@@ -498,133 +498,134 @@ items:
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a charred dead tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a charred dead tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-2
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a black lava rock. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a black lava rock on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-3
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a slag heap. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a slag heap on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-4
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a smoking steam vent. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a smoking steam vent on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-5
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a cluster of dark crystals. Single isolated object, centered,
-    whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a cluster of dark crystals on a tiny patch of its own ground. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-6
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a rusty broken cogwheel. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a rusty broken cogwheel on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-7
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a burnt stump. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a burnt stump on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-ash-8
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: an ash dune. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: an ash dune on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: ground-pine
   width: 1024
   height: 1024
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Seamless top-down ground texture: pine forest floor with needles, moss and cones, even soft lighting, fills the whole square.'
+    warm sunlight and soft shadows. Seamless top-down ground texture: flat brown pine needle litter with moss patches and scattered cones, even soft lighting, fills
+    the whole square.'
 - name: decor-pine-1
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a tall pine tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a tall pine tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-2
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a young fir tree. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a young fir tree on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-3
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a mossy boulder. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a mossy boulder on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-4
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a ring of mushrooms. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a ring of mushrooms on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-5
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a clump of pines. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a clump of pines on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-6
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a fern bush. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a fern bush on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-7
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a pine stump. Single isolated object, centered, whole object in
-    frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a pine stump on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
 - name: decor-pine-8
   width: 1024
   height: 1024
   seeds:
   - 31
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map decoration seen from above in three-quarter view: a glowing blue crystal in moss. Single isolated object, centered,
-    whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a glowing blue crystal in moss on a tiny patch of its own ground. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: ground-road-dirt
   width: 1024
   height: 1024
@@ -664,23 +665,23 @@ items:
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map obstacle seen from above in three-quarter view: a rocky grey mountain massif with snow on the top. Single isolated
-    object, centered, whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a rocky grey mountain massif with snow on the top, its own rocky ground
+    at the foot. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: mountain-2
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map obstacle seen from above in three-quarter view: a group of green forested hills. Single isolated object, centered,
-    whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a group of green forested hills, its own rocky ground at the foot.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: mountain-3
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map obstacle seen from above in three-quarter view: a jagged dark volcanic ridge. Single isolated object, centered,
-    whole object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a jagged dark volcanic ridge, its own rocky ground at the foot. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
 - name: mountain-4
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Adventure map obstacle seen from above in three-quarter view: a steep sandstone cliff. Single isolated object, centered, whole
-    object in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a steep sandstone cliff, its own rocky ground at the foot. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'

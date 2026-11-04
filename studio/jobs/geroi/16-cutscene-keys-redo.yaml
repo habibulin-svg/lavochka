@@ -1,0 +1,18 @@
+# Герои, переделки партии 16-cutscene-keys после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 3
+- 4
+items:
+- name: intro-2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Four different teenagers in mixed summer clothes of the 1990s (a striped t-shirt, a faded sports jacket,
+    a sleeveless shirt) and a small girl with braids and glasses, looking down into a clay construction pit at sunset, at the bottom an old brass knuckle glows warmly
+    in the clay; one of them is a sixteen-year-old boy with a light brown buzz cut, freckles and a cheeky confident smile.'

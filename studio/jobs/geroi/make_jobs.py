@@ -17,8 +17,10 @@ OUT = 'G:/temp/studio/out/geroi'
 GOUACHE = ('Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, '
            'saturated but harmonious colors, warm sunlight and soft shadows.')
 ISOLATED = 'Single isolated object, centered, whole object in frame with margin, plain light grey background.'
-ICON = ('Rich gouache painted game icon, a single object centered and filling most of the square, bold readable silhouette, '
-        'warm rim light, simple dark warm brown background.')
+ICON = ('Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, '
+        'like an inventory item in a classic 1990s fantasy strategy game, centered and filling most of the square.')
+SPELL_ART = ('Rich gouache miniature painting filling the whole square, a small dramatic scene with depth and glowing light, '
+             'like a spell card picture in a classic 1990s fantasy strategy game:')
 CREATURE3D = ('Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, '
               'bright but refined colors. Full body, whole figure in frame with margin, standing in a three-quarter view facing right, '
               'seen slightly from above, centered, plain light grey background.')
@@ -68,7 +70,7 @@ FACTIONS = {
         'units': [
             ('apprentice', 1, 0, 'a young forge apprentice with a leather apron, soot on the face and a heavy hammer'),
             ('smith', 1, 1, 'a burly master blacksmith with a huge war hammer and riveted leather armor'),
-            ('wasp', 2, 0, 'a mechanical copper wasp the size of a dog with brass wings and a sharp stinger'),
+            ('wasp', 2, 0, 'a big mechanical copper wasp insect with brass wings, six thin jointed legs, a striped segmented abdomen and a sharp stinger'),
             ('stingwasp', 2, 1, 'a bigger clockwork bronze wasp with a glowing furnace abdomen'),
             ('riveter', 3, 0, 'a riveter in goggles with a heavy steam bolt-thrower on his shoulder'),
             ('repeater', 3, 1, 'an armored gunner with a repeating copper bolt-thrower and pipes on his back'),
@@ -82,22 +84,22 @@ FACTIONS = {
             ('forgecolossus', 7, 1, 'a huge bronze colossus with glowing molten joints and a hammer arm'),
         ]},
     'akademiya': {
-        'ru': 'Звёздная академия', 'look': 'star academy in a pine forest, night blue, silver, pine green and warm gold',
+        'ru': 'Звёздная академия', 'look': 'star academy mages, night blue, silver, deep green and warm gold',
         'units': [
-            ('student', 1, 0, 'a young academy student in a dark blue robe carrying a glowing star lantern on a pole'),
+            ('student', 1, 0, 'a young human academy student boy in a dark blue robe carrying a glowing star lantern on a pole'),
             ('adept', 1, 1, 'an apprentice mage with an armillary charm and a glowing lantern staff'),
             ('owl', 2, 0, 'a large owl with a satchel of scrolls and wise eyes, standing'),
             ('seerowl', 2, 1, 'a great silver owl with starry feathers and glowing runes, standing'),
-            ('crystal', 3, 0, 'a crystal guardian: a humanoid of clear quartz with a crystal shield'),
-            ('prism', 3, 1, 'a prism guardian of rainbow crystal facets with a refracting shield'),
+            ('crystal', 3, 0, 'a tall humanoid knight made entirely of clear pale-blue quartz crystal, faceted body, a crystal shield and a crystal sword'),
+            ('prism', 3, 1, 'a tall humanoid knight made of rainbow prism crystal facets, glowing edges, a large refracting crystal shield'),
             ('centaur', 4, 0, 'a centaur astrologer with a bow and a cloak embroidered with star charts'),
             ('astrologer', 4, 1, 'a centaur astronomer archer in silver armor with a starlight bow'),
-            ('pineguard', 5, 0, 'a gentle tall giant of pine bark and needles carrying a lantern'),
-            ('borguard', 5, 1, 'an ancient pine forest guardian with moss, cones and glowing amber sap'),
+            ('pineguard', 5, 0, 'a gentle tall treant giant: a walking humanoid made of pine bark with arms and legs of branches, needle hair, carrying a warm lantern'),
+            ('borguard', 5, 1, 'an ancient huge treant: a walking humanoid of mossy pine bark with branch arms, pine cones and glowing amber sap in the cracks'),
             ('skywhale', 6, 0, 'a flying sky whale with soft blue skin, star-like spots and small fins'),
             ('starwhale', 6, 1, 'a majestic star whale glowing with constellations'),
-            ('fallenstar', 7, 0, 'a star elemental: a humanoid of white-gold starlight fire with a glowing core'),
-            ('wanderstar', 7, 1, 'a wandering star spirit, a radiant figure with a trailing comet tail'),
+            ('fallenstar', 7, 0, 'a star elemental: a tall slender humanoid figure made of white-gold starlight flame, glowing core in the chest, arms raised'),
+            ('wanderstar', 7, 1, 'a wandering star spirit: a radiant floating humanoid in a flowing robe of starlight, a long comet tail of light behind it'),
         ]},
 }
 NEUTRALS = [
@@ -119,7 +121,7 @@ def creatures():
     for fid, f in FACTIONS.items():
         for uid, tier, up, desc in f['units']:
             out.append({'name': f'{fid}-{uid}', 'faction': fid, 'tier': tier, 'up': up,
-                        'prompt': f'{desc[0].upper()}{desc[1:]}, creature of the {f["look"]}. {{style}}'})
+                        'prompt': f'{desc[0].upper()}{desc[1:]}. Colors and style: {f["look"]}. {{style}}'})
     for uid, tier, desc in NEUTRALS:
         out.append({'name': f'neutral-{uid}', 'faction': 'neutral', 'tier': tier, 'up': 0, 'prompt': f'{desc[0].upper()}{desc[1:]}, fantasy creature. {{style}}'})
     return out
@@ -189,13 +191,13 @@ COMMON_BUILDINGS = [
     ('storehouse', 'a storehouse for resources with barrels and crates'), ('shipyard', 'a small shipyard with a boat on a slipway'),
 ]
 TOWNS = {
-    'zatulye': {'look': 'old northern wooden architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades; no churches, no domes',
+    'zatulye': {'look': 'old northern wooden architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse heads',
                 'site': 'a wide riverbank meadow with birch groves and a calm river, summer evening',
                 'dwell': ['a militia barracks hut', 'a slinger range with targets', 'a raider longhouse with boat hooks', 'a boat shed with river boats',
                           'a herbalist hut with drying herbs', 'horse stables with a paddock', 'a giant aurochs pen with a carved gate'],
                 'unique': [('skhod', 'a carved assembly pavilion for the people\'s gathering with benches in a circle'),
                            ('relic', 'a carved wooden shrine pavilion holding a glowing brass relic')]},
-    'zatonye': {'look': 'swamp architecture: houses on stilts, reed roofs, boardwalks over water, willow arches, lanterns in mist',
+    'zatonye': {'look': 'northern swamp architecture: houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist',
                 'site': 'a misty green swamp with dark water pools, willows and reeds, early morning',
                 'dwell': ['a reed hut cluster', 'a frog pond with lily pads and a hut', 'a glowing mist hollow', 'a weeping willow grove ring',
                           'a water maiden pool with stones', 'a deep catfish pit with a wooden rail', 'a serpent lair cave in misty rocks'],
@@ -244,7 +246,7 @@ MAP_OBJECTS = [
     ('artifact', 'a stone pedestal with a glowing relic on it'), ('windmill', 'a wooden windmill on a hill'),
     ('watermill', 'a water mill with a turning wheel'), ('watchtower', 'a tall wooden lookout tower'),
     ('shrine1', 'a small stone shrine with a blue glowing rune'), ('shrine2', 'a stone shrine with two glowing runes and candles'),
-    ('shrine3', 'a large stone temple shrine with three glowing runes'), ('learnstone', 'a standing stone carved with glowing letters'),
+    ('shrine3', 'a large stone shrine with three glowing round blue gems in its arch'), ('learnstone', 'a tall standing stone carved with glowing spiral patterns'),
     ('wisewell', 'a wooden well with a carved roof and sparkling water'), ('luckfountain', 'a small fountain with a stone fish'),
     ('gloryhill', 'a burial hill with old weapons stuck in it and a banner'), ('stables', 'horse stables with a fenced yard'),
     ('tavern', 'a roadside tavern with a lantern'), ('tradepost', 'a trading post tent with goods'),
@@ -252,7 +254,7 @@ MAP_OBJECTS = [
     ('prison', 'a wooden prison cage wagon'), ('obelisk', 'a carved stone obelisk with a glowing top'),
     ('portal2', 'a stone ring portal with swirling blue light'), ('portal1', 'a stone arch portal with swirling red light'),
     ('whirlpool', 'a whirlpool on dark water'), ('seerhut', 'a seer hut on a hill with a smoking chimney'),
-    ('guardtent', 'a striped border guard tent with a barrier'), ('keytent', 'a keymaster tent with a big key sign'),
+    ('guardtent', 'a striped border guard tent with a barrier'), ('keytent', 'a round canvas tent with a flat top and a large brass key hanging over the entrance'),
     ('signpost', 'a wooden signpost with arrows'), ('garrison', 'a small stone gate garrison with a tower'),
     ('treasury-meadow', 'ruins of an old stone tower'), ('treasury-swamp', 'a sunken barge in the swamp with treasure'),
     ('treasury-ash', 'ruins of a slag furnace with glowing cracks'), ('treasury-pine', 'a fallen star crater glowing among pines'),
@@ -269,7 +271,7 @@ TERRAINS = {  # местность → текстура грунта (вид с�
               'a mossy log', 'a weeping willow', 'a hummock with grass', 'bog cotton tufts', 'a rotten tree stump']),
     'ash': ('dark grey ash ground with slag pebbles and faint glowing cracks', ['a charred dead tree', 'a black lava rock', 'a slag heap',
             'a smoking steam vent', 'a cluster of dark crystals', 'a rusty broken cogwheel', 'a burnt stump', 'an ash dune']),
-    'pine': ('pine forest floor with needles, moss and cones', ['a tall pine tree', 'a young fir tree', 'a mossy boulder', 'a ring of mushrooms',
+    'pine': ('flat brown pine needle litter with moss patches and scattered cones', ['a tall pine tree', 'a young fir tree', 'a mossy boulder', 'a ring of mushrooms',
              'a clump of pines', 'a fern bush', 'a pine stump', 'a glowing blue crystal in moss']),
 }
 GROUNDS = [('road-dirt', 'a packed dirt road surface'), ('road-stone', 'a cobblestone road surface'), ('road-plank', 'a wooden plank road surface'),
@@ -289,14 +291,14 @@ def mapping():
                       'prompt': f'{GOUACHE} Seamless top-down ground texture: {ground}, even soft lighting, fills the whole square.'})
         for i, d in enumerate(decor):
             items.append({'name': f'decor-{tid}-{i + 1}', 'width': 1024, 'height': 1024, 'seeds': [31],
-                          'prompt': f'{GOUACHE} Adventure map decoration seen from above in three-quarter view: {d}. {ISOLATED}'})
+                          'prompt': f'{GOUACHE} Game scenery sprite seen from above in three-quarter view: {d} on a tiny patch of its own ground. {ISOLATED}'})
     for gid, d in GROUNDS:
         items.append({'name': f'ground-{gid}', 'width': 1024, 'height': 1024,
                       'prompt': f'{GOUACHE} Seamless top-down ground texture: {d}, even soft lighting, fills the whole square.'})
     for i, d in enumerate(['a rocky grey mountain massif with snow on the top', 'a group of green forested hills', 'a jagged dark volcanic ridge',
                            'a steep sandstone cliff']):
         items.append({'name': f'mountain-{i + 1}', 'width': 1536, 'height': 864,
-                      'prompt': f'{GOUACHE} Adventure map obstacle seen from above in three-quarter view: {d}. {ISOLATED}'})
+                      'prompt': f'{GOUACHE} Game scenery sprite seen from above in three-quarter view: {d}, its own rocky ground at the foot. {ISOLATED}'})
     return items
 
 
@@ -322,7 +324,7 @@ def battle():
                                 f'{t["look"]}. The middle and left are open, flat and clear.'})
     for i, d in enumerate(OBSTACLES):
         items.append({'name': f'obstacle-{i + 1}', 'width': 1024, 'height': 1024, 'seeds': [41],
-                      'prompt': f'{GOUACHE} Battlefield obstacle seen from above in three-quarter view: {d}. {ISOLATED}'})
+                      'prompt': f'{GOUACHE} Game scenery sprite seen from above in three-quarter view: {d} on a tiny patch of its own ground. {ISOLATED}'})
     return items
 
 
@@ -348,13 +350,13 @@ SPELLS = {
 }
 SPELL_TINT = {'fire': 'red and orange flames', 'water': 'blue and white water and ice', 'earth': 'green and brown earth and stone', 'air': 'pale violet wind and lightning'}
 SKILLS = ['logistics: a horse hoof with a wing', 'pathfinding: a forest trail with arrows', 'scouting: an eye over a hill', 'wisdom: an open book with a star',
-          'fire magic: a flame rune', 'water magic: a water drop rune', 'earth magic: a stone rune', 'air magic: a wind swirl rune',
+          'fire magic: a flame dancing over a bronze bowl', 'water magic: a spinning water sphere over a silver bowl', 'earth magic: a floating mossy stone', 'air magic: a glass orb with a tiny storm inside',
           'leadership: a raised banner', 'luck: a four-leaf clover', 'offense: crossed swords', 'armorer: a breastplate', 'archery: a bow with an arrow',
           'tactics: a war map with figures', 'first aid: a healer tent', 'estates: a sack of seeds', 'diplomacy: a handshake', 'scholar: a scroll and quill',
           'learning: a lit candle', 'resistance: a shield against sparks', 'mysticism: a glowing crystal ball', 'sorcery: a magic staff with sparks',
           'navigation: a ship wheel', 'eagle eye: an eagle head']
-PRIMARY = ['attack: a sword', 'defense: a shield', 'spell power: a glowing staff', 'knowledge: a book', 'morale: a laughing face mask', 'luck: a golden horseshoe',
-           'movement: a horseshoe with wings', 'experience: a star medal', 'mana: a blue crystal', 'population: a group of figures']
+PRIMARY = ['attack: a sword', 'defense: a shield', 'spell power: a glowing staff', 'knowledge: a book', 'morale: a war horn with a ribbon', 'luck: a golden horseshoe',
+           'movement: a horseshoe with wings', 'experience: a star medal', 'mana: a blue crystal', 'population: a small carved wooden house with lit windows']
 
 
 def icons():
@@ -364,11 +366,11 @@ def icons():
     for school, names in SPELLS.items():
         for i, d in enumerate(names):
             items.append({'name': f'spell-{school}-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51],
-                          'prompt': f'{ICON} A magic spell symbol: {d}, made of {SPELL_TINT[school]}.'})
+                          'prompt': f'{SPELL_ART} the magic spell «{d}» in action, {SPELL_TINT[school]}.'})
     for i, d in enumerate(SKILLS):
-        items.append({'name': f'skill-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51], 'prompt': f'{ICON} An emblem for {d}.'})
+        items.append({'name': f'skill-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51], 'prompt': f'{ICON} The item: {d.split(": ", 1)[1]}.'})
     for i, d in enumerate(PRIMARY):
-        items.append({'name': f'stat-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51], 'prompt': f'{ICON} An emblem for {d}.'})
+        items.append({'name': f'stat-{i + 1:02d}', 'width': 768, 'height': 768, 'seeds': [51], 'prompt': f'{ICON} The item: {d.split(": ", 1)[1]}.'})
     for rid, d in RESOURCES:
         items.append({'name': f'icon-{rid}', 'width': 768, 'height': 768, 'prompt': f'{ICON} {d}.'})
     return items
@@ -379,7 +381,7 @@ SER, LEN, DIM, VIT = LOOK['seryoga'], LOOK['lenka'], LOOK['dimon'], LOOK['vityok
 CUTSCENES = [  # (id, кадр, движение)
     ('intro-1', 'Summer evening in 1995 in a Siberian city: rows of grey nine-storey panel apartment blocks, a construction site with a crane by a small river, warm sunset sky',
      'slow pan across the panel blocks toward the construction site, birds fly, warm evening light'),
-    ('intro-2', f'Teenagers in 1990s tracksuits looking down into a clay construction pit at sunset, at the bottom an old brass knuckle glows warmly in the clay; one of them is {SER}',
+    ('intro-2', f'Four different teenagers in mixed summer clothes of the 1990s (a striped t-shirt, a faded sports jacket, a sleeveless shirt) and a small girl with braids and glasses, looking down into a clay construction pit at sunset, at the bottom an old brass knuckle glows warmly in the clay; one of them is {SER}',
      'the teenagers lean forward, the brass knuckle pulses with warm golden light, slow push in'),
     ('intro-3', 'A solar eclipse over a construction pit and panel houses, the sun becomes a black disc with a bright ring, eerie green light, wind lifting dust',
      'the sun darkens into the eclipse, dust swirls in the wind, eerie light flickers'),
@@ -593,6 +595,34 @@ def write(name, title, job):
     (HERE / name).write_text(head + yaml.safe_dump(job, allow_unicode=True, sort_keys=False, width=160), encoding='utf-8')
 
 
+# Переделки после отбора: те же пункты с новыми промптами и новыми сидами — отдельной партией «<партия>-redo»,
+# чтобы ночные варианты остались для сравнения. Отбор — studio/jobs/geroi/picks.json.
+REDO = {
+    '10-creatures': ([f'akademiya-{u[0]}' for u in FACTIONS['akademiya']['units']] + ['kuznya-wasp'], [43, 44]),
+    '11b-mounts': (['mount-akademiya-strazh', 'mount-akademiya-zvezdochet'], [63, 64]),
+    '12-towns': ([f'bld-{f}-{b}' for f in ('zatulye', 'zatonye') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)]
+                  + [u[0] for u in TOWNS[f]['unique']]], [22, 23]),
+    '13-map': ([f'decor-{t}-{i}' for t in TERRAINS for i in range(1, 9)] + [f'mountain-{i}' for i in range(1, 5)]
+               + ['obj-learnstone', 'obj-shrine3', 'obj-keytent', 'ground-pine'], [32, 33]),
+    '14-battle': (['obstacle-3', 'obstacle-5', 'obstacle-6', 'obstacle-9'], [42, 43]),
+    '15-icons': (None, [52, 53]),  # все: ночные вышли плоскими пиктограммами с буквами
+    '16-cutscene-keys': (['intro-2'], [3, 4]),
+    '19-sfx': (['death-spirit', 'learn', 'market', 'move-hop', 'pickup-res', 'shot-sling', 'voice-star'], [3, 4]),  # тихие: почти один шум
+}
+
+
+def redo_jobs():
+    for batch, (names, seeds) in REDO.items():
+        job = yaml.safe_load((HERE / f'{batch}.yaml').read_text(encoding='utf-8'))
+        key = 'sounds' if 'sounds' in job else 'items'
+        job[key] = [{k: v for k, v in i.items() if k != 'seeds'} for i in job[key] if names is None or i['name'] in names]
+        if key == 'sounds':
+            for i in job[key]:
+                i['prompt'] = 'close-up, clear and present: ' + i['prompt']
+        job['seeds'] = seeds
+        write(f'{batch}-redo.yaml', f'переделки партии {batch} после отбора', job)
+
+
 def main():
     cr = creatures()
     write('10-creatures.yaml', 'партия 10: эталоны существ под 3D (4 фракции × 14 + 10 нейтралов)',
@@ -659,3 +689,4 @@ def content(cr):
 
 if __name__ == '__main__':
     main()
+    redo_jobs()

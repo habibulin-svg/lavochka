@@ -1,0 +1,252 @@
+# Герои, переделки партии 12-towns после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 22
+- 23
+items:
+- name: bld-zatulye-hall
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-fort
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-tavern
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-market
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-guild
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of old northern wooden architecture: log-built halls, steep plank
+    roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse heads, three-quarter
+    view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-smithy
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of old northern wooden architecture:
+    log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending
+    in carved horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-storehouse
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of old northern wooden architecture:
+    log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending
+    in carved horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-shipyard
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell1
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a militia barracks hut, in the style of old northern wooden architecture: log-built halls, steep
+    plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse heads,
+    three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell2
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a slinger range with targets, in the style of old northern wooden architecture: log-built halls,
+    steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse
+    heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell3
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a raider longhouse with boat hooks, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell4
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a boat shed with river boats, in the style of old northern wooden architecture: log-built halls,
+    steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse
+    heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell5
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a herbalist hut with drying herbs, in the style of old northern wooden architecture: log-built halls,
+    steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse
+    heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell6
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, horse stables with a paddock, in the style of old northern wooden architecture: log-built halls,
+    steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved horse
+    heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell7
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a giant aurochs pen with a carved gate, in the style of old northern wooden architecture: log-built
+    halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof ridges ending in carved
+    horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-skhod
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a carved assembly pavilion for the people''s gathering with benches in a circle, in the style of
+    old northern wooden architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped
+    plank roofs, roof ridges ending in carved horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: bld-zatulye-relic
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a carved wooden shrine pavilion holding a glowing brass relic, in the style of old northern wooden
+    architecture: log-built halls, steep plank roofs, carved gables, timber watchtowers, log palisades, square timber watchtowers with low hipped plank roofs, roof
+    ridges ending in carved horse heads, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-hall
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-fort
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-tavern
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-market
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of northern swamp architecture: houses on
+    stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-zatonye-guild
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of northern swamp architecture: houses on stilts, reed roofs, boardwalks
+    over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-zatonye-smithy
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of northern swamp architecture: houses
+    on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-storehouse
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of northern swamp architecture:
+    houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-shipyard
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of northern swamp architecture: houses on
+    stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell1
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a reed hut cluster, in the style of northern swamp architecture: houses on stilts, reed roofs, boardwalks
+    over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-zatonye-dwell2
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a frog pond with lily pads and a hut, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell3
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a glowing mist hollow, in the style of northern swamp architecture: houses on stilts, reed roofs,
+    boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-zatonye-dwell4
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a weeping willow grove ring, in the style of northern swamp architecture: houses on stilts, reed
+    roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell5
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a water maiden pool with stones, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell6
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a deep catfish pit with a wooden rail, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell7
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a serpent lair cave in misty rocks, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-fogwell
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a stone well breathing thick mist, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-gat
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a long wooden causeway over the swamp, in the style of northern swamp architecture: houses on stilts,
+    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'

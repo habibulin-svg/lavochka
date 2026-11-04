@@ -32,8 +32,8 @@ items:
   prompt: A hero on horseback, a fire-forging mage with glowing ember tattoos, riding a horse with forge clans of an ash land, copper, bronze, soot black and ember
     orange tack and a small banner. {style}
 - name: mount-akademiya-strazh
-  prompt: A hero on horseback, a star guard knight in silver-blue armor, riding a horse with star academy in a pine forest, night blue, silver, pine green and warm
-    gold tack and a small banner. {style}
+  prompt: A hero on horseback, a star guard knight in silver-blue armor, riding a horse with star academy mages, night blue, silver, deep green and warm gold tack
+    and a small banner. {style}
 - name: mount-akademiya-zvezdochet
-  prompt: A hero on horseback, a stargazer mage with a silver beard or long silver hair and a star diadem, riding a horse with star academy in a pine forest, night
-    blue, silver, pine green and warm gold tack and a small banner. {style}
+  prompt: A hero on horseback, a stargazer mage with a silver beard or long silver hair and a star diadem, riding a horse with star academy mages, night blue, silver,
+    deep green and warm gold tack and a small banner. {style}
