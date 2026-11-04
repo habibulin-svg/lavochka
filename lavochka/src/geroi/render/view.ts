@@ -1,7 +1,8 @@
 /* Отрисовка боя на PixiJS v8 (DESIGN.md §10): сцена 1920×1080, вписанная в окно. Логику не трогает: показывает события act() по очереди,
  * у отрядов свой показанный вид (клетка, число), поэтому сохранение и сеть рисуются тем же кодом. */
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { type Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import type { Audio2 } from '../audio';
+import { releaseApp, takeApp } from './pixi';
 import { type BattleEvent, type BattleState, type HitInfo, type Unit, cellsOf } from '../sim/battle';
 import { CREATURES, hasAb } from '../sim/creatures';
 import { CELLS, FIELD_W, cellX, cellY } from '../sim/hex';
@@ -34,13 +35,14 @@ type Anim = 'idle' | 'move' | 'shoot' | 'hit' | 'defend' | 'death';
 
 /** Кадры существа: один раз на вид. */
 const loaded = new Map<string, Promise<{ meta: Atlas; frames: Record<string, Texture[]> }>>();
-function loadCreature(id: string) {
+export function loadCreature(id: string) {
   let p = loaded.get(id);
   if (!p) {
     p = (async () => {
+      // мипмапы: младшие ступени стоят мельче кадра, без них они рябят
       const [meta, tex] = await Promise.all([
         fetch(`/geroi/a/creatures/${id}.json`).then((r) => r.json() as Promise<Atlas>),
-        Assets.load<Texture>(`/geroi/a/creatures/${id}.webp`),
+        Assets.load<Texture>({ src: `/geroi/a/creatures/${id}.webp`, data: { autoGenerateMipmaps: true } }),
       ]);
       const frames: Record<string, Texture[]> = {};
       for (const [name, a] of Object.entries(meta.anims)) {
@@ -59,6 +61,9 @@ class UnitSprite {
   badge = new Container();
   private plate = new Graphics();
   private label = new Text({ text: '', style: { fontFamily: 'Geroi Num, sans-serif', fontSize: 22, fontWeight: '700', fill: 0xfff4d8 } });
+  private veil = new Container();
+  private veilMist = new Graphics();
+  private veilLabel = new Text({ text: '', style: { fontFamily: 'Geroi Num, sans-serif', fontSize: 19, fontWeight: '600', fill: 0xeaf4f0, stroke: { color: 0x1a2420, width: 4 } } });
   anim: Anim = 'idle';
   private t = 0;
   private fps = 8;
@@ -80,9 +85,22 @@ class UnitSprite {
     this.body.scale.set(u.side === 0 ? k : -k, k);
     this.badge.addChild(this.plate, this.label);
     this.label.anchor.set(0.5);
-    this.root.addChild(this.body, this.badge);
+    this.veilLabel.anchor.set(0.5);
+    this.veilLabel.position.set(0, -TIER_H[c.tier - 1] - 8);
+    this.veil.addChild(this.veilMist, this.veilLabel);
+    this.veil.visible = false;
+    this.root.addChild(this.body, this.veil, this.badge);
     this.setCount(u.count);
     this.play('idle');
+  }
+
+  /** Отряд стоит, но ударить его нельзя: дымка у ног и подпись, сам он виден ясно. */
+  setVeil(text: string | null): void {
+    this.veil.visible = !!text;
+    if (!text) return;
+    this.veilLabel.text = text;
+    this.veilMist.clear();
+    for (const [x, y, rx, ry] of [[-34, -6, 40, 15], [26, -2, 44, 16], [-4, -20, 52, 17]]) this.veilMist.ellipse(x, y, rx, ry).fill({ color: 0xdfe8e4, alpha: 0.42 });
   }
 
   setCount(n: number): void {
@@ -143,13 +161,16 @@ export interface Pointer {
 }
 
 export class BattleView {
-  readonly app = new Application();
+  app!: Application;
+  private readonly canvasEvents = new AbortController();
+  private readonly onTick = (t: { deltaMS: number }): void => this.tick(t.deltaMS / 1000);
   private stage = new Container();
   private grid = new Graphics();
   private marks = new Graphics();
   private unitsLayer = new Container();
   private fx = new Container();
   private sprites = new Map<number, UnitSprite>();
+  private wallSprites = new Map<number, Sprite>();
   private tweens = new Set<(dt: number) => boolean>();
   /** Без показа: автобой ×∞ и прогон по адресу (?fast=1). */
   instant = false;
@@ -161,8 +182,7 @@ export class BattleView {
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2) {}
 
   async init(s: BattleState): Promise<void> {
-    await this.app.init({ resizeTo: this.host, background: 0x15110c, antialias: true, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
-    this.host.appendChild(this.app.canvas);
+    this.app = await takeApp(this.host);
     this.app.stage.addChild(this.stage);
     const bg = new Sprite(await Assets.load<Texture>(`/geroi/a/fields/${s.field}.webp`));
     bg.width = STAGE_W;
@@ -183,6 +203,19 @@ export class BattleView {
     }));
     this.unitsLayer.sortableChildren = true;
     this.stage.addChild(this.unitsLayer, this.fx);
+    await Promise.all((s.walls ?? []).map(async (w) => {
+      const part = w.gate ? 'gate' : w.tower ? 'tower' : 'wall';
+      const tex = await Assets.load<Texture>(`/geroi/a/siege/${part}-${s.siegeFaction}.webp`);
+      const sp = new Sprite(tex);
+      const p = cellCenter(w.cell);
+      sp.anchor.set(0.5, 0.8);
+      sp.scale.set((w.tower ? 130 : 118) / tex.width);
+      sp.position.set(p.x, p.y);
+      sp.zIndex = p.y;
+      this.unitsLayer.addChild(sp);
+      this.wallSprites.set(w.cell, sp);
+    }));
+    if (s.walls) this.refreshWalls(s);
     await Promise.all(s.units.map(async (u) => {
       const art = await loadCreature(u.cre);
       const sp = new UnitSprite(u, art, u.side === 0 ? 0x4aa3ff : 0xff5d4a);
@@ -195,7 +228,7 @@ export class BattleView {
       this.sprites.set(u.id, sp);
       this.unitsLayer.addChild(sp.root);
     }));
-    this.app.ticker.add((t) => this.tick(t.deltaMS / 1000));
+    this.app.ticker.add(this.onTick);
     window.addEventListener('resize', this.resize);
     this.fit();
     const canvas = this.app.canvas;
@@ -206,15 +239,19 @@ export class BattleView {
       const y = (e.clientY - r.top - this.stage.y) / k;
       return { x, y, cell: this.cellAt(x, y) };
     };
-    canvas.addEventListener('pointermove', (e) => this.onPointer(at(e)));
-    canvas.addEventListener('pointerleave', () => this.onPointer({ cell: -1, x: 0, y: 0 }));
-    canvas.addEventListener('pointerdown', (e) => this.onClick(at(e), e.button === 2));
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    const { signal } = this.canvasEvents;
+    canvas.addEventListener('pointermove', (e) => this.onPointer(at(e)), { signal });
+    canvas.addEventListener('pointerleave', () => this.onPointer({ cell: -1, x: 0, y: 0 }), { signal });
+    canvas.addEventListener('pointerdown', (e) => this.onClick(at(e), e.button === 2), { signal });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
   }
 
   destroy(): void {
     window.removeEventListener('resize', this.resize);
-    this.app.destroy(true, { children: true });
+    this.canvasEvents.abort();
+    if (!this.app) return;
+    this.app.ticker.remove(this.onTick);
+    releaseApp(this.app);
   }
 
   /** Сцена вписана в окно целиком (16:9, поля по краям). */
@@ -507,9 +544,8 @@ export class BattleView {
       case 'proc': {
         const t = this.sprites.get(e.t);
         if (!t) return;
-        const text = { poison: 'яд', blind: 'ослеплён', root: 'опутан', swallow: 'проглочен!', mist: 'в тумане' }[e.k];
+        const text = { poison: 'яд', blind: 'ослеплён', root: 'опутан', swallow: 'схвачен!', mist: 'в тумане' }[e.k];
         this.floatText(this.headOf(t).x + 20, this.headOf(t).y + 26, text, 0xc9ffa8, 22);
-        t.body.alpha = 1;
         return;
       }
       case 'poison': {
@@ -517,6 +553,23 @@ export class BattleView {
         if (!t) return;
         t.setCount(e.left);
         this.floatText(this.headOf(t).x, this.headOf(t).y, `яд −${e.dmg}`, 0xa8ff7a, 24);
+        return this.tween(0.25, () => {});
+      }
+      case 'wall': {
+        const sp = this.wallSprites.get(e.cell);
+        this.audio.sfx(e.hp > 0 ? 'catapult' : 'wall-break');
+        if (sp) {
+          this.floatText(sp.x, sp.y - 60, e.hp > 0 ? 'таран!' : 'пролом!', 0xffd9a0, 26);
+          this.showWall(sp, e.hp);
+        }
+        return this.tween(0.3, () => {});
+      }
+      case 'tower': {
+        const t = this.sprites.get(e.t);
+        if (!t) return;
+        this.audio.sfx('tower-shot');
+        t.setCount(e.left);
+        this.floatText(this.headOf(t).x, this.headOf(t).y, `башня −${e.dmg}`, 0xffb08a, 24);
         return this.tween(0.25, () => {});
       }
       case 'round':
@@ -542,11 +595,30 @@ export class BattleView {
     }
   }
 
-  /** Прозрачность «ушедших в туман». */
+  private showWall(sp: Sprite, hp: number): void {
+    // разбитый кусок лежит тёмной грудой, а не исчезает
+    if (hp <= 0) {
+      sp.tint = 0x5a5048;
+      sp.alpha = 0.55;
+      sp.scale.y = Math.abs(sp.scale.x) * 0.45;
+      sp.zIndex = 0;
+    } else if (hp === 1) sp.tint = 0xb8a890;
+  }
+
+  private refreshWalls(s: BattleState): void {
+    for (const w of s.walls ?? []) {
+      const sp = this.wallSprites.get(w.cell);
+      if (sp) this.showWall(sp, w.hp);
+    }
+  }
+
+  /** Метка отряда, которого нельзя ударить: ушёл в туман или схвачен. */
   refreshStates(s: BattleState): void {
     for (const u of s.units) {
       const sp = this.sprites.get(u.id);
-      if (sp && u.count > 0) sp.root.alpha = u.effects.some((e) => e.k === 'hidden') ? 0.45 : 1;
+      if (!sp || u.count <= 0) continue;
+      const hidden = u.effects.some((e) => e.k === 'hidden');
+      sp.setVeil(!hidden ? null : u.effects.some((e) => e.k === 'stun') ? 'схвачен' : 'в тумане');
     }
   }
 }

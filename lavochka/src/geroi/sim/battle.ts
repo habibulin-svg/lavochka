@@ -3,7 +3,7 @@
 import { Rng } from '../../gops/sim/rng';
 import { CREATURES, type CreatureDef, type Faction, hasAb } from './creatures';
 import { type HeroPick, classOf } from './heroes';
-import { CELLS, FIELD_H, FIELD_W, cellOf, cellX, hexDist, mirrorCell, neighbors } from './hex';
+import { CELLS, FIELD_H, FIELD_W, cellOf, cellX, cellY, hexDist, mirrorCell, neighbors } from './hex';
 import { SPELLS, type School, type SpellDef } from './spells';
 
 export const MAX_ROUNDS = 60;
@@ -15,15 +15,45 @@ const AID_USES = 3;
 const SKY: School[] = ['fire', 'water', 'earth', 'air'];
 const BOG_SPEED = 2;
 
+/** Цифры героя с карты приключений: уровень, навыки, вещи. В «Арене» их нет — там всё от класса. */
+export interface HeroStats {
+  atk: number;
+  def: number;
+  power: number;
+  know: number;
+  mana: number;
+  morale: number;
+  luck: number;
+  spells: string[];
+  /** Навыки, %: рукопашная, стрельба, броня, стойкость к магии, урон заклинаний. */
+  offense?: number;
+  archery?: number;
+  armorer?: number;
+  resist?: number;
+  sorcery?: number;
+  /** Сила магии по школам. */
+  schools?: Partial<Record<School, number>>;
+  /** Тактика: скорость в первом раунде. */
+  tactics?: number;
+}
+
 export interface SideSetup {
-  hero: HeroPick;
+  /** Нет героя — нейтральный отряд или гарнизон: нули и без книги. */
+  hero: HeroPick | null;
   army: { cre: string; count: number }[];
+  stats?: HeroStats;
+  /** Подпись стороны без героя. */
+  label?: string;
 }
 
 export interface BattleSetup {
   seed: number;
   field: string;
   sides: [SideSetup, SideSetup];
+  /** Осада: уровень стен у стороны 1 (1–3). */
+  siege?: number;
+  /** Чьи стены рисовать. */
+  siegeFaction?: string;
 }
 
 export type EffectKind = 'atk' | 'def' | 'speed' | 'poison' | 'stun' | 'root' | 'hidden';
@@ -60,8 +90,9 @@ export interface Unit {
   effects: Effect[];
 }
 
-export interface HeroState {
-  pick: HeroPick;
+export interface HeroState extends Partial<Pick<HeroStats, 'offense' | 'archery' | 'armorer' | 'resist' | 'sorcery' | 'schools' | 'tactics'>> {
+  pick: HeroPick | null;
+  label?: string;
   faction: Faction;
   atk: number;
   def: number;
@@ -88,6 +119,13 @@ export interface BattleState {
   bog: number[];
   /** Чья топь: её не боится эта сторона. −1 — топи нет. */
   bogOwner: number;
+  /** Осада: стены стороны 1. Пусто — обычный бой. */
+  walls?: WallSeg[];
+  /** Сколько башен бьёт в начале раунда. */
+  towers?: number;
+  siegeFaction?: string;
+  /** Уровень стен. */
+  fort?: number;
   sky: School[];
   over: boolean;
   /** Победитель; −1 — ничья. */
@@ -95,6 +133,20 @@ export interface BattleState {
   /** Расчёт бота: средний урон и без случайностей, настоящих бросков бот не видит. */
   expect?: boolean;
 }
+
+/** Кусок стены: держит клетку, пока цел. Ворота свои пропускают. */
+export interface WallSeg {
+  cell: number;
+  hp: number;
+  gate: boolean;
+  /** Башня: стоит до конца боя. */
+  tower?: boolean;
+}
+
+/** Столбец стены и ряды; ворота посередине, башни — по краям ворот. */
+export const WALL_X = 11;
+const GATE_ROW = 5;
+const TOWER_ROWS = [2, 8];
 
 export type Action =
   | { t: 'move'; to: number }
@@ -128,6 +180,8 @@ export type BattleEvent =
   | { e: 'aid'; u: number; t: number; left: number; curse?: boolean }
   | { e: 'proc'; t: number; k: 'poison' | 'blind' | 'root' | 'swallow' | 'mist' }
   | { e: 'poison'; t: number; dmg: number; left: number }
+  | { e: 'wall'; cell: number; hp: number }
+  | { e: 'tower'; t: number; dmg: number; left: number }
   | { e: 'over'; winner: number; why?: 'flee' | 'rounds' };
 
 const creOf = (u: Unit): CreatureDef => CREATURES[u.cre];
@@ -141,9 +195,11 @@ const fitsBig = (side: number, cell: number): boolean => (side === 0 ? cellX(cel
 export const cellsOf = (u: Unit): number[] => (hasAb(creOf(u), 'big') ? [u.cell, tailOf(u.side, u.cell)] : [u.cell]);
 const cellsAt = (u: Unit, cell: number): number[] => (hasAb(creOf(u), 'big') ? [cell, tailOf(u.side, cell)] : [cell]);
 
-export function occupancy(s: BattleState): Int16Array {
+/** Занятость клеток; ворота пропускают защитников (side = 1). */
+export function occupancy(s: BattleState, side = -1): Int16Array {
   const occ = new Int16Array(CELLS).fill(-1);
   for (const o of s.obstacles) occ[o.cell] = -2;
+  for (const c of s.walls ?? []) if (c.hp > 0 && !(c.gate && side === 1)) occ[c.cell] = -2;
   for (const u of s.units) if (u.count > 0) for (const c of cellsOf(u)) occ[c] = u.id;
   return occ;
 }
@@ -161,7 +217,8 @@ export const isRooted = (u: Unit): boolean => hasEffect(u, 'root');
 const onForeignBog = (s: BattleState, u: Unit): boolean => s.bogOwner >= 0 && s.bogOwner !== u.side && !hasAb(creOf(u), 'pass') && !hasAb(creOf(u), 'fly') && s.bog.includes(u.cell);
 
 export function speedOf(s: BattleState, u: Unit): number {
-  return Math.max(1, creOf(u).speed + effectSum(u, 'speed') - (onForeignBog(s, u) ? BOG_SPEED : 0));
+  const tactics = s.round === 1 ? s.sides[u.side].tactics ?? 0 : 0;
+  return Math.max(1, creOf(u).speed + effectSum(u, 'speed') + tactics - (onForeignBog(s, u) ? BOG_SPEED : 0));
 }
 export const attackOf = (s: BattleState, u: Unit): number => Math.max(0, creOf(u).atk + s.sides[u.side].atk + effectSum(u, 'atk'));
 export function defenseOf(s: BattleState, u: Unit): number {
@@ -185,7 +242,7 @@ export function reachOf(s: BattleState, u: Unit): Reach {
   dist[u.cell] = 0;
   if (isRooted(u)) return { dist, prev };
   const c = creOf(u);
-  const occ = occupancy(s);
+  const occ = occupancy(s, u.side);
   const big = hasAb(c, 'big');
   const free = (cell: number): boolean => {
     if (big && !fitsBig(u.side, cell)) return false;
@@ -205,10 +262,11 @@ export function reachOf(s: BattleState, u: Unit): Reach {
   }
   // сквозь препятствия идут ладейщики и морока, но встать на него нельзя
   const pass = hasAb(c, 'pass');
-  const obstacle = new Uint8Array(CELLS);
-  for (const o of s.obstacles) obstacle[o.cell] = 1;
+  const walled = new Set((s.walls ?? []).filter((w) => w.hp > 0 && !(w.gate && u.side === 1)).map((w) => w.cell));
   const walkable = (cell: number): boolean => {
     if (!pass) return free(cell);
+    // стену не пройти и тем, кто идёт сквозь камни и топь
+    if (walled.has(cell)) return false;
     if (big && !fitsBig(u.side, cell)) return false;
     for (const x of big ? [cell, tailOf(u.side, cell)] : [cell]) if (occ[x] >= 0 && occ[x] !== u.id) return false;
     return true;
@@ -285,6 +343,11 @@ export function damageFactor(s: BattleState, a: Unit, t: Unit, opts: { ranged?: 
   if (opts.ranged) {
     if (!hasAb(c, 'noRangePen') && hexDist(a.cell, t.cell) > 10) m = Math.trunc(m / 2);
   } else if (c.shots > 0 && !hasAb(c, 'noMeleePen')) m = Math.trunc(m / 2);
+  const own = s.sides[a.side];
+  const skill = opts.ranged ? own.archery : own.offense;
+  if (skill) m = Math.trunc((m * (100 + skill)) / 100);
+  const armor = s.sides[t.side].armorer;
+  if (armor) m = Math.trunc((m * (100 - armor)) / 100);
   return m;
 }
 
@@ -407,7 +470,7 @@ function melee(s: BattleState, a: Unit, t: Unit, steps: number, ev: BattleEvent[
 /** Сила магии с учётом «Созвездий» Академии. */
 export function spellPower(s: BattleState, side: number, sp: SpellDef): number {
   const h = s.sides[side];
-  return h.power + (h.faction === 'akademiya' && s.sky[s.round % s.sky.length] === sp.school ? 3 : 0);
+  return h.power + (h.schools?.[sp.school] ?? 0) + (h.faction === 'akademiya' && s.sky[s.round % s.sky.length] === sp.school ? 3 : 0);
 }
 
 export function spellError(s: BattleState, side: number, spell: string, cell: number): string | null {
@@ -443,14 +506,15 @@ function castSpell(s: BattleState, side: number, spell: string, cell: number, ev
   const power = spellPower(s, side, sp);
   h.mana -= sp.mana;
   h.cast = true;
-  const amount = sp.base + sp.perPower * power;
+  const amount = sp.kind === 'damage' || sp.kind === 'aoe' ? Math.trunc(((sp.base + sp.perPower * power) * (100 + (h.sorcery ?? 0))) / 100) : sp.base + sp.perPower * power;
+  const foeResist = s.sides[1 - side].resist ?? 0;
   const hits: HitInfo[] = [];
   const heals: { t: number; left: number }[] = [];
   const marks: number[] = [];
   const dead: Unit[] = [];
   const hurt = (t: Unit): void => {
     const dmg = hasAb(creOf(t), 'spellRes') ? Math.trunc(amount / 2) : amount;
-    hits.push(wound(s, t, Math.max(1, dmg)));
+    hits.push(wound(s, t, Math.max(1, Math.trunc((dmg * (100 - foeResist)) / 100))));
     if (t.count === 0) dead.push(t);
   };
   const t = unitAt(s, cell);
@@ -544,9 +608,29 @@ function startRound(s: BattleState, ev: BattleEvent[]): void {
       if (u.count === 0) ev.push({ e: 'die', u: u.id });
     }
   }
+  siegeRound(s, ev);
   if (checkOver(s, ev)) return;
   s.queue = makeQueue(s);
   s.waited = [];
+}
+
+/** Начало раунда в осаде: таран бьёт ворота, затем стену рядом; башни стреляют по самому сильному. Без бросков: одинаково и в расчёте бота. */
+function siegeRound(s: BattleState, ev: BattleEvent[]): void {
+  if (!s.walls) return;
+  const gate = s.walls.find((w) => w.gate && w.hp > 0);
+  const seg = gate ?? s.walls.filter((w) => w.hp > 0 && !w.tower).sort((a, b) => Math.abs(cellY(a.cell) - GATE_ROW) - Math.abs(cellY(b.cell) - GATE_ROW))[0];
+  if (seg) {
+    seg.hp--;
+    ev.push({ e: 'wall', cell: seg.cell, hp: seg.hp });
+  }
+  for (let i = 0; i < (s.towers ?? 0); i++) {
+    const foes = s.units.filter((u) => u.side === 0 && u.count > 0 && !isHidden(u));
+    if (!foes.length) break;
+    const t = foes.reduce((a, b) => (unitValue(b) > unitValue(a) ? b : a));
+    const h = wound(s, t, 30 + (s.fort ?? 1) * 15);
+    ev.push({ e: 'tower', t: t.id, dmg: h.dmg, left: h.left });
+    if (t.count === 0) ev.push({ e: 'die', u: t.id });
+  }
 }
 
 function endRound(s: BattleState): void {
@@ -736,7 +820,12 @@ function connected(blocked: Set<number>): boolean {
 }
 
 function makeHero(setup: SideSetup): HeroState {
+  if (!setup.hero) {
+    const f = setup.army[0] ? CREATURES[setup.army[0].cre].faction : 'neutral';
+    return { pick: null, label: setup.label, faction: f, atk: 0, def: 0, power: 0, know: 0, mana: 0, morale: 0, luck: 0, spells: [], cast: false, ...setup.stats };
+  }
   const cls = classOf(setup.hero.cls);
+  if (setup.stats) return { pick: setup.hero, faction: cls.faction, cast: false, ...setup.stats };
   return {
     pick: setup.hero, faction: cls.faction, atk: cls.atk, def: cls.def, power: cls.power, know: cls.know, mana: cls.know * 10,
     morale: cls.atk >= 5 ? 2 : 1, luck: cls.power >= 5 ? 2 : 1, spells: cls.spells, cast: false,
@@ -769,7 +858,9 @@ export function createBattle(setup: BattleSetup): BattleState {
       const c = cellOf(r.int(3, 6), r.int(0, FIELD_H - 1));
       if (list.some((o) => o.cell === c)) continue;
       const art = r.int(1, 10);
-      list.push({ cell: c, art }, { cell: mirrorCell(c), art });
+      list.push({ cell: c, art });
+      // в осаде правый край занят стеной: камни только перед ней
+      if (!setup.siege) list.push({ cell: mirrorCell(c), art });
     }
     if (connected(new Set(list.map((o) => o.cell)))) {
       obstacles = list;
@@ -785,7 +876,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     while (bog.length < n * 2) {
       const c = cellOf(r.int(3, 6), r.int(0, FIELD_H - 1));
       if (bog.includes(c) || obstacles.some((o) => o.cell === c)) continue;
-      bog.push(c, mirrorCell(c));
+      bog.push(c, setup.siege ? cellOf(r.int(3, 6), r.int(0, FIELD_H - 1)) : mirrorCell(c));
     }
   }
   const sky: School[] = [];
@@ -793,6 +884,18 @@ export function createBattle(setup: BattleSetup): BattleState {
   const s: BattleState = {
     seed: setup.seed, rng: r.s, round: 0, field: setup.field, sides, units, queue: [], waited: [], current: -1, obstacles, bog, bogOwner, sky, over: false, winner: -1,
   };
+  if (setup.siege) {
+    s.fort = setup.siege;
+    s.siegeFaction = setup.siegeFaction;
+    s.towers = setup.siege - 1;
+    s.walls = [];
+    for (let y = 0; y < FIELD_H; y++) {
+      const gate = y === GATE_ROW;
+      // крепость — одна башня, твердыня — две
+      const tower = setup.siege >= 2 && (y === TOWER_ROWS[1] || (setup.siege >= 3 && y === TOWER_ROWS[0]));
+      s.walls.push({ cell: cellOf(WALL_X, y), hp: gate ? 1 + setup.siege : tower ? 99 : 2, gate, tower: tower || undefined });
+    }
+  }
   const ev: BattleEvent[] = [];
   startRound(s, ev);
   nextTurn(s, ev);
@@ -807,6 +910,7 @@ export function cloneBattle(s: BattleState): BattleState {
     units: s.units.map((u) => ({ ...u, effects: u.effects.map((e) => ({ ...e })) })),
     queue: [...s.queue],
     waited: [...s.waited],
+    walls: s.walls?.map((w) => ({ ...w })),
   };
 }
 

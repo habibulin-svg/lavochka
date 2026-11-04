@@ -329,9 +329,9 @@ items:
   seeds:
   - 21
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A building of a fantasy town, a deep catfish pit with a wooden rail, in the style of northern swamp architecture: houses on stilts,
-    reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated object, centered, whole object
-    in frame with margin, plain light grey background.'
+    warm sunlight and soft shadows. A building of a fantasy town, a big mossy troll den under a fallen tree with a fence of bones, in the style of northern swamp
+    architecture: houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
 - name: bld-zatonye-dwell7
   width: 1024
   height: 1024
@@ -674,9 +674,9 @@ items:
   seeds:
   - 21
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A building of a fantasy town, a sky whale mooring tower, in the style of star academy architecture: white stone and pine wood
-    towers, silver observatory domes, glass galleries, lanterns, three-quarter view. Single isolated object, centered, whole object in frame with margin, plain light
-    grey background.'
+    warm sunlight and soft shadows. A building of a fantasy town, a moonlit dragon perch tower with a wide stone platform, in the style of star academy architecture:
+    white stone and pine wood towers, silver observatory domes, glass galleries, lanterns, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
 - name: bld-akademiya-dwell7
   width: 1024
   height: 1024

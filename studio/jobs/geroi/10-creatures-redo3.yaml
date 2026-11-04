@@ -1,0 +1,27 @@
+# Герои, переделки партии 10-creatures после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 47
+- 48
+style: Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, bright but refined colors. Full body, whole
+  figure in frame with margin, standing in a three-quarter view facing right, seen slightly from above, centered, plain light grey background.
+items:
+- name: zatonye-troll
+  prompt: 'A huge hunched swamp troll with grey-green warty skin, very long arms, moss and reeds growing on its shoulders, a wide toothy mouth, standing. Colors and
+    style: misty swamp folk, moss green, murky teal and reed ochre. {style}'
+- name: zatonye-bogtroll
+  prompt: 'A massive ancient bog troll covered in thick moss and hanging waterweed, driftwood antlers, huge hands and glowing yellow eyes, standing. Colors and style:
+    misty swamp folk, moss green, murky teal and reed ochre. {style}'
+- name: akademiya-moondragon
+  prompt: 'A slim pale silver-blue dragon with wide feathered wings, a calm face and small star-like spots, standing on four legs with wings spread. Colors and style:
+    star academy mages, night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-stardragon
+  prompt: 'A majestic white-gold dragon with wide wings dusted with glowing constellations and a star on its forehead, standing on four legs with wings spread. Colors
+    and style: star academy mages, night blue, silver, deep green and warm gold. {style}'

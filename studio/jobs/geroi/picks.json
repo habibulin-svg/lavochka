@@ -885,5 +885,29 @@
   "spell-air-08": 55,
   "spell-air-09": 55,
   "spell-air-10": 55
+ },
+ "10-creatures-redo3": {
+  "akademiya-moondragon": 47,
+  "akademiya-stardragon": 47,
+  "zatonye-troll": 48,
+  "zatonye-bogtroll": 48
+ },
+ "12-towns-redo2": {
+  "bld-akademiya-dwell6": 25,
+  "bld-zatonye-dwell6": 24
+ },
+ "14b-siege": {
+  "wall-zatulye": 73,
+  "gate-zatulye": 74,
+  "tower-zatulye": 73,
+  "wall-zatonye": 73,
+  "gate-zatonye": 74,
+  "tower-zatonye": 74,
+  "wall-kuznya": 73,
+  "gate-kuznya": 74,
+  "tower-kuznya": 73,
+  "wall-akademiya": 73,
+  "gate-akademiya": 74,
+  "tower-akademiya": 73
  }
 }

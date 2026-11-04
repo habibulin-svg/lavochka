@@ -11,9 +11,10 @@ import {
   skyAt, spellError, spellPower, unitAt,
 } from './sim/battle';
 import { CREATURES, hasAb } from './sim/creatures';
-import { heroName, heroPortrait } from './sim/heroes';
+import { heroPortrait, sideName } from './sim/heroes';
 import { CELLS, neighbors } from './sim/hex';
 import { SPELLS, type School, spellIcon } from './sim/spells';
+import type { World } from './sim/adv/world';
 import { button, creatureIcon, creatureLines, h, modal } from './ui/common';
 
 export type Who = 'human' | 'remote' | BotLevel;
@@ -81,16 +82,18 @@ export class Game {
   onQuit: () => void = () => {};
   onLoad: (s: Save) => void = () => {};
   onRematch: () => void = () => {};
+  /** Бой из партии на карте: сохранение несёт мир, итог уходит в него. */
+  adv: { world: () => World; onFinish: (s: BattleState) => void } | null = null;
 
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2, o: GameOptions) {
-    this.state = o.restore ? o.restore.state : createBattle(o.setup!);
+    this.state = o.restore?.state ?? createBattle(o.setup!);
     this.who = o.who;
     this.net = o.net ?? null;
     this.view = new BattleView(this.canvasHost, audio);
     this.view.instant = !!o.fast;
     this.lastRound = this.state.round;
     this.start0 = this.state.units.map((u) => u.start);
-    const names = this.state.sides.map((x) => heroName(x.pick));
+    const names = this.state.sides.map((x) => sideName(x));
     this.title = `${names[0]} и ${names[1]}, раунд`;
   }
 
@@ -105,7 +108,7 @@ export class Game {
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('resize', this.fit);
     this.fitHud();
-    this.audio.music('battle');
+    this.audio.music(this.state.walls ? 'siege' : 'battle');
     this.audio.sfx('battle-start');
     this.refresh();
     if (this.net) {
@@ -305,7 +308,7 @@ export class Game {
   }
 
   private saveData(): Save {
-    return { at: Date.now(), title: `${this.title} ${this.state.round}`, state: this.state, who: this.who };
+    return { at: Date.now(), title: `${this.title} ${this.state.round}`, state: this.state, who: this.who, adv: this.adv?.world() };
   }
 
   private prepareInput(): void {
@@ -429,10 +432,12 @@ export class Game {
     const el = this.plates[side];
     el.replaceChildren();
     const img = h('img');
-    img.src = `/geroi/a/heroes/${heroPortrait(x.pick)}.webp`;
+    // у нейтралов и гарнизона героя нет
+    if (x.pick) img.src = `/geroi/a/heroes/${heroPortrait(x.pick)}.webp`;
+    else img.hidden = true;
     img.alt = '';
     const text = h('div', 'g-hero-text');
-    text.append(h('b', '', heroName(x.pick)), h('span', 'dim', this.net ? this.net.names[side] : WHO_NAME[this.who[side]]));
+    text.append(h('b', '', sideName(x)), h('span', 'dim', this.net ? this.net.names[side] : WHO_NAME[this.who[side]]));
     const stats = h('div', 'g-stats');
     for (const [icon, v] of [['01', x.atk], ['02', x.def], ['03', x.power], ['04', x.know]] as const) {
       const c = h('span');
@@ -515,7 +520,7 @@ export class Game {
         const kills = e.hits.reduce((n, x) => n + x.kills, 0);
         const dmg = e.hits.reduce((n, x) => n + x.dmg, 0);
         this.logEl.textContent = `${name(e.u)} ${e.retal ? 'отвечают' : e.shot ? 'стреляют' : 'бьют'}: ${Math.round(dmg)} урона${kills ? `, пало ${kills}` : ''}${e.luck ? ' · удача!' : ''}`;
-      } else if (e.e === 'spell') this.logEl.textContent = `${heroName(s.sides[e.side].pick)} колдует: ${SPELLS[e.spell].name}`;
+      } else if (e.e === 'spell') this.logEl.textContent = `${sideName(s.sides[e.side])} колдует: ${SPELLS[e.spell].name}`;
       else if (e.e === 'round') this.logEl.textContent = `Раунд ${e.n}`;
     }
   }
@@ -540,7 +545,7 @@ export class Game {
     if (!u || !this.input) return;
     const hero = s.sides[u.side];
     const { box, close } = modal(this.overlay, 'g-book');
-    box.append(h('h3', '', `Книга: ${heroName(hero.pick)} · мана ${hero.mana}`));
+    box.append(h('h3', '', `Книга: ${sideName(hero)} · мана ${hero.mana}`));
     const grid = h('div', 'g-spells');
     for (const id of hero.spells) {
       const sp = SPELLS[id];
@@ -703,7 +708,7 @@ export class Game {
     const won = humans.length ? humans.includes(s.winner) : s.winner >= 0;
     this.audio.music(won ? 'victory' : 'defeat');
     this.audio.sfx(won ? 'battle-win' : 'battle-lose');
-    const title = s.winner < 0 ? 'Ничья' : humans.length === 1 ? (won ? 'Победа!' : 'Поражение') : `Победа: ${this.net ? this.net.names[s.winner] : heroName(s.sides[s.winner].pick)}`;
+    const title = s.winner < 0 ? 'Ничья' : humans.length === 1 ? (won ? 'Победа!' : 'Поражение') : `Победа: ${this.net ? this.net.names[s.winner] : sideName(s.sides[s.winner])}`;
     const { box } = modal(this.overlay, 'g-result');
     box.append(h('h2', '', title));
     const result = this.net?.result;
@@ -714,7 +719,7 @@ export class Game {
     const cols = h('div', 'g-losses');
     for (const side of [0, 1] as const) {
       const col = h('div');
-      col.append(h('b', '', `${heroName(s.sides[side].pick)} · осталось силы ${Math.round(sideValue(s, side))}`));
+      col.append(h('b', '', `${sideName(s.sides[side])} · осталось силы ${Math.round(sideValue(s, side))}`));
       for (const u of s.units) {
         if (u.side !== side) continue;
         const row = h('div', 'g-loss');
@@ -723,7 +728,10 @@ export class Game {
       }
       cols.append(col);
     }
-    if (this.net) box.append(cols, button('К Арене', () => this.onQuit()));
+    if (this.adv) {
+      const finish = this.adv.onFinish;
+      box.append(cols, button('Дальше', () => finish(this.state), 'g-btn main'));
+    } else if (this.net) box.append(cols, button('К Арене', () => this.onQuit()));
     else box.append(cols, button('Ещё раз', () => this.onRematch()), button('В меню игры', () => this.onQuit()));
   }
 }

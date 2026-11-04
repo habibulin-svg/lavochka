@@ -43,5 +43,7 @@ export interface HeroPick {
 
 export const heroName = (p: HeroPick): string => NAMES[p.cls][p.n - 1];
 export const heroPortrait = (p: HeroPick): string => `hero-${p.cls}-${p.n}`;
+/** Подпись стороны боя: без героя — «Нейтралы» или гарнизон. */
+export const sideName = (x: { pick: HeroPick | null; label?: string }): string => (x.pick ? heroName(x.pick) : x.label ?? 'Нейтралы');
 export const classOf = (id: string): HeroClass => CLASSES.find((c) => c.id === id)!;
 export const factionClasses = (f: Faction): HeroClass[] => CLASSES.filter((c) => c.faction === f);

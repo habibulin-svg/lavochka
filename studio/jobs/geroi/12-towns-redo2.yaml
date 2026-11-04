@@ -1,0 +1,27 @@
+# Герои, переделки партии 12-towns после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 24
+- 25
+items:
+- name: bld-zatonye-dwell6
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a big mossy troll den under a fallen tree with a fence of bones, in the style of northern swamp
+    architecture: houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist, three-quarter view. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell6
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a moonlit dragon perch tower with a wide stone platform, in the style of star academy architecture:
+    white stone and pine wood towers, silver observatory domes, glass galleries, lanterns, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'

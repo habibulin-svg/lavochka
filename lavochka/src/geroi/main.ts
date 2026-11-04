@@ -1,5 +1,5 @@
 /* Вход «Героев». Без параметров — заставка студии и меню. Для разработки: /geroi.html?a=zatulye&b=kuznya&p1=hard&p2=hard&seed=5&budget=20000&fast=1
- * (p1, p2: human|easy|medium|hard; fast — бой без показа). */
+ * (p1, p2: human|easy|medium|hard; fast — бой без показа); /geroi.html?map=1&a=zatulye&b=kuznya&seed=5 — сразу партия на карте. */
 import { type Release, mayPlay } from '../core/release';
 import type { RightGrant } from '../core/rights';
 import { Audio2 } from './audio';
@@ -12,6 +12,9 @@ import { button, h } from './ui/common';
 import { ArenaClient } from './net/client';
 import type { NetClientMsg, NetServerMsg } from './net/protocol';
 import { Arena } from './ui/arena';
+import { AdvGame } from './ui/adv';
+import { type GameSpec, makeTestMap } from './sim/adv/testmap';
+import type { TownFaction } from './sim/adv/town';
 import { Menu, type QuickConfig } from './ui/menu';
 import './ui/geroi.css';
 
@@ -20,10 +23,28 @@ const q = new URLSearchParams(location.search);
 const audio = new Audio2();
 const menu = new Menu(host, audio);
 let game: Game | null = null;
+let adv: AdvGame | null = null;
 
 function stop(): void {
   game?.destroy();
   game = null;
+  adv?.destroy();
+  adv = null;
+}
+
+/** Партия на карте: новая или из сохранения. */
+async function startAdv(world: Save['adv'], battle?: Save['state']): Promise<void> {
+  stop();
+  menu.hide();
+  const a = new AdvGame(host, audio, { world: world!, battle });
+  adv = a;
+  a.onQuit = () => {
+    stop();
+    menu.title();
+  };
+  a.onLoad = (s) => void resume(s);
+  (window as unknown as { geroiMap: AdvGame }).geroiMap = a;
+  await a.start();
 }
 
 function wire(g: Game): void {
@@ -53,6 +74,7 @@ async function quick(c: QuickConfig, fast = false): Promise<void> {
 }
 
 async function resume(s: Save): Promise<void> {
+  if (s.adv) return startAdv(s.adv, s.state);
   stop();
   menu.hide();
   const g = new Game(host, audio, { who: s.who, restore: s });
@@ -170,6 +192,7 @@ menu.onArena = () => arena.home();
 
 menu.onQuick = (c) => void quick(c);
 menu.onLoad = (s) => void resume(s);
+menu.onMap = (spec: GameSpec) => void startAdv(makeTestMap(spec));
 
 /** Заставка студии — раз за вкладку; браузер не дал звук — ждём щелчка. */
 function splash(next: () => void): void {
@@ -208,6 +231,17 @@ async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
   const fa = q.get('a') as Faction | null;
+  if (q.has('map')) {
+    const f0 = (fa ?? 'zatulye') as TownFaction;
+    const f1 = (q.get('b') ?? 'zatonye') as TownFaction;
+    return startAdv(makeTestMap({
+      seed: Number(q.get('seed') ?? 5),
+      players: [
+        { name: 'Первый', faction: f0, hero: { cls: factionClasses(f0)[0].id, n: 1 } },
+        { name: 'Второй', faction: f1, hero: { cls: factionClasses(f1)[0].id, n: 2 } },
+      ],
+    }));
+  }
   if (fa) {
     const fb = (q.get('b') ?? 'zatonye') as Faction;
     const seed = Number(q.get('seed') ?? Date.now() % 100000);

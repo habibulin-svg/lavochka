@@ -45,11 +45,12 @@ items:
 - name: akademiya-borguard
   prompt: 'An ancient huge treant: a walking humanoid of mossy pine bark with branch arms, pine cones and glowing amber sap in the cracks. Colors and style: star
     academy mages, night blue, silver, deep green and warm gold. {style}'
-- name: akademiya-skywhale
-  prompt: 'A flying sky whale with soft blue skin, star-like spots and small fins. Colors and style: star academy mages, night blue, silver, deep green and warm gold.
-    {style}'
-- name: akademiya-starwhale
-  prompt: 'A majestic star whale glowing with constellations. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-moondragon
+  prompt: 'A slim pale silver-blue dragon with wide feathered wings, a calm face and small star-like spots, standing on four legs with wings spread. Colors and style:
+    star academy mages, night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-stardragon
+  prompt: 'A majestic white-gold dragon with wide wings dusted with glowing constellations and a star on its forehead, standing on four legs with wings spread. Colors
+    and style: star academy mages, night blue, silver, deep green and warm gold. {style}'
 - name: akademiya-fallenstar
   prompt: 'A star elemental: a tall slender humanoid figure made of white-gold starlight flame, glowing core in the chest, arms raised. Colors and style: star academy
     mages, night blue, silver, deep green and warm gold. {style}'

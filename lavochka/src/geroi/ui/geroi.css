@@ -167,3 +167,94 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .g-clock.low { color: #ff7a60; }
 .g-game .talk { left: 14px; top: auto; bottom: 14px; font-family: 'Geroi Text', Georgia, serif; z-index: 4; }
 .g-banner { position: absolute; top: 200px; left: 50%; transform: translateX(-50%); padding: 8px 22px; font-size: 22px; background: #5a1f14ee; border: 1px solid #ff8d7a; border-radius: 6px; pointer-events: none; z-index: 4; }
+
+/* ------------------------------------------------------------------ карта приключений */
+.a-hud .a-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 320px; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: linear-gradient(#2a2118, #1a140e); border-left: 2px solid var(--brass); pointer-events: auto; box-sizing: border-box; font-family: 'Geroi Text', Georgia, serif; color: var(--ink); }
+.a-minibox { position: relative; width: 280px; height: 280px; border: 1px solid var(--brass); background: #0c0a08; overflow: hidden; cursor: pointer; flex: none; }
+.a-mini { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.a-miniframe { position: absolute; border: 1.5px solid #fff; pointer-events: none; }
+.a-info { display: flex; flex-direction: column; gap: 2px; font-size: 19px; }
+.a-info b { font: 700 24px 'Geroi Title', Georgia, serif; }
+.a-info .dim, .a-hud .dim { color: var(--dim); }
+.a-heroes { display: flex; flex-wrap: wrap; gap: 8px; }
+.a-herocard { position: relative; padding: 0; width: 76px; height: 68px; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; cursor: pointer; display: flex; overflow: hidden; }
+.a-herocard.on { border-color: var(--brass2); box-shadow: 0 0 0 1px var(--brass2); }
+.a-portrait { object-fit: cover; object-position: 50% 0; border-radius: 4px; display: block; }
+.a-portrait.small { width: 72px; height: 72px; cursor: pointer; }
+.a-bars { position: absolute; right: 2px; top: 2px; bottom: 2px; width: 7px; background: #0008; border-radius: 3px; display: flex; align-items: flex-end; overflow: hidden; }
+.a-bars .mp { width: 100%; background: #7fdc6a; }
+.a-towns { display: flex; flex-direction: column; gap: 6px; }
+.a-townbtn { text-align: left; }
+.a-buttons { display: flex; gap: 8px; margin-top: auto; }
+.a-panel .g-btn.main { padding: 12px 10px; }
+.a-resbar { display: flex; gap: 20px; align-items: center; padding: 8px 18px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 6px; font: 600 22px 'Geroi Num', sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
+.a-resbar span { display: inline-flex; align-items: center; gap: 6px; }
+.a-resbar-map { position: absolute; left: 16px; bottom: 14px; pointer-events: auto; }
+.a-icon { vertical-align: middle; border-radius: 3px; }
+.a-tip { position: absolute; left: 16px; top: 14px; max-width: 1200px; padding: 8px 16px; background: #1f1812ee; border: 1px solid #5d4a2d; border-radius: 5px; color: var(--ink); font: 400 21px 'Geroi Text', Georgia, serif; }
+.a-pass { padding: 40px 70px; text-align: center; font-family: 'Geroi Text', Georgia, serif; color: var(--ink); }
+.a-pass h2 { font: 700 44px 'Geroi Title', Georgia, serif; margin: 0 0 12px; color: var(--brass2); }
+.a-pass .g-btn { margin-top: 18px; }
+.a-hud .g-modal:has(.a-pass) { background: #0c0a08; }
+.a-battleask { padding: 28px 46px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; font: 400 22px 'Geroi Text', Georgia, serif; color: var(--ink); }
+.a-battleask h2 { font: 700 34px 'Geroi Title', Georgia, serif; margin: 0; color: var(--brass2); }
+.a-skillpick { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: 400 19px 'Geroi Text', Georgia, serif; margin-top: 8px; }
+.a-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.a-why { color: #e8927c; margin: 2px 0; font-size: 16px; }
+/* лист героя */
+.a-sheet { width: 880px; max-height: 1000px; overflow-y: auto; padding: 22px 28px; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; }
+.a-sheet h2 { font: 700 34px 'Geroi Title', Georgia, serif; margin: 0; color: var(--brass2); }
+.a-sheet h3 { font: 700 21px 'Geroi Title', Georgia, serif; margin: 12px 0 6px; color: var(--brass2); }
+.a-sheet p { margin: 2px 0 8px; }
+.a-sheet-top { display: flex; gap: 18px; align-items: flex-start; }
+.a-stats { display: grid; grid-template-columns: repeat(4, 130px); gap: 8px 6px; font: 600 22px 'Geroi Num', sans-serif; }
+.a-stats span { display: inline-flex; align-items: center; gap: 8px; }
+.a-skills, .a-book { display: flex; flex-wrap: wrap; gap: 8px; }
+.a-skills span { position: relative; }
+.a-skills em { position: absolute; right: -2px; bottom: -2px; min-width: 18px; text-align: center; background: #241c14; border: 1px solid var(--brass); border-radius: 50%; font: 600 14px 'Geroi Num', sans-serif; font-style: normal; }
+.a-arts { display: flex; flex-wrap: wrap; gap: 6px; }
+.a-art { width: 66px; height: 66px; padding: 2px; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; color: var(--dim); cursor: pointer; }
+.a-art.empty { cursor: default; opacity: .7; }
+.a-art small { font-size: 12px; }
+/* ряд отрядов */
+.a-army { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.a-army-label { width: 118px; font: 700 18px 'Geroi Title', Georgia, serif; color: var(--brass2); overflow: hidden; text-overflow: ellipsis; }
+.a-slot { position: relative; width: 80px; height: 80px; padding: 0; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.a-slot.on { border-color: #ffe08a; box-shadow: 0 0 0 2px #ffe08a; }
+.a-slot em { position: absolute; right: 2px; bottom: 1px; padding: 0 5px; background: #241c14e6; border-radius: 3px; color: #fff4d8; font: 600 17px 'Geroi Num', sans-serif; font-style: normal; }
+/* замок */
+.a-town { position: absolute; inset: 0; background: #0c0a08; pointer-events: auto; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; }
+.a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.a-bld { position: absolute; cursor: pointer; filter: drop-shadow(0 6px 6px #0007); transition: filter .12s; }
+.a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
+.a-town > .a-resbar { position: absolute; left: 16px; top: 14px; }
+.a-town-side { position: absolute; right: 16px; top: 14px; width: 270px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; }
+.a-town-side h2 { font: 700 26px 'Geroi Title', Georgia, serif; margin: 0; color: var(--brass2); }
+.a-town-side p { margin: 0 0 6px; font-size: 16px; color: var(--dim); }
+.a-town-bottom { position: absolute; left: 16px; bottom: 12px; padding: 10px 14px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; display: flex; flex-direction: column; gap: 2px; }
+.a-hintline { margin: 4px 0 0; font-size: 15px; color: var(--dim); }
+.a-build, .a-recruit, .a-market { padding: 20px 26px; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; max-height: 980px; overflow-y: auto; }
+.a-build { width: 1300px; }
+.a-recruit { width: 860px; }
+.a-market { width: 560px; }
+.a-build h3, .a-recruit h3, .a-market h3 { font: 700 26px 'Geroi Title', Georgia, serif; margin: 0 0 10px; color: var(--brass2); }
+.a-build-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.a-build-card { display: grid; grid-template-columns: 76px 1fr; gap: 4px 10px; padding: 8px; background: #2a2118; border: 1px solid #5d4a2d; border-radius: 6px; align-items: start; }
+.a-build-card.off { opacity: .68; }
+.a-build-card > img { width: 76px; height: 76px; object-fit: contain; }
+.a-build-card b { font: 700 18px 'Geroi Title', Georgia, serif; }
+.a-build-card p { margin: 2px 0; font-size: 15px; }
+.a-build-card .g-btn { grid-column: 1 / -1; }
+.a-price { display: inline-flex; flex-wrap: wrap; gap: 10px; font: 600 17px 'Geroi Num', sans-serif; }
+.a-price span { display: inline-flex; align-items: center; gap: 4px; }
+.a-price .lack { color: #ef7d66; }
+.a-recruit-row { display: grid; grid-template-columns: 96px 1fr 170px 40px 110px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid #3a2e1e; }
+.a-recruit-row p { margin: 2px 0; font-size: 16px; }
+.a-recruit-row b { font: 700 19px 'Geroi Title', Georgia, serif; }
+.a-count { font: 600 20px 'Geroi Num', sans-serif !important; text-align: right; }
+.a-recruit .g-btn:last-child { margin-top: 12px; }
+.a-res-pick { display: flex; gap: 6px; margin-bottom: 8px; }
+.a-res-pick button { position: relative; width: 62px; height: 62px; padding: 2px; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; cursor: pointer; }
+.a-res-pick button.on { border-color: #ffe08a; box-shadow: 0 0 0 2px #ffe08a; }
+.a-res-pick em { position: absolute; right: 3px; bottom: 1px; font: 600 14px 'Geroi Num', sans-serif; font-style: normal; color: #fff4d8; }
+.a-market input[type=range], .a-recruit input[type=range] { width: 100%; }

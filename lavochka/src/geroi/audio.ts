@@ -21,12 +21,21 @@ const write = (k: string, on: boolean): void => {
   }
 };
 
-export type Situation = 'menu' | 'battle' | 'victory' | 'defeat';
+export type Situation = 'menu' | 'battle' | 'victory' | 'defeat' | 'siege' | 'map' | 'map-swamp' | 'map-ash' | 'map-pine' | 'town-zatulye' | 'town-zatonye' | 'town-kuznya' | 'town-akademiya';
 const TRACKS: Record<Situation, string[]> = {
   menu: ['menu', 'menu-vox'],
   battle: ['battle', 'battle-b', 'battle-c'],
   victory: ['victory'],
   defeat: ['defeat'],
+  siege: ['siege'],
+  map: ['map'],
+  'map-swamp': ['map-swamp'],
+  'map-ash': ['map-ash'],
+  'map-pine': ['map-pine'],
+  'town-zatulye': ['town-zatulye'],
+  'town-zatonye': ['town-zatonye'],
+  'town-kuznya': ['town-kuznya'],
+  'town-akademiya': ['town-akademiya'],
 };
 const SINGLE: Situation[] = ['victory', 'defeat'];
 

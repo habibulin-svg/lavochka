@@ -1,6 +1,6 @@
 /* Заклинания первого выпуска: 4 школы, запись в данных. Иконка — public/geroi/a/icons/spell-<школа>-<NN>.webp. */
 export type School = 'fire' | 'water' | 'earth' | 'air';
-export type SpellKind = 'damage' | 'aoe' | 'heal' | 'buff' | 'curse' | 'stun';
+export type SpellKind = 'damage' | 'aoe' | 'heal' | 'buff' | 'curse' | 'stun' | 'adv';
 
 export interface SpellDef {
   id: string;
@@ -36,5 +36,17 @@ add({ id: 'lightning', name: 'Молния', school: 'air', icon: 1, mana: 8, ki
 add({ id: 'haste', name: 'Ускорение', school: 'air', icon: 3, mana: 5, kind: 'buff', base: 2, perPower: 0, stat: 'speed', rounds: 2, text: '+2 к скорости' });
 add({ id: 'precision', name: 'Меткость', school: 'air', icon: 4, mana: 5, kind: 'buff', base: 4, perPower: 0, stat: 'atk', rounds: 1, text: '+4 к атаке' });
 add({ id: 'gust', name: 'Порыв ветра', school: 'air', icon: 10, mana: 4, kind: 'curse', base: -1, perPower: 0, stat: 'speed', rounds: 1, text: '−1 к скорости' });
+
+// Заклинания карты: в книге боя их нет
+add({ id: 'town-portal', name: 'Врата домой', school: 'air', icon: 7, mana: 16, kind: 'adv', base: 0, perPower: 0, text: 'перенос в ближайший свой город' });
+add({ id: 'view-air', name: 'Взор ветра', school: 'air', icon: 8, mana: 4, kind: 'adv', base: 0, perPower: 0, text: 'открыть округу на 12 клеток' });
+add({ id: 'summon-boat', name: 'Лодка', school: 'water', icon: 10, mana: 8, kind: 'adv', base: 0, perPower: 0, text: 'лодка к ближайшему берегу' });
+
+/** Круг заклинания: что можно учить в гильдиях и святилищах (3-й — с Мудростью). */
+export const SPELL_LEVEL: Record<string, number> = {
+  'fire-arrow': 1, bloodlust: 1, 'stone-skin': 1, haste: 1, weakness: 1, gust: 1, 'view-air': 1, 'ice-bolt': 1,
+  'heal-light': 2, slow: 2, blessing: 2, precision: 2, sorrow: 2, flash: 2, 'summon-boat': 2,
+  fireball: 3, lightning: 3, meteors: 3, 'town-portal': 3,
+};
 
 export const spellIcon = (s: SpellDef): string => `spell-${s.school}-${String(s.icon).padStart(2, '0')}`;

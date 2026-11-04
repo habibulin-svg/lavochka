@@ -6,6 +6,8 @@ import { type ArmySlot, randomArmy } from '../sim/army';
 import type { BattleSetup } from '../sim/battle';
 import { CREATURES, FACTIONS, type Faction, factionCreatures } from '../sim/creatures';
 import { type HeroPick, factionClasses, heroName, heroPortrait } from '../sim/heroes';
+import type { GameSpec } from '../sim/adv/testmap';
+import type { TownFaction } from '../sim/adv/town';
 import { button, creatureIcon, creatureLines, h, modal } from './common';
 
 const BUDGETS = [5000, 10000, 20000, 40000, 80000];
@@ -29,6 +31,7 @@ export class Menu {
   onQuick: (c: QuickConfig) => void = () => {};
   onLoad: (s: Save) => void = () => {};
   onArena: () => void = () => {};
+  onMap: (s: GameSpec) => void = () => {};
   private last: QuickConfig | null = null;
 
   constructor(host: HTMLElement, private readonly audio: Audio2) {
@@ -54,12 +57,13 @@ export class Menu {
     });
     col.append(
       button('Арена', () => this.onArena(), 'g-btn main'),
+      button('Карта: за одним экраном', () => this.mapSetup()),
       button('Быстрый бой', () => this.quick()),
       button('Загрузить', () => this.load()),
       music,
       button('Во двор', () => (location.href = '/')),
     );
-    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ · первый выпуск: «Арена»'));
+    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена» и карта за одним экраном'));
   }
 
   locked(signedIn: boolean): void {
@@ -84,6 +88,59 @@ export class Menu {
     });
     col.append(button('Назад', () => this.title()));
     this.screen(col);
+  }
+
+  /** Партия на карте «Две реки»: двое за одним экраном; боты на карте — этап 5. */
+  mapSetup(): void {
+    const sides: { faction: Faction; hero: HeroPick; name: string }[] = [
+      { faction: 'zatulye', hero: { cls: factionClasses('zatulye')[0].id, n: 1 }, name: 'Первый' },
+      { faction: 'zatonye', hero: { cls: factionClasses('zatonye')[0].id, n: 1 }, name: 'Второй' },
+    ];
+    const cols = h('div', 'g-quick');
+    const draw = (): void => {
+      cols.replaceChildren();
+      sides.forEach((s, i) => {
+        const col = h('div', `g-panel g-side side${i}`);
+        const name = h('input', 'g-select');
+        name.value = s.name;
+        name.maxLength = 16;
+        name.oninput = () => (s.name = name.value);
+        const fac = h('select', 'g-select');
+        for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+        fac.onchange = () => {
+          s.faction = fac.value as Faction;
+          s.hero = { cls: factionClasses(s.faction)[0].id, n: 1 };
+          draw();
+        };
+        const row = h('div', 'g-row');
+        row.append(name, fac);
+        col.append(row, h('p', 'dim g-mech', FACTIONS.find((f) => f.id === s.faction)!.mechanic));
+        const heroes = h('div', 'g-heroes');
+        for (const cls of factionClasses(s.faction)) for (let n = 1; n <= 4; n++) {
+          const p = { cls: cls.id, n };
+          const b = h('button', `g-heropick${s.hero.cls === cls.id && s.hero.n === n ? ' on' : ''}`);
+          const img = h('img');
+          img.src = `/geroi/a/heroes/${heroPortrait(p)}.webp`;
+          img.alt = heroName(p);
+          b.title = `${heroName(p)}, ${cls.name}: атака ${cls.atk}, защита ${cls.def}, магия ${cls.power}, знание ${cls.know}`;
+          b.append(img);
+          b.onclick = () => {
+            s.hero = p;
+            draw();
+          };
+          heroes.append(b);
+        }
+        col.append(heroes, h('p', 'g-heroline', `${heroName(s.hero)}, ${factionClasses(s.faction).find((c) => c.id === s.hero.cls)!.name}`));
+        cols.append(col);
+      });
+    };
+    draw();
+    const bar = h('div', 'g-quickbar');
+    bar.append(button('Назад', () => this.title()), button('На карту!', () => {
+      if (sides[0].hero.cls === sides[1].hero.cls && sides[0].hero.n === sides[1].hero.n) return;
+      this.onMap({ seed: Date.now() % 2147483647, players: sides.map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero })) });
+    }, 'g-btn main'));
+    this.screen(h('h2', 'g-quick-title', 'Карта «Две реки»'), cols, bar);
   }
 
   private newSide(f: Faction, who: Who, budget: number): SideCfg {

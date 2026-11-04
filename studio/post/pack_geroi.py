@@ -1,8 +1,8 @@
 """Сборка ассетов «Героев» для игры: отобранное с выхода конвейера → lavochka/public/geroi/a/ (Git LFS).
 
-G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/pack_geroi.py [--only brand,creatures,fields,obstacles,icons,heroes,music,sfx,fonts]
+G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/pack_geroi.py [--only map,mounts,towns,brand,creatures,fields,obstacles,icons,heroes,music,sfx,fonts]
 
-Выбор — studio/jobs/geroi/picks.json (партия → пункт → сид; переделка <партия>-redo[N] важнее партии). Существа — один атлас на существо (кадр 240 px, анимации по строкам)
+Выбор — studio/jobs/geroi/picks.json (партия → пункт → сид; переделка <партия>-redo[N] важнее партии). Существа — один атлас на существо (кадр как в рендере: 320 px, старшие ступени 400 px, анимации по строкам)
 и JSON рядом; поля — WebP 1536; иконки и портреты — WebP; музыка и звуки — Opus. Готовое не пересчитывается (тест tests/geroi/assets.test.ts сверяет ссылки игры с этой папкой).
 Препятствия лежат на сером фоне: перед упаковкой — runners/cutout.py (папка 14-battle/cut).
 """
@@ -19,13 +19,19 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 DST = ROOT / 'lavochka/public/geroi/a'
 FFMPEG = 'G:/ai/ffmpeg/bin/ffmpeg.exe'
 PICKS = json.loads((ROOT / 'studio/jobs/geroi/picks.json').read_text(encoding='utf8'))
-FRAME = 240
 ORDER = ['idle', 'move', 'shoot', 'hit', 'defend', 'death']
 # треки «Арены»: меню и бой (проба 02 + партия 18), имя в игре → файл на выходе конвейера
 MUSIC = {
     'menu': '02-music-proba/menu', 'menu-vox': '02-music-proba/menu-vox', 'battle': '02-music-proba/battle',
     'battle-b': '18-music/battle-b', 'battle-c': '18-music/battle-c', 'victory': '18-music/victory', 'defeat': '18-music/defeat',
+    # карта и замки (этап 3)
+    'map': '02-music-proba/map', 'map-swamp': '18-music/map-swamp', 'map-ash': '18-music/map-ash', 'map-pine': '18-music/map-pine', 'siege': '18-music/siege',
+    'town-zatulye': '02-music-proba/zatulye', 'town-zatonye': '02-music-proba/zatonye', 'town-kuznya': '18-music/town-kuznya', 'town-akademiya': '18-music/town-akademiya',
 }
+GROUNDS = ['meadow', 'swamp', 'ash', 'pine', 'rough', 'sand', 'water', 'underground', 'road-dirt', 'road-stone', 'road-plank']
+FACTIONS = ['zatulye', 'zatonye', 'kuznya', 'akademiya']
+# герой на коне: кадр рендера 256 px, 8 направлений, в ряд idle (8) + move (8)
+MOUNT_FRAME = 256
 
 
 def pick_file(batch: str, name: str, cut: bool = False) -> pathlib.Path:
@@ -52,25 +58,29 @@ def webp(src: pathlib.Path, dst: pathlib.Path, width: int | None = None, q: int 
 def creatures() -> None:
     out = DST / 'creatures'
     out.mkdir(parents=True, exist_ok=True)
+    # только нынешний состав: снятые с игры существа (сомы, киты) лежат на выходе конвейера
+    names = {c['name'] for c in json.loads((ROOT / 'studio/jobs/geroi/creatures.json').read_text(encoding='utf8'))}
     for d in sorted((SRC / '20-creature-3d').iterdir()):
         meta_file = d / 'frames/meta.json'
-        if not meta_file.exists():
+        if d.name not in names or not meta_file.exists():
             continue
         dst = out / f'{d.name}.webp'
-        if dst.exists() and dst.stat().st_mtime >= meta_file.stat().st_mtime:
-            continue
         meta = json.loads(meta_file.read_text(encoding='utf8'))
-        k = FRAME / meta['frameW']
+        info_file = out / f'{d.name}.json'
+        same_size = info_file.exists() and json.loads(info_file.read_text(encoding='utf8'))['frame'] == meta['frameW']
+        if dst.exists() and same_size and dst.stat().st_mtime >= meta_file.stat().st_mtime:
+            continue
+        # кадр — как отрисован, без ужатия: иначе старшие ступени на поле растягиваются и мылятся
+        FRAME = meta['frameW']
         rows = [a for a in ORDER if a in meta['anims']]
         cols = max(meta['anims'][a]['frames'] for a in rows)
         sheet = Image.new('RGBA', (cols * FRAME, len(rows) * FRAME), (0, 0, 0, 0))
         for y, a in enumerate(rows):
             for x in range(meta['anims'][a]['frames']):
-                fr = Image.open(d / f'frames/{a}_{x:02d}.png').convert('RGBA').resize((FRAME, FRAME), Image.LANCZOS)
+                fr = Image.open(d / f'frames/{a}_{x:02d}.png').convert('RGBA')
                 sheet.paste(fr, (x * FRAME, y * FRAME))
         sheet.save(dst, 'WEBP', quality=88, method=6, alpha_quality=90)
-        scale = lambda p: [round(p[0] * k, 1), round(p[1] * k, 1)]  # noqa: E731
-        info = {'frame': FRAME, 'origin': scale(meta['origin']), 'muzzle': scale(meta['muzzle']), 'top': scale(meta['top']),
+        info = {'frame': FRAME, 'origin': meta['origin'], 'muzzle': meta['muzzle'], 'top': meta['top'],
                 'anims': {a: {'row': i, **meta['anims'][a]} for i, a in enumerate(rows)}}
         (out / f'{d.name}.json').write_text(json.dumps(info), encoding='utf8')
         print('существо', d.name, dst.stat().st_size // 1024, 'КБ', flush=True)
@@ -92,11 +102,77 @@ def icons() -> None:
             webp(pick_file('15-icons', f'spell-{sc}-{i:02d}'), DST / f'icons/spell-{sc}-{i:02d}.webp', width=128)
     for i in range(1, 11):
         webp(pick_file('15-icons', f'stat-{i:02d}'), DST / f'icons/stat-{i:02d}.webp', width=96)
+    for i in range(1, 61):
+        webp(pick_file('15-icons', f'art-{i:02d}'), DST / f'icons/art-{i:02d}.webp', width=128)
+    for i in range(1, 25):
+        webp(pick_file('15-icons', f'skill-{i:02d}'), DST / f'icons/skill-{i:02d}.webp', width=96)
+    for r in ('semki', 'wood', 'stone', 'amber', 'salt', 'stariron', 'resin'):
+        webp(pick_file('15-icons', f'icon-{r}'), DST / f'icons/icon-{r}.webp', width=96)
 
 
 def heroes() -> None:
     for name in PICKS['11-heroes']:
         webp(pick_file('11-heroes', name), DST / f'heroes/{name}.webp', width=320)
+
+
+def mapping() -> None:
+    """Карта: грунты бесшовно (резка по шву), объекты и декор — вырезанные."""
+    tmp = pathlib.Path('G:/temp/geroi-seamless')
+    tmp.mkdir(parents=True, exist_ok=True)
+    for g in GROUNDS:
+        src = pick_file('13-map', f'ground-{g}')
+        mid = tmp / f'{g}.png'
+        if not mid.exists():
+            subprocess.run(['python', '-X', 'utf8', str(ROOT / 'studio/post/seamless.py'), str(src), str(mid)], check=True)
+        webp(mid, DST / f'map/ground-{g}.webp', q=80)
+    sizes = {'res-': 180, 'obj-': 400, 'decor-': 280, 'mountain-': 720}
+    for name in PICKS['13-map']:
+        if name.startswith('ground-'):
+            continue
+        width = next(v for k, v in sizes.items() if name.startswith(k))
+        webp(pick_file('13-map', name, cut=True), DST / f'map/{name}.webp', width=width)
+    for f in FACTIONS:
+        webp(pick_file('12-towns', f'map-town-{f}', cut=True), DST / f'map/town-{f}.webp', width=720)
+
+
+def mounts() -> None:
+    out = DST / 'mounts'
+    out.mkdir(parents=True, exist_ok=True)
+    for d in sorted((SRC / '21-mounts-3d').iterdir()):
+        meta_file = d / 'frames/meta.json'
+        if not meta_file.exists():
+            continue
+        name = d.name.removeprefix('mount-')
+        dst = out / f'{name}.webp'
+        if dst.exists() and dst.stat().st_mtime >= meta_file.stat().st_mtime:
+            continue
+        meta = json.loads(meta_file.read_text(encoding='utf8'))
+        k = MOUNT_FRAME / meta['frameW']
+        sheet = Image.new('RGBA', (16 * MOUNT_FRAME, meta['dirs'] * MOUNT_FRAME), (0, 0, 0, 0))
+        for dir_ in range(meta['dirs']):
+            for a, shift in (('idle', 0), ('move', 8)):
+                for i in range(8):
+                    fr = Image.open(d / f'frames/{a}_d{dir_}_{i:02d}.png').convert('RGBA')
+                    if fr.width != MOUNT_FRAME:
+                        fr = fr.resize((MOUNT_FRAME, MOUNT_FRAME), Image.LANCZOS)
+                    sheet.paste(fr, ((shift + i) * MOUNT_FRAME, dir_ * MOUNT_FRAME))
+        sheet.save(dst, 'WEBP', quality=86, method=6, alpha_quality=90)
+        (out / f'{name}.json').write_text(json.dumps({'frame': MOUNT_FRAME, 'origin': [meta['origin'][0] * k, meta['origin'][1] * k], 'top': [meta['top'][0] * k, meta['top'][1] * k]}), encoding='utf8')
+        print('конь', name, dst.stat().st_size // 1024, 'КБ', flush=True)
+
+
+def siege() -> None:
+    for f in FACTIONS:
+        for part in ('wall', 'gate', 'tower'):
+            webp(pick_file('14b-siege', f'{part}-{f}', cut=True), DST / f'siege/{part}-{f}.webp', width=320)
+
+
+def towns() -> None:
+    for f in FACTIONS:
+        webp(pick_file('12-towns', f'town-{f}-site'), DST / f'towns/{f}-site.webp', q=84)
+    for name in PICKS['12-towns']:
+        if name.startswith('bld-'):
+            webp(pick_file('12-towns', name, cut=True), DST / f'towns/{name[4:]}.webp', width=480)
 
 
 def brand() -> None:
@@ -133,7 +209,7 @@ def sfx() -> None:
             print('нет звука', name)
 
 
-STEPS = {'brand': brand, 'creatures': creatures, 'fields': fields, 'obstacles': obstacles, 'icons': icons, 'heroes': heroes, 'music': music, 'sfx': sfx}
+STEPS = {'siege': siege, 'map': mapping, 'mounts': mounts, 'towns': towns, 'brand': brand, 'creatures': creatures, 'fields': fields, 'obstacles': obstacles, 'icons': icons, 'heroes': heroes, 'music': music, 'sfx': sfx}
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

@@ -43,8 +43,8 @@ _Сгенерировано `studio/jobs/geroi/make_jobs.py` — правки в
 | `zatonye-oldwillow` | zatonye | 4 | да | |
 | `zatonye-vodyanitsa` | zatonye | 5 |  | |
 | `zatonye-omutnitsa` | zatonye | 5 | да | |
-| `zatonye-catfish` | zatonye | 6 |  | |
-| `zatonye-kingcatfish` | zatonye | 6 | да | |
+| `zatonye-troll` | zatonye | 6 |  | |
+| `zatonye-bogtroll` | zatonye | 6 | да | |
 | `zatonye-mistserpent` | zatonye | 7 |  | |
 | `zatonye-phantomserpent` | zatonye | 7 | да | |
 | `kuznya-apprentice` | kuznya | 1 |  | |
@@ -71,8 +71,8 @@ _Сгенерировано `studio/jobs/geroi/make_jobs.py` — правки в
 | `akademiya-moonstag` | akademiya | 4 | да | |
 | `akademiya-pineguard` | akademiya | 5 |  | |
 | `akademiya-borguard` | akademiya | 5 | да | |
-| `akademiya-skywhale` | akademiya | 6 |  | |
-| `akademiya-starwhale` | akademiya | 6 | да | |
+| `akademiya-moondragon` | akademiya | 6 |  | |
+| `akademiya-stardragon` | akademiya | 6 | да | |
 | `akademiya-fallenstar` | akademiya | 7 |  | |
 | `akademiya-wanderstar` | akademiya | 7 | да | |
 | `neutral-wolf` | neutral | 2 |  | |

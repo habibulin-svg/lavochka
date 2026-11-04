@@ -6,6 +6,11 @@ import { CATALOG } from '../../src/games/catalog';
 import { CLASSES, heroPortrait } from '../../src/geroi/sim/heroes';
 import { CREATURES, FACTIONS } from '../../src/geroi/sim/creatures';
 import { SPELLS, spellIcon } from '../../src/geroi/sim/spells';
+import { OBJECTS, RES, ROAD_ART, TERRAINS } from '../../src/geroi/sim/adv/data';
+import { ARTIFACTS, SKILLS } from '../../src/geroi/sim/adv/hero';
+import { BUILDINGS, type TownFaction } from '../../src/geroi/sim/adv/town';
+import { makeTestMap } from '../../src/geroi/sim/adv/testmap';
+import { factionClasses } from '../../src/geroi/sim/heroes';
 
 const A = join(__dirname, '../../public/geroi/a');
 
@@ -20,6 +25,28 @@ describe('geroi: выход на сайт', () => {
 });
 
 describe('geroi/assets', () => {
+  it('карта: грунты, объекты, декор, кони, замки, панорамы, осада, иконки, музыка', () => {
+    const need: string[] = [];
+    for (const t of TERRAINS) need.push(`map/ground-${t.id}.webp`);
+    for (const r of ROAD_ART.slice(1)) need.push(`map/ground-${r}.webp`);
+    for (const o of Object.values(OBJECTS)) if (o.art) need.push(`map/${o.art}.webp`);
+    for (const r of RES) need.push(`icons/icon-${r}.webp`);
+    for (const a of Object.keys(ARTIFACTS)) need.push(`icons/${a}.webp`);
+    for (const s of SKILLS) need.push(`icons/skill-${String(s.icon).padStart(2, '0')}.webp`);
+    for (const c of CLASSES) need.push(`mounts/${c.id}.webp`, `mounts/${c.id}.json`);
+    const fs: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
+    for (const f of fs) {
+      need.push(`map/town-${f}.webp`, `towns/${f}-site.webp`, `music/town-${f}.ogg`);
+      for (const p of ['wall', 'gate', 'tower']) need.push(`siege/${p}-${f}.webp`);
+      for (const b of Object.values(BUILDINGS[f])) need.push(`towns/${f}-${b.art}.webp`);
+    }
+    for (const m of ['map', 'map-swamp', 'map-ash', 'map-pine', 'siege']) need.push(`music/${m}.ogg`);
+    const w = makeTestMap({ seed: 1, players: fs.slice(0, 2).map((f) => ({ name: f, faction: f, hero: { cls: factionClasses(f)[0].id, n: 1 } })) });
+    for (const d of w.decor) need.push(`map/${d.art}.webp`);
+    for (const f of ['catapult', 'wall-break', 'tower-shot', 'horse-grass', 'horse-road', 'horse-swamp', 'horse-ash', 'boat-row', 'pickup-semki', 'pickup-res', 'chest-open', 'artifact', 'flag', 'mine-capture', 'shrine', 'levelup', 'newday', 'newweek', 'teleport', 'dig', 'learn', 'water-splash', 'build', 'recruit', 'market', 'gate', 'forge', 'horse-snort', 'ui-click', 'ui-close', 'ui-turn']) need.push(`sfx/${f}.ogg`);
+    expect([...new Set(need)].filter((f) => !existsSync(join(A, f)))).toEqual([]);
+  });
+
   it('существа, звуки, портреты, иконки, поля, препятствия, музыка, шрифты', () => {
     const need: string[] = ['brand/title.webp', 'fonts/AlegreyaSC-Bold.ttf', 'fonts/Lora-Var.ttf', 'fonts/FiraSansCondensed-Bold.ttf'];
     for (const c of Object.values(CREATURES)) {

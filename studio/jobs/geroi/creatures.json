@@ -168,18 +168,18 @@
   "prompt": "A dark pool witch with teal skin, robes of waterweed and a glowing whirlpool orb. Colors and style: misty swamp folk, moss green, murky teal and reed ochre. {style}"
  },
  {
-  "name": "zatonye-catfish",
+  "name": "zatonye-troll",
   "faction": "zatonye",
   "tier": 6,
   "up": 0,
-  "prompt": "A giant whiskered catfish walking on stubby fin-legs with a huge mouth, river mud on its sides. Colors and style: misty swamp folk, moss green, murky teal and reed ochre. {style}"
+  "prompt": "A huge hunched swamp troll with grey-green warty skin, very long arms, moss and reeds growing on its shoulders, a wide toothy mouth, standing. Colors and style: misty swamp folk, moss green, murky teal and reed ochre. {style}"
  },
  {
-  "name": "zatonye-kingcatfish",
+  "name": "zatonye-bogtroll",
   "faction": "zatonye",
   "tier": 6,
   "up": 1,
-  "prompt": "A king catfish giant with a crown of river shells and very long whiskers. Colors and style: misty swamp folk, moss green, murky teal and reed ochre. {style}"
+  "prompt": "A massive ancient bog troll covered in thick moss and hanging waterweed, driftwood antlers, huge hands and glowing yellow eyes, standing. Colors and style: misty swamp folk, moss green, murky teal and reed ochre. {style}"
  },
  {
   "name": "zatonye-mistserpent",
@@ -364,18 +364,18 @@
   "prompt": "An ancient huge treant: a walking humanoid of mossy pine bark with branch arms, pine cones and glowing amber sap in the cracks. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
-  "name": "akademiya-skywhale",
+  "name": "akademiya-moondragon",
   "faction": "akademiya",
   "tier": 6,
   "up": 0,
-  "prompt": "A flying sky whale with soft blue skin, star-like spots and small fins. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
+  "prompt": "A slim pale silver-blue dragon with wide feathered wings, a calm face and small star-like spots, standing on four legs with wings spread. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
-  "name": "akademiya-starwhale",
+  "name": "akademiya-stardragon",
   "faction": "akademiya",
   "tier": 6,
   "up": 1,
-  "prompt": "A majestic star whale glowing with constellations. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
+  "prompt": "A majestic white-gold dragon with wide wings dusted with glowing constellations and a star on its forehead, standing on four legs with wings spread. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
   "name": "akademiya-fallenstar",

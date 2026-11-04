@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { botAction, playOut } from '../../src/geroi/bot/bot';
 import { randomArmy } from '../../src/geroi/sim/army';
 import {
-  type Action, type BattleSetup, type BattleState, act, actionError, adjacent, attackOf, cellsOf, cloneBattle, createBattle, currentUnit, damageFactor, defenseOf, reachOf, sideValue, unitById, unitValue,
+  type Action, type BattleSetup, type BattleState, act, actionError, adjacent, attackOf, cellsOf, cloneBattle, createBattle, currentUnit, damageFactor, defenseOf, occupancy, reachOf, sideValue, unitById, unitValue,
 } from '../../src/geroi/sim/battle';
 import { CREATURES, FACTIONS, type Faction, factionCreatures, hasAb, rootOf } from '../../src/geroi/sim/creatures';
 import { CLASSES, factionClasses } from '../../src/geroi/sim/heroes';
@@ -154,7 +154,7 @@ describe('geroi/battle: правила', () => {
   });
 
   it('большие занимают два гекса и не вылезают за край', () => {
-    const s = createBattle(setup([['zatulye', 'zatulye-tur', 2]], [['zatonye', 'zatonye-catfish', 2]]));
+    const s = createBattle(setup([['zatulye', 'zatulye-tur', 2]], [['zatonye', 'zatonye-troll', 2]]));
     const [a, b] = s.units;
     expect(cellsOf(a)).toHaveLength(2);
     expect(cellsOf(b)).toHaveLength(2);
@@ -303,5 +303,58 @@ describe('geroi: боты', () => {
     cloneBattle(s);
     expect(JSON.stringify(s)).toBe(before);
     expect(hasAb(CREATURES['kuznya-wasp'], 'machine')).toBe(true);
+  });
+});
+
+describe('geroi/sim: осада', () => {
+  const siege = (fort: number) => createBattle({
+    seed: 3, field: 'meadow', siege: fort, siegeFaction: 'zatulye',
+    sides: [
+      { hero: { cls: 'zatonye-bolotnik', n: 1 }, army: [{ cre: 'zatonye-sedgeling', count: 40 }, { cre: 'zatonye-troll', count: 3 }] },
+      { hero: null, label: 'Гарнизон', army: [{ cre: 'zatulye-militia', count: 30 }] },
+    ],
+  });
+  it('стена держит пехоту, ворота пропускают только своих', () => {
+    const s = siege(1);
+    const gate = s.walls!.find((w) => w.gate)!;
+    const attacker = s.units.find((u) => u.side === 0)!;
+    const defender = s.units.find((u) => u.side === 1)!;
+    for (let i = 0; i < CELLS; i++) {
+      if (gate.hp <= 0) break;
+      expect(occupancy(s, 0)[gate.cell]).toBe(-2);
+    }
+    expect(occupancy(s, 1)[gate.cell]).toBe(-1);
+    expect(reachOf(s, attacker).dist[gate.cell]).toBe(-1);
+    defender.cell = cellOf(12, 5);
+    expect(reachOf(s, defender).dist[gate.cell]).toBeGreaterThan(0);
+  });
+  it('таран начинает с ворот и ломает их за несколько раундов', () => {
+    const s = siege(3);
+    const gate = s.walls!.find((w) => w.gate)!;
+    const hp = gate.hp;
+    // первый раунд уже начат: таран ударил
+    expect(hp).toBe(3);
+    for (let i = 0; i < 5000 && !s.over && gate.hp > 0; i++) act(s, botAction(s, 'medium'));
+    expect(gate.hp === 0 || s.over).toBe(true);
+    if (!s.over) expect(occupancy(s, 0)[gate.cell]).toBe(-1);
+  });
+  it('башни бьют каждый раунд, у первого уровня их нет', () => {
+    const count = (fort: number): number => {
+      const s = createBattle({
+        seed: 3, field: 'meadow', siege: fort, siegeFaction: 'zatulye',
+        sides: [{ hero: null, army: [{ cre: 'zatonye-sedgeling', count: 100 }] }, { hero: null, army: [{ cre: 'zatulye-militia', count: 1 }] }],
+      });
+      return s.units[0].count;
+    };
+    expect(count(1)).toBe(100);
+    expect(count(3)).toBeLessThan(100);
+  });
+  it('бой с осадой доигрывается ботами и остаётся JSON', () => {
+    for (const fort of [1, 2, 3]) {
+      const s = siege(fort);
+      for (let i = 0; i < 20000 && !s.over; i++) act(s, botAction(s, 'easy'));
+      expect(s.over).toBe(true);
+      expect(JSON.parse(JSON.stringify(s))).toEqual(s);
+    }
   });
 });

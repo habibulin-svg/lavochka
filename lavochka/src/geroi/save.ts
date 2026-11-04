@@ -1,5 +1,6 @@
 /* Сохранения «Героев»: три ячейки и автосохранение в localStorage. Снимок — само состояние боя (DESIGN.md §10), поэтому сохранение и сеть — одно и то же. */
 import type { BattleState } from './sim/battle';
+import type { World } from './sim/adv/world';
 import type { Who } from './game';
 
 export const SLOTS = 3;
@@ -9,8 +10,11 @@ const AUTO = SLOTS;
 export interface Save {
   at: number;
   title: string;
-  state: BattleState;
+  /** Бой: быстрый или посреди партии на карте. */
+  state?: BattleState;
   who: [Who, Who];
+  /** Партия на карте. */
+  adv?: World;
 }
 
 function all(): (Save | null)[] {

@@ -60,8 +60,8 @@ FACTIONS = {
             ('oldwillow', 4, 1, 'an ancient massive willow giant with mossy bark, roots as legs and glowing eyes'),
             ('vodyanitsa', 5, 0, 'a swamp water maiden with pale green skin, long wet hair with water lilies and a driftwood staff'),
             ('omutnitsa', 5, 1, 'a dark pool witch with teal skin, robes of waterweed and a glowing whirlpool orb'),
-            ('catfish', 6, 0, 'a giant whiskered catfish walking on stubby fin-legs with a huge mouth, river mud on its sides'),
-            ('kingcatfish', 6, 1, 'a king catfish giant with a crown of river shells and very long whiskers'),
+            ('troll', 6, 0, 'a huge hunched swamp troll with grey-green warty skin, very long arms, moss and reeds growing on its shoulders, a wide toothy mouth, standing'),
+            ('bogtroll', 6, 1, 'a massive ancient bog troll covered in thick moss and hanging waterweed, driftwood antlers, huge hands and glowing yellow eyes, standing'),
             ('mistserpent', 7, 0, 'a long coiled serpent dragon of green scales wrapped in mist, without wings'),
             ('phantomserpent', 7, 1, 'a phantom mist serpent dragon, half transparent, with glowing pale eyes'),
         ]},
@@ -96,8 +96,8 @@ FACTIONS = {
             ('moonstag', 4, 1, 'a majestic silver-white stag with crystal antlers radiating moonlight, a silver star circlet on its brow, standing on four legs'),
             ('pineguard', 5, 0, 'a gentle tall treant giant: a walking humanoid made of pine bark with arms and legs of branches, needle hair, carrying a warm lantern'),
             ('borguard', 5, 1, 'an ancient huge treant: a walking humanoid of mossy pine bark with branch arms, pine cones and glowing amber sap in the cracks'),
-            ('skywhale', 6, 0, 'a flying sky whale with soft blue skin, star-like spots and small fins'),
-            ('starwhale', 6, 1, 'a majestic star whale glowing with constellations'),
+            ('moondragon', 6, 0, 'a slim pale silver-blue dragon with wide feathered wings, a calm face and small star-like spots, standing on four legs with wings spread'),
+            ('stardragon', 6, 1, 'a majestic white-gold dragon with wide wings dusted with glowing constellations and a star on its forehead, standing on four legs with wings spread'),
             ('fallenstar', 7, 0, 'a star elemental: a tall slender humanoid figure made of white-gold starlight flame, glowing core in the chest, arms raised'),
             ('wanderstar', 7, 1, 'a wandering star spirit: a radiant floating humanoid in a flowing robe of starlight, a long comet tail of light behind it'),
         ]},
@@ -200,7 +200,7 @@ TOWNS = {
     'zatonye': {'look': 'northern swamp architecture: houses on stilts, reed roofs, boardwalks over water, weeping willow arches, alders and reeds, lanterns in mist',
                 'site': 'a misty green swamp with dark water pools, willows and reeds, early morning',
                 'dwell': ['a reed hut cluster', 'a frog pond with lily pads and a hut', 'a glowing mist hollow', 'a weeping willow grove ring',
-                          'a water maiden pool with stones', 'a deep catfish pit with a wooden rail', 'a serpent lair cave in misty rocks'],
+                          'a water maiden pool with stones', 'a big mossy troll den under a fallen tree with a fence of bones', 'a serpent lair cave in misty rocks'],
                 'unique': [('fogwell', 'a stone well breathing thick mist'), ('gat', 'a long wooden causeway over the swamp')]},
     'kuznya': {'look': 'forge city architecture: brick and riveted iron workshops, tall chimneys with smoke, copper domes of furnaces, rails and cranes',
                'site': 'an ash plain with dark slag hills and glowing cracks, red sunset haze',
@@ -210,7 +210,7 @@ TOWNS = {
     'akademiya': {'look': 'star academy architecture: white stone and pine wood towers, silver observatory domes, glass galleries, lanterns',
                   'site': 'a tall pine forest on a hill under a deep blue twilight sky with first stars',
                   'dwell': ['a student dormitory with lantern windows', 'an owl tower with perches', 'a crystal grotto', 'a stag glade with a star-chart stone',
-                            'a sacred pine grove with lanterns', 'a sky whale mooring tower', 'a fallen star crater shrine'],
+                            'a sacred pine grove with lanterns', 'a moonlit dragon perch tower with a wide stone platform', 'a fallen star crater shrine'],
                   'unique': [('observatory', 'a great observatory with a huge brass telescope'), ('lab', 'a research laboratory with glowing glassware')]},
 }
 
@@ -325,6 +325,24 @@ def battle():
     for i, d in enumerate(OBSTACLES):
         items.append({'name': f'obstacle-{i + 1}', 'width': 1024, 'height': 1024, 'seeds': [41],
                       'prompt': f'{GOUACHE} Game scenery sprite seen from above in three-quarter view: {d} on a tiny patch of its own ground. {ISOLATED}'})
+    return items
+
+
+# ------------------------------------------------------------------ осада: стена, ворота, башня у каждого замка спрайтами (фоны осады с нарисованными стенами не легли на гексы)
+# в промпте только материал и одна деталь: описание города тянет в кадр целый городок с кровлями и шпилями
+SIEGE_PARTS = [('wall', 'one short chunky block of a defensive wall, as wide as it is tall, flat crenellated top'),
+               ('gate', 'one short chunky block of a defensive wall with a single heavy closed gate in its front, flat crenellated top'),
+               ('tower', 'one stout round defensive tower, as wide as it is tall, flat crenellated top')]
+SIEGE_MATERIAL = {'zatulye': 'dark sharpened oak logs bound with rope', 'zatonye': 'mossy grey river stones and wet black timber',
+                  'kuznya': 'dark red brick with riveted iron plates', 'akademiya': 'smooth white stone with thin silver trim'}
+
+
+def siege():
+    items = []
+    for fid, material in SIEGE_MATERIAL.items():
+        for pid, d in SIEGE_PARTS:
+            items.append({'name': f'{pid}-{fid}', 'width': 1024, 'height': 1024,
+                          'prompt': f'{GOUACHE} Game scenery sprite seen from above in three-quarter view: {d}, built of {material}, standing alone on bare ground. {ISOLATED}'})
     return items
 
 
@@ -615,9 +633,11 @@ def write(name, title, job):
 REDO = {
     '10-creatures': ([f'akademiya-{u[0]}' for u in FACTIONS['akademiya']['units']] + ['kuznya-wasp'], [43, 44]),
     '10-creatures#2': (['akademiya-stag', 'akademiya-moonstag'], [45, 46]),  # кентавры не дались (люди с конской головой, всадники) — олени
+    '10-creatures#3': (['zatonye-troll', 'zatonye-bogtroll', 'akademiya-moondragon', 'akademiya-stardragon'], [47, 48]),  # рыбы и киты на поле — «глупо» (пользователь 2026-11-04)
     '11b-mounts': (['mount-akademiya-strazh', 'mount-akademiya-zvezdochet'], [63, 64]),
     '12-towns': ([f'bld-{f}-{b}' for f in ('zatulye', 'zatonye') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)]
                   + [u[0] for u in TOWNS[f]['unique']]], [22, 23]),
+    '12-towns#2': (['bld-zatonye-dwell6', 'bld-akademiya-dwell6'], [24, 25]),
     '13-map': ([f'decor-{t}-{i}' for t in TERRAINS for i in range(1, 9)] + [f'mountain-{i}' for i in range(1, 5)]
                + ['obj-learnstone', 'obj-shrine3', 'obj-keytent', 'ground-pine'], [32, 33]),
     '14-battle': (['obstacle-3', 'obstacle-5', 'obstacle-6', 'obstacle-9'], [42, 43]),
@@ -661,6 +681,7 @@ def main():
     image_job('12-towns.yaml', 'партия 12: замки — панорамы, площадки, постройки, замки на карте', towns(), [11, 12])
     image_job('13-map.yaml', 'партия 13: карта — ресурсы, объекты, грунты, декор, горы', mapping(), [11, 12])
     image_job('14-battle.yaml', 'партия 14: поля боя, осады, препятствия', battle(), [11, 12])
+    image_job('14b-siege.yaml', 'партия 14б: осада — стена, ворота, башня × 4 замка', siege(), [73, 74])
     image_job('15-icons.yaml', 'партия 15: иконки — артефакты, заклинания, навыки, параметры, ресурсы', icons(), [11, 12])
     image_job('16-cutscene-keys.yaml', 'партия 16: ключевые кадры роликов (docs/geroi/CAMPAIGNS.md)', cutscene_keys(), [1, 2],
               {'width': 1280, 'height': 704, 'steps': 8})
