@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { botStep, newMem } from '../../src/geroi/bot/advbot';
 import { botAction } from '../../src/geroi/bot/bot';
 import { type MapServerMsg, cleanAdvAction, eventsView, worldView } from '../../src/geroi/net/mapproto';
+import { diffJson, patchJson } from '../../src/geroi/net/record';
 import { CONTACT, FREE_GAP, MAP_BANK_MS, MAP_GONE_MS, MapRoom, type MapPeer, enemyGap } from '../../src/geroi/net/maproom';
 import { currentUnit } from '../../src/geroi/sim/battle';
 import { type GenOptions, generateMap } from '../../src/geroi/sim/adv/gen';
@@ -254,6 +255,9 @@ describe('geroi/maproom: сеть карты', () => {
     expect(r.freeDays).toBeGreaterThan(10);
     expect(r.fights).toBeGreaterThan(5);
     expect(both).toBeGreaterThan(0);
+    // запись 40 дней средней карты — в разумных пределах (сжатая — в разы меньше)
+    const size = JSON.stringify(room.rec).length; // ≈ 4 МБ на 40 дней
+    expect(size).toBeLessThan(40_000_000);
   });
 
   it('сдача: соперник побеждает', () => {
@@ -393,5 +397,45 @@ describe('geroi/maproom: сеть карты', () => {
     const allyTown = w.towns.find((x) => x.owner === 2)!;
     expect(v.players[0].explored[allyTown.cell]).toBe(1);
     expect(enemyGap(w)).toBeGreaterThan(0);
+  });
+
+  it('запись: мир на старте + заплатки = мир в конце; зритель — с задержкой в день; запись — только после партии', () => {
+    const { room, a, b, adv } = setup(true);
+    const s = peer(3, 's');
+    room.message(a, { t: 'start' });
+    room.add(s);
+    expect(s.last('mstart').seat).toBeNull();
+    room.message(a, { t: 'mrec' });
+    expect(a.box.some((m) => m.t === 'mrecord')).toBe(false);
+    // зрителю шаги приходят, только когда их день прошёл
+    const seen: number[] = [];
+    const sBox = s.box;
+    const orig = s.send;
+    s.send = (m) => {
+      if (m.t === 'mspec') for (const st of m.steps) seen.push(st.day);
+      if (m.t === 'mspec') expect(m.steps.every((st) => st.day < room.world!.day || room.phase === 'over')).toBe(true);
+      orig(m);
+      if (sBox.length > 20) sBox.splice(0, sBox.length - 4);
+    };
+    playOut(room, [a, b], adv, 20000);
+    expect(room.phase).toBe('over');
+    expect(s.box.some((m) => m.t === 'mstep')).toBe(false);
+    const rec = room.rec!;
+    expect(seen.length).toBe(rec.steps.length);
+    let w = JSON.parse(JSON.stringify(rec.world));
+    for (const st of rec.steps) w = patchJson(w, st.d);
+    expect(w).toEqual(JSON.parse(JSON.stringify(room.viewOf(null))));
+    room.message(a, { t: 'mrec' });
+    const got = a.last('mrecord').rec;
+    expect(got.steps.length).toBe(rec.steps.length);
+    expect(JSON.stringify(got).length).toBeLessThan(20_000_000);
+  });
+
+  it('заплатки: поля, удаление, массивы длиннее и короче', () => {
+    const x = { a: 1, b: [1, 2, 3], c: { d: 'x', e: [{ f: 1 }] }, g: null as null | number };
+    const y = { a: 2, b: [1, 5], c: { e: [{ f: 1 }, { f: 2 }] }, g: 3, h: [0] };
+    const ops = diffJson(x, y);
+    expect(patchJson(JSON.parse(JSON.stringify(x)), JSON.parse(JSON.stringify(ops)))).toEqual(y);
+    expect(diffJson(y, y)).toEqual([]);
   });
 });

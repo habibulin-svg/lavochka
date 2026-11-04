@@ -12,6 +12,7 @@ import type { TownFaction } from '../sim/adv/town';
 import { type AdvAction, type AdvEvent, type ArmyRef, type World, emptyArmy, heroById, heroHiddenFrom } from '../sim/adv/world';
 import { CLASSES, type HeroPick } from '../sim/heroes';
 import type { ClockView, ResultView } from './protocol';
+import type { MapRecord, RecStep } from './record';
 
 export const MAP_FACTIONS: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
 export const BOT_LEVELS: BotLevel[] = ['easy', 'medium', 'hard'];
@@ -87,6 +88,8 @@ export type MapClientMsg =
   | { t: 'chat'; text: string }
   | { t: 'voice'; on: boolean; video?: boolean }
   | { t: 'rtc'; to: string; data: unknown }
+  /** Запись партии (только после конца). */
+  | { t: 'mrec' }
   | { t: 'ping' };
 
 export type MapServerMsg =
@@ -95,6 +98,9 @@ export type MapServerMsg =
   | { t: 'error'; text: string }
   | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean }
   | { t: 'mdraft'; d: MapDraftView; seat: number | null; seats: MapSeatView[] }
+  /** Зрителю: шаги записи (с задержкой в день), мир он собирает сам. */
+  | { t: 'mspec'; steps: RecStep[]; seats: MapSeatView[] }
+  | { t: 'mrecord'; rec: MapRecord }
   /** Объявление всем: «армии сблизились — ходим по очереди». */
   | { t: 'mnote'; text: string }
   | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string }

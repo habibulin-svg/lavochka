@@ -7,7 +7,9 @@ import type { TownFaction } from '../sim/adv/town';
 import type { AdvAction } from '../sim/adv/world';
 import type { BotLevel } from '../bot/bot';
 import type { HeroPick } from '../sim/heroes';
-import type { MapClientMsg, MapServerMsg } from './mapproto';
+import type { MapClientMsg, MapClock, MapServerMsg } from './mapproto';
+import { type MapRecord, patchJson } from './record';
+import type { World } from '../sim/adv/world';
 import type { BattleNet } from './protocol';
 
 type Of<T extends MapServerMsg['t']> = Extract<MapServerMsg, { t: T }>;
@@ -23,6 +25,11 @@ export class MapClient implements BattleNet {
   onMapNope: (why: string) => void = () => {};
   onOver: (m: Of<'mover'>) => void = () => {};
   onNote: (text: string) => void = () => {};
+  /** Запись партии пришла (после конца, по просьбе). */
+  onRecord: (rec: MapRecord) => void = () => {};
+  /** Зритель: мир, собранный из шагов записи. */
+  private spec: World | null = null;
+  private clock: MapClock | null = null;
   /** Бой на карте начался для этого места. */
   onFight: (m: Of<'start'>) => void = () => {};
   onStep: BattleNet['onStep'] = () => {};
@@ -100,6 +107,10 @@ export class MapClient implements BattleNet {
   draft(faction?: TownFaction, hero?: HeroPick): void {
     this.send({ t: 'mdraft', faction, hero });
   }
+  /** Попросить запись партии (сервер даст её только после конца). */
+  record(): void {
+    this.send({ t: 'mrec' });
+  }
   start(): void {
     this.send({ t: 'start' });
   }
@@ -134,10 +145,23 @@ export class MapClient implements BattleNet {
         break;
       case 'mstart':
         this.you = m.you;
+        this.spec = m.seat === null ? structuredClone(m.world) : null;
+        this.clock = m.clock;
         this.onStart(m);
         break;
       case 'mstep':
         this.onMapStep(m);
+        break;
+      case 'mspec':
+        // зритель: шаги записи → обычные шаги карты (мир у каждого шага свой — показ идёт с отставанием)
+        if (!this.spec || !this.clock) break;
+        for (const st of m.steps) {
+          this.spec = patchJson(this.spec, st.d);
+          this.onMapStep({ t: 'mstep', events: st.ev, world: structuredClone(this.spec), clock: { ...this.clock, running: [], free: false }, seats: m.seats, actor: st.actor });
+        }
+        break;
+      case 'mrecord':
+        this.onRecord(m.rec);
         break;
       case 'mbusy':
         this.onBusy(m.text);

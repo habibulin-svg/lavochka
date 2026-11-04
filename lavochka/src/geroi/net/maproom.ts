@@ -6,7 +6,9 @@
  * Бой на карте: стороны-люди ходят сами (как в Арене, с часами), остальные — бот; бой без людей считается сразу.
  * В общий день боёв с нейтралами может идти несколько: у каждого места свой.
  * Драфт (по желанию хозяина): между лобби и картой каждый по очереди банит героя, в дуэли второй банит ещё фракцию,
- * потом по очереди выбирают фракцию (без повторов) и её героя. Бот и не успевший — случайно из доступного. */
+ * потом по очереди выбирают фракцию (без повторов) и её героя. Бот и не успевший — случайно из доступного.
+ * Запись (`record.ts`): весь мир на старте и разница после каждой рассылки. Зрители смотрят по записи с задержкой в день
+ * (иначе игрок во второй вкладке зрителем видел бы всю карту); после партии запись можно скачать. */
 import { botAction } from '../bot/bot';
 import { type BotMem, botStep, newMem } from '../bot/advbot';
 import { fightOut } from '../bot/advplay';
@@ -16,6 +18,7 @@ import { type GenOptions, generateMap } from '../sim/adv/gen';
 import { TEMPLATES } from '../sim/adv/templates';
 import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, actionError, allied, applyBattle, battleSetup, heroById, objById, townById } from '../sim/adv/world';
 import { type HeroPick, factionClasses } from '../sim/heroes';
+import { type MapRecord, type RecStep, diffJson, patchJson } from './record';
 import type { TownFaction } from '../sim/adv/town';
 import { type MapClientMsg, type MapClock, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
 import { type ClockView, cleanAction } from './protocol';
@@ -100,6 +103,8 @@ export function draftSteps(n: number, seed: number): MapDraftStep[] {
 
 const sameHero = (a: HeroPick, b: HeroPick): boolean => a.cls === b.cls && a.n === b.n;
 
+const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
+
 /** Ближе всего друг к другу чужие герои и города (по клеткам, на одном уровне). */
 export function enemyGap(w: World): number {
   const wh = w.w * w.h;
@@ -144,6 +149,12 @@ export class MapRoom {
   /** События, ещё не разосланные. */
   private pendingEvents: AdvEvent[] = [];
   private pendingActor = -1;
+  /** Запись партии и мир, с которым сравниваем следующий шаг. */
+  rec: MapRecord | null = null;
+  private recPrev: World | null = null;
+  /** Зрители: сколько шагов записи им уже ушло и мир на этом шаге. */
+  private specAt = 0;
+  private specWorld: World | null = null;
   /** Изменилось то, чего в событиях нет (кто ходит, кто закончил): разослать вид и без событий. */
   private dirty = false;
 
@@ -347,6 +358,10 @@ export class MapRoom {
         if (to && this.talking.has(p.id) && this.talking.has(to.id)) to.send({ t: 'rtc', from: String(p.id), data: m.data });
         return;
       }
+      case 'mrec':
+        // запись — только после партии: иначе это вся карта без тумана
+        if (this.phase === 'over' && this.rec) p.send({ t: 'mrecord', rec: this.rec });
+        return;
       case 'ping':
         p.send({ t: 'pong' });
         return;
@@ -551,10 +566,36 @@ export class MapRoom {
     this.dirty = false;
     const seats = this.view();
     const clock = this.clock();
+    this.record(actor, ev);
     for (const p of this.peers) {
       const seat = this.seatOf(p);
+      if (seat === null) continue;
       p.send({ t: 'mstep', events: eventsView(w, ev, seat, actor), world: this.viewOf(seat), clock, seats, actor });
     }
+    this.feedSpectators();
+  }
+
+  /** Шаг в запись: разница всего мира с прошлым шагом. */
+  private record(actor: number, ev: AdvEvent[]): void {
+    if (!this.rec) return;
+    const now = clone(this.viewOf(null));
+    this.rec.steps.push({ actor, day: this.world!.day, ev: clone(ev), d: diffJson(this.recPrev, now) });
+    this.recPrev = now;
+  }
+
+  /** Зрителям — шаги прошлых дней (вся партия — после конца). */
+  private feedSpectators(): void {
+    if (!this.rec || !this.specWorld) return;
+    const steps: RecStep[] = [];
+    const day = this.world!.day;
+    while (this.specAt < this.rec.steps.length && (this.phase === 'over' || this.rec.steps[this.specAt].day < day)) {
+      const st = this.rec.steps[this.specAt++];
+      this.specWorld = patchJson(this.specWorld, st.d);
+      steps.push(st);
+    }
+    if (!steps.length) return;
+    const seats = this.view();
+    for (const p of this.peers) if (this.seatOf(p) === null) p.send({ t: 'mspec', steps, seats });
   }
 
   /** Все в одной команде — играть не с кем. */
@@ -659,13 +700,18 @@ export class MapRoom {
     this.startDay();
     this.pendingEvents = [];
     this.dirty = false;
+    const w0 = clone(this.viewOf(null));
+    this.rec = { v: 1, gen: this.gen, seats: this.view(), at: this.now(), world: w0, steps: [] };
+    this.recPrev = clone(w0);
+    this.specWorld = clone(w0);
+    this.specAt = 0;
     for (const p of this.peers) this.sendStart(p);
   }
 
   private sendStart(p: MapPeer): void {
     if (!this.world) return;
     const seat = this.seatOf(p);
-    p.send({ t: 'mstart', world: this.viewOf(seat), seat, seats: this.view(), clock: this.clock(), you: p.id, busy: this.busyText(seat) });
+    p.send({ t: 'mstart', world: seat === null && this.specWorld ? this.specWorld : this.viewOf(seat), seat, seats: this.view(), clock: this.clock(), you: p.id, busy: this.busyText(seat) });
     if (this.phase === 'over') p.send({ t: 'mover', winner: this.world.winner, why: 'map' });
   }
 
@@ -702,7 +748,9 @@ export class MapRoom {
 
   private finish(winner: number, why: 'map' | 'resign'): void {
     if (this.phase === 'over') return;
+    this.flush();
     this.phase = 'over';
+    this.feedSpectators();
     this.broadcast({ t: 'mover', winner, why });
   }
 

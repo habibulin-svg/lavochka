@@ -7,6 +7,7 @@ import { MapBotClient } from '../bot/remote';
 import type { MapClient } from '../net/mapclient';
 import type { MapClock, MapSeatView, MapServerMsg } from '../net/mapproto';
 import { Talk } from '../../gops/ui/talk';
+import { type ReplayClient, saveRecord } from './replay';
 import { Game, type Who } from '../game';
 import { MapView, PLAYER_COLORS } from '../render/mapview';
 import { SLOTS, type Save, loadSaves, slotLabel, writeAuto, writeSave } from '../save';
@@ -58,6 +59,8 @@ export interface AdvNet {
   seats: MapSeatView[];
   clock: MapClock;
   busy: string;
+  /** Проигрыватель записи вместо сервера: без чата, с кнопками показа. */
+  replay?: ReplayClient;
 }
 
 export class AdvGame {
@@ -757,6 +760,10 @@ export class AdvGame {
     c.onNote = (text) => this.queueNet(async () => this.message('По очереди', text));
     c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : `${name} пропал со связи: через минуту за него сходит бот`);
     this.talk?.destroy();
+    if (net.replay) {
+      this.hud.append(net.replay.bar);
+      return;
+    }
     this.talk = new Talk(this.root, c);
   }
 
@@ -779,6 +786,7 @@ export class AdvGame {
     this.town?.draw();
     next();
     this.showOtherBar();
+    net.replay?.stepped();
   }
 
   /** Бой на карте по сети: тот же Game, что в Арене; мир после боя придёт с сервера. */
@@ -817,7 +825,13 @@ export class AdvGame {
     this.botBar.replaceChildren();
     if (w.over) return this.hideBotBar();
     const left = net.clock.running.includes(w.current) ? ` · ${fmtMs(net.clock.bank[w.current] - (Date.now() - this.clockAt))}` : '';
-    if (net.busy) this.botBar.append(h('span', '', net.busy));
+    if (net.seat === null) {
+      // зритель и запись: часы не наши, партия — с задержкой в день
+      const s = net.seats[w.current];
+      const name = h('b', '', s?.name ?? w.players[w.current].name);
+      name.style.color = `#${PLAYER_COLORS[w.current].toString(16).padStart(6, '0')}`;
+      this.botBar.append(h('span', 'dim', net.replay ? 'Запись · ' : 'Смотришь с задержкой в день · '), h('span', '', 'ходит '), name);
+    } else if (net.busy) this.botBar.append(h('span', '', net.busy));
     else if (!this.botTurn) this.botBar.append(h('b', '', 'Твой ход'), h('span', 'dim', left + (net.clock.free ? ' · все ходят разом' : '')));
     else if (net.clock.free) {
       // общий день: свой закончен, ждём остальных
@@ -1224,6 +1238,16 @@ export class AdvGame {
     box.parentElement!.onpointerdown = null;
     const team = w.winner >= 0 ? w.players.filter((p) => allied(w, p.id, w.winner)).map((p) => p.name) : [];
     box.append(h('h2', '', team.length ? `Победа: ${team.join(' и ')}!` : 'Никто не выстоял'), h('p', 'dim', `Партия шла ${w.day + 1} дн.`), button('В меню игры', () => this.onQuit(), 'g-btn main'));
+    // сетевая партия: запись — файлом (сервер отдаёт её только после конца)
+    const net = this.net;
+    if (net && !net.replay) {
+      const save = button('Сохранить запись', () => {
+        save.disabled = true;
+        net.client.onRecord = (rec) => void saveRecord(rec);
+        net.client.record();
+      });
+      box.append(save);
+    }
   }
 
   // ------------------------------------------------------------------ подсказки

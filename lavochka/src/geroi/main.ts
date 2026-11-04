@@ -17,6 +17,8 @@ import { AdvGame } from './ui/adv';
 import { MapClient } from './net/mapclient';
 import type { MapClientMsg, MapServerMsg } from './net/mapproto';
 import { NetMap } from './ui/netmap';
+import { ReplayClient, loadRecord } from './ui/replay';
+import type { MapRecord } from './net/record';
 import { type GameSpec, makeTestMap } from './sim/adv/testmap';
 import { TEMPLATES, generateMap, parseGen } from './sim/adv/gen';
 import type { TownFaction } from './sim/adv/town';
@@ -273,6 +275,32 @@ async function connectMap(first: MapClientMsg, name: string): Promise<void> {
 menu.onNetMap = () => netMap.home();
 netMap.onCreate = (name, gen) => void connectMap({ t: 'mcreate', game: 'geroi', name, token: token(), gen }, name);
 netMap.onJoin = (name, code) => void connectMap({ t: 'join', game: 'geroi', code, name, token: token() }, name);
+netMap.onReplay = (file) => void watchRecord(file);
+
+/** Запись партии: AdvGame зрителем, шаги шлёт проигрыватель. */
+async function watchRecord(file: File): Promise<void> {
+  let rec: MapRecord;
+  try {
+    rec = await loadRecord(file);
+  } catch (e) {
+    return netMap.home(e instanceof SyntaxError ? 'Это не запись партии.' : String((e as Error).message ?? e));
+  }
+  leaveMap();
+  stop();
+  menu.hide();
+  const r = new ReplayClient(rec);
+  const { world, clock } = r.start;
+  const a = new AdvGame(host, audio, { world, net: { client: r.asClient, seat: null, seats: rec.seats, clock, busy: '', replay: r } });
+  adv = a;
+  a.onQuit = r.onQuit = () => {
+    r.close();
+    stop();
+    netMap.home();
+  };
+  await a.start();
+  r.begin();
+}
+
 netMap.onLeave = () => {
   leaveMap();
   netMap.home();

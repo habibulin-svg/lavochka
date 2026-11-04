@@ -27,12 +27,13 @@ export class NetMap {
   onCreate: (name: string, gen: GenOptions) => void = () => {};
   onJoin: (name: string, code: string) => void = () => {};
   onLeave: () => void = () => {};
+  onReplay: (file: File) => void = () => {};
 
   constructor(private readonly menu: Menu) {}
 
   home(message?: string): void {
     const col = h('div', 'g-panel g-arena');
-    col.append(h('p', 'dim', 'Случайная карта по сети: до четырёх игроков, свободные места займут боты. Ходят по очереди, у каждого свой запас времени; пропал со связи — через минуту за тебя сходит бот.'));
+    col.append(h('p', 'dim', 'Случайная карта по сети: до четырёх игроков, свободные места займут боты. Пока армии далеко, все ходят разом, у каждого свой запас времени; пропал со связи — через минуту за тебя сходит бот. Зашёл в полную комнату — смотришь партию с задержкой в день.'));
     if (message) col.append(h('p', 'g-warn', message));
     const nameRow = h('label', 'g-field', 'Имя');
     const name = h('input', 'g-input');
@@ -55,7 +56,12 @@ export class NetMap {
     const joinRow = h('div', 'g-row');
     joinRow.append(code, button('Войти по коду', () => code.value.trim() && this.onJoin(who(), code.value.trim().toUpperCase())));
     const gen: GenOptions = { template: 'duel', size: 'm', water: 'lakes', guard: 'normal', seed: (Date.now() % 999999) + 1 };
-    col.append(nameRow, button('Создать комнату', () => this.onCreate(who(), gen), 'g-btn main'), joinRow, button('Назад', () => this.menu.title()));
+    const file = h('input');
+    file.type = 'file';
+    file.accept = '.geroi,application/json';
+    file.hidden = true;
+    file.onchange = () => file.files?.[0] && this.onReplay(file.files[0]);
+    col.append(nameRow, button('Создать комнату', () => this.onCreate(who(), gen), 'g-btn main'), joinRow, button('Смотреть запись партии', () => file.click()), file, button('Назад', () => this.menu.title()));
     this.menu.screen(h('h2', 'g-quick-title', 'Карта по сети'), col);
   }
 
