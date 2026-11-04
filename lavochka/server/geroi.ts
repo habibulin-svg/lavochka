@@ -28,8 +28,8 @@ export class Ratings {
   private timer: NodeJS.Timeout | undefined;
   private file: string;
 
-  constructor(private readonly dir: string, private log: (s: string) => void = console.log) {
-    this.file = join(dir, 'geroi-rating.json');
+  constructor(private readonly dir: string, private log: (s: string) => void = console.log, file = 'geroi-rating.json') {
+    this.file = join(dir, file);
     if (existsSync(this.file)) {
       try {
         this.rows = JSON.parse(readFileSync(this.file, 'utf8'));
@@ -104,6 +104,7 @@ export function geroiFirst(
   genCode: (taken: (c: string) => boolean) => string,
   user: { id: number; name: string } | null,
   ratings: Ratings,
+  mapRatings?: Ratings,
 ): Link | null {
   const fail = (text: string) => {
     send({ t: 'error', text });
@@ -124,6 +125,16 @@ export function geroiFirst(
       const won = { r: Math.round(a.r), delta: Math.round(a.r - before[0]) };
       const lost = { r: Math.round(b.r), delta: Math.round(b.r - before[1]) };
       return (winner === 0 ? [won, lost] : [lost, won]) as [typeof won, typeof won];
+    },
+  };
+
+  // рейтинг карты — своя таблица: Арена и карта — разные умения
+  const mapHooks = {
+    onResult: (w: number, l: number, names: [string, string]) => {
+      const t = mapRatings ?? ratings;
+      const before = [t.get(w).r, t.get(l).r];
+      const [a, b] = t.apply(w, l, names);
+      return [{ r: Math.round(a.r), delta: Math.round(a.r - before[0]) }, { r: Math.round(b.r), delta: Math.round(b.r - before[1]) }] as [{ r: number; delta: number }, { r: number; delta: number }];
     },
   };
 
@@ -161,7 +172,7 @@ export function geroiFirst(
     const gen = cleanGen((msg as { gen?: unknown }).gen);
     if (!gen) return fail('Непонятные настройки карты.');
     code = genCode((c) => rooms.has(c));
-    const r = new MapRoom(gen);
+    const r = new MapRoom(gen, Date.now, mapHooks);
     rooms.set(code, r);
     enter(r, code);
     send({ t: 'created', code });

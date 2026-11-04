@@ -20,7 +20,7 @@ import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, act
 import { type HeroPick, factionClasses } from '../sim/heroes';
 import { type MapRecord, type RecStep, diffJson, patchJson } from './record';
 import type { TownFaction } from '../sim/adv/town';
-import { type MapClientMsg, type MapClock, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
+import { type MapClientMsg, type MapClock, type MapRatingView, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
 import { type ClockView, cleanAction } from './protocol';
 
 /** Запас хода на всю партию и прибавка в начале каждого своего хода. */
@@ -53,6 +53,11 @@ export interface MapPeer {
   send(m: MapServerMsg): void;
 }
 
+/** Сервер: рейтинг дуэли (победивший и проигравший — номера аккаунтов). */
+export interface MapHooks {
+  onResult?(winner: number, loser: number, names: [string, string]): [{ r: number; delta: number }, { r: number; delta: number }];
+}
+
 interface Seat {
   token: string | null;
   name: string;
@@ -61,6 +66,7 @@ interface Seat {
   bot: BotLevel | null;
   goneAt: number;
   team: number | null;
+  user: number | null;
 }
 
 interface Fight {
@@ -158,7 +164,11 @@ export class MapRoom {
   /** Изменилось то, чего в событиях нет (кто ходит, кто закончил): разослать вид и без событий. */
   private dirty = false;
 
-  constructor(gen: GenOptions, private readonly now: () => number = Date.now) {
+  /** Партия на рейтинг (хозяин; только дуэль людей, вошедших на сайт). */
+  ranked = false;
+  private rating: MapRatingView | undefined;
+
+  constructor(gen: GenOptions, private readonly now: () => number = Date.now, private readonly hooks: MapHooks = {}) {
     this.gen = gen;
     this.resizeSeats();
   }
@@ -173,7 +183,7 @@ export class MapRoom {
     while (this.seats.length < n) {
       const i = this.seats.length;
       const f = MAP_FACTIONS[i % 4];
-      this.seats.push({ token: null, name: `Бот ${i + 1}`, faction: f, hero: this.freeHero(f, i), bot: i === 0 ? null : i === 1 ? null : 'medium', goneAt: 0, team: null });
+      this.seats.push({ token: null, name: `Бот ${i + 1}`, faction: f, hero: this.freeHero(f, i), bot: i === 0 ? null : i === 1 ? null : 'medium', goneAt: 0, team: null, user: null });
     }
     this.seats.length = n;
   }
@@ -201,7 +211,7 @@ export class MapRoom {
   }
 
   private view(): MapSeatView[] {
-    return this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, bot: s.bot, taken: !!s.token, on: !!s.token && !s.goneAt, team: s.team }));
+    return this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, bot: s.bot, taken: !!s.token, on: !!s.token && !s.goneAt, team: s.team, acc: s.user !== null }));
   }
 
   /** Мир глазами места: в общий день «ходит» он сам, пока не закончил; своё «начатое». */
@@ -222,6 +232,7 @@ export class MapRoom {
         seat = free;
         this.seats[free].token = p.token;
         this.seats[free].name = p.name;
+        this.seats[free].user = p.user;
       }
     }
     if (seat !== null && this.seats[seat].goneAt) {
@@ -245,6 +256,7 @@ export class MapRoom {
     if (this.phase === 'lobby') {
       const s = this.seats[seat];
       s.token = null;
+      s.user = null;
       s.name = `Игрок ${seat + 1}`;
       this.sendLobby();
     } else {
@@ -270,6 +282,7 @@ export class MapRoom {
         const g = cleanGen(m.gen);
         if (this.phase !== 'lobby' || !this.isHost(p) || !g) return;
         this.gen = g;
+        if (TEMPLATES[g.template].players !== 2) this.ranked = false;
         this.resizeSeats();
         return this.sendLobby();
       }
@@ -289,6 +302,10 @@ export class MapRoom {
         this.seats[m.seat].team = m.team;
         return this.sendLobby();
       }
+      case 'mranked':
+        if (this.phase !== 'lobby' || !this.isHost(p)) return;
+        this.ranked = !!m.on && TEMPLATES[this.gen.template].players === 2;
+        return this.sendLobby();
       case 'msimul':
         if (this.phase !== 'lobby' || !this.isHost(p)) return;
         this.simul = !!m.on;
@@ -298,7 +315,7 @@ export class MapRoom {
         this.draftOn = !!m.on;
         return this.sendLobby();
       case 'start':
-        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token) || this.oneTeam()) return;
+        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token) || this.oneTeam() || this.rankErr()) return;
         if (this.draftOn) this.startDraft();
         else this.startMap();
         return;
@@ -598,6 +615,14 @@ export class MapRoom {
     for (const p of this.peers) if (this.seatOf(p) === null) p.send({ t: 'mspec', steps, seats });
   }
 
+  /** Почему рейтинговую не начать; null — можно (или партия не на рейтинг). */
+  rankErr(): string | null {
+    if (!this.ranked) return null;
+    if (this.seats.length !== 2 || this.seats.some((s) => s.bot || !s.token)) return 'На рейтинг — только дуэль двух людей.';
+    if (this.seats.some((s) => s.user === null)) return 'На рейтинг — оба должны войти на сайт.';
+    return this.seats[0].user === this.seats[1].user ? 'Сам с собой на рейтинг не играют.' : null;
+  }
+
   /** Все в одной команде — играть не с кем. */
   private oneTeam(): boolean {
     const t = this.seats[0].team;
@@ -712,7 +737,7 @@ export class MapRoom {
     if (!this.world) return;
     const seat = this.seatOf(p);
     p.send({ t: 'mstart', world: seat === null && this.specWorld ? this.specWorld : this.viewOf(seat), seat, seats: this.view(), clock: this.clock(), you: p.id, busy: this.busyText(seat) });
-    if (this.phase === 'over') p.send({ t: 'mover', winner: this.world.winner, why: 'map' });
+    if (this.phase === 'over') p.send({ t: 'mover', winner: this.world.winner, why: 'map', rating: this.rating });
   }
 
   private surrender(seat: number): void {
@@ -751,7 +776,13 @@ export class MapRoom {
     this.flush();
     this.phase = 'over';
     this.feedSpectators();
-    this.broadcast({ t: 'mover', winner, why });
+    // рейтинг: дуэль, оба места — вошедшие люди (пропавшего доигрывал бот — проигрыш всё равно его)
+    const users = this.seats.map((s) => s.user);
+    if (this.ranked && winner >= 0 && users.length === 2 && users[0] !== null && users[1] !== null && users[0] !== users[1] && this.hooks.onResult) {
+      const [won, lost] = this.hooks.onResult(users[winner]!, users[1 - winner]!, [this.seats[winner].name, this.seats[1 - winner].name]);
+      this.rating = winner === 0 ? [won, lost] : [lost, won];
+    }
+    this.broadcast({ t: 'mover', winner, why, rating: this.rating });
   }
 
   // ------------------------------------------------------------------ бой на карте
@@ -876,7 +907,7 @@ export class MapRoom {
 
   private sendLobby(): void {
     const seats = this.view();
-    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul, draft: this.draftOn });
+    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul, draft: this.draftOn, ranked: this.ranked });
   }
 
   private voiceList(): void {

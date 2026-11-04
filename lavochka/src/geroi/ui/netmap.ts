@@ -61,7 +61,9 @@ export class NetMap {
     file.accept = '.geroi,application/json';
     file.hidden = true;
     file.onchange = () => file.files?.[0] && this.onReplay(file.files[0]);
-    col.append(nameRow, button('Создать комнату', () => this.onCreate(who(), gen), 'g-btn main'), joinRow, button('Смотреть запись партии', () => file.click()), file, button('Назад', () => this.menu.title()));
+    const table = h('div', 'g-top');
+    col.append(nameRow, button('Создать комнату', () => this.onCreate(who(), gen), 'g-btn main'), joinRow, button('Смотреть запись партии', () => file.click()), file, table, button('Назад', () => this.menu.title()));
+    void this.loadTop(table);
     this.menu.screen(h('h2', 'g-quick-title', 'Карта по сети'), col);
   }
 
@@ -104,9 +106,18 @@ export class NetMap {
       box3.onchange = () => c.draftOpt(box3.checked);
       draft.append(box3, h('span', '', ' Драфт — баны и выбор фракций и героев по очереди'));
       box.append(row1, row2, simul, draft);
+      if (t.players === 2) {
+        const ranked = h('label', 'g-check');
+        const box4 = h('input');
+        box4.type = 'checkbox';
+        box4.checked = m.ranked;
+        box4.onchange = () => c.ranked(box4.checked);
+        ranked.append(box4, h('span', '', ' На рейтинг — дуэль двух людей, оба вошли на сайт'));
+        box.append(ranked);
+      }
     } else
       box.append(
-        h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}${m.simul ? ' · ходы одновременные' : ' · ходы по очереди'}${m.draft ? ' · драфт' : ''}`),
+        h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}${m.simul ? ' · ходы одновременные' : ' · ходы по очереди'}${m.draft ? ' · драфт' : ''}${m.ranked ? ' · на рейтинг' : ''}`),
       );
     if (m.draft) box.append(h('p', 'dim', 'Фракции и героев выберем драфтом после «Начать».'));
 
@@ -171,7 +182,10 @@ export class NetMap {
     });
     const oneTeam = m.seats[0].team !== null && m.seats.every((s) => s.team === m.seats[0].team);
     if (oneTeam) box.append(h('p', 'g-warn', 'Все в одной команде — играть не с кем.'));
-    const ready = m.seats.every((s) => s.bot || s.taken) && !oneTeam;
+    // рейтинг: те же условия, что проверяет сервер (сам с собой — его забота)
+    const rankErr = !m.ranked ? null : m.seats.some((s) => s.bot) ? 'На рейтинг — только дуэль двух людей.' : m.seats.some((s) => s.taken && !s.acc) ? 'На рейтинг — оба должны войти на сайт.' : null;
+    if (rankErr) box.append(h('p', 'g-warn', rankErr));
+    const ready = m.seats.every((s) => s.bot || s.taken) && !oneTeam && !rankErr;
     if (m.host) {
       const go = button('Начать', () => c.start(), 'g-btn main');
       go.disabled = !ready;
@@ -180,6 +194,20 @@ export class NetMap {
     } else box.append(h('p', 'dim', 'Хозяин начнёт, когда все соберутся.'));
     box.append(button('Выйти', () => this.onLeave()));
     this.menu.screen(h('h2', 'g-quick-title', 'Карта по сети'), box);
+  }
+
+  /** Рейтинг дуэлей на карте: свой и лучшие. */
+  private async loadTop(table: HTMLElement): Promise<void> {
+    const r = await fetch('/api/geroi/rating?map=1', { signal: AbortSignal.timeout(5000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    if (!r) return;
+    table.append(h('b', '', 'Рейтинг дуэлей на карте'));
+    if (r.me) table.append(h('p', 'dim', `${r.me.name}: ${Math.round(r.me.r)} · побед ${r.me.wins}, поражений ${r.me.losses}`));
+    else table.append(h('p', 'dim', 'Рейтинг ведётся у вошедших: дуэль «на рейтинг», оба вошли на сайт.'));
+    r.top?.slice(0, 10).forEach((x: { name: string; r: number; wins: number; losses: number }, i: number) => {
+      const row = h('div', 'g-toprow');
+      row.append(h('span', '', `${i + 1}. ${x.name}`), h('em', '', `${x.r} · ${x.wins}–${x.losses}`));
+      table.append(row);
+    });
   }
 
   /** Фракция, открытая на драфте (между перерисовками). */

@@ -30,7 +30,12 @@ export interface MapSeatView {
   on: boolean;
   /** Союз: номер команды (1, 2); null — сам за себя. */
   team: number | null;
+  /** Человек вошёл на сайт (нужно для рейтинга). */
+  acc: boolean;
 }
+
+/** Рейтинговая дуэль: что стало по местам. */
+export type MapRatingView = [{ r: number; delta: number }, { r: number; delta: number }];
 
 export interface MapClock {
   /** Запас хода по местам, мс. */
@@ -73,6 +78,8 @@ export type MapClientMsg =
   | { t: 'msimul'; on: boolean }
   /** Хозяин: команда места (союзы 2×2); null — сам за себя. */
   | { t: 'mteam'; seat: number; team: number | null }
+  /** Хозяин: партия на рейтинг (только дуэль людей, оба вошли). */
+  | { t: 'mranked'; on: boolean }
   /** Хозяин: драфт фракций и героев перед картой. */
   | { t: 'mdraftopt'; on: boolean }
   /** Шаг драфта: бан героя (hero), бан фракции (faction), выбор (оба). */
@@ -96,7 +103,7 @@ export type MapServerMsg =
   | { t: 'created'; code: string }
   | { t: 'joined'; code: string }
   | { t: 'error'; text: string }
-  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean }
+  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean; ranked: boolean }
   | { t: 'mdraft'; d: MapDraftView; seat: number | null; seats: MapSeatView[] }
   /** Зрителю: шаги записи (с задержкой в день), мир он собирает сам. */
   | { t: 'mspec'; steps: RecStep[]; seats: MapSeatView[] }
@@ -108,7 +115,7 @@ export type MapServerMsg =
   /** Что сейчас происходит у других: «Идёт бой…», «Ходит Петя». Пусто — ничего. */
   | { t: 'mbusy'; text: string }
   | { t: 'mnope'; why: string }
-  | { t: 'mover'; winner: number; why: 'map' | 'resign' }
+  | { t: 'mover'; winner: number; why: 'map' | 'resign'; rating?: MapRatingView }
   // бой на карте — как в Арене
   | { t: 'start'; state: BattleState; seat: number | null; names: [string, string]; clock: ClockView; result?: ResultView; you: number }
   | { t: 'step'; events: BattleEvent[]; state: BattleState; clock: ClockView }

@@ -438,4 +438,54 @@ describe('geroi/maproom: сеть карты', () => {
     expect(patchJson(JSON.parse(JSON.stringify(x)), JSON.parse(JSON.stringify(ops)))).toEqual(y);
     expect(diffJson(y, y)).toEqual([]);
   });
+
+  it('рейтинг: только дуэль вошедших людей; сдавшийся проигрывает, счёт приходит всем', () => {
+    const calls: [number, number][] = [];
+    const room = new MapRoom(GEN, () => 1000, {
+      onResult: (w, l) => {
+        calls.push([w, l]);
+        return [{ r: 1520, delta: 20 }, { r: 1480, delta: -20 }];
+      },
+    });
+    const a = { ...peer(1, 'a'), user: 11 };
+    const b = { ...peer(2, 'b'), user: null as number | null };
+    room.add(a);
+    room.add(b);
+    room.message(a, { t: 'mranked', on: true });
+    expect(a.last('mlobby').ranked).toBe(true);
+    // гость не вошёл — не начать
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('lobby');
+    expect(room.rankErr()).toMatch(/войти/);
+    room.remove(b);
+    const b2 = { ...peer(3, 'b2'), user: 11 };
+    room.add(b2);
+    expect(room.rankErr()).toMatch(/Сам с собой/);
+    room.remove(b2);
+    const b3 = { ...peer(4, 'b3'), user: 22 };
+    room.add(b3);
+    expect(room.rankErr()).toBeNull();
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('map');
+    room.message(a, { t: 'resign' });
+    expect(room.phase).toBe('over');
+    expect(calls).toEqual([[22, 11]]);
+    expect(a.last('mover').rating).toEqual([{ r: 1480, delta: -20 }, { r: 1520, delta: 20 }]);
+    expect(b3.last('mover').winner).toBe(1);
+  });
+
+  it('рейтинг: на четверых не включается; без галочки счёт не идёт', () => {
+    const calls: number[] = [];
+    const room = new MapRoom({ ...GEN, template: 'four', size: 'm' }, () => 1000, { onResult: () => (calls.push(1), [{ r: 0, delta: 0 }, { r: 0, delta: 0 }]) });
+    const a = { ...peer(1, 'a'), user: 1 };
+    room.add(a);
+    room.message(a, { t: 'mranked', on: true });
+    expect(room.ranked).toBe(false);
+    // дуэль без галочки: сдача без счёта
+    const { room: duel, a: d } = setup();
+    duel.message(d, { t: 'start' });
+    duel.message(d, { t: 'resign' });
+    expect(d.last('mover').rating).toBeUndefined();
+    expect(calls).toEqual([]);
+  });
 });

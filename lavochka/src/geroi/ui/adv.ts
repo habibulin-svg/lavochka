@@ -5,7 +5,7 @@ import { type BotMem, newMem } from '../bot/advbot';
 import { battleLevels } from '../bot/advplay';
 import { MapBotClient } from '../bot/remote';
 import type { MapClient } from '../net/mapclient';
-import type { MapClock, MapSeatView, MapServerMsg } from '../net/mapproto';
+import type { MapClock, MapRatingView, MapSeatView, MapServerMsg } from '../net/mapproto';
 import { Talk } from '../../gops/ui/talk';
 import { type ReplayClient, saveRecord } from './replay';
 import { Game, type Who } from '../game';
@@ -61,6 +61,8 @@ export interface AdvNet {
   busy: string;
   /** Проигрыватель записи вместо сервера: без чата, с кнопками показа. */
   replay?: ReplayClient;
+  /** Рейтинговая дуэль кончилась: что стало по местам. */
+  rating?: MapRatingView;
 }
 
 export class AdvGame {
@@ -756,7 +758,13 @@ export class AdvGame {
       this.showOtherBar();
     };
     c.onFight = (m) => this.queueNet(() => this.netFight(m));
-    c.onOver = () => this.queueNet(async () => this.afterAction());
+    c.onOver = (m) => {
+      net.rating = m.rating;
+      // итог уже на экране (мир с концом пришёл раньше) — дописать рейтинг туда
+      const box = this.overlay.querySelector('.g-result');
+      if (box && m.rating) this.ratingLine(box as HTMLElement);
+      this.queueNet(async () => this.afterAction());
+    };
     c.onNote = (text) => this.queueNet(async () => this.message('По очереди', text));
     c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : `${name} пропал со связи: через минуту за него сходит бот`);
     this.talk?.destroy();
@@ -1231,6 +1239,14 @@ export class AdvGame {
     box.append(list);
   }
 
+  /** Рейтинговая дуэль: своё новое число на экране итога (один раз). */
+  private ratingLine(box: HTMLElement): void {
+    const net = this.net;
+    const mine = net && net.seat !== null ? net.rating?.[net.seat] : undefined;
+    if (!mine || box.querySelector('.a-rating')) return;
+    box.append(h('p', 'g-heroline a-rating', `Рейтинг: ${mine.r} (${mine.delta >= 0 ? '+' : ''}${mine.delta})`));
+  }
+
   private showEnd(): void {
     const w = this.world;
     this.audio.music('victory');
@@ -1240,6 +1256,7 @@ export class AdvGame {
     box.append(h('h2', '', team.length ? `Победа: ${team.join(' и ')}!` : 'Никто не выстоял'), h('p', 'dim', `Партия шла ${w.day + 1} дн.`), button('В меню игры', () => this.onQuit(), 'g-btn main'));
     // сетевая партия: запись — файлом (сервер отдаёт её только после конца)
     const net = this.net;
+    this.ratingLine(box);
     if (net && !net.replay) {
       const save = button('Сохранить запись', () => {
         save.disabled = true;

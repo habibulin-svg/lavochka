@@ -131,7 +131,7 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     const no = msg.t === 'join' ? null : await closed('geroi');
     if (no) return fail(no);
     const u = await userOf(req);
-    const link = geroiFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode, u ? { id: u.id, name: u.name } : null, geroiRatings);
+    const link = geroiFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode, u ? { id: u.id, name: u.name } : null, geroiRatings, geroiMapRatings);
     if (link) log(`Герои: ${msg.t}, комнат ${geroiRooms()}`);
     return link;
   }
@@ -197,6 +197,7 @@ async function attach(ws: WebSocket, room: Room, req: IncomingMessage): Promise<
 // Хранение, проверка и выдача — server/records.ts; старый records.json аркад переносится при первом запуске.
 const recordStore = new FileRecordStore(DATA, log);
 const geroiRatings = new Ratings(DATA, log);
+const geroiMapRatings = new Ratings(DATA, log, 'geroi-map-rating.json');
 const recordDefs: Record<string, GameDef> = {};
 const records = new Records(
   recordStore,
@@ -208,6 +209,7 @@ for (const sig of ['SIGTERM', 'SIGINT'] as const)
   process.once(sig, () => {
     recordStore.flush();
     geroiRatings.flush();
+    geroiMapRatings.flush();
     process.exit(0);
   });
 
@@ -538,7 +540,9 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   // рейтинг Арены: таблица и своё место
   if (path === '/api/geroi/rating' && req.method === 'GET') {
     const u = await userOf(req);
-    return json(res, 200, { top: geroiRatings.top(20), me: u ? { name: u.name, ...geroiRatings.get(u.id) } : null });
+    // ?map=1 — рейтинг сетевой карты (дуэли), иначе Арены
+    const t = new URL(req.url || '/', 'http://x').searchParams.get('map') ? geroiMapRatings : geroiRatings;
+    return json(res, 200, { top: t.top(20), me: u ? { name: u.name, ...t.get(u.id) } : null });
   }
   if (path === '/api/ice') {
     // логины TURN — только своему сайту (без access-control-allow-origin)
