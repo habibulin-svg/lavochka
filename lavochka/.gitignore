@@ -8,3 +8,5 @@ tools/seo/raw/
 tools/seo/raw-run.log
 tools/seo/serp/
 lavochka/tools/seo/serp-run.log
+# временные файлы ffmpeg/упаковки роликов
+ffcache*
