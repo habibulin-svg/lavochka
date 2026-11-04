@@ -216,7 +216,17 @@ function militaryCard(f: Fact, base: Omit<Card, 'cost' | 'atk' | 'hp' | 'kw' | '
 
 const KIND_RU: Record<string, string> = { ship: 'Корабль', submarine: 'Подлодка', plane: 'Самолёт', helicopter: 'Вертолёт', tank: 'Танк', missile: 'Ракета' };
 
+/** Сильный удар на единицу слабее, чем по формуле: гонка «в лицо» медленнее, убрать чужой вкладыш со стола выгоднее
+ * (прогоны ботов 2026-11-04: размены против «всё в лицо» 53 → 56 %). Цена остаётся от полной формулы. */
+function tame(c: Card): Card {
+  return !c.spell && c.atk >= 3 ? { ...c, atk: c.atk - 1 } : c;
+}
+
 function build(f: Fact): Card {
+  return tame(buildRaw(f));
+}
+
+function buildRaw(f: Fact): Card {
   const s = setInfo(f.set);
   const base = { id: f.id, set: f.set, coll: s.coll, n: f.n, img: f.img, name: f.name || f.player || (s.coll === 'lazer' ? KIND_RU[f.kind ?? ''] ?? 'Техника' : `№${f.n}`), sub: '' };
   switch (s.coll) {

@@ -9,8 +9,8 @@ export const MAX_MANA = 10;
 export const HAND_MAX = 7;
 export const BOARD_MAX = 5;
 export const START_HAND = 3;
-/** Сколько терпения сверху получает второй игрок. */
-export const SECOND_BONUS = 2;
+/** Сколько терпения сверху получает второй игрок (прогоны ботов 2026-11-04: при 2 первый ход выигрывал 58,5 %, при 4 — 51 %). */
+export const SECOND_BONUS = 4;
 /** Ходов всего (на двоих): дальше — по терпению, чтобы партия не тянулась вечно. */
 export const TURN_LIMIT = 80;
 
