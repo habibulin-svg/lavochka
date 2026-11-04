@@ -77,6 +77,21 @@ export type NetServerMsg =
   | { t: 'rtc'; from: string; data: unknown }
   | { t: 'pong' };
 
+/** Что бою (Game) нужно от сетевого клиента: Арена и сетевая карта шлют бой одними сообщениями. Голосу — id, on, voice, rtc. */
+export interface BattleNet {
+  onStep: (m: Extract<NetServerMsg, { t: 'step' }>) => void;
+  onNope: (why: string) => void;
+  onResult: (m: Extract<NetServerMsg, { t: 'result' }>) => void;
+  onPeer: (name: string, on: boolean) => void;
+  onChat: (name: string, text: string) => void;
+  act(a: Action): void;
+  resign(): void;
+  chat(text: string): void;
+  readonly id: string;
+  voice(on: boolean, video?: boolean): void;
+  rtc(to: string, data: unknown): void;
+}
+
 const isCell = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < CELLS;
 const isUnit = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < 16;
 

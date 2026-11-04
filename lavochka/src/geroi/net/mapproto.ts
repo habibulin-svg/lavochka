@@ -64,7 +64,7 @@ export type MapServerMsg =
   | { t: 'error'; text: string }
   | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean }
   | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string }
-  | { t: 'mstep'; events: AdvEvent[]; world: World; clock: MapClock; seats: MapSeatView[] }
+  | { t: 'mstep'; events: AdvEvent[]; world: World; clock: MapClock; seats: MapSeatView[]; actor: number }
   /** Что сейчас происходит у других: «Идёт бой…», «Ходит Петя». Пусто — ничего. */
   | { t: 'mbusy'; text: string }
   | { t: 'mnope'; why: string }

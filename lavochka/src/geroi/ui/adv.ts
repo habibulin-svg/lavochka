@@ -4,6 +4,9 @@ import { type BotLevel, botAction } from '../bot/bot';
 import { type BotMem, newMem } from '../bot/advbot';
 import { battleLevels } from '../bot/advplay';
 import { MapBotClient } from '../bot/remote';
+import type { MapClient } from '../net/mapclient';
+import type { MapClock, MapSeatView, MapServerMsg } from '../net/mapproto';
+import { Talk } from '../../gops/ui/talk';
 import { Game, type Who } from '../game';
 import { MapView, PLAYER_COLORS } from '../render/mapview';
 import { SLOTS, type Save, loadSaves, slotLabel, writeAuto, writeSave } from '../save';
@@ -20,6 +23,10 @@ import { ArmyPicker, heroSheet, icon, marketDialog, portrait, priceRow, resBar }
 import { button, h, modal } from './common';
 import { TownScreen } from './town';
 
+const fmtMs = (ms: number): string => {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  return `${Math.trunc(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+};
 const BOT_WORD: Record<BotLevel, string> = { easy: 'лёгкий', medium: 'средний', hard: 'сложный' };
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -40,6 +47,17 @@ export interface AdvOptions {
   world: World;
   /** Сохранённый бой посреди партии. */
   battle?: BattleState;
+  /** Сетевая карта: мир держит сервер, сюда приходит вид своего места. */
+  net?: AdvNet;
+}
+
+export interface AdvNet {
+  client: MapClient;
+  /** Своё место; null — зритель. */
+  seat: number | null;
+  seats: MapSeatView[];
+  clock: MapClock;
+  busy: string;
 }
 
 export class AdvGame {
@@ -79,6 +97,13 @@ export class AdvGame {
   private botBar = h('div', 'a-botbar');
   /** Бой посреди хода бота: ход продолжится, когда он кончится. */
   private battleDone: (() => void) | null = null;
+  private net: AdvNet | null;
+  /** Сетевые события по очереди: показ одного не перебивает другой. */
+  private netQueue: Promise<void> = Promise.resolve();
+  private talk: Talk | null = null;
+  private clockTimer = 0;
+  /** Когда пришли часы с сервера: от этого момента считаем остаток. */
+  private clockAt = 0;
   /** Тела объектов и городов → вход: щелчок по зданию идёт к его воротам. */
   private bodies = new Map<number, number>();
   private readonly onKey = (e: KeyboardEvent): void => this.key(e);
@@ -90,6 +115,7 @@ export class AdvGame {
     this.world = o.world;
     this.view = new MapView(this.canvasHost, audio);
     this.resumeBattle = o.battle ?? null;
+    this.net = o.net ?? null;
     this.humans = this.world.players.filter((p) => !p.bot).map((p) => p.id);
     this.weekShown = Math.trunc(this.world.day / 7);
     this.lastHuman = this.humans.includes(this.world.current) ? this.world.current : (this.humans[0] ?? 0);
@@ -109,6 +135,7 @@ export class AdvGame {
     window.addEventListener('resize', this.fit);
     this.lastDay = this.world.day;
     await this.syncAll();
+    if (this.net) return this.startNet();
     if (this.resumeBattle) {
       const s = this.resumeBattle;
       this.resumeBattle = null;
@@ -162,14 +189,18 @@ export class AdvGame {
   /** Чьими глазами смотрим: ходящий человек, а в ход бота — последний человек; в партии ботов — ходящий. */
   private get me(): number {
     const c = this.world.current;
+    if (this.net) return this.net.seat ?? c;
     if (!this.humans.length || !this.world.players[c].bot) return c;
     return this.lastHuman;
   }
   /** Туман: у зрителя партии ботов его нет. */
   private get fogOf(): number {
+    if (this.net) return this.net.seat ?? -1;
     return this.humans.length ? this.me : -1;
   }
+  /** Ходит не тот, кто сидит за экраном: бот, а по сети — любой другой. */
   private get botTurn(): boolean {
+    if (this.net) return this.world.current !== this.net.seat;
     return !!this.world.players[this.world.current].bot;
   }
   private get hero(): AdvHero | undefined {
@@ -235,12 +266,15 @@ export class AdvGame {
   /** Начало хода: экран передачи, если людей несколько; герой под рукой. */
   private startTurn(pass: boolean): void {
     const w = this.world;
-    if (this.botTurn && !w.over) {
+    if (this.net) {
+      this.showOtherBar();
+      if (this.botTurn) return;
+    } else if (this.botTurn && !w.over) {
       void this.runBot();
       return;
     }
     // передать экран — только между разными людьми
-    const passed = pass && this.lastHuman !== w.current && this.humans.length > 1;
+    const passed = !this.net && pass && this.lastHuman !== w.current && this.humans.length > 1;
     this.lastHuman = w.current;
     this.selected = null;
     this.target = -1;
@@ -377,6 +411,12 @@ export class AdvGame {
       this.audio.sfx('ui-error');
       return;
     }
+    if (this.net) {
+      // ответ — mstep или mnope; до него руки заняты
+      this.busy = true;
+      this.net.client.adv(a);
+      return;
+    }
     this.busy = true;
     const next = await this.play(act(this.world, a));
     this.busy = false;
@@ -392,6 +432,10 @@ export class AdvGame {
       this.audio.sfx('ui-error');
       return;
     }
+    if (this.net) {
+      this.net.client.adv(a);
+      return;
+    }
     const ev = act(this.world, a);
     for (const e of ev) if (e.e === 'sfx') this.audio.sfx(e.name);
     void this.syncAll();
@@ -401,11 +445,11 @@ export class AdvGame {
   };
 
   /** Показать события; возвращает, что делать дальше, когда показ кончился. */
-  private async play(ev: AdvEvent[]): Promise<() => void> {
+  private async play(ev: AdvEvent[], foreign?: boolean): Promise<() => void> {
     const w = this.world;
     let steps: { to: number; from: number; dir: number }[] = [];
     let walker: AdvHero | undefined;
-    const bot = !!w.players[w.current].bot;
+    const bot = foreign ?? !!w.players[w.current].bot;
     const flush = async (): Promise<void> => {
       // ход бота: шаги видно, только если герой на виду; «быстрее» — без шагов
       const seen = !bot || (!this.fast && steps.some((x) => this.fogOf < 0 || w.players[this.fogOf].explored[x.to]));
@@ -648,7 +692,7 @@ export class AdvGame {
     }
     const upHero = playerHeroes(w, this.me).find((x) => x.ups.length);
     if (upHero) return this.levelUp(upHero);
-    if (pending?.t === 'battle') return this.battlePrompt(pending);
+    if (pending?.t === 'battle' && !this.net) return this.battlePrompt(pending);
     this.playMusic();
   }
 
@@ -675,6 +719,105 @@ export class AdvGame {
   }
 
   // ------------------------------------------------------------------ бой
+
+  // ------------------------------------------------------------------ сеть
+
+  private startNet(): void {
+    this.bindNet();
+    this.clockAt = Date.now();
+    this.clockTimer = window.setInterval(() => this.showOtherBar(), 1000);
+    this.startTurn(false);
+    this.showOtherBar();
+    this.afterAction();
+  }
+
+  /** Обработчики клиента и чат карты; после боя — снова (бой их перехватывает). */
+  private bindNet(): void {
+    const net = this.net!;
+    const c = net.client;
+    c.onMapStep = (m) => this.queueNet(() => this.applyNet(m));
+    c.onMapNope = (why) => {
+      this.busy = false;
+      this.tip(why);
+      this.audio.sfx('ui-error');
+    };
+    c.onBusy = (text) => {
+      net.busy = text;
+      this.showOtherBar();
+    };
+    c.onFight = (m) => this.queueNet(() => this.netFight(m));
+    c.onOver = () => this.queueNet(async () => this.afterAction());
+    c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : `${name} пропал со связи: через минуту за него сходит бот`);
+    this.talk?.destroy();
+    this.talk = new Talk(this.root, c);
+  }
+
+  private queueNet(f: () => Promise<void>): void {
+    this.netQueue = this.netQueue.then(f).catch((e) => console.error(e));
+  }
+
+  /** Мир с сервера: заменить свой и показать события. */
+  private async applyNet(m: Extract<MapServerMsg, { t: 'mstep' }>): Promise<void> {
+    if (this.dead) return;
+    const net = this.net!;
+    this.world = m.world;
+    net.seats = m.seats;
+    net.clock = m.clock;
+    this.clockAt = Date.now();
+    this.busy = true;
+    const next = await this.play(m.events, m.actor !== net.seat);
+    this.busy = false;
+    if (this.dead) return;
+    this.town?.draw();
+    next();
+  }
+
+  /** Бой на карте по сети: тот же Game, что в Арене; мир после боя придёт с сервера. */
+  private netFight(m: Extract<MapServerMsg, { t: 'start' }>): Promise<void> {
+    const net = this.net!;
+    const side = m.seat;
+    const who: [Who, Who] = [side === 0 ? 'human' : 'remote', side === 1 ? 'human' : 'remote'];
+    this.root.style.display = 'none';
+    this.view.frozen = true;
+    this.hideBotBar();
+    return new Promise((done) => {
+      const g = new Game(this.host, this.audio, { who, restore: { at: 0, title: '', state: m.state, who }, net: { client: net.client, seat: side, names: m.names, clock: m.clock, result: m.result } });
+      this.battle = g;
+      const close = (): void => {
+        g.destroy();
+        this.battle = null;
+        this.root.style.display = '';
+        this.view.frozen = false;
+        this.fitHud();
+        // клиент и чат — снова карте
+        this.bindNet();
+        this.playMusic();
+        done();
+      };
+      g.adv = { world: () => this.world, onFinish: close };
+      g.onQuit = close;
+      void g.start();
+    });
+  }
+
+  /** Плашка: кто ходит и сколько у него запаса (в свой ход — свой запас); идёт бой — об этом. */
+  private showOtherBar(): void {
+    const net = this.net;
+    if (!net || this.dead || this.battle) return;
+    const w = this.world;
+    this.botBar.replaceChildren();
+    if (w.over) return this.hideBotBar();
+    const left = net.clock.running === w.current ? ` · ${fmtMs(net.clock.bank[w.current] - (Date.now() - this.clockAt))}` : '';
+    if (net.busy) this.botBar.append(h('span', '', net.busy));
+    else if (!this.botTurn) this.botBar.append(h('b', '', 'Твой ход'), h('span', 'dim', left));
+    else {
+      const s = net.seats[w.current];
+      const name = h('b', '', s?.name ?? w.players[w.current].name);
+      name.style.color = `#${PLAYER_COLORS[w.current].toString(16).padStart(6, '0')}`;
+      this.botBar.append(h('span', '', 'Ходит '), name, h('span', 'dim', s?.bot ? ` — бот, ${BOT_WORD[s.bot]}` : s && !s.on ? ' — пропал со связи' : left));
+    }
+    this.botBar.hidden = false;
+  }
 
   /** Кто играет каждую сторону боя: люди — сами, боты — своим уровнем, нейтралы и гарнизоны без хозяина-человека — Средний. */
   private battleWho(p: PendingBattle): [Who, Who] {
@@ -985,6 +1128,22 @@ export class AdvGame {
       list.append(button('Назад', main));
     };
     const main = (): void => {
+      if (this.net) {
+        const net = this.net;
+        list.replaceChildren(
+          button('Продолжить', close),
+          button('Управление', () => this.help()),
+          button('Сдаться', () => {
+            close();
+            net.client.surrender();
+          }),
+          button('Выйти (за тебя сходит бот)', () => {
+            close();
+            this.onQuit();
+          }),
+        );
+        return;
+      }
       const save = button('Сохранить', () => slots('save'));
       save.disabled = !!this.world.pending;
       list.replaceChildren(
@@ -1099,6 +1258,9 @@ export class AdvGame {
   destroy(): void {
     this.dead = true;
     this.bots?.destroy();
+    this.talk?.destroy();
+    clearInterval(this.clockTimer);
+    this.net?.client.close();
     this.battle?.destroy();
     this.town?.destroy();
     window.removeEventListener('keydown', this.onKey);

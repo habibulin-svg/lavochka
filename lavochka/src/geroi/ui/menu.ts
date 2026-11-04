@@ -46,6 +46,7 @@ export class Menu {
   onQuick: (c: QuickConfig) => void = () => {};
   onLoad: (s: Save) => void = () => {};
   onArena: () => void = () => {};
+  onNetMap: () => void = () => {};
   onMap: (s: GameSpec) => void = () => {};
   onRandom: (s: GameSpec, o: GenOptions) => void = () => {};
   private last: QuickConfig | null = null;
@@ -74,13 +75,14 @@ export class Menu {
     col.append(
       button('Арена', () => this.onArena(), 'g-btn main'),
       button('Случайная карта', () => this.randomMap()),
+      button('Карта по сети', () => this.onNetMap()),
       button('Карта «Две реки»', () => this.mapSetup()),
       button('Быстрый бой', () => this.quick()),
       button('Загрузить', () => this.load()),
       music,
       button('Во двор', () => (location.href = '/')),
     );
-    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена» и карты за одним экраном'));
+    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена», карты с ботами и по сети'));
   }
 
   locked(signedIn: boolean): void {

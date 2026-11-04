@@ -329,7 +329,7 @@ export class MapRoom {
     const clock = this.clock();
     for (const p of this.peers) {
       const seat = this.seatOf(p);
-      p.send({ t: 'mstep', events: eventsView(w, ev, seat, actor), world: worldView(w, seat), clock, seats });
+      p.send({ t: 'mstep', events: eventsView(w, ev, seat, actor), world: worldView(w, seat), clock, seats, actor });
     }
   }
 

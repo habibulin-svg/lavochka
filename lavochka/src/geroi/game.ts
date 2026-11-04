@@ -2,8 +2,7 @@
 import { Talk } from '../gops/ui/talk';
 import { type Audio2 } from './audio';
 import { type BotLevel, botAction } from './bot/bot';
-import type { ArenaClient } from './net/client';
-import type { ClockView, NetServerMsg, ResultView } from './net/protocol';
+import type { BattleNet, ClockView, NetServerMsg, ResultView } from './net/protocol';
 import { BattleView, STAGE_H, STAGE_W, cellCenter, type Pointer } from './render/view';
 import { SLOTS, type Save, loadSaves, slotLabel, writeAuto, writeSave } from './save';
 import {
@@ -21,7 +20,7 @@ export type Who = 'human' | 'remote' | BotLevel;
 
 /** Партия по сети: сервер считает, клиент показывает и шлёт ходы. */
 export interface NetOptions {
-  client: ArenaClient;
+  client: BattleNet;
   seat: number | null;
   names: [string, string];
   clock: ClockView;
@@ -123,7 +122,7 @@ export class Game {
 
   // ------------------------------------------------------------------ сеть
 
-  private bindClient(c: ArenaClient): void {
+  private bindClient(c: BattleNet): void {
     this.net!.client = c;
     c.onStep = (m) => {
       this.steps.push(m);
@@ -144,7 +143,7 @@ export class Game {
   }
 
   /** Соединение вернулось: снимок с сервера заменяет всё показанное. */
-  resync(c: ArenaClient, m: Extract<NetServerMsg, { t: 'start' }>): void {
+  resync(c: BattleNet, m: Extract<NetServerMsg, { t: 'start' }>): void {
     this.bindClient(c);
     this.steps = [];
     this.sent = false;

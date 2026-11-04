@@ -7,8 +7,11 @@ import type { Link } from '../src/core/protocol';
 import { DEFAULT_BUDGET, type NetClientMsg, type NetServerMsg } from '../src/geroi/net/protocol';
 import { type Rating, START_RATING, afterGame } from '../src/geroi/net/rating';
 import { ArenaRoom, type RoomPeer } from '../src/geroi/net/room';
+import { cleanGen } from '../src/geroi/net/mapproto';
+import { MapRoom } from '../src/geroi/net/maproom';
 
-const rooms = new Map<string, ArenaRoom>();
+/** Комнаты Арены и сетевой карты — одни коды на двоих. */
+const rooms = new Map<string, ArenaRoom | MapRoom>();
 let waiting: { peer: RoomPeer; attach: (room: ArenaRoom, code: string) => void } | null = null;
 let nextPeer = 1;
 let clock: NodeJS.Timeout | null = null;
@@ -124,20 +127,21 @@ export function geroiFirst(
     },
   };
 
-  let room: ArenaRoom | null = null;
+  let room: ArenaRoom | MapRoom | null = null;
   let code = '';
-  const enter = (r: ArenaRoom, c: string) => {
+  const enter = (r: ArenaRoom | MapRoom, c: string) => {
     room = r;
     code = c;
   };
   const link: Link = {
     send: (x) => send(x as NetServerMsg),
     close,
-    onMessage: (x) => room?.message(peer, x as NetClientMsg),
+    // у Арены и карты свои сообщения: комната сама отбрасывает чужие
+    onMessage: (x) => room?.message(peer as never, x as never),
     onClose: () => {
       if (waiting?.peer === peer) waiting = null;
       if (room) {
-        room.remove(peer);
+        room.remove(peer as never);
         sweep(code);
       }
     },
@@ -153,6 +157,18 @@ export function geroiFirst(
     r.add(peer);
     return link;
   }
+  if ((msg as { t: string }).t === 'mcreate') {
+    const gen = cleanGen((msg as { gen?: unknown }).gen);
+    if (!gen) return fail('Непонятные настройки карты.');
+    code = genCode((c) => rooms.has(c));
+    const r = new MapRoom(gen);
+    rooms.set(code, r);
+    enter(r, code);
+    send({ t: 'created', code });
+    ensureClock();
+    r.add(peer as never);
+    return link;
+  }
   if (msg.t === 'join') {
     const c = String(msg.code || '').toUpperCase();
     const r = rooms.get(c);
@@ -160,7 +176,7 @@ export function geroiFirst(
     enter(r, c);
     send({ t: 'joined', code: c });
     ensureClock();
-    r.add(peer);
+    r.add(peer as never);
     return link;
   }
   if (msg.t === 'queue') {

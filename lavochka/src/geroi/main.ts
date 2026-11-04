@@ -14,6 +14,9 @@ import { ArenaClient } from './net/client';
 import type { NetClientMsg, NetServerMsg } from './net/protocol';
 import { Arena } from './ui/arena';
 import { AdvGame } from './ui/adv';
+import { MapClient } from './net/mapclient';
+import type { MapClientMsg, MapServerMsg } from './net/mapproto';
+import { NetMap } from './ui/netmap';
 import { type GameSpec, makeTestMap } from './sim/adv/testmap';
 import { TEMPLATES, generateMap, parseGen } from './sim/adv/gen';
 import type { TownFaction } from './sim/adv/town';
@@ -192,6 +195,86 @@ arena.onLeave = () => {
 };
 menu.onArena = () => arena.home();
 
+// ------------------------------------------------------------------ карта по сети
+
+const netMap = new NetMap(menu);
+let mapNet: MapClient | null = null;
+const MAP_SESSION = 'geroi-map';
+
+function leaveMap(): void {
+  const c = mapNet;
+  mapNet = null;
+  sessionStorage.removeItem(MAP_SESSION);
+  c?.close();
+}
+
+function wireMap(c: MapClient, name: string): void {
+  mapNet = c;
+  if (c.code) sessionStorage.setItem(MAP_SESSION, JSON.stringify({ code: c.code, name }));
+  c.onLobby = (m) => {
+    if (!adv) netMap.lobby(c, m);
+  };
+  // начало партии и возврат после обрыва: мир целиком с сервера
+  c.onStart = (m) => void startNetMap(c, m);
+  c.onClose = (why) => {
+    if (mapNet !== c) return;
+    void reconnectMap(why);
+  };
+}
+
+async function startNetMap(c: MapClient, m: Extract<MapServerMsg, { t: 'mstart' }>): Promise<void> {
+  stop();
+  menu.hide();
+  const a = new AdvGame(host, audio, { world: m.world, net: { client: c, seat: m.seat, seats: m.seats, clock: m.clock, busy: m.busy } });
+  adv = a;
+  a.onQuit = () => {
+    leaveMap();
+    stop();
+    menu.title();
+  };
+  (window as unknown as { geroiMap: AdvGame }).geroiMap = a;
+  await a.start();
+}
+
+async function reconnectMap(why: string): Promise<void> {
+  const saved = sessionStorage.getItem(MAP_SESSION);
+  if (!saved) {
+    leaveMap();
+    stop();
+    return netMap.home(why);
+  }
+  const { code, name } = JSON.parse(saved) as { code: string; name: string };
+  for (let i = 0; i < 6; i++) {
+    await new Promise((r) => setTimeout(r, 1000 + i * 1500));
+    try {
+      wireMap(await MapClient.open({ t: 'join', game: 'geroi', code, name, token: token() }), name);
+      return;
+    } catch {
+      /* ещё раз */
+    }
+  }
+  leaveMap();
+  stop();
+  netMap.home('Вернуться не вышло: связи нет или комната закрыта.');
+}
+
+async function connectMap(first: MapClientMsg, name: string): Promise<void> {
+  leaveMap();
+  try {
+    wireMap(await MapClient.open(first), name);
+  } catch (e) {
+    netMap.home(String((e as Error).message ?? e));
+  }
+}
+
+menu.onNetMap = () => netMap.home();
+netMap.onCreate = (name, gen) => void connectMap({ t: 'mcreate', game: 'geroi', name, token: token(), gen }, name);
+netMap.onJoin = (name, code) => void connectMap({ t: 'join', game: 'geroi', code, name, token: token() }, name);
+netMap.onLeave = () => {
+  leaveMap();
+  netMap.home();
+};
+
 menu.onQuick = (c) => void quick(c);
 menu.onLoad = (s) => void resume(s);
 menu.onMap = (spec: GameSpec) => void startAdv(makeTestMap(spec));
@@ -291,6 +374,16 @@ async function main(): Promise<void> {
       return;
     } catch {
       sessionStorage.removeItem(SESSION);
+    }
+  }
+  const savedMap = sessionStorage.getItem(MAP_SESSION);
+  if (savedMap) {
+    const { code, name } = JSON.parse(savedMap) as { code: string; name: string };
+    try {
+      wireMap(await MapClient.open({ t: 'join', game: 'geroi', code, name, token: token() }), name);
+      return;
+    } catch {
+      sessionStorage.removeItem(MAP_SESSION);
     }
   }
   if (sessionStorage.getItem('geroi-logo')) return menu.title();
