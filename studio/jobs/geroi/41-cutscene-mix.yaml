@@ -1,0 +1,270 @@
+# Герои, партия 41: раскладка звуков роликов (по листам кадров 40-cutscenes/sheets). Время — секунды от начала ролика. Ролики — петли: beat нет.
+clips:
+  - name: intro-1
+    beat: null
+    focus: [0.5, 0.5]
+    note: "вечер в городе 1995 года: панельки, кран на стройке у реки, закат; с правой стороны в конце пролетает тёмная птица (не голубь)"
+    bed: {duration: 7, gain: -6, prompt: "evening city outskirts ambience, distant traffic hum, light wind, far construction site"}
+    sounds:
+      - {id: crane-clank, at: 0.4, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "distant construction crane cable clanking on steel, metal clang far away"}
+      - {id: bird-flap, at: 3.6, gain: -2, duration: 2, level: quiet, max: 1.0, prompt: "dark bird wings beating hard as it flies in fast over a housing estate, flapping whoosh"}
+
+  - name: intro-2
+    beat: null
+    focus: [0.5, 0.5]
+    note: "котлован стройки: парни и Ленка склонились над кастетом в глине, он светится; в конце свечение вспыхивает"
+    bed: {duration: 7, gain: -6, prompt: "construction pit ambience, light wind over loose dirt, faint distant city hum"}
+    sounds:
+      - {id: dirt-brush, at: 2.0, gain: -2, duration: 1, level: quiet, max: 0.6, prompt: "hands brushing loose dirt and small stones aside, gritty scrape"}
+      - {id: brass-glow, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "faint warm magical hum rising from a brass object lying in dirt, soft shimmer"}
+      - {id: glow-flare, at: 4.2, gain: -2, duration: 2, level: normal, max: 0.9, prompt: "magical brass glow flaring up, soft whoosh with a sparkle"}
+
+  - name: intro-3
+    beat: null
+    focus: [0.5, 0.5]
+    note: "солнце закрыто чёрным диском с зелёным ободом, над стройкой ползёт дым и поднимается пыль; тревожный свет"
+    bed: {duration: 7, gain: -6, prompt: "dusty construction site under an eerie dark sky, slow wind, low air hum, distant dog barking"}
+    sounds:
+      - {id: eclipse-hush, at: 0.4, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "sudden eerie hush over a city, air pressure drop, low rumbling tension"}
+      - {id: wind-gust, at: 1.6, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "gusty wind kicking up loose dust across an open pit, rushing air"}
+      - {id: dust-scatter, at: 3.6, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "loose sand and dust scattering on rough ground, soft hiss"}
+
+  - name: intro-4
+    beat: null
+    focus: [0.5, 0.5]
+    note: "кастет вспыхивает: белый свет заливает котлован и город, потом в облаке пыли летят осколки"
+    bed: {duration: 7, gain: -6, prompt: "vast open landscape ambience, low wind, faint crackling of magical energy"}
+    sounds:
+      - {id: energy-burst, at: 0.0, gain: 0, duration: 2, level: loud, max: 1.2, prompt: "massive magical energy burst, bright crackling blast of light rays"}
+      - {id: light-swell, at: 2.8, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "bright white energy swelling outward, rushing hiss of light"}
+      - {id: shard-scatter, at: 4.4, gain: -2, duration: 2, level: quiet, max: 0.8, prompt: "glassy shards and rock fragments settling on the ground, tinkling crystal scatter"}
+
+  - name: intro-5
+    beat: null
+    focus: [0.5, 0.5]
+    note: "Серёга лежит в высокой траве под берёзами, над головой две луны; в руке светится осколок, он поворачивает голову"
+    bed: {duration: 7, gain: -6, prompt: "night meadow ambience, soft wind through tall grass, crickets, distant owl far away"}
+    sounds:
+      - {id: shard-glint, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "small glowing crystal shard with a low soft shimmer, faint glassy sparkle"}
+      - {id: grass-rustle, at: 2.8, gain: -2, duration: 1, level: quiet, max: 0.5, prompt: "boy shifting his body in tall grass, grass rustling softly"}
+
+  - name: intro-6
+    beat: null
+    focus: [0.5, 0.5]
+    note: "вид с холма: река, башни и дома деревни, на воде две лодки, полная луна; лодки медленно плывут"
+    bed: {duration: 7, gain: -6, prompt: "river valley ambience, gentle flowing river, light breeze through grass, distant village"}
+    sounds:
+      - {id: boat-oars, at: 0.4, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "wooden oars dipping into river water and pulling, soft splash and drip"}
+      - {id: village-bell, at: 2.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "distant village watch bell rings once, soft metallic ring fading away"}
+
+  - name: c1-1a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "старик в лодке налегает на вёсла, парень на берегу смотрит; к концу парень уходит из кадра"
+    bed: {duration: 7, gain: -6, prompt: "calm river shore ambience, gentle water lapping against a wooden hull, reeds rustling in breeze, distant birds"}
+    sounds:
+      - {id: oar-dip, at: 0.8, gain: -2, duration: 2, level: normal, max: 0.8, prompt: "wooden oar dipping into water and pulling, splash and drip"}
+      - {id: boat-creak, at: 2.4, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "old wooden boat creaking as a heavy man leans on the gunwale"}
+      - {id: footsteps-leave, at: 3.0, gain: -2, duration: 2, level: quiet, max: 0.6, prompt: "bare footsteps walking away along a gravel shore"}
+
+  - name: c1-2a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "всадник с синим флажком скачет вдоль частокола по росе, за копытами поднимаются клубы пыли"
+    bed: {duration: 7, gain: -6, prompt: "open meadow ambience, light wind through grass, distant birds"}
+    sounds:
+      - {id: hooves-gallop, at: 0.0, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "horse hooves galloping hard on dry grass, rhythmic thud of hooves"}
+      - {id: hooves-gallop-2, at: 2.8, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "horse hooves galloping on dry earth, dusty thud and soft puffs of dirt"}
+      - {id: flag-snap, at: 3.6, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "blue cloth flag snapping in the wind, fabric flap"}
+
+  - name: c1-2b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "на троне из коряг сидит здоровяк в венке из цветов, вокруг лягушки и туман; он слегка поворачивается"
+    bed: {duration: 7, gain: -6, prompt: "swamp at dawn ambience, bubbling water, damp fog, soft insect buzz"}
+    sounds:
+      - {id: throne-creak, at: 1.6, gain: -2, duration: 1, level: quiet, max: 0.6, prompt: "tangled wooden roots creaking as a heavy man shifts on a wooden throne"}
+      - {id: frog-hop, at: 2.4, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "small frog hopping onto wet mud, wet slap"}
+
+  - name: c1-3a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "туман над рекой: лягушки с копьями на берегу, в тумане тёмные силуэты и болотные огни; справа лягушка прыгает в воду"
+    bed: {duration: 7, gain: -6, prompt: "misty river marsh at night, slow current, faint fog hiss, distant reeds"}
+    sounds:
+      - {id: spear-shake, at: 1.2, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "wooden spear shaft rattling against a stone, short clatter"}
+      - {id: will-wisp, at: 2.0, gain: -4, duration: 2, level: quiet, max: 0.5, prompt: "faint glowing marsh lights flickering with a soft fizzing shimmer"}
+      - {id: frog-leap, at: 3.2, gain: -2, duration: 1, level: normal, max: 0.8, prompt: "frog leaping off a muddy bank and landing in water with a splash"}
+
+  - name: c1-3b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "на гребне холма стоят чёрные всадники на вороных конях, над ними грозовые тучи"
+    bed: {duration: 7, gain: -6, prompt: "windy hilltop ambience, strong wind, distant thunder rumble"}
+    sounds:
+      - {id: horses-trot, at: 0.0, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "several dark horses trotting on hard ground, muffled hoofbeats and leather creaks"}
+      - {id: horses-trot-2, at: 2.4, gain: -4, duration: 2, level: quiet, max: 0.7, prompt: "group of horses moving on a dirt hilltop, hoofbeats and tack creaking"}
+      - {id: thunder-roll, at: 3.2, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "distant thunder rolling over hills, low rumble"}
+
+  - name: c1-4a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "каменный обелиск светится изнутри, перед ним стоят ряды войска с чёрными знамёнами и тёмными плащами"
+    bed: {duration: 7, gain: -6, prompt: "dusk camp ambience, wind over hills, distant clatter of an army camp"}
+    sounds:
+      - {id: obelisk-hum, at: 0.0, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "ancient stone obelisk humming with glowing energy, low resonant hum with crackle"}
+      - {id: army-march, at: 2.0, gain: -4, duration: 2, level: quiet, max: 0.8, prompt: "many armoured feet marching in step on dirt, muffled boots and armour clinking"}
+      - {id: banner-snap, at: 3.2, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "black banners snapping in strong wind"}
+
+  - name: c1-fin1
+    beat: null
+    focus: [0.5, 0.5]
+    note: "два золотых осколка в ладони светятся и сходятся, потом вспыхивают в белый шар"
+    bed: {duration: 7, gain: -6, prompt: "quiet dark room ambience, faint warm air, soft magical undertone"}
+    sounds:
+      - {id: crystal-hum, at: 0.0, gain: -2, duration: 2, level: quiet, max: 0.8, prompt: "two golden crystals humming and tingling above a palm, steady warm shimmer"}
+      - {id: energy-pull, at: 3.2, gain: 0, duration: 2, level: normal, max: 1.0, prompt: "glowing energy orb forming between crystals, rising whoosh gathering into a bright ball"}
+      - {id: light-flash, at: 4.2, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "bright orb bursting outward with a sparkling sizzle, rushing wind of light"}
+
+  - name: c1-fin2
+    beat: null
+    focus: [0.5, 0.5]
+    note: "тёмный замок на скале, в освещённом окне башни стоит силуэт человека в длинном плаще и кепке"
+    bed: {duration: 7, gain: -6, prompt: "night wind around a high stone castle, faint distant thunder, sparse rain"}
+    sounds:
+      - {id: window-lantern, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.5, prompt: "lantern flame glowing steadily in an arched stone window, low soft hum of fire"}
+      - {id: coat-rustle, at: 2.0, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "long heavy coat fabric rustling as a figure shifts in a stone window"}
+      - {id: tower-steps, at: 3.6, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "boots pacing slowly on a stone floor of a tower, heavy footsteps echoing"}
+
+  - name: c1-fin3
+    beat: null
+    focus: [0.5, 0.5]
+    note: "Серёга и Димон сидят у костра на холме над рекой на закате; Димон жестикулирует, костёр горит"
+    bed: {duration: 7, gain: -6, prompt: "evening meadow by a river, gentle breeze, distant water flow, crickets"}
+    sounds:
+      - {id: fire-crackle, at: 0.0, gain: -2, duration: 2, level: normal, max: 0.8, prompt: "campfire wood crackling and popping, soft flame roar"}
+      - {id: log-pop, at: 2.4, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "single log popping in a fire, sharp snap with a shower of sparks"}
+      - {id: grass-shift, at: 3.4, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "clothes and grass rustling as a man shifts to sit on the ground"}
+
+  - name: c2-1a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "девочка в кровати под куполом обсерватории, у кровати медные телескопы; звёздная карта на потолке гаснет, она закрывает голову руками"
+    bed: {duration: 7, gain: -6, prompt: "observatory dome at night, quiet room tone, faint wind outside pine trees"}
+    sounds:
+      - {id: star-twinkle, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "faint glassy sparkle of a star map fading, soft twinkle of light"}
+      - {id: bedsheet-rustle, at: 2.4, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "bedsheets rustling as a girl pulls them up and clutches her head"}
+      - {id: star-dim, at: 2.8, gain: -2, duration: 2, level: quiet, max: 0.8, prompt: "magical glow dimming away with a soft airy fall, light fading into darkness"}
+
+  - name: c2-1b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "старый маг в синей мантии склонился над звёздной картой на пюпитре, девочка рядом; потом она ныряет под пюпитр"
+    bed: {duration: 7, gain: -6, prompt: "stone hall interior, quiet echoing room tone, distant candle flicker"}
+    sounds:
+      - {id: robe-swish, at: 0.8, gain: -2, duration: 1, level: quiet, max: 0.6, prompt: "heavy blue robe fabric swishing as an old man bends forward"}
+      - {id: map-slide, at: 1.6, gain: -2, duration: 2, level: normal, max: 0.8, prompt: "large parchment map sliding on a wooden easel, paper rustle and wood creak"}
+      - {id: girl-duck, at: 2.8, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "small shoes shuffling quickly under a wooden easel, light scuffle on stone"}
+
+  - name: c2-2a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "город-кузня на пепелище: красное зарево, трубы, паровые машины, работники в дыму"
+    bed: {duration: 7, gain: -6, prompt: "industrial foundry town ambience, roaring furnaces, distant steam hiss, clanking machinery"}
+    sounds:
+      - {id: furnace-roar, at: 0.0, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "large furnace roaring with flame, deep whoosh of fire"}
+      - {id: steam-release, at: 2.0, gain: -2, duration: 2, level: normal, max: 0.9, prompt: "steam engine releasing pressure, sharp hiss and puff of steam"}
+      - {id: hammer-far, at: 3.6, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "distant heavy hammer striking iron, metallic clang with echo"}
+
+  - name: c2-2b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "парень в фартуке бьёт молотом по наковальне, снопы искр; за ним медный колосс"
+    bed: {duration: 7, gain: -6, prompt: "forge interior ambience, crackling fire, distant metal workshop rumble"}
+    sounds:
+      - {id: hammer-a, at: 0.4, gain: 0, duration: 1, level: normal, max: 1.0, prompt: "hammer striking hot iron on an anvil, metallic clang with a spray of sparks"}
+      - {id: hammer-b, at: 1.2, gain: 0, duration: 1, level: normal, max: 1.0, prompt: "hammer striking hot iron on an anvil, sharp ring with hissing sparks"}
+      - {id: hammer-c, at: 2.0, gain: -2, duration: 1, level: normal, max: 1.0, prompt: "hammer striking hot iron on an anvil, metallic clang"}
+      - {id: hammer-d, at: 4.4, gain: 0, duration: 1, level: normal, max: 1.0, prompt: "hammer striking hot iron on an anvil, metallic clang with a burst of sparks"}
+
+  - name: c2-3a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "в тёплой комнате над столом с картой зажигаются свечи-огни, из карты поднимается башня; в кадре справа край рукава мага"
+    bed: {duration: 7, gain: -6, prompt: "quiet magical study at night, soft room tone, faint wind outside"}
+    sounds:
+      - {id: candles-ignite, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "candle flames igniting one after another with a soft whoosh and flicker"}
+      - {id: tower-rise, at: 2.8, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "stone tower rising out of a map with grinding wood and a magical rumble"}
+      - {id: scroll-unroll, at: 3.6, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "stiff parchment scroll unrolling with a dry papery rustle"}
+
+  - name: c2-3b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "фигура в чёрном плаще и кепке прыгает с башни на фоне луны, в руке свиток; потом падает вниз"
+    bed: {duration: 7, gain: -6, prompt: "faint night wind, gusts around a tall stone tower under a full moon"}
+    sounds:
+      - {id: cloak-whip, at: 0.0, gain: -2, duration: 2, level: normal, max: 0.9, prompt: "black cloak snapping in the air as a figure leaps from a tower, fabric whip"}
+      - {id: fall-rush, at: 3.2, gain: -2, duration: 2, level: normal, max: 0.9, prompt: "body falling through air, rushing whoosh with flapping cloth"}
+      - {id: landing-thump, at: 4.6, gain: 0, duration: 1, level: normal, max: 0.8, prompt: "body landing on a roof, soft heavy thump"}
+
+  - name: c2-4a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "звездопад над лесным кратером: метеоры падают в лес, под самым большим — вспышка и облако пыли, которое заволакивает кратер"
+    bed: {duration: 7, gain: -6, prompt: "night forest ambience, crickets, light wind through pine trees, distant rumbling"}
+    sounds:
+      - {id: meteor-whistle, at: 0.0, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "fiery meteors streaking through the night sky with a rushing whistle"}
+      - {id: impact-boom, at: 2.4, gain: -2, duration: 2, level: loud, max: 1.2, prompt: "huge meteor impact, deep explosive boom with a rocky crunch"}
+      - {id: smoke-roll, at: 3.2, gain: -4, duration: 2, level: quiet, max: 0.8, prompt: "thick smoke billowing up with a rolling low rumble"}
+      - {id: second-crash, at: 4.0, gain: -4, duration: 1, level: normal, max: 0.8, prompt: "second meteor crashing into rocky ground, crunch and rumble"}
+
+  - name: c2-fin1
+    beat: null
+    focus: [0.5, 0.5]
+    note: "девочка в кратере поднимает светящийся осколок, вокруг дымятся камни; осколок вспыхивает, и свет накрывает её"
+    bed: {duration: 7, gain: -6, prompt: "crater cavern ambience, low rumble of cooling rock, faint hiss of steam"}
+    sounds:
+      - {id: shard-hum, at: 0.0, gain: -2, duration: 2, level: quiet, max: 0.8, prompt: "glowing crystal shard humming with a steady warm shimmer"}
+      - {id: energy-surge, at: 2.8, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "magical energy surging up from the ground, rising whoosh"}
+      - {id: light-blast, at: 4.0, gain: 0, duration: 2, level: loud, max: 1.2, prompt: "bright magical burst of light, rushing wind and sparkling fizz"}
+
+  - name: c2-fin2
+    beat: null
+    focus: [0.5, 0.5]
+    note: "на земле лежит кожаная сумка с жёлтым значком и чёрно-белым фото здания; в конце в кадр входит рука и хватает сумку"
+    bed: {duration: 7, gain: -6, prompt: "quiet outdoor ground ambience, grass rustle, light wind"}
+    sounds:
+      - {id: hand-brush, at: 0.8, gain: -4, duration: 1, level: quiet, max: 0.6, prompt: "hand brushing quickly across leather and paper, soft whoosh"}
+      - {id: bag-grab, at: 4.0, gain: -2, duration: 1, level: normal, max: 0.8, prompt: "leather bag snatched up by a hand, strap pulled, quick rustle"}
+
+  - name: c2-fin3
+    beat: null
+    focus: [0.5, 0.5]
+    note: "девочка на башне светит фонарём на запад, через реку; машет рукой"
+    bed: {duration: 7, gain: -6, prompt: "dusk riverside ambience, wind across a stone tower, distant river flow"}
+    sounds:
+      - {id: beam-swish, at: 0.0, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "bright light beam sweeping out over the land with a soft airy swish"}
+      - {id: sleeve-flap, at: 1.2, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "light fabric sleeve flapping in the wind as an arm waves"}
+      - {id: lantern-hum, at: 2.8, gain: -4, duration: 2, level: quiet, max: 0.5, prompt: "lantern light humming steadily in the evening wind"}
+
+  - name: lose
+    beat: null
+    focus: [0.5, 0.5]
+    note: "тёмные тучи над опустевшей деревней, порванное знамя сорвано ветром и летит по земле"
+    bed: {duration: 7, gain: -6, prompt: "stormy open village at dusk ambience, strong wind, distant thunder rumble"}
+    sounds:
+      - {id: thunder-far, at: 0.8, gain: -4, duration: 2, level: quiet, max: 0.8, prompt: "distant thunder rolling low under a storm cloud"}
+      - {id: wind-gust, at: 2.4, gain: -2, duration: 2, level: normal, max: 1.0, prompt: "heavy wind gust rushing across an empty village"}
+      - {id: cloth-flap, at: 3.2, gain: -2, duration: 2, level: normal, max: 0.9, prompt: "torn fabric banner flapping and snapping in strong wind"}
+      - {id: cloth-drop, at: 4.8, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "light torn cloth dropping onto dirt, soft rustle"}
+
+  - name: win
+    beat: null
+    focus: [0.5, 0.5]
+    note: "в кадре не ликование над замком, а свалка в деревне: отряды сходятся у хат, жёлтое знамя на переднем плане, на башне красный флаг"
+    bed: {duration: 7, gain: -6, prompt: "village square ambience, dusty open ground, light wind, distant footsteps"}
+    sounds:
+      - {id: weapons-clash, at: 0.8, gain: 0, duration: 1, level: normal, max: 1.0, prompt: "spears and shields clashing together with a metallic clatter"}
+      - {id: banner-wind, at: 1.6, gain: -2, duration: 2, level: quiet, max: 0.8, prompt: "large yellow banner snapping in the wind"}
+      - {id: sword-whoosh, at: 3.2, gain: -2, duration: 1, level: quiet, max: 0.6, prompt: "sword swung quickly through the air, short whoosh"}
+      - {id: body-thud, at: 4.4, gain: -2, duration: 1, level: normal, max: 0.8, prompt: "heavy body falling onto a wooden roof, dull thud"}

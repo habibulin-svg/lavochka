@@ -1,4 +1,4 @@
-"""Ролики ГОПС со звуком: листы кадров → раскладка звуков (задание) → звуки → апскейл → монтаж.
+"""Ролики со звуком (--game gops | geroi, по умолчанию gops): листы кадров → раскладка звуков (задание) → звуки → апскейл → монтаж.
 
 G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/cutscenes.py sheets      # листы кадров с метками времени (для раскладки)
 G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/cutscenes.py sfxjob      # задание раскладки → задание runners/sfx.py
@@ -30,22 +30,53 @@ import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = pathlib.Path('G:/temp/studio/out/gops')
-WORK = SRC / '40-cutscenes'
-SFX = SRC / '41-cutscene-sfx'
-MIX = ROOT / 'studio/jobs/gops/41-cutscene-mix.yaml'
-SFXJOB = ROOT / 'studio/jobs/gops/41-cutscene-sfx.yaml'
-DST = ROOT / 'lavochka/public/gops/a/40-cutscenes'
 FFMPEG = 'G:/ai/ffmpeg/bin/ffmpeg.exe'
 ESRGAN = 'G:/ai/ComfyUI/models/upscale_models/RealESRGAN_x4plus.pth'
 FPS = 24
 W, H = 1920, 1056
 PRE, TAIL, FADE = 0.5, 1.2, 0.4
+LOOP_X = 12  # «Герои»: кадров перехода конца ролика в начало (петля в окне кампании)
 
-# отобранные ролики — как cutsceneUrl в lavochka/src/gops/assets.ts
-CLIPS = {p.name.removesuffix('-1-v1.mp4'): p for p in sorted((SRC / '25-videos').glob('s[0-9][0-9]-*-1-v1.mp4'))}
-CLIPS['logo-anim'] = SRC / '25-videos/logo-anim-1-v1.mp4'
-CLIPS['s09-kvass'] = SRC / '25c-fix-videos/s09b-kvass-2-v1.mp4'
+
+def gops_clips(src):
+    # отобранные ролики — как cutsceneUrl в lavochka/src/gops/assets.ts
+    c = {p.name.removesuffix('-1-v1.mp4'): p for p in sorted((src / '25-videos').glob('s[0-9][0-9]-*-1-v1.mp4'))}
+    c['logo-anim'] = src / '25-videos/logo-anim-1-v1.mp4'
+    c['s09-kvass'] = src / '25c-fix-videos/s09b-kvass-2-v1.mp4'
+    return c
+
+
+def geroi_clips(src):
+    # выбор — studio/jobs/geroi/picks.json: по умолчанию ключ 1 сид 1, переделки — партии 17-videos-redo*
+    picks = json.loads((ROOT / 'studio/jobs/geroi/picks.json').read_text(encoding='utf-8'))
+    c = {p.name.removesuffix('-1-v1.mp4'): p for p in sorted((src / '17-videos').glob('*-1-v1.mp4'))}
+    for b in ('17-videos-redo', '17-videos-redo2'):
+        for name, file in picks.get(b, {}).items():
+            c[name] = src / b / f'{file}.mp4'
+    return c
+
+
+# GOPS: вступление, наезд на главный момент, стоп-кадр с притемнением. Герои: петля (конец переходит в начало) — окно кампании
+GAMES = {
+    'gops': {'src': 'gops', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
+             'dst': 'lavochka/public/gops/a/40-cutscenes', 'clips': gops_clips, 'loop': False},
+    'geroi': {'src': 'geroi', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
+              'dst': 'lavochka/public/geroi/a/cutscenes', 'clips': geroi_clips, 'loop': True},
+}
+GAME = 'gops'
+SRC = WORK = SFX = MIX = SFXJOB = DST = None
+CLIPS: dict = {}
+
+
+def setup(game: str):
+    global GAME, SRC, WORK, SFX, MIX, SFXJOB, DST, CLIPS
+    g = GAMES[game]
+    GAME = game
+    SRC = pathlib.Path('G:/temp/studio/out') / g['src']
+    WORK, SFX = SRC / g['work'], SRC / g['sfx']
+    MIX, SFXJOB = ROOT / 'studio/jobs' / game / g['mix'], ROOT / 'studio/jobs' / game / g['sfxjob']
+    DST = ROOT / g['dst']
+    CLIPS = g['clips'](SRC)
 
 
 def frames(path: pathlib.Path, w: int, h: int):
@@ -101,7 +132,7 @@ def sfxjob():
         if s.get('max') is None:
             s.pop('max', None)
     job = {'out': str(SFX).replace('\\', '/'), 'seeds': [1], 'sounds': sounds}
-    SFXJOB.write_text('# ГОПС, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob из 41-cutscene-mix.yaml — правки вносить туда.\n'
+    SFXJOB.write_text(f'# {GAME}, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob --game {GAME} из 41-cutscene-mix.yaml — правки вносить туда.\n'
                       + yaml.safe_dump(job, allow_unicode=True, sort_keys=False, width=200), encoding='utf-8')
     print('задание', SFXJOB, len(sounds), 'звуков')
 
@@ -166,7 +197,7 @@ def crop(f: np.ndarray, z: float, fx: float, fy: float) -> np.ndarray:
     return np.asarray(img.resize((W, H), Image.BICUBIC, box=(x0, y0, x0 + cw, y0 + ch)))
 
 
-def mix_audio(c, dur: float, total: float, wav: pathlib.Path, shared):
+def mix_audio(c, dur: float, total: float, wav: pathlib.Path, shared, fades=True):
     import soundfile as sf
     sr = 48000
     buf = np.zeros((int(total * sr) + sr, 2))
@@ -195,9 +226,10 @@ def mix_audio(c, dur: float, total: float, wav: pathlib.Path, shared):
         put('shared--sting', PRE + c['beat'] - 0.05, c.get('sting_gain', -3))
     n = int(total * sr)
     buf = buf[:n]
-    fi, fo = int(0.15 * sr), int(FADE * sr)
-    buf[:fi] *= np.linspace(0, 1, fi)[:, None]
-    buf[-fo:] *= np.linspace(1, 0, fo)[:, None]
+    if fades:
+        fi, fo = int(0.15 * sr), int(FADE * sr)
+        buf[:fi] *= np.linspace(0, 1, fi)[:, None]
+        buf[-fo:] *= np.linspace(1, 0, fo)[:, None]
     pk = np.abs(buf).max()
     if pk > 0.89:
         buf *= 0.89 / pk
@@ -216,6 +248,9 @@ def edit(names):
             src = CLIPS[name]
         w, h = size(src)
         fr = [f if (w, h) == (W, H) else np.asarray(Image.fromarray(f).resize((W, H), Image.LANCZOS)) for f in frames(src, w, h)]
+        if GAMES[GAME]['loop']:
+            info[name] = edit_loop(c, fr, name)
+            continue
         dur = len(fr) / FPS
         beat = c.get('beat')
         fx, fy = c.get('focus') or (0.5, 0.5)
@@ -243,11 +278,50 @@ def edit(names):
         print('монтаж', name, f'{total:.1f} с', flush=True)
 
 
+def edit_loop(c, fr, name):
+    """Петля: последние LOOP_X кадров плавно переходят в первые, ролик начинается с кадра LOOP_X — швa не видно.
+    Звук тем же образом: фон и звуки по раскладке, хвост подмешивается в начало."""
+    import soundfile as sf
+    n, L = len(fr), LOOP_X
+    out = fr[L:n - L] + [((1 - (j + 1) / (L + 1)) * fr[n - L + j] + (j + 1) / (L + 1) * fr[j]).astype(np.uint8) for j in range(L)]
+    dur = len(out) / FPS
+    WORK.mkdir(parents=True, exist_ok=True)
+    wav = WORK / f'{name}.wav'
+    full = (n) / FPS
+    global PRE
+    pre, PRE = PRE, 0.0
+    mix_audio(c, full, full, wav, False, fades=False)
+    PRE = pre
+    a, sr = sf.read(wav, always_2d=True)
+    sh, xl = int(L / FPS * sr), int(L / FPS * sr)
+    body = a[sh:sh + int(dur * sr)].copy()
+    tail = a[sh + int(dur * sr): sh + int(dur * sr) + xl]
+    k = min(len(tail), len(body))
+    body[:k] += tail[:k] * np.linspace(1, 0, k)[:, None]  # что звучало после шва — в начало петли
+    pk = np.abs(body).max()
+    if pk > 0.89:
+        body *= 0.89 / pk
+    sf.write(wav, body, sr)
+    DST.mkdir(parents=True, exist_ok=True)
+    out_p = DST / f'{name}.mp4'
+    enc = subprocess.Popen([FFMPEG, '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
+                            '-i', str(wav), '-c:v', 'libx264', '-preset', 'slow', '-crf', '27', '-pix_fmt', 'yuv420p',
+                            '-c:a', 'aac', '-b:a', '128k', '-shortest', '-movflags', '+faststart', str(out_p)], stdin=subprocess.PIPE)
+    for f in out:
+        enc.stdin.write(np.ascontiguousarray(f).tobytes())
+    enc.stdin.close()
+    enc.wait()
+    print('петля', name, f'{dur:.1f} с', flush=True)
+    return round(dur, 2)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('step', choices=['sheets', 'sfxjob', 'upscale', 'edit'])
     ap.add_argument('names', nargs='*')
+    ap.add_argument('--game', default='gops', choices=list(GAMES))
     a = ap.parse_args()
+    setup(a.game)
     names = a.names or list(CLIPS)
     {'sheets': lambda: sheets(), 'sfxjob': lambda: sfxjob(), 'upscale': lambda: upscale(names), 'edit': lambda: edit(names)}[a.step]()
 

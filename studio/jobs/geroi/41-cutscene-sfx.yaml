@@ -1,0 +1,540 @@
+# geroi, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob --game geroi из 41-cutscene-mix.yaml — правки вносить туда.
+out: G:/temp/studio/out/geroi/41-cutscene-sfx
+seeds:
+- 1
+sounds:
+- name: intro-1--crane-clank
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: distant construction crane cable clanking on steel, metal clang far away
+- name: intro-1--bird-flap
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: dark bird wings beating hard as it flies in fast over a housing estate, flapping whoosh
+- name: intro-1--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: evening city outskirts ambience, distant traffic hum, light wind, far construction site
+- name: intro-2--dirt-brush
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: hands brushing loose dirt and small stones aside, gritty scrape
+- name: intro-2--brass-glow
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: faint warm magical hum rising from a brass object lying in dirt, soft shimmer
+- name: intro-2--glow-flare
+  duration: 2
+  level: normal
+  max: 0.9
+  prompt: magical brass glow flaring up, soft whoosh with a sparkle
+- name: intro-2--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: construction pit ambience, light wind over loose dirt, faint distant city hum
+- name: intro-3--eclipse-hush
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: sudden eerie hush over a city, air pressure drop, low rumbling tension
+- name: intro-3--wind-gust
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: gusty wind kicking up loose dust across an open pit, rushing air
+- name: intro-3--dust-scatter
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: loose sand and dust scattering on rough ground, soft hiss
+- name: intro-3--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: dusty construction site under an eerie dark sky, slow wind, low air hum, distant dog barking
+- name: intro-4--energy-burst
+  duration: 2
+  level: loud
+  max: 1.2
+  prompt: massive magical energy burst, bright crackling blast of light rays
+- name: intro-4--light-swell
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: bright white energy swelling outward, rushing hiss of light
+- name: intro-4--shard-scatter
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: glassy shards and rock fragments settling on the ground, tinkling crystal scatter
+- name: intro-4--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: vast open landscape ambience, low wind, faint crackling of magical energy
+- name: intro-5--shard-glint
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: small glowing crystal shard with a low soft shimmer, faint glassy sparkle
+- name: intro-5--grass-rustle
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: boy shifting his body in tall grass, grass rustling softly
+- name: intro-5--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: night meadow ambience, soft wind through tall grass, crickets, distant owl far away
+- name: intro-6--boat-oars
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: wooden oars dipping into river water and pulling, soft splash and drip
+- name: intro-6--village-bell
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: distant village watch bell rings once, soft metallic ring fading away
+- name: intro-6--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: river valley ambience, gentle flowing river, light breeze through grass, distant village
+- name: c1-1a--oar-dip
+  duration: 2
+  level: normal
+  max: 0.8
+  prompt: wooden oar dipping into water and pulling, splash and drip
+- name: c1-1a--boat-creak
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: old wooden boat creaking as a heavy man leans on the gunwale
+- name: c1-1a--footsteps-leave
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: bare footsteps walking away along a gravel shore
+- name: c1-1a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: calm river shore ambience, gentle water lapping against a wooden hull, reeds rustling in breeze, distant birds
+- name: c1-2a--hooves-gallop
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: horse hooves galloping hard on dry grass, rhythmic thud of hooves
+- name: c1-2a--hooves-gallop-2
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: horse hooves galloping on dry earth, dusty thud and soft puffs of dirt
+- name: c1-2a--flag-snap
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: blue cloth flag snapping in the wind, fabric flap
+- name: c1-2a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: open meadow ambience, light wind through grass, distant birds
+- name: c1-2b--throne-creak
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: tangled wooden roots creaking as a heavy man shifts on a wooden throne
+- name: c1-2b--frog-hop
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: small frog hopping onto wet mud, wet slap
+- name: c1-2b--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: swamp at dawn ambience, bubbling water, damp fog, soft insect buzz
+- name: c1-3a--spear-shake
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: wooden spear shaft rattling against a stone, short clatter
+- name: c1-3a--will-wisp
+  duration: 2
+  level: quiet
+  max: 0.5
+  prompt: faint glowing marsh lights flickering with a soft fizzing shimmer
+- name: c1-3a--frog-leap
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: frog leaping off a muddy bank and landing in water with a splash
+- name: c1-3a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: misty river marsh at night, slow current, faint fog hiss, distant reeds
+- name: c1-3b--horses-trot
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: several dark horses trotting on hard ground, muffled hoofbeats and leather creaks
+- name: c1-3b--horses-trot-2
+  duration: 2
+  level: quiet
+  max: 0.7
+  prompt: group of horses moving on a dirt hilltop, hoofbeats and tack creaking
+- name: c1-3b--thunder-roll
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: distant thunder rolling over hills, low rumble
+- name: c1-3b--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: windy hilltop ambience, strong wind, distant thunder rumble
+- name: c1-4a--obelisk-hum
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: ancient stone obelisk humming with glowing energy, low resonant hum with crackle
+- name: c1-4a--army-march
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: many armoured feet marching in step on dirt, muffled boots and armour clinking
+- name: c1-4a--banner-snap
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: black banners snapping in strong wind
+- name: c1-4a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: dusk camp ambience, wind over hills, distant clatter of an army camp
+- name: c1-fin1--crystal-hum
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: two golden crystals humming and tingling above a palm, steady warm shimmer
+- name: c1-fin1--energy-pull
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: glowing energy orb forming between crystals, rising whoosh gathering into a bright ball
+- name: c1-fin1--light-flash
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: bright orb bursting outward with a sparkling sizzle, rushing wind of light
+- name: c1-fin1--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet dark room ambience, faint warm air, soft magical undertone
+- name: c1-fin2--window-lantern
+  duration: 2
+  level: quiet
+  max: 0.5
+  prompt: lantern flame glowing steadily in an arched stone window, low soft hum of fire
+- name: c1-fin2--coat-rustle
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: long heavy coat fabric rustling as a figure shifts in a stone window
+- name: c1-fin2--tower-steps
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: boots pacing slowly on a stone floor of a tower, heavy footsteps echoing
+- name: c1-fin2--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: night wind around a high stone castle, faint distant thunder, sparse rain
+- name: c1-fin3--fire-crackle
+  duration: 2
+  level: normal
+  max: 0.8
+  prompt: campfire wood crackling and popping, soft flame roar
+- name: c1-fin3--log-pop
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: single log popping in a fire, sharp snap with a shower of sparks
+- name: c1-fin3--grass-shift
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: clothes and grass rustling as a man shifts to sit on the ground
+- name: c1-fin3--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: evening meadow by a river, gentle breeze, distant water flow, crickets
+- name: c2-1a--star-twinkle
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: faint glassy sparkle of a star map fading, soft twinkle of light
+- name: c2-1a--bedsheet-rustle
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: bedsheets rustling as a girl pulls them up and clutches her head
+- name: c2-1a--star-dim
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: magical glow dimming away with a soft airy fall, light fading into darkness
+- name: c2-1a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: observatory dome at night, quiet room tone, faint wind outside pine trees
+- name: c2-1b--robe-swish
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: heavy blue robe fabric swishing as an old man bends forward
+- name: c2-1b--map-slide
+  duration: 2
+  level: normal
+  max: 0.8
+  prompt: large parchment map sliding on a wooden easel, paper rustle and wood creak
+- name: c2-1b--girl-duck
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: small shoes shuffling quickly under a wooden easel, light scuffle on stone
+- name: c2-1b--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: stone hall interior, quiet echoing room tone, distant candle flicker
+- name: c2-2a--furnace-roar
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: large furnace roaring with flame, deep whoosh of fire
+- name: c2-2a--steam-release
+  duration: 2
+  level: normal
+  max: 0.9
+  prompt: steam engine releasing pressure, sharp hiss and puff of steam
+- name: c2-2a--hammer-far
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: distant heavy hammer striking iron, metallic clang with echo
+- name: c2-2a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: industrial foundry town ambience, roaring furnaces, distant steam hiss, clanking machinery
+- name: c2-2b--hammer-a
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: hammer striking hot iron on an anvil, metallic clang with a spray of sparks
+- name: c2-2b--hammer-b
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: hammer striking hot iron on an anvil, sharp ring with hissing sparks
+- name: c2-2b--hammer-c
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: hammer striking hot iron on an anvil, metallic clang
+- name: c2-2b--hammer-d
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: hammer striking hot iron on an anvil, metallic clang with a burst of sparks
+- name: c2-2b--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: forge interior ambience, crackling fire, distant metal workshop rumble
+- name: c2-3a--candles-ignite
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: candle flames igniting one after another with a soft whoosh and flicker
+- name: c2-3a--tower-rise
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: stone tower rising out of a map with grinding wood and a magical rumble
+- name: c2-3a--scroll-unroll
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: stiff parchment scroll unrolling with a dry papery rustle
+- name: c2-3a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet magical study at night, soft room tone, faint wind outside
+- name: c2-3b--cloak-whip
+  duration: 2
+  level: normal
+  max: 0.9
+  prompt: black cloak snapping in the air as a figure leaps from a tower, fabric whip
+- name: c2-3b--fall-rush
+  duration: 2
+  level: normal
+  max: 0.9
+  prompt: body falling through air, rushing whoosh with flapping cloth
+- name: c2-3b--landing-thump
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: body landing on a roof, soft heavy thump
+- name: c2-3b--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: faint night wind, gusts around a tall stone tower under a full moon
+- name: c2-4a--meteor-whistle
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: fiery meteors streaking through the night sky with a rushing whistle
+- name: c2-4a--impact-boom
+  duration: 2
+  level: loud
+  max: 1.2
+  prompt: huge meteor impact, deep explosive boom with a rocky crunch
+- name: c2-4a--smoke-roll
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: thick smoke billowing up with a rolling low rumble
+- name: c2-4a--second-crash
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: second meteor crashing into rocky ground, crunch and rumble
+- name: c2-4a--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: night forest ambience, crickets, light wind through pine trees, distant rumbling
+- name: c2-fin1--shard-hum
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: glowing crystal shard humming with a steady warm shimmer
+- name: c2-fin1--energy-surge
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: magical energy surging up from the ground, rising whoosh
+- name: c2-fin1--light-blast
+  duration: 2
+  level: loud
+  max: 1.2
+  prompt: bright magical burst of light, rushing wind and sparkling fizz
+- name: c2-fin1--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: crater cavern ambience, low rumble of cooling rock, faint hiss of steam
+- name: c2-fin2--hand-brush
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: hand brushing quickly across leather and paper, soft whoosh
+- name: c2-fin2--bag-grab
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: leather bag snatched up by a hand, strap pulled, quick rustle
+- name: c2-fin2--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet outdoor ground ambience, grass rustle, light wind
+- name: c2-fin3--beam-swish
+  duration: 2
+  level: quiet
+  max: 0.6
+  prompt: bright light beam sweeping out over the land with a soft airy swish
+- name: c2-fin3--sleeve-flap
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: light fabric sleeve flapping in the wind as an arm waves
+- name: c2-fin3--lantern-hum
+  duration: 2
+  level: quiet
+  max: 0.5
+  prompt: lantern light humming steadily in the evening wind
+- name: c2-fin3--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: dusk riverside ambience, wind across a stone tower, distant river flow
+- name: lose--thunder-far
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: distant thunder rolling low under a storm cloud
+- name: lose--wind-gust
+  duration: 2
+  level: normal
+  max: 1.0
+  prompt: heavy wind gust rushing across an empty village
+- name: lose--cloth-flap
+  duration: 2
+  level: normal
+  max: 0.9
+  prompt: torn fabric banner flapping and snapping in strong wind
+- name: lose--cloth-drop
+  duration: 1
+  level: quiet
+  max: 0.5
+  prompt: light torn cloth dropping onto dirt, soft rustle
+- name: lose--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: stormy open village at dusk ambience, strong wind, distant thunder rumble
+- name: win--weapons-clash
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: spears and shields clashing together with a metallic clatter
+- name: win--banner-wind
+  duration: 2
+  level: quiet
+  max: 0.8
+  prompt: large yellow banner snapping in the wind
+- name: win--sword-whoosh
+  duration: 1
+  level: quiet
+  max: 0.6
+  prompt: sword swung quickly through the air, short whoosh
+- name: win--body-thud
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: heavy body falling onto a wooden roof, dull thud
+- name: win--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: village square ambience, dusty open ground, light wind, distant footsteps

@@ -1,6 +1,9 @@
 """Существо «Героев»: меш TripoSG + эталон → цвет проекцией → простой скелет → toon-рендер кадров анимаций.
 
-blender -b -P studio/blender/creature_sprites.py -- <меш.glb> <эталон-cut.png> <папка кадров> [размер кадра, px]
+blender -b -P studio/blender/creature_sprites.py -- <меш.glb> <эталон-cut.png> <папка кадров> [размер кадра, px] [--dirs 8 --elev 40 --anims idle,move]
+
+--dirs N — кадры в N направлениях (герой на коне по карте): <анимация>_d<направление>_<NN>.png, направление 0 — вправо, дальше против
+часовой (1 — вправо-вверх, 2 — вверх…); --elev — камера сверху под углом (градусы), --anims — какие анимации снимать.
 
 Эталон рисуется сразу в ракурсе поля боя (три четверти, лицом вправо, чуть сверху). TripoSG строит меш так,
 будто эталон — вид спереди (перёд −Y, верх +Z), поэтому камера смотрит с −Y горизонтально, а цвет переносится
@@ -19,8 +22,16 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
 args = sys.argv[sys.argv.index('--') + 1:]
+opts = {}
+while len(args) > 1 and args[-2].startswith('--'):
+    opts[args[-2][2:]] = args[-1]
+    args = args[:-2]
 SRC, REF, OUT = args[0], args[1], args[2]
 FRAME = int(args[3]) if len(args) > 3 else 256
+DIRS = int(opts.get('dirs', 0))
+ELEV = math.radians(float(opts.get('elev', 0)))
+ONLY = opts['anims'].split(',') if 'anims' in opts else None
+YAW = 0.0  # поворот на направление (DIRS)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -187,36 +198,120 @@ if not weighted:  # автовеса не взялись — по высоте �
         body.vertex_groups['root'].add([v.index], rw, 'REPLACE')
         body.vertex_groups['body'].add([v.index], max(0, 1 - hw - rw), 'REPLACE')
     print('веса по высоте (автовеса не взялись)', flush=True)
+
+
+# --- ноги: нижний срез меша распадается на пятна (ступни/копыта); где пятна сливаются — бедро ---
+def blobs(z0, z1, cell):
+    """Пятна в срезе z0..z1: [(cx, cy, n)] — связные клетки сетки по x/y."""
+    pts = co[(co[:, 2] >= z0) & (co[:, 2] < z1)]
+    if len(pts) < 8:
+        return [], 0
+    g = {}
+    for x, y in pts[:, :2]:
+        k = (int(math.floor(x / cell)), int(math.floor(y / cell)))
+        g[k] = g.get(k, 0) + 1
+    seen, out = set(), []
+    for k in g:
+        if k in seen:
+            continue
+        stack, comp = [k], []
+        seen.add(k)
+        while stack:
+            c = stack.pop()
+            comp.append(c)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    nb = (c[0] + dx, c[1] + dy)
+                    if nb in g and nb not in seen:
+                        seen.add(nb)
+                        stack.append(nb)
+        n = sum(g[c] for c in comp)
+        cx = sum((c[0] + 0.5) * cell * g[c] for c in comp) / n
+        cy = sum((c[1] + 0.5) * cell * g[c] for c in comp) / n
+        out.append((cx, cy, n))
+    total = len(pts)
+    return [b for b in out if b[2] >= 0.06 * total], total
+
+
+co = np.array([v.co[:] for v in me.vertices], dtype=np.float32)
+CELL = 0.035 * max(H, X1 - X0)
+feet, _ = blobs(0.0, 0.12 * H, CELL)
+legs = []
+if 2 <= len(feet) <= 6 and float(co[:, 2].min()) < 0.05 * H:  # парящие (киты, духи, змеи кольцом) — без ног
+    hip = 0.5 * H
+    for k in range(5, 24):
+        z = k * 0.025 * H
+        if len(blobs(z - 0.05 * H, z, CELL)[0]) < len(feet):
+            hip = z
+            break
+    hip = min(max(hip, 0.22 * H), 0.55 * H)
+    xs_med = float(np.median([f[0] for f in feet]))
+    ys_med = float(np.median([f[1] for f in feet]))
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode='EDIT')
+    for i, (cx, cy, _) in enumerate(feet):
+        e = arm.edit_bones.new(f'leg{i}')
+        e.head = Vector((cx, cy, hip))
+        e.tail = Vector((cx, cy, 0))
+        e.parent = arm.edit_bones['root']
+        # шаг: у четвероногих — по диагонали, у двуногих — левая/правая
+        legs.append((f'leg{i}', math.pi * (((cx > xs_med) + (cy > ys_med)) % 2) if len(feet) > 2 else math.pi * (cy > ys_med)))
+    bpy.ops.object.mode_set(mode='OBJECT')
+    rad = 1.6 * CELL * 2
+    for i, (cx, cy, _) in enumerate(feet):
+        g = body.vertex_groups.new(name=f'leg{i}')
+    for v in me.vertices:
+        x, y, z = v.co
+        if z > hip + 0.05 * H:
+            continue
+        d = [(math.hypot(x - cx, y - cy), i) for i, (cx, cy, _) in enumerate(feet)]
+        dist, i = min(d)
+        if dist > rad:
+            continue
+        w = min(1.0, max(0.0, (hip + 0.05 * H - z) / (0.13 * H)))
+        for gr in v.groups:
+            gr.weight *= 1 - w
+        body.vertex_groups[f'leg{i}'].add([v.index], w, 'REPLACE')
+    print(f'ноги: {len(feet)}, бедро {hip / H:.2f} роста', flush=True)
+else:
+    print(f'ноги: нет (пятен внизу {len(feet)})', flush=True)
 pb = rig.pose.bones
 for p in pb:
     p.rotation_mode = 'XYZ'
 
 
-def pose(root_z=0.0, root_x=0.0, root_rot=0.0, lean=0.0, head=0.0, squash=1.0, tilt=0.0):
+def pose(root_z=0.0, root_x=0.0, root_rot=0.0, lean=0.0, head=0.0, squash=1.0, tilt=0.0, walk=None):
     """root_z, root_x — сдвиг в долях H; root_rot — завал всего тела вбок (градусы, + — назад, от зрителя вправо);
-    lean — наклон тела вперёд (к +X), head — кивок; squash — сплющивание по высоте (объём сохраняется)."""
+    lean — наклон тела вперёд (к +X), head — кивок; squash — сплющивание по высоте (объём сохраняется);
+    walk — фаза шага 0..1: ноги качаются вперёд-назад попарно."""
     for p in pb:
         p.location = (0, 0, 0)
         p.rotation_euler = (0, 0, 0)
         p.scale = (1, 1, 1)
     rig.location = (root_x * H, 0, root_z * H)
-    rig.rotation_euler = (0, math.radians(-root_rot), 0)  # + — назад: макушка к −X (персонаж смотрит на +X)
+    rig.rotation_euler = (0, math.radians(-root_rot), YAW)  # + — назад: макушка к −X (персонаж смотрит на +X); YAW — направление
     # кость смотрит вверх (+Z); наклон к +X — вращение вокруг её оси Z… в пространстве кости ось X — вбок, Z — вглубь
     pb['body'].rotation_euler = (0, 0, math.radians(-lean))
     pb['head'].rotation_euler = (0, 0, math.radians(-head) + math.radians(tilt))
     s = squash
     pb['root'].scale = (1 / math.sqrt(s), s, 1 / math.sqrt(s))
+    if walk is not None:
+        for name, ph in legs:  # кость смотрит вниз (−Z): качание в плоскости x/z — вокруг её локальной Z
+            pb[name].rotation_euler = (0, 0, math.radians(LEG_SWING * math.sin(2 * math.pi * walk + ph)))
 
 
 def cyc(n, f):
     return [f(i / n) for i in range(n)]
 
 
+LEG_SWING = 24  # градусов вперёд-назад
 S = math.sin
 P = math.pi
 ANIMS = {
     'idle': {'fps': 8, 'loop': True, 'frames': cyc(8, lambda t: dict(squash=1 + 0.025 * S(2 * P * t), head=2 * S(2 * P * t)))},
-    'move': {'fps': 12, 'loop': True, 'frames': cyc(8, lambda t: dict(root_z=0.12 * abs(S(P * t)), squash=1 - 0.08 * math.cos(2 * P * t) * (t < 0.15 or t > 0.85), lean=8 * S(P * t)))},
+    # с ногами — шаг (лёгкое покачивание на каждый шаг), без ног — прыжками
+    'move': {'fps': 12, 'loop': True, 'frames': cyc(8, lambda t: dict(root_z=0.03 * abs(S(2 * P * t)), lean=3 * S(2 * P * t), walk=t)) if legs else
+             cyc(8, lambda t: dict(root_z=0.12 * abs(S(P * t)), squash=1 - 0.08 * math.cos(2 * P * t) * (t < 0.15 or t > 0.85), lean=8 * S(P * t)))},
     'shoot': {'fps': 12, 'loop': False, 'frames': [dict(lean=a, head=b, squash=c) for a, b, c in (
         (0, 0, 1), (-6, -4, 1.02), (-10, -8, 1.04), (-12, -10, 1.05), (6, 10, 0.97), (10, 12, 0.95), (8, 8, 0.97), (4, 4, 0.99), (0, 0, 1))]},
     'hit': {'fps': 12, 'loop': False, 'frames': [dict(root_x=a, lean=b, squash=c) for a, b, c in (
@@ -253,8 +348,8 @@ scene.collection.objects.link(cam)
 cam.data.type = 'ORTHO'
 span = 1.8 * max(H, X1 - X0)  # с запасом: лежит на спине во весь рост
 cam.data.ortho_scale = span
-cam.location = (0, -10 * H, span / 2 - 0.12 * span)
-cam.rotation_euler = (math.radians(90), 0, 0)
+cam.location = (0, -10 * H * math.cos(ELEV), span / 2 - 0.12 * span + 10 * H * math.sin(ELEV))
+cam.rotation_euler = (math.radians(90) - ELEV, 0, 0)
 scene.camera = cam
 scene.render.resolution_x = scene.render.resolution_y = FRAME
 scene.render.filter_size = 0.8
@@ -271,12 +366,18 @@ bpy.context.view_layer.update()
 meta = {'frameW': FRAME, 'frameH': FRAME, 'origin': at(Vector((0, 0, 0))),
         'muzzle': at(Vector((X1 * 0.95, 0, 0.62 * H))), 'top': at(Vector((0, 0, H))), 'anims': {}}
 for name, a in ANIMS.items():
-    for k, p in enumerate(a['frames']):
-        pose(**p)
-        scene.render.filepath = os.path.join(OUT, f'{name}_{k:02d}.png')
-        bpy.ops.render.render(write_still=True)
+    if ONLY and name not in ONLY:
+        continue
+    for d in range(DIRS or 1):
+        YAW = 2 * math.pi * d / DIRS if DIRS else 0.0
+        for k, p in enumerate(a['frames']):
+            pose(**p)
+            scene.render.filepath = os.path.join(OUT, f'{name}_d{d}_{k:02d}.png' if DIRS else f'{name}_{k:02d}.png')
+            bpy.ops.render.render(write_still=True)
     meta['anims'][name] = {'fps': a['fps'], 'loop': a['loop'], 'frames': len(a['frames'])}
     print('готово', name, len(a['frames']), flush=True)
+if DIRS:
+    meta['dirs'] = DIRS
 json.dump(meta, open(os.path.join(OUT, 'meta.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'rigged.blend'))
 print('кадры →', OUT, flush=True)
