@@ -189,7 +189,10 @@ export function createView(): GameView<View, Event> {
       if (!c.spell && sel.slot === undefined) return 'куда на лавочку? — щёлкните промежуток';
       return 'выберите цель (подсвечена)';
     }
-    if (sel?.kind === 'unit') return 'кого бить? — цели подсвечены';
+    if (sel?.kind === 'unit') {
+      const walls = v.players[1 - meIdx()].board.some((u) => u.kw.includes('wall'));
+      return walls ? 'кого бить? — Стенка прикрывает соперника, сначала её' : 'кого бить? — вкладыш соперника или его самого (портрет сверху)';
+    }
     return 'выложите вкладыш или ударьте своим; зажать — рассмотреть';
   }
 

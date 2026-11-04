@@ -153,11 +153,12 @@ items:
 - name: akademiya-prism
   prompt: 'A tall humanoid knight made of rainbow prism crystal facets, glowing edges, a large refracting crystal shield. Colors and style: star academy mages, night
     blue, silver, deep green and warm gold. {style}'
-- name: akademiya-centaur
-  prompt: 'A centaur astrologer with a bow and a cloak embroidered with star charts. Colors and style: star academy mages, night blue, silver, deep green and warm
-    gold. {style}'
-- name: akademiya-astrologer
-  prompt: 'A centaur astronomer archer in silver armor with a starlight bow. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-stag
+  prompt: 'A large night-blue stag with tall antlers glowing with small stars, a star-chart saddle cloth, standing on four legs. Colors and style: star academy mages,
+    night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-moonstag
+  prompt: 'A majestic silver-white stag with crystal antlers radiating moonlight, a silver star circlet on its brow, standing on four legs. Colors and style: star
+    academy mages, night blue, silver, deep green and warm gold. {style}'
 - name: akademiya-pineguard
   prompt: 'A gentle tall treant giant: a walking humanoid made of pine bark with arms and legs of branches, needle hair, carrying a warm lantern. Colors and style:
     star academy mages, night blue, silver, deep green and warm gold. {style}'

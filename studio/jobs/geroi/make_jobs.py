@@ -92,8 +92,8 @@ FACTIONS = {
             ('seerowl', 2, 1, 'a great silver owl with starry feathers and glowing runes, standing'),
             ('crystal', 3, 0, 'a tall humanoid knight made entirely of clear pale-blue quartz crystal, faceted body, a crystal shield and a crystal sword'),
             ('prism', 3, 1, 'a tall humanoid knight made of rainbow prism crystal facets, glowing edges, a large refracting crystal shield'),
-            ('centaur', 4, 0, 'a centaur astrologer with a bow and a cloak embroidered with star charts'),
-            ('astrologer', 4, 1, 'a centaur astronomer archer in silver armor with a starlight bow'),
+            ('stag', 4, 0, 'a large night-blue stag with tall antlers glowing with small stars, a star-chart saddle cloth, standing on four legs'),
+            ('moonstag', 4, 1, 'a majestic silver-white stag with crystal antlers radiating moonlight, a silver star circlet on its brow, standing on four legs'),
             ('pineguard', 5, 0, 'a gentle tall treant giant: a walking humanoid made of pine bark with arms and legs of branches, needle hair, carrying a warm lantern'),
             ('borguard', 5, 1, 'an ancient huge treant: a walking humanoid of mossy pine bark with branch arms, pine cones and glowing amber sap in the cracks'),
             ('skywhale', 6, 0, 'a flying sky whale with soft blue skin, star-like spots and small fins'),
@@ -209,7 +209,7 @@ TOWNS = {
                'unique': [('furnace', 'a giant blast furnace with molten metal pouring'), ('scrapyard', 'a repair yard with mechanical scrap')]},
     'akademiya': {'look': 'star academy architecture: white stone and pine wood towers, silver observatory domes, glass galleries, lanterns',
                   'site': 'a tall pine forest on a hill under a deep blue twilight sky with first stars',
-                  'dwell': ['a student dormitory with lantern windows', 'an owl tower with perches', 'a crystal grotto', 'a centaur star-chart pavilion',
+                  'dwell': ['a student dormitory with lantern windows', 'an owl tower with perches', 'a crystal grotto', 'a stag glade with a star-chart stone',
                             'a sacred pine grove with lanterns', 'a sky whale mooring tower', 'a fallen star crater shrine'],
                   'unique': [('observatory', 'a great observatory with a huge brass telescope'), ('lab', 'a research laboratory with glowing glassware')]},
 }
@@ -599,6 +599,7 @@ def write(name, title, job):
 # чтобы ночные варианты остались для сравнения. Отбор — studio/jobs/geroi/picks.json.
 REDO = {
     '10-creatures': ([f'akademiya-{u[0]}' for u in FACTIONS['akademiya']['units']] + ['kuznya-wasp'], [43, 44]),
+    '10-creatures#2': (['akademiya-stag', 'akademiya-moonstag'], [45, 46]),  # кентавры не дались (люди с конской головой, всадники) — олени
     '11b-mounts': (['mount-akademiya-strazh', 'mount-akademiya-zvezdochet'], [63, 64]),
     '12-towns': ([f'bld-{f}-{b}' for f in ('zatulye', 'zatonye') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)]
                   + [u[0] for u in TOWNS[f]['unique']]], [22, 23]),
@@ -612,7 +613,8 @@ REDO = {
 
 
 def redo_jobs():
-    for batch, (names, seeds) in REDO.items():
+    for key, (names, seeds) in REDO.items():
+        batch, _, n = key.partition('#')
         job = yaml.safe_load((HERE / f'{batch}.yaml').read_text(encoding='utf-8'))
         key = 'sounds' if 'sounds' in job else 'items'
         job[key] = [{k: v for k, v in i.items() if k != 'seeds'} for i in job[key] if names is None or i['name'] in names]
@@ -620,7 +622,7 @@ def redo_jobs():
             for i in job[key]:
                 i['prompt'] = 'close-up, clear and present: ' + i['prompt']
         job['seeds'] = seeds
-        write(f'{batch}-redo.yaml', f'переделки партии {batch} после отбора', job)
+        write(f'{batch}-redo{n}.yaml', f'переделки партии {batch} после отбора', job)
 
 
 def main():

@@ -1,0 +1,21 @@
+# Герои, переделки партии 10-creatures после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 45
+- 46
+style: Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, bright but refined colors. Full body, whole
+  figure in frame with margin, standing in a three-quarter view facing right, seen slightly from above, centered, plain light grey background.
+items:
+- name: akademiya-stag
+  prompt: 'A large night-blue stag with tall antlers glowing with small stars, a star-chart saddle cloth, standing on four legs. Colors and style: star academy mages,
+    night blue, silver, deep green and warm gold. {style}'
+- name: akademiya-moonstag
+  prompt: 'A majestic silver-white stag with crystal antlers radiating moonlight, a silver star circlet on its brow, standing on four legs. Colors and style: star
+    academy mages, night blue, silver, deep green and warm gold. {style}'

@@ -336,18 +336,18 @@
   "prompt": "A tall humanoid knight made of rainbow prism crystal facets, glowing edges, a large refracting crystal shield. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
-  "name": "akademiya-centaur",
+  "name": "akademiya-stag",
   "faction": "akademiya",
   "tier": 4,
   "up": 0,
-  "prompt": "A centaur astrologer with a bow and a cloak embroidered with star charts. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
+  "prompt": "A large night-blue stag with tall antlers glowing with small stars, a star-chart saddle cloth, standing on four legs. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
-  "name": "akademiya-astrologer",
+  "name": "akademiya-moonstag",
   "faction": "akademiya",
   "tier": 4,
   "up": 1,
-  "prompt": "A centaur astronomer archer in silver armor with a starlight bow. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
+  "prompt": "A majestic silver-white stag with crystal antlers radiating moonlight, a silver star circlet on its brow, standing on four legs. Colors and style: star academy mages, night blue, silver, deep green and warm gold. {style}"
  },
  {
   "name": "akademiya-pineguard",
