@@ -1,5 +1,6 @@
 /* Вход «Героев». Без параметров — заставка студии и меню. Для разработки: /geroi.html?a=zatulye&b=kuznya&p1=hard&p2=hard&seed=5&budget=20000&fast=1
- * (p1, p2: human|easy|medium|hard; fast — бой без показа); /geroi.html?map=1&a=zatulye&b=kuznya&seed=5 — сразу партия на карте. */
+ * (p1, p2: human|easy|medium|hard; fast — бой без показа); /geroi.html?map=1&a=zatulye&b=kuznya&seed=5 — сразу партия на карте;
+ * ?map=1&gen=duel&size=m&water=lakes&guard=normal&seed=7&a=…&b=… — сразу на случайной карте, без map=1 — её настройка. */
 import { type Release, mayPlay } from '../core/release';
 import type { RightGrant } from '../core/rights';
 import { Audio2 } from './audio';
@@ -14,6 +15,7 @@ import type { NetClientMsg, NetServerMsg } from './net/protocol';
 import { Arena } from './ui/arena';
 import { AdvGame } from './ui/adv';
 import { type GameSpec, makeTestMap } from './sim/adv/testmap';
+import { TEMPLATES, generateMap, parseGen } from './sim/adv/gen';
 import type { TownFaction } from './sim/adv/town';
 import { Menu, type QuickConfig } from './ui/menu';
 import './ui/geroi.css';
@@ -193,6 +195,7 @@ menu.onArena = () => arena.home();
 menu.onQuick = (c) => void quick(c);
 menu.onLoad = (s) => void resume(s);
 menu.onMap = (spec: GameSpec) => void startAdv(makeTestMap(spec));
+menu.onRandom = (spec, o) => void startAdv(generateMap(spec, o));
 
 /** Заставка студии — раз за вкладку; браузер не дал звук — ждём щелчка. */
 function splash(next: () => void): void {
@@ -231,6 +234,18 @@ async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
   const fa = q.get('a') as Faction | null;
+  const gen = parseGen(q);
+  if (gen && q.has('map')) {
+    // ссылка на случайную карту: a, b, c, d — фракции игроков
+    const def: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
+    const names = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
+    const players = Array.from({ length: TEMPLATES[gen.template].players }, (_, i) => {
+      const f = (q.get('abcd'[i]) ?? def[i]) as TownFaction;
+      return { name: names[i], faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) } };
+    });
+    return startAdv(generateMap({ seed: gen.seed, players }, gen));
+  }
+  if (gen) return menu.randomMap(gen);
   if (q.has('map')) {
     const f0 = (fa ?? 'zatulye') as TownFaction;
     const f1 = (q.get('b') ?? 'zatonye') as TownFaction;

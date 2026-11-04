@@ -16,10 +16,10 @@ export interface GameSpec {
   players: { name: string; faction: TownFaction; hero: HeroPick }[];
 }
 
-const TOWN_NAMES: Record<TownFaction, string> = { zatulye: 'Заречье', zatonye: 'Сомов омут', kuznya: 'Горн', akademiya: 'Сосновый купол' };
+export const TOWN_NAMES: Record<TownFaction, string> = { zatulye: 'Заречье', zatonye: 'Сомов омут', kuznya: 'Горн', akademiya: 'Сосновый купол' };
 
 /** Шум: значения в узлах сетки, между ними — сглаженно. Только + и ×: одинаково везде. */
-function noise(seed: number, cell: number): (x: number, y: number) => number {
+export function noise(seed: number, cell: number): (x: number, y: number) => number {
   const at = (ix: number, iy: number): number => new Rng(Math.imul(ix + 7, 73856093) ^ Math.imul(iy + 11, 19349663) ^ seed).f();
   return (x, y) => {
     const fx = x / cell;
@@ -43,9 +43,9 @@ function bend(u: number): number {
 }
 
 const BRIDGES = [-26, 0, 26];
-const decorArts = (t: TerrainId): string => (t === 'swamp' || t === 'ash' || t === 'pine' ? t : 'meadow');
+export const decorArts = (t: TerrainId): string => (t === 'swamp' || t === 'ash' || t === 'pine' ? t : 'meadow');
 /** Какие картинки декора закрывают клетку (деревья, скалы), а не лежат под ногами. */
-const DECOR_SIZE = [1.9, 2.1, 1.3, 1.2, 1.3, 2.4, 1.3, 1.2];
+export const DECOR_SIZE = [1.9, 2.1, 1.3, 1.2, 1.3, 2.4, 1.3, 1.2];
 
 interface Spot {
   kind: string;

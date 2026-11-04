@@ -127,6 +127,8 @@ export interface World {
   over: boolean;
   /** Событие недели: текст показан в начале. */
   weekNote: string;
+  /** Название карты для сохранений; нет — «Две реки». */
+  name?: string;
 }
 
 export type AdvEvent =

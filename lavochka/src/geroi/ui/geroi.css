@@ -258,3 +258,17 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-res-pick button.on { border-color: #ffe08a; box-shadow: 0 0 0 2px #ffe08a; }
 .a-res-pick em { position: absolute; right: 3px; bottom: 1px; font: 600 14px 'Geroi Num', sans-serif; font-style: normal; color: #fff4d8; }
 .a-market input[type=range], .a-recruit input[type=range] { width: 100%; }
+
+/* Случайная карта */
+.g-rand { align-items: stretch; }
+.g-rand-left { display: flex; flex-direction: column; gap: 10px; width: min(560px, 96vw); }
+.g-rand-form { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.g-rand-text { margin: 0; font-size: 16px; }
+.g-rand-label { align-self: center; color: var(--dim); }
+.g-rand-sides { display: flex; flex-direction: column; gap: 6px; }
+.g-rand-side { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 6px; padding: 6px 8px; background: #1f1812f2; border: 1px solid var(--brass); border-left-width: 6px; border-radius: 8px; }
+.g-rand-right { padding: 12px; display: flex; flex-direction: column; gap: 8px; width: min(420px, 96vw); }
+.g-rand-map { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border: 1px solid #000; border-radius: 4px; background: #0c0a08; }
+.g-rand-info { margin: 0; font-size: 15px; }
+.g-rand-link { font-size: 13px; }
+@media (max-width: 640px) { .g-rand-side { grid-template-columns: 1fr 1fr; } .g-rand-side select:last-child { grid-column: 1 / -1; } }

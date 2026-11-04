@@ -791,7 +791,7 @@ export class AdvGame {
   private saveData(): Save {
     const w = this.world;
     const week = Math.trunc(w.day / 7);
-    return { at: Date.now(), title: `Две реки: ${w.players[w.current].name}, неделя ${week + 1}, день ${(w.day % 7) + 1}`, who: ['human', 'human'], adv: w };
+    return { at: Date.now(), title: `${w.name ?? 'Две реки'}: ${w.players[w.current].name}, неделя ${week + 1}, день ${(w.day % 7) + 1}`, who: ['human', 'human'], adv: w };
   }
 
   pause(): void {

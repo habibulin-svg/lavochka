@@ -7,6 +7,10 @@ import type { BattleSetup } from '../sim/battle';
 import { CREATURES, FACTIONS, type Faction, factionCreatures } from '../sim/creatures';
 import { type HeroPick, factionClasses, heroName, heroPortrait } from '../sim/heroes';
 import type { GameSpec } from '../sim/adv/testmap';
+import { GUARDS, type GenOptions, type GuardId, MAP_SIZES, type SizeId, TEMPLATES, WATERS, type WaterId, daySeed, genQuery, generateMap } from '../sim/adv/gen';
+import { OBJECTS, TERRAINS, WATER } from '../sim/adv/data';
+import type { World } from '../sim/adv/world';
+import { PLAYER_COLORS } from '../render/mapview';
 import type { TownFaction } from '../sim/adv/town';
 import { button, creatureIcon, creatureLines, h, modal } from './common';
 
@@ -32,6 +36,7 @@ export class Menu {
   onLoad: (s: Save) => void = () => {};
   onArena: () => void = () => {};
   onMap: (s: GameSpec) => void = () => {};
+  onRandom: (s: GameSpec, o: GenOptions) => void = () => {};
   private last: QuickConfig | null = null;
 
   constructor(host: HTMLElement, private readonly audio: Audio2) {
@@ -57,13 +62,14 @@ export class Menu {
     });
     col.append(
       button('Арена', () => this.onArena(), 'g-btn main'),
-      button('Карта: за одним экраном', () => this.mapSetup()),
+      button('Случайная карта', () => this.randomMap()),
+      button('Карта «Две реки»', () => this.mapSetup()),
       button('Быстрый бой', () => this.quick()),
       button('Загрузить', () => this.load()),
       music,
       button('Во двор', () => (location.href = '/')),
     );
-    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена» и карта за одним экраном'));
+    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена» и карты за одним экраном'));
   }
 
   locked(signedIn: boolean): void {
@@ -141,6 +147,142 @@ export class Menu {
       this.onMap({ seed: Date.now() % 2147483647, players: sides.map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero })) });
     }, 'g-btn main'));
     this.screen(h('h2', 'g-quick-title', 'Карта «Две реки»'), cols, bar);
+  }
+
+  /** Случайная карта: шаблон, размер, вода, охрана, сид; предпросмотр и ссылка. Боты на карте — этап 5, пока все за одним экраном. */
+  randomMap(pre?: GenOptions): void {
+    const o: GenOptions = pre ? { ...pre } : { template: 'duel', size: 'm', water: 'lakes', guard: 'normal', seed: (Date.now() % 999999) + 1 };
+    const START: Faction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
+    const NAMES = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
+    const sides = START.map((f, i) => ({ faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) } as HeroPick, name: NAMES[i] }));
+    const today = (): string => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    let dayLabel = '';
+    const form = h('div', 'g-panel g-rand-form');
+    const list = h('div', 'g-rand-sides');
+    const canvas = h('canvas', 'g-rand-map');
+    const info = h('p', 'g-rand-info dim');
+    const link = h('input', 'g-select g-rand-link');
+    link.readOnly = true;
+    const players = (): number => TEMPLATES[o.template].players;
+    const spec = (): GameSpec => ({
+      seed: o.seed,
+      players: sides.slice(0, players()).map((s, i) => ({ name: s.name.trim() || `Игрок ${i + 1}`, faction: s.faction as TownFaction, hero: s.hero })),
+    });
+    const url = (): string => {
+      const fs = sides.slice(0, players()).map((s, i) => `&${'abcd'[i]}=${s.faction}`).join('');
+      return `${location.origin}/geroi.html?map=1&${genQuery(o)}${fs}`;
+    };
+    const free = (f: Faction, i: number): HeroPick => {
+      for (const cls of factionClasses(f)) for (let n = 1; n <= 4; n++) {
+        if (!sides.some((x, j) => j !== i && x.hero.cls === cls.id && x.hero.n === n)) return { cls: cls.id, n };
+      }
+      return { cls: factionClasses(f)[0].id, n: 1 };
+    };
+    const sel = <T extends string>(entries: [T, string][], value: T, on: (v: T) => void): HTMLSelectElement => {
+      const el = h('select', 'g-select');
+      for (const [id, name] of entries) el.append(new Option(name, id, false, id === value));
+      el.onchange = () => {
+        on(el.value as T);
+        dayLabel = '';
+        draw();
+      };
+      return el;
+    };
+    const seedIn = h('input', 'g-select g-rand-seed');
+    seedIn.inputMode = 'numeric';
+    seedIn.onchange = () => {
+      o.seed = (Number(seedIn.value.replace(/\D/g, '')) || 1) >>> 0;
+      dayLabel = '';
+      draw();
+    };
+    const draw = (): void => {
+      const t = TEMPLATES[o.template];
+      if (!t.sizes.includes(o.size)) o.size = t.sizes.includes('m') ? 'm' : t.sizes[0];
+      form.replaceChildren();
+      const row1 = h('div', 'g-row');
+      row1.append(
+        sel(Object.values(TEMPLATES).map((x): [string, string] => [x.id, `${x.name} · игроков: ${x.players}`]), o.template, (v) => (o.template = v)),
+        sel(t.sizes.map((x): [SizeId, string] => [x, `${MAP_SIZES[x].name}, ${MAP_SIZES[x].n}×${MAP_SIZES[x].n}`]), o.size, (v) => (o.size = v)),
+      );
+      const row2 = h('div', 'g-row');
+      row2.append(
+        sel(Object.entries(WATERS) as [WaterId, string][], o.water, (v) => (o.water = v)),
+        sel(Object.entries(GUARDS).map(([k, v]): [GuardId, string] => [k as GuardId, v.name]), o.guard, (v) => (o.guard = v)),
+      );
+      seedIn.value = String(o.seed);
+      const row3 = h('div', 'g-row');
+      row3.append(h('span', 'g-rand-label', 'Сид'), seedIn, button('🎲', () => {
+        o.seed = (Date.now() % 999999) + 1;
+        dayLabel = '';
+        draw();
+      }, 'g-btn small'), button('Карта дня', () => {
+        const d = today();
+        Object.assign(o, { template: 'duel', size: 'm', water: 'lakes', guard: 'normal', seed: daySeed(d) });
+        dayLabel = `Карта дня, ${d.split('-').reverse().join('.')}`;
+        draw();
+      }, 'g-btn small'));
+      form.append(h('p', 'dim g-rand-text', t.text), row1, row2, row3);
+
+      // игроки: имя, фракция, герой; одинаковых героев не бывает
+      list.replaceChildren();
+      sides.slice(0, t.players).forEach((s, i) => {
+        if (sides.some((x, j) => j < i && x.hero.cls === s.hero.cls && x.hero.n === s.hero.n)) s.hero = free(s.faction, i);
+        const row = h('div', 'g-rand-side');
+        row.style.borderLeftColor = `#${PLAYER_COLORS[i].toString(16).padStart(6, '0')}`;
+        const name = h('input', 'g-select');
+        name.value = s.name;
+        name.maxLength = 16;
+        name.oninput = () => (s.name = name.value);
+        const fac = h('select', 'g-select');
+        for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+        fac.onchange = () => {
+          s.faction = fac.value as Faction;
+          s.hero = free(s.faction, i);
+          draw();
+        };
+        const hero = h('select', 'g-select');
+        for (const cls of factionClasses(s.faction)) for (let n = 1; n <= 4; n++) {
+          const p = { cls: cls.id, n };
+          const opt = new Option(`${heroName(p)}, ${cls.name}`, `${cls.id}:${n}`, false, s.hero.cls === cls.id && s.hero.n === n);
+          opt.disabled = sides.slice(0, t.players).some((x, j) => j !== i && x.hero.cls === p.cls && x.hero.n === p.n);
+          hero.append(opt);
+        }
+        hero.onchange = () => {
+          const [cls, n] = hero.value.split(':');
+          s.hero = { cls, n: Number(n) };
+          draw();
+        };
+        row.append(name, fac, hero);
+        list.append(row);
+      });
+
+      // предпросмотр: та же карта, что будет в игре (стартовые зоны — по фракциям)
+      const w = generateMap(spec(), o);
+      drawPreview(canvas, w);
+      const mines = w.objects.filter((x) => x.kind.startsWith('mine-')).length;
+      const guards = w.objects.filter((x) => x.kind === 'stack').length;
+      info.textContent = `${dayLabel ? `${dayLabel} · ` : ''}${w.w}×${w.h} · объектов ${w.objects.length - guards} · шахт ${mines} · стражей ${guards}`;
+      link.value = url();
+    };
+    draw();
+    const left = h('div', 'g-rand-left');
+    left.append(form, list);
+    const right = h('div', 'g-panel g-rand-right');
+    const copy = button('Скопировать ссылку', () => {
+      link.select();
+      void navigator.clipboard?.writeText(link.value).catch(() => {});
+    }, 'g-btn small');
+    const lrow = h('div', 'g-row');
+    lrow.append(link, copy);
+    right.append(canvas, info, lrow);
+    const cols = h('div', 'g-quick g-rand');
+    cols.append(left, right);
+    const bar = h('div', 'g-quickbar');
+    bar.append(button('Назад', () => this.title()), button('На карту!', () => this.onRandom(spec(), { ...o }), 'g-btn main'));
+    this.screen(h('h2', 'g-quick-title', 'Случайная карта'), cols, bar);
   }
 
   private newSide(f: Faction, who: Who, budget: number): SideCfg {
@@ -275,4 +417,31 @@ export class Menu {
     }, 'g-btn small'));
     return col;
   }
+}
+
+/** Мини-карта для предпросмотра: всё открыто, города — цветом игрока, шахты — жёлтым, стража — красным. */
+export function drawPreview(canvas: HTMLCanvasElement, w: World): void {
+  canvas.width = w.w;
+  canvas.height = w.h;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(w.w, w.h);
+  const put = (c: number, color: number): void => {
+    if (c < 0 || c >= w.w * w.h) return;
+    img.data[c * 4] = (color >> 16) & 255;
+    img.data[c * 4 + 1] = (color >> 8) & 255;
+    img.data[c * 4 + 2] = color & 255;
+    img.data[c * 4 + 3] = 255;
+  };
+  const shade = (color: number, k: number): number => (Math.trunc(((color >> 16) & 255) * k) << 16) | (Math.trunc(((color >> 8) & 255) * k) << 8) | Math.trunc((color & 255) * k);
+  for (let c = 0; c < w.w * w.h; c++) {
+    const base = TERRAINS[w.terrain[c]].color;
+    put(c, w.terrain[c] === WATER ? base : w.block[c] ? shade(base, 0.45) : w.road[c] ? 0xb09a68 : base);
+  }
+  for (const o of w.objects) {
+    const color = o.kind === 'stack' ? 0xe04a3a : o.kind.startsWith('mine-') ? 0xf2d04a : o.kind.startsWith('treasury') ? 0xff9a3c : 0xf4ecd8;
+    put(o.cell, color);
+    if (OBJECTS[o.kind]?.w >= 3) for (const k of o.cells ?? []) put(k, shade(color, 0.7));
+  }
+  for (const t of w.towns) for (const c of [t.cell, t.cell - 1, t.cell + 1, t.cell - w.w, t.cell - w.w - 1, t.cell - w.w + 1, t.cell - 2 * w.w]) put(c, PLAYER_COLORS[t.owner] ?? 0xc9c2a8);
+  ctx.putImageData(img, 0, 0);
 }
