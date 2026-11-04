@@ -48,6 +48,37 @@ for o in list(scene.objects):
     if o != body:
         bpy.data.objects.remove(o)
 
+# мелкие оторванные куски (трава и камешки с эталона, мусор реконструкции) — прочь: меньше 2 % вершин
+import bmesh  # noqa: E402
+
+bm = bmesh.new()
+bm.from_mesh(body.data)
+seen, islands = set(), []
+for v in bm.verts:
+    if v in seen:
+        continue
+    stack, isl = [v], []
+    seen.add(v)
+    while stack:
+        x = stack.pop()
+        isl.append(x)
+        for e in x.link_edges:
+            o = e.other_vert(x)
+            if o not in seen:
+                seen.add(o)
+                stack.append(o)
+    islands.append(isl)
+# и куски у самой земли до 12 % вершин (кочки и камни под ногами)
+z0 = min(v.co.z for v in bm.verts)
+z1 = max(v.co.z for v in bm.verts)
+junk = [isl for isl in islands if len(isl) < 0.02 * len(seen)
+        or (len(isl) < 0.12 * len(seen) and max(v.co.z for v in isl) < z0 + 0.12 * (z1 - z0))]
+if junk:
+    bmesh.ops.delete(bm, geom=[v for isl in junk for v in isl], context='VERTS')
+    bm.to_mesh(body.data)
+    print(f'убрано кусков: {len(junk)}', flush=True)
+bm.free()
+
 # подошвы на z=0, центр по x/y в ноль, рост H
 me = body.data
 xs = [v.co.x for v in me.vertices]
@@ -112,6 +143,18 @@ if TURN:
     c = Vector(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, 0))
     for v in me.vertices:
         v.co -= c
+if DIRS:
+    # для карты направление 0 — строго вбок: длинная ось тела (главная ось по x/y) — вдоль X; из двух вариантов —
+    # ближайший к повороту под эталон, чтобы голова осталась справа
+    xy = np.array([v.co[:2] for v in me.vertices], dtype=np.float64)
+    xy -= xy.mean(0)
+    ev, vec = np.linalg.eigh(np.cov(xy.T))
+    phi = math.atan2(vec[1, 1], vec[0, 1])
+    snap = min((-phi, -phi + math.pi, -phi - math.pi), key=abs)
+    for v in me.vertices:
+        x, y = v.co.x, v.co.y
+        v.co.x, v.co.y = x * math.cos(snap) - y * math.sin(snap), x * math.sin(snap) + y * math.cos(snap)
+    print(f'профиль: доворот {math.degrees(snap):.0f}°', flush=True)
 me.update()
 
 xs = [v.co.x for v in me.vertices]
