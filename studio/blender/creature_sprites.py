@@ -389,7 +389,7 @@ scene.view_settings.view_transform = 'Standard'
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam'))
 scene.collection.objects.link(cam)
 cam.data.type = 'ORTHO'
-span = 1.8 * max(H, X1 - X0)  # с запасом: лежит на спине во весь рост
+span = float(opts.get('span', 1.8)) * max(H, X1 - X0)  # с запасом: лежит на спине во весь рост; коню на карте смерть не нужна — рамка плотнее
 cam.data.ortho_scale = span
 cam.location = (0, -10 * H * math.cos(ELEV), span / 2 - 0.12 * span + 10 * H * math.sin(ELEV))
 cam.rotation_euler = (math.radians(90) - ELEV, 0, 0)

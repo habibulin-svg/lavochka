@@ -118,7 +118,7 @@ export function makeTestMap(spec: GameSpec): World {
       if (d >= 0) continue;
       const c = cellOf(w, x, y);
       if (w.terrain[c] === WATER || w.road[c]) continue;
-      if (forest(x, y) > 0.56 && speck(x, y) > 0.3) {
+      if (forest(x, y) > 0.47 && speck(x, y) > 0.22) {
         putDecor(c);
         putDecor(mirror(c));
       }

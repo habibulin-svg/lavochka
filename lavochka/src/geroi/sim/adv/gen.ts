@@ -6,7 +6,7 @@ import { Rng, fnv1a } from '../../../gops/sim/rng';
 import { CREATURES, type Faction, factionCreatures } from '../creatures';
 import { type HeroPick, factionClasses } from '../heroes';
 import { SPELL_LEVEL } from '../spells';
-import { FACTION_RES, MOUNT_H, MOUNT_W, NATIVE, OBJECTS, type Purse, type ResId, TERRAINS, TERRAIN_INDEX, type TerrainId, TOWN_H, TOWN_W, WATER } from './data';
+import { FACTION_RES, MOUNT_H, MOUNT_W, NATIVE, OBJECTS, type Purse, ROAD_COST, type ResId, TERRAINS, TERRAIN_INDEX, type TerrainId, TOWN_H, TOWN_W, WATER } from './data';
 import { type Army, artList } from './hero';
 import { type EdgeT, type MapTemplate, type SizeId, TEMPLATES, type ZoneT } from './templates';
 import { DECOR_SIZE, type GameSpec, TOWN_NAMES, decorArts, noise } from './testmap';
@@ -160,6 +160,8 @@ const KIND_LETTER: Record<string, string> = { start: 's', mid: 'm', treasure: 't
 const ZONE_GUARD: Record<string, number> = { start: 0.5, mid: 1, treasure: 1.4, center: 1.8, water: 1 };
 /** Страж прохода: ценность армии по силе ребра. */
 const EDGE_GUARD = [0, 3500, 9000, 22000];
+/** Множитель ценности зон: насыщенность объектами. */
+const DENSITY = 2.5;
 
 export const templateFits = (t: MapTemplate, size: SizeId): boolean => t.sizes.includes(size);
 
@@ -398,7 +400,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   }
 
   // ---------------------------------------------------------------- занятость
-  /** 0 — свободно, 1 — держать открытым (дорога, проход), 2 — тело (город, объект, вход), 3 — чисто вокруг объекта. */
+  /** 0 — свободно, 1 — держать открытым (дорога, проход), 2 — тело (город, объект, вход), 3 — поле вокруг объекта (лес можно, кроме входа), 4 — чисто вокруг города. */
   const res = new Uint8Array(N);
   /** Тело объекта или города: не проходимо, не вырубается. */
   const body = new Uint8Array(N);
@@ -411,7 +413,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   const townOk = (gate: number): boolean => copies(gate).every((g) => {
     const gx = X(g);
     const gy = Y(g);
-    for (let y = gy - TOWN_H; y <= gy + 2; y++) {
+    for (let y = gy - TOWN_H - 1; y <= gy + 2; y++) {
       for (let x = gx - (TOWN_W >> 1) - 1; x <= gx + (TOWN_W >> 1) + 1; x++) {
         if (!inside(x, y)) return false;
         const c = at(x, y);
@@ -423,7 +425,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   for (const z of zones) {
     if (z.sector !== 0 || z.t.kind !== 'start') continue;
     let gate = -1;
-    for (let rad = 0; rad <= 8 && gate < 0; rad++) {
+    for (let rad = 0; rad <= 14 && gate < 0; rad++) {
       for (let dy = -rad; dy <= rad && gate < 0; dy++) {
         for (let dx = -rad; dx <= rad && gate < 0; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
@@ -440,10 +442,12 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
       gates[zones[z.orbit[k]].sector] = g;
       const gx = X(g);
       const gy = Y(g);
-      for (let y = gy - TOWN_H; y <= gy + 2; y++) {
+      // за городом — ряд: туда уходит верх рисунка
+      for (let y = gy - TOWN_H - 1; y <= gy + 2; y++) {
         for (let x = gx - (TOWN_W >> 1) - 1; x <= gx + (TOWN_W >> 1) + 1; x++) {
           if (!inside(x, y)) continue;
           const c = at(x, y);
+          if (res[c] === 2) continue;
           const foot = y <= gy && y > gy - TOWN_H && Math.abs(x - gx) <= TOWN_W >> 1;
           if (w.terrain[c] === WATER) w.terrain[c] = TERRAIN_INDEX.sand;
           if (foot && c !== g) {
@@ -453,7 +457,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
           } else if (c === g) {
             res[c] = 2;
             stop[c] = 1;
-          } else res[c] = 3;
+          } else res[c] = 4;
         }
       }
     });
@@ -755,7 +759,8 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   }
 
   const caps = captives();
-  for (const z of zones) {
+  // два прохода: сначала обязательное во всех зонах, потом мелочь по бюджету — иначе мелочь первых зон отнимет место у шахт и сокровищниц следующих
+  for (const phase of [0, 1]) for (const z of zones) {
     if ((z.sector !== 0 && z.sector !== -1) || z.t.terrain === 'water') continue;
     const zi = zones.indexOf(z);
     const cand = zoneCells(zi);
@@ -766,10 +771,13 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
     const near = (lo: number, hi: number) => (c: number): boolean => cheb(c, z.center) >= lo && cheb(c, z.center) <= hi;
     const guarded = (v: number) => (): Partial<MapObject> => ({ army: guardArmy(v * zk, terr0) });
     const any = (): boolean => true;
-    let budget = (z.t.value * cand.length) / 100;
+    // насыщенность как в жанре: объект на каждые ~15–20 клеток суши
+    let budget = (z.t.value * DENSITY * cand.length) / 100 - (kind === 'start' || kind === 'treasure' ? 12000 : 0);
 
     // обязательное
-    if (kind === 'start') {
+    if (phase === 1) {
+      // уже стоит
+    } else if (kind === 'start') {
       const free = (): Partial<MapObject> => ({});
       if (t.islands) {
         // верфь у берега и бесплатная лодка
@@ -782,15 +790,14 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
       }
       // обязательные шахты: сначала в своём кольце, не вышло — шире
       const must = (lo: number, hi: number, kindOf: (g: number) => string, make: () => Partial<MapObject>): boolean =>
-        tryPlace(zi, cand, near(lo, hi), kindOf, make) || tryPlace(zi, cand, near(3, hi + 8), kindOf, make) || tryPlace(zi, zoneCells(zi, 1), near(3, 99), kindOf, make)
-        // своя зона тесна — в соседнюю своей доли
-        || zones.some((o2, zj) => o2.sector === 0 && zj !== zi && o2.t.terrain !== 'water' && tryPlace(zj, zoneCells(zj, 1), any, kindOf, make));
+        tryPlace(zi, cand, near(lo, hi), kindOf, make) || tryPlace(zi, cand, near(3, hi + 8), kindOf, make) || tryPlace(zi, zoneCells(zi, 0), near(3, 99), kindOf, make)
+        // своя зона тесна — в соседнюю своей доли или в общую
+        || zones.some((o2, zj) => o2.sector <= 0 && zj !== zi && o2.t.terrain !== 'water' && tryPlace(zj, zoneCells(zj, 0), any, kindOf, make));
       must(4, 9, () => 'mine-wood', free);
       must(4, 9, () => 'mine-stone', free);
       must(6, 14, () => 'mine-semki', guarded(4000));
       must(7, 16, (g) => `mine-${rareOf(g, 0)}`, guarded(5000));
       tryPlace(zi, cand, near(2, 5), () => 'signpost', () => ({ text: 'Свой край. Дальше — охраняемые проходы к соседям.' }));
-      budget -= 12000;
     } else if (kind === 'mid') {
       tryPlace(zi, cand, any, (g) => `mine-${z.sector < 0 ? RARE[0] : rareOf(g, 1)}`, guarded(6000));
     } else if (kind === 'treasure') {
@@ -800,7 +807,6 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
       const make = (): Partial<MapObject> => ({ army: guardArmy(12000 * zk, terr0), reward: { ...reward }, art });
       tryPlace(zi, cand, any, kindOf, make) || tryPlace(zi, zoneCells(zi, 1), any, kindOf, make) || zones.some((o2, zj) => o2.sector <= 0 && zj !== zi && o2.t.kind !== 'start' && o2.t.terrain !== 'water' && tryPlace(zj, zoneCells(zj, 1), any, kindOf, make));
       tryPlace(zi, cand, any, () => 'mine-semki', guarded(7000));
-      budget -= 12000;
     } else if (kind === 'center') {
       const reward = { semki: 8000, [RARE[r.below(4)]]: 6 } as Purse;
       const art = artOf(2);
@@ -810,12 +816,15 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
       tryPlace(zi, cand, any, () => 'obelisk', () => ({}));
     }
 
+    if (phase === 0) continue;
     // по бюджету
     const count: Record<string, number> = {};
     const letter = KIND_LETTER[kind];
     let misses = 0;
     while (budget > 600 && misses < 6) {
-      const opts = TABLE.filter((p) => p.where.includes(letter) && (count[p.kind] ?? 0) < (p.max ?? 9) && p.v <= budget + 1500);
+      // мелочь (кучи, сундуки, костры, простые вещи) — сколько влезет по площади, редкое — штучно
+      const cap = (p: Pick): number => (p.v <= 3000 ? Math.max(p.max ?? 9, Math.round(((p.max ?? 9) * cand.length) / 160)) : (p.max ?? 9));
+      const opts = TABLE.filter((p) => p.where.includes(letter) && (count[p.kind] ?? 0) < cap(p) && p.v <= budget + 1500);
       if (!opts.length) break;
       const sum = opts.reduce((s, p) => s + p.w, 0);
       let roll = r.below(sum);
@@ -913,12 +922,15 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   const ob2 = noise(r.u32(), 3.5);
   const obW = noise(r.u32(), S / 10);
   const mask = new Uint8Array(N);
+  // лес подходит к объектам вплотную, как в жанре; свободны только клетки у входов
+  const nearEntry = (k: number): boolean => stop[k] === 1 || around(k).some((n) => stop[n] === 1);
+  const busy = (k: number): boolean => res[k] === 1 || res[k] === 2 || res[k] === 4 || (res[k] === 3 && nearEntry(k));
   for (let c = 0; c < N; c++) {
     if (canon[c] !== c) continue;
-    if (!isLand(c) || anyCopy(c, (k) => res[k] !== 0)) continue;
+    if (!isLand(c) || anyCopy(c, busy)) continue;
     const z = zones[zoneOf[c]];
     let m = wall[c] === 1;
-    if (!m && cheb(c, z.center) > (z.t.kind === 'start' ? 5 : 3)) {
+    if (!m && cheb(c, z.center) > (z.t.kind === 'start' ? 3 : 2)) {
       const x = X(c);
       const y = Y(c);
       const wx = x + (obW(x, y) - 0.5) * 8;
@@ -926,17 +938,17 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
       const v = ob1(wx, wy) * 0.7 + ob2(wx, wy) * 0.3;
       // у границы с сушей лес гуще — стена выглядит природной; у моря берег открыт
       const coast = inner[c] <= 2 && around(c).some((n) => isSea(n) || around(n).some(isSea));
-      m = v > (z.t.kind === 'start' ? 0.6 : 0.56) || (inner[c] <= 1 && v > 0.45 && !coast);
+      m = v > (z.t.kind === 'start' ? 0.47 : 0.44) || (inner[c] <= 1 && v > 0.38 && !coast);
     }
     if (m) for (const k of copies(c)) mask[k] = 1;
   }
   // диск Пуассона: одиночные деревья в открытом поле
   {
-    const open = Array.from({ length: N }, (_, c) => c).filter((c) => canon[c] === c && !mask[c] && isLand(c) && !anyCopy(c, (k) => res[k] !== 0) && inner[c] >= 2);
+    const open = Array.from({ length: N }, (_, c) => c).filter((c) => canon[c] === c && !mask[c] && isLand(c) && !anyCopy(c, busy) && inner[c] >= 2);
     const taken: number[] = [];
-    for (let i = 0; i < open.length >> 3; i++) {
+    for (let i = 0; i < open.length >> 1; i++) {
       const c = open[r.below(open.length)];
-      if (taken.some((k) => cheb(k, c) < 4)) continue;
+      if (taken.some((k) => cheb(k, c) < 2)) continue;
       taken.push(c);
       for (const k of copies(c)) mask[k] = 1;
     }
@@ -948,7 +960,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   const mountainFree = (k: number): boolean => mask[k] === 1 && mountainAt[k] < 0;
   for (let c = 0; c < N; c++) {
     if (canon[c] !== c || !mask[c] || mountainAt[c] >= 0) continue;
-    if (speck(X(c) + 7, Y(c) + 3) < 0.42) continue;
+    if (speck(X(c) + 7, Y(c) + 3) < 0.3) continue;
     // c — левый нижний угол
     const box = (k: number): number[] | null => {
       const out: number[] = [];
@@ -1026,45 +1038,156 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   /** Лодка на воде: достижима, если рядом достижимый берег. */
   const reached = (seen: Uint8Array, c: number): boolean => seen[c] === 1 || (!isLand(c) && around(c).some((n) => seen[n] && isLand(n) && !stop[n]));
   const startZone = (c: number): boolean => zones[zoneOf[c]].t.kind === 'start';
+  /** Прорубить путь от цели к достижимому. Симметрично: путь годится во всех копиях (тела объектов и входы — по всем долям), кончается там, где достижимы все копии;
+   * у самой цели — только своя доля (входы у копий смотрят вниз по-разному). Не вышло — путь только для этой копии. */
   const fix = (seen: Uint8Array, target: number, boat: boolean): void => {
-    // Дейкстра от цели к достижимому: лес дёшев, горы и стены дороги, тела — стена
-    const dist = new Float64Array(N).fill(Infinity);
-    const prev = new Int32Array(N).fill(-1);
-    const q = new Heap();
-    q.push(0, target);
-    dist[target] = 0;
-    let end = -1;
-    while (q.size) {
-      const [d, c] = q.pop();
-      if (d > dist[c]) continue;
-      if (c !== target && seen[c] && isLand(c) && (!stop[c] || stacks.has(c))) {
-        end = c;
-        break;
-      }
-      for (const n of around(c)) {
-        if (body[n] || (stop[n] && !seen[n])) continue;
-        if (isSea(n) && !boat) continue;
-        let k = 1;
-        if (w.block[n]) k = mountainAt[n] >= 0 ? 25 : 4;
-        if (wall[n]) k += 20;
-        if (!isLand(n) && !isSea(n)) k = 6;
-        if (dist[c] + k < dist[n]) {
-          dist[n] = dist[c] + k;
-          prev[n] = c;
-          q.push(dist[n], n);
+    const free = (k: number): boolean => seen[k] === 1 && isLand(k) && (!stop[k] || stacks.has(k));
+    const run = (sym: boolean): boolean => {
+      const dist = new Float64Array(N).fill(Infinity);
+      const prev = new Int32Array(N).fill(-1);
+      const q = new Heap();
+      q.push(0, target);
+      dist[target] = 0;
+      let end = -1;
+      while (q.size) {
+        const [d, c] = q.pop();
+        if (d > dist[c]) continue;
+        if (c !== target && (sym ? copies(c).every(free) : free(c))) {
+          end = c;
+          break;
+        }
+        for (const n of around(c)) {
+          const own = !sym || cheb(n, target) <= 1;
+          // сквозь чужой вход не пройти: с него дальше не шагают (кроме стражи — её бьют)
+          const solid = (k: number): boolean => body[k] === 1 || (stop[k] === 1 && !stacks.has(k) && !gates.includes(k));
+          if (own ? solid(n) : anyCopy(n, solid)) continue;
+          if (isSea(n) && !boat) continue;
+          let k = 1;
+          if (w.block[n]) k = mountainAt[n] >= 0 ? 25 : 4;
+          if (wall[n]) k += 20;
+          if (!isLand(n) && !isSea(n)) k = 6;
+          if (dist[c] + k < dist[n]) {
+            dist[n] = dist[c] + k;
+            prev[n] = c;
+            q.push(dist[n], n);
+          }
         }
       }
-    }
-    if (end < 0) return;
-    for (let k = end; k >= 0; k = prev[k]) for (const m of copies(k)) open(m);
+      if (end < 0) return false;
+      for (let k = end; k >= 0; k = prev[k]) for (const m of sym ? copies(k) : [k]) open(m);
+      return true;
+    };
+    if (!run(true)) run(false);
   };
   const targets = (): number[] => [...w.objects.map((x) => x.cell), ...gates, ...zones.filter((z) => z.t.terrain !== 'water').map((z) => z.center).filter((c) => isLand(c) && !body[c])];
-  for (let round = 0; round < 300; round++) {
+  for (let round = 0; round < 2000; round++) {
     const foot = flood(false);
     const wet = t.islands ? flood(true) : foot;
     const miss = targets().find((c) => (t.islands && !startZone(c) ? !reached(wet, c) : !reached(foot, c)));
     if (miss === undefined) break;
     fix(t.islands && !startZone(miss) ? wet : foot, miss, t.islands === true && !startZone(miss));
+  }
+
+  // осколок кастета — ближе к середине карты; обелиски на него указывают
+  {
+    const foot = t.islands ? flood(true) : flood(false);
+    const mid = at(S >> 1, S >> 1);
+    let best = -1;
+    let bd = Infinity;
+    for (let c = 0; c < N; c++) {
+      if (!isLand(c) || w.block[c] || res[c] === 2 || !foot[c]) continue;
+      const d = cheb(c, mid) * 4 + (speck(X(c), Y(c)) > 0.5 ? 1 : 0);
+      if (d < bd) {
+        bd = d;
+        best = c;
+      }
+    }
+    w.shard = best;
+    w.shardHint = [r.int(-12, 12), r.int(-12, 12)];
+  }
+
+  // выравнивание: вход у объекта всегда снизу, и в повёрнутой копии лес «за спиной» оказывается перед подходом.
+  // Кому до своей копии объекта дальше — тому прорубаем повёрнутый путь самого удачливого (DESIGN.md §7.5)
+  const walk = (from: number): { dist: Int32Array; prev: Int32Array } => {
+    const dist = new Int32Array(N).fill(-1);
+    const prev = new Int32Array(N).fill(-1);
+    const q = new Heap();
+    q.push(0, from);
+    dist[from] = 0;
+    while (q.size) {
+      const [d, c] = q.pop();
+      if (d > dist[c]) continue;
+      if (c !== from && stop[c] && !stacks.has(c)) continue;
+      for (const n of around(c)) {
+        // на островах — на лодке по любой воде, как в игре
+        if (w.block[n] || body[n] || (!isLand(n) && !t.islands)) continue;
+        let k = w.road[n] && isLand(n) ? ROAD_COST[w.road[n]] : 100;
+        if (X(n) !== X(c) && Y(n) !== Y(c)) k = Math.trunc((k * 141) / 100);
+        if (dist[n] < 0 || d + k < dist[n]) {
+          dist[n] = d + k;
+          prev[n] = c;
+          q.push(d + k, n);
+        }
+      }
+    }
+    return { dist, prev };
+  };
+  for (let it = 0; it < 4; it++) {
+    flood(false);
+    const runs = gates.map((g0) => walk(g0));
+    const done = new Set<number>();
+    let changed = false;
+    // цели: объекты (копия g — у игрока g) и соседние города (игроку g — город g + j)
+    const goals: { cs: number[]; fw: number; fh: number }[] = [];
+    for (const o of w.objects) {
+      if (done.has(o.cell)) continue;
+      const cs = copies(o.cell);
+      for (const k of cs) done.add(k);
+      if (cs.every((k) => w.entries[k] !== undefined)) goals.push({ cs, fw: OBJECTS[o.kind].w, fh: OBJECTS[o.kind].h });
+    }
+    for (let j = 1; j < G; j++) goals.push({ cs: copies(gates[j]), fw: TOWN_W, fh: TOWN_H });
+    // осколок один, но его повёрнутые места рядом: подходы к середине у всех одинаковые
+    if (w.shard >= 0) goals.push({ cs: copies(w.shard), fw: 1, fh: 1 });
+    for (const { cs, fw, fh } of goals) {
+      const d = cs.map((k, g) => runs[g].dist[k]);
+      if (d.some((x) => x < 0)) continue;
+      const best = d.indexOf(Math.min(...d));
+      if (Math.max(...d) - d[best] <= 300) continue;
+      const path: number[] = [];
+      for (let k = cs[best]; k >= 0; k = runs[best].prev[k]) path.push(k);
+      for (let g = 0; g < G; g++) {
+        if (g === best || d[g] - d[best] <= 300) continue;
+        // повёрнутый путь приводит к «спине» объекта — кольцо вокруг тела, чтобы обойти его ко входу
+        const ring: number[] = [];
+        for (let yy = Y(cs[g]) - fh; yy <= Y(cs[g]) + 1; yy++) for (let xx = X(cs[g]) - (fw >> 1) - 1; xx <= X(cs[g]) - (fw >> 1) + fw; xx++) if (inside(xx, yy)) ring.push(at(xx, yy));
+        for (const k of [...path.map((c) => rot(c, (g - best + G) % G)), ...ring]) {
+          if (w.block[k] && !body[k] && !wall[k]) {
+            open(k);
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  // осколок — у середины, там, куда всем идти поровну
+  if (w.shard >= 0) {
+    const runs = gates.map((g0) => walk(g0));
+    const mid = at(S >> 1, S >> 1);
+    let best = w.shard;
+    let bs = Infinity;
+    for (let c = 0; c < N; c++) {
+      if (cheb(c, mid) > Math.max(6, S >> 3) || !isLand(c) || w.block[c] || res[c] === 2) continue;
+      const d = runs.map((x) => x.dist[c]);
+      if (d.some((x) => x < 0)) continue;
+      const v = (Math.max(...d) - Math.min(...d)) * 4 + cheb(c, mid) * 60;
+      if (v < bs) {
+        bs = v;
+        best = c;
+      }
+    }
+    w.shard = best;
   }
 
   // лодки у островов: на воде у берега, ближе к воротам
@@ -1088,11 +1211,28 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
     }
     // поровну не вышло — каждому свою, ближе к воротам
     const cells = best >= 0 ? copies(best) : starts.map((z) => {
+      const zi = zones.indexOf(z);
       let b = -1;
       let d0 = Infinity;
-      for (let c = 0; c < N; c++) if (shore(c, zones.indexOf(z)) && cheb(c, z.center) < d0) {
+      for (let c = 0; c < N; c++) if (shore(c, zi) && cheb(c, z.center) < d0) {
         d0 = cheb(c, z.center);
         b = c;
+      }
+      if (b >= 0) return b;
+      // берег зарос: лодку — к ближайшему берегу своей зоны, к ней прорубаем тропу
+      let land = -1;
+      for (let c = 0; c < N; c++) {
+        if (!isSea(c) || w.terrain[c] !== WATER || res[c] === 2) continue;
+        const n = around(c, N4).find((k) => zoneOf[k] === zi && isLand(k) && !body[k] && !stop[k]);
+        if (n !== undefined && cheb(c, z.center) < d0) {
+          d0 = cheb(c, z.center);
+          b = c;
+          land = n;
+        }
+      }
+      if (land >= 0) {
+        open(land);
+        fix(flood(false), land, false);
       }
       return b;
     });
@@ -1114,24 +1254,6 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
     const dup = spec.players.slice(0, i).filter((o2) => o2.faction === p.faction).length;
     w.towns.push(makeTown(w, p.faction, i, gates[i], TOWN_NAMES[p.faction] + (dup ? `-${dup + 1}` : '')));
   });
-
-  // осколок кастета — ближе к середине карты; обелиски на него указывают
-  {
-    const foot = t.islands ? flood(true) : flood(false);
-    const mid = at(S >> 1, S >> 1);
-    let best = -1;
-    let bd = Infinity;
-    for (let c = 0; c < N; c++) {
-      if (!isLand(c) || w.block[c] || res[c] === 2 || !foot[c]) continue;
-      const d = cheb(c, mid) * 4 + (speck(X(c), Y(c)) > 0.5 ? 1 : 0);
-      if (d < bd) {
-        bd = d;
-        best = c;
-      }
-    }
-    w.shard = best;
-    w.shardHint = [r.int(-12, 12), r.int(-12, 12)];
-  }
 
   spec.players.forEach((p, i) => {
     const h = makeHero(w, p.hero, i, gates[i]);

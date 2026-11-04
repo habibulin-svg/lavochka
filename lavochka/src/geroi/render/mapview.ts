@@ -13,7 +13,7 @@ export const TILE = 64;
 /** Сцена считается в размере 1080p: на другом экране всё просто крупнее или мельче. */
 const STAGE_H = 1080;
 export const PLAYER_COLORS = [0x3f8fe0, 0xd8533f, 0x57b05a, 0xe0b23f, 0x9a62d4, 0x3fc3c3, 0xe07fb0, 0x8f8f8f];
-const HERO_H = 104;
+const HERO_H = 88;
 
 const VERT = `
 in vec2 aPosition;
