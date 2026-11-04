@@ -1,10 +1,10 @@
 /* «Коммерсы»: календарь и дорога, сделки и часы, исторические даты, падения, покупка клуба; партии ботов и прикидка баланса. */
 import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
-import { CLUB_PRICE, LAST, SEG_CELLS, dateText, mm, segMonths } from '../src/games/kommersy/data';
+import { CARDS, CLUB_PRICE, LAST, SEG_CELLS, dateText, mm, segMonths } from '../src/games/kommersy/data';
 import { def } from '../src/games/kommersy/def';
 import { choose } from '../src/games/kommersy/bot';
-import { apply, bookSum, clubCheck, clubReady, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
+import { applyFx, apply, availableDeals, bookSum, cardOk, clubCheck, clubReady, fxHint, newState, view, worth, type Action, type State } from '../src/games/kommersy/engine';
 import { botSeats, simulate } from './harness';
 
 function act(s: State, seat: number, a: Action, rig?: number[]): State {
@@ -61,6 +61,52 @@ describe('Коммерсы: ход', () => {
     expect(s.ask!.choices[0].label).toContain('управляющ');
     s = act(s, 0, { type: 'choose', i: 0 });
     expect(s.players[0].assets[0].manager).toBe(true);
+  });
+});
+
+describe('Коммерсы: что предлагают клетки', () => {
+  const card = (id: string) => CARDS.find((c) => c.id === id)!;
+
+  it('женат и с квартирой матери — такие карточки больше не выпадают; разовые покупки тоже', () => {
+    const s = newState([0], { start: mm(1996, 1) });
+    const p = s.players[0];
+    p.cash = 1e6;
+    for (const id of ['w-svadba', 'w-mama', 'w-mers', 'n-mobila', 'n-voditel', 'n-strah']) expect(cardOk(s, p, card(id)), id).toBe(true);
+    for (const id of ['w-svadba', 'w-mama', 'w-mers', 'n-mobila', 'n-voditel', 'n-strah']) applyFx(s, p, card(id).choices[0].fx, new SeededRng(1), []);
+    for (const id of ['w-svadba', 'w-mama', 'w-mers', 'n-mobila', 'n-voditel', 'n-strah']) expect(cardOk(s, p, card(id)), id).toBe(false);
+  });
+
+  it('уже под ментами — их охранное агентство не предлагают', () => {
+    const s = newState([0], { start: mm(1996, 1) });
+    const p = s.players[0];
+    p.cash = 1e6;
+    expect(cardOk(s, p, card('n-krysha'))).toBe(true);
+    p.krysha = 'police';
+    expect(cardOk(s, p, card('n-krysha'))).toBe(false);
+  });
+
+  it('«Расширяться?» приходит, только если есть что и на что расширять', () => {
+    const s = newState([0], { start: mm(1994, 1) });
+    const p = s.players[0];
+    const asset = (id: string) => ({ uid: 1, id, name: id, kind: 'biz' as const, value: 3000, income: 900, hours: 60, manager: false, mul: 1 });
+    p.cash = 1e6;
+    p.assets = [asset('obmennik')]; // обменнику расти некуда
+    expect(cardOk(s, p, card('n-grow'))).toBe(false);
+    p.assets = [asset('larek')];
+    expect(cardOk(s, p, card('n-grow'))).toBe(true);
+    expect(fxHint(s, p, card('n-grow').choices[0].fx).join()).toContain('Сеть ларьков');
+    p.cash = 100; // есть куда, но не на что
+    expect(cardOk(s, p, card('n-grow'))).toBe(false);
+  });
+
+  it('клетка «Сделка» всегда с делами, как бы капитал ни обогнал время', () => {
+    for (let m = 0; m <= LAST; m++)
+      for (const cash of [0, 5e3, 5e4, 5e5, 5e6, 5e7, 2e8, 1e9]) {
+        const s = newState([0]);
+        s.m = m;
+        s.players[0].cash = cash;
+        expect(availableDeals(s, s.players[0]).length, `${dateText(m)}, ${cash}`).toBeGreaterThan(0);
+      }
   });
 });
 

@@ -46,6 +46,8 @@ export interface Player {
   upkeep: number;
   study: number;
   dreams: string[];
+  /** Разовые покупки: водитель, пейджер, мобильник (в старых сохранениях поля нет). */
+  items?: string[];
   insurance: boolean;
   advisor: boolean;
   incomeBoost: number;
@@ -341,6 +343,7 @@ export function applyFx(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[]) {
   if (fx.upkeepT) p.upkeep += fx.upkeepT * sc;
   if (fx.studyHours) p.study += fx.studyHours;
   if (fx.dream && !p.dreams.includes(fx.dream)) p.dreams.push(fx.dream);
+  if (fx.item && !p.items?.includes(fx.item)) (p.items ??= []).push(fx.item);
   if (fx.insurance) p.insurance = true;
   if (fx.advisor) p.advisor = true;
   if (fx.incomeBoost) p.incomeBoost = Math.min(2, p.incomeBoost * fx.incomeBoost);
@@ -394,9 +397,11 @@ function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
 }
 
 // ---------------------------------------------------------------- клетки → вопрос игроку
-function availableDeals(s: State, p: Player) {
-  const t = tier(p);
-  return DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && d.tier >= t - 1 && d.tier <= t + 1);
+export function availableDeals(s: State, p: Player) {
+  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies));
+  // капитал обогнал время (100 млн в 1998-м, а дел для «Лондона» ещё нет) — предлагаем самые крупные из живых
+  const t = Math.min(tier(p), Math.max(...alive.map((d) => d.tier)));
+  return alive.filter((d) => d.tier >= t - 1 && d.tier <= t + 1);
 }
 
 /** Клетка «Сделка»: до трёх предложений — чаще то, что по карману (с кредитом), иногда — на вырост. */
@@ -453,14 +458,19 @@ function needFail(s: State, p: Player, d: DealT): string | null {
 
 export const loanLimit = (p: Player) => Math.max(0, Math.max(500, worth(p) * 0.6) * (p.stats.name / 50) - debt(p));
 
-function cardOk(s: State, p: Player, c: CardT) {
+/** Выбор предлагает то, что у игрока уже есть: второй раз не женятся и второй мобильник не покупают. */
+const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
+
+/** Карточка не выпадает, если её главное предложение (первый выбор) уже есть или его нечем принять. */
+export function cardOk(s: State, p: Player, c: CardT) {
   const t = tier(p);
-  return (c.from == null || s.m >= c.from) && (c.to == null || s.m <= c.to) && (c.minTier == null || t >= c.minTier) && (c.maxTier == null || t <= c.maxTier) && !(c.choices.length === 1 && c.choices[0].fx.dream && p.dreams.includes(c.choices[0].fx.dream));
+  const main = c.choices[0];
+  return (c.from == null || s.m >= c.from) && (c.to == null || s.m <= c.to) && (c.minTier == null || t >= c.minTier) && (c.maxTier == null || t <= c.maxTier) && !owned(p, main.fx) && !(main.need?.growable && !growTarget(s, p));
 }
 
 function choiceWhy(s: State, p: Player, ch: Choice): string | undefined {
   const n = ch.need;
-  if (ch.fx.dream && p.dreams.includes(ch.fx.dream)) return 'уже есть';
+  if (owned(p, ch.fx)) return 'уже есть';
   const cost = (ch.fx.cash ?? 0) < 0 ? -ch.fx.cash! : 0;
   if (cost && p.cash < cost) return 'не хватает денег';
   if (!n) return undefined;
@@ -510,7 +520,11 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
   const cash = round((fx.cash ?? 0) + (fx.cashT ?? 0) * sc);
   if (cash) out.push(plusMoney(cash));
   if (fx.cashPct) out.push(`${fx.cashPct > 0 ? '+' : '−'}${Math.round(Math.abs(fx.cashPct) * 100)} % наличных`);
-  if (fx.asset) out.push(ASSET_HINT[fx.asset]);
+  const grow = fx.asset === 'grow' ? growTarget(s, p) : undefined;
+  if (grow) {
+    const n = dealById(dealById(grow.id)!.next!)!;
+    out.push(`расширить «${grow.name}» до «${n.name}», доплата ${money(round((n.price - grow.value) * 0.8))}`);
+  } else if (fx.asset) out.push(ASSET_HINT[fx.asset]);
   if (fx.incomeBoost) out.push(`доход дел ${signed(Math.round((fx.incomeBoost - 1) * 100))} %`);
   for (const [k, v] of Object.entries(fx.stats ?? {}) as [Stat, number][]) {
     if (!v) continue;

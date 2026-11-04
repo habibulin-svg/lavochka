@@ -392,7 +392,8 @@ class KommersyView implements GameView<View, Event> {
             const d = dealById(a.id);
             const mgr = a.kind === 'biz' ? `<button class="km-mini${a.manager ? ' on' : ''}" data-act="manager" data-uid="${a.uid}" data-on="${a.manager ? 0 : 1}"${dis} title="управляющий">👔</button>` : '';
             const inc = a.kind === 'paper' ? `${money(a.value)} в бумагах` : `+${money(a.income * a.mul)}/мес · ${a.manager ? Math.ceil(a.hours * 0.15) : a.hours} ч`;
-            return `<li><b>${esc(a.name)}</b><small>${inc}${d?.heat ? ' · 🩸' : ''}</small>${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></li>`;
+            const grows = d?.next ? ` · растёт в «${esc(dealById(d.next)!.name)}»` : '';
+            return `<li><b>${esc(a.name)}</b><small>${inc}${d?.heat ? ' · 🩸' : ''}${grows}</small>${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></li>`;
           })
           .join('')
       : '<li class="km-none">Дел пока нет</li>';
