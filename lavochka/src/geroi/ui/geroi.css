@@ -127,3 +127,43 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .g-losses { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; }
 .g-losses b { font: 700 19px 'Geroi Num', sans-serif; }
 .g-loss { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+
+/* Арена */
+.g-arena { width: min(560px, 94vw); padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+.g-arena p { margin: 0; line-height: 1.4; }
+.g-warn { color: #ffb38a; }
+.g-field { display: flex; align-items: center; gap: 10px; font-size: 17px; }
+.g-input { font: 500 18px 'Geroi Text', Georgia, serif; color: var(--ink); background: #241b12; border: 1px solid var(--brass); border-radius: 5px; padding: 7px 10px; flex: 1; min-width: 0; }
+.g-code { max-width: 130px; text-transform: uppercase; font-family: 'Geroi Num', sans-serif; font-weight: 700; letter-spacing: .12em; }
+.g-arena .g-row .g-btn { flex: 1; white-space: nowrap; }
+.g-bigcode { font: 700 54px 'Geroi Num', sans-serif; letter-spacing: .14em; color: var(--brass2); text-align: center; user-select: all; }
+.g-top { display: flex; flex-direction: column; gap: 2px; font-size: 16px; }
+.g-toprow { display: flex; justify-content: space-between; }
+.g-toprow em { font: normal 500 15px 'Geroi Num', sans-serif; color: var(--dim); }
+.g-draft { display: flex; flex-direction: column; gap: 14px; align-items: center; width: min(1240px, 96vw); padding: 10px 0; }
+.g-drafthead { display: flex; gap: 20px; align-items: baseline; }
+.g-draftclock { font: 700 32px 'Geroi Num', sans-serif; color: var(--ink); text-shadow: 0 2px 6px #000; }
+.g-cards { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; min-height: 300px; }
+.g-dcard { width: 290px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px; color: var(--ink); background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; cursor: pointer; text-align: center; transition: transform .12s, border-color .12s; }
+.g-dcard:hover:not(:disabled) { transform: translateY(-4px); border-color: var(--brass2); }
+.g-dcard.on { border: 2px solid var(--brass2); box-shadow: 0 0 18px #e0c38788; }
+.g-dcard.off { opacity: .4; }
+.g-dcard b { font: 700 22px 'Geroi Title', Georgia, serif; color: var(--brass2); }
+.g-dcard em { font: normal 500 15px 'Geroi Num', sans-serif; color: var(--dim); }
+.g-dcard p { margin: 0; font-size: 15px; line-height: 1.3; }
+.g-dhero { width: 130px; height: 162px; object-fit: cover; border-radius: 4px; }
+.g-draftsides { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+.g-draftside { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; min-height: 130px; }
+.g-draftside.side0 { border-top: 3px solid #4aa3ff; }
+.g-draftside.side1 { border-top: 3px solid #ff5d4a; }
+.g-draftside > b { font: 500 17px 'Geroi Num', sans-serif; }
+.g-draftrow { display: flex; gap: 8px; align-items: center; font-size: 16px; }
+.g-draftrow img { width: 40px; height: 50px; object-fit: cover; border-radius: 3px; }
+.g-draftarmy { display: flex; gap: 4px; flex-wrap: wrap; }
+.g-draftarmy .g-qi { width: 60px; height: 66px; cursor: default; }
+
+/* часы и чат в бою */
+.g-clock { font: 700 22px 'Geroi Num', sans-serif; font-variant-numeric: tabular-nums; }
+.g-clock.low { color: #ff7a60; }
+.g-game .talk { left: 14px; top: auto; bottom: 14px; font-family: 'Geroi Text', Georgia, serif; z-index: 4; }
+.g-banner { position: absolute; top: 200px; left: 50%; transform: translateX(-50%); padding: 8px 22px; font-size: 22px; background: #5a1f14ee; border: 1px solid #ff8d7a; border-radius: 6px; pointer-events: none; z-index: 4; }

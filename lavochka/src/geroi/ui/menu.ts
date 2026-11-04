@@ -28,6 +28,7 @@ export class Menu {
   readonly el = h('div', 'g-menu');
   onQuick: (c: QuickConfig) => void = () => {};
   onLoad: (s: Save) => void = () => {};
+  onArena: () => void = () => {};
   private last: QuickConfig | null = null;
 
   constructor(host: HTMLElement, private readonly audio: Audio2) {
@@ -38,7 +39,7 @@ export class Menu {
     this.el.hidden = true;
   }
 
-  private screen(...nodes: Node[]): void {
+  screen(...nodes: Node[]): void {
     this.el.hidden = false;
     this.el.replaceChildren(...nodes);
     this.audio.music('menu');
@@ -52,6 +53,7 @@ export class Menu {
       music.textContent = this.audio.toggleMusic() ? 'Музыка: выкл' : 'Музыка: вкл';
     });
     col.append(
+      button('Арена', () => this.onArena(), 'g-btn main'),
       button('Быстрый бой', () => this.quick()),
       button('Загрузить', () => this.load()),
       music,

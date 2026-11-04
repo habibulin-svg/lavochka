@@ -1,6 +1,9 @@
 /* Партия боя: кто ходит, ввод человека, боты, панель, пауза, сохранения. Правила — в sim/, картинка — в render/. */
+import { Talk } from '../gops/ui/talk';
 import { type Audio2 } from './audio';
 import { type BotLevel, botAction } from './bot/bot';
+import type { ArenaClient } from './net/client';
+import type { ClockView, NetServerMsg, ResultView } from './net/protocol';
 import { BattleView, STAGE_H, STAGE_W, cellCenter, type Pointer } from './render/view';
 import { SLOTS, type Save, loadSaves, slotLabel, writeAuto, writeSave } from './save';
 import {
@@ -13,17 +16,27 @@ import { CELLS, neighbors } from './sim/hex';
 import { SPELLS, type School, spellIcon } from './sim/spells';
 import { button, creatureIcon, creatureLines, h, modal } from './ui/common';
 
-export type Who = 'human' | BotLevel;
+export type Who = 'human' | 'remote' | BotLevel;
+
+/** Партия по сети: сервер считает, клиент показывает и шлёт ходы. */
+export interface NetOptions {
+  client: ArenaClient;
+  seat: number | null;
+  names: [string, string];
+  clock: ClockView;
+  result?: ResultView;
+}
 
 const SCHOOL_NAME: Record<School, string> = { fire: 'Огонь', water: 'Вода', earth: 'Земля', air: 'Воздух' };
 const SCHOOL_SIGN: Record<School, string> = { fire: '🔥', water: '💧', earth: '⛰', air: '🌀' };
-const WHO_NAME: Record<Who, string> = { human: 'человек', easy: 'лёгкий', medium: 'средний', hard: 'сложный' };
+const WHO_NAME: Record<Who, string> = { human: 'человек', remote: 'соперник', easy: 'лёгкий', medium: 'средний', hard: 'сложный' };
 
 export interface GameOptions {
   who: [Who, Who];
   setup?: BattleSetup;
   restore?: Save;
   fast?: boolean;
+  net?: NetOptions;
 }
 
 export class Game {
@@ -53,6 +66,16 @@ export class Game {
   private lastRound = 0;
   private start0: number[];
   private readonly title: string;
+  private net: NetOptions | null = null;
+  private talk: Talk | null = null;
+  private steps: Extract<NetServerMsg, { t: 'step' }>[] = [];
+  private wakers: (() => void)[] = [];
+  /** Ход послан, ждём ответа сервера. */
+  private sent = false;
+  private clockAt = 0;
+  private clockTimer = 0;
+  private clocks: HTMLElement[] = [h('span', 'g-clock'), h('span', 'g-clock')];
+  private banner = h('div', 'g-banner');
   private readonly onKey = (e: KeyboardEvent): void => this.key(e);
   private readonly fit = (): void => this.fitHud();
   onQuit: () => void = () => {};
@@ -62,6 +85,7 @@ export class Game {
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2, o: GameOptions) {
     this.state = o.restore ? o.restore.state : createBattle(o.setup!);
     this.who = o.who;
+    this.net = o.net ?? null;
     this.view = new BattleView(this.canvasHost, audio);
     this.view.instant = !!o.fast;
     this.lastRound = this.state.round;
@@ -84,11 +108,135 @@ export class Game {
     this.audio.music('battle');
     this.audio.sfx('battle-start');
     this.refresh();
-    void this.loop();
+    if (this.net) {
+      this.banner.hidden = true;
+      this.hud.append(this.banner);
+      this.setClock(this.net.clock);
+      this.clockTimer = window.setInterval(() => this.drawClocks(), 250);
+      this.bindClient(this.net.client);
+      void this.netLoop();
+    } else void this.loop();
+  }
+
+  // ------------------------------------------------------------------ сеть
+
+  private bindClient(c: ArenaClient): void {
+    this.net!.client = c;
+    c.onStep = (m) => {
+      this.steps.push(m);
+      this.wake();
+    };
+    c.onNope = (why) => {
+      this.flash(why);
+      this.sent = false;
+      this.wake();
+    };
+    c.onResult = (m) => {
+      this.net!.result = m.result;
+      this.wake();
+    };
+    c.onPeer = (name, on) => this.flash(on ? `${name} вернулся` : `${name} пропал со связи: ждём 90 секунд`);
+    this.talk?.destroy();
+    this.talk = new Talk(this.root, c);
+  }
+
+  /** Соединение вернулось: снимок с сервера заменяет всё показанное. */
+  resync(c: ArenaClient, m: Extract<NetServerMsg, { t: 'start' }>): void {
+    this.bindClient(c);
+    this.steps = [];
+    this.sent = false;
+    this.state = m.state;
+    this.net!.result = m.result;
+    this.setClock(m.clock);
+    this.showBanner(null);
+    this.view.sync(this.state);
+    this.refresh();
+    this.wake();
+  }
+
+  showBanner(text: string | null): void {
+    this.banner.hidden = !text;
+    this.banner.textContent = text ?? '';
+  }
+
+  private wake(): void {
+    for (const w of this.wakers.splice(0)) w();
+  }
+
+  private sleep(): Promise<void> {
+    return new Promise((r) => this.wakers.push(r));
+  }
+
+  private async netLoop(): Promise<void> {
+    const net = this.net!;
+    while (!this.dead) {
+      const step = this.steps.shift();
+      if (step) {
+        this.sent = false;
+        this.input = null;
+        this.state = step.state;
+        this.setClock(step.clock);
+        this.logEvents(step.events);
+        this.view.highlight({});
+        this.hideTip();
+        await this.view.play(step.events);
+        if (this.dead) return;
+        this.view.refreshStates(this.state);
+        this.refresh();
+        continue;
+      }
+      if (this.state.over) {
+        if (net.result) return this.showResult();
+        await this.sleep();
+        continue;
+      }
+      const u = currentUnit(this.state);
+      if (u && u.side === net.seat && !this.sent) {
+        if (this.auto) {
+          this.sent = true;
+          net.client.act(botAction(this.state, 'hard'));
+          continue;
+        }
+        this.prepareInput();
+        const a = await Promise.race([new Promise<Action>((res) => (this.input = res)), this.sleep().then(() => null)]);
+        this.input = null;
+        if (this.dead) return;
+        if (a) {
+          this.sent = true;
+          net.client.act(a);
+          this.view.highlight({});
+          this.buildActions();
+        }
+        continue;
+      }
+      this.view.highlight(u ? { active: u } : {});
+      await this.sleep();
+    }
+  }
+
+  private setClock(c: ClockView): void {
+    this.net!.clock = c;
+    this.clockAt = Date.now() + c.waitMs;
+    this.drawClocks();
+  }
+
+  private drawClocks(): void {
+    const c = this.net?.clock;
+    if (!c) return;
+    const cur = this.state.over ? null : currentUnit(this.state);
+    this.clocks.forEach((el, side) => {
+      const ms = Math.max(0, c.bank[side] - (cur?.side === side ? Math.max(0, Date.now() - this.clockAt) : 0));
+      const sec = Math.ceil(ms / 1000);
+      el.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      el.classList.toggle('low', sec < 30);
+    });
   }
 
   destroy(): void {
     this.dead = true;
+    clearInterval(this.clockTimer);
+    this.talk?.destroy();
+    this.wake();
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('resize', this.fit);
     this.resumeFn?.();
@@ -124,7 +272,7 @@ export class Game {
         await this.pauseFor(this.view.instant ? 0 : 220);
         if (this.dead) return;
         if (this.paused) continue;
-        a = botAction(this.state, who === 'human' ? 'hard' : who);
+        a = botAction(this.state, who === 'human' || who === 'remote' ? 'hard' : who);
       }
       if (this.dead) return;
       const err = actionError(this.state, a);
@@ -284,7 +432,7 @@ export class Game {
     img.src = `/geroi/a/heroes/${heroPortrait(x.pick)}.webp`;
     img.alt = '';
     const text = h('div', 'g-hero-text');
-    text.append(h('b', '', heroName(x.pick)), h('span', 'dim', WHO_NAME[this.who[side]]));
+    text.append(h('b', '', heroName(x.pick)), h('span', 'dim', this.net ? this.net.names[side] : WHO_NAME[this.who[side]]));
     const stats = h('div', 'g-stats');
     for (const [icon, v] of [['01', x.atk], ['02', x.def], ['03', x.power], ['04', x.know]] as const) {
       const c = h('span');
@@ -297,6 +445,7 @@ export class Game {
     const bar = h('i');
     bar.style.width = `${Math.round((x.mana / Math.max(1, x.know * 10)) * 100)}%`;
     mana.append(bar, h('span', '', `${x.mana}/${x.know * 10}`));
+    if (this.net) stats.append(this.clocks[side]);
     text.append(stats, mana);
     el.append(img, text);
     el.classList.toggle('active', currentUnit(this.state)?.side === side);
@@ -480,6 +629,19 @@ export class Game {
       });
       list.append(button('Назад', showMain));
     };
+    const showNet = (): void => {
+      const playing = this.net?.seat != null && !this.state.over;
+      const items = [button('Продолжить', close), button('Управление', () => this.help())];
+      if (playing) items.push(button('Сдаться', () => {
+        close();
+        this.net!.client.resign();
+      }));
+      items.push(button(playing ? 'Выйти в меню (через 90 с — поражение)' : 'Выйти в меню', () => {
+        close();
+        this.onQuit();
+      }), button('Во двор', () => (location.href = '/')));
+      list.replaceChildren(...items);
+    };
     const showMain = (): void => {
       list.replaceChildren(
         button('Продолжить', close),
@@ -493,7 +655,8 @@ export class Game {
         button('Во двор', () => (location.href = '/')),
       );
     };
-    showMain();
+    if (this.net) showNet();
+    else showMain();
     box.append(list);
   }
 
@@ -540,9 +703,14 @@ export class Game {
     const won = humans.length ? humans.includes(s.winner) : s.winner >= 0;
     this.audio.music(won ? 'victory' : 'defeat');
     this.audio.sfx(won ? 'battle-win' : 'battle-lose');
-    const title = s.winner < 0 ? 'Ничья' : humans.length === 1 ? (won ? 'Победа!' : 'Поражение') : `Победа: ${heroName(s.sides[s.winner].pick)}`;
+    const title = s.winner < 0 ? 'Ничья' : humans.length === 1 ? (won ? 'Победа!' : 'Поражение') : `Победа: ${this.net ? this.net.names[s.winner] : heroName(s.sides[s.winner].pick)}`;
     const { box } = modal(this.overlay, 'g-result');
     box.append(h('h2', '', title));
+    const result = this.net?.result;
+    if (result?.why === 'resign') box.append(h('p', 'dim', 'Сторона сдалась.'));
+    if (result?.why === 'gone') box.append(h('p', 'dim', 'Игрок пропал со связи.'));
+    const rate = result?.rating && this.net?.seat != null ? result.rating[this.net.seat] : null;
+    if (rate) box.append(h('p', 'g-heroline', `Рейтинг: ${rate.r} (${rate.delta >= 0 ? '+' : ''}${rate.delta})`));
     const cols = h('div', 'g-losses');
     for (const side of [0, 1] as const) {
       const col = h('div');
@@ -555,6 +723,7 @@ export class Game {
       }
       cols.append(col);
     }
-    box.append(cols, button('Ещё раз', () => this.onRematch()), button('В меню игры', () => this.onQuit()));
+    if (this.net) box.append(cols, button('К Арене', () => this.onQuit()));
+    else box.append(cols, button('Ещё раз', () => this.onRematch()), button('В меню игры', () => this.onQuit()));
   }
 }

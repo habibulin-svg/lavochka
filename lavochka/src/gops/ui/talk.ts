@@ -2,8 +2,13 @@
  * кнопка 🎤 — голосовой чат (core/voice.ts, звук напрямую между браузерами, сигналы — через комнату). */
 import type { RoomClient } from '../../core/client';
 import { Voice } from '../../core/voice';
-import type { NetClient } from '../net/client';
 import './talk.css';
+
+/** Что нужно панели от сетевого клиента (ГОПС, «Герои»); остальное для голоса — id, on, voice, rtc. */
+export interface TalkNet {
+  onChat: (name: string, text: string) => void;
+  chat(text: string): void;
+}
 
 export class Talk {
   readonly el: HTMLElement;
@@ -14,7 +19,7 @@ export class Talk {
   private voice: Voice | null = null;
   private off = new AbortController();
 
-  constructor(host: HTMLElement, net: NetClient) {
+  constructor(host: HTMLElement, net: TalkNet) {
     this.el = document.createElement('div');
     this.el.className = 'talk';
     this.log = document.createElement('div');

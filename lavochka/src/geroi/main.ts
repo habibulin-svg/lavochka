@@ -9,6 +9,9 @@ import { randomArmy } from './sim/army';
 import { FACTIONS, type Faction } from './sim/creatures';
 import { factionClasses } from './sim/heroes';
 import { button, h } from './ui/common';
+import { ArenaClient } from './net/client';
+import type { NetClientMsg, NetServerMsg } from './net/protocol';
+import { Arena } from './ui/arena';
 import { Menu, type QuickConfig } from './ui/menu';
 import './ui/geroi.css';
 
@@ -56,6 +59,114 @@ async function resume(s: Save): Promise<void> {
   wire(g);
   await g.start();
 }
+
+// ------------------------------------------------------------------ Арена
+
+const arena = new Arena(menu);
+let net: ArenaClient | null = null;
+let netSeat: number | null = null;
+/** Куда вернуться после обрыва и обновления страницы; у вкладки свой ключ игрока. */
+const SESSION = 'geroi-net';
+
+function token(): string {
+  let t = sessionStorage.getItem('geroi-token');
+  if (!t) {
+    t = crypto.randomUUID();
+    sessionStorage.setItem('geroi-token', t);
+  }
+  return t;
+}
+
+function leaveNet(): void {
+  net?.close();
+  net = null;
+  netSeat = null;
+  sessionStorage.removeItem(SESSION);
+  stop();
+}
+
+function wireClient(c: ArenaClient, name: string): void {
+  net = c;
+  const remember = (code: string): void => sessionStorage.setItem(SESSION, JSON.stringify({ code, name }));
+  if (c.code) remember(c.code);
+  c.onJoined = remember;
+  c.onLobby = (m) => {
+    if (!game) arena.lobby(c, m);
+  };
+  c.onDraft = (m) => {
+    netSeat = m.seat;
+    if (!game) arena.draft(c, m);
+  };
+  c.onStart = (m) => {
+    netSeat = m.seat;
+    if (game) game.resync(c, m);
+    else void startNet(c, m);
+  };
+  c.onResult = (m) => {
+    // партия кончилась на драфте (у идущего боя свой обработчик)
+    if (!game) arena.result(m.result, netSeat);
+  };
+  c.onClose = (why) => {
+    if (net !== c) return;
+    void reconnect(why);
+  };
+}
+
+/** Связь пропала посреди партии: пробуем вернуться на своё место. */
+async function reconnect(why: string): Promise<void> {
+  const saved = sessionStorage.getItem(SESSION);
+  if (!saved) {
+    leaveNet();
+    return arena.home(why);
+  }
+  const { code, name } = JSON.parse(saved) as { code: string; name: string };
+  game?.showBanner('Связь пропала. Возвращаемся…');
+  for (let i = 0; i < 6; i++) {
+    await new Promise((r) => setTimeout(r, 1000 + i * 1500));
+    try {
+      wireClient(await ArenaClient.open({ t: 'join', game: 'geroi', code, name, token: token() }), name);
+      return;
+    } catch {
+      /* ещё раз */
+    }
+  }
+  leaveNet();
+  arena.home('Вернуться не вышло: связи нет или комната закрыта.');
+}
+
+async function connect(first: NetClientMsg, name: string): Promise<void> {
+  leaveNet();
+  try {
+    const c = await ArenaClient.open(first);
+    wireClient(c, name);
+    if (first.t === 'queue' && !c.code) arena.searching();
+  } catch (e) {
+    arena.home(String((e as Error).message ?? e));
+  }
+}
+
+async function startNet(c: ArenaClient, m: Extract<NetServerMsg, { t: 'start' }>): Promise<void> {
+  arena.stopTimer();
+  menu.hide();
+  const who: [Who, Who] = [m.seat === 0 ? 'human' : 'remote', m.seat === 1 ? 'human' : 'remote'];
+  const g = new Game(host, audio, { who, restore: { at: 0, title: '', state: m.state, who }, net: { client: c, seat: m.seat, names: m.names, clock: m.clock, result: m.result } });
+  wire(g);
+  g.onQuit = () => {
+    leaveNet();
+    arena.home();
+  };
+  await g.start();
+}
+
+arena.onQueue = (name) => void connect({ t: 'queue', game: 'geroi', name, token: token() }, name);
+arena.onCreate = (name, budget) => void connect({ t: 'create', game: 'geroi', name, token: token(), budget }, name);
+arena.onJoin = (name, code) => void connect({ t: 'join', game: 'geroi', code, name, token: token() }, name);
+arena.onCancel = leaveNet;
+arena.onLeave = () => {
+  leaveNet();
+  arena.home();
+};
+menu.onArena = () => arena.home();
 
 menu.onQuick = (c) => void quick(c);
 menu.onLoad = (s) => void resume(s);
@@ -114,6 +225,17 @@ async function main(): Promise<void> {
     };
     menu.remember(cfg);
     return quick(cfg, q.has('fast'));
+  }
+  // обновили страницу посреди партии — на своё место
+  const saved = sessionStorage.getItem(SESSION);
+  if (saved) {
+    const { code, name } = JSON.parse(saved) as { code: string; name: string };
+    try {
+      wireClient(await ArenaClient.open({ t: 'join', game: 'geroi', code, name, token: token() }), name);
+      return;
+    } catch {
+      sessionStorage.removeItem(SESSION);
+    }
   }
   if (sessionStorage.getItem('geroi-logo')) return menu.title();
   sessionStorage.setItem('geroi-logo', '1');

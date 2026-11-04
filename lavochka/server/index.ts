@@ -21,6 +21,7 @@ import type { Link } from '../src/core/protocol';
 import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
+import { Ratings, geroiFirst, geroiRooms } from './geroi';
 import { gopsFirst, gopsRooms } from './gops';
 import { Vk, vkApi } from './vkladyshi';
 import type { GameDef } from '../src/core/types';
@@ -125,6 +126,15 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     if (link) log(`ГОПС: ${msg.t === 'create' ? 'новая комната' : 'вход'}, комнат ${gopsRooms()}`);
     return link;
   }
+  // Арена «Героев» — своя комната, сервер считает бой сам (server/geroi.ts)
+  if (msg?.game === 'geroi') {
+    const no = msg.t === 'join' ? null : await closed('geroi');
+    if (no) return fail(no);
+    const u = await userOf(req);
+    const link = geroiFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode, u ? { id: u.id, name: u.name } : null, geroiRatings);
+    if (link) log(`Герои: ${msg.t}, комнат ${geroiRooms()}`);
+    return link;
+  }
   if (msg?.t === 'create') {
     const load = DEFS[String(msg.game)];
     if (!load) return fail('Сервер не знает эту игру — возможно, он старее сайта.');
@@ -186,6 +196,7 @@ async function attach(ws: WebSocket, room: Room, req: IncomingMessage): Promise<
 
 // Хранение, проверка и выдача — server/records.ts; старый records.json аркад переносится при первом запуске.
 const recordStore = new FileRecordStore(DATA, log);
+const geroiRatings = new Ratings(DATA, log);
 const recordDefs: Record<string, GameDef> = {};
 const records = new Records(
   recordStore,
@@ -196,6 +207,7 @@ const records = new Records(
 for (const sig of ['SIGTERM', 'SIGINT'] as const)
   process.once(sig, () => {
     recordStore.flush();
+    geroiRatings.flush();
     process.exit(0);
   });
 
@@ -522,6 +534,11 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     } catch {
       return json(res, 400, { error: 'bad body' });
     }
+  }
+  // рейтинг Арены: таблица и своё место
+  if (path === '/api/geroi/rating' && req.method === 'GET') {
+    const u = await userOf(req);
+    return json(res, 200, { top: geroiRatings.top(20), me: u ? { name: u.name, ...geroiRatings.get(u.id) } : null });
   }
   if (path === '/api/ice') {
     // логины TURN — только своему сайту (без access-control-allow-origin)

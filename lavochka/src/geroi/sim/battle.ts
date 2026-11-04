@@ -710,6 +710,14 @@ export function act(s: BattleState, a: Action): BattleEvent[] {
   return ev;
 }
 
+/** Сдача в любой момент (сеть: кнопка, долгое отсутствие). */
+export function resign(s: BattleState, side: number): BattleEvent[] {
+  if (s.over) return [];
+  const ev: BattleEvent[] = [];
+  finish(s, 1 - side, ev, 'flee');
+  return ev;
+}
+
 /** Ряды расстановки при N отрядах. */
 const ROWS: number[][] = [[], [5], [3, 7], [2, 5, 8], [1, 4, 6, 9], [0, 3, 5, 7, 10], [0, 2, 4, 6, 8, 10], [0, 2, 4, 5, 6, 8, 10]];
 
