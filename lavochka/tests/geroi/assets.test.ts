@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { mayPlay, withDefaults } from '../../src/core/release';
+import { CATALOG } from '../../src/games/catalog';
 import { CLASSES, heroPortrait } from '../../src/geroi/sim/heroes';
 import { CREATURES, FACTIONS } from '../../src/geroi/sim/creatures';
 import { SPELLS, spellIcon } from '../../src/geroi/sim/spells';
@@ -8,6 +10,15 @@ import { SPELLS, spellIcon } from '../../src/geroi/sim/spells';
 const A = join(__dirname, '../../public/geroi/a');
 
 // Всё, на что ссылается игра, лежит в public/geroi/a (упаковка studio/post/pack_geroi.py).
+describe('geroi: выход на сайт', () => {
+  it('карточка есть, и ранний доступ действует: сервер признаёт его только у игр из каталога', () => {
+    const known = (id: string) => CATALOG.some((g) => g.id === id);
+    expect(known('geroi')).toBe(true);
+    const rel = withDefaults({}, known);
+    expect(mayPlay(rel, 'geroi', [])).toBe(false);
+  });
+});
+
 describe('geroi/assets', () => {
   it('существа, звуки, портреты, иконки, поля, препятствия, музыка, шрифты', () => {
     const need: string[] = ['brand/title.webp', 'fonts/AlegreyaSC-Bold.ttf', 'fonts/Lora-Var.ttf', 'fonts/FiraSansCondensed-Bold.ttf'];

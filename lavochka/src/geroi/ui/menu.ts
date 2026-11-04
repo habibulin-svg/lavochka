@@ -68,7 +68,7 @@ export class Menu {
     const col = h('div', 'g-col g-title-col');
     col.append(
       h('p', 'g-note', `Игра в раннем доступе — первыми в неё играют подписчики «Лавочки+».${signedIn ? '' : ' Войди, если подписка есть.'}`),
-      button(signedIn ? 'Оформить «Лавочку+»' : 'Войти', () => (location.href = signedIn ? '/plus/' : '/vhod/')),
+      button(signedIn ? 'Оформить «Лавочку+»' : 'Войти или оформить «Лавочку+»', () => (location.href = '/geroi/')),
       button('Во двор', () => (location.href = '/')),
     );
     this.screen(logo, col);
