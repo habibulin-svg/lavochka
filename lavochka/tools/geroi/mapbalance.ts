@@ -1,5 +1,5 @@
 /* Прогоны ботов на случайных картах (DESIGN.md §6.4, этап 5): уровни между собой, матрица фракций, длина партии в днях.
- * npx tsx tools/geroi/mapbalance.ts [партий] [размер s|m|l] [шаблон] [что: levels|factions|all]
+ * npx tsx tools/geroi/mapbalance.ts [партий] [размер s|m|l] [шаблон] [что: levels|factions|all] [сдвиг сидов]
  * Бои считают Средние боевые боты (Сложный боевой бот медленный, на карте решает не он). */
 import { type BotLevel } from '../../src/geroi/bot/bot';
 import { playBotGame } from '../../src/geroi/bot/advplay';
@@ -12,6 +12,8 @@ const N = Number(process.argv[2] ?? 20);
 const size = (process.argv[3] ?? 's') as SizeId;
 const template = process.argv[4] ?? 'duel';
 const what = process.argv[5] ?? 'all';
+/** Сдвиг сидов: другой набор карт для проверки на шум. */
+const base = Number(process.argv[6] ?? 0);
 const TF = FACTIONS.map((f) => f.id as TownFaction);
 
 function game(seed: number, fa: TownFaction, fb: TownFaction, la: BotLevel, lb: BotLevel): { winner: number; days: number } {
@@ -40,7 +42,7 @@ if (what === 'levels' || what === 'all') {
       const fa = TF[i % 4];
       const fb = TF[(i + 1 + (i >> 2)) % 4];
       const swap = i % 2 === 1;
-      const r = game(1000 + i, fa, fb, swap ? y : x, swap ? x : y);
+      const r = game(base + 1000 + i, fa, fb, swap ? y : x, swap ? x : y);
       days.push(r.days);
       if (r.winner < 0) draw++;
       else if ((r.winner === 0) !== swap) win++;
@@ -61,7 +63,7 @@ if (what === 'factions' || what === 'all') {
       let played = 0;
       for (let i = 0; i < N; i++) {
         const swap = i % 2 === 1;
-        const r = game(2000 + i * 7 + a * 31 + b, swap ? TF[b] : TF[a], swap ? TF[a] : TF[b], 'medium', 'medium');
+        const r = game(base + 2000 + i * 7 + a * 31 + b, swap ? TF[b] : TF[a], swap ? TF[a] : TF[b], 'medium', 'medium');
         days.push(r.days);
         if (r.winner < 0) continue;
         played++;
