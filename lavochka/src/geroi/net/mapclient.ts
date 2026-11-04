@@ -87,6 +87,9 @@ export class MapClient implements BattleNet {
   bot(seat: number, bot: BotLevel | null): void {
     this.send({ t: 'mbot', seat, bot });
   }
+  team(seat: number, team: number | null): void {
+    this.send({ t: 'mteam', seat, team });
+  }
   simul(on: boolean): void {
     this.send({ t: 'msimul', on });
   }

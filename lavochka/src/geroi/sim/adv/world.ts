@@ -74,6 +74,8 @@ export interface Player {
   scrap: Record<string, number>;
   /** Бот и его уровень; нет — человек. */
   bot?: 'easy' | 'medium' | 'hard';
+  /** Союз (сеть, 2×2): одна команда — общий обзор, общая победа, друг друга не бьют. Нет — сам за себя. */
+  team?: number;
 }
 
 export type BattleSide = { k: 'hero'; id: number } | { k: 'obj'; id: number } | { k: 'town'; id: number };
@@ -158,7 +160,8 @@ export type AdvEvent =
   | { e: 'sfx'; name: string }
   | { e: 'dig'; found: boolean }
   | { e: 'lost'; player: number }
-  | { e: 'over'; winner: number };
+  | { e: 'over'; winner: number }
+  | { e: 'gift'; from: number; to: number; res: ResId; amount: number };
 
 export type AdvAction =
   | { t: 'move'; hero: number; to: number }
@@ -182,7 +185,9 @@ export type AdvAction =
   | { t: 'decree'; town: number; id: string }
   | { t: 'research'; town: number; school: string }
   | { t: 'repair'; town: number; cre: string; count: number }
-  | { t: 'dismiss'; hero: number };
+  | { t: 'dismiss'; hero: number }
+  /** Союзнику — ресурсы. */
+  | { t: 'gift'; to: number; res: ResId; amount: number };
 
 export type ArmyRef = { h: number } | { t: number } | { o: number };
 
@@ -227,6 +232,14 @@ export function guardOf(w: World, c: number): MapObject | undefined {
   return best;
 }
 
+/** Свой или союзник; −1 (ничей) никому не союзник. */
+export function allied(w: World, a: number, b: number): boolean {
+  if (a === b) return a >= 0;
+  if (a < 0 || b < 0) return false;
+  const ta = w.players[a]?.team;
+  return ta !== undefined && ta === w.players[b]?.team;
+}
+
 const owned = (w: World, p: number): MapObject[] => w.objects.filter((o) => o.owner === p);
 export const playerTowns = (w: World, p: number): Town[] => w.towns.filter((t) => t.owner === p);
 export const playerHeroes = (w: World, p: number): AdvHero[] => w.heroes.filter((h) => h.owner === p);
@@ -240,17 +253,21 @@ const distSq = (w: World, a: number, b: number): number => {
 
 /** Туман Затонья: чужой герой рядом с городом с колодцем видит хуже (DESIGN.md §5.2). */
 function inForeignFog(w: World, h: AdvHero): boolean {
-  return w.towns.some((t) => t.faction === 'zatonye' && t.owner !== h.owner && t.owner >= 0 && has(t, 'fogwell') && distSq(w, t.cell, h.cell) <= FOG_RADIUS * FOG_RADIUS);
+  return w.towns.some((t) => t.faction === 'zatonye' && !allied(w, t.owner, h.owner) && t.owner >= 0 && has(t, 'fogwell') && distSq(w, t.cell, h.cell) <= FOG_RADIUS * FOG_RADIUS);
 }
 /** Свой герой в тумане не виден чужому. */
 export function heroHiddenFrom(w: World, h: AdvHero, player: number): boolean {
-  if (h.owner === player) return false;
+  if (allied(w, h.owner, player)) return false;
   return w.towns.some((t) => t.faction === 'zatonye' && t.owner === h.owner && has(t, 'fogwell') && distSq(w, t.cell, h.cell) <= FOG_RADIUS * FOG_RADIUS);
 }
 
 export function reveal(w: World, player: number, c: number, r: number): void {
-  const p = w.players[player];
-  if (!p) return;
+  if (!w.players[player]) return;
+  // союзники видят то же
+  for (const p of w.players) if (allied(w, p.id, player)) revealFor(w, p, c, r);
+}
+
+function revealFor(w: World, p: Player, c: number, r: number): void {
   const cx = xOf(w, c);
   const cy = yOf(w, c);
   const z = levelOf(w, c);
@@ -523,7 +540,7 @@ function giveArtifact(h: AdvHero, art: string, ev: AdvEvent[]): void {
 }
 
 function capture(w: World, o: MapObject, h: AdvHero, ev: AdvEvent[]): void {
-  if (o.owner === h.owner) return;
+  if (allied(w, o.owner, h.owner)) return;
   o.owner = h.owner;
   ev.push({ e: 'flag', obj: o.id, owner: h.owner });
   ev.push({ e: 'sfx', name: defOf(o).effect.t === 'mine' ? 'mine-capture' : 'flag' });
@@ -601,7 +618,7 @@ function visit(w: World, h: AdvHero, o: MapObject, ev: AdvEvent[]): void {
   const p = w.players[h.owner];
   const def = defOf(o);
   const fx = def.effect;
-  if (o.army && !armyEmpty(o.army) && o.owner !== h.owner) {
+  if (o.army && !armyEmpty(o.army) && !allied(w, o.owner, h.owner)) {
     stackFight(w, h, o, ev);
     return;
   }
@@ -784,6 +801,10 @@ function visit(w: World, h: AdvHero, o: MapObject, ev: AdvEvent[]): void {
 }
 
 function enterTown(w: World, h: AdvHero, t: Town, ev: AdvEvent[]): void {
+  if (t.owner !== h.owner && allied(w, t.owner, h.owner)) {
+    ev.push({ e: 'msg', title: t.name, text: `Город союзника: ${w.players[t.owner].name}.` });
+    return;
+  }
   if (t.owner === h.owner) {
     learnFromTown(h, t, ev);
     refillInTown(h, t);
@@ -814,7 +835,7 @@ function walk(w: World, h: AdvHero, path: number[], ev: AdvEvent[]): void {
   for (const c of path) {
     const other = heroAt(w, c);
     if (other && other !== h) {
-      if (other.owner === h.owner) {
+      if (allied(w, other.owner, h.owner)) {
         ev.push({ e: 'meet', a: h.id, b: other.id });
         meet(w, h, other, ev);
       } else {
@@ -999,7 +1020,8 @@ function checkPlayers(w: World, ev: AdvEvent[]): void {
     }
   }
   const left = w.players.filter((p) => p.alive);
-  if (left.length <= 1 && !w.over) {
+  // остались одни союзники — победа их команды (победителем пишется первый из них)
+  if (!w.over && left.every((p) => allied(w, p.id, left[0].id))) {
     w.over = true;
     w.winner = left[0]?.id ?? -1;
     ev.push({ e: 'over', winner: w.winner });
@@ -1134,7 +1156,13 @@ export function actionError(w: World, a: AdvAction): string | null {
       const from = armyOf(w, a.from);
       const to = armyOf(w, a.to);
       if (!from || !to) return 'Нет отряда';
-      if (refOwner(w, a.from) !== me || refOwner(w, a.to) !== me) return 'Чужой отряд';
+      if (refOwner(w, a.from) !== me) return 'Чужой отряд';
+      if (refOwner(w, a.to) !== me) {
+        // союзнику — только отдать герою: в пустой слот или к такому же отряду
+        if (!('h' in a.to) || !allied(w, refOwner(w, a.to), me)) return 'Чужой отряд';
+        const d = to[a.toSlot];
+        if (d && d.cre !== from[a.fromSlot]?.cre) return 'Союзнику — только в пустой слот или к такому же отряду';
+      }
       if (!within(w, refCell(w, a.from), refCell(w, a.to))) return 'Слишком далеко';
       const s = from[a.fromSlot];
       const d = to[a.toSlot];
@@ -1158,7 +1186,8 @@ export function actionError(w: World, a: AdvAction): string | null {
     }
     case 'giveArt': {
       const f = mine(a.from);
-      const t = mine(a.to);
+      const to = heroById(w, a.to);
+      const t = to && allied(w, to.owner, me) ? to : null;
       if (!f || !t || !within(w, f.cell, t.cell)) return 'Герои не рядом';
       return f.bag.includes(a.art) ? null : 'Сначала в сумку';
     }
@@ -1209,6 +1238,12 @@ export function actionError(w: World, a: AdvAction): string | null {
       if (a.count < 1 || a.count > n) return 'Столько лома нет';
       if (!canPay(p, repairCost(a.cre, a.count))) return 'Не хватает ресурсов';
       return t.garrison.some((s) => s?.cre === a.cre || !s) ? null : 'В гарнизоне нет места';
+    }
+    case 'gift': {
+      const to = w.players[a.to];
+      if (!to || a.to === me || !to.alive || !allied(w, a.to, me)) return 'Не союзник';
+      if (!Number.isInteger(a.amount) || a.amount < 1) return 'Сколько?';
+      return (p.res[a.res] ?? 0) >= a.amount ? null : 'Не хватает';
     }
     case 'dismiss': {
       const h = mine(a.hero);
@@ -1466,6 +1501,12 @@ export function act(w: World, a: AdvAction): AdvEvent[] {
       p.scrap[a.cre] -= a.count;
       addToArmy(t.garrison, a.cre, a.count);
       ev.push({ e: 'sfx', name: 'forge' });
+      break;
+    }
+    case 'gift': {
+      p.res[a.res] -= a.amount;
+      give(w.players[a.to], { [a.res]: a.amount });
+      ev.push({ e: 'gift', from: w.current, to: a.to, res: a.res, amount: a.amount });
       break;
     }
     case 'dismiss': {

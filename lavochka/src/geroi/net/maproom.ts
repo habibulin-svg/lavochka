@@ -14,7 +14,7 @@ import type { BotLevel } from '../bot/bot';
 import { type BattleEvent, type BattleState, act as battleAct, actionError as battleError, createBattle, currentUnit, resign } from '../sim/battle';
 import { type GenOptions, generateMap } from '../sim/adv/gen';
 import { TEMPLATES } from '../sim/adv/templates';
-import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, actionError, applyBattle, battleSetup, heroById, objById, townById } from '../sim/adv/world';
+import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, actionError, allied, applyBattle, battleSetup, heroById, objById, townById } from '../sim/adv/world';
 import { type HeroPick, factionClasses } from '../sim/heroes';
 import type { TownFaction } from '../sim/adv/town';
 import { type MapClientMsg, type MapClock, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
@@ -57,6 +57,7 @@ interface Seat {
   hero: MapSeatView['hero'];
   bot: BotLevel | null;
   goneAt: number;
+  team: number | null;
 }
 
 interface Fight {
@@ -111,7 +112,7 @@ export function enemyGap(w: World): number {
   for (const a of things) {
     if (!a.hero) continue;
     for (const b of things) {
-      if (b.owner === a.owner || b.z !== a.z) continue;
+      if (allied(w, a.owner, b.owner) || b.z !== a.z) continue;
       best = Math.min(best, Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)));
     }
   }
@@ -161,7 +162,7 @@ export class MapRoom {
     while (this.seats.length < n) {
       const i = this.seats.length;
       const f = MAP_FACTIONS[i % 4];
-      this.seats.push({ token: null, name: `Бот ${i + 1}`, faction: f, hero: this.freeHero(f, i), bot: i === 0 ? null : i === 1 ? null : 'medium', goneAt: 0 });
+      this.seats.push({ token: null, name: `Бот ${i + 1}`, faction: f, hero: this.freeHero(f, i), bot: i === 0 ? null : i === 1 ? null : 'medium', goneAt: 0, team: null });
     }
     this.seats.length = n;
   }
@@ -189,7 +190,7 @@ export class MapRoom {
   }
 
   private view(): MapSeatView[] {
-    return this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, bot: s.bot, taken: !!s.token, on: !!s.token && !s.goneAt }));
+    return this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, bot: s.bot, taken: !!s.token, on: !!s.token && !s.goneAt, team: s.team }));
   }
 
   /** Мир глазами места: в общий день «ходит» он сам, пока не закончил; своё «начатое». */
@@ -271,6 +272,12 @@ export class MapRoom {
         s.name = m.bot ? `Бот ${m.seat + 1}` : `Игрок ${m.seat + 1}`;
         return this.sendLobby();
       }
+      case 'mteam': {
+        if (this.phase !== 'lobby' || !this.isHost(p) || !Number.isInteger(m.seat) || m.seat < 0 || m.seat >= this.seats.length) return;
+        if (m.team !== null && m.team !== 1 && m.team !== 2) return;
+        this.seats[m.seat].team = m.team;
+        return this.sendLobby();
+      }
       case 'msimul':
         if (this.phase !== 'lobby' || !this.isHost(p)) return;
         this.simul = !!m.on;
@@ -280,7 +287,7 @@ export class MapRoom {
         this.draftOn = !!m.on;
         return this.sendLobby();
       case 'start':
-        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token)) return;
+        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token) || this.oneTeam()) return;
         if (this.draftOn) this.startDraft();
         else this.startMap();
         return;
@@ -550,6 +557,12 @@ export class MapRoom {
     }
   }
 
+  /** Все в одной команде — играть не с кем. */
+  private oneTeam(): boolean {
+    const t = this.seats[0].team;
+    return t !== null && this.seats.every((s) => s.team === t);
+  }
+
   // ------------------------------------------------------------------ драфт
 
   private startDraft(): void {
@@ -631,6 +644,13 @@ export class MapRoom {
     const players = this.seats.map((s) => ({ name: s.name, faction: s.faction, hero: s.hero, ...(s.bot ? { bot: s.bot } : {}) }));
     const w = generateMap({ seed: this.gen.seed, players }, this.gen);
     w.name = 'Сетевая карта';
+    // союзы: команда и общий обзор с первого дня
+    this.seats.forEach((s, i) => {
+      if (s.team !== null) w.players[i].team = s.team;
+    });
+    for (const p of w.players)
+      for (const q of w.players)
+        if (p !== q && allied(w, p.id, q.id)) q.explored.forEach((v, c) => v && (p.explored[c] = 1));
     this.world = w;
     this.phase = 'map';
     this.pend = this.seats.map(() => null);

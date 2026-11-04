@@ -27,6 +27,8 @@ export interface MapSeatView {
   taken: boolean;
   /** Человек на связи. */
   on: boolean;
+  /** Союз: номер команды (1, 2); null — сам за себя. */
+  team: number | null;
 }
 
 export interface MapClock {
@@ -68,6 +70,8 @@ export type MapClientMsg =
   | { t: 'mbot'; seat: number; bot: BotLevel | null }
   /** Хозяин: одновременные ходы. */
   | { t: 'msimul'; on: boolean }
+  /** Хозяин: команда места (союзы 2×2); null — сам за себя. */
+  | { t: 'mteam'; seat: number; team: number | null }
   /** Хозяин: драфт фракций и героев перед картой. */
   | { t: 'mdraftopt'; on: boolean }
   /** Шаг драфта: бан героя (hero), бан фракции (faction), выбор (оба). */
@@ -187,6 +191,8 @@ export function cleanAdvAction(raw: unknown): AdvAction | null {
       return int(a.town) && str(a.cre) && int(a.count, 100000) ? { t: 'repair', town: a.town, cre: a.cre, count: a.count } : null;
     case 'dismiss':
       return int(a.hero) ? { t: 'dismiss', hero: a.hero } : null;
+    case 'gift':
+      return int(a.to, 8) && isRes(a.res) && int(a.amount, 1_000_000) && a.amount > 0 ? { t: 'gift', to: a.to, res: a.res, amount: a.amount } : null;
     default:
       return null;
   }
@@ -253,6 +259,8 @@ export function eventsView(w: World, events: AdvEvent[], seat: number | null, ac
         return true;
       case 'heroDead':
         return e.owner === seat;
+      case 'gift':
+        return e.to === seat;
       default:
         return false;
     }

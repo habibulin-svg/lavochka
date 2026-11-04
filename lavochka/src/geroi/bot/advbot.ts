@@ -11,7 +11,7 @@ import { FACTION_RES, RES, RES_VALUE, MINE_INCOME, type ResId, WATER } from '../
 import { type AdvHero, ARMY_SLOTS, armyPower, heroAtk, heroDef, heroMaxMana, heroMaxMp, skillLevel } from '../sim/adv/hero';
 import { type Town, type TownFaction, buildCost, buildError, buildingDef, creaturePrice, fortLevel, has, isCast, townCreature } from '../sim/adv/town';
 import {
-  type AdvAction, type ArmyRef, type BattleSide, battleSetup, HERO_COST, MAX_HEROES, type MapObject, type World, actionError, defOf, guardOf, heroHiddenFrom, neighbors, playerHeroes, playerTowns, reachOf, stepCost, xOf, yOf,
+  type AdvAction, type ArmyRef, type BattleSide, battleSetup, HERO_COST, MAX_HEROES, type MapObject, type World, actionError, allied, defOf, guardOf, heroHiddenFrom, neighbors, playerHeroes, playerTowns, reachOf, stepCost, xOf, yOf,
 } from '../sim/adv/world';
 import { act as battleAct, createBattle } from '../sim/battle';
 import { type BotLevel, botAction } from './bot';
@@ -81,7 +81,7 @@ function objValue(w: World, h: AdvHero, o: MapObject, me: number): number {
     case 'artifact':
       return 2500;
     case 'mine':
-      return o.owner === me ? 0 : MINE_INCOME[fx.res] * RES_VALUE[fx.res] * 8;
+      return allied(w, o.owner, me) ? 0 : MINE_INCOME[fx.res] * RES_VALUE[fx.res] * 8;
     case 'mill':
       return o.week === week ? 0 : fx.n * RES_VALUE[fx.res];
     case 'shrine':
@@ -102,10 +102,11 @@ function objValue(w: World, h: AdvHero, o: MapObject, me: number): number {
     case 'treasury':
       return o.week === -2 ? 0 : 6000;
     case 'dwelling':
-      if (o.owner !== me) return 1500;
+      if (!allied(w, o.owner, me)) return 1500;
+      if (o.owner !== me) return 0;
       return (o.n ?? 0) > 0 ? Math.min(w.players[me].res.semki, (o.n ?? 0) * CREATURES[fx.cre].cost) : 0;
     case 'garrison':
-      return o.owner === me ? 0 : 1000;
+      return allied(w, o.owner, me) ? 0 : 1000;
     case 'stack':
       return 300;
     default:
@@ -114,8 +115,8 @@ function objValue(w: World, h: AdvHero, o: MapObject, me: number): number {
 }
 
 /** Сила охраны объекта, или 0. */
-function guardPower(o: MapObject, me: number): number {
-  if (!o.army || o.owner === me) return 0;
+function guardPower(w: World, o: MapObject, me: number): number {
+  if (!o.army || allied(w, o.owner, me)) return 0;
   return armyPower(o.army);
 }
 
@@ -158,9 +159,9 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
     if (d <= 0 || value <= 0) return;
     // клетку стережёт отряд: дойти — значит драться с ним
     const g = guardOf(w, cell);
-    if (g && !fight && g.owner !== me) {
+    if (g && !fight && !allied(w, g.owner, me)) {
       fight = { k: 'obj', id: g.id };
-      foe = guardPower(g, me);
+      foe = guardPower(w, g, me);
     }
     let score = (value * 1000) / (d + 400);
     if (tune.noise) score *= 1 - tune.noise / 2 + rng.f() * tune.noise;
@@ -170,7 +171,7 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
   // объекты и нейтралы
   for (const o of w.objects) {
     if (!p.explored[o.cell]) continue;
-    const foe = guardPower(o, me);
+    const foe = guardPower(w, o, me);
     let v = objValue(w, h, o, me);
     if (o.kind === 'stack') {
       // отряд стережёт то, что рядом: польза — от соседей
@@ -182,7 +183,8 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
   // города: свои — забрать гарнизон или защитить, чужие — взять
   for (const t of w.towns) {
     // к дню наступления разведка «знает», где чужие замки (решение: иначе за туманом и охраной партия не кончается)
-    if (!p.explored[t.cell] && !(t.owner !== me && w.day >= tune.attackDay)) continue;
+    if (!p.explored[t.cell] && !(!allied(w, t.owner, me) && w.day >= tune.attackDay)) continue;
+    if (allied(w, t.owner, me) && t.owner !== me) continue;
     if (t.owner === me) {
       const g = armyPower(t.garrison);
       let v = g > 0 && (main || g > heroPower(h)) ? g + 300 : 0;
@@ -196,7 +198,7 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
   }
   // чужие герои: бить, если по силам
   for (const e of w.heroes) {
-    if (e.owner === me || !p.explored[e.cell] || heroHiddenFrom(w, e, me)) continue;
+    if (allied(w, e.owner, me) || !p.explored[e.cell] || heroHiddenFrom(w, e, me)) continue;
     consider(e.cell, 5000 + heroPower(e) / 4, { k: 'hero', id: e.id }, heroPower(e));
   }
   // вода: чужой замок по суше не достать — главный герой садится в лодку, а с лодки высаживается поближе к нему
@@ -254,7 +256,7 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
 /** Чужие города, о которых бот знает: открытые, а с дня наступления — все. */
 function knownTowns(w: World, me: number, level: BotLevel): Town[] {
   const p = w.players[me];
-  return w.towns.filter((t) => t.owner !== me && (p.explored[t.cell] || w.day >= TUNE[level].attackDay));
+  return w.towns.filter((t) => !allied(w, t.owner, me) && (p.explored[t.cell] || w.day >= TUNE[level].attackDay));
 }
 
 /** Нужна ли вода: чужие замки известны, а по суше ни до одного не дойти. */
@@ -270,7 +272,7 @@ function enemyThreat(w: World, me: number): Set<number> {
   const p = w.players[me];
   for (const t of playerTowns(w, me)) {
     for (const e of w.heroes) {
-      if (e.owner === me || !p.explored[e.cell] || heroHiddenFrom(w, e, me)) continue;
+      if (allied(w, e.owner, me) || !p.explored[e.cell] || heroHiddenFrom(w, e, me)) continue;
       if (cheb(w, e.cell, t.cell) <= 14 && heroPower(e) > townPower(t)) out.add(t.id);
     }
   }

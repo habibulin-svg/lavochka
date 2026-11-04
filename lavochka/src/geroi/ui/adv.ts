@@ -14,10 +14,10 @@ import { act as battleAct, type BattleState, createBattle, currentUnit } from '.
 import { CREATURES } from '../sim/creatures';
 import { classOf, heroName } from '../sim/heroes';
 import { SPELLS, spellIcon } from '../sim/spells';
-import { type Purse, RES_NAME, type ResId, TERRAINS } from '../sim/adv/data';
+import { type Purse, RES, RES_NAME, type ResId, TERRAINS } from '../sim/adv/data';
 import { type AdvHero, ARTIFACTS, SKILL, armyPower, heroMaxMp } from '../sim/adv/hero';
 import {
-  type AdvAction, type AdvEvent, HERO_COST, type PendingBattle, type World, act, actionError, applyBattle, battleSetup, cellOf, defOf, dirOf, guardOf, heroAt, heroById, heroHiddenFrom, hireCost, isStack, objAt, objById, pathDays, pathOf, playerHeroes, playerTowns, reachOf, townAt, townById, xOf, yOf,
+  type AdvAction, type AdvEvent, HERO_COST, type PendingBattle, type World, act, actionError, allied, applyBattle, battleSetup, cellOf, defOf, dirOf, guardOf, heroAt, heroById, heroHiddenFrom, hireCost, isStack, objAt, objById, pathDays, pathOf, playerHeroes, playerTowns, reachOf, townAt, townById, xOf, yOf,
 } from '../sim/adv/world';
 import { ArmyPicker, heroSheet, icon, marketDialog, portrait, priceRow, resBar } from './advparts';
 import { button, h, modal } from './common';
@@ -168,6 +168,8 @@ export class AdvGame {
       button('📖', () => this.book(), 'g-round'),
       button('⛏', () => this.dig(), 'g-round'),
     );
+    // союз (сеть, 2×2): ресурсы союзнику
+    if (this.allies().length) buttons.append(button('🤝', () => this.gift(), 'g-round'));
     this.musicBtn.classList.toggle('off', this.audio.musicOff);
     this.panel.append(this.miniBox, this.info, this.heroes, this.towns, buttons, button('Следующий герой', () => this.nextHero(), 'g-btn small'), button('Конец хода', () => this.endTurn(), 'g-btn main'));
     this.tipEl.hidden = true;
@@ -376,7 +378,7 @@ export class AdvGame {
     this.target = tcell;
     const obj = objAt(w, tcell);
     const foe = heroAt(w, tcell);
-    const fight = !!(foe && foe.owner !== this.me) || !!(obj && isStack(obj)) || !!guardOf(w, tcell) || !!(obj?.army?.some((s) => s) && obj.owner !== this.me) || !!(town && town.owner !== this.me);
+    const fight = !!(foe && !allied(w, foe.owner, this.me)) || !!(obj && isStack(obj)) || !!guardOf(w, tcell) || !!(obj?.army?.some((s) => s) && !allied(w, obj.owner, this.me)) || !!(town && !allied(w, town.owner, this.me));
     this.view.showPath(path, pathDays(w, x, path), fight);
     this.audio.sfx('ui-click', 0.4);
   }
@@ -502,6 +504,9 @@ export class AdvGame {
           break;
         case 'lost':
           if (!bot) msgs.push({ title: 'Игрок выбыл', text: w.players[e.player].name });
+          break;
+        case 'gift':
+          if (e.to === this.me) msgs.push({ title: 'От союзника', text: `${w.players[e.from].name} прислал: ${e.amount} — ${RES_NAME[e.res].toLowerCase()}` });
           break;
         default:
           break;
@@ -1081,6 +1086,48 @@ export class AdvGame {
     box.append(button('Закрыть', close));
   }
 
+  /** Живые союзники (без себя). */
+  private allies(): number[] {
+    const w = this.world;
+    return w.players.filter((p) => p.id !== this.me && p.alive && allied(w, p.id, this.me)).map((p) => p.id);
+  }
+
+  /** Ресурсы союзнику. Войска — встречей героев: союзнику отряд можно отдать, забрать — нет. */
+  private gift(): void {
+    if (this.blocked()) return;
+    const allies = this.allies();
+    if (!allies.length) return;
+    const { box, close } = modal(this.overlay, 'g-card', () => this.afterAction());
+    const w = this.world;
+    const who = h('select', 'g-select');
+    for (const id of allies) who.append(new Option(w.players[id].name, String(id)));
+    const res = h('select', 'g-select');
+    for (const r of RES) res.append(new Option(RES_NAME[r], r));
+    const n = h('input', 'g-input');
+    n.type = 'number';
+    n.min = '1';
+    n.value = '500';
+    const have = h('p', 'dim');
+    const upd = (): void => {
+      have.textContent = `Есть: ${w.players[this.me].res[res.value as ResId] ?? 0}`;
+    };
+    res.onchange = upd;
+    upd();
+    box.append(
+      h('h3', '', 'Союзнику'),
+      who,
+      res,
+      n,
+      have,
+      h('p', 'dim', 'Войска союзнику — встречей героев: отряд можно отдать в пустой слот или к такому же.'),
+      button('Отдать', () => {
+        close();
+        void this.doAct({ t: 'gift', to: Number(who.value), res: res.value as ResId, amount: Math.trunc(Number(n.value)) });
+      }, 'g-btn main'),
+      button('Отмена', close),
+    );
+  }
+
   private dig(): void {
     const x = this.hero;
     if (!x || this.blocked()) return;
@@ -1175,7 +1222,8 @@ export class AdvGame {
     this.audio.music('victory');
     const { box } = modal(this.overlay, 'g-result');
     box.parentElement!.onpointerdown = null;
-    box.append(h('h2', '', w.winner >= 0 ? `Победа: ${w.players[w.winner].name}!` : 'Никто не выстоял'), h('p', 'dim', `Партия шла ${w.day + 1} дн.`), button('В меню игры', () => this.onQuit(), 'g-btn main'));
+    const team = w.winner >= 0 ? w.players.filter((p) => allied(w, p.id, w.winner)).map((p) => p.name) : [];
+    box.append(h('h2', '', team.length ? `Победа: ${team.join(' и ')}!` : 'Никто не выстоял'), h('p', 'dim', `Партия шла ${w.day + 1} дн.`), button('В меню игры', () => this.onQuit(), 'g-btn main'));
   }
 
   // ------------------------------------------------------------------ подсказки
@@ -1190,7 +1238,7 @@ export class AdvGame {
     if (c < 0 || !w.players[this.me].explored[c]) return '';
     const cell = this.bodies.get(c) ?? c;
     const foe = heroAt(w, cell);
-    if (foe && !heroHiddenFrom(w, foe, this.me)) return `${foe.owner === this.me ? '' : 'Чужой герой: '}${heroName(foe.pick)}, ${foe.level}-й уровень`;
+    if (foe && !heroHiddenFrom(w, foe, this.me)) return `${foe.owner === this.me ? '' : allied(w, foe.owner, this.me) ? 'Союзник: ' : 'Чужой герой: '}${heroName(foe.pick)}, ${foe.level}-й уровень`;
     const t = townAt(w, cell);
     if (t) return `${t.name} · ${t.owner < 0 ? 'ничей' : w.players[t.owner].name}`;
     const o = objAt(w, cell);

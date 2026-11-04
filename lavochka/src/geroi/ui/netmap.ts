@@ -153,9 +153,19 @@ export class NetMap {
           row.append(w);
         } else if (s.bot) row.append(h('span', 'dim', WHO.find(([id]) => id === s.bot)![1]));
       }
+      // союзы: команда места (хозяин выбирает, остальные видят)
+      const TEAMS: [string, string][] = [['', 'Сам за себя'], ['1', 'Команда 1'], ['2', 'Команда 2']];
+      if (m.host) {
+        const tm = h('select', 'g-select g-team');
+        for (const [id, label] of TEAMS) tm.append(new Option(label, id, false, id === String(s.team ?? '')));
+        tm.onchange = () => c.team(i, tm.value ? Number(tm.value) : null);
+        row.append(tm);
+      } else if (s.team !== null) row.append(h('span', 'g-teamtag', `Команда ${s.team}`));
       box.append(row);
     });
-    const ready = m.seats.every((s) => s.bot || s.taken);
+    const oneTeam = m.seats[0].team !== null && m.seats.every((s) => s.team === m.seats[0].team);
+    if (oneTeam) box.append(h('p', 'g-warn', 'Все в одной команде — играть не с кем.'));
+    const ready = m.seats.every((s) => s.bot || s.taken) && !oneTeam;
     if (m.host) {
       const go = button('Начать', () => c.start(), 'g-btn main');
       go.disabled = !ready;

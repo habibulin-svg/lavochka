@@ -366,4 +366,32 @@ describe('geroi/maproom: сеть карты', () => {
     expect(room.phase).toBe('map');
     expect(new Set(room.world!.players.map((p) => p.faction)).size).toBe(4);
   });
+
+  it('союзы: хозяин ставит команды, все в одной — не начать; в мире команды и общий обзор', () => {
+    let t = 1000;
+    const room = new MapRoom({ ...GEN, template: 'four', size: 'm' }, () => t);
+    const a = peer(1, 'a');
+    room.add(a);
+    for (let i = 1; i < 4; i++) room.message(a, { t: 'mbot', seat: i, bot: 'easy' });
+    for (let i = 0; i < 4; i++) room.message(a, { t: 'mteam', seat: i, team: 1 });
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('lobby');
+    room.message(a, { t: 'mteam', seat: 1, team: 2 });
+    room.message(a, { t: 'mteam', seat: 3, team: 2 });
+    room.message(a, { t: 'mteam', seat: 9, team: 2 });
+    room.message(a, { t: 'mteam', seat: 2, team: 7 });
+    expect(a.last('mlobby').seats.map((s) => s.team)).toEqual([1, 2, 1, 2]);
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('map');
+    const w = room.world!;
+    expect(w.players.map((p) => p.team)).toEqual([1, 2, 1, 2]);
+    const ex = (i: number) => w.players[i].explored;
+    expect(ex(0).every((v, c) => v === ex(2)[c])).toBe(true);
+    expect(ex(0).every((v, c) => v === ex(1)[c])).toBe(false);
+    // свой вид: город союзника виден
+    const v = room.viewOf(0);
+    const allyTown = w.towns.find((x) => x.owner === 2)!;
+    expect(v.players[0].explored[allyTown.cell]).toBe(1);
+    expect(enemyGap(w)).toBeGreaterThan(0);
+  });
 });
