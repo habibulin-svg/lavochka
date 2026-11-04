@@ -12,6 +12,8 @@ import { TerrainLayer } from './terrain';
 
 /** Боец в атласе — кадр 192 px, рост ~130 px; в мире ~27 px. */
 const WORM_SCALE = 0.21;
+/** Бегуны, чьи кадры анимации (31-sprites/actors) смотрят влево. */
+const WALK_ANIM_LEFT = new Set(['kozy', 'dog']);
 
 interface WormSprite {
   root: Container;
@@ -353,12 +355,13 @@ export class GameView {
         if (art.turn && moving) rot = Math.atan2(p.vy, p.vx) + (art.turn === 'up' ? Math.PI / 2 : 0);
         else if (art.turn === 'up' && kind === 'missile') rot = Math.PI / 2;
         else if (kind === 'grenade' || p.weapon === 'holodilnik') rot = p.age * 0.15 * Math.sign(p.vx || 1) * (moving ? 1 : 0);
-        // бабка нарисована лицом влево, остальные — вправо
-        const flip = kind === 'walker' ? (p.dir < 0) !== (p.weapon === 'babka') : kind === 'flyer' && p.weapon !== 'kite' ? Math.cos((p.ang / 4096) * Math.PI * 2) < 0 : false;
+        const anim = this.fxFrames[p.weapon];
+        // куда смотрит картинка: в кадрах анимации коза и собака — влево, бабка — вправо; в неподвижной картинке бабка — влево
+        const left = anim ? WALK_ANIM_LEFT.has(p.weapon) : p.weapon === 'babka';
+        const flip = kind === 'walker' ? (p.dir < 0) !== left : kind === 'flyer' && p.weapon !== 'kite' ? Math.cos((p.ang / 4096) * Math.PI * 2) < 0 : false;
         const bob = kind === 'walker' ? -((p.age >> 2) & 1) : 0;
         // бегуна ставим ногами на землю: низ картинки — по низу тела; есть анимация — кадрами
         const yy = y + bob - (kind === 'walker' ? art.h / 2 - p.r - 1 : 0);
-        const anim = this.fxFrames[p.weapon];
         if (anim ? this.putTex(anim[(p.age >> 2) % anim.length], x, yy - bob, art.h, rot, flip) : this.put(p.weapon, x, yy, rot, flip)) {
           if (p.weapon === 'tnt' && (p.fuse >> 3) & 1) g.circle(x, y - 8, 2).fill(0xffd166);
           if (p.weapon === 'mine' && (p.state === 'armed' || (p.state === 'fuse' && (p.fuse >> 2) & 1))) g.circle(x, y - 3, 1.4).fill(0xff2222);
