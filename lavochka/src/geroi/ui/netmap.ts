@@ -62,6 +62,9 @@ export class NetMap {
     file.hidden = true;
     file.onchange = () => file.files?.[0] && this.onReplay(file.files[0]);
     const table = h('div', 'g-top');
+    const games = h('div', 'g-top');
+    col.append(games);
+    void this.loadMail(games, (code) => this.onJoin(who(), code));
     col.append(nameRow, button('Создать комнату', () => this.onCreate(who(), gen), 'g-btn main'), joinRow, button('Смотреть запись партии', () => file.click()), file, table, button('Назад', () => this.menu.title()));
     void this.loadTop(table);
     this.menu.screen(h('h2', 'g-quick-title', 'Карта по сети'), col);
@@ -106,6 +109,13 @@ export class NetMap {
       box3.onchange = () => c.draftOpt(box3.checked);
       draft.append(box3, h('span', '', ' Драфт — баны и выбор фракций и героев по очереди'));
       box.append(row1, row2, simul, draft);
+      const mail = h('label', 'g-check');
+      const box5 = h('input');
+      box5.type = 'checkbox';
+      box5.checked = m.mail;
+      box5.onchange = () => c.mail(box5.checked);
+      mail.append(box5, h('span', '', ' По переписке — ход до суток, вернуться можно с любого устройства (все входят на сайт)'));
+      box.append(mail);
       if (t.players === 2) {
         const ranked = h('label', 'g-check');
         const box4 = h('input');
@@ -117,7 +127,7 @@ export class NetMap {
       }
     } else
       box.append(
-        h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}${m.simul ? ' · ходы одновременные' : ' · ходы по очереди'}${m.draft ? ' · драфт' : ''}${m.ranked ? ' · на рейтинг' : ''}`),
+        h('p', 'g-heroline', `${t.name} · ${MAP_SIZES[g.size].name} · ${WATERS[g.water]} · ${GUARDS[g.guard].name} · сид ${g.seed}${m.simul ? ' · ходы одновременные' : ' · ходы по очереди'}${m.draft ? ' · драфт' : ''}${m.ranked ? ' · на рейтинг' : ''}${m.mail ? ' · по переписке' : ''}`),
       );
     if (m.draft) box.append(h('p', 'dim', 'Фракции и героев выберем драфтом после «Начать».'));
 
@@ -185,7 +195,9 @@ export class NetMap {
     // рейтинг: те же условия, что проверяет сервер (сам с собой — его забота)
     const rankErr = !m.ranked ? null : m.seats.some((s) => s.bot) ? 'На рейтинг — только дуэль двух людей.' : m.seats.some((s) => s.taken && !s.acc) ? 'На рейтинг — оба должны войти на сайт.' : null;
     if (rankErr) box.append(h('p', 'g-warn', rankErr));
-    const ready = m.seats.every((s) => s.bot || s.taken) && !oneTeam && !rankErr;
+    const mailErr = m.mail && m.seats.some((s) => s.taken && !s.acc) ? 'По переписке — все игроки должны войти на сайт.' : null;
+    if (mailErr) box.append(h('p', 'g-warn', mailErr));
+    const ready = m.seats.every((s) => s.bot || s.taken) && !oneTeam && !rankErr && !mailErr;
     if (m.host) {
       const go = button('Начать', () => c.start(), 'g-btn main');
       go.disabled = !ready;
@@ -194,6 +206,22 @@ export class NetMap {
     } else box.append(h('p', 'dim', 'Хозяин начнёт, когда все соберутся.'));
     box.append(button('Выйти', () => this.onLeave()));
     this.menu.screen(h('h2', 'g-quick-title', 'Карта по сети'), box);
+  }
+
+  /** Мои партии по переписке: где мой ход — сверху. */
+  private async loadMail(box: HTMLElement, open: (code: string) => void): Promise<void> {
+    const r = await fetch('/api/geroi/mail', { signal: AbortSignal.timeout(5000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    const list = (r?.games ?? []) as { code: string; day: number; yours: boolean; left: number; over: boolean; won: boolean; names: string[]; seat: number }[];
+    if (!list.length) return;
+    box.append(h('b', '', 'Мои партии по переписке'));
+    for (const g of list) {
+      const row = h('div', 'g-toprow');
+      const foes = g.names.filter((_, i) => i !== g.seat).join(', ');
+      const state = g.over ? (g.won ? 'победа' : 'кончилась') : g.yours ? `твой ход · ещё ${Math.floor(g.left / 3600_000)} ч` : 'ход соперника';
+      const b = button(`${g.code} · день ${g.day} · против ${foes}`, () => open(g.code), `g-btn small${g.yours ? ' on' : ''}`);
+      row.append(b, h('em', '', state));
+      box.append(row);
+    }
   }
 
   /** Рейтинг дуэлей на карте: свой и лучшие. */

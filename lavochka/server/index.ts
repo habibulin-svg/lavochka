@@ -21,7 +21,7 @@ import type { Link } from '../src/core/protocol';
 import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
-import { Ratings, geroiFirst, geroiRooms } from './geroi';
+import { Ratings, flushGeroiMail, geroiFirst, geroiMailOf, geroiRooms, initGeroiMail } from './geroi';
 import { gopsFirst, gopsRooms } from './gops';
 import { Vk, vkApi } from './vkladyshi';
 import type { GameDef } from '../src/core/types';
@@ -198,6 +198,7 @@ async function attach(ws: WebSocket, room: Room, req: IncomingMessage): Promise<
 const recordStore = new FileRecordStore(DATA, log);
 const geroiRatings = new Ratings(DATA, log);
 const geroiMapRatings = new Ratings(DATA, log, 'geroi-map-rating.json');
+initGeroiMail(DATA, geroiMapRatings, log);
 const recordDefs: Record<string, GameDef> = {};
 const records = new Records(
   recordStore,
@@ -210,6 +211,7 @@ for (const sig of ['SIGTERM', 'SIGINT'] as const)
     recordStore.flush();
     geroiRatings.flush();
     geroiMapRatings.flush();
+    flushGeroiMail();
     process.exit(0);
   });
 
@@ -543,6 +545,11 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     // ?map=1 — рейтинг сетевой карты (дуэли), иначе Арены
     const t = new URL(req.url || '/', 'http://x').searchParams.get('map') ? geroiMapRatings : geroiRatings;
     return json(res, 200, { top: t.top(20), me: u ? { name: u.name, ...t.get(u.id) } : null });
+  }
+  // «Герои» по переписке: партии вошедшего и чей ход
+  if (path === '/api/geroi/mail' && req.method === 'GET') {
+    const u = await userOf(req);
+    return json(res, 200, { games: u ? geroiMailOf(u.id) : null });
   }
   if (path === '/api/ice') {
     // логины TURN — только своему сайту (без access-control-allow-origin)

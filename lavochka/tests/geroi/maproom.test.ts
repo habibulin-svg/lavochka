@@ -3,7 +3,7 @@ import { botStep, newMem } from '../../src/geroi/bot/advbot';
 import { botAction } from '../../src/geroi/bot/bot';
 import { type MapServerMsg, cleanAdvAction, eventsView, worldView } from '../../src/geroi/net/mapproto';
 import { diffJson, patchJson } from '../../src/geroi/net/record';
-import { CONTACT, FREE_GAP, MAP_BANK_MS, MAP_GONE_MS, MapRoom, type MapPeer, enemyGap } from '../../src/geroi/net/maproom';
+import { CONTACT, FREE_GAP, MAIL_TURN_MS, MAP_BANK_MS, MAP_GONE_MS, MapRoom, type MapPeer, enemyGap } from '../../src/geroi/net/maproom';
 import { currentUnit } from '../../src/geroi/sim/battle';
 import { type GenOptions, generateMap } from '../../src/geroi/sim/adv/gen';
 import { factionClasses } from '../../src/geroi/sim/heroes';
@@ -487,5 +487,73 @@ describe('geroi/maproom: сеть карты', () => {
     duel.message(d, { t: 'resign' });
     expect(d.last('mover').rating).toBeUndefined();
     expect(calls).toEqual([]);
+  });
+
+  it('по переписке: все вошли; ушедшего бот не заменяет, сутки кончились — ход кончается', () => {
+    let t = 1000;
+    const room = new MapRoom(GEN, () => t);
+    const a = { ...peer(1, 'a'), user: 11 as number | null };
+    const b = { ...peer(2, 'b'), user: null as number | null };
+    room.add(a);
+    room.add(b);
+    room.message(a, { t: 'msimul', on: false });
+    room.message(a, { t: 'mmail', on: true });
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('lobby');
+    expect(room.mailErr()).toMatch(/войти/);
+    room.remove(b);
+    const b2 = { ...peer(3, 'b2'), user: 22 as number | null };
+    room.add(b2);
+    room.message(a, { t: 'start' });
+    expect(room.phase).toBe('map');
+    expect(a.last('mstart').mail).toBe(true);
+    // ходит a; он ушёл — через минуту бот за него не ходит
+    expect(room.world!.current).toBe(0);
+    room.remove(a);
+    t += MAP_GONE_MS + 1000;
+    room.tick();
+    expect(room.world!.current).toBe(0);
+    expect(room.summary(11)).toMatchObject({ yours: true, over: false });
+    expect(room.summary(22)).toMatchObject({ yours: false });
+    // сутки прошли — ход кончился
+    t += MAIL_TURN_MS;
+    room.tick();
+    expect(room.world!.current).toBe(1);
+  });
+
+  it('по переписке: комната сохраняется и поднимается; вернуться можно с другого устройства по аккаунту', () => {
+    let t = 1000;
+    const room = new MapRoom(GEN, () => t);
+    const a = { ...peer(1, 'a'), user: 11 as number | null };
+    const b = { ...peer(2, 'b'), user: 22 as number | null };
+    room.add(a);
+    room.add(b);
+    room.message(a, { t: 'mmail', on: true });
+    room.message(a, { t: 'start' });
+    const adv = (ms: number) => (t += ms);
+    playOut(room, [a, b], adv, 40);
+    const saved = JSON.parse(JSON.stringify(room.save()));
+    const day = room.world!.day;
+    const r2 = MapRoom.restore(saved, () => t);
+    expect(r2.world).toEqual(room.world);
+    expect(r2.phase).toBe('map');
+    // новое устройство: другой ключ, тот же аккаунт
+    const a2 = { ...peer(5, 'a-phone'), user: 11 as number | null };
+    const b2 = { ...peer(6, 'b-phone'), user: 22 as number | null };
+    r2.add(a2);
+    r2.add(b2);
+    expect(a2.last('mstart').seat).toBe(0);
+    expect(b2.last('mstart').seat).toBe(1);
+    // чужой аккаунт — зритель
+    const c = { ...peer(7, 'c'), user: 33 as number | null };
+    r2.add(c);
+    expect(c.last('mstart').seat).toBeNull();
+    playOut(r2, [a2, b2], adv, 20000);
+    expect(r2.phase).toBe('over');
+    expect(r2.world!.day).toBeGreaterThan(day);
+    // запись после подъёма сходится с концом
+    let w = JSON.parse(JSON.stringify(r2.rec!.world));
+    for (const st of r2.rec!.steps) w = patchJson(w, st.d);
+    expect(w).toEqual(JSON.parse(JSON.stringify(r2.viewOf(null))));
   });
 });

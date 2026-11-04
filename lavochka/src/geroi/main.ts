@@ -230,7 +230,7 @@ function wireMap(c: MapClient, name: string): void {
 async function startNetMap(c: MapClient, m: Extract<MapServerMsg, { t: 'mstart' }>): Promise<void> {
   stop();
   menu.hide();
-  const a = new AdvGame(host, audio, { world: m.world, net: { client: c, seat: m.seat, seats: m.seats, clock: m.clock, busy: m.busy } });
+  const a = new AdvGame(host, audio, { world: m.world, net: { client: c, seat: m.seat, seats: m.seats, clock: m.clock, busy: m.busy, mail: m.mail } });
   adv = a;
   a.onQuit = () => {
     leaveMap();

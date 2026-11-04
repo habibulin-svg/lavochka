@@ -26,6 +26,8 @@ import { TownScreen } from './town';
 
 const fmtMs = (ms: number): string => {
   const sec = Math.max(0, Math.round(ms / 1000));
+  // по переписке — часы и минуты
+  if (sec >= 3600) return `${Math.trunc(sec / 3600)} ч ${String(Math.trunc((sec % 3600) / 60)).padStart(2, '0')} мин`;
   return `${Math.trunc(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 };
 const BOT_WORD: Record<BotLevel, string> = { easy: 'лёгкий', medium: 'средний', hard: 'сложный' };
@@ -61,6 +63,8 @@ export interface AdvNet {
   busy: string;
   /** Проигрыватель записи вместо сервера: без чата, с кнопками показа. */
   replay?: ReplayClient;
+  /** По переписке: ход до суток, за ушедшего на карте никто не ходит. */
+  mail?: boolean;
   /** Рейтинговая дуэль кончилась: что стало по местам. */
   rating?: MapRatingView;
 }
@@ -766,7 +770,7 @@ export class AdvGame {
       this.queueNet(async () => this.afterAction());
     };
     c.onNote = (text) => this.queueNet(async () => this.message('По очереди', text));
-    c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : `${name} пропал со связи: через минуту за него сходит бот`);
+    c.onPeer = (name, on) => this.tip(on ? `${name} вернулся` : net.mail ? `${name} ушёл — его ход подождёт до суток` : `${name} пропал со связи: через минуту за него сходит бот`);
     this.talk?.destroy();
     if (net.replay) {
       this.hud.append(net.replay.bar);

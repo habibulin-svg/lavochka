@@ -8,7 +8,9 @@
  * Драфт (по желанию хозяина): между лобби и картой каждый по очереди банит героя, в дуэли второй банит ещё фракцию,
  * потом по очереди выбирают фракцию (без повторов) и её героя. Бот и не успевший — случайно из доступного.
  * Запись (`record.ts`): весь мир на старте и разница после каждой рассылки. Зрители смотрят по записи с задержкой в день
- * (иначе игрок во второй вкладке зрителем видел бы всю карту); после партии запись можно скачать. */
+ * (иначе игрок во второй вкладке зрителем видел бы всю карту); после партии запись можно скачать.
+ * По переписке (`mail`): ход до суток, место — за аккаунтом (вернуться с любого устройства), за ушедшего на карте никто не ходит —
+ * кончились сутки, ход кончается; бой за ушедшего ведёт бот. Комнату сервер хранит на диске (`save`/`restore`). */
 import { botAction } from '../bot/bot';
 import { type BotMem, botStep, newMem } from '../bot/advbot';
 import { fightOut } from '../bot/advplay';
@@ -31,6 +33,8 @@ export const MAP_BANK_MAX = 15 * 60_000;
 export const FIGHT_BANK_MS = 150_000;
 const FIGHT_INC_MS = 5_000;
 const FIGHT_MIN_MS = 12_000;
+/** По переписке: на ход — сутки, без копилки. */
+export const MAIL_TURN_MS = 24 * 3600_000;
 /** Пропал со связи: столько ждём, потом за него ходит бот (место остаётся за ним). Кончился запас — ход просто кончается. */
 export const MAP_GONE_MS = 60_000;
 /** Общий день начинается, только если чужие герои и города дальше этого (клеток); внутри дня сближение до CONTACT — по очереди. */
@@ -83,6 +87,43 @@ interface Fight {
 type Phase = 'lobby' | 'draft' | 'map' | 'over';
 /** Как идёт день: по очереди (мир сам передаёт ход), общий, по очереди после сближения (очередь держит комната). */
 type Day = 'seq' | 'free' | 'late';
+
+/** Комната по переписке на диске. */
+export interface MapRoomSave {
+  v: 1;
+  gen: GenOptions;
+  seats: Seat[];
+  phase: Phase;
+  simul: boolean;
+  draftOn: boolean;
+  draft: Draft | null;
+  world: World | null;
+  day: Day;
+  mems: BotMem[];
+  fights: Fight[];
+  bank: number[];
+  since: number[];
+  pend: World['pending'][];
+  done: boolean[];
+  rec: MapRecord | null;
+  specAt: number;
+  ranked: boolean;
+  rating: MapRatingView | undefined;
+  mail: boolean;
+}
+
+/** Партия по переписке в списке игрока. */
+export interface MailSummary {
+  seat: number;
+  day: number;
+  /** Сейчас ход этого игрока. */
+  yours: boolean;
+  /** Сколько осталось на ход, мс. */
+  left: number;
+  over: boolean;
+  won: boolean;
+  names: string[];
+}
 
 interface Draft {
   steps: MapDraftStep[];
@@ -166,6 +207,10 @@ export class MapRoom {
 
   /** Партия на рейтинг (хозяин; только дуэль людей, вошедших на сайт). */
   ranked = false;
+  /** По переписке (хозяин): ход до суток, места — за аккаунтами. */
+  mail = false;
+  /** Что-то поменялось — сервер сохранит комнату по переписке. */
+  onChange: () => void = () => {};
   private rating: MapRatingView | undefined;
 
   constructor(gen: GenOptions, private readonly now: () => number = Date.now, private readonly hooks: MapHooks = {}) {
@@ -194,7 +239,8 @@ export class MapRoom {
   }
 
   private seatOf(p: MapPeer): number | null {
-    const i = this.seats.findIndex((s) => s.token === p.token);
+    // по переписке место — за аккаунтом: вернуться можно с другого устройства
+    const i = this.seats.findIndex((s) => s.token === p.token || (this.mail && p.user !== null && s.user === p.user && this.phase !== 'lobby'));
     return i < 0 ? null : i;
   }
 
@@ -207,7 +253,14 @@ export class MapRoom {
     const s = this.seats[seat];
     if (s.bot) return s.bot;
     if (!s.token) return 'medium';
+    if (this.mail) return null;
     return s.goneAt && this.now() - s.goneAt >= MAP_GONE_MS ? 'medium' : null;
+  }
+
+  /** Кто ведёт сторону боя: по переписке за ушедшего — бот (ждать его сутки посреди боя нельзя). */
+  private fightBot(seat: number): BotLevel | null {
+    if (this.mail && this.seats[seat].token && this.seats[seat].goneAt) return 'medium';
+    return this.botFor(seat);
   }
 
   private view(): MapSeatView[] {
@@ -302,6 +355,10 @@ export class MapRoom {
         this.seats[m.seat].team = m.team;
         return this.sendLobby();
       }
+      case 'mmail':
+        if (this.phase !== 'lobby' || !this.isHost(p)) return;
+        this.mail = !!m.on;
+        return this.sendLobby();
       case 'mranked':
         if (this.phase !== 'lobby' || !this.isHost(p)) return;
         this.ranked = !!m.on && TEMPLATES[this.gen.template].players === 2;
@@ -315,7 +372,7 @@ export class MapRoom {
         this.draftOn = !!m.on;
         return this.sendLobby();
       case 'start':
-        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token) || this.oneTeam() || this.rankErr()) return;
+        if (this.phase !== 'lobby' || !this.isHost(p) || !this.seats.every((s) => s.bot || s.token) || this.oneTeam() || this.rankErr() || this.mailErr()) return;
         if (this.draftOn) this.startDraft();
         else this.startMap();
         return;
@@ -522,7 +579,7 @@ export class MapRoom {
 
   /** Новый ход места: прибавка к запасу и пуск часов. */
   private beginTurn(seat: number): void {
-    this.bank[seat] = Math.min(MAP_BANK_MAX, this.bank[seat] + MAP_TURN_MS);
+    this.bank[seat] = this.mail ? MAIL_TURN_MS : Math.min(MAP_BANK_MAX, this.bank[seat] + MAP_TURN_MS);
     this.since[seat] = this.now();
   }
 
@@ -590,6 +647,7 @@ export class MapRoom {
       p.send({ t: 'mstep', events: eventsView(w, ev, seat, actor), world: this.viewOf(seat), clock, seats, actor });
     }
     this.feedSpectators();
+    this.onChange();
   }
 
   /** Шаг в запись: разница всего мира с прошлым шагом. */
@@ -621,6 +679,11 @@ export class MapRoom {
     if (this.seats.length !== 2 || this.seats.some((s) => s.bot || !s.token)) return 'На рейтинг — только дуэль двух людей.';
     if (this.seats.some((s) => s.user === null)) return 'На рейтинг — оба должны войти на сайт.';
     return this.seats[0].user === this.seats[1].user ? 'Сам с собой на рейтинг не играют.' : null;
+  }
+
+  /** По переписке место держит аккаунт: все люди должны войти. */
+  mailErr(): string | null {
+    return this.mail && this.seats.some((s) => !s.bot && s.user === null) ? 'По переписке — все игроки должны войти на сайт.' : null;
   }
 
   /** Все в одной команде — играть не с кем. */
@@ -720,7 +783,7 @@ export class MapRoom {
     this.world = w;
     this.phase = 'map';
     this.pend = this.seats.map(() => null);
-    this.bank = this.seats.map(() => MAP_BANK_MS - MAP_TURN_MS);
+    this.bank = this.seats.map(() => (this.mail ? MAIL_TURN_MS : MAP_BANK_MS - MAP_TURN_MS));
     this.since = this.seats.map(() => this.now());
     this.startDay();
     this.pendingEvents = [];
@@ -731,12 +794,13 @@ export class MapRoom {
     this.specWorld = clone(w0);
     this.specAt = 0;
     for (const p of this.peers) this.sendStart(p);
+    this.onChange();
   }
 
   private sendStart(p: MapPeer): void {
     if (!this.world) return;
     const seat = this.seatOf(p);
-    p.send({ t: 'mstart', world: seat === null && this.specWorld ? this.specWorld : this.viewOf(seat), seat, seats: this.view(), clock: this.clock(), you: p.id, busy: this.busyText(seat) });
+    p.send({ t: 'mstart', world: seat === null && this.specWorld ? this.specWorld : this.viewOf(seat), seat, seats: this.view(), clock: this.clock(), you: p.id, busy: this.busyText(seat), mail: this.mail });
     if (this.phase === 'over') p.send({ t: 'mover', winner: this.world.winner, why: 'map', rating: this.rating });
   }
 
@@ -783,6 +847,46 @@ export class MapRoom {
       this.rating = winner === 0 ? [won, lost] : [lost, won];
     }
     this.broadcast({ t: 'mover', winner, why, rating: this.rating });
+    this.onChange();
+  }
+
+  // ------------------------------------------------------------------ хранение (по переписке)
+
+  /** Всё, кроме соединений: JSON для файла. События к этому времени разосланы (`flush`). */
+  save(): MapRoomSave {
+    return {
+      v: 1, gen: this.gen, seats: this.seats, phase: this.phase, simul: this.simul, draftOn: this.draftOn, draft: this.draft, world: this.world, day: this.day,
+      mems: this.mems, fights: this.fights, bank: this.bank, since: this.since, pend: this.pend, done: this.done, rec: this.rec, specAt: this.specAt,
+      ranked: this.ranked, rating: this.rating, mail: this.mail,
+    };
+  }
+
+  /** Комната из файла: все места — «ушли» (пока кто-то не зайдёт), сравнение для записи — с миром как есть. */
+  static restore(x: MapRoomSave, now: () => number = Date.now, hooks: MapHooks = {}): MapRoom {
+    const r = new MapRoom(x.gen, now, hooks);
+    Object.assign(r, {
+      seats: x.seats, phase: x.phase, simul: x.simul, draftOn: x.draftOn, draft: x.draft, world: x.world, day: x.day, mems: x.mems, fights: x.fights,
+      bank: x.bank, since: x.since, pend: x.pend, done: x.done, rec: x.rec, specAt: x.specAt, ranked: x.ranked, rating: x.rating, mail: x.mail,
+    });
+    const t = now();
+    for (const s of r.seats) if (s.token) s.goneAt = s.goneAt || t;
+    if (r.world) r.recPrev = clone(r.viewOf(null));
+    if (r.rec) {
+      let sw = clone(r.rec.world);
+      for (let i = 0; i < r.specAt; i++) sw = patchJson(sw, r.rec.steps[i].d);
+      r.specWorld = sw;
+    }
+    return r;
+  }
+
+  /** Для списка «Мои партии»: место аккаунта и чей ход. */
+  summary(user: number): MailSummary | null {
+    const seat = this.seats.findIndex((s) => s.user === user);
+    if (seat < 0 || !this.mail || this.phase === 'lobby') return null;
+    const w = this.world;
+    const yours = this.phase === 'map' && !!w && this.mayAct(seat) && !this.done[seat];
+    const left = yours ? Math.max(0, this.bank[seat] - (this.now() - this.since[seat])) : 0;
+    return { seat, day: (w?.day ?? 0) + 1, yours, left, over: this.phase === 'over', won: this.phase === 'over' && !!w && w.winner >= 0 && allied(w, w.winner, seat), names: this.seats.map((s) => s.name) };
   }
 
   // ------------------------------------------------------------------ бой на карте
@@ -816,11 +920,11 @@ export class MapRoom {
     const def = this.defOwner(b);
     if (def !== null && this.fightOf(def)) return;
     const seats: [number | null, number | null] = [seat, def];
-    const lv = (s: number | null): BotLevel => (s === null ? 'medium' : this.botFor(s) ?? 'medium');
+    const lv = (s: number | null): BotLevel => (s === null ? 'medium' : this.fightBot(s) ?? 'medium');
     const levels: [BotLevel, BotLevel] = [lv(seat), lv(def)];
     const setup = this.as(seat, () => battleSetup(w).setup);
     // людей в бою нет — считаем сразу (Сложный боевой бот медленный: на сервере — Средний)
-    if (seats.every((s) => s === null || this.botFor(s) !== null)) {
+    if (seats.every((s) => s === null || this.fightBot(s) !== null)) {
       const state = fightOut(setup, [levels[0] === 'hard' ? 'medium' : levels[0], levels[1] === 'hard' ? 'medium' : levels[1]]);
       this.collect(seat, this.as(seat, () => applyBattle(w, state)));
       if (w.over) {
@@ -876,7 +980,7 @@ export class MapRoom {
     const u = currentUnit(f.state);
     if (!u) return;
     const seat = f.seats[u.side];
-    const human = seat !== null && this.botFor(seat) === null;
+    const human = seat !== null && this.fightBot(seat) === null;
     if (human && t - f.since < Math.max(f.bank[u.side], FIGHT_MIN_MS)) return;
     if (human) this.chargeFight(f, u.side, false);
     else if (t < f.since) return;
@@ -907,7 +1011,7 @@ export class MapRoom {
 
   private sendLobby(): void {
     const seats = this.view();
-    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul, draft: this.draftOn, ranked: this.ranked });
+    for (const p of this.peers) p.send({ t: 'mlobby', gen: this.gen, seats, you: p.id, seat: this.seatOf(p), host: this.isHost(p), simul: this.simul, draft: this.draftOn, ranked: this.ranked, mail: this.mail });
   }
 
   private voiceList(): void {

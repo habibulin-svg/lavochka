@@ -97,6 +97,9 @@ export class MapClient implements BattleNet {
   team(seat: number, team: number | null): void {
     this.send({ t: 'mteam', seat, team });
   }
+  mail(on: boolean): void {
+    this.send({ t: 'mmail', on });
+  }
   ranked(on: boolean): void {
     this.send({ t: 'mranked', on });
   }

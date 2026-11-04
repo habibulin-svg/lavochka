@@ -1,14 +1,14 @@
 /* Арена «Героев» на сервере: комнаты по коду, подбор соперника, рейтинг (src/geroi/net/room.ts — сама комната, здесь сокеты и хранение).
  * Рейтинг — файл в DATA_DIR, как рекорды: одна запись на вошедшего игрока. */
 import { randomInt } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Link } from '../src/core/protocol';
 import { DEFAULT_BUDGET, type NetClientMsg, type NetServerMsg } from '../src/geroi/net/protocol';
 import { type Rating, START_RATING, afterGame } from '../src/geroi/net/rating';
 import { ArenaRoom, type RoomPeer } from '../src/geroi/net/room';
 import { cleanGen } from '../src/geroi/net/mapproto';
-import { MapRoom } from '../src/geroi/net/maproom';
+import { type MailSummary, type MapHooks, MapRoom, type MapRoomSave } from '../src/geroi/net/maproom';
 
 /** Комнаты Арены и сетевой карты — одни коды на двоих. */
 const rooms = new Map<string, ArenaRoom | MapRoom>();
@@ -77,6 +77,92 @@ export class Ratings {
   }
 }
 
+// ------------------------------------------------------------------ по переписке: комнаты на диске
+
+/** Кончившуюся партию по переписке держим столько (посмотреть итог и сохранить запись), потом файл удаляется. */
+const MAIL_KEEP_MS = 7 * 24 * 3600_000;
+let mailDir = '';
+const mailTimers = new Map<string, NodeJS.Timeout>();
+
+/** Рейтинг карты: хуки комнаты (и для поднятых с диска). */
+function mapHooksFor(t: Ratings | undefined): MapHooks {
+  return {
+    onResult: (w, l, names) => {
+      if (!t) return [{ r: 0, delta: 0 }, { r: 0, delta: 0 }];
+      const before = [t.get(w).r, t.get(l).r];
+      const [a, b] = t.apply(w, l, names);
+      return [{ r: Math.round(a.r), delta: Math.round(a.r - before[0]) }, { r: Math.round(b.r), delta: Math.round(b.r - before[1]) }];
+    },
+  };
+}
+
+function mailFile(code: string): string {
+  return join(mailDir, `${code}.json`);
+}
+
+/** Партия по переписке поменялась — записать файл (не чаще раза в 5 с). */
+function watchMail(code: string, r: MapRoom): void {
+  r.onChange = () => {
+    if (!mailDir || !r.mail || r.phase === 'lobby' || mailTimers.has(code)) return;
+    mailTimers.set(code, setTimeout(() => writeMail(code, r), 5000));
+  };
+}
+
+function writeMail(code: string, r: MapRoom): void {
+  clearTimeout(mailTimers.get(code));
+  mailTimers.delete(code);
+  if (rooms.get(code) !== r) return;
+  mkdirSync(mailDir, { recursive: true });
+  const tmp = `${mailFile(code)}.tmp`;
+  writeFileSync(tmp, JSON.stringify(r.save()));
+  renameSync(tmp, mailFile(code));
+}
+
+/** Поднять партии по переписке с диска (при старте сервера). */
+export function initGeroiMail(dir: string, mapRatings: Ratings | undefined, log: (s: string) => void = console.log): void {
+  mailDir = join(dir, 'geroi-mail');
+  if (!existsSync(mailDir)) return;
+  let n = 0;
+  for (const f of readdirSync(mailDir)) {
+    if (!f.endsWith('.json')) continue;
+    const code = f.slice(0, -5);
+    const path = join(mailDir, f);
+    try {
+      const x = JSON.parse(readFileSync(path, 'utf8')) as MapRoomSave;
+      if (x.phase === 'over' && Date.now() - statSync(path).mtimeMs > MAIL_KEEP_MS) {
+        unlinkSync(path);
+        continue;
+      }
+      const r = MapRoom.restore(x, Date.now, mapHooksFor(mapRatings));
+      rooms.set(code, r);
+      watchMail(code, r);
+      n++;
+    } catch (e) {
+      renameSync(path, `${path}.bad`);
+      log(`Герои по переписке: ${f} испорчен, отложен (${String(e)})`);
+    }
+  }
+  if (n) {
+    log(`Герои по переписке: поднято партий ${n}`);
+    ensureClock();
+  }
+}
+
+/** Записать все партии по переписке сейчас (перед выключением). */
+export function flushGeroiMail(): void {
+  for (const [code, r] of rooms) if (r instanceof MapRoom && r.mail && r.phase !== 'lobby') writeMail(code, r);
+}
+
+/** Партии по переписке аккаунта: для списка «Мои партии». */
+export function geroiMailOf(user: number): (MailSummary & { code: string })[] {
+  const out: (MailSummary & { code: string })[] = [];
+  for (const [code, r] of rooms) {
+    const s = r instanceof MapRoom ? r.summary(user) : null;
+    if (s) out.push({ code, ...s });
+  }
+  return out.sort((a, b) => Number(b.yours) - Number(a.yours) || Number(a.over) - Number(b.over));
+}
+
 function ensureClock(): void {
   clock ??= setInterval(() => {
     for (const r of rooms.values()) r.tick();
@@ -85,6 +171,8 @@ function ensureClock(): void {
 
 function sweep(code: string, waited = false): void {
   const r = rooms.get(code);
+  // по переписке пустая комната — обычное дело: живёт, пока не кончится (и ещё неделю на диске)
+  if (r instanceof MapRoom && r.mail && r.phase !== 'lobby' && (r.phase !== 'over' || (mailDir && existsSync(mailFile(code))))) return;
   if (r?.isEmpty && r.phase !== 'lobby' && r.phase !== 'over' && !waited) {
     setTimeout(() => sweep(code, true), GRACE_MS);
     return;
@@ -129,14 +217,7 @@ export function geroiFirst(
   };
 
   // рейтинг карты — своя таблица: Арена и карта — разные умения
-  const mapHooks = {
-    onResult: (w: number, l: number, names: [string, string]) => {
-      const t = mapRatings ?? ratings;
-      const before = [t.get(w).r, t.get(l).r];
-      const [a, b] = t.apply(w, l, names);
-      return [{ r: Math.round(a.r), delta: Math.round(a.r - before[0]) }, { r: Math.round(b.r), delta: Math.round(b.r - before[1]) }] as [{ r: number; delta: number }, { r: number; delta: number }];
-    },
-  };
+  const mapHooks = mapHooksFor(mapRatings ?? ratings);
 
   let room: ArenaRoom | MapRoom | null = null;
   let code = '';
@@ -174,6 +255,7 @@ export function geroiFirst(
     code = genCode((c) => rooms.has(c));
     const r = new MapRoom(gen, Date.now, mapHooks);
     rooms.set(code, r);
+    watchMail(code, r);
     enter(r, code);
     send({ t: 'created', code });
     ensureClock();

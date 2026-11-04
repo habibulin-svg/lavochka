@@ -80,6 +80,8 @@ export type MapClientMsg =
   | { t: 'mteam'; seat: number; team: number | null }
   /** Хозяин: партия на рейтинг (только дуэль людей, оба вошли). */
   | { t: 'mranked'; on: boolean }
+  /** Хозяин: по переписке (ход до суток, нужен вход на сайт). */
+  | { t: 'mmail'; on: boolean }
   /** Хозяин: драфт фракций и героев перед картой. */
   | { t: 'mdraftopt'; on: boolean }
   /** Шаг драфта: бан героя (hero), бан фракции (faction), выбор (оба). */
@@ -103,14 +105,14 @@ export type MapServerMsg =
   | { t: 'created'; code: string }
   | { t: 'joined'; code: string }
   | { t: 'error'; text: string }
-  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean; ranked: boolean }
+  | { t: 'mlobby'; gen: GenOptions; seats: MapSeatView[]; you: number; seat: number | null; host: boolean; simul: boolean; draft: boolean; ranked: boolean; mail: boolean }
   | { t: 'mdraft'; d: MapDraftView; seat: number | null; seats: MapSeatView[] }
   /** Зрителю: шаги записи (с задержкой в день), мир он собирает сам. */
   | { t: 'mspec'; steps: RecStep[]; seats: MapSeatView[] }
   | { t: 'mrecord'; rec: MapRecord }
   /** Объявление всем: «армии сблизились — ходим по очереди». */
   | { t: 'mnote'; text: string }
-  | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string }
+  | { t: 'mstart'; world: World; seat: number | null; seats: MapSeatView[]; clock: MapClock; you: number; busy: string; mail?: boolean }
   | { t: 'mstep'; events: AdvEvent[]; world: World; clock: MapClock; seats: MapSeatView[]; actor: number }
   /** Что сейчас происходит у других: «Идёт бой…», «Ходит Петя». Пусто — ничего. */
   | { t: 'mbusy'; text: string }
