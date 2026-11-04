@@ -28,7 +28,7 @@ export type Ability =
 const ABILITY_COST: Record<Ability, number> = {
   fly: 1.12, big: 1.0, machine: 1.03, noRetal: 1.15, manyRetal: 1.1, strike2: 1.0, antiBig: 1.05, charge: 1.18, sweep: 1.15, aoe: 1.35,
   noMeleePen: 1.08, noRangePen: 1.06, poison: 1.12, blind: 1.12, root: 1.1, swallow: 1.14, mist: 1.12, pass: 1.03,
-  heal: 1.3, repair: 1.1, curseCast: 1.15, spellRes: 1.03,
+  heal: 1.3, repair: 1.3, curseCast: 1.15, spellRes: 1.03,
 };
 const RANGED_COST = 1.5;
 const WALL_COST = 1.12;
