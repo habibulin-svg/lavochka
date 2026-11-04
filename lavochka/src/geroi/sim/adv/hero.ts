@@ -8,6 +8,28 @@ export interface Slot {
   count: number;
 }
 export type Army = (Slot | null)[];
+
+/** Чужой отряд виден примерно (как в жанре): ступень числа и её середина. */
+export const ARMY_BANDS: { upto: number; name: string; mid: number }[] = [
+  { upto: 4, name: 'несколько', mid: 2 },
+  { upto: 9, name: 'стайка', mid: 7 },
+  { upto: 19, name: 'стая', mid: 15 },
+  { upto: 49, name: 'толпа', mid: 35 },
+  { upto: 99, name: 'орава', mid: 75 },
+  { upto: 249, name: 'полчище', mid: 175 },
+  { upto: 499, name: 'тьма', mid: 375 },
+  { upto: 999, name: 'легион', mid: 750 },
+  { upto: Infinity, name: 'несметно', mid: 1000 },
+];
+
+export function armyBand(n: number): { name: string; mid: number } {
+  return ARMY_BANDS.find((b) => n <= b.upto)!;
+}
+
+/** Отряд глазами чужого: виды те же, числа — середины ступеней. */
+export function armyGuess(a: Army): Army {
+  return a.map((s) => (s ? { ...s, count: armyBand(s.count).mid } : null));
+}
 export const ARMY_SLOTS = 7;
 
 export interface SkillDef {

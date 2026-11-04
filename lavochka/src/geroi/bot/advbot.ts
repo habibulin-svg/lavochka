@@ -8,7 +8,7 @@ import { CREATURES } from '../sim/creatures';
 import { classOf } from '../sim/heroes';
 import { travel } from '../sim/adv/fair';
 import { FACTION_RES, RES, RES_VALUE, MINE_INCOME, type ResId, WATER } from '../sim/adv/data';
-import { type AdvHero, ARMY_SLOTS, armyPower, heroAtk, heroDef, heroMaxMana, heroMaxMp, skillLevel } from '../sim/adv/hero';
+import { type AdvHero, ARMY_SLOTS, armyGuess, armyPower, heroAtk, heroDef, heroMaxMana, heroMaxMp, skillLevel } from '../sim/adv/hero';
 import { type Town, type TownFaction, buildCost, buildError, buildingDef, creaturePrice, fortLevel, has, isCast, townCreature } from '../sim/adv/town';
 import {
   type AdvAction, type ArmyRef, type BattleSide, battleSetup, HERO_COST, MAX_HEROES, type MapObject, type World, actionError, allied, defOf, guardOf, heroHiddenFrom, neighbors, playerHeroes, playerTowns, reachOf, stepCost, xOf, yOf,
@@ -61,9 +61,11 @@ const SKILL_ORDER = [
 export function heroPower(h: AdvHero): number {
   return (armyPower(h.army) * (100 + 5 * (heroAtk(h) + heroDef(h)))) / 100;
 }
-function townPower(t: Town): number {
+/** Сила города; чужой гарнизон бот видит примерно — как человек (`armyGuess`). */
+function townPower(t: Town, me: number): number {
   const f = fortLevel(t);
-  return (armyPower(t.garrison) * (100 + 25 * f + (has(t, 'smithy') ? 10 : 0))) / 100;
+  const g = t.owner === me ? t.garrison : armyGuess(t.garrison);
+  return (armyPower(g) * (100 + 25 * f + (has(t, 'smithy') ? 10 : 0))) / 100;
 }
 
 
@@ -191,7 +193,7 @@ function pickTarget(w: World, h: AdvHero, level: BotLevel, main: boolean, rng: R
       if (main && threat.has(t.id)) v += 12000;
       consider(t.cell, v);
     } else {
-      const foe = townPower(t);
+      const foe = townPower(t, me);
       const early = w.day < tune.attackDay && foe > 0;
       consider(t.cell, (t.owner < 0 ? 8000 : 25000) / (early ? 3 : 1), foe > 0 ? { k: 'town', id: t.id } : undefined, foe);
     }
@@ -273,7 +275,7 @@ function enemyThreat(w: World, me: number): Set<number> {
   for (const t of playerTowns(w, me)) {
     for (const e of w.heroes) {
       if (allied(w, e.owner, me) || !p.explored[e.cell] || heroHiddenFrom(w, e, me)) continue;
-      if (cheb(w, e.cell, t.cell) <= 14 && heroPower(e) > townPower(t)) out.add(t.id);
+      if (cheb(w, e.cell, t.cell) <= 14 && heroPower(e) > townPower(t, me)) out.add(t.id);
     }
   }
   return out;

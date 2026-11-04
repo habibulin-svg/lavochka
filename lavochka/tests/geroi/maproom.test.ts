@@ -556,4 +556,11 @@ describe('geroi/maproom: сеть карты', () => {
     for (const st of r2.rec!.steps) w = patchJson(w, st.d);
     expect(w).toEqual(JSON.parse(JSON.stringify(r2.viewOf(null))));
   });
+
+  it('боты по своему виду (чужой гарнизон — примерно) доигрывают среднюю карту', () => {
+    const { room, a, b, adv } = setup(false, { ...GEN, size: 'm' });
+    room.message(a, { t: 'start' });
+    playOut(room, [a, b], adv, 60000, 150);
+    expect(room.phase, `день ${room.world!.day}`).toBe('over');
+  }, 180_000);
 });

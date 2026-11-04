@@ -6,7 +6,7 @@ import type { BotLevel } from '../bot/bot';
 import type { Action, BattleEvent, BattleState } from '../sim/battle';
 import { RES, type ResId } from '../sim/adv/data';
 import { type GenOptions, GUARDS, MAP_SIZES, WATERS } from '../sim/adv/gen';
-import { ARMY_SLOTS } from '../sim/adv/hero';
+import { ARMY_SLOTS, armyGuess } from '../sim/adv/hero';
 import { TEMPLATES } from '../sim/adv/templates';
 import type { TownFaction } from '../sim/adv/town';
 import { type AdvAction, type AdvEvent, type ArmyRef, type World, emptyArmy, heroById, heroHiddenFrom } from '../sim/adv/world';
@@ -241,7 +241,8 @@ export function worldView(w: World, seat: number | null): World {
     players: w.players.map((p) => (p.id === seat ? p : { ...p, res: { ...ZERO }, explored: [], obelisks: [], keys: [], scrap: {} })),
     heroes: w.heroes.filter((h) => h.owner === seat || (ex[h.cell] && !heroHiddenFrom(w, h, seat))),
     towns: w.towns.map((t) => (t.owner === seat ? t : {
-      ...t, garrison: emptyArmy(), avail: t.avail.map(() => 0), tavern: [], guild: t.guild.map(() => []), decrees: [], research: null, studied: {}, forge: 0, bonus: t.bonus.map(() => 0), discount: 0,
+      // чужой гарнизон — примерно и только у открытых городов (как и видит бот)
+      ...t, garrison: ex[t.cell] ? armyGuess(t.garrison) : emptyArmy(), avail: t.avail.map(() => 0), tavern: [], guild: t.guild.map(() => []), decrees: [], research: null, studied: {}, forge: 0, bonus: t.bonus.map(() => 0), discount: 0,
     })),
     // чужое «начатое» (бой, выбор) — не своё дело
     pending: w.pending && heroById(w, w.pending.hero)?.owner === seat ? w.pending : null,

@@ -16,7 +16,7 @@ import { CREATURES } from '../sim/creatures';
 import { classOf, heroName } from '../sim/heroes';
 import { SPELLS, spellIcon } from '../sim/spells';
 import { type Purse, RES, RES_NAME, type ResId, TERRAINS } from '../sim/adv/data';
-import { type AdvHero, ARTIFACTS, SKILL, armyPower, heroMaxMp } from '../sim/adv/hero';
+import { type AdvHero, ARTIFACTS, SKILL, armyBand, armyPower, heroMaxMp } from '../sim/adv/hero';
 import {
   type AdvAction, type AdvEvent, HERO_COST, type PendingBattle, type World, act, actionError, allied, applyBattle, battleSetup, cellOf, defOf, dirOf, guardOf, heroAt, heroById, heroHiddenFrom, hireCost, isStack, objAt, objById, pathDays, pathOf, playerHeroes, playerTowns, reachOf, townAt, townById, xOf, yOf,
 } from '../sim/adv/world';
@@ -1285,7 +1285,13 @@ export class AdvGame {
     const foe = heroAt(w, cell);
     if (foe && !heroHiddenFrom(w, foe, this.me)) return `${foe.owner === this.me ? '' : allied(w, foe.owner, this.me) ? 'Союзник: ' : 'Чужой герой: '}${heroName(foe.pick)}, ${foe.level}-й уровень`;
     const t = townAt(w, cell);
-    if (t) return `${t.name} · ${t.owner < 0 ? 'ничей' : w.players[t.owner].name}`;
+    if (t) {
+      const head = `${t.name} · ${t.owner < 0 ? 'ничей' : w.players[t.owner].name}`;
+      if (t.owner === this.me) return head;
+      // чужой гарнизон — примерно
+      const g = t.garrison.filter((s) => s).map((s) => `${CREATURES[s!.cre].name} — ${armyBand(s!.count).name}`);
+      return g.length ? `${head} · гарнизон: ${g.join(', ')}` : head;
+    }
     const o = objAt(w, cell);
     if (o) {
       if (isStack(o)) {
