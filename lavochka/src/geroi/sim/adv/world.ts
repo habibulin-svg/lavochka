@@ -9,6 +9,7 @@ import { FACTION_RES, MINE_INCOME, NATIVE, OBJECTS, type ObjDef, type Purse, RES
 import {
   type AdvHero, ARMY_SLOTS, ART_SLOTS, ARTIFACTS, type Army, MAX_SKILLS, SHARD, SKILLS, addToArmy, armyEmpty, armySize, heroAtk, heroDef, heroKnow, heroLuck, heroMaxMana, heroMaxMp, heroMorale, heroPower, heroSemki, heroVision, isMight, skillLevel, skillValue, xpForLevel,
 } from './hero';
+import { type ScnState, scnCheck } from './scenario';
 import {
   BRANCHES, BUILDINGS, DECREES, RESEARCH_AMBER, RESEARCH_DAYS, type Town, type TownFaction, buildCost, buildError, buildingDef, canUpgrade, creaturePrice, forgeCap, forgePerDay, fortLevel, guildLevel, hallIncome, has, isCast, marketRate, townCreature, weeklyGrowth,
 } from './town';
@@ -45,6 +46,8 @@ export interface MapObject {
   cells?: number[];
   /** Номер картинки декора. */
   reward?: Purse;
+  /** Метка сценария кампании. */
+  tag?: string;
 }
 
 export interface Quest {
@@ -76,6 +79,8 @@ export interface Player {
   bot?: 'easy' | 'medium' | 'hard';
   /** Союз (сеть, 2×2): одна команда — общий обзор, общая победа, друг друга не бьют. Нет — сам за себя. */
   team?: number;
+  /** Сценарий: не выбывает без города (набеги из тумана). */
+  keep?: boolean;
 }
 
 export type BattleSide = { k: 'hero'; id: number } | { k: 'obj'; id: number } | { k: 'town'; id: number };
@@ -133,11 +138,14 @@ export interface World {
   weekNote: string;
   /** Название карты для сохранений; нет — «Две реки». */
   name?: string;
+  /** Сценарий кампании: задания и события (scenario.ts). */
+  scn?: ScnState;
 }
 
 export type AdvEvent =
   | { e: 'step'; hero: number; from: number; to: number }
-  | { e: 'msg'; title?: string; text: string; icon?: string }
+  /** to — кому, даже если сейчас ходит бот (события сценария). */
+  | { e: 'msg'; title?: string; text: string; icon?: string; to?: number }
   | { e: 'gain'; player: number; res: Purse }
   | { e: 'flag'; obj: number; owner: number }
   | { e: 'remove'; obj: number }
@@ -1009,7 +1017,7 @@ function newDay(w: World, ev: AdvEvent[]): void {
 
 function checkPlayers(w: World, ev: AdvEvent[]): void {
   for (const p of w.players) {
-    if (!p.alive) continue;
+    if (!p.alive || p.keep) continue;
     const towns = playerTowns(w, p.id).length;
     const heroes = playerHeroes(w, p.id).length;
     if (towns === 0 && (heroes === 0 || p.townless >= TOWNLESS_DAYS)) {
@@ -1020,8 +1028,8 @@ function checkPlayers(w: World, ev: AdvEvent[]): void {
     }
   }
   const left = w.players.filter((p) => p.alive);
-  // остались одни союзники — победа их команды (победителем пишется первый из них)
-  if (!w.over && left.every((p) => allied(w, p.id, left[0].id))) {
+  // остались одни союзники — победа их команды (победителем пишется первый из них); в сценарии конец решают задания
+  if (!w.over && !w.scn && left.every((p) => allied(w, p.id, left[0].id))) {
     w.over = true;
     w.winner = left[0]?.id ?? -1;
     ev.push({ e: 'over', winner: w.winner });
@@ -1517,6 +1525,7 @@ export function act(w: World, a: AdvAction): AdvEvent[] {
       break;
     }
   }
+  scnCheck(w, ev);
   return ev;
 }
 
@@ -1723,6 +1732,7 @@ export function applyBattle(w: World, s: BattleState): AdvEvent[] {
     else if (o.army) afterArmy(o.army, s, 1);
   }
   checkPlayers(w, ev);
+  scnCheck(w, ev);
   return ev;
 }
 

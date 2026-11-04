@@ -23,6 +23,8 @@ import {
 import { ArmyPicker, heroSheet, icon, marketDialog, portrait, priceRow, resBar } from './advparts';
 import { button, h, modal } from './common';
 import { TownScreen } from './town';
+import { goalsCard } from './campaign';
+import { scnCheck } from '../sim/adv/scenario';
 
 const fmtMs = (ms: number): string => {
   const sec = Math.max(0, Math.round(ms / 1000));
@@ -119,6 +121,8 @@ export class AdvGame {
   private readonly fit = (): void => this.fitHud();
   onQuit: () => void = () => {};
   onLoad: (s: Save) => void = () => {};
+  /** Сценарий кампании кончился: кнопки итога (дальше, заново, к кампаниям). */
+  scnEnd: ((win: boolean) => [string, () => void][]) | null = null;
 
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2, o: AdvOptions) {
     this.world = o.world;
@@ -152,7 +156,21 @@ export class AdvGame {
       return;
     }
     this.startTurn(false);
+    // сценарий: подсказки первого дня — сразу, не дожидаясь первого шага
+    if (this.world.scn) {
+      const ev: AdvEvent[] = [];
+      scnCheck(this.world, ev);
+      for (const e of ev) if (e.e === 'msg') this.message(e.title ?? '', e.text);
+    }
     this.afterAction();
+  }
+
+  private goals(): void {
+    const s = this.world.scn;
+    if (!s) return;
+    const { box, close } = modal(this.overlay, 'g-card c-goalcard');
+    goalsCard(box, s);
+    box.append(button('Понятно', close));
   }
 
   private fitHud(): void {
@@ -177,6 +195,7 @@ export class AdvGame {
       button('📖', () => this.book(), 'g-round'),
       button('⛏', () => this.dig(), 'g-round'),
     );
+    if (this.world.scn) buttons.append(button('📜', () => this.goals(), 'g-round'));
     // союз (сеть, 2×2): ресурсы союзнику
     if (this.allies().length) buttons.append(button('🤝', () => this.gift(), 'g-round'));
     this.musicBtn.classList.toggle('off', this.audio.musicOff);
@@ -490,7 +509,7 @@ export class AdvGame {
           if (!bot || !this.fast) this.audio.sfx(e.name);
           break;
         case 'msg':
-          if (!bot) msgs.push({ title: e.title ?? '', text: e.text });
+          if (!bot || e.to === this.me) msgs.push({ title: e.title ?? '', text: e.text });
           break;
         case 'gain':
           await flush();
@@ -1253,6 +1272,7 @@ export class AdvGame {
 
   private showEnd(): void {
     const w = this.world;
+    if (w.scn && this.scnEnd) return this.showScnEnd();
     this.audio.music('victory');
     const { box } = modal(this.overlay, 'g-result');
     box.parentElement!.onpointerdown = null;
@@ -1269,6 +1289,27 @@ export class AdvGame {
       });
       box.append(save);
     }
+  }
+
+  private showScnEnd(): void {
+    const w = this.world;
+    const s = w.scn!;
+    const win = s.result === 'win';
+    this.audio.music(win ? 'victory' : 'defeat');
+    const { box } = modal(this.overlay, 'g-result c-result');
+    box.parentElement!.onpointerdown = null;
+    const v = h('video', 'c-endvideo');
+    v.src = `/geroi/a/cutscenes/${win ? 'win' : 'lose'}.mp4`;
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    void v.play().catch(() => {});
+    box.append(v, h('h2', '', win ? 'Победа!' : 'Поражение'));
+    if (!win && s.why) box.append(h('p', '', s.why));
+    box.append(h('p', 'dim', `Сценарий занял ${w.day + 1} дн.`));
+    const row = h('div', 'g-row');
+    this.scnEnd!(win).forEach(([label, fn], i) => row.append(button(label, fn, i === 0 ? 'g-btn main' : 'g-btn')));
+    box.append(row);
   }
 
   // ------------------------------------------------------------------ подсказки

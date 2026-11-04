@@ -378,7 +378,7 @@ export function makeTestMap(spec: GameSpec): World {
 }
 
 /** Каждый вход достижим из своего города: где лес заслонил — прорубаем просеку (DESIGN.md §7.3: чиним, а не новым сидом). */
-function carvePaths(w: World, ...starts: number[]): void {
+export function carvePaths(w: World, ...starts: number[]): void {
   const n = w.w * w.h;
   const seen = new Uint8Array(n);
   const flood = (): void => {

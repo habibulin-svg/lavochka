@@ -14,6 +14,10 @@ import { ArenaClient } from './net/client';
 import type { NetClientMsg, NetServerMsg } from './net/protocol';
 import { Arena } from './ui/arena';
 import { AdvGame } from './ui/adv';
+import { INTRO, markIntro, progressOf, saveProgress, scenarioOf } from './campaign';
+import { type CampaignDef, type Difficulty, buildScenario, takeCarry } from './campaign/types';
+import { briefing, campaignScreen, cutscenes, introSeen } from './ui/campaign';
+import type { World } from './sim/adv/world';
 import { MapClient } from './net/mapclient';
 import type { MapClientMsg, MapServerMsg } from './net/mapproto';
 import { NetMap } from './ui/netmap';
@@ -45,6 +49,7 @@ async function startAdv(world: Save['adv'], battle?: Save['state']): Promise<voi
   menu.hide();
   const a = new AdvGame(host, audio, { world: world!, battle });
   adv = a;
+  if (world!.scn) a.scnEnd = (win) => scenarioEnd(a.world, win);
   a.onQuit = () => {
     stop();
     menu.title();
@@ -306,6 +311,50 @@ netMap.onLeave = () => {
   netMap.home();
 };
 
+// ------------------------------------------------------------------ кампании
+
+function showCampaigns(): void {
+  stop();
+  campaignScreen((...n) => menu.screen(...n), { play: (c, i, d) => void playScenario(c, i, d), back: () => menu.title() });
+}
+
+async function playScenario(c: CampaignDef, i: number, diff: Difficulty): Promise<void> {
+  stop();
+  saveProgress(c.id, { ...progressOf(c.id), diff });
+  audio.music(null);
+  if (!introSeen()) {
+    await cutscenes(host, INTRO, true);
+    markIntro();
+  }
+  await cutscenes(host, c.scenarios[i].before);
+  briefing(host, c, i, () => {
+    const p = progressOf(c.id);
+    const w = buildScenario(c.scenarios[i], diff, i > 0 ? p.carry : null);
+    w.name = `${c.title}: ${c.scenarios[i].title}`;
+    void startAdv(w);
+  }, showCampaigns);
+}
+
+/** Итог сценария: прохождение и герой — сразу, кнопки — что дальше. */
+function scenarioEnd(w: World, win: boolean): [string, () => void][] {
+  const found = scenarioOf(w.scn!.id);
+  if (!found) return [['В меню', () => (stop(), menu.title())]];
+  const { c, i } = found;
+  const p = progressOf(c.id);
+  const back: [string, () => void] = ['К кампаниям', showCampaigns];
+  if (!win) return [['Заново', () => void playScenario(c, i, p.diff)], back];
+  const main = w.heroes.find((x) => x.tag === 'main');
+  const best = { ...p.best, [c.scenarios[i].id]: Math.min(p.best[c.scenarios[i].id] ?? 1e9, w.day + 1) };
+  saveProgress(c.id, { ...p, done: Math.max(p.done, i + 1), carry: main ? takeCarry(main) : p.carry, best });
+  if (i + 1 < c.scenarios.length) return [['Дальше', () => void playScenario(c, i + 1, p.diff)], back];
+  return [['Финал', () => {
+    stop();
+    audio.music(null);
+    void cutscenes(host, c.finale).then(showCampaigns);
+  }], back];
+}
+
+menu.onCampaigns = showCampaigns;
 menu.onQuick = (c) => void quick(c);
 menu.onLoad = (s) => void resume(s);
 menu.onMap = (spec: GameSpec) => void startAdv(makeTestMap(spec));
@@ -354,6 +403,14 @@ function botParam(key: string): { bot?: 'easy' | 'medium' | 'hard' } {
 async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
+  // ?scn=c1-1 — сразу сценарий кампании, без роликов (разработка)
+  const scn = q.get('scn');
+  const found = scn ? scenarioOf(scn) : null;
+  if (found) {
+    const w = buildScenario(found.c.scenarios[found.i], (q.get('diff') as Difficulty | null) ?? 'normal', null);
+    w.name = `${found.c.title}: ${found.c.scenarios[found.i].title}`;
+    return startAdv(w);
+  }
   const fa = q.get('a') as Faction | null;
   const gen = parseGen(q);
   if (gen && q.has('map')) {

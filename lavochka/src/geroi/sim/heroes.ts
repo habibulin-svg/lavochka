@@ -37,12 +37,27 @@ const NAMES: Record<string, string[]> = {
 
 export interface HeroPick {
   cls: string;
-  /** 1..4 — портрет и имя. */
+  /** 1..4 — портрет и имя; у пацанов кампании — 0. */
   n: number;
+  /** Пацан из кампании (DESIGN.md §2): своё имя и портрет `lad-<id>`, цифры — от класса. */
+  lad?: string;
 }
 
-export const heroName = (p: HeroPick): string => NAMES[p.cls][p.n - 1];
-export const heroPortrait = (p: HeroPick): string => `hero-${p.cls}-${p.n}`;
+/** Пацаны и Старшой — герои кампаний. */
+export const LADS: Record<string, string> = {
+  seryoga: 'Серёга «Тула»',
+  lenka: 'Ленка «Кнопка»',
+  dimon: 'Димон «Сом»',
+  vityok: 'Витёк «Шлак»',
+  maks: 'Макс «Штиль»',
+  andryukha: 'Андрюха «Прапор»',
+  zheka: 'Жека «Барыга»',
+  tyoma: 'Тёма «Тихий»',
+  starshoy: 'Старшой',
+};
+
+export const heroName = (p: HeroPick): string => (p.lad ? LADS[p.lad] : NAMES[p.cls][p.n - 1]);
+export const heroPortrait = (p: HeroPick): string => (p.lad ? `lad-${p.lad}` : `hero-${p.cls}-${p.n}`);
 /** Подпись стороны боя: без героя — «Нейтралы» или гарнизон. */
 export const sideName = (x: { pick: HeroPick | null; label?: string }): string => (x.pick ? heroName(x.pick) : x.label ?? 'Нейтралы');
 export const classOf = (id: string): HeroClass => CLASSES.find((c) => c.id === id)!;

@@ -46,6 +46,7 @@ export class Menu {
   onQuick: (c: QuickConfig) => void = () => {};
   onLoad: (s: Save) => void = () => {};
   onArena: () => void = () => {};
+  onCampaigns: () => void = () => {};
   onNetMap: () => void = () => {};
   onMap: (s: GameSpec) => void = () => {};
   onRandom: (s: GameSpec, o: GenOptions) => void = () => {};
@@ -73,7 +74,8 @@ export class Menu {
       music.textContent = this.audio.toggleMusic() ? 'Музыка: выкл' : 'Музыка: вкл';
     });
     col.append(
-      button('Арена', () => this.onArena(), 'g-btn main'),
+      button('Кампании', () => this.onCampaigns(), 'g-btn main'),
+      button('Арена', () => this.onArena()),
       button('Случайная карта', () => this.randomMap()),
       button('Карта по сети', () => this.onNetMap()),
       button('Карта «Две реки»', () => this.mapSetup()),
@@ -82,7 +84,7 @@ export class Menu {
       music,
       button('Во двор', () => (location.href = '/')),
     );
-    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: «Арена», карты с ботами и по сети'));
+    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: кампании, «Арена», карты с ботами и по сети'));
   }
 
   locked(signedIn: boolean): void {

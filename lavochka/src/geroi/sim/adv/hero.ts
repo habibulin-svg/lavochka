@@ -158,6 +158,8 @@ export interface AdvHero {
   wellDay: number;
   /** Куда шёл вчера: путь держим в клиенте, здесь — направление для показа. */
   dir: number;
+  /** Метка сценария кампании: `main` — главный герой. */
+  tag?: string;
 }
 
 export const skillLevel = (h: AdvHero, id: string): number => h.skills.find((s) => s.id === id)?.lv ?? 0;
