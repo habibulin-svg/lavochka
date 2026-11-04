@@ -23,13 +23,46 @@ interface Row extends Rating {
   at: number;
 }
 
+/** Сезон — квартал: «2026-4». */
+export function seasonOf(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${Math.trunc(d.getUTCMonth() / 3) + 1}`;
+}
+
+const SEASON_NAMES = ['зима', 'весна', 'лето', 'осень'];
+/** «осень 2026». */
+export function seasonName(id: string): string {
+  const [y, q] = id.split('-').map(Number);
+  return `${SEASON_NAMES[q - 1] ?? '?'} ${y}`;
+}
+
+type Top = { name: string; r: number; wins: number; losses: number }[];
+
+interface Seasons {
+  season: string;
+  /** Прошлые сезоны: лучшие на конец, новые сверху. */
+  past: { season: string; top: Top }[];
+}
+
+/** Рейтинг по сезонам: со сменой квартала лучшие уходят в архив, числа сжимаются к 1500 (половина отрыва), неточность растёт, счёт побед — с нуля. */
 export class Ratings {
   private rows: Record<string, Row> = {};
   private timer: NodeJS.Timeout | undefined;
   private file: string;
+  private seasonFile: string;
+  private seasons: Seasons;
 
-  constructor(private readonly dir: string, private log: (s: string) => void = console.log, file = 'geroi-rating.json') {
+  constructor(private readonly dir: string, private log: (s: string) => void = console.log, file = 'geroi-rating.json', private readonly now: () => number = Date.now) {
     this.file = join(dir, file);
+    this.seasonFile = join(dir, file.replace(/\.json$/, '-seasons.json'));
+    this.seasons = { season: seasonOf(now()), past: [] };
+    if (existsSync(this.seasonFile)) {
+      try {
+        this.seasons = JSON.parse(readFileSync(this.seasonFile, 'utf8'));
+      } catch {
+        renameSync(this.seasonFile, `${this.seasonFile}.bad`);
+      }
+    }
     if (existsSync(this.file)) {
       try {
         this.rows = JSON.parse(readFileSync(this.file, 'utf8'));
@@ -41,11 +74,31 @@ export class Ratings {
     }
   }
 
+  /** Новый квартал — новый сезон. */
+  private roll(): void {
+    const cur = seasonOf(this.now());
+    if (this.seasons.season === cur) return;
+    const top = this.rank(10);
+    if (top.length) this.seasons.past = [{ season: this.seasons.season, top }, ...this.seasons.past].slice(0, 8);
+    for (const [k, x] of Object.entries(this.rows)) this.rows[k] = { ...x, r: 1500 + (x.r - 1500) / 2, rd: Math.min(350, Math.max(x.rd, 200)), wins: 0, losses: 0 };
+    this.log(`Рейтинг (${this.file}): сезон ${this.seasons.season} закрыт, начат ${cur}`);
+    this.seasons.season = cur;
+    this.save();
+  }
+
+  /** Текущий сезон и прошлые (для таблицы). */
+  season(): { name: string; past: { name: string; top: Top }[] } {
+    this.roll();
+    return { name: seasonName(this.seasons.season), past: this.seasons.past.map((p) => ({ name: seasonName(p.season), top: p.top.slice(0, 3) })) };
+  }
+
   get(user: number): Rating {
+    this.roll();
     return this.rows[user] ?? START_RATING;
   }
 
   apply(winner: number, loser: number, names: [string, string]): [Row, Row] {
+    this.roll();
     const [a, b] = afterGame(this.get(winner), this.get(loser));
     const at = Date.now();
     const rows: [Row, Row] = [{ ...a, name: names[0], at }, { ...b, name: names[1], at }];
@@ -55,8 +108,15 @@ export class Ratings {
     return rows;
   }
 
-  top(n: number): { name: string; r: number; wins: number; losses: number }[] {
+  top(n: number): Top {
+    this.roll();
+    return this.rank(n);
+  }
+
+  /** Сезон без игр: в таблице только сыгравшие. */
+  private rank(n: number): Top {
     return Object.values(this.rows)
+      .filter((x) => x.wins + x.losses > 0)
       .sort((a, b) => b.r - a.r)
       .slice(0, n)
       .map((x) => ({ name: x.name, r: Math.round(x.r), wins: x.wins, losses: x.losses }));
@@ -74,6 +134,8 @@ export class Ratings {
     const tmp = `${this.file}.tmp`;
     writeFileSync(tmp, JSON.stringify(this.rows));
     renameSync(tmp, this.file);
+    writeFileSync(`${this.seasonFile}.tmp`, JSON.stringify(this.seasons));
+    renameSync(`${this.seasonFile}.tmp`, this.seasonFile);
   }
 }
 

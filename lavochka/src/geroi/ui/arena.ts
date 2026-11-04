@@ -83,13 +83,15 @@ export class Arena {
       nameRow.replaceWith(h('p', 'g-heroline', `${r.me.name} · рейтинг ${Math.round(r.me.r)} · побед ${r.me.wins}, поражений ${r.me.losses}`));
     } else table.append(h('p', 'dim', 'Рейтинг ведётся у вошедших: подбор соперника, оба вошли на сайт.'));
     if (r.top?.length) {
-      table.append(h('b', '', 'Лучшие'));
+      table.append(h('b', '', r.season ? `Лучшие · сезон «${r.season.name}»` : 'Лучшие'));
       r.top.slice(0, 10).forEach((x: { name: string; r: number; wins: number; losses: number }, i: number) => {
         const row = h('div', 'g-toprow');
         row.append(h('span', '', `${i + 1}. ${x.name}`), h('em', '', `${x.r} · ${x.wins}–${x.losses}`));
         table.append(row);
       });
     }
+    const last = r.season?.past?.[0] as { name: string; top: { name: string }[] } | undefined;
+    if (last?.top.length) table.append(h('p', 'dim', `Прошлый сезон (${last.name}): ${last.top.map((x, i) => `${i + 1}. ${x.name}`).join(', ')}`));
   }
 
   searching(): void {

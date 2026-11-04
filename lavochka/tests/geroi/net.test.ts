@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Ratings } from '../../server/geroi';
+import { Ratings, seasonOf } from '../../server/geroi';
 import { botAction } from '../../src/geroi/bot/bot';
 import type { BattleState } from '../../src/geroi/sim/battle';
 import { currentUnit, createBattle, sideValue } from '../../src/geroi/sim/battle';
@@ -300,6 +300,35 @@ describe('geroi/ratings: хранение', () => {
       expect(again.get(2).r).toBeLessThan(1500);
       expect(again.get(3).r).toBe(1500);
       expect(again.top(5).map((x) => x.name)).toEqual(['Рыжий', 'Гость']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('geroi/ratings: сезоны', () => {
+  it('новый квартал: лучшие — в архив, отрыв от 1500 вдвое меньше, счёт с нуля; переживает перезапуск', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'geroi-season-'));
+    try {
+      let t = Date.UTC(2026, 10, 5);
+      const r = new Ratings(dir, () => {}, 'geroi-rating.json', () => t);
+      for (let i = 0; i < 3; i++) r.apply(1, 2, ['Рыжий', 'Гость']);
+      const before = r.get(1).r;
+      expect(r.season().name).toBe('осень 2026');
+      expect(seasonOf(Date.UTC(2027, 0, 1))).toBe('2027-1');
+      t = Date.UTC(2027, 0, 2);
+      const s = r.season();
+      expect(s.name).toBe('зима 2027');
+      expect(s.past[0]).toMatchObject({ name: 'осень 2026', top: [{ name: 'Рыжий' }, { name: 'Гость' }] });
+      expect(r.get(1).r).toBeCloseTo(1500 + (before - 1500) / 2, 5);
+      expect(r.get(1).wins).toBe(0);
+      expect(r.get(1).rd).toBeGreaterThanOrEqual(200);
+      // в новом сезоне таблица — только сыгравшие
+      expect(r.top(5)).toEqual([]);
+      r.flush();
+      const again = new Ratings(dir, () => {}, 'geroi-rating.json', () => t);
+      expect(again.season().past[0].name).toBe('осень 2026');
+      expect(again.get(1).wins).toBe(0);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

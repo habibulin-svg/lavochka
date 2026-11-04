@@ -544,7 +544,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
     const u = await userOf(req);
     // ?map=1 — рейтинг сетевой карты (дуэли), иначе Арены
     const t = new URL(req.url || '/', 'http://x').searchParams.get('map') ? geroiMapRatings : geroiRatings;
-    return json(res, 200, { top: t.top(20), me: u ? { name: u.name, ...t.get(u.id) } : null });
+    return json(res, 200, { top: t.top(20), me: u ? { name: u.name, ...t.get(u.id) } : null, season: t.season() });
   }
   // «Герои» по переписке: партии вошедшего и чей ход
   if (path === '/api/geroi/mail' && req.method === 'GET') {

@@ -228,7 +228,7 @@ export class NetMap {
   private async loadTop(table: HTMLElement): Promise<void> {
     const r = await fetch('/api/geroi/rating?map=1', { signal: AbortSignal.timeout(5000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
     if (!r) return;
-    table.append(h('b', '', 'Рейтинг дуэлей на карте'));
+    table.append(h('b', '', r.season ? `Рейтинг дуэлей на карте · сезон «${r.season.name}»` : 'Рейтинг дуэлей на карте'));
     if (r.me) table.append(h('p', 'dim', `${r.me.name}: ${Math.round(r.me.r)} · побед ${r.me.wins}, поражений ${r.me.losses}`));
     else table.append(h('p', 'dim', 'Рейтинг ведётся у вошедших: дуэль «на рейтинг», оба вошли на сайт.'));
     r.top?.slice(0, 10).forEach((x: { name: string; r: number; wins: number; losses: number }, i: number) => {
@@ -236,6 +236,8 @@ export class NetMap {
       row.append(h('span', '', `${i + 1}. ${x.name}`), h('em', '', `${x.r} · ${x.wins}–${x.losses}`));
       table.append(row);
     });
+    const last = r.season?.past?.[0] as { name: string; top: { name: string }[] } | undefined;
+    if (last?.top.length) table.append(h('p', 'dim', `Прошлый сезон (${last.name}): ${last.top.map((x, i) => `${i + 1}. ${x.name}`).join(', ')}`));
   }
 
   /** Фракция, открытая на драфте (между перерисовками). */
