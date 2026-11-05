@@ -7,11 +7,11 @@ import { type HeroPick, CLASSES, classOf, factionClasses } from '../heroes';
 import { type School, SPELLS, SPELL_LEVEL } from '../spells';
 import { FACTION_RES, MINE_INCOME, NATIVE, OBJECTS, type ObjDef, type Purse, RES, ROAD_COST, type ResId, TERRAINS, TERRAIN_INDEX, WATER } from './data';
 import {
-  type AdvHero, ARMY_SLOTS, ART_SLOTS, ARTIFACTS, type Army, MAX_SKILLS, SHARD, SKILLS, addToArmy, armyEmpty, armySize, heroAtk, heroDef, heroKnow, heroLuck, heroMaxMana, heroMaxMp, heroMorale, heroPower, heroSemki, heroVision, isMight, skillLevel, skillValue, xpForLevel,
+  type AdvHero, ARMY_SLOTS, ART_SLOTS, ARTIFACTS, type Army, MAX_SKILLS, SHARD, SKILLS, addToArmy, armyPower, mergeSlot, slotRank, armyEmpty, armySize, heroAtk, heroDef, heroKnow, heroLuck, heroMaxMana, heroMaxMp, heroMorale, heroPower, heroSemki, heroVision, isMight, skillLevel, skillValue, xpForLevel,
 } from './hero';
 import { type ScnState, scnCheck } from './scenario';
 import {
-  BRANCHES, BUILDINGS, DECREES, RESEARCH_AMBER, RESEARCH_DAYS, type Town, type TownFaction, buildCost, buildError, baseGrowth, buildingDef, canUpgrade, creaturePrice, forgeCap, forgePerDay, fortLevel, guildLevel, hallIncome, has, isCast, marketRate, townCreature, weeklyGrowth,
+  BANYA_MP, BRANCHES, BUILDINGS, DECREES, LOAN, MEMORY_SHARE, MEMORY_WEEK_CAP, NAPOR_COST, NAPOR_MAX, RELEASE_MP, RELEASE_SEMKI, RESEARCH_AMBER, RESEARCH_DAYS, SPIRIT_DAYS, type Town, type TownFaction, bindCost, buildCost, mercPrice, mercStock, naporPerDay, summonCost, buildError, baseGrowth, buildingDef, canUpgrade, creaturePrice, forgeCap, forgePerDay, fortLevel, guildLevel, hallIncome, has, isCast, marketRate, townCreature, weeklyGrowth,
 } from './town';
 
 export const HERO_COST = 2500;
@@ -81,6 +81,11 @@ export interface Player {
   team?: number;
   /** Сценарий: не выбывает без города (набеги из тумана). */
   keep?: boolean;
+  /** Курганы: накопленная память павших и сколько набрано за эту неделю (потолок). */
+  memory?: number;
+  memWeek?: number;
+  /** Кредит меняльной конторы: город, сколько недель ещё платить. */
+  loan?: { town: number; left: number };
 }
 
 export type BattleSide = { k: 'hero'; id: number } | { k: 'obj'; id: number } | { k: 'town'; id: number };
@@ -193,6 +198,16 @@ export type AdvAction =
   | { t: 'decree'; town: number; id: string }
   | { t: 'research'; town: number; school: string }
   | { t: 'repair'; town: number; cre: string; count: number }
+  /** Плотина: сбросить напор. */
+  | { t: 'release'; town: number; use: 'semki' | 'mp' | 'build' }
+  /** Караван-сарай: чужие существа. */
+  | { t: 'merc'; town: number; cre: string; count: number }
+  /** Меняльная контора: кредит. */
+  | { t: 'loan'; town: number }
+  /** Круг памяти: духи на 7 дней. */
+  | { t: 'summon'; town: number; cre: string; count: number }
+  /** Камень привязки: дух остаётся навсегда. */
+  | { t: 'bind'; town: number; ref: ArmyRef; slot: number }
   | { t: 'dismiss'; hero: number }
   /** Союзнику — ресурсы. */
   | { t: 'gift'; to: number; res: ResId; amount: number };
@@ -926,6 +941,9 @@ function newWeek(w: World, ev: AdvEvent[]): string {
     }
     t.bonus = [0, 0, 0, 0, 0, 0, 0];
     t.tavern = tavernOffer(w, t.faction);
+    if (t.merc) t.merc = {};
+    // плац Острога: гарнизон муштруется
+    if (has(t, 'drill')) for (const st of t.garrison) if (st && CREATURES[st.cre].faction === 'ostrog') st.xp = (st.xp ?? 0) + 1;
     if (t.faction === 'zatulye' && has(t, 'skhod') && t.owner >= 0) t.decrees = rollDecrees(w);
   }
   for (const o of w.objects) {
@@ -935,8 +953,39 @@ function newWeek(w: World, ev: AdvEvent[]): string {
     if (fx.t === 'stack' && o.army?.[0]) o.army[0].count += Math.max(1, o.army[0].count >> 3);
   }
   for (const h of w.heroes) h.stabled = false;
-  void ev;
+  for (const p of w.players) {
+    if (p.memWeek) p.memWeek = 0;
+    if (p.alive && p.loan) payLoan(w, p, ev);
+  }
   return WEEK_NOTES[(week + (w.seed % WEEK_NOTES.length)) % WEEK_NOTES.length];
+}
+
+/** Взнос по кредиту; не хватило семок — бунт: гарнизон теряет половину самого сильного отряда. */
+function payLoan(w: World, p: Player, ev: AdvEvent[]): void {
+  const loan = p.loan!;
+  if (p.res.semki >= LOAN.pay) {
+    p.res.semki -= LOAN.pay;
+    ev.push({ e: 'msg', title: 'Меняльная контора', text: `Взнос по кредиту: ${LOAN.pay} семок.`, to: p.id });
+  } else {
+    const home = townById(w, loan.town);
+    const t = home && home.owner === p.id ? home : playerTowns(w, p.id)[0];
+    let big = -1;
+    if (t) {
+      for (let i = 0; i < t.garrison.length; i++) {
+        const st = t.garrison[i];
+        if (st && (big < 0 || armyPower([st]) > armyPower([t.garrison[big]]))) big = i;
+      }
+    }
+    if (t && big >= 0) {
+      const st = t.garrison[big]!;
+      st.count -= Math.ceil(st.count / 2);
+      if (st.count <= 0) t.garrison[big] = null;
+    }
+    const text = t && big >= 0 ? `Нечем платить по кредиту: в городе ${t.name} бунт, сильнейший отряд гарнизона разбежался наполовину.` : 'Нечем платить по кредиту: долг списан со скандалом.';
+    ev.push({ e: 'msg', title: 'Бунт', text, to: p.id });
+  }
+  loan.left--;
+  if (loan.left <= 0) delete p.loan;
 }
 
 function rollDecrees(w: World): string[] {
@@ -990,8 +1039,23 @@ function newDay(w: World, ev: AdvEvent[]): void {
   if (week) note = newWeek(w, ev);
   w.weekNote = note ?? w.weekNote;
   for (const p of w.players) if (p.alive) give(p, dailyIncome(w, p.id));
+  // духи Курганов уходят в начале дня своего срока
+  const expire = (a: Army): void => {
+    for (let i = 0; i < a.length; i++) {
+      const u = a[i]?.until;
+      if (u !== undefined && u <= w.day) a[i] = null;
+    }
+  };
+  for (const t of w.towns) expire(t.garrison);
+  for (const h of w.heroes) {
+    const had = h.army.find((x) => x);
+    expire(h.army);
+    // герой без армии не остаётся: последний дух задерживается одним
+    if (had && armyEmpty(h.army)) h.army[0] = { cre: had.cre, count: 1 };
+  }
   for (const t of w.towns) {
     t.builtToday = false;
+    if (naporPerDay(t)) t.napor = Math.min(NAPOR_MAX, (t.napor ?? 0) + naporPerDay(t));
     if (t.faction === 'kuznya') t.forge = Math.min(forgeCap(t), t.forge + forgePerDay(t));
     if (t.research) {
       t.research.left--;
@@ -1009,6 +1073,8 @@ function newDay(w: World, ev: AdvEvent[]): void {
   }
   for (const h of w.heroes) {
     h.mp = heroMaxMp(h);
+    const at = townAt(w, h.cell);
+    if (at && at.owner === h.owner && has(at, 'banya')) h.mp += BANYA_MP;
     h.mana = Math.min(Math.max(h.mana, heroMaxMana(h)), h.mana + 1 + skillValue(h, 'mysticism'));
   }
   ev.push({ e: 'day', day: w.day, week, note });
@@ -1247,6 +1313,48 @@ export function actionError(w: World, a: AdvAction): string | null {
       if (!canPay(p, repairCost(a.cre, a.count))) return 'Не хватает ресурсов';
       return t.garrison.some((s) => s?.cre === a.cre || !s) ? null : 'В гарнизоне нет места';
     }
+    case 'release': {
+      const t = myTown(a.town);
+      if (!t || !has(t, 'dam')) return 'Плотины нет';
+      if ((t.napor ?? 0) < NAPOR_COST) return `Мало напора: нужно ${NAPOR_COST}`;
+      if (a.use === 'build') return t.builtToday ? null : 'Сегодня и так можно строить';
+      if (a.use === 'mp') return w.heroes.some((h) => h.owner === me && h.cell === t.cell) ? null : 'В воротах нет своего героя';
+      return a.use === 'semki' ? null : 'Нельзя';
+    }
+    case 'merc': {
+      const t = myTown(a.town);
+      if (!t || !has(t, 'caravanserai')) return 'Караван-сарая нет';
+      const c = CREATURES[a.cre];
+      if (!c || c.up || c.faction === 'neutral' || c.faction === t.faction) return 'Таких не нанять';
+      if (!mercSeen(w, me, c.faction)) return 'Их города вы не видели';
+      if (!Number.isInteger(a.count) || a.count < 1 || a.count > mercLeft(t, a.cre)) return 'Столько нет';
+      if (!canPay(p, mercPrice(c, a.count))) return 'Не хватает ресурсов';
+      return t.garrison.some((s) => s?.cre === a.cre || !s) ? null : 'В гарнизоне нет места';
+    }
+    case 'loan': {
+      const t = myTown(a.town);
+      if (!t || !has(t, 'bank')) return 'Меняльной конторы нет';
+      return p.loan ? 'Сначала верни прошлый кредит' : null;
+    }
+    case 'summon': {
+      const t = myTown(a.town);
+      if (!t || !has(t, 'memory')) return 'Круга памяти нет';
+      const c = CREATURES[a.cre];
+      if (!c || c.up || c.faction !== 'kurgany' || !has(t, `dwell${c.tier}`)) return 'Этих предков не позвать';
+      if (!Number.isInteger(a.count) || a.count < 1) return 'Сколько?';
+      if (summonCost(c, a.count) > (p.memory ?? 0)) return 'Мало памяти';
+      // духи не сливаются с постоянным отрядом: свой слот или те же духи этого дня
+      return t.garrison.some((s) => !s || (s.cre === a.cre && !s.xp && s.until === w.day + SPIRIT_DAYS)) ? null : 'В гарнизоне нет места';
+    }
+    case 'bind': {
+      const t = myTown(a.town);
+      if (!t || !has(t, 'bindstone')) return 'Камня привязки нет';
+      const army = armyOf(w, a.ref);
+      if (!army || refOwner(w, a.ref) !== me || refCell(w, a.ref) !== t.cell) return 'Отряда тут нет';
+      const s = army[a.slot];
+      if (!s || s.until === undefined) return 'Это не дух';
+      return canPay(p, { amber: bindCost(CREATURES[s.cre], s.count) }) ? null : 'Мало янтаря';
+    }
     case 'gift': {
       const to = w.players[a.to];
       if (!to || a.to === me || !to.alive || !allied(w, a.to, me)) return 'Не союзник';
@@ -1260,6 +1368,11 @@ export function actionError(w: World, a: AdvAction): string | null {
     }
   }
 }
+
+/** Видел ли игрок город этой фракции (клетка ворот открыта). */
+export const mercSeen = (w: World, me: number, f: string): boolean => w.towns.some((t) => t.faction === f && !!w.players[me].explored[t.cell]);
+/** Сколько ещё можно нанять в караван-сарае на этой неделе. */
+export const mercLeft = (t: Town, cre: string): number => Math.max(0, mercStock(CREATURES[cre]) - (t.merc?.[cre] ?? 0));
 
 export const hireCost = (h: AdvHero, cre: string, count: number): number => Math.trunc((CREATURES[cre].cost * count * (100 - skillValue(h, 'diplomacy'))) / 100);
 export const repairCost = (cre: string, count: number): Purse => {
@@ -1412,11 +1525,11 @@ export function act(w: World, a: AdvAction): AdvEvent[] {
       const n = a.count ?? s.count;
       if (from === to && a.fromSlot === a.toSlot) break;
       if (d && d.cre === s.cre) {
-        d.count += n;
+        mergeSlot(d, n, s.xp ?? 0, s.until);
         s.count -= n;
         if (s.count === 0) from[a.fromSlot] = null;
       } else if (!d) {
-        to[a.toSlot] = { cre: s.cre, count: n };
+        to[a.toSlot] = { ...s, count: n };
         s.count -= n;
         if (s.count === 0) from[a.fromSlot] = null;
       } else {
@@ -1509,6 +1622,45 @@ export function act(w: World, a: AdvAction): AdvEvent[] {
       p.scrap[a.cre] -= a.count;
       addToArmy(t.garrison, a.cre, a.count);
       ev.push({ e: 'sfx', name: 'forge' });
+      break;
+    }
+    case 'release': {
+      const t = townById(w, a.town)!;
+      t.napor = (t.napor ?? 0) - NAPOR_COST;
+      if (a.use === 'semki') {
+        give(p, { semki: RELEASE_SEMKI });
+        ev.push({ e: 'gain', player: p.id, res: { semki: RELEASE_SEMKI } });
+      } else if (a.use === 'mp') {
+        for (const h of w.heroes) if (h.owner === p.id && h.cell === t.cell) h.mp += RELEASE_MP;
+      } else t.builtToday = false;
+      ev.push({ e: 'sfx', name: 'water-splash' });
+      break;
+    }
+    case 'merc': {
+      const t = townById(w, a.town)!;
+      pay(p, mercPrice(CREATURES[a.cre], a.count));
+      t.merc = { ...t.merc, [a.cre]: (t.merc?.[a.cre] ?? 0) + a.count };
+      addToArmy(t.garrison, a.cre, a.count);
+      ev.push({ e: 'recruit', town: t.id, cre: a.cre, count: a.count }, { e: 'sfx', name: 'recruit' });
+      break;
+    }
+    case 'loan':
+      give(p, { semki: LOAN.sum });
+      p.loan = { town: a.town, left: LOAN.weeks };
+      ev.push({ e: 'gain', player: p.id, res: { semki: LOAN.sum } }, { e: 'sfx', name: 'market' });
+      break;
+    case 'summon': {
+      const t = townById(w, a.town)!;
+      p.memory = (p.memory ?? 0) - summonCost(CREATURES[a.cre], a.count);
+      addToArmy(t.garrison, a.cre, a.count, 0, w.day + SPIRIT_DAYS);
+      ev.push({ e: 'recruit', town: t.id, cre: a.cre, count: a.count }, { e: 'sfx', name: 'learn' });
+      break;
+    }
+    case 'bind': {
+      const s = armyOf(w, a.ref)![a.slot]!;
+      pay(p, { amber: bindCost(CREATURES[s.cre], s.count) });
+      delete s.until;
+      ev.push({ e: 'sfx', name: 'artifact' });
       break;
     }
     case 'gift': {
@@ -1609,7 +1761,8 @@ export function heroStats(h: AdvHero): HeroStats {
   };
 }
 
-const armyList = (a: Army): { cre: string; count: number }[] => a.flatMap((s) => (s ? [{ cre: s.cre, count: s.count }] : []));
+const armyList = (a: Army): { cre: string; count: number; rank?: number }[] =>
+  a.flatMap((s) => (s ? [{ cre: s.cre, count: s.count, ...(slotRank(s) ? { rank: slotRank(s) } : {}) }] : []));
 
 export interface WorldBattle {
   setup: BattleSetup;
@@ -1637,7 +1790,7 @@ export function battleSetup(w: World): WorldBattle {
   return { setup: { seed: b.seed, field, sides: [att, { hero: null, label: isStack(o) ? CREATURES[armyList(o.army!)[0].cre].name : defOf(o).name, army: armyList(o.army!) }] }, fort: 0 };
 }
 
-/** Отряды после боя → армия: те же слоты, павшие слоты пустеют. */
+/** Отряды после боя → армия: те же слоты, павшие слоты пустеют (и опыт с ними). Выжившие отряды Острога у победителя — +1 опыта. */
 function afterArmy(a: Army, s: BattleState, side: number): void {
   const units = s.units.filter((u) => u.side === side);
   let i = 0;
@@ -1646,9 +1799,23 @@ function afterArmy(a: Army, s: BattleState, side: number): void {
     if (!st) continue;
     const u = units[i++];
     if (!u) continue;
-    if (u.count > 0) st.count = u.count;
-    else a[slot] = null;
+    if (u.count > 0) {
+      st.count = u.count;
+      if (s.winner === side && CREATURES[st.cre].faction === 'ostrog') st.xp = (st.xp ?? 0) + 1;
+    } else a[slot] = null;
   }
+}
+
+/** Память Курганов: павшие обеих сторон — доля их цены, не больше потолка за неделю. */
+function addMemory(w: World, owner: number, s: BattleState): void {
+  const p = w.players[owner];
+  if (!p) return;
+  let fallen = 0;
+  for (const u of s.units) fallen += (u.start - u.count) * CREATURES[u.cre].cost;
+  const got = Math.min(Math.trunc((fallen * MEMORY_SHARE) / 100), MEMORY_WEEK_CAP - (p.memWeek ?? 0));
+  if (got <= 0) return;
+  p.memory = (p.memory ?? 0) + got;
+  p.memWeek = (p.memWeek ?? 0) + got;
 }
 
 function killedXp(s: BattleState, side: number): number {
@@ -1668,7 +1835,9 @@ function afterLosses(w: World, h: AdvHero, s: BattleState, side: number): void {
     const c = CREATURES[u.cre];
     if (aid) {
       const back = Math.trunc((lost * aid) / 100);
-      if (back > 0) addToArmy(h.army, u.cre, back);
+      const same = h.army.find((x) => x?.cre === u.cre);
+      if (back > 0 && same) same.count += back;
+      else if (back > 0) addToArmy(h.army, u.cre, back);
     }
     if (isCast(c) && classOf(h.pick.cls).faction === 'kuznya') p.scrap[u.cre] = (p.scrap[u.cre] ?? 0) + (lost >> 1);
   }
@@ -1689,6 +1858,19 @@ export function applyBattle(w: World, s: BattleState): AdvEvent[] {
   h.mana = s.sides[0].mana;
   const won = s.winner === 0;
   const d = b.def;
+  const foeHero = d.k === 'hero' ? heroById(w, d.id) : undefined;
+  const owners = [h.owner, foeHero ? foeHero.owner : d.k === 'town' ? townById(w, d.id)!.owner : -1];
+  // память — тем, у кого в бою был герой Курганов
+  const kurgan = new Set<number>();
+  if (classOf(h.pick.cls).faction === 'kurgany') kurgan.add(h.owner);
+  if (foeHero && classOf(foeHero.pick.cls).faction === 'kurgany') kurgan.add(foeHero.owner);
+  for (const o of kurgan) addMemory(w, o, s);
+  // карманники: украденное — в казну победителя
+  const stolen = s.winner >= 0 ? s.loot?.[s.winner] ?? 0 : 0;
+  if (stolen > 0 && owners[s.winner] >= 0) {
+    give(w.players[owners[s.winner]], { semki: stolen });
+    ev.push({ e: 'gain', player: owners[s.winner], res: { semki: stolen } });
+  }
   if (won) {
     afterArmy(h.army, s, 0);
     afterLosses(w, h, s, 0);

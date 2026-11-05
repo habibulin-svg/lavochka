@@ -243,6 +243,9 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-slot { position: relative; width: 80px; height: 80px; padding: 0; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .a-slot.on { border-color: #ffe08a; box-shadow: 0 0 0 2px #ffe08a; }
 .a-slot em { position: absolute; right: 2px; bottom: 1px; padding: 0 5px; background: #241c14e6; border-radius: 3px; color: #fff4d8; font: 600 17px 'Geroi Num', sans-serif; font-style: normal; }
+/* ранг Острога и срок духа Курганов */
+.a-slot i { position: absolute; left: 2px; top: 1px; padding: 0 4px; background: #241c14e6; border-radius: 3px; color: #ffe08a; font: 600 14px 'Geroi Num', sans-serif; font-style: normal; }
+.a-slot i.spirit { color: #b9e2ff; }
 /* замок */
 .a-town { position: absolute; inset: 0; background: #0c0a08; pointer-events: auto; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; }
 /* полосы за пределами 16:9 закрываем, чтобы сквозь них не было видно и не щёлкалось по карте */

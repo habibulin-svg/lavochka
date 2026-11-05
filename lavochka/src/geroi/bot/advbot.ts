@@ -9,7 +9,7 @@ import { classOf } from '../sim/heroes';
 import { travel } from '../sim/adv/fair';
 import { FACTION_RES, RES, RES_VALUE, MINE_INCOME, type ResId, WATER } from '../sim/adv/data';
 import { type AdvHero, ARMY_SLOTS, armyGuess, armyPower, heroAtk, heroDef, heroMaxMana, heroMaxMp, skillLevel } from '../sim/adv/hero';
-import { type Town, type TownFaction, buildCost, buildError, buildingDef, creaturePrice, fortLevel, has, isCast, townCreature } from '../sim/adv/town';
+import { NAPOR_COST, type Town, type TownFaction, buildCost, buildError, buildingDef, creaturePrice, fortLevel, has, isCast, summonCost, townCreature } from '../sim/adv/town';
 import {
   type AdvAction, type ArmyRef, type BattleSide, battleSetup, HERO_COST, MAX_HEROES, type MapObject, type World, actionError, allied, defOf, guardOf, heroHiddenFrom, neighbors, playerHeroes, playerTowns, reachOf, stepCost, xOf, yOf,
 } from '../sim/adv/world';
@@ -49,8 +49,8 @@ const TUNE: Record<BotLevel, Tune> = {
 
 /** Порядок построек: жилища и доход вперемешку, как ходит опытный игрок. */
 const BUILD_ORDER = [
-  'hall2', 'dwell2', 'dwell3', 'smithy', 'market', 'guild1', 'dwell4', 'hall3', 'fort2', 'dwell5', 'up1', 'up2', 'up3', 'dwell6', 'skhod', 'furnace', 'lab', 'gat',
-  'up4', 'fort3', 'dwell7', 'up5', 'storehouse', 'up6', 'guild2', 'hall4', 'up7', 'guild3', 'fogwell', 'scrapyard', 'observatory',
+  'hall2', 'dwell2', 'dam', 'memory', 'dwell3', 'smithy', 'market', 'guild1', 'dwell4', 'hall3', 'fort2', 'drill', 'dwell5', 'up1', 'up2', 'up3', 'dwell6', 'skhod', 'furnace', 'lab', 'gat',
+  'turbine', 'up4', 'fort3', 'dwell7', 'up5', 'storehouse', 'up6', 'guild2', 'hall4', 'up7', 'guild3', 'fogwell', 'scrapyard', 'observatory', 'banya', 'caravanserai',
 ];
 const SKILL_ORDER = [
   'logistics', 'offense', 'armorer', 'archery', 'leadership', 'tactics', 'luck', 'pathfinding', 'wisdom', 'earth', 'air', 'fire', 'water', 'sorcery', 'resistance',
@@ -377,6 +377,26 @@ function upgradeChoice(w: World, t: Town): AdvAction | null {
   return null;
 }
 
+/** Механики замков второй четвёрки: Плотина сбрасывает напор в семки, Курганы зовут предков, пока хватает памяти.
+ * Острог копит опыт сам; кредит бот не берёт, караван-сарай не трогает. */
+function castleChoice(w: World, t: Town): AdvAction | null {
+  if (has(t, 'dam') && (t.napor ?? 0) >= NAPOR_COST) {
+    const a: AdvAction = { t: 'release', town: t.id, use: 'semki' };
+    if (!actionError(w, a)) return a;
+  }
+  const mem = w.players[w.current].memory ?? 0;
+  if (has(t, 'memory') && mem > 0) {
+    for (let tier = 7; tier >= 1; tier--) {
+      if (!has(t, `dwell${tier}`)) continue;
+      const c = townCreature(t, tier, false);
+      const n = Math.trunc(mem / summonCost(c, 1));
+      const a: AdvAction = { t: 'summon', town: t.id, cre: c.id, count: n };
+      if (n > 0 && !actionError(w, a)) return a;
+    }
+  }
+  return null;
+}
+
 /** Главный герой — самый сильный. */
 function mainHero(w: World, me: number): AdvHero | null {
   let best: AdvHero | null = null;
@@ -424,6 +444,8 @@ export function botStep(w: World, level: BotLevel, mem: BotMem): AdvAction {
       const id = t.decrees.includes('growth') ? 'growth' : t.decrees.includes('semki') ? 'semki' : t.decrees[0];
       return { t: 'decree', town: t.id, id };
     }
+    const cc = castleChoice(w, t);
+    if (cc) return cc;
     if (!t.builtToday && !mem.done.includes(`b${t.id}`)) {
       mem.done.push(`b${t.id}`);
       const b = buildChoice(w, t, level, rng);

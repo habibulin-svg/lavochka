@@ -206,6 +206,18 @@ export function cleanAdvAction(raw: unknown): AdvAction | null {
       return int(a.town) && str(a.school) ? { t: 'research', town: a.town, school: a.school } : null;
     case 'repair':
       return int(a.town) && str(a.cre) && int(a.count, 100000) ? { t: 'repair', town: a.town, cre: a.cre, count: a.count } : null;
+    case 'release':
+      return int(a.town) && (a.use === 'semki' || a.use === 'mp' || a.use === 'build') ? { t: 'release', town: a.town, use: a.use } : null;
+    case 'merc':
+      return int(a.town) && str(a.cre) && int(a.count, 100000) ? { t: 'merc', town: a.town, cre: a.cre, count: a.count } : null;
+    case 'loan':
+      return int(a.town) ? { t: 'loan', town: a.town } : null;
+    case 'summon':
+      return int(a.town) && str(a.cre) && int(a.count, 100000) ? { t: 'summon', town: a.town, cre: a.cre, count: a.count } : null;
+    case 'bind': {
+      const r = ref(a.ref);
+      return int(a.town) && r && int(a.slot, ARMY_SLOTS) ? { t: 'bind', town: a.town, ref: r, slot: a.slot } : null;
+    }
     case 'dismiss':
       return int(a.hero) ? { t: 'dismiss', hero: a.hero } : null;
     case 'gift':
@@ -240,11 +252,11 @@ export function worldView(w: World, seat: number | null): World {
   return {
     ...w,
     rng: 0,
-    players: w.players.map((p) => (p.id === seat ? p : { ...p, res: { ...ZERO }, explored: [], obelisks: [], keys: [], scrap: {} })),
+    players: w.players.map((p) => (p.id === seat ? p : { ...p, res: { ...ZERO }, explored: [], obelisks: [], keys: [], scrap: {}, memory: undefined, memWeek: undefined, loan: undefined })),
     heroes: w.heroes.filter((h) => h.owner === seat || (ex[h.cell] && !heroHiddenFrom(w, h, seat))),
     towns: w.towns.map((t) => (t.owner === seat ? t : {
       // чужой гарнизон — примерно и только у открытых городов (как и видит бот)
-      ...t, garrison: ex[t.cell] ? armyGuess(t.garrison) : emptyArmy(), avail: t.avail.map(() => 0), tavern: [], guild: t.guild.map(() => []), decrees: [], research: null, studied: {}, forge: 0, bonus: t.bonus.map(() => 0), discount: 0,
+      ...t, garrison: ex[t.cell] ? armyGuess(t.garrison) : emptyArmy(), avail: t.avail.map(() => 0), tavern: [], guild: t.guild.map(() => []), decrees: [], research: null, studied: {}, forge: 0, bonus: t.bonus.map(() => 0), discount: 0, napor: undefined, merc: undefined,
     })),
     // чужое «начатое» (бой, выбор) — не своё дело
     pending: w.pending && heroById(w, w.pending.hero)?.owner === seat ? w.pending : null,

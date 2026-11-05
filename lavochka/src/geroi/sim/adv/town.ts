@@ -174,6 +174,10 @@ export interface Town {
   studied: Record<string, number>;
   /** Герои в трактире. */
   tavern: { cls: string; n: number }[];
+  /** Плотина: напор 0..NAPOR_MAX. Нет — 0 (старые сохранения). */
+  napor?: number;
+  /** Караван-сарай: сколько чужих существ нанято за эту неделю, вид → число. */
+  merc?: Record<string, number>;
 }
 
 export const has = (t: Town, b: string): boolean => t.built.includes(b);
@@ -258,3 +262,37 @@ export const BRANCHES: Record<string, string[]> = {
 };
 export const RESEARCH_DAYS = 3;
 export const RESEARCH_AMBER = 3;
+
+/** Плотина бурь (DESIGN.md §5.5): напор копится, сброс за 3 — на выбор. */
+export const NAPOR_MAX = 6;
+export const NAPOR_COST = 3;
+export const naporPerDay = (t: Town): number => (has(t, 'turbine') ? 2 : has(t, 'dam') ? 1 : 0);
+export const RELEASES: Record<string, { name: string; text: string }> = {
+  semki: { name: 'Турбины', text: '+1500 семок' },
+  mp: { name: 'Подзарядка', text: 'Героям в городе +400 к ходу' },
+  build: { name: 'Аврал', text: 'Сегодня можно построить ещё раз' },
+};
+export const RELEASE_SEMKI = 1500;
+export const RELEASE_MP = 400;
+
+/** Острог: баня даёт ход тому, кто начал день в городе; плац — опыт гарнизону раз в неделю. */
+export const BANYA_MP = 300;
+
+/** Нахалов базар (§5.7): караван-сарай — чужие базовые существа с наценкой, половина недельного прироста. */
+export const MERC_MARKUP = 125;
+export const mercStock = (c: CreatureDef): number => Math.max(1, Math.trunc(baseGrowth(c.faction as TownFaction, c) / 2));
+export function mercPrice(c: CreatureDef, count: number): Purse {
+  const out: Purse = {};
+  for (const [k, v] of Object.entries(creaturePrice(c, count)) as [ResId, number][]) out[k] = Math.ceil((v * MERC_MARKUP) / 100);
+  return out;
+}
+/** Кредит меняльной конторы. */
+export const LOAN = { sum: 5000, pay: 1500, weeks: 4 };
+
+/** Курганы (§5.8): память павших — доля их цены; призыв духа стоит половину цены в памяти и живёт 7 дней. */
+export const MEMORY_SHARE = 15;
+export const MEMORY_WEEK_CAP = 4000;
+export const SPIRIT_DAYS = 7;
+export const summonCost = (c: CreatureDef, count: number): number => Math.ceil((c.cost * count) / 2);
+/** Привязать духа навсегда: янтарь, 1 за каждые 2000 семок цены отряда. */
+export const bindCost = (c: CreatureDef, count: number): number => Math.max(1, Math.ceil((c.cost * count) / 2000));

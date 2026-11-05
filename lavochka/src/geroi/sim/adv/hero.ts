@@ -6,6 +6,27 @@ import type { School } from '../spells';
 export interface Slot {
   cre: string;
   count: number;
+  /** Опыт отряда Острога: бои и плац (ранг — `slotRank`). Нет — 0. */
+  xp?: number;
+  /** Дух Курганов: в начале этого дня уходит. Нет — отряд навсегда. */
+  until?: number;
+}
+
+/** Пороги опыта по рангам 1–5 (DESIGN.md §5.6). */
+export const RANK_XP = [1, 3, 6, 10, 15];
+export const rankOfXp = (xp: number): number => RANK_XP.filter((x) => xp >= x).length;
+/** Ранг в бою — только у существ Острога. */
+export const slotRank = (s: Slot): number => (CREATURES[s.cre]?.faction === 'ostrog' ? rankOfXp(s.xp ?? 0) : 0);
+
+/** Слить отряд в другой: опыт и срок — меньшие из двух (новобранцы разбавляют ветеранов, дух тянет за собой). */
+export function mergeSlot(d: Slot, n: number, xp = 0, until?: number): void {
+  d.count += n;
+  const x = Math.min(d.xp ?? 0, xp);
+  if (x > 0) d.xp = x;
+  else delete d.xp;
+  const u = d.until === undefined ? until : until === undefined ? d.until : Math.min(d.until, until);
+  if (u === undefined) delete d.until;
+  else d.until = u;
 }
 export type Army = (Slot | null)[];
 
@@ -223,18 +244,20 @@ export const armySize = (a: Army): number => a.reduce((n, s) => n + (s ? 1 : 0),
 /** Сила армии по модели: для оценки охраны и подсказок. */
 export const armyPower = (a: Army): number => a.reduce((sum, s) => (s ? sum + CREATURES[s.cre].power * s.count : sum), 0);
 
-/** Куда положить отряд: тот же вид или пустой слот; −1 — некуда. */
-export function slotFor(a: Army, cre: string): number {
-  const same = a.findIndex((s) => s?.cre === cre);
-  return same >= 0 ? same : a.indexOf(null);
+/** Куда положить отряд: тот же вид с тем же опытом и сроком, иначе пустой слот, иначе любой того же вида; −1 — некуда. */
+export function slotFor(a: Army, cre: string, xp = 0, until?: number): number {
+  const exact = a.findIndex((s) => s?.cre === cre && (s.xp ?? 0) === xp && s.until === until);
+  if (exact >= 0) return exact;
+  const free = a.indexOf(null);
+  return free >= 0 ? free : a.findIndex((s) => s?.cre === cre);
 }
 
-export function addToArmy(a: Army, cre: string, count: number): boolean {
-  const i = slotFor(a, cre);
+export function addToArmy(a: Army, cre: string, count: number, xp = 0, until?: number): boolean {
+  const i = slotFor(a, cre, xp, until);
   if (i < 0) return false;
   const s = a[i];
-  if (s) s.count += count;
-  else a[i] = { cre, count };
+  if (s) mergeSlot(s, count, xp, until);
+  else a[i] = { cre, count, ...(xp > 0 ? { xp } : {}), ...(until !== undefined ? { until } : {}) };
   return true;
 }
 

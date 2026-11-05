@@ -3,7 +3,7 @@ import { CREATURES } from '../sim/creatures';
 import { classOf, heroName, heroPortrait } from '../sim/heroes';
 import { spellIcon, SPELLS } from '../sim/spells';
 import { type Purse, RES, RES_NAME, type ResId } from '../sim/adv/data';
-import { type AdvHero, ART_SLOTS, ARTIFACTS, type Army, SKILL, heroAtk, heroDef, heroKnow, heroLuck, heroMaxMana, heroMaxMp, heroMorale, heroPower, xpForLevel } from '../sim/adv/hero';
+import { type AdvHero, ART_SLOTS, ARTIFACTS, type Army, SKILL, slotRank, heroAtk, heroDef, heroKnow, heroLuck, heroMaxMana, heroMaxMp, heroMorale, heroPower, xpForLevel } from '../sim/adv/hero';
 import { marketRate } from '../sim/adv/town';
 import { type AdvAction, type ArmyRef, type Player, type World, actionError } from '../sim/adv/world';
 import { button, creatureIcon, creatureLines, h, modal } from './common';
@@ -58,6 +58,16 @@ export class ArmyPicker {
       if (s) {
         cell.append(creatureIcon(s.cre, 72), h('em', '', String(s.count)));
         cell.title = CREATURES[s.cre].name;
+        const rank = slotRank(s);
+        if (rank) {
+          cell.append(h('i', '', `★${rank}`));
+          cell.title += ` · ранг ${rank}, опыт ${s.xp}`;
+        }
+        if (s.until !== undefined) {
+          const left = s.until - this.world().day;
+          cell.append(h('i', 'spirit', `${left} дн.`));
+          cell.title += ` · дух, уйдёт через ${left} дн.`;
+        }
       }
       cell.onclick = (e) => this.click(ref, i, e.shiftKey);
       cell.oncontextmenu = (e) => {

@@ -2,8 +2,12 @@
 import { CREATURES, FACTIONS, factionCreatures } from '../sim/creatures';
 import { classOf, heroName, heroPortrait } from '../sim/heroes';
 import { SPELLS, spellIcon } from '../sim/spells';
-import { BRANCHES, BUILDINGS, type BuildingDef, DECREES, RESEARCH_AMBER, RESEARCH_DAYS, type Town, buildCost, canUpgrade, creaturePrice, forgePerDay, guildLevel, has, hallIncome, isCast, weeklyGrowth } from '../sim/adv/town';
-import { type AdvAction, HERO_COST, type World, actionError, heroAt, repairCost } from '../sim/adv/world';
+import { slotRank, RANK_XP } from '../sim/adv/hero';
+import {
+  BANYA_MP, BRANCHES, BUILDINGS, type BuildingDef, DECREES, LOAN, MEMORY_WEEK_CAP, NAPOR_COST, NAPOR_MAX, RELEASES, RESEARCH_AMBER, RESEARCH_DAYS, SPIRIT_DAYS, type Town, bindCost, buildCost, canUpgrade, creaturePrice, forgePerDay,
+  guildLevel, has, hallIncome, isCast, mercPrice, naporPerDay, summonCost, weeklyGrowth,
+} from '../sim/adv/town';
+import { type AdvAction, type ArmyRef, HERO_COST, type World, actionError, heroAt, mercLeft, mercSeen, repairCost } from '../sim/adv/world';
 import { type Act, ArmyPicker, heroSheet, icon, marketDialog, priceRow, resBar } from './advparts';
 import { button, creatureIcon, h, modal } from './common';
 
@@ -15,9 +19,14 @@ const LAYOUT: Record<string, [number, number, number]> = {
 };
 /** Где на панораме ровная земля: верх и низ; у каждого замка своя. */
 const GROUND: Record<string, [number, number]> = { zatulye: [430, 670], zatonye: [440, 665], kuznya: [490, 730], akademiya: [590, 860] };
+/** Панорам второй четвёрки ещё нет: земля по середине, пока не снята своя. */
+const GROUND_DEFAULT: [number, number] = [480, 720];
 /** Дальние ряды мельче. */
 const ROW_SCALE = [0.62, 0.8, 1];
-const UNIQ: Record<string, string> = { skhod: 'uniq1', fogwell: 'uniq1', gat: 'uniq2', furnace: 'uniq1', scrapyard: 'uniq2', lab: 'uniq1', observatory: 'uniq2' };
+const UNIQ: Record<string, string> = {
+  skhod: 'uniq1', fogwell: 'uniq1', gat: 'uniq2', furnace: 'uniq1', scrapyard: 'uniq2', lab: 'uniq1', observatory: 'uniq2',
+  dam: 'uniq1', turbine: 'uniq2', drill: 'uniq1', banya: 'uniq2', caravanserai: 'uniq1', bank: 'uniq2', memory: 'uniq1', bindstone: 'uniq2',
+};
 
 export class TownScreen {
   readonly el = h('div', 'a-town');
@@ -64,7 +73,7 @@ export class TownScreen {
       const d = BUILDINGS[t.faction][id];
       if (d) arts.set(d.art, d);
     }
-    const [top, low] = GROUND[t.faction];
+    const [top, low] = GROUND[t.faction] ?? GROUND_DEFAULT;
     const layers = [...arts.entries()].map(([art, d]) => ({ art, d, pos: LAYOUT[UNIQ[art] ?? art] })).filter((x) => x.pos).sort((a, b) => a.pos[0] - b.pos[0]);
     for (const { art, d, pos } of layers) {
       const [row, x, size] = pos;
@@ -93,6 +102,11 @@ export class TownScreen {
     if (has(t, 'skhod')) items.push([t.decrees.length ? 'Сход: выбрать указ!' : 'Сход', () => this.skhod()]);
     if (has(t, 'lab')) items.push(['Опыты', () => this.lab()]);
     if (has(t, 'scrapyard')) items.push(['Ремонтный двор', () => this.scrap()]);
+    if (has(t, 'dam')) items.push([`Плотина: напор ${t.napor ?? 0}/${NAPOR_MAX}${(t.napor ?? 0) >= NAPOR_COST ? '!' : ''}`, () => this.dam()]);
+    if (t.faction === 'ostrog') items.push(['Муштра', () => this.drill()]);
+    if (has(t, 'caravanserai')) items.push(['Караван-сарай', () => this.merc()]);
+    if (has(t, 'bank')) items.push([p.loan ? `Контора: долг ${p.loan.left} нед.` : 'Меняльная контора', () => this.bank()]);
+    if (has(t, 'memory')) items.push([`Круг памяти: ${p.memory ?? 0}`, () => this.memory()]);
     if (has(t, 'shipyard')) items.push(['Лодка', () => this.boat()]);
     for (const [label, fn, off] of items) {
       const b = button(label, fn, 'g-btn small');
@@ -149,6 +163,19 @@ export class TownScreen {
         return this.lab();
       case 'scrapyard':
         return this.scrap();
+      case 'dam':
+      case 'turbine':
+        return this.dam();
+      case 'drill':
+      case 'banya':
+        return this.drill();
+      case 'caravanserai':
+        return this.merc();
+      case 'bank':
+        return this.bank();
+      case 'memory':
+      case 'bindstone':
+        return this.memory();
       case 'shipyard':
         return this.boat();
     }
@@ -337,6 +364,196 @@ export class TownScreen {
         box.append(row);
       }
       if (!any) box.append(h('p', '', 'Лома нет.'));
+      box.append(button('Закрыть', close));
+    };
+    draw();
+  }
+
+  /** Плотина: напор и три сброса. */
+  private dam(): void {
+    const { box, close } = modal(this.overlay, 'g-card', () => this.draw());
+    const draw = (): void => {
+      const t = this.town;
+      const w = this.world();
+      box.replaceChildren(
+        h('h3', '', 'Плотина'),
+        h('p', 'dim', `Напор копится каждый день: +${naporPerDay(t)}${has(t, 'turbine') ? ' (с турбиной)' : ''}, не больше ${NAPOR_MAX}. Сброс стоит ${NAPOR_COST}.`),
+        h('p', 'g-heroline', `Напор: ${'▮'.repeat(t.napor ?? 0)}${'▯'.repeat(NAPOR_MAX - (t.napor ?? 0))} ${t.napor ?? 0}/${NAPOR_MAX}`),
+      );
+      for (const use of ['semki', 'mp', 'build'] as const) {
+        const a: AdvAction = { t: 'release', town: t.id, use };
+        const err = actionError(w, a);
+        const b = button(`${RELEASES[use].name}: ${RELEASES[use].text}`, () => {
+          this.act(a);
+          draw();
+        });
+        b.disabled = !!err;
+        b.title = err ?? '';
+        box.append(b);
+      }
+      box.append(button('Закрыть', close));
+    };
+    draw();
+  }
+
+  /** Острог: ранги отрядов и что даёт плац и баня. */
+  private drill(): void {
+    const { box, close } = modal(this.overlay, 'g-card', () => this.draw());
+    const t = this.town;
+    const w = this.world();
+    box.append(
+      h('h3', '', 'Муштра'),
+      h('p', 'dim', `Отряд Острога, выживший в победном бою, получает опыт. Ранги по опыту ${RANK_XP.join(' / ')}: +1 к атаке и защите за ранг. Разбитый отряд опыт теряет, при слиянии — остаётся меньший.`),
+      h('p', 'dim', has(t, 'drill') ? 'Плац: каждую неделю гарнизону +1 опыта.' : 'Плац не построен: гарнизон опыта не получает.'),
+      h('p', 'dim', has(t, 'banya') ? `Баня: герой, начавший день в городе, +${BANYA_MP} к ходу.` : 'Бани нет.'),
+    );
+    const hero = heroAt(w, t.cell);
+    const armies: [string, typeof t.garrison][] = [['Гарнизон', t.garrison]];
+    if (hero && hero.owner === t.owner) armies.push([heroName(hero.pick), hero.army]);
+    let any = false;
+    for (const [label, army] of armies) {
+      for (const s of army) {
+        if (!s || CREATURES[s.cre].faction !== 'ostrog') continue;
+        any = true;
+        const row = h('div', 'a-row');
+        const r = slotRank(s);
+        const next = RANK_XP[r];
+        row.append(creatureIcon(s.cre, 44), h('span', '', `${label}: ${CREATURES[s.cre].name} — ранг ${r}, опыт ${s.xp ?? 0}${next !== undefined ? ` (до следующего ${next})` : ' (высший)'}`));
+        box.append(row);
+      }
+    }
+    if (!any) box.append(h('p', '', 'Отрядов Острога рядом нет.'));
+    box.append(button('Закрыть', close));
+  }
+
+  /** Караван-сарай: чужие базовые существа тех фракций, чьи города видели. */
+  private merc(): void {
+    const { box, close } = modal(this.overlay, 'a-recruit', () => this.draw());
+    const draw = (): void => {
+      const t = this.town;
+      const w = this.world();
+      const p = w.players[t.owner];
+      box.replaceChildren(h('h3', '', 'Караван-сарай'), h('p', 'dim', 'Чужие бойцы из городов, которые вы видели. Дороже на четверть, в неделю — половина их прироста.'));
+      const list = h('div', 'a-recruit-list');
+      const seen = FACTIONS.filter((f) => f.id !== 'neutral' && f.id !== t.faction && mercSeen(w, t.owner, f.id));
+      for (const f of seen) {
+        for (const c of factionCreatures(f.id).filter((x) => !x.up).sort((a, b) => a.tier - b.tier)) {
+          const left = mercLeft(t, c.id);
+          const row = h('div', 'a-recruit-row');
+          const info = h('div');
+          info.append(h('b', '', `${c.name} · ${f.name}`), h('p', 'dim', `Есть: ${left}`), priceRow(mercPrice(c, 1), p));
+          const r = h('input');
+          r.type = 'range';
+          r.min = '1';
+          r.max = String(Math.max(1, left));
+          r.value = String(Math.max(1, left));
+          const n = h('b', 'a-count', r.value);
+          const go = button('Нанять', () => {
+            this.act({ t: 'merc', town: t.id, cre: c.id, count: Number(r.value) });
+            draw();
+          }, 'g-btn small');
+          const check = (): void => {
+            n.textContent = r.value;
+            go.disabled = left < 1 || !!actionError(w, { t: 'merc', town: t.id, cre: c.id, count: Number(r.value) });
+          };
+          r.oninput = check;
+          check();
+          row.append(creatureIcon(c.id, 88), info, r, n, go);
+          list.append(row);
+        }
+      }
+      if (!seen.length) list.append(h('p', 'dim', 'Чужих городов вы пока не видели: разведайте карту.'));
+      box.append(list, button('Закрыть', close));
+    };
+    draw();
+  }
+
+  /** Меняльная контора: кредит. */
+  private bank(): void {
+    const { box, close } = modal(this.overlay, 'g-card', () => this.draw());
+    const t = this.town;
+    const w = this.world();
+    const p = w.players[t.owner];
+    box.append(
+      h('h3', '', 'Меняльная контора'),
+      h('p', 'dim', `Кредит: ${LOAN.sum} семок сейчас, потом ${LOAN.weeks} недели по ${LOAN.pay} в начале недели. Не хватит семок на взнос — бунт: сильнейший отряд гарнизона разбежится наполовину.`),
+    );
+    if (p.loan) box.append(h('p', 'g-heroline', `Долг: ещё ${p.loan.left} взнос(а) по ${LOAN.pay}.`));
+    const a: AdvAction = { t: 'loan', town: t.id };
+    const err = actionError(w, a);
+    const b = button(`Взять ${LOAN.sum} семок`, () => {
+      close();
+      this.act(a);
+      this.draw();
+    });
+    b.disabled = !!err;
+    b.title = err ?? '';
+    box.append(b, button('Закрыть', close));
+  }
+
+  /** Круг памяти и камень привязки. */
+  private memory(): void {
+    const { box, close } = modal(this.overlay, 'a-recruit', () => this.draw());
+    const draw = (): void => {
+      const t = this.town;
+      const w = this.world();
+      const p = w.players[t.owner];
+      const mem = p.memory ?? 0;
+      box.replaceChildren(
+        h('h3', '', 'Круг памяти'),
+        h('p', 'dim', `Память копится после боёв с героем Курганов: павшие обеих сторон. За неделю — не больше ${MEMORY_WEEK_CAP} (набрано ${p.memWeek ?? 0}). Дух стоит половину своей цены в памяти и уходит через ${SPIRIT_DAYS} дней.`),
+        h('p', 'g-heroline', `Память: ${mem}`),
+      );
+      const list = h('div', 'a-recruit-list');
+      for (const c of factionCreatures(t.faction).filter((x) => !x.up && has(t, `dwell${x.tier}`)).sort((a, b) => a.tier - b.tier)) {
+        const most = Math.trunc(mem / summonCost(c, 1));
+        const row = h('div', 'a-recruit-row');
+        const info = h('div');
+        info.append(h('b', '', c.name), h('p', 'dim', `Память за одного: ${summonCost(c, 1)} · хватит на ${most}`));
+        const r = h('input');
+        r.type = 'range';
+        r.min = '1';
+        r.max = String(Math.max(1, most));
+        r.value = String(Math.max(1, most));
+        const n = h('b', 'a-count', r.value);
+        const go = button('Призвать', () => {
+          this.act({ t: 'summon', town: t.id, cre: c.id, count: Number(r.value) });
+          draw();
+        }, 'g-btn small');
+        const check = (): void => {
+          n.textContent = r.value;
+          go.disabled = most < 1 || !!actionError(w, { t: 'summon', town: t.id, cre: c.id, count: Number(r.value) });
+        };
+        r.oninput = check;
+        check();
+        row.append(creatureIcon(c.id, 88), info, r, n, go);
+        list.append(row);
+      }
+      if (!list.children.length) list.append(h('p', 'dim', 'Призывать можно тех, чьё жилище построено.'));
+      box.append(list);
+      // духи в гарнизоне и у героя в воротах: привязка
+      const hero = heroAt(w, t.cell);
+      const refs: [ArmyRef, typeof t.garrison, string][] = [[{ t: t.id }, t.garrison, 'Гарнизон']];
+      if (hero && hero.owner === t.owner) refs.push([{ h: hero.id }, hero.army, heroName(hero.pick)]);
+      const spirits = h('div');
+      for (const [ref, army, label] of refs) {
+        army.forEach((s, slot) => {
+          if (!s || s.until === undefined) return;
+          const row = h('div', 'a-row');
+          const a: AdvAction = { t: 'bind', town: t.id, ref, slot };
+          const err = actionError(w, a);
+          const b = button(`Привязать: ${bindCost(CREATURES[s.cre], s.count)} янтаря`, () => {
+            this.act(a);
+            draw();
+          }, 'g-btn small');
+          b.disabled = !!err;
+          b.title = err ?? '';
+          row.append(creatureIcon(s.cre, 44), h('span', '', `${label}: ${CREATURES[s.cre].name}, ${s.count} — уйдут через ${s.until - w.day} дн.`));
+          if (has(t, 'bindstone')) row.append(b);
+          spirits.append(row);
+        });
+      }
+      if (spirits.children.length) box.append(h('b', '', has(t, 'bindstone') ? 'Духи рядом — камень привязки оставит их навсегда' : 'Духи рядом (привязать — камень привязки)'), spirits);
       box.append(button('Закрыть', close));
     };
     draw();
