@@ -1,0 +1,28 @@
+# Герои, переделки партии 37-videos после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/geroi/36-cutscene-keys-redo
+server: comfy-big
+defaults:
+  width: 1280
+  height: 704
+  frames: 121
+  steps: 30
+seeds:
+- 1
+clips:
+- name: c4-3b
+  keys:
+  - c4-3b-3
+  - c4-3b-4
+  prompt: the spirits sway and whisper, his hair moves in the wind, mist swirls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+  seeds:
+  - 1
+- name: c7-2b
+  keys:
+  - c7-2b-3
+  - c7-2b-4
+  prompt: dust drifts in a beam of light, slow push in on the cap. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+  seeds:
+  - 1

@@ -1,6 +1,6 @@
 /* Партия боя: кто ходит, ввод человека, боты, панель, пауза, сохранения. Правила — в sim/, картинка — в render/. */
 import { Talk } from '../gops/ui/talk';
-import { type Audio2 } from './audio';
+import { type Audio2, type Situation } from './audio';
 import { type BotLevel, botAction } from './bot/bot';
 import type { BattleNet, ClockView, NetServerMsg, ResultView } from './net/protocol';
 import { BattleView, STAGE_H, STAGE_W, cellCenter, type Pointer } from './render/view';
@@ -37,6 +37,8 @@ export interface GameOptions {
   restore?: Save;
   fast?: boolean;
   net?: NetOptions;
+  /** Своя боевая музыка (финал кампании). */
+  music?: Situation;
 }
 
 export class Game {
@@ -85,7 +87,10 @@ export class Game {
   /** Бой из партии на карте: сохранение несёт мир, итог уходит в него. */
   adv: { world: () => World; onFinish: (s: BattleState) => void } | null = null;
 
+  private readonly musicSit: Situation;
+
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2, o: GameOptions) {
+    this.musicSit = o.music ?? 'battle';
     this.state = o.restore?.state ?? createBattle(o.setup!);
     this.who = o.who;
     this.net = o.net ?? null;
@@ -108,7 +113,7 @@ export class Game {
     window.addEventListener('keydown', this.onKey);
     this.fit.observe(this.root);
     this.fitHud();
-    this.audio.music(this.state.walls ? 'siege' : 'battle');
+    this.audio.music(this.state.walls ? 'siege' : this.musicSit);
     this.audio.sfx('battle-start');
     this.refresh();
     if (this.net) {

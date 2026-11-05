@@ -22,10 +22,11 @@ const write = (k: string, on: boolean): void => {
 };
 
 export type Situation = 'menu' | 'battle' | 'victory' | 'defeat' | 'siege' | 'map' | 'map-swamp' | 'map-ash' | 'map-pine' | 'town-zatulye' | 'town-zatonye' | 'town-kuznya' | 'town-akademiya'
-  | 'map-coast' | 'map-snow' | 'map-saltflat' | 'map-heath' | 'town-plotina' | 'town-ostrog' | 'town-bazar' | 'town-kurgany';
+  | 'map-coast' | 'map-snow' | 'map-saltflat' | 'map-heath' | 'town-plotina' | 'town-ostrog' | 'town-bazar' | 'town-kurgany'
+  | 'campaign3' | 'campaign4' | 'campaign5' | 'campaign6' | 'finale-battle' | 'ending-home' | 'ending-stay';
 const TRACKS: Record<Situation, string[]> = {
   menu: ['menu', 'menu-vox'],
-  battle: ['battle', 'battle-b', 'battle-c'],
+  battle: ['battle', 'battle-b', 'battle-c', 'battle-d'],
   victory: ['victory'],
   defeat: ['defeat'],
   siege: ['siege'],
@@ -46,8 +47,16 @@ const TRACKS: Record<Situation, string[]> = {
   'town-ostrog': ['town-ostrog'],
   'town-bazar': ['town-bazar'],
   'town-kurgany': ['town-kurgany'],
+  // кампании 3–6: тема кампании вперемешку с музыкой родной местности; финал и концовки
+  campaign3: ['campaign3', 'map-coast'],
+  campaign4: ['campaign4', 'map-snow'],
+  campaign5: ['campaign5', 'map-saltflat'],
+  campaign6: ['campaign6', 'map-heath'],
+  'finale-battle': ['finale-battle'],
+  'ending-home': ['ending-home'],
+  'ending-stay': ['ending-stay'],
 };
-const SINGLE: Situation[] = ['victory', 'defeat'];
+const SINGLE: Situation[] = ['victory', 'defeat', 'ending-home', 'ending-stay'];
 
 export class Audio2 {
   musicOff = read(MUSIC_KEY);

@@ -11,7 +11,8 @@ OUT=G:/temp/studio/out/geroi
 export PYTHONIOENCODING=utf-8 CUDA_DEVICE_ORDER=PCI_BUS_ID
 step() { echo "=== $(date '+%F %T') $*"; }
 until grep -q "конвейер geroi-w2-3d закончен" G:/temp/studio/pipeline-geroi-w2-3d.log 2>/dev/null; do sleep 60; done
-while IFS='=' read -r n ref; do
+while IFS="=" read -r n ref; do
+  ref=${ref%$'\r'}  # список мог быть сохранён с CRLF
   [ -n "$n" ] || continue
   tier=$($PY -X utf8 -c "import json,sys;print(next(c['tier'] for c in json.load(open('jobs/geroi/creatures-w2.json',encoding='utf-8')) if c['name']==sys.argv[1]))" "$n")
   px=320; [ "$tier" -ge 6 ] && px=400

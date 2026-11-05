@@ -361,7 +361,8 @@ export class AdvGame {
 
   private playMusic(): void {
     const cell = this.hero?.cell ?? playerTowns(this.world, this.me)[0]?.cell ?? 0;
-    this.audio.music(MUSIC_BY_TERRAIN[TERRAINS[this.world.terrain[cell]].id] ?? 'map');
+    const camp = /^c([3-6])-/.exec(this.world.scn?.id ?? '');
+    this.audio.music(camp ? (`campaign${camp[1]}` as Situation) : MUSIC_BY_TERRAIN[TERRAINS[this.world.terrain[cell]].id] ?? 'map');
   }
 
   private select(id: number, center: boolean): void {
@@ -1060,7 +1061,8 @@ export class AdvGame {
     const who = this.battleWho(pend);
     this.root.style.display = 'none';
     this.view.frozen = true;
-    const g = new Game(this.host, this.audio, saved ? { who, restore: { at: 0, title: '', state: saved, who } } : { who, setup: battleSetup(w).setup });
+    const music = w.scn?.id === 'c7-3' ? 'finale-battle' : undefined;
+    const g = new Game(this.host, this.audio, saved ? { who, restore: { at: 0, title: '', state: saved, who }, music } : { who, setup: battleSetup(w).setup, music });
     this.battle = g;
     g.adv = { world: () => this.world, onFinish: (s) => void this.endGameBattle(g, s) };
     g.onQuit = () => {

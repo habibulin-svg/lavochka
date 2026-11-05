@@ -1,0 +1,21 @@
+# Герои, переделки партии 36-cutscene-keys после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 3
+- 4
+items:
+- name: c4-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a pale quiet sixteen-year-old boy with dark hair over his eyes sitting on top of a grassy burial mound at
+    sunset, translucent glowing blue ghosts of old bearded warriors in sheepskin coats and fur caps standing around him.'
+- name: c7-2b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: An empty tall wooden armchair carved with dark patterns in a dim stone hall, an old flat cap lying on the
+    seat.'

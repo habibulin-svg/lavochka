@@ -361,6 +361,9 @@ function scenarioEnd(w: World, win: boolean): [string, () => void][] {
         const o = await endingChoice(host, c.ending);
         saveProgress(c.id, { ...progressOf(c.id), ending: o.id });
         await cutscenes(host, o.cut);
+        showCampaigns();
+        audio.music(o.id === 'home' ? 'ending-home' : 'ending-stay');
+        return;
       }
       showCampaigns();
     });

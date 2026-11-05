@@ -317,7 +317,7 @@ CUTSCENES2 = [
     ('c4-1b', f'A grey-bearded commander in a fur coat handing an old war horn to {AND} in a log hall', 'the old man hands over the horn, firelight flickers, snow outside'),
     ('c4-2a', 'A blizzard over a mountain pass, snow-covered fort gates, campfires burning on the walls', 'snow swirls in the wind, fires flicker, the gates creak'),
     ('c4-3a', 'A purple heather moor with burial mounds at night, ghostly lights and pale riders above them', 'ghost lights float, pale riders move slowly, mist drifts'),
-    ('c4-3b', f'{TYO} sitting on top of a burial mound, pale ghostly ancestor spirits standing around him', 'the spirits sway and whisper, his hair moves in the wind, mist swirls'),
+    ('c4-3b', f'{TYO} sitting on top of a grassy burial mound at sunset, translucent glowing blue ghosts of old bearded warriors in sheepskin coats and fur caps standing around him', 'the spirits sway and whisper, his hair moves in the wind, mist swirls'),
     ('c4-4a', 'A narrow mountain pass in snow, black banners and a huge army camp below', 'banners wave, smoke rises from the camp, snow drifts'),
     ('c4-fin1', f'{AND} and {TYO} standing on a log fort wall under the northern lights', 'the northern lights ripple across the sky, they talk, breath steams'),
     ('c4-fin2', 'A glowing brass shard frozen in clear ice on a mountain peak', 'light pulses inside the ice, snow blows past'),
@@ -340,7 +340,7 @@ CUTSCENES2 = [
     ('c7-1a', f'{EIGHT} standing together on a hill at sunset, banners of different lands behind them', 'banners wave, they stand shoulder to shoulder, the sun sets'),
     ('c7-1b', 'A great stone map of the world with eight lights, six bright and two dim red in the east, teenagers leaning over it', 'the lights glow, hands point at the red lights, torchlight flickers'),
     ('c7-2a', 'A black fortress on a cliff above an ash plain, lightning, thousands of torches on the walls', 'lightning strikes, torches flicker along the walls, smoke drifts'),
-    ('c7-2b', 'An empty throne of black iron in a dark hall, an old flat cap lying on the armrest', 'dust drifts in a beam of light, slow push in on the cap'),
+    ('c7-2b', 'An empty tall wooden armchair carved with dark patterns in a dim stone hall, an old flat cap lying on the seat', 'dust drifts in a beam of light, slow push in on the cap'),
     ('c7-3a', 'A gigantic crater with a glowing heart of brass and light at the bottom, armies descending along a spiral road', 'light pulses from the heart, armies march down the spiral, dust rises'),
     ('c7-3b', f'{STAR} standing by a glowing brass heart at the bottom of a crater, holding two glowing shards', 'he turns slowly, his coat moves in the wind, the heart pulses'),
     ('c7-fin1', 'Eight hands holding glowing brass shards coming together above a glowing heart, the brass knuckle assembling whole', 'the shards slide together and fuse with a bright golden flash'),
@@ -460,6 +460,8 @@ REDO2 = {
     '30-creatures': ([f'ostrog-{u[0]}' for u in FACTIONS2['ostrog']['units']] + ['kurgany-shadowherd', 'neutral-griffin'], [43, 44]),  # Острог «дедами-морозами», грифон без орлиной головы, пастух — собакой
     '32-towns': ([f'bld-{f}-{b}' for f in ('ostrog', 'bazar') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)] + [u[0] for u in TOWNS2[f]['unique']]]
                  + ['map-town-ostrog', 'map-town-bazar', 'town-bazar-full', 'town-ostrog-full'], [22, 23]),  # кресты на шпилях Острога, минареты и пальмы Базара (отрицания модель не понимает)
+    '36-cutscene-keys': (['c4-3b', 'c7-2b'], [3, 4]),  # духи в белых балахонах; трон из мечей — чужой узнаваемый образ
+    '37-videos': ({'c4-3b': (['c4-3b-3', 'c4-3b-4'], 1), 'c7-2b': (['c7-2b-3', 'c7-2b-4'], 1)}, None),  # ключи — из 36-cutscene-keys-redo
     '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 
@@ -468,6 +470,11 @@ def redo2():
     for key, (names, seeds) in REDO2.items():
         batch, _, n = key.partition('#')
         job = yaml.safe_load((HERE / f'{batch}.yaml').read_text(encoding='utf-8'))
+        if 'clips' in job:  # ролики: names — {ролик: ([ключи], сид)}, ключи из переделки партии 36
+            job['keys'] = job['keys'] + '-redo'
+            job['clips'] = [{**c, 'keys': names[c['name']][0], 'seeds': [names[c['name']][1]]} for c in job['clips'] if c['name'] in names]
+            write(f'{batch}-redo{n}.yaml', f'переделки партии {batch} после отбора', job)
+            continue
         job['items'] = [i for i in job['items'] if i['name'] in names]
         job['seeds'] = seeds
         write(f'{batch}-redo{n}.yaml', f'переделки партии {batch} после отбора', job)
