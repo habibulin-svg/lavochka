@@ -4,6 +4,7 @@
 import { PRODUCTS } from '../../core/buy';
 import { FACTIONS, type Faction, isPaidFaction } from '../sim/creatures';
 import { button, h, modal } from './common';
+import { SALE_OPEN } from '../sale';
 
 const PRODUCT = PRODUCTS.geroi;
 let full = false;
@@ -15,8 +16,8 @@ export function setOwnership(v: { full: boolean; signedIn: boolean }): void {
   signedIn = v.signedIn;
 }
 export const factionOpen = (f: string): boolean => full || !isPaidFaction(f);
-/** Продажа открыта: до готовности второй волны платное не показываем вовсе (видят только купившие и Мастер — право master). */
-export const SALE_OPEN = false;
+/** Продажа открыта (src/geroi/sale.ts): до готовности второй волны платное не показываем вовсе (видят только купившие и Мастер — право master). */
+export { SALE_OPEN };
 /** Показывать ли фракцию в списке выбора. */
 export const factionListed = (f: string): boolean => factionOpen(f) || SALE_OPEN;
 

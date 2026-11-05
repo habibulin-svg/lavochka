@@ -11,8 +11,14 @@ import { ARTIFACTS, SKILLS } from '../../src/geroi/sim/adv/hero';
 import { BUILDINGS, type TownFaction } from '../../src/geroi/sim/adv/town';
 import { makeTestMap } from '../../src/geroi/sim/adv/testmap';
 import { factionClasses } from '../../src/geroi/sim/heroes';
+import { SALE_OPEN } from '../../src/geroi/sale';
 
 const A = join(__dirname, '../../public/geroi/a');
+
+/** Картинки второй волны (платная часть) ждут упаковки, пока продажа закрыта: их не видит никто, кроме Мастера.
+ * С SALE_OPEN тест требует всё. */
+const PAID_ART = /plotina|ostrog|bazar|kurgany|coast|snow|saltflat|heath|neutral-(crab|lynx|scorpion|raven|nomad|griffin)|dwell-(crab|lynx|scorpion|raven|nomad|griffin)/;
+const missing = (need: string[]): string[] => [...new Set(need)].filter((f) => !existsSync(join(A, f)) && (SALE_OPEN || !PAID_ART.test(f)));
 
 // Всё, на что ссылается игра, лежит в public/geroi/a (упаковка studio/post/pack_geroi.py).
 describe('geroi: выход на сайт', () => {
@@ -44,7 +50,7 @@ describe('geroi/assets', () => {
     const w = makeTestMap({ seed: 1, players: fs.slice(0, 2).map((f) => ({ name: f, faction: f, hero: { cls: factionClasses(f)[0].id, n: 1 } })) });
     for (const d of w.decor) need.push(`map/${d.art}.webp`);
     for (const f of ['catapult', 'wall-break', 'tower-shot', 'horse-grass', 'horse-road', 'horse-swamp', 'horse-ash', 'boat-row', 'pickup-semki', 'pickup-res', 'chest-open', 'artifact', 'flag', 'mine-capture', 'shrine', 'levelup', 'newday', 'newweek', 'teleport', 'dig', 'learn', 'water-splash', 'build', 'recruit', 'market', 'gate', 'forge', 'horse-snort', 'ui-click', 'ui-close', 'ui-turn']) need.push(`sfx/${f}.ogg`);
-    expect([...new Set(need)].filter((f) => !existsSync(join(A, f)))).toEqual([]);
+    expect(missing(need)).toEqual([]);
   });
 
   it('существа, звуки, портреты, иконки, поля, препятствия, музыка, шрифты', () => {
@@ -60,6 +66,6 @@ describe('geroi/assets', () => {
     for (let i = 1; i <= 10; i++) need.push(`obstacles/${i}.webp`);
     for (const m of ['menu', 'menu-vox', 'battle', 'battle-b', 'battle-c', 'victory', 'defeat']) need.push(`music/${m}.ogg`);
     for (const s of ['battle-start', 'battle-win', 'battle-lose', 'impact-arrow', 'morale', 'badmorale', 'luck', 'defend', 'spell-heal', 'spell-buff', 'spell-curse', 'spell-fire', 'spell-water', 'spell-earth', 'spell-air', 'ui-error']) need.push(`sfx/${s}.ogg`);
-    expect(need.filter((f) => !existsSync(join(A, f)))).toEqual([]);
+    expect(missing(need)).toEqual([]);
   });
 });
