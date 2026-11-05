@@ -36,7 +36,9 @@ const BOT_WORD: Record<BotLevel, string> = { easy: 'лёгкий', medium: 'ср
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 const MINI = 280;
-const MUSIC_BY_TERRAIN: Record<string, Situation> = { meadow: 'map', rough: 'map', sand: 'map', water: 'map', swamp: 'map-swamp', ash: 'map-ash', pine: 'map-pine', underground: 'map-ash' };
+const MUSIC_BY_TERRAIN: Record<string, Situation> = { meadow: 'map', rough: 'map', sand: 'map', water: 'map', swamp: 'map-swamp', ash: 'map-ash', pine: 'map-pine', underground: 'map-ash',
+  coast: 'map-coast', snow: 'map-snow', saltflat: 'map-saltflat', heath: 'map-heath',
+};
 
 /** Сколько в отряде: на карте точного числа не показываем. */
 export function stackWord(n: number): string {

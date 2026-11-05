@@ -28,6 +28,13 @@ void main() {
   vUV = aUV;
 }`;
 
+/** Атлас местностей 8–11: клетка = плитка + поля с повтором с обеих сторон. */
+const ATLAS_TILE = 512;
+const ATLAS_PAD = 32;
+const ATLAS_CELL = ATLAS_TILE + ATLAS_PAD * 2;
+const ATLAS_SIZE = ATLAS_CELL * 2;
+const BASE_TERRAINS = 8;
+
 const FRAG = `
 precision highp float;
 in vec2 vUV;
@@ -37,6 +44,8 @@ uniform sampler2D uFog;
 uniform sampler2D uT0; uniform sampler2D uT1; uniform sampler2D uT2; uniform sampler2D uT3;
 uniform sampler2D uT4; uniform sampler2D uT5; uniform sampler2D uT6; uniform sampler2D uT7;
 uniform sampler2D uR1; uniform sampler2D uR2; uniform sampler2D uR3;
+/* местности второй четвёрки (8–11) — одним атласом 2×2: слотов текстур в WebGL2 гарантированно 16 */
+uniform sampler2D uT8;
 uniform vec2 uSize;
 uniform float uTime;
 
@@ -48,6 +57,13 @@ float vnoise(vec2 p) {
 }
 float fbm(vec2 p) { return 0.55 * vnoise(p) + 0.3 * vnoise(p * 2.1 + 3.7) + 0.15 * vnoise(p * 4.3 + 9.1); }
 
+/* Клетка атласа с полями: повтор — через fract, уровень мипмапа — по непрерывным производным, иначе на стыке шов. */
+vec3 sampleAtlas(int k, vec2 uv) {
+  vec2 cell = vec2(float(k - (k / 2) * 2), float(k / 2));
+  vec2 a = (cell * ${ATLAS_CELL}.0 + ${ATLAS_PAD}.0 + fract(uv) * ${ATLAS_TILE}.0) / ${ATLAS_SIZE}.0;
+  float s = ${ATLAS_TILE}.0 / ${ATLAS_SIZE}.0;
+  return textureGrad(uT8, a, dFdx(uv) * s, dFdy(uv) * s).rgb;
+}
 vec3 sampleT(int id, vec2 uv) {
   if (id == 0) return texture(uT0, uv).rgb;
   if (id == 1) return texture(uT1, uv).rgb;
@@ -56,7 +72,8 @@ vec3 sampleT(int id, vec2 uv) {
   if (id == 4) return texture(uT4, uv).rgb;
   if (id == 5) return texture(uT5, uv).rgb;
   if (id == 6) return texture(uT6, uv + vec2(sin(uTime * 0.35 + uv.y * 9.0), cos(uTime * 0.28 + uv.x * 8.0)) * 0.006).rgb;
-  return texture(uT7, uv).rgb;
+  if (id == 7) return texture(uT7, uv).rgb;
+  return sampleAtlas(id - 8, uv);
 }
 /* Узор: две выборки в разном масштабе, чтобы текстура не читалась плиткой. */
 vec3 terrain(int id, vec2 cell) {
@@ -295,7 +312,10 @@ export class MapView {
 
   private async buildGround(w: World): Promise<void> {
     const load = (name: string): Promise<Texture> => Assets.load<Texture>({ src: `/geroi/a/map/ground-${name}.webp`, data: { autoGenerateMipmaps: true, addressMode: 'repeat' } });
-    const [terr, roads] = await Promise.all([Promise.all(TERRAINS.map((t) => load(t.id))), Promise.all(ROAD_ART.slice(1).map(load))]);
+    const [terr, roads] = await Promise.all([Promise.all(TERRAINS.slice(0, BASE_TERRAINS).map((t) => load(t.id))), Promise.all(ROAD_ART.slice(1).map(load))]);
+    // новых грунтов может ещё не быть в сборке: тогда на их месте луг
+    const extra = await Promise.all(TERRAINS.slice(BASE_TERRAINS).map((t) => load(t.id).catch(() => terr[0])));
+    const atlas = groundAtlas(extra);
     for (const t of [...terr, ...roads]) {
       t.source.addressMode = 'repeat';
       t.source.style.update();
@@ -323,6 +343,7 @@ export class MapView {
       groundUniforms: { uSize: { value: [w.w, w.h], type: 'vec2<f32>' }, uTime: { value: 0, type: 'f32' } },
     };
     terr.forEach((t, i) => (resources[`uT${i}`] = t.source));
+    resources.uT8 = atlas.source;
     roads.forEach((t, i) => (resources[`uR${i + 1}`] = t.source));
     const shader = Shader.from({ gl: { vertex: VERT, fragment: FRAG }, resources });
     this.uniforms = shader.resources.groundUniforms as { uniforms: { uTime: number } };
@@ -694,4 +715,25 @@ export class MapView {
     this.app.ticker.remove(this.onTick);
     releaseApp(this.app);
   }
+}
+
+/** Четыре грунта — в одну текстуру 2×2; у каждой клетки поля с повтором краёв, чтобы мипмапы не тянули соседа. */
+function groundAtlas(list: Texture[]): Texture {
+  const c = document.createElement('canvas');
+  c.width = c.height = ATLAS_SIZE;
+  const g = c.getContext('2d')!;
+  list.slice(0, 4).forEach((t, k) => {
+    const img = t.source.resource as CanvasImageSource;
+    const x0 = (k % 2) * ATLAS_CELL;
+    const y0 = Math.trunc(k / 2) * ATLAS_CELL;
+    g.save();
+    g.beginPath();
+    g.rect(x0, y0, ATLAS_CELL, ATLAS_CELL);
+    g.clip();
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) g.drawImage(img, x0 + ATLAS_PAD + dx * ATLAS_TILE, y0 + ATLAS_PAD + dy * ATLAS_TILE, ATLAS_TILE, ATLAS_TILE);
+    g.restore();
+  });
+  const tex = Texture.from({ resource: c, autoGenerateMipmaps: true });
+  tex.source.style.update();
+  return tex;
 }

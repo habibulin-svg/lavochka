@@ -21,7 +21,8 @@ const write = (k: string, on: boolean): void => {
   }
 };
 
-export type Situation = 'menu' | 'battle' | 'victory' | 'defeat' | 'siege' | 'map' | 'map-swamp' | 'map-ash' | 'map-pine' | 'town-zatulye' | 'town-zatonye' | 'town-kuznya' | 'town-akademiya';
+export type Situation = 'menu' | 'battle' | 'victory' | 'defeat' | 'siege' | 'map' | 'map-swamp' | 'map-ash' | 'map-pine' | 'town-zatulye' | 'town-zatonye' | 'town-kuznya' | 'town-akademiya'
+  | 'map-coast' | 'map-snow' | 'map-saltflat' | 'map-heath' | 'town-plotina' | 'town-ostrog' | 'town-bazar' | 'town-kurgany';
 const TRACKS: Record<Situation, string[]> = {
   menu: ['menu', 'menu-vox'],
   battle: ['battle', 'battle-b', 'battle-c'],
@@ -36,6 +37,15 @@ const TRACKS: Record<Situation, string[]> = {
   'town-zatonye': ['town-zatonye'],
   'town-kuznya': ['town-kuznya'],
   'town-akademiya': ['town-akademiya'],
+  // вторая четвёрка (платная часть)
+  'map-coast': ['map-coast'],
+  'map-snow': ['map-snow'],
+  'map-saltflat': ['map-saltflat'],
+  'map-heath': ['map-heath'],
+  'town-plotina': ['town-plotina'],
+  'town-ostrog': ['town-ostrog'],
+  'town-bazar': ['town-bazar'],
+  'town-kurgany': ['town-kurgany'],
 };
 const SINGLE: Situation[] = ['victory', 'defeat'];
 

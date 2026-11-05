@@ -27,9 +27,19 @@ MUSIC = {
     # карта и замки (этап 3)
     'map': '02-music-proba/map', 'map-swamp': '18-music/map-swamp', 'map-ash': '18-music/map-ash', 'map-pine': '18-music/map-pine', 'siege': '18-music/siege',
     'town-zatulye': '02-music-proba/zatulye', 'town-zatonye': '02-music-proba/zatonye', 'town-kuznya': '18-music/town-kuznya', 'town-akademiya': '18-music/town-akademiya',
+    # вторая волна (платная часть, партия 38)
+    **{n: f'38-music/{n}' for n in ('town-plotina', 'town-ostrog', 'town-bazar', 'town-kurgany', 'map-coast', 'map-snow', 'map-saltflat', 'map-heath', 'battle-d')},
 }
 GROUNDS = ['meadow', 'swamp', 'ash', 'pine', 'rough', 'sand', 'water', 'underground', 'road-dirt', 'road-stone', 'road-plank']
 FACTIONS = ['zatulye', 'zatonye', 'kuznya', 'akademiya']
+# вторая волна (платная часть): партии 30–39 (studio/jobs/geroi/make_jobs_w2.py)
+FACTIONS2 = ['plotina', 'ostrog', 'bazar', 'kurgany']
+GROUNDS2 = ['coast', 'snow', 'saltflat', 'heath']
+
+
+def wave2(batch: str) -> bool:
+    """Партия второй волны отобрана (есть в picks.json): до отбора её шаги пропускаются."""
+    return batch in PICKS
 # герой на коне: кадр рендера 256 px, 8 направлений, в ряд idle (8) + move (8)
 MOUNT_FRAME = 256
 
@@ -59,7 +69,7 @@ def creatures() -> None:
     out = DST / 'creatures'
     out.mkdir(parents=True, exist_ok=True)
     # только нынешний состав: снятые с игры существа (сомы, киты) лежат на выходе конвейера
-    names = {c['name'] for c in json.loads((ROOT / 'studio/jobs/geroi/creatures.json').read_text(encoding='utf8'))}
+    names = {c['name'] for f in ('creatures.json', 'creatures-w2.json') for c in json.loads((ROOT / f'studio/jobs/geroi/{f}').read_text(encoding='utf8'))}
     for d in sorted((SRC / '20-creature-3d').iterdir()):
         meta_file = d / 'frames/meta.json'
         if d.name not in names or not meta_file.exists():
@@ -89,11 +99,19 @@ def creatures() -> None:
 def fields() -> None:
     for name in ('meadow', 'swamp', 'ash', 'pine', 'ford', 'crater'):
         webp(pick_file('14-battle', f'field-{name}'), DST / f'fields/{name}.webp')
+    if wave2('34-battle'):
+        for name in ('coast', 'snow', 'saltflat', 'heath', 'heart', 'darkkeep'):
+            webp(pick_file('34-battle', f'field-{name}'), DST / f'fields/{name}.webp')
 
 
 def obstacles() -> None:
     for i in range(1, 11):
         webp(pick_file('14-battle', f'obstacle-{i}', cut=True), DST / f'obstacles/{i}.webp', width=256)
+    if wave2('34-battle'):
+        for i in range(11, 17):
+            webp(pick_file('34-battle', f'obstacle-{i}', cut=True), DST / f'obstacles/{i}.webp', width=256)
+        for t in ('trap-pepper', 'trap-pit', 'trap-mirage'):
+            webp(pick_file('34-battle', t, cut=True), DST / f'obstacles/{t}.webp', width=256)
 
 
 def icons() -> None:
@@ -108,11 +126,17 @@ def icons() -> None:
         webp(pick_file('15-icons', f'skill-{i:02d}'), DST / f'icons/skill-{i:02d}.webp', width=96)
     for r in ('semki', 'wood', 'stone', 'amber', 'salt', 'stariron', 'resin'):
         webp(pick_file('15-icons', f'icon-{r}'), DST / f'icons/icon-{r}.webp', width=96)
+    if wave2('35-icons'):
+        for name in PICKS['35-icons']:
+            webp(pick_file('35-icons', name), DST / f'icons/{name}.webp', width=128 if name.startswith('art-') else 96)
 
 
 def heroes() -> None:
     for name in PICKS['11-heroes']:
         webp(pick_file('11-heroes', name), DST / f'heroes/{name}.webp', width=320)
+    # вторая волна: пацаны в нарядах своих краёв заменяют прежние портреты «в куртке»
+    for name in PICKS.get('31-heroes', {}):
+        webp(pick_file('31-heroes', name), DST / f'heroes/{name}.webp', width=320)
 
 
 def mapping() -> None:
@@ -133,6 +157,20 @@ def mapping() -> None:
         webp(pick_file('13-map', name, cut=True), DST / f'map/{name}.webp', width=width)
     for f in FACTIONS:
         webp(pick_file('12-towns', f'map-town-{f}', cut=True), DST / f'map/town-{f}.webp', width=720)
+    if wave2('33-map'):
+        for g in GROUNDS2:
+            src = pick_file('33-map', f'ground-{g}')
+            mid = tmp / f'{g}.png'
+            if not mid.exists():
+                subprocess.run(['python', '-X', 'utf8', str(ROOT / 'studio/post/seamless.py'), str(src), str(mid)], check=True)
+            webp(mid, DST / f'map/ground-{g}.webp', q=80)
+        for name in PICKS['33-map']:
+            if not name.startswith('ground-'):
+                width = next(v for k, v in sizes.items() if name.startswith(k))
+                webp(pick_file('33-map', name, cut=True), DST / f'map/{name}.webp', width=width)
+    if wave2('32-towns'):
+        for f in FACTIONS2 + ['dark']:
+            webp(pick_file('32-towns', f'map-town-{f}', cut=True), DST / f'map/town-{f}.webp', width=720)
 
 
 def mounts() -> None:
@@ -165,6 +203,10 @@ def siege() -> None:
     for f in FACTIONS:
         for part in ('wall', 'gate', 'tower'):
             webp(pick_file('14b-siege', f'{part}-{f}', cut=True), DST / f'siege/{part}-{f}.webp', width=320)
+    if wave2('34-battle'):
+        for f in FACTIONS2 + ['dark']:
+            for part in ('wall', 'gate', 'tower'):
+                webp(pick_file('34-battle', f'{part}-{f}', cut=True), DST / f'siege/{part}-{f}.webp', width=320)
 
 
 def towns() -> None:
@@ -173,6 +215,13 @@ def towns() -> None:
     for name in PICKS['12-towns']:
         if name.startswith('bld-'):
             webp(pick_file('12-towns', name, cut=True), DST / f'towns/{name[4:]}.webp', width=480)
+    if wave2('32-towns'):
+        for f in FACTIONS2:
+            webp(pick_file('32-towns', f'town-{f}-site'), DST / f'towns/{f}-site.webp', q=84)
+        webp(pick_file('32-towns', 'town-dark-full'), DST / 'towns/dark-full.webp', q=84)
+        for name in PICKS['32-towns']:
+            if name.startswith('bld-'):
+                webp(pick_file('32-towns', name, cut=True), DST / f'towns/{name[4:]}.webp', width=480)
 
 
 def brand() -> None:
@@ -195,9 +244,9 @@ def music() -> None:
 
 
 def sfx() -> None:
-    picks = {**PICKS['19-sfx'], **PICKS.get('19-sfx-redo', {})}
+    picks = {**PICKS['19-sfx'], **PICKS.get('19-sfx-redo', {}), **PICKS.get('39-sfx', {})}
     for name, take in sorted(picks.items()):
-        for batch in ('19-sfx-redo', '19-sfx'):
+        for batch in ('19-sfx-redo', '19-sfx', '39-sfx'):
             src = SRC / batch / 'ogg' / f'{name}-{take}.ogg'
             if name in PICKS.get(batch, {}) and src.exists():
                 dst = DST / f'sfx/{name}.ogg'

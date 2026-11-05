@@ -286,7 +286,7 @@ export function makeTestMap(spec: GameSpec): World {
   // ключ и застава: за заставой сокровищница
   same('keytent', 16, 31, { extra: { key: 'медный' } });
   same('guardtent', 34, 13, { extra: { key: 'медный' } });
-  both(`treasury-${TERRAINS[native[0]].id === 'rough' ? 'meadow' : TERRAINS[native[0]].id}`, `treasury-${TERRAINS[native[1]].id === 'rough' ? 'meadow' : TERRAINS[native[1]].id}`, 37, 9, {
+  both(`treasury-${decorArts(TERRAINS[native[0]].id)}`, `treasury-${decorArts(TERRAINS[native[1]].id)}`, 37, 9, {
     army: ['neutral-stonegiant', 3], extra: { reward: { semki: 6000, stone: 8 }, art: artOf(2) },
   });
   same('prison', 10, 36, { army: ['neutral-kikimora', 10], extra: { captive: { cls: 'kuznya-master', n: 4 } } });
