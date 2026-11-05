@@ -4,70 +4,90 @@ import { DIFFICULTIES, type Difficulty, type CampaignDef, type ScenarioDef } fro
 import type { ScnState } from '../sim/adv/scenario';
 import { button, h } from './common';
 
-/** Печать по буквам; щелчок — дописать строку сразу, следующий — дальше. */
-export function cutscenes(host: HTMLElement, ids: string[], full = false): Promise<void> {
+/** Ролик играет один раз и замирает на последнем кадре; строки печатаются по буквам и листаются сами.
+ *  Щелчок — дописать строку сразу, следующий — дальше. Промис отдаёт true, если ролики пропустили целиком. */
+export function cutscenes(host: HTMLElement, ids: string[], full = false): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!ids.length) return resolve();
+    if (!ids.length) return resolve(false);
     const box = h('div', `c-cut${full ? ' full' : ''}`);
     const frame = h('div', 'c-frame');
     const v = h('video');
-    v.loop = true;
     v.playsInline = true;
     const line = h('p', 'c-line');
-    const hint = h('span', 'c-hint', 'щелчок — дальше');
+    const hint = h('span', 'c-hint', 'щелчок — дальше · Esc — пропустить');
     frame.append(v);
-    box.append(frame, line, hint, button('Пропустить', () => finish(), 'g-btn small c-skip'));
+    box.append(frame, line, hint, button('Пропустить', () => finish(true), 'g-btn small c-skip'));
     host.append(box);
     let shot = 0;
     let row = 0;
     let shown = 0;
     let text = '';
     let timer = 0;
-    const finish = (): void => {
+    let wait = 0;
+    let ended = false;
+    const finish = (skipped: boolean): void => {
       window.clearInterval(timer);
+      window.clearTimeout(wait);
       v.pause();
+      v.removeAttribute('src');
       box.remove();
       window.removeEventListener('keydown', key);
-      resolve();
+      resolve(skipped);
+    };
+    const lastRow = (): boolean => row + 1 >= (CUTSCENE_TEXT[ids[shot]] ?? []).length;
+    /** Строка дописана: дать прочитать и листать дальше; последнюю строку кадра — только когда ролик кончился. */
+    const typed = (): void => {
+      window.clearTimeout(wait);
+      if (lastRow() && !ended) return;
+      wait = window.setTimeout(next, 1400 + text.length * 45);
     };
     const type = (): void => {
       window.clearInterval(timer);
+      window.clearTimeout(wait);
       shown = 0;
       line.textContent = '';
       timer = window.setInterval(() => {
         shown++;
         line.textContent = text.slice(0, shown);
-        if (shown >= text.length) window.clearInterval(timer);
+        if (shown >= text.length) {
+          window.clearInterval(timer);
+          typed();
+        }
       }, 32);
     };
     const showShot = (): void => {
       const id = ids[shot];
+      ended = false;
       v.src = `/geroi/a/cutscenes/${id}.mp4`;
       v.play().catch(() => {});
       row = 0;
       text = CUTSCENE_TEXT[id]?.[0] ?? '';
       type();
     };
+    v.onended = v.onerror = () => {
+      ended = true;
+      if (shown >= text.length) typed();
+    };
     const next = (): void => {
       if (shown < text.length) {
         window.clearInterval(timer);
         shown = text.length;
         line.textContent = text;
+        typed();
         return;
       }
-      const lines = CUTSCENE_TEXT[ids[shot]] ?? [];
-      if (row + 1 < lines.length) {
+      if (!lastRow()) {
         row++;
-        text = lines[row];
+        text = CUTSCENE_TEXT[ids[shot]][row];
         type();
         return;
       }
       shot++;
-      if (shot >= ids.length) finish();
+      if (shot >= ids.length) finish(false);
       else showShot();
     };
     const key = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') finish();
+      if (e.key === 'Escape') finish(true);
       else if (e.key === ' ' || e.key === 'Enter') next();
     };
     box.onclick = (e) => {

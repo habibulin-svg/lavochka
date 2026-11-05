@@ -322,11 +322,13 @@ async function playScenario(c: CampaignDef, i: number, diff: Difficulty): Promis
   stop();
   saveProgress(c.id, { ...progressOf(c.id), diff });
   audio.music(null);
+  // «Пропустить» на вступлении пропускает и ролики сценария — сразу к брифингу
+  let skipped = false;
   if (!introSeen()) {
-    await cutscenes(host, INTRO, true);
+    skipped = await cutscenes(host, INTRO, true);
     markIntro();
   }
-  await cutscenes(host, c.scenarios[i].before);
+  if (!skipped) await cutscenes(host, c.scenarios[i].before);
   briefing(host, c, i, () => {
     const p = progressOf(c.id);
     const w = buildScenario(c.scenarios[i], diff, i > 0 ? p.carry : null);
