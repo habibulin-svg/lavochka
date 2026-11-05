@@ -9,7 +9,7 @@ import {
   CELL_COLOR, CELL_NAME, CLUB, ERA_NAME, HEROES, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, TIERS, TIER_ID,
   dateText, dealById, eraOf, type Cell, type Krysha, type Skill, type Stat,
 } from './data';
-import { RIVAL_DARK, RIVAL_NAME, money, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
+import { RIVAL_DARK, RIVAL_NAME, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
@@ -188,6 +188,7 @@ class KommersyView implements GameView<View, Event> {
       const act = el.dataset.act!;
       if (act === 'sell') this.send({ type: 'sell', uid: Number(el.dataset.uid) });
       else if (act === 'manager') this.send({ type: 'manager', uid: Number(el.dataset.uid), on: el.dataset.on === '1' });
+      else if (act === 'grow') this.send({ type: 'grow', uid: Number(el.dataset.uid) });
       else if (act === 'repay') this.send({ type: 'repay' });
       else if (act === 'quit') this.send({ type: 'quit' });
       else if (act === 'krysha') this.send({ type: 'krysha', to: el.dataset.to as Krysha });
@@ -231,6 +232,8 @@ class KommersyView implements GameView<View, Event> {
     if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => say('start', true), 800);
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
     if (v.roll) this.tray.show([v.roll]);
+    // остаток хода с прошлого отрезка: в лотке — сколько досходить
+    else if (v.phase === 'move' && v.target != null && v.players.find((p) => p.seat === v.turn)?.pos === 0) this.tray.show([v.target]);
     this.render();
   }
 
@@ -245,6 +248,7 @@ class KommersyView implements GameView<View, Event> {
     const mine = interactive.includes(toAct[0]);
     if (v.phase === 'buh') return v.booksWait.some((x) => interactive.includes(x)) ? 'Сведите баланс за отрезок' : 'Бухгалтерия: ждём остальных';
     if (v.phase === 'choose') return mine ? 'Выбирайте' : `${who} думает`;
+    if (v.phase === 'move' && v.roll == null) return mine ? 'Остаток хода с прошлого отрезка — поставьте фишку' : `${who} досходит остаток хода`;
     if (v.phase === 'move') return mine ? 'Поставьте фишку на подсвеченную клетку' : `${who} ходит`;
     return mine ? 'Бросайте кубик' : `${who} бросает кубик`;
   }
@@ -380,7 +384,7 @@ class KommersyView implements GameView<View, Event> {
     const bar = (k: Stat, val: number) => {
       const lo = k === 'mood' ? -50 : 0;
       const pct = ((val - lo) / ((k === 'mood' ? 50 : 100) - lo)) * 100;
-      const bad = k === 'stress' ? val > 60 : k === 'mood' ? val < -20 : val < 25;
+      const bad = k === 'stress' ? val > 60 : k === 'mood' ? val < 0 : val < 25;
       return `<div class="km-stat"><span>${STAT_NAME[k]}</span><i><b style="width:${Math.max(2, Math.min(100, pct))}%"${bad ? ' class="bad"' : ''}></b></i><em>${val}</em></div>`;
     };
     const skills = (Object.keys(SKILL_NAME) as Skill[])
@@ -391,9 +395,11 @@ class KommersyView implements GameView<View, Event> {
           .map((a) => {
             const d = dealById(a.id);
             const mgr = a.kind === 'biz' ? `<button class="km-mini${a.manager ? ' on' : ''}" data-act="manager" data-uid="${a.uid}" data-on="${a.manager ? 0 : 1}"${dis} title="управляющий">👔</button>` : '';
-            const inc = a.kind === 'paper' ? `${money(a.value)} в бумагах` : `+${money(a.income * a.mul)}/мес · ${a.manager ? Math.ceil(a.hours * 0.15) : a.hours} ч`;
-            const grows = d?.next ? ` · растёт в «${esc(dealById(d.next)!.name)}»` : '';
-            return `<li><b>${esc(a.name)}</b><small>${inc}${d?.heat ? ' · 🩸' : ''}${grows}</small>${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></li>`;
+            const inc = a.kind === 'paper' ? `${money(a.value)} в бумагах` : `${a.now >= 0 ? '+' : ''}${money(a.now)}/мес${a.manager ? ' (управляющему 12 %)' : ''} · ${a.manager ? Math.ceil(a.hours * 0.15) : a.hours} ч`;
+            const g = a.grow;
+            const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(dealById(d.next)!.name)}» (пока рано)` : '';
+            const growBtn = g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '';
+            return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${d?.heat ? ' · органы ↑' : ''}${grows}</small>${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></li>`;
           })
           .join('')
       : '<li class="km-none">Дел пока нет</li>';
@@ -449,6 +455,9 @@ class KommersyView implements GameView<View, Event> {
           Sound.diceRoll();
           await this.tray.roll([ev.d], speed);
           break;
+        case 'carry':
+          this.tray.show([ev.d]);
+          break;
         case 'move': {
           const to = v.players.find((p) => p.seat === ev.seat)?.pos ?? 0;
           const from = this.shownPos.get(ev.seat) ?? 0;
@@ -493,8 +502,9 @@ class KommersyView implements GameView<View, Event> {
           await this.showBanner(`<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
           break;
         case 'buy':
+        case 'grow':
         case 'sell':
-          sfx(ev.t);
+          sfx(ev.t === 'grow' ? 'buy' : ev.t);
           await sleep(300 / speed);
           break;
         case 'buh':
@@ -570,10 +580,13 @@ function cardHtml(ask: Ask, mine: boolean, who: string) {
         .map((o, i) => {
           const ch = ask.choices.find((c) => c.di === i)!;
           const ci = ask.choices.indexOf(ch);
-          const pay = o.kind === 'paper' ? 'бумаги: цена растёт' : `окупится за ${Math.max(1, Math.round(o.price / Math.max(1, o.income)))} мес`;
+          // с управляющим доход сразу за вычетом его доли — как потом в «Делах»
+          const net = round(o.income * (o.mgr ? 0.88 : 1));
+          const pay = o.kind === 'paper' ? 'бумаги: цена растёт' : `окупится за ${Math.max(1, Math.round(o.price / Math.max(1, net)))} мес`;
+          const dark = dealById(o.id)?.heat ? '<em class="km-dark">🩸 тёмное дело: внимание органов растёт каждый месяц</em>' : '';
           return `<button class="km-offer" data-choice="${ci}"${!mine || !ch.ok ? ' disabled' : ''}>${art(o.id, 'km-thumb')}<div>
-            <b>${esc(o.name)}</b><small>${esc(o.text)}</small>
-            <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(o.income)}/мес · `}${o.mgr ? 'управляющий' : `${o.hours} ч`}</span>
+            <b>${dealById(o.id)?.heat ? '🩸 ' : ''}${esc(o.name)}</b><small>${esc(o.text)}</small>
+            <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(net)}/мес · `}${o.mgr ? 'с управляющим' : `${o.hours} ч`}</span>${dark}
             <em>${ch.ok ? (o.loan ? `в кредит ${money(o.loan)} · ` : '') + pay : esc(ch.why ?? '')}</em></div></button>`;
         })
         .join('')}</div>`

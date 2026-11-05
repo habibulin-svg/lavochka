@@ -61,6 +61,8 @@ export interface Player {
   books?: number;
   /** Отрезок (его месяц), в котором уже ходил против соперника: раз за отрезок. */
   rivalM?: number;
+  /** Остаток хода, не поместившийся в прошлый отрезок: досходится первым ходом нового. */
+  carry?: number;
 }
 export type Rival = 'demping' | 'peremanit' | 'naezd' | 'donos';
 export const RIVAL_NAME: Record<Rival, string> = { demping: 'Сбить цены', peremanit: 'Переманить управляющего', naezd: 'Наехать через крышу', donos: 'Донести' };
@@ -153,6 +155,7 @@ export type Action =
   | { type: 'choose'; i: number }
   | { type: 'sell'; uid: number }
   | { type: 'manager'; uid: number; on: boolean }
+  | { type: 'grow'; uid: number }
   | { type: 'repay' }
   | { type: 'quit' }
   | { type: 'krysha'; to: Krysha }
@@ -167,6 +170,9 @@ export type Event =
   /** Итог выбора на карточке: что изменилось. secret — совесть и органы, только самому (redact). */
   | { t: 'fx'; seat: number; title: string; label: string; lines: string[]; secret?: string[] }
   | { t: 'buy'; seat: number; name: string; sum: number }
+  | { t: 'grow'; seat: number; from: string; name: string; sum: number }
+  /** Остаток хода с прошлого отрезка. */
+  | { t: 'carry'; seat: number; d: number }
   | { t: 'sell'; seat: number; name: string; sum: number }
   | { t: 'period'; m: number; len: number }
   | { t: 'hist'; id: string; title: string; text: string }
@@ -313,12 +319,35 @@ function pickAsset(p: Player, rng: Rng, pred: (a: Asset) => boolean = (a) => a.k
   return list.length ? list[rng.int(list.length)] : null;
 }
 
+/** Во что может вырасти дело сейчас: следующая ступень уже появилась и ещё жива, второй такой нет. */
+export function growNext(s: State, p: Player, a: Asset): DealT | undefined {
+  const d = dealById(a.id);
+  const n = d?.next ? dealById(d.next) : undefined;
+  return n && !hasBiz(p, n) && s.m >= n.from && s.m <= n.peak + 24 && (!n.dies || s.m < n.dies) ? n : undefined;
+}
+/** Доплата за расширение: доля разницы цен (своё дело идёт в зачёт). Сам — 80 %, карточка «Расширяться?» — удачный случай, 60 %. */
+export const GROW_PAY = 0.8;
+export const GROW_PAY_CARD = 0.6;
+export const growCost = (n: DealT, a: Asset, k = GROW_PAY) => round(Math.max(0, n.price - a.value) * k);
+export function growWhy(s: State, p: Player, a: Asset): string | null {
+  const n = growNext(s, p, a);
+  if (!n) return 'расти некуда';
+  if (p.cash < growCost(n, a)) return 'не хватает денег';
+  return null;
+}
 function growTarget(s: State, p: Player) {
   return p.assets.find((a) => {
-    const d = dealById(a.id);
-    const n = d?.next ? dealById(d.next) : undefined;
-    return !!n && !hasBiz(p, n) && s.m >= n.from && p.cash >= (n.price - a.value) * 0.8;
+    const n = growNext(s, p, a);
+    return !!n && p.cash >= growCost(n, a, GROW_PAY_CARD);
   });
+}
+function growAsset(s: State, p: Player, a: Asset, k: number, ev: Event[]) {
+  const n = growNext(s, p, a)!;
+  const sum = growCost(n, a, k);
+  p.cash -= sum;
+  const from = a.name;
+  Object.assign(a, { id: n.id, name: n.name, kind: n.kind, value: n.price, income: n.income, hours: n.hours, mul: 1 });
+  ev.push({ t: 'grow', seat: p.seat, from, name: n.name, sum });
 }
 
 function setOut(s: State, p: Player, kind: 'jail' | 'hosp' | 'away', months: number, ev: Event[]) {
@@ -347,6 +376,7 @@ export function applyFx(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[]) {
   if (fx.insurance) p.insurance = true;
   if (fx.advisor) p.advisor = true;
   if (fx.incomeBoost) p.incomeBoost = Math.min(2, p.incomeBoost * fx.incomeBoost);
+  if (fx.close) p.assets = p.assets.filter((a) => a.id !== fx.close);
   if (fx.asset) {
     const m1 = (a: Asset) => assetIncome(s, p, a);
     if (fx.asset === 'good') {
@@ -357,12 +387,7 @@ export function applyFx(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[]) {
       if (a) p.cash -= m1(a) * (1.5 - p.skills.trade * 0.15);
     } else if (fx.asset === 'grow') {
       const a = growTarget(s, p);
-      const n = a && dealById(dealById(a.id)!.next!);
-      if (a && n) {
-        p.cash -= (n.price - a.value) * 0.8;
-        Object.assign(a, { id: n.id, name: n.name, kind: n.kind, value: n.price, income: n.income, hours: n.hours });
-        ev.push({ t: 'buy', seat: p.seat, name: n.name, sum: n.price });
-      }
+      if (a) growAsset(s, p, a, GROW_PAY_CARD, ev);
     } else if (fx.asset === 'sell') {
       const a = [...p.assets].sort((x, y) => y.value - x.value)[0];
       if (a) {
@@ -469,6 +494,9 @@ const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)
 export function cardOk(s: State, p: Player, c: CardT) {
   const t = tier(p);
   const main = c.choices[0];
+  const n = c.need;
+  if (n?.krysha && !n.krysha.includes(p.krysha)) return false;
+  if (n?.deal && !p.assets.some((a) => a.id === n.deal)) return false;
   return (c.from == null || s.m >= c.from) && (c.to == null || s.m <= c.to) && (c.minTier == null || t >= c.minTier) && (c.maxTier == null || t <= c.maxTier) && !owned(p, main.fx) && !(main.need?.growable && !growTarget(s, p));
 }
 
@@ -489,7 +517,8 @@ function choiceWhy(s: State, p: Player, ch: Choice): string | undefined {
 }
 
 function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
-  const list = CARDS.filter((c) => c.cell === cell && cardOk(s, p, c));
+  // карточка, где ни один выбор не доступен, ничего не меняет («Крыша просит» без крыши) — её не тянем
+  const list = CARDS.filter((c) => c.cell === cell && cardOk(s, p, c) && c.choices.some((ch) => !choiceWhy(s, p, ch)));
   const bag: CardT[] = [];
   for (const c of list) {
     // собрался в Лондон (с «Центра») — английский и советник попадаются вдвое чаще
@@ -526,10 +555,11 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
   if (fx.cashPct) out.push(`${fx.cashPct > 0 ? '+' : '−'}${Math.round(Math.abs(fx.cashPct) * 100)} % наличных`);
   const grow = fx.asset === 'grow' ? growTarget(s, p) : undefined;
   if (grow) {
-    const n = dealById(dealById(grow.id)!.next!)!;
-    out.push(`расширить «${grow.name}» до «${n.name}», доплата ${money(round((n.price - grow.value) * 0.8))}`);
+    const n = growNext(s, p, grow)!;
+    out.push(`расширить «${grow.name}» до «${n.name}», доплата ${money(growCost(n, grow, GROW_PAY_CARD))}`);
   } else if (fx.asset) out.push(ASSET_HINT[fx.asset]);
   if (fx.incomeBoost) out.push(`доход дел ${signed(Math.round((fx.incomeBoost - 1) * 100))} %`);
+  if (fx.close) out.push(`закрыть «${dealById(fx.close)?.name ?? fx.close}»`);
   for (const [k, v] of Object.entries(fx.stats ?? {}) as [Stat, number][]) {
     if (!v) continue;
     if (k === 'heat') out.push(`органы ${arrow(v)}`);
@@ -624,9 +654,13 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (!p) return null;
   const mine = s.players[s.turn].seat === seat;
 
-  if (a.type === 'sell' || a.type === 'manager' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha' || a.type === 'rival') {
+  if (a.type === 'sell' || a.type === 'manager' || a.type === 'grow' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha' || a.type === 'rival') {
     if (!mine || s.phase !== 'roll') return null;
-    if (a.type === 'rival') {
+    if (a.type === 'grow') {
+      const x = p.assets.find((q) => q.uid === a.uid);
+      if (!x || growWhy(s, p, x) !== null) return null;
+      growAsset(s, p, x, GROW_PAY, ev);
+    } else if (a.type === 'rival') {
       const q = s.players.find((x) => x.seat === a.target);
       if (!q || rivalWhy(s, p, q, a.kind) !== null) return null;
       rival(s, p, q, a.kind, rng, ev);
@@ -682,6 +716,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     const d = 1 + rng.int(6);
     s.roll = d;
     s.target = Math.min(p.pos + d, SEG_CELLS + 1);
+    // не поместилось до конца отрезка — остаток переходит в следующий
+    p.carry = Math.max(0, p.pos + d - (SEG_CELLS + 1));
     s.phase = 'move';
     ev.push({ t: 'roll', seat, d });
     return { state: s, events: ev };
@@ -904,10 +940,23 @@ function next(s: State, ev: Event[], rng: Rng) {
     const i = (s.turn + k) % n;
     if (s.players[i].pos <= SEG_CELLS) {
       s.turn = i;
+      startTurn(s, ev);
       return;
     }
   }
   periods(s, ev, rng);
+}
+
+/** Начало хода: остаток прошлого отрезка досходится без броска — игрок сам ставит фишку. */
+function startTurn(s: State, ev: Event[]) {
+  const p = s.players[s.turn];
+  const d = p.carry ?? 0;
+  if (!d || p.pos !== 0) return;
+  p.carry = 0;
+  s.phase = 'move';
+  s.roll = null;
+  s.target = Math.min(d, SEG_CELLS + 1);
+  ev.push({ t: 'carry', seat: p.seat, d });
 }
 
 /** Конец отрезка: «Бухгалтерия» (если включена), «Новый квартал» — и так, пока кто-нибудь не выйдет на дорогу. */
@@ -928,6 +977,7 @@ function periods(s: State, ev: Event[], rng: Rng, booked = false) {
       const i = (s.first + k) % n;
       if (s.players[i].pos <= SEG_CELLS) {
         s.turn = i;
+        startTurn(s, ev);
         return;
       }
     }
@@ -951,7 +1001,10 @@ function period(s: State, ev: Event[], rng: Rng) {
   }
   s.len = segMonths(s.m);
   s.cells = makeCells(s.m, rng);
-  for (const p of s.players) p.pos = p.out > 0 ? SEG_CELLS + 1 : 0;
+  for (const p of s.players) {
+    p.pos = p.out > 0 ? SEG_CELLS + 1 : 0;
+    if (p.out > 0) p.carry = 0;
+  }
 }
 
 /** Внимание органов на выходе из тюрьмы — не выше этого. */
@@ -1109,13 +1162,18 @@ export interface PlayerView {
   krysha: Krysha;
   stats: Partial<Record<Stat, number>>;
   skills: Record<Skill, number>;
-  assets: Asset[];
+  assets: AssetView[];
   debt: number;
   falls: Fall[];
   dreams: string[];
   club: boolean;
   ending: Ending | null;
   enemies: number;
+}
+/** Дело в виде: настоящий доход в месяц сейчас (с управляющим, нишей, кризисом) и куда можно вырасти. */
+export interface AssetView extends Asset {
+  now: number;
+  grow: { id: string; name: string; cost: number; why: string | null } | null;
 }
 export interface MyView {
   loans: Loan[];
@@ -1169,7 +1227,10 @@ export function view(s: State, seats: number[] | 'all'): View {
     }
     return {
       seat: p.seat, hero: p.hero, cash: round(p.cash), worth: round(marketWorth(s, p)), tier: tier(p), pos: p.pos, out: p.out, outKind: p.outKind, krysha: p.krysha,
-      stats, skills: { ...p.skills }, assets: clone(p.assets), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
+      stats, skills: { ...p.skills }, assets: p.assets.map((a): AssetView => {
+        const n = growNext(s, p, a);
+        return { ...clone(a), now: round(assetIncome(s, p, a)), grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
+      }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
     };
   });
   const mp = me == null ? null : P(s, me);

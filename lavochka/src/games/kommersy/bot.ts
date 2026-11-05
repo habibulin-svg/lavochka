@@ -107,6 +107,16 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
     const a = me.assets.filter((x) => x.kind === 'biz' && !x.manager).sort((x, y) => y.hours - x.hours)[0];
     if (a) return { type: 'manager', uid: a.uid, on: true };
   }
+  // расширить дело: своё идёт в зачёт — берём, если прибавка дохода окупает доплату быстро
+  if (level >= 1) {
+    for (const a of me.assets) {
+      const g = a.grow;
+      const n = g && !g.why ? dealById(g.id) : undefined;
+      if (!g || !n) continue;
+      const gain = n.income * (a.manager ? 0.88 : 1) - a.now;
+      if (gain > 0 && g.cost / gain < (level >= 2 ? 14 : 10) && me.cash - g.cost > my.expenses * 2) return { type: 'grow', uid: a.uid };
+    }
+  }
   if (level >= 2) {
     // всё готово, кроме денег, а капитала хватает — продавать дела и копить наличные
     const rest = my.club.filter((c) => !c.ok).map((c) => c.id);

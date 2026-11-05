@@ -52,6 +52,29 @@ describe('Коммерсы: ход', () => {
     expect(s.players[0].cash).not.toBe(cash);
   });
 
+  it('лишние очки кубика переходят в новый отрезок: первым ходом фишка досходит их без броска', () => {
+    let s = newState([0]);
+    s.players[0].pos = SEG_CELLS - 1; // до конца две клетки, выпало 5 — три переходят
+    s = act(s, 0, { type: 'roll' }, [4]);
+    s = act(s, 0, { type: 'move' });
+    expect(s.m).toBe(3);
+    expect(s.phase).toBe('move');
+    expect(s.roll).toBeNull();
+    expect(s.target).toBe(3);
+    s = act(s, 0, { type: 'move' }, [0, 0, 0, 0]);
+    expect(s.players[0].pos).toBe(3);
+    expect(s.players[0].carry).toBe(0);
+  });
+
+  it('с управляющим доход дела в виде — уже за вычетом его доли', () => {
+    const s = newState([0], { start: mm(1994, 1) });
+    const p = s.players[0];
+    p.assets = [{ uid: 1, id: 'larek', name: 'Ларёк', kind: 'biz', value: 3000, income: 1000, hours: 60, manager: false, mul: 1 }];
+    expect(view(s, [0]).players[0].assets[0].now).toBe(1000);
+    p.assets[0].manager = true;
+    expect(view(s, [0]).players[0].assets[0].now).toBe(880);
+  });
+
   it('нет часов на своё дело — берётся с управляющим', () => {
     let s = newState([0]);
     s.players[0].job = { name: 'две работы', salary: 100, hours: 210 };
@@ -97,6 +120,38 @@ describe('Коммерсы: что предлагают клетки', () => {
     expect(fxHint(s, p, card('n-grow').choices[0].fx).join()).toContain('Сеть ларьков');
     p.cash = 100; // есть куда, но не на что
     expect(cardOk(s, p, card('n-grow'))).toBe(false);
+  });
+
+  it('«Крыша просит» — только тому, у кого крыша; «Отравление» — только хозяину водочного цеха, и цех закрывается', () => {
+    const s = newState([0], { start: mm(1995, 1) });
+    const p = s.players[0];
+    p.cash = 1e6;
+    p.assets = [{ uid: 1, id: 'larek', name: 'Ларёк', kind: 'biz', value: 3000, income: 900, hours: 60, manager: false, mul: 1 }];
+    expect(cardOk(s, p, card('k-krysha-dan'))).toBe(false);
+    p.krysha = 'bandit';
+    expect(cardOk(s, p, card('k-krysha-dan'))).toBe(true);
+    expect(cardOk(s, p, card('c-palenka'))).toBe(false);
+    p.assets.push({ uid: 2, id: 'palenka', name: 'Водочный цех', kind: 'biz', value: 40000, income: 15000, hours: 50, manager: false, mul: 1 });
+    expect(cardOk(s, p, card('c-palenka'))).toBe(true);
+    applyFx(s, p, card('c-palenka').choices[1].fx, new SeededRng(1), []);
+    expect(p.assets.map((a) => a.id)).toEqual(['larek']);
+  });
+
+  it('расширить дело можно и самому, кнопкой: своё в зачёт, доплата 80 % разницы', () => {
+    let s = newState([0], { start: mm(1994, 1) });
+    const p = s.players[0];
+    p.cash = 30000;
+    p.assets = [{ uid: 1, id: 'larek', name: 'Ларёк', kind: 'biz', value: 3000, income: 900, hours: 60, manager: false, mul: 0.7 }];
+    const g = view(s, [0]).players[0].assets[0].grow!;
+    expect(g.name).toBe('Сеть ларьков');
+    expect(g.cost).toBe(21600);
+    expect(g.why).toBeNull();
+    s = act(s, 0, { type: 'grow', uid: 1 });
+    expect(s.players[0].assets[0]).toMatchObject({ id: 'set-larkov', value: 30000, mul: 1 });
+    expect(s.players[0].cash).toBe(30000 - 21600);
+    s.players[0].cash = 0;
+    s.players[0].assets[0] = { ...s.players[0].assets[0], id: 'larek', value: 3000 };
+    expect(apply(s, 0, { type: 'grow', uid: 1 }, new SeededRng(1))).toBeNull(); // не на что
   });
 
   it('клетка «Сделка» всегда с делами, как бы капитал ни обогнал время', () => {
@@ -185,7 +240,7 @@ describe('Коммерсы: эпоха и падения', () => {
     s.players[0].cash = -50000;
     s.players[0].stats.name = 0;
     s.players[0].pos = SEG_CELLS;
-    s = act(s, 0, { type: 'roll' }, [5]);
+    s = act(s, 0, { type: 'roll' }, [0]);
     s = act(s, 0, { type: 'move' });
     expect(s.players[0].falls.map((f) => f.kind)).toContain('razor');
     expect(s.players[0].cash).toBeGreaterThan(0);
@@ -212,7 +267,7 @@ describe('Коммерсы: эпоха и падения', () => {
       const s = newState([0]);
       Object.assign(s.players[0], { cash: CLUB_PRICE + 1e6, job: null, advisor: true, pos: SEG_CELLS });
       Object.assign(s.players[0].stats, { name: 80, svyazi: 80, heat: 0 });
-      return act(act(s, 0, { type: 'roll' }, [5]), 0, { type: 'move' });
+      return act(act(s, 0, { type: 'roll' }, [0]), 0, { type: 'move' });
     };
     let s = ready();
     expect(s.ask!.cell).toBe('period');

@@ -219,6 +219,8 @@ export interface Fx {
   asset?: 'good' | 'bad' | 'grow' | 'sell' | 'fire';
   /** Захват/раздел ниши: доход всех дел ×. */
   incomeBoost?: number;
+  /** Закрыть своё дело этого вида (палёнку после отравления). */
+  close?: string;
 }
 
 export interface Choice {
@@ -241,6 +243,8 @@ export interface CardT {
   to?: number;
   minTier?: number;
   maxTier?: number;
+  /** Карточка выпадает только тому, у кого такая крыша / такое дело. */
+  need?: { krysha?: Krysha[]; deal?: string };
   choices: Choice[];
 }
 const C = (id: string, cell: Cell, title: string, text: string, choices: Choice[], more: Partial<CardT> = {}): CardT => ({ id, cell, title, text, choices, ...more });
@@ -320,7 +324,7 @@ export const CARDS: CardT[] = [
     ok('Платить больше', { cashT: -1, stats: { mood: -3 } }, { need: { krysha: true } }),
     ok('Сменить на ментов', { krysha: 'police', cashT: -0.8, stats: { avt: -6, svyazi: 5 }, enemy: 1 }, { need: { krysha: true } }),
     ok('Своя охрана', { krysha: 'own', cashT: -3, stats: { avt: 4 } }, { need: { krysha: true, cashT: 3 } }),
-  ], { minTier: 1 }),
+  ], { minTier: 1, need: { krysha: ['bandit', 'police'] } }),
   C('k-zakaz', 'naezd', 'Конкурент мешает', 'Один человек давит на рынке и не уступает. «Можно решить вопрос насовсем».', [
     ok('Заказать', { cashT: -4, incomeBoost: 1.25, enemy: 2, stats: { sovest: -45, heat: 35, avt: 10, mood: -10 } }, { dark: true, need: { cashT: 4 } }),
     ok('Натравить крышу', { incomeBoost: 1.1, enemy: 1, stats: { sovest: -12, heat: 12 } }, { dark: true, need: { krysha: true } }),
@@ -353,8 +357,8 @@ export const CARDS: CardT[] = [
   ]),
   C('c-palenka', 'check', 'Отравление', 'В районе отравились палёной водкой. Ищут, чья.', [
     ok('Затаиться', { stats: { heat: 15, sovest: -10 } }, { dark: true }),
-    ok('Закрыть цех и помочь пострадавшим', { cashT: -2, stats: { heat: -5, sovest: 10, name: -5 } }),
-  ], { from: mm(1993, 1), to: mm(1999, 12) }),
+    ok('Закрыть цех и помочь пострадавшим', { cashT: -1, close: 'palenka', stats: { heat: -10, sovest: 10, name: -5 } }),
+  ], { from: mm(1993, 1), to: mm(1999, 12), need: { deal: 'palenka' } }),
   C('c-uchastkovy', 'check', 'Участковый', 'Участковый интересуется: «На какие шиши живём?»', [
     ok('Угостить', { cashT: -0.15, stats: { svyazi: 2 } }), ok('Показать трудовую', { stats: { heat: -2 } }),
   ], { to: mm(1993, 12) }),
