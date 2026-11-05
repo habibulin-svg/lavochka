@@ -40,10 +40,18 @@ export function loadCreature(id: string) {
   if (!p) {
     p = (async () => {
       // мипмапы: младшие ступени стоят мельче кадра, без них они рябят
-      const [meta, tex] = await Promise.all([
+      const got = await Promise.all([
         fetch(`/geroi/a/creatures/${id}.json`).then((r) => r.json() as Promise<Atlas>),
         Assets.load<Texture>({ src: `/geroi/a/creatures/${id}.webp`, data: { autoGenerateMipmaps: true } }),
-      ]);
+      ]).catch(() => null);
+      // атласа ещё нет (вторая волна генерируется): пустой спрайт, игра идёт
+      if (!got) {
+        console.warn(`geroi: нет атласа существа ${id}`);
+        const one = { row: 0, fps: 1, loop: true, frames: 1 };
+        const meta: Atlas = { frame: 1, origin: [0, 0], muzzle: [0, 0], top: [0, 0], anims: { idle: one, move: one, shoot: one, hit: one, defend: one, death: { ...one, loop: false } } };
+        return { meta, frames: Object.fromEntries(Object.keys(meta.anims).map((k) => [k, [Texture.EMPTY]])) };
+      }
+      const [meta, tex] = got;
       const frames: Record<string, Texture[]> = {};
       for (const [name, a] of Object.entries(meta.anims)) {
         frames[name] = Array.from({ length: a.frames }, (_, i) => new Texture({ source: tex.source, frame: new Rectangle(i * meta.frame, a.row * meta.frame, meta.frame, meta.frame) }));

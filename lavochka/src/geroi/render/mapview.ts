@@ -137,6 +137,7 @@ interface MountArt {
   frames: Texture[][];
 }
 const mounts = new Map<string, Promise<MountArt>>();
+const MOUNT_FALLBACK = 'zatulye-sotnik';
 function loadMount(cls: string): Promise<MountArt> {
   let p = mounts.get(cls);
   if (!p) {
@@ -150,13 +151,23 @@ function loadMount(cls: string): Promise<MountArt> {
         frames.push(Array.from({ length: 16 }, (_, i) => new Texture({ source: tex.source, frame: new Rectangle(i * meta.frame, d * meta.frame, meta.frame, meta.frame) })));
       }
       return { ...meta, frames };
-    })();
+    })().catch((e: unknown) => {
+      // коня этого класса ещё не нарисовали (вторая волна): пока — конь сотника
+      if (cls === MOUNT_FALLBACK) throw e;
+      console.warn(`geroi: нет коня ${cls}`);
+      return loadMount(MOUNT_FALLBACK);
+    });
     mounts.set(cls, p);
   }
   return p;
 }
 
-const artTexture = (art: string): Promise<Texture> => Assets.load<Texture>({ src: `/geroi/a/map/${art}.webp`, data: { autoGenerateMipmaps: true } });
+/** Рисунок объекта; ещё не нарисованный (вторая волна) — пусто, карта грузится дальше. */
+const artTexture = (art: string): Promise<Texture> =>
+  Assets.load<Texture>({ src: `/geroi/a/map/${art}.webp`, data: { autoGenerateMipmaps: true } }).catch(() => {
+    console.warn(`geroi: нет рисунка ${art}`);
+    return Texture.EMPTY;
+  });
 
 class HeroSprite {
   root = new Container();

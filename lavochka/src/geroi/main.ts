@@ -17,7 +17,7 @@ import { Arena } from './ui/arena';
 import { AdvGame } from './ui/adv';
 import { INTRO, markIntro, progressOf, saveProgress, scenarioOf } from './campaign';
 import { type CampaignDef, type Difficulty, buildScenario, takeCarry } from './campaign/types';
-import { briefing, campaignScreen, cutscenes, introSeen } from './ui/campaign';
+import { briefing, campaignScreen, cutscenes, endingChoice, introSeen } from './ui/campaign';
 import type { World } from './sim/adv/world';
 import { MapClient } from './net/mapclient';
 import type { MapClientMsg, MapServerMsg } from './net/mapproto';
@@ -332,7 +332,9 @@ async function playScenario(c: CampaignDef, i: number, diff: Difficulty): Promis
   if (!skipped) await cutscenes(host, c.scenarios[i].before);
   briefing(host, c, i, () => {
     const p = progressOf(c.id);
-    const w = buildScenario(c.scenarios[i], diff, i > 0 ? p.carry : null);
+    // финал: Серёга приходит из «За Тулой»
+    const carry = i > 0 ? p.carry : c.carryFrom ? progressOf(c.carryFrom).carry : null;
+    const w = buildScenario(c.scenarios[i], diff, carry);
     w.name = `${c.title}: ${c.scenarios[i].title}`;
     void startAdv(w);
   }, showCampaigns);
@@ -353,7 +355,15 @@ function scenarioEnd(w: World, win: boolean): [string, () => void][] {
   return [['Финал', () => {
     stop();
     audio.music(null);
-    void cutscenes(host, c.finale).then(showCampaigns);
+    void cutscenes(host, c.finale).then(async () => {
+      // выбор концовки: ответ — в прохождение, потом его ролики
+      if (c.ending) {
+        const o = await endingChoice(host, c.ending);
+        saveProgress(c.id, { ...progressOf(c.id), ending: o.id });
+        await cutscenes(host, o.cut);
+      }
+      showCampaigns();
+    });
   }], back];
 }
 

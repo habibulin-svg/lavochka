@@ -2,7 +2,7 @@
  * поэтому сохранение, боты и показ работают как в обычной партии. Проверка — после каждого действия и итога боя. */
 import type { HeroPick } from '../heroes';
 import { type Purse, WATER } from './data';
-import { SHARD, addToArmy } from './hero';
+import { SHARD, addToArmy, rankOfXp } from './hero';
 import { type AdvEvent, type World, allied, cellOf, emptyArmy, heroById, makeHero, neighbors, placeObject, playerHeroes, playerTowns, reveal, xOf, yOf } from './world';
 
 /** Клетка в описании сценария: [x, y] или метка объекта, города, героя. */
@@ -24,6 +24,14 @@ export type Cond =
   | { t: 'studied'; n: number }
   /** Настал день (0 — первый). */
   | { t: 'day'; day: number }
+  /** У игрока не меньше n ресурса. */
+  | { t: 'res'; res: keyof Purse; n: number }
+  /** Напор Плотины в городе игрока — не меньше n. */
+  | { t: 'napor'; n: number }
+  /** Отряд игрока (у героя или в гарнизоне) дорос до ранга n. */
+  | { t: 'rank'; n: number }
+  /** Память Курганов у игрока — не меньше n. */
+  | { t: 'memory'; n: number }
   /** Просьба провидца с меткой выполнена. */
   | { t: 'quest'; tag: string }
   | { t: 'flag'; id: string }
@@ -158,6 +166,14 @@ export function holds(w: World, s: ScnState, c: Cond): boolean {
       return playerTowns(w, me).reduce((sum, t) => sum + Object.values(t.studied).reduce((a, b) => a + b, 0), 0) >= c.n;
     case 'day':
       return w.day >= c.day;
+    case 'res':
+      return (w.players[me].res[c.res] ?? 0) >= c.n;
+    case 'napor':
+      return playerTowns(w, me).some((t) => (t.napor ?? 0) >= c.n);
+    case 'rank':
+      return [...playerHeroes(w, me).map((h) => h.army), ...playerTowns(w, me).map((t) => t.garrison)].some((a) => a.some((st) => !!st && rankOfXp(st.xp ?? 0) >= c.n));
+    case 'memory':
+      return (w.players[me].memory ?? 0) >= c.n;
     case 'quest':
       return w.objects.some((o) => o.tag === c.tag && o.quest?.done);
     case 'flag':

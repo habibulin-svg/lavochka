@@ -126,6 +126,25 @@ export function briefing(host: HTMLElement, c: CampaignDef, i: number, onGo: () 
   host.append(box);
 }
 
+/** Выбор концовки после финальных роликов: окно с вопросом и ответами; промис отдаёт выбранный ответ. */
+export function endingChoice(host: HTMLElement, e: NonNullable<CampaignDef['ending']>): Promise<NonNullable<CampaignDef['ending']>['options'][number]> {
+  return new Promise((resolve) => {
+    const box = h('div', 'g-modal');
+    const card = h('div', 'g-panel c-brief c-ending');
+    const text = h('div', 'c-brieftext');
+    text.append(h('h2', '', e.ask));
+    const row = h('div', 'g-row');
+    e.options.forEach((o, i) => row.append(button(o.text, () => {
+      box.remove();
+      resolve(o);
+    }, i === 0 ? 'g-btn main' : 'g-btn')));
+    text.append(row);
+    card.append(text);
+    box.append(card);
+    host.append(box);
+  });
+}
+
 /** Задания посреди сценария (кнопка 📜). */
 export function goalsCard(box: HTMLElement, s: ScnState): void {
   box.append(h('h3', '', 'Задания'));
@@ -174,6 +193,8 @@ export function campaignScreen(screen: (...n: Node[]) => void, hooks: CampaignHo
     face.src = `/geroi/a/heroes/lad-${c.lad}.webp`;
     const body = h('div', 'c-body');
     body.append(h('h2', '', c.title), h('b', '', c.hero), h('p', 'dim', c.text));
+    const end = p.ending && c.ending?.options.find((o) => o.id === p.ending);
+    if (end) body.append(h('p', 'g-note', `Концовка: «${end.text}»`));
     const ol = h('ol', 'c-scen');
     c.scenarios.forEach((s: ScenarioDef, i) => {
       const li = h('li', i < p.done ? 'done' : i === p.done ? 'next' : 'locked');

@@ -71,6 +71,7 @@ export const LADS: Record<string, string> = {
   zheka: 'Жека «Барыга»',
   tyoma: 'Тёма «Тихий»',
   starshoy: 'Старшой',
+  kostya: 'Костя, брат Макса',
 };
 
 export const heroName = (p: HeroPick): string => (p.lad ? LADS[p.lad] : NAMES[p.cls][p.n - 1]);
