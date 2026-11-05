@@ -163,12 +163,12 @@ TOWNS2 = {
                 'dwell': ['a stone guardhouse on the dam', 'a harpoon workshop with nets and harpoons', 'a cliff nest tower for storm birds', 'a sea grotto pool with steps',
                           'a witch tower of shells and kelp', 'a stone bull pen by the surf', 'a giant flooded sluice basin with whirling water'],
                 'unique': [('dam', 'a huge stone dam with open sluices and roaring water'), ('turbine', 'a great water wheel turbine house with brass gears')]},
-    'ostrog': {'look': 'northern fort architecture: dark log palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys',
+    'ostrog': {'look': 'northern log fort architecture: dark log walls and a sharpened palisade, low log houses with flat plank roofs covered in snow, square log watchtowers with flat plank tops, chimneys with smoke',
                'site': 'a snowy taiga clearing with tall dark firs, a frozen river, pale winter sun',
                'dwell': ['a log barracks with a training yard', 'a ski hunters lodge with skis and bows', 'a wolf kennel with a log fence', 'a bear pit with a log roof',
                          'a shaman yurt of hides with antlers', 'a giant mammoth stable of logs', 'an ice cave with a giant door'],
                 'unique': [('drill', 'a drill square with wooden training dummies and a banner'), ('banya', 'a log bath house with steam rising')]},
-    'bazar': {'look': 'desert bazaar architecture: sun-dried brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets',
+    'bazar': {'look': 'desert bazaar architecture: low flat-roofed sun-dried brick houses, colorful striped silk awnings, hanging carpets, round market domes with turquoise tiles, lanterns',
               'site': 'a white salt flat with dunes, a turquoise oasis lake, hot hazy afternoon',
               'dwell': ['a thieves den behind a curtain', 'a spice shop with sacks of red pepper', 'a carpet workshop with hanging carpets', 'a hall of mirrors',
                         'a camel caravan yard', 'a blue lamp tower', 'a sand pit lair with a domed roof'],
@@ -458,6 +458,8 @@ def main():
 # Переделки после отбора (как REDO в make_jobs.py): пункты с новыми промптами и сидами — партией «<партия>-redo», ночные остаются для сравнения.
 REDO2 = {
     '30-creatures': ([f'ostrog-{u[0]}' for u in FACTIONS2['ostrog']['units']] + ['kurgany-shadowherd', 'neutral-griffin'], [43, 44]),  # Острог «дедами-морозами», грифон без орлиной головы, пастух — собакой
+    '32-towns': ([f'bld-{f}-{b}' for f in ('ostrog', 'bazar') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)] + [u[0] for u in TOWNS2[f]['unique']]]
+                 + ['map-town-ostrog', 'map-town-bazar', 'town-bazar-full', 'town-ostrog-full'], [22, 23]),  # кресты на шпилях Острога, минареты и пальмы Базара (отрицания модель не понимает)
     '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 
