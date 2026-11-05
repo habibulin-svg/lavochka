@@ -1,0 +1,220 @@
+# Герои, партия 34: поля боя, препятствия, осада, ловушки Базара
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 12
+items:
+- name: field-coast
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat rocky seashore with wet sand, tide
+    pools and surf along the very top edge. The middle is open, flat and clear.'
+- name: field-snow
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat snowy field with frozen grass, snowy
+    firs along the very top edge. The middle is open, flat and clear.'
+- name: field-saltflat
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat cracked white salt flat with low dunes
+    along the very top edge. The middle is open, flat and clear.'
+- name: field-heath
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat purple heather moor with low burial
+    mounds along the very top edge. The middle is open, flat and clear.'
+- name: field-heart
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat floor of a giant crater glowing with
+    golden brass light from cracks, spiral walls along the edges. The middle is open, flat and clear.'
+- name: field-darkkeep
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat black stone courtyard with iron grates
+    and red braziers along the very top edge. The middle is open, flat and clear.'
+- name: obstacle-11
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: an ice block on a tiny patch of its own ground. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-12
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a white salt crystal cluster on a tiny patch of its own ground. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-13
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a small standing stone on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-14
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a pile of driftwood on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-15
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a frozen dead bush on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: obstacle-16
+  width: 1024
+  height: 1024
+  seeds:
+  - 41
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: a bronze brazier on a tiny patch of its own ground. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: wall-plotina
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall, as wide as it is tall,
+    flat crenellated top, built of grey granite blocks with brass rivets, standing alone on bare ground. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: gate-plotina
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall with a single heavy closed
+    gate in its front, flat crenellated top, built of grey granite blocks with brass rivets, standing alone on bare ground. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: tower-plotina
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one stout round defensive tower, as wide as it is tall, flat crenellated
+    top, built of grey granite blocks with brass rivets, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: wall-ostrog
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall, as wide as it is tall,
+    flat crenellated top, built of dark sharpened pine logs with snow on top, standing alone on bare ground. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: gate-ostrog
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall with a single heavy closed
+    gate in its front, flat crenellated top, built of dark sharpened pine logs with snow on top, standing alone on bare ground. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: tower-ostrog
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one stout round defensive tower, as wide as it is tall, flat crenellated
+    top, built of dark sharpened pine logs with snow on top, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: wall-bazar
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall, as wide as it is tall,
+    flat crenellated top, built of sun-dried yellow brick with turquoise tiles, standing alone on bare ground. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: gate-bazar
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall with a single heavy closed
+    gate in its front, flat crenellated top, built of sun-dried yellow brick with turquoise tiles, standing alone on bare ground. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: tower-bazar
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one stout round defensive tower, as wide as it is tall, flat crenellated
+    top, built of sun-dried yellow brick with turquoise tiles, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: wall-kurgany
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall, as wide as it is tall,
+    flat crenellated top, built of turf covered earth with old standing stones, standing alone on bare ground. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: gate-kurgany
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall with a single heavy closed
+    gate in its front, flat crenellated top, built of turf covered earth with old standing stones, standing alone on bare ground. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: tower-kurgany
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one stout round defensive tower, as wide as it is tall, flat crenellated
+    top, built of turf covered earth with old standing stones, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: wall-dark
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall, as wide as it is tall,
+    flat crenellated top, built of black stone with iron spikes, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: gate-dark
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one short chunky block of a defensive wall with a single heavy closed
+    gate in its front, flat crenellated top, built of black stone with iron spikes, standing alone on bare ground. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: tower-dark
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game scenery sprite seen from above in three-quarter view: one stout round defensive tower, as wide as it is tall, flat crenellated
+    top, built of black stone with iron spikes, standing alone on bare ground. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: trap-pepper
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game sprite seen from above in three-quarter view: a small cloth sack of red pepper powder with a red cloud above it. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: trap-pit
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game sprite seen from above in three-quarter view: a hidden pit covered with sticks and sand. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: trap-mirage
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Game sprite seen from above in three-quarter view: a shimmering transparent mirror ghost of a warrior. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'

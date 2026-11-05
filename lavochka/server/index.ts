@@ -24,6 +24,7 @@ import { DEFS } from '../src/games/defs';
 import { Ratings, flushGeroiMail, geroiFirst, geroiMailOf, geroiRooms, initGeroiMail } from './geroi';
 import { gopsFirst, gopsRooms } from './gops';
 import { Vk, vkApi } from './vkladyshi';
+import { Buy, buyApi } from './buy';
 import type { GameDef } from '../src/core/types';
 import { FileRecordStore, mayPost, Records } from './records';
 import { PERIODS, RECORD_GAMES, type RecordPeriod } from '../src/core/records';
@@ -254,7 +255,11 @@ setInterval(() => accountsReady && player.refresh().catch(() => {}), 600_000).un
 const donate = new Donate(accounts, robokassaFromEnv(), log);
 // «Вкладыши» (server/vkladyshi.ts): коллекция под аккаунтом, кон, обмен; монеты за рубли — через ту же Robokassa
 const vk = new Vk(accounts, robokassaFromEnv(), log);
-donate.onPaid = (d) => vk.paid(d);
+// разовые покупки (server/buy.ts): «Герои» целиком — право geroi_full навсегда
+const buy = new Buy(accounts, robokassaFromEnv(), log);
+donate.onPaid = async (d) => {
+  if (!(await buy.paid(d))) await vk.paid(d);
+};
 if (!donate.enabled) log('донат: ключей Robokassa нет (ROBOKASSA_LOGIN/PASS1/PASS2) — приём платежей выключен');
 // подписка «Лавочка+» (server/plus.ts): та же Robokassa; повторные списания — только при ROBOKASSA_RECURRING=1
 const plus = new Plus(accounts, robokassaFromEnv(), log, fetch, (process.env.SITE_URL || 'https://lavochka-games.ru').replace(/\/+$/, ''));
@@ -478,6 +483,10 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string) {
   if (path === '/api/donate' || path === '/api/admin/donate' || path.startsWith('/api/pay/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
     if (await donateApi(donate, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody, plus)) return;
+  }
+  if (path === '/api/buy') {
+    if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });
+    if (await buyApi(buy, req, res, new URL(req.url || '/', 'http://x'), clientIp(req), readBody)) return;
   }
   if (path === '/api/vk' || path.startsWith('/api/vk/')) {
     if (!accountsReady) return json(res, 503, { error: 'down', message: 'Сервер временно недоступен. Попробуйте чуть позже.' });

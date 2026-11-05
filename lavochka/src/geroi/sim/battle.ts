@@ -14,6 +14,15 @@ const CHANCE_PROC = 250;
 const AID_USES = 3;
 const SKY: School[] = ['fire', 'water', 'earth', 'air'];
 const BOG_SPEED = 2;
+/** «Разгон» Плотины: +4 % урона за пройденный гекс, не больше +40 %. */
+const RUSH_PER_STEP = 4;
+const RUSH_MAX = 40;
+/** «Буря» Плотины: каждый 3-й раунд чужие летуны теряют столько скорости. */
+const STORM_SPEED = 2;
+/** Ранг отряда Острога: +1 к атаке и защите за ранг (на карте — опыт в боях и на плацу). */
+export const RANK_MAX = 5;
+/** Карманники Базара: семок за каждое существо в ударе (на карте уходят в казну). */
+const STEAL_PER = 2;
 
 /** Цифры героя с карты приключений: уровень, навыки, вещи. В «Арене» их нет — там всё от класса. */
 export interface HeroStats {
@@ -40,7 +49,8 @@ export interface HeroStats {
 export interface SideSetup {
   /** Нет героя — нейтральный отряд или гарнизон: нули и без книги. */
   hero: HeroPick | null;
-  army: { cre: string; count: number }[];
+  /** rank — ранг отряда Острога (0–5). */
+  army: { cre: string; count: number; rank?: number }[];
   stats?: HeroStats;
   /** Подпись стороны без героя. */
   label?: string;
@@ -87,6 +97,8 @@ export interface Unit {
   moved: boolean;
   /** Прошлый удар уже увёл в туман. */
   misted?: boolean;
+  /** Ранг Острога: +1 к атаке и защите за ранг. */
+  rank?: number;
   effects: Effect[];
 }
 
@@ -132,6 +144,10 @@ export interface BattleState {
   winner: number;
   /** Расчёт бота: средний урон и без случайностей, настоящих бросков бот не видит. */
   expect?: boolean;
+  /** «Подлянка» Базара: спрятанная ловушка (видит только хозяин). Нет — нет ловушки. */
+  trap?: { cell: number; owner: number };
+  /** Сколько семок унесли карманники каждой стороны. */
+  loot?: [number, number];
 }
 
 /** Кусок стены: держит клетку, пока цел. Ворота свои пропускают. */
@@ -178,7 +194,7 @@ export type BattleEvent =
   | { e: 'defend'; u: number }
   | { e: 'spell'; side: number; spell: string; cell: number; hits: HitInfo[]; heals: { t: number; left: number }[]; marks: number[] }
   | { e: 'aid'; u: number; t: number; left: number; curse?: boolean }
-  | { e: 'proc'; t: number; k: 'poison' | 'blind' | 'root' | 'swallow' | 'mist' }
+  | { e: 'proc'; t: number; k: 'poison' | 'blind' | 'root' | 'swallow' | 'mist' | 'storm' | 'trap' | 'pull' | 'steal' }
   | { e: 'poison'; t: number; dmg: number; left: number }
   | { e: 'wall'; cell: number; hp: number }
   | { e: 'tower'; t: number; dmg: number; left: number }
@@ -216,13 +232,16 @@ export const isRooted = (u: Unit): boolean => hasEffect(u, 'root');
 
 const onForeignBog = (s: BattleState, u: Unit): boolean => s.bogOwner >= 0 && s.bogOwner !== u.side && !hasAb(creOf(u), 'pass') && !hasAb(creOf(u), 'fly') && s.bog.includes(u.cell);
 
+/** «Строй дружины» Острога: в первом раунде +1 скорость и +2 защиты. */
+const inFormation = (s: BattleState, u: Unit): boolean => s.round === 1 && creOf(u).faction === 'ostrog';
+
 export function speedOf(s: BattleState, u: Unit): number {
   const tactics = s.round === 1 ? s.sides[u.side].tactics ?? 0 : 0;
-  return Math.max(1, creOf(u).speed + effectSum(u, 'speed') + tactics - (onForeignBog(s, u) ? BOG_SPEED : 0));
+  return Math.max(1, creOf(u).speed + effectSum(u, 'speed') + tactics + (inFormation(s, u) ? 1 : 0) - (onForeignBog(s, u) ? BOG_SPEED : 0));
 }
-export const attackOf = (s: BattleState, u: Unit): number => Math.max(0, creOf(u).atk + s.sides[u.side].atk + effectSum(u, 'atk'));
+export const attackOf = (s: BattleState, u: Unit): number => Math.max(0, creOf(u).atk + s.sides[u.side].atk + effectSum(u, 'atk') + (u.rank ?? 0));
 export function defenseOf(s: BattleState, u: Unit): number {
-  const d = Math.max(0, creOf(u).def + s.sides[u.side].def + effectSum(u, 'def'));
+  const d = Math.max(0, creOf(u).def + s.sides[u.side].def + effectSum(u, 'def') + (u.rank ?? 0) + (inFormation(s, u) ? 2 : 0));
   return u.defending ? d + Math.trunc((d * 3) / 10) + 1 : d;
 }
 const totalHp = (u: Unit): number => (u.count > 0 ? (u.count - 1) * creOf(u).hp + u.top : 0);
@@ -240,8 +259,8 @@ export function reachOf(s: BattleState, u: Unit): Reach {
   const dist = new Int16Array(CELLS).fill(-1);
   const prev = new Int16Array(CELLS).fill(-1);
   dist[u.cell] = 0;
-  if (isRooted(u)) return { dist, prev };
   const c = creOf(u);
+  if (isRooted(u) || hasAb(c, 'still')) return { dist, prev };
   const occ = occupancy(s, u.side);
   const big = hasAb(c, 'big');
   const free = (cell: number): boolean => {
@@ -340,6 +359,9 @@ export function damageFactor(s: BattleState, a: Unit, t: Unit, opts: { ranged?: 
   let m = diff >= 0 ? 1000 + Math.min(60, diff) * 50 : 1000 - Math.min(28, -diff) * 25;
   if (hasAb(c, 'antiBig') && hasAb(creOf(t), 'big')) m = Math.trunc((m * 3) / 2);
   if (opts.steps && hasAb(c, 'charge')) m = Math.trunc((m * (100 + opts.steps * 5)) / 100);
+  if (opts.steps && c.faction === 'plotina') m = Math.trunc((m * (100 + Math.min(RUSH_MAX, opts.steps * RUSH_PER_STEP))) / 100);
+  // «Предки смотрят»: последний живой отряд Курганов бьёт вдвое
+  if (c.faction === 'kurgany' && !s.units.some((x) => x !== a && x.side === a.side && x.count > 0)) m *= 2;
   if (opts.ranged) {
     if (!hasAb(c, 'noRangePen') && hexDist(a.cell, t.cell) > 10) m = Math.trunc(m / 2);
   } else if (c.shots > 0 && !hasAb(c, 'noMeleePen')) m = Math.trunc(m / 2);
@@ -413,7 +435,7 @@ function strike(s: BattleState, a: Unit, t: Unit, ev: BattleEvent[], o: { ranged
   ev.push({ e: 'hit', u: a.id, hits, shot: o.ranged, retal: o.retal, luck: luck || undefined });
   for (const x of targets) if (x.count === 0) ev.push({ e: 'die', u: x.id });
   if (t.count > 0) {
-    if (hasAb(c, 'poison') && !hasAb(creOf(t), 'machine')) {
+    if (hasAb(c, 'poison') && !hasAb(creOf(t), 'machine') && !hasAb(creOf(t), 'ghost')) {
       addEffect(t, { k: 'poison', v: Math.max(1, Math.trunc(dealt / 8)), n: 3 });
       ev.push({ e: 'proc', t: t.id, k: 'poison' });
     }
@@ -430,7 +452,27 @@ function strike(s: BattleState, a: Unit, t: Unit, ev: BattleEvent[], o: { ranged
       addEffect(t, { k: 'hidden', v: 1, n: 1 });
       ev.push({ e: 'proc', t: t.id, k: 'swallow' });
     }
+    if (o.ranged && hasAb(c, 'pull')) pull(s, a, t, ev);
   }
+  if (hasAb(c, 'steal') && !o.ranged && !o.retal) {
+    const loot = s.loot ?? [0, 0];
+    loot[a.side] += a.count * STEAL_PER;
+    s.loot = loot;
+    ev.push({ e: 'proc', t: a.id, k: 'steal' });
+  }
+}
+
+/** Гарпун: цель (не большая, не на корню) подтягивается на гекс к стрелку, если там свободно. */
+function pull(s: BattleState, a: Unit, t: Unit, ev: BattleEvent[]): void {
+  const ct = creOf(t);
+  if (hasAb(ct, 'big') || hasAb(ct, 'still') || isRooted(t) || t.count === 0) return;
+  const occ = occupancy(s, t.side);
+  const d0 = hexDist(t.cell, a.cell);
+  const to = neighbors(t.cell).find((n) => occ[n] === -1 && hexDist(n, a.cell) < d0 && hexDist(n, a.cell) >= 1);
+  if (to === undefined) return;
+  ev.push({ e: 'move', u: t.id, path: [t.cell, to] });
+  t.cell = to;
+  ev.push({ e: 'proc', t: t.id, k: 'pull' });
 }
 
 /** Может ли отряд ответить на удар сейчас. */
@@ -608,10 +650,24 @@ function startRound(s: BattleState, ev: BattleEvent[]): void {
       if (u.count === 0) ev.push({ e: 'die', u: u.id });
     }
   }
+  storm(s, ev);
   siegeRound(s, ev);
   if (checkOver(s, ev)) return;
   s.queue = makeQueue(s);
   s.waited = [];
+}
+
+/** «Буря» Плотины: каждый 3-й раунд чужие летуны теряют скорость до конца раунда. Плотина с обеих сторон — бури нет. */
+function storm(s: BattleState, ev: BattleEvent[]): void {
+  if (s.round % 3 !== 0) return;
+  const p = s.sides.map((h) => h.faction === 'plotina');
+  if (p[0] === p[1]) return;
+  const foe = p[0] ? 1 : 0;
+  for (const u of s.units) {
+    if (u.side !== foe || u.count === 0 || !hasAb(creOf(u), 'fly')) continue;
+    u.effects.push({ k: 'speed', v: -STORM_SPEED, n: 1 });
+    ev.push({ e: 'proc', t: u.id, k: 'storm' });
+  }
 }
 
 /** Начало раунда в осаде: таран бьёт ворота, затем стену рядом; башни стреляют по самому сильному. Без бросков: одинаково и в расчёте бота. */
@@ -645,6 +701,15 @@ function endRound(s: BattleState): void {
   }
 }
 
+/** Мораль отряда: механизмам и духам её нет; у Курганов потерявший половину не дрогнет и получает +1. */
+function moraleOf(s: BattleState, u: Unit): number {
+  const c = creOf(u);
+  if (hasAb(c, 'machine') || hasAb(c, 'ghost')) return 0;
+  const m = s.sides[u.side].morale;
+  if (c.faction === 'kurgany' && u.count * 2 < u.start) return Math.max(0, m) + 1;
+  return m;
+}
+
 /** Следующий отряд: очередь, потом выждавшие (самый медленный — первым), потом новый раунд. */
 function nextTurn(s: BattleState, ev: BattleEvent[]): void {
   for (;;) {
@@ -670,8 +735,8 @@ function nextTurn(s: BattleState, ev: BattleEvent[]): void {
       ev.push({ e: 'skip', u: id, why: 'stun' });
       continue;
     }
-    const morale = s.sides[u.side].morale;
-    if (morale < 0 && !hasAb(creOf(u), 'machine') && proc(s, -morale * FORTUNE_PER_POINT)) {
+    const morale = moraleOf(s, u);
+    if (morale < 0 && proc(s, -morale * FORTUNE_PER_POINT)) {
       u.acted = true;
       ev.push({ e: 'skip', u: id, why: 'morale' });
       continue;
@@ -686,8 +751,8 @@ function nextTurn(s: BattleState, ev: BattleEvent[]): void {
 function endTurn(s: BattleState, u: Unit, ev: BattleEvent[]): void {
   if (checkOver(s, ev)) return;
   u.acted = true;
-  const morale = s.sides[u.side].morale;
-  if (u.count > 0 && !u.moraled && morale > 0 && !hasAb(creOf(u), 'machine') && proc(s, morale * FORTUNE_PER_POINT)) {
+  const morale = moraleOf(s, u);
+  if (u.count > 0 && !u.moraled && morale > 0 && proc(s, morale * FORTUNE_PER_POINT)) {
     u.moraled = true;
     ev.push({ e: 'morale', u: u.id });
     ev.push({ e: 'turn', u: u.id });
@@ -738,11 +803,30 @@ export function act(s: BattleState, a: Action): BattleEvent[] {
   const stepTo = (to: number): number => {
     if (to === u.cell) return 0;
     const r = reachOf(s, u);
-    const path = pathTo(r, u.cell, to);
+    let path = pathTo(r, u.cell, to);
+    // «Подлянка»: чужой, ступивший на ловушку, встаёт на ней и пропускает следующий ход; летуны её не задевают
+    const trap = s.trap;
+    let caught = false;
+    if (trap && trap.owner !== u.side && !hasAb(creOf(u), 'fly')) {
+      const i = path.indexOf(trap.cell);
+      const occ = occupancy(s, u.side);
+      if (i > 0 && (occ[trap.cell] === -1 || occ[trap.cell] === u.id) && (!hasAb(creOf(u), 'big') || fitsBig(u.side, trap.cell))) {
+        path = path.slice(0, i + 1);
+        caught = true;
+      }
+    }
+    const dest = path[path.length - 1];
     ev.push({ e: 'move', u: u.id, path });
-    u.cell = to;
+    u.cell = dest;
     u.moved = true;
-    return r.dist[to];
+    if (caught) {
+      s.trap = undefined;
+      // ход уже идёт: запрет должен пережить конец этого раунда
+      addEffect(u, { k: 'stun', v: 1, n: 2 });
+      ev.push({ e: 'proc', t: u.id, k: 'trap' });
+      return -1;
+    }
+    return r.dist[dest];
   };
   switch (a.t) {
     case 'flee':
@@ -763,7 +847,8 @@ export function act(s: BattleState, a: Action): BattleEvent[] {
       break;
     case 'attack': {
       const steps = stepTo(a.from);
-      melee(s, u, s.units[a.target], steps, ev);
+      // попал в ловушку по пути — до цели не дошёл
+      if (steps >= 0) melee(s, u, s.units[a.target], steps, ev);
       break;
     }
     case 'shoot':
@@ -846,6 +931,7 @@ export function createBattle(setup: BattleSetup): BattleState {
       units.push({
         id: units.length, side: side as 0 | 1, cre: st.cre, cell: cellOf(x, rows[i]), count: st.count, start: st.count, top: c.hp, shots: c.shots, aid: AID_USES,
         retaled: false, acted: false, waited: false, defending: false, moraled: false, moved: false, effects: [],
+        ...(st.rank ? { rank: Math.max(0, Math.min(RANK_MAX, Math.trunc(st.rank))) } : {}),
       });
     });
   });
@@ -884,6 +970,18 @@ export function createBattle(setup: BattleSetup): BattleState {
   const s: BattleState = {
     seed: setup.seed, rng: r.s, round: 0, field: setup.field, sides, units, queue: [], waited: [], current: -1, obstacles, bog, bogOwner, sky, over: false, winner: -1,
   };
+  // «Подлянка» Базара: ловушка на чужой половине середины поля; Базар с обеих сторон — ловушек нет
+  const bz = sides.map((h) => h.faction === 'bazar');
+  if (bz[0] !== bz[1]) {
+    const owner = bz[0] ? 0 : 1;
+    for (let i = 0; i < 40; i++) {
+      const x = owner === 0 ? r.int(6, 9) : r.int(3, 6);
+      const c = cellOf(Math.min(FIELD_W - 2, x), r.int(1, FIELD_H - 2));
+      if (obstacles.some((o) => o.cell === c) || bog.includes(c)) continue;
+      s.trap = { cell: c, owner };
+      break;
+    }
+  }
   if (setup.siege) {
     s.fort = setup.siege;
     s.siegeFaction = setup.siegeFaction;
@@ -911,6 +1009,8 @@ export function cloneBattle(s: BattleState): BattleState {
     queue: [...s.queue],
     waited: [...s.waited],
     walls: s.walls?.map((w) => ({ ...w })),
+    trap: s.trap ? { ...s.trap } : undefined,
+    loot: s.loot ? [...s.loot] : undefined,
   };
 }
 

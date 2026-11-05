@@ -12,6 +12,7 @@ import type { Donation } from './accounts/store';
 import { cookieOf, sameOrigin, send, siteOf } from './accounts/http';
 import { checkResult, payForm, type RobokassaConf } from './pay/robokassa';
 import { isPlusInv, type Plus } from './plus';
+import { productOfPurpose } from '../src/core/buy';
 import { DONATE_LABEL, DONATE_MAX, DONATE_MIN, DONATE_PURPOSE, LIMITS, type DonateInfo } from '../src/core/donate';
 
 const K = { label: 'donate.label', title: 'donate.goal.title', text: 'donate.goal.text', target: 'donate.goal.target', since: 'donate.goal.since' };
@@ -156,9 +157,12 @@ export async function donateApi(
       // возврат с Robokassa: оплата засчитывается уведомлением, здесь только «спасибо» или «не вышло»
       const q = sub ? 'plus' : 'donate';
       // покупка монет «Вкладышей» — обратно в игру
-      const vk = !sub && /^\d+$/.test(String(p.InvId ?? '')) && (await don.purposeOf(Number(p.InvId))) === 'vk';
+      const purpose = !sub && /^\d+$/.test(String(p.InvId ?? '')) ? await don.purposeOf(Number(p.InvId)) : null;
       const ok = m[1] === 'success' ? 'spasibo' : 'otmena';
-      res.writeHead(303, { location: vk ? `/vkladyshi/?coins=${ok}` : `/?${q}=${ok}`, 'cache-control': 'no-store' });
+      // разовая покупка (server/buy.ts) — обратно туда, где покупали
+      const prod = productOfPurpose(purpose);
+      const location = prod ? `${prod.back}?buy=${ok}` : purpose === 'vk' ? `/vkladyshi/?coins=${ok}` : `/?${q}=${ok}`;
+      res.writeHead(303, { location, 'cache-control': 'no-store' });
       res.end();
     }
     return true;

@@ -1,0 +1,262 @@
+# Герои, партия 38: музыка YuE2 второй волны
+# Сгенерировано make_jobs.py — правки вносить туда.
+out: G:/temp/studio/out/geroi/38-music
+max_duration: 150
+tracks:
+- name: town-plotina
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, ocean surf textures, low horn calls, deep drum, wide airy pads, calm and powerful
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: town-ostrog
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 88 bpm, throat singing drone, frame drum, wooden flute, cold airy pads, proud and steady, minor key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: town-bazar
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 96 bpm, oud melody, darbuka groove, breakbeat, warm pads, lively and cunning
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: town-kurgany
+  seeds:
+  - 11
+  - 22
+  style: dark ambient new age, downtempo, early 1990s, instrumental, 82 bpm, jaw harp, whistling wind, low choir humming without words, slow beat, solemn
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-coast
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, sea waves, bamboo flute, soft breakbeat, wide pads, open horizon, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-snow
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 86 bpm, glassy bells, frame drum, cold pads, quiet winter journey
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-saltflat
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 92 bpm, ney flute, hand drums, shimmering heat pads, desert journey
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: map-heath
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 84 bpm, lonely low whistle, wind, soft drums, misty pads, wistful, minor key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: battle-d
+  seeds:
+  - 11
+  - 22
+  style: epic new age, downtempo, early 1990s, instrumental, 120 bpm, big taiko, hard breakbeat, throat singing stabs, low brass, minor key
+  lyrics: '[intro]
+
+    [chorus]
+
+    [verse]
+
+    [chorus]
+
+    [bridge]
+
+    [chorus]'
+- name: campaign3
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 92 bpm, surf, flute, harp, hopeful sea theme, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: campaign4
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, frame drum march, horn, cold pads, determined, minor key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: campaign5
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 98 bpm, oud and darbuka, playful and sly theme
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: campaign6
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 80 bpm, low whistle, choir humming without words, gentle and mysterious
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: finale-battle
+  seeds:
+  - 11
+  - 22
+  style: epic cinematic new age, downtempo, early 1990s, instrumental, 124 bpm, massive drums, deep male choir humming, all ethnic flutes together, dark then heroic,
+    minor key
+  lyrics: '[intro]
+
+    [chorus]
+
+    [verse]
+
+    [chorus]
+
+    [bridge]
+
+    [chorus]'
+- name: ending-home
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 90 bpm, warm nostalgic pads, soft breakbeat, bamboo flute melody, summer evening, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'
+- name: ending-stay
+  seeds:
+  - 11
+  - 22
+  style: new age, downtempo, early 1990s, instrumental, 88 bpm, wide majestic pads, harp, flute, bittersweet and bright, major key
+  lyrics: '[intro]
+
+    [verse]
+
+    [chorus]
+
+    [interlude]
+
+    [chorus]
+
+    [outro]'

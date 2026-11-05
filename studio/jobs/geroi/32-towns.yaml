@@ -1,0 +1,718 @@
+# Герои, партия 32: замки второй волны + Чёрная крепость
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 12
+items:
+- name: town-plotina-full
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of a fantasy town of the storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass,
+    storm dam architecture: massive grey stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, on a rocky sea coast with
+    cliffs, a river falling into the sea through a gorge, grey stormy sky with sunbeams. Many buildings, lively and inviting, calm composition.'
+- name: town-plotina-site
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of an empty landscape: a rocky sea coast with cliffs, a river falling into the sea through a gorge, grey stormy
+    sky with sunbeams, open flat building ground in the middle, calm composition.'
+- name: map-town-plotina
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a small walled fantasy town, storm dam architecture: massive grey
+    stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-plotina-hall
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of storm dam architecture: massive grey stone
+    dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-plotina-fort
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of storm dam architecture: massive grey stone
+    dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-plotina-tavern
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of storm dam architecture: massive grey stone
+    dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-plotina-market
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of storm dam architecture: massive grey stone
+    dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-plotina-guild
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of storm dam architecture: massive grey stone dam walls, sluice
+    gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-plotina-smithy
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of storm dam architecture: massive grey
+    stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-plotina-storehouse
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of storm dam architecture: massive
+    grey stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-shipyard
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of storm dam architecture: massive grey
+    stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell1
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a stone guardhouse on the dam, in the style of storm dam architecture: massive grey stone dam walls,
+    sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-plotina-dwell2
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a harpoon workshop with nets and harpoons, in the style of storm dam architecture: massive grey
+    stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell3
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cliff nest tower for storm birds, in the style of storm dam architecture: massive grey stone dam
+    walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-plotina-dwell4
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a sea grotto pool with steps, in the style of storm dam architecture: massive grey stone dam walls,
+    sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-plotina-dwell5
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a witch tower of shells and kelp, in the style of storm dam architecture: massive grey stone dam
+    walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-plotina-dwell6
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a stone bull pen by the surf, in the style of storm dam architecture: massive grey stone dam walls,
+    sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-plotina-dwell7
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a giant flooded sluice basin with whirling water, in the style of storm dam architecture: massive
+    grey stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dam
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a huge stone dam with open sluices and roaring water, in the style of storm dam architecture: massive
+    grey stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-turbine
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a great water wheel turbine house with brass gears, in the style of storm dam architecture: massive
+    grey stone dam walls, sluice gates with brass wheels, lighthouses, slate roofs, foaming water channels, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: town-ostrog-full
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of a fantasy town of the northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth, northern
+    fort architecture: dark log palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, on a snowy taiga clearing with
+    tall dark firs, a frozen river, pale winter sun. Many buildings, lively and inviting, calm composition.'
+- name: town-ostrog-site
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of an empty landscape: a snowy taiga clearing with tall dark firs, a frozen river, pale winter sun, open flat building
+    ground in the middle, calm composition.'
+- name: map-town-ostrog
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a small walled fantasy town, northern fort architecture: dark log
+    palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-ostrog-hall
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-fort
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-tavern
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-market
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-guild
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of northern fort architecture: dark log palisades with sharpened
+    tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-ostrog-smithy
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of northern fort architecture: dark log
+    palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-ostrog-storehouse
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of northern fort architecture:
+    dark log palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-shipyard
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of northern fort architecture: dark log
+    palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell1
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a log barracks with a training yard, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell2
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a ski hunters lodge with skis and bows, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell3
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a wolf kennel with a log fence, in the style of northern fort architecture: dark log palisades with
+    sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-ostrog-dwell4
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a bear pit with a log roof, in the style of northern fort architecture: dark log palisades with
+    sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-ostrog-dwell5
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a shaman yurt of hides with antlers, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell6
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a giant mammoth stable of logs, in the style of northern fort architecture: dark log palisades with
+    sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-ostrog-dwell7
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, an ice cave with a giant door, in the style of northern fort architecture: dark log palisades with
+    sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-ostrog-drill
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a drill square with wooden training dummies and a banner, in the style of northern fort architecture:
+    dark log palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-banya
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a log bath house with steam rising, in the style of northern fort architecture: dark log palisades
+    with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: town-bazar-full
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of a fantasy town of the salt desert bazaar folk, saffron yellow, crimson, turquoise and bright silk, desert bazaar
+    architecture: sun-dried brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, on a white salt flat with
+    dunes, a turquoise oasis lake, hot hazy afternoon. Many buildings, lively and inviting, calm composition.'
+- name: town-bazar-site
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of an empty landscape: a white salt flat with dunes, a turquoise oasis lake, hot hazy afternoon, open flat building
+    ground in the middle, calm composition.'
+- name: map-town-bazar
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a small walled fantasy town, desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-bazar-hall
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-fort
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-tavern
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-market
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-guild
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of desert bazaar architecture: sun-dried brick, colorful silk awnings,
+    domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-bazar-smithy
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-storehouse
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of desert bazaar architecture:
+    sun-dried brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-shipyard
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell1
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a thieves den behind a curtain, in the style of desert bazaar architecture: sun-dried brick, colorful
+    silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell2
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a spice shop with sacks of red pepper, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell3
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a carpet workshop with hanging carpets, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell4
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a hall of mirrors, in the style of desert bazaar architecture: sun-dried brick, colorful silk awnings,
+    domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-bazar-dwell5
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a camel caravan yard, in the style of desert bazaar architecture: sun-dried brick, colorful silk
+    awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell6
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a blue lamp tower, in the style of desert bazaar architecture: sun-dried brick, colorful silk awnings,
+    domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-bazar-dwell7
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a sand pit lair with a domed roof, in the style of desert bazaar architecture: sun-dried brick,
+    colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-bank
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a moneylender house with a golden scale sign, in the style of desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-caravanserai
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a caravanserai courtyard with camels and goods, in the style of desert bazaar architecture: sun-dried
+    brick, colorful silk awnings, domes with turquoise tiles, minaret-free towers, palm-free, lanterns and carpets, three-quarter view. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: town-kurgany-full
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of a fantasy town of the ancestor spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old
+    bone, barrow land architecture: grass-covered burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, on a misty
+    purple heather moor with low hills, standing stones, pale evening light. Many buildings, lively and inviting, calm composition.'
+- name: town-kurgany-site
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of an empty landscape: a misty purple heather moor with low hills, standing stones, pale evening light, open flat
+    building ground in the middle, calm composition.'
+- name: map-town-kurgany
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a small walled fantasy town, barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-kurgany-hall
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, town hall, a large carved council hall, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-fort
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, fortress walls with a gate and towers, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-tavern
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a cozy tavern with a sign and a porch, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-market
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a covered market with stalls and awnings, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-guild
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a mage guild tower, in the style of barrow land architecture: grass-covered burial mounds with stone
+    doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-kurgany-smithy
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a smithy with a chimney and an anvil outside, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-storehouse
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a storehouse for resources with barrels and crates, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-shipyard
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a small shipyard with a boat on a slipway, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell1
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a shepherd ghost fold of stones, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell2
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a ring of carved stone idols, in the style of barrow land architecture: grass-covered burial mounds
+    with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell3
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a ghostly horse corral of stones, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell4
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a warrior barrow with a bronze door, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell5
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a seeress hut of bones and heather, in the style of barrow land architecture: grass-covered burial
+    mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell6
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, an eagle rock with a bone nest, in the style of barrow land architecture: grass-covered burial mounds
+    with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell7
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a great royal barrow with a stone gate, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-memory
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a stone circle with glowing pale blue runes, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-kurgany-bindstone
+  width: 1024
+  height: 1024
+  seeds:
+  - 21
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building of a fantasy town, a tall amber-veined binding stone with chains, in the style of barrow land architecture: grass-covered
+    burial mounds with stone doors, standing stones, bronze braziers, wooden totem poles, low stone halls, three-quarter view. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: town-dark-full
+  width: 1536
+  height: 864
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Wide panorama of a dark fantasy fortress, dark fortress architecture: black stone and iron walls, sharp towers, red-lit windows,
+    chains and iron spikes, smoke, on a black rocky cliff over an ash plain, storm clouds and red glow. Menacing but beautiful, calm composition.'
+- name: map-town-dark
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Adventure map object seen from above in three-quarter view: a small dark fortress, dark fortress architecture: black stone and
+    iron walls, sharp towers, red-lit windows, chains and iron spikes, smoke. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'

@@ -110,6 +110,10 @@ const NEUTRALS: Record<TerrainId, string[]> = {
   sand: ['neutral-bandit', 'neutral-wolf', 'neutral-kikimora', 'neutral-salamander', 'neutral-poloz'],
   water: ['neutral-kikimora', 'neutral-sirin'],
   underground: ['neutral-salamander', 'neutral-stonegiant'],
+  coast: ['neutral-crab', 'neutral-raven', 'neutral-bandit', 'neutral-sirin', 'neutral-griffin'],
+  snow: ['neutral-wolf', 'neutral-lynx', 'neutral-bear', 'neutral-raven', 'neutral-stonegiant'],
+  saltflat: ['neutral-nomad', 'neutral-scorpion', 'neutral-salamander', 'neutral-griffin', 'neutral-poloz'],
+  heath: ['neutral-raven', 'neutral-nomad', 'neutral-lynx', 'neutral-bear', 'neutral-griffin'],
 };
 const RANDOM_TERRAIN: [TerrainId, number][] = [['meadow', 3], ['swamp', 2], ['ash', 2], ['pine', 3], ['rough', 2], ['sand', 1]];
 const RARE: ResId[] = ['amber', 'salt', 'stariron', 'resin'];
@@ -846,7 +850,7 @@ export function generateMap(spec: GameSpec, o: GenOptions): World {
   }
 
   function tArt(tid: TerrainId): string {
-    return tid === 'swamp' || tid === 'ash' || tid === 'pine' ? tid : 'meadow';
+    return decorArts(tid);
   }
 
   /** Один объект из таблицы: вид, награда и охрана — одинаковые во всех долях, ресурс — по фракции хозяина доли. */

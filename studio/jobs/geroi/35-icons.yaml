@@ -1,0 +1,265 @@
+# Герои, партия 35: артефакты 61–84 и значки механик второй волны
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 12
+items:
+- name: art-61
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a brass storm compass.
+- name: art-62
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a sea shell horn.
+- name: art-63
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. an oilskin cloak with brass buckles.
+- name: art-64
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a coral trident.
+- name: art-65
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a bear claw necklace.
+- name: art-66
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a fur winter hat with a red star.
+- name: art-67
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a frost axe.
+- name: art-68
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. felt boots with iron spikes.
+- name: art-69
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a golden abacus.
+- name: art-70
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a flying carpet piece.
+- name: art-71
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a djinn lamp.
+- name: art-72
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a purse of endless coins.
+- name: art-73
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a bronze ancestor mask.
+- name: art-74
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a bone flute.
+- name: art-75
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a heather wreath.
+- name: art-76
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a ghost lantern.
+- name: art-77
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. an iron crown of the dark prince.
+- name: art-78
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a black coat with iron plates.
+- name: art-79
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a flat cap with an iron star.
+- name: art-80
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a black iron gauntlet.
+- name: art-81
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a brass heart amulet.
+- name: art-82
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a silver chain of eight links.
+- name: art-83
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. a lucky sunflower seed of gold.
+- name: art-84
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. an old pocket watch stopped at seven.
+- name: icon-napor
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a small brass pressure gauge with a needle in the red.'
+- name: icon-memory
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a pale blue ghost flame in a bronze bowl.'
+- name: icon-rank
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: three red cloth chevrons on a fur patch.'
+- name: icon-credit
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a sealed loan scroll with a wax seal and coins.'
+- name: icon-trap
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a small iron trap with open jaws.'
+- name: icon-flood
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a sluice gate with water bursting through.'
+- name: icon-turbine
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a small brass water wheel.'
+- name: icon-bind
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a stone with a chain and an amber vein.'
+- name: icon-mercenary
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a sack of coins tied to a sword.'
+- name: icon-drill
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a wooden training dummy with a helmet.'
+- name: skill-25
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a pair of dice and a deck of cards.'
+- name: icon-shard
+  width: 768
+  height: 768
+  seeds:
+  - 51
+  prompt: 'Rich gouache painting of a single fantasy item resting on dark warm brown velvet, painted with volume, texture and warm highlights, like an inventory item
+    in a classic 1990s fantasy strategy game, centered and filling most of the square. The item: a single glowing brass knuckle shard on velvet.'

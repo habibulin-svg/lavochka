@@ -46,8 +46,8 @@ describe('geroi/hex', () => {
 });
 
 describe('geroi/creatures: модель силы', () => {
-  it('66 существ, все поля осмысленны', () => {
-    expect(Object.keys(CREATURES)).toHaveLength(66);
+  it('128 существ (8 фракций × 14 + 16 нейтралов), все поля осмысленны', () => {
+    expect(Object.keys(CREATURES)).toHaveLength(128);
     for (const c of Object.values(CREATURES)) {
       expect(c.hp).toBeGreaterThan(0);
       expect(c.dmax).toBeGreaterThanOrEqual(c.dmin);

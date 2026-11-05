@@ -12,9 +12,10 @@ export const MINE_INCOME: Record<ResId, number> = { semki: 1000, wood: 2, stone:
 /** Редкие ресурсы фракции (DESIGN.md §5). */
 export const FACTION_RES: Record<Exclude<Faction, 'neutral'>, [ResId, ResId]> = {
   zatulye: ['wood', 'salt'], zatonye: ['resin', 'salt'], kuznya: ['stone', 'stariron'], akademiya: ['amber', 'stariron'],
+  plotina: ['salt', 'amber'], ostrog: ['wood', 'resin'], bazar: ['salt', 'stariron'], kurgany: ['amber', 'resin'],
 };
 
-export type TerrainId = 'meadow' | 'swamp' | 'ash' | 'pine' | 'rough' | 'sand' | 'water' | 'underground';
+export type TerrainId = 'meadow' | 'swamp' | 'ash' | 'pine' | 'rough' | 'sand' | 'water' | 'underground' | 'coast' | 'snow' | 'saltflat' | 'heath';
 export interface TerrainDef {
   id: TerrainId;
   name: string;
@@ -37,11 +38,18 @@ export const TERRAINS: TerrainDef[] = [
   { id: 'sand', name: 'Песок', cost: 150, field: 'ford', color: 0xc9b070, step: 'horse-road' },
   { id: 'water', name: 'Вода', cost: 100, field: 'ford', color: 0x2f6a94, step: 'boat-row' },
   { id: 'underground', name: 'Подземелье', cost: 100, field: 'crater', color: 0x3a3430, step: 'horse-road' },
+  // вторая четвёрка (платная часть): только в конец — номер лежит в клетке и в сохранениях
+  { id: 'coast', name: 'Скалистый берег', cost: 125, field: 'coast', color: 0x6c7a80, step: 'horse-road' },
+  { id: 'snow', name: 'Снега', cost: 150, field: 'snow', color: 0xdfe6ea, step: 'horse-road' },
+  { id: 'saltflat', name: 'Солончак', cost: 125, field: 'saltflat', color: 0xe4dcc4, step: 'horse-road' },
+  { id: 'heath', name: 'Пустошь', cost: 100, field: 'heath', color: 0x7a6078, step: 'horse-grass' },
 ];
 export const TERRAIN_INDEX = Object.fromEntries(TERRAINS.map((t, i) => [t.id, i])) as Record<TerrainId, number>;
 export const WATER = TERRAIN_INDEX.water;
 /** Родная местность: на ней фракция не теряет хода. */
-export const NATIVE: Record<Exclude<Faction, 'neutral'>, TerrainId> = { zatulye: 'meadow', zatonye: 'swamp', kuznya: 'ash', akademiya: 'pine' };
+export const NATIVE: Record<Exclude<Faction, 'neutral'>, TerrainId> = {
+  zatulye: 'meadow', zatonye: 'swamp', kuznya: 'ash', akademiya: 'pine', plotina: 'coast', ostrog: 'snow', bazar: 'saltflat', kurgany: 'heath',
+};
 
 /** Дороги: 0 — нет; цена шага. */
 export const ROAD_COST = [0, 75, 50, 50];
@@ -95,7 +103,9 @@ export interface ObjDef {
 const O = (id: string, name: string, w: number, h: number, size: number, effect: ObjEffect, text: string, art = `obj-${id}`): ObjDef => ({ id, name, art, w, h, size, effect, text });
 const PILES: [ResId, string, number, number][] = [['semki', 'Мешок семок', 500, 1000], ['wood', 'Брёвна', 5, 10], ['stone', 'Камень', 5, 10], ['amber', 'Янтарь', 3, 6], ['salt', 'Соль', 3, 6], ['stariron', 'Звёздное железо', 3, 6], ['resin', 'Живица', 3, 6]];
 const MINES: [ResId, string, string][] = [['semki', 'semki', 'Семечковое поле'], ['wood', 'wood', 'Лесопилка'], ['stone', 'stone', 'Каменоломня'], ['amber', 'amber', 'Янтарная копь'], ['salt', 'salt', 'Солеварня'], ['stariron', 'stariron', 'Метеоритная шахта'], ['resin', 'resin', 'Подсочный стан']];
-const DWELLS: [string, string, string][] = [['wolf', 'neutral-wolf', 'Волчье логово'], ['boar', 'neutral-boar', 'Кабанья чаща'], ['bandit', 'neutral-bandit', 'Разбойничий стан'], ['leshak', 'neutral-leshak', 'Замшелая роща'], ['kikimora', 'neutral-kikimora', 'Кикиморина изба'], ['salamander', 'neutral-salamander', 'Лавовая яма'], ['bear', 'neutral-bear', 'Медвежья берлога'], ['sirin', 'neutral-sirin', 'Гнездо сирина'], ['stonegiant', 'neutral-stonegiant', 'Круг валунов'], ['poloz', 'neutral-poloz', 'Логово полоза']];
+const DWELLS: [string, string, string][] = [['wolf', 'neutral-wolf', 'Волчье логово'], ['boar', 'neutral-boar', 'Кабанья чаща'], ['bandit', 'neutral-bandit', 'Разбойничий стан'], ['leshak', 'neutral-leshak', 'Замшелая роща'], ['kikimora', 'neutral-kikimora', 'Кикиморина изба'], ['salamander', 'neutral-salamander', 'Лавовая яма'], ['bear', 'neutral-bear', 'Медвежья берлога'], ['sirin', 'neutral-sirin', 'Гнездо сирина'], ['stonegiant', 'neutral-stonegiant', 'Круг валунов'], ['poloz', 'neutral-poloz', 'Логово полоза'],
+  ['crab', 'neutral-crab', 'Крабьи норы'], ['lynx', 'neutral-lynx', 'Рысье логово'], ['scorpion', 'neutral-scorpion', 'Скорпионья яма'], ['raven', 'neutral-raven', 'Вороний сухостой'],
+  ['nomad', 'neutral-nomad', 'Стан кочевников'], ['griffin', 'neutral-griffin', 'Гнездо грифона']];
 
 export const OBJECTS: Record<string, ObjDef> = {};
 const put = (d: ObjDef): void => {
@@ -137,6 +147,10 @@ for (const v of [
   O('treasury-swamp', 'Затонувшая баржа', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
   O('treasury-ash', 'Старая плавильня', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
   O('treasury-pine', 'Звёздный кратер', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
+  O('treasury-coast', 'Разбитый корабль', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
+  O('treasury-snow', 'Ледяная гробница', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
+  O('treasury-saltflat', 'Засыпанный караван', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
+  O('treasury-heath', 'Открытый курган', 3, 2, 2.7, { t: 'treasury' }, 'Сокровищница под охраной'),
 ]) put(v);
 OBJECTS.stack = { id: 'stack', name: 'Отряд', art: '', w: 1, h: 1, size: 1, effect: { t: 'stack' }, text: 'Нейтральный отряд: не пропустит мимо' };
 

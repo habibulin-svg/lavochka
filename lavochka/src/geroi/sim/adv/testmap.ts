@@ -17,7 +17,9 @@ export interface GameSpec {
   players: { name: string; faction: TownFaction; hero: HeroPick; bot?: 'easy' | 'medium' | 'hard' }[];
 }
 
-export const TOWN_NAMES: Record<TownFaction, string> = { zatulye: 'Заречье', zatonye: 'Сомов омут', kuznya: 'Горн', akademiya: 'Сосновый купол' };
+export const TOWN_NAMES: Record<TownFaction, string> = {
+  zatulye: 'Заречье', zatonye: 'Сомов омут', kuznya: 'Горн', akademiya: 'Сосновый купол', plotina: 'Шлюз', ostrog: 'Пашин острог', bazar: 'Нахалов торг', kurgany: 'Седой курган',
+};
 
 /** Шум: значения в узлах сетки, между ними — сглаженно. Только + и ×: одинаково везде. */
 export function noise(seed: number, cell: number): (x: number, y: number) => number {
@@ -44,7 +46,9 @@ function bend(u: number): number {
 }
 
 const BRIDGES = [-26, 0, 26];
-export const decorArts = (t: TerrainId): string => (t === 'swamp' || t === 'ash' || t === 'pine' ? t : 'meadow');
+/** Местности со своим декором и сокровищницей; остальные берут луговые. Вторая четвёрка встаёт сюда, когда её картинки упакованы. */
+export const ART_TERRAINS: ReadonlySet<TerrainId> = new Set<TerrainId>(['swamp', 'ash', 'pine']);
+export const decorArts = (t: TerrainId): string => (ART_TERRAINS.has(t) ? t : 'meadow');
 /** Какие картинки декора закрывают клетку (деревья, скалы), а не лежат под ногами. */
 export const DECOR_SIZE = [1.9, 2.1, 1.3, 1.2, 1.3, 2.4, 1.3, 1.2];
 

@@ -1,0 +1,219 @@
+# Герои, партия 37: ролики Wan 2.2 кампаний 3–7
+# Сгенерировано make_jobs.py — правки вносить туда.
+keys: G:/temp/studio/out/geroi/36-cutscene-keys
+server: comfy-big
+defaults:
+  width: 1280
+  height: 704
+  frames: 121
+  steps: 30
+seeds:
+- 1
+clips:
+- name: c3-1a
+  keys:
+  - c3-1a-1
+  prompt: water roars and sprays, mist rises, he looks down calmly, slow push in. Painterly gouache animation, hand-painted look, gentle cinematic camera motion,
+    smooth natural movement.
+- name: c3-1b
+  keys:
+  - c3-1b-1
+  prompt: the wheel turns slowly, water flows in channels, the keepers bow. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c3-2a
+  keys:
+  - c3-2a-1
+  prompt: waves rise and fall, lightning flashes, the boats rock, the lighthouse beam turns. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
+- name: c3-3a
+  keys:
+  - c3-3a-1
+  prompt: he grins and spreads goods, flags flutter, gulls fly over. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c3-3b
+  keys:
+  - c3-3b-1
+  prompt: the beam sweeps across the sea, black sails sway, waves crash. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c3-4a
+  keys:
+  - c3-4a-1
+  prompt: waves crash at the rock, clouds move, the silhouette leans on the window. Painterly gouache animation, hand-painted look, gentle cinematic camera motion,
+    smooth natural movement.
+- name: c3-fin1
+  keys:
+  - c3-fin1-1
+  prompt: rain falls, they hug tightly, waves lap at the pier. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c3-fin2
+  keys:
+  - c3-fin2-1
+  prompt: spray flies, the shard pulses with warm light. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c4-1a
+  keys:
+  - c4-1a-1
+  prompt: snow falls gently, banners move, he walks along the row. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c4-1b
+  keys:
+  - c4-1b-1
+  prompt: the old man hands over the horn, firelight flickers, snow outside. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c4-2a
+  keys:
+  - c4-2a-1
+  prompt: snow swirls in the wind, fires flicker, the gates creak. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c4-3a
+  keys:
+  - c4-3a-1
+  prompt: ghost lights float, pale riders move slowly, mist drifts. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c4-3b
+  keys:
+  - c4-3b-1
+  prompt: the spirits sway and whisper, his hair moves in the wind, mist swirls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c4-4a
+  keys:
+  - c4-4a-1
+  prompt: banners wave, smoke rises from the camp, snow drifts. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c4-fin1
+  keys:
+  - c4-fin1-1
+  prompt: the northern lights ripple across the sky, they talk, breath steams. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c4-fin2
+  keys:
+  - c4-fin2-1
+  prompt: light pulses inside the ice, snow blows past. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c5-1a
+  keys:
+  - c5-1a-1
+  prompt: people bustle, silk awnings flutter, he haggles with a grin. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c5-1b
+  keys:
+  - c5-1b-1
+  prompt: the merchant bows, abacus beads click, lanterns sway. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c5-2a
+  keys:
+  - c5-2a-1
+  prompt: the rider holds out the scroll, the horse stamps, dust swirls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c5-3a
+  keys:
+  - c5-3a-1
+  prompt: flags flutter, crowds move between tents, smoke rises from food stalls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion,
+    smooth natural movement.
+- name: c5-3b
+  keys:
+  - c5-3b-1
+  prompt: he raises the board, a crowd murmurs, coins glitter. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c5-4a
+  keys:
+  - c5-4a-1
+  prompt: the shard glows softly, a guard snores and shifts, torchlight flickers. Painterly gouache animation, hand-painted look, gentle cinematic camera motion,
+    smooth natural movement.
+- name: c5-fin1
+  keys:
+  - c5-fin1-1
+  prompt: he runs and jumps between roofs, his robe flaps, lanterns pass by. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c5-fin2
+  keys:
+  - c5-fin2-1
+  prompt: the fire crackles, camels chew, he counts seeds. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c6-1a
+  keys:
+  - c6-1a-1
+  prompt: he slowly rises, shadows drift around, mist moves. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c6-1b
+  keys:
+  - c6-1b-1
+  prompt: the spirits bow slowly, their glow pulses, mist drifts. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c6-2a
+  keys:
+  - c6-2a-1
+  prompt: fires flicker one after another, sparks rise, wind moves the heather. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c6-3a
+  keys:
+  - c6-3a-1
+  prompt: the fire crackles, the ghost smokes a cigarette, smoke curls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c6-3b
+  keys:
+  - c6-3b-1
+  prompt: he points up, the eight lights slowly move together. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c6-4a
+  keys:
+  - c6-4a-1
+  prompt: lightning flashes, banners wave, the army stirs. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c6-fin1
+  keys:
+  - c6-fin1-1
+  prompt: the ghost waves and fades, the shard glows brighter, heather sways. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c6-fin2
+  keys:
+  - c6-fin2-1
+  prompt: the six lights glow steady, the two red ones flicker, fire crackles. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c7-1a
+  keys:
+  - c7-1a-1
+  prompt: banners wave, they stand shoulder to shoulder, the sun sets. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c7-1b
+  keys:
+  - c7-1b-1
+  prompt: the lights glow, hands point at the red lights, torchlight flickers. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c7-2a
+  keys:
+  - c7-2a-1
+  prompt: lightning strikes, torches flicker along the walls, smoke drifts. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c7-2b
+  keys:
+  - c7-2b-1
+  prompt: dust drifts in a beam of light, slow push in on the cap. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c7-3a
+  keys:
+  - c7-3a-1
+  prompt: light pulses from the heart, armies march down the spiral, dust rises. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c7-3b
+  keys:
+  - c7-3b-1
+  prompt: he turns slowly, his coat moves in the wind, the heart pulses. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c7-fin1
+  keys:
+  - c7-fin1-1
+  prompt: the shards slide together and fuse with a bright golden flash. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c7-fin2
+  keys:
+  - c7-fin2-1
+  prompt: the light pillar rises and spreads, clouds swirl around it. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.
+- name: c7-home1
+  keys:
+  - c7-home1-1
+  prompt: they laugh and sit up, grass sways, warm sunset light. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c7-home2
+  keys:
+  - c7-home2-1
+  prompt: the window lights up, he looks up, then walks inside. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural movement.
+- name: c7-stay1
+  keys:
+  - c7-stay1-1
+  prompt: they walk apart and wave, clouds move, banners flutter far away. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
+    natural movement.
+- name: c7-stay2
+  keys:
+  - c7-stay2-1
+  prompt: he walks away, turns and waves his cap, the mirage shimmers. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
+    movement.

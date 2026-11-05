@@ -24,6 +24,10 @@ const NAME_DWELL: Record<TownFaction, string[]> = {
   zatonye: ['Камышовые шалаши', 'Лягушачий пруд', 'Туманная лощина', 'Круг ив', 'Омут водяниц', 'Логово тролля', 'Логово змея'],
   kuznya: ['Мастерская', 'Медный улей', 'Клепальный ряд', 'Паровая псарня', 'Литейная', 'Сборочный ангар', 'Стапель колосса'],
   akademiya: ['Общежитие', 'Совиная башня', 'Хрустальный грот', 'Оленья поляна', 'Священная роща', 'Драконий насест', 'Кратер звезды'],
+  plotina: ['Караулка на гребне', 'Гарпунная', 'Гнёзда на утёсе', 'Морской грот', 'Башня ведьм', 'Бычий загон', 'Затопленный бассейн'],
+  ostrog: ['Казарма', 'Лыжная заимка', 'Волчий двор', 'Медвежья яма', 'Шаманский чум', 'Мамонтовый хлев', 'Ледяная пещера'],
+  bazar: ['Воровской угол', 'Перечная лавка', 'Ковровая мастерская', 'Зеркальный зал', 'Караванный двор', 'Башня лампы', 'Песчаная яма'],
+  kurgany: ['Призрачная кошара', 'Круг идолов', 'Конский круг', 'Курган витязей', 'Изба вещуньи', 'Орлиная скала', 'Царский курган'],
 };
 
 const SEMKI = [500, 1000, 1500, 3000, 5000, 10000, 20000];
@@ -108,16 +112,36 @@ function tree(f: TownFaction): BuildingDef[] {
         { id: 'observatory', name: 'Обсерватория', art: 'observatory', cost: { semki: 3000, amber: 5 }, req: ['guild1'], text: 'Видно округу вокруг всех своих объектов', only: f },
       );
       break;
+    case 'plotina':
+      list.push(
+        { id: 'dam', name: 'Плотина', art: 'dam', cost: { semki: 2000, stone: 10 }, req: ['fort1'], text: 'Копит напор каждый день (до 6); сброс — семки, ход героям в городе или вторая стройка за день', only: f },
+        { id: 'turbine', name: 'Турбина', art: 'turbine', cost: { semki: 2500, salt: 3 }, req: ['dam'], text: 'Напор копится вдвое быстрее', only: f },
+      );
+      break;
+    case 'ostrog':
+      list.push(
+        { id: 'drill', name: 'Плац', art: 'drill', cost: { semki: 1500, wood: 5 }, req: ['fort1'], text: 'Отряды в гарнизоне каждую неделю получают опыт', only: f },
+        { id: 'banya', name: 'Баня', art: 'banya', cost: { semki: 2000, wood: 10 }, req: ['drill'], text: 'Герой, начавший день в городе, получает +300 к ходу', only: f },
+      );
+      break;
+    case 'bazar':
+      list.push(
+        { id: 'caravanserai', name: 'Караван-сарай', art: 'caravanserai', cost: { semki: 2000, wood: 5 }, req: ['market'], text: 'Наём чужих существ, чьи жилища вы видели, с наценкой', only: f },
+        { id: 'bank', name: 'Меняльная контора', art: 'bank', cost: { semki: 1500, stone: 5 }, req: ['market'], text: 'Кредит: 5000 семок сейчас, по 1500 в неделю 4 недели', only: f },
+      );
+      break;
+    case 'kurgany':
+      list.push(
+        { id: 'memory', name: 'Круг памяти', art: 'memory', cost: { semki: 1500, amber: 2 }, req: ['fort1'], text: 'Память павших: призыв духов-предков на 7 дней', only: f },
+        { id: 'bindstone', name: 'Камень привязки', art: 'bindstone', cost: { semki: 3000, amber: 5 }, req: ['memory'], text: 'Привязать призванных духов навсегда за янтарь', only: f },
+      );
+      break;
   }
   return list;
 }
 
-export const BUILDINGS: Record<TownFaction, Record<string, BuildingDef>> = {
-  zatulye: Object.fromEntries(tree('zatulye').map((b) => [b.id, b])),
-  zatonye: Object.fromEntries(tree('zatonye').map((b) => [b.id, b])),
-  kuznya: Object.fromEntries(tree('kuznya').map((b) => [b.id, b])),
-  akademiya: Object.fromEntries(tree('akademiya').map((b) => [b.id, b])),
-};
+export const TOWN_FACTIONS: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya', 'plotina', 'ostrog', 'bazar', 'kurgany'];
+export const BUILDINGS = Object.fromEntries(TOWN_FACTIONS.map((f) => [f, Object.fromEntries(tree(f).map((b) => [b.id, b]))])) as Record<TownFaction, Record<string, BuildingDef>>;
 
 export interface Town {
   id: number;

@@ -1,0 +1,42 @@
+# Герои, партия 31б: герой на коне второй волны (8 классов + Старшой)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 61
+- 62
+style: Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, bright but refined colors. Full body, whole
+  figure in frame with margin, standing in a three-quarter view facing right, seen slightly from above, centered, plain light grey background.
+items:
+- name: mount-plotina-smotritel
+  prompt: A hero on horseback, a broad-shouldered dam warden in an oilskin coat with a brass spyglass, riding a horse with storm dam keepers of a rocky sea coast,
+    slate grey stone, sea teal, white foam and brass tack and a small banner. {style}
+- name: mount-plotina-bureveshchun
+  prompt: A hero on horseback, a storm caller with wild grey hair and lightning sparks in the fingers, riding a horse with storm dam keepers of a rocky sea coast,
+    slate grey stone, sea teal, white foam and brass tack and a small banner. {style}
+- name: mount-ostrog-voevoda
+  prompt: A hero on horseback, a stern fort commander in fur and chainmail with a long moustache, riding a horse with northern taiga fort warriors, fur, dark wood,
+    iron, snow white and deep red cloth tack and a small banner. {style}
+- name: mount-ostrog-shaman
+  prompt: A hero on horseback, a northern shaman with an antler headdress and a drum, riding a horse with northern taiga fort warriors, fur, dark wood, iron, snow
+    white and deep red cloth tack and a small banner. {style}
+- name: mount-bazar-kupets
+  prompt: A hero on horseback, a sly rich merchant in silk with rings on every finger, riding a horse with salt desert bazaar folk, saffron yellow, crimson, turquoise
+    and bright silk tack and a small banner. {style}
+- name: mount-bazar-menyala
+  prompt: A hero on horseback, a money-changer mage with a turban and glowing beads, riding a horse with salt desert bazaar folk, saffron yellow, crimson, turquoise
+    and bright silk tack and a small banner. {style}
+- name: mount-kurgany-khan
+  prompt: A hero on horseback, a barrow lord in bronze armor with a pale ghostly glow, riding a horse with ancestor spirits of a heath barrow land, bronze, pale ghost
+    blue, heather purple and old bone tack and a small banner. {style}
+- name: mount-kurgany-veshchun
+  prompt: A hero on horseback, a seer with pale eyes and bone charms in the hair, riding a horse with ancestor spirits of a heath barrow land, bronze, pale ghost
+    blue, heather purple and old bone tack and a small banner. {style}
+- name: mount-starshoy
+  prompt: A hero on horseback, a man in a long black coat with iron armor plates and a flat cap, riding a black war horse with dark iron tack and a black banner.
+    {style}

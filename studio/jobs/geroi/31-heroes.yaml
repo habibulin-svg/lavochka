@@ -1,0 +1,311 @@
+# Герои, партия 31: портреты второй волны (4 пацана в нарядах краёв, Старшой в 1983-м, Костя, дед, 32 местных)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 12
+items:
+- name: lad-maks
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a tall athletic sixteen-year-old boy with wet-looking blond hair and a calm gaze, wearing a
+    faded blue swimming club tracksuit jacket under a grey oilskin sea cloak with brass buckles. Plain dark warm background.'
+- name: lad-andryukha
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a stocky sixteen-year-old boy with a short military haircut and a serious frown, wearing an
+    army green padded jacket of the 1990s under a fur-trimmed northern cloak and a red sash. Plain dark warm background.'
+- name: lad-zheka
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a skinny sixteen-year-old boy with slicked hair and a sly grin, wearing a black leather jacket
+    of the 1990s under an open saffron silk robe, a gold chain. Plain dark warm background.'
+- name: lad-tyoma
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a pale quiet sixteen-year-old boy with dark hair over his eyes, wearing a dark hooded sweatshirt
+    under a ragged heather-purple cloak with a bronze clasp. Plain dark warm background.'
+- name: lad-starshoy-young
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Portrait, head and shoulders: a nineteen-year-old young man with a hard face, a flat 1980s cap and a worn denim jacket, faded
+    photo colors of 1983. Plain dark background.'
+- name: lad-kostya
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Portrait, head and shoulders: a tall eighteen-year-old young man with blond hair and a tired kind face, a torn sailor shirt. Plain
+    dark background.'
+- name: lad-ded
+  width: 1024
+  height: 1024
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Portrait, head and shoulders: a translucent pale blue ghost of a kind old watchman in a quilted jacket and a flat cap, a cigarette.
+    Plain dark background.'
+- name: hero-plotina-smotritel-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a broad-shouldered dam warden in an oilskin coat with a brass spyglass, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-smotritel-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a broad-shouldered dam warden in an oilskin coat with a brass spyglass,
+    of the storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-smotritel-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a broad-shouldered dam warden in an oilskin coat with a brass spyglass, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-smotritel-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a broad-shouldered dam warden in an oilskin coat with a brass spyglass, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-bureveshchun-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a storm caller with wild grey hair and lightning sparks in the fingers, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-bureveshchun-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a storm caller with wild grey hair and lightning sparks in the fingers,
+    of the storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-bureveshchun-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a storm caller with wild grey hair and lightning sparks in the fingers, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-plotina-bureveshchun-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a storm caller with wild grey hair and lightning sparks in the fingers, of the
+    storm dam keepers of a rocky sea coast, slate grey stone, sea teal, white foam and brass. Plain dark warm background.'
+- name: hero-ostrog-voevoda-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a stern fort commander in fur and chainmail with a long moustache, of the northern
+    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-voevoda-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a stern fort commander in fur and chainmail with a long moustache, of
+    the northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-voevoda-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a stern fort commander in fur and chainmail with a long moustache, of the northern
+    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-voevoda-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a stern fort commander in fur and chainmail with a long moustache, of the northern
+    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-shaman-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a northern shaman with an antler headdress and a drum, of the northern taiga fort
+    warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-shaman-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a northern shaman with an antler headdress and a drum, of the northern
+    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-shaman-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a northern shaman with an antler headdress and a drum, of the northern taiga fort
+    warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-ostrog-shaman-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a northern shaman with an antler headdress and a drum, of the northern taiga
+    fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+- name: hero-bazar-kupets-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a sly rich merchant in silk with rings on every finger, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-kupets-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a sly rich merchant in silk with rings on every finger, of the salt desert
+    bazaar folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-kupets-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a sly rich merchant in silk with rings on every finger, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-kupets-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a sly rich merchant in silk with rings on every finger, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-menyala-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a money-changer mage with a turban and glowing beads, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-menyala-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a money-changer mage with a turban and glowing beads, of the salt desert
+    bazaar folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-menyala-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a money-changer mage with a turban and glowing beads, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-bazar-menyala-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a money-changer mage with a turban and glowing beads, of the salt desert bazaar
+    folk, saffron yellow, crimson, turquoise and bright silk. Plain dark warm background.'
+- name: hero-kurgany-khan-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a barrow lord in bronze armor with a pale ghostly glow, of the ancestor spirits
+    of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-khan-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a barrow lord in bronze armor with a pale ghostly glow, of the ancestor
+    spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-khan-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a barrow lord in bronze armor with a pale ghostly glow, of the ancestor spirits
+    of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-khan-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a barrow lord in bronze armor with a pale ghostly glow, of the ancestor spirits
+    of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-veshchun-1
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a seer with pale eyes and bone charms in the hair, of the ancestor spirits of
+    a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-veshchun-2
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a seer with pale eyes and bone charms in the hair, of the ancestor spirits
+    of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-veshchun-3
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a seer with pale eyes and bone charms in the hair, of the ancestor spirits of a
+    heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'
+- name: hero-kurgany-veshchun-4
+  width: 1024
+  height: 1024
+  seeds:
+  - 11
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a seer with pale eyes and bone charms in the hair, of the ancestor spirits of
+    a heath barrow land, bronze, pale ghost blue, heather purple and old bone. Plain dark warm background.'

@@ -1,0 +1,202 @@
+# Герои, партия 39: звуки второй волны
+# Сгенерировано make_jobs.py — правки вносить туда.
+out: G:/temp/studio/out/geroi/39-sfx
+seeds:
+- 1
+- 2
+sounds:
+- name: horse-snow
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking through deep crunchy snow
+- name: horse-sand
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking on soft dry sand
+- name: horse-rock
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse hooves on wet rocks near the sea
+- name: horse-heath
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: horse walking through dry heather and grass
+- name: waves
+  duration: 3
+  level: ambience
+  max: 3.0
+  prompt: sea waves crashing on rocks, ambience
+- name: blizzard
+  duration: 3
+  level: ambience
+  max: 3.0
+  prompt: cold blizzard wind howling
+- name: desert-wind
+  duration: 3
+  level: ambience
+  max: 3.0
+  prompt: hot desert wind with blowing sand
+- name: moor-wind
+  duration: 3
+  level: ambience
+  max: 3.0
+  prompt: lonely wind over an empty moor with faint whispers
+- name: flood
+  duration: 3
+  level: loud
+  max: 2.5
+  prompt: sluice gates opening and a rush of water
+- name: turbine
+  duration: 2
+  level: normal
+  max: 2.0
+  prompt: a big wooden water wheel turning with creaks and splashes
+- name: drill
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: soldiers stamping in step and a short shout without words
+- name: rankup
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a short proud horn call and a drum hit
+- name: loan
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: a heavy purse of coins dropped on a table
+- name: steal
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a quick coin snatch jingle
+- name: trap
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a trap snapping shut
+- name: pepper
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a puff of powder and a sneeze-like cough without words
+- name: mirage
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: shimmering glassy whoosh of an illusion
+- name: memory
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: soft ghostly choir breath rising
+- name: bind
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: chains clinking and a low stone hum
+- name: summon-spirit
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: ghostly wind swirl and a distant horn
+- name: shot-harpoon
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a heavy harpoon launched with a rope whizzing
+- name: shot-gaze
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a low eerie stone hum with a magic zap
+- name: hit-ice
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: ice cracking under a heavy blow
+- name: hit-water
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a heavy wave slapping hit
+- name: death-ice
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: ice shattering and collapsing
+- name: voice-mammoth
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a mammoth trumpeting
+- name: voice-camel
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a camel grunting and groaning
+- name: voice-djinn
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a deep magical laugh with a swirl of wind, no words
+- name: voice-ghost
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a ghostly moan, soft and sad
+- name: voice-eagle
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: an eagle screech
+- name: voice-giant
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a giant deep grunt with rumble
+- name: voice-crab
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: crab claws clicking
+- name: voice-lynx
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a lynx growl
+- name: voice-scorpion
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: a scorpion chitter and hiss
+- name: voice-raven
+  duration: 1
+  level: normal
+  max: 1.0
+  prompt: a raven caw
+- name: voice-griffin
+  duration: 2
+  level: normal
+  max: 1.5
+  prompt: a griffin screech mixed with a lion roar
+- name: voice-thunder
+  duration: 2
+  level: loud
+  max: 1.5
+  prompt: a thunderclap and crackling lightning
+- name: heart
+  duration: 3
+  level: normal
+  max: 2.5
+  prompt: a deep magical heartbeat pulse with a golden shimmer
+- name: shards
+  duration: 3
+  level: normal
+  max: 2.5
+  prompt: metal shards sliding together and a bright magical chime

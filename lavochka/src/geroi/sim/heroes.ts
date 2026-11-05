@@ -1,4 +1,4 @@
-/* Герои «Арены»: 4 фракции × 2 класса × 4 героя (DESIGN.md §5.9). Цифры и книга — у класса, у героя — портрет и имя. */
+/* Герои «Арены»: 8 фракций × 2 класса × 4 героя (DESIGN.md §5.9). Цифры и книга — у класса, у героя — портрет и имя. */
 import type { Faction } from './creatures';
 
 export interface HeroClass {
@@ -21,6 +21,15 @@ export const CLASSES: HeroClass[] = [
   { id: 'kuznya-ognelit', name: 'Огнелит', faction: 'kuznya', atk: 3, def: 3, power: 5, know: 4, spells: ['fire-arrow', 'fireball', 'bloodlust', 'flash'] },
   { id: 'akademiya-strazh', name: 'Страж', faction: 'akademiya', atk: 6, def: 5, power: 3, know: 3, spells: ['lightning', 'haste', 'precision', 'stone-skin'] },
   { id: 'akademiya-zvezdochet', name: 'Звездочёт', faction: 'akademiya', atk: 1, def: 2, power: 5, know: 5, spells: ['lightning', 'fireball', 'ice-bolt', 'meteors', 'haste', 'slow', 'heal-light', 'gust'] },
+  // вторая четвёрка (платная часть)
+  { id: 'plotina-smotritel', name: 'Смотритель', faction: 'plotina', atk: 5, def: 5, power: 2, know: 2, spells: ['ice-bolt', 'haste', 'gust'] },
+  { id: 'plotina-bureveshchun', name: 'Буревещун', faction: 'plotina', atk: 2, def: 2, power: 5, know: 5, spells: ['lightning', 'ice-bolt', 'gust', 'haste', 'weakness'] },
+  { id: 'ostrog-voevoda', name: 'Воевода', faction: 'ostrog', atk: 6, def: 5, power: 1, know: 2, spells: ['stone-skin', 'blessing', 'slow'] },
+  { id: 'ostrog-shaman', name: 'Шаман', faction: 'ostrog', atk: 3, def: 3, power: 4, know: 4, spells: ['stone-skin', 'slow', 'meteors', 'heal-light'] },
+  { id: 'bazar-kupets', name: 'Купец', faction: 'bazar', atk: 4, def: 4, power: 3, know: 3, spells: ['haste', 'bloodlust', 'precision'] },
+  { id: 'bazar-menyala', name: 'Меняла', faction: 'bazar', atk: 2, def: 2, power: 5, know: 5, spells: ['fire-arrow', 'flash', 'haste', 'lightning', 'gust'] },
+  { id: 'kurgany-khan', name: 'Хан', faction: 'kurgany', atk: 5, def: 6, power: 2, know: 2, spells: ['sorrow', 'stone-skin', 'ice-bolt'] },
+  { id: 'kurgany-veshchun', name: 'Вещун', faction: 'kurgany', atk: 2, def: 3, power: 5, know: 5, spells: ['sorrow', 'weakness', 'slow', 'ice-bolt', 'heal-light'] },
 ];
 
 /** Имена по порядку портретов hero-<класс>-<1..4>. */
@@ -33,6 +42,14 @@ const NAMES: Record<string, string[]> = {
   'kuznya-ognelit': ['Жар', 'Искра', 'Плавень', 'Зола'],
   'akademiya-strazh': ['Орион', 'Вега', 'Альтаир', 'Лира'],
   'akademiya-zvezdochet': ['Астрей', 'Сириус', 'Птолемей', 'Селена'],
+  'plotina-smotritel': ['Шквал', 'Волна', 'Бакен', 'Гавань'],
+  'plotina-bureveshchun': ['Гром', 'Чайка', 'Норд', 'Буря'],
+  'ostrog-voevoda': ['Ермак', 'Василиса', 'Тимофей', 'Ярина'],
+  'ostrog-shaman': ['Кам', 'Айна', 'Урхан', 'Сайна'],
+  'bazar-kupets': ['Сафар', 'Зарина', 'Хаким', 'Лейла'],
+  'bazar-menyala': ['Динар', 'Ширин', 'Абакус', 'Нура'],
+  'kurgany-khan': ['Бату', 'Алтын', 'Курган', 'Умай'],
+  'kurgany-veshchun': ['Тенгри', 'Полынь', 'Морок', 'Вереска'],
 };
 
 export interface HeroPick {

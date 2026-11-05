@@ -1,0 +1,170 @@
+# Герои, партия 36: ключевые кадры роликов кампаний 3–7 (docs/geroi/CAMPAIGNS2.md)
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 1
+- 2
+items:
+- name: c3-1a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A huge stone dam among rocky cliffs, water roaring through open sluices, on the top of the dam stands a tall
+    athletic sixteen-year-old boy with wet-looking blond hair and a calm gaze.'
+- name: c3-1b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Old keepers in blue oilskin cloaks turning a giant brass sluice wheel inside a stone hall.'
+- name: c3-2a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A storm over a grey sea, small sailing boats tossed by waves, lightning, a distant lighthouse.'
+- name: c3-3a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A colorful merchant ship at a wooden pier, on deck a skinny sixteen-year-old boy with slicked hair and a
+    sly grin lays out goods on a carpet.'
+- name: c3-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A lighthouse on a cliff at night, its beam falling on black sails of a fleet near the rocks.'
+- name: c3-4a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A stone prison fort on a lonely rock in the sea, in a lit tower window the silhouette of a young man.'
+- name: c3-fin1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a tall athletic sixteen-year-old boy with wet-looking blond hair and a calm gaze hugging a tall blond young
+    man in a torn sailor shirt on a wet wooden pier in the rain.'
+- name: c3-fin2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A glowing brass shard lying in an open wet palm, sea spray around.'
+- name: c4-1a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A log fort in a snowy taiga, warriors in furs standing in a row on the drill square, before them a stocky
+    sixteen-year-old boy with a short military haircut and a serious frown.'
+- name: c4-1b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A grey-bearded commander in a fur coat handing an old war horn to a stocky sixteen-year-old boy with a short
+    military haircut and a serious frown in a log hall.'
+- name: c4-2a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A blizzard over a mountain pass, snow-covered fort gates, campfires burning on the walls.'
+- name: c4-3a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A purple heather moor with burial mounds at night, ghostly lights and pale riders above them.'
+- name: c4-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a pale quiet sixteen-year-old boy with dark hair over his eyes sitting on top of a burial mound, pale ghostly
+    ancestor spirits standing around him.'
+- name: c4-4a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A narrow mountain pass in snow, black banners and a huge army camp below.'
+- name: c4-fin1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a stocky sixteen-year-old boy with a short military haircut and a serious frown and a pale quiet sixteen-year-old
+    boy with dark hair over his eyes standing on a log fort wall under the northern lights.'
+- name: c4-fin2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A glowing brass shard frozen in clear ice on a mountain peak.'
+- name: c5-1a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A noisy fantasy bazaar on a white salt flat, silk tents, camels, a skinny sixteen-year-old boy with slicked
+    hair and a sly grin wearing a silk robe over a leather jacket at a stall.'
+- name: c5-1b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: An important old merchant with a huge abacus bowing to a skinny sixteen-year-old boy with slicked hair and
+    a sly grin in a silk tent.'
+- name: c5-2a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A black rider handing a sealed scroll to a skinny sixteen-year-old boy with slicked hair and a sly grin,
+    an empty open chest behind him.'
+- name: c5-3a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A great fair at a crossroads of three roads, tents and flags of different lands, crowds.'
+- name: c5-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A merchant in black at a stall slowly raising a price written on a wooden board.'
+- name: c5-4a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A treasure vault in a dark castle, a glowing brass shard on a velvet cushion, sleeping guards.'
+- name: c5-fin1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a skinny sixteen-year-old boy with slicked hair and a sly grin running across bazaar rooftops at night with
+    a glowing shard in his fist.'
+- name: c5-fin2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a skinny sixteen-year-old boy with slicked hair and a sly grin sitting on a crate by a campfire among camels,
+    counting glowing seeds and smiling.'
+- name: c6-1a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A misty purple heather moor with burial mounds, a pale quiet sixteen-year-old boy with dark hair over his
+    eyes getting up from the ground, pale shadows whispering around him.'
+- name: c6-1b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Ghostly old warriors in bronze armor standing in a half circle and bowing, pale blue glow, heather moor.'
+- name: c6-2a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A night funeral feast: bonfires burning on the tops of burial mounds, a chain of fire to the horizon.'
+- name: c6-3a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A translucent ghost of an old watchman in a quilted jacket and a flat cap sitting by a campfire on a burial
+    mound.'
+- name: c6-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A translucent ghost of an old watchman in a flat cap pointing to the night sky where eight lights draw together
+    into one.'
+- name: c6-4a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A huge ancient burial mound under a stormy sky, a black army at its foot.'
+- name: c6-fin1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a pale quiet sixteen-year-old boy with dark hair over his eyes holding a glowing brass shard, behind him
+    the ghost of an old watchman slowly fading.'
+- name: c6-fin2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A stone map by a campfire, six bright lights on it and two dim red lights far to the east.'
+- name: c7-1a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: eight different teenagers, seven boys and one small girl with braids and glasses, each in a cloak of a different
+    fantasy land over 1990s clothes standing together on a hill at sunset, banners of different lands behind them.'
+- name: c7-1b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A great stone map of the world with eight lights, six bright and two dim red in the east, teenagers leaning
+    over it.'
+- name: c7-2a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A black fortress on a cliff above an ash plain, lightning, thousands of torches on the walls.'
+- name: c7-2b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: An empty throne of black iron in a dark hall, an old flat cap lying on the armrest.'
+- name: c7-3a
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A gigantic crater with a glowing heart of brass and light at the bottom, armies descending along a spiral
+    road.'
+- name: c7-3b
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: a man about thirty with a hard face and a scar, a flat 1980s cap and a long black coat with dark iron armor
+    plates standing by a glowing brass heart at the bottom of a crater, holding two glowing shards.'
+- name: c7-fin1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Eight hands holding glowing brass shards coming together above a glowing heart, the brass knuckle assembling
+    whole.'
+- name: c7-fin2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A blinding pillar of light rising from a giant crater into a sky with two moons.'
+- name: c7-home1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Summer evening in 1995, a construction site by a small river, eight teenagers lying on the grass by a clay
+    pit and laughing, grey panel apartment blocks behind.'
+- name: c7-home2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A man in a flat cap standing at the entrance of a grey nine-storey panel apartment block at dusk, a window
+    on the third floor lights up.'
+- name: c7-stay1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: Eight teenagers on a hill above a fantasy valley walking away in different directions toward different lands,
+    two pale moons.'
+- name: c7-stay2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. Cinematic wide shot: A man in a flat cap walking down a summer path toward grey panel apartment blocks that stand in a fantasy
+    field like a mirage.'

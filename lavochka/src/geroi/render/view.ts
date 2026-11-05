@@ -544,7 +544,7 @@ export class BattleView {
       case 'proc': {
         const t = this.sprites.get(e.t);
         if (!t) return;
-        const text = { poison: 'яд', blind: 'ослеплён', root: 'опутан', swallow: 'схвачен!', mist: 'в тумане' }[e.k];
+        const text = { poison: 'яд', blind: 'ослеплён', root: 'опутан', swallow: 'схвачен!', mist: 'в тумане', storm: 'буря!', trap: 'ловушка!', pull: 'гарпун', steal: '+семки' }[e.k];
         this.floatText(this.headOf(t).x + 20, this.headOf(t).y + 26, text, 0xc9ffa8, 22);
         return;
       }
