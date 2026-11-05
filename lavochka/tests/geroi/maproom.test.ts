@@ -251,7 +251,8 @@ describe('geroi/maproom: сеть карты', () => {
       orig();
     };
     const r = playOut(room, [a, b], adv, 20000, 40);
-    expect(room.world!.day).toBeGreaterThanOrEqual(40);
+    // 40 дней или победа раньше (партия ботов на этом сиде может и кончиться)
+    expect(room.phase === 'over' || room.world!.day >= 40).toBe(true);
     expect(r.freeDays).toBeGreaterThan(10);
     expect(r.fights).toBeGreaterThan(5);
     expect(both).toBeGreaterThan(0);

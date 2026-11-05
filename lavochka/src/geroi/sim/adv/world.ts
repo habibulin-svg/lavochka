@@ -11,7 +11,7 @@ import {
 } from './hero';
 import { type ScnState, scnCheck } from './scenario';
 import {
-  BRANCHES, BUILDINGS, DECREES, RESEARCH_AMBER, RESEARCH_DAYS, type Town, type TownFaction, buildCost, buildError, buildingDef, canUpgrade, creaturePrice, forgeCap, forgePerDay, fortLevel, guildLevel, hallIncome, has, isCast, marketRate, townCreature, weeklyGrowth,
+  BRANCHES, BUILDINGS, DECREES, RESEARCH_AMBER, RESEARCH_DAYS, type Town, type TownFaction, buildCost, buildError, baseGrowth, buildingDef, canUpgrade, creaturePrice, forgeCap, forgePerDay, fortLevel, guildLevel, hallIncome, has, isCast, marketRate, townCreature, weeklyGrowth,
 } from './town';
 
 export const HERO_COST = 2500;
@@ -1347,7 +1347,7 @@ export function act(w: World, a: AdvAction): AdvEvent[] {
       if (a.b.startsWith('dwell')) {
         const tier = Number(a.b.slice(5));
         const c = townCreature(t, tier, false);
-        if (!isCast(c)) t.avail[tier - 1] += c.weekly;
+        if (!isCast(c)) t.avail[tier - 1] += baseGrowth(t.faction, c);
       }
       if (a.b === 'skhod') t.decrees = rollDecrees(w);
       if (a.b === 'observatory') for (const o of owned(w, t.owner)) reveal(w, t.owner, o.cell, 6);
@@ -1780,8 +1780,7 @@ export function makeTown(w: World, faction: TownFaction, owner: number, cell: nu
     id: w.towns.length, name, faction, owner, cell, built: ['hall1', 'fort1', 'tavern', 'dwell1'], builtToday: false, avail: [0, 0, 0, 0, 0, 0, 0], garrison: emptyArmy(), guild, decrees: [], bonus: [0, 0, 0, 0, 0, 0, 0], discount: 0,
     forge: faction === 'kuznya' ? 1500 : 0, research: null, studied: {}, tavern: [],
   };
-  const c = townCreature(t, 1, false);
-  t.avail[0] = c.weekly;
+  t.avail[0] = baseGrowth(faction, townCreature(t, 1, false));
   return t;
 }
 

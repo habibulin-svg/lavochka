@@ -31,10 +31,27 @@ const BASIC = [5, 5, 10, 10, 10, 15, 20];
 const RARE = [0, 2, 3, 5, 8, 10, 15];
 const REQ: string[][] = [['fort1'], ['dwell1'], ['dwell1'], ['dwell2', 'smithy'], ['dwell3', 'guild1'], ['dwell4', 'hall2'], ['dwell5', 'dwell6', 'fort2']];
 
+/** Прирост фракции на карте, % по ступеням. В «Арене» фракции ровные (там бюджет в семках), а на карте — прирост штуками,
+ * и одни и те же существа в мелких боях с нейтралами и осадах дают разное: Затонье брало 43 %, Академия 59 % (BALANCE.md, 2026-11-06). */
+const FACTION_GROWTH: Partial<Record<TownFaction, number[]>> = {
+  zatonye: [125, 125, 125, 125, 125, 125, 125],
+  akademiya: [70, 85, 85, 85, 85, 85, 85],
+  kuznya: [105, 105, 105, 105, 105, 105, 105],
+};
+
+/** Прирост ступени без крепости: столько жилище даёт в неделю. */
+export function baseGrowth(f: TownFaction, c: CreatureDef): number {
+  const k = FACTION_GROWTH[f]?.[c.tier - 1] ?? 100;
+  return Math.max(1, Math.round((c.weekly * k) / 100));
+}
+
 /** Дерево построек фракции: общая часть + жилища + две свои постройки. */
 function tree(f: TownFaction): BuildingDef[] {
   const [r1, r2] = FACTION_RES[f];
-  const rare = (n: number): Purse => (r1 === r2 ? { [r1]: n * 2 } : { [r1]: n, [r2]: n });
+  // Дерево и камень — обычные ресурсы (шахта даёт 2 в день, цена вдвое ниже): у Затулья и Кузни их в «редкой» цене вдвое больше,
+  // иначе их жилища обходились вдвое дешевле, чем у Затонья и Академии (2026-11-06)
+  const k1 = r1 === 'wood' || r1 === 'stone' ? 2 : 1;
+  const rare = (n: number): Purse => (r1 === r2 ? { [r1]: n * 2 } : { [r1]: n * k1, [r2]: n });
   const add = (a: Purse, b: Purse): Purse => {
     const out: Purse = { ...a };
     for (const [k, v] of Object.entries(b) as [ResId, number][]) out[k] = (out[k] ?? 0) + v;
@@ -61,7 +78,7 @@ function tree(f: TownFaction): BuildingDef[] {
     const t = c.tier - 1;
     list.push({
       id: `dwell${c.tier}`, name: NAME_DWELL[f][t], art: `dwell${c.tier}`, cost: add({ semki: SEMKI[t], wood: BASIC[t] >> 1, stone: BASIC[t] >> 1 }, rare(RARE[t])),
-      req: REQ[t], text: `Наём: ${c.name}, ${c.weekly} в неделю`,
+      req: REQ[t], text: `Наём: ${c.name}, ${baseGrowth(f, c)} в неделю`,
     });
     const up = factionCreatures(f).find((x) => x.tier === c.tier && x.up)!;
     list.push({
@@ -187,9 +204,11 @@ export const canUpgrade = (t: Town, cre: string): CreatureDef | null => {
 
 /** Недельный прирост ступени: крепость даёт +50 %, твердыня — вдвое. */
 export function weeklyGrowth(t: Town, tier: number): number {
-  const base = factionCreatures(t.faction).find((c) => c.tier === tier)!.weekly;
+  const c = factionCreatures(t.faction).find((x) => x.tier === tier)!;
+  const k = FACTION_GROWTH[t.faction]?.[tier - 1] ?? 100;
   const f = fortLevel(t);
-  return base + (f === 3 ? base : f === 2 ? base >> 1 : 0) + t.bonus[tier - 1];
+  const g = c.weekly + (f === 3 ? c.weekly : f === 2 ? c.weekly >> 1 : 0);
+  return Math.max(1, Math.round((g * k) / 100)) + t.bonus[tier - 1];
 }
 
 /** Рынок: за amount ресурса give — сколько get. Комиссия ×2 (DESIGN.md §5.7 — у Базара позже лучше). */
