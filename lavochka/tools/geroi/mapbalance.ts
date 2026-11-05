@@ -1,6 +1,6 @@
 /* Прогоны ботов на случайных картах (DESIGN.md §6.4, этап 5): уровни между собой, матрица фракций, длина партии в днях.
  * npx tsx tools/geroi/mapbalance.ts [партий] [размер s|m|l] [шаблон] [что: levels|factions|all] [сдвиг сидов]
- * Бои считают Средние боевые боты (Сложный боевой бот медленный, на карте решает не он). */
+ * Бои считают Средние боевые боты (Сложный в ~20 раз дольше — на тысячах партий это часы; на карте решает не он). */
 import { type BotLevel } from '../../src/geroi/bot/bot';
 import { playBotGame } from '../../src/geroi/bot/advplay';
 import { FACTIONS, type Faction } from '../../src/geroi/sim/creatures';

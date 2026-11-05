@@ -24,13 +24,16 @@ export type Ability =
   | 'curseCast'  // замедляет врага вместо хода
   | 'spellRes';  // половина урона от заклинаний
 
-/** Во что обходится способность в силе (множитель к итоговой силе). */
+/** Во что обходится способность в силе (множитель к итоговой силе).
+ * Проглот 1,14 → 1,08 (2026-11-06): он срабатывает только по отряду слабее тролля, в больших боях таких мало — Затонье на 100 000 брало 44 %. */
 const ABILITY_COST: Record<Ability, number> = {
   fly: 1.12, big: 1.0, machine: 1.03, noRetal: 1.15, manyRetal: 1.1, strike2: 1.0, antiBig: 1.05, charge: 1.18, sweep: 1.15, aoe: 1.35,
-  noMeleePen: 1.08, noRangePen: 1.06, poison: 1.12, blind: 1.12, root: 1.1, swallow: 1.14, mist: 1.12, pass: 1.03,
+  noMeleePen: 1.08, noRangePen: 1.06, poison: 1.12, blind: 1.12, root: 1.1, swallow: 1.08, mist: 1.12, pass: 1.03,
   heal: 1.3, repair: 1.3, curseCast: 1.15, spellRes: 1.03,
 };
 const RANGED_COST = 1.5;
+/** Стрелки 1-й ступени — ещё дороже: их берут толпой, и вся толпа стреляет до сближения (Академия на 10 000 брала 63–65 %). */
+const RANGED_T1_COST = 1.12;
 const WALL_COST = 1.12;
 /** Базовая сила ступени = √(здоровье × урон) у средней формы; улучшение — ×1,3. */
 const TIER_POWER = [4.8, 8, 13.5, 23, 40, 72, 140];
@@ -180,7 +183,7 @@ const SPECS: Record<Faction, Spec[]> = {
 /** Поправка силы за всё, кроме здоровья и урона. */
 function modifier(f: Faction, s: Spec, speed: number): number {
   let m = (1 + (speed - 5) * 0.035) * (1 + (s.a ?? 0) * 0.025) * (1 + (s.d ?? 0) * 0.025);
-  if (s.shots) m *= RANGED_COST;
+  if (s.shots) m *= RANGED_COST * (s.tier === 1 ? RANGED_T1_COST : 1);
   // «Стенка» Затулья стоит силы у той пехоты, что в ней стоит
   if (f === 'zatulye' && !s.shots && !s.ab?.some((a) => a === 'fly' || a === 'big')) m *= WALL_COST;
   for (const ab of s.ab ?? []) m *= ABILITY_COST[ab];
