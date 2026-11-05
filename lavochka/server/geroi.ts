@@ -252,7 +252,7 @@ export function geroiFirst(
   close: () => void,
   msg: NetClientMsg,
   genCode: (taken: (c: string) => boolean) => string,
-  user: { id: number; name: string } | null,
+  user: { id: number; name: string; full?: boolean } | null,
   ratings: Ratings,
   mapRatings?: Ratings,
 ): Link | null {
@@ -265,7 +265,7 @@ export function geroiFirst(
   const given = String(m.name ?? 'Пацан').trim().slice(0, 24) || 'Пацан';
   const token = String(m.token ?? '').slice(0, 64);
   if (!token) return fail('Обнови страницу: нет ключа игрока.');
-  const peer: RoomPeer = { id: nextPeer++, name: user?.name ?? given, token, user: user?.id ?? null, send };
+  const peer: RoomPeer = { id: nextPeer++, name: user?.name ?? given, token, user: user?.id ?? null, full: !!user?.full, send };
   const hooks = {
     onResult: (winner: number, users: [number | null, number | null], names: [string, string]) => {
       const w = users[winner]!;

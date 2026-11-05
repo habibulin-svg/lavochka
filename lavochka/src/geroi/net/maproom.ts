@@ -22,7 +22,8 @@ import { type AdvAction, type AdvEvent, type PendingBattle, type World, act, act
 import { type HeroPick, factionClasses } from '../sim/heroes';
 import { type MapRecord, type RecStep, diffJson, patchJson } from './record';
 import type { TownFaction } from '../sim/adv/town';
-import { type MapClientMsg, type MapClock, type MapRatingView, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
+import { isPaidFaction } from '../sim/creatures';
+import { type MapClientMsg, type MapClock, type MapRatingView, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, MAP_FACTIONS_ALL, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
 import { type ClockView, cleanAction } from './protocol';
 
 /** Запас хода на всю партию и прибавка в начале каждого своего хода. */
@@ -54,6 +55,8 @@ export interface MapPeer {
   name: string;
   token: string;
   user: number | null;
+  /** Купил полную игру: может взять фракцию второй четвёрки. */
+  full?: boolean;
   send(m: MapServerMsg): void;
 }
 
@@ -71,6 +74,8 @@ interface Seat {
   goneAt: number;
   team: number | null;
   user: number | null;
+  /** У сидящего куплена полная игра. */
+  full?: boolean;
 }
 
 interface Fight {
@@ -286,6 +291,13 @@ export class MapRoom {
         this.seats[free].token = p.token;
         this.seats[free].name = p.name;
         this.seats[free].user = p.user;
+        this.seats[free].full = !!p.full;
+        // платная фракция осталась от ушедшего — у некупившего она сменяется на базовую
+        if (!p.full && isPaidFaction(this.seats[free].faction)) {
+          const f = MAP_FACTIONS[free % 4];
+          this.seats[free].faction = f;
+          this.seats[free].hero = this.freeHero(f, free);
+        }
       }
     }
     if (seat !== null && this.seats[seat].goneAt) {
@@ -324,7 +336,8 @@ export class MapRoom {
     switch (m.t) {
       case 'mseat': {
         const pk = cleanPick(m.hero);
-        if (this.phase !== 'lobby' || seat === null || !MAP_FACTIONS.includes(m.faction) || !pk) return;
+        if (this.phase !== 'lobby' || seat === null || !MAP_FACTIONS_ALL.includes(m.faction) || !pk) return;
+        if (isPaidFaction(m.faction) && !p.full) return p.send({ t: 'mnope', why: 'Эта фракция — в полной игре' });
         if (!factionClasses(m.faction).some((c) => c.id === pk.cls)) return;
         if (this.seats.some((s, j) => j !== seat && s.hero.cls === pk.cls && s.hero.n === pk.n)) return;
         this.seats[seat].faction = m.faction;
@@ -378,7 +391,7 @@ export class MapRoom {
         return;
       case 'mdraft': {
         if (this.phase !== 'draft' || seat === null) return;
-        const f = MAP_FACTIONS.includes(m.faction as TownFaction) ? m.faction : undefined;
+        const f = this.draftPool().includes(m.faction as TownFaction) ? m.faction : undefined;
         const pk = m.hero === undefined ? null : cleanPick(m.hero);
         const err = this.draftError(seat, f, pk);
         if (err) return p.send({ t: 'mnope', why: err });
@@ -700,6 +713,11 @@ export class MapRoom {
     this.sendDraft();
   }
 
+  /** Из каких фракций драфт: вторая четвёрка — только если полная игра у всех людей за столом. */
+  private draftPool(): TownFaction[] {
+    return this.seats.every((s) => s.bot || s.full) ? MAP_FACTIONS_ALL : MAP_FACTIONS;
+  }
+
   /** Фракции, уже выбранные на драфте. */
   private draftTaken(): TownFaction[] {
     const d = this.draft!;
@@ -710,7 +728,7 @@ export class MapRoom {
   private draftChoices(): { faction?: TownFaction; hero?: HeroPick }[] {
     const d = this.draft!;
     const kind = d.steps[d.i].kind;
-    const open = MAP_FACTIONS.filter((f) => !d.factions.includes(f) && (kind !== 'pick' || !this.draftTaken().includes(f)));
+    const open = this.draftPool().filter((f) => !d.factions.includes(f) && (kind !== 'pick' || !this.draftTaken().includes(f)));
     if (kind === 'faction') return open.map((faction) => ({ faction }));
     const out: { faction?: TownFaction; hero?: HeroPick }[] = [];
     for (const faction of open)

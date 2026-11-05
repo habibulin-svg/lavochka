@@ -10,6 +10,7 @@ import { TEMPLATES } from '../sim/adv/templates';
 import type { TownFaction } from '../sim/adv/town';
 import { type HeroPick, classOf, factionClasses, heroName, heroPortrait } from '../sim/heroes';
 import { button, h } from './common';
+import { buyOffer, factionListed, factionOpen } from './paid';
 import type { Menu } from './menu';
 
 const NAME_KEY = 'geroi-name';
@@ -146,7 +147,7 @@ export class NetMap {
         } else if (s.bot) row.append(h('span', 'dim', WHO.find(([id]) => id === s.bot)![1]));
       } else if (mine) {
         const fac = h('select', 'g-select');
-        for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+        for (const f of FACTIONS) if (factionListed(f.id)) fac.append(new Option(factionOpen(f.id) ? f.name : `🔒 ${f.name}`, f.id, false, f.id === s.faction));
         const hero = h('select', 'g-select');
         const fill = (f: TownFaction): void => {
           hero.replaceChildren();
@@ -159,6 +160,10 @@ export class NetMap {
         };
         fill(s.faction);
         fac.onchange = () => {
+          if (!factionOpen(fac.value)) {
+            fac.value = s.faction;
+            return buyOffer(document.body);
+          }
           const f = fac.value as TownFaction;
           fill(f);
           const first = [...hero.options].find((o) => !o.disabled);

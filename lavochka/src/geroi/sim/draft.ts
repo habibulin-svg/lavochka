@@ -2,7 +2,7 @@
  * соперник видит сделанный выбор после каждого круга: можно подстраиваться. Цена отряда в любой карточке примерно одна: выбор — про роль, а не про «кто дороже». */
 import { Rng } from '../../gops/sim/rng';
 import type { ArmySlot } from './army';
-import { CREATURES, type CreatureDef, type Faction, factionCreatures } from './creatures';
+import { CREATURES, type CreatureDef, type Faction, factionCreatures, isPaidFaction } from './creatures';
 import { CLASSES, type HeroPick, classOf } from './heroes';
 
 export const ARMY_ROUNDS = 7;
@@ -29,8 +29,9 @@ export interface DraftState {
   done: boolean;
 }
 
-function heroOffer(r: Rng): DraftCard[] {
-  const classes = [...CLASSES];
+/** paid — в предложения идут и классы второй четвёрки (оба игрока купили полную игру). */
+function heroOffer(r: Rng, paid: boolean): DraftCard[] {
+  const classes = CLASSES.filter((c) => paid || !isPaidFaction(c.faction));
   const out: DraftCard[] = [];
   while (out.length < 3) {
     const [cls] = classes.splice(r.below(classes.length), 1);
@@ -64,9 +65,9 @@ function armyOffer(r: Rng, f: Faction, side: DraftSide, budget: number): DraftCa
   return out;
 }
 
-export function newDraft(seed: number, budget: number): DraftState {
+export function newDraft(seed: number, budget: number, paid = false): DraftState {
   const r = new Rng(seed);
-  const side = (): DraftSide => ({ hero: null, army: [], offer: heroOffer(r), pick: -1 });
+  const side = (): DraftSide => ({ hero: null, army: [], offer: heroOffer(r, paid), pick: -1 });
   return { budget, round: 0, rng: r.s, sides: [side(), side()], done: false };
 }
 

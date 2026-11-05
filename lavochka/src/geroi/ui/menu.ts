@@ -13,6 +13,7 @@ import type { World } from '../sim/adv/world';
 import { PLAYER_COLORS } from '../render/mapview';
 import type { TownFaction } from '../sim/adv/town';
 import { button, creatureIcon, creatureLines, h, modal } from './common';
+import { SALE_OPEN, buyOffer, factionListed, factionOpen, ownsFull } from './paid';
 
 const BUDGETS = [10000, 20000];
 const FIELDS: [string, string][] = [['meadow', 'Луг'], ['swamp', 'Болото'], ['ash', 'Пепелище'], ['pine', 'Бор'], ['ford', 'Брод'], ['crater', 'Кратер']];
@@ -81,6 +82,7 @@ export class Menu {
       button('Карта «Две реки»', () => this.mapSetup()),
       button('Быстрый бой', () => this.quick()),
       button('Загрузить', () => this.load()),
+      ...(SALE_OPEN && !ownsFull() ? [button('Полная игра — 300 ₽', () => buyOffer(this.el))] : []),
       music,
       button('Во двор', () => (location.href = '/')),
     );
@@ -127,8 +129,12 @@ export class Menu {
         name.maxLength = 16;
         name.oninput = () => (s.name = name.value);
         const fac = h('select', 'g-select');
-        for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+        for (const f of FACTIONS) if (factionListed(f.id)) fac.append(new Option(factionOpen(f.id) ? f.name : `🔒 ${f.name}`, f.id, false, f.id === s.faction));
         fac.onchange = () => {
+          if (!factionOpen(fac.value)) {
+            fac.value = s.faction;
+            return buyOffer(this.el);
+          }
           s.faction = fac.value as Faction;
           s.hero = { cls: factionClasses(s.faction)[0].id, n: 1 };
           draw();
@@ -252,8 +258,12 @@ export class Menu {
         name.maxLength = 16;
         name.oninput = () => (s.name = name.value);
         const fac = h('select', 'g-select');
-        for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+        for (const f of FACTIONS) if (factionListed(f.id)) fac.append(new Option(factionOpen(f.id) ? f.name : `🔒 ${f.name}`, f.id, false, f.id === s.faction));
         fac.onchange = () => {
+          if (!factionOpen(fac.value)) {
+            fac.value = s.faction;
+            return buyOffer(this.el);
+          }
           s.faction = fac.value as Faction;
           s.hero = free(s.faction, i);
           draw();
@@ -357,8 +367,12 @@ export class Menu {
     const col = h('div', `g-panel g-side side${idx}`);
     const top = h('div', 'g-row');
     const fac = h('select', 'g-select');
-    for (const f of FACTIONS) fac.append(new Option(f.name, f.id, false, f.id === s.faction));
+    for (const f of FACTIONS) if (factionListed(f.id)) fac.append(new Option(factionOpen(f.id) ? f.name : `🔒 ${f.name}`, f.id, false, f.id === s.faction));
     fac.onchange = () => {
+      if (!factionOpen(fac.value)) {
+        fac.value = s.faction;
+        return buyOffer(this.el);
+      }
       s.faction = fac.value as Faction;
       s.hero = { cls: factionClasses(s.faction)[0].id, n: 1 };
       s.army = randomArmy(s.faction, budget, Date.now() % 100000);

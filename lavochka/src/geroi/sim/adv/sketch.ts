@@ -10,7 +10,8 @@ import type { TownFaction } from './town';
 import { type MapObject, type Player, type Quest, type World, cellOf, emptyArmy, makeHero, makeTown, placeObject, reveal, tavernOffer, xOf, yOf } from './world';
 
 /** Символы наброска: строчная — местность, заглавная — она же в лесу, `^` — горы, `~` — вода. */
-const LAND: Record<string, TerrainId> = { g: 'meadow', s: 'swamp', a: 'ash', p: 'pine', r: 'rough', d: 'sand' };
+/** Вторая четвёрка: c — скалистый берег, n — снега, l — солончак, h — пустошь. */
+const LAND: Record<string, TerrainId> = { g: 'meadow', s: 'swamp', a: 'ash', p: 'pine', r: 'rough', d: 'sand', c: 'coast', n: 'snow', l: 'saltflat', h: 'heath' };
 
 export type Stack = [string, number];
 

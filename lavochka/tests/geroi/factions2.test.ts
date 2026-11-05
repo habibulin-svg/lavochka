@@ -5,6 +5,9 @@ import { randomArmy } from '../../src/geroi/sim/army';
 import { type BattleSetup, type BattleState, act, attackOf, createBattle, currentUnit, damageFactor, defenseOf, pathTo, reachOf, speedOf } from '../../src/geroi/sim/battle';
 import { CREATURES, PAID_FACTIONS, type Faction, isPaidFaction } from '../../src/geroi/sim/creatures';
 import { factionClasses } from '../../src/geroi/sim/heroes';
+import { MapRoom, type MapPeer } from '../../src/geroi/net/maproom';
+import { newDraft } from '../../src/geroi/sim/draft';
+import { classOf } from '../../src/geroi/sim/heroes';
 
 const hero = (f: Faction) => ({ cls: factionClasses(f)[0].id, n: 1 });
 const setup = (a: [Faction, string, number][], b: [Faction, string, number][], seed = 7): BattleSetup => ({
@@ -117,5 +120,28 @@ describe('geroi: вторая четвёрка фракций', () => {
         playOut(s, ['medium', 'medium']);
         expect(s.over, `${f}–${g}`).toBe(true);
       }
+  });
+
+  it('сеть: платную фракцию в лобби берёт только купивший; драфт «Арены» без покупки — только база', () => {
+    const box: unknown[] = [];
+    const mk = (id: number, full: boolean): MapPeer => ({ id, name: 'p' + id, token: 't' + id, user: null, full, send: (m) => box.push(m) });
+    const room = new MapRoom({ template: 'duel', size: 's', water: 'lakes', guard: 'normal', seed: 3 }, () => 1000);
+    const poor = mk(1, false);
+    const rich = mk(2, true);
+    room.add(poor);
+    room.add(rich);
+    const seats = () => (room as unknown as { seats: { faction: string }[] }).seats;
+    const cls = factionClasses('plotina')[0].id;
+    room.message(poor, { t: 'mseat', faction: 'plotina', hero: { cls, n: 1 } });
+    expect(seats()[0].faction).not.toBe('plotina');
+    room.message(rich, { t: 'mseat', faction: 'plotina', hero: { cls, n: 2 } });
+    expect(seats()[1].faction).toBe('plotina');
+    for (let seed = 1; seed < 40; seed++) {
+      const d = newDraft(seed, 10000);
+      for (const sd of d.sides) for (const c of sd.offer) if ('hero' in c) expect(isPaidFaction(classOf(c.hero.cls).faction)).toBe(false);
+    }
+    const all = new Set<string>();
+    for (let seed = 1; seed < 40; seed++) for (const sd of newDraft(seed, 10000, true).sides) for (const c of sd.offer) if ('hero' in c) all.add(classOf(c.hero.cls).faction);
+    expect([...all].some(isPaidFaction)).toBe(true);
   });
 });

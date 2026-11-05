@@ -2,7 +2,8 @@
  * (p1, p2: human|easy|medium|hard; fast — бой без показа); /geroi.html?map=1&a=zatulye&b=kuznya&seed=5 — сразу партия на карте;
  * ?map=1&gen=duel&size=m&water=lakes&guard=normal&seed=7&a=…&b=… — сразу на случайной карте, без map=1 — её настройка. */
 import { type Release, mayPlay } from '../core/release';
-import type { RightGrant } from '../core/rights';
+import { type RightGrant, hasRight } from '../core/rights';
+import { buyReturn, factionOpen, ownsFull, setOwnership } from './ui/paid';
 import { Audio2 } from './audio';
 import { Game, type Who } from './game';
 import type { Save } from './save';
@@ -387,12 +388,22 @@ function splash(next: () => void): void {
 
 /** Ранний доступ — как у ГОПС: права из /api/auth/me, выход игр — /api/stats; нет связи — пускаем. В разработке не проверяем. */
 async function access(): Promise<{ ok: boolean; signedIn: boolean }> {
-  if (import.meta.env.DEV) return { ok: true, signedIn: true };
+  if (import.meta.env.DEV) {
+    setOwnership({ full: true, signedIn: true });
+    return { ok: true, signedIn: true };
+  }
   const get = (url: string) => fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const [me, stats] = await Promise.all([get('/api/auth/me'), get('/api/stats')]);
   const rights: RightGrant[] = me?.user?.rights ?? [];
   const release: Release = stats?.release ?? {};
+  setOwnership({ full: hasRight(rights, 'geroi_full'), signedIn: !!me?.user });
   return { ok: mayPlay(release, 'geroi', rights), signedIn: !!me?.user };
+}
+
+/** Фракция из ссылки: только настоящая и открытая (платную без покупки — нет). */
+function qFaction(key: string): TownFaction | null {
+  const v = q.get(key);
+  return v && FACTIONS.some((f) => f.id === v) && factionOpen(v) ? (v as TownFaction) : null;
 }
 
 const BOT_NAMES = { easy: 1, medium: 1, hard: 1 };
@@ -405,30 +416,33 @@ function botParam(key: string): { bot?: 'easy' | 'medium' | 'hard' } {
 async function main(): Promise<void> {
   const a = await access();
   if (!a.ok) return menu.locked(a.signedIn);
+  buyReturn(document.body);
   // ?scn=c1-1 — сразу сценарий кампании, без роликов (разработка)
   const scn = q.get('scn');
-  const found = scn ? scenarioOf(scn) : null;
+  const sc = scn ? scenarioOf(scn) : null;
+  // платный сценарий по ссылке — только купившим
+  const found = sc && (!sc.c.paid || ownsFull()) ? sc : null;
   if (found) {
     const w = buildScenario(found.c.scenarios[found.i], (q.get('diff') as Difficulty | null) ?? 'normal', null);
     w.name = `${found.c.title}: ${found.c.scenarios[found.i].title}`;
     return startAdv(w);
   }
-  const fa = q.get('a') as Faction | null;
+  const fa = qFaction('a');
   const gen = parseGen(q);
   if (gen && q.has('map')) {
     // ссылка на случайную карту: a, b, c, d — фракции игроков
     const def: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
     const names = ['Первый', 'Второй', 'Третий', 'Четвёртый'];
     const players = Array.from({ length: TEMPLATES[gen.template].players }, (_, i) => {
-      const f = (q.get('abcd'[i]) ?? def[i]) as TownFaction;
+      const f = qFaction('abcd'[i]) ?? def[i];
       return { name: names[i], faction: f, hero: { cls: factionClasses(f)[i % 2].id, n: 1 + (i >> 1) }, ...botParam(`w${'abcd'[i]}`) };
     });
     return startAdv(generateMap({ seed: gen.seed, players }, gen));
   }
   if (gen) return menu.randomMap(gen);
   if (q.has('map')) {
-    const f0 = (fa ?? 'zatulye') as TownFaction;
-    const f1 = (q.get('b') ?? 'zatonye') as TownFaction;
+    const f0 = fa ?? 'zatulye';
+    const f1 = qFaction('b') ?? 'zatonye';
     return startAdv(makeTestMap({
       seed: Number(q.get('seed') ?? 5),
       players: [
@@ -438,7 +452,7 @@ async function main(): Promise<void> {
     }));
   }
   if (fa) {
-    const fb = (q.get('b') ?? 'zatonye') as Faction;
+    const fb: Faction = qFaction('b') ?? 'zatonye';
     const seed = Number(q.get('seed') ?? Date.now() % 100000);
     const budget = Number(q.get('budget') ?? 20000);
     const cfg: QuickConfig = {

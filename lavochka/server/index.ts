@@ -132,7 +132,9 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     const no = msg.t === 'join' ? null : await closed('geroi');
     if (no) return fail(no);
     const u = await userOf(req);
-    const link = geroiFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode, u ? { id: u.id, name: u.name } : null, geroiRatings, geroiMapRatings);
+    // вторая четвёрка фракций — у купивших полную игру (server/buy.ts)
+    const full = u ? hasRight(await accounts.store.rights(u.id, Date.now()).catch(() => []), 'geroi_full') : false;
+    const link = geroiFirst((m) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(m)), () => ws.close(), msg, genCode, u ? { id: u.id, name: u.name, full } : null, geroiRatings, geroiMapRatings);
     if (link) log(`Герои: ${msg.t}, комнат ${geroiRooms()}`);
     return link;
   }

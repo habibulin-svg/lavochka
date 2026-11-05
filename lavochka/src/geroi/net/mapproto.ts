@@ -14,7 +14,9 @@ import { CLASSES, type HeroPick } from '../sim/heroes';
 import type { ClockView, ResultView } from './protocol';
 import type { MapRecord, RecStep } from './record';
 
+/** Базовые четыре — у всех; вторая четвёрка — у купивших полную игру (право geroi_full). */
 export const MAP_FACTIONS: TownFaction[] = ['zatulye', 'zatonye', 'kuznya', 'akademiya'];
+export const MAP_FACTIONS_ALL: TownFaction[] = [...MAP_FACTIONS, 'plotina', 'ostrog', 'bazar', 'kurgany'];
 export const BOT_LEVELS: BotLevel[] = ['easy', 'medium', 'hard'];
 
 /** Место в лобби и в партии. */

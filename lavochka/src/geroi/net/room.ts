@@ -27,6 +27,8 @@ export interface RoomPeer {
   /** Ключ браузера: по нему вернувшийся садится на своё место. */
   token: string;
   user: number | null;
+  /** Купил полную игру (право geroi_full): вторая четвёрка фракций открыта. */
+  full?: boolean;
   send(m: NetServerMsg): void;
 }
 
@@ -39,6 +41,7 @@ interface Seat {
   token: string;
   name: string;
   user: number | null;
+  full?: boolean;
   goneAt: number;
 }
 
@@ -83,7 +86,7 @@ export class ArenaRoom {
     let seat = this.seatOf(p);
     if (seat === null && this.phase === 'lobby') {
       seat = this.seats[0] ? (this.seats[1] ? null : 1) : 0;
-      if (seat !== null) this.seats[seat] = { token: p.token, name: p.name, user: p.user, goneAt: 0 };
+      if (seat !== null) this.seats[seat] = { token: p.token, name: p.name, user: p.user, full: !!p.full, goneAt: 0 };
     }
     if (seat !== null && this.seats[seat]!.goneAt) {
       this.seats[seat]!.goneAt = 0;
@@ -238,7 +241,8 @@ export class ArenaRoom {
 
   private startDraft(): void {
     this.phase = 'draft';
-    this.draft = newDraft(this.seed, this.budget);
+    // вторая четвёрка — только если купили оба
+    this.draft = newDraft(this.seed, this.budget, this.seats.every((s) => s?.full));
     this.deadline = this.now() + HERO_MS;
     this.sendDraftAll();
   }
@@ -253,7 +257,8 @@ export class ArenaRoom {
 
   private startBattle(): void {
     const d = this.draft!;
-    const field = FACTIONS[this.seed % FACTIONS.length].field;
+    // поле — из базовых четырёх: у них оно есть всегда
+    const field = FACTIONS[this.seed % 4].field;
     this.state = createBattle({
       seed: this.seed,
       field,

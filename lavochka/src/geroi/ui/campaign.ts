@@ -1,6 +1,7 @@
 /* Кампании: выбор, ролики «окно + строка» (вступление — во весь экран), брифинг, итог сценария (CAMPAIGNS.md, DESIGN.md §9). */
 import { CAMPAIGNS, CUTSCENE_TEXT, INTRO, introSeen, progressOf, saveProgress } from '../campaign';
 import { DIFFICULTIES, type Difficulty, type CampaignDef, type ScenarioDef } from '../campaign/types';
+import { SALE_OPEN, buyOffer, ownsFull } from './paid';
 import type { ScnState } from '../sim/adv/scenario';
 import { button, h } from './common';
 
@@ -142,11 +143,32 @@ export interface CampaignHooks {
   back: () => void;
 }
 
+/** Почему кампания заперта; null — открыта. */
+export function campaignLock(c: CampaignDef): { text: string; buy: boolean } | null {
+  if (c.paid && !ownsFull()) return { text: 'Кампания из полной игры.', buy: true };
+  const done = (id: string): boolean => {
+    const x = CAMPAIGNS.find((k) => k.id === id);
+    return !!x && progressOf(id).done >= x.scenarios.length;
+  };
+  const n = c.needs;
+  if (!n) return null;
+  const all = (n.all ?? []).every(done);
+  const some = !n.some || n.some.of.filter(done).length >= n.some.n;
+  if (all && some) return null;
+  const parts: string[] = [];
+  if (!all) parts.push(`пройти ${(n.all ?? []).map((id) => `«${CAMPAIGNS.find((k) => k.id === id)?.title ?? id}»`).join(' и ')}`);
+  if (!some) parts.push(`и ещё ${n.some!.n} из кампаний ${n.some!.of.map((id) => `«${CAMPAIGNS.find((k) => k.id === id)?.title ?? id}»`).join(', ')}`);
+  return { text: `Откроется, когда получится ${parts.join(' ')}.`, buy: false };
+}
+
 /** Экран кампаний: карточка на кампанию, сценарии по порядку, сложность. */
 export function campaignScreen(screen: (...n: Node[]) => void, hooks: CampaignHooks): void {
   const wrap = h('div', 'c-list');
   for (const c of CAMPAIGNS) {
+    // платную без покупки не показываем, пока продажа не открыта (ui/paid.ts)
+    if (c.paid && !ownsFull() && !SALE_OPEN) continue;
     const p = progressOf(c.id);
+    const lock = campaignLock(c);
     const card = h('div', 'g-panel c-card');
     const face = h('img', 'c-face');
     face.src = `/geroi/a/heroes/lad-${c.lad}.webp`;
@@ -170,6 +192,14 @@ export function campaignScreen(screen: (...n: Node[]) => void, hooks: CampaignHo
     const all = p.done >= c.scenarios.length && c.scenarios.length > 0;
     const go = button(all ? 'Пройдено — сыграть снова' : p.done ? 'Продолжить' : 'Начать', () => hooks.play(c, all ? 0 : p.done, diff.value as Difficulty), 'g-btn main');
     go.disabled = !c.scenarios.length;
+    if (lock) {
+      // заперто: покупка или «сначала пройди…»
+      go.textContent = lock.buy ? `🔒 Полная игра` : '🔒 Пока закрыто';
+      go.disabled = !lock.buy;
+      go.onclick = () => buyOffer(document.body);
+      ol.querySelectorAll('button').forEach((b) => ((b as HTMLButtonElement).disabled = true));
+      body.append(h('p', 'g-note', lock.text));
+    }
     row.append(diff, go);
     if (p.done) {
       row.append(button('Сначала', () => {
