@@ -14,7 +14,7 @@ import { PLAYER_COLORS } from '../render/mapview';
 import type { TownFaction } from '../sim/adv/town';
 import { button, creatureIcon, creatureLines, h, modal } from './common';
 
-const BUDGETS = [5000, 10000, 20000, 40000, 80000];
+const BUDGETS = [10000, 20000];
 const FIELDS: [string, string][] = [['meadow', 'Луг'], ['swamp', 'Болото'], ['ash', 'Пепелище'], ['pine', 'Бор'], ['ford', 'Брод'], ['crater', 'Кратер']];
 const WHO: [Who, string][] = [['human', 'Человек'], ['easy', 'Бот: лёгкий'], ['medium', 'Бот: средний'], ['hard', 'Бот: сложный']];
 

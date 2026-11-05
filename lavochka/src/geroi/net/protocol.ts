@@ -8,7 +8,7 @@ import type { DraftCard } from '../sim/draft';
 import type { HeroPick } from '../sim/heroes';
 import { SPELLS } from '../sim/spells';
 
-export const BUDGETS = [10000, 20000, 40000];
+export const BUDGETS = [10000, 20000];
 export const DEFAULT_BUDGET = 20000;
 
 export type NetClientMsg =
