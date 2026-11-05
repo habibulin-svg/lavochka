@@ -107,7 +107,8 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .g-tip { position: absolute; padding: 5px 12px; font: 500 21px 'Geroi Num', sans-serif; color: var(--ink); background: #120d08ee; border: 1px solid var(--brass); border-radius: 5px; pointer-events: none; white-space: nowrap; z-index: 3; }
 .g-overlayhost { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 
-.g-modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0008; z-index: 6; }
+/* inset с запасом: интерфейс вписан в 16:9, а карта и бой — на весь экран; на 16:10 и 4:3 окно должно закрывать и полосы */
+.g-modal { position: absolute; inset: -1500px; display: flex; align-items: center; justify-content: center; background: #0008; z-index: 6; }
 .g-card { padding: 20px 28px; width: 500px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .g-card h3, .g-pause h3, .g-book h3 { font: 700 30px 'Geroi Title', Georgia, serif; color: var(--brass2); margin: 4px 0; text-align: center; }
 .g-card p { margin: 2px 0; font-size: 18px; text-align: center; line-height: 1.35; }
@@ -238,6 +239,8 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-slot em { position: absolute; right: 2px; bottom: 1px; padding: 0 5px; background: #241c14e6; border-radius: 3px; color: #fff4d8; font: 600 17px 'Geroi Num', sans-serif; font-style: normal; }
 /* замок */
 .a-town { position: absolute; inset: 0; background: #0c0a08; pointer-events: auto; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; }
+/* полосы за пределами 16:9 закрываем, чтобы сквозь них не было видно и не щёлкалось по карте */
+.a-town::before { content: ''; position: absolute; inset: -1500px; background: #0c0a08; }
 .a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; }
 .a-bld { position: absolute; cursor: pointer; filter: drop-shadow(0 6px 6px #0007); transition: filter .12s; }
 .a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
