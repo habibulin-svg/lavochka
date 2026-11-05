@@ -195,7 +195,13 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-bars { position: absolute; right: 2px; top: 2px; bottom: 2px; width: 7px; background: #0008; border-radius: 3px; display: flex; align-items: flex-end; overflow: hidden; }
 .a-bars .mp { width: 100%; background: #7fdc6a; }
 .a-towns { display: flex; flex-direction: column; gap: 6px; }
-.a-townbtn { text-align: left; }
+.a-towncard { position: relative; display: flex; align-items: center; gap: 10px; padding: 3px 8px 3px 3px; background: #15100b; border: 1px solid #5d4a2d; border-radius: 5px; color: var(--ink, #f1e3c4); font: inherit; font-size: 19px; cursor: pointer; text-align: left; }
+.a-towncard:hover { border-color: var(--brass2); }
+.a-townpic { width: 76px; height: 54px; object-fit: cover; border-radius: 4px; background: #0a0806; flex: none; }
+.a-townname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a-townmarks { display: flex; gap: 4px; font-style: normal; }
+.a-townmarks i { font-style: normal; }
+.a-townmarks .decree { color: var(--brass2); font-weight: 700; }
 .a-buttons { display: flex; gap: 8px; margin-top: auto; }
 .a-panel .g-btn.main { padding: 12px 10px; }
 .a-resbar { display: flex; gap: 20px; align-items: center; padding: 8px 18px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 6px; font: 600 22px 'Geroi Num', sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }

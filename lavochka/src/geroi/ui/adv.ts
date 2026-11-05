@@ -275,7 +275,20 @@ export class AdvGame {
       this.heroes.append(b);
     }
     this.towns.replaceChildren();
-    for (const t of playerTowns(w, this.me)) this.towns.append(button(t.name + (t.decrees.length ? ' •' : ''), () => this.openTown(t.id), 'g-btn small a-townbtn'));
+    for (const t of playerTowns(w, this.me)) {
+      // как у героев: картинка, имя, значки «можно строить» и «ждёт указ»
+      const b = h('button', 'a-towncard');
+      b.title = `${t.name}: открыть город`;
+      const img = h('img', 'a-townpic') as HTMLImageElement;
+      img.src = `/geroi/a/map/town-${t.faction}.webp`;
+      img.alt = '';
+      const marks = h('span', 'a-townmarks');
+      if (!t.builtToday) marks.append(h('i', 'build', '🔨'));
+      if (t.decrees.length) marks.append(h('i', 'decree', '•'));
+      b.append(img, h('span', 'a-townname', t.name), marks);
+      b.onclick = () => this.openTown(t.id);
+      this.towns.append(b);
+    }
   }
 
   private drawMiniFrame(): void {
@@ -393,6 +406,15 @@ export class AdvGame {
     const town = townAt(w, tcell);
     if (town && town.owner === this.me && (!x || x.cell === tcell)) return this.openTown(town.id);
     if (!x) return;
+    // свой город: первый щелчок — зайти (путь к воротам уже проложен), второй — отправить туда героя
+    if (town && town.owner === this.me && this.target !== tcell) {
+      const path = pathOf(reachOf(w, x), tcell);
+      if (path.length) {
+        this.target = tcell;
+        this.view.showPath(path, pathDays(w, x, path), false);
+      }
+      return this.openTown(town.id);
+    }
     if (this.target === tcell) {
       void this.go(x.id, tcell);
       return;
@@ -1187,6 +1209,7 @@ export class AdvGame {
       'Щелчок по клетке — показать путь, второй щелчок туда же — идти.',
       'Зелёные точки — дойдёт сегодня, жёлтые — позже. Красный крест — там бой.',
       'Щелчок по герою или замку — открыть; правая кнопка — сведения.',
+      'Свой замок — щелчок по нему на карте или по карточке справа: зайти и строить. Путь к воротам при этом уже проложен — щёлкни по замку ещё раз, и герой пойдёт туда.',
       'Экран двигают стрелки и край окна, колёсико — масштаб, средняя кнопка — тащить.',
       'H — следующий герой, E — конец хода, B — заклинания, D — копать.',
       'Esc — пауза, M — весь звук, пробел — идти по показанному пути.',
