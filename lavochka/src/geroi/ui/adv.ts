@@ -118,7 +118,8 @@ export class AdvGame {
   /** Тела объектов и городов → вход: щелчок по зданию идёт к его воротам. */
   private bodies = new Map<number, number>();
   private readonly onKey = (e: KeyboardEvent): void => this.key(e);
-  private readonly fit = (): void => this.fitHud();
+  /** Размер корня, а не окна: на старте корень бывает нулевым (вкладка ещё не раскрыта), и панель оставалась scale(0). */
+  private readonly fit = new ResizeObserver(() => this.fitHud());
   onQuit: () => void = () => {};
   onLoad: (s: Save) => void = () => {};
   /** Сценарий кампании кончился: кнопки итога (дальше, заново, к кампаниям). */
@@ -145,7 +146,7 @@ export class AdvGame {
     this.view.onClick = (c, right) => this.click(c, right);
     this.view.onCamera = () => this.drawMiniFrame();
     window.addEventListener('keydown', this.onKey);
-    window.addEventListener('resize', this.fit);
+    this.fit.observe(this.root);
     this.lastDay = this.world.day;
     await this.syncAll();
     if (this.net) return this.startNet();
@@ -1412,7 +1413,7 @@ export class AdvGame {
     this.battle?.destroy();
     this.town?.destroy();
     window.removeEventListener('keydown', this.onKey);
-    window.removeEventListener('resize', this.fit);
+    this.fit.disconnect();
     this.view.destroy();
     this.root.remove();
   }

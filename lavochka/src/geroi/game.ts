@@ -77,7 +77,8 @@ export class Game {
   private clocks: HTMLElement[] = [h('span', 'g-clock'), h('span', 'g-clock')];
   private banner = h('div', 'g-banner');
   private readonly onKey = (e: KeyboardEvent): void => this.key(e);
-  private readonly fit = (): void => this.fitHud();
+  /** Размер корня, а не окна: на старте корень бывает нулевым, и панель оставалась scale(0). */
+  private readonly fit = new ResizeObserver(() => this.fitHud());
   onQuit: () => void = () => {};
   onLoad: (s: Save) => void = () => {};
   onRematch: () => void = () => {};
@@ -105,7 +106,7 @@ export class Game {
     this.view.onPointer = (p) => this.hover(p);
     this.view.onClick = (p, right) => this.click(p, right);
     window.addEventListener('keydown', this.onKey);
-    window.addEventListener('resize', this.fit);
+    this.fit.observe(this.root);
     this.fitHud();
     this.audio.music(this.state.walls ? 'siege' : 'battle');
     this.audio.sfx('battle-start');
@@ -240,7 +241,7 @@ export class Game {
     this.talk?.destroy();
     this.wake();
     window.removeEventListener('keydown', this.onKey);
-    window.removeEventListener('resize', this.fit);
+    this.fit.disconnect();
     this.resumeFn?.();
     this.input = null;
     this.view.destroy();
