@@ -42,6 +42,11 @@ const RANGED_COST = 1.5;
 /** Стрелки 1-й ступени — ещё дороже: их берут толпой, и вся толпа стреляет до сближения (Академия на 10 000 брала 63–65 %). */
 const RANGED_T1_COST = 1.12;
 const WALL_COST = 1.12;
+/** Механики боя второй четвёрки в силе (2026-11-06, «Арена» 20 000: Плотина брала 78 %, Базар 33 %, Острог 57 %):
+ * разгон Плотины — пехоте и всадникам, строй Острога — всем; Базар дешевле: ловушка разовая, а карманники в «Арене» ничего не дают. */
+const RUSH_COST = 1.08;
+const DRILL_COST = 1.0;
+const BAZAR_COST = 0.95;
 /** Базовая сила ступени = √(здоровье × урон) у средней формы; улучшение — ×1,3. */
 const TIER_POWER = [4.8, 8, 13.5, 23, 40, 72, 140];
 const UP_POWER = 1.3;
@@ -264,6 +269,9 @@ function modifier(f: Faction, s: Spec, speed: number): number {
   if (s.shots) m *= RANGED_COST * (s.tier === 1 ? RANGED_T1_COST : 1);
   // «Стенка» Затулья стоит силы у той пехоты, что в ней стоит
   if (f === 'zatulye' && !s.shots && !s.ab?.some((a) => a === 'fly' || a === 'big')) m *= WALL_COST;
+  if (f === 'plotina' && !s.shots) m *= RUSH_COST;
+  if (f === 'ostrog') m *= DRILL_COST;
+  if (f === 'bazar') m *= BAZAR_COST;
   for (const ab of s.ab ?? []) m *= ABILITY_COST[ab];
   return m;
 }
