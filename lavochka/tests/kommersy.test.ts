@@ -181,6 +181,31 @@ describe('Коммерсы: что предлагают клетки', () => {
     expect(ids).toContain('videoprokat');
   });
 
+  it('купил старшую ступень готовой — младшие не предлагают (видеопрокат → нет видеосалона, кабельное → нет обоих)', () => {
+    const s = newState([0], { start: mm(1991, 9) });
+    const p = s.players[0];
+    p.cash = 3000;
+    const biz = (id: string) => ({ uid: s.uid++, id, name: id, kind: 'biz' as const, value: 1000, income: 100, hours: 1, manager: false, mul: 1 });
+    p.assets = [biz('varenki'), biz('videoprokat')];
+    const ids = availableDeals(s, p).map((d) => d.id);
+    expect(ids).not.toContain('videosalon');
+    expect(ids).toContain('deficit');
+    s.m = mm(1996, 1);
+    p.assets = [biz('teleka')];
+    p.cash = 0;
+    expect(availableDeals(s, p).map((d) => d.id)).not.toContain('videoprokat');
+  });
+
+  it('ниша после пика: дело остаётся, а в виде видно, насколько постарела', () => {
+    const s = newState([0], { start: mm(1993, 7) });
+    s.players[0].assets = [{ uid: 1, id: 'deficit', name: 'Дефицит', kind: 'biz', value: 150, income: 45, hours: 30, manager: false, mul: 1 }];
+    expect(view(s, [0]).players[0].assets[0].niche).toBe(0.35);
+    s.m = mm(1991, 6);
+    expect(view(s, [0]).players[0].assets[0].niche).toBe(1);
+    s.m = mm(1992, 6);
+    expect(view(s, [0]).players[0].assets[0].niche).toBeCloseTo(0.68, 2);
+  });
+
   it('клетка «Сделка» всегда с делами, как бы капитал ни обогнал время', () => {
     for (let m = 0; m <= LAST; m++)
       for (const cash of [0, 5e3, 5e4, 5e5, 5e6, 5e7, 2e8, 1e9]) {

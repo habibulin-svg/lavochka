@@ -43,6 +43,7 @@
 .km-offer[disabled] em { color: #a0523a; }
 .km-offer em.km-dark { color: #a0302a; font-weight: 600; }
 .km-offer em.km-grow { color: #2f6aa8; }
+.km-old { display: block; color: #a0523a; font-weight: 600; }
 .km-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .km-choice { display: flex; flex-direction: column; align-items: flex-start; white-space: normal; text-align: left; max-width: 100%; }
 .km-choice small { font-size: 11px; opacity: 0.8; }
@@ -84,6 +85,7 @@
 .km-assets li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px; }
 .km-assets li small { grid-column: 1; display: block; opacity: 0.75; }
 .km-assets li b { grid-column: 1; }
+.km-assets .km-acts { grid-column: 2 / -1; grid-row: 1 / span 2; display: flex; gap: 4px; align-self: center; }
 .km-assets .km-none { display: block; opacity: 0.6; }
 .km-club li { opacity: 0.7; }
 .km-club li.ok { opacity: 1; color: #3f9b4a; }

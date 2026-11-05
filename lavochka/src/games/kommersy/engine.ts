@@ -431,8 +431,13 @@ function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
 /** Дело каждого вида — одно на игрока (завод не покупают дважды); недвижимость и бумаги можно копить. */
 const hasBiz = (p: Player, d: DealT) => d.kind === 'biz' && p.assets.some((a) => a.id === d.id);
 
+/** Дело — ступень ниже того, что уже есть (купил видеопрокат или кабельное — видеосалон не нужен): не предлагаем. */
+function below(p: Player, d: DealT) {
+  for (let n = d.next; n; n = dealById(n)?.next) if (p.assets.some((a) => a.id === n && a.kind === 'biz')) return true;
+  return false;
+}
 export function availableDeals(s: State, p: Player) {
-  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d) && !p.grown?.includes(d.id));
+  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d) && !p.grown?.includes(d.id) && !below(p, d));
   // капитал обогнал время (100 млн в 1998-м, а дел для «Лондона» ещё нет) — предлагаем самые крупные из живых
   const t = Math.min(tier(p), Math.max(...alive.map((d) => d.tier)));
   return alive.filter((d) => d.tier >= t - 1 && d.tier <= t + 1);
@@ -1182,6 +1187,8 @@ export interface PlayerView {
 /** Дело в виде: настоящий доход в месяц сейчас (с управляющим, нишей, кризисом) и куда можно вырасти. */
 export interface AssetView extends Asset {
   now: number;
+  /** Ниша: доля дохода от лучших лет (1 — живая, 0,35 — отжила). */
+  niche: number;
   grow: { id: string; name: string; cost: number; why: string | null } | null;
 }
 export interface MyView {
@@ -1238,7 +1245,8 @@ export function view(s: State, seats: number[] | 'all'): View {
       seat: p.seat, hero: p.hero, cash: round(p.cash), worth: round(marketWorth(s, p)), tier: tier(p), pos: p.pos, out: p.out, outKind: p.outKind, krysha: p.krysha,
       stats, skills: { ...p.skills }, assets: p.assets.map((a): AssetView => {
         const n = growNext(s, p, a);
-        return { ...clone(a), now: round(assetIncome(s, p, a)), grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
+        const d = dealById(a.id);
+        return { ...clone(a), now: round(assetIncome(s, p, a)), niche: d && a.kind !== 'paper' ? Math.round(nicheMul(d, s.m) * 100) / 100 : 1, grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
       }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
     };
   });

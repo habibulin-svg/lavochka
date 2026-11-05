@@ -396,10 +396,13 @@ class KommersyView implements GameView<View, Event> {
             const d = dealById(a.id);
             const mgr = a.kind === 'biz' ? `<button class="km-mini${a.manager ? ' on' : ''}" data-act="manager" data-uid="${a.uid}" data-on="${a.manager ? 0 : 1}"${dis} title="управляющий">👔</button>` : '';
             const inc = a.kind === 'paper' ? `${money(a.value)} в бумагах` : `${a.now >= 0 ? '+' : ''}${money(a.now)}/мес${a.manager ? ' (управляющему 12 %)' : ''} · ${a.manager ? Math.ceil(a.hours * 0.15) : a.hours} ч`;
+            // ниша после пика: дело не пропадает, но о старении говорим прямо
+            const pct = Math.round(a.niche * 100);
+            const old = a.niche >= 1 ? '' : `<span class="km-old">${a.niche <= 0.35 ? `ниша отжила: доход ${pct} % от лучших лет` : `ниша стареет: доход ${pct} %`}</span>`;
             const g = a.grow;
             const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(dealById(d.next)!.name)}» (пока рано)` : '';
             const growBtn = g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '';
-            return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${d?.heat ? ' · органы ↑' : ''}${grows}</small>${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></li>`;
+            return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${d?.heat ? ' · органы ↑' : ''}${grows}${old}</small><span class="km-acts">${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></span></li>`;
           })
           .join('')
       : '<li class="km-none">Дел пока нет</li>';
