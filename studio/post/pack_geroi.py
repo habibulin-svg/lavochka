@@ -219,7 +219,7 @@ def towns() -> None:
         for f in FACTIONS2:
             webp(pick_file('32-towns', f'town-{f}-site'), DST / f'towns/{f}-site.webp', q=84)
         webp(pick_file('32-towns', 'town-dark-full'), DST / 'towns/dark-full.webp', q=84)
-        for name in PICKS['32-towns']:
+        for name in sorted({*PICKS['32-towns'], *PICKS.get('32-towns-redo', {})}):
             if name.startswith('bld-'):
                 webp(pick_file('32-towns', name, cut=True), DST / f'towns/{name[4:]}.webp', width=480)
 
