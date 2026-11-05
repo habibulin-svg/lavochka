@@ -154,6 +154,33 @@ describe('Коммерсы: что предлагают клетки', () => {
     expect(apply(s, 0, { type: 'grow', uid: 1 }, new SeededRng(1))).toBeNull(); // не на что
   });
 
+  it('свой человек в Москве заменяет связи для клуба, второй раз не предлагается', () => {
+    const s = newState([0], { start: mm(1999, 1) });
+    const p = s.players[0];
+    p.cash = 1e7;
+    p.stats.svyazi = 10;
+    const sv = () => clubCheck(s, p).find((c) => c.id === 'svyazi')!.ok;
+    expect(sv()).toBe(false);
+    expect(cardOk(s, p, card('n-fixer'))).toBe(true);
+    applyFx(s, p, card('n-fixer').choices[0].fx, new SeededRng(1), []);
+    expect(sv()).toBe(true);
+    expect(cardOk(s, p, card('n-fixer'))).toBe(false);
+  });
+
+  it('из чего дело выросло — больше не предлагают, даже если выросшее продано', () => {
+    let s = newState([0], { start: mm(1991, 9) });
+    const p = s.players[0];
+    p.cash = 3000;
+    expect(availableDeals(s, p).some((d) => d.id === 'videosalon')).toBe(true);
+    p.assets = [{ uid: 1, id: 'videosalon', name: 'Видеосалон', kind: 'biz', value: 1500, income: 380, hours: 50, manager: false, mul: 1 }];
+    s = act(s, 0, { type: 'grow', uid: 1 });
+    expect(s.players[0].assets[0].id).toBe('videoprokat');
+    s = act(s, 0, { type: 'sell', uid: 1 });
+    const ids = availableDeals(s, s.players[0]).map((d) => d.id);
+    expect(ids).not.toContain('videosalon');
+    expect(ids).toContain('videoprokat');
+  });
+
   it('клетка «Сделка» всегда с делами, как бы капитал ни обогнал время', () => {
     for (let m = 0; m <= LAST; m++)
       for (const cash of [0, 5e3, 5e4, 5e5, 5e6, 5e7, 2e8, 1e9]) {

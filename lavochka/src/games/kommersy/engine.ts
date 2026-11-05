@@ -50,6 +50,10 @@ export interface Player {
   items?: string[];
   insurance: boolean;
   advisor: boolean;
+  /** Свой человек в Москве (в старых сохранениях поля нет). */
+  fixer?: boolean;
+  /** Из каких дел уже вырос: их больше не предлагают (вырос из видеосалона — видеосалон не нужен). */
+  grown?: string[];
   incomeBoost: number;
   /** Перегрузка часами в прошлом отрезке: доход своих дел без управляющих падает. */
   over: boolean;
@@ -249,7 +253,7 @@ export function clubCheck(s: State, p: Player) {
   return [
     { id: 'cash', label: `Деньги ${money(CLUB_PRICE)}`, ok: p.cash >= CLUB_PRICE },
     { id: 'name', label: `Имя ≥ ${n.name}`, ok: p.stats.name >= n.name },
-    { id: 'svyazi', label: `Связи в Москве ≥ ${n.svyazi}`, ok: p.stats.svyazi >= n.svyazi },
+    { id: 'svyazi', label: `Связи в Москве ≥ ${n.svyazi} или свой человек`, ok: p.stats.svyazi >= n.svyazi || !!p.fixer },
     { id: 'heat', label: 'Чистый хвост', ok: p.stats.heat <= n.heat && p.outKind !== 'jail' },
     { id: 'english', label: `Английский ${n.english} или советник`, ok: p.skills.english >= n.english || p.advisor },
     { id: 'hours', label: `Свободные часы ≥ ${n.hours}`, ok: hoursFree(p) >= n.hours },
@@ -346,6 +350,7 @@ function growAsset(s: State, p: Player, a: Asset, k: number, ev: Event[]) {
   const sum = growCost(n, a, k);
   p.cash -= sum;
   const from = a.name;
+  if (!(p.grown ??= []).includes(a.id)) p.grown.push(a.id);
   Object.assign(a, { id: n.id, name: n.name, kind: n.kind, value: n.price, income: n.income, hours: n.hours, mul: 1 });
   ev.push({ t: 'grow', seat: p.seat, from, name: n.name, sum });
 }
@@ -375,6 +380,7 @@ export function applyFx(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[]) {
   if (fx.item && !p.items?.includes(fx.item)) (p.items ??= []).push(fx.item);
   if (fx.insurance) p.insurance = true;
   if (fx.advisor) p.advisor = true;
+  if (fx.fixer) p.fixer = true;
   if (fx.incomeBoost) p.incomeBoost = Math.min(2, p.incomeBoost * fx.incomeBoost);
   if (fx.close) p.assets = p.assets.filter((a) => a.id !== fx.close);
   if (fx.asset) {
@@ -426,7 +432,7 @@ function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
 const hasBiz = (p: Player, d: DealT) => d.kind === 'biz' && p.assets.some((a) => a.id === d.id);
 
 export function availableDeals(s: State, p: Player) {
-  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d));
+  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d) && !p.grown?.includes(d.id));
   // капитал обогнал время (100 млн в 1998-м, а дел для «Лондона» ещё нет) — предлагаем самые крупные из живых
   const t = Math.min(tier(p), Math.max(...alive.map((d) => d.tier)));
   return alive.filter((d) => d.tier >= t - 1 && d.tier <= t + 1);
@@ -488,7 +494,7 @@ function needFail(s: State, p: Player, d: DealT): string | null {
 export const loanLimit = (p: Player) => Math.max(0, Math.max(500, worth(p) * 0.6) * (p.stats.name / 50) - debt(p));
 
 /** Выбор предлагает то, что у игрока уже есть: второй раз не женятся и второй мобильник не покупают. */
-const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
+const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.fixer && p.fixer) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
 
 /** Карточка не выпадает, если её главное предложение (первый выбор) уже есть или его нечем принять. */
 export function cardOk(s: State, p: Player, c: CardT) {
@@ -522,7 +528,7 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
   const bag: CardT[] = [];
   for (const c of list) {
     // собрался в Лондон (с «Центра») — английский и советник попадаются вдвое чаще
-    const london = tier(p) >= 3 && c.choices.some((x) => x.fx.skills?.english || x.fx.advisor);
+    const london = tier(p) >= 3 && c.choices.some((x) => x.fx.skills?.english || x.fx.advisor || x.fx.fixer);
     const w = c.id === 'k-pokushenie' ? Math.min(4, p.enemies) : c.choices.some((x) => x.need?.asset || x.need?.growable) && !p.assets.length ? 0 : london ? 4 : 2;
     for (let i = 0; i < w; i++) bag.push(c);
   }
@@ -575,6 +581,7 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
   if (fx.dream) out.push('мечта сбудется');
   if (fx.insurance) out.push('страховка дел');
   if (fx.advisor) out.push('советник');
+  if (fx.fixer) out.push('свой человек в Москве: связи для клуба');
   if (fx.prep) out.push('пригодится потом');
   if (fx.jail) out.push(`тюрьма ${fx.jail} мес`);
   if (fx.hosp) out.push(`больница ${fx.hosp} мес`);
@@ -595,12 +602,13 @@ interface Snap {
   out: number;
   insurance: boolean;
   advisor: boolean;
+  fixer: boolean;
   dreams: number;
   study: number;
 }
 const snap = (s: State, p: Player): Snap => ({
   cash: p.cash, income: income(s, p), upkeep: p.upkeep, hoursBonus: p.hoursBonus, stats: { ...p.stats }, skills: { ...p.skills }, krysha: p.krysha, enemies: p.enemies,
-  assets: new Map(p.assets.map((a) => [a.uid, a.name])), out: p.out, insurance: p.insurance, advisor: p.advisor, dreams: p.dreams.length, study: p.study,
+  assets: new Map(p.assets.map((a) => [a.uid, a.name])), out: p.out, insurance: p.insurance, advisor: p.advisor, fixer: !!p.fixer, dreams: p.dreams.length, study: p.study,
 });
 
 /** Что изменилось у игрока после выбора: [видно всем, только ему самому]. */
@@ -630,6 +638,7 @@ function fxDiff(s: State, a: Snap, p: Player): [string[], string[]] {
   for (const [uid, name] of b.assets) if (a.assets.get(uid) !== name) out.push(`дело «${name}»`);
   if (b.insurance && !a.insurance) out.push('дела застрахованы');
   if (b.advisor && !a.advisor) out.push('появился советник');
+  if (b.fixer && !a.fixer) out.push('свой человек в Москве');
   if (b.dreams > a.dreams) out.push('мечта сбылась');
   if (b.study > a.study) out.push(`учёба +${b.study - a.study} ч`);
   if (b.out > a.out) out.push(`${p.outKind === 'jail' ? 'тюрьма' : p.outKind === 'hosp' ? 'больница' : 'нет в городе'} ${b.out} мес`);

@@ -96,7 +96,7 @@ const NPC_BY_CARD: Record<string, string> = {
   'k-reket': 'byk', 'k-strelka': 'brigadir', 'k-krysha-dan': 'brigadir', 'k-zakaz': 'konkurent', 'k-kinul': 'konkurent', 'k-reyd': 'reshala', 'k-pokushenie': 'byk',
   'c-nalog': 'nalogovik', 'c-obep': 'oper', 'c-ses': 'chinovnik', 'c-palenka': 'oper', 'c-uchastkovy': 'uchastkovy',
   'w-banya': 'chinovnik', 'w-chinovnik': 'chinovnik', 'w-deputat': 'chinovnik', 'w-moskva': 'reshala', 'w-mvd': 'oper', 'w-devushka': 'girl', 'w-svadba': 'girl', 'w-mama': 'mother', 'w-dacha': 'mother',
-  'n-black': 'bankir', 'n-default': 'reshala', 'n-pavlov': 'mother', 'n-advisor': 'yurist', 'n-vybory': 'chinovnik', 'n-krysha': 'oper', 'n-vykup': 'bankir', 'n-sponsor': 'chinovnik',
+  'n-black': 'bankir', 'n-default': 'reshala', 'n-pavlov': 'mother', 'n-advisor': 'yurist', 'n-fixer': 'reshala', 'n-vybory': 'chinovnik', 'n-krysha': 'oper', 'n-vykup': 'bankir', 'n-sponsor': 'chinovnik',
   'e-mat': 'mother', 'e-rebenok': 'girl', 'e-drug': 'drug', 'r-dolg': 'drug', 'r-kabak': 'drug', 'r-podarok': 'mother', 's-english': 'zhurnalist', 's-london': 'yurist', 's-buh': 'chelnochnitsa',
 };
 const NPC_BY_CELL: Partial<Record<Cell, string>> = { deal: 'chelnochnitsa', routine: 'drug', study: 'drug', rest: 'girl', news: 'zhurnalist', event: 'mother', naezd: 'brigadir', check: 'nalogovik' };
@@ -372,7 +372,7 @@ class KommersyView implements GameView<View, Event> {
     }
     const mine = this.interactive.includes(ask.seat);
     this.cardEl.hidden = false;
-    this.cardEl.innerHTML = cardHtml(ask, mine, this.ctx.name(ask.seat));
+    this.cardEl.innerHTML = cardHtml(ask, mine, this.ctx.name(ask.seat), this.v!.m);
   }
 
   private drawSheet() {
@@ -572,7 +572,7 @@ function fxChips(c: Ask['choices'][number]) {
   return (chips ? `<span class="km-fx">${chips}</span>` : '') + (c.riskHint ? `<small class="km-risk">⚠ ${esc(c.riskHint)}</small>` : '');
 }
 
-function cardHtml(ask: Ask, mine: boolean, who: string) {
+function cardHtml(ask: Ask, mine: boolean, who: string, m = 0) {
   const npc = (ask.card && NPC_BY_CARD[ask.card]) || NPC_BY_CELL[ask.cell];
   const face = npc ? `<img class="km-npc" src="${A}/people/${npc}.webp" alt="">` : '';
   const offers = ask.deals
@@ -583,10 +583,12 @@ function cardHtml(ask: Ask, mine: boolean, who: string) {
           // с управляющим доход сразу за вычетом его доли — как потом в «Делах»
           const net = round(o.income * (o.mgr ? 0.88 : 1));
           const pay = o.kind === 'paper' ? 'бумаги: цена растёт' : `окупится за ${Math.max(1, Math.round(o.price / Math.max(1, net)))} мес`;
+          const nx = dealById(o.id)?.next ? dealById(dealById(o.id)!.next!) : undefined;
+          const grow = nx ? `<em class="km-grow">⬆ растёт в «${esc(nx.name)}»${nx.from > m ? ` (откроется: ${dateText(nx.from)})` : ''}</em>` : '';
           const dark = dealById(o.id)?.heat ? '<em class="km-dark">🩸 тёмное дело: внимание органов растёт каждый месяц</em>' : '';
           return `<button class="km-offer" data-choice="${ci}"${!mine || !ch.ok ? ' disabled' : ''}>${art(o.id, 'km-thumb')}<div>
             <b>${dealById(o.id)?.heat ? '🩸 ' : ''}${esc(o.name)}</b><small>${esc(o.text)}</small>
-            <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(net)}/мес · `}${o.mgr ? 'с управляющим' : `${o.hours} ч`}</span>${dark}
+            <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(net)}/мес · `}${o.mgr ? 'с управляющим' : `${o.hours} ч`}</span>${grow}${dark}
             <em>${ch.ok ? (o.loan ? `в кредит ${money(o.loan)} · ` : '') + pay : esc(ch.why ?? '')}</em></div></button>`;
         })
         .join('')}</div>`

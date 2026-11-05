@@ -26,6 +26,7 @@ function fxScore(fx: Fx | undefined, v: View, level: number): number {
   if (fx.dream) s += 10;
   if (fx.insurance) s += 4;
   if (fx.advisor) s += me.tier >= 4 && me.skills.english < 3 ? 40 : -10;
+  if (fx.fixer) s += me.tier >= 4 && (me.stats.svyazi ?? 0) < 60 ? 40 : -10;
   if (fx.enemy) s -= 8 * fx.enemy;
   if (fx.jail) s -= 100;
   if (fx.hosp) s -= 15 * fx.hosp;
