@@ -5,6 +5,7 @@ import type { Snapshot } from '../src/core/authority';
 import { Room, noVideoSend } from '../src/core/room';
 import type { SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
+import { SECOND_BONUS } from '../src/games/vkladyshi/engine';
 import { AutoClient, until } from './harness';
 
 const rooms: Room[] = [];
@@ -264,7 +265,7 @@ describe('комната: аккаунты по местам (кон «Вкла�
     owner.client.start(false);
     await until(() => owner.has('start'), 5000, 'старт');
     expect(starts).toEqual([[7, 8]]);
-    expect(Math.max(...(owner.view as any).players.map((p: any) => p.hero))).toBeLessThanOrEqual(22); // терпение 20 (+2 второму)
+    expect(Math.max(...(owner.view as any).players.map((p: any) => p.hero))).toBeLessThanOrEqual(20 + SECOND_BONUS); // терпение 20 (+бонус второму)
     await until(() => !!owner.result, 60000, 'конец партии');
     await until(() => results.length > 0, 2000, 'итог');
     expect(results).toHaveLength(1);
