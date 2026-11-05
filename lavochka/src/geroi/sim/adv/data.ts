@@ -105,7 +105,7 @@ const PILES: [ResId, string, number, number][] = [['semki', 'Мешок семо
 const MINES: [ResId, string, string][] = [['semki', 'semki', 'Семечковое поле'], ['wood', 'wood', 'Лесопилка'], ['stone', 'stone', 'Каменоломня'], ['amber', 'amber', 'Янтарная копь'], ['salt', 'salt', 'Солеварня'], ['stariron', 'stariron', 'Метеоритная шахта'], ['resin', 'resin', 'Подсочный стан']];
 const DWELLS: [string, string, string][] = [['wolf', 'neutral-wolf', 'Волчье логово'], ['boar', 'neutral-boar', 'Кабанья чаща'], ['bandit', 'neutral-bandit', 'Разбойничий стан'], ['leshak', 'neutral-leshak', 'Замшелая роща'], ['kikimora', 'neutral-kikimora', 'Кикиморина изба'], ['salamander', 'neutral-salamander', 'Лавовая яма'], ['bear', 'neutral-bear', 'Медвежья берлога'], ['sirin', 'neutral-sirin', 'Гнездо сирина'], ['stonegiant', 'neutral-stonegiant', 'Круг валунов'], ['poloz', 'neutral-poloz', 'Логово полоза'],
   ['crab', 'neutral-crab', 'Крабьи норы'], ['lynx', 'neutral-lynx', 'Рысье логово'], ['scorpion', 'neutral-scorpion', 'Скорпионья яма'], ['raven', 'neutral-raven', 'Вороний сухостой'],
-  ['nomad', 'neutral-nomad', 'Стан кочевников'], ['griffin', 'neutral-griffin', 'Гнездо грифона']];
+  ['nomad', 'neutral-nomad', 'Стан кочевников'], ['griffin', 'neutral-griffin', 'Орлиная круча']];
 
 export const OBJECTS: Record<string, ObjDef> = {};
 const put = (d: ObjDef): void => {

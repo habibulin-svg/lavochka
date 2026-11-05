@@ -259,7 +259,7 @@ const SPECS: Record<Faction, Spec[]> = {
     { id: 'neutral-crab', name: 'Скальные крабы', tier: 3, shape: 6, v: -1, d: 3, sfx: ['move-heavy', 'hit-claw', 'death-creature'] },
     { id: 'neutral-lynx', name: 'Рыси', tier: 3, shape: 3, v: 2, a: 1, ab: ['noRetal'], sfx: ['move-hoof', 'hit-claw', 'death-creature', null, 'voice-wolf'] },
     { id: 'neutral-scorpion', name: 'Песчаные скорпионы', tier: 4, shape: 4.5, ab: ['poison'], sfx: ['move-heavy', 'hit-claw', 'death-creature'] },
-    { id: 'neutral-griffin', name: 'Грифоны', tier: 6, shape: 4, v: 1, ab: ['big', 'fly', 'manyRetal'], sfx: ['move-fly', 'hit-claw', 'death-creature', null, 'voice-bird'] },
+    { id: 'neutral-griffin', name: 'Горные орлы', tier: 6, shape: 4, v: 1, ab: ['big', 'fly', 'manyRetal'], sfx: ['move-fly', 'hit-claw', 'death-creature', null, 'voice-bird'] },
   ],
 };
 

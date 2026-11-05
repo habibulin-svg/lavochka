@@ -1,0 +1,38 @@
+# Герои, переделки партии 30-creatures после отбора
+# Сгенерировано make_jobs.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 45
+- 46
+style: Stylized 3D game creature render, clean sculpted shapes, toon shading with a thin dark outline, soft studio light, bright but refined colors. Full body, whole
+  figure in frame with margin, standing in a three-quarter view facing right, seen slightly from above, centered, plain light grey background.
+items:
+- name: ostrog-skiarcher
+  prompt: 'A young human hunter archer with a bare face on short wooden skis with a long bow, a dark green hooded sheepskin coat and a quiver. Colors and style: northern
+    taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}'
+- name: ostrog-bearknight
+  prompt: 'A massive armored bear warrior: a big brown bear standing on two legs in iron plate armor and a green tabard, holding a huge war hammer. Colors and style:
+    northern taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look.
+    {style}'
+- name: ostrog-shaman
+  prompt: 'A human northern shaman man with a weathered face and a braided beard, sheepskin coat with bone charms and ribbons, beating a big round frame drum. Colors
+    and style: northern taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa
+    Claus look. {style}'
+- name: ostrog-thundershaman
+  prompt: 'A powerful human thunder shaman man with a stern face and an antler headdress, a glowing drum crackling with blue sparks, ribbons flying. Colors and style:
+    northern taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look.
+    {style}'
+- name: ostrog-snowgiant
+  prompt: 'A giant made of packed white snow and ice blocks, a human-like face with a frosty beard, holding a club of a whole pine trunk. Colors and style: northern
+    taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}'
+- name: kurgany-shadowherd
+  prompt: 'A translucent pale blue ghost of an old bearded man in a tattered hooded cloak leaning on a long wooden staff, human face, no animals. Colors and style:
+    ancestor spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. {style}'
+- name: neutral-griffin
+  prompt: A giant golden mountain eagle with a hooked beak and huge wings, standing on a rock, fantasy creature. {style}

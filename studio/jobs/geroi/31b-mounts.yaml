@@ -20,11 +20,11 @@ items:
   prompt: A hero on horseback, a storm caller with wild grey hair and lightning sparks in the fingers, riding a horse with storm dam keepers of a rocky sea coast,
     slate grey stone, sea teal, white foam and brass tack and a small banner. {style}
 - name: mount-ostrog-voevoda
-  prompt: A hero on horseback, a stern fort commander in fur and chainmail with a long moustache, riding a horse with northern taiga fort warriors, grey wolf fur,
+  prompt: A hero on horseback, a stern fort commander in fur and chainmail with a long moustache, riding a horse with northern taiga fort warriors, dark brown sheepskin,
     dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look tack and a small banner. {style}
 - name: mount-ostrog-shaman
-  prompt: A hero on horseback, a northern shaman with an antler headdress and a drum, riding a horse with northern taiga fort warriors, grey wolf fur, dark wood,
-    blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look tack and a small banner. {style}
+  prompt: A hero on horseback, a northern shaman with an antler headdress and a drum, riding a horse with northern taiga fort warriors, dark brown sheepskin, dark
+    wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look tack and a small banner. {style}
 - name: mount-bazar-kupets
   prompt: A hero on horseback, a sly rich merchant in silk with rings on every finger, riding a horse with salt desert bazaar folk, saffron yellow, crimson, turquoise
     and bright silk tack and a small banner. {style}

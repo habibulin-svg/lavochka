@@ -32,21 +32,21 @@ FACTIONS2 = {
             ('stormtitan', 7, 1, 'a towering storm titan humanoid of dark sea water and storm clouds, lightning inside, a crown of white foam'),
         ]},
     'ostrog': {
-        'ru': 'Северный острог', 'look': 'northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look',
+        'ru': 'Северный острог', 'look': 'northern taiga fort warriors, dark brown sheepskin, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look',
         'units': [
             ('recruit', 1, 0, 'a young recruit soldier in a dark green padded quilted coat and a grey wolf fur hat with a short spear and a small round wooden shield'),
             ('druzhinnik', 1, 1, 'a hardened northern guardsman in chainmail over furs, a conical helmet with a nose guard, axe and red round shield'),
-            ('skiarcher', 2, 0, 'a hunter archer on short wooden skis with a long bow, white fur coat and a quiver'),
+            ('skiarcher', 2, 0, 'a young human hunter archer with a bare face on short wooden skis with a long bow, a dark green hooded sheepskin coat and a quiver'),
             ('snowarcher', 2, 1, 'a veteran snow archer in a white hooded fur cloak with a powerful recurve bow, snowflakes around'),
             ('wolf', 3, 0, 'a large grey northern war wolf with a leather harness and red tassels, standing on four legs'),
             ('wolfrider', 3, 1, 'a huge white wolf with an armored harness ridden by a warrior with a short spear, standing on four legs'),
             ('bearguard', 4, 0, 'a burly warrior wearing a bear pelt as a cloak with the bear head as a hood, a big two-handed axe'),
-            ('bearknight', 4, 1, 'a massive armored warrior in iron plates and a bear pelt cloak, a huge war hammer, very broad shoulders'),
-            ('shaman', 5, 0, 'a northern shaman in a fur coat with bone charms and ribbons, beating a big round frame drum'),
-            ('thundershaman', 5, 1, 'a powerful thunder shaman with an antler headdress, a glowing drum crackling with blue sparks, ribbons flying'),
+            ('bearknight', 4, 1, 'a massive armored bear warrior: a big brown bear standing on two legs in iron plate armor and a green tabard, holding a huge war hammer'),
+            ('shaman', 5, 0, 'a human northern shaman man with a weathered face and a braided beard, sheepskin coat with bone charms and ribbons, beating a big round frame drum'),
+            ('thundershaman', 5, 1, 'a powerful human thunder shaman man with a stern face and an antler headdress, a glowing drum crackling with blue sparks, ribbons flying'),
             ('mammothtower', 6, 0, 'a woolly mammoth carrying a small wooden archer tower on its back, two archers inside, standing on four legs'),
             ('warmammoth', 6, 1, 'a huge armored woolly mammoth with iron plates on its tusks and a fortified tower on its back, standing on four legs'),
-            ('snowgiant', 7, 0, 'a giant humanoid of packed snow and ice with a frosty beard and a club of a whole pine trunk'),
+            ('snowgiant', 7, 0, 'a giant made of packed white snow and ice blocks, a human-like face with a frosty beard, holding a club of a whole pine trunk'),
             ('icegiant', 7, 1, 'a towering ice giant humanoid of blue glacier ice with a crown of icicles and a huge ice hammer'),
         ]},
     'bazar': {
@@ -70,7 +70,7 @@ FACTIONS2 = {
     'kurgany': {
         'ru': 'Курганы предков', 'look': 'ancestor spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old bone',
         'units': [
-            ('shadowherd', 1, 0, 'a translucent pale blue ghost of an old human shepherd man with a beard, holding a wooden crook staff, in a tattered hooded cloak, faint and calm'),
+            ('shadowherd', 1, 0, 'a translucent pale blue ghost of an old bearded man in a tattered hooded cloak leaning on a long wooden staff, human face, no animals'),
             ('shadowwanderer', 1, 1, 'a ghostly wanderer spirit with a lantern and a long crook, a hooded cloak trailing mist'),
             ('stonebaba', 2, 0, 'an ancient carved stone idol statue of a woman holding a bowl, glowing pale blue eyes, standing on a small mound'),
             ('barrowidol', 2, 1, 'a tall weathered stone idol of an ancestor with crossed arms, glowing runes and pale blue eyes, standing on a mound'),
@@ -92,7 +92,7 @@ NEUTRALS2 = [
     ('scorpion', 4, 'a giant desert scorpion with a sand-yellow shell and a raised stinger'),
     ('raven', 2, 'a big black raven with a sharp beak and clever eyes, standing'),
     ('nomad', 2, 'a desert nomad raider in a headscarf with a curved sword and a small round shield'),
-    ('griffin', 6, 'a griffin: the head, hooked beak and wings of a golden eagle and the body and tail of a lion, golden brown feathers, standing on four legs'),
+    ('griffin', 6, 'a giant golden mountain eagle with a hooked beak and huge wings, standing on a rock'),  # грифоны Z-Image не даются (лев с крыльями) — горные орлы
 ]
 
 
@@ -458,15 +458,17 @@ def main():
 # Переделки после отбора (как REDO в make_jobs.py): пункты с новыми промптами и сидами — партией «<партия>-redo», ночные остаются для сравнения.
 REDO2 = {
     '30-creatures': ([f'ostrog-{u[0]}' for u in FACTIONS2['ostrog']['units']] + ['kurgany-shadowherd', 'neutral-griffin'], [43, 44]),  # Острог «дедами-морозами», грифон без орлиной головы, пастух — собакой
+    '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 
 
 def redo2():
-    for batch, (names, seeds) in REDO2.items():
+    for key, (names, seeds) in REDO2.items():
+        batch, _, n = key.partition('#')
         job = yaml.safe_load((HERE / f'{batch}.yaml').read_text(encoding='utf-8'))
         job['items'] = [i for i in job['items'] if i['name'] in names]
         job['seeds'] = seeds
-        write(f'{batch}-redo.yaml', f'переделки партии {batch} после отбора', job)
+        write(f'{batch}-redo{n}.yaml', f'переделки партии {batch} после отбора', job)
 
 
 if __name__ == '__main__':

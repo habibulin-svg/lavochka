@@ -1050,5 +1050,16 @@
   "mount-plotina-bureveshchun": 61,
   "mount-plotina-smotritel": 61,
   "mount-starshoy": 61
+ },
+ "30-creatures-redo": {
+  "ostrog-recruit": 43,
+  "ostrog-druzhinnik": 43,
+  "ostrog-icegiant": 43,
+  "ostrog-mammothtower": 43,
+  "ostrog-warmammoth": 44,
+  "ostrog-wolf": 43,
+  "ostrog-wolfrider": 44,
+  "ostrog-bearguard": 43,
+  "ostrog-snowarcher": 43
  }
 }
