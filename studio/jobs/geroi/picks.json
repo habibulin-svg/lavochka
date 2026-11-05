@@ -997,7 +997,8 @@
   "plotina-tidewitch": 41,
   "plotina-triton": 41,
   "plotina-tritonherd": 41,
-  "plotina-whaler": 41
+  "plotina-whaler": 41,
+  "ostrog-snowgiant": 41
  },
  "31-heroes": {
   "hero-bazar-kupets-1": 11,
@@ -1061,5 +1062,13 @@
   "ostrog-wolfrider": 44,
   "ostrog-bearguard": 43,
   "ostrog-snowarcher": 43
+ },
+ "30-creatures-redo2": {
+  "kurgany-shadowherd": 45,
+  "neutral-griffin": 45,
+  "ostrog-bearknight": 46,
+  "ostrog-shaman": 45,
+  "ostrog-skiarcher": 45,
+  "ostrog-thundershaman": 46
  }
 }
