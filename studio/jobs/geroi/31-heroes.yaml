@@ -124,7 +124,8 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a stern fort commander in fur and chainmail with a long moustache, of the northern
-    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm
+    background.'
 - name: hero-ostrog-voevoda-2
   width: 1024
   height: 1024
@@ -132,7 +133,8 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a stern fort commander in fur and chainmail with a long moustache, of
-    the northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    the northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look.
+    Plain dark warm background.'
 - name: hero-ostrog-voevoda-3
   width: 1024
   height: 1024
@@ -140,7 +142,8 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a stern fort commander in fur and chainmail with a long moustache, of the northern
-    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm
+    background.'
 - name: hero-ostrog-voevoda-4
   width: 1024
   height: 1024
@@ -148,7 +151,8 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a stern fort commander in fur and chainmail with a long moustache, of the northern
-    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm
+    background.'
 - name: hero-ostrog-shaman-1
   width: 1024
   height: 1024
@@ -156,7 +160,7 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a young man, a northern shaman with an antler headdress and a drum, of the northern taiga fort
-    warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm background.'
 - name: hero-ostrog-shaman-2
   width: 1024
   height: 1024
@@ -164,7 +168,8 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a middle-aged woman, a northern shaman with an antler headdress and a drum, of the northern
-    taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm
+    background.'
 - name: hero-ostrog-shaman-3
   width: 1024
   height: 1024
@@ -172,7 +177,7 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: an old man, a northern shaman with an antler headdress and a drum, of the northern taiga fort
-    warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm background.'
 - name: hero-ostrog-shaman-4
   width: 1024
   height: 1024
@@ -180,7 +185,7 @@ items:
   - 11
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. Hero portrait, head and shoulders: a young woman, a northern shaman with an antler headdress and a drum, of the northern taiga
-    fort warriors, fur, dark wood, iron, snow white and deep red cloth. Plain dark warm background.'
+    fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. Plain dark warm background.'
 - name: hero-bazar-kupets-1
   width: 1024
   height: 1024

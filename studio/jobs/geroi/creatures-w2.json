@@ -102,98 +102,98 @@
   "faction": "ostrog",
   "tier": 1,
   "up": 0,
-  "prompt": "A young recruit soldier in a padded fur coat and fur hat with a short spear and a small round shield. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A young recruit soldier in a dark green padded quilted coat and a grey wolf fur hat with a short spear and a small round wooden shield. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-druzhinnik",
   "faction": "ostrog",
   "tier": 1,
   "up": 1,
-  "prompt": "A hardened northern guardsman in chainmail over furs, a conical helmet with a nose guard, axe and red round shield. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A hardened northern guardsman in chainmail over furs, a conical helmet with a nose guard, axe and red round shield. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-skiarcher",
   "faction": "ostrog",
   "tier": 2,
   "up": 0,
-  "prompt": "A hunter archer on short wooden skis with a long bow, white fur coat and a quiver. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A hunter archer on short wooden skis with a long bow, white fur coat and a quiver. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-snowarcher",
   "faction": "ostrog",
   "tier": 2,
   "up": 1,
-  "prompt": "A veteran snow archer in a white hooded fur cloak with a powerful recurve bow, snowflakes around. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A veteran snow archer in a white hooded fur cloak with a powerful recurve bow, snowflakes around. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-wolf",
   "faction": "ostrog",
   "tier": 3,
   "up": 0,
-  "prompt": "A large grey northern war wolf with a leather harness and red tassels, standing on four legs. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A large grey northern war wolf with a leather harness and red tassels, standing on four legs. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-wolfrider",
   "faction": "ostrog",
   "tier": 3,
   "up": 1,
-  "prompt": "A huge white wolf with an armored harness ridden by a warrior with a short spear, standing on four legs. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A huge white wolf with an armored harness ridden by a warrior with a short spear, standing on four legs. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-bearguard",
   "faction": "ostrog",
   "tier": 4,
   "up": 0,
-  "prompt": "A burly warrior wearing a bear pelt as a cloak with the bear head as a hood, a big two-handed axe. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A burly warrior wearing a bear pelt as a cloak with the bear head as a hood, a big two-handed axe. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-bearknight",
   "faction": "ostrog",
   "tier": 4,
   "up": 1,
-  "prompt": "A massive armored warrior in iron plates and a bear pelt cloak, a huge war hammer, very broad shoulders. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A massive armored warrior in iron plates and a bear pelt cloak, a huge war hammer, very broad shoulders. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-shaman",
   "faction": "ostrog",
   "tier": 5,
   "up": 0,
-  "prompt": "A northern shaman in a fur coat with bone charms and ribbons, beating a big round frame drum. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A northern shaman in a fur coat with bone charms and ribbons, beating a big round frame drum. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-thundershaman",
   "faction": "ostrog",
   "tier": 5,
   "up": 1,
-  "prompt": "A powerful thunder shaman with an antler headdress, a glowing drum crackling with blue sparks, ribbons flying. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A powerful thunder shaman with an antler headdress, a glowing drum crackling with blue sparks, ribbons flying. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-mammothtower",
   "faction": "ostrog",
   "tier": 6,
   "up": 0,
-  "prompt": "A woolly mammoth carrying a small wooden archer tower on its back, two archers inside, standing on four legs. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A woolly mammoth carrying a small wooden archer tower on its back, two archers inside, standing on four legs. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-warmammoth",
   "faction": "ostrog",
   "tier": 6,
   "up": 1,
-  "prompt": "A huge armored woolly mammoth with iron plates on its tusks and a fortified tower on its back, standing on four legs. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A huge armored woolly mammoth with iron plates on its tusks and a fortified tower on its back, standing on four legs. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-snowgiant",
   "faction": "ostrog",
   "tier": 7,
   "up": 0,
-  "prompt": "A giant humanoid of packed snow and ice with a frosty beard and a club of a whole pine trunk. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A giant humanoid of packed snow and ice with a frosty beard and a club of a whole pine trunk. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "ostrog-icegiant",
   "faction": "ostrog",
   "tier": 7,
   "up": 1,
-  "prompt": "A towering ice giant humanoid of blue glacier ice with a crown of icicles and a huge ice hammer. Colors and style: northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth. {style}"
+  "prompt": "A towering ice giant humanoid of blue glacier ice with a crown of icicles and a huge ice hammer. Colors and style: northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green and muted crimson cloth, no white fur trim, no Santa Claus look. {style}"
  },
  {
   "name": "bazar-pickpocket",
@@ -298,7 +298,7 @@
   "faction": "kurgany",
   "tier": 1,
   "up": 0,
-  "prompt": "A translucent pale blue ghost shepherd with a crook staff and a tattered cloak, faint and calm. Colors and style: ancestor spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. {style}"
+  "prompt": "A translucent pale blue ghost of an old human shepherd man with a beard, holding a wooden crook staff, in a tattered hooded cloak, faint and calm. Colors and style: ancestor spirits of a heath barrow land, bronze, pale ghost blue, heather purple and old bone. {style}"
  },
  {
   "name": "kurgany-shadowwanderer",
@@ -431,6 +431,6 @@
   "faction": "neutral",
   "tier": 6,
   "up": 0,
-  "prompt": "A griffin with an eagle head and wings and a lion body, golden brown feathers, standing, fantasy creature. {style}"
+  "prompt": "A griffin: the head, hooked beak and wings of a golden eagle and the body and tail of a lion, golden brown feathers, standing on four legs, fantasy creature. {style}"
  }
 ]

@@ -188,9 +188,10 @@ items:
   width: 1536
   height: 864
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. Wide panorama of a fantasy town of the northern taiga fort warriors, fur, dark wood, iron, snow white and deep red cloth, northern
-    fort architecture: dark log palisades with sharpened tops, tall log towers with tent roofs, snow on roofs, smoke from chimneys, on a snowy taiga clearing with
-    tall dark firs, a frozen river, pale winter sun. Many buildings, lively and inviting, calm composition.'
+    warm sunlight and soft shadows. Wide panorama of a fantasy town of the northern taiga fort warriors, grey wolf fur, dark wood, blackened iron, dark forest green
+    and muted crimson cloth, no white fur trim, no Santa Claus look, northern fort architecture: dark log palisades with sharpened tops, tall log towers with tent
+    roofs, snow on roofs, smoke from chimneys, on a snowy taiga clearing with tall dark firs, a frozen river, pale winter sun. Many buildings, lively and inviting,
+    calm composition.'
 - name: town-ostrog-site
   width: 1536
   height: 864
