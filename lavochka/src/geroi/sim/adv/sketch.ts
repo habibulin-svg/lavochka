@@ -78,6 +78,8 @@ export interface Sketch {
   roads?: [number, number][][];
   /** Где зарыт осколок. */
   shard?: [number, number];
+  /** Закрыть клетки скалами: обход заставы у брода и т. п. */
+  walls?: [number, number][];
   /** Лес: доля закрытых клеток в заглавных пятнах (0..1). */
   forest?: number;
 }
@@ -262,13 +264,21 @@ export function buildSketch(sk: Sketch): World {
       ...(o.reward ? { reward: o.reward } : {}), ...(o.tag ? { tag: o.tag } : {}),
     };
     placeObject(w, obj);
-    // отряд стоит прямо на дороге: стережёт брод или проход
-    if (o.kind !== 'stack') solid.add(c);
+    // отряд и застава стоят прямо на дороге: стерегут брод или проход
+    if (o.kind !== 'stack' && o.kind !== 'garrison') solid.add(c);
   }
 
   // дороги: кратчайший путь между опорными точками, лес рубим, через воду — мост
   for (const chain of sk.roads ?? []) {
     for (let i = 0; i + 1 < chain.length; i++) layRoad(w, cellOf(w, ...chain[i]), cellOf(w, ...chain[i + 1]), solid, mount, clearDecor);
+  }
+
+  for (const [x, y] of sk.walls ?? []) {
+    const c = cellOf(w, x, y);
+    clearDecor(c);
+    w.road[c] = 0;
+    if (w.terrain[c] === WATER) continue;
+    putDecor(c);
   }
 
   if (sk.shard) {

@@ -5,6 +5,7 @@ import { OBJECTS, WATER } from '../../src/geroi/sim/adv/data';
 import { holds } from '../../src/geroi/sim/adv/scenario';
 import { type World, act, neighbors } from '../../src/geroi/sim/adv/world';
 import { existsSync } from 'node:fs';
+import { playBotGame } from '../../src/geroi/bot/advplay';
 
 const ALL = CAMPAIGNS.flatMap((c) => c.scenarios.map((s) => ({ c, s })));
 
@@ -79,6 +80,13 @@ describe('geroi/campaign: сценарии кампаний', () => {
         expect(x.over).toBe(false);
         expect(x.scn!.goals.some((g) => !g.done && !g.optional)).toBe(true);
       });
+
+      it('боты на всех местах играют 15 дней без ошибок, события срабатывают', () => {
+        const x = buildScenario(s, 'normal', null);
+        playBotGame(x, x.players.map((p) => p.bot ?? 'medium'), 15, 'medium');
+        expect(JSON.parse(JSON.stringify(x))).toEqual(x);
+        expect(Object.keys(x.scn!.fired).length).toBeGreaterThan(0);
+      }, 30000);
 
       it('сложность меняет охрану, герой переходит из прошлого сценария', () => {
         const by = (d: Difficulty): number => buildScenario(s, d, null).objects.reduce((n, o) => n + (o.army?.reduce((m, st) => m + (st?.count ?? 0), 0) ?? 0), 0);

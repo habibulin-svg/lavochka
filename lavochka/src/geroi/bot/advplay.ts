@@ -36,6 +36,8 @@ export function playBotTurn(w: World, levels: BotLevel[], mem: BotMem = newMem()
     }
     const a = i === max - 1 && !w.pending ? { t: 'end' as const } : botStep(w, levels[me], mem);
     ev.push(...act(w, a));
+    // один игрок на карте (сценарий): после «конец хода» ход снова его — не крутим дни дальше
+    if (a.t === 'end') return ev;
   }
   if (!w.over && w.current === me && !w.pending) ev.push(...act(w, { t: 'end' }));
   return ev;

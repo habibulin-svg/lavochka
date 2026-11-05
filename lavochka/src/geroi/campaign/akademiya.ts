@@ -1,5 +1,400 @@
 /* Кампания 2 «Звёздный счёт»: Ленка «Кнопка», Звёздная академия. Про магию и исследования (CAMPAIGNS.md). */
-import type { CampaignDef } from './types';
+import type { HeroPick } from '../sim/heroes';
+import type { CampaignDef, ScenarioDef } from './types';
+
+const LENKA: HeroPick = { cls: 'akademiya-zvezdochet', n: 0, lad: 'lenka' };
+const VITYOK: HeroPick = { cls: 'kuznya-master', n: 0, lad: 'vityok' };
+const HINT = 'Подсказка';
+const MAIN_DEAD = { text: 'Ленка пала.', cond: { t: 'heroDead' as const, tag: 'main' } };
+const NO_TOWNS = { text: 'Сосновый купол пал.', cond: { t: 'noTowns' as const } };
+/** У чужого отряда без города нет хозяйства. */
+const NOTHING = { semki: 0, wood: 0, stone: 0, amber: 0, salt: 0, stariron: 0, resin: 0 };
+
+// ------------------------------------------------------------------ 2.1 «Обсерватория»
+
+const s21: ScenarioDef = {
+  id: 'c2-1',
+  title: 'Обсерватория',
+  brief: 'Ленка очнулась под куполом обсерватории. Звездочёты Академии называют её «той, что считает звёзды» и просят помочь: лаборатория стоит без дела, а в соснах жужжат механические осы — разведка с востока.',
+  before: ['c2-1a', 'c2-1b'],
+  sketch: () => ({
+    name: 'Обсерватория',
+    seed: 21,
+    scale: 2,
+    rows: [
+      'PPPPPppppppppPPPPP',
+      'PPPPPppppppppPPPPP',
+      'PPPPPppppppppPPPPP',
+      'PPPPPppppppppPPPPP',
+      'pppppppppppppPPPPP',
+      'pppppppPPPpppppppp',
+      'pppppppPPPpppppppp',
+      'pppppppPPPppppp^^^',
+      'ppppppppppppppp^^^',
+      'ppppppppppp~~pp^^^',
+      'ppppppppppp~~ppppp',
+      'pppppppppppppppppp',
+      'pppppppppppppppppp',
+      'ppppppppppppppPPPP',
+      'PPPPPpppppppppPPPP',
+      'PPPPPpPPPPppppPPPP',
+      'PPPPPpPPPPppppPPPP',
+      'PPPPPpPPPPppppPPPP',
+    ],
+    players: [{ name: 'Ленка', faction: 'akademiya', res: { semki: 7000 } }],
+    towns: [{ at: [10, 22], faction: 'akademiya', owner: 0, name: 'Сосновый купол', tag: 'town', built: ['guild1'] }],
+    heroes: [{ at: [13, 24], owner: 0, pick: LENKA, army: [['akademiya-student', 16], ['akademiya-owl', 6], ['akademiya-crystal', 2]], tag: 'main' }],
+    objects: [
+      { kind: 'mine-amber', at: [28, 6], tag: 'amber' },
+      { kind: 'stack', at: [28, 8], army: [['kuznya-wasp', 7]], tag: 'wasps1' },
+      { kind: 'stack', at: [30, 23], army: [['kuznya-wasp', 9]], tag: 'wasps2' },
+      { kind: 'mine-wood', at: [4, 14], owner: 0 },
+      { kind: 'chest', at: [20, 12], n: 1500 },
+      { kind: 'res-semki', at: [14, 30], n: 800 },
+      { kind: 'res-stariron', at: [33, 20], n: 4 },
+      { kind: 'learnstone', at: [24, 16] },
+      { kind: 'shrine1', at: [6, 30], spell: 'precision' },
+      { kind: 'watchtower', at: [32, 31] },
+      { kind: 'campfire', at: [22, 4], n: 500 },
+      { kind: 'luckfountain', at: [16, 8] },
+      { kind: 'signpost', at: [14, 25], text: 'Лаборатория строится в городе после гильдии магов. Опыт стоит 3 янтаря и идёт 3 дня.' },
+    ],
+    roads: [
+      [[10, 23], [22, 23], [33, 23]],
+      [[10, 23], [16, 12], [28, 9]],
+      [[10, 23], [5, 15]],
+    ],
+  }),
+  spec: {
+    goals: [
+      { id: 'study', text: 'Построить лабораторию и провести первый опыт', cond: { t: 'studied', n: 1 } },
+      { id: 'wasps', text: 'Отбить разведку механических ос', cond: { t: 'gone', tags: ['wasps1', 'wasps2', 'wasps3'] } },
+    ],
+    lose: [MAIN_DEAD],
+    triggers: [
+      { id: 'hello', when: { t: 'day', day: 0 }, do: [{ t: 'msg', title: HINT, text: 'Ленка — звездочёт: сильна магией, а не кулаком. В бою открой книгу заклинаний (📖 или B). Лаборатория — в городе, опыты требуют янтаря.' }] },
+      { id: 'amber', when: { t: 'near', at: 'amber', r: 6 }, do: [{ t: 'msg', title: 'Янтарная копь', text: 'Копь даёт янтарь каждый день. Её стерегут осы.' }] },
+      {
+        id: 'scouts', when: { t: 'day', day: 5 }, do: [
+          { t: 'stack', at: [18, 29], cre: 'kuznya-wasp', n: 8, tag: 'wasps3' },
+          { t: 'msg', title: 'Разведка', text: 'Ещё одна стая ос села в лесу у самого города.' },
+        ],
+      },
+      { id: 'studied', when: { t: 'studied', n: 1 }, do: [{ t: 'msg', title: 'Опыт закончен', text: 'Звездочёты аплодируют. Ленка пожимает плечами: «Это просто арифметика».' }] },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------ 2.2 «Пепел Первомая»
+
+const s22: ScenarioDef = {
+  id: 'c2-2',
+  title: 'Пепел Первомая',
+  brief: 'На востоке дымит Кузня, и хозяйничает там Витёк «Шлак» — тоже с нашего двора. Звёздное железо из шахт между бором и пепелищем нужно Академии. Витёк своё отдавать не собирается.',
+  before: ['c2-2a', 'c2-2b'],
+  carry: true,
+  sketch: () => ({
+    name: 'Пепел Первомая',
+    seed: 22,
+    scale: 2,
+    rows: [
+      'PPPPpppppr^^^^raaAAAAaaa',
+      'PPPPpppppr^^^^raaAAAAaaa',
+      'PPPPpppppr^^^^raaAAAAaaa',
+      'PPPPppppprrrrrraaAAAAaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaAAA',
+      'pppppPPPprrrrrraAAAaaAAA',
+      'pppppPPPprrrrrraAAAaaAAA',
+      'pppppPPPprr~~rraAAAaaAAA',
+      'ppppppppprr~~rraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaaaaa',
+      'ppppppppprrrrrraaaaaAAAA',
+      'PPPPPpppprrrrrraaaaaAAAA',
+      'PPPPPpppprrrrrraaaaaAAAA',
+      'PPPPPppppr^^^^raaaaaAAAA',
+      'PPPPPppppr^^^^raaaaaAAAA',
+      'PPPPPppppr^^^^raaaaaAAAA',
+    ],
+    players: [
+      { name: 'Ленка', faction: 'akademiya', res: { semki: 9000 } },
+      { name: 'Витёк', faction: 'kuznya', bot: 'easy', res: { semki: 2500 } },
+    ],
+    towns: [
+      { at: [8, 24], faction: 'akademiya', owner: 0, name: 'Сосновый купол', tag: 'town', built: ['guild1', 'lab', 'dwell2'] },
+      { at: [40, 24], faction: 'kuznya', owner: 1, name: 'Горн', tag: 'gorn', built: ['dwell2'], garrison: [['kuznya-apprentice', 10]] },
+    ],
+    heroes: [
+      { at: [11, 26], owner: 0, pick: LENKA, army: [['akademiya-student', 30], ['akademiya-owl', 14], ['akademiya-crystal', 8], ['akademiya-stag', 2]], tag: 'main' },
+      { at: [37, 26], owner: 1, pick: VITYOK, army: [['kuznya-apprentice', 14], ['kuznya-wasp', 6], ['kuznya-riveter', 3]], level: 2, tag: 'vityok' },
+    ],
+    objects: [
+      { kind: 'mine-stariron', at: [24, 9], tag: 'iron1' },
+      { kind: 'stack', at: [24, 11], army: [['kuznya-steamhound', 5]] },
+      { kind: 'mine-stariron', at: [24, 39], tag: 'iron2' },
+      { kind: 'stack', at: [24, 41], army: [['kuznya-wasp', 12]] },
+      { kind: 'mine-wood', at: [4, 14], owner: 0 },
+      { kind: 'mine-amber', at: [8, 40] },
+      { kind: 'stack', at: [8, 42], army: [['neutral-wolf', 8]] },
+      { kind: 'chest', at: [16, 20], n: 1500 },
+      { kind: 'chest', at: [32, 32], n: 2000 },
+      { kind: 'treasury-ash', at: [44, 8], army: [['neutral-salamander', 8]], reward: { semki: 5000, stariron: 4 }, artRank: 2 },
+      { kind: 'shrine2', at: [14, 34], spell: 'blessing', army: [['neutral-leshak', 6]] },
+      { kind: 'learnstone', at: [20, 29] },
+      { kind: 'res-amber', at: [18, 14], n: 3 },
+      { kind: 'res-stariron', at: [30, 16], n: 3 },
+      { kind: 'watchtower', at: [27, 31] },
+      { kind: 'campfire', at: [34, 42], n: 600 },
+    ],
+    roads: [
+      [[8, 25], [16, 12], [24, 10]],
+      [[8, 25], [16, 38], [24, 40]],
+      [[8, 25], [18, 27], [30, 27], [40, 25]],
+      [[40, 25], [32, 12], [24, 10]],
+      [[40, 25], [32, 38], [24, 40]],
+      [[8, 25], [5, 15]],
+    ],
+  }),
+  spec: {
+    goals: [
+      { id: 'iron', text: 'Отбить обе шахты звёздного железа', cond: { t: 'own', tags: ['iron1', 'iron2'] } },
+      { id: 'gorn', text: 'Взять Горн', cond: { t: 'own', tags: ['gorn'] }, optional: true },
+    ],
+    lose: [MAIN_DEAD, NO_TOWNS],
+    triggers: [
+      { id: 'hello', when: { t: 'day', day: 0 }, do: [{ t: 'msg', title: 'Пепелище', text: 'Шахты звёздного железа — между бором и пепелищем, на севере и на юге. Обе нужно держать одновременно.' }] },
+      { id: 'taunt', when: { t: 'day', day: 3 }, do: [{ t: 'msg', title: 'Витёк', text: '— Кнопка, железо моё! Я на нём мопед собираю. Шагающий!' }] },
+      { id: 'half', when: { t: 'own', tags: ['iron1', 'iron2'], n: 1 }, do: [{ t: 'msg', title: 'Шахта твоя', text: 'Одна шахта есть. Витёк попробует отбить её — оставь в ней отряд или держи героя рядом.' }] },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------ 2.3 «Карта неба»
+
+const s23: ScenarioDef = {
+  id: 'c2-3',
+  title: 'Карта неба',
+  brief: 'Витёк помирился с Академией: теперь Кузня — союзник. Заклинание показало восемь огней — восемь осколков кастета. Но карту тут же украли. Вор был в кепке — такие носили только у нас. Догони его до конца третьей недели.',
+  before: ['c2-3a', 'c2-3b'],
+  carry: true,
+  sketch: () => ({
+    name: 'Карта неба',
+    seed: 23,
+    scale: 2,
+    rows: [
+      'PPPPPpppppppp^^^aaAAAAAAaaaa',
+      'PPPPPpppppppp^^^aaAAAAAAaaaa',
+      'PPPPPpppppppp^^^aaAAAAAAaaaa',
+      'PPPPPpppppppp^^^aaaaaaaaaaaa',
+      'PPPPPpppppppp^^^aaaaaaaaaaaa',
+      'ppppppppppppprrraaaaaaaaAAAA',
+      'ppppppppppppprrraaaaaaaaAAAA',
+      'ppppppppppppprrraaaaaaaaAAAA',
+      'ppppppPPPPppprrraaaaaaaaAAAA',
+      'ppppppPPPPppprrraaaaaaaaAAAA',
+      'ppppppPPPPppprrraaaaaaaaaaaa',
+      'ppppppppppppprrraaaaaaaaaaaa',
+      'ppppppppppppp~~~aaaaaaaaaaaa',
+      'ppppppppppppp~~~aaaaaaaaaaaa',
+      'pppp~~~pppppprrraaaAAAaaaaaa',
+      'pppp~~~pppppprrraaaAAAaaaaaa',
+      'ppppppppppppprrraaaAAAaaaaaa',
+      'ppppppppppppprrraaaAAAaaaaaa',
+      'ppppppppppppprrraaaaaaaaaaaa',
+      'ppppppppppppprrraaaaaaaaaaaa',
+      'PPPPppppppppprrraaaaaaaAAAAA',
+      'PPPPppppppppprrraaaaaaaAAAAA',
+      'PPPPppppPPPPprrraaaaaaaAAAAA',
+      'PPPPppppPPPPp^^^aaaaaaaAAAAA',
+      'PPPPppppPPPPp^^^aaaaaaaAAAAA',
+      'PPPPppppPPPPp^^^aAAAAaaaaaaa',
+      'PPPPppppPPPPp^^^aAAAAaaaaaaa',
+      'PPPPppppPPPPp^^^aAAAAaaaaaaa',
+    ],
+    players: [
+      { name: 'Ленка', faction: 'akademiya', team: 1, res: { semki: 10000 } },
+      { name: 'Витёк', faction: 'kuznya', bot: 'medium', team: 1 },
+      { name: 'Вор', faction: 'kuznya', bot: 'medium', keep: true, res: NOTHING },
+    ],
+    towns: [
+      { at: [10, 30], faction: 'akademiya', owner: 0, name: 'Сосновый купол', tag: 'town', built: ['guild1', 'lab', 'dwell2', 'dwell3'] },
+      { at: [44, 28], faction: 'kuznya', owner: 1, name: 'Горн', tag: 'gorn', built: ['dwell2', 'dwell3'] },
+    ],
+    heroes: [
+      { at: [13, 32], owner: 0, pick: LENKA, army: [['akademiya-student', 30], ['akademiya-owl', 12], ['akademiya-crystal', 7], ['akademiya-stag', 2]], tag: 'main' },
+      { at: [41, 30], owner: 1, pick: VITYOK, army: [['kuznya-apprentice', 24], ['kuznya-wasp', 10], ['kuznya-riveter', 6]], level: 5, tag: 'vityok' },
+      { at: [48, 5], owner: 2, pick: { cls: 'kuznya-ognelit', n: 2 }, army: [['kuznya-wasp', 12], ['kuznya-steamhound', 4], ['kuznya-riveter', 6]], level: 5, tag: 'thief' },
+    ],
+    objects: [
+      { kind: 'mine-wood', at: [4, 18], owner: 0 },
+      { kind: 'mine-amber', at: [16, 46], owner: 0 },
+      { kind: 'mine-stariron', at: [36, 8] },
+      { kind: 'stack', at: [36, 10], army: [['kuznya-steamhound', 6]] },
+      { kind: 'mine-semki', at: [22, 18] },
+      { kind: 'stack', at: [22, 20], army: [['neutral-bandit', 14]] },
+      { kind: 'obelisk', at: [20, 8] },
+      { kind: 'treasury-pine', at: [6, 6], army: [['akademiya-crystal', 10]], reward: { semki: 5000, amber: 5 }, artRank: 2 },
+      { kind: 'chest', at: [26, 36], n: 2000 },
+      { kind: 'chest', at: [48, 46], n: 2000 },
+      { kind: 'stables', at: [24, 30] },
+      { kind: 'learnstone', at: [34, 20] },
+      { kind: 'shrine2', at: [18, 38], spell: 'slow', army: [['neutral-sirin', 4]] },
+      { kind: 'watchtower', at: [30, 44] },
+      { kind: 'res-amber', at: [14, 24], n: 3 },
+      { kind: 'campfire', at: [40, 16], n: 600 },
+      { kind: 'signpost', at: [15, 31], text: 'Обсерватория в городе показывает округу вокруг всех твоих объектов: так вора проще найти.' },
+    ],
+    roads: [
+      [[10, 31], [20, 31], [30, 28], [44, 29]],
+      [[10, 31], [16, 20], [26, 12], [36, 9]],
+      [[44, 29], [46, 16], [48, 6]],
+      [[10, 31], [14, 45]],
+      [[10, 31], [5, 19]],
+    ],
+  }),
+  spec: {
+    goals: [
+      { id: 'observatory', text: 'Построить обсерваторию', cond: { t: 'built', b: 'observatory' } },
+      { id: 'thief', text: 'Догнать вора и вернуть карту', cond: { t: 'gone', tags: ['thief'] } },
+    ],
+    lose: [MAIN_DEAD, NO_TOWNS, { text: 'Вор ушёл с картой.', cond: { t: 'all', of: [{ t: 'day', day: 21 }, { t: 'not', c: { t: 'gone', tags: ['thief'] } }] } }],
+    triggers: [
+      { id: 'hello', when: { t: 'day', day: 0 }, do: [{ t: 'msg', title: 'Вор', text: 'Вор ушёл на северо-восток, за пепелище. Витёк — союзник: его войска тебя не тронут. Срок — до конца третьей недели.' }] },
+      {
+        id: 'seen', when: { t: 'built', b: 'observatory' }, do: [
+          { t: 'reveal', at: 'thief', r: 6 },
+          { t: 'msg', title: 'Обсерватория', text: 'Телескоп поймал вора: его видно на карте.' },
+        ],
+      },
+      { id: 'week3', when: { t: 'day', day: 14 }, do: [{ t: 'msg', title: 'Неделя осталась', text: 'До конца третьей недели — семь дней.' }] },
+    ],
+  },
+};
+
+// ------------------------------------------------------------------ 2.4 «Звездопад»
+
+const s24: ScenarioDef = {
+  id: 'c2-4',
+  title: 'Звездопад',
+  brief: 'Звёзды падают, как семечки из кулька. Под каждой — пожар. Под самой большой, в огромном кратере между бором и пепелищем, лежит второй осколок. Отряд Старшого уже идёт туда.',
+  before: ['c2-4a'],
+  carry: true,
+  sketch: () => ({
+    name: 'Звездопад',
+    seed: 24,
+    scale: 2,
+    rows: [
+      'PPPPppppppppppaaaaaaaaAAAAAaaaaa',
+      'PPPPppppppppppaaaaaaaaAAAAAaaaaa',
+      'PPPPppppppppppaaaaaaaaAAAAAaaaaa',
+      'PPPPppppppppppaaaaaaaaAAAAAaaaaa',
+      'PPPPpppppp~~~paaaaaaaaaaaaaaaaaa',
+      'pppppppppp~~~paaaaaaaaaaaaaaaaaa',
+      'ppppppppppppppaaaaaaaaaaaaaaaaaa',
+      'ppppppppppppppaaaaaaaaaaaaa^^^^^',
+      'ppppppppppppppaaaaaaaaaaaaa^^^^^',
+      'ppppppppppppppaaaaaaaaaaaaa^^^^^',
+      'ppppppPPPpppppaaaaaaaaaaaaa^^^^^',
+      'ppppppPPPpppppaaaaaaaaaaaaaaaaaa',
+      'ppppppPPPpppppaaaaaaaaaaaaaaaaaa',
+      'ppppppPPPppppprrrraaaaaaaaaaaaaa',
+      'ppppppppppppprrddrraaaaaaaaaaaaa',
+      'pppppppppppprrddddrraaaaaAAAaaaa',
+      'pppppppppppprrddddrraaaaaAAAaaaa',
+      'pppppppppppprrddddrraaaaaAAAaaaa',
+      'ppppppppppppprrddrraaaaaaaaaaaaa',
+      'pppppppppppppprrrraaaaaaaaaaaaaa',
+      'ppppppppppppppppppssssssssssssss',
+      'ppppppppppppppppppssssssssssssss',
+      'ppppppppppppppppppssssssssssssss',
+      'ppppppppppppppppppssssssssssssss',
+      'PPPPPpppppppppppppssSSSSssssssss',
+      'PPPPPpppppppppppppssSSSSssssssss',
+      'PPPPPppppPPPPPppppssSSSSsssSSSSS',
+      'PPPPPppppPPPPPppppssSSSSsssSSSSS',
+      'PPPPPppppPPPPPppppsssssssssSSSSS',
+      'PPPPPppppPPPPPppppsssssssssSSSSS',
+      'PPPPPppppPPPPPppppsssssssssSSSSS',
+      'PPPPPppppPPPPPppppsssssssssSSSSS',
+    ],
+    players: [
+      { name: 'Ленка', faction: 'akademiya', team: 1, res: { semki: 12000 } },
+      { name: 'Витёк', faction: 'kuznya', bot: 'medium', team: 1 },
+      { name: 'Старшой', faction: 'kuznya', bot: 'medium', keep: true, res: NOTHING },
+    ],
+    towns: [
+      { at: [10, 46], faction: 'akademiya', owner: 0, name: 'Сосновый купол', tag: 'town', built: ['guild1', 'lab', 'dwell2', 'dwell3', 'dwell4', 'hall2'] },
+      { at: [50, 10], faction: 'kuznya', owner: 1, name: 'Горн', tag: 'gorn', built: ['dwell2', 'dwell3', 'hall2'] },
+    ],
+    heroes: [
+      { at: [13, 48], owner: 0, pick: LENKA, army: [['akademiya-student', 36], ['akademiya-owl', 16], ['akademiya-crystal', 10], ['akademiya-stag', 5], ['akademiya-pineguard', 2]], tag: 'main' },
+      { at: [47, 12], owner: 1, pick: VITYOK, army: [['kuznya-apprentice', 30], ['kuznya-wasp', 14], ['kuznya-riveter', 8], ['kuznya-steamhound', 3]], level: 7, tag: 'vityok' },
+    ],
+    objects: [
+      { kind: 'treasury-pine', at: [32, 33], army: [['neutral-salamander', 10], ['akademiya-fallenstar', 1]], reward: { semki: 8000, stariron: 6 }, artRank: 2, tag: 'crater' },
+      { kind: 'mine-wood', at: [4, 38], owner: 0 },
+      { kind: 'mine-amber', at: [20, 54], owner: 0 },
+      { kind: 'mine-stariron', at: [36, 16] },
+      { kind: 'stack', at: [36, 18], army: [['neutral-salamander', 6]] },
+      { kind: 'mine-amber', at: [12, 12] },
+      { kind: 'stack', at: [12, 14], army: [['akademiya-crystal', 10]] },
+      { kind: 'mine-semki', at: [44, 44] },
+      { kind: 'stack', at: [44, 46], army: [['neutral-kikimora', 10]] },
+      { kind: 'obelisk', at: [18, 24] },
+      { kind: 'obelisk', at: [46, 30] },
+      { kind: 'treasury-ash', at: [54, 26], army: [['neutral-salamander', 12]], reward: { semki: 6000, stariron: 5 }, artRank: 2 },
+      { kind: 'chest', at: [24, 40], n: 2500 },
+      { kind: 'chest', at: [40, 6], n: 2500 },
+      { kind: 'learnstone', at: [28, 44] },
+      { kind: 'shrine3', at: [8, 24], spell: 'meteors', army: [['neutral-sirin', 6]] },
+      { kind: 'stables', at: [22, 34] },
+      { kind: 'wisewell', at: [16, 40] },
+      { kind: 'watchtower', at: [40, 36] },
+      { kind: 'res-stariron', at: [26, 24], n: 4 },
+      { kind: 'campfire', at: [52, 50], n: 800 },
+    ],
+    roads: [
+      [[10, 47], [20, 42], [30, 36], [32, 34]],
+      [[32, 34], [40, 24], [50, 11]],
+      [[10, 47], [12, 30], [12, 15]],
+      [[32, 34], [44, 42], [44, 45]],
+      [[10, 47], [18, 54]],
+    ],
+    shard: [33, 36],
+  }),
+  spec: {
+    goals: [
+      { id: 'crater', text: 'Дойти до кратера', cond: { t: 'near', at: 'crater', r: 2 } },
+      { id: 'otryad', text: 'Разбить отряд Старшого', cond: { t: 'gone', tags: ['otryad'] } },
+      { id: 'shard', text: 'Найти осколок под самой большой звездой', cond: { t: 'shard' } },
+    ],
+    lose: [MAIN_DEAD, NO_TOWNS],
+    triggers: [
+      { id: 'hello', when: { t: 'day', day: 0 }, do: [{ t: 'msg', title: 'Звездопад', text: 'Каждые три дня падает звезда — рядом с твоими героями. Кратер — в середине карты.' }, { t: 'reveal', at: 'crater', r: 4 }] },
+      {
+        id: 'starfall', when: { t: 'day', day: 3 }, every: 3, do: [
+          { t: 'ambush', cre: 'neutral-salamander', n: 4, r: 3 },
+          { t: 'res', player: 0, res: { stariron: 1 } },
+          { t: 'msg', title: 'Звезда упала', text: 'Рядом упала звезда. Из огня вылезли саламандры, а в золе осталось звёздное железо.' },
+        ],
+      },
+      {
+        id: 'otryad-come', when: { t: 'any', of: [{ t: 'day', day: 8 }, { t: 'near', at: 'crater', r: 12 }] }, do: [
+          { t: 'hero', owner: 2, pick: { cls: 'kuznya-ognelit', n: 4 }, at: [44, 30], army: [['kuznya-wasp', 18], ['kuznya-riveter', 12], ['kuznya-steamhound', 6], ['kuznya-founder', 3], ['kuznya-walkcannon', 1]], level: 8, tag: 'otryad' },
+          { t: 'msg', title: 'Отряд Старшого', text: 'С востока к кратеру идёт отряд Старшого. Ведёт его огнелитка Зола.' },
+        ],
+      },
+      { id: 'crater-near', when: { t: 'near', at: 'crater', r: 3 }, do: [{ t: 'msg', title: 'Кратер', text: 'Под самой большой звездой — осколок. Встань у кратера и копай (⛏ или D).' }] },
+    ],
+  },
+};
 
 export const AKADEMIYA: CampaignDef = {
   id: 'c2',
@@ -7,6 +402,6 @@ export const AKADEMIYA: CampaignDef = {
   hero: 'Ленка «Кнопка»',
   lad: 'lenka',
   text: 'Звёздная академия: опыты, обсерватория и звездопад. Кампания про магию.',
-  scenarios: [],
+  scenarios: [s21, s22, s23, s24],
   finale: ['c2-fin1', 'c2-fin2', 'c2-fin3'],
 };

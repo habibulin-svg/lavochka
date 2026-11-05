@@ -31,7 +31,8 @@ export type Cond =
   | { t: 'heroDead'; tag: string }
   | { t: 'noTowns' }
   | { t: 'all'; of: Cond[] }
-  | { t: 'any'; of: Cond[] };
+  | { t: 'any'; of: Cond[] }
+  | { t: 'not'; c: Cond };
 
 export type ScnAct =
   /** Сообщение игроку. */
@@ -169,6 +170,8 @@ export function holds(w: World, s: ScnState, c: Cond): boolean {
       return c.of.every((x) => holds(w, s, x));
     case 'any':
       return c.of.some((x) => holds(w, s, x));
+    case 'not':
+      return !holds(w, s, c.c);
   }
 }
 

@@ -4,11 +4,18 @@ import { type Sketch, type ScenarioSpec, attachScenario, buildSketch } from '../
 import { type World, allied } from '../sim/adv/world';
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
-export const DIFFICULTIES: Record<Difficulty, { name: string; res: number; guard: number; bot: 'easy' | 'medium' | 'hard' }> = {
-  easy: { name: 'Лёгкая', res: 1.5, guard: 0.7, bot: 'easy' },
-  normal: { name: 'Обычная', res: 1, guard: 1, bot: 'medium' },
-  hard: { name: 'Трудная', res: 0.6, guard: 1.3, bot: 'hard' },
+export const DIFFICULTIES: Record<Difficulty, { name: string; res: number; guard: number }> = {
+  easy: { name: 'Лёгкая', res: 1.5, guard: 0.7 },
+  normal: { name: 'Обычная', res: 1, guard: 1 },
+  hard: { name: 'Трудная', res: 0.6, guard: 1.3 },
 };
+
+const BOTS = ['easy', 'medium', 'hard'] as const;
+/** Сложность сдвигает задуманный уровень бота на ступень: лёгкий Димон на трудной — средний. */
+function shiftBot(b: 'easy' | 'medium' | 'hard', diff: Difficulty): 'easy' | 'medium' | 'hard' {
+  const k = BOTS.indexOf(b) + (diff === 'easy' ? -1 : diff === 'hard' ? 1 : 0);
+  return BOTS[Math.max(0, Math.min(2, k))];
+}
 
 export interface ScenarioDef {
   id: string;
@@ -50,7 +57,7 @@ export function buildScenario(def: ScenarioDef, diff: Difficulty, carry: Carry |
   attachScenario(w, def.id, human, def.spec);
   for (const p of w.players) {
     if (p.id === human) for (const k of Object.keys(p.res) as (keyof typeof p.res)[]) p.res[k] = Math.round(p.res[k] * d.res);
-    else if (p.bot) p.bot = d.bot;
+    else if (p.bot) p.bot = shiftBot(p.bot, diff);
   }
   // нейтралы и чужие гарнизоны — по сложности
   const scale = (a: AdvHero['army'] | undefined): void => {
