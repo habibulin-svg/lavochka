@@ -86,7 +86,7 @@ export class Menu {
       music,
       button('Во двор', () => (location.href = '/')),
     );
-    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · ранний доступ: кампании, «Арена», карты с ботами и по сети'));
+    this.screen(logo, col, h('div', 'g-foot', 'Lavochka Games · кампании, «Арена», карты с ботами и по сети'));
   }
 
   locked(signedIn: boolean): void {
