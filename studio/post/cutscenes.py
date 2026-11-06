@@ -49,8 +49,8 @@ def gops_clips(src):
 def geroi_clips(src):
     # выбор — studio/jobs/geroi/picks.json: по умолчанию ключ 1 сид 1, переделки — партии 17-videos-redo*
     picks = json.loads((ROOT / 'studio/jobs/geroi/picks.json').read_text(encoding='utf-8'))
-    c = {p.name.removesuffix('-1-v1.mp4'): p for p in sorted((src / '17-videos').glob('*-1-v1.mp4'))}
-    for b in ('17-videos-redo', '17-videos-redo2'):
+    c = {p.name.removesuffix('-1-v1.mp4'): p for b in ('17-videos', '37-videos') for p in sorted((src / b).glob('*-1-v1.mp4'))}
+    for b in ('17-videos-redo', '17-videos-redo2', '37-videos-redo'):
         for name, file in picks.get(b, {}).items():
             c[name] = src / b / f'{file}.mp4'
     return c
