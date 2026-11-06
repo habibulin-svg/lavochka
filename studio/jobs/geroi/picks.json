@@ -1344,5 +1344,18 @@
   "finale-battle": 22,
   "ending-home": 22,
   "ending-stay": 22
+ },
+ "37-videos-redo": {
+  "c4-3b": "c4-3b-4-v1",
+  "c5-1a": "c5-1a-1-v2",
+  "c5-2a": "c5-2a-1-v2",
+  "c7-1b": "c7-1b-1-v2",
+  "c7-2a": "c7-2a-1-v2",
+  "c7-2b": "c7-2b-3-v1",
+  "c7-fin2": "c7-fin2-1-v2"
+ },
+ "36-cutscene-keys-redo": {
+  "c4-3b": 4,
+  "c7-2b": 3
  }
 }

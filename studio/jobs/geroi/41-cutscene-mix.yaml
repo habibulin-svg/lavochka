@@ -613,3 +613,72 @@ clips:
     sounds:
       - {id: path-steps, at: 0.2, gain: -2, duration: 3, level: quiet, max: 0.7, prompt: "man walking along a dry dirt path, steady footsteps crunching on gravel and dust"}
       - {id: meadow-breeze, at: 3.0, gain: -5, duration: 2, level: quiet, max: 0.4, prompt: "gentle wind moving through wildflowers in a meadow"}
+
+  - name: c4-3b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "парень сидит на кургане на закате; вокруг полупрозрачные голубые духи и бородатые воины в тулупах, к концу один дух колышется"
+    bed: {duration: 7, gain: -6, prompt: "burial mound at sunset ambience, soft steady wind through grass, faint airy ghostly drone, distant bird"}
+    sounds:
+      - {id: spirit-whisper, at: 0.4, gain: -3, duration: 3, level: quiet, max: 0.6, prompt: "faint ghostly whispering of many spirits without words, airy ethereal murmur"}
+      - {id: grass-wind, at: 2.4, gain: -4, duration: 2, level: quiet, max: 0.5, prompt: "gentle wind rustling tall grass and wildflowers on a hill"}
+      - {id: spirit-shimmer, at: 4.4, gain: -3, duration: 2, level: quiet, max: 0.6, prompt: "soft ethereal shimmer as a spirit ripples and sways, airy glassy whoosh"}
+
+  - name: c5-1a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "базар на соляной равнине: шатры, верблюд идёт вдали, парень за прилавком улыбается и считает монеты"
+    bed: {duration: 7, gain: -6, prompt: "desert salt flat bazaar ambience, light dry wind, distant market murmur, faint camel bells"}
+    sounds:
+      - {id: coin-count, at: 0.8, gain: -2, duration: 3, level: quiet, max: 0.7, prompt: "small metal coins being counted and clinking on a wooden table"}
+      - {id: camel-grunt, at: 2.4, gain: -5, duration: 2, level: quiet, max: 0.5, prompt: "a camel groaning softly in the distance, low grunt with faint bell"}
+      - {id: stall-creak, at: 4.4, gain: -5, duration: 1, level: quiet, max: 0.4, prompt: "wooden market stall creaking and canvas flapping gently in the breeze"}
+
+  - name: c5-2a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "чёрный всадник протягивает свиток, конь трясёт гривой, рядом открытый пустой сундук; парень отшатывается и разводит руками"
+    bed: {duration: 7, gain: -6, prompt: "open rolling hills ambience, soft wind, faint distant birds, quiet countryside"}
+    sounds:
+      - {id: horse-snort, at: 1.2, gain: -2, duration: 2, level: normal, max: 0.8, prompt: "black horse snorting and shaking its mane, harness jingling, breathy huff"}
+      - {id: scroll-rustle, at: 0.4, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "parchment scroll rustling and being handed over, dry paper crinkle"}
+      - {id: chest-lid, at: 4.4, gain: -3, duration: 1, level: quiet, max: 0.6, prompt: "wooden chest lid creaking on leather hinges, hollow empty box thump"}
+
+  - name: c7-1b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "подростки склонились над каменной картой мира с жёлтыми и красными огнями; в конце все встают и расходятся по карте"
+    bed: {duration: 7, gain: -6, prompt: "quiet stone hall ambience, low airy drone, faint magical hum, soft echo"}
+    sounds:
+      - {id: map-hum, at: 0.0, gain: -4, duration: 3, level: quiet, max: 0.6, prompt: "soft magical hum from glowing lights on a stone map, gentle pulsing shimmer"}
+      - {id: footsteps-stone, at: 2.8, gain: -3, duration: 2, level: quiet, max: 0.7, prompt: "several people shuffling and stepping on a stone floor, soft scuffs and cloth rustle"}
+      - {id: crouch-rustle, at: 4.0, gain: -4, duration: 1, level: quiet, max: 0.5, prompt: "clothing rustling as people lean over a large table, soft fabric movement"}
+
+  - name: c7-2a
+    beat: null
+    focus: [0.5, 0.5]
+    note: "чёрная крепость на скале под грозовым небом, бьют молнии, на стенах горят факелы; слева в конце появляется синий дымок"
+    bed: {duration: 7, gain: -6, prompt: "stormy sky over a rocky cliff, heavy wind, low rumbling thunder in the distance, crackling torch fire"}
+    sounds:
+      - {id: lightning-crack, at: 0.0, gain: 0, duration: 2, level: loud, max: 1.0, prompt: "sharp lightning crack followed by rolling thunder over a fortress"}
+      - {id: torch-crackle, at: 1.6, gain: -4, duration: 3, level: quiet, max: 0.6, prompt: "many torches crackling and fluttering in strong wind, flame flutter"}
+      - {id: lightning-crack-2, at: 4.0, gain: -1, duration: 2, level: normal, max: 1.0, prompt: "lightning strike with a crackling snap and deep distant thunder rumble"}
+
+  - name: c7-2b
+    beat: null
+    focus: [0.5, 0.5]
+    note: "пустое резное кресло с кепкой на сиденье в каменном зале, пыль в луче света, по залу проходит дымка"
+    bed: {duration: 7, gain: -6, prompt: "empty stone hall ambience, deep silence with faint echo, very light draft, distant dripping"}
+    sounds:
+      - {id: dust-draft, at: 1.6, gain: -3, duration: 3, level: quiet, max: 0.5, prompt: "soft draft carrying fine dust through a large empty stone hall, faint airy hiss"}
+      - {id: hall-echo, at: 0.2, gain: -5, duration: 2, level: quiet, max: 0.4, prompt: "faint hollow echo in an empty stone hall, low room tone"}
+
+  - name: c7-fin2
+    beat: null
+    focus: [0.5, 0.5]
+    note: "столб золотого света бьёт из кратера в ночное небо с двумя лунами, поднимается выше, летят искры, внизу остаётся синее небо"
+    bed: {duration: 7, gain: -6, prompt: "vast night sky ambience, deep low energy hum, soft high wind, faint magical shimmer"}
+    sounds:
+      - {id: light-pillar, at: 0.0, gain: -1, duration: 3, level: loud, max: 1.1, prompt: "huge column of magical light roaring upward, deep rushing energy blast with a bright hum"}
+      - {id: pillar-rise, at: 2.0, gain: -3, duration: 3, level: normal, max: 0.9, prompt: "energy beam rising high into the sky, whooshing ascent fading into the distance"}
+      - {id: spark-twinkle, at: 3.6, gain: -4, duration: 2, level: quiet, max: 0.6, prompt: "tiny glowing sparks drifting upward, delicate glittering twinkle"}
