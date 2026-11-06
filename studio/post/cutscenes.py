@@ -94,12 +94,13 @@ def size(path: pathlib.Path) -> tuple[int, int]:
     return w, h
 
 
-def sheets():
+def sheets(names):
     """Лист на ролик: кадр каждые 0,4 с, подпись — время."""
     d = WORK / 'sheets'
     d.mkdir(parents=True, exist_ok=True)
     font = ImageFont.truetype('arial.ttf', 26)
-    for name, path in CLIPS.items():
+    for name in names:
+        path = CLIPS[name]
         w, h = size(path)
         picks = [f for i, f in enumerate(frames(path, w, h)) if i % round(0.4 * FPS) == 0]
         cw, ch = 384, round(384 * h / w)
@@ -115,10 +116,13 @@ def sheets():
         print('лист', name, flush=True)
 
 
-def sfxjob():
+def sfxjob(names=None):
+    """Без имён — всё задание; с именами — только эти ролики, в отдельное задание <партия>-part.yaml (готовые звуки не трогаем)."""
     mix = yaml.safe_load(MIX.read_text(encoding='utf-8'))
-    sounds = [dict(s, name=f"shared--{s['id']}") for s in mix.get('shared', [])]
+    sounds = [] if names else [dict(s, name=f"shared--{s['id']}") for s in mix.get('shared', [])]
     for c in mix['clips']:
+        if names and c['name'] not in names:
+            continue
         for s in c.get('sounds', []):
             sounds.append({'name': f"{c['name']}--{s['id']}", 'duration': s.get('duration', 2), 'level': s.get('level', 'normal'),
                            'max': s.get('max'), 'prompt': s['prompt']})
@@ -132,9 +136,10 @@ def sfxjob():
         if s.get('max') is None:
             s.pop('max', None)
     job = {'out': str(SFX).replace('\\', '/'), 'seeds': [1], 'sounds': sounds}
-    SFXJOB.write_text(f'# {GAME}, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob --game {GAME} из 41-cutscene-mix.yaml — правки вносить туда.\n'
+    dst = SFXJOB.with_name(SFXJOB.stem + '-part.yaml') if names else SFXJOB
+    dst.write_text(f'# {GAME}, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob --game {GAME} из 41-cutscene-mix.yaml — правки вносить туда.\n'
                       + yaml.safe_dump(job, allow_unicode=True, sort_keys=False, width=200), encoding='utf-8')
-    print('задание', SFXJOB, len(sounds), 'звуков')
+    print('задание', dst, len(sounds), 'звуков')
 
 
 def upscale(names):
@@ -323,7 +328,7 @@ def main():
     a = ap.parse_args()
     setup(a.game)
     names = a.names or list(CLIPS)
-    {'sheets': lambda: sheets(), 'sfxjob': lambda: sfxjob(), 'upscale': lambda: upscale(names), 'edit': lambda: edit(names)}[a.step]()
+    {'sheets': lambda: sheets(names), 'sfxjob': lambda: sfxjob(a.names or None), 'upscale': lambda: upscale(names), 'edit': lambda: edit(names)}[a.step]()
 
 
 if __name__ == '__main__':
