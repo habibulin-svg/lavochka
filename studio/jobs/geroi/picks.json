@@ -1495,13 +1495,13 @@
   "bld-zatulye-smithy": 21,
   "bld-zatulye-storehouse": 21,
   "bld-zatulye-tavern": 21,
-  "town-akademiya-site": 22,
-  "town-bazar-site": 22,
-  "town-kurgany-site": 22,
-  "town-kuznya-site": 22,
-  "town-ostrog-site": 22,
-  "town-plotina-site": 22,
-  "town-zatonye-site": 22,
-  "town-zatulye-site": 22
+  "town-akademiya-site": 24,
+  "town-bazar-site": 23,
+  "town-kurgany-site": 24,
+  "town-kuznya-site": 24,
+  "town-ostrog-site": 24,
+  "town-plotina-site": 24,
+  "town-zatonye-site": 23,
+  "town-zatulye-site": 24
  }
 }

@@ -126,13 +126,27 @@ def buildings(fid: str) -> list[tuple[str, str]]:
     return COMMON + [(f'dwell{i + 1}', d) for i, d in enumerate(DWELL[fid])] + list(t['unique'])
 
 
+# земля панорамы — своя у каждой фракции (общая «трава с цветами» давала луг даже Кузне на пепелище)
+GROUND = {
+    'zatulye': 'meadow grass, bare earth patches, dirt paths and wildflowers',
+    'zatonye': 'wet marshy ground with green moss, shallow puddles, tufts of reeds and old plank walkways',
+    'kuznya': 'scorched grey ash and black cinder ground, lumps of dark slag and cracked earth with faint orange glowing cracks',
+    'akademiya': 'a forest clearing of moss, fallen pine needles, grey rocks and small blue flowers',
+    'plotina': 'grey rocky ground with wet pebbles, flat granite slabs and sparse tough sea grass',
+    'ostrog': 'deep white snow with trampled paths, snowdrifts and a few bare frozen shrubs',
+    'bazar': 'cracked white salt crust and pale sand with ripples and small tufts of dry yellow grass',
+    'kurgany': 'purple heather, dark peat, mossy grey stones and low turf mounds',
+}
+SITE_SEEDS = [23, 24]  # 21–22 — прежний промпт с общей травой; новые сиды, чтобы run.py не счёл их готовыми
+
+
 def site(fid: str) -> str:
     """Фон экрана замка как в классических «Героях»: пустая земля крупным планом на весь кадр, горизонт высоко.
     Слово «город» не писать — Z-Image сразу рисует сотню домиков."""
     t = TOWNS.get(fid) or TOWNS2[fid]
-    return (f'{GOUACHE} A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, '
-            f'dirt paths and wildflowers fills most of the picture, gently rising toward the back in two or three broad flat terraces. '
-            f'The horizon line is high, near the top edge, with a narrow strip of sky. '
+    return (f'{GOUACHE} A wide empty landscape seen close up from a low viewpoint: broad open ground of {GROUND[fid]} '
+            f'fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. '
+            f'The horizon line is very high, right under the top edge; the sky is only a thin strip along the top of the picture. '
             f'The scenery is {t["site"]}, shown only at the far left and right edges and along the distant horizon. '
             f'Wild untouched land, quiet and calm.')
 
@@ -140,7 +154,7 @@ def site(fid: str) -> str:
 def items(factions):
     out = []
     for fid in factions:
-        out.append({'name': f'town-{fid}-site', 'width': 1536, 'height': 864, 'seeds': [21, 22], 'prompt': site(fid)})
+        out.append({'name': f'town-{fid}-site', 'width': 1536, 'height': 864, 'seeds': SITE_SEEDS, 'prompt': site(fid)})
         for bid, d in buildings(fid):
             out.append({'name': f'bld-{fid}-{bid}',
                         'prompt': f'{GOUACHE} A building for a fantasy strategy game town screen, three-quarter view from slightly above: {d}. '

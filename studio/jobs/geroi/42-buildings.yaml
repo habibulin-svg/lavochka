@@ -13,14 +13,14 @@ items:
 - name: town-zatulye-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: &id001
+  - 23
+  - 24
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a wide riverbank meadow with birch groves and a calm river, summer evening, shown only at the far left and right edges and along the distant
-    horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of meadow grass, bare earth patches, dirt paths and
+    wildflowers fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very high, right under the
+    top edge; the sky is only a thin strip along the top of the picture. The scenery is a wide riverbank meadow with birch groves and a calm river, summer evening,
+    shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-zatulye-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -112,14 +112,12 @@ items:
 - name: town-zatonye-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a misty green swamp with dark water pools, willows and reeds, early morning, shown only at the far left and right edges and along the distant
-    horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of wet marshy ground with green moss, shallow puddles,
+    tufts of reeds and old plank walkways fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very
+    high, right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is a misty green swamp with dark water pools, willows and
+    reeds, early morning, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-zatonye-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -213,14 +211,12 @@ items:
 - name: town-kuznya-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is an ash plain with dark slag hills and glowing cracks, red sunset haze, shown only at the far left and right edges and along the distant
-    horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of scorched grey ash and black cinder ground, lumps
+    of dark slag and cracked earth with faint orange glowing cracks fills almost the whole picture, gently rising toward the back in two or three broad flat terraces.
+    The horizon line is very high, right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is an ash plain with dark slag
+    hills and glowing cracks, red sunset haze, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-kuznya-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -312,14 +308,12 @@ items:
 - name: town-akademiya-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a tall pine forest on a hill under a deep blue twilight sky with first stars, shown only at the far left and right edges and along the
-    distant horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of a forest clearing of moss, fallen pine needles,
+    grey rocks and small blue flowers fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very
+    high, right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is a tall pine forest on a hill under a deep blue twilight
+    sky with first stars, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-akademiya-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -411,14 +405,12 @@ items:
 - name: town-plotina-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a rocky sea coast with cliffs, a river falling into the sea through a gorge, grey stormy sky with sunbeams, shown only at the far left
-    and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of grey rocky ground with wet pebbles, flat granite
+    slabs and sparse tough sea grass fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very high,
+    right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is a rocky sea coast with cliffs, a river falling into the sea
+    through a gorge, grey stormy sky with sunbeams, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-plotina-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -510,14 +502,12 @@ items:
 - name: town-ostrog-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a snowy taiga clearing with tall dark firs, a frozen river, pale winter sun, shown only at the far left and right edges and along the distant
-    horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of deep white snow with trampled paths, snowdrifts
+    and a few bare frozen shrubs fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very high,
+    right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is a snowy taiga clearing with tall dark firs, a frozen river,
+    pale winter sun, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-ostrog-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -607,14 +597,12 @@ items:
 - name: town-bazar-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a white salt flat with dunes, a turquoise oasis lake, hot hazy afternoon, shown only at the far left and right edges and along the distant
-    horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of cracked white salt crust and pale sand with ripples
+    and small tufts of dry yellow grass fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very
+    high, right under the top edge; the sky is only a thin strip along the top of the picture. The scenery is a white salt flat with dunes, a turquoise oasis lake,
+    hot hazy afternoon, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-bazar-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
@@ -706,14 +694,12 @@ items:
 - name: town-kurgany-site
   width: 1536
   height: 864
-  seeds:
-  - 21
-  - 22
+  seeds: *id001
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
-    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
-    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
-    of sky. The scenery is a misty purple heather moor with low hills, standing stones, pale evening light, shown only at the far left and right edges and along the
-    distant horizon. Wild untouched land, quiet and calm.'
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground of purple heather, dark peat, mossy grey stones and
+    low turf mounds fills almost the whole picture, gently rising toward the back in two or three broad flat terraces. The horizon line is very high, right under
+    the top edge; the sky is only a thin strip along the top of the picture. The scenery is a misty purple heather moor with low hills, standing stones, pale evening
+    light, shown only at the far left and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
 - name: bld-kurgany-hall
   prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
     warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest

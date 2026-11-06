@@ -260,8 +260,8 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-town { position: absolute; inset: 0; background: #0c0a08; pointer-events: auto; color: var(--ink); font-family: 'Geroi Text', Georgia, serif; }
 /* полосы за пределами 16:9 закрываем, чтобы сквозь них не было видно и не щёлкалось по карте */
 .a-town::before { content: ''; position: absolute; inset: -1500px; background: #0c0a08; }
-.a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.a-bld { position: absolute; cursor: pointer; filter: drop-shadow(0 6px 6px #0007); transition: filter .12s; }
+.a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; user-select: none; -webkit-user-select: none; }
+.a-bld { position: absolute; cursor: pointer; filter: drop-shadow(0 6px 6px #0007); transition: filter .12s; -webkit-user-drag: none; }
 .a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
 .a-town > .a-resbar { position: absolute; left: 16px; top: 14px; }
 .a-town-side { position: absolute; right: 16px; top: 14px; width: 270px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; }
