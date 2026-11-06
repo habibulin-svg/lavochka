@@ -47,7 +47,7 @@ function bend(u: number): number {
 
 const BRIDGES = [-26, 0, 26];
 /** Местности со своим декором и сокровищницей; остальные берут луговые. Вторая четвёрка встаёт сюда, когда её картинки упакованы. */
-export const ART_TERRAINS: ReadonlySet<TerrainId> = new Set<TerrainId>(['swamp', 'ash', 'pine']);
+export const ART_TERRAINS: ReadonlySet<TerrainId> = new Set<TerrainId>(['swamp', 'ash', 'pine', 'coast', 'snow', 'saltflat', 'heath']);
 export const decorArts = (t: TerrainId): string => (ART_TERRAINS.has(t) ? t : 'meadow');
 /** Какие картинки декора закрывают клетку (деревья, скалы), а не лежат под ногами. */
 export const DECOR_SIZE = [1.9, 2.1, 1.3, 1.2, 1.3, 2.4, 1.3, 1.2];

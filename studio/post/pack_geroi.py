@@ -240,6 +240,9 @@ def music() -> None:
         batch, track = rel.split('/')
         pick = PICKS.get(batch, {}).get(track)
         seed = pick if pick else 11
+        if not (SRC / batch / f'{track}-{seed}.flac').exists() and batch.startswith('38'):
+            print('ещё нет музыки', rel)  # вторая волна: партия 38 идёт после роликов
+            continue
         opus(SRC / batch / f'{track}-{seed}.flac', DST / f'music/{name}.ogg', '96k')
 
 

@@ -15,7 +15,7 @@ const STAGE_H = 1080;
 export const PLAYER_COLORS = [0x3f8fe0, 0xd8533f, 0x57b05a, 0xe0b23f, 0x9a62d4, 0x3fc3c3, 0xe07fb0, 0x8f8f8f];
 const HERO_H = 88;
 
-const VERT = `
+const VERT = `#version 300 es
 in vec2 aPosition;
 in vec2 aUV;
 out vec2 vUV;
@@ -35,7 +35,7 @@ const ATLAS_CELL = ATLAS_TILE + ATLAS_PAD * 2;
 const ATLAS_SIZE = ATLAS_CELL * 2;
 const BASE_TERRAINS = 8;
 
-const FRAG = `
+const FRAG = `#version 300 es
 precision highp float;
 in vec2 vUV;
 out vec4 finalColor;
