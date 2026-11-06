@@ -37,6 +37,14 @@ const menu = new Menu(host, audio);
 let game: Game | null = null;
 let adv: AdvGame | null = null;
 
+/* ПКМ в игре — сведения о существе/объекте; всплывашка открывается на pointerdown прямо под курсором,
+ * и contextmenu на отпускании попадал уже в неё — вылезало системное меню. Глушим на всей странице, кроме полей ввода. */
+document.addEventListener('contextmenu', (e) => {
+  const t = e.target as HTMLElement | null;
+  if (t?.closest('input, textarea, [contenteditable="true"]')) return;
+  e.preventDefault();
+});
+
 function stop(): void {
   game?.destroy();
   game = null;
