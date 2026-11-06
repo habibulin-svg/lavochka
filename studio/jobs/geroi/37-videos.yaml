@@ -89,8 +89,8 @@ clips:
 - name: c5-1a
   keys:
   - c5-1a-1
-  prompt: people bustle, silk awnings flutter, he haggles with a grin. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
-    movement.
+  prompt: people walk between the tents in the background, camels sway, he smiles and counts coins. Painterly gouache animation, hand-painted look, gentle cinematic
+    camera motion, smooth natural movement.
 - name: c5-1b
   keys:
   - c5-1b-1
@@ -98,8 +98,8 @@ clips:
 - name: c5-2a
   keys:
   - c5-2a-1
-  prompt: the rider holds out the scroll, the horse stamps, dust swirls. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
-    movement.
+  prompt: the rider holds out the scroll, the horse shakes its mane, he reaches for the scroll. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
 - name: c5-3a
   keys:
   - c5-3a-1

@@ -321,9 +321,9 @@ CUTSCENES2 = [
     ('c4-4a', 'A narrow mountain pass in snow, black banners and a huge army camp below', 'banners wave, smoke rises from the camp, snow drifts'),
     ('c4-fin1', f'{AND} and {TYO} standing on a log fort wall under the northern lights', 'the northern lights ripple across the sky, they talk, breath steams'),
     ('c4-fin2', 'A glowing brass shard frozen in clear ice on a mountain peak', 'light pulses inside the ice, snow blows past'),
-    ('c5-1a', f'A noisy fantasy bazaar on a white salt flat, silk tents, camels, {ZHE} wearing a silk robe over a leather jacket at a stall', 'people bustle, silk awnings flutter, he haggles with a grin'),
+    ('c5-1a', f'A noisy fantasy bazaar on a white salt flat, silk tents, camels, {ZHE} wearing a silk robe over a leather jacket at a stall', 'people walk between the tents in the background, camels sway, he smiles and counts coins'),
     ('c5-1b', f'An important old merchant with a huge abacus bowing to {ZHE} in a silk tent', 'the merchant bows, abacus beads click, lanterns sway'),
-    ('c5-2a', f'A black rider handing a sealed scroll to {ZHE}, an empty open chest behind him', 'the rider holds out the scroll, the horse stamps, dust swirls'),
+    ('c5-2a', f'A black rider handing a sealed scroll to {ZHE}, an empty open chest behind him', 'the rider holds out the scroll, the horse shakes its mane, he reaches for the scroll'),
     ('c5-3a', 'A great fair at a crossroads of three roads, tents and flags of different lands, crowds', 'flags flutter, crowds move between tents, smoke rises from food stalls'),
     ('c5-3b', 'A merchant in black at a stall slowly raising a price written on a wooden board', 'he raises the board, a crowd murmurs, coins glitter'),
     ('c5-4a', 'A treasure vault in a dark castle, a glowing brass shard on a velvet cushion, sleeping guards', 'the shard glows softly, a guard snores and shifts, torchlight flickers'),
@@ -461,7 +461,8 @@ REDO2 = {
     '32-towns': ([f'bld-{f}-{b}' for f in ('ostrog', 'bazar') for b in [c[0] for c in COMMON_BUILDINGS] + [f'dwell{i}' for i in range(1, 8)] + [u[0] for u in TOWNS2[f]['unique']]]
                  + ['map-town-ostrog', 'map-town-bazar', 'town-bazar-full', 'town-ostrog-full'], [22, 23]),  # кресты на шпилях Острога, минареты и пальмы Базара (отрицания модель не понимает)
     '36-cutscene-keys': (['c4-3b', 'c7-2b'], [3, 4]),  # духи в белых балахонах; трон из мечей — чужой узнаваемый образ
-    '37-videos': ({'c4-3b': (['c4-3b-3', 'c4-3b-4'], 1), 'c7-2b': (['c7-2b-3', 'c7-2b-4'], 1)}, None),  # ключи — из 36-cutscene-keys-redo
+    '37-videos': ({'c4-3b': (['c4-3b-3', 'c4-3b-4'], 1), 'c7-2b': (['c7-2b-3', 'c7-2b-4'], 1),
+                   'c5-1a': (['c5-1a-1'], 2), 'c5-2a': (['c5-2a-1'], 2)}, None),  # ключи — из 36-cutscene-keys-redo (c5-1a/c5-2a туда скопированы); у них кадр закрывало пятно навеса и облако пыли
     '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 

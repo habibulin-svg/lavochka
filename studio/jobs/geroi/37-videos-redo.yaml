@@ -18,6 +18,20 @@ clips:
     natural movement.
   seeds:
   - 1
+- name: c5-1a
+  keys:
+  - c5-1a-1
+  prompt: people walk between the tents in the background, camels sway, he smiles and counts coins. Painterly gouache animation, hand-painted look, gentle cinematic
+    camera motion, smooth natural movement.
+  seeds:
+  - 2
+- name: c5-2a
+  keys:
+  - c5-2a-1
+  prompt: the rider holds out the scroll, the horse shakes its mane, he reaches for the scroll. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
+  seeds:
+  - 2
 - name: c7-2b
   keys:
   - c7-2b-3
