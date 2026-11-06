@@ -17,6 +17,10 @@ const FIELD_X = (STAGE_W - (FIELD_W + 0.5) * HEX_W) / 2;
 const FIELD_Y = 232;
 /** Рост на поле по ступеням, px сцены; в атласе фигура ~133 px. */
 const TIER_H = [92, 100, 108, 122, 136, 166, 200];
+/** Высота высоких препятствий в пикселях сцены (существо — около 100). */
+const OBST_TALL: Record<number, number> = { 1: 120, 3: 120, 4: 270, 7: 160, 9: 270, 11: 110, 12: 150, 13: 170, 15: 230, 16: 140 };
+/** Ширина низких препятствий. */
+const OBST_WIDE: Record<number, number> = { 2: 132, 5: 124, 6: 120, 8: 124, 10: 118, 14: 124 };
 const OBST: Record<string, number[]> = { meadow: [1, 2, 3, 4, 9, 10], swamp: [1, 3, 4, 5, 9], ash: [1, 6, 8, 10], pine: [1, 2, 3, 4, 7, 10] };
 const SCHOOL_COLOR: Record<School, number> = { fire: 0xff7a2a, water: 0x58b8ff, earth: 0xb9a15a, air: 0xc9e4ff };
 
@@ -203,12 +207,15 @@ export class BattleView {
     await Promise.all(s.obstacles.map(async (o) => {
       const sp = new Sprite(await Assets.load<Texture>(`/geroi/a/obstacles/${arts[o.art % arts.length]}.webp`));
       const p = cellCenter(o.cell);
-      const k = 112 / Math.max(sp.texture.width, sp.texture.height);
-      sp.anchor.set(0.5, 0.86); // спрайт без своего клочка земли: опора — у низа
+      const n = arts[o.art % arts.length];
+      // высокие (деревья, кристаллы, менгиры) — выше существ, по высоте; низкие (бревно, лужа, пень) — по ширине клетки
+      const tall = OBST_TALL[n];
+      const k = tall ? tall / sp.texture.height : (OBST_WIDE[n] ?? 112) / sp.texture.width;
+      sp.anchor.set(0.5, 0.94); // спрайт обрезан по краю, без своего клочка земли: опора — у самого низа
       sp.scale.set(k);
-      sp.position.set(p.x, p.y);
+      sp.position.set(p.x, p.y + 14);
       sp.zIndex = p.y;
-      this.unitsLayer.addChild(shadowSprite(p.x, p.y + 6, 96), sp);
+      this.unitsLayer.addChild(shadowSprite(p.x, p.y + 12, Math.min(sp.width * 0.95, 110)), sp);
     }));
     this.unitsLayer.sortableChildren = true;
     this.stage.addChild(this.unitsLayer, this.fx);

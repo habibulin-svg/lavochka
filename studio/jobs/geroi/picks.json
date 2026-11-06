@@ -1626,5 +1626,17 @@
   "obstacle-14": 72,
   "obstacle-15": 71,
   "obstacle-16": 72
+ },
+ "13-map-redo9b": {
+  "decor-swamp-1": 82,
+  "decor-swamp-6": 82,
+  "mountain-2": 82
+ },
+ "14-battle-redo9b": {
+  "obstacle-3": 81,
+  "obstacle-4": 82,
+  "obstacle-5": 82,
+  "obstacle-8": 82,
+  "obstacle-9": 82
  }
 }
