@@ -525,19 +525,23 @@ export class MapView {
     }
   }
 
-  /** Лента пути: зелёные — сегодня, жёлтые — позже, крест — куда идём. */
+  /** Путь как в классических «Героях»: объёмные стрелки по ходу — зелёные на сегодня, красные на следующие дни;
+   * в конце — крест (зелёный, если дойдём сегодня), а если там бой — скрещённые мечи. */
   showPath(path: number[], days: number[], fight: boolean): void {
     const g = this.overlay;
     g.clear();
+    const at = (c: number) => ({ x: (xOf(this.w, c) + 0.5) * TILE, y: (yOf(this.w, c) + 0.5) * TILE });
+    const today = (i: number) => days[i] === 0;
     path.forEach((c, i) => {
-      const x = (xOf(this.w, c) + 0.5) * TILE;
-      const y = (yOf(this.w, c) + 0.5) * TILE;
-      const color = days[i] === 0 ? 0x7fdc6a : days[i] === 1 ? 0xe8cf58 : 0xd98a4a;
-      if (i === path.length - 1) {
-        const r = 13;
-        const col = fight ? 0xff5d4a : color;
-        g.moveTo(x - r, y - r).lineTo(x + r, y + r).moveTo(x + r, y - r).lineTo(x - r, y + r).stroke({ color: 0x1a120a, width: 8 }).moveTo(x - r, y - r).lineTo(x + r, y + r).moveTo(x + r, y - r).lineTo(x - r, y + r).stroke({ color: col, width: 4.5 });
-      } else g.circle(x, y, 9).fill({ color: 0x1a120a, alpha: 0.85 }).circle(x, y, 6).fill(color);
+      const p = at(c);
+      const last = i === path.length - 1;
+      if (last) {
+        if (fight) swords(g, p.x, p.y, today(i));
+        else cross(g, p.x, p.y, today(i));
+        return;
+      }
+      const n = at(path[i + 1]);
+      arrow(g, p.x, p.y, Math.atan2(n.y - p.y, n.x - p.x), today(i));
     });
   }
 
@@ -747,4 +751,49 @@ function groundAtlas(list: Texture[]): Texture {
   const tex = Texture.from({ resource: c, autoGenerateMipmaps: true });
   tex.source.style.update();
   return tex;
+}
+
+// ------------------------------------------------------------------ знаки пути
+/** Размер знаков: почти во всю клетку, как в оригинале. */
+const SIGN = 1.45;
+const OUTLINE = 0x140d06;
+const GREEN = [0x2f9e2a, 0x7fe36a, 0x1d6b1a] as const; // заливка, блик, тень
+const RED = [0xc8281e, 0xff7a5c, 0x7d1410] as const;
+
+/** Повернуть точки (x, y) вокруг центра на угол a. */
+function turn(pts: [number, number][], cx: number, cy: number, a: number): number[] {
+  const c = Math.cos(a) * SIGN;
+  const s = Math.sin(a) * SIGN;
+  return pts.flatMap(([x, y]) => [cx + x * c - y * s, cy + x * s + y * c]);
+}
+
+/** Стрелка с древком и широким наконечником, с тёмной обводкой и бликом сверху. */
+function arrow(g: Graphics, cx: number, cy: number, a: number, today: boolean): void {
+  const [fill, light, dark] = today ? GREEN : RED;
+  const shape: [number, number][] = [[-15, -4.5], [3, -4.5], [3, -11], [17, 0], [3, 11], [3, 4.5], [-15, 4.5]];
+  g.poly(turn(shape.map(([x, y]) => [x + 1.5, y + 2]), cx, cy, a)).fill({ color: 0x000000, alpha: 0.35 }); // тень на земле
+  g.poly(turn(shape, cx, cy, a)).fill(fill).stroke({ color: OUTLINE, width: 2.5, join: 'round' });
+  g.poly(turn([[-13, -2.5], [4, -2.5], [4, -7.5], [13, -0.5], [4, -0.5], [-13, -0.5]], cx, cy, a)).fill({ color: light, alpha: 0.75 });
+  g.poly(turn([[-13, 2.5], [4, 2.5], [4, 7.5], [13, 0.8], [4, 4], [-13, 4]], cx, cy, a)).fill({ color: dark, alpha: 0.6 });
+}
+
+/** Крест в конце пути. */
+function cross(g: Graphics, cx: number, cy: number, today: boolean): void {
+  const [fill, light] = today ? GREEN : RED;
+  const bar: [number, number][] = [[-15, -4.5], [15, -4.5], [15, 4.5], [-15, 4.5]];
+  for (const a of [Math.PI / 4, -Math.PI / 4]) g.poly(turn(bar.map(([x, y]) => [x + 1.5, y + 2]), cx, cy, a)).fill({ color: 0x000000, alpha: 0.35 });
+  for (const a of [Math.PI / 4, -Math.PI / 4]) g.poly(turn(bar, cx, cy, a)).fill(fill).stroke({ color: OUTLINE, width: 2.5, join: 'round' });
+  for (const a of [Math.PI / 4, -Math.PI / 4]) g.poly(turn([[-13, -2.5], [13, -2.5], [13, -0.5], [-13, -0.5]], cx, cy, a)).fill({ color: light, alpha: 0.75 });
+}
+
+/** Скрещённые мечи — в конце пути бой. */
+function swords(g: Graphics, cx: number, cy: number, today: boolean): void {
+  const blade = today ? 0xe8edf2 : 0xf3c2b8;
+  const sword: [number, number][] = [[-17, -2.2], [10, -2.2], [16, 0], [10, 2.2], [-17, 2.2]];
+  for (const a of [Math.PI * 0.75, Math.PI * 0.25]) {
+    g.poly(turn(sword, cx, cy, a)).fill(blade).stroke({ color: OUTLINE, width: 2, join: 'round' });
+    g.poly(turn([[-9, -6], [-6, -6], [-6, 6], [-9, 6]], cx, cy, a)).fill(0xd9a83a).stroke({ color: OUTLINE, width: 1.5 }); // гарда
+    g.poly(turn([[-17, -1.8], [-10, -1.8], [-10, 1.8], [-17, 1.8]], cx, cy, a)).fill(0x6b3d1c); // рукоять
+  }
+  g.circle(cx, cy + 15 * SIGN, 4.5 * SIGN).fill(today ? GREEN[0] : RED[0]).stroke({ color: OUTLINE, width: 1.5 });
 }

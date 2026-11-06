@@ -14,6 +14,8 @@ import { type Snapshot, applySnapshot, takeSnapshot } from './sim/snapshot';
 import { type Input, type Scheme, TICK_HZ, type World, addMine, createWorld, step, worldHash } from './sim/world';
 import type { Save, SaveKind } from './save';
 import { Hud } from './ui/hud';
+import { showLoading } from '../core/loading';
+import { brandArt } from './assets';
 import { Talk } from './ui/talk';
 
 export interface Side {
@@ -124,7 +126,9 @@ export class Game {
     const tip = s.mission?.tip;
     BRIGADE_IDS.splice(0, BRIGADE_IDS.length, ...s.sides.map((x) => x.brigade));
     this.view = new GameView(this.host);
+    const loading = showLoading({ art: brandArt(`loading-${Math.max(1, Math.min(4, s.mission?.chapter || 1))}-1`), title: s.title ?? 'Загрузка…', font: "'Russo One', sans-serif", color: '#ffd166' });
     await this.view.init(this.world, s.sides.map((x) => x.brigade), s.theme, s.time);
+    loading.done();
     if (s.mission?.objective.type === 'king_of_hill') this.view.zone = zonePx(this.world, s.mission.objective.zone);
     // боссы: бригада врага с boss — крупнее и с именем; при старте — баннер
     const bosses = (s.mission?.enemies ?? []).flatMap((e, i) => (e.boss ? [[i + 1, e.name ?? 'Босс'] as [number, string]] : []));

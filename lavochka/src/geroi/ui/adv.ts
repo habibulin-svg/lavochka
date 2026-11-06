@@ -22,7 +22,8 @@ import {
 } from '../sim/adv/world';
 import { ArmyPicker, heroSheet, icon, marketDialog, portrait, priceRow, resBar } from './advparts';
 import { button, h, modal } from './common';
-import { TownScreen } from './town';
+import { TownScreen, townArt } from './town';
+import { preloadImages, showLoading } from '../../core/loading';
 import { goalsCard } from './campaign';
 import { scnCheck } from '../sim/adv/scenario';
 
@@ -94,6 +95,7 @@ export class AdvGame {
   private target = -1;
   private busy = false;
   private town: TownScreen | null = null;
+  private townOpening = false;
   private battle: Game | null = null;
   private dead = false;
   private lastDay = -1;
@@ -142,6 +144,7 @@ export class AdvGame {
     this.host.append(this.root);
     this.buildHud();
     this.fitHud();
+    const loading = showLoading({ art: '/geroi/a/brand/title.webp', title: 'Карта грузится…', font: "'Geroi Title', Georgia, serif", color: '#f0d48a' });
     await this.view.init(this.world);
     this.collectBodies();
     this.view.onHover = (c) => this.hover(c);
@@ -151,6 +154,7 @@ export class AdvGame {
     this.fit.observe(this.root);
     this.lastDay = this.world.day;
     await this.syncAll();
+    loading.done();
     if (this.net) return this.startNet();
     if (this.resumeBattle) {
       const s = this.resumeBattle;
@@ -1115,11 +1119,19 @@ export class AdvGame {
   // ------------------------------------------------------------------ окна
 
   private openTown(id: number): void {
-    if (this.town || !townById(this.world, id)) return;
-    this.audio.music(`town-${townById(this.world, id)!.faction}` as Situation);
+    const t = townById(this.world, id);
+    if (this.town || this.townOpening || !t) return;
+    this.audio.music(`town-${t.faction}` as Situation);
     this.audio.sfx('gate');
     this.view.frozen = true;
-    this.town = new TownScreen(this.hud, () => this.world, id, this.quick, () => this.closeTown());
+    // панорама и постройки — разом, а не по одной (экран загрузки — только если не в кэше)
+    this.townOpening = true;
+    const loading = showLoading({ art: '/geroi/a/brand/title.webp', title: 'Замок…', font: "'Geroi Title', Georgia, serif", color: '#f0d48a' });
+    void preloadImages(townArt(t)).then(() => {
+      loading.done();
+      this.townOpening = false;
+      this.town = new TownScreen(this.hud, () => this.world, id, this.quick, () => this.closeTown());
+    });
   }
 
   private closeTown(): void {

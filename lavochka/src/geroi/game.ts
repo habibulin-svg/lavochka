@@ -15,6 +15,7 @@ import { CELLS, neighbors } from './sim/hex';
 import { SPELLS, type School, spellIcon } from './sim/spells';
 import type { World } from './sim/adv/world';
 import { button, creatureIcon, creatureLines, h, modal } from './ui/common';
+import { showLoading } from '../core/loading';
 
 export type Who = 'human' | 'remote' | BotLevel;
 
@@ -106,8 +107,10 @@ export class Game {
     this.root.append(this.canvasHost, this.hud);
     this.host.append(this.root);
     this.buildHud();
+    const loading = showLoading({ art: '/geroi/a/brand/title.webp', title: 'К бою…', font: "'Geroi Title', Georgia, serif", color: '#f0d48a' });
     await this.view.init(this.state);
     this.view.sync(this.state);
+    loading.done();
     this.view.onPointer = (p) => this.hover(p);
     this.view.onClick = (p, right) => this.click(p, right);
     window.addEventListener('keydown', this.onKey);

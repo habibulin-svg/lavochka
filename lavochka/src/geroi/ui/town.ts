@@ -28,6 +28,16 @@ const UNIQ: Record<string, string> = {
   dam: 'uniq1', turbine: 'uniq2', drill: 'uniq1', banya: 'uniq2', caravanserai: 'uniq1', bank: 'uniq2', memory: 'uniq1', bindstone: 'uniq2',
 };
 
+/** Картинки экрана замка: панорама и все построенные — грузим до показа. */
+export function townArt(t: Town): string[] {
+  const arts = new Set<string>();
+  for (const id of t.built) {
+    const d = BUILDINGS[t.faction][id];
+    if (d) arts.add(d.art);
+  }
+  return [`/geroi/a/towns/${t.faction}-site.webp`, ...[...arts].map((a) => `/geroi/a/towns/${t.faction}-${a}.webp`)];
+}
+
 export class TownScreen {
   readonly el = h('div', 'a-town');
   private scene = h('div', 'a-town-scene');
