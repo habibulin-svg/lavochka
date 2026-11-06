@@ -1326,5 +1326,19 @@
   "c7-home2": 1,
   "c7-stay1": 1,
   "c7-stay2": 1
+ },
+ "38-music": {
+  "battle-d": 11,
+  "campaign3": 22,
+  "campaign4": 11,
+  "campaign5": 11,
+  "map-coast": 11,
+  "map-heath": 11,
+  "map-saltflat": 11,
+  "map-snow": 22,
+  "town-bazar": 11,
+  "town-kurgany": 22,
+  "town-ostrog": 22,
+  "town-plotina": 11
  }
 }
