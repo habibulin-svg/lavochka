@@ -1,0 +1,60 @@
+/* Штос: игорный стол XIX века — тёмно-зелёное сукно, ставки и счёт мелом, рама красного дерева с латунью, фишки-жетоны. */
+.table--shtos {
+  --panel-bg: linear-gradient(180deg, #f1e9d6, #d9cba9);
+  --panel-ink: #1d170c;
+  --table-bg: radial-gradient(ellipse at 50% 40%, rgba(255, 210, 140, 0.08), transparent 65%), #0f0b07;
+}
+.sh-cloth {
+  position: absolute; inset: 12px; border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.09), transparent 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.045) 0 1px, transparent 1px 5px),
+    linear-gradient(170deg, #1f5130, #0d2c19 75%);
+  box-shadow: inset 0 0 0 2px rgba(214, 178, 96, 0.45), inset 0 0 80px rgba(0, 0, 0, 0.55), 0 0 0 10px #4a1f12, 0 0 0 13px #b08a3e, 0 18px 30px rgba(0, 0, 0, 0.6);
+}
+.sh-chalk { position: absolute; transform: translate(-50%, 0); font: italic 16px 'PT Serif', Georgia, serif; color: rgba(240, 236, 220, 0.55); letter-spacing: 1px; white-space: nowrap; }
+.sh-plates { position: absolute; inset: 0; }
+.sh-tag, .sh-bank, .sh-talia { position: absolute; transform: translate(-50%, 0); white-space: nowrap; color: #f6ecd0; text-shadow: 0 1px 2px #000; font: 600 15px 'PT Sans', sans-serif; }
+.sh-tag { font: italic 14px 'PT Serif', Georgia, serif; opacity: 0.8; }
+.sh-bank { font-size: 19px; background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 3px 12px; display: flex; align-items: center; gap: 6px; }
+.sh-talia { transform: none; font-size: 14px; background: rgba(0, 0, 0, 0.3); border-radius: 10px; padding: 3px 10px; }
+.sh-talia small { display: block; opacity: 0.7; font-size: 12px; }
+.sh-rank { position: absolute; width: 62px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sh-lay { width: 62px; height: 96px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); transition: transform 0.15s, box-shadow 0.15s; }
+.sh-rank.dead .sh-lay { filter: grayscale(0.8) brightness(0.55); }
+.sh-rank.pick { pointer-events: auto; cursor: pointer; }
+.sh-rank.pick:hover .sh-lay { transform: translateY(-4px); }
+.sh-rank.sel .sh-lay { box-shadow: 0 0 0 3px #ffd24a, 0 4px 10px rgba(0, 0, 0, 0.6); transform: translateY(-4px); }
+.sh-beads { display: flex; gap: 3px; }
+.sh-beads i { width: 9px; height: 9px; border-radius: 50%; background: rgba(0, 0, 0, 0.35); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5); }
+.sh-beads i.on { background: radial-gradient(circle at 35% 35%, #fff2c8, #c9a24a 60%, #7a5a1a); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); }
+.sh-chips { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 20px; }
+.sh-chip {
+  position: relative; font: 700 12px 'PT Sans', sans-serif; color: #fff; background: var(--c); border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 999px; padding: 0 7px; line-height: 18px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45); white-space: nowrap;
+}
+.sh-chip i { font-style: normal; margin-left: 2px; color: #ffe08a; }
+.sh-chip em { font-style: normal; margin-left: 3px; color: #c8ffb8; }
+.sh-chip.cu::before { content: ''; position: absolute; left: -7px; top: 3px; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3b77a, #b0622a 65%, #6a3412); }
+.sh-chip.won { box-shadow: 0 0 0 2px #7dff8a, 0 2px 0 rgba(0, 0, 0, 0.45); }
+.sh-chip.win { animation: sh-pop 0.6s; }
+.sh-chip.lose, .sh-chip.plie { opacity: 0.4; }
+@keyframes sh-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.sh-plate { transform: translate(-50%, 0); }
+.sh-plate.sh-broke { opacity: 0.55; }
+.sh-coin {
+  display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -2px; margin-right: 4px;
+  background: radial-gradient(circle, #f5e6b0 0 30%, #8a2a1e 31% 62%, #f5e6b0 63% 70%, #8a2a1e 71%); box-shadow: 0 2px 0 #3a1008;
+}
+.sh-controls { display: flex; flex-direction: column; gap: 8px; }
+.sh-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.sh-btns > .btn { flex: 1 1 45%; }
+.sh-row { flex: 1 1 100%; display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.sh-row > .btn { flex: 1 1 28%; }
+.sh-row .btn small { display: block; font-size: 11px; opacity: 0.75; }
+.sh-amount > .btn.sh-q { flex: 0 0 auto; min-width: 42px; }
+.sh-q.on { outline: 3px solid #b0622a; }
+.sh-n { min-width: 80px; text-align: center; font-size: 18px; font-weight: 700; }
+.sh-ask { flex: 1 1 100%; font-size: 14px; }
+.tv-btns .btn .red, .sh-plates .red { color: #d8382c; }
+.cs-port .sh-plate { font-size: 16px; }

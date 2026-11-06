@@ -92,6 +92,7 @@ export const SLUGS: Record<string, string> = {
   janggi: 'changi',
   deberts: 'deberc',
   terc: 'terc',
+  shtos: 'shtos',
   chapaev: 'chapaev',
   kunken: 'kunken',
   khrap: 'hrap',

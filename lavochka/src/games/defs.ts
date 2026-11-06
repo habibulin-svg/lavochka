@@ -87,6 +87,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   janggi: () => import('./janggi/def').then((m) => m.def),
   deberts: () => import('./deberts/def').then((m) => m.def),
   terc: () => import('./terc/def').then((m) => m.def),
+  shtos: () => import('./shtos/def').then((m) => m.def),
   chapaev: () => import('./chapaev/def').then((m) => m.def),
   khrap: () => import('./khrap/def').then((m) => m.def),
   bridge: () => import('./bridge/def').then((m) => m.def),
