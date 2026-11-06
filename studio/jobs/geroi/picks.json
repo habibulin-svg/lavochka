@@ -1638,5 +1638,21 @@
   "obstacle-5": 82,
   "obstacle-8": 82,
   "obstacle-9": 82
+ },
+ "33-map-redo9b": {
+  "decor-heath-7": 83,
+  "decor-saltflat-1": 82,
+  "decor-saltflat-8": 82,
+  "ground-coast": 84,
+  "ground-heath": 81,
+  "mountain-7": 82
+ },
+ "34-battle-redo9b": {
+  "field-heath": 83
+ },
+ "13-map-redo9c": {
+  "ground-pine": 82,
+  "ground-ash": 82,
+  "ground-swamp": 82
  }
 }
