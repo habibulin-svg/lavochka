@@ -338,8 +338,8 @@ CUTSCENES2 = [
     ('c6-fin1', f'{TYO} holding a glowing brass shard, behind him the ghost of an old watchman slowly fading', 'the ghost waves and fades, the shard glows brighter, heather sways'),
     ('c6-fin2', 'A stone map by a campfire, six bright lights on it and two dim red lights far to the east', 'the six lights glow steady, the two red ones flicker, fire crackles'),
     ('c7-1a', f'{EIGHT} standing together on a hill at sunset, banners of different lands behind them', 'banners wave, they stand shoulder to shoulder, the sun sets'),
-    ('c7-1b', 'A great stone map of the world with eight lights, six bright and two dim red in the east, teenagers leaning over it', 'the lights glow, hands point at the red lights, torchlight flickers'),
-    ('c7-2a', 'A black fortress on a cliff above an ash plain, lightning, thousands of torches on the walls', 'lightning strikes, torches flicker along the walls, smoke drifts'),
+    ('c7-1b', 'A great stone map of the world with eight lights, six bright and two dim red in the east, teenagers leaning over it', 'the lights pulse softly, the teenagers lean closer over the map, torchlight flickers'),
+    ('c7-2a', 'A black fortress on a cliff above an ash plain, lightning, thousands of torches on the walls', 'lightning strikes in the distance, torches flicker along the walls, slow push in'),
     ('c7-2b', 'An empty tall wooden armchair carved with dark patterns in a dim stone hall, an old flat cap lying on the seat', 'dust drifts in a beam of light, slow push in on the cap'),
     ('c7-3a', 'A gigantic crater with a glowing heart of brass and light at the bottom, armies descending along a spiral road', 'light pulses from the heart, armies march down the spiral, dust rises'),
     ('c7-3b', f'{STAR} standing by a glowing brass heart at the bottom of a crater, holding two glowing shards', 'he turns slowly, his coat moves in the wind, the heart pulses'),
@@ -462,7 +462,7 @@ REDO2 = {
                  + ['map-town-ostrog', 'map-town-bazar', 'town-bazar-full', 'town-ostrog-full'], [22, 23]),  # кресты на шпилях Острога, минареты и пальмы Базара (отрицания модель не понимает)
     '36-cutscene-keys': (['c4-3b', 'c7-2b'], [3, 4]),  # духи в белых балахонах; трон из мечей — чужой узнаваемый образ
     '37-videos': ({'c4-3b': (['c4-3b-3', 'c4-3b-4'], 1), 'c7-2b': (['c7-2b-3', 'c7-2b-4'], 1),
-                   'c5-1a': (['c5-1a-1'], 2), 'c5-2a': (['c5-2a-1'], 2)}, None),  # ключи — из 36-cutscene-keys-redo (c5-1a/c5-2a туда скопированы); у них кадр закрывало пятно навеса и облако пыли
+                   'c5-1a': (['c5-1a-1'], 2), 'c5-2a': (['c5-2a-1'], 2), 'c7-1b': (['c7-1b-1'], 2), 'c7-2a': (['c7-2a-1'], 2)}, None),  # ключи — из 36-cutscene-keys-redo (c5-1a/c5-2a туда скопированы); у них кадр закрывало пятно навеса и облако пыли; c7-1b — руки взрослого во весь кадр, c7-2a — мультяшные облака
     '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 

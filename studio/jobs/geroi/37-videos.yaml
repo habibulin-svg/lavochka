@@ -167,13 +167,13 @@ clips:
 - name: c7-1b
   keys:
   - c7-1b-1
-  prompt: the lights glow, hands point at the red lights, torchlight flickers. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
-    natural movement.
+  prompt: the lights pulse softly, the teenagers lean closer over the map, torchlight flickers. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
 - name: c7-2a
   keys:
   - c7-2a-1
-  prompt: lightning strikes, torches flicker along the walls, smoke drifts. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth
-    natural movement.
+  prompt: lightning strikes in the distance, torches flicker along the walls, slow push in. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
 - name: c7-2b
   keys:
   - c7-2b-1
