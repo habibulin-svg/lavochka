@@ -57,8 +57,8 @@ if (what === 'factions' || what === 'all') {
   const games: Record<string, number> = {};
   for (const f of TF) wins[f] = games[f] = 0;
   const rows: string[] = [];
-  for (let a = 0; a < 4; a++) {
-    for (let b = a + 1; b < 4; b++) {
+  for (let a = 0; a < TF.length; a++) {
+    for (let b = a + 1; b < TF.length; b++) {
       let wa = 0;
       let played = 0;
       for (let i = 0; i < N; i++) {

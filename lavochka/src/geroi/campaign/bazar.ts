@@ -161,8 +161,8 @@ const s53: ScenarioDef = {
       { at: [40, 40], faction: 'bazar', owner: 1, name: 'Чёрный ряд', tag: 'rivaltown', built: ['dwell2', 'dwell3', 'market'], garrison: [['bazar-pickpocket', 16]] },
     ],
     heroes: [
-      { at: [12, 43], owner: 0, pick: ZHEKA, army: [['bazar-cutpurse', 20], ['bazar-peppermaster', 10], ['bazar-carpetrider', 5], ['bazar-mirrorman', 3]], tag: 'main' },
-      { at: [38, 43], owner: 1, pick: { cls: 'bazar-kupets', n: 3 }, army: [['bazar-pickpocket', 20], ['bazar-pepperthrower', 10], ['bazar-carpetrider', 4]], level: 3, tag: 'rival' },
+      { at: [12, 43], owner: 0, pick: ZHEKA, army: [['bazar-cutpurse', 24], ['bazar-peppermaster', 12], ['bazar-carpetrider', 6], ['bazar-mirrorman', 3]], tag: 'main' },
+      { at: [38, 43], owner: 1, pick: { cls: 'bazar-kupets', n: 3 }, army: [['bazar-pickpocket', 16], ['bazar-pepperthrower', 8], ['bazar-carpetrider', 3]], level: 3, tag: 'rival' },
     ],
     objects: [
       { kind: 'dwell-bear', at: [8, 10], army: [['neutral-bear', 5]], tag: 'd1' },
