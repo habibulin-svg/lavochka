@@ -389,7 +389,8 @@ function splash(next: () => void): void {
   };
   v.onended = done;
   v.onerror = done;
-  box.append(v, button('Пропустить', done, 'g-btn small g-skip'));
+  // подпись студии — как в ГОПС (src/gops/ui/menu.ts, gm-caption): всплывает, пока идёт ролик
+  box.append(v, h('div', 'g-studio', 'Lavochka Games'), button('Пропустить', done, 'g-btn small g-skip'));
   host.append(box);
   v.play().catch(() => {
     const go = button('▶ Щёлкни', () => {

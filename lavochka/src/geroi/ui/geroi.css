@@ -43,6 +43,9 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .g-splash { position: absolute; inset: 0; background: #000; z-index: 9; display: flex; align-items: center; justify-content: center; }
 .g-splash video { width: 100%; height: 100%; object-fit: contain; }
 .g-skip { position: absolute; right: 20px; bottom: 20px; }
+.g-studio { position: absolute; left: 0; right: 0; bottom: 14%; text-align: center; font: 400 clamp(30px, 6vw, 64px) 'Russo One', sans-serif; color: #ffd166;
+  text-shadow: 0 3px 0 #000, 0 0 30px #000e; letter-spacing: 0.06em; pointer-events: none; animation: g-studio 2.4s ease-out both; }
+@keyframes g-studio { from { opacity: 0; transform: translateY(12px); } 40% { opacity: 0; } to { opacity: 1; transform: none; } }
 .g-tap { position: absolute; }
 
 /* быстрый бой */
