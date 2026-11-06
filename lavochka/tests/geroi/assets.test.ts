@@ -49,6 +49,7 @@ describe('geroi/assets', () => {
     for (const m of ['map', 'map-swamp', 'map-ash', 'map-pine', 'siege']) need.push(`music/${m}.ogg`);
     // вторая волна: замки и местности новых фракций, кампании 3–6, финал и концовки
     for (const m of ['town-plotina', 'town-ostrog', 'town-bazar', 'town-kurgany', 'map-coast', 'map-snow', 'map-saltflat', 'map-heath', 'battle-d', 'campaign3', 'campaign4', 'campaign5', 'campaign6', 'finale-battle', 'ending-home', 'ending-stay']) need.push(`music/${m}.ogg`);
+    for (const m of ['campaign1', 'campaign2', 'finale', 'villain', 'intro']) need.push(`music/${m}.ogg`);
     const w = makeTestMap({ seed: 1, players: fs.slice(0, 2).map((f) => ({ name: f, faction: f, hero: { cls: factionClasses(f)[0].id, n: 1 } })) });
     for (const d of w.decor) need.push(`map/${d.art}.webp`);
     for (const f of ['catapult', 'wall-break', 'tower-shot', 'horse-grass', 'horse-road', 'horse-swamp', 'horse-ash', 'boat-row', 'pickup-semki', 'pickup-res', 'chest-open', 'artifact', 'flag', 'mine-capture', 'shrine', 'levelup', 'newday', 'newweek', 'teleport', 'dig', 'learn', 'water-splash', 'build', 'recruit', 'market', 'gate', 'forge', 'horse-snort', 'ui-click', 'ui-close', 'ui-turn']) need.push(`sfx/${f}.ogg`);

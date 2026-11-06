@@ -23,7 +23,7 @@ const write = (k: string, on: boolean): void => {
 
 export type Situation = 'menu' | 'battle' | 'victory' | 'defeat' | 'siege' | 'map' | 'map-swamp' | 'map-ash' | 'map-pine' | 'town-zatulye' | 'town-zatonye' | 'town-kuznya' | 'town-akademiya'
   | 'map-coast' | 'map-snow' | 'map-saltflat' | 'map-heath' | 'town-plotina' | 'town-ostrog' | 'town-bazar' | 'town-kurgany'
-  | 'campaign3' | 'campaign4' | 'campaign5' | 'campaign6' | 'finale-battle' | 'ending-home' | 'ending-stay';
+  | 'campaigns' | 'campaign1' | 'campaign2' | 'campaign7' | 'campaign3' | 'campaign4' | 'campaign5' | 'campaign6' | 'finale-battle' | 'ending-home' | 'ending-stay';
 const TRACKS: Record<Situation, string[]> = {
   menu: ['menu', 'menu-vox'],
   battle: ['battle', 'battle-b', 'battle-c', 'battle-d'],
@@ -47,6 +47,11 @@ const TRACKS: Record<Situation, string[]> = {
   'town-ostrog': ['town-ostrog'],
   'town-bazar': ['town-bazar'],
   'town-kurgany': ['town-kurgany'],
+  // экран кампаний; кампании 1–2 и финальная (на карте — темы финала и злодея)
+  campaigns: ['intro'],
+  campaign1: ['campaign1', 'map'],
+  campaign2: ['campaign2', 'map'],
+  campaign7: ['finale', 'villain'],
   // кампании 3–6: тема кампании вперемешку с музыкой родной местности; финал и концовки
   campaign3: ['campaign3', 'map-coast'],
   campaign4: ['campaign4', 'map-snow'],

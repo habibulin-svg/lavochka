@@ -27,6 +27,8 @@ MUSIC = {
     # карта и замки (этап 3)
     'map': '02-music-proba/map', 'map-swamp': '18-music/map-swamp', 'map-ash': '18-music/map-ash', 'map-pine': '18-music/map-pine', 'siege': '18-music/siege',
     'town-zatulye': '02-music-proba/zatulye', 'town-zatonye': '02-music-proba/zatonye', 'town-kuznya': '18-music/town-kuznya', 'town-akademiya': '18-music/town-akademiya',
+    # кампании первого выпуска: темы кампаний 1–2, финала и злодея, вступление — на экран кампаний
+    **{n: f'18-music/{n}' for n in ('campaign1', 'campaign2', 'finale', 'villain', 'intro')},
     # вторая волна (платная часть, партия 38)
     **{n: f'38-music/{n}' for n in ('town-plotina', 'town-ostrog', 'town-bazar', 'town-kurgany', 'map-coast', 'map-snow', 'map-saltflat', 'map-heath', 'battle-d',
                                      'campaign3', 'campaign4', 'campaign5', 'campaign6', 'finale-battle', 'ending-home', 'ending-stay')},

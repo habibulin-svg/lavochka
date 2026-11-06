@@ -317,6 +317,7 @@ netMap.onLeave = () => {
 function showCampaigns(): void {
   stop();
   campaignScreen((...n) => menu.screen(...n), { play: (c, i, d) => void playScenario(c, i, d), back: () => menu.title() });
+  audio.music('campaigns');
 }
 
 async function playScenario(c: CampaignDef, i: number, diff: Difficulty): Promise<void> {

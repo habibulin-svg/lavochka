@@ -361,7 +361,7 @@ export class AdvGame {
 
   private playMusic(): void {
     const cell = this.hero?.cell ?? playerTowns(this.world, this.me)[0]?.cell ?? 0;
-    const camp = /^c([3-6])-/.exec(this.world.scn?.id ?? '');
+    const camp = /^c([1-7])-/.exec(this.world.scn?.id ?? '');
     this.audio.music(camp ? (`campaign${camp[1]}` as Situation) : MUSIC_BY_TERRAIN[TERRAINS[this.world.terrain[cell]].id] ?? 'map');
   }
 
