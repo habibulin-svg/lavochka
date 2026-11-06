@@ -87,6 +87,7 @@ export const NAMES: Record<string, Names> = {
   tarot: { ru: ['французское таро', 'таро карточная игра', 'игра в таро', 'тарок', 'тарокк', 'таро онлайн игра'], en: ['French Tarot', 'Jeu de tarot', 'Tarot card game', 'Tarock'] },
   skat: { ru: ['скат онлайн', 'игра скат', 'скат карточная игра', 'немецкий скат'], en: ['Skat', 'German Skat'] },
   pinochle: { ru: ['пинокль онлайн', 'пинокл', 'игра пинокль', 'пинокль карточная игра'], en: ['Pinochle', 'Partnership pinochle', 'Cutthroat pinochle'] },
+  terc: { ru: ['терц онлайн', 'терц карточная игра', 'игра терц', 'терц правила', 'юс и манела', 'разбор фрица'], en: ['Terts', 'Tertz', 'Russian Terts card game'] },
   deberts: { ru: ['деберц онлайн', 'деберц', 'клабор', 'клабар', 'белот', 'дэбчик', 'деберц правила', 'клаберьяс'], en: ['Deberts', 'Klaberjass', 'Klabberjass', 'Belote', 'Clobyosh', 'Bela'] },
   canasta: { ru: ['канаста онлайн', 'канаста карточная игра', 'канаста правила', 'игра канаста'], en: ['Canasta', 'Canasta online', 'Classic canasta'] },
   chapaev: { ru: ['чапаев игра', 'чапаев в шашки', 'шашки чапаев', 'щелчки', 'чапаевцы', 'карром', 'чапаев онлайн'], en: ['Chapayev', 'Checkers flicking game', 'Carrom', 'Carrom board'] },

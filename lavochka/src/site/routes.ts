@@ -91,6 +91,7 @@ export const SLUGS: Record<string, string> = {
   chinesecheckers: 'kitajskie-shashki',
   janggi: 'changi',
   deberts: 'deberc',
+  terc: 'terc',
   chapaev: 'chapaev',
   kunken: 'kunken',
   khrap: 'hrap',
