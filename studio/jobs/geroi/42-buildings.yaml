@@ -1,0 +1,804 @@
+# Герои, партия 42: постройки замков заново — силуэт постройки главный, стиль фракции — материалом
+# Сгенерировано make_jobs_bld.py — правки вносить туда.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 21
+items:
+- name: town-zatulye-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a wide riverbank meadow with birch groves and a calm river, summer evening, shown only at the far left and right edges and along the distant
+    horizon. Wild untouched land, quiet and calm.'
+- name: bld-zatulye-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of weathered golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: bld-zatulye-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of weathered golden-brown logs
+    with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of weathered golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: bld-zatulye-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of weathered golden-brown
+    logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of weathered
+    golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of weathered golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-zatulye-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of weathered golden-brown logs with grey plank roofs and carved
+    wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of weathered golden-brown logs with grey
+    plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: militia barracks: a long low guardhouse
+    with a rack of tall boar spears leaning along the wall and a straw training dummy in front. It is built of weathered golden-brown logs with grey plank roofs and
+    carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: archers range: an open shooting yard
+    with three round straw targets on stands, a small roofed shelter and bundles of arrows. It is built of weathered golden-brown logs with grey plank roofs and carved
+    wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: river wanderers camp: a cluster of
+    three conical hide tents around a campfire with a cooking pot and fishing nets on poles. It is built of weathered golden-brown logs with grey plank roofs and
+    carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: boat shed: a long open shed on the
+    riverbank with two long narrow oared river boats pulled up on wooden rollers. It is built of weathered golden-brown logs with grey plank roofs and carved wooden
+    trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: herbalist hut: a tiny round hut with
+    a steep thatched roof, bundles of drying herbs hanging from the eaves and a bubbling cauldron outside. It is built of weathered golden-brown logs with grey plank
+    roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: knights stable: a two-storey stable
+    with tall arched doors, a white war horse in armor tied at the gate and shields on the wall. It is built of weathered golden-brown logs with grey plank roofs
+    and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: aurochs pen: a huge round paddock
+    of thick logs with a giant black bull with glowing horns inside and a carved ox-head arch over the gate. It is built of weathered golden-brown logs with grey
+    plank roofs and carved wooden trim. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-skhod
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a carved assembly pavilion for the
+    people''s gathering with benches in a circle. It is built of weathered golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatulye-relic
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a carved wooden shrine pavilion holding
+    a glowing brass relic. It is built of weathered golden-brown logs with grey plank roofs and carved wooden trim. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: town-zatonye-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a misty green swamp with dark water pools, willows and reeds, early morning, shown only at the far left and right edges and along the distant
+    horizon. Wild untouched land, quiet and calm.'
+- name: bld-zatonye-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of grey driftwood, reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-zatonye-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of grey driftwood, reeds and willow,
+    standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of grey driftwood, reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-zatonye-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of grey driftwood,
+    reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: bld-zatonye-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of grey driftwood,
+    reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: bld-zatonye-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-zatonye-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of grey driftwood, reeds and willow, standing on wooden stilts
+    over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of grey driftwood, reeds and willow,
+    standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: reed cutters huts: two small round
+    reed huts on short stilts connected by a plank bridge over the water, bundles of cut reeds. It is built of grey driftwood, reeds and willow, standing on wooden
+    stilts over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: frog pond: a round pond with giant
+    lily pads and a small hut shaped like a sitting frog on the bank. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water with
+    lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: will-o-wisp hollow: a dark mossy hollow
+    among twisted roots with several floating glowing blue-green lights. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water
+    with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: old willow grove: a ring of huge ancient
+    weeping willows with faces in their bark around a small dark pond. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water
+    with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: water maiden pool: a round stone pool
+    with steps going down into glowing water, white water lilies and a carved stone arch. It is built of grey driftwood, reeds and willow, standing on wooden stilts
+    over dark water with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: troll den: a huge cave under a fallen
+    giant tree trunk with a big round boulder door and a fence of bones. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water
+    with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: serpent lair: a deep misty rock crevice
+    with a giant coiled scaled serpent tail visible inside and dark water. It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water
+    with lily pads. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-zatonye-fogwell
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a stone well breathing thick mist.
+    It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-zatonye-gat
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a long wooden causeway over the swamp.
+    It is built of grey driftwood, reeds and willow, standing on wooden stilts over dark water with lily pads. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: town-kuznya-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is an ash plain with dark slag hills and glowing cracks, red sunset haze, shown only at the far left and right edges and along the distant
+    horizon. Wild untouched land, quiet and calm.'
+- name: bld-kuznya-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of red brick and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: bld-kuznya-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of red brick and dark riveted
+    iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of red brick and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: bld-kuznya-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of red brick and dark
+    riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of red brick
+    and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of red brick and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-kuznya-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of red brick and dark riveted iron with copper details and soot
+    stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of red brick and dark riveted iron with
+    copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: apprentice smithy: a small brick workshop
+    with an open front, two anvils outside and tongs and hammers on a rack. It is built of red brick and dark riveted iron with copper details and soot stains. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: wasp hive: a tall cone-shaped hive
+    of copper honeycomb plates on iron legs with small metal wasps buzzing around. It is built of red brick and dark riveted iron with copper details and soot stains.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: crossbow workshop: a brick shed with
+    giant crossbows on a rack outside and a target wall with bolts sticking in it. It is built of red brick and dark riveted iron with copper details and soot stains.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: hound kennel: a row of iron kennels
+    with steam vents, glowing furnace eyes in the doorways and chains. It is built of red brick and dark riveted iron with copper details and soot stains. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: smelting house: a round brick foundry
+    with a big crucible pouring glowing molten metal into molds. It is built of red brick and dark riveted iron with copper details and soot stains. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: cannon walker hangar: a tall open
+    hangar with a huge iron mortar standing on mechanical legs inside, chains and a gantry. It is built of red brick and dark riveted iron with copper details and
+    soot stains. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: colossus gantry: a tall iron scaffolding
+    tower with a giant iron head and arm hanging from chains, sparks of welding. It is built of red brick and dark riveted iron with copper details and soot stains.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kuznya-furnace
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a giant blast furnace with molten
+    metal pouring. It is built of red brick and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-kuznya-scrapyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a repair yard with mechanical scrap.
+    It is built of red brick and dark riveted iron with copper details and soot stains. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: town-akademiya-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a tall pine forest on a hill under a deep blue twilight sky with first stars, shown only at the far left and right edges and along the
+    distant horizon. Wild untouched land, quiet and calm.'
+- name: bld-akademiya-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of white limestone and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: bld-akademiya-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of white limestone and pale pine
+    wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of white limestone and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: bld-akademiya-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of white limestone
+    and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of white limestone
+    and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-akademiya-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of white limestone and pale pine wood with silver roofs and
+    blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of white limestone and pale pine wood
+    with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: student hall: a neat two-storey white
+    stone college with arched windows, a small bell turret and an open book carved over the door. It is built of white limestone and pale pine wood with silver roofs
+    and blue glass. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: owl tower: a slim round tower with
+    many perches and round openings, large white owls sitting on it. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: prism hall: a pavilion with tall glowing
+    crystal prisms standing like pillars, rainbows of light around it. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: moon deer glade: a fenced glade with
+    a white stone gate shaped like antlers and a silver deer grazing beside a pool. It is built of white limestone and pale pine wood with silver roofs and blue glass.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: pine guardians grove: a ring of tall
+    pines with lanterns hanging from branches and a carved pine-wood gatehouse. It is built of white limestone and pale pine wood with silver roofs and blue glass.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: dragon perch: a high rock pillar with
+    a wide round stone platform on top, a starry blue dragon curled on it. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: fallen star crater: a crater with
+    a glowing star stone in the middle surrounded by a ring of white stone arches. It is built of white limestone and pale pine wood with silver roofs and blue glass.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-akademiya-observatory
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a great observatory with a huge brass
+    telescope. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-akademiya-lab
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a research laboratory with glowing
+    glassware. It is built of white limestone and pale pine wood with silver roofs and blue glass. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: town-plotina-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a rocky sea coast with cliffs, a river falling into the sea through a gorge, grey stormy sky with sunbeams, shown only at the far left
+    and right edges and along the distant horizon. Wild untouched land, quiet and calm.'
+- name: bld-plotina-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of grey granite blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: bld-plotina-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of grey granite blocks with slate
+    roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of grey granite blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: bld-plotina-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of grey granite blocks
+    with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of grey granite
+    blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-plotina-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of grey granite blocks with slate roofs and brass fittings,
+    wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of grey granite blocks with slate roofs
+    and brass fittings, wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: sluice guardhouse: a small square
+    stone blockhouse built over a little sluice gate with a brass wheel and a lantern. It is built of grey granite blocks with slate roofs and brass fittings, wet
+    with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: whalers wharf: a wooden pier with
+    giant harpoons on racks, a whale jawbone arch at the entrance and nets drying on poles. It is built of grey granite blocks with slate roofs and brass fittings,
+    wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: storm bird cliff: a tall sea cliff
+    rock with big nests on ledges, storm birds with crackling lightning wings. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea
+    spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: triton grotto: a sea cave in a rock
+    with a pool and wide steps going down into the water, a carved trident over the entrance. It is built of grey granite blocks with slate roofs and brass fittings,
+    wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: tide witch hut: a crooked hut on stilts
+    in the surf, covered in seashells and kelp, a lantern of green fire. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea spray.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: storm bull pen: a stone corral by
+    the surf with a huge blue bull with crackling lightning horns inside. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea spray.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: titan basin: a giant round flooded
+    stone basin with a whirlpool in the middle and a huge stone hand rising from the water. It is built of grey granite blocks with slate roofs and brass fittings,
+    wet with sea spray. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-plotina-dam
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a huge stone dam with open sluices
+    and roaring water. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-plotina-turbine
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a great water wheel turbine house
+    with brass gears. It is built of grey granite blocks with slate roofs and brass fittings, wet with sea spray. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: town-ostrog-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a snowy taiga clearing with tall dark firs, a frozen river, pale winter sun, shown only at the far left and right edges and along the distant
+    horizon. Wild untouched land, quiet and calm.'
+- name: bld-ostrog-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of dark tarred logs with thick
+    snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of dark tarred logs
+    with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of dark tarred
+    logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: bld-ostrog-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of dark tarred logs with thick snow on the roofs and icicles.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of dark tarred logs with thick snow on
+    the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: guard barracks: a long log barracks
+    with a training yard, a row of round shields on the fence and a war horn on a post. It is built of dark tarred logs with thick snow on the roofs and icicles.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: ski hunters lodge: a small log lodge
+    with skis and bows leaning against the wall and a deer hide stretched on a frame. It is built of dark tarred logs with thick snow on the roofs and icicles. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: wolf kennel: a fenced log yard with
+    grey wolves inside and a wolf skull over the gate. It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: bear pit: a deep round pit with a
+    log roof on posts and a carved bear head over the entrance, a big armored bear inside. It is built of dark tarred logs with thick snow on the roofs and icicles.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: shaman tent: a tall cone tent of hides
+    with deer antlers on top, drums and bone charms hanging around it. It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: mammoth stable: a huge long log stable
+    with an enormous arched gate and a woolly mammoth with tusks standing in front. It is built of dark tarred logs with thick snow on the roofs and icicles. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-ostrog-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: ice cave: a cave entrance in a glacier
+    with giant icicles and a huge carved ice door. It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: bld-ostrog-drill
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a drill square with wooden training
+    dummies and a banner. It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-ostrog-banya
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a log bath house with steam rising.
+    It is built of dark tarred logs with thick snow on the roofs and icicles. Single isolated object, centered, whole object in frame with margin, plain light grey
+    background.'
+- name: town-bazar-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a white salt flat with dunes, a turquoise oasis lake, hot hazy afternoon, shown only at the far left and right edges and along the distant
+    horizon. Wild untouched land, quiet and calm.'
+- name: bld-bazar-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: bld-bazar-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of sand-colored clay brick with
+    striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'
+- name: bld-bazar-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of sand-colored clay
+    brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of sand-colored
+    clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: bld-bazar-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of sand-colored clay brick with striped red and gold silk awnings
+    and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of sand-colored clay brick with striped
+    red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: thieves den: a small crooked clay
+    house with a dark curtained doorway, rope ladders and a hidden roof hatch. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise
+    tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: pepper shop: an open stall piled with
+    big baskets and sacks of red, orange and yellow spices, ropes of dried red peppers hanging. It is built of sand-colored clay brick with striped red and gold silk
+    awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: carpet workshop: a courtyard with
+    big colorful carpets hanging on frames and one flying carpet hovering above. It is built of sand-colored clay brick with striped red and gold silk awnings and
+    turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: hall of mirrors: a domed pavilion
+    with walls of tall shining mirrors and shimmering mirage light. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: caravan yard: a walled yard with a
+    huge pack bull loaded with bundles, crates and saddlebags, and a drinking trough. It is built of sand-colored clay brick with striped red and gold silk awnings
+    and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: genie lamp tower: a slim tower topped
+    by a giant golden oil lamp with blue smoke rising and curling. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: serpent sand pit: a round sandy pit
+    with a domed roof on columns and a big golden-scaled serpent coiled inside on piles of coins. It is built of sand-colored clay brick with striped red and gold
+    silk awnings and turquoise tiles. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-bazar-bank
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a moneylender house with a golden
+    scale sign. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: bld-bazar-caravanserai
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a caravanserai courtyard with camels
+    and goods. It is built of sand-colored clay brick with striped red and gold silk awnings and turquoise tiles. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: town-kurgany-site
+  width: 1536
+  height: 864
+  seeds:
+  - 21
+  - 22
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A wide empty landscape seen close up from a low viewpoint: broad open ground with grass, bare earth patches, dirt paths and wildflowers
+    fills most of the picture, gently rising toward the back in two or three broad flat terraces. The horizon line is high, near the top edge, with a narrow strip
+    of sky. The scenery is a misty purple heather moor with low hills, standing stones, pale evening light, shown only at the far left and right edges and along the
+    distant horizon. Wild untouched land, quiet and calm.'
+- name: bld-kurgany-hall
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: the town hall: the largest and grandest
+    building, a wide two-storey council hall with a tall central clock tower, a broad front staircase leading to big double doors, and flags on the roof. It is built
+    of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: bld-kurgany-fort
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a fortress: a ring of tall thick defensive
+    walls with battlements, a big arched gate in the middle and four round corner towers, a courtyard inside the walls. It is built of rough grey standing stones,
+    green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-tavern
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a small cozy tavern: a low one-storey
+    inn with a big carved wooden beer mug hanging over the door, wooden tables and benches outside, barrels stacked by the door, warm light in the windows. It is
+    built of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain
+    light grey background.'
+- name: bld-kurgany-market
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: an open market square: three rows
+    of wooden stalls under bright colorful cloth awnings, piled with fruit, pots, cloth and sacks, a small fountain in the middle. It is built of rough grey standing
+    stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-guild
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a mage guild: one very tall slender
+    round tower with a pointed roof, glowing purple windows spiralling up, a crescent moon finial on top and magic sparks around the top. It is built of rough grey
+    standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-smithy
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a blacksmith forge: a low open-sided
+    workshop under a lean-to roof with one huge wide chimney pouring black smoke, a glowing orange forge fire inside, a big iron anvil in front and swords and axes
+    on racks. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: bld-kurgany-storehouse
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a storehouse yard: a long low barn
+    with wide open doors, big stacks of barrels, crates, sacks and timber in front of it. It is built of rough grey standing stones, green turf and dark bronze, with
+    heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-shipyard
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a shipyard: a half-built wooden boat
+    on a sloping slipway at the edge of the water, wooden scaffolding around the hull and a small lifting crane. It is built of rough grey standing stones, green
+    turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell1
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: wanderers stone fold: a low circular
+    stone wall fold with a few shadowy grey ghost figures and a lone pole with rags. It is built of rough grey standing stones, green turf and dark bronze, with heather
+    around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell2
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: idol ring: a ring of tall carved stone
+    idols with stern faces around a small fire. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell3
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: ghost horse corral: a stone corral
+    with pale glowing riderless horses inside and old saddles on the wall. It is built of rough grey standing stones, green turf and dark bronze, with heather around.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell4
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: bronze warrior barrow: a grass-covered
+    burial mound with a big bronze door and two bronze shields on posts. It is built of rough grey standing stones, green turf and dark bronze, with heather around.
+    Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell5
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: mourners hut: a low hut of bones and
+    heather with candles and long white veils hanging at the door. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell6
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: eagle rock: a tall rock with a huge
+    nest of bones on top and a giant eagle spreading its wings. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single
+    isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-dwell7
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: royal barrow: a huge grass-covered
+    royal burial mound with a stone gate of three giant slabs and bronze braziers burning. It is built of rough grey standing stones, green turf and dark bronze,
+    with heather around. Single isolated object, centered, whole object in frame with margin, plain light grey background.'
+- name: bld-kurgany-memory
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a stone circle with glowing pale blue
+    runes. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: bld-kurgany-bindstone
+  prompt: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes, saturated but harmonious colors,
+    warm sunlight and soft shadows. A building for a fantasy strategy game town screen, three-quarter view from slightly above: a tall amber-veined binding stone
+    with chains. It is built of rough grey standing stones, green turf and dark bronze, with heather around. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'

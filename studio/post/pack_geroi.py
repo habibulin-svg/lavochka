@@ -225,6 +225,13 @@ def towns() -> None:
         for name in sorted({*PICKS['32-towns'], *PICKS.get('32-towns-redo', {})}):
             if name.startswith('bld-'):
                 webp(pick_file('32-towns', name, cut=True), DST / f'towns/{name[4:]}.webp', width=480)
+    # постройки и панорамы заново (партия 42, make_jobs_bld.py): узнаваемые силуэты, панорама крупным планом — поверх старых
+    for name, seed in PICKS.get('42-buildings', {}).items():
+        src = SRC / '42-buildings'
+        if name.startswith('bld-'):
+            webp(src / 'cut' / f'{name}-{seed}.png', DST / f'towns/{name[4:]}.webp', width=640)
+        elif name.startswith('town-') and name.endswith('-site'):
+            webp(src / f'{name}-{seed}.png', DST / f'towns/{name[5:]}.webp', q=84)
 
 
 def brand() -> None:

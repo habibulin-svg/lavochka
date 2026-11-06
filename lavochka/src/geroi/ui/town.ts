@@ -13,16 +13,18 @@ import { button, creatureIcon, h, modal } from './common';
 
 /** Постройка на панораме 1920×1080: ряд (0 — дальний), x, ширина в ближнем ряду. Правый край занят панелью замка. */
 const LAYOUT: Record<string, [number, number, number]> = {
-  guild: [0, 240, 240], dwell7: [0, 540, 280], dwell6: [0, 830, 270], fort: [0, 1160, 400], dwell5: [0, 1480, 250],
-  storehouse: [1, 130, 230], dwell4: [1, 400, 250], hall: [1, 760, 350], tavern: [1, 1090, 250], market: [1, 1340, 260], uniq2: [1, 1560, 240],
-  shipyard: [2, 130, 240], dwell1: [2, 400, 250], dwell2: [2, 680, 250], uniq1: [2, 960, 260], smithy: [2, 1230, 240], dwell3: [2, 1500, 260],
+  guild: [0, 170, 330], dwell7: [0, 450, 400], dwell6: [0, 740, 380], fort: [0, 1060, 560], dwell5: [0, 1390, 340],
+  storehouse: [1, 120, 330], dwell4: [1, 360, 350], hall: [1, 680, 480], tavern: [1, 980, 330], market: [1, 1220, 370], uniq2: [1, 1450, 330],
+  // левый низ занят гарнизоном — эти стоят чуть выше его края; ближний ряд — справа от него
+  shipyard: [1.4, 130, 350], dwell1: [1.4, 400, 340], dwell2: [1.4, 660, 340],
+  uniq1: [2, 950, 370], smithy: [2, 1190, 340], dwell3: [2, 1430, 360],
 };
 /** Где на панораме ровная земля: верх и низ; у каждого замка своя. */
-const GROUND: Record<string, [number, number]> = { zatulye: [430, 670], zatonye: [440, 665], kuznya: [490, 730], akademiya: [590, 860] };
-/** Панорам второй четвёрки ещё нет: земля по середине, пока не снята своя. */
-const GROUND_DEFAULT: [number, number] = [480, 720];
-/** Дальние ряды мельче. */
-const ROW_SCALE = [0.62, 0.8, 1];
+/** Панорамы партии 42 (крупный план, горизонт у верха) у всех замков устроены одинаково; своя — если понадобится. */
+const GROUND: Record<string, [number, number]> = {};
+const GROUND_DEFAULT: [number, number] = [500, 900];
+/** Дальние ряды мельче (ряд может быть дробным). */
+const rowScale = (row: number): number => 0.7 + 0.15 * row;
 const UNIQ: Record<string, string> = {
   skhod: 'uniq1', fogwell: 'uniq1', gat: 'uniq2', furnace: 'uniq1', scrapyard: 'uniq2', lab: 'uniq1', observatory: 'uniq2',
   dam: 'uniq1', turbine: 'uniq2', drill: 'uniq1', banya: 'uniq2', caravanserai: 'uniq1', bank: 'uniq2', memory: 'uniq1', bindstone: 'uniq2',
@@ -87,7 +89,7 @@ export class TownScreen {
     const layers = [...arts.entries()].map(([art, d]) => ({ art, d, pos: LAYOUT[UNIQ[art] ?? art] })).filter((x) => x.pos).sort((a, b) => a.pos[0] - b.pos[0]);
     for (const { art, d, pos } of layers) {
       const [row, x, size] = pos;
-      const width = size * ROW_SCALE[row];
+      const width = size * rowScale(row);
       const img = h('img', 'a-bld');
       img.src = `/geroi/a/towns/${t.faction}-${art}.webp`;
       img.alt = d.name;
