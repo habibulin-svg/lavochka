@@ -6,7 +6,7 @@ import { hasRight, type RightGrant } from './rights';
 export type ReleaseState = 'all' | 'early' | 'hidden';
 
 /** Новые игры — сразу в ранний доступ (решение пользователя 2026-10-29: срока нет, снимается в админке). */
-export const EARLY: string[] = ['shifrovka', 'partizany', 'gops', 'kommersy', 'geroi'];
+export const EARLY: string[] = ['shifrovka', 'partizany', 'gops', 'kommersy'];
 
 export interface GameRelease {
   state?: ReleaseState;

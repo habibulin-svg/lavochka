@@ -22,11 +22,11 @@ const missing = (need: string[]): string[] => [...new Set(need)].filter((f) => !
 
 // Всё, на что ссылается игра, лежит в public/geroi/a (упаковка studio/post/pack_geroi.py).
 describe('geroi: выход на сайт', () => {
-  it('карточка есть, и ранний доступ действует: сервер признаёт его только у игр из каталога', () => {
+  it('карточка есть, и игра вышла из раннего доступа: играть может каждый (платная часть — отдельной покупкой)', () => {
     const known = (id: string) => CATALOG.some((g) => g.id === id);
     expect(known('geroi')).toBe(true);
     const rel = withDefaults({}, known);
-    expect(mayPlay(rel, 'geroi', [])).toBe(false);
+    expect(mayPlay(rel, 'geroi', [])).toBe(true);
   });
 });
 
