@@ -1,0 +1,80 @@
+# Герои, 33-map-redo9b: переделка нового ландшафта. Сгенерировано make_jobs_terrain.py redo2.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: ground-coast
+  seeds:
+  - 81
+  - 82
+  - 83
+  - 84
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture for a strategy game map, natural irregular scattering without any grid or rows: wet dark grey pebble beach with small scattered stones
+    and a few tufts of sea grass. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-heath
+  seeds:
+  - 81
+  - 82
+  - 83
+  - 84
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture for a strategy game map, natural irregular scattering without any grid or rows: low heather moorland, a soft carpet of tiny purple flowers
+    mixed with grey-green grass. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: decor-saltflat-1
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dry leafless thorn tree with spiky bare branches. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-saltflat-8
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a small round natural turquoise spring among pale stones, irregular rounded outline. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: decor-heath-6
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dead grey juniper bush without needles, dry twisted twigs. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-heath-7
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a tall carved wooden totem pole with stern faces and painted ornaments. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: mountain-7
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a tall flat-topped yellow sandstone mesa with steep layered cliffs, irregular natural outline. Single isolated
+    object, centered, whole object in frame with margin, plain light grey background.'

@@ -1,0 +1,39 @@
+# Герои, 13-map-redo9c: плоские грунты бора, пепелища, болота. Сгенерировано make_jobs_terrain.py redo3.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: ground-pine
+  seeds:
+  - 81
+  - 82
+  - 83
+  - 84
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture for a strategy game map, natural irregular scattering without any grid or rows: forest floor of brown pine needles with patches of dark
+    green moss, small ferns, twigs and scattered cones, rich natural variation. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-ash
+  seeds:
+  - 81
+  - 82
+  - 83
+  - 84
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture for a strategy game map, natural irregular scattering without any grid or rows: dark charcoal ash ground with cracked black basalt plates,
+    grey cinders and thin cracks glowing orange. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-swamp
+  seeds:
+  - 81
+  - 82
+  - 83
+  - 84
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture for a strategy game map, natural irregular scattering without any grid or rows: boggy marsh ground: wet dark green moss, tufts of sedge,
+    small murky puddles, rich natural variation. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'

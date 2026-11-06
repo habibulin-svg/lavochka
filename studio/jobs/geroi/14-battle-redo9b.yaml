@@ -1,0 +1,62 @@
+# Герои, 14-battle-redo9b: переделка нового ландшафта. Сгенерировано make_jobs_terrain.py redo.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: obstacle-3
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a low round thorny bush with sharp thorns and small red berries, no trunk. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'
+- name: obstacle-4
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a short cut tree stump with roots and visible rings, no branches. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: obstacle-5
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a flat muddy puddle of brown water, seen from above. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: obstacle-8
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a heap of rusty mechanical scrap: gears, pipes and bolts, irregular pile. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: obstacle-9
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dead leafless grey tree with bare crooked branches. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'

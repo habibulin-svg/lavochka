@@ -1,5 +1,6 @@
 /* Отрисовка боя на PixiJS v8 (DESIGN.md §10): сцена 1920×1080, вписанная в окно. Логику не трогает: показывает события act() по очереди,
  * у отрядов свой показанный вид (клетка, число), поэтому сохранение и сеть рисуются тем же кодом. */
+import { shadowSprite } from './shadow';
 import { type Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import type { Audio2 } from '../audio';
 import { releaseApp, takeApp } from './pixi';
@@ -203,11 +204,11 @@ export class BattleView {
       const sp = new Sprite(await Assets.load<Texture>(`/geroi/a/obstacles/${arts[o.art % arts.length]}.webp`));
       const p = cellCenter(o.cell);
       const k = 112 / Math.max(sp.texture.width, sp.texture.height);
-      sp.anchor.set(0.5, 0.72);
+      sp.anchor.set(0.5, 0.86); // спрайт без своего клочка земли: опора — у низа
       sp.scale.set(k);
       sp.position.set(p.x, p.y);
       sp.zIndex = p.y;
-      this.unitsLayer.addChild(sp);
+      this.unitsLayer.addChild(shadowSprite(p.x, p.y + 6, 96), sp);
     }));
     this.unitsLayer.sortableChildren = true;
     this.stage.addChild(this.unitsLayer, this.fx);
@@ -220,7 +221,7 @@ export class BattleView {
       sp.scale.set((w.tower ? 130 : 118) / tex.width);
       sp.position.set(p.x, p.y);
       sp.zIndex = p.y;
-      this.unitsLayer.addChild(sp);
+      this.unitsLayer.addChild(shadowSprite(p.x, p.y + 6, 96), sp);
       this.wallSprites.set(w.cell, sp);
     }));
     if (s.walls) this.refreshWalls(s);

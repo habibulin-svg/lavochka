@@ -1,0 +1,89 @@
+# Герои, партия 60: проба нового стиля ландшафта (чёткий, детальный вместо гуаши)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 61
+- 62
+items:
+- name: a-ground-meadow
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: dense short lush green grass with tiny scattered white and yellow flowers and small grass tufts. Uniform
+    even tone across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: a-ground-water
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: clear blue river water with small crisp ripples and sparkles. Uniform even tone across the whole square,
+    fine small-scale detail, no large spots, fills the whole square.'
+- name: a-ground-pine
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: brown forest floor of pine needles with small green moss patches and a few pine cones. Uniform even tone
+    across the whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: a-ground-road
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: a packed light brown dirt surface with small pebbles and wheel ruts. Uniform even tone across the whole square,
+    fine small-scale detail, no large spots, fills the whole square.'
+- name: a-field-meadow
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat summer meadow of even short green grass with tiny flowers and fine crisp grass
+    detail, a strip of birch forest and bushes along the very top edge. The middle is open, flat and clear.'
+- name: a-decor-oak
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a broad green oak tree, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: b-ground-meadow
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Seamless top-down ground texture tile for a strategy game map: dense short lush green grass with tiny scattered white and yellow flowers and small grass tufts. Uniform even tone across the whole square,
+    fine small-scale detail, no large spots, fills the whole square.'
+- name: b-ground-water
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Seamless top-down ground texture tile for a strategy game map: clear blue river water with small crisp ripples and sparkles. Uniform even tone across the whole square, fine small-scale detail, no large
+    spots, fills the whole square.'
+- name: b-ground-pine
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Seamless top-down ground texture tile for a strategy game map: brown forest floor of pine needles with small green moss patches and a few pine cones. Uniform even tone across the whole square, fine
+    small-scale detail, no large spots, fills the whole square.'
+- name: b-ground-road
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Seamless top-down ground texture tile for a strategy game map: a packed light brown dirt surface with small pebbles and wheel ruts. Uniform even tone across the whole square, fine small-scale detail,
+    no large spots, fills the whole square.'
+- name: b-field-meadow
+  width: 1920
+  height: 1088
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Battlefield background seen from high above at a steep angle, almost top-down: a wide flat summer meadow of even short green grass with tiny flowers and fine crisp grass detail, a strip of birch forest
+    and bushes along the very top edge. The middle is open, flat and clear.'
+- name: b-decor-oak
+  prompt: 'Detailed pre-rendered look of a classic late 1990s fantasy strategy game, crisp fine texture detail, sharp and clean, vivid saturated natural colors, bright sunny daylight, soft small shadows.
+    Game scenery sprite seen from above in three-quarter view: a broad green oak tree, standing alone, no ground under it. Single isolated object, centered, whole object in frame with margin, plain light
+    grey background.'
+- name: c-ground-meadow
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Seamless top-down ground
+    texture tile for a strategy game map: dense short lush green grass with tiny scattered white and yellow flowers and small grass tufts. Uniform even tone across the whole square, fine small-scale detail,
+    no large spots, fills the whole square.'
+- name: c-ground-water
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Seamless top-down ground
+    texture tile for a strategy game map: clear blue river water with small crisp ripples and sparkles. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the whole
+    square.'
+- name: c-ground-pine
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Seamless top-down ground
+    texture tile for a strategy game map: brown forest floor of pine needles with small green moss patches and a few pine cones. Uniform even tone across the whole square, fine small-scale detail, no large
+    spots, fills the whole square.'
+- name: c-ground-road
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Seamless top-down ground
+    texture tile for a strategy game map: a packed light brown dirt surface with small pebbles and wheel ruts. Uniform even tone across the whole square, fine small-scale detail, no large spots, fills the
+    whole square.'
+- name: c-field-meadow
+  width: 1920
+  height: 1088
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Battlefield background
+    seen from high above at a steep angle, almost top-down: a wide flat summer meadow of even short green grass with tiny flowers and fine crisp grass detail, a strip of birch forest and bushes along the
+    very top edge. The middle is open, flat and clear.'
+- name: c-decor-oak
+  prompt: 'Premium detailed digital painting for a 2D fantasy strategy game, crisp fine details everywhere, clean sharp rendering, vivid colorful palette, bright cheerful daylight. Game scenery sprite seen
+    from above in three-quarter view: a broad green oak tree, standing alone, no ground under it. Single isolated object, centered, whole object in frame with margin, plain light grey background.'

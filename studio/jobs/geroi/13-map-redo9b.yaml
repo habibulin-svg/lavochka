@@ -1,0 +1,52 @@
+# Герои, 13-map-redo9b: переделка нового ландшафта. Сгенерировано make_jobs_terrain.py redo.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: decor-swamp-1
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dead leafless twisted grey tree with bare crooked branches. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-swamp-6
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a small round grassy hummock, a low soft mound of moss and grass. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: mountain-2
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a group of three rounded green hills covered with dense forest, irregular natural outline. Single isolated object,
+    centered, whole object in frame with margin, plain light grey background.'
+- name: decor-ash-1
+  seeds:
+  - 81
+  - 82
+  - 83
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a charred black dead tree without leaves. Single isolated object, centered, whole object in frame with margin,
+    plain light grey background.'

@@ -1,0 +1,120 @@
+# Герои, 34-battle-redo9: новый ландшафт — бой, волна 2. Сгенерировано make_jobs_terrain.py.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: field-coast
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat rocky seashore with wet sand, tide pools and surf along the very top edge. The
+    middle is open, flat and clear, an even surface with fine crisp detail.'
+- name: field-snow
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat snowy field with frozen grass, snowy firs along the very top edge. The middle
+    is open, flat and clear, an even surface with fine crisp detail.'
+- name: field-saltflat
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat cracked white salt flat with low dunes along the very top edge. The middle is
+    open, flat and clear, an even surface with fine crisp detail.'
+- name: field-heath
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat purple heather moor with low burial mounds along the very top edge. The middle
+    is open, flat and clear, an even surface with fine crisp detail.'
+- name: field-heart
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat floor of a giant crater glowing with golden brass light from cracks, spiral walls
+    along the edges. The middle is open, flat and clear, an even surface with fine crisp detail.'
+- name: field-darkkeep
+  seeds:
+  - 71
+  - 72
+  width: 1920
+  height: 1088
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Battlefield background seen from high above at a steep angle, almost top-down: a wide flat black stone courtyard with iron grates and red braziers along the very top edge.
+    The middle is open, flat and clear, an even surface with fine crisp detail.'
+- name: obstacle-11
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: an ice block, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: obstacle-12
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a white salt crystal cluster, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: obstacle-13
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a small standing stone, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: obstacle-14
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a pile of driftwood, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: obstacle-15
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a frozen dead bush, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: obstacle-16
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a bronze brazier, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'

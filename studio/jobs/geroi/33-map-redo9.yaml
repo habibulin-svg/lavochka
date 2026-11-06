@@ -1,0 +1,372 @@
+# Герои, 33-map-redo9: новый ландшафт — карта, волна 2. Сгенерировано make_jobs_terrain.py.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 71
+- 72
+items:
+- name: ground-coast
+  seeds:
+  - 71
+  - 72
+  - 73
+  - 74
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: wet grey coastal rocks with patches of sea grass and small tide pools. Uniform even tone across the whole
+    square, fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-snow
+  seeds:
+  - 71
+  - 72
+  - 73
+  - 74
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: fresh white snow ground with soft blue shadows and a few frozen grass tufts. Uniform even tone across the
+    whole square, fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-saltflat
+  seeds:
+  - 71
+  - 72
+  - 73
+  - 74
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: cracked white salt flat ground with pale yellow sand patches. Uniform even tone across the whole square,
+    fine small-scale detail, no large spots, fills the whole square.'
+- name: ground-heath
+  seeds:
+  - 71
+  - 72
+  - 73
+  - 74
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Seamless top-down ground texture tile for a strategy game map: purple heather moor ground with grey grass and small stones. Uniform even tone across the whole square, fine
+    small-scale detail, no large spots, fills the whole square.'
+- name: decor-coast-1
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a wind-bent pine on a rock, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-coast-2
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a grey sea stack rock, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-coast-3
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a pile of driftwood, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-coast-4
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a clump of sea grass, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-coast-5
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a wrecked boat hull, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-coast-6
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a cluster of barnacled rocks, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-coast-7
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: an old anchor in the sand, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-coast-8
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a stone cairn, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-snow-1
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a snowy fir tree, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-snow-2
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a clump of snowy firs, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-snow-3
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a snow covered boulder, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-snow-4
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a frozen bush, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-snow-5
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a snowdrift, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-snow-6
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: an ice block, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-snow-7
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dead birch in snow, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-snow-8
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a snowy log, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-saltflat-1
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dry thorn tree, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-saltflat-2
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a white salt pillar, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-saltflat-3
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a desert rock arch, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-saltflat-4
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dry tumbleweed bush, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-saltflat-5
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a sand dune, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-saltflat-6
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a bleached animal skull on sand, standing alone, no ground under it. Single isolated object, centered, whole
+    object in frame with margin, plain light grey background.'
+- name: decor-saltflat-7
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a cluster of salt crystals, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-saltflat-8
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a small turquoise spring, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: decor-heath-1
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a gnarled lonely oak, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-heath-2
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a standing stone, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-heath-3
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a heather bush, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-heath-4
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a small burial mound, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-heath-5
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a ring of small stones, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: decor-heath-6
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a dead juniper, standing alone, no ground under it. Single isolated object, centered, whole object in frame with
+    margin, plain light grey background.'
+- name: decor-heath-7
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a wooden totem pole, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: decor-heath-8
+  seeds:
+  - 71
+  - 72
+  width: 1024
+  height: 1024
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a mossy fallen stone, standing alone, no ground under it. Single isolated object, centered, whole object in frame
+    with margin, plain light grey background.'
+- name: mountain-5
+  seeds:
+  - 71
+  - 72
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a snowy jagged mountain ridge, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: mountain-6
+  seeds:
+  - 71
+  - 72
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a high grey sea cliff, standing alone, no ground under it. Single isolated object, centered, whole object in
+    frame with margin, plain light grey background.'
+- name: mountain-7
+  seeds:
+  - 71
+  - 72
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a flat-topped yellow mesa, standing alone, no ground under it. Single isolated object, centered, whole object
+    in frame with margin, plain light grey background.'
+- name: mountain-8
+  seeds:
+  - 71
+  - 72
+  width: 1536
+  height: 864
+  prompt: 'Crisp hand-painted 2D fantasy strategy game art in the manner of classic late 1990s turn-based strategy games, highly detailed, sharp clean edges, clearly readable shapes, bright vivid natural
+    colors, even bright daylight. Game scenery sprite seen from above in three-quarter view: a low heather hill with standing stones, standing alone, no ground under it. Single isolated object, centered,
+    whole object in frame with margin, plain light grey background.'

@@ -8,6 +8,7 @@ import type { AdvHero } from '../sim/adv/hero';
 import { type MapObject, type World, defOf, heroHiddenFrom, isStack, xOf, yOf } from '../sim/adv/world';
 import { releaseApp, takeApp } from './pixi';
 import { loadCreature } from './view';
+import { shadowSprite } from './shadow';
 
 export const TILE = 64;
 /** Сцена считается в размере 1080p: на другом экране всё просто крупнее или мельче. */
@@ -34,6 +35,8 @@ const ATLAS_PAD = 32;
 const ATLAS_CELL = ATLAS_TILE + ATLAS_PAD * 2;
 const ATLAS_SIZE = ATLAS_CELL * 2;
 const BASE_TERRAINS = 8;
+/** Сколько клеток на одну плитку текстуры грунта. */
+const GROUND_SCALE = 8;
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -79,56 +82,126 @@ vec3 sampleT(int id, vec2 uv) {
 vec3 terrain(int id, vec2 cell) {
   /* сдвиг низкой частотой ломает ряды, второй слой повёрнут и другого масштаба */
   vec2 drift = vec2(fbm(cell * 0.11), fbm(cell * 0.11 + 31.7)) * 2.4;
-  vec3 a = sampleT(id, (cell + drift) / 6.0);
+  vec3 a = sampleT(id, (cell + drift) / ${GROUND_SCALE}.0);
   vec2 turned = vec2(cell.x * 0.82 - cell.y * 0.57, cell.x * 0.57 + cell.y * 0.82);
-  vec3 b = sampleT(id, (turned - drift) / 8.5 + 0.37);
+  vec3 b = sampleT(id, (turned - drift) / (${GROUND_SCALE}.0 * 1.4) + 0.37);
   return mix(a, b, smoothstep(0.32, 0.68, fbm(cell * 0.17 + 3.3)));
 }
 
+vec4 idAt(vec2 c) { return texture(uIds, (clamp(c, vec2(0.0), uSize - 1.0) + 0.5) / uSize); }
+
+/* расстояние от точки до отрезка */
+float segDist(vec2 p, vec2 a, vec2 b) {
+  vec2 ab = b - a; vec2 ap = p - a;
+  float t = clamp(dot(ap, ab) / dot(ab, ab), 0.0, 1.0);
+  return length(ap - ab * t);
+}
+
+const int NT = ${TERRAINS.length};
+
 void main() {
   vec2 cell = vUV * uSize;
-  /* граница местности не по сетке: сдвигаем точку шумом */
-  vec2 warp = vec2(fbm(cell * 0.9), fbm(cell * 0.9 + 17.3)) - 0.5;
-  vec2 q = cell + warp * 0.85 - 0.5;
-  vec2 base = floor(q);
-  vec2 f = smoothstep(0.28, 0.72, fract(q));
-  vec2 px = 1.0 / uSize;
-  vec4 c00 = texture(uIds, (base + vec2(0.5, 0.5)) * px);
-  vec4 c10 = texture(uIds, (base + vec2(1.5, 0.5)) * px);
-  vec4 c01 = texture(uIds, (base + vec2(0.5, 1.5)) * px);
-  vec4 c11 = texture(uIds, (base + vec2(1.5, 1.5)) * px);
-  int i00 = int(c00.r * 255.0 + 0.5); int i10 = int(c10.r * 255.0 + 0.5);
-  int i01 = int(c01.r * 255.0 + 0.5); int i11 = int(c11.r * 255.0 + 0.5);
-  float w00 = (1.0 - f.x) * (1.0 - f.y); float w10 = f.x * (1.0 - f.y);
-  float w01 = (1.0 - f.x) * f.y; float w11 = f.x * f.y;
-  vec3 col;
-  if (i00 == i10 && i00 == i01 && i00 == i11) col = terrain(i00, cell);
-  else {
-    col = terrain(i00, cell) * w00 + terrain(i10, cell) * w10 + terrain(i01, cell) * w01 + terrain(i11, cell) * w11;
+  /* Местность: у каждой клетки — пятно-ядро вокруг центра; в точке побеждает местность с наибольшим весом.
+   * Края — плавные кривые вместо ступенек сетки, кромка чёткая, с тонкой тенью (как нарисованный переход). */
+  /* изгиб кромки — плавный, без мелкой «рвани» */
+  vec2 warp = vec2(vnoise(cell * 0.7) + 0.5 * vnoise(cell * 1.5 + 7.0), vnoise(cell * 0.7 + 17.3) + 0.5 * vnoise(cell * 1.5 + 23.0)) / 1.5 - 0.5;
+  vec2 p = cell + warp * 0.7;
+  vec2 base = floor(p);
+  float w[NT];
+  for (int k = 0; k < NT; k++) w[k] = 0.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 c = base + vec2(float(i), float(j));
+    int id = int(idAt(c).r * 255.0 + 0.5);
+    vec2 d = p - (c + 0.5);
+    /* ядро по «квадрату со скруглением»: сплошная местность заполняет клетку, углы — круглые */
+    float r = length(max(abs(d) - 0.18, 0.0));
+    w[id] += exp(-r * r * 9.0);
   }
-  /* пена у берега */
-  float waterW = (i00 == 6 ? w00 : 0.0) + (i10 == 6 ? w10 : 0.0) + (i01 == 6 ? w01 : 0.0) + (i11 == 6 ? w11 : 0.0);
-  if (waterW > 0.02 && waterW < 0.98) {
-    float band = smoothstep(0.1, 0.5, waterW) * (1.0 - smoothstep(0.5, 0.95, waterW));
-    col = mix(col, vec3(0.86, 0.9, 0.86), band * 0.35 * (0.6 + 0.4 * sin(uTime * 0.8 + cell.x * 3.0 + cell.y * 2.0)));
+  int top = 0; int sec = 0; float wt = -1.0; float ws = -1.0;
+  for (int k = 0; k < NT; k++) {
+    float v = w[k];
+    if (v > wt) { ws = wt; sec = top; wt = v; top = k; }
+    else if (v > ws) { ws = v; sec = k; }
   }
-  /* дорога: мягкая полоса поверх */
-  int r00 = int(c00.g * 255.0 + 0.5); int r10 = int(c10.g * 255.0 + 0.5);
-  int r01 = int(c01.g * 255.0 + 0.5); int r11 = int(c11.g * 255.0 + 0.5);
-  float roadW = (r00 > 0 ? w00 : 0.0) + (r10 > 0 ? w10 : 0.0) + (r01 > 0 ? w01 : 0.0) + (r11 > 0 ? w11 : 0.0);
-  if (roadW > 0.01) {
-    int kind = r00 > 0 ? r00 : r10 > 0 ? r10 : r01 > 0 ? r01 : r11;
+  if (ws < 0.0) { ws = 0.0; sec = top; }
+  float diff = (wt - ws) / max(wt + ws, 1e-4); /* 0 на кромке, 1 внутри */
+  vec3 col = terrain(top, cell);
+  if (ws > 0.002) {
+    vec3 other = terrain(sec, cell);
+    col = mix(other, col, smoothstep(0.0, 0.06, diff));
+    bool water = top == ${WATER} || sec == ${WATER};
+    if (top == ${WATER}) {
+      /* вода: у берега светлее и пена, вдали — глубже */
+      col *= mix(1.08, 0.78, smoothstep(0.05, 0.9, diff));
+      float foam = (1.0 - smoothstep(0.0, 0.16, diff)) * (0.65 + 0.35 * sin(uTime * 1.3 + cell.x * 5.0 + cell.y * 3.0));
+      foam += (1.0 - smoothstep(0.2, 0.26, abs(diff - 0.24 - 0.04 * sin(uTime * 0.9 + cell.x * 2.0)))) * 0.35;
+      col = mix(col, vec3(0.92, 0.96, 0.95), clamp(foam, 0.0, 1.0) * 0.7);
+    } else if (water) {
+      /* берег: мокрая тёмная полоса у самой воды */
+      col *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, 0.18, diff));
+    } else {
+      /* кромка между двумя грунтами: тонкая тень */
+      col *= 1.0 - 0.22 * (1.0 - smoothstep(0.0, 0.1, diff));
+    }
+  } else if (top == ${WATER}) {
+    col *= 0.78;
+  }
+  /* Дорога: лента по отрезкам между центрами связанных дорожных клеток (связи — биты канала B: В, ЮВ, Ю, ЮЗ). */
+  vec2 cb = floor(cell);
+  float rd = 9.0; int kind = 0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 c = cb + vec2(float(i), float(j));
+    vec4 v = idAt(c);
+    int rk = int(v.g * 255.0 + 0.5);
+    if (rk == 0) continue;
+    int links = int(v.b * 255.0 + 0.5);
+    vec2 a = c + 0.5;
+    float dd = length(cell - a) + 0.02; /* одиночная клетка или конец — круглое пятно */
+    if ((links & 1) != 0) dd = min(dd, segDist(cell, a, a + vec2(1.0, 0.0)));
+    if ((links & 2) != 0) dd = min(dd, segDist(cell, a, a + vec2(1.0, 1.0)));
+    if ((links & 4) != 0) dd = min(dd, segDist(cell, a, a + vec2(0.0, 1.0)));
+    if ((links & 8) != 0) dd = min(dd, segDist(cell, a, a + vec2(-1.0, 1.0)));
+    if (dd < rd) { rd = dd; kind = rk; }
+  }
+  if (kind > 0) {
+    float half_ = (kind == 3 ? 0.27 : 0.23) + (vnoise(cell * 4.0) - 0.5) * 0.03;
     vec2 uv = cell / 2.5;
     vec3 road = kind == 1 ? texture(uR1, uv).rgb : kind == 2 ? texture(uR2, uv).rgb : texture(uR3, uv).rgb;
-    col = mix(col, road, smoothstep(0.36, 0.62, roadW + (vnoise(cell * 3.1) - 0.5) * 0.2));
+    /* тень по краю снаружи, бордюр, сама лента */
+    col *= 1.0 - 0.3 * (1.0 - smoothstep(half_, half_ + 0.07, rd));
+    vec3 rim = road * 0.62;
+    vec3 band = mix(road, rim, smoothstep(half_ - 0.05, half_ - 0.01, rd));
+    col = mix(col, band, 1.0 - smoothstep(half_ - 0.012, half_ + 0.012, rd));
   }
-  /* тёплая дымка неровности: грунт не плоский */
-  col *= 0.94 + 0.12 * fbm(cell * 0.35 + 5.0);
+  /* грунт спокойнее объектов: чуть меньше насыщенности и яркости, чтобы постройки и герои читались */
+  float luma = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(luma), col, 0.8) * 0.9;
+  /* лёгкая неровность освещения */
+  col *= 0.97 + 0.06 * fbm(cell * 0.35 + 5.0);
   /* туман */
   float fog = texture(uFog, vUV).r;
   float seen = smoothstep(0.3, 0.72, fog + (fbm(cell * 1.3) - 0.5) * 0.34);
   finalColor = vec4(mix(vec3(0.045, 0.037, 0.03), col, seen), 1.0);
 }`;
+
+/** Связи дорожной клетки с соседями вперёд (биты: В, ЮВ, Ю, ЮЗ) — шейдер ведёт ленту по ним.
+ * Диагональ — только если её не обходит прямой угол через дорогу (иначе треугольники). */
+export function roadLinks(w: World, c: number): number {
+  if (!w.road[c]) return 0;
+  const x = c % w.w;
+  const y = (c / w.w) | 0;
+  const r = (dx: number, dy: number): boolean => {
+    const nx = x + dx;
+    const ny = y + dy;
+    return nx >= 0 && ny >= 0 && nx < w.w && ny < w.h && w.road[ny * w.w + nx] > 0;
+  };
+  let m = 0;
+  if (r(1, 0)) m |= 1;
+  if (r(1, 1) && !r(1, 0) && !r(0, 1)) m |= 2;
+  if (r(0, 1)) m |= 4;
+  if (r(-1, 1) && !r(-1, 0) && !r(0, 1)) m |= 8;
+  return m;
+}
 
 interface MountArt {
   frame: number;
@@ -206,7 +279,9 @@ export class MapView {
   private cursor = new Graphics();
   private fxLayer = new Container();
   private objSprites = new Map<number, Container>();
-  private decorSprites: { sp: Sprite; cell: number }[] = [];
+  private decorSprites: { sp: Sprite; cell: number; sh: Sprite }[] = [];
+  /** Тени декора — под всеми объектами, над грунтом. */
+  private shadows = new Container();
   private townSprites = new Map<number, Container>();
   private heroSprites = new Map<number, HeroSprite>();
   private stackSprites: { sp: Sprite; frames: Texture[]; t: number }[] = [];
@@ -337,6 +412,7 @@ export class MapView {
     for (let c = 0; c < n; c++) {
       this.idsData[c * 4] = w.terrain[c];
       this.idsData[c * 4 + 1] = w.road[c];
+      this.idsData[c * 4 + 2] = roadLinks(w, c);
       this.idsData[c * 4 + 3] = 255;
       this.fogData[c * 4 + 3] = 255;
     }
@@ -360,6 +436,7 @@ export class MapView {
     this.uniforms = shader.resources.groundUniforms as { uniforms: { uTime: number } };
     this.ground = new Mesh({ geometry, shader });
     this.world.addChildAt(this.ground, 0);
+    this.world.addChildAt(this.shadows, 1);
   }
 
   private async buildDecor(w: World): Promise<void> {
@@ -374,7 +451,10 @@ export class MapView {
       const y = yOf(w, d.cell);
       sp.position.set((x + (big ? MOUNT_W / 2 : 0.5)) * TILE, (y + 1) * TILE - (big ? 0 : 4));
       sp.zIndex = (y + 1) * TILE;
-      this.decorSprites.push({ sp, cell: d.cell });
+      // тень — в слое под объектами; у декора нет своего клочка земли
+      const sh = shadowSprite(sp.x, sp.y - (big ? TILE * 0.35 : 6), d.size * TILE * (big ? 0.95 : 0.8));
+      this.shadows.addChild(sh);
+      this.decorSprites.push({ sp, cell: d.cell, sh });
       this.objs.addChild(sp);
     }));
   }
@@ -510,7 +590,7 @@ export class MapView {
     const ex = player < 0 ? w.terrain.map(() => 1) : w.players[player].explored;
     for (let c = 0; c < w.w * w.h; c++) this.fogData[c * 4] = ex[c] ? 255 : 0;
     this.fogSource.update();
-    for (const d of this.decorSprites) d.sp.visible = !!ex[d.cell];
+    for (const d of this.decorSprites) d.sp.visible = d.sh.visible = !!ex[d.cell];
     for (const o of w.objects) {
       const sp = this.objSprites.get(o.id);
       if (sp) sp.visible = !!ex[o.cell];
