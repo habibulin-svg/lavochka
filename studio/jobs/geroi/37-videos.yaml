@@ -197,8 +197,8 @@ clips:
 - name: c7-fin2
   keys:
   - c7-fin2-1
-  prompt: the light pillar rises and spreads, clouds swirl around it. Painterly gouache animation, hand-painted look, gentle cinematic camera motion, smooth natural
-    movement.
+  prompt: the light pillar rises and slowly fades into the night sky, sparks float upward. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
 - name: c7-home1
   keys:
   - c7-home1-1

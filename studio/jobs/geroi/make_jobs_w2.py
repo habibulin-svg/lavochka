@@ -344,7 +344,7 @@ CUTSCENES2 = [
     ('c7-3a', 'A gigantic crater with a glowing heart of brass and light at the bottom, armies descending along a spiral road', 'light pulses from the heart, armies march down the spiral, dust rises'),
     ('c7-3b', f'{STAR} standing by a glowing brass heart at the bottom of a crater, holding two glowing shards', 'he turns slowly, his coat moves in the wind, the heart pulses'),
     ('c7-fin1', 'Eight hands holding glowing brass shards coming together above a glowing heart, the brass knuckle assembling whole', 'the shards slide together and fuse with a bright golden flash'),
-    ('c7-fin2', 'A blinding pillar of light rising from a giant crater into a sky with two moons', 'the light pillar rises and spreads, clouds swirl around it'),
+    ('c7-fin2', 'A blinding pillar of light rising from a giant crater into a sky with two moons', 'the light pillar rises and slowly fades into the night sky, sparks float upward'),
     ('c7-home1', 'Summer evening in 1995, a construction site by a small river, eight teenagers lying on the grass by a clay pit and laughing, grey panel apartment blocks behind', 'they laugh and sit up, grass sways, warm sunset light'),
     ('c7-home2', 'A man in a flat cap standing at the entrance of a grey nine-storey panel apartment block at dusk, a window on the third floor lights up', 'the window lights up, he looks up, then walks inside'),
     ('c7-stay1', 'Eight teenagers on a hill above a fantasy valley walking away in different directions toward different lands, two pale moons', 'they walk apart and wave, clouds move, banners flutter far away'),
@@ -462,7 +462,7 @@ REDO2 = {
                  + ['map-town-ostrog', 'map-town-bazar', 'town-bazar-full', 'town-ostrog-full'], [22, 23]),  # кресты на шпилях Острога, минареты и пальмы Базара (отрицания модель не понимает)
     '36-cutscene-keys': (['c4-3b', 'c7-2b'], [3, 4]),  # духи в белых балахонах; трон из мечей — чужой узнаваемый образ
     '37-videos': ({'c4-3b': (['c4-3b-3', 'c4-3b-4'], 1), 'c7-2b': (['c7-2b-3', 'c7-2b-4'], 1),
-                   'c5-1a': (['c5-1a-1'], 2), 'c5-2a': (['c5-2a-1'], 2), 'c7-1b': (['c7-1b-1'], 2), 'c7-2a': (['c7-2a-1'], 2)}, None),  # ключи — из 36-cutscene-keys-redo (c5-1a/c5-2a туда скопированы); у них кадр закрывало пятно навеса и облако пыли; c7-1b — руки взрослого во весь кадр, c7-2a — мультяшные облака
+                   'c5-1a': (['c5-1a-1'], 2), 'c5-2a': (['c5-2a-1'], 2), 'c7-1b': (['c7-1b-1'], 2), 'c7-2a': (['c7-2a-1'], 2), 'c7-fin2': (['c7-fin2-1'], 2)}, None),  # ключи — из 36-cutscene-keys-redo (c5-1a/c5-2a туда скопированы); у них кадр закрывало пятно навеса и облако пыли; c7-1b — руки взрослого во весь кадр, c7-2a и c7-fin2 — мультяшные облака
     '30-creatures#2': (['ostrog-shaman', 'ostrog-thundershaman', 'ostrog-skiarcher', 'ostrog-bearknight', 'ostrog-snowgiant', 'kurgany-shadowherd', 'neutral-griffin'], [45, 46]),  # «волчий мех» сделал волков-людей
 }
 

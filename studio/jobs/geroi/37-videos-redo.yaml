@@ -54,3 +54,10 @@ clips:
     movement.
   seeds:
   - 1
+- name: c7-fin2
+  keys:
+  - c7-fin2-1
+  prompt: the light pillar rises and slowly fades into the night sky, sparks float upward. Painterly gouache animation, hand-painted look, gentle cinematic camera
+    motion, smooth natural movement.
+  seeds:
+  - 2
