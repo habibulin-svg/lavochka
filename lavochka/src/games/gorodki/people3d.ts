@@ -109,6 +109,8 @@ interface Person {
   palm: THREE.Vector3;
   /** Вершины правой кисти (меш и номера): их середина — где на самом деле кулак. */
   fist: { mesh: THREE.SkinnedMesh; idx: number[] } | null;
+  /** Где сейчас кулак с битой (после hold). */
+  gripAt: THREE.Vector3;
 }
 
 /** Поза броска по фазе: угол кисти вокруг плеча (от «вперёд» по часовой — вправо), высота, закрутка корпуса, наклон, бита. */
@@ -214,7 +216,7 @@ export class Crowd {
       if (bones.handR) bones.handR.scale.set(1.05, 0.62, 1.05);
       const bat = new THREE.Group();
       this.group.add(root, bat);
-      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10, palm, fist: handVerts(model, bones.handR) });
+      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10, palm, fist: handVerts(model, bones.handR), gripAt: new THREE.Vector3() });
     } catch (e) {
       console.warn('городки: человек не загрузился', e);
     } finally {
@@ -354,10 +356,19 @@ export class Crowd {
     const tip = new THREE.Vector3(hand.x, 0.03, hand.z).addScaledVector(fwd, thr ? 0.62 : 0.45).addScaledVector(right, 0.12);
     const dir = tip.sub(hand).normalize();
     this.hold(p, dir);
-    // бросающий держит биту двумя руками: левая — ниже по бите
-    if (thr && b.upper_armL && b.forearmL && b.handL) {
-      const t = p.bat.position.clone().addScaledVector(dir, -0.16);
-      ik2(b.upper_armL, b.forearmL, b.handL, t, new THREE.Vector3(0, -0.4, 0).addScaledVector(right, -1));
+    if (b.upper_armL && b.forearmL && b.handL) {
+      if (thr) {
+        // бросающий держит биту двумя руками: левая — ниже по бите
+        const t = p.gripAt.clone().addScaledVector(dir, 0.11);
+        ik2(b.upper_armL, b.forearmL, b.handL, t, new THREE.Vector3(0, -0.4, 0).addScaledVector(right, -1));
+      } else {
+        // левая рука висит вдоль тела
+        const shl = wpos(b.upper_armL, new THREE.Vector3());
+        const len = boneLen(b.upper_armL, b.forearmL) + boneLen(b.forearmL, b.handL);
+        const t = shl.clone().addScaledVector(right, -0.06).addScaledVector(fwd, 0.04);
+        t.y -= len * 0.97;
+        ik2(b.upper_armL, b.forearmL, b.handL, t, fwd.clone().negate());
+      }
     }
   }
 
@@ -450,6 +461,7 @@ export class Crowd {
       const ax = new THREE.Vector3(0, 1, 0).applyQuaternion(hb.getWorldQuaternion(_q2)).normalize();
       fist = wpos(hb, new THREE.Vector3()).addScaledVector(ax, boneLen(p.bones.forearmR, hb) * 0.17);
     }
+    p.gripAt.copy(fist);
     const bat = p.bat;
     bat.quaternion.setFromUnitVectors(UP, dir);
     // центр биты — от кулака вдоль биты; рукоять торчит из кулака на 6 см

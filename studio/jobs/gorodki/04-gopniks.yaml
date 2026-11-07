@@ -5,18 +5,19 @@ workflow: z_image_turbo
 server: comfy-big
 license: Apache-2.0 (Z-Image-Turbo)
 defaults:
-  width: 832
+  width: 1024
   height: 1216
   steps: 8
 style: >-
   Full body 3D scan of a real young Russian man from the 1990s, a typical gopnik, photorealistic realistic human anatomy and proportions,
   eight heads tall, normal small head, normal hands and feet, lean build, long legs, slightly slouching,
-  standing in a relaxed A-pose with arms straight down and slightly away from the body, palms facing the legs,
-  strictly front view facing the camera, symmetrical, feet apart. He wears a flat ivy cap pulled low, short buzzcut, unshaven,
+  standing in a rigging A-pose: both arms straight and spread down-sideways at 45 degrees away from the body, a wide clear gap
+  of empty background between each arm and the torso, hands open with fingers together, palms facing down, legs apart with a clear gap between them,
+  strictly front view facing the camera, perfectly symmetrical. He wears a flat ivy cap pulled low, short buzzcut, unshaven,
   squinting eyes, a zipped track jacket and matching track pants with two white side stripes, worn white sneakers.
   Realistic AAA video game character, real fabric folds, soft even studio light, plain pure white background,
   entire figure visible from the cap to the shoes, no shadow on the floor, no text, no logos, not cartoon, not stylized.
-seeds: [71, 72]
+seeds: [91, 92]
 items:
   - name: zaton
     prompt: "{style} Colors: light sky blue track jacket with navy blue sleeves stripes, navy blue track pants, dark grey herringbone cap."

@@ -93,10 +93,10 @@ bm.from_mesh(me)
 uv = bm.loops.layers.uv.new('UVMap') if not bm.loops.layers.uv else bm.loops.layers.uv.verify()
 bm.normal_update()
 for f in bm.faces:
-    # голова выше подбородка: всё, что не смотрит прямо вперёд, — с «изнанки» (кепка, волосы), иначе лицо
-    # растягивается на виски и уши
+    # голова выше подбородка: что смотрит назад (затылок, кепка сзади) — с «изнанки» (кепка, волосы);
+    # щёки и виски — с лица (иначе на лице тёмные пятна волос)
     head = f.calc_center_median().z > 0.865 * H
-    f.material_index = 1 if (f.normal.y > 0.2 or (head and f.normal.y > -0.55)) else 0
+    f.material_index = 1 if (f.normal.y > 0.2 or (head and f.normal.y > 0.05)) else 0
     for lp in f.loops:
         x, _, z = lp.vert.co
         u, v = to_px(x, z)
@@ -114,12 +114,11 @@ co = np.array([v.co[:] for v in me.vertices])
 
 
 def extreme_hand(sign):
-    """Кисть: самая дальняя по |x| точка на высоте кисти."""
-    sel = co[(co[:, 2] > 0.36 * H) & (co[:, 2] < 0.56 * H) & (np.sign(co[:, 0]) == sign)]
+    """Кончики пальцев: самая дальняя по |x| точка руки (A-поза: руки вниз-в-стороны под 45°)."""
+    sel = co[(co[:, 2] > 0.35 * H) & (co[:, 2] < 0.85 * H) & (np.sign(co[:, 0]) == sign)]
     i = np.argmax(np.abs(sel[:, 0]))
     p = sel[i]
-    # центр кисти — среднее точек рядом с крайней
-    near = sel[np.linalg.norm(sel[:, [0, 2]] - p[[0, 2]], axis=1) < 0.06]
+    near = sel[np.linalg.norm(sel[:, [0, 2]] - p[[0, 2]], axis=1) < 0.03]
     return near.mean(0)
 
 
@@ -147,11 +146,12 @@ bone('hips', (0, yb, 0.5 * H), (0, yb, 0.58 * H), 'root')
 bone('spine', (0, yb, 0.58 * H), (0, yb, 0.8 * H), 'hips', True)
 bone('head', (0, yb, 0.8 * H), (0, yb, 1.0 * H), 'spine', True)
 for side, s in (('L', 1), ('R', -1)):
-    hand = extreme_hand(s)
-    sh = Vector((s * 0.115 * H, yb, 0.795 * H))
-    wrist = Vector((hand[0] - s * 0.005, yb, hand[2] + 0.045 * H))
-    elbow = sh.lerp(wrist, 0.52) + Vector((s * 0.008, 0.02, 0))
-    tip = Vector((wrist.x, yb, wrist.z - 0.09 * H))
+    tipp = extreme_hand(s)
+    sh = Vector((s * 0.11 * H, yb, 0.81 * H))
+    tip = Vector((tipp[0], yb, tipp[2]))
+    along = (tip - sh).normalized()
+    wrist = tip - along * (0.105 * H)
+    elbow = sh.lerp(wrist, 0.5) + Vector((0, 0.015, 0))
     bone(f'upper_arm.{side}', sh, elbow, 'spine')
     bone(f'forearm.{side}', elbow, wrist, f'upper_arm.{side}', True)
     bone(f'hand.{side}', wrist, tip, f'forearm.{side}', True)
