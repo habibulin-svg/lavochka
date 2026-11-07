@@ -181,6 +181,8 @@ export function createView(): GameView<State, Event> {
 
   /** Разработка: ?gkpose=<фаза> — замереть в позе броска (подбор анимации). */
   const dbgPose = import.meta.env.DEV ? new URLSearchParams(location.search).get('gkpose') : null;
+  /** Разработка: ?gkcam=bench|back — крупный план лавочки или спины бросающего. */
+  const dbgCam = import.meta.env.DEV ? new URLSearchParams(location.search).get('gkcam') : null;
 
   function frame(now: number) {
     raf = requestAnimationFrame(frame);
@@ -188,6 +190,8 @@ export function createView(): GameView<State, Event> {
       yard.thrower = { seat: v.seats[0], x: 0, line: -13 };
       const ph = dbgPose != null ? Number(dbgPose) : NaN;
       yard.phase = Number.isFinite(ph) ? ph : null;
+      if (dbgCam === 'bench') (yard.lupa = false), yard.setCam([3.3, 1.4, 8.4], [4.9, 0.8, 9.6]);
+      if (dbgCam === 'back') (yard.lupa = false), yard.setCam([0.6, 1.7, 15.2], [-0.4, 1.1, 13.3]);
     }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;

@@ -146,7 +146,7 @@ export class Yard3D {
 
   private async load() {
     const loader = new GLTFLoader();
-    const [yard, props] = await Promise.all([loader.loadAsync(`${BASE}yard.glb`), loader.loadAsync(`${BASE}props.glb`)]);
+    const [yard, props] = await Promise.all([loader.loadAsync(`${BASE}yard.glb?v=3`), loader.loadAsync(`${BASE}props.glb?v=3`)]);
     yard.scene.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
@@ -324,6 +324,13 @@ export class Yard3D {
   shotCam() {
     this.camGoalPos.copy(W(1.1, -2.1, 0.62));
     this.camGoalLook.copy(W(-0.15, 0.35, 0.12));
+    this.snapCam();
+  }
+
+  /** Разработка: поставить камеру (координаты three). */
+  setCam(pos: [number, number, number], look: [number, number, number]) {
+    this.camGoalPos.set(...pos);
+    this.camGoalLook.set(...look);
     this.snapCam();
   }
 

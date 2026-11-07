@@ -97,9 +97,11 @@ for f in bm.faces:
     # щёки и виски — с лица (иначе на лице тёмные пятна волос)
     head = f.calc_center_median().z > 0.865 * H
     f.material_index = 1 if (f.normal.y > 0.2 or (head and f.normal.y > 0.05)) else 0
+    # грани вбок берут цвет чуть внутри силуэта (против нормали): там основной цвет ткани, а не край и не фон
+    shift = -f.normal.x * 0.035 if abs(f.normal.x) > 0.5 else 0.0
     for lp in f.loops:
         x, _, z = lp.vert.co
-        u, v = to_px(x, z)
+        u, v = to_px(x + shift, z)
         # задние грани — зеркально по x (картинка «со спины»)
         if f.material_index == 1:
             u = bx0 + bx1 - u

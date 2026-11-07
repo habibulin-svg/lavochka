@@ -7,10 +7,13 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { normalOnly } from '../holdem/pbr';
 
 const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
 /** Рост — как у взрослого (решение пользователя: «нормального размера»). */
 const HEIGHT = 1.78;
+/** Версия моделей: менять при пересборке, чтобы браузер не взял старые из кэша. */
+const MODELS_V = 6;
 
 /** Кто на каком месте: бригады ГОПС (расцветки — studio/blender/liveries.py). */
 const LOOKS = ['zatulinka', 'zaton', 'rastochka', 'pervomayka'];
@@ -158,7 +161,7 @@ export class Crowd {
   private gltf(file: string) {
     let p = this.gltfs.get(file);
     if (!p) {
-      p = this.loader.loadAsync(`${BASE}${file}.glb`);
+      p = this.loader.loadAsync(`${BASE}${file}.glb?v=${MODELS_V}`);
       this.gltfs.set(file, p);
     }
     return p;
@@ -188,6 +191,7 @@ export class Crowd {
       const g = await this.gltf(file);
       if (this.disposed) return;
       const model = SkeletonUtils.clone(g.scene);
+      const fabric = normalOnly('fabric', [10, 10]);
       model.traverse((o) => {
         const m = o as THREE.SkinnedMesh;
         if (!m.isMesh) return;
@@ -196,8 +200,11 @@ export class Crowd {
         m.frustumCulled = false;
         const mats = (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshStandardMaterial[];
         for (const mt of mats) {
-          mt.roughness = 0.85;
+          mt.roughness = 0.82;
           mt.metalness = 0;
+          // ткань костюма — с лёгким переплетением нитей
+          mt.normalMap = fabric;
+          mt.normalScale.set(0.35, 0.35);
         }
       });
       // масштаб по росту: как взрослый
