@@ -1,0 +1,21 @@
+# Brick Game 2026: «Калинка» (И. Ларионов, 1860, общественное достояние) по нотам — партитура ABC из MIDI flutetunes.com
+# (скачано с разрешения пользователя 2026-11-07), переведена в ля минор, аккорды по тактам; форма: вступление, припев, запев, припев ×2, концовка.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/brick2026/02-kalinka.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/brick2026/02-kalinka
+max_duration: 120
+tracks:
+  - name: kalinka-folk
+    seeds: [11, 22, 33]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      russian folk dance, eurodance remix, instrumental, 168 bpm, energetic and joyful, fast balalaika tremolo lead,
+      bayan accordion, four on the floor kick, supersaw synth pads, minor key, arcade energy
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
+
+  - name: kalinka-chip
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      chiptune, 8-bit, instrumental, 168 bpm, russian folk melody, square wave lead, triangle bass,
+      noise channel drums, catchy and bouncy, minor key, retro video game music
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"

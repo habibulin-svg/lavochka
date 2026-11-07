@@ -1,0 +1,45 @@
+# Brick Game 2026: «Калинка» по нотам (та же партитура studio/music/kalinka/kalinka.abc) — разные аранжировки
+# по просьбе пользователя 2026-11-07: традиционный народный оркестр, техноремикс и ещё несколько.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/brick2026/03-kalinka-arr.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/brick2026/03-kalinka-arr
+max_duration: 120
+tracks:
+  - name: orkestr
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      russian folk orchestra, traditional, instrumental, 160 bpm, acoustic, balalaika ensemble, domra tremolo melody,
+      bayan button accordion, gusli, tambourine and spoons, no drum kit, joyful folk dance, accelerating, minor key
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
+
+  - name: techno
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      techno remix, instrumental, 140 bpm, driving four on the floor kick, rolling acid bassline, hard techno,
+      rave synth stabs playing the folk melody, hi-hat rolls, big drop, minor key, club energy
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
+
+  - name: rock
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      hard rock, instrumental, 168 bpm, distorted electric guitar playing the folk melody, power chords, driving drums,
+      bass guitar, energetic, minor key, folk metal feel
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
+
+  - name: simfonia
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      symphonic orchestra, cinematic, instrumental, 160 bpm, full strings, brass fanfares, woodwinds, timpani, cymbals,
+      grand and festive, minor key, russian classical style
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
+
+  - name: swing
+    seeds: [11, 22]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      swing jazz big band, instrumental, 170 bpm, brass section and saxophones, walking upright bass, swing drums,
+      piano comping, playful, minor key
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"

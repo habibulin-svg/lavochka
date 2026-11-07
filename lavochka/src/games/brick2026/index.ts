@@ -1,7 +1,7 @@
 /* Brick Game 2026 — одиночная аркада: «тип A» (марафон с выбранного уровня до проигрыша) и «тип B» (снять 25 рядов
  * поверх мусора высотой 0…5). Справа — следующая фигура, очки, ряды, уровень и рекорд; слева — сколько каких фигур выпало.
  * Управление — как на приставке: ←/→ (автоповтор), ↓ мягко, X/↑ и Z — поворот; по желанию — тень и мгновенный сброс пробелом.
- * На телефоне — экранные кнопки. Три мелодии на выбор и «без музыки». Пауза сохраняет партию. Сеть — «Битва до 16» (def.ts). */
+ * На телефоне — экранные кнопки. «Калинка» в семи аранжировках и «без музыки». Пауза сохраняет партию. Сеть — «Битва до 16» (def.ts). */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { store } from '../../core/settings';
@@ -20,10 +20,15 @@ const P = {
   best: (m: string) => `brick2026.best.${m}`,
 };
 
+/** «Калинка» (И. Ларионов, 1860) по нотам в разных аранжировках (YuE2 по партитуре, studio/music/kalinka). */
 export const MUSIC = [
-  { id: 'a', label: 'А' },
-  { id: 'b', label: 'Б' },
-  { id: 'c', label: 'В' },
+  { id: 'folk', label: 'Калинка' },
+  { id: 'orkestr', label: 'оркестр' },
+  { id: 'techno', label: 'техно' },
+  { id: 'chip', label: '8-бит' },
+  { id: 'rock', label: 'рок' },
+  { id: 'simfonia', label: 'симфония' },
+  { id: 'swing', label: 'свинг' },
   { id: 'off', label: 'нет' },
 ];
 
@@ -31,7 +36,10 @@ export const MUSIC = [
 export class Music {
   private a: HTMLAudioElement | null = null;
   private id = '';
-  choice = () => store.get<string>(P.music, 'a');
+  choice = () => {
+    const v = store.get<string>(P.music, 'folk');
+    return MUSIC.some((m) => m.id === v) ? v : 'folk';
+  };
   set(id: string) {
     store.set(P.music, id);
     this.play(true);

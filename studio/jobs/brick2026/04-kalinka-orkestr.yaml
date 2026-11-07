@@ -1,0 +1,12 @@
+# Brick Game 2026: «Калинка» — народный оркестр, вторая попытка (в 03 мелодия читалась слабо: 0.54–0.58 по melcheck).
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/brick2026/04-kalinka-orkestr.yaml
+out: G:/temp/studio/out/brick2026/04-kalinka-orkestr
+max_duration: 120
+tracks:
+  - name: orkestr
+    seeds: [33, 44, 55]
+    abc_file: studio/music/kalinka/kalinka.abc
+    style: >-
+      russian folk orchestra, instrumental, 160 bpm, lead domra clearly playing the melody in front, balalaika ensemble strumming chords,
+      bayan button accordion, contrabass balalaika, tambourine, no drum kit, bright and joyful folk dance, minor key
+    lyrics: "[intro]\n[chorus]\n[verse]\n[chorus]\n[chorus]\n[outro]"
