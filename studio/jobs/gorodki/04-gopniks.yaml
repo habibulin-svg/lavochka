@@ -1,0 +1,31 @@
+# Городки (волна 17): гопники во взрослых пропорциях (замечание пользователя: «наши персонажи гопники», «нормального размера»).
+# Эталон для TripoSG и для проекции текстуры: анфас, A-поза, весь рост, белый фон.
+# python studio/run.py studio/jobs/gorodki/04-gopniks.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 832
+  height: 1216
+  steps: 8
+style: >-
+  Full body 3D character render of a young Russian gopnik from the 1990s, realistic adult human proportions (head is one seventh of the height),
+  slightly slouching, standing in a relaxed A-pose with arms straight down and slightly away from the body, palms facing the legs,
+  strictly front view facing the camera, symmetrical, feet apart. He wears a wide flat ivy cap pulled low over the eyes,
+  short buzzcut, squinting eyes, smirk, a zipped track jacket and matching track pants with two white side stripes, white worn sneakers.
+  Stylized realistic video game character, detailed fabric folds, soft even studio light, plain pure white background,
+  entire figure visible from the cap to the shoes, no shadow on the floor, no text, no logos.
+seeds: [61, 62]
+items:
+  - name: zaton
+    prompt: "{style} Colors: light sky blue track jacket with navy blue sleeves stripes, navy blue track pants, dark grey herringbone cap."
+  - name: rastochka
+    prompt: "{style} Colors: emerald green track jacket with a teal and blue chest stripe, emerald green track pants, black and white herringbone cap."
+  - name: pervomayka
+    prompt: "{style} Colors: dark navy blue track jacket and pants with white piping, dark grey wool eight panel cap."
+  - name: zatulinka
+    prompt: "{style} Colors: black track jacket with bold teal, red and white zigzag pattern across the chest and sleeves, black track pants, grey cap."
+  - name: chemskoy
+    prompt: "{style} Colors: navy track jacket with a red and green chest panel, navy track pants, charcoal herringbone cap."
+  - name: leninskiy
+    prompt: "{style} Colors: teal green track jacket with red and white sleeve stripes, teal track pants, black flat cap."

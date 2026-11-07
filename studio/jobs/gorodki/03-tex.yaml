@@ -1,0 +1,93 @@
+# Городки (волна 17, переделка графики): материалы двора для Blender — фото-текстуры (потом seamless.py),
+# двери гаражей целиком, деревья и кусты на белом (потом вырезка BiRefNet), фотопанорама-задник.
+# python studio/run.py studio/jobs/gorodki/03-tex.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds: [51, 52]
+items:
+  - name: dirt
+    prompt: >-
+      Seamless tileable texture, straight top-down photograph of hard packed dry light brown dirt ground of a courtyard playground,
+      fine sand, scattered small grey pebbles, a few dry grass bits, footprints barely visible, even soft daylight, no shadows of objects, high detail, photorealistic.
+  - name: grass
+    prompt: >-
+      Seamless tileable texture, straight top-down photograph of short trampled summer lawn grass with clover and small dandelion leaves,
+      some bare earth patches, even soft daylight, photorealistic, high detail.
+  - name: planks
+    prompt: >-
+      Seamless tileable texture, flat frontal photograph of a fence of old weathered horizontal wooden planks, grey-brown wood with faded green paint peeling,
+      visible grain, cracks and nail holes, narrow dark gaps between boards, even daylight, photorealistic.
+  - name: birch
+    prompt: >-
+      Seamless tileable texture, macro photograph of smooth light birch wood surface, pale cream wood with fine straight grain lines along the length,
+      slight handling dirt, a tiny knot, even light, photorealistic.
+  - name: endgrain
+    prompt: >-
+      Macro photograph of the cut end of a round birch wood log, circular cross-section filling the whole frame, concentric growth rings,
+      pale cream wood, saw marks, centered, flat even light, photorealistic.
+  - name: batwood
+    prompt: >-
+      Seamless tileable texture, macro photograph of smooth varnished honey brown hardwood, long straight grain, slight scratches and dents from use,
+      even light, photorealistic.
+  - name: roof
+    prompt: >-
+      Seamless tileable texture, top-down photograph of old black bitumen roofing felt on a garage roof, patched seams, small debris, moss in places,
+      even light, photorealistic.
+  - name: concrete
+    prompt: >-
+      Seamless tileable texture, flat frontal photograph of an old grey concrete wall with cracks, stains and patches, Soviet garage cooperative,
+      even daylight, photorealistic.
+  - name: door-green
+    width: 1152
+    prompt: >-
+      Flat frontal orthographic photograph of an old Soviet metal garage double door filling the entire frame edge to edge, painted faded green,
+      riveted steel sheets with vertical seam in the middle, rust streaks running down, a small padlock, dented, peeling paint, even daylight,
+      no frame around, no wall, no sky, no ground, no text, photorealistic.
+  - name: door-blue
+    width: 1152
+    prompt: >-
+      Flat frontal orthographic photograph of an old Soviet metal garage double door filling the entire frame edge to edge, painted faded sky blue,
+      riveted steel sheets with vertical seam in the middle, rust stains, a small padlock and a handle, dented, peeling paint, even daylight,
+      no frame around, no wall, no sky, no ground, no text, photorealistic.
+  - name: door-red
+    width: 1152
+    prompt: >-
+      Flat frontal orthographic photograph of an old Soviet metal garage double door filling the entire frame edge to edge, painted faded brick red brown,
+      riveted steel sheets with vertical seam in the middle, heavy rust patches, a small padlock, dented, even daylight,
+      no frame around, no wall, no sky, no ground, no text, photorealistic.
+  - name: birch-tree
+    width: 832
+    height: 1216
+    prompt: >-
+      A single tall birch tree in full summer foliage, whole tree from roots to crown fully visible, white bark with black marks,
+      isolated on a plain pure white background, centered, photorealistic, soft daylight.
+  - name: poplar-tree
+    width: 832
+    height: 1216
+    prompt: >-
+      A single tall green poplar tree in summer, whole tree from trunk base to the top fully visible, dense foliage,
+      isolated on a plain pure white background, centered, photorealistic, soft daylight.
+  - name: lilac-bush
+    width: 1216
+    height: 832
+    prompt: >-
+      A single wide green lilac bush with some purple flowers, whole bush fully visible including the base,
+      isolated on a plain pure white background, centered, photorealistic, soft daylight.
+  - name: weeds
+    width: 1216
+    height: 832
+    prompt: >-
+      A clump of tall wild grass, weeds and burdock leaves growing together, whole clump fully visible including the base,
+      isolated on a plain pure white background, photorealistic, soft daylight.
+  - name: backdrop
+    width: 1920
+    height: 640
+    prompt: >-
+      Wide panoramic photograph taken at eye level from a dirt playground in a Russian provincial town in the 1990s, summer evening, warm sun:
+      in the distance a long row of old metal garages, behind them tall poplars and birches and two five-storey grey panel apartment buildings
+      with balconies and hanging laundry, blue sky with light clouds. Flat horizon, the bottom of the frame is trampled grass. No people, no cars, no text, photorealistic.

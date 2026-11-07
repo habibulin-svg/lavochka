@@ -12,7 +12,6 @@ import { launch, powFor, simulate, type Throw } from './physics';
 import { Yard3D, type RodPose } from './scene';
 import './gorodki.css';
 
-export const PREF_PLACE = 'gorodki.place';
 export const PREF_HINT = 'gorodki.hint';
 const PREF_MUSIC = 'gorodki.music';
 const PREF_STYLE = 'gorodki.style';
@@ -178,8 +177,16 @@ export function createView(): GameView<State, Event> {
     bannerT = performance.now() + ms / Math.max(0.5, ctx.speed());
   }
 
+  /** Разработка: ?gkpose=<фаза> — замереть в позе броска (подбор анимации). */
+  const dbgPose = import.meta.env.DEV ? new URLSearchParams(location.search).get('gkpose') : null;
+
   function frame(now: number) {
     raf = requestAnimationFrame(frame);
+    if ((dbgPose != null || v?.shot) && v) {
+      yard.thrower = { seat: v.seats[0], x: 0, line: -13 };
+      const ph = dbgPose != null ? Number(dbgPose) : 0.48;
+      yard.phase = Number.isFinite(ph) ? ph : null;
+    }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     if (document.hidden) return;
@@ -282,20 +289,6 @@ export function createView(): GameView<State, Event> {
     );
     box.appendChild(
       segRow(
-        'Двор',
-        [
-          ['garazhi', 'за гаражами'],
-          ['dvor', 'у домов'],
-        ],
-        () => store.get<string>(PREF_PLACE, 'garazhi'),
-        (x) => {
-          store.set(PREF_PLACE, x);
-          yard.setPlace(x);
-        }
-      )
-    );
-    box.appendChild(
-      segRow(
         '♪ Музыка',
         [
           ['on', 'вкл'],
@@ -362,7 +355,8 @@ export function createView(): GameView<State, Event> {
         hit++;
       }
       // камера: за битой, потом — на город
-      if (by < -3) yard.camTo('flight', { x: bx, y: Math.min(by, -3) }, 5);
+      if (by < -3 && ev.line < -8 && by > ev.line + 3.5) yard.camTo('flight', { x: bx, y: Math.min(by, -3) }, 5);
+      else if (by < -3 && ev.line < -8) yard.camTo('aim', undefined, 4);
       else if (!followed) {
         followed = true;
         yard.camTo('city', undefined, 3.5);
@@ -407,7 +401,12 @@ export function createView(): GameView<State, Event> {
       lupaTag = wrap.querySelector('.gk-lupa') as HTMLElement;
       yard = new Yard3D(wrap.querySelector('.gk-cv') as HTMLElement);
       yard.lupa = store.get<string>('gorodki.lupa', 'on') !== 'off';
-      yard.setPlace(store.get<string>(PREF_PLACE, 'garazhi'));
+      // двор и люди грузятся — боты подождут
+      ctx.hold?.(20000);
+      void yard.loaded.then(
+        () => ctx.hold?.(0),
+        () => ctx.hold?.(0)
+      );
       yard.camTo('aim');
       yard.snapCam();
       bindInput();
@@ -416,18 +415,17 @@ export function createView(): GameView<State, Event> {
       document.addEventListener('visibilitychange', vis);
       cleanup.push(() => document.removeEventListener('visibilitychange', vis));
       raf = requestAnimationFrame(frame);
-      if (ctx.demo) ctx.hold?.(0);
     },
     setView(s) {
       v = s;
       showState(s);
-      if (s.shot) {
-        yard.lupa = false;
+      if (s.shot && dbgPose == null) {
+        // превью карточки: замах у кона, город — в лупе
         hud.style.display = 'none';
-        lupaTag.style.display = 'none';
-        yard.thrower = { seat: 99, x: 0, line: -13 };
-        yard.setBat({ x: 0.05, y: -0.55, z: 0.26, a: 0.35, roll: 0, stand: false });
-        yard.shotCam();
+        yard.thrower = { seat: s.seats[0], x: 0, line: -13 };
+        yard.phase = 0.48;
+        yard.camTo('aim');
+        yard.snapCam();
       }
       syncMusic();
     },
