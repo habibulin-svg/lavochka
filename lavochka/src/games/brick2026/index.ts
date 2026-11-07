@@ -6,7 +6,7 @@ import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { store } from '../../core/settings';
 import { h } from '../../core/util';
-import { drawBackdrop, drawBoard, drawPreview, glowText } from './render';
+import { accentOf, drawBackdrop, drawBoard, drawPreview, frost, glowText, labelText } from './render';
 import { H, HIDDEN, KINDS, newTet, stepTet, type Tet, type TetEvent, type TetIn, W } from './tetris';
 import './brick2026.css';
 
@@ -325,12 +325,15 @@ class Game {
     }
     const g = this.g;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    drawBackdrop(g, w, hh, this.time);
+    drawBackdrop(g, w, hh, this.time, this.t.level);
     // раскладка: логический лист 620×640, поле по центру
     const LW = 620;
     const LH = 640;
-    const s = Math.min(w / LW, hh / LH);
-    g.setTransform(s, 0, 0, s, (w - LW * s) / 2, (hh - LH * s) / 2);
+    // на телефоне снизу экранные кнопки — раскладка над ними
+    const pad = this.el.querySelector('.bg-pad') as HTMLElement | null;
+    const lh = pad && pad.offsetParent ? Math.max(60, hh - 80 * dpr) : hh;
+    const s = Math.min(w / LW, lh / LH);
+    g.setTransform(s, 0, 0, s, (w - LW * s) / 2, (lh - LH * s) / 2);
     const t = this.t;
     const c = 28;
     const bx = 170;
@@ -381,15 +384,29 @@ class Game {
     g.setTransform(1, 0, 0, 1, 0, 0);
   }
 
+  /** Панель-табло: матовое стекло поверх фона, ободок цвета уровня, заголовок на светлой плашке. */
   private panelBox(g: CanvasRenderingContext2D, x: number, y: number, w: number, hh: number, title: string) {
-    g.fillStyle = 'rgba(6,8,28,0.82)';
-    g.strokeStyle = '#3a6aff';
-    g.lineWidth = 2;
+    const acc = accentOf(this.t.level);
+    frost(g, x, y, w, hh, 10, 'rgba(5,7,24,0.62)');
+    g.save();
     g.beginPath();
-    g.roundRect(x, y, w, hh, 8);
-    g.fill();
+    g.roundRect(x, y, w, hh, 10);
+    g.clip();
+    const top = g.createLinearGradient(0, y, 0, y + 30);
+    top.addColorStop(0, acc + '55');
+    top.addColorStop(1, acc + '00');
+    g.fillStyle = top;
+    g.fillRect(x, y, w, 30);
+    g.restore();
+    const fr = g.createLinearGradient(0, y, 0, y + hh);
+    fr.addColorStop(0, acc);
+    fr.addColorStop(1, acc + '44');
+    g.strokeStyle = fr;
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.roundRect(x, y, w, hh, 10);
     g.stroke();
-    glowText(g, title, x + w / 2, y + 16, 12, '#8ab4ff', 'center');
+    labelText(g, title, x + w / 2, y + 16, 11, '#eef3ff');
   }
 
   destroy() {

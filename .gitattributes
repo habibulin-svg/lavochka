@@ -17,4 +17,5 @@ lavochka/public/geroi/a/**/*.ttf filter=lfs diff=lfs merge=lfs -text
 lavochka/public/pinbol/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/pinbol/**/*.ogg filter=lfs diff=lfs merge=lfs -text
 lavochka/public/brick2026/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+lavochka/public/brick2026/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/tanchiki/**/*.ogg filter=lfs diff=lfs merge=lfs -text

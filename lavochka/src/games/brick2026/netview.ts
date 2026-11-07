@@ -5,7 +5,7 @@ import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { Controls, Music, MUSIC, PAD_HTML, sfx } from './index';
-import { drawBackdrop, drawBoard, drawMini, drawPreview, glowText } from './render';
+import { accentOf, drawBackdrop, drawBoard, drawMini, drawPreview, frost, glowText, labelText } from './render';
 import { H, HIDDEN, stepTet, type Place, type Tet, W } from './tetris';
 import { cloneTet, gridString, type BrEvent, type BrIn, type BrView } from './versus';
 import { SEATS } from './def';
@@ -140,12 +140,15 @@ export function createView(): GameView<BrView, BrEvent> {
       cv.height = hh;
     }
     g.setTransform(1, 0, 0, 1, 0, 0);
-    drawBackdrop(g, w, hh, time, '#2a1a6a');
     const v = view;
+    drawBackdrop(g, w, hh, time, v?.level ?? 0);
     if (!v) return;
-    scale = Math.min(w / LW, hh / LH);
+    // на телефоне снизу экранные кнопки — раскладка над ними
+    const padEl = cv.parentElement?.querySelector('.bg-pad') as HTMLElement | null;
+    const lh = padEl && padEl.offsetParent ? Math.max(60, hh - 80 * dpr) : hh;
+    scale = Math.min(w / LW, lh / LH);
     ox = (w - LW * scale) / 2;
-    oy = (hh - LH * scale) / 2;
+    oy = (lh - LH * scale) / 2;
     g.setTransform(scale, 0, 0, scale, ox, oy);
     rects = [];
     const mine = myBoard();
@@ -157,11 +160,13 @@ export function createView(): GameView<BrView, BrEvent> {
     const by = 60;
     const t = local ?? (mine?.full as Tet | undefined) ?? (watching && v.boards[0]?.full ? (v.boards[0].full as Tet) : null);
     if (t) {
-      drawBoard(g, t, bx, by, c, { ghost: true, incoming: mine?.inc ?? 0, dead: !!mine?.out, frame: '#5aa0ff', clearRows: t.clearRows, clearK: t.clearRows.length ? 1 - t.clearT / 18 : 0 });
+      drawBoard(g, t, bx, by, c, { ghost: true, incoming: mine?.inc ?? 0, dead: !!mine?.out, clearRows: t.clearRows, clearK: t.clearRows.length ? 1 - t.clearT / 18 : 0 });
+      box(bx + W * c + 14, by - 6, 72, 76, t.level);
       drawPreview(g, t.next, bx + W * c + 50, by + 40, 18, t.level);
-      glowText(g, 'СЛЕД.', bx + W * c + 50, by + 8, 11, '#8ab4ff', 'center');
+      labelText(g, 'СЛЕД.', bx + W * c + 50, by + 8, 10, '#eef3ff');
     }
     if (mine) {
+      box(bx - 88, by - 6, 76, 96, v.level);
       glowText(g, `KO ${mine.ko}`, bx - 50, by + 20, 16, '#ffd23a', 'center');
       glowText(g, `★${mine.badges}`, bx - 50, by + 46, 16, '#ff8a3a', 'center');
       glowText(g, `${mine.lines} р.`, bx - 50, by + 72, 14, '#3affd8', 'center');
@@ -236,6 +241,16 @@ export function createView(): GameView<BrView, BrEvent> {
       glowText(g, won ? 'ПОБЕДА!' : `${mine?.place ?? '—'}-Е МЕСТО`, LW / 2, by + 230, 30, won ? '#3aff8a' : '#ffd23a', 'center');
     }
     g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  /** Табличка на матовом стекле с ободком цвета уровня. */
+  function box(x: number, y: number, w: number, hh: number, level: number) {
+    frost(g, x, y, w, hh, 8, 'rgba(5,7,24,0.62)');
+    g.strokeStyle = accentOf(level) + 'aa';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.roundRect(x, y, w, hh, 8);
+    g.stroke();
   }
 
   function frame2(x: number, y: number, w: number, hh: number, target: boolean, out: boolean) {

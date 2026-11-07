@@ -1,0 +1,26 @@
+# Brick Game 2026: переделка двух фонов из 05-fony — там салют и Земля стояли по центру и прятались за стаканом.
+# Здесь главное — по левому и правому краю, середина пустая и тёмная.
+# python studio/run.py studio/jobs/brick2026/07-fony-kraya.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1344
+  height: 768
+  steps: 8
+style: >-
+  Wide cinematic digital matte painting, night mood, soft glowing light, rich deep colors, atmospheric haze,
+  the middle third of the picture is calm dark empty sky, all the interesting things are at the far left and far right edges, high quality wallpaper.
+  No people, no letters, no text, no logos, no frames.
+seeds: [51, 52]
+items:
+  - name: l5-orbita
+    prompt: >-
+      Outer space: a big teal-blue planet Earth filling the lower left corner with glowing atmosphere, a bright orange sun flare at the right edge,
+      a retro Soviet space station with long solar panels in the upper right, a crescent moon at the upper left, many stars and a faint teal nebula.
+      Palette: teal and orange. {style}
+  - name: l6-salyut
+    prompt: >-
+      Festive night: huge red and blue firework bursts on the left side and on the right side of the sky, sparkling trails falling down,
+      red brick fortress towers with green spires at the bottom left and bottom right corners, glowing smoke, dark blue sky in the middle.
+      Palette: red and royal blue. {style}

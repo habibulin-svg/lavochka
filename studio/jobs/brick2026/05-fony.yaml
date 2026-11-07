@@ -1,0 +1,55 @@
+# Brick Game 2026 (волна 17, доработка): фоны за стаканом — по одному на каждую из десяти палитр уровня (render.ts PALETTES).
+# Композиция: середина спокойная и тёмная (там встанет стакан, его ещё затемняем и размываем), главное — по краям и в небе.
+# python studio/run.py studio/jobs/brick2026/05-fony.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1344
+  height: 768
+  steps: 8
+style: >-
+  Wide cinematic digital matte painting, night or dusk mood, soft glowing light, rich deep colors, atmospheric haze, gentle bokeh,
+  calm dark empty middle area, details toward the left and right edges, high quality wallpaper. No people, no letters, no text, no logos, no frames.
+seeds: [11, 12]
+items:
+  - name: l0-dvor
+    prompt: >-
+      A Russian residential courtyard at night between tall old panel apartment blocks, many warm and blue lit windows,
+      a deep blue starry sky with a big pale moon, pink neon glow on the horizon, wet asphalt reflecting lights. Palette: electric blue and hot pink. {style}
+  - name: l1-bereza
+    prompt: >-
+      A birch forest on a riverbank at night under a bright green aurora borealis, white birch trunks at the sides,
+      green light reflected in calm water, fireflies. Palette: emerald and lime green on dark. {style}
+  - name: l2-zakat
+    prompt: >-
+      A synthwave sunset over a wide Russian river: huge striped magenta sun low on the horizon, purple clouds,
+      silhouettes of wooden houses and a church with onion domes far on the banks, violet water. Palette: magenta and purple. {style}
+  - name: l3-zima
+    prompt: >-
+      A snowy winter village at blue hour, wooden log cottages with carved windows covered in snow, frozen river, snow-laden fir trees at the sides,
+      falling snowflakes, cyan glowing frost. Palette: icy blue and turquoise. {style}
+  - name: l4-sad
+    prompt: >-
+      A blooming apple orchard on a spring night, pink blossoms on branches framing the sides, green grass, paper lanterns glowing softly,
+      petals floating in the air, starry sky. Palette: pink and fresh green. {style}
+  - name: l5-orbita
+    prompt: >-
+      Outer space seen from orbit: the curved teal-blue Earth at the bottom, a bright orange sunrise flare on its edge,
+      a small retro Soviet space station with solar panels at one side, stars. Palette: teal and orange. {style}
+  - name: l6-salyut
+    prompt: >-
+      Festive fireworks over an old Russian city at night: red brick fortress walls and towers with onion domes along the bottom,
+      big red and blue firework bursts in the dark sky, glowing smoke. Palette: red and royal blue. {style}
+  - name: l7-tumannost
+    prompt: >-
+      A deep space nebula: swirling violet and crimson gas clouds, glowing star clusters, a distant ringed planet at one side,
+      dark calm center. Palette: violet and purple with pink accents. {style}
+  - name: l8-metro
+    prompt: >-
+      A grand Moscow-style metro station hall at night, empty, marble columns and arches at the sides, ornate chandeliers glowing,
+      blue tiled vaults with red mosaic stars, polished floor reflections, deep perspective. Palette: deep blue and red. {style}
+  - name: l9-osen
+    prompt: >-
+      A golden autumn forest at sunset, orange and red maple and birch trees at the sides, glowing low sun through the haze,
+      a quiet path covered with fallen leaves, warm amber light. Palette: orange, red and golden yellow. {style}

@@ -1,0 +1,18 @@
+# Brick Game 2026: фактура кирпичика — серая глянцевая плитка, в игре тонируется под цвет палитры (render.ts block()).
+# Первая попытка («white glass tile») дала плоские белые квадраты на белом — здесь тёмный фон и сильная фаска, вырезка по рамке в export_fony.py.
+# python studio/run.py studio/jobs/brick2026/06-kirpich.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 768
+  height: 768
+  steps: 8
+seeds: [31, 32, 33, 34]
+items:
+  - name: plitka
+    prompt: >-
+      Game asset: one square glossy plastic block seen exactly from the front, flat orthographic view, centered on a pure black background,
+      large chunky beveled frame around a slightly raised flat square face, the top and left bevels are bright white highlights,
+      the bottom and right bevels are dark gray shadows, the face is medium gray with a soft glossy reflection streak in the upper left corner,
+      monochrome neutral gray only, clean sharp edges, no rounding, no text.
