@@ -179,6 +179,7 @@ export const SLUGS: Record<string, string> = {
   treasures: 'klad',
   pinbol: 'pinbol',
   brick2026: 'brick-game-2026',
+  tanchiki: 'tanchiki',
   shariki: 'shariki',
   eggs: 'yayca-dinozavrov',
   gops: 'gops',

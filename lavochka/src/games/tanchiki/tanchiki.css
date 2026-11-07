@@ -1,0 +1,20 @@
+/* Танчики: поле на canvas, крестовина и кнопка огня на телефоне. */
+.tk-wrap { position: relative; width: 100%; height: min(84vh, 820px); min-height: 380px; user-select: none; -webkit-user-select: none; border-radius: 12px; overflow: hidden; background: #2a2d1e; }
+.tk-cv { display: block; width: 100%; height: 100%; touch-action: none; }
+.tk-pad { display: none; position: absolute; left: 0; right: 0; bottom: 8px; justify-content: space-between; align-items: flex-end; padding: 0 12px; pointer-events: none; }
+.tk-cross { position: relative; width: 150px; height: 150px; pointer-events: auto; }
+.tk-cross button, .tk-fire { position: absolute; width: 52px; height: 52px; border-radius: 12px; border: 2px solid rgba(255,220,120,.6); background: rgba(40,40,20,.55); color: #ffe9b8; font-size: 22px; touch-action: none; }
+.tk-cross [data-k=KeyW] { left: 49px; top: 0; }
+.tk-cross [data-k=KeyA] { left: 0; top: 49px; }
+.tk-cross [data-k=KeyD] { left: 98px; top: 49px; }
+.tk-cross [data-k=KeyS] { left: 49px; top: 98px; }
+.tk-fire { position: relative; width: 76px; height: 76px; border-radius: 50%; background: rgba(200,40,30,.6); pointer-events: auto; font-size: 30px; }
+.tk-panel { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.tk-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; }
+.tk-row .seg { flex-wrap: wrap; }
+.tk-row .seg button { padding: 2px 6px; font-size: 12px; }
+@media (pointer: coarse), (max-width: 760px) {
+  .tk-pad { display: flex; }
+  .tk-wrap { height: min(88vh, 170vw); }
+  .tk-cv { height: calc(100% - 160px); }
+}

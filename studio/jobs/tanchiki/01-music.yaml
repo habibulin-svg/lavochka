@@ -1,0 +1,18 @@
+# Танчики (волна 17): фоновая музыка уровней, без слов. Чужих мелодий не берём — только жанр.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/tanchiki/01-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/tanchiki/01-music
+max_duration: 120
+tracks:
+  - name: march
+    seeds: [11, 22]
+    style: >-
+      chiptune, 8-bit, instrumental, 132 bpm, heroic military march, snare drum rolls, square wave brass melody,
+      triangle bass, noise channel percussion, major key, determined and bold, retro video game music
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: battle
+    seeds: [11, 22]
+    style: >-
+      synthwave rock, instrumental, 140 bpm, tense and driving, distorted guitar riffs, analog synth bass arpeggio,
+      big gated drums, minor key, action, arcade battle
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
