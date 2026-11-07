@@ -432,6 +432,7 @@ const mod: ArcadeModule = {
     { id: 'a', label: 'Тип A', hint: 'марафон' },
     { id: 'b', label: 'Тип B', hint: '25 рядов' },
   ],
+  netHome: true,
   net: { label: 'Битва до 16', hint: 'каждый сам за себя: мусорные ряды соперникам, по сети или с ботами', load: () => import('./net').then((m) => m.default) },
   mount(root, opts) {
     return new Game(root, opts);

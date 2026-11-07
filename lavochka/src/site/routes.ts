@@ -385,7 +385,7 @@ export const RESERVED = ['novosti', 'blog', 'forum', 'chat', 'lobbi', 'turniry',
 
 export type Route =
   | { kind: 'yard'; cat?: string }
-  | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string }
+  | { kind: 'game'; id: string; preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string; solo?: boolean }
   | { kind: 'table'; code: string }
   | { kind: 'search'; q: string }
   /** Новости и блог: список (/novosti/, /novosti/stranica-2/) или запись (/blog/<адрес>/) — готовый текст с сервера. */
@@ -436,7 +436,7 @@ export function parseRoute(pathname: string, search = ''): Route {
     return gd ? { kind: 'game', id: 'gadanie', mode: gd.mode } : { kind: 'missing', path: p };
   }
   if (rules && (hit.article || hit.mode)) return { kind: 'missing', path: p };
-  return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined, article: hit.article, mode: hit.mode };
+  return { kind: 'game', id: hit.id, preset: hit.preset, rules: rules || undefined, play: q.has('igra') || undefined, article: hit.article, mode: hit.mode ?? (q.get('odin') || undefined), solo: q.has('odin') || undefined };
 }
 
 /** Адрес экрана игры: у варианта со своей страницей — её адрес, иначе — адрес игры. */

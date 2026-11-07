@@ -51,6 +51,9 @@ export interface ArcadeModule {
   starts?: { id: string; label: string }[];
   /** Сетевой режим (дуэль, битва): обычный стол со своим GameDef — кнопка в карточке открывает его экран настройки. */
   net?: { label: string; hint?: string; load: () => Promise<GameModule> };
+  /** Вход — обычный экран игры (настройка стола сетевого режима, правила, текст страницы), а одиночные режимы —
+   * кнопками «Одному» на нём (адрес «?odin=<режим>»). Без флага аркада открывается сразу, а стол — кнопкой из карточки. */
+  netHome?: boolean;
   /** Счёт не известен (эмуляция) — таблицу рекордов не показываем. */
   noRecords?: boolean;
   /** На телефоне переключатель режимов — над игрой (у кружка листы длинные, до вкладок в панели не долистать). */
@@ -66,7 +69,7 @@ export const isArcade = (m: unknown): m is ArcadeModule => !!m && (m as ArcadeMo
 
 /** Открыть аркаду; возвращает «остановить» — для ухода с экрана мимо меню (кнопка «назад» браузера). */
 /** `at.mode` — открыть сразу эту игру серии (адрес страницы игры); `at.onMode` — игрок выбрал другую. */
-export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void; onNet?: () => void } = {}): () => void {
+export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: string; onMode?: (mode: string) => void; onNet?: () => void; onMenu?: () => void } = {}): () => void {
   let mode = at.mode ?? mod.home ?? store.get<string>(`arcade.${mod.id}.mode`, mod.modes[0]?.id ?? 'A');
   if (!mod.modes.some((m) => m.id === mode)) mode = mod.modes[0]?.id ?? 'A';
   let inst: ArcadeInstance | null = null;
@@ -223,6 +226,7 @@ export function openArcade(mod: ArcadeModule, onBack: () => void, at: { mode?: s
       { text: 'Настройки', action: () => void openSettings() },
       // у аркады со своим «лобби» (кружок — «Путь») — вернуться в него, а не только во двор
       ...(home ? [{ text: `В начало — ${home.label}`, action: () => (modes.querySelector<HTMLButtonElement>(`[data-mode="${home.id}"]`) ?? null)?.click() }] : []),
+      ...(at.onMenu ? [{ text: 'В меню игры', action: () => (stop(), at.onMenu!()) }] : []),
       { text: 'Во двор', action: leave },
       { text: 'Продолжить', primary: true, action: () => setPaused(was) },
     ]);

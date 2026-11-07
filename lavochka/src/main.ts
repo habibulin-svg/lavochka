@@ -2,7 +2,7 @@
 import './styles/base.css';
 import { Sound } from './core/audio';
 import { openHome } from './core/home';
-import { isArcade, openArcade } from './core/arcade';
+import { type ArcadeModule, isArcade, openArcade } from './core/arcade';
 import { currentTable, nav, offerResume, resumeTable } from './core/session';
 import { closeAllModals, modal, mountScreen, showScreen } from './core/ui';
 import type { GameModule } from './core/view';
@@ -59,7 +59,7 @@ function presetOpts(mod: GameModule, preset?: string) {
   return preset ? mod.def.presets?.find((p) => p.id === preset)?.options : undefined;
 }
 
-async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string; net?: boolean } = {}) {
+async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boolean; play?: boolean; article?: boolean; mode?: string; net?: boolean; solo?: boolean } = {}) {
   // ярлык (например, «Шёл солдат» — поле кинь-двинь): открываем игру с заранее выбранными вариантами
   const g = entry.of ? byId(entry.of) : entry;
   if (!g?.load) return;
@@ -79,16 +79,26 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     if (my !== navSeq) return; // пока грузилось, ушли на другой экран
     // аркада с сетевым режимом: «Дуэль и битва» (или возврат со стола) — обычный экран настройки стола; «назад» — снова аркада
     const arcade = isArcade(mod) ? mod : null;
-    if (arcade?.net && (r.net || r.preset || r.rules)) {
+    // аркада с экраном игры (netHome): по умолчанию — экран стола, сама аркада — по «?odin» или странице режима
+    const solo = !!(r.solo || r.mode);
+    if (arcade?.net && (r.net || r.preset || r.rules || (arcade.netHome && !solo))) {
       mod = await arcade.net.load();
       if (my !== navSeq) return;
     }
     if (isArcade(mod)) {
       const a = mod;
+      if (a.netHome) {
+        const toHome = () => {
+          go(gamePath(a.id));
+          void openGame(entry);
+        };
+        stopArcade = openArcade(a, toYard, { mode: r.mode, onMode: (m) => go(`${gamePath(a.id)}?odin=${m}`, true), onNet: toHome, onMenu: toHome });
+        return;
+      }
       stopArcade = openArcade(a, toYard, { mode: r.mode, onMode: (m) => go(modePath(a.id, m), true), onNet: () => void openGame(entry, { net: true }) });
       return;
     }
-    const back = arcade ? () => void openGame(entry) : toYard;
+    const back = arcade && !arcade.netHome ? () => void openGame(entry) : toYard;
     // вошедшему — сохранение из базы, если там новее (продолжить партию с другого устройства)
     if (!mod.ownSaves) {
       await syncSave(mod.def.id);
@@ -114,12 +124,29 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
       },
     });
     homeEl()?.prepend(siteBar({ onSearch: searchFromBar }));
+    if (arcade?.netHome) soloBox(arcade, (m) => {
+      go(`${gamePath(arcade.id)}?odin=${m}`);
+      void openGame(entry, { mode: m, solo: true });
+    });
     const seo = attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
     // статья при игре (комбинации покера): пришли читать — сразу к тексту, игра выше
     if (r.article) void seo.then(() => document.querySelector('#app .seo-page')?.scrollIntoView());
   } catch (e: any) {
     modal(`<h2>Не загрузилось</h2><p>${esc(e?.message || e)}</p>`, [{ text: 'Ок', primary: true }]);
   }
+}
+
+/** Аркада с экраном игры: блок «Одному» над настройкой стола — кнопки одиночных режимов (тип A/B у Brick Game 2026). */
+function soloBox(a: ArcadeModule, play: (mode: string) => void) {
+  const card = homeEl()?.querySelector('.home-card');
+  if (!card) return;
+  const box = document.createElement('div');
+  box.className = 'solo-box';
+  box.innerHTML = `<h2>Одному</h2><div class="solo-modes">${a.modes
+    .map((m) => `<button class="btn primary" data-mode="${esc(m.id)}">▶ ${esc(m.label)}${m.hint ? `<small>${esc(m.hint)}</small>` : ''}</button>`)
+    .join('')}</div><h2 class="solo-net">${esc(a.net?.label ?? 'По сети')}</h2>${a.net?.hint ? `<p class="solo-hint">${esc(a.net.hint)}</p>` : ''}`;
+  box.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((b) => (b.onclick = () => play(b.dataset.mode!)));
+  card.querySelector('h2')?.replaceWith(box);
 }
 
 /** Поиск из шапки страницы игры — во двор, на найденное. */
