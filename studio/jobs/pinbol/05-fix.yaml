@@ -1,0 +1,27 @@
+# Пинбол: переделки 04-parts — карусель строго сверху (в 04 вышла сбоку), вагончик горок (в 04 — машинка автодрома),
+# дерево корпуса ровной текстурой (в 04 — дверцы шкафа).
+# studio/run.cmd run.py jobs/pinbol/05-fix.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic product render, crisp details, soft studio lighting from the top left, glossy materials, high contrast, clean silhouette.
+seeds: [61, 62, 63]
+items:
+  - name: carousel
+    prompt: >-
+      Flat overhead drone photo looking straight down at the round roof of a toy carousel: a perfect circle divided into twelve radial wedges
+      alternating red and white like a pie, a small golden knob exactly in the center, a ring of small light bulbs along the circular edge,
+      symmetrical, centered, on a plain flat white background. {style}
+  - name: coaster
+    prompt: >-
+      A small toy roller coaster train car seen from the side: an open red and gold car with two rows of seats and a safety bar,
+      small metal wheels underneath gripping a short piece of steel rail track, glossy, centered, on a plain flat white background. {style}
+  - name: tex-wood
+    prompt: >-
+      Seamless texture, close-up of dark varnished walnut wood planks, long straight deep brown grain running horizontally,
+      glossy lacquer, uniform, fills the whole image edge to edge, even lighting.

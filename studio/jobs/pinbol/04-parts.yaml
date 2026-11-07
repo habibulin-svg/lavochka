@@ -1,0 +1,139 @@
+# Пинбол (доработка графики, 2026-11-08): все детали стола моделью вместо кодовых болванок.
+# Детали — на ровном фоне, потом вырезка BiRefNet (studio/runners/cutout.py) в export_art.py;
+# текстуры (хромированная рейка, пластик рампы, дерево корпуса, пластик рогаток, резина) — на весь лист.
+# Белые детали (стойки, мишени, лампы, резина, рампа) игра тонирует под цвет стола умножением.
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем вовсе.
+# studio/run.cmd run.py jobs/pinbol/04-parts.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic product render of a pinball machine part, crisp details, soft studio lighting from the top left, glossy materials, high contrast, clean silhouette.
+seeds: [51, 52, 53]
+items:
+  # ---------------------------------------------------------------- шар, пружина, флипперы
+  - name: ball
+    prompt: >-
+      One polished chrome steel ball bearing, perfect sphere, mirror finish reflecting a dark room with a bright window highlight on the top left,
+      centered, on a plain flat medium gray background. {style}
+  - name: plunger
+    prompt: >-
+      A vertical chrome pinball plunger rod standing upright: a round red rubber tip on top, a shiny coiled steel spring around the rod below it,
+      a chrome knob at the bottom, side view, centered, tall and narrow, on a plain flat white background. {style}
+  - name: flipper-red
+    prompt: >-
+      Top view of one pinball flipper bat lying horizontally: a glossy white plastic tapered bat with a bright red rubber ring around its edge,
+      the wide rounded end on the left with a chrome pivot screw, the narrow rounded tip on the right,
+      centered, on a plain flat light gray background. {style}
+  - name: flipper-pink
+    prompt: >-
+      Top view of one pinball flipper bat lying horizontally: a glossy white plastic tapered bat with a hot pink neon rubber ring around its edge,
+      the wide rounded end on the left with a chrome pivot screw, the narrow rounded tip on the right,
+      centered, on a plain flat light gray background. {style}
+  - name: flipper-orange
+    prompt: >-
+      Top view of one pinball flipper bat lying horizontally: a glossy white plastic tapered bat with a bright orange rubber ring around its edge,
+      the wide rounded end on the left with a chrome pivot screw, the narrow rounded tip on the right,
+      centered, on a plain flat light gray background. {style}
+
+  # ---------------------------------------------------------------- грибки (по столу)
+  - name: bumper-park
+    prompt: >-
+      Top view of one round pinball pop bumper seen exactly from directly above: a glossy red translucent plastic cap with a yellow star in the middle,
+      a white ring skirt and a chrome rim, circular, centered, on a plain flat white background. {style}
+  - name: bumper-disco
+    prompt: >-
+      Top view of one round pinball pop bumper seen exactly from directly above: a glossy translucent cyan neon plastic cap with a hot pink ring
+      and a sparkling silver center, chrome rim, circular, centered, on a plain flat white background. {style}
+  - name: bumper-kosmos
+    prompt: >-
+      Top view of one round pinball pop bumper seen exactly from directly above: a glossy orange and white plastic cap painted like a small planet
+      with a ring, chrome rim, circular, centered, on a plain flat white background. {style}
+
+  # ---------------------------------------------------------------- мишени, столбики, лунка, вертушка, лампы
+  - name: post
+    prompt: >-
+      Top view of one small pinball rubber post seen exactly from directly above: a thick plain white rubber ring around a small chrome peg,
+      circular, centered, on a plain flat dark gray background. {style}
+  - name: drop
+    prompt: >-
+      Front view of one pinball drop target: a flat white plastic rectangular target face wider than tall, glossy, slightly rounded corners,
+      centered, on a plain flat dark gray background. {style}
+  - name: standup
+    prompt: >-
+      Front view of one pinball standup target: a small white plastic rectangular target face with rounded corners and a black bullseye ring
+      mounted on a short thin metal spring stem, glossy, centered, on a plain flat dark gray background. {style}
+  - name: saucer
+    prompt: >-
+      Top view of one round chrome metal pinball kicker saucer seen exactly from directly above: a shallow polished steel cup with concentric rings
+      and a dark hole in the center, circular, centered, on a plain flat white background. {style}
+  - name: spinner
+    prompt: >-
+      Front view of one pinball spinner: a flat rectangular polished chrome metal plate wider than tall hanging on a thin steel wire axle,
+      a bright red five-pointed star printed in the middle, centered, on a plain flat white background. {style}
+  - name: insert
+    prompt: >-
+      Top view of one round glossy translucent white plastic pinball light insert lens, milky white with a bright glowing center and a subtle faceted pattern,
+      circular, centered, on a plain flat black background. {style}
+  - name: arrow
+    prompt: >-
+      Top view of one glossy translucent white plastic pinball arrow light insert shaped like a chevron arrow pointing straight up,
+      milky white with a bright glowing center, centered, on a plain flat black background. {style}
+
+  # ---------------------------------------------------------------- текстуры
+  - name: tex-rail
+    prompt: >-
+      Seamless texture, a close-up of a long horizontal polished chrome steel rail tube, bright highlight stripe along the top, dark reflections along the bottom,
+      fills the whole image edge to edge.
+  - name: tex-ramp
+    prompt: >-
+      Seamless texture, top view of a clear transparent white acrylic plastic ramp surface running horizontally, glossy reflections and subtle streaks,
+      two shiny chrome wire rails along the top and bottom edges, fills the whole image edge to edge.
+  - name: tex-wood
+    prompt: >-
+      Seamless texture, dark varnished wood of an old arcade cabinet, deep brown and black grain, glossy lacquer with soft reflections,
+      fills the whole image edge to edge, even lighting.
+  - name: tex-rubber
+    prompt: >-
+      Seamless texture, close-up of a plain white rubber band surface, soft matte with subtle fine grain, fills the whole image edge to edge, even lighting.
+  - name: tex-plastic-park
+    prompt: >-
+      Seamless texture, glossy printed plastic with a bright amusement park pattern: red and white circus stripes with small yellow stars and light bulbs,
+      fills the whole image edge to edge.
+  - name: tex-plastic-disco
+    prompt: >-
+      Seamless texture, glossy printed plastic with a neon 1990s disco pattern: hot pink, cyan and purple zigzags and small sparkles on black,
+      fills the whole image edge to edge.
+  - name: tex-plastic-kosmos
+    prompt: >-
+      Seamless texture, glossy printed plastic with a retro space pattern: deep blue with small white stars, orange comets and tiny planets,
+      fills the whole image edge to edge.
+
+  # ---------------------------------------------------------------- фигуры столов
+  - name: carousel
+    prompt: >-
+      Top view of a toy carousel seen exactly from directly above: a round striped canopy roof in red, white and yellow segments with a golden spire in the center
+      and small light bulbs around the edge, circular, centered, on a plain flat white background. {style}
+  - name: coaster
+    prompt: >-
+      A small toy roller coaster car with two seats painted red and gold, seen from the side three-quarter view, glossy, centered, on a plain flat white background. {style}
+  - name: mirrorball
+    prompt: >-
+      A sparkling disco mirror ball made of many small square mirror tiles reflecting pink, cyan and purple lights, perfect sphere, bright glints,
+      centered, on a plain flat dark gray background. {style}
+  - name: vinyl
+    prompt: >-
+      Top view of one black vinyl record seen exactly from directly above, shiny grooves with a glossy light reflection, a bright pink round label in the center,
+      circular, centered, on a plain flat white background. {style}
+  - name: blackhole
+    prompt: >-
+      A glowing swirling black hole vortex seen from above: a pitch black center surrounded by a bright spiral accretion disk of orange, white and violet light,
+      circular, centered, on a plain flat black background.
+  - name: rocket
+    prompt: >-
+      A small toy retro space rocket standing vertically pointing straight up, white body with red nose cone and red fins, a round porthole window,
+      glossy, centered, on a plain flat white background. {style}
