@@ -1,0 +1,27 @@
+# Brick Game 2026 (волна 17): три мелодии на выбор, как три мелодии у старых приставочных «падающих фигур».
+# Без слов, в духе русской плясовой (трепак, «калинка»-ускорение), но без чужих мелодий: точную «Калинку» по нотам —
+# когда будет партитура (abc_file). Коробейников не берём — слишком связаны с чужим товарным знаком.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/brick2026/01-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/brick2026/01-music
+max_duration: 120
+tracks:
+  - name: a
+    seeds: [11, 22]
+    style: >-
+      russian folk dance, eurodance remix, instrumental, 140 bpm, energetic and joyful, fast balalaika tremolo lead,
+      bayan accordion riffs, four on the floor kick, supersaw synth pads, minor key, accelerating trepak feel, arcade energy
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: b
+    seeds: [11, 22]
+    style: >-
+      chiptune, 8-bit, instrumental, 150 bpm, russian folk melody in minor key, square wave lead, triangle bass,
+      noise channel drums, catchy and bouncy, retro video game music
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: c
+    seeds: [11, 22]
+    style: >-
+      synthwave, instrumental, 118 bpm, dreamy and driving, russian winter, sleigh bells, balalaika plucks,
+      analog synth arpeggios, gated reverb drums, deep bass, minor key, nostalgic
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
