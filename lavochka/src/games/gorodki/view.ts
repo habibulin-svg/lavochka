@@ -186,7 +186,7 @@ export function createView(): GameView<State, Event> {
     raf = requestAnimationFrame(frame);
     if ((dbgPose != null || v?.shot) && v) {
       yard.thrower = { seat: v.seats[0], x: 0, line: -13 };
-      const ph = dbgPose != null ? Number(dbgPose) : 0.48;
+      const ph = dbgPose != null ? Number(dbgPose) : NaN;
       yard.phase = Number.isFinite(ph) ? ph : null;
     }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
@@ -422,10 +422,10 @@ export function createView(): GameView<State, Event> {
       v = s;
       showState(s);
       if (s.shot && dbgPose == null) {
-        // превью карточки: замах у кона, город — в лупе
+        // превью карточки: стойка у кона с битой в обеих руках, город — в лупе
         hud.style.display = 'none';
         yard.thrower = { seat: s.seats[0], x: 0, line: -13 };
-        yard.phase = 0.48;
+        yard.phase = null;
         yard.camTo('aim');
         yard.snapCam();
       }

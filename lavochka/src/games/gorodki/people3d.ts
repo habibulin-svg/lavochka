@@ -94,7 +94,6 @@ function handVerts(model: THREE.Object3D, hand: THREE.Bone | undefined): { mesh:
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const DEG = Math.PI / 180;
 
 interface Person {
   root: THREE.Group;
@@ -113,24 +112,32 @@ interface Person {
   gripAt: THREE.Vector3;
 }
 
-/** Поза броска по фазе: угол кисти вокруг плеча (от «вперёд» по часовой — вправо), высота, закрутка корпуса, наклон, бита. */
-function throwPose(p: number) {
-  // ключи: фаза → [угол кисти, высота кисти, закрутка корпуса, наклон, угол биты относительно руки]
-  const K: [number, number, number, number, number][] = [
-    [0, 25, 0.95, 0, 6],
-    [0.3, 95, 1.12, -32, -4],
-    [0.55, 150, 1.14, -62, -10],
-    [0.62, 60, 1.1, 0, 8],
-    [0.7, -25, 1.08, 38, 14],
-    [0.85, -70, 1.02, 55, 10],
-    [1, 10, 0.95, 10, 4],
-  ];
+type V3 = [number, number, number];
+/** Ключевые позы бросающего: фаза, поворот корпуса к полю (рад, 0 — грудью на город, минус — левым боком),
+ * правая кисть относительно правого плеча в осях тела [вперёд, вправо, вверх] (м), бита [вперёд, вправо, вверх],
+ * левая рука: 0 — на бите, 1 — показывает на город, 2 — опущена в сторону. */
+const KEYS: [number, number, V3, V3, number][] = [
+  // стойка: боком к полю, бита в обеих руках перед собой концом к земле
+  [0, -1.0, [0.3, -0.12, -0.45], [0.55, 0.05, -0.85], 0],
+  // замах: рука с битой уходит назад-вниз за правый бок, локоть согнут, левая показывает на город
+  [0.3, -1.25, [-0.04, 0.24, -0.3], [-0.5, 0.4, -0.65], 1],
+  [0.55, -1.45, [-0.24, 0.17, -0.2], [-0.75, 0.35, -0.5], 1],
+  // выброс: корпус раскручивается, рука идёт сбоку на уровне пояса, бита плашмя
+  [0.62, -0.45, [0.2, 0.42, -0.14], [-0.15, 0.97, -0.08], 2],
+  [0.72, 0.25, [0.45, 0.15, -0.06], [0.6, 0.6, -0.1], 2],
+  // доводка: рука уходит поперёк тела, потом возвращается
+  [0.86, 0.5, [0.35, -0.28, -0.12], [0.6, -0.3, -0.5], 2],
+  [1, -0.7, [0.28, -0.08, -0.42], [0.55, 0.05, -0.85], 0],
+];
+
+function keyPose(ph: number) {
   let i = 0;
-  while (i < K.length - 2 && p > K[i + 1][0]) i++;
-  const [p0, a0, h0, t0, l0] = K[i];
-  const [p1, a1, h1, t1, l1] = K[i + 1];
-  const k = smooth(THREE.MathUtils.clamp((p - p0) / (p1 - p0), 0, 1));
-  return { ang: lerp(a0, a1, k) * DEG, h: lerp(h0, h1, k), twist: lerp(t0, t1, k) * DEG, lean: lerp(l0, l1, k) * DEG };
+  while (i < KEYS.length - 2 && ph > KEYS[i + 1][0]) i++;
+  const a = KEYS[i];
+  const b = KEYS[i + 1];
+  const k = smooth(THREE.MathUtils.clamp((ph - a[0]) / (b[0] - a[0]), 0, 1));
+  const mix = (x: V3, y: V3): V3 => [lerp(x[0], y[0], k), lerp(x[1], y[1], k), lerp(x[2], y[2], k)];
+  return { yaw: lerp(a[1], b[1], k), hand: mix(a[2], b[2]), bat: mix(a[3], b[3]), left: [a[4], b[4], k] as const };
 }
 
 export class Crowd {
@@ -243,7 +250,7 @@ export class Crowd {
       // где стоит: бросающий — у черты вполоборота, трое ждущих сидят на лавочке, остальные стоят рядом
       if (thr) {
         p.root.position.set(this.thrower.x - 0.4, 0, -(this.thrower.line - 0.3));
-        p.root.rotation.y = Math.PI + (this.phase == null ? 0.28 : 0);
+        p.root.rotation.y = Math.PI + keyPose(this.phase ?? 0).yaw;
       } else {
         const k = bench++;
         if (k < 3) {
@@ -285,50 +292,43 @@ export class Crowd {
         if (p.waveT > 1.6) p.waveT = -1;
       }
       if (p.waveT >= 0 && R) this.posCheer(p, sit);
-      else if (thr && R && this.phase != null) this.posThrow(p);
+      else if (thr && R) this.posThrow(p);
       else if (R) this.posHold(p, thr);
       p.bat.visible = !thr || this.phase == null || this.phase < 0.62;
     }
   }
 
-  /** Кисть на дуге вокруг правого плеча, корпус закручен. */
+  /** Бросающий: правая кисть и бита — по ключевым позам в осях тела, левая — на бите, показывает на город или опущена. */
   private posThrow(p: Person) {
     const b = p.bones;
     const ph = this.phase ?? 0;
-    const pose = throwPose(this.phase == null ? 0 : ph);
+    const k = keyPose(ph);
     const yaw = p.root.rotation.y;
-    // закрутка корпуса вокруг вертикали и наклон вперёд
-    if (b.hips) rotateWorld(b.hips, _q.setFromAxisAngle(UP, pose.twist * 0.25));
-    if (b.spine) rotateWorld(b.spine, _q.setFromAxisAngle(UP, pose.twist * 0.5));
-    if (b.spine) {
-      const side = _a.set(1, 0, 0).applyAxisAngle(UP, yaw).normalize();
-      rotateWorld(b.spine, _q.setFromAxisAngle(side, -pose.lean * 0.5));
-    }
+    const bf = new THREE.Vector3(0, 0, 1).applyAxisAngle(UP, yaw);
+    const br = new THREE.Vector3(-1, 0, 0).applyAxisAngle(UP, yaw);
+    const body = (v: V3) => new THREE.Vector3().addScaledVector(bf, v[0]).addScaledVector(br, v[1]).addScaledVector(UP, v[2]);
+    // наклон вперёд на выбросе
+    if (b.spine) rotateWorld(b.spine, _q.setFromAxisAngle(br, ph > 0.55 && ph < 0.95 ? 0.18 : 0.06));
     const sh = wpos(b.upper_armR, new THREE.Vector3());
-    // «вперёд» персонажа в мире: −z при yaw = π
-    const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(UP, yaw);
-    const right = new THREE.Vector3(-1, 0, 0).applyAxisAngle(UP, yaw);
-    // руки у гопника короткие: дуга — на длину руки, высота — от плеча
-    const reach = (boneLen(b.upper_armR, b.forearmR) + boneLen(b.forearmR, b.handR)) * 0.96;
-    const dir = fwd.clone().multiplyScalar(Math.cos(pose.ang)).addScaledVector(right, Math.sin(pose.ang));
-    const target = sh.clone().addScaledVector(dir, reach);
-    target.y = sh.y + (pose.h - 1.12) * 0.8;
-    ik2(b.upper_armR, b.forearmR, b.handR, target, new THREE.Vector3(0, -1, 0).addScaledVector(fwd, -0.3));
-    // левая рука — для равновесия
-    if (b.upper_armL && b.handL) {
-      const shl = wpos(b.upper_armL, new THREE.Vector3());
-      const left = right.clone().negate();
-      const tl = shl.clone().addScaledVector(left, 0.28).addScaledVector(fwd, 0.18 + Math.sin(pose.ang) * 0.12);
-      tl.y = shl.y - 0.22;
-      ik2(b.upper_armL, b.forearmL, b.handL, tl, new THREE.Vector3(0, -1, 0));
-    }
-    // бита: рукоять в кисти, тело — вбок от дуги (плашмя, по касательной назад)
-    // бита — продолжение руки, чуть отстаёт от движения кисти по дуге
-    const along = fwd.clone().multiplyScalar(-Math.sin(pose.ang)).addScaledVector(right, Math.cos(pose.ang)); // d(dir)/d(угол)
-    const batDir = dir.clone().addScaledVector(along, ph < 0.55 ? -0.35 : 0.45).normalize();
-    batDir.y -= 0.08;
-    batDir.normalize();
+    const target = sh.clone().add(body(k.hand));
+    // локоть — назад и вниз: рука сгибается, а не торчит палкой
+    ik2(b.upper_armR, b.forearmR, b.handR, target, body([-0.15, 0.45, -1]));
+    const batDir = body(k.bat).normalize();
     this.hold(p, batDir);
+    // левая рука: смесь двух соседних положений
+    if (b.upper_armL && b.forearmL && b.handL) {
+      const shl = wpos(b.upper_armL, new THREE.Vector3());
+      const city = new THREE.Vector3(0, 0, -1);
+      const spot = (m: number) =>
+        m === 0
+          ? p.gripAt.clone().addScaledVector(batDir, 0.11)
+          : m === 1
+            ? shl.clone().addScaledVector(city, 0.42).add(new THREE.Vector3(0, -0.22, 0))
+            : shl.clone().addScaledVector(br, -0.14).addScaledVector(bf, 0.08).add(new THREE.Vector3(0, -0.5, 0));
+      const [m0, m1, t] = k.left;
+      const tl = spot(m0).lerp(spot(m1), t);
+      ik2(b.upper_armL, b.forearmL, b.handL, tl, body([-0.6, -0.4, -0.5]));
+    }
   }
 
   /** Дыхание и лёгкое покачивание. */
@@ -403,16 +403,18 @@ export class Crowd {
     p.bat.position.copy(p.root.position).setY(0.42).addScaledVector(fwd, 0.25).add(new THREE.Vector3(0, 0, 0).addScaledVector(new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw), 0.3));
   }
 
-  /** Бросающий стоит в шаг: левая нога чуть вперёд, правая отставлена. */
+  /** Бросающий стоит широко, ноги в шаг вдоль линии броска (корпус боком к полю). */
   private posStep(p: Person) {
     const b = p.bones;
     if (!b.thighL || !b.thighR) return;
     const yaw = p.root.rotation.y;
-    const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw);
-    const k = this.phase == null ? 1 : this.phase < 0.55 ? 1 - this.phase * 0.6 : 1.3;
-    rotateWorld(b.thighL, _q.setFromAxisAngle(side, -0.2 * k));
-    rotateWorld(b.thighR, _q.setFromAxisAngle(side, 0.16 * k));
-    if (b.shinR) rotateWorld(b.shinR, _q.setFromAxisAngle(side, -0.1 * k));
+    const bf = new THREE.Vector3(0, 0, 1).applyAxisAngle(UP, yaw);
+    const ph = this.phase ?? 0;
+    const k = ph > 0.55 && ph < 0.95 ? 1.25 : 1;
+    rotateWorld(b.thighL, _q.setFromAxisAngle(bf, -0.17 * k));
+    rotateWorld(b.thighR, _q.setFromAxisAngle(bf, 0.15 * k));
+    if (b.shinL) rotateWorld(b.shinL, _q.setFromAxisAngle(bf, 0.05 * k));
+    if (b.shinR) rotateWorld(b.shinR, _q.setFromAxisAngle(bf, -0.05 * k));
   }
 
   /** Радость: руки вверх, подпрыгнуть (сидя — без прыжка). */
