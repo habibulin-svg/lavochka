@@ -1,0 +1,16 @@
+# Танчики: граната заново — в 02-art «pineapple hand grenade» дала ананасы. Описываем саму гранату, без фруктов.
+# studio/run.cmd run.py jobs/tanchiki/03-granata.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds: [21, 22, 23, 24]
+items:
+  - name: bonus-grenade
+    prompt: >-
+      Game power-up icon: a military hand grenade, oval olive drab steel body with a deep grid of square segments, a gray metal fuse on top
+      with a curved safety lever along the side and a silver pull ring, glossy, centered, on a plain flat white background.
+      Detailed modern video game sprite art, crisp painted details, soft studio lighting from the top left, high contrast, clean silhouette.

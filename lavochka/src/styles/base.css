@@ -149,6 +149,13 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .solo-modes .btn small { font-weight: 400; font-size: 12px; opacity: 0.85; }
 .solo-box .solo-net { margin: 4px 0 2px; }
 .solo-hint { margin: 0 0 8px; font-size: 13px; opacity: 0.8; }
+/* одиночная аркада (core/arcade-home.ts): режимы, управление, правила окном */
+.arcade-home .solo-modes { margin-bottom: 4px; }
+.arcade-home-controls p { margin: 0 0 8px; line-height: 1.45; }
+.arcade-home-controls kbd, .arcade-rules kbd { display: inline-block; padding: 0 5px; border: 1px solid rgba(42, 18, 6, 0.35); border-bottom-width: 2px; border-radius: 4px; font-size: 12px; font-weight: 700; line-height: 1.5; background: rgba(255, 250, 235, 0.6); }
+.arcade-rules h3 { margin: 14px 0 4px; }
+.arcade-rules ul { margin: 4px 0; padding-left: 20px; }
+.arcade-rules li { margin: 2px 0; }
 .seat-row { display: grid; grid-template-columns: 26px 92px 118px 1fr; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255, 250, 235, 0.35); margin: 6px 0; border: 1px solid rgba(42, 18, 6, 0.2); }
 .seat-name { font-weight: 700; }
 .remote-note { font-size: 13px; font-style: italic; opacity: 0.7; }

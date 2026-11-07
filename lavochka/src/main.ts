@@ -3,6 +3,7 @@ import './styles/base.css';
 import { Sound } from './core/audio';
 import { openHome } from './core/home';
 import { type ArcadeModule, isArcade, openArcade } from './core/arcade';
+import { openArcadeHome } from './core/arcade-home';
 import { currentTable, nav, offerResume, resumeTable } from './core/session';
 import { closeAllModals, modal, mountScreen, showScreen } from './core/ui';
 import type { GameModule } from './core/view';
@@ -87,6 +88,37 @@ async function openGame(entry: CatalogEntry, r: { preset?: string; rules?: boole
     }
     if (isArcade(mod)) {
       const a = mod;
+      if (a.soloHome) {
+        const toHome = () => {
+          go(gamePath(a.id));
+          void openGame(entry);
+        };
+        if (solo) {
+          stopArcade = openArcade(a, toYard, { mode: r.mode, onMode: (m) => go(`${gamePath(a.id)}?odin=${m}`, true), onMenu: toHome });
+          return;
+        }
+        let rulesByUrl = !!r.rules;
+        openArcadeHome(a, {
+          onBack: toYard,
+          rules: r.rules,
+          topExtra: likeButton(a.id),
+          onPlay: (m) => {
+            go(`${gamePath(a.id)}?odin=${m}`);
+            void openGame(entry, { mode: m, solo: true });
+          },
+          onRules: (open) => {
+            const base = location.pathname.replace(/pravila\/?$/, '');
+            if (open) return go(base + 'pravila/', rulesByUrl, { rules: 1 });
+            if (popping || !location.pathname.endsWith('/pravila/')) return;
+            if (history.state?.rules && !rulesByUrl) history.back();
+            else go(base, true);
+            rulesByUrl = false;
+          },
+        });
+        homeEl()?.prepend(siteBar({ onSearch: searchFromBar }));
+        void attachSeo(homeEl(), location.pathname.replace(/pravila\/$/, ''));
+        return;
+      }
       if (a.netHome) {
         const toHome = () => {
           go(gamePath(a.id));

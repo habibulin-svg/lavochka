@@ -1,0 +1,135 @@
+# Танчики (доработка графики, 2026-11-08): все ассеты поля моделью вместо кодовых болванок.
+# Танки/бонусы/база/взрывы — на ровном фоне, потом вырезка BiRefNet (studio/runners/cutout.py) в export_art.py;
+# покрытия (кирпич, бетон, вода, лёд, земля) — квадратные текстуры сверху, бесшовными делает export_art.py.
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем вовсе.
+# studio/run.cmd run.py jobs/tanchiki/02-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed modern video game sprite art, crisp painted details, soft studio lighting from the top left, high contrast, clean silhouette.
+seeds: [11, 12, 13, 14]
+items:
+  # ---------------------------------------------------------------- танки: вид строго сверху, ствол вверх
+  - name: tank-p1
+    prompt: >-
+      Top-down orthographic view of a compact cartoon battle tank seen exactly from directly above, centered, square footprint,
+      painted bright golden yellow with dark olive details, two wide black rubber caterpillar tracks running along the left and right sides,
+      a round turret in the center with a hatch, a single cannon barrel pointing straight up to the top edge of the image,
+      on a plain flat light gray background. {style}
+  - name: tank-p2
+    prompt: >-
+      Top-down orthographic view of a compact cartoon battle tank seen exactly from directly above, centered, square footprint,
+      painted bright emerald green with dark green details, two wide black rubber caterpillar tracks running along the left and right sides,
+      a round turret in the center with a hatch, a single cannon barrel pointing straight up to the top edge of the image,
+      on a plain flat light gray background. {style}
+  - name: enemy-basic
+    prompt: >-
+      Top-down orthographic view of a compact cartoon enemy battle tank seen exactly from directly above, centered, square footprint,
+      painted steel gray with silver panels and rivets, two black caterpillar tracks along the left and right sides,
+      a small round turret in the center, a short cannon barrel pointing straight up to the top edge of the image,
+      on a plain flat white background. {style}
+  - name: enemy-fast
+    prompt: >-
+      Top-down orthographic view of a light fast cartoon scout tank seen exactly from directly above, centered, narrow sleek wedge-shaped hull,
+      painted pale sand beige with white racing stripes, thin black caterpillar tracks along the left and right sides,
+      a tiny flat turret, a thin cannon barrel pointing straight up to the top edge of the image,
+      on a plain flat white background. {style}
+  - name: enemy-power
+    prompt: >-
+      Top-down orthographic view of a cartoon assault tank seen exactly from directly above, centered, square footprint,
+      painted dark charcoal gray with orange warning stripes, two black caterpillar tracks along the left and right sides,
+      an angular turret in the center, a very long thick cannon barrel with a muzzle brake pointing straight up to the top edge of the image,
+      on a plain flat white background. {style}
+  - name: enemy-armor
+    prompt: >-
+      Top-down orthographic view of a huge heavy armored cartoon tank seen exactly from directly above, centered, wide square bulky hull,
+      painted light neutral gray with thick riveted armor plates and side skirts, two very wide black caterpillar tracks along the left and right sides,
+      a big round heavy turret in the center, a short thick cannon barrel pointing straight up to the top edge of the image,
+      on a plain flat white background. {style}
+
+  # ---------------------------------------------------------------- покрытия поля (текстуры сверху на весь лист)
+  - name: tex-brick
+    prompt: >-
+      Seamless texture, top view of a red clay brick wall laid in running bond, rows of rectangular orange-red bricks with light gray mortar lines,
+      slightly worn edges, even flat lighting, fills the whole image edge to edge.
+  - name: tex-steel
+    prompt: >-
+      Top view of one square reinforced concrete armor block, flat orthographic, fills the whole image edge to edge,
+      light gray steel plate with a thick beveled raised border, four big round rivets in the corners, scratches and subtle rust stains,
+      bright highlight on the top and left bevel, dark shadow on the bottom and right bevel.
+  - name: tex-water
+    prompt: >-
+      Seamless texture, top view of deep blue river water surface, gentle ripples and small waves with white sparkles, turquoise and navy tones,
+      fills the whole image edge to edge, even lighting.
+  - name: tex-ice
+    prompt: >-
+      Seamless texture, top view of a frozen pond surface, smooth pale cyan and white ice with fine cracks, frost streaks and glossy reflections,
+      fills the whole image edge to edge, even lighting.
+  - name: tex-ground
+    prompt: >-
+      Seamless texture, top view of dark gray old cracked asphalt with small pebbles, dust and faded tire marks, low contrast, dark tones,
+      fills the whole image edge to edge, even flat lighting.
+  - name: bush
+    prompt: >-
+      Top view of one round dense green bush canopy seen from directly above, lush leaves, several shades of green with sunlit light green highlights,
+      soft round outline, centered, on a plain flat white background. {style}
+
+  # ---------------------------------------------------------------- база, бонусы, снаряд, эффекты
+  - name: base
+    prompt: >-
+      Game icon: a big glossy red five-pointed star with a golden rim standing on a square gray concrete pedestal, seen from the front, slightly from above,
+      centered, compact, on a plain flat white background. {style}
+  - name: base-ruin
+    prompt: >-
+      Game icon: a destroyed square gray concrete pedestal, a pile of broken concrete rubble with charred black soot, a few scorched red star fragments,
+      wisps of smoke, centered, compact, on a plain flat white background. {style}
+  - name: bonus-helmet
+    prompt: >-
+      Game power-up icon: a shiny green military army helmet with a small red star, glossy, seen from the front, centered, on a plain flat white background. {style}
+  - name: bonus-clock
+    prompt: >-
+      Game power-up icon: a round brass alarm clock with two bells on top, white face and black hands, glossy, seen from the front, centered, on a plain flat white background. {style}
+  - name: bonus-shovel
+    prompt: >-
+      Game power-up icon: a military spade shovel with a wooden handle and a steel blade, diagonal, glossy, centered, on a plain flat white background. {style}
+  - name: bonus-star
+    prompt: >-
+      Game power-up icon: a big glossy golden five-pointed star with a bright shine, centered, on a plain flat white background. {style}
+  - name: bonus-grenade
+    prompt: >-
+      Game power-up icon: a green pineapple hand grenade with a ring pin, glossy, centered, on a plain flat white background. {style}
+  - name: bonus-tank
+    prompt: >-
+      Game power-up icon: a small toy tank seen from the front three-quarter view, painted golden yellow, glossy, cute, centered, on a plain flat white background. {style}
+  - name: shell
+    prompt: >-
+      Game sprite: one brass tank shell bullet with a pointed tip, seen from the side, pointing straight up, vertical, centered, on a plain flat white background. {style}
+  - name: boom-small
+    prompt: >-
+      Game effect sprite: a small bright explosion flash burst, yellow and white hot core with orange sparks, round, centered, on a plain flat black background.
+  - name: boom-big
+    prompt: >-
+      Game effect sprite: a big round fiery explosion fireball, bright yellow core, orange and red flames, sparks flying outward, centered, on a plain flat black background.
+  - name: boom-smoke
+    prompt: >-
+      Game effect sprite: a round fading explosion with dark red embers and thick gray black smoke clouds, centered, on a plain flat black background.
+  - name: spawn
+    prompt: >-
+      Game effect sprite: a sparkling white and pale blue four-pointed twinkle star with glowing light rays, centered, on a plain flat black background.
+  - name: flag
+    prompt: >-
+      Game icon: a small red triangular pennant flag on a thin metal pole, waving, seen from the front, centered, on a plain flat white background. {style}
+
+  # ---------------------------------------------------------------- фон вокруг поля
+  - name: bg
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down view of an old military training ground seen from high above, dusty olive and khaki earth, sandbag walls, camouflage nets,
+      tire tracks in the dirt, scattered wooden crates and oil barrels along the edges, patches of dry grass, a large empty flat dark area in the center,
+      muted desaturated colors, painted game background art.

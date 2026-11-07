@@ -1,12 +1,13 @@
-/* Танчики — экран аркады: поле на canvas (всё рисуется кодом: кирпич с кладкой, клёпаный бетон, рябь воды, блики льда,
- * кроны поверх танков, танки с бегущими гусеницами, взрывы, искры), справа — запас врагов, жизни, флажок уровня.
+/* Танчики — экран аркады: поле на canvas из сгенерированных картинок (art.ts: танки с двумя кадрами гусениц, кирпич кусками,
+ * бетон, вода в три кадра, лёд, кусты поверх танков, база, бонусы, взрывы), справа — запас врагов, жизни, флажок уровня.
  * Один игрок — стрелки или WASD, огонь — пробел; вдвоём за клавиатурой — WASD + пробел и стрелки + Enter. На телефоне — крестовина и кнопка.
  * Конструктор: рисуйте свою карту и играйте её. Пауза сохраняет партию. */
 import type { ArcadeModule, ArcadeOpts } from '../../core/arcade';
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { store } from '../../core/settings';
 import { h } from '../../core/util';
-import { BASE_X, BASE_Y, DX, DY, FW, mapRows, N4, N8, newGame, parseMap, step, totalScore, ENEMY_PTS, type Bonus, type Tank, type TkEvent, type TkIn, type TkState } from './logic';
+import { BASE_X, BASE_Y, FW, mapRows, N4, N8, newGame, parseMap, step, totalScore, ENEMY_PTS, type Bonus, type Tank, type TkEvent, type TkIn, type TkState } from './logic';
+import { art, loadArt, tile, tinted, TANKS, type ArtName } from './art';
 import './tanchiki.css';
 
 const P = {
@@ -38,6 +39,18 @@ interface Popup {
   text: string;
 }
 
+/** Броневик по запасу брони (4 → 1): тон поверх серой картинки. */
+const ARMOR_TINT = ['#b8e0a0', '#ffe080', '#ffb080', '#ffffff'];
+
+interface Boom {
+  x: number;
+  y: number;
+  t: number;
+  dur: number;
+  size: number;
+  rot: number;
+}
+
 const EMPTY = Array.from({ length: 26 }, () => '.'.repeat(26));
 
 class Game {
@@ -46,6 +59,8 @@ class Game {
   private g: CanvasRenderingContext2D;
   private st: TkState;
   private stat: HTMLCanvasElement = document.createElement('canvas');
+  private walls: HTMLCanvasElement = document.createElement('canvas');
+  private booms: Boom[] = [];
   private statDirty = true;
   private raf = 0;
   private last = 0;
@@ -86,6 +101,7 @@ class Game {
     } else this.st = this.fresh();
     this.panel();
     this.bind();
+    void loadArt().then(() => (this.statDirty = true));
     this.raf = requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -302,6 +318,7 @@ class Game {
   private onEvent(e: TkEvent) {
     const o = audioOut();
     const t = o?.ctx.currentTime ?? 0;
+    const boom = (x: number, y: number, size: number, dur: number) => this.booms.push({ x, y, t: 0, dur, size, rot: Math.random() * Math.PI * 2 });
     const burst = (x: number, y: number, n: number, cols: string[], sp: number, r = 1.2) => {
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2;
@@ -319,19 +336,23 @@ class Game {
       case 'brick':
         this.statDirty = true;
         burst(e.x, e.y, 8, ['#c8663a', '#8a3a1a', '#e8a070'], 40);
+        boom(e.x, e.y, 9, 0.25);
         if (o) click(t, { freq: 500, q: 1, dur: 0.06, gain: 0.35 });
         break;
       case 'steel':
         this.statDirty = true;
         burst(e.x, e.y, 6, ['#ffffff', '#c8d8ff'], 50, 0.8);
+        boom(e.x, e.y, 7, 0.2);
         if (o) tone(t, { freq: 1800, to: 1200, dur: 0.08, gain: 0.12, type: 'triangle' });
         break;
       case 'hit':
         burst(e.x, e.y, 6, ['#ffe08a', '#ffffff'], 50, 0.8);
+        boom(e.x, e.y, 8, 0.2);
         if (o) tone(t, { freq: 1400, to: 900, dur: 0.06, gain: 0.12, type: 'square' });
         break;
       case 'boom':
-        burst(e.x, e.y, e.big ? 26 : 10, ['#ffd23a', '#ff8a2a', '#ff3a1a', '#5a5a5a'], e.big ? 70 : 40, 1.6);
+        burst(e.x, e.y, e.big ? 14 : 6, ['#ffd23a', '#ff8a2a', '#5a5a5a'], e.big ? 60 : 40, 1.2);
+        boom(e.x, e.y, e.kind === -2 ? 40 : e.big ? 30 : 16, e.big ? 0.8 : 0.4);
         this.shake = Math.max(this.shake, e.kind === -2 ? 1 : 0.4);
         this.flashT = e.kind === -2 ? 0.5 : 0.15;
         if (e.pts) this.pops.push({ x: e.x, y: e.y, t: 1.2, text: String(e.pts) });
@@ -366,122 +387,49 @@ class Game {
     }
   }
 
-  // ---------------------------------------------------------------- отрисовка
+  // ---------------------------------------------------------------- отрисовка (картинки — art.ts)
 
+  /** Неподвижное: земля, лёд, стены с тенью, база — перерисовывается, только когда что-то выбили. */
   private drawStatic() {
     const st = this.st;
     const c = this.stat;
     const W = Math.round(FW * this.s);
     if (c.width !== W) {
       c.width = c.height = W;
+      this.walls.width = this.walls.height = W;
       this.statDirty = true;
     }
     if (!this.statDirty) return;
     this.statDirty = false;
     const g = c.getContext('2d')!;
     g.setTransform(this.s, 0, 0, this.s, 0, 0);
-    // земля: тёмный асфальт с крапом
-    g.fillStyle = '#1e2326';
-    g.fillRect(0, 0, FW, FW);
-    let seed = 7;
-    const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 900; i++) {
-      g.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.12)';
-      g.fillRect(r() * FW, r() * FW, 1 + r() * 2, 1 + r());
+    g.clearRect(0, 0, FW, FW);
+    const ground = art('ground');
+    if (ground) g.drawImage(ground, 0, 0, FW, FW);
+    else {
+      g.fillStyle = '#25282a';
+      g.fillRect(0, 0, FW, FW);
     }
     const m = st.map;
-    // лёд
-    for (let y = 0; y < N8; y++)
-      for (let x = 0; x < N8; x++) {
-        if (!m.ice[y * N8 + x]) continue;
-        g.fillStyle = '#a8d8ee';
-        g.fillRect(x * 8, y * 8, 8, 8);
-        g.strokeStyle = 'rgba(255,255,255,0.7)';
-        g.lineWidth = 0.6;
-        g.beginPath();
-        g.moveTo(x * 8 + 1, y * 8 + 6);
-        g.lineTo(x * 8 + 5, y * 8 + 2);
-        g.stroke();
-      }
-    // кирпич: кусками 4×4 с кладкой
-    for (let y = 0; y < N4; y++)
-      for (let x = 0; x < N4; x++) {
-        if (!m.brick[y * N4 + x]) continue;
-        const px = x * 4;
-        const py = y * 4;
-        g.fillStyle = '#9a4322';
-        g.fillRect(px, py, 4, 4);
-        const off = y % 2 ? 2 : 0;
-        g.fillStyle = '#c8663a';
-        g.fillRect(px + 0.3, py + 0.3, 3.4, 1.5);
-        g.fillRect(px + 0.3, py + 2.2, 3.4, 1.5);
-        g.fillStyle = '#e8946a';
-        g.fillRect(px + 0.3, py + 0.3, 3.4, 0.5);
-        g.fillStyle = 'rgba(60,30,20,0.9)';
-        g.fillRect(px + off, py, 0.5, 2);
-        g.fillRect(px + ((off + 2) % 4), py + 2, 0.5, 2);
-      }
-    // бетон: клёпаные плиты
-    for (let y = 0; y < N8; y++)
-      for (let x = 0; x < N8; x++) {
-        if (!m.steel[y * N8 + x]) continue;
-        const px = x * 8;
-        const py = y * 8;
-        const gr = g.createLinearGradient(px, py, px + 8, py + 8);
-        gr.addColorStop(0, '#e8ecf0');
-        gr.addColorStop(0.5, '#a8b0b8');
-        gr.addColorStop(1, '#6a727a');
-        g.fillStyle = gr;
-        g.fillRect(px, py, 8, 8);
-        g.fillStyle = '#ffffff';
-        g.fillRect(px, py, 8, 0.6);
-        g.fillRect(px, py, 0.6, 8);
-        g.fillStyle = '#4a5058';
-        g.fillRect(px, py + 7.4, 8, 0.6);
-        g.fillRect(px + 7.4, py, 0.6, 8);
-        g.fillStyle = '#5a6068';
-        for (const [rx, ry] of [[2, 2], [6, 2], [2, 6], [6, 6]]) {
-          g.beginPath();
-          g.arc(px + rx, py + ry, 0.6, 0, Math.PI * 2);
-          g.fill();
-        }
-      }
-    // база: звезда на постаменте (или руины)
-    this.drawBase(g);
+    const ice = art('ice');
+    if (ice) for (let y = 0; y < N8; y++) for (let x = 0; x < N8; x++) if (m.ice[y * N8 + x]) tile(g, ice, x * 8, y * 8, 8, 8);
+    // стены — на свой слой, потом на землю с тенью
+    const wg = this.walls.getContext('2d')!;
+    wg.setTransform(this.s, 0, 0, this.s, 0, 0);
+    wg.clearRect(0, 0, FW, FW);
+    const brick = art('brick');
+    if (brick) for (let y = 0; y < N4; y++) for (let x = 0; x < N4; x++) if (m.brick[y * N4 + x]) tile(wg, brick, x * 4, y * 4, 4, 4);
+    const steel = art('steel');
+    if (steel) for (let y = 0; y < N8; y++) for (let x = 0; x < N8; x++) if (m.steel[y * N8 + x]) wg.drawImage(steel, x * 8, y * 8, 8, 8);
+    const base = art(st.baseDead ? 'base-ruin' : 'base');
+    if (base) wg.drawImage(base, BASE_X - 1, BASE_Y - 1, 18, 18);
     g.setTransform(1, 0, 0, 1, 0, 0);
-  }
-
-  private drawBase(g: CanvasRenderingContext2D) {
-    const x = BASE_X;
-    const y = BASE_Y;
-    if (this.st.baseDead) {
-      g.fillStyle = '#3a3230';
-      g.fillRect(x + 1, y + 6, 14, 10);
-      g.fillStyle = '#5a4a40';
-      for (const [a, b] of [[3, 8], [8, 10], [11, 7], [5, 12]]) g.fillRect(x + a, y + b, 3, 2);
-      return;
-    }
-    g.fillStyle = '#5a5a62';
-    g.fillRect(x + 2, y + 11, 12, 5);
-    g.fillStyle = '#8a8a92';
-    g.fillRect(x + 2, y + 11, 12, 1);
     g.save();
-    g.translate(x + 8, y + 7);
-    g.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const a = -Math.PI / 2 + (i * Math.PI) / 5;
-      const rr = i % 2 ? 2.6 : 6.4;
-      g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-    }
-    g.closePath();
-    const gr = g.createLinearGradient(-6, -6, 6, 6);
-    gr.addColorStop(0, '#ff6a5a');
-    gr.addColorStop(1, '#a8100a');
-    g.fillStyle = gr;
-    g.fill();
-    g.strokeStyle = '#ffd23a';
-    g.lineWidth = 0.7;
-    g.stroke();
+    g.shadowColor = 'rgba(0,0,0,0.6)';
+    g.shadowOffsetX = 0.9 * this.s;
+    g.shadowOffsetY = 1.2 * this.s;
+    g.shadowBlur = 1.5 * this.s;
+    g.drawImage(this.walls, 0, 0);
     g.restore();
   }
 
@@ -497,11 +445,17 @@ class Game {
     }
     const g = this.g;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    const bg = g.createLinearGradient(0, 0, 0, hh);
-    bg.addColorStop(0, '#4a4f36');
-    bg.addColorStop(1, '#2a2d1e');
-    g.fillStyle = bg;
-    g.fillRect(0, 0, w, hh);
+    // фон вокруг поля — полигон, картинкой «под обрез», чуть притушен
+    const bg = art('bg');
+    if (bg) {
+      const k = Math.max(w / bg.naturalWidth, hh / bg.naturalHeight);
+      g.drawImage(bg, (w - bg.naturalWidth * k) / 2, (hh - bg.naturalHeight * k) / 2, bg.naturalWidth * k, bg.naturalHeight * k);
+      g.fillStyle = 'rgba(10,12,8,0.35)';
+      g.fillRect(0, 0, w, hh);
+    } else {
+      g.fillStyle = '#2a2d1e';
+      g.fillRect(0, 0, w, hh);
+    }
     const s = Math.min(w / LW, hh / LH);
     if (Math.abs(s - this.s) > 0.001) {
       this.s = s;
@@ -517,61 +471,70 @@ class Game {
       this.shake = Math.max(0, this.shake - dt * 3);
     }
     this.drawStatic();
-    // рамка поля
-    g.fillStyle = 'rgba(0,0,0,0.45)';
-    g.fillRect(this.ox - 3 * s, this.oy - 3 * s, (FW + 6) * s, (FW + 6) * s);
+    // рамка поля: тёмная подложка с тенью
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,0.7)';
+    g.shadowBlur = 14 * s;
+    g.fillStyle = '#111';
+    g.fillRect(this.ox - 2 * s, this.oy - 2 * s, (FW + 4) * s, (FW + 4) * s);
+    g.restore();
     g.drawImage(this.stat, this.ox + sx, this.oy + sy);
     g.setTransform(s, 0, 0, s, this.ox + sx, this.oy + sy);
     const st = this.st;
-    // вода (анимированная)
-    for (let y = 0; y < N8; y++)
-      for (let x = 0; x < N8; x++) {
-        if (!st.map.water[y * N8 + x]) continue;
-        g.fillStyle = '#1a5ab8';
-        g.fillRect(x * 8, y * 8, 8, 8);
-        g.strokeStyle = 'rgba(160,210,255,0.7)';
-        g.lineWidth = 0.6;
-        const ph = this.time * 2 + x * 0.7 + y * 1.3;
-        for (let k = 0; k < 2; k++) {
-          const yy = y * 8 + 2.5 + k * 4;
-          g.beginPath();
-          g.moveTo(x * 8, yy + Math.sin(ph + k) * 0.6);
-          g.quadraticCurveTo(x * 8 + 4, yy - 1 + Math.sin(ph + k + 1), x * 8 + 8, yy + Math.sin(ph + k + 2) * 0.6);
-          g.stroke();
-        }
-      }
+    // вода: три кадра по кругу
+    const water = art(`water-${Math.floor(this.time * 2.5) % 3}` as ArtName);
+    if (water) for (let y = 0; y < N8; y++) for (let x = 0; x < N8; x++) if (st.map.water[y * N8 + x]) tile(g, water, x * 8, y * 8, 8, 8);
     // бонус
-    if (st.bonus && Math.floor(this.time * 4) % 2 === 0) this.drawBonus(g, st.bonus);
+    if (st.bonus) this.drawBonus(g, st.bonus);
     // танки
     if (!this.build) for (const t of st.tanks) this.drawTank(g, t);
     // снаряды
+    const shell = art('shell');
     for (const b of st.bullets) {
       g.save();
-      g.shadowColor = b.pl >= 0 ? '#ffd23a' : '#ff6a5a';
-      g.shadowBlur = 4 * s;
-      g.fillStyle = '#fff4c8';
-      const vert = b.dir % 2 === 0;
-      g.fillRect(b.x + (vert ? 1 : 0), b.y + (vert ? 0 : 1), vert ? 2 : 4, vert ? 4 : 2);
+      g.translate(b.x + 2, b.y + 2);
+      g.rotate((b.dir * Math.PI) / 2);
+      g.shadowColor = b.pl >= 0 ? '#ffd23a' : '#ff6a4a';
+      g.shadowBlur = 5 * s;
+      if (shell) g.drawImage(shell, -1.9, -4, 3.8, 8);
       g.restore();
     }
-    // кроны поверх
+    // кроны поверх танков
     for (let y = 0; y < N8; y++)
       for (let x = 0; x < N8; x++) {
         if (!st.map.trees[y * N8 + x]) continue;
-        for (const [ax, ay, rr, c] of [
-          [2.5, 2.5, 3.2, '#1f5a24'],
-          [6, 3, 2.8, '#2a7030'],
-          [3.5, 6, 2.8, '#24642a'],
-          [6, 6.5, 2.4, '#1a4a1e'],
-          [4.5, 4, 1.4, '#4aa04a'],
-        ] as [number, number, number, string][]) {
-          g.fillStyle = c;
-          g.beginPath();
-          g.arc(x * 8 + ax, y * 8 + ay, rr, 0, Math.PI * 2);
-          g.fill();
-        }
+        const hsh = (x * 7919 + y * 104729) >>> 0;
+        const bush = art(`bush-${hsh % 3}` as ArtName);
+        if (!bush) continue;
+        g.save();
+        g.translate(x * 8 + 4, y * 8 + 4);
+        g.rotate(((hsh >> 3) % 4) * (Math.PI / 2));
+        g.shadowColor = 'rgba(0,0,0,0.45)';
+        g.shadowOffsetX = 0.8 * s;
+        g.shadowOffsetY = 1 * s;
+        g.shadowBlur = 1.5 * s;
+        g.drawImage(bush, -5.5, -5.5, 11, 11);
+        g.restore();
       }
-    // искры
+    // взрывы: вспышка → огненный шар → дым
+    for (const b of this.booms) {
+      if (!this.paused) b.t += dt;
+      const p = b.t / b.dur;
+      if (p >= 1) continue;
+      const fr = p < 0.25 ? 0 : p < 0.6 ? 1 : 2;
+      const im = art(`boom-${fr}` as ArtName);
+      if (!im) continue;
+      const sz = b.size * (0.55 + 0.6 * Math.min(1, p * 2.2));
+      g.save();
+      g.globalAlpha = fr === 2 ? Math.max(0, 1 - (p - 0.6) / 0.4) : 1;
+      if (fr < 2) g.globalCompositeOperation = 'lighter';
+      g.translate(b.x, b.y);
+      g.rotate(b.rot);
+      g.drawImage(im, -sz / 2, -sz / 2, sz, sz);
+      g.restore();
+    }
+    this.booms = this.booms.filter((b) => b.t < b.dur);
+    // осколки
     for (const k of this.sparks) {
       k.t -= dt;
       k.x += k.vx * dt;
@@ -612,7 +575,7 @@ class Game {
       }
       this.text(g, 'КОНСТРУКТОР: рисуйте мышью или пальцем', FW / 2, 8, 6, '#ffd23a');
     } else if (st.phase === 'intro') {
-      g.fillStyle = 'rgba(40,40,40,0.85)';
+      g.fillStyle = 'rgba(20,22,18,0.82)';
       g.fillRect(0, 0, FW, FW);
       this.text(g, st.custom ? 'СВОЯ КАРТА' : `УРОВЕНЬ ${st.stage}`, FW / 2, FW / 2, 14, '#ffffff');
     } else if (st.phase === 'tally' || st.phase === 'won') {
@@ -623,7 +586,10 @@ class Game {
         const x = st.players.length > 1 ? (i ? 150 : 58) : FW / 2;
         this.text(g, st.players.length > 1 ? (i ? 'II ИГРОК' : 'I ИГРОК') : 'ОЧКИ', x, 56, 8, '#ff8a6a');
         this.text(g, String(p.score), x, 70, 9, '#ffffff');
-        p.kills.forEach((k, kind) => this.text(g, `${k} × ${ENEMY_PTS[kind]}`, x, 92 + kind * 16, 7, '#c8d8ff'));
+        p.kills.forEach((k, kind) => {
+          this.icon(g, `enemy-${kind}` as ArtName, x - 34, 86 + kind * 16, 12);
+          this.text(g, `${k} × ${ENEMY_PTS[kind]}`, x + 6, 92 + kind * 16, 7, '#c8d8ff');
+        });
       });
     } else if (st.phase === 'over') {
       const k = Math.min(1, (200 - st.phaseT) / 60);
@@ -631,24 +597,20 @@ class Game {
     }
     // правая панель: запас врагов, жизни, уровень
     g.setTransform(s, 0, 0, s, this.ox + (FW + 10) * s, this.oy);
+    g.fillStyle = 'rgba(0,0,0,0.45)';
+    g.beginPath();
+    g.roundRect(-4, -4, 30, FW + 8, 4);
+    g.fill();
     const left = Math.max(0, st.queue.length - st.sent);
-    for (let i = 0; i < left; i++) this.miniTank(g, (i % 2) * 10, Math.floor(i / 2) * 9, '#c8ccd0');
+    for (let i = 0; i < left; i++) this.icon(g, 'enemy-0', (i % 2) * 11, Math.floor(i / 2) * 10, 9);
     st.players.forEach((p, i) => {
       const y = 110 + i * 26;
-      this.text(g, i ? 'II' : 'I', 10, y, 8, '#ffffff', 'left');
-      this.miniTank(g, 0, y + 4, i ? '#4ac060' : '#e8c040');
-      this.text(g, String(Math.max(0, p.lives - (st.tanks.some((t) => t.pl === i) ? 1 : 0))), 14, y + 9, 8, '#ffffff', 'left');
+      this.text(g, i ? 'II' : 'I', 11, y, 8, '#ffffff', 'center');
+      this.icon(g, i ? 'tank-p2' : 'tank-p1', 0, y + 4, 10);
+      this.text(g, String(Math.max(0, p.lives - (st.tanks.some((t) => t.pl === i) ? 1 : 0))), 13, y + 9, 8, '#ffffff', 'left');
     });
-    // флажок
-    g.fillStyle = '#8a8a8a';
-    g.fillRect(2, 170, 1.2, 16);
-    g.fillStyle = '#e8322a';
-    g.beginPath();
-    g.moveTo(3.2, 170);
-    g.lineTo(14, 174);
-    g.lineTo(3.2, 178);
-    g.fill();
-    this.text(g, st.custom ? '—' : String(st.stage), 10, 194, 9, '#ffffff');
+    this.icon(g, 'flag', 0, 166, 18);
+    this.text(g, st.custom ? '—' : String(st.stage), 11, 194, 9, '#ffffff');
     g.setTransform(1, 0, 0, 1, 0, 0);
   }
 
@@ -664,30 +626,27 @@ class Game {
     g.restore();
   }
 
-  private miniTank(g: CanvasRenderingContext2D, x: number, y: number, c: string) {
-    g.fillStyle = '#2a2a2a';
-    g.fillRect(x, y, 7, 7);
-    g.fillStyle = c;
-    g.fillRect(x + 1.5, y + 1, 4, 5);
-    g.fillRect(x + 3, y - 1, 1, 3);
+  /** Значок панели: первый кадр картинки (у танков — стоящий), вписан в квадрат size. */
+  private icon(g: CanvasRenderingContext2D, n: ArtName, x: number, y: number, size: number) {
+    const im = art(n);
+    if (!im) return;
+    const fw = (TANKS as readonly string[]).includes(n) ? im.naturalHeight : im.naturalWidth;
+    g.drawImage(im, 0, 0, fw, im.naturalHeight, x, y, size, size);
   }
 
   private drawBonus(g: CanvasRenderingContext2D, b: Bonus) {
+    const im = art(`bonus-${b.kind}` as ArtName);
+    if (!im) return;
+    const on = Math.floor(this.time * 4) % 2 === 0;
     g.save();
-    g.shadowColor = '#ffffff';
-    g.shadowBlur = 6 * this.s;
-    g.fillStyle = 'rgba(30,30,60,0.9)';
-    g.beginPath();
-    g.roundRect(b.x, b.y, 16, 16, 3);
-    g.fill();
+    g.globalAlpha = on ? 1 : 0.45;
+    g.shadowColor = '#fff6c0';
+    g.shadowBlur = (on ? 8 : 3) * this.s;
+    const k = 1 + 0.06 * Math.sin(this.time * 8);
+    g.translate(b.x + 8, b.y + 8);
+    g.scale(k, k);
+    g.drawImage(im, -8, -8, 16, 16);
     g.restore();
-    g.strokeStyle = '#ffd23a';
-    g.lineWidth = 0.8;
-    g.beginPath();
-    g.roundRect(b.x, b.y, 16, 16, 3);
-    g.stroke();
-    const sym = { helmet: '⛑', clock: '⏱', shovel: '▦', star: '★', grenade: '✸', tank: '♥' }[b.kind];
-    this.text(g, sym, b.x + 8, b.y + 8.5, 11, b.kind === 'star' ? '#ffd23a' : b.kind === 'tank' ? '#ff5a5a' : '#ffffff');
   }
 
   private drawTank(g: CanvasRenderingContext2D, t: Tank) {
@@ -695,84 +654,56 @@ class Game {
     const cy = t.y + 8;
     if (t.spawn > 0) {
       // появление: мерцающая звезда
+      const sp = art('spawn');
+      if (!sp) return;
       const k = (Math.sin(this.time * 18) + 1) / 2;
       g.save();
+      g.globalCompositeOperation = 'lighter';
       g.translate(cx, cy);
       g.rotate(this.time * 3);
-      g.fillStyle = `rgba(255,255,255,${0.5 + k * 0.5})`;
-      g.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const a = (i * Math.PI) / 4;
-        const rr = i % 2 ? 2 : 4 + k * 4;
-        g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-      }
-      g.closePath();
-      g.fill();
+      const sz = 10 + k * 10;
+      g.drawImage(sp, -sz / 2, -sz / 2, sz, sz);
       g.restore();
       return;
     }
-    let body: string;
-    let dark: string;
-    if (t.pl === 0) [body, dark] = ['#e8c040', '#8a6a10'];
-    else if (t.pl === 1) [body, dark] = ['#4ac060', '#1a6a2a'];
-    else if (t.kind === 3) [body, dark] = [['#a0a8b0', '#c87a40', '#c8a040', '#8aa06a'][t.hp - 1] ?? '#8aa06a', '#3a3a3a'];
-    else [body, dark] = [['#a8b0b8', '#d0d8e0', '#7a8a9a'][t.kind], '#3a4048'];
-    if (t.bonus && Math.floor(this.time * 8) % 2 === 0) [body, dark] = ['#e8322a', '#6a0a08'];
+    const name: ArtName = t.pl === 0 ? 'tank-p1' : t.pl === 1 ? 'tank-p2' : (`enemy-${t.kind}` as ArtName);
+    const base = art(name);
+    if (!base) return;
+    const fh = base.naturalHeight;
+    let im: CanvasImageSource | null = base;
+    if (t.bonus && Math.floor(this.time * 8) % 2 === 0) im = tinted(name, '#ff6a50');
+    else if (t.pl < 0 && t.kind === 3) im = tinted(name, ARMOR_TINT[Math.max(0, Math.min(3, t.hp - 1))]);
+    if (!im) return;
+    const frame = t.moving ? Math.floor(t.tread / 3) % 2 : 0;
     g.save();
     g.translate(cx, cy);
     g.rotate((t.dir * Math.PI) / 2);
-    // тень
-    g.fillStyle = 'rgba(0,0,0,0.35)';
-    g.fillRect(-7 + 1.2, -7 + 1.5, 14, 14);
-    // гусеницы
-    for (const side of [-1, 1]) {
-      g.fillStyle = '#1a1a1a';
-      g.fillRect(side < 0 ? -7.5 : 4, -7.5, 3.5, 15);
-      g.fillStyle = '#5a5a5a';
-      const ph = t.moving ? (t.tread * 0.5) % 3 : 0;
-      for (let k = -7.5 + ph; k < 7.5; k += 3) g.fillRect(side < 0 ? -7.2 : 4.3, k, 2.9, 1);
-    }
-    // корпус
-    const gr = g.createLinearGradient(-4, -6, 4, 6);
-    gr.addColorStop(0, body);
-    gr.addColorStop(1, dark);
-    g.fillStyle = gr;
-    g.fillRect(-4.5, -6, 9, 12);
-    g.fillStyle = 'rgba(255,255,255,0.35)';
-    g.fillRect(-4.5, -6, 9, 1);
-    // башня и ствол
-    g.fillStyle = dark;
-    g.fillRect(-0.9, -9 - (t.kind === 2 && t.pl < 0 ? 1 : 0), 1.8, 7);
-    g.fillStyle = body;
-    g.beginPath();
-    g.arc(0, 0.5, 3.3, 0, Math.PI * 2);
-    g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.4)';
-    g.beginPath();
-    g.arc(-1, -0.6, 1.2, 0, Math.PI * 2);
-    g.fill();
-    if (t.pl >= 0 && t.star > 0) {
-      g.fillStyle = '#ffd23a';
-      for (let i = 0; i < t.star; i++) g.fillRect(-3 + i * 2.2, 4, 1.5, 1.5);
-    }
+    g.shadowColor = 'rgba(0,0,0,0.55)';
+    g.shadowOffsetX = 1.2 * this.s;
+    g.shadowOffsetY = 1.6 * this.s;
+    g.shadowBlur = 2 * this.s;
+    if (t.stun > 0 && Math.floor(this.time * 10) % 2) g.globalAlpha = 0.45;
+    g.drawImage(im, frame * fh, 0, fh, fh, -10, -10, 20, 20); // картинка со стволом: корпус ~14 единиц
     g.restore();
+    // звёзды прокачки — у кормы
+    if (t.pl >= 0 && t.star > 0) {
+      const star = art('bonus-star');
+      if (star) for (let i = 0; i < t.star; i++) g.drawImage(star, t.x + 1 + i * 4, t.y + 14, 3.5, 3.5);
+    }
     if (t.shield > 0) {
       g.save();
-      g.strokeStyle = `rgba(120,220,255,${0.5 + 0.4 * Math.sin(this.time * 20)})`;
-      g.lineWidth = 1;
+      const a = 0.35 + 0.25 * Math.sin(this.time * 20);
+      const gr = g.createRadialGradient(cx, cy, 6, cx, cy, 11);
+      gr.addColorStop(0, 'rgba(120,220,255,0)');
+      gr.addColorStop(0.8, `rgba(150,230,255,${a})`);
+      gr.addColorStop(1, 'rgba(150,230,255,0)');
+      g.fillStyle = gr;
       g.beginPath();
-      g.arc(cx, cy, 10, this.time * 6, this.time * 6 + 4);
-      g.stroke();
+      g.arc(cx, cy, 11, 0, Math.PI * 2);
+      g.fill();
       g.restore();
     }
-    if (t.stun > 0 && Math.floor(this.time * 10) % 2) {
-      g.fillStyle = 'rgba(255,255,255,0.4)';
-      g.fillRect(t.x, t.y, 16, 16);
-    }
-    void DX;
-    void DY;
   }
-
   /** Превью карточки: бой в разгаре, игра стоит. */
   demo() {
     const st = newGame({ players: 2, diff: 1, stage: 4, seed: 0x7a7c1 });
@@ -795,10 +726,7 @@ class Game {
     this.statDirty = true;
     this.paused = true;
     this.sparks = [];
-    for (let i = 0; i < 24; i++) {
-      const a = Math.random() * Math.PI * 2;
-      this.sparks.push({ x: 48 + Math.cos(a) * 6, y: 90 + Math.sin(a) * 6, vx: 0, vy: 0, t: 99, c: ['#ffd23a', '#ff8a2a', '#ff3a1a'][i % 3], r: 2 });
-    }
+    this.booms = [{ x: 48, y: 90, t: 0.42, dur: 1, size: 30, rot: 0.5 }];
   }
 
   destroy() {
@@ -822,13 +750,29 @@ const mod: ArcadeModule = {
     Мигающий красный враг несёт бонус: каска — щит, часы — враги замирают, «стена» — бетон вокруг базы, звезда — прокачка, взрыв — все враги на поле, сердце — жизнь.
     Свою базу (звезду внизу) береги: попадание по ней — конец игры. Попал в напарника — он замрёт на пару секунд.</p>`,
   modes: [
-    { id: 'one', label: 'Один игрок' },
-    { id: 'two', label: 'Вдвоём' },
-    { id: 'build', label: 'Конструктор' },
+    { id: 'one', label: 'Один игрок', hint: 'двадцать врагов на уровень' },
+    { id: 'two', label: 'Вдвоём', hint: 'за одной клавиатурой' },
+    { id: 'build', label: 'Конструктор', hint: 'нарисуй свою карту' },
   ],
+  soloHome: true,
+  rules: `<h3>Цель</h3><p>Внизу поля — ваша база, красная звезда. Сверху выезжают двадцать вражеских танков, не больше четырёх разом (вдвоём — шести).
+    Подбейте всех — уровень пройден. Попадание по базе или потеря всех жизней — конец игры.</p>
+    <h3>Местность</h3><ul><li><b>Кирпич</b> выбивается выстрелами по кусочку — можно пробить проход.</li>
+    <li><b>Бетон</b> держит снаряды; пробивает его только танк с тремя звёздами.</li>
+    <li><b>Вода</b> — не переехать, но снаряды летят над ней.</li><li><b>Лес</b> прячет танки, ездить и стрелять сквозь него можно.</li>
+    <li><b>Лёд</b> — танк заносит, он скользит после остановки.</li></ul>
+    <h3>Враги</h3><ul><li><b>Обычный</b> — 100 очков.</li><li><b>Быстрый</b> — ездит вдвое резвее, 200 очков.</li>
+    <li><b>Скорострел</b> — быстрые снаряды, 300 очков.</li><li><b>Броневик</b> — выдерживает четыре попадания (меняет цвет), 400 очков.</li></ul>
+    <h3>Бонусы</h3><p>Мигающий красным враг несёт бонус: подбейте его — на поле появится значок, наезжайте на него.</p>
+    <ul><li><b>Каска</b> — щит, снаряды не берут.</li><li><b>Часы</b> — враги замирают.</li><li><b>Лопата</b> — бетонная стена вокруг базы на время.</li>
+    <li><b>Звезда</b> — прокачка: быстрые снаряды, два снаряда разом, на третьей — пробивает бетон.</li>
+    <li><b>Граната</b> — взрываются все враги на поле.</li><li><b>Танк</b> — лишняя жизнь.</li></ul>
+    <h3>Вдвоём</h3><p>Играют вместе за одной клавиатурой. Попал в напарника — он замрёт на пару секунд.</p>
+    <h3>Конструктор</h3><p>Рисуйте карту мышью или пальцем кистями «кирпич, бетон, вода, лес, лёд», потом «Играть эту карту».</p>`,
   thumb(el) {
     el.style.cssText = 'position:fixed;inset:0;z-index:50;background:#2a2d1e';
     const g = new Game(el, { mode: 'one', onScore: () => {} });
+    (el.querySelector('.tk-wrap') as HTMLElement).style.cssText = 'height:100%;border-radius:0';
     g.demo();
   },
   mount(root, opts) {
