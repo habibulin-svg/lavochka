@@ -1,0 +1,23 @@
+# Городки (волна 17): панорама-задник площадки за гаражами (натягивается на цилиндр за полем) и небо.
+# python studio/run.py studio/jobs/gorodki/02-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1920
+  height: 640
+  steps: 8
+seeds: [41, 42, 43]
+items:
+  - name: garages
+    prompt: >-
+      Wide panoramic illustration, bright cheerful stylized 3D cartoon look like a casual sports video game background, soft sunny summer afternoon.
+      A long row of old Soviet metal garages painted in faded green, blue and rust red with closed doors, behind them tall poplar and birch trees,
+      further back a five-storey panel apartment building with balconies and laundry, clear blue sky with fluffy white clouds.
+      Eye level view, flat horizon, empty foreground of trampled grass. No people, no cars, no letters, no text, no signs.
+  - name: houses
+    prompt: >-
+      Wide panoramic illustration, bright cheerful stylized 3D cartoon look like a casual sports video game background, soft sunny summer afternoon.
+      A Soviet residential courtyard: nine-storey panel apartment blocks, green birch trees and lilac bushes, a wooden bench, a children's playground
+      with a metal climbing frame, a sandbox and swings, clothes lines, clear blue sky with fluffy clouds.
+      Eye level view, flat horizon, empty foreground of grass. No people, no cars, no letters, no text, no signs.

@@ -1,0 +1,18 @@
+# Городки (волна 17): фоновая музыка двора, без слов. Чужих мелодий не берём — только жанр.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/gorodki/01-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/gorodki/01-music
+max_duration: 130
+tracks:
+  - name: dvor
+    seeds: [11, 22]
+    style: >-
+      cheerful Soviet 1980s estrada instrumental, 112 bpm, accordion and balalaika melody, acoustic guitar strumming,
+      upright bass, light brushed drums, sunny summer courtyard mood, playful, major key, sports game menu music
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: match
+    seeds: [11, 22]
+    style: >-
+      upbeat retro sports game music, instrumental, 124 bpm, bouncy brass section, xylophone and marimba,
+      funky bass, claps, whistles, fun and lighthearted, major key, Wii-style casual sports
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
