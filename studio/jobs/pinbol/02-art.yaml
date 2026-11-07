@@ -1,0 +1,27 @@
+# Пинбол (волна 17): рисованные подложки трёх столов — вертикальная «картинка игрового поля» под элементами,
+# которые игра рисует сама (борта, грибки, флипперы, огни). Поэтому — без деталей автомата, только иллюстрация.
+# python studio/run.py studio/jobs/pinbol/02-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 704
+  height: 1280
+  steps: 8
+seeds: [31, 32, 33]
+items:
+  - name: park
+    prompt: >-
+      Vibrant pinball playfield artwork, flat vertical illustration seen straight from above, bright saturated colors, bold clean shapes,
+      glossy airbrushed 1990s arcade style. A Soviet city amusement park on a summer evening: a big Ferris wheel, a colorful carousel with horses,
+      swing rides, strings of light bulbs, balloons, cotton candy stall, green trees, warm sunset sky in orange and pink. No letters, no text, no people faces close up.
+  - name: disco
+    prompt: >-
+      Vibrant pinball playfield artwork, flat vertical illustration seen straight from above, bright saturated neon colors on deep purple,
+      glossy airbrushed 1990s arcade style. A 1990s school disco: a glowing dance floor of colored squares, a big mirror ball, laser beams,
+      cassette tapes, boombox, vinyl records, neon stars and lightning bolts in pink, cyan and yellow. No letters, no text.
+  - name: kosmos
+    prompt: >-
+      Vibrant pinball playfield artwork, flat vertical illustration seen straight from above, bright saturated colors on deep blue space,
+      glossy airbrushed retro Soviet space poster style. A white and red rocket launching in a column of fire, an orbiting satellite with antennas,
+      the blue Earth below, the cratered Moon, ringed planets, comets and bright stars. No letters, no text.

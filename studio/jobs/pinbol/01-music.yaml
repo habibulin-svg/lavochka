@@ -1,0 +1,25 @@
+# Пинбол (волна 17): музыка трёх столов, без слов. Чужих мелодий не берём — только жанр.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/pinbol/01-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/pinbol/01-music
+max_duration: 120
+tracks:
+  - name: park
+    seeds: [11, 22]
+    style: >-
+      upbeat funfair pop, early 1990s, instrumental, 128 bpm, cheerful and bouncy, bright analog synth brass stabs,
+      plucky arpeggios, punchy drum machine, slap bass, carnival organ lead, catchy major key, arcade energy
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: disco
+    seeds: [11, 22]
+    style: >-
+      eurodance, 1994, instrumental, 136 bpm, energetic, four on the floor kick, offbeat open hi-hats, rave piano chords,
+      supersaw synth lead hook, pumping bass, uplifting minor key, club, arcade energy
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+
+  - name: kosmos
+    seeds: [11, 22]
+    style: >-
+      space synth, italo disco, late 1980s, instrumental, 124 bpm, dreamy and driving, sequenced analog bass arpeggio,
+      shimmering pads, vocoder-free melodic synth lead, electronic toms, cosmic, arcade energy
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"

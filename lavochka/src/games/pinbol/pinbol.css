@@ -1,0 +1,8 @@
+/* Пинбол: стол во всю сцену аркады, вытянутый по высоте. */
+.pb-wrap { position: relative; width: 100%; height: min(88vh, 1100px); min-height: 420px; user-select: none; -webkit-user-select: none; }
+.pb-cv { display: block; width: 100%; height: 100%; }
+.pb-panel { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+@media (max-width: 900px) { .pb-wrap { height: min(80vh, 160vw); } }
+.pb-thumb { position: fixed; inset: 0; z-index: 50; display: flex; gap: 0; background: #1a0c2a; }
+.pb-thumb-cell { flex: 1; min-width: 0; }
+.pb-thumb-cell .pb-wrap { height: 100vh; min-height: 0; }

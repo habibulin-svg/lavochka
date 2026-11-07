@@ -1,0 +1,30 @@
+# Пинбол (волна 17): подложки столов, вторая попытка. В 02-art слово «pinball» дало нарисованные автоматы внутри картинки —
+# здесь просто вертикальная плакатная иллюстрация на весь лист, без приборов и рамок.
+# python studio/run.py studio/jobs/pinbol/03-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 704
+  height: 1280
+  steps: 8
+seeds: [41, 42, 43]
+items:
+  - name: park
+    prompt: >-
+      Tall vertical flat vector illustration filling the whole sheet edge to edge, bright saturated colors, bold clean shapes, glossy 1990s airbrush poster style.
+      A city amusement park on a summer evening: a huge Ferris wheel at the top against an orange and pink sunset sky, a colorful carousel with horses in the middle,
+      swing ride, strings of glowing light bulbs, balloons, striped candy stalls, green trees and winding paths at the bottom.
+      No machines, no frames, no borders, no letters, no text.
+  - name: disco
+    prompt: >-
+      Tall vertical flat vector illustration filling the whole sheet edge to edge, bright saturated neon colors on deep purple, glossy 1990s airbrush poster style.
+      A 1990s disco party: a big sparkling mirror ball at the top shooting colored light rays, laser beams, neon stars and lightning bolts,
+      cassette tapes, a boombox and vinyl records flying around, a glowing dance floor of colored squares at the bottom.
+      No machines, no frames, no borders, no letters, no text.
+  - name: kosmos
+    prompt: >-
+      Tall vertical flat vector illustration filling the whole sheet edge to edge, bright saturated colors on deep blue starry space, glossy retro Soviet space poster style.
+      A white and red rocket flying upward with a column of fire, an orbiting satellite with antennas, the blue Earth at the bottom,
+      the cratered Moon, ringed planets, comets and bright stars.
+      No machines, no frames, no borders, no letters, no text.
