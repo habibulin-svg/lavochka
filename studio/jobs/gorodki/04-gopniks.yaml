@@ -9,13 +9,14 @@ defaults:
   height: 1216
   steps: 8
 style: >-
-  Full body 3D character render of a young Russian gopnik from the 1990s, realistic adult human proportions (head is one seventh of the height),
-  slightly slouching, standing in a relaxed A-pose with arms straight down and slightly away from the body, palms facing the legs,
-  strictly front view facing the camera, symmetrical, feet apart. He wears a wide flat ivy cap pulled low over the eyes,
-  short buzzcut, squinting eyes, smirk, a zipped track jacket and matching track pants with two white side stripes, white worn sneakers.
-  Stylized realistic video game character, detailed fabric folds, soft even studio light, plain pure white background,
-  entire figure visible from the cap to the shoes, no shadow on the floor, no text, no logos.
-seeds: [61, 62]
+  Full body 3D scan of a real young Russian man from the 1990s, a typical gopnik, photorealistic realistic human anatomy and proportions,
+  eight heads tall, normal small head, normal hands and feet, lean build, long legs, slightly slouching,
+  standing in a relaxed A-pose with arms straight down and slightly away from the body, palms facing the legs,
+  strictly front view facing the camera, symmetrical, feet apart. He wears a flat ivy cap pulled low, short buzzcut, unshaven,
+  squinting eyes, a zipped track jacket and matching track pants with two white side stripes, worn white sneakers.
+  Realistic AAA video game character, real fabric folds, soft even studio light, plain pure white background,
+  entire figure visible from the cap to the shoes, no shadow on the floor, no text, no logos, not cartoon, not stylized.
+seeds: [71, 72]
 items:
   - name: zaton
     prompt: "{style} Colors: light sky blue track jacket with navy blue sleeves stripes, navy blue track pants, dark grey herringbone cap."

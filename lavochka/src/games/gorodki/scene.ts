@@ -102,16 +102,16 @@ export class Yard3D {
 
   private light() {
     const sc = this.scene;
-    sc.background = new THREE.Color('#a9d4f0');
-    sc.fog = new THREE.Fog('#c4dcea', 40, 140);
+    sc.background = new THREE.Color('#b8d4ea');
+    sc.fog = new THREE.Fog('#e6d6c2', 40, 140);
     const pm = new THREE.PMREMGenerator(this.renderer);
     sc.environment = this.keep(pm.fromScene(new RoomEnvironment(), 0.04).texture);
     sc.environmentIntensity = 0.32;
     pm.dispose();
-    sc.add(new THREE.HemisphereLight('#dcecff', '#6b5a3a', 1.15));
-    // вечернее солнце слева-сзади: длинные мягкие тени
-    const sun = new THREE.DirectionalLight('#ffe8c8', 2.9);
-    sun.position.set(-9, 11, 7);
+    sc.add(new THREE.HemisphereLight('#ffe4c4', '#5a4630', 0.95));
+    // тёплое вечернее солнце низко слева-сзади: длинные мягкие тени
+    const sun = new THREE.DirectionalLight('#ffcf94', 3.3);
+    sun.position.set(-14, 7.5, 9);
     sun.target.position.set(0, 0, -1);
     sun.castShadow = true;
     sun.shadow.mapSize.set(4096, 4096);
@@ -151,19 +151,36 @@ export class Yard3D {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       const name = (m.name + ' ' + (m.parent?.name ?? '')).toLowerCase();
-      const flat = /ground|court|city|prigorod|mark|line/.test(name);
+      const flat = /ground|court|city|prigorod|mark|line|clay/.test(name) && !/cityboard/.test(name);
       m.receiveShadow = true;
       m.castShadow = !flat;
       const mat = m.material as THREE.MeshStandardMaterial;
       if (mat.map) mat.map.anisotropy = 8;
-      // деревья и кусты: вырезка по альфе, обе стороны
+      // деревья и кусты: вырезка по альфе с мягким краем (alpha to coverage при сглаживании), обе стороны
       if (/tree|bush|weeds/.test(name)) {
-        mat.alphaTest = 0.5;
+        mat.alphaTest = 0.35;
+        mat.alphaToCoverage = true;
         mat.transparent = false;
         mat.side = THREE.DoubleSide;
         m.receiveShadow = false;
       }
-      if (/city|prigorod|mark|line/.test(name)) {
+      // следы бит и камешки — наклейки на земле
+      if (/scuff|pebbles/.test(name)) {
+        mat.transparent = true;
+        mat.opacity = /scuff/.test(name) ? 0.42 : 0.8;
+        mat.alphaTest = 0.02;
+        mat.depthWrite = false;
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = -4;
+        m.castShadow = false;
+        m.renderOrder = 2;
+      }
+      if (/clay/.test(name)) {
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = -1;
+        m.castShadow = false;
+      }
+      if (/city|prigorod|mark|line/.test(name) && !/clay|cityboard/.test(name)) {
         mat.polygonOffset = true;
         mat.polygonOffsetFactor = -2;
       }
@@ -353,10 +370,6 @@ export class Yard3D {
       const aim = this.aimGroup.visible;
       this.aimGroup.visible = false;
       r.setScissorTest(true);
-      r.setScissor(x - 3, y - 3, lw + 6, lh + 6);
-      r.setViewport(x - 3, y - 3, lw + 6, lh + 6);
-      r.setClearColor('#fff8e0', 1);
-      r.clear();
       r.setScissor(x, y, lw, lh);
       r.setViewport(x, y, lw, lh);
       r.render(this.scene, this.lupaCam);

@@ -14,7 +14,10 @@
 .gk-row b { text-align: right; font: bold 17px 'PT Sans', Arial, sans-serif; color: #fff; }
 .gk-head { position: absolute; right: 8px; top: -15px; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; }
 .gk-now { margin-top: 6px; display: inline-block; padding: 4px 10px; border-radius: 8px; background: rgba(255, 246, 214, 0.92); color: #3a2a10; }
-.gk-lupa { position: absolute; padding: 0 6px; font: bold 11px 'PT Sans', Arial, sans-serif; color: #6a4a1a; text-transform: uppercase; letter-spacing: 1px; pointer-events: none; box-sizing: border-box; }
+.gk-lupa { position: absolute; box-sizing: border-box; pointer-events: none; border: 6px solid #6b4423; border-radius: 10px;
+  border-image: linear-gradient(135deg, #8a5a2e, #5a3518 40%, #9a6a38 60%, #4a2c12) 1; box-shadow: 0 4px 14px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,220,160,.35); }
+.gk-lupa span { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); padding: 1px 10px; border-radius: 4px; background: linear-gradient(#a8743c, #6b4423);
+  color: #fff3d6; font: bold 11px 'PT Sans', Arial, sans-serif; letter-spacing: 2px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,.4); }
 .gk-banner { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); padding: 12px 28px; border-radius: 16px; background: rgba(255, 250, 230, 0.93); color: #3a2410; text-align: center; pointer-events: none; box-shadow: 0 6px 30px rgba(0,0,0,.3); opacity: 0; transition: opacity .25s; max-width: 86%; }
 .gk-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; color: #b8401e; }
 .gk-banner span { font: 15px 'PT Sans', Arial, sans-serif; }

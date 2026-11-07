@@ -1,0 +1,33 @@
+# Городки: доработка двора (замечания: рюхи «как пластик», поле пустое, отбойник плоский) — материалы и наклейки.
+# python studio/run.py studio/jobs/gorodki/05-tex2.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds: [81, 82]
+items:
+  - name: rodwood
+    prompt: >-
+      Seamless tileable texture, macro photograph of the side of an old well-used birch wood stick without bark, warm cream and honey wood,
+      straight grain, many small dents, scratches and dark dirt smudges from hits, worn, matte, even light, photorealistic.
+  - name: clay
+    prompt: >-
+      Seamless tileable texture, top-down photograph of hard compacted brown clay ground of a sports court, slightly darker damp patches,
+      fine cracks, small pebbles, scuff marks, even soft daylight, photorealistic.
+  - name: burlap
+    prompt: >-
+      Seamless tileable texture, flat photograph of coarse old jute burlap sack fabric, brown, dusty, some stains, even light, photorealistic.
+  - name: scuff
+    prompt: >-
+      Top-down photograph of a single dark scuff mark of disturbed loose earth on a pure white background, a short elongated gouge where a heavy stick hit the ground,
+      scattered crumbs of soil around, isolated, photorealistic.
+  - name: pebbles
+    prompt: >-
+      Top-down photograph of a small scattered cluster of grey and brown pebbles and gravel isolated on a pure white background, photorealistic.
+  - name: batwood2
+    prompt: >-
+      Seamless tileable texture, macro photograph of a dark brown oiled hardwood stick surface, long straight grain, heavily worn and scratched from years of use,
+      dents, darker grime, matte, even light, photorealistic.

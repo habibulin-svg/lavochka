@@ -160,14 +160,16 @@ export function createView(): GameView<State, Event> {
   function placeLupaTag() {
     const lr = yard.lupaRect();
     const show = !!lr && yard.lupaShown;
-    const key = show ? `${lr!.x},${lr!.w}` : '-';
+    const key = show ? `${lr!.x},${lr!.w},${lr!.h}` : '-';
     if (key === lupaKey) return;
     lupaKey = key;
     lupaTag.style.display = show ? '' : 'none';
     if (show) {
-      lupaTag.style.left = `${lr!.x}px`;
-      lupaTag.style.top = `${lr!.y}px`;
-      lupaTag.style.width = `${lr!.w}px`;
+      // рамка — снаружи окошка
+      lupaTag.style.left = `${lr!.x - 6}px`;
+      lupaTag.style.top = `${lr!.y - 6}px`;
+      lupaTag.style.width = `${lr!.w + 12}px`;
+      lupaTag.style.height = `${lr!.h + 12}px`;
     }
   }
 
@@ -393,7 +395,7 @@ export function createView(): GameView<State, Event> {
     mount(el, c) {
       ctx = c;
       root = el;
-      const wrap = h(`<div class="gk-wrap"><div class="gk-cv"></div><div class="gk-hud"></div><div class="gk-lupa">город крупно</div><div class="gk-banner"></div>
+      const wrap = h(`<div class="gk-wrap"><div class="gk-cv"></div><div class="gk-hud"></div><div class="gk-lupa"><span>город</span></div><div class="gk-banner"></div>
         ${ctx.demo ? '' : '<div class="gk-tip">Потяните вниз и отпустите — бросок</div>'}</div>`);
       root.appendChild(wrap);
       hud = wrap.querySelector('.gk-hud') as HTMLElement;

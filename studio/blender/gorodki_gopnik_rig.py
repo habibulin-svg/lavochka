@@ -93,7 +93,10 @@ bm.from_mesh(me)
 uv = bm.loops.layers.uv.new('UVMap') if not bm.loops.layers.uv else bm.loops.layers.uv.verify()
 bm.normal_update()
 for f in bm.faces:
-    f.material_index = 1 if f.normal.y > 0.2 else 0
+    # голова выше подбородка: всё, что не смотрит прямо вперёд, — с «изнанки» (кепка, волосы), иначе лицо
+    # растягивается на виски и уши
+    head = f.calc_center_median().z > 0.865 * H
+    f.material_index = 1 if (f.normal.y > 0.2 or (head and f.normal.y > -0.55)) else 0
     for lp in f.loops:
         x, _, z = lp.vert.co
         u, v = to_px(x, z)

@@ -16,8 +16,8 @@ const HEIGHT = 1.78;
 const LOOKS = ['zatulinka', 'zaton', 'rastochka', 'pervomayka'];
 const EXTRA = ['chemskoy', 'leninskiy'];
 
-type BoneName = 'hips' | 'spine' | 'head' | 'upper_armR' | 'forearmR' | 'handR' | 'upper_armL' | 'forearmL' | 'handL';
-const BONES: BoneName[] = ['hips', 'spine', 'head', 'upper_armR', 'forearmR', 'handR', 'upper_armL', 'forearmL', 'handL'];
+type BoneName = 'hips' | 'spine' | 'head' | 'upper_armR' | 'forearmR' | 'handR' | 'upper_armL' | 'forearmL' | 'handL' | 'thighL' | 'shinL' | 'thighR' | 'shinR';
+const BONES: BoneName[] = ['hips', 'spine', 'head', 'upper_armR', 'forearmR', 'handR', 'upper_armL', 'forearmL', 'handL', 'thighL', 'shinL', 'thighR', 'shinR'];
 
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -71,6 +71,27 @@ function ik2(upper: THREE.Object3D, lower: THREE.Object3D, end: THREE.Object3D, 
   aim(lower, tip.sub(wpos(lower, new THREE.Vector3())));
 }
 
+/** Вершины, которые ведёт кость кисти (вес > 0,6): не больше 48, равномерно. */
+function handVerts(model: THREE.Object3D, hand: THREE.Bone | undefined): { mesh: THREE.SkinnedMesh; idx: number[] } | null {
+  if (!hand) return null;
+  let out: { mesh: THREE.SkinnedMesh; idx: number[] } | null = null;
+  model.traverse((o) => {
+    const m = o as THREE.SkinnedMesh;
+    if (out || !m.isSkinnedMesh) return;
+    const bi = m.skeleton.bones.indexOf(hand);
+    if (bi < 0) return;
+    const si = m.geometry.attributes.skinIndex;
+    const sw = m.geometry.attributes.skinWeight;
+    const all: number[] = [];
+    for (let v = 0; v < si.count; v++)
+      for (let k = 0; k < 4; k++) if (si.getComponent(v, k) === bi && sw.getComponent(v, k) > 0.6) all.push(v);
+    if (!all.length) return;
+    const step = Math.max(1, Math.floor(all.length / 48));
+    out = { mesh: m, idx: all.filter((_, i) => i % step === 0) };
+  });
+  return out;
+}
+
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const DEG = Math.PI / 180;
@@ -84,6 +105,10 @@ interface Person {
   waveT: number;
   /** Сдвиг фазы дыхания. */
   t: number;
+  /** Ось «поперёк ладони» в осях кости кисти: через неё проходит бита в кулаке. */
+  palm: THREE.Vector3;
+  /** Вершины правой кисти (меш и номера): их середина — где на самом деле кулак. */
+  fist: { mesh: THREE.SkinnedMesh; idx: number[] } | null;
 }
 
 /** Поза броска по фазе: угол кисти вокруг плеча (от «вперёд» по часовой — вправо), высота, закрутка корпуса, наклон, бита. */
@@ -181,9 +206,15 @@ export class Crowd {
       });
       const rest = new Map<THREE.Bone, THREE.Quaternion>();
       for (const n of BONES) if (bones[n]) rest.set(bones[n], bones[n].quaternion.clone());
+      // ладонь висящей руки смотрит в бедро, поперёк ладони — «вперёд» тела (у модели — +z)
+      root.updateMatrixWorld(true);
+      const palm = new THREE.Vector3(0, 0, 1);
+      if (bones.handR) palm.applyQuaternion(bones.handR.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+      // пальцы поджаты: кисть короче — получается кулак
+      if (bones.handR) bones.handR.scale.set(1.05, 0.62, 1.05);
       const bat = new THREE.Group();
       this.group.add(root, bat);
-      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10 });
+      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10, palm, fist: handVerts(model, bones.handR) });
     } catch (e) {
       console.warn('городки: человек не загрузился', e);
     } finally {
@@ -191,36 +222,44 @@ export class Crowd {
     }
   }
 
-  /** Радость (выбил фигуру): руки вверх, подпрыгнуть. */
+  /** Радость (выбил фигуру): бросающий подпрыгивает с поднятыми руками, зрители на лавочке тоже вскидывают руки. */
   cheer(seat: number) {
-    const p = this.people.get(seat);
-    if (p) p.waveT = 0;
+    for (const [k, p] of this.people) if (k === seat || this.sitting.has(k)) p.waveT = k === seat ? 0 : -0.25 - Math.random() * 0.3;
   }
+
+  /** Кто сидит на лавочке (места): первые трое ждущих. */
+  private sitting = new Set<number>();
 
   update(dt: number) {
     let bench = 0;
+    this.sitting.clear();
     for (const seat of this.seats) {
       const p = this.people.get(seat);
       if (!p) continue;
       const thr = seat === this.thrower.seat;
-      // где стоит
+      let sit = false;
+      // где стоит: бросающий — у черты вполоборота, трое ждущих сидят на лавочке, остальные стоят рядом
       if (thr) {
         p.root.position.set(this.thrower.x - 0.4, 0, -(this.thrower.line - 0.3));
-        p.root.rotation.y = Math.PI;
+        p.root.rotation.y = Math.PI + (this.phase == null ? 0.28 : 0);
       } else {
         const k = bench++;
-        const spots = [
-          [4.6, -8.2],
-          [4.7, -9.1],
-          [4.5, -10.0],
-          [4.8, -10.9],
-          [-4.6, -2.4],
-          [-4.7, -3.5],
-        ];
-        const [x, y] = spots[k % spots.length];
-        p.root.position.set(x, 0, -y);
-        // смотрит на площадку (на город, чуть вперёд)
-        p.root.rotation.y = Math.atan2(-(0 - x), -(-1 - y)) + Math.PI;
+        if (k < 3) {
+          sit = true;
+          this.sitting.add(seat);
+          // лавочка у x = 5, вдоль площадки, лицом к игре
+          p.root.position.set(4.93, 0, -(-9.65 + k * 0.62));
+          p.root.rotation.y = -Math.PI / 2;
+        } else {
+          const spots = [
+            [4.3, -7.6],
+            [4.4, -11.2],
+            [-4.6, -2.4],
+          ];
+          const [x, y] = spots[(k - 3) % spots.length];
+          p.root.position.set(x, 0, -y);
+          p.root.rotation.y = Math.atan2(-(0 - x), -(-1 - y)) + Math.PI;
+        }
       }
       for (const [bone, q] of p.rest) bone.quaternion.copy(q);
       p.t += dt;
@@ -236,11 +275,14 @@ export class Crowd {
           p.bat.add(b);
         }
       }
-      if (p.waveT >= 0) {
+      if (sit) this.posSit(p);
+      else if (thr) this.posStep(p);
+      p.root.updateMatrixWorld(true);
+      if (p.waveT !== -1) {
         p.waveT += dt;
         if (p.waveT > 1.6) p.waveT = -1;
       }
-      if (p.waveT >= 0 && R) this.posCheer(p);
+      if (p.waveT >= 0 && R) this.posCheer(p, sit);
       else if (thr && R && this.phase != null) this.posThrow(p);
       else if (R) this.posHold(p, thr);
       p.bat.visible = !thr || this.phase == null || this.phase < 0.62;
@@ -279,13 +321,12 @@ export class Crowd {
       ik2(b.upper_armL, b.forearmL, b.handL, tl, new THREE.Vector3(0, -1, 0));
     }
     // бита: рукоять в кисти, тело — вбок от дуги (плашмя, по касательной назад)
-    const hand = this.grip(b.handR);
     // бита — продолжение руки, чуть отстаёт от движения кисти по дуге
     const along = fwd.clone().multiplyScalar(-Math.sin(pose.ang)).addScaledVector(right, Math.cos(pose.ang)); // d(dir)/d(угол)
     const batDir = dir.clone().addScaledVector(along, ph < 0.55 ? -0.35 : 0.45).normalize();
     batDir.y -= 0.08;
     batDir.normalize();
-    this.placeBat(p.bat, hand, batDir);
+    this.hold(p, batDir);
   }
 
   /** Дыхание и лёгкое покачивание. */
@@ -308,18 +349,66 @@ export class Crowd {
     const target = sh.clone().addScaledVector(fwd, reach * 0.35).addScaledVector(right, reach * 0.25);
     target.y = sh.y - reach * 0.85;
     ik2(b.upper_armR, b.forearmR, b.handR, target, new THREE.Vector3(0, 0, 0).addScaledVector(fwd, -1).addScaledVector(right, 0.5));
-    const hand = this.grip(b.handR);
-    // конец биты — на земле чуть впереди и сбоку
-    const tip = new THREE.Vector3(hand.x, 0.03, hand.z).addScaledVector(fwd, thr ? 0.55 : 0.35).addScaledVector(right, 0.25);
+    const hand = wpos(b.handR, new THREE.Vector3());
+    // конец биты — на земле впереди и чуть сбоку
+    const tip = new THREE.Vector3(hand.x, 0.03, hand.z).addScaledVector(fwd, thr ? 0.62 : 0.45).addScaledVector(right, 0.12);
     const dir = tip.sub(hand).normalize();
-    this.placeBat(p.bat, hand, dir);
+    this.hold(p, dir);
+    // бросающий держит биту двумя руками: левая — ниже по бите
+    if (thr && b.upper_armL && b.forearmL && b.handL) {
+      const t = p.bat.position.clone().addScaledVector(dir, -0.16);
+      ik2(b.upper_armL, b.forearmL, b.handL, t, new THREE.Vector3(0, -0.4, 0).addScaledVector(right, -1));
+    }
   }
 
-  /** Радость: руки вверх, подпрыгнуть. */
-  private posCheer(p: Person) {
+  /** Сидит на лавочке: бёдра вперёд, голени вниз, руки на коленях, бита прислонена к лавочке. */
+  private posSit(p: Person) {
+    const b = p.bones;
+    const yaw = p.root.rotation.y;
+    const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(UP, yaw);
+    // таз — на высоте сиденья
+    const hip = b.thighL ? wpos(b.thighL, new THREE.Vector3()).y : 0.9;
+    p.root.position.y = 0.53 - hip;
+    p.root.updateMatrixWorld(true);
+    for (const [th, sh, side] of [
+      [b.thighL, b.shinL, 1],
+      [b.thighR, b.shinR, -1],
+    ] as const) {
+      if (!th || !sh) continue;
+      aim(th, fwd.clone().addScaledVector(new THREE.Vector3(0, 1, 0), -0.08).add(new THREE.Vector3(-1, 0, 0).applyAxisAngle(UP, yaw).multiplyScalar(-side * 0.12)));
+      aim(sh, new THREE.Vector3(0, -1, 0).addScaledVector(fwd, 0.25));
+    }
+    // руки на коленях
+    for (const [u, f, h, th] of [
+      [b.upper_armR, b.forearmR, b.handR, b.shinR],
+      [b.upper_armL, b.forearmL, b.handL, b.shinL],
+    ] as const) {
+      if (!u || !f || !h || !th) continue;
+      const knee = wpos(th, new THREE.Vector3());
+      ik2(u, f, h, knee.addScaledVector(fwd, -0.05).add(new THREE.Vector3(0, 0.06, 0)), new THREE.Vector3(0, 0, 0).addScaledVector(fwd, -1).add(new THREE.Vector3(0, -0.3, 0)));
+    }
+    // бита стоит у лавочки
+    p.bat.quaternion.setFromUnitVectors(UP, new THREE.Vector3(0, 1, 0).addScaledVector(fwd, -0.25).normalize());
+    p.bat.position.copy(p.root.position).setY(0.42).addScaledVector(fwd, 0.25).add(new THREE.Vector3(0, 0, 0).addScaledVector(new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw), 0.3));
+  }
+
+  /** Бросающий стоит в шаг: левая нога чуть вперёд, правая отставлена. */
+  private posStep(p: Person) {
+    const b = p.bones;
+    if (!b.thighL || !b.thighR) return;
+    const yaw = p.root.rotation.y;
+    const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw);
+    const k = this.phase == null ? 1 : this.phase < 0.55 ? 1 - this.phase * 0.6 : 1.3;
+    rotateWorld(b.thighL, _q.setFromAxisAngle(side, -0.2 * k));
+    rotateWorld(b.thighR, _q.setFromAxisAngle(side, 0.16 * k));
+    if (b.shinR) rotateWorld(b.shinR, _q.setFromAxisAngle(side, -0.1 * k));
+  }
+
+  /** Радость: руки вверх, подпрыгнуть (сидя — без прыжка). */
+  private posCheer(p: Person, sit = false) {
     const b = p.bones;
     const k = p.waveT / 1.6;
-    p.root.position.y = Math.max(0, Math.sin(k * Math.PI * 3)) * 0.18 * (1 - k);
+    if (!sit) p.root.position.y = Math.max(0, Math.sin(k * Math.PI * 3)) * 0.18 * (1 - k);
     const yaw = p.root.rotation.y;
     const right = new THREE.Vector3(-1, 0, 0).applyAxisAngle(UP, yaw);
     for (const [u, f, h, s] of [
@@ -333,27 +422,38 @@ export class Crowd {
       t.y = sh.y + len * 0.9;
       ik2(u, f, h, t, right.clone().multiplyScalar(s));
     }
-    const hand = this.grip(b.handR);
-    this.placeBat(p.bat, hand, new THREE.Vector3(0, 1, 0).addScaledVector(right, 0.3).normalize());
+    this.hold(p, new THREE.Vector3(0, 1, 0).addScaledVector(right, 0.3).normalize());
   }
 
-  /** Где кулак: середина кости кисти (от запястья к пальцам). */
-  private grip(hand: THREE.Bone) {
-    const w = wpos(hand, new THREE.Vector3());
-    const ax = new THREE.Vector3(0, 1, 0).applyQuaternion(hand.getWorldQuaternion(_q2));
-    let len = hand.userData.glen as number | undefined;
-    if (!len) {
-      // длина кисти ≈ треть предплечья
-      len = boneLen(hand.parent!, hand) * 0.45;
-      hand.userData.glen = len;
+  /** Бита в кулаке: кисть поворачиваем так, чтобы ось «поперёк ладони» легла вдоль биты, бита проходит через середину
+   * сжатой кисти, из кулака снизу торчит набалдашник рукояти. */
+  private hold(p: Person, dir: THREE.Vector3) {
+    const hb = p.bones.handR;
+    if (!hb) return;
+    const cur = p.palm.clone().applyQuaternion(hb.getWorldQuaternion(_q2)).normalize();
+    // знак ладони не важен — берём ближний к нужному
+    if (cur.dot(dir) < 0) cur.negate();
+    rotateWorld(hb, new THREE.Quaternion().setFromUnitVectors(cur, dir));
+    let fist: THREE.Vector3;
+    if (p.fist) {
+      // середина кисти по вершинам меша (со скиннингом) — бита идёт через неё
+      const m = p.fist.mesh;
+      m.skeleton.update();
+      fist = new THREE.Vector3();
+      const v = new THREE.Vector3();
+      for (const i of p.fist.idx) {
+        m.getVertexPosition(i, v);
+        fist.add(v.applyMatrix4(m.matrixWorld));
+      }
+      fist.multiplyScalar(1 / p.fist.idx.length);
+    } else {
+      const ax = new THREE.Vector3(0, 1, 0).applyQuaternion(hb.getWorldQuaternion(_q2)).normalize();
+      fist = wpos(hb, new THREE.Vector3()).addScaledVector(ax, boneLen(p.bones.forearmR, hb) * 0.17);
     }
-    return w.addScaledVector(ax, len * 0.6);
-  }
-
-  /** Бита: ось модели — y (как у цилиндра), рукоять (−y) — в кулаке: из кулака торчит набалдашник. */
-  private placeBat(bat: THREE.Object3D, hand: THREE.Vector3, dir: THREE.Vector3) {
+    const bat = p.bat;
     bat.quaternion.setFromUnitVectors(UP, dir);
-    bat.position.copy(hand).addScaledVector(dir, 0.42 - 0.08);
+    // центр биты — от кулака вдоль биты; рукоять торчит из кулака на 6 см
+    bat.position.copy(fist).addScaledVector(dir, 0.42 - 0.06);
   }
 
   dispose() {
