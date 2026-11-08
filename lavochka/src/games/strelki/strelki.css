@@ -1,0 +1,36 @@
+/* «Стрелки» — двор, асфальт, цветной мел: как стрелки казаков-разбойников, только на целое поле. */
+.table--strelki {
+  --table-bg: radial-gradient(ellipse at 50% 20%, #6f7b62, #4b5644 55%, #2f362b 100%);
+}
+.st-wrap { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+.st-hud {
+  display: flex; align-items: center; gap: 18px; padding: 5px 16px; border-radius: 999px;
+  background: rgba(20, 22, 20, 0.55); color: #f4f1e8; font: 700 15px/1.2 'PT Sans', Arial, sans-serif;
+}
+.st-hud.hurt { animation: st-hurt 420ms ease; }
+@keyframes st-hurt { 0%, 100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+.st-hearts i { font-style: normal; color: #5a5450; margin-right: 2px; font-size: 18px; transition: color 200ms; }
+.st-hearts i.on { color: #ff4f5e; text-shadow: 0 0 6px rgba(255, 79, 94, 0.5); }
+.st-err { color: #ffb0a8; }
+.st-time { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.st-board { flex: 1; min-height: 0; width: 100%; touch-action: manipulation; filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.45)); }
+.st-ground { fill: #45474a; }
+.st-frame { fill: none; stroke: rgba(244, 241, 232, 0.55); stroke-width: 5; stroke-dasharray: 60 14; }
+.st-dots circle { fill: rgba(244, 241, 232, 0.16); }
+
+.st-arrow .st-hit { fill: none; stroke: transparent; stroke-width: 92; stroke-linecap: round; stroke-linejoin: round; }
+.st-arrow .st-body { fill: none; stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; }
+.st-board.can .st-arrow { cursor: pointer; }
+.st-arrow { transition: opacity 200ms; }
+.st-board.can .st-arrow:hover .st-body { stroke-width: 31; }
+.st-arrow.t0 .st-body { stroke: #f4f1e8; } .st-arrow.t0 .st-head path { fill: #f4f1e8; }
+.st-arrow.t1 .st-body { stroke: #ffe066; } .st-arrow.t1 .st-head path { fill: #ffe066; }
+.st-arrow.t2 .st-body { stroke: #ff8fb1; } .st-arrow.t2 .st-head path { fill: #ff8fb1; }
+.st-arrow.t3 .st-body { stroke: #7fd0ff; } .st-arrow.t3 .st-head path { fill: #7fd0ff; }
+.st-arrow.t4 .st-body { stroke: #9be37a; } .st-arrow.t4 .st-head path { fill: #9be37a; }
+.st-arrow.bad .st-body { stroke: #ff5a4a; } .st-arrow.bad .st-head path { fill: #ff5a4a; }
+.st-arrow.hint { animation: st-hint 900ms ease-in-out infinite; }
+@keyframes st-hint { 50% { opacity: 0.35; } }
+.st-arrow.shake { animation: st-shake 380ms ease; }
+@keyframes st-shake { 25% { transform: translate(4px, -3px); } 50% { transform: translate(-4px, 3px); } 75% { transform: translate(2px, -1px); } }
+.st-btns { display: flex; gap: 6px; }

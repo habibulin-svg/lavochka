@@ -126,6 +126,7 @@ export const SLUGS: Record<string, string> = {
   saper: 'saper',
   g2048: '2048',
   pipes: 'vodoprovodchik',
+  strelki: 'strelki',
   detektiv: 'detektivy',
   // настолки
   adventures: 'priklyucheniya',

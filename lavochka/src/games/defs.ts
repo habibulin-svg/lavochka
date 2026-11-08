@@ -147,6 +147,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   dvor: () => import('./dvor/def').then((m) => m.def),
   saper: () => import('./saper/def').then((m) => m.def),
   g2048: () => import('./g2048/def').then((m) => m.def),
+  strelki: () => import('./strelki/def').then((m) => m.def),
   pipes: () => import('./pipes/def').then((m) => m.def),
   detektiv: () => import('./detektiv/def').then((m) => m.def),
   hat: () => Promise.all([import('./hat/def'), loadClues()]).then(([m]) => m.def),

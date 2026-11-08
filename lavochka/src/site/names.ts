@@ -128,6 +128,7 @@ export const NAMES: Record<string, Names> = {
   puzzles: { ru: ['судоку', 'кроссворды', 'сканворды', 'японские кроссворды', 'нонограммы', 'кроссворды онлайн'], en: ['Sudoku', 'Crossword', 'Scanword', 'Arrowword', 'Nonogram', 'Picross', 'Griddlers', 'Hanjie'] },
   saper: { ru: ['сапер', 'сапёр Windows', 'минёр', 'мины', 'сапёр онлайн'], en: ['Minesweeper', 'Mines', 'Minesweeper Flags'] },
   g2048: { ru: ['2048 игра', 'плитки 2048', 'игра 2048 онлайн', 'цифры 2048'], en: ['2048', '2048 game', 'Threes'] },
+  strelki: { ru: ['выпусти стрелки', 'головоломка со стрелками', 'стрелки на поле', 'убери стрелки', 'стрелки змейки'], en: ['Arrows Go', 'Arrow Out', 'Arrows Puzzle Escape', 'Arrow puzzle', 'Tap Away'] },
   pipes: { ru: ['трубы', 'соедини трубы', 'водопровод', 'поворотка', 'головоломка с трубами', 'сантехник'], en: ['Pipes', 'Net', 'NetWalk', 'Pipe puzzle', 'Plumber puzzle', 'Pipe Mania'] },
   detektiv: { ru: ['детективные загадки', 'инспектор Варнике', 'загадки инспектора Варнике', 'Анискин', 'найди преступника', 'логические задачи'], en: ['Detective puzzles', 'Whodunit', 'Murder mystery', 'Inspector Warnicke'] },
   // — настолки —
