@@ -68,8 +68,10 @@ shot('side', (0, 0, 0.9), 4.2, 90)
 shot('back', (0, 0, 0.9), 4.2, 180)
 shot('34', (0, 0, 0.9), 4.2, -35)
 headb = rig.data.bones['head']
-hp = rig.matrix_world @ headb.head_local + Vector((0, 0, 0.1))
+hp = rig.matrix_world @ headb.head_local + Vector((0, 0, 0.065))
+shot('head-front', hp, 0.75, 0, 0.02)
 shot('head', hp, 0.75, -20, 0.03)
+shot('head34', hp, 0.8, -40, 0.03)
 shot('head-side', hp, 0.75, 90, 0.03)
 hb = rig.data.bones['hand.R']
 hh = rig.matrix_world @ ((hb.head_local + hb.tail_local) / 2)

@@ -11,10 +11,10 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { normalOnly } from '../holdem/pbr';
 
 const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
-/** Рост — как у взрослого (решение пользователя: «нормального размера»). */
+/** Рост по умолчанию — для моделей не в метрах (решение пользователя: «нормального размера»). */
 const HEIGHT = 1.78;
 /** Версия моделей: менять при пересборке, чтобы браузер не взял старые из кэша. */
-const MODELS_V = 8;
+const MODELS_V = 9;
 
 /** Кто на каком месте: бригады ГОПС (расцветки — studio/blender/liveries.py). */
 const LOOKS = ['zatulinka', 'zaton', 'rastochka', 'pervomayka'];
@@ -220,10 +220,11 @@ export class Crowd {
           }
         }
       });
-      // масштаб по росту: как взрослый
+      // рост: модели MakeHuman уже в метрах, у каждой бригады свой (1,72–1,85); старые слепки — к среднему росту
       model.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(model);
-      const k = HEIGHT / Math.max(0.1, box.max.y - box.min.y);
+      const h = box.max.y - box.min.y;
+      const k = h > 1.6 && h < 2 ? 1 : HEIGHT / Math.max(0.1, h);
       model.scale.setScalar(k);
       model.position.y = -box.min.y * k;
       const root = new THREE.Group();

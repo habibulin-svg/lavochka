@@ -34,64 +34,100 @@ from mathutils import Matrix, Vector
 args = sys.argv[sys.argv.index('--') + 1:]
 NAME, OUT = args[0], args[1]
 BLEND = args[2] if len(args) > 2 else None
-HEIGHT = 1.78
 ASSETS = 'G:/ai/models/3d/mpfb/data'
 rng = np.random.default_rng(abs(hash(NAME)) % 2**32)
 
 # ---------------------------------------------------------------- бригады
 # цвета — sRGB 0..255; stripes — лампасы [(сдвиг от внешней линии, м, ширина, м, цвет)]
 NAVY, WHITE, BLACK, RED = (28, 36, 72), (236, 236, 230), (22, 22, 24), (178, 30, 34)
+
+
+def lr(name, w):
+    """Цель MakeHuman для обеих сторон: 'eyes/eye-scale-decr' → l-… и r-…."""
+    d, n = name.split('/')
+    return {f'{d}/l-{n}': w, f'{d}/r-{n}': w}
+
+
+# лицо и тело: у каждого своё (решение пользователя «да, разнообразь»): рост 1,72–1,85, форма головы, нос, глаза,
+# уши, губы, подбородок, причёска (или «под ноль»), щетина/усы, веснушки, шрам, оттенок кожи
 LOOKS = {
     'zaton': dict(  # голубая олимпийка, тёмно-синие лампасы, тёмно-синие штаны
-        macro=dict(muscle=0.72, weight=0.72, height=0.5, proportions=0.55, age=0.52), race=(0.95, 0.05, 0), hair_rgb=(150, 112, 70),
-        targets={'chin/chin-width-incr': 0.8, 'nose/nose-volume-incr': 0.8, 'head/head-square': 1.0, 'ears/l-ear-flap-incr': 0.9, 'ears/r-ear-flap-incr': 0.9,
-                 'neck/neck-scale-horiz-incr': 0.6, 'nose/nose-point-width-incr': 0.5},
-        skin='young_caucasian_male2', eyes='blue', brows='eyebrow006', hair='short04', shoes='shoes05',
+        # коренастый, курносый, широкий нос, лопоухий, рыжеватый ёжик, лёгкая щетина
+        macro=dict(muscle=0.8, weight=0.75, height=0.35, proportions=0.45, age=0.5), race=(0.97, 0.03, 0), height_m=1.74,
+        targets={'chin/chin-width-incr': 0.9, 'head/head-square': 1.0, 'head/head-fat-incr': 0.4, 'nose/nose-point-up': 0.9,
+                 'nose/nose-scale-horiz-incr': 0.8, 'nose/nose-flaring-incr': 0.6, 'nose/nose-scale-vert-decr': 0.5,
+                 **lr('ears/ear-flap-incr', 1.0), **lr('ears/ear-scale-incr', 0.5), **lr('cheek/cheek-volume-incr', 0.6),
+                 'mouth/mouth-lowerlip-volume-incr': 0.5, 'neck/neck-scale-horiz-incr': 0.9},
+        skin='young_caucasian_male2', eyes='blue', brows='eyebrow006', hair='short01', hair_rgb=(150, 92, 52), shoes='shoes05',
+        tint=(1.04, 0.97, 0.92), beard='stubble',
         jacket=(120, 178, 222), sleeve=[(-0.016, 0.011, NAVY), (0.0, 0.011, NAVY), (0.016, 0.011, NAVY)],
         pants=NAVY, leg=[(-0.012, 0.009, WHITE), (0.012, 0.009, WHITE)], collar=NAVY, cuffs=NAVY,
         chest=[], cap=(70, 70, 72)),
     'rastochka': dict(  # изумрудная, на груди бирюзовая и синяя полосы
-        macro=dict(muscle=0.55, weight=0.42, height=0.6, proportions=0.65, age=0.47), race=(0.6, 0.4, 0), hair_rgb=(28, 24, 22),
-        targets={'nose/nose-hump-incr': 1.0, 'mouth/mouth-scale-horiz-incr': 0.6, 'chin/chin-prominent-incr': 0.6, 'cheek/l-cheek-bones-incr': 0.9,
-                 'cheek/r-cheek-bones-incr': 0.9, 'head/head-invertedtriangular': 0.6},
-        skin='young_caucasian_male', eyes='brown', brows='eyebrow010', hair='short02', shoes='shoes05',
+        # татарин: скуластый, разрез глаз, нос с горбинкой, щетина, чёрная чёлка
+        macro=dict(muscle=0.55, weight=0.45, height=0.55, proportions=0.6, age=0.46), race=(0.5, 0.5, 0), height_m=1.76,
+        targets={'nose/nose-hump-incr': 1.0, 'nose/nose-greek-incr': 0.4, **lr('cheek/cheek-bones-incr', 1.0),
+                 **lr('cheek/cheek-inner-decr', 0.6), **lr('eyes/eye-epicanthus-in', 0.7), **lr('eyes/eye-height2-decr', 0.4),
+                 'head/head-invertedtriangular': 0.7, 'chin/chin-prominent-incr': 0.5, 'mouth/mouth-scale-horiz-incr': 0.4},
+        skin='young_asian_male', eyes='brown', brows='eyebrow010', hair='short02', hair_rgb=(22, 20, 20),
+        tint=(1.0, 0.98, 0.93), beard='stubble', shoes='shoes05',
         jacket=(18, 120, 74), sleeve=[(-0.01, 0.012, WHITE), (0.01, 0.012, WHITE)],
         pants=(16, 104, 64), leg=[(-0.01, 0.01, WHITE), (0.01, 0.01, WHITE)], collar=(14, 70, 48), cuffs=(14, 70, 48),
         chest=[('band', 0.03, 0.05, (30, 170, 170)), ('band', -0.03, 0.03, (32, 70, 160))], cap=(120, 120, 122)),
     'pervomayka': dict(  # тёмно-синий костюм с белым кантом
-        macro=dict(muscle=0.45, weight=0.3, height=0.75, proportions=0.75, age=0.4), race=(1.0, 0, 0), hair_rgb=(190, 160, 110),
-        targets={'head/head-oval': 1.0, 'nose/nose-point-width-decr': 0.8, 'mouth/mouth-lowerlip-volume-decr': 0.6, 'chin/chin-height-incr': 0.7,
-                 'nose/nose-scale-vert-incr': 0.6, 'neck/neck-scale-vert-incr': 0.5},
-        skin='young_caucasian_male', eyes='lightblue', brows='eyebrow001', hair='short02', shoes='shoes05',
+        # худой длинный, самый молодой: светлый, веснушки, острый нос, узкое лицо, круглая (не вытянутая) голова
+        macro=dict(muscle=0.4, weight=0.25, height=0.9, proportions=0.8, age=0.37), race=(1.0, 0, 0), height_m=1.85,
+        targets={'head/head-round': 0.5, 'head/head-scale-vert-decr': 0.5, 'head/head-scale-horiz-decr': 0.2,
+                 'nose/nose-point-width-decr': 0.8, 'nose/nose-scale-vert-incr': 0.4, 'nose/nose-point-up': 0.3,
+                 **lr('cheek/cheek-volume-decr', 0.8), 'chin/chin-height-decr': 0.3, 'chin/chin-width-decr': 0.6,
+                 'mouth/mouth-lowerlip-volume-decr': 0.5, 'mouth/mouth-scale-horiz-decr': 0.4, **lr('eyes/eye-scale-incr', 0.3),
+                 'neck/neck-scale-horiz-decr': 0.5},
+        skin='young_caucasian_male', eyes='lightblue', brows='eyebrow001', hair='short02', hair_rgb=(205, 172, 115),
+        tint=(1.03, 0.98, 0.97), freckles=True, shoes='shoes05',
         jacket=(30, 40, 84), sleeve=[(0.0, 0.006, WHITE)], pants=(28, 36, 78), leg=[(0.0, 0.006, WHITE)],
         collar=WHITE, cuffs=(24, 30, 64), chest=[('yoke', 0.0, 0.006, WHITE)], cap=(78, 80, 84)),
     'zatulinka': dict(  # чёрная с бирюзово-красно-белым зигзагом на груди и рукавах
-        macro=dict(muscle=0.68, weight=0.48, height=0.58, proportions=0.6, age=0.5), race=(0.95, 0.05, 0), hair_rgb=(70, 48, 32),
-        targets={'chin/chin-prognathism-incr': 0.8, 'nose/nose-curve-convex': 1.0, 'nose/nose-greek-incr': 0.6, 'head/head-rectangular': 0.8,
-                 'chin/chin-bones-incr': 0.6},
-        skin='young_caucasian_male2', eyes='grey', brows='eyebrow002', hair='short02', shoes='shoes06',
+        # бритый «под ноль», жилистый, длинное лицо, крючковатый нос, тяжёлая челюсть, глубоко посаженные глаза, шрам у брови
+        macro=dict(muscle=0.75, weight=0.4, height=0.6, proportions=0.6, age=0.55), race=(1.0, 0, 0), height_m=1.80,
+        targets={'head/head-rectangular': 1.0, 'head/head-scale-vert-incr': 0.3, 'nose/nose-curve-convex': 1.0,
+                 'nose/nose-hump-incr': 0.5, 'nose/nose-point-down': 0.6, 'chin/chin-prognathism-incr': 0.7,
+                 'chin/chin-bones-incr': 0.9, 'chin/chin-height-incr': 0.4, **lr('eyes/eye-trans-in', 0.3),
+                 **lr('eyes/eye-scale-decr', 0.4), **lr('eyes/eye-bag-incr', 0.6), **lr('cheek/cheek-inner-decr', 0.8),
+                 'mouth/mouth-upperlip-volume-decr': 0.7, 'mouth/mouth-lowerlip-volume-decr': 0.4},
+        skin='young_caucasian_male2', eyes='grey', brows='eyebrow002', hair=None, hair_rgb=(60, 44, 34),
+        tint=(0.98, 0.98, 1.0), scalp=True, scar=True, beard='stubble', shoes='shoes06',
         jacket=BLACK, sleeve=[], pants=(26, 26, 28), leg=[(-0.01, 0.009, WHITE), (0.01, 0.009, WHITE)],
         collar=(40, 40, 42), cuffs=(40, 40, 42),
         chest=[('zig', 0.05, 0.022, (24, 168, 168)), ('zig', 0.025, 0.014, WHITE), ('zig', 0.0, 0.022, RED)],
         sleeve_zig=True, cap=(110, 110, 112)),
     'chemskoy': dict(  # тёмно-синяя, на груди красная вставка с зелёной полосой
-        macro=dict(muscle=0.6, weight=0.95, height=0.45, proportions=0.5, age=0.7), race=(0.95, 0.05, 0), hair_rgb=(105, 62, 38),
-        targets={'head/head-round': 0.8, 'chin/chin-width-incr': 0.8, 'nose/nose-volume-incr': 0.9,
-                 'neck/neck-scale-horiz-incr': 0.9, 'head/head-fat-incr': 0.7},
-        skin='middleage_caucasian_male', eyes='brownlight', brows='eyebrow007', hair='short04', shoes='shoes05',
+        # старший, тяжёлый: круглое лицо, двойной подбородок, нос картошкой, усы и щетина, тёмный зачёс
+        macro=dict(muscle=0.6, weight=1.0, height=0.3, proportions=0.4, age=0.75), race=(0.97, 0.03, 0), height_m=1.72,
+        targets={'head/head-round': 1.0, 'head/head-fat-incr': 1.0, 'chin/chin-width-incr': 0.9, 'neck/neck-double-incr': 1.0,
+                 'nose/nose-volume-incr': 1.0, 'nose/nose-point-width-incr': 0.8, **lr('cheek/cheek-volume-incr', 1.0),
+                 **lr('eyes/eye-bag-incr', 0.8), **lr('eyes/eye-scale-decr', 0.3), 'mouth/mouth-lowerlip-volume-incr': 0.6,
+                 'neck/neck-scale-horiz-incr': 1.0},
+        skin='middleage_caucasian_male', eyes='brownlight', brows='eyebrow007', hair='short04', hair_rgb=(62, 44, 32),
+        tint=(1.05, 0.95, 0.9), beard='mustache+stubble', shoes='shoes05',
         jacket=(30, 38, 80), sleeve=[(0.0, 0.01, (200, 40, 40))], pants=(30, 38, 80), leg=[(0.0, 0.01, (200, 40, 40))],
         collar=(26, 30, 64), cuffs=(26, 30, 64),
         chest=[('panel', 0.0, 0.0, (176, 34, 38)), ('band', -0.005, 0.022, (30, 130, 70))], cap=(56, 56, 58)),
     'leninskiy': dict(  # бирюзово-зелёная, красно-белые полосы на рукавах
-        macro=dict(muscle=0.6, weight=0.55, height=0.62, proportions=0.6, age=0.48), race=(0.45, 0.55, 0), hair_rgb=(22, 20, 19),
-        targets={'nose/nose-flaring-incr': 0.7, 'eyes/l-eye-height2-decr': 0.5, 'eyes/r-eye-height2-decr': 0.5,
-                 'chin/chin-bones-incr': 0.7, 'head/head-square': 0.5},
-        skin='young_asian_male', eyes='brown', brows='eyebrow004', hair='short04', shoes='shoes06',
+        # широкое плоское лицо, узкие глаза, широкий нос, бородка, чёрный ёжик
+        macro=dict(muscle=0.65, weight=0.55, height=0.55, proportions=0.55, age=0.52), race=(0.2, 0.8, 0), height_m=1.78,
+        targets={'head/head-square': 0.6, 'head/head-scale-horiz-incr': 0.1, **lr('eyes/eye-height2-decr', 0.6),
+                 **lr('eyes/eye-epicanthus-in', 1.0), **lr('eyes/eye-corner1-up', 0.5), 'nose/nose-scale-horiz-incr': 0.7,
+                 'nose/nose-flaring-incr': 0.9, 'nose/nose-base-up': 0.4, **lr('cheek/cheek-bones-incr', 0.8),
+                 'chin/chin-bones-incr': 0.8, 'mouth/mouth-lowerlip-volume-incr': 0.4},
+        skin='young_asian_male', eyes='brown', brows='eyebrow004', hair='short01', hair_rgb=(18, 17, 17),
+        tint=(1.02, 0.96, 0.88), beard='goatee', shoes='shoes06',
         jacket=(20, 128, 120), sleeve=[(-0.016, 0.01, RED), (0.0, 0.01, WHITE), (0.016, 0.01, RED)],
         pants=(18, 112, 106), leg=[(-0.01, 0.009, WHITE), (0.01, 0.009, WHITE)], collar=(14, 84, 80),
         cuffs=(14, 84, 80), chest=[], cap=(24, 24, 26)),
 }
 L = LOOKS[NAME]
+HEIGHT = L['height_m']
+HAIR = L['hair'] or '@нет@'  # None — бритый «под ноль»
 
 # ---------------------------------------------------------------- аддон и ассеты
 ext_data = bpy.utils.user_resource('EXTENSIONS', path='.user/user_default/mpfb/data', create=True)
@@ -126,11 +162,16 @@ troot = LS.get_mpfb_data('targets')
 COMMON = {'eyebrows/eyebrows-trans-down': 0.5, 'forehead/forehead-nubian-incr': 0.4, 'mouth/mouth-angles-down': 0.35,
           'neck/neck-scale-horiz-incr': 0.35, 'head/head-age-incr': 0.25}
 for t, w in {**COMMON, **L['targets']}.items():
-    TS.load_target(human, os.path.join(troot, t + '.target.gz'), weight=w)
+    tp = os.path.join(troot, t + '.target.gz')
+    if os.path.exists(tp):
+        TS.load_target(human, tp, weight=w)
+    else:
+        print('нет цели', t)
 HS.set_character_skin(AS.find_asset_absolute_path(L['skin'] + '.mhmat', asset_subdir='skins'), human, skin_type='GAMEENGINE')
 HS.add_builtin_rig(human, 'game_engine')
 for sub, fname, kind in [('eyes', 'high-poly.mhclo', 'Eyes'), ('eyebrows', L['brows'] + '.mhclo', 'Eyebrows'),
-                         ('eyelashes', 'eyelashes01.mhclo', 'Eyelashes'), ('hair', L['hair'] + '.mhclo', 'Hair'),
+                         ('eyelashes', 'eyelashes01.mhclo', 'Eyelashes'),
+                         *([('hair', HAIR + '.mhclo', 'Hair')] if L['hair'] else []),
                          ('clothes', 'male_casualsuit02.mhclo', 'Clothes'), ('clothes', L['shoes'] + '.mhclo', 'Clothes')]:
     HS.add_mhclo_asset(AS.find_asset_absolute_path(fname, asset_subdir=sub), human, asset_type=kind,
                        material_type='GAMEENGINE', subdiv_levels=0)
@@ -181,11 +222,11 @@ def recolor(img, rgb, keep=0.0):
 
 
 for o in parts:
-    if any(k in o.name for k in (L['hair'], 'eyebrow')):
+    if any(k in o.name for k in (HAIR, 'eyebrow')):
         for m in o.data.materials:
             for n in m.node_tree.nodes:
                 if n.type == 'TEX_IMAGE' and n.image and not getattr(n.image, '_done', False):
-                    rgb = L['hair_rgb'] if L['hair'] in o.name else tuple(int(c * 0.7) for c in L['hair_rgb'])
+                    rgb = L['hair_rgb'] if HAIR in o.name else tuple(int(c * 0.7) for c in L['hair_rgb'])
                     recolor(n.image, rgb)
                     break
 
@@ -194,7 +235,7 @@ for o in parts:
     for m in o.data.materials:
         if not m or not m.use_nodes:
             continue
-        cut = any(k in o.name for k in ('eyebrow', 'eyelash', 'high-poly', L['hair']))
+        cut = any(k in o.name for k in ('eyebrow', 'eyelash', 'high-poly', HAIR))
         nt = m.node_tree
         bsdf = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
         for lk in list(nt.links):
@@ -508,7 +549,7 @@ def build_cap():
     """Кепка 90-х по голове: околыш чуть шире лба, мягкий купол из восьми клиньев с пуговкой, верх слегка нависает
     вперёд, явный короткий козырёк чуть вниз; надвинута на лоб (спереди ниже, сзади выше)."""
     co = np.array([base.matrix_world @ v.co for v in base.data.vertices])
-    hairo = part(L['hair'])
+    hairo = part(HAIR)
     hc = np.array([hairo.matrix_world @ v.co for v in hairo.data.vertices]) if hairo else co[:0]
     top = float(max(co[:, 2].max(), hc[:, 2].max() if len(hc) else 0))
     allp = np.concatenate([co, hc]) if len(hc) else co
@@ -620,6 +661,86 @@ def build_cap():
     return cap
 
 
+
+# ---------------------------------------------------------------- лицо: щетина, усы, бородка, «под ноль», веснушки, шрам, тон кожи
+def paint_face():
+    mat = next(m for m in base.data.materials if m)
+    tex = next(n for n in mat.node_tree.nodes if n.type == 'TEX_IMAGE' and n.image)
+    img = tex.image
+    if img.size[0] > 2048:
+        img.scale(2048, 2048)
+    W_, H_ = img.size
+    px = np.array(img.pixels[:], np.float32).reshape(H_, W_, 4)[::-1].copy()
+    rgb = px[..., :3]
+    rgb *= np.array(L.get('tint', (1, 1, 1)), np.float32)
+    feats = [k for k in ('beard', 'scalp', 'freckles', 'scar') if L.get(k)]
+    if feats:
+        P, N, UV, M, F = raster(base, W_)
+        x, y, z = P[..., 0], P[..., 1], P[..., 2]
+        co = np.array([base.matrix_world @ v.co for v in base.data.vertices])
+        neck_z = (rig.matrix_world @ rig.data.bones['head'].head_local).z
+        hv = co[co[:, 2] > neck_z]
+        cy = float((hv[:, 1].min() + hv[:, 1].max()) / 2)
+        # опора — глаза (сетка глаз надёжнее «самой передней точки»: у кого-то вперёд выходит подбородок)
+        ec = np.array([eyes.matrix_world @ v.co for v in eyes.data.vertices]) if eyes else hv
+        ez = float(ec[:, 2].mean())
+        f_ = float(co[:, 2].max() - co[:, 2].min()) / 1.78  # масштаб лица — по росту до приведения к 1,72–1,85
+        nz = ez - 0.042 * f_
+        mouth_z, chin_z, brow_z = ez - 0.074 * f_, ez - 0.112 * f_, ez + 0.018 * f_
+        print('лицо: глаза', round(ez, 3), 'нос', round(nz, 3), 'рот', round(mouth_z, 3), 'подбородок', round(chin_z, 3))
+        head = M & (z > chin_z - 0.06)
+        front = y < cy
+        ax = np.abs(x)
+        grain = rng.random(rgb.shape[:2]).astype(np.float32)
+        hair_c = np.array(L['hair_rgb'], np.float32) / 255.0 * 0.6
+
+        def darken(mask, amount):
+            a = np.clip(amount, 0, 1)[mask] * (0.55 + 0.45 * grain[mask])
+            rgb[mask] = rgb[mask] * (1 - a[:, None]) + hair_c * a[:, None]
+
+        def ramp(v, a, b):
+            return np.clip((v - a) / (b - a), 0, 1).astype(np.float32)
+
+        # губы — без щетины (мягко), перёд лица — до ушей (по глубине), край растушёван
+        lips = 1 - (1 - ramp(np.abs(z - mouth_z), 0.004, 0.008)) * (1 - ramp(ax, 0.018, 0.026))
+        to_ears = 1 - ramp(y, cy - 0.012, cy + 0.004)
+        beard = L.get('beard') or ''
+        if 'stubble' in beard:
+            # щетина: подбородок и низ щёк до линии от крыла носа к мочке уха, бакенбарды; под подбородком сходит на нет
+            top = nz - 0.01 + np.clip(ax - 0.025, 0, 0.05) * 0.35
+            w = (1 - ramp(z, top - 0.012, top)) * ramp(z, chin_z - 0.05, chin_z - 0.025) * to_ears * lips
+            darken(head & (w > 0), 0.32 * w)
+        if 'mustache' in beard:
+            # густые усы во всю ширину рта, концы чуть вниз к углам губ («подковой»)
+            low = mouth_z + 0.005 - 0.012 * ramp(ax, 0.02, 0.034)
+            w = (1 - ramp(ax, 0.034, 0.04)) * ramp(z, low, low + 0.003) * (1 - ramp(z, nz - 0.014, nz - 0.009))
+            w *= 1 - (1 - ramp(np.abs(z - mouth_z), 0.002, 0.004)) * (1 - ramp(ax, 0.02, 0.024))  # не по губам
+            darken(head & front & (w > 0), 0.8 * w)
+        if 'goatee' in beard:
+            w1 = (1 - ramp(ax, 0.016, 0.024)) * ramp(z, chin_z - 0.016, chin_z - 0.008) * (1 - ramp(z, mouth_z - 0.012, mouth_z - 0.007))
+            w2 = (1 - ramp(ax, 0.026, 0.032)) * ramp(z, mouth_z + 0.004, mouth_z + 0.007) * (1 - ramp(z, nz - 0.016, nz - 0.012))
+            w = np.maximum(w1, w2)
+            darken(head & front & (w > 0), 0.8 * w)
+        if L.get('scalp'):
+            # «под ноль»: тёмная щетина на черепе выше линии роста волос
+            hl = np.where(front, brow_z + 0.03, ez - 0.01)
+            hl = np.where(front & (ax > 0.055), ez + 0.012, hl)
+            sc = head & (z > hl) & ~((ax > 0.065) & (z < ez + 0.012) & (np.abs(y - cy) < 0.035))  # уши — не трогать
+            darken(sc, np.clip((z - hl) / 0.01, 0, 1) * 0.55)
+        if L.get('freckles'):
+            fr = head & front & (ax < 0.065) & (z > nz - 0.012) & (z < ez - 0.008) & (grain > 0.985)
+            rgb[fr] = rgb[fr] * np.array([0.78, 0.62, 0.5], np.float32)
+        if L.get('scar'):
+            # шрам через левую бровь: тонкая светлая полоса
+            t = (x - 0.035) * 0.8 + (z - brow_z)
+            sc = head & front & (np.abs(t) < 0.0015) & (np.abs(x - 0.035) < 0.012) & (np.abs(z - brow_z) < 0.02)
+            rgb[sc] = rgb[sc] * 0.6 + np.array([0.86, 0.62, 0.6], np.float32) * 0.4
+    px[..., :3] = np.clip(rgb, 0, 1)
+    img.pixels.foreach_set(px[::-1].ravel())
+    img.pack()
+
+
+paint_face()
 cap = build_cap()
 parts.append(cap)
 
