@@ -1,7 +1,7 @@
 """Чапаев: отобранные картинки 01-art → lavochka/public/chapaev/art/*.webp (раскладывает их lavochka/src/games/chapaev/view.ts).
 
 G:/ai/venvs/3d/Scripts/python.exe studio/jobs/chapaev/export_art.py
-(venv с torch: вырезка BiRefNet — studio/runners/cutout.py, вызывается отсюда же; CUDA_VISIBLE_DEVICES=1, если 4070 занята.)
+(venv с torch: вырезка BiRefNet — studio/runners/cutout.py, вызывается отсюда же; видеокарта одна — 4070.)
 
 Что делается с картинками (только подгонка, рисунок — модели):
 - коробки, корона, флажок, лёд, песок — вырезка, обрезка по содержимому;

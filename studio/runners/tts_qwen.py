@@ -8,7 +8,7 @@ G:/ai/venvs/qwentts/Scripts/python.exe -X utf8 studio/runners/tts_qwen.py <ре�
 его на все фразы — голос набора не плывёт от фразы к фразе. Выход: <выход>/<набор>/<ключ>-<NN>-<дубль>.wav + ogg/
 (Opus 64k, −16 LUFS, тишина срезана) + manifest.json, как у Chatterbox. Готовое не пересчитывается.
 --stress — ударения ruaccent знаком U+0301 (как для Chatterbox); по умолчанию текст как есть.
-Веса — локально G:/ai/models/tts/qwen3 (ModelScope), видеокарта по умолчанию — 5060 (cuda:1).
+Веса — локально G:/ai/models/tts/qwen3 (ModelScope), видеокарта по умолчанию — 4070 (cuda:0; 5060 из машины убрана).
 """
 import argparse
 import json
@@ -95,7 +95,7 @@ def main():
     ap.add_argument('--takes', type=int, default=2)
     ap.add_argument('--test', action='store_true')
     ap.add_argument('--stress', action='store_true')
-    ap.add_argument('--device', default='cuda:1')
+    ap.add_argument('--device', default='cuda:0')
     a = ap.parse_args()
 
     data = json.loads(pathlib.Path(a.lines).read_text(encoding='utf-8'))
