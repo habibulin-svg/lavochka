@@ -60,7 +60,8 @@ export type ClientMsg =
   | { t: 'restart' }
   /** Хозяин после партии — обратно в лобби (пересесть, сменить правила). */
   | { t: 'tolobby' }
-  | { t: 'pong' }
+  /** Ответ на ping: ts — отметка комнаты из ping, ct — часы клиента (синхронизация часов, core/clocksync.ts). */
+  | { t: 'pong'; ts?: number; ct?: number }
   | { t: 'bye' }
   /** Клиент не дождался ответа на свой ход — прислать стол заново. */
   | { t: 'sync' }
@@ -98,7 +99,8 @@ export type RoomMsg =
   | { t: 'chat'; name: string; seat: number | null; text: string }
   | { t: 'error'; text: string }
   | { t: 'closed'; reason?: string }
-  | { t: 'ping' }
+  /** ts — часы комнаты при отправке; off — оценка смещения часов этого клиента (клиент − комната). */
+  | { t: 'ping'; ts?: number; off?: number }
   | { t: 'voice'; members: VoiceMember[] }
   | { t: 'rtc'; from: string; data: unknown };
 

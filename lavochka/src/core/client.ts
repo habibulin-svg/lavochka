@@ -1,5 +1,6 @@
 /* Клиент комнаты: шлёт hello, отвечает на ping, следит за связью и раздаёт сообщения интерфейсу. */
 import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg } from './protocol';
+import { setRoomOffset } from './clocksync';
 import { settings } from './settings';
 
 type Handler = (msg: RoomMsg) => void;
@@ -44,7 +45,10 @@ export class RoomClient {
   private receive(m: RoomMsg) {
     if (this.dead || !m || typeof m !== 'object') return;
     this.lastSeen = Date.now();
-    if (m.t === 'ping') return this.send({ t: 'pong' });
+    if (m.t === 'ping') {
+      if (typeof m.off === 'number') setRoomOffset(m.off);
+      return this.send(typeof m.ts === 'number' ? { t: 'pong', ts: m.ts, ct: Date.now() } : { t: 'pong' });
+    }
     if (m.t === 'welcome') {
       this.welcome = m;
       this.welcomeWaiters.splice(0).forEach((w) => w.ok(m));

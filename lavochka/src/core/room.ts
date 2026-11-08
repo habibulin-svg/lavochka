@@ -10,6 +10,7 @@
  */
 import { Authority, type Snapshot, type StepResult } from './authority';
 import { AVATARS, PHOTO_RE } from './avatars';
+import { ClockSync, clampPress, pressWindow } from './clocksync';
 import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
 import { startTicker, type Ticker } from './ticker';
@@ -84,6 +85,8 @@ interface Conn {
   voice: { video: boolean } | null;
   /** Молчит до этого момента (правило игры в чате). */
   muteUntil?: number;
+  /** Часы клиента относительно комнаты (игры с def.clock). */
+  clk?: ClockSync;
 }
 
 export interface RoomConfig {
@@ -132,6 +135,8 @@ export class Room {
   private ownerTimer: ReturnType<typeof setTimeout> | undefined;
   // игра реального времени: таймер шагов, последний ввод мест, память ботов, события до ближайшего снимка
   private rtTimer: Ticker | undefined;
+  /** Будильник партии (def.clock). */
+  private wakeTimer: ReturnType<typeof setTimeout> | undefined;
   private rtLast = 0;
   private rtTicks = 0;
   private rtInputs = new Map<number, unknown>();
@@ -148,6 +153,7 @@ export class Room {
     this.options = cfg.options;
     this.seats = cfg.seats.map((s) => ({ ...s }));
     if (cfg.snapshot) this.auth = new Authority(this.def, cfg.snapshot.seats, cfg.snapshot.options, cfg.snapshot);
+    if (this.auth) queueMicrotask(() => this.scheduleWake());
     this.heartbeat = setInterval(() => this.beat(), HEARTBEAT_MS);
     if (this.auth) this.rtStart();
   }
@@ -190,7 +196,10 @@ export class Room {
       case 'hello':
         return this.hello(conn, m);
       case 'act':
-        if (this.auth && conn.seats.includes(m.seat)) this.tryAct(m.seat, m.action);
+        if (this.auth && conn.seats.includes(m.seat)) this.tryAct(m.seat, m.action, conn);
+        return;
+      case 'pong':
+        if (typeof m.ts === 'number' && typeof m.ct === 'number' && !conn.link.local) (conn.clk ??= new ClockSync()).add(m.ts, m.ct, Date.now());
         return;
       case 'input': {
         const rt = this.def.realtime;
@@ -313,6 +322,7 @@ export class Room {
     }
 
     this.send(conn, { t: 'welcome', code: this.code, game: this.def.id, options: this.options, mySeats: conn.seats, owner: conn.owner });
+    this.syncBurst(conn);
     if (this.auth) {
       this.sendStart(conn);
       if (conn.seats.length && this.dropped.delete(conn.clientId)) {
@@ -408,8 +418,62 @@ export class Room {
     for (const c of [...this.conns]) {
       if (c.link.local) continue;
       if (now - c.lastSeen > TIMEOUT_MS) this.drop(c);
-      else this.send(c, { t: 'ping' });
+      else this.ping(c);
     }
+  }
+
+  /** ping с отметкой часов: ответы дают смещение часов клиента и круг связи (core/clocksync.ts). */
+  private ping(c: Conn) {
+    this.send(c, { t: 'ping', ts: Date.now(), ...(c.clk?.ready ? { off: Math.round(c.clk.off) } : {}) });
+  }
+
+  /** Серия ping подряд — чтобы к первому вопросу часы уже были сверены (только игры с часами). */
+  private syncBurst(c: Conn) {
+    if (!this.def.clock || c.link.local) return;
+    for (let i = 0; i < 6; i++) setTimeout(() => !this.closed && this.conns.has(c) && this.ping(c), i * 150);
+  }
+
+  /** Окно ожидания нажатий: самая большая задержка среди подключённых по сети игроков. */
+  private pressWin(): number {
+    const lags = [...this.conns].filter((c) => c.clientId && c.seats.length && !c.link.local).map((c) => (c.clk?.ready ? c.clk.lag : 300));
+    return pressWindow(lags);
+  }
+
+  /** Действие игры с часами: когда пришло, время нажатия по часам комнаты, окно ожидания (см. ClockDef). */
+  private stamp(action: unknown, conn?: Conn): unknown {
+    if (!this.def.clock || !action || typeof action !== 'object' || Array.isArray(action)) return action;
+    const rx = Date.now();
+    const a: Record<string, unknown> = { ...(action as Record<string, unknown>), now: rx, win: this.pressWin() };
+    if (!conn) delete a.at; // бот: реакцию считает движок
+    else if ('at' in a) a.at = conn.link.local ? (typeof a.at === 'number' && Number.isFinite(a.at) ? clampPress(a.at, rx, 1000) : rx) : (conn.clk ?? new ClockSync()).toRoom(a.at, rx);
+    return a;
+  }
+
+  /** Завести будильник партии на def.clock.wake(state). */
+  private scheduleWake() {
+    clearTimeout(this.wakeTimer);
+    this.wakeTimer = undefined;
+    const ck = this.def.clock;
+    const a = this.auth;
+    if (!ck || !a || a.result || this.closed) return;
+    let t: number | null = null;
+    try {
+      t = ck.wake(a.state);
+    } catch (e) {
+      console.error('wake failed', e);
+    }
+    if (t == null || !Number.isFinite(t)) return;
+    this.wakeTimer = setTimeout(() => {
+      if (this.auth !== a || this.closed) return;
+      const res = a.act(-1, { type: 'wake', now: Date.now(), win: this.pressWin() });
+      if (res) {
+        this.broadcastStep(res);
+        this.save();
+        this.report();
+        this.pumpBots();
+      }
+      this.scheduleWake();
+    }, Math.max(0, Math.min(2 ** 31 - 1, t - Date.now())));
   }
 
   // ---------------------------------------------------------------- места
@@ -656,6 +720,7 @@ export class Room {
     this.save();
     this.pumpBots();
     this.rtStart();
+    this.scheduleWake();
   }
 
   /** Аккаунт за каждым местом (сервер ставит link.user); правила партии — с поправкой onStart. */
@@ -685,6 +750,7 @@ export class Room {
   /** После партии — обратно в лобби: места и правила снова можно менять. */
   private toLobby() {
     this.botToken++;
+    clearTimeout(this.wakeTimer);
     this.rtStop();
     this.auth = null;
     this.save();
@@ -699,6 +765,7 @@ export class Room {
     this.save();
     this.pumpBots();
     this.rtStart();
+    this.scheduleWake();
   }
 
   // ---------------------------------------------------------------- реальное время
@@ -809,15 +876,16 @@ export class Room {
     });
   }
 
-  private tryAct(seat: number, action: unknown) {
+  private tryAct(seat: number, action: unknown, conn?: Conn) {
     const a = this.auth;
     if (!a) return;
-    const res = a.act(seat, action);
+    const res = a.act(seat, this.stamp(action, conn));
     if (!res) return;
     this.broadcastStep(res);
     this.save();
     this.report();
     this.pumpBots();
+    this.scheduleWake();
   }
 
   private broadcastStep(res: StepResult) {
@@ -906,6 +974,7 @@ export class Room {
     clearInterval(this.heartbeat);
     clearTimeout(this.graceTimer);
     clearTimeout(this.ownerTimer);
+    clearTimeout(this.wakeTimer);
     this.rtStop();
     const conns = [...this.conns];
     this.conns.clear();

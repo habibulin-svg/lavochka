@@ -52,8 +52,20 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
   let steps = 0;
   const breathe = breather();
   const strong = new Map<number, number>();
+  // часы комнаты (def.clock) — виртуальные: каждый ход «приходит» через 300 мс, будильник срабатывает, когда ходить некому
+  let clock = 1_700_000_000_000;
+  const stamp = (x: unknown) => (def.clock && x && typeof x === 'object' ? { ...(x as object), now: (clock += 300), win: 60 } : x);
   while (!a.result && steps < maxSteps) {
     await breathe();
+    if (def.clock && !a.toAct().length) {
+      const w = def.clock.wake(a.state);
+      if (w != null) {
+        clock = Math.max(clock, w);
+        if (!a.act(-1, { type: 'wake', now: clock, win: 60 })) return { steps, finished: false, winners: [], error: `будильник отклонён (шаг ${steps})` };
+        steps++;
+        continue;
+      }
+    }
     const toAct = a.toAct();
     if (!toAct.length) return { steps, finished: false, winners: [], error: 'никто не ходит, а результата нет' };
     const seat = toAct[0];
@@ -68,7 +80,7 @@ export async function simulate(def: GameDef, seats: SeatSpec[], options: Options
     }
     const action = await def.bot.choose(view, seat, level, botRng);
     if (action == null) return { steps, finished: false, winners: [], error: `бот места ${seat} не нашёл хода (шаг ${steps})` };
-    const res = a.act(seat, action);
+    const res = a.act(seat, stamp(action));
     if (!res) return { steps, finished: false, winners: [], error: `ход бота отклонён правилами: ${JSON.stringify(action)} (шаг ${steps})` };
     JSON.stringify(res.events);
     steps++;
