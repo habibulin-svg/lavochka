@@ -1,0 +1,58 @@
+/* Дартс: бар и шкафчик во всю доску; табло мелом — на створках шкафчика (если он виден целиком), иначе — по углам. */
+.table--darts .table-board { padding: 0; }
+.dt-wrap { position: relative; width: 100%; height: min(80vh, 62vw); min-height: 380px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; background: #20140c; touch-action: none; }
+.dt-wrap.demo { height: min(56vh, 52vw); min-height: 320px; }
+.dt-wrap.shot { height: 100%; min-height: 0; border-radius: 0; }
+.dt-wrap canvas { position: absolute; inset: 0; display: block; cursor: crosshair; touch-action: none; }
+.dt-chalk { position: absolute; box-sizing: border-box; pointer-events: none; color: #f4f1e8; font-family: 'Caveat', 'PT Sans', cursive; line-height: 1.15;
+  padding: 6px 10px; border-radius: 10px; background: rgba(28, 34, 30, 0.86); box-shadow: 0 2px 12px rgba(0,0,0,.45); text-shadow: 0 0 1px rgba(255,255,255,.5); }
+.dt-score { top: 10px; left: 10px; max-width: 46%; font-size: 17px; }
+.dt-turn { top: 10px; right: 10px; max-width: 40%; font-size: 17px; text-align: center; }
+.dt-wrap.doors .dt-chalk { background: transparent; box-shadow: none; padding: 0.8em 0.6em; overflow: hidden; max-width: none; }
+.dt-wrap.shot .dt-chalk { display: none; }
+.dt-mode { opacity: .8; font-size: .85em; margin-bottom: 2px; }
+.dt-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: baseline; column-gap: 6px; opacity: .72; }
+.dt-row.cur { opacity: 1; }
+.dt-row.cur .nm { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.dt-row.off { opacity: .35; text-decoration: line-through; }
+.dt-row i, .dt-who i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; align-self: center; box-shadow: 0 0 0 1px rgba(255,255,255,.6); }
+.dt-row .nm, .dt-who .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .95em; }
+.dt-row b { font-size: 1.6em; font-weight: 700; line-height: 1; }
+.dt-row small { grid-column: 2 / 4; font-size: .72em; opacity: .75; margin-top: -2px; }
+.dt-cr { border-collapse: collapse; width: 100%; font-size: .95em; }
+.dt-cr th, .dt-cr td { padding: 0 4px; text-align: center; font-weight: 700; }
+.dt-cr td:first-child { text-align: left; opacity: .85; }
+.dt-cr tr.dead td { opacity: .35; text-decoration: line-through; }
+.dt-cr tr.pts td { border-top: 1px solid rgba(255,255,255,.4); font-size: 1.15em; }
+.dt-cr td.cur { text-decoration: underline; }
+.dt-who { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.dt-slots { display: flex; gap: 6px; justify-content: center; margin: 4px 0; }
+.dt-slots span { min-width: 2.4em; padding: 0 4px; border: 1px solid rgba(255,255,255,.45); border-radius: 6px; font-size: 1.15em; font-weight: 700; opacity: .5; }
+.dt-slots span.on { opacity: 1; }
+.dt-sum { font-size: 2em; font-weight: 700; line-height: 1; }
+.dt-hint { font-size: .9em; opacity: .9; }
+.dt-pow { font-size: .78em; opacity: .7; }
+.dt-banner { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%); padding: 10px 26px; border-radius: 14px; background: rgba(250, 244, 226, 0.94); color: #3a2410;
+  text-align: center; pointer-events: none; box-shadow: 0 6px 30px rgba(0,0,0,.4); opacity: 0; transition: opacity .25s; max-width: 86%; }
+.dt-banner b { display: block; font: 36px 'Russo One', 'PT Sans', sans-serif; color: #b8301e; }
+.dt-banner span { font: 15px 'PT Sans', Arial, sans-serif; }
+.dt-tip { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 5px 14px; border-radius: 20px; background: rgba(20, 12, 6, 0.66); color: #fff;
+  font: 14px 'PT Sans', Arial, sans-serif; pointer-events: none; opacity: 0; transition: opacity .3s; white-space: nowrap; }
+.dt-tip.on { opacity: 1; }
+.dt-meter { position: absolute; right: 14px; bottom: 50px; width: 14px; height: 34%; border-radius: 8px; background: rgba(0,0,0,.55); box-shadow: 0 0 0 2px rgba(255,255,255,.5); overflow: hidden; pointer-events: none; }
+.dt-meter i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#e8402e, #ffd24a 50%, #4ac85a); }
+.dt-meter u { position: absolute; left: -2px; right: -2px; bottom: 50%; height: 3px; background: #fff; }
+.dt-wrap.small:not(.doors) .dt-score, .dt-wrap.small:not(.doors) .dt-turn { font-size: 12px; padding: 3px 7px; }
+.dt-wrap.small .dt-slots span { min-width: 1.8em; }
+@media (max-width: 860px) {
+  .dt-wrap { height: min(74vh, 140vw); }
+  .dt-banner b { font-size: 26px; }
+  .dt-score, .dt-turn { font-size: 13px; padding: 4px 8px; }
+  .dt-score { max-width: 52%; }
+  .dt-turn { max-width: 44%; }
+  .dt-slots { gap: 3px; }
+  .dt-slots span { min-width: 1.9em; }
+  .dt-sum { font-size: 1.6em; }
+  .dt-banner { top: 30%; padding: 8px 18px; }
+}
+.dt-chalk .nm, .dt-chalk .nm * { color: #f4f1e8 !important; }

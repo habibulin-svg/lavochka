@@ -1,0 +1,19 @@
+# Дартс (волна 17): музыка бара 90-х, без слов. Чужих мелодий не берём — только жанр.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/darts/02-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/darts/02-music
+max_duration: 130
+tracks:
+  - name: bar
+    seeds: [11, 22]
+    style: >-
+      relaxed pub rock, mid 1990s, instrumental, 104 bpm, laid back groove, clean electric guitar riffs, warm bass guitar,
+      brushed drums, honky tonk piano, smoky bar atmosphere, friendly and cozy, major key
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+  - name: jukebox
+    seeds: [11, 22]
+    style: >-
+      russian pop rock, 1993, instrumental, 118 bpm, upbeat, jangly electric guitar, synth strings, bouncy bass, drum machine with live snare,
+      catchy accordion lead melody, bar jukebox, cheerful
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+# Взято (2026-11-08, отбор по замерам, на слух не сверял): bar-11 → bar.ogg, bar-22 → bar2.ogg, jukebox-11 → jukebox.ogg
+# (ffmpeg: затухание 1,5 с, loudnorm −16 LUFS, Opus 80k) → lavochka/public/darts/music/.

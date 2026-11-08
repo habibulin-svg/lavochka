@@ -1,0 +1,88 @@
+# Дартс (волна 17, 2026-11-08): мишень в шкафчике со створками, бар 90-х фоном, дротики четырёх расцветок.
+# Геометрия мишени — точная математика (src/games/darts/board.ts): саму мишень export_art.py собирает по кольцам и секторам
+# из фактур сизаля, нарисованных моделью; шкафчик, фон, дротики — моделью целиком (детали — вырезка BiRefNet).
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем вовсе. Кириллицу модель не пишет — надписи только кодом.
+# studio/run.cmd run.py jobs/darts/01-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic photo render, crisp details, warm soft lighting, rich colors, high contrast.
+seeds: [81, 82, 83]
+items:
+  # ---------------------------------------------------------------- фон: стена бара 90-х
+  - name: bg-bar
+    width: 1536
+    height: 1024
+    prompt: >-
+      Interior of a cozy dim 1990s neighborhood bar in a Soviet apartment block basement, front view of the back wall:
+      dark varnished wood paneling, a long wooden bar counter with beer taps along the bottom, glass beer mugs, a glowing red neon star sign,
+      a small old television on a shelf in the corner, string lights, a cassette player, warm orange lamp light and haze,
+      the middle of the wall above the counter is plain empty wood paneling, cinematic, shallow depth of field. {style}
+  # ---------------------------------------------------------------- шкафчик со створками
+  - name: cabinet
+    width: 1536
+    height: 1024
+    prompt: >-
+      Front view of an open wooden dartboard cabinet: a square cabinet of dark polished mahogany with brass hinges,
+      its two doors swung fully open flat to the left and to the right, the inner side of each door is a black slate chalkboard panel with a thin wooden frame,
+      inside the cabinet a classic bristle dartboard in the middle on a dark green felt backing, symmetrical, centered,
+      on a plain flat light gray background. {style}
+  - name: cabinet-closed
+    prompt: >-
+      Front view of a closed wooden dartboard cabinet: a square cabinet of dark polished mahogany with two tall doors closed in the middle,
+      brass hinges, a small brass knob on each door, a carved arrow ornament, symmetrical, centered, on a plain flat light gray background. {style}
+  # ---------------------------------------------------------------- фактуры сизаля (мишень собирается из них по точной геометрии)
+  - name: sisal-black
+    prompt: >-
+      Extreme close-up texture of the flat surface of a bristle dartboard made of tightly compressed sisal fibers, pure black,
+      fine fibrous dots and tiny pores, a few tiny dart holes, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: sisal-cream
+    prompt: >-
+      Extreme close-up texture of the flat surface of a bristle dartboard made of tightly compressed sisal fibers, cream beige ivory color,
+      fine fibrous dots and tiny pores, a few tiny dart holes, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: sisal-red
+    prompt: >-
+      Extreme close-up texture of the flat surface of a bristle dartboard made of tightly compressed sisal fibers dyed deep scarlet red,
+      fine fibrous dots and tiny pores, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: sisal-green
+    prompt: >-
+      Extreme close-up texture of the flat surface of a bristle dartboard made of tightly compressed sisal fibers dyed deep emerald green,
+      fine fibrous dots and tiny pores, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: wire
+    prompt: >-
+      Extreme close-up texture of polished silver steel wire, bright shiny metallic chrome, horizontal fine brushed lines, even lighting,
+      uniform texture filling the whole frame edge to edge.
+  # ---------------------------------------------------------------- дротики (вид сбоку, остриём влево)
+  - name: dart-red
+    width: 1536
+    height: 512
+    prompt: >-
+      One steel tip dart lying horizontally, side view, the sharp steel point on the left, a knurled silver tungsten barrel, a short black nylon shaft,
+      big bright red flights with a white star on the right, the whole dart in frame, centered, on a plain flat white background. {style}
+  - name: dart-blue
+    width: 1536
+    height: 512
+    prompt: >-
+      One steel tip dart lying horizontally, side view, the sharp steel point on the left, a knurled silver tungsten barrel, a short black nylon shaft,
+      big bright royal blue flights with a white stripe on the right, the whole dart in frame, centered, on a plain flat white background. {style}
+  - name: dart-green
+    width: 1536
+    height: 512
+    prompt: >-
+      One steel tip dart lying horizontally, side view, the sharp steel point on the left, a knurled silver tungsten barrel, a short black nylon shaft,
+      big bright green flights with a yellow lightning bolt on the right, the whole dart in frame, centered, on a plain flat white background. {style}
+  - name: dart-yellow
+    width: 1536
+    height: 512
+    prompt: >-
+      One steel tip dart lying horizontally, side view, the sharp steel point on the left, a knurled gold brass barrel, a short black nylon shaft,
+      big bright yellow flights with a black checker pattern on the right, the whole dart in frame, centered, on a plain flat white background. {style}
+  # ---------------------------------------------------------------- мелочи бара
+  - name: chalk
+    prompt: >-
+      A small piece of white blackboard chalk and a wet sponge lying on a dark wooden ledge, side view, centered, on a plain flat light gray background. {style}

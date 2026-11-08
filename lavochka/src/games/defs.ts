@@ -39,6 +39,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   billiards: () => import('./billiards/def').then((m) => m.def),
   aerohockey: () => import('./aerohockey/def').then((m) => m.def),
   gorodki: () => import('./gorodki/def').then((m) => m.def),
+  darts: () => import('./darts/def').then((m) => m.def),
   brick2026: () => import('./brick2026/def').then((m) => m.def),
   hockey: () => import('./hockey/def').then((m) => m.def),
   eggs: () => import('./eggs/def').then((m) => m.def),
