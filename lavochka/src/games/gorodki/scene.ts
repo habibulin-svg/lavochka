@@ -83,8 +83,8 @@ export class Yard3D {
     this.crowd = new Crowd(() => this.batProto);
     this.scene.add(this.crowd.group);
     this.light();
-    this.backdrop();
-    this.loaded = this.load();
+    const bd = this.backdrop();
+    this.loaded = Promise.all([this.load(), bd]).then(() => {});
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(host);
     this.resize();
@@ -129,8 +129,11 @@ export class Yard3D {
   }
 
   /** Фотопанорама двора на полукруге за площадкой. */
-  private backdrop() {
-    const t = this.keep(new THREE.TextureLoader().load(`${BASE}backdrop.webp`));
+  private backdrop(): Promise<void> {
+    let ok!: () => void;
+    const ready = new Promise<void>((r) => (ok = r));
+    // ошибка картинки не держит экран загрузки — двор откроется без задника
+    const t = this.keep(new THREE.TextureLoader().load(`${BASE}backdrop.webp`, () => ok(), undefined, () => ok()));
     t.colorSpace = THREE.SRGBColorSpace;
     t.wrapS = THREE.MirroredRepeatWrapping;
     t.repeat.set(-2, 1);
@@ -142,6 +145,17 @@ export class Yard3D {
     bd.position.set(0, 7.2, 4);
     bd.rotation.y = Math.PI;
     this.scene.add(bd);
+    return ready;
+  }
+
+  /** Собрать шейдеры и залить текстуры в видеокарту до показа (иначе первые кадры — голубая пустота). */
+  async warm(): Promise<void> {
+    try {
+      await this.renderer.compileAsync(this.scene, this.camera);
+    } catch {
+      /* старый three или потеря контекста — просто покажем как есть */
+    }
+    this.renderer.render(this.scene, this.camera);
   }
 
   private async load() {

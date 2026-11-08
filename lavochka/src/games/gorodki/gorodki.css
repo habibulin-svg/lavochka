@@ -33,3 +33,7 @@
   .gk-row .nm { max-width: 6em; }
   .gk-hud { font-size: 12px; }
 }
+
+/* пока двор грузится — не показывать голубую пустоту (сверху экран загрузки) */
+.gk-loading .gk-cv, .gk-loading .gk-lupa { visibility: hidden; }
+.gk-loading { background: #0b0907; }

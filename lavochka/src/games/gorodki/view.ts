@@ -1,6 +1,7 @@
 /* Городки — экран: 3D-двор, бросок жестом «рогаткой» (потянул назад — отпустил), клавишами или кнопками; переигрывание броска
  * по кадрам той же физики, что у комнаты; табло, надписи, деревянный стук, музыка двора (выключатель запоминается). */
 import { audioOut, click, Sound, tone } from '../../core/audio';
+import { showLoading } from '../../core/loading';
 import { segRow } from '../../core/rtview';
 import { onSettings, settings, store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
@@ -411,12 +412,27 @@ export function createView(): GameView<State, Event> {
       lupaTag = wrap.querySelector('.gk-lupa') as HTMLElement;
       yard = new Yard3D(wrap.querySelector('.gk-cv') as HTMLElement);
       yard.lupa = store.get<string>('gorodki.lupa', 'on') !== 'off';
-      // двор и люди грузятся — боты подождут
-      ctx.hold?.(20000);
-      void yard.loaded.then(
-        () => ctx.hold?.(0),
-        () => ctx.hold?.(0)
-      );
+      // двор и люди грузятся — экран загрузки, боты подождут (раньше открывалась голубая пустота с городом)
+      ctx.hold?.(30000);
+      const y = yard;
+      const shot = ctx.demo || /[?&]thumb=/.test(location.search);
+      if (!shot) wrap.classList.add('gk-loading');
+      const ld = shot ? null : showLoading({ art: `${import.meta.env.BASE_URL}gorodki/backdrop.webp`, title: 'Городки — двор собирается…' });
+      cleanup.push(() => ld?.done());
+      void (async () => {
+        try {
+          await y.loaded;
+          // люди за столом (места приходят с первым setView) — ждём, но не дольше 15 с
+          const until = performance.now() + 15000;
+          while (!y.crowd.ready() && performance.now() < until) await sleep(100);
+          await y.warm();
+        } catch (e) {
+          console.warn('городки: загрузка двора', e);
+        }
+        wrap.classList.remove('gk-loading');
+        ld?.done();
+        ctx.hold?.(0);
+      })();
       yard.camTo('aim');
       yard.snapCam();
       bindInput();
