@@ -157,6 +157,8 @@ def check_poll(r: dict, rep: Report) -> dict:
     if any(out[i][1] < out[i + 1][1] for i in range(5)):
         out.sort(key=lambda x: -x[1])
         rep.warn('ответы не по убыванию: пересортировано')
+    if out[0][1] >= 70:
+        raise Bad(f'один очевидный ответ ({out[0][0]} — {out[0][1]}): угадывать нечего')
     s = sum(x[1] for x in out)
     if not (70 <= s <= 100):
         raise Bad(f'сумма {s}')
