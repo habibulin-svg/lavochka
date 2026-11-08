@@ -2,17 +2,36 @@
  * шашки — деревянные, с кольцевыми бороздками. Карром — светлая фанера, чёрные полосы по краю, лузы с сеткой, линии битка
  * с красными кружками, круг и звезда посередине, стрелки к лузам; фишки светлого и тёмного дерева, красная королева, белый биток.
  * Удар — «рогаткой»: нажать на свою шашку (биток), потянуть назад и отпустить; сила — по длине натяжки.
- * В карроме биток передвигается касанием своей линии. Полёт шашек — кадры той же физики, что считает игра. */
+ * В карроме биток передвигается касанием своей линии. Полёт шашек — кадры той же физики, что считает игра.
+ * Варианты Чапаева: дома (спичечные коробки), лунки, лёд, песок, корона короля, флажок ветра — картинки конвейера
+ * (studio/jobs/chapaev/01-art.yaml → public/chapaev/art/), код их только раскладывает. Танк — две шашки стопкой. */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { CH_R, CR, shoot, type Action, type Event, type Piece, type State } from './engine';
+import { CH_R, CR, HOUSES, shoot, spread, TRAPS, ZONES, type Action, type Event, type Piece, type State } from './engine';
 import './chapaev.css';
 
 const NS = 'http://www.w3.org/2000/svg';
 const PAD = 0.5;
 /** Натяжка на полную силу (в клетках). */
 const PULL = 2.6;
+const ART = '/chapaev/art/';
+const img = (n: string, x: number, y: number, w: number, h: number, extra = '') =>
+  `<image href="${ART}${n}.webp" x="${(x - w / 2).toFixed(3)}" y="${(y - h / 2).toFixed(3)}" width="${w.toFixed(3)}" height="${h.toFixed(3)}" preserveAspectRatio="none"${extra}/>`;
+
+/** Предметы вариантов на доске: пятна льда и песка, лунки, дома. */
+function extras(s: State): string {
+  const c = s.cfg;
+  let o = '';
+  if (c.terrain) for (const z of ZONES) o += img(z.k < 1 ? 'ice' : 'sand', z.x, z.y, z.r * 2.15, z.r * 2.15, ' class="cp-zone"');
+  if (c.traps) for (const t of TRAPS) o += img('hole', t.x, t.y, t.r * 2.6, t.r * 2.6);
+  if (c.houses)
+    HOUSES.forEach((b, i) => {
+      o += `<rect x="${b.x - b.hw + 0.05}" y="${b.y - b.hh + 0.09}" width="${b.hw * 2}" height="${b.hh * 2}" rx="0.04" fill="rgba(0,0,0,0.35)"/>`;
+      o += img(`matchbox-${i % 2}`, b.x, b.y, b.hw * 2, b.hh * 2);
+    });
+  return o;
+}
 
 function chessBoard(): string {
   let o = `<defs>
@@ -86,14 +105,19 @@ function carromBoard(): string {
   return o;
 }
 
-function discSvg(mode: string, o: number, r: number): string {
+function discSvg(mode: string, o: number, r: number, p?: { k?: 1; t?: 1 }): string {
   if (mode === 'carrom') {
     const fill = o === 0 ? 'url(#cr-w)' : o === 1 ? 'url(#cr-b)' : o === 2 ? 'url(#cr-q)' : 'url(#cr-s)';
     return `<circle r="${r * 1.04}" cy="${r * 0.18}" fill="rgba(0,0,0,0.3)"/><circle r="${r}" fill="${fill}" stroke="rgba(0,0,0,0.5)" stroke-width="0.012"/><circle r="${r * 0.62}" fill="none" stroke="${o === 1 ? 'rgba(255,220,180,0.25)' : 'rgba(80,40,10,0.25)'}" stroke-width="0.012"/>`;
   }
   const fill = o === 0 ? 'url(#cp-w)' : 'url(#cp-b)';
   const groove = o === 0 ? 'rgba(120,90,50,0.45)' : 'rgba(255,230,200,0.18)';
-  return `<circle r="${r * 1.03}" cy="0.07" cx="0.04" fill="rgba(0,0,0,0.35)"/><circle r="${r}" fill="${fill}" stroke="${o === 0 ? '#a08860' : '#000'}" stroke-width="0.02"/><circle r="${r * 0.72}" fill="none" stroke="${groove}" stroke-width="0.02"/><circle r="${r * 0.45}" fill="none" stroke="${groove}" stroke-width="0.016"/>`;
+  const one = `<circle r="${r}" fill="${fill}" stroke="${o === 0 ? '#a08860' : '#000'}" stroke-width="0.02"/><circle r="${r * 0.72}" fill="none" stroke="${groove}" stroke-width="0.02"/><circle r="${r * 0.45}" fill="none" stroke="${groove}" stroke-width="0.016"/>`;
+  let out = `<circle r="${r * 1.03}" cy="${p?.t ? 0.13 : 0.07}" cx="0.04" fill="rgba(0,0,0,0.35)"/>`;
+  // танк — две шашки стопкой: нижняя чуть видна из-под верхней
+  out += p?.t ? `<g transform="translate(0.03 0.08)">${one}</g><g transform="translate(-0.02 -0.03)">${one}</g>` : one;
+  if (p?.k) out += img('crown', p.t ? -0.02 : 0, p.t ? -0.05 : -0.02, r * 1.2, r * 0.8);
+  return out;
 }
 
 class ChapaevView implements GameView<State, Event> {
@@ -105,6 +129,8 @@ class ChapaevView implements GameView<State, Event> {
   private s: State | null = null;
   private act: number | null = null;
   private mode = '';
+  private boardKey = '';
+  private wind!: SVGGElement;
   private els = new Map<number, SVGGElement>();
   private aim: { id: number; x0: number; y0: number; x: number; y: number } | null = null;
   private strikerX = 4;
@@ -132,11 +158,13 @@ class ChapaevView implements GameView<State, Event> {
   private draw() {
     const s = this.s;
     if (!s) return;
-    if (this.mode !== s.cfg.mode) {
+    const key = JSON.stringify(s.cfg);
+    if (this.boardKey !== key) {
+      this.boardKey = key;
       this.mode = s.cfg.mode;
       const S = this.size;
       this.svg.setAttribute('viewBox', `${-PAD - 0.1} ${-PAD - 0.1} ${S + 2 * PAD + 0.2} ${S + 2 * PAD + 0.2}`);
-      (this.svg.querySelector('.cp-board') as SVGGElement).innerHTML = s.cfg.mode === 'carrom' ? carromBoard() : chessBoard();
+      (this.svg.querySelector('.cp-board') as SVGGElement).innerHTML = s.cfg.mode === 'carrom' ? carromBoard() : chessBoard() + extras(s);
       for (const el of this.els.values()) el.remove();
       this.els.clear();
     }
@@ -157,7 +185,8 @@ class ChapaevView implements GameView<State, Event> {
       let el = this.els.get(p.id);
       if (!el) {
         el = document.createElementNS(NS, 'g') as SVGGElement;
-        el.innerHTML = discSvg(this.mode, p.o, this.radius(p));
+        const full = this.s?.pieces.find((q) => q.id === p.id);
+        el.innerHTML = discSvg(this.mode, p.o, this.radius(p), full);
         this.layer.appendChild(el);
         this.els.set(p.id, el);
       }
@@ -188,6 +217,14 @@ class ChapaevView implements GameView<State, Event> {
       o += `<line x1="${a.x0}" y1="${a.y0}" x2="${a.x0 + Math.cos(ang) * L}" y2="${a.y0 + Math.sin(ang) * L}" class="cp-aim"/>`;
       o += `<line x1="${a.x0}" y1="${a.y0}" x2="${a.x}" y2="${a.y}" class="cp-pull"/>`;
       o += `<circle cx="${a.x0}" cy="${a.y0}" r="${0.55}" class="cp-power" style="stroke-dasharray:${(pw * 3.46).toFixed(3)} 4"/>`;
+      if (this.s?.cfg.mode === 'chapaev') {
+        // веер разброса: у сильного щелчка рука дрожит
+        const sp = spread(pw);
+        const R = L + 0.3;
+        const p1 = [a.x0 + Math.cos(ang - sp) * R, a.y0 + Math.sin(ang - sp) * R];
+        const p2 = [a.x0 + Math.cos(ang + sp) * R, a.y0 + Math.sin(ang + sp) * R];
+        o += `<path d="M${a.x0} ${a.y0}L${p1[0].toFixed(3)} ${p1[1].toFixed(3)}A${R} ${R} 0 0 1 ${p2[0].toFixed(3)} ${p2[1].toFixed(3)}Z" class="cp-fan"/>`;
+      }
     } else if (this.act != null && this.s?.cfg.mode === 'chapaev') {
       for (const p of this.s.pieces) if (p.o === this.act) o += `<circle cx="${p.x}" cy="${p.y}" r="${CH_R + 0.05}" class="cp-can"/>`;
     }
@@ -201,7 +238,31 @@ class ChapaevView implements GameView<State, Event> {
       return;
     }
     const n = (o: number) => s.pieces.filter((p) => p.o === o).length;
-    this.info.innerHTML = `Раунд ${s.round}: шашек <b>${n(0)} : ${n(1)}</b><small>линии: белые ${s.line[0] + 1}-я, чёрные ${s.line[1] + 1}-я${s.cfg.strict ? ' · строго по очереди' : ''}</small>`;
+    const c = s.cfg;
+    const vars = [c.strict && 'строго по очереди', c.houses && 'дома', c.king && 'короли', c.traps && 'ловушки', c.tanks && 'танки', c.terrain && 'лёд и песок'].filter(Boolean).join(' · ');
+    let wind = '';
+    if (c.wind && s.wind) {
+      const f = Math.hypot(s.wind.x, s.wind.y);
+      const deg = (Math.atan2(s.wind.y, s.wind.x) * 180) / Math.PI;
+      wind = `<span class="cp-wind"><img src="${ART}flag.webp" alt="" style="transform:scaleX(${s.wind.x < 0 ? -1 : 1})"><i style="transform:rotate(${deg.toFixed(0)}deg)">➜</i> ветер ${Math.max(1, Math.round(f * 2.5))} балл.</span>`;
+    }
+    this.info.innerHTML = `Раунд ${s.round}: шашек <b>${n(0)} : ${n(1)}</b>${wind}<small>линии: белые ${s.line[0] + 1}-я, чёрные ${s.line[1] + 1}-я${vars ? ' · ' + vars : ''}</small>`;
+    this.drawWind();
+  }
+
+  /** Ветер: большая полупрозрачная стрелка поверх доски — куда и как сильно сносит. */
+  private drawWind() {
+    const s = this.s!;
+    if (!this.wind) {
+      this.wind = document.createElementNS(NS, 'g') as SVGGElement;
+      this.wind.setAttribute('class', 'cp-windarrow');
+      this.svg.insertBefore(this.wind, this.layer);
+    }
+    if (s.cfg.mode !== 'chapaev' || !s.cfg.wind || !s.wind) return void (this.wind.innerHTML = '');
+    const f = Math.hypot(s.wind.x, s.wind.y);
+    const deg = (Math.atan2(s.wind.y, s.wind.x) * 180) / Math.PI;
+    const L = 0.8 + f * 0.9;
+    this.wind.innerHTML = `<g transform="translate(4 4) rotate(${deg.toFixed(1)})"><path d="M${-L} -0.16L${L - 0.5} -0.16L${L - 0.5} -0.42L${L} 0L${L - 0.5} 0.42L${L - 0.5} 0.16L${-L} 0.16Z"/></g>`;
   }
 
   // ---------------------------------------------------------------- рогатка

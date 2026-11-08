@@ -1,0 +1,50 @@
+# Чапаев (волна 17, 2026-11-08): предметы вариантов на шахматной доске — вид строго сверху.
+# Дом — спичечный коробок, ловушка — лунка в доске, пятна льда и песка, корона короля, флажок ветра.
+# Всё вырезается BiRefNet и подгоняется studio/jobs/chapaev/export_art.py → lavochka/public/chapaev/art/.
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем. Кириллицу модель не пишет.
+# studio/run.cmd run.py jobs/chapaev/01-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic photo, top-down view from directly above, flat lay, crisp details, soft even lighting, rich colors.
+seeds: [91, 92, 93]
+items:
+  - name: matchbox
+    width: 1536
+    height: 1024
+    prompt: >-
+      One closed old Soviet matchbox lying flat, seen from directly above, the top label is a vintage 1970s paper label with a red rocket
+      and stars on a cream background, thin brown cardboard edges, slightly worn corners, the whole box in frame, centered,
+      on a plain flat white background. {style}
+  - name: matchbox2
+    width: 1536
+    height: 1024
+    prompt: >-
+      One closed old Soviet matchbox lying flat, seen from directly above, the top label is a vintage paper label with a blue sailing ship
+      and waves on a yellow background, thin brown cardboard edges, slightly worn corners, the whole box in frame, centered,
+      on a plain flat white background. {style}
+  - name: hole
+    prompt: >-
+      A small round hole drilled into a light wooden board, seen from directly above, deep dark inside with a shadowed inner wall,
+      a smooth beveled rim of bare wood around it, the hole in the center, the wooden board fills the frame. {style}
+  - name: ice
+    prompt: >-
+      A thin flat round puddle of frozen clear blue ice, seen from directly above, glossy shiny surface with white frost cracks and tiny air bubbles,
+      irregular round edge, centered, on a plain flat dark gray background. {style}
+  - name: sand
+    prompt: >-
+      A thin flat round patch of spilled fine yellow sand, seen from directly above, grainy texture with tiny pebbles,
+      soft irregular scattered edge, centered, on a plain flat white background. {style}
+  - name: crown
+    prompt: >-
+      A small shiny golden king crown emblem sticker, seen from directly above, five points with small red jewels, metallic gold foil,
+      centered, on a plain flat white background. {style}
+  - name: flag
+    prompt: >-
+      A small red triangular pennant flag on a thin wooden stick, side view, the flag fluttering to the right in the wind,
+      centered, on a plain flat white background. {style}

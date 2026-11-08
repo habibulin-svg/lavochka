@@ -13,9 +13,21 @@
  * Забил все свои (и королева покрыта) — партия: победителю — оставшиеся фишки соперника, за королеву +3. Играют до 25.
  * Разбой: первый удар сдачи, не сдвинувший ни одной фишки, можно повторить — всего три попытки, потом ход переходит.
  * Последнюю свою фишку нельзя забить раньше королевы: фол — она и ещё одна забитая (штраф) возвращаются в центр, ход переходит.
+ *
+ * Щелчок Чапаева (доработка 2026-11-08): шашки — дерево, удар неупругий (часть силы теряется — ряд одним щелчком не сносится),
+ * сила ограничена (полный удар — чуть дальше доски), у сильного щелчка рука дрожит: направление чуть уходит в сторону
+ * (разброс растёт с квадратом силы, его тянет rng комнаты — один и тот же у всех).
+ * Варианты Чапаева (их можно сочетать):
+ *   дома — спичечные коробки посреди доски, шашки от них отскакивают, за ними прячутся;
+ *   король — шашка на поле e: сбил чужого короля — раунд твой, потерял своего — раунд проигран (шахматный Чапаев);
+ *   ловушки — лунки: медленная шашка над лункой проваливается (выбыла), быструю проносит;
+ *   танки — по две шашки «стопкой» в ряду: вдвое тяжелее, бьют сильнее, сами еле сдвигаются;
+ *   ветер — перед каждым ходом дует в случайную сторону и сносит катящиеся шашки;
+ *   лёд и песок — пятна посреди доски: на льду шашка катится далеко, в песке вязнет.
  */
 import type { Options } from '../../core/types';
-import { simulate, shotSpeed, type Disc, type Field, type SimResult } from './physics';
+import type { Rng } from '../../core/types';
+import { simulate, shotSpeed, type Box, type Disc, type Field, type SimResult, type Trap, type Zone } from './physics';
 
 export type Mode = 'chapaev' | 'carrom';
 
@@ -25,17 +37,74 @@ export interface Cfg {
   strict: boolean;
   /** Карром: до скольких очков. */
   target: number;
+  /** Варианты Чапаева. */
+  houses: boolean;
+  king: boolean;
+  traps: boolean;
+  tanks: boolean;
+  wind: boolean;
+  terrain: boolean;
 }
 
 export function cfgFrom(o: Options): Cfg {
-  return { mode: o.mode === 'carrom' ? 'carrom' : 'chapaev', strict: !!o.strict, target: [13, 25].includes(Number(o.target)) ? Number(o.target) : 25 };
+  const ch = o.mode !== 'carrom';
+  return {
+    mode: ch ? 'chapaev' : 'carrom',
+    strict: !!o.strict,
+    target: [13, 25].includes(Number(o.target)) ? Number(o.target) : 25,
+    houses: ch && !!o.houses,
+    king: ch && !!o.king,
+    traps: ch && !!o.traps,
+    tanks: ch && !!o.tanks,
+    wind: ch && !!o.wind,
+    terrain: ch && !!o.terrain,
+  };
 }
 
 // ---------------------------------------------------------------- поле
 
 export const CH_R = 0.4;
-export const CH_MAX = 13;
-export const CH_FIELD: Field = { w: 8, h: 8, walls: false, pockets: [], friction: 2.6, e: 0.88, eWall: 0 };
+/** Полный щелчок: шашка в одиночку прокатится ≈ v²/2f = 8,4 клетки — через всю доску, но не «с запасом в три доски», как было. */
+export const CH_MAX = 8.6;
+export const CH_FIELD: Field = { w: 8, h: 8, walls: false, pockets: [], friction: 4.4, e: 0.55, eWall: 0, eBox: 0.45 };
+/** Разброс направления (рад, наибольший): у самого слабого щелчка — CH_AIM, у полного — CH_AIM + CH_SPREAD (растёт с квадратом силы).
+ * Сила тоже «гуляет» — до ±CH_POW·сила. */
+export const CH_AIM = 0.07;
+export const CH_SPREAD = 0.12;
+export const CH_POW = 0.15;
+export const spread = (power: number) => CH_AIM + CH_SPREAD * power * power;
+/** Масса танка (стопка из двух шашек). */
+export const TANK_M = 2;
+
+/** Дома — спичечные коробки (≈ 5 × 3,5 см на клетке 4,5 см): посередине и у краёв, симметрично для обоих. */
+export const HOUSES: Box[] = [
+  { x: 4, y: 4, hw: 0.56, hh: 0.36 },
+  { x: 1.25, y: 4, hw: 0.56, hh: 0.36 },
+  { x: 6.75, y: 4, hw: 0.56, hh: 0.36 },
+];
+/** Лунки-ловушки: между домами; медленнее v — проваливается. */
+export const TRAPS: Trap[] = [
+  { x: 2.6, y: 4, r: 0.3, v: 3.2 },
+  { x: 5.4, y: 4, r: 0.3, v: 3.2 },
+];
+/** Лёд посередине, песок по краям. */
+export const ZONES: Zone[] = [
+  { x: 4, y: 4, r: 1.25, k: 0.25 },
+  { x: 1.1, y: 4, r: 1.0, k: 3.5 },
+  { x: 6.9, y: 4, r: 1.0, k: 3.5 },
+];
+
+/** Поле Чапаева со всеми включёнными вариантами (ветер — текущий). */
+export function chField(s: State): Field {
+  const c = s.cfg;
+  return {
+    ...CH_FIELD,
+    boxes: c.houses ? HOUSES : undefined,
+    traps: c.traps ? TRAPS : undefined,
+    zones: c.terrain ? ZONES : undefined,
+    wind: c.wind && s.wind ? s.wind : undefined,
+  };
+}
 
 /** Карром: поле 8×8 единиц (≈ 74 см), фишка Ø ≈ 3,2 см → r 0,17; биток Ø 4,1 см → r 0,22; лузы Ø 4,5 см в углах. */
 export const CR = { size: 8, coin: 0.17, striker: 0.22, pocket: 0.27, base: 6.75, baseFrom: 1.75, baseTo: 6.25 };
@@ -61,6 +130,10 @@ export interface Piece {
   o: number;
   x: number;
   y: number;
+  /** Чапаев: король. */
+  k?: 1;
+  /** Чапаев: танк — стопка из двух шашек. */
+  t?: 1;
 }
 
 export interface State {
@@ -79,6 +152,8 @@ export interface State {
   /** Карром: попыток разбоя в этой сдаче (null — сдача уже разбита). */
   breakTries?: number | null;
   shots: number;
+  /** Чапаев с ветром: ускорение (клеток/с²), меняется перед каждым ходом. */
+  wind?: { x: number; y: number };
   last: { seat: number; result: string } | null;
   over: boolean;
   winner: number | null;
@@ -97,10 +172,33 @@ export const MAX_SHOTS = 600;
 
 // ---------------------------------------------------------------- расстановка
 
-/** Ряд шашек стороны: белые (0) — снизу (ряд 7 − line), чёрные (1) — сверху (ряд line). */
-function chapaevRow(o: number, line: number): Piece[] {
+export const KING_COL = 4;
+export const TANK_COLS = [1, 6];
+
+/** Ряд шашек стороны: белые (0) — снизу (ряд 7 − line), чёрные (1) — сверху (ряд line).
+ * Шашку, что встала бы на дом, отодвигают к своему краю вплотную к дому. */
+function chapaevRow(cfg: Cfg, o: number, line: number): Piece[] {
   const y = o === 0 ? 7.5 - line : 0.5 + line;
-  return Array.from({ length: 8 }, (_, i) => ({ id: o * 8 + i, o, x: i + 0.5, y }));
+  return Array.from({ length: 8 }, (_, i) => {
+    const p: Piece = { id: o * 8 + i, o, x: i + 0.5, y };
+    if (cfg.king && i === KING_COL) p.k = 1;
+    if (cfg.tanks && TANK_COLS.includes(i)) p.t = 1;
+    if (cfg.houses)
+      for (const b of HOUSES)
+        if (Math.abs(p.x - b.x) < b.hw + CH_R && Math.abs(p.y - b.y) < b.hh + CH_R) p.y = o === 0 ? b.y + b.hh + CH_R + 0.02 : b.y - b.hh - CH_R - 0.02;
+    return p;
+  });
+}
+
+const rows = (s: State) => [...chapaevRow(s.cfg, 0, s.line[0]), ...chapaevRow(s.cfg, 1, s.line[1])];
+
+/** Ветер на следующий ход — от номера удара и раунда (одинаково у всех): сила 0,4…2 клетки/с², направление любое. */
+export function windFor(s: State): { x: number; y: number } {
+  let h = (s.shots * 2654435761 + s.round * 40503 + 12345) >>> 0;
+  const nx = () => ((h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x9e3779b9) >>> 0), h / 4294967296);
+  const a = nx() * Math.PI * 2;
+  const f = 0.4 + nx() * 1.6;
+  return { x: Math.round(Math.cos(a) * f * 100) / 100, y: Math.round(Math.sin(a) * f * 100) / 100 };
 }
 
 function carromSetup(): Piece[] {
@@ -139,7 +237,8 @@ export function newState(cfg: Cfg, seats: number[]): State {
     over: false,
     winner: null,
   };
-  s.pieces = cfg.mode === 'carrom' ? carromSetup() : [...chapaevRow(0, 0), ...chapaevRow(1, 0)];
+  s.pieces = cfg.mode === 'carrom' ? carromSetup() : rows(s);
+  if (cfg.wind) s.wind = windFor(s);
   return s;
 }
 
@@ -156,8 +255,9 @@ export function discsFor(s: State, a: Action): { discs: Disc[]; striker: number 
     if (a.type !== 'shot') return null;
     const p = s.pieces.find((q) => q.id === a.id);
     if (!p || p.o !== s.turn) return null;
+    // танк — стопка: щёлкают по нижней с той же скоростью, а удар (импульс) вдвое больше; самого его сдвинуть вдвое труднее
     const v = shotSpeed(a.power, CH_MAX);
-    const discs = s.pieces.map((q) => ({ id: q.id, x: q.x, y: q.y, r: CH_R, m: 1, vx: q.id === a.id ? Math.cos(a.angle) * v : 0, vy: q.id === a.id ? Math.sin(a.angle) * v : 0 }));
+    const discs = s.pieces.map((q) => ({ id: q.id, x: q.x, y: q.y, r: CH_R, m: q.t ? TANK_M : 1, vx: q.id === a.id ? Math.cos(a.angle) * v : 0, vy: q.id === a.id ? Math.sin(a.angle) * v : 0 }));
     return { discs, striker: a.id };
   }
   if (a.type !== 'strike') return null;
@@ -175,16 +275,19 @@ export function discsFor(s: State, a: Action): { discs: Disc[]; striker: number 
 export function shoot(s: State, a: Action): SimResult | null {
   const d = discsFor(s, a);
   if (!d) return null;
-  return simulate(s.cfg.mode === 'carrom' ? CR_FIELD : CH_FIELD, d.discs, d.striker);
+  return simulate(s.cfg.mode === 'carrom' ? CR_FIELD : chField(s), d.discs, d.striker);
 }
 
 function clone(s: State): State {
-  return { ...s, pieces: s.pieces.map((p) => ({ ...p })), line: [...s.line] as [number, number], score: [...s.score] as [number, number], pocketed: [...s.pocketed] as [number, number] };
+  return { ...s, pieces: s.pieces.map((p) => ({ ...p })), wind: s.wind && { ...s.wind }, line: [...s.line] as [number, number], score: [...s.score] as [number, number], pocketed: [...s.pocketed] as [number, number] };
 }
 
-export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
+/** Применить удар. rng (комнаты) даёт дрожь руки у сильного щелчка Чапаева; без rng (тесты, расчёт) — точно в прицел. */
+export function apply(s0: State, seat: number, a: Action, rng?: Rng): { state: State; events: Event[] } | null {
   if (s0.over || seat !== s0.turn || !a) return null;
   if (!(a.power > 0 && a.power <= 1) || !Number.isFinite(a.angle)) return null;
+  if (s0.cfg.mode === 'chapaev' && rng && a.type === 'shot')
+    a = { ...a, angle: a.angle + spread(a.power) * (rng.next() + rng.next() - 1), power: Math.min(1, a.power * (1 + CH_POW * a.power * (rng.next() + rng.next() - 1))) };
   const sim = shoot(s0, a);
   if (!sim) return null;
   const s = clone(s0);
@@ -223,8 +326,18 @@ function chapaevAfter(s0: State, s: State, a: Extract<Action, { type: 'shot' }>,
   ev.push({ type: 'shot', seat: me, id: a.id, angle: a.angle, power: a.power, gone, again });
   const mine = s.pieces.filter((p) => p.o === me).length;
   const theirs = s.pieces.filter((p) => p.o === op).length;
+  if (s.cfg.king) {
+    // шахматный Чапаев: раунд решают короли
+    const kingGone = (o: number) => gone.some((id) => s0.pieces.some((p) => p.id === id && p.o === o && p.k));
+    const myK = kingGone(me);
+    const opK = kingGone(op);
+    if (myK || opK) return endRound(s, myK && opK ? null : myK ? op : me, ev, myK && !opK ? 'свой король слетел' : 'король сбит');
+  }
   if (!mine || !theirs) return endRound(s, mine ? me : theirs ? op : null, ev);
-  if (!again) s.turn = op;
+  if (!again) {
+    s.turn = op;
+    if (s.cfg.wind) s.wind = windFor(s);
+  }
   if (s.shots >= MAX_SHOTS) {
     s.over = true;
     s.winner = mine >= theirs ? me : op;
@@ -233,11 +346,12 @@ function chapaevAfter(s0: State, s: State, a: Extract<Action, { type: 'shot' }>,
   return { state: s, events: ev };
 }
 
-function endRound(s: State, w: number | null, ev: Event[]) {
+function endRound(s: State, w: number | null, ev: Event[], why?: string) {
   if (w == null) {
-    // все слетели — переиграть с теми же рядами
-    s.pieces = [...chapaevRow(0, s.line[0]), ...chapaevRow(1, s.line[1])];
-    ev.push({ type: 'round', winner: null, line: [...s.line] as [number, number], text: 'все шашки слетели — переигрываем' });
+    // все слетели (или оба короля) — переиграть с теми же рядами
+    s.pieces = rows(s);
+    if (s.cfg.wind) s.wind = windFor(s);
+    ev.push({ type: 'round', winner: null, line: [...s.line] as [number, number], text: why ? 'оба короля слетели — переигрываем' : 'все шашки слетели — переигрываем' });
     return { state: s, events: ev };
   }
   const left = s.pieces.filter((p) => p.o === w).length;
@@ -247,16 +361,17 @@ function endRound(s: State, w: number | null, ev: Event[]) {
     // ряды сошлись — раунд решил партию
     s.over = true;
     s.winner = w;
-    ev.push({ type: 'round', winner: w, line: [...s.line] as [number, number], text: 'ряды сошлись — партия' });
+    ev.push({ type: 'round', winner: w, line: [...s.line] as [number, number], text: `${why ? why + ', ' : ''}ряды сошлись — партия` });
     ev.push({ type: 'end', winner: w });
     return { state: s, events: ev };
   }
   s.line[w] += Math.min(step, gap - 1);
   s.round++;
-  s.pieces = [...chapaevRow(0, s.line[0]), ...chapaevRow(1, s.line[1])];
+  s.pieces = rows(s);
   // ход у победителя; но прижатый к последней линии (сам ещё не сдвинут, а соперник — вплотную) бьёт первым
   s.turn = 7 - s.line[0] - s.line[1] <= 1 ? 1 - w : w;
-  ev.push({ type: 'round', winner: w, line: [...s.line] as [number, number], text: step === 2 ? 'без потерь — на две линии' : 'вперёд на линию' });
+  if (s.cfg.wind) s.wind = windFor(s);
+  ev.push({ type: 'round', winner: w, line: [...s.line] as [number, number], text: `${why ? why + ' — ' : ''}${step === 2 ? 'без потерь — на две линии' : 'вперёд на линию'}` });
   return { state: s, events: ev };
 }
 

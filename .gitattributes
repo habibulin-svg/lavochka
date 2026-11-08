@@ -23,3 +23,4 @@ lavochka/public/tanchiki/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/aerohockey/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/darts/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/darts/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+lavochka/public/chapaev/**/*.webp filter=lfs diff=lfs merge=lfs -text

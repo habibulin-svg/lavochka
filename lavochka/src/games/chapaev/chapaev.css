@@ -22,3 +22,9 @@
 .cp-info { font-size: 15px; }
 .cp-info small { display: block; opacity: 0.7; }
 .cp-hint { font-size: 13px; opacity: 0.8; margin-top: 6px; }
+.cp-fan { fill: rgba(255, 230, 120, 0.16); stroke: rgba(255, 230, 120, 0.35); stroke-width: 0.015; pointer-events: none; }
+.cp-zone { opacity: 0.92; }
+.cp-windarrow { fill: rgba(220, 240, 255, 0.22); stroke: rgba(255, 255, 255, 0.35); stroke-width: 0.02; pointer-events: none; }
+.cp-wind { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; font-size: 14px; }
+.cp-wind img { width: 22px; height: 22px; object-fit: contain; }
+.cp-wind i { display: inline-block; font-style: normal; color: #2a6ab0; }
