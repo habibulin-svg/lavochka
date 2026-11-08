@@ -26,3 +26,4 @@ lavochka/public/darts/**/*.ogg filter=lfs diff=lfs merge=lfs -text
 lavochka/public/chapaev/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/viktorina/**/*.webp filter=lfs diff=lfs merge=lfs -text
 lavochka/public/viktorina/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+lavochka/public/gorodki/gop/*.glb filter=lfs diff=lfs merge=lfs -text

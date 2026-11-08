@@ -1,5 +1,6 @@
-/* Городки — люди во дворе: гопники вселенной (модели ГОПС: TripoSG → Blender, риг gopnik_rig, бригады в своих
- * спортивных костюмах; выгрузка — studio/blender/gorodki_gopniks.py → public/gorodki/gop/<бригада>.glb), ростом со взрослого.
+/* Городки — люди во дворе: гопники бригад — люди MakeHuman (MPFB2, CC0) в олимпийках, спортивных штанах, кепках-восьмиклинках
+ * и кроссовках; сборка — studio/blender/gorodki_mpfb.py → public/gorodki/gop/<бригада>.glb, ростом со взрослого.
+ * У моделей настоящие глаза и кисти с пальцами, сжатыми в кулак; кость grip.L/R — середина кулака, ось Y — канал кулака.
  * Стоят и дышат (кодом: корпус, голова), бросающий — у черты: замах сбоку и бросок плашмя — правая кисть идёт по дуге вокруг
  * плеча (две кости, IK), корпус закручивается и раскручивается; бита зажата в кулаке. Выбил фигуру — руки вверх и подпрыгнуть.
  * Остальные ждут у лавочки и смотрят на площадку. Оси — как в scene.ts: three (x, высота, −y игры). */
@@ -13,14 +14,16 @@ const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
 /** Рост — как у взрослого (решение пользователя: «нормального размера»). */
 const HEIGHT = 1.78;
 /** Версия моделей: менять при пересборке, чтобы браузер не взял старые из кэша. */
-const MODELS_V = 6;
+const MODELS_V = 7;
 
 /** Кто на каком месте: бригады ГОПС (расцветки — studio/blender/liveries.py). */
 const LOOKS = ['zatulinka', 'zaton', 'rastochka', 'pervomayka'];
 const EXTRA = ['chemskoy', 'leninskiy'];
+/** Разработка: ?gklook=<бригада> — кто бросает (проверка моделей). */
+const DBG_LOOK = import.meta.env.DEV && typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gklook') : null;
 
-type BoneName = 'hips' | 'spine' | 'head' | 'upper_armR' | 'forearmR' | 'handR' | 'upper_armL' | 'forearmL' | 'handL' | 'thighL' | 'shinL' | 'thighR' | 'shinR';
-const BONES: BoneName[] = ['hips', 'spine', 'head', 'upper_armR', 'forearmR', 'handR', 'upper_armL', 'forearmL', 'handL', 'thighL', 'shinL', 'thighR', 'shinR'];
+type BoneName = 'hips' | 'spine' | 'head' | 'upper_armR' | 'forearmR' | 'handR' | 'upper_armL' | 'forearmL' | 'handL' | 'thighL' | 'shinL' | 'thighR' | 'shinR' | 'gripR' | 'gripL';
+const BONES: BoneName[] = ['hips', 'spine', 'head', 'upper_armR', 'forearmR', 'handR', 'upper_armL', 'forearmL', 'handL', 'thighL', 'shinL', 'thighR', 'shinR', 'gripR', 'gripL'];
 
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -121,7 +124,7 @@ type V3 = [number, number, number];
  * левая рука: 0 — на бите, 1 — показывает на город, 2 — опущена в сторону. */
 const KEYS: [number, number, V3, V3, number][] = [
   // стойка: боком к полю, бита в обеих руках перед собой концом к земле
-  [0, -1.0, [0.3, -0.12, -0.45], [0.55, 0.05, -0.85], 0],
+  [0, -1.0, [0.28, -0.2, -0.45], [0.55, 0.05, -0.85], 0],
   // замах: рука с битой уходит назад-вниз за правый бок, локоть согнут, левая показывает на город
   [0.3, -1.25, [-0.04, 0.24, -0.3], [-0.5, 0.4, -0.65], 1],
   [0.55, -1.45, [-0.24, 0.17, -0.2], [-0.75, 0.35, -0.5], 1],
@@ -130,7 +133,7 @@ const KEYS: [number, number, V3, V3, number][] = [
   [0.72, 0.25, [0.45, 0.15, -0.06], [0.6, 0.6, -0.1], 2],
   // доводка: рука уходит поперёк тела, потом возвращается
   [0.86, 0.5, [0.35, -0.28, -0.12], [0.6, -0.3, -0.5], 2],
-  [1, -0.7, [0.28, -0.08, -0.42], [0.55, 0.05, -0.85], 0],
+  [1, -0.7, [0.28, -0.16, -0.42], [0.55, 0.05, -0.85], 0],
 ];
 
 function keyPose(ph: number) {
@@ -156,7 +159,9 @@ export class Crowd {
   /** Фаза броска 0…1 (null — стоит с битой). */
   phase: number | null = null;
 
-  constructor(private batProto: () => THREE.Object3D | null) {}
+  constructor(private batProto: () => THREE.Object3D | null) {
+    if (import.meta.env.DEV) ((globalThis as unknown as { __gkCrowds?: Crowd[] }).__gkCrowds ??= []).push(this);
+  }
 
   private gltf(file: string) {
     let p = this.gltfs.get(file);
@@ -186,7 +191,7 @@ export class Crowd {
 
   private async spawn(seat: number) {
     this.pending.add(seat);
-    const file = seat >= 90 ? EXTRA[seat - 90] : LOOKS[seat % LOOKS.length];
+    const file = seat >= 90 ? EXTRA[seat - 90] : seat === this.thrower.seat && DBG_LOOK ? DBG_LOOK : LOOKS[seat % LOOKS.length];
     try {
       const g = await this.gltf(file);
       if (this.disposed) return;
@@ -200,11 +205,19 @@ export class Crowd {
         m.frustumCulled = false;
         const mats = (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshStandardMaterial[];
         for (const mt of mats) {
-          mt.roughness = 0.82;
           mt.metalness = 0;
-          // ткань костюма — с лёгким переплетением нитей
-          mt.normalMap = fabric;
-          mt.normalScale.set(0.35, 0.35);
+          if (mt.name === 'suit' || mt.name === 'cap') {
+            // ткань костюма и кепки — с лёгким переплетением нитей
+            mt.normalMap = fabric;
+            mt.normalScale.set(0.35, 0.35);
+          } else if (/high-poly|short\d/.test(mt.name)) {
+            // глаза (роговица) и волосы — вырезом по альфе: без сортировки прозрачного и с тенями
+            mt.transparent = false;
+            mt.alphaTest = 0.5;
+          } else if (mt.transparent) {
+            // брови и ресницы — тонкие полупрозрачные пряди
+            mt.depthWrite = false;
+          }
         }
       });
       // масштаб по росту: как взрослый
@@ -222,15 +235,19 @@ export class Crowd {
       });
       const rest = new Map<THREE.Bone, THREE.Quaternion>();
       for (const n of BONES) if (bones[n]) rest.set(bones[n], bones[n].quaternion.clone());
-      // ладонь висящей руки смотрит в бедро, поперёк ладони — «вперёд» тела (у модели — +z)
       root.updateMatrixWorld(true);
       const palm = new THREE.Vector3(0, 0, 1);
-      if (bones.handR) palm.applyQuaternion(bones.handR.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
-      // пальцы поджаты: кисть короче — получается кулак
-      if (bones.handR) bones.handR.scale.set(1.05, 0.62, 1.05);
+      if (bones.gripR) {
+        // канал кулака: ось Y кости grip.R в осях кисти
+        palm.set(0, 1, 0).applyQuaternion(bones.gripR.quaternion).normalize();
+      } else if (bones.handR) {
+        // старые модели: ладонь висящей руки смотрит в бедро, поперёк ладони — «вперёд» тела (+z); кисть короче — кулак
+        palm.applyQuaternion(bones.handR.getWorldQuaternion(new THREE.Quaternion()).invert()).normalize();
+        bones.handR.scale.set(1.05, 0.62, 1.05);
+      }
       const bat = new THREE.Group();
       this.group.add(root, bat);
-      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10, palm, fist: handVerts(model, bones.handR), gripAt: new THREE.Vector3() });
+      this.people.set(seat, { root, bones, rest, bat, waveT: -1, t: Math.random() * 10, palm, fist: bones.gripR ? null : handVerts(model, bones.handR), gripAt: new THREE.Vector3() });
     } catch (e) {
       console.warn('городки: человек не загрузился', e);
     } finally {
@@ -334,7 +351,8 @@ export class Crowd {
             : shl.clone().addScaledVector(br, -0.14).addScaledVector(bf, 0.08).add(new THREE.Vector3(0, -0.5, 0));
       const [m0, m1, t] = k.left;
       const tl = spot(m0).lerp(spot(m1), t);
-      ik2(b.upper_armL, b.forearmL, b.handL, tl, body([-0.6, -0.4, -0.5]));
+      if ((t < 0.5 ? m0 : m1) === 0) this.gripLeft(p, tl, batDir, body([-0.6, -0.4, -0.5]));
+      else ik2(b.upper_armL, b.forearmL, b.handL, tl, body([-0.6, -0.4, -0.5]));
     }
   }
 
@@ -367,7 +385,7 @@ export class Crowd {
       if (thr) {
         // бросающий держит биту двумя руками: левая — ниже по бите
         const t = p.gripAt.clone().addScaledVector(dir, 0.11);
-        ik2(b.upper_armL, b.forearmL, b.handL, t, new THREE.Vector3(0, -0.4, 0).addScaledVector(right, -1));
+        this.gripLeft(p, t, dir, new THREE.Vector3(0, -0.4, 0).addScaledVector(right, -1));
       } else {
         // левая рука висит вдоль тела
         const shl = wpos(b.upper_armL, new THREE.Vector3());
@@ -445,6 +463,38 @@ export class Crowd {
     this.hold(p, new THREE.Vector3(0, 1, 0).addScaledVector(right, 0.3).normalize());
   }
 
+  /** Левая рука на бите: кулак (кость grip.L) — в точке на бите, канал кулака — вдоль биты. Цель IK — запястье,
+   * поэтому пару раз поправляем её на промах кулака. Старые модели без grip.L — просто запястье в точку. */
+  private gripLeft(p: Person, at: THREE.Vector3, dir: THREE.Vector3, pole: THREE.Vector3) {
+    const b = p.bones;
+    if (!b.upper_armL || !b.forearmL || !b.handL) return;
+    if (b.gripL) {
+      // не дотягивается — кулак ниже по бите, в ближайшую к плечу точку (рука короче, чем у прежних моделей)
+      const sh = wpos(b.upper_armL, new THREE.Vector3());
+      const reach = boneLen(b.upper_armL, b.forearmL) + boneLen(b.forearmL, b.handL) + boneLen(b.handL, b.gripL) * 0.9;
+      if (sh.distanceTo(at) > reach) {
+        let best = at.clone();
+        let bd = Infinity;
+        for (let s = 0.09; s <= 0.45; s += 0.02) {
+          const q = p.gripAt.clone().addScaledVector(dir, s);
+          const dd = sh.distanceTo(q);
+          if (dd < bd) (bd = dd), (best = q);
+        }
+        at = best;
+      }
+    }
+    const t = at.clone();
+    for (let i = 0; i < 3; i++) {
+      ik2(b.upper_armL, b.forearmL, b.handL, t, pole);
+      if (!b.gripL) return;
+      const cur = new THREE.Vector3(0, 1, 0).applyQuaternion(b.gripL.getWorldQuaternion(_q2)).normalize();
+      if (cur.dot(dir) < 0) cur.negate();
+      rotateWorld(b.handL, new THREE.Quaternion().setFromUnitVectors(cur, dir));
+      b.gripL.updateMatrixWorld(true);
+      t.add(at.clone().sub(wpos(b.gripL, new THREE.Vector3())));
+    }
+  }
+
   /** Бита в кулаке: кисть поворачиваем так, чтобы ось «поперёк ладони» легла вдоль биты, бита проходит через середину
    * сжатой кисти, из кулака снизу торчит набалдашник рукояти. */
   private hold(p: Person, dir: THREE.Vector3) {
@@ -455,7 +505,11 @@ export class Crowd {
     if (cur.dot(dir) < 0) cur.negate();
     rotateWorld(hb, new THREE.Quaternion().setFromUnitVectors(cur, dir));
     let fist: THREE.Vector3;
-    if (p.fist) {
+    if (p.bones.gripR) {
+      // середина кулака — кость grip.R
+      p.bones.gripR.updateMatrixWorld(true);
+      fist = wpos(p.bones.gripR, new THREE.Vector3());
+    } else if (p.fist) {
       // середина кисти по вершинам меша (со скиннингом) — бита идёт через неё
       const m = p.fist.mesh;
       m.skeleton.update();

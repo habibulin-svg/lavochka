@@ -1,0 +1,8 @@
+Городки — модели людей (zaton, rastochka, pervomayka, zatulinka, chemskoy, leninskiy .glb)
+
+Собраны скриптом studio/blender/gorodki_mpfb.py в Blender 5.2 аддоном MPFB 2.0.18 (MakeHuman for Blender,
+https://github.com/makehumancommunity/mpfb2, код — GPL-3.0; выход аддона — CC0) из ассетов
+«makehuman_system_assets» (https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html):
+базовая сетка, скелет game_engine, кожа, глаза, брови, ресницы, волосы short02/short04, одежда male_casualsuit02,
+кроссовки shoes05/shoes06 — всё CC0 1.0. Расцветка олимпийки и штанов, кепка-восьмиклинка и её ткань нарисованы
+скриптом (свои). Чужих логотипов нет.

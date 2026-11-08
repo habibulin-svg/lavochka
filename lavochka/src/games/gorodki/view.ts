@@ -182,7 +182,7 @@ export function createView(): GameView<State, Event> {
 
   /** Разработка: ?gkpose=<фаза> — замереть в позе броска (подбор анимации). */
   const dbgPose = import.meta.env.DEV ? new URLSearchParams(location.search).get('gkpose') : null;
-  /** Разработка: ?gkcam=bench|back — крупный план лавочки или спины бросающего. */
+  /** Разработка: ?gkcam=bench|back|x,y,z,tx,ty,tz — крупный план лавочки, спины бросающего или своя камера. */
   const dbgCam = import.meta.env.DEV ? new URLSearchParams(location.search).get('gkcam') : null;
 
   function frame(now: number) {
@@ -193,6 +193,9 @@ export function createView(): GameView<State, Event> {
       yard.phase = Number.isFinite(ph) ? ph : null;
       if (dbgCam === 'bench') (yard.lupa = false), yard.setCam([3.3, 1.4, 8.4], [4.9, 0.8, 9.6]);
       if (dbgCam === 'back') (yard.lupa = false), yard.setCam([0.6, 1.7, 15.2], [-0.4, 1.1, 13.3]);
+      // ?gkcam=x,y,z,tx,ty,tz — камера в точке и куда смотрит (проверка моделей людей)
+      const cn = dbgCam?.split(',').map(Number);
+      if (cn?.length === 6 && cn.every(Number.isFinite)) (yard.lupa = false), yard.setCam([cn[0], cn[1], cn[2]], [cn[3], cn[4], cn[5]]);
     }
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
