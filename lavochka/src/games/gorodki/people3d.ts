@@ -14,7 +14,7 @@ const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
 /** Рост — как у взрослого (решение пользователя: «нормального размера»). */
 const HEIGHT = 1.78;
 /** Версия моделей: менять при пересборке, чтобы браузер не взял старые из кэша. */
-const MODELS_V = 7;
+const MODELS_V = 8;
 
 /** Кто на каком месте: бригады ГОПС (расцветки — studio/blender/liveries.py). */
 const LOOKS = ['zatulinka', 'zaton', 'rastochka', 'pervomayka'];

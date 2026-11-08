@@ -57,8 +57,7 @@ LOOKS = {
         skin='young_caucasian_male', eyes='brown', brows='eyebrow010', hair='short02', shoes='shoes05',
         jacket=(18, 120, 74), sleeve=[(-0.01, 0.012, WHITE), (0.01, 0.012, WHITE)],
         pants=(16, 104, 64), leg=[(-0.01, 0.01, WHITE), (0.01, 0.01, WHITE)], collar=(14, 70, 48), cuffs=(14, 70, 48),
-        chest=[('band', 0.03, 0.05, (30, 170, 170)), ('band', -0.03, 0.03, (32, 70, 160))], cap=(140, 140, 140),
-        cap2=(104, 104, 106)),
+        chest=[('band', 0.03, 0.05, (30, 170, 170)), ('band', -0.03, 0.03, (32, 70, 160))], cap=(120, 120, 122)),
     'pervomayka': dict(  # тёмно-синий костюм с белым кантом
         macro=dict(muscle=0.45, weight=0.3, height=0.75, proportions=0.75, age=0.4), race=(1.0, 0, 0), hair_rgb=(190, 160, 110),
         targets={'head/head-oval': 1.0, 'nose/nose-point-width-decr': 0.8, 'mouth/mouth-lowerlip-volume-decr': 0.6, 'chin/chin-height-incr': 0.7,
@@ -505,39 +504,26 @@ for m in suit.data.materials:
 
 
 # ---------------------------------------------------------------- кепка-восьмиклинка
-def herringbone(size, c1, c2):
-    y, x = np.mgrid[0:size, 0:size].astype(np.float32)
-    col_w = 16.0
-    k = (x // col_w) % 2
-    diag = np.where(k == 0, x + y, y - x)
-    t = (diag % 12) < 6
-    a, b = lin(c1), lin(c2)
-    out = np.where(t[..., None], a, b)
-    out = out * (1 + 0.06 * noise((size, size), 0.05)[..., None])
-    return out
-
-
 def build_cap():
-    head_pts = []
-    for o in parts:
-        if o.name.endswith('_x') or 'Human' in o.name and o == base:
-            pass
+    """Кепка 90-х по голове: околыш чуть шире лба, мягкий купол из восьми клиньев с пуговкой, верх слегка нависает
+    вперёд, явный короткий козырёк чуть вниз; надвинута на лоб (спереди ниже, сзади выше)."""
     co = np.array([base.matrix_world @ v.co for v in base.data.vertices])
     hairo = part(L['hair'])
     hc = np.array([hairo.matrix_world @ v.co for v in hairo.data.vertices]) if hairo else co[:0]
     top = float(max(co[:, 2].max(), hc[:, 2].max() if len(hc) else 0))
-    hd = np.concatenate([co[co[:, 2] > top - 0.12], hc[hc[:, 2] > top - 0.12]]) if len(hc) else co[co[:, 2] > top - 0.12]
+    allp = np.concatenate([co, hc]) if len(hc) else co
+    hd = allp[(allp[:, 2] > top - 0.085) & (np.abs(allp[:, 0]) < 0.14)]  # голова выше ушей
     cx, cy = float(hd[:, 0].mean()), float((hd[:, 1].min() + hd[:, 1].max()) / 2)
-    rx = float(hd[:, 0].max() - hd[:, 0].min()) / 2 + 0.008
-    ry = float(hd[:, 1].max() - hd[:, 1].min()) / 2 + 0.008
-    brim_front, brim_back = top - 0.1, top - 0.085
+    rx = float(hd[:, 0].max() - hd[:, 0].min()) / 2 + 0.006
+    ry = float(hd[:, 1].max() - hd[:, 1].min()) / 2 + 0.006
+    brim_front, brim_back = top - 0.092, top - 0.07
     bm = bmesh.new()
     uvl = bm.loops.layers.uv.new('UVMap')
     seg = 32
-    # профиль восьмиклинки: (во сколько раз шире головы, доля высоты от околыша до макушки) — околыш по голове,
-    # выше — «подушка» шире головы на 2 см, плоский верх
-    prof = [(1.0, 0.0), (1.01, 0.2), (1.04, 0.38), (1.1, 0.55), (1.14, 0.69), (1.13, 0.8), (1.05, 0.88),
-            (0.82, 0.95), (0.47, 0.99), (0.0, 1.0)]
+    # профиль: (во сколько раз шире головы, доля высоты от околыша до макушки) — купол мягкий, почти по голове
+    # (купол идёт по черепу — эллипс, с лёгкой «подушкой»; плоский перёд нависает над козырьком)
+    prof = [(1.0, 0.0), (1.01, 0.2), (0.97, 0.4), (0.9, 0.55), (0.79, 0.7), (0.64, 0.82), (0.46, 0.91),
+            (0.25, 0.97), (0.0, 1.0)]
     rings = len(prof) - 1
     z_c = top + 0.008
     grid = []
@@ -548,14 +534,14 @@ def build_cap():
             sx, sy = math.sin(th), -math.cos(th)  # th=0 — перёд (−Y)
             fr = max(0.0, -sy)
             bz = brim_back + (brim_front - brim_back) * (0.5 + 0.5 * (-sy))
-            r = rf * (1 + 0.07 * fr * hf)
+            r = rf * (1 + 0.35 * fr ** 1.5 * hf)  # перёд купола нависает над козырьком
             px = cx + sx * rx * r
-            py = cy + sy * ry * r - 0.03 * hf
-            zt = z_c - 0.02 * (-sy) * rf
+            py = cy + sy * ry * r - 0.012 * hf
+            zt = z_c - 0.02 * fr * rf
             pz = bz + (zt - bz) * hf
             row.append(bm.verts.new((px, py, pz)))
         grid.append(row)
-    tipv = bm.verts.new((cx, cy - 0.03, z_c))
+    tipv = bm.verts.new((cx, cy - 0.012, z_c))
     for j in range(rings - 1):
         for i in range(seg):
             a, b = grid[j][i], grid[j][(i + 1) % seg]
@@ -568,14 +554,16 @@ def build_cap():
         for lp in f.loops:
             p = lp.vert.co
             lp[uvl].uv = (0.25 + (p.x - cx) / (rx * 2.6) * 0.5, 0.5 + (p.y - cy) / (ry * 2.6))
-    # козырёк: полукольцо спереди, чуть вниз
+    # козырёк: от околыша вперёд на 5,5 см, вниз под ~20°, края скруглены
     vis = []
-    n_v = 12
+    n_v = 14
     for i in range(n_v + 1):
-        th = -math.pi * 0.42 + math.pi * 0.84 * i / n_v
+        th = -math.pi * 0.36 + math.pi * 0.72 * i / n_v
         sx, sy = math.sin(th), -math.cos(th)
-        inner = (cx + sx * rx * 0.98, cy + sy * ry * 0.98, brim_front + 0.004)
-        outer = (cx + sx * rx * 1.02, cy + sy * (ry + 0.055 * math.cos(th) ** 0.5), brim_front - 0.012)
+        bz = brim_back + (brim_front - brim_back) * (0.5 + 0.5 * (-sy))
+        inner = Vector((cx + sx * rx * 1.0, cy + sy * ry * 1.0, bz + 0.003))
+        k = max(0.0, math.cos(th / (0.36 * math.pi) * math.pi / 2 * 0.92)) ** 0.6  # 1 посередине, к краям — мало
+        outer = inner + Vector((sx * 0.01 * k, -0.055 * k - 0.004, -0.02 * k - 0.002))
         vis.append((bm.verts.new(inner), bm.verts.new(outer)))
     for i in range(n_v):
         (a, b), (c_, d) = vis[i], vis[i + 1]
@@ -592,28 +580,28 @@ def build_cap():
     for p in me.polygons:
         p.use_smooth = True
     sol = cap.modifiers.new('sol', 'SOLIDIFY')
-    sol.thickness = 0.004
+    sol.thickness = 0.005
     sol.offset = 1
     bpy.context.view_layer.objects.active = cap
     bpy.ops.object.select_all(action='DESELECT')
     cap.select_set(True)
     bpy.ops.object.modifier_apply(modifier='sol')
-    # текстура: ёлочка, восемь швов-клиньев, пуговка
-    S = 512
-    tex = herringbone(S, L['cap'], tuple(int(c * 0.86) for c in L['cap']))
-    if 'cap2' in L:
-        tex = herringbone(S, L['cap'], L['cap2'])
+    # ткань: однотонная, лёгкая крупная неровность (никакой мелкой контрастной фактуры — от неё муар),
+    # мягкие швы восьми клиньев и пуговка; козырёк чуть темнее
+    S = 256
+    base_c = lin(L['cap'])
+    tex = np.ones((S, S, 3), np.float32) * base_c
+    tex *= (1 + 0.03 * noise((S, S), 0.03))[..., None]
     yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
-    # купол: центр (0.25, 0.5) в UV → пиксели (128, 256) с учётом сдвига макушки вперёд
-    ucx, ucy = 0.25 * S, S - (0.5 + (-0.03) / (ry * 2.6)) * S
+    ucx, ucy = 0.25 * S, S - (0.5 + (-0.012) / (ry * 2.6)) * S
     ang = np.arctan2(yy - ucy, xx - ucx)
     rad = np.hypot(xx - ucx, yy - ucy)
-    seam = (np.abs(((ang / (2 * np.pi / 8)) % 1) - 0.5) > 0.485) & (xx < S / 2)
-    tex[seam] *= 0.7
-    tex[(rad < 6) & (xx < S / 2)] = lin(L['cap']) * 0.8
-    tex[(np.abs(rad - 6.5) < 1.2) & (xx < S / 2)] *= 0.5
-    # козырёк чуть темнее
-    tex[xx >= S / 2] *= 0.85
+    dome = xx < S / 2
+    sd = np.abs(((ang / (2 * np.pi / 8)) % 1) - 0.5)  # 0.5 — на шве
+    tex[dome] *= (1 - 0.18 * np.clip((sd[dome] - 0.47) / 0.03, 0, 1))[:, None]
+    tex[dome & (rad < 3.5)] = base_c * 0.85
+    tex[dome & (np.abs(rad - 3.8) < 0.8)] *= 0.7
+    tex[~dome] *= 0.82
     m = bpy.data.materials.new('cap')
     m.use_nodes = True
     nt = m.node_tree
