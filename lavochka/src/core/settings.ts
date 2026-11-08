@@ -3,23 +3,36 @@ import { uid } from './util';
 
 const PREFIX = 'lavochka.';
 
+/** Последнее записанное за эту вкладку: если localStorage полон или запрещён, запись молча не проходит —
+ * без этого выключатель (музыка в городках) тут же «включался» обратно, потому что get читал старое. */
+const mem = new Map<string, string>();
+
 export const store = {
   get<T>(key: string, def: T): T {
     try {
-      const raw = localStorage.getItem(PREFIX + key);
+      const raw = mem.get(key) ?? localStorage.getItem(PREFIX + key);
       return raw == null ? def : (JSON.parse(raw) as T);
     } catch {
       return def;
     }
   },
   set(key: string, value: unknown) {
+    let raw: string;
     try {
-      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+      raw = JSON.stringify(value);
     } catch {
-      /* нет места или запрещено — не страшно */
+      return;
+    }
+    if (raw === undefined) mem.delete(key);
+    else mem.set(key, raw);
+    try {
+      localStorage.setItem(PREFIX + key, raw);
+    } catch {
+      /* нет места или запрещено — значение живёт в памяти вкладки */
     }
   },
   remove(key: string) {
+    mem.delete(key);
     try {
       localStorage.removeItem(PREFIX + key);
     } catch {

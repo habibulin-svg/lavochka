@@ -2,7 +2,7 @@
  * по кадрам той же физики, что у комнаты; табло, надписи, деревянный стук, музыка двора (выключатель запоминается). */
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { segRow } from '../../core/rtview';
-import { store } from '../../core/settings';
+import { onSettings, settings, store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
@@ -76,7 +76,8 @@ export function createView(): GameView<State, Event> {
   const hintOn = () => store.get<string>(PREF_HINT, 'full') !== 'dir';
 
   function syncMusic() {
-    const want = musicOn() && !ctx.demo && !!v && !v.over && !document.hidden;
+    // 🔊 стола глушит всё, ♪ — только музыку
+    const want = musicOn() && settings.sound && !ctx.demo && !!v && !v.over && !document.hidden;
     if (!want) {
       music?.pause();
       return;
@@ -420,6 +421,8 @@ export function createView(): GameView<State, Event> {
       const vis = () => syncMusic();
       document.addEventListener('visibilitychange', vis);
       cleanup.push(() => document.removeEventListener('visibilitychange', vis));
+      const off = onSettings(vis);
+      if (typeof off === 'function') cleanup.push(off);
       raf = requestAnimationFrame(frame);
     },
     setView(s) {
