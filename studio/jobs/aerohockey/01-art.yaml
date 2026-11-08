@@ -1,0 +1,145 @@
+# Аэрохоккей (доработка графики, 2026-11-08): оформление столов моделью вместо кодовых «коробок».
+# Четыре стола (каток, дискотека, пионерлагерь, космос) — у каждого: окружение (фон вокруг стола), поверхность поля,
+# фактура борта, эмблема в центральном круге, своя шайба. Биты (красная, синяя) и табло — общие.
+# Детали — на ровном фоне, потом вырезка BiRefNet (studio/runners/cutout.py) в export_art.py;
+# фактуры бортов — бесшовными делает export_art.py (post/seamless.py).
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем вовсе.
+# studio/run.cmd run.py jobs/aerohockey/01-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic render, crisp details, soft lighting from the top left, rich colors, high contrast.
+seeds: [71, 72, 73]
+items:
+  # ---------------------------------------------------------------- окружение вокруг стола (вид сверху, середина пустая)
+  - name: bg-katok
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down view from high above of a snowy courtyard of old Soviet apartment blocks on a winter night,
+      a wooden fence of a yard hockey box along the edges, deep snowdrifts, footprints and sled tracks in the snow, a wooden sled, a pair of skates,
+      warm orange light pools from street lamps, blue night shadows, a large flat empty snow-covered area in the center,
+      painted game background art. {style}
+  - name: bg-disco
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down view from high above of a 1990s school disco dance floor at night: a floor of glowing colored square light tiles in magenta, cyan and yellow,
+      colored spotlight beams, scattered confetti and paper streamers, two big black loudspeakers in the corners, cassette tapes,
+      a large dark empty area in the center, neon glow, painted game background art. {style}
+  - name: bg-lager
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down view from high above of a sunny summer pioneer camp veranda: worn painted wooden floorboards, pine needles and pine cones,
+      a red neckerchief, a brass bugle, a small snare drum, a volleyball, a mug of compote, patches of sunlight and leaf shadows,
+      a large flat empty area of floorboards in the center, warm cheerful colors, painted game background art. {style}
+  - name: bg-kosmos
+    width: 1536
+    height: 1024
+    prompt: >-
+      Top-down view of deep outer space: a dense starfield, colorful purple and teal nebula clouds, a ringed orange planet at the left edge,
+      a small blue planet at the right edge, a few asteroids, a tiny satellite, a large dark empty region in the center,
+      painted game background art. {style}
+
+  # ---------------------------------------------------------------- поверхность поля (вид сверху, ровная фактура)
+  - name: surf-katok
+    width: 704
+    height: 1408
+    prompt: >-
+      Top-down flat view of a smooth glossy ice surface of a freshly flooded outdoor skating rink, pale white and light blue,
+      thin skate scratches and soft frosty swirls, a few faint hairline cracks, even soft lighting, uniform texture. {style}
+  - name: surf-disco
+    width: 704
+    height: 1408
+    prompt: >-
+      Top-down flat view of a glossy deep violet acrylic panel with fine glitter sparkles, faint soft magenta and cyan light reflections,
+      even lighting, uniform texture. {style}
+  - name: surf-lager
+    width: 704
+    height: 1408
+    prompt: >-
+      Top-down flat view of a smooth glossy green painted plywood board like a ping pong table, light wood grain showing through the green paint,
+      a few tiny scuffs, even sunlight, uniform texture. {style}
+  - name: surf-kosmos
+    width: 704
+    height: 1408
+    prompt: >-
+      Top-down flat view of a deep navy blue space nebula with many small stars, faint purple and teal glowing gas clouds,
+      dark and calm, uniform texture. {style}
+
+  # ---------------------------------------------------------------- фактура борта (плитка)
+  - name: rail-katok
+    prompt: >-
+      Close-up top-down texture of glossy white painted wooden boards of a hockey rink fence, slight scuffs and black puck marks,
+      fine wood grain under the paint, even lighting, uniform seamless texture filling the frame. {style}
+  - name: rail-disco
+    prompt: >-
+      Close-up top-down texture of polished chrome metal with smooth reflections of magenta and cyan neon lights,
+      even lighting, uniform seamless texture filling the frame. {style}
+  - name: rail-lager
+    prompt: >-
+      Close-up top-down texture of a bright red painted wooden plank, slightly chipped glossy paint, wood grain under the paint,
+      even sunlight, uniform seamless texture filling the frame. {style}
+  - name: rail-kosmos
+    prompt: >-
+      Close-up top-down texture of orange anodized spaceship hull metal plates with panel seams and small round rivets,
+      even lighting, uniform seamless texture filling the frame. {style}
+
+  # ---------------------------------------------------------------- эмблема в центральном круге
+  - name: emblem-katok
+    prompt: >-
+      One big ornate snowflake ice crystal emblem, glossy translucent light blue and white, six symmetrical branches, flat top view,
+      centered, on a plain flat dark navy background. {style}
+  - name: emblem-disco
+    prompt: >-
+      One sparkling mirror disco ball seen from above, many small square mirror tiles reflecting pink and cyan light, round,
+      centered, on a plain flat medium gray background. {style}
+  - name: emblem-lager
+    prompt: >-
+      One round enamel pioneer camp badge: a red five-pointed star with a yellow campfire flame in the middle, golden rim, glossy enamel pin,
+      flat top view, centered, on a plain flat white background. {style}
+  - name: emblem-kosmos
+    prompt: >-
+      One small glossy blue and green planet with a thin bright orange ring around it, round, flat top view,
+      centered, on a plain flat medium gray background. {style}
+
+  # ---------------------------------------------------------------- шайбы и биты (вид строго сверху)
+  - name: puck-katok
+    prompt: >-
+      Top view seen exactly from directly above of one round black rubber ice hockey puck, matte black with a slightly glossy rim,
+      perfect circle, centered, on a plain flat white background. {style}
+  - name: puck-disco
+    prompt: >-
+      Top view seen exactly from directly above of one round glossy neon yellow plastic air hockey puck with a thin raised rim,
+      perfect circle, centered, on a plain flat dark gray background. {style}
+  - name: puck-lager
+    prompt: >-
+      Top view seen exactly from directly above of one round glossy white plastic air hockey puck with a thin raised rim,
+      perfect circle, centered, on a plain flat medium gray background. {style}
+  - name: puck-kosmos
+    prompt: >-
+      Top view seen exactly from directly above of one small round shiny silver flying saucer disc with a glowing cyan dome in the middle
+      and a ring of tiny lights, perfect circle, centered, on a plain flat medium gray background. {style}
+  - name: mallet-red
+    prompt: >-
+      Top view seen exactly from directly above of one air hockey striker mallet: a glossy bright red plastic disc with a raised rim
+      and a round knob handle in the center, perfect circle, centered, on a plain flat light gray background. {style}
+  - name: mallet-blue
+    prompt: >-
+      Top view seen exactly from directly above of one air hockey striker mallet: a glossy bright blue plastic disc with a raised rim
+      and a round knob handle in the center, perfect circle, centered, on a plain flat light gray background. {style}
+
+  # ---------------------------------------------------------------- табло
+  - name: scoreboard
+    width: 1536
+    height: 640
+    prompt: >-
+      Front view of a retro Soviet electronic sports scoreboard panel: a wide black metal box with a riveted steel frame,
+      two large empty dark square windows on the left and right with faint red LED dot grids, a small empty dark window in the middle,
+      flat frontal view, centered, on a plain flat white background. {style}

@@ -3,11 +3,13 @@
 .ah-wrap { position: relative; width: 100%; height: min(82vh, 70vw); min-height: 340px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; background: #101c36; }
 .ah-cv { position: absolute; inset: 0; }
 .ah-cv canvas { display: block; width: 100%; height: 100%; outline: none; cursor: crosshair; }
-.ah-hud { position: absolute; top: 10px; left: 12px; display: flex; align-items: center; gap: 12px; padding: 4px 14px; border-radius: 10px; background: rgba(10, 8, 20, 0.72); color: #ffe9b8; font: bold 24px 'PT Sans', Arial, sans-serif; pointer-events: none; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
-.ah-hud .r { color: #ff7a64; min-width: 1.2em; text-align: center; }
-.ah-hud .b { color: #8ab4ff; min-width: 1.2em; text-align: center; }
-.ah-hud .t { font: bold 16px 'Courier New', monospace; color: #ffd24a; }
+.ah-hud { position: absolute; top: 8px; left: 10px; width: 176px; height: 79px; background: url(/aerohockey/art/scoreboard.webp) center / 100% 100% no-repeat; pointer-events: none; filter: drop-shadow(0 3px 8px rgba(0,0,0,.55)); font: bold 40px 'Courier New', monospace; }
+.ah-hud b, .ah-hud .t { position: absolute; display: flex; align-items: center; justify-content: center; }
+.ah-hud .r { left: 6%; width: 32.5%; top: 12%; height: 76%; color: #ff5a46; text-shadow: 0 0 6px #ff2a1a, 0 0 14px rgba(255,40,20,.6); }
+.ah-hud .b { left: 61%; width: 33%; top: 12%; height: 76%; color: #6aa8ff; text-shadow: 0 0 6px #2a6aff, 0 0 14px rgba(40,100,255,.6); }
+.ah-hud .t { left: 40.6%; width: 18.8%; top: 16%; height: 37%; font-size: 10px; color: #ffd24a; text-shadow: 0 0 4px #ffb000; white-space: nowrap; letter-spacing: -0.5px; }
 .ah-banner { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); padding: 14px 30px; border-radius: 16px; background: rgba(12, 10, 40, 0.8); color: #ffe9a0; text-align: center; pointer-events: none; box-shadow: 0 6px 30px rgba(0,0,0,.4); }
 .ah-banner b { display: block; font: bold 46px 'PT Serif', Georgia, serif; letter-spacing: 2px; }
 .ah-banner span { font: 16px 'PT Sans', Arial, sans-serif; color: #e8f0f8; }
 @media (max-width: 860px) { .ah-wrap { height: min(74vh, 150vw); } }
+@media (max-width: 560px) { .ah-hud { width: 132px; height: 60px; font-size: 30px; top: 6px; left: 6px; } .ah-hud .t { font-size: 9px; } }

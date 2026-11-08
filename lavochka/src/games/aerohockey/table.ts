@@ -1,10 +1,14 @@
 /* Аэрохоккей — отрисовка стола на canvas 2D. Всё рисуется в координатах стола (метры) через матрицу вида:
- * неподвижное (поле, разметка, дырочки, борта) — один раз в запасной холст на каждый размер и тему, по кадру — шайба, биты, искры.
- * Темы — яркие, «по двору»: каток, дискотека, пионерлагерь, космос. */
+ * неподвижное (окружение, борта, поле, эмблема, разметка, дырочки) — один раз в запасной холст на каждый размер и тему,
+ * по кадру — шайба, биты, искры. Темы — яркие, «по двору»: каток, дискотека, пионерлагерь, космос.
+ * Картинки (окружение, поверхность, фактура борта, эмблема, шайба, биты) — моделью, см. art.ts; пока не загрузились
+ * (или в тестах без сети) — запасная отрисовка кодом. Круглое (шайба, биты, эмблема) рисуется в координатах экрана,
+ * чтобы свет на картинке всегда падал сверху-слева при любом повороте стола. */
+import { art, loadArt, loaded } from './art';
 import { CORNER, GOAL, L, MAL_R, PUCK_R, W, type AhState } from './engine';
 
-/** Ориентация: 0 — место 0 внизу, 1 — место 1 внизу, 2 — поперёк (место 0 слева). */
-export type Orient = 0 | 1 | 2;
+/** Ориентация: 0 — место 0 внизу, 1 — место 1 внизу, 2 — поперёк (место 0 слева), 3 — поперёк (место 1 слева). */
+export type Orient = 0 | 1 | 2 | 3;
 
 interface Theme {
   bg: (g: CanvasRenderingContext2D, w: number, h: number) => void;
@@ -308,6 +312,8 @@ export class TableCanvas {
   private stat: HTMLCanvasElement;
   private statKey = '';
   private m = new DOMMatrix();
+  /** Пикселей холста на метр стола. */
+  private sc = 1;
   private dpr = 1;
   private trail: [number, number][] = [];
   private sparks: Spark[] = [];
@@ -321,22 +327,44 @@ export class TableCanvas {
     parent.appendChild(this.canvas);
     this.g = this.canvas.getContext('2d')!;
     this.stat = document.createElement('canvas');
+    void loadArt();
+  }
+
+  /** Картинка во весь холст «по обрезке»; у высокого холста — повёрнута, чтобы меньше резать (вид сверху это позволяет). */
+  private cover(g: CanvasRenderingContext2D, im: HTMLImageElement, w: number, h: number) {
+    const turn = h > w * 1.1;
+    const [iw, ih] = turn ? [im.naturalHeight, im.naturalWidth] : [im.naturalWidth, im.naturalHeight];
+    const k = Math.max(w / iw, h / ih);
+    g.save();
+    g.translate(w / 2, h / 2);
+    if (turn) g.rotate(Math.PI / 2);
+    g.drawImage(im, (-im.naturalWidth * k) / 2, (-im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k);
+    g.restore();
+  }
+
+  /** Круглая картинка с центром в точке стола (x, y) и радиусом r (метры) — без поворота, в координатах экрана. */
+  private sprite(g: CanvasRenderingContext2D, im: CanvasImageSource, x: number, y: number, r: number, ox = 0, oy = 0) {
+    const p = this.m.transformPoint(new DOMPoint(x, y));
+    const d = r * 2 * this.sc;
+    g.drawImage(im, p.x + ox - d / 2, p.y + oy - d / 2, d, d);
   }
 
   /** Матрица «стол → экран» (пиксели холста). */
   private layout() {
     const cw = this.canvas.width;
     const ch = this.canvas.height;
-    const across = this.orient === 2;
+    const across = this.orient >= 2;
     const tw = (across ? L : W) + RAIL * 2;
     const th = (across ? W : L) + RAIL * 2;
     const s = Math.min(cw / (tw * 1.06), ch / (th * 1.04));
     const m = new DOMMatrix().translate(cw / 2, ch / 2).scale(s, s);
     if (this.orient === 0) m.scaleSelf(1, -1);
     else if (this.orient === 1) m.scaleSelf(-1, 1);
-    else m.rotateSelf(90).scaleSelf(1, -1);
+    else if (this.orient === 2) m.rotateSelf(90).scaleSelf(1, -1);
+    else m.rotateSelf(270).scaleSelf(1, -1);
     m.translateSelf(0, -L / 2);
     this.m = m;
+    this.sc = s;
   }
 
   resize() {
@@ -368,7 +396,7 @@ export class TableCanvas {
   }
 
   private drawStatic() {
-    const key = `${this.canvas.width}x${this.canvas.height}:${this.orient}:${this.theme}`;
+    const key = `${this.canvas.width}x${this.canvas.height}:${this.orient}:${this.theme}:${loaded()}`;
     if (key === this.statKey) return;
     this.statKey = key;
     this.layout();
@@ -377,7 +405,17 @@ export class TableCanvas {
     c.height = this.canvas.height;
     const g = c.getContext('2d')!;
     const th = themeOf(this.theme);
-    th.bg(g, c.width, c.height);
+    const t = this.theme in THEMES ? this.theme : 'katok';
+    const bgIm = art(`bg-${t}`);
+    if (bgIm) {
+      this.cover(g, bgIm, c.width, c.height);
+      // к краям темнее — стол в пятне света
+      const vg = g.createRadialGradient(c.width / 2, c.height / 2, Math.min(c.width, c.height) * 0.3, c.width / 2, c.height / 2, Math.max(c.width, c.height) * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+      g.fillStyle = vg;
+      g.fillRect(0, 0, c.width, c.height);
+    } else th.bg(g, c.width, c.height);
     g.setTransform(this.m);
     // тень стола
     g.save();
@@ -388,30 +426,91 @@ export class TableCanvas {
     g.fillStyle = th.rail[2];
     g.fill();
     g.restore();
-    // борт: объёмная рамка
-    const rg = g.createLinearGradient(-W / 2 - RAIL, 0, W / 2 + RAIL, 0);
-    rg.addColorStop(0, th.rail[1]);
-    rg.addColorStop(0.5, th.rail[0]);
-    rg.addColorStop(1, th.rail[1]);
+    // борт: фактура (плитка) или градиент, сверху — объём светом сверху-слева в координатах экрана
+    const railIm = art(`rail-${t}`);
+    const ring = () => {
+      g.beginPath();
+      const o = (x: number, y: number, w: number, h: number, r: number) => {
+        g.moveTo(x + r, y);
+        g.arcTo(x + w, y, x + w, y + h, r);
+        g.arcTo(x + w, y + h, x, y + h, r);
+        g.arcTo(x, y + h, x, y, r);
+        g.arcTo(x, y, x + w, y, r);
+        g.closePath();
+      };
+      o(-W / 2 - RAIL, -RAIL, W + RAIL * 2, L + RAIL * 2, CORNER + RAIL);
+      o(-W / 2, 0, W, L, CORNER);
+    };
+    if (railIm) {
+      const pat = g.createPattern(railIm, 'repeat')!;
+      pat.setTransform(new DOMMatrix().scale(0.3 / railIm.naturalWidth));
+      ring();
+      g.fillStyle = pat;
+      g.fill('evenodd');
+    } else {
+      const rg = g.createLinearGradient(-W / 2 - RAIL, 0, W / 2 + RAIL, 0);
+      rg.addColorStop(0, th.rail[1]);
+      rg.addColorStop(0.5, th.rail[0]);
+      rg.addColorStop(1, th.rail[1]);
+      ring();
+      g.fillStyle = rg;
+      g.fill('evenodd');
+    }
+    {
+      ring();
+      g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      const lg = g.createLinearGradient(0, 0, c.width, c.height);
+      lg.addColorStop(0, 'rgba(255,255,255,0.22)');
+      lg.addColorStop(0.5, 'rgba(255,255,255,0)');
+      lg.addColorStop(1, 'rgba(0,0,0,0.3)');
+      g.fillStyle = lg;
+      g.fill('evenodd');
+      g.restore();
+    }
+    // кромки борта: наружная тёмная, внутренняя — блик
+    g.lineWidth = 0.006;
+    g.strokeStyle = 'rgba(0,0,0,0.55)';
     roundRect(g, -W / 2 - RAIL, -RAIL, W + RAIL * 2, L + RAIL * 2, CORNER + RAIL);
-    g.fillStyle = rg;
-    g.fill();
+    g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.35)';
+    g.lineWidth = 0.004;
+    roundRect(g, -W / 2 - RAIL + 0.008, -RAIL + 0.008, W + RAIL * 2 - 0.016, L + RAIL * 2 - 0.016, CORNER + RAIL - 0.008);
+    g.stroke();
     g.strokeStyle = th.railTrim;
-    g.lineWidth = 0.012;
+    g.lineWidth = 0.01;
+    if (th.glow) {
+      g.shadowColor = th.railTrim;
+      g.shadowBlur = 12 * this.dpr * th.glow;
+    }
     roundRect(g, -W / 2 - RAIL * 0.5, -RAIL * 0.5, W + RAIL, L + RAIL, CORNER + RAIL * 0.5);
     g.stroke();
+    g.shadowBlur = 0;
     // поле
     g.save();
     roundRect(g, -W / 2, 0, W, L, CORNER);
     g.clip();
-    const sg = g.createRadialGradient(0, L / 2, 0.05, 0, L / 2, L * 0.7);
-    sg.addColorStop(0, th.surf[0]);
-    sg.addColorStop(1, th.surf[1]);
-    g.fillStyle = sg;
-    g.fillRect(-W / 2, 0, W, L);
-    th.deco(g);
+    const surfIm = art(`surf-${t}`);
+    if (surfIm) {
+      g.drawImage(surfIm, -W / 2, 0, W, L);
+      // мягкий свет на середину поля
+      const sg = g.createRadialGradient(0, L / 2, 0.05, 0, L / 2, L * 0.75);
+      sg.addColorStop(0, 'rgba(255,255,255,0.08)');
+      sg.addColorStop(1, 'rgba(0,0,0,0.22)');
+      g.fillStyle = sg;
+      g.fillRect(-W / 2, 0, W, L);
+    } else {
+      const sg = g.createRadialGradient(0, L / 2, 0.05, 0, L / 2, L * 0.7);
+      sg.addColorStop(0, th.surf[0]);
+      sg.addColorStop(1, th.surf[1]);
+      g.fillStyle = sg;
+      g.fillRect(-W / 2, 0, W, L);
+      th.deco(g);
+    }
     // дырочки воздушной подушки
     g.fillStyle = th.holes;
+    // по сгенерированной поверхности дырочки тише — иначе поле в «сетку»
+    if (surfIm) g.globalAlpha = 0.55;
     const step = 0.036;
     for (let y = step / 2; y < L; y += step)
       for (let x = -W / 2 + step / 2; x < W / 2; x += step) {
@@ -419,6 +518,7 @@ export class TableCanvas {
         g.arc(x, y, 0.0035, 0, Math.PI * 2);
         g.fill();
       }
+    g.globalAlpha = 1;
     // разметка: центральная линия и круг, «вратарские» полукруги, линии у ворот
     const glow = (col: string) => {
       g.strokeStyle = col;
@@ -434,6 +534,18 @@ export class TableCanvas {
     g.moveTo(-W / 2, L / 2);
     g.lineTo(W / 2, L / 2);
     g.stroke();
+    const emb = art(`emblem-${t}`);
+    if (emb) {
+      g.save();
+      g.shadowBlur = 0;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.shadowColor = 'rgba(0,0,0,0.45)';
+      g.shadowBlur = 8 * this.dpr;
+      g.shadowOffsetY = 3 * this.dpr;
+      this.sprite(g, emb, 0, L / 2, 0.13);
+      g.restore();
+      g.setTransform(this.m);
+    }
     g.beginPath();
     g.arc(0, L / 2, 0.15, 0, Math.PI * 2);
     g.stroke();
@@ -550,6 +662,8 @@ export class TableCanvas {
       }
       g.globalAlpha = 1;
     }
+    const t = this.theme in THEMES ? this.theme : 'katok';
+    const puckIm = art(`puck-${t}`);
     // шайба
     if (onTable) {
       g.fillStyle = 'rgba(0,0,0,0.3)';
@@ -560,19 +674,26 @@ export class TableCanvas {
         g.shadowColor = th.puckGlow;
         g.shadowBlur = 18 * this.dpr;
       }
-      const pg = g.createRadialGradient(p.x - PUCK_R * 0.3, p.y + PUCK_R * 0.3, PUCK_R * 0.1, p.x, p.y, PUCK_R);
-      pg.addColorStop(0, th.puck[0]);
-      pg.addColorStop(1, th.puck[1]);
-      g.fillStyle = pg;
-      g.beginPath();
-      g.arc(p.x, p.y, PUCK_R, 0, Math.PI * 2);
-      g.fill();
-      g.shadowBlur = 0;
-      g.strokeStyle = 'rgba(255,255,255,0.35)';
-      g.lineWidth = 0.004;
-      g.beginPath();
-      g.arc(p.x, p.y, PUCK_R * 0.62, 0, Math.PI * 2);
-      g.stroke();
+      if (puckIm) {
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        this.sprite(g, puckIm, p.x, p.y, PUCK_R, ox, oy);
+        g.setTransform(new DOMMatrix().translate(ox, oy).multiply(this.m));
+        g.shadowBlur = 0;
+      } else {
+        const pg = g.createRadialGradient(p.x - PUCK_R * 0.3, p.y + PUCK_R * 0.3, PUCK_R * 0.1, p.x, p.y, PUCK_R);
+        pg.addColorStop(0, th.puck[0]);
+        pg.addColorStop(1, th.puck[1]);
+        g.fillStyle = pg;
+        g.beginPath();
+        g.arc(p.x, p.y, PUCK_R, 0, Math.PI * 2);
+        g.fill();
+        g.shadowBlur = 0;
+        g.strokeStyle = 'rgba(255,255,255,0.35)';
+        g.lineWidth = 0.004;
+        g.beginPath();
+        g.arc(p.x, p.y, PUCK_R * 0.62, 0, Math.PI * 2);
+        g.stroke();
+      }
     }
     // биты
     for (const s of [0, 1]) {
@@ -585,6 +706,14 @@ export class TableCanvas {
       if (th.glow) {
         g.shadowColor = c;
         g.shadowBlur = 20 * this.dpr * th.glow;
+      }
+      const malIm = art(`mallet-${s}`);
+      if (malIm) {
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        this.sprite(g, malIm, m.x, m.y, MAL_R, ox, oy);
+        g.setTransform(new DOMMatrix().translate(ox, oy).multiply(this.m));
+        g.shadowBlur = 0;
+        continue;
       }
       const mg = g.createRadialGradient(m.x - MAL_R * 0.35, m.y + MAL_R * 0.35, MAL_R * 0.1, m.x, m.y, MAL_R);
       mg.addColorStop(0, light);

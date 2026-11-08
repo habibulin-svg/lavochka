@@ -1,8 +1,9 @@
 /* Аэрохоккей — экран: стол на canvas, плавное движение между снимками комнаты, управление битой, звук.
- * Один игрок: бита идёт за мышью (без нажатия) или пальцем; стрелки/WASD — тоже можно. Своя половина всегда внизу.
- * Двое за одним экраном: стол поперёк, каждый палец (или мышь) ведёт биту той половины, где он; клавиши — WASD у красных, стрелки у синих. */
+ * Один игрок: бита идёт за мышью (без нажатия) или пальцем; стрелки/WASD — тоже можно. Своя половина внизу (стол вдоль) или слева (поперёк).
+ * Двое за одним экраном: каждый палец (или мышь) ведёт биту той половины, где он; клавиши — WASD у красных, стрелки у синих.
+ * Вдоль или поперёк — настройка в панели стола (запоминается); по умолчанию — по форме экрана. */
 import { audioOut, click, Sound, tone } from '../../core/audio';
-import { speedRow } from '../../core/rtview';
+import { segRow, speedRow } from '../../core/rtview';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
@@ -11,6 +12,30 @@ import { TableCanvas, type Orient } from './table';
 import './aerohockey.css';
 
 const TEAM = ['Красные', 'Синие'];
+
+/** Ориентация стола — настройка игрока (запоминается в этом браузере); по умолчанию — по форме экрана. */
+type OrientPref = 'auto' | 'v' | 'h';
+const ORIENT_KEY = 'ah-orient';
+const ORIENT_OPTS: [string, string][] = [
+  ['auto', 'по экрану'],
+  ['v', '▯ вдоль'],
+  ['h', '▭ поперёк'],
+];
+function loadPref(): OrientPref {
+  try {
+    const v = localStorage.getItem(ORIENT_KEY);
+    return v === 'v' || v === 'h' ? v : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+function savePref(v: OrientPref) {
+  try {
+    localStorage.setItem(ORIENT_KEY, v);
+  } catch {
+    /* хранилище недоступно — настройка живёт до конца партии */
+  }
+}
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 interface Snap {
@@ -49,12 +74,14 @@ export function createView(): GameView<AhState, AhEvent> {
 
   const mine = () => ctx.mySeats.filter((s) => s === 0 || s === 1);
   const hotseat = () => mine().length > 1;
+  let pref: OrientPref = loadPref();
+  /** Как лежит стол: настройка (вдоль, поперёк) или по форме экрана; своя половина — внизу или слева. */
   function orient(): Orient {
-    if (hotseat() || !mine().length) {
-      const r = root.getBoundingClientRect();
-      return r.width > r.height * 1.1 ? 2 : 0;
-    }
-    return mine()[0] === 1 ? 1 : 0;
+    const r = root.getBoundingClientRect();
+    const across = pref === 'h' || (pref === 'auto' && r.width > r.height * 1.1);
+    const me = !hotseat() && mine().length ? mine()[0] : 0;
+    if (across) return me === 1 ? 3 : 2;
+    return me === 1 ? 1 : 0;
   }
 
   function current(): AhState | null {
@@ -116,7 +143,7 @@ export function createView(): GameView<AhState, AhEvent> {
     const st = current();
     if (!st) return;
     table.orient = orient();
-    table.theme = st.table ?? 'katok';
+    table.theme = (import.meta.env.DEV && (window as unknown as { __ahTheme?: string }).__ahTheme) || st.table || 'katok';
     table.render(st, dt, colors);
     drawHud(latest ?? st);
     if (bannerT && performance.now() > bannerT) {
@@ -216,8 +243,8 @@ export function createView(): GameView<AhState, AhEvent> {
     }
     // палец не прячет биту под собой: на телефоне цель чуть выше пальца
     const lift = e.pointerType === 'touch' ? 0.06 : 0;
-    const fwd = seat === 0 ? 1 : -1;
-    aim[seat] = [p[0], p[1] + lift * fwd];
+    const [ux, uy] = table.screenToTableDir(0, 1);
+    aim[seat] = [p[0] + lift * ux, p[1] + lift * uy];
   }
 
   // ---------------------------------------------------------------- панель
@@ -226,6 +253,12 @@ export function createView(): GameView<AhState, AhEvent> {
     const box = ctx.controls;
     if (!box || ctx.demo) return;
     box.innerHTML = '';
+    box.appendChild(
+      segRow('Стол', ORIENT_OPTS, () => pref, (v) => {
+        pref = v as OrientPref;
+        savePref(pref);
+      })
+    );
     if (mine().length) {
       speedEl = speedRow(
         () => latest?.speed ?? 0.7,
