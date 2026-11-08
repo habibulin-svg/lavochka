@@ -1,0 +1,19 @@
+# Викторина (2026-11-08): музыка студии телевикторины 90-х, без слов. Чужих заставок не берём — только жанр.
+# G:/ai/venvs/3d/Scripts/python.exe studio/runners/yue2.py studio/jobs/viktorina/02-music.yaml   (comfy-big на :8188)
+out: G:/temp/studio/out/viktorina/02-music
+max_duration: 130
+tracks:
+  - name: studio
+    seeds: [11, 22]
+    style: >-
+      television game show music, early 1990s, instrumental, 120 bpm, bright synth brass stabs, punchy drum machine, slap bass,
+      sparkling bells, glossy studio pop, suspenseful and cheerful, major key
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[chorus]\n[outro]"
+  - name: think
+    seeds: [11, 22]
+    style: >-
+      quiz show thinking music, 1990s, instrumental, 100 bpm, ticking clock percussion, soft synth pads, pulsing analog bass,
+      light suspense, curious and playful, minor key
+    lyrics: "[intro]\n[verse]\n[chorus]\n[verse]\n[outro]"
+# Взято (2026-11-08, отбор по замерам — длина без обрыва на max_duration, громкость; на слух не сверял): studio-11 → studio.ogg, think-11 → think.ogg
+# (ffmpeg: затухание 1,5 с, loudnorm −16 LUFS, Opus 80k) → lavochka/public/viktorina/music/.

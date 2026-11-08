@@ -1,0 +1,105 @@
+# Викторина (2026-11-08): студия телевикторины 90-х — фон, барабан (обод, лак секторов, стрелка), кнопка-«пуговица»,
+# трибуна игрока, плашки ответов, ячейка табло, панель с лампочками. Барабан собирает export_art.py по точной геометрии
+# секторов (число секторов — из engine.ts) из лаковых фактур, нарисованных моделью; надписи и цифры — шрифтом
+# (кириллицу модель не пишет). Отрицания Z-Image понимает наоборот — ненужное не упоминаем.
+# studio/run.cmd run.py jobs/viktorina/01-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic photo render, crisp details, glossy materials, rich saturated colors, high contrast, 1990s television look.
+seeds: [91, 92, 93]
+items:
+  # ---------------------------------------------------------------- фон: студия телевикторины 90-х
+  - name: bg-studio
+    width: 1536
+    height: 1024
+    prompt: >-
+      Wide shot of an empty 1990s television quiz show studio set: a dark glossy stage floor reflecting lights,
+      a semicircle of colorful neon tubes and rows of round light bulbs on the back wall, deep blue and purple stage lighting,
+      spotlights beams in haze, chrome railings, a big round empty stage in the middle, an audience area in darkness at the sides,
+      cinematic wide angle. {style}
+  - name: bg-studio-tall
+    width: 1024
+    height: 1536
+    prompt: >-
+      Tall view of an empty 1990s television quiz show studio set: a dark glossy stage floor reflecting lights,
+      a semicircle of colorful neon tubes and rows of round light bulbs on the back wall, deep blue and purple stage lighting,
+      spotlights beams in haze from the ceiling truss, a big round empty stage in the middle, cinematic. {style}
+  # ---------------------------------------------------------------- барабан
+  - name: wheel-rim
+    prompt: >-
+      Top-down view straight from above of a large round wooden game show wheel rim: a wide polished brass ring with a row of
+      small glowing light bulbs all around it and short brass pegs on the inner edge, the middle of the ring is plain flat white,
+      perfectly circular, centered, on a plain flat white background. {style}
+  - name: wheel-hub
+    prompt: >-
+      Top-down view straight from above of a round polished brass hub cap with a glossy red jewel in the middle and fine radial grooves,
+      perfectly circular, centered, on a plain flat white background. {style}
+  - name: lacquer-red
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, deep scarlet red enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: lacquer-yellow
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, bright golden yellow enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: lacquer-blue
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, deep royal blue enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: lacquer-green
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, emerald green enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: lacquer-black
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, jet black enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: lacquer-white
+    prompt: >-
+      Extreme close-up texture of glossy lacquered painted wood, ivory white enamel paint with subtle wood grain under the paint,
+      soft reflections, even lighting, uniform texture filling the whole frame edge to edge.
+  - name: pointer
+    width: 512
+    height: 1024
+    prompt: >-
+      A single polished brass arrow pointer shaped like a long triangle pointing straight down, with a round rivet at the top,
+      front view, centered, on a plain flat white background. {style}
+  # ---------------------------------------------------------------- кнопка-«пуговица»
+  - name: buzzer
+    prompt: >-
+      A big round glossy red arcade buzzer push button on a short black round base, seen from the front and slightly above,
+      the red dome shiny with a bright highlight, centered, on a plain flat white background. {style}
+  - name: buzzer-lit
+    prompt: >-
+      A big round glossy red arcade buzzer push button glowing brightly from inside with warm red light, on a short black round base,
+      seen from the front and slightly above, light rays, centered, on a plain flat white background. {style}
+  # ---------------------------------------------------------------- трибуна игрока
+  - name: podium
+    width: 768
+    height: 1024
+    prompt: >-
+      Front view of a single 1990s television quiz show contestant podium: a chrome and dark blue lacquered lectern with a curved front,
+      a plain dark glass display panel on the front, a row of small light bulbs along the top edge, centered, on a plain flat white background. {style}
+  # ---------------------------------------------------------------- плашки и табло
+  - name: plate
+    width: 1536
+    height: 512
+    prompt: >-
+      A wide horizontal elongated hexagon shaped glossy dark navy blue glass plate with a thin shining gold metallic border,
+      plain and empty, front view, centered, on a plain flat white background. {style}
+  - name: tile
+    prompt: >-
+      A single square glowing television game board tile: deep blue glossy glass panel with soft inner light and a beveled gold frame,
+      plain and empty, front view, centered, on a plain flat white background. {style}
+  - name: panel
+    width: 1536
+    height: 1024
+    prompt: >-
+      Front view of a large dark 1990s television game show scoreboard panel: a deep navy blue matte surface framed by chrome edges
+      and a border of small glowing round light bulbs all around, plain and empty, centered, on a plain flat white background. {style}
