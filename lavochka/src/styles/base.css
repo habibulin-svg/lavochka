@@ -410,3 +410,14 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 .slot-btn { text-align: left; justify-content: flex-start; }
 .help-text { line-height: 1.5; }
 .help-text kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; font: inherit; font-size: 0.9em; text-align: center; opacity: 0.85; }
+
+/* ---------- геймпад (core/gamepad.ts): рамка фокуса, курсор, подсказка; только пока пад в руках ---------- */
+.gp-on .gp-focus { outline: 3px solid #ffd23f !important; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255, 210, 63, 0.35), 0 0 18px rgba(255, 210, 63, 0.6) !important; border-radius: 6px; position: relative; z-index: 2; }
+.gp-cursor { position: fixed; left: -11px; top: -11px; width: 22px; height: 22px; z-index: 300; pointer-events: none; border-radius: 50%; border: 3px solid #ffd23f; background: rgba(255, 210, 63, 0.25); box-shadow: 0 0 0 2px #261c12, 0 0 12px rgba(255, 210, 63, 0.7); }
+.gp-cursor.down { background: rgba(255, 210, 63, 0.75); transform-origin: center; }
+.gp-hint { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 79; pointer-events: none; max-width: calc(100vw - 16px);
+  font: 13px 'PT Sans', sans-serif; color: #fbf1dc; background: rgba(23, 20, 31, 0.82); border: 1px solid rgba(255, 210, 63, 0.4); border-radius: 18px; padding: 5px 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-hint b { color: #ffd23f; }
+@media (max-width: 600px) { .gp-hint { font-size: 11px; white-space: normal; text-align: center; } }
+/* у SVG-клеток (пункты нард, поля) рамки нет — подсвечиваем обводкой и свечением */
+.gp-on svg .gp-focus { outline: none !important; box-shadow: none !important; stroke: #ffd23f !important; stroke-width: 3px !important; filter: drop-shadow(0 0 4px #ffd23f) drop-shadow(0 0 2px #ffd23f); }

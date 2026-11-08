@@ -11,6 +11,7 @@ import {
   AIM_MAX, BLAST_TIME, coin, fire, HALF_W, LAUNCHES, newSea, roseOn, ships, step, TICK, torpedoLamp, trackX,
   TRACKS, turn, type SeaEvent, type SeaState,
 } from './logic';
+import { padOff, padOn } from '../../../core/gamepad';
 
 // ---- окуляр VW×VH (свои координаты), экран LW×LH: сверху полоса «ПУСК», снизу «ТОРПЕДИРОВАНО»
 const VW = 1200;
@@ -496,6 +497,7 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
   const ku = (e: KeyboardEvent) => onKey(e, false);
   const blur = () => (turning.l = turning.r = false);
   window.addEventListener('keydown', kd);
+  padOn(kd, { map: { move: ['', '', 'ArrowLeft', 'ArrowRight'], keys: { a: 'KeyZ', rt: 'KeyZ', x: 'Space' } }, hint: 'стик — перископ · <b>Ⓐ</b>/<b>RT</b> пуск · <b>Ⓧ</b> монетка' });
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', blur);
   view.style.cursor = 'ew-resize';
@@ -780,6 +782,7 @@ export function mountMorboy(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstanc
       dead = true;
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur);
       sh.destroy();

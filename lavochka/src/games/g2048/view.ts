@@ -6,6 +6,7 @@ import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { boardOf, race, type Action, type Board, type Dir, type Event, type State } from './engine';
 import './g2048.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const KEYS: Record<string, Dir> = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
 
@@ -54,6 +55,7 @@ class G2048View implements GameView<State, Event> {
       ctx.controls.appendChild(this.btns);
       ctx.controls.appendChild(h(`<div class="hint small-hint">Стрелки или W A S D; на телефоне — проведите пальцем по доске.</div>`));
       window.addEventListener('keydown', this.onKey);
+      padOn(this.onKey, { map: {}, hint: 'стик — сдвинуть плитки' });
     }
     this.boardEl.addEventListener('pointerdown', (e) => {
       this.swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
@@ -73,6 +75,7 @@ class G2048View implements GameView<State, Event> {
 
   destroy() {
     window.removeEventListener('keydown', this.onKey);
+    padOff(this.onKey);
     this.ro?.disconnect();
   }
 

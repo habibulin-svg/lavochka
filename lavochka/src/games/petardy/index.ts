@@ -6,6 +6,7 @@ import { Sound } from '../../core/audio';
 import { h } from '../../core/util';
 import { DISTRICTS, FUSE, GH, Petardy, GW, type Input, type Mover } from './logic';
 import './petardy.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const T = 48;
 const CW = GW * T;
@@ -41,6 +42,7 @@ class Yard {
     this.g.setTransform(2, 0, 0, 2, 0, 0);
     this.game = this.fresh();
     window.addEventListener('keydown', this.onKey);
+    padOn(this.onKey, { map: () => (this.mode.endsWith('2') ? [{ move: 'wasd', keys: { a: 'Space' } }, { move: 'arrows', keys: { a: 'Enter' } }] : { keys: { a: 'Space' } }), hint: 'стик — бежать · <b>Ⓐ</b> петарда' });
     window.addEventListener('keyup', this.onKeyUp);
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-d]')) {
       const [dx, dy] = b.dataset.d!.split(',').map(Number);
@@ -356,6 +358,7 @@ class Yard {
   destroy() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('keydown', this.onKey);
+    padOff(this.onKey);
     window.removeEventListener('keyup', this.onKeyUp);
     this.el.remove();
   }

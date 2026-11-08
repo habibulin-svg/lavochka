@@ -11,6 +11,7 @@ import {
   CAR_H, CAR_W, chooseTrack, coin, CRASH_TIME, greenIndicator, indicator, newMag, POST_GAP, start, step, TH, TRACKS, TW,
   type MagEvent, type MagState, type Mover, type Player, type TrackKind,
 } from './logic';
+import { padOff, padOn } from '../../../core/gamepad';
 
 // ---- экран 320×240: две трассы по 136 точек, между ними чёрная полоса индикаторов, по краям — зелёная кайма
 const SW = 320;
@@ -266,6 +267,7 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
   const ku = (e: KeyboardEvent) => onKey(e, false);
   const clear = () => keys.clear();
   window.addEventListener('keydown', kd);
+  padOn(kd, { map: [{ move: 'wasd', keys: { a: 'KeyW', rt: 'KeyW', b: 'KeyS', lt: 'KeyS', x: 'Space', y: 'Enter' } }, { move: 'arrows', keys: { a: 'ArrowUp', rt: 'ArrowUp', b: 'ArrowDown', lt: 'ArrowDown' } }], hint: 'стик — руль · <b>RT</b> газ · <b>LT</b> тормоз · <b>Ⓧ</b> монетка · <b>Ⓨ</b> старт' });
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', clear);
 
@@ -494,6 +496,7 @@ export function mountMagistral(root: HTMLElement, opts?: ArcadeOpts): ArcadeInst
         e?.gn.disconnect();
       });
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', clear);
       sh.destroy();

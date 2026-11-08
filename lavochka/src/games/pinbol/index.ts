@@ -31,6 +31,7 @@ import {
   type TableDef,
 } from './logic';
 import './pinbol.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const DMD = 136;
 const PREF_MUSIC = 'pinbol.music';
@@ -217,10 +218,12 @@ class Pinball {
     const ku = (e: KeyboardEvent) => this.keys.delete(e.code);
     const blur = () => this.keys.clear();
     window.addEventListener('keydown', kd);
+    padOn(kd, { map: { keys: { lb: 'ShiftLeft', lt: 'ShiftLeft', rb: 'ShiftRight', rt: 'ShiftRight', a: 'Space', y: 'ArrowUp' } }, hint: '<b>LB</b>/<b>RB</b> флипперы · <b>Ⓐ</b> пружина · <b>Ⓨ</b> толкнуть стол' });
     window.addEventListener('keyup', ku);
     window.addEventListener('blur', blur);
     this.cleanup.push(() => {
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur);
     });

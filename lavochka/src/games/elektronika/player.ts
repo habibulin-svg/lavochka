@@ -8,6 +8,7 @@ import { store } from '../../core/settings';
 import { esc } from '../../core/util';
 import type { GwButton, GwGame } from './games';
 import './elektronika.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 interface Layout {
   w: number;
@@ -108,6 +109,7 @@ export function mountGw(game: GwGame, root: HTMLElement, opts?: ArcadeOpts): Arc
     }
   };
   window.addEventListener('keydown', kd);
+  padOn(kd, { map: { keys: { lb: 'KeyQ', lt: 'KeyA', rb: 'KeyP', rt: 'KeyL', a: 'Space', x: 'Digit1', y: 'Digit2', b: 'Digit3' } }, hint: 'крестовина или <b>LB LT RB RT</b> — четыре кнопки · <b>Ⓧ</b> игра А · <b>Ⓨ</b> игра Б · <b>Ⓑ</b> время' });
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', onHide);
@@ -243,6 +245,7 @@ export function mountGw(game: GwGame, root: HTMLElement, opts?: ArcadeOpts): Arc
       cancelAnimationFrame(raf);
       beeper?.close();
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', releaseAll);
       document.removeEventListener('visibilitychange', onHide);

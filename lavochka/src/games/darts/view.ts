@@ -13,6 +13,7 @@ import { SEATS } from './def';
 import { CRICKET, markSym, modeName, targetName, type Event, type State } from './engine';
 import { DART_LEN, flight, OCHE, V0, VMAX, VMIN, type Frame, type Stuck } from './physics';
 import './darts.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const PREF_MUSIC = 'darts.music';
 const PREF_MODE = 'darts.throw';
@@ -587,8 +588,9 @@ export function createView(): GameView<State, Event> {
       }
     };
     window.addEventListener('keydown', key);
+    padOn(key, { map: { keys: { a: 'Space', rt: 'Space' } }, hint: 'стик — прицел · <b>Ⓐ</b>/<b>RT</b> держать — замах, отпустить — бросок' });
     window.addEventListener('keyup', keyUp);
-    cleanup.push(() => window.removeEventListener('keydown', key));
+    cleanup.push(() => (window.removeEventListener('keydown', key), padOff(key)));
     cleanup.push(() => window.removeEventListener('keyup', keyUp));
   }
 

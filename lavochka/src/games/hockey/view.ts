@@ -10,6 +10,7 @@ import { botInput } from './ai';
 import { slotAt, slotDir, slotNearest, SLOTS, type HkEvent, type HkIn, type HkState, type RodIn } from './engine';
 import { Rink3D, type Cam } from './scene';
 import './hockey.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 export const PREF_CAM = 'hockey.cam';
 export const PREF_MOUSE = 'hockey.mouse';
@@ -336,6 +337,7 @@ export function createView(): GameView<HkState, HkEvent> {
       const ku = (e: KeyboardEvent) => onKey(e, false);
       const blur = () => keys.clear();
       window.addEventListener('keydown', kd);
+      padOn(kd, { map: () => (hotseat() ? [{ move: 'wasd', keys: { x: 'Space', lb: 'KeyQ', rb: 'KeyE' } }, { move: 'arrows', keys: { x: 'Space', lb: 'Comma', rb: 'Period' } }] : { move: 'arrows', move2: 'wasd', keys: { x: 'Space', lb: 'KeyQ', rb: 'KeyE' } }), hint: 'стик — хоккеист · правый стик — вратарь · <b>LB</b>/<b>RB</b> другой игрок · <b>Ⓧ</b> постучать' });
       window.addEventListener('keyup', ku);
       window.addEventListener('blur', blur);
       const pd = (e: PointerEvent) => onPointer(e, 'down');
@@ -347,6 +349,7 @@ export function createView(): GameView<HkState, HkEvent> {
       cv.addEventListener('wheel', onWheel, { passive: false });
       cleanup.push(() => {
         window.removeEventListener('keydown', kd);
+        padOff(kd);
         window.removeEventListener('keyup', ku);
         window.removeEventListener('blur', blur);
       });

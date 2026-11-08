@@ -12,6 +12,7 @@ import { figure } from './figures';
 import { launch, powFor, simulate, type Throw } from './physics';
 import { Yard3D, type RodPose } from './scene';
 import './gorodki.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 export const PREF_HINT = 'gorodki.hint';
 const PREF_MUSIC = 'gorodki.music';
@@ -259,7 +260,8 @@ export function createView(): GameView<State, Event> {
       if (used) e.preventDefault();
     };
     window.addEventListener('keydown', key);
-    cleanup.push(() => window.removeEventListener('keydown', key));
+    padOn(key, { map: { move2: 'wasd', keys: { a: 'Space', rt: 'Space' } }, hint: 'стик — прицел и сила · правый стик — шаг вдоль черты · <b>Ⓐ</b> бросок' });
+    cleanup.push(() => (window.removeEventListener('keydown', key), padOff(key)));
   }
 
   function controls() {

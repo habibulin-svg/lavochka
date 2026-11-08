@@ -12,6 +12,7 @@ import { esc } from '../../core/util';
 import { giveBack, takeCoin } from './coins';
 import type { AutoGame } from './games';
 import { mountShell } from './screen';
+import { padOff, padOn } from '../../core/gamepad';
 
 /** Сколько держим датчик монеты (секунд эмулируемого времени). */
 const COIN_HOLD_S = 0.1;
@@ -141,6 +142,7 @@ export function mountAuto(game: AutoGame, root: HTMLElement, opts?: ArcadeOpts):
     sh.lit('b2', false);
   };
   window.addEventListener('keydown', kd);
+  padOn(kd, { map: { keys: { a: 'KeyZ', rt: 'KeyZ', b: 'KeyX', lt: 'KeyX', x: 'Space' } }, hint: '<b>Ⓐ</b>/<b>Ⓑ</b> кнопки автомата · <b>Ⓧ</b> монетка' });
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', releaseAll);
 
@@ -209,6 +211,7 @@ export function mountAuto(game: AutoGame, root: HTMLElement, opts?: ArcadeOpts):
       cancelAnimationFrame(raf);
       beeper?.close();
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', releaseAll);
       sh.destroy();

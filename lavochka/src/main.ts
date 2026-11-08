@@ -1,6 +1,7 @@
 /* Точка входа: двор → экран игры → стол. */
 import './styles/base.css';
 import { Sound } from './core/audio';
+import { initGamepad } from './core/gamepad';
 import { openHome } from './core/home';
 import { type ArcadeModule, isArcade, openArcade } from './core/arcade';
 import { openArcadeHome } from './core/arcade-home';
@@ -446,6 +447,7 @@ else {
   setTimeout(startMetrika);
   startPresence();
   startErrorReports();
+  initGamepad();
   // вернулись со страницы оплаты — «спасибо» (после первого показа экрана: он закрывает окна)
   if (params.has('voshel') || params.has('privyazan')) setTimeout(handleOAuthReturn);
   if (params.has('donate')) setTimeout(() => void loadDonate().then(handleDonateReturn));

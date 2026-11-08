@@ -9,6 +9,7 @@ import { h } from '../../core/util';
 import { BASE_X, BASE_Y, FW, mapRows, N4, N8, newGame, parseMap, step, totalScore, ENEMY_PTS, type Bonus, type Tank, type TkEvent, type TkIn, type TkState } from './logic';
 import { art, loadArt, tile, tinted, TANKS, type ArtName } from './art';
 import './tanchiki.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const P = {
   diff: 'tanchiki.diff',
@@ -213,10 +214,12 @@ class Game {
     const ku = (e: KeyboardEvent) => (this.keys = this.keys.filter((k) => k !== e.code));
     const blur = () => (this.keys = []);
     window.addEventListener('keydown', kd);
+    padOn(kd, { map: [{ move: 'wasd', keys: { a: 'KeyF', rt: 'KeyF', x: 'KeyF' } }, { move: 'arrows', keys: { a: 'Enter', rt: 'Enter', x: 'Enter' } }], hint: 'стик — ехать · <b>Ⓐ</b>/<b>RT</b> огонь' });
     window.addEventListener('keyup', ku);
     window.addEventListener('blur', blur);
     this.off.push(() => {
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur);
     });

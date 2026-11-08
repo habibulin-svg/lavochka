@@ -9,6 +9,7 @@ import { h } from '../../core/util';
 import { accentOf, drawBackdrop, drawBoard, drawPreview, frost, glowText, labelText } from './render';
 import { H, HIDDEN, KINDS, newTet, stepTet, type Tet, type TetEvent, type TetIn, W } from './tetris';
 import './brick2026.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const P = {
   level: 'brick2026.level',
@@ -125,10 +126,12 @@ export class Controls {
     const ku = (e: KeyboardEvent) => this.keys.delete(e.code);
     const blur = () => this.keys.clear();
     window.addEventListener('keydown', kd);
+    padOn(kd, { map: { keys: { a: 'KeyX', rb: 'KeyX', b: 'KeyZ', lb: 'KeyZ', x: 'Space', y: 'Space' } }, hint: '<b>Ⓐ</b>/<b>RB</b> поворот · <b>Ⓑ</b>/<b>LB</b> обратно · <b>Ⓧ</b> сбросить' });
     window.addEventListener('keyup', ku);
     window.addEventListener('blur', blur);
     this.off.push(() => {
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', blur);
     });

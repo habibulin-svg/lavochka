@@ -10,6 +10,7 @@ import { SEATS } from './def';
 import { L, type AhEvent, type AhIn, type AhState } from './engine';
 import { TableCanvas, type Orient } from './table';
 import './aerohockey.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const TEAM = ['Красные', 'Синие'];
 
@@ -282,6 +283,7 @@ export function createView(): GameView<AhState, AhEvent> {
       const ku = (e: KeyboardEvent) => onKey(e, false);
       const blur = () => keys.clear();
       window.addEventListener('keydown', kd);
+      padOn(kd, { map: () => (hotseat() ? [{ move: 'wasd' }, { move: 'arrows' }] : { move: 'arrows' }), hint: 'стик — бита' });
       window.addEventListener('keyup', ku);
       window.addEventListener('blur', blur);
       const pd = (e: PointerEvent) => onPointer(e, 'down');
@@ -293,6 +295,7 @@ export function createView(): GameView<AhState, AhEvent> {
       cv.addEventListener('pointercancel', pu);
       cleanup.push(() => {
         window.removeEventListener('keydown', kd);
+        padOff(kd);
         window.removeEventListener('keyup', ku);
         window.removeEventListener('blur', blur);
       });

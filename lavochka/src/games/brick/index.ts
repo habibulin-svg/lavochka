@@ -12,6 +12,7 @@ import { store } from '../../core/settings';
 import { BrickMachine, KEYS, segIndex, type BrickKey } from './machine';
 import type { HtState } from '../../arcade/ht1190';
 import './brick.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 const BASE = `${import.meta.env.BASE_URL}brick/`;
 const SAVE = 'brick.e23';
@@ -238,6 +239,7 @@ function mount(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
     }
   };
   window.addEventListener('keydown', kd);
+  padOn(kd, { map: { keys: { a: 'KeyX', b: 'ArrowUp', y: 'Enter', back: 'KeyM' } }, hint: '<b>Ⓐ</b> поворот · <b>Ⓨ</b> старт/пауза прибора' });
   window.addEventListener('keyup', ku);
   window.addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', onHide);
@@ -377,6 +379,7 @@ function mount(root: HTMLElement, opts?: ArcadeOpts): ArcadeInstance {
       cancelAnimationFrame(raf);
       beeper?.close();
       window.removeEventListener('keydown', kd);
+      padOff(kd);
       window.removeEventListener('keyup', ku);
       window.removeEventListener('blur', releaseAll);
       document.removeEventListener('visibilitychange', onHide);

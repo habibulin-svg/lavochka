@@ -11,6 +11,7 @@ import { botInput } from './ai';
 import { keeperX, KEEPER_RANGE, PULL_MAX, SPOTS, type FbEvent, type FbIn, type FbState } from './engine';
 import { Pitch3D, type Cam } from './scene';
 import './football.css';
+import { padOff, padOn } from '../../core/gamepad';
 
 export const PREF_CAM = 'football.cam';
 
@@ -350,6 +351,7 @@ export function createView(): GameView<FbState, FbEvent> {
         drag = null;
       };
       window.addEventListener('keydown', kd);
+      padOn(kd, { map: () => (hotseat() ? [{ move: 'wasd', keys: { a: 'KeyW', rt: 'KeyW', lb: 'KeyQ', rb: 'KeyE' } }, { move: 'arrows', keys: { a: 'ArrowUp', rt: 'ArrowUp', lb: 'Comma', rb: 'Period' } }] : { move: 'arrows', move2: 'wasd', keys: { a: 'Space', rt: 'Space', lb: 'KeyQ', rb: 'KeyE' } }), hint: '<b>Ⓐ</b>/<b>RT</b> держать — завести ногу, стик — куда · <b>LB</b>/<b>RB</b> фигурка · правый стик — вратарь' });
       window.addEventListener('keyup', ku);
       window.addEventListener('blur', blur);
       cv.addEventListener('pointerdown', (e) => onPointer(e, 'down'));
@@ -358,6 +360,7 @@ export function createView(): GameView<FbState, FbEvent> {
       cv.addEventListener('pointercancel', (e) => onPointer(e, 'up'));
       cleanup.push(() => {
         window.removeEventListener('keydown', kd);
+        padOff(kd);
         window.removeEventListener('keyup', ku);
         window.removeEventListener('blur', blur);
       });

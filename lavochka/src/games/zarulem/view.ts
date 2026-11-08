@@ -10,6 +10,7 @@ import { clock, WHY } from './def';
 import { GEARS, standings, type Car, type ZrEvent, type ZrIn, type ZrState } from './engine';
 import { Toy3D, type Cam } from './scene';
 import './zarulem.css';
+import { padAxis, padOff, padOn } from '../../core/gamepad';
 
 export const PREF_CAM = 'zarulem.cam';
 
@@ -89,6 +90,8 @@ export function createView(): GameView<ZrState, ZrEvent> {
     if (arrows && keys.has('ArrowLeft')) s -= 1;
     if (wasd && keys.has('KeyD')) s += 1;
     if (wasd && keys.has('KeyA')) s -= 1;
+    // стик геймпада — руль плавно (первый пад — первый игрок за экраном)
+    s += padAxis('lx', first ? 0 : 1);
     if (drag && drag.seat === seat) s += dragSteer;
     return Math.max(-1, Math.min(1, s));
   }
@@ -383,10 +386,12 @@ export function createView(): GameView<ZrState, ZrEvent> {
         mine().forEach((s) => send(s, true));
       };
       window.addEventListener('keydown', kd);
+      padOn(kd, { map: () => (hotseat() ? [{ move: 'arrows', analog: true }, { move: 'wasd', analog: true }] : { move: 'arrows', analog: true }), hint: 'стик — руль (плавно)' });
       window.addEventListener('keyup', ku);
       window.addEventListener('blur', blur);
       cleanup.push(() => {
         window.removeEventListener('keydown', kd);
+        padOff(kd);
         window.removeEventListener('keyup', ku);
         window.removeEventListener('blur', blur);
       });
