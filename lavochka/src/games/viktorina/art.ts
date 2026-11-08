@@ -13,7 +13,8 @@ export const ART = {
   podium: `${DIR}podium.webp`,
   plate: `${DIR}plate.webp`,
   tile: `${DIR}tile.webp`,
-  panel: `${DIR}panel.webp`,
+  /** табло вопроса без швов для border-image (studio/jobs/viktorina/panel_frame.py из panel.webp) */
+  panel: `${DIR}panel-frame.webp`,
 };
 
 /** Доля радиуса диска секторов от стороны картинки барабана (export_art.py печатает её). */

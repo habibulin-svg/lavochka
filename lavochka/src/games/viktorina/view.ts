@@ -556,12 +556,12 @@ class VikView implements GameView<View, Event> {
     const teams =
       pl.teams.length > 1
         ? `<div class="vk-teams">${pl.teams
-            .map((t, k) => `<span class="${k === pl.team ? 'cur' : ''}">Команда ${k + 1}: ${t.map((x) => this.ctx.name(x)).join(', ')}</span>`)
+            .map((t, k) => `<span class="${k === pl.team ? 'cur' : ''}">Команда ${k + 1}: ${t.map((x) => `<b style="color:${SEATS[x].color}">${esc(this.plain(x))}</b>`).join(', ')}</span>`)
             .join('')}</div>`
         : '';
     const said = v.last && (v.last.kind === 'wrong' || v.last.kind === 'right') && v.last.said != null ? `<div class="vk-note">${this.ctx.name(v.last.seat!)}: «${esc(v.last.said || '—')}»${v.last.kind === 'right' ? ' — есть!' : ' — нет на табло'}</div>` : '';
     return `${this.qPanel(`Мы спросили сто человек: ${pl.q}`)}${teams}
-      <div class="vk-pollbox"><ol class="vk-poll">${rows}</ol>
+      <div class="vk-pollbox"><ol class="vk-poll" style="--rows:${Math.ceil(pl.rows.length / 2)}">${rows}</ol>
       <div class="vk-pside"><div class="vk-strikes">${[0, 1, 2].map((i) => `<i class="${i < pl.strikes ? 'on' : ''}">✖</i>`).join('')}</div>
       <div class="vk-bank">Банк: <b>${pl.bank}</b></div>${pl.steal ? '<div class="vk-steal">Отыгрыш!</div>' : ''}</div></div>
       ${said}${v.phase === 'say' ? this.inputBox(v, pl.speaker, 'Что ответили люди?') : ''}`;
@@ -610,7 +610,7 @@ class VikView implements GameView<View, Event> {
     return `<div class="vk-podiums">${v.seats
       .map(
         (x) => `<div class="vk-pod ${lamp(x)}${out(x) ? ' out' : ''}" data-cam="${x}" style="--c:${SEATS[x].color}">
-          <div class="vk-pscreen"><b>${score(x)}</b></div><div class="vk-pname">${esc(this.plain(x))}</div></div>`
+          <div class="vk-pbody"><div class="vk-pscreen"><b>${score(x)}</b></div></div><div class="vk-pname">${esc(this.plain(x))}</div></div>`
       )
       .join('')}</div>`;
   }
