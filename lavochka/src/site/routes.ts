@@ -171,6 +171,7 @@ export const SLUGS: Record<string, string> = {
   hockey: 'nastolnyy-hokkey',
   aerohockey: 'aerohokkey',
   gorodki: 'gorodki',
+  lapta: 'lapta',
   darts: 'darts',
   viktorina: 'viktorina',
   football: 'nastolnyy-futbol',

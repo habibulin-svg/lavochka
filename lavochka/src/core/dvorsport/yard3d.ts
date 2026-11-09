@@ -31,6 +31,10 @@ export interface YardOpts {
   backdrop?: string | false;
   /** Где освещать тенями: прямоугольник в осях three вокруг солнца (left, right, top, bottom). */
   shadow?: [number, number, number, number];
+  /** Середина площадки (оси игры x, y): туда смотрит солнце и вокруг неё стоит задник. По умолчанию (0, 1) — двор городков. */
+  center?: [number, number];
+  /** Радиус полукруга задника, м (по умолчанию 60; большое поле лапты — 85). */
+  backdropR?: number;
 }
 
 export class DvorYard<Cam extends string = string> {
@@ -69,8 +73,9 @@ export class DvorYard<Cam extends string = string> {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = false;
     host.appendChild(this.renderer.domElement);
-    this.light(o.shadow ?? [-16, 16, 20, -22]);
-    const bd = o.backdrop === false ? Promise.resolve() : this.backdrop(o.backdrop ?? `${DVOR_BASE}backdrop.webp`);
+    const [cx, cy] = o.center ?? [0, 1];
+    this.light(o.shadow ?? [-16, 16, 20, -22], cx, cy - 1);
+    const bd = o.backdrop === false ? Promise.resolve() : this.backdrop(o.backdrop ?? `${DVOR_BASE}backdrop.webp`, cx, cy - 1, o.backdropR ?? 60);
     this.loaded = Promise.all([this.load(o.yard === false ? null : (o.yard ?? `${DVOR_BASE}yard.glb?v=3`), o.props === false ? null : (o.props ?? `${DVOR_BASE}props.glb?v=3`)), bd]).then(() => {});
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(host);
@@ -86,7 +91,8 @@ export class DvorYard<Cam extends string = string> {
     return x;
   }
 
-  private light([l, r, t, b]: [number, number, number, number]) {
+  /** Свет; dx, dy — сдвиг солнца и его цели от двора городков (оси игры). */
+  private light([l, r, t, b]: [number, number, number, number], dx = 0, dy = 0) {
     const sc = this.scene;
     sc.background = new THREE.Color('#b8d4ea');
     sc.fog = new THREE.Fog('#e6d6c2', 40, 140);
@@ -97,8 +103,8 @@ export class DvorYard<Cam extends string = string> {
     sc.add(new THREE.HemisphereLight('#ffe4c4', '#5a4630', 0.95));
     // тёплое вечернее солнце низко слева-сзади: длинные мягкие тени
     const sun = new THREE.DirectionalLight('#ffcf94', 3.3);
-    sun.position.set(-14, 7.5, 9);
-    sun.target.position.set(0, 0, -1);
+    sun.position.set(-14 + dx, 7.5, 9 - dy);
+    sun.target.position.set(dx, 0, -1 - dy);
     sun.castShadow = true;
     sun.shadow.mapSize.set(4096, 4096);
     const sh = sun.shadow.camera;
@@ -115,7 +121,7 @@ export class DvorYard<Cam extends string = string> {
   }
 
   /** Фотопанорама двора на полукруге за площадкой. */
-  private backdrop(url: string): Promise<void> {
+  private backdrop(url: string, dx = 0, dy = 0, R = 60): Promise<void> {
     let ok!: () => void;
     const ready = new Promise<void>((r) => (ok = r));
     // ошибка картинки не держит экран загрузки — двор откроется без задника
@@ -125,10 +131,10 @@ export class DvorYard<Cam extends string = string> {
     t.repeat.set(-2, 1);
     t.offset.set(0.5, 0);
     const bd = new THREE.Mesh(
-      new THREE.CylinderGeometry(60, 60, 20, 72, 1, true, -Math.PI * 0.5, Math.PI),
+      new THREE.CylinderGeometry(R, R, (20 * R) / 60, 72, 1, true, -Math.PI * 0.5, Math.PI),
       new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, color: '#f2f2f2' }),
     );
-    bd.position.set(0, 7.2, 4);
+    bd.position.set(dx, (7.2 * R) / 60, 4 - dy);
     bd.rotation.y = Math.PI;
     this.scene.add(bd);
     return ready;
