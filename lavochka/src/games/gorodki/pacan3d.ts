@@ -1,25 +1,26 @@
 /* Городки — проба «дворового спорта»: стилизованный пацан (KayKit Adventurers «Ranger», CC0, перекрашен в олимпийку
  * бригады — studio/blender/dvor_pacan.py) с готовыми анимациями KayKit (CC0) вместо поз кодом.
- * Включается адресом ?pacan (запоминается; ?pacan=0 — назад к старым людям). Клипы: idle, hold2h, throw, cheer, sit, wave …
+ * По умолчанию (решение 2026-11-09: «этот вариант значительно лучше»); ?pacan=0 — назад к людям MakeHuman (запоминается).
+ * Модели бригад — public/gorodki/pacan/<бригада>.glb без анимаций, клипы — общий anims.glb (по именам костей). Клипы: idle, hold2h, throw, cheer, sit, wave …
  * Бросок — клип «throw» (из-за правого плеча вперёд: по замеру кисть в самой быстрой точке идёт вперёд, +Z модели),
  * поэтому бросающий стоит почти лицом к городу. Время клипа идёт за фазой броска игры: выпуск биты (фаза RELEASE)
  * совмещён с самой быстрой точкой (ищется по клипу). Горизонтальный взмах «swing1h» не годится — он наотмашь, слева
  * направо. Бита — в кости handslot.r (ось Y кости — вдоль биты). */
 import * as THREE from 'three';
 
-/** Проба включается адресом ?pacan и запоминается в браузере (адрес партии меняется на ?igra); ?pacan=0 — выключить. */
+/** Пацаны — по умолчанию; ?pacan=0 — прежние люди (запоминается в браузере: адрес партии меняется на ?igra), ?pacan — обратно. */
 export const TOON = ((): boolean => {
-  if (typeof location === 'undefined') return false;
+  if (typeof location === 'undefined') return true;
   const v = new URLSearchParams(location.search).get('pacan');
   try {
     if (v != null) localStorage.setItem('gk-pacan', v === '0' ? '0' : '1');
-    return localStorage.getItem('gk-pacan') === '1';
+    return localStorage.getItem('gk-pacan') !== '0';
   } catch {
-    return v != null && v !== '0';
+    return v !== '0';
   }
 })();
 export const TOON_BASE = `${import.meta.env.BASE_URL}gorodki/pacan/`;
-export const TOON_V = 3;
+export const TOON_V = 5;
 /** Рост пацана, м: крупная голова — ростом чуть ниже взрослого. */
 const TOON_H = 1.62;
 /** Фаза броска, на которой бита улетает (как в people3d: бита в руке до 0.62). */

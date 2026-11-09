@@ -1,4 +1,5 @@
-/* Городки — люди во дворе: гопники бригад — люди MakeHuman (MPFB2, CC0) в олимпийках, спортивных штанах, кепках-восьмиклинках
+/* Городки — люди во дворе. По умолчанию — пацаны KayKit с готовыми анимациями (pacan3d.ts, ветки «toon» ниже); ?pacan=0 —
+ * прежние гопники бригад — люди MakeHuman (MPFB2, CC0) в олимпийках, спортивных штанах, кепках-восьмиклинках
  * и кроссовках; сборка — studio/blender/gorodki_mpfb.py → public/gorodki/gop/<бригада>.glb, ростом со взрослого.
  * У моделей настоящие глаза и кисти с пальцами, сжатыми в кулак; кость grip.L/R — середина кулака, ось Y — канал кулака.
  * Стоят и дышат (кодом: корпус, голова), бросающий — у черты: замах сбоку и бросок плашмя — правая кисть идёт по дуге вокруг
@@ -265,15 +266,19 @@ export class Crowd {
 
   /** Проба ?pacan: пацан бригады с анимациями KayKit. */
   private async spawnToon(seat: number, file: string) {
-    let p = this.gltfs.get(`toon:${file}`);
-    if (!p) {
-      p = this.loader.loadAsync(`${TOON_BASE}${file}.glb?v=${TOON_V}`);
-      this.gltfs.set(`toon:${file}`, p);
-    }
-    const g = await p;
+    const load = (f: string) => {
+      let p = this.gltfs.get(`toon:${f}`);
+      if (!p) {
+        p = this.loader.loadAsync(`${TOON_BASE}${f}.glb?v=${TOON_V}`);
+        this.gltfs.set(`toon:${f}`, p);
+      }
+      return p;
+    };
+    // модель бригады и общий файл клипов
+    const [g, anims] = await Promise.all([load(file), load('anims')]);
     if (this.disposed) return;
     const model = SkeletonUtils.clone(g.scene);
-    const toon = new Toon(model, g.animations, seat);
+    const toon = new Toon(model, anims.animations, seat);
     const root = new THREE.Group();
     root.add(model);
     const bat = new THREE.Group();
@@ -375,9 +380,9 @@ export class Crowd {
     else t.play(sit ? 'sit' : thr ? TOON_CFG.ready : 'idle');
     t.update(dt);
     p.root.updateMatrixWorld(true);
-    // бита на плече в стойке; на замахе (первые 15 % фазы) — плавно в кулак вдоль кости
+    // бита на плече (бросающий у черты и стоящие зрители); на замахе (первые 15 % фазы) — плавно в кулак вдоль кости
     const ph = thr && this.phase != null ? this.phase : null;
-    t.placeBat(p.bat, 0.42, !thr ? 0 : ph == null ? 1 : Math.max(0, 1 - ph / 0.15));
+    t.placeBat(p.bat, 0.42, ph == null ? 1 : Math.max(0, 1 - ph / 0.15));
     p.bat.visible = !sit && (!thr || this.phase == null || this.phase < 0.62);
   }
 
