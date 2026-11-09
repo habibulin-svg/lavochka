@@ -51,6 +51,10 @@ export class PekarYard extends DvorYard<CamMode> {
     tmp.position.y = 0.06;
     this.can.add(tmp);
     this.scene.add(this.can);
+    // слои земли field.glb разнесены на сантиметры — с ближней плоскостью 5 см они мерцали бы (как было в лапте)
+    this.camera.near = 0.4;
+    this.camera.far = 220;
+    this.camera.updateProjectionMatrix();
     const dotGeo = new THREE.CircleGeometry(0.045, 12);
     const dotMat = new THREE.MeshBasicMaterial({ color: '#ffe23a', transparent: true, opacity: 0.85, depthWrite: false });
     for (let i = 0; i < 26; i++) {
@@ -124,7 +128,7 @@ export class PekarYard extends DvorYard<CamMode> {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(len + w, w), chalk);
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = Math.atan2(y1 - y0, x1 - x0);
-      m.position.copy(W((x0 + x1) / 2, (y0 + y1) / 2, 0.006));
+      m.position.copy(W((x0 + x1) / 2, (y0 + y1) / 2, 0.03));
       m.receiveShadow = true;
       this.lines.add(m);
     };
@@ -133,7 +137,7 @@ export class PekarYard extends DvorYard<CamMode> {
     for (const d of f.ranks) if (d > 0.3) strip(-1.6, d, 1.6, d, 0.06);
     const circ = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.48, 40), chalk);
     circ.rotation.x = -Math.PI / 2;
-    circ.position.copy(W(0, f.dist, 0.006));
+    circ.position.copy(W(0, f.dist, 0.03));
     this.lines.add(circ);
   }
 
@@ -249,7 +253,7 @@ export class PekarYard extends DvorYard<CamMode> {
       }
     });
     this.aimRing.visible = !!land;
-    if (land) this.aimRing.position.copy(W(land[0], land[1], 0.02));
+    if (land) this.aimRing.position.copy(W(land[0], land[1], 0.04));
   }
 
   override camTo(mode: CamMode, focus?: { x: number; y: number }, speed = 2.5) {
@@ -262,7 +266,7 @@ export class PekarYard extends DvorYard<CamMode> {
     for (const m of this.men) {
       m.toon?.update(dt);
       if (m.ring.visible) {
-        m.ring.position.copy(W(m.x, m.y, 0.03));
+        m.ring.position.copy(W(m.x, m.y, 0.045));
         const s = 1 + Math.sin(tt * 6) * 0.08;
         m.ring.scale.set(s, s, s);
       }

@@ -7,7 +7,7 @@ import { showLoading } from '../../core/loading';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { sample } from '../../core/dvorsport/body';
-import { PullAim, tip } from '../../core/dvorsport/input';
+import { PullAim } from '../../core/dvorsport/input';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
@@ -79,6 +79,7 @@ export function createView(): GameView<State, Event> {
   let hud: HTMLElement;
   let banner: HTMLElement;
   let bar: HTMLElement;
+  let ask: HTMLElement;
   let tags: HTMLElement;
   let raf = 0;
   let last = 0;
@@ -193,6 +194,7 @@ export function createView(): GameView<State, Event> {
     bar.innerHTML = '';
     yard.clearMarks();
     picks = [];
+    hint();
     if (!v || act == null || busy || v.over) {
       bar.style.display = 'none';
       return;
@@ -234,6 +236,31 @@ export function createView(): GameView<State, Event> {
       if (pk.who >= 0) yard.mark(pk.who, pk.kind === 'chase' ? '#ff4a2a' : '#ffe23a');
     }
     placeTags();
+  }
+
+  /** Что можно сделать сейчас — крупно внизу, всегда на виду. */
+  function hint() {
+    if (!v || v.over || busy) {
+      ask.innerHTML = '';
+      return;
+    }
+    const s = v;
+    const who = nm(actor(s));
+    if (act == null) {
+      const what = s.phase === 'kick' ? 'пинает палку' : s.phase === 'throw' ? 'бросает' : s.phase === 'run' ? 'решает, бежать ли за палкой' : s.phase === 'fix' ? 'ставит банку' : 'выбирает, кого салить';
+      ask.innerHTML = `Ждём: ${who} ${what}…`;
+      return;
+    }
+    ask.innerHTML =
+      s.phase === 'kick'
+        ? '<b>Жеребьёвка.</b> Потяните вниз и отпустите — пинок палки. Ближе всех — пекарь.'
+        : s.phase === 'throw'
+          ? '<b>Ваш бросок!</b> Потяните вниз (сила) и вбок (направление), отпустите. Кольцо — где ляжет палка.'
+          : s.phase === 'run'
+            ? '<b>Банка сбита!</b> Бегите за палкой, пока пекарь ставит банку, — или стойте.'
+            : s.phase === 'fix'
+              ? '<b>Вы пекарь!</b> Коснитесь банки — бегите и поставьте её в кружок.'
+              : '<b>Салите!</b> Коснитесь бегущего — над ним шанс догнать. Или «Не догнать».';
   }
 
   function placeTags() {
@@ -664,12 +691,13 @@ export function createView(): GameView<State, Event> {
     mount(el, c) {
       ctx = c;
       root = el;
-      wrap = h(`<div class="pk-wrap"><div class="pk-cv"></div><div class="pk-hud"></div><div class="pk-tags"></div><div class="pk-bar"></div><div class="pk-banner"></div></div>`);
+      wrap = h(`<div class="pk-wrap"><div class="pk-cv"></div><div class="pk-hud"></div><div class="pk-tags"></div><div class="pk-ask"><div class="pk-say"></div><div class="pk-bar"></div></div><div class="pk-banner"></div></div>`);
       root.appendChild(wrap);
-      if (!ctx.demo) showTip = tip(wrap, 'Потяните вниз и отпустите — бросок');
+      // подсказка «что делать сейчас» — своя, внизу (hint), вместо общей «потяните и отпустите»
       hud = wrap.querySelector('.pk-hud') as HTMLElement;
       banner = wrap.querySelector('.pk-banner') as HTMLElement;
       bar = wrap.querySelector('.pk-bar') as HTMLElement;
+      ask = wrap.querySelector('.pk-say') as HTMLElement;
       tags = wrap.querySelector('.pk-tags') as HTMLElement;
       bar.style.display = 'none';
       yard = new PekarYard(wrap.querySelector('.pk-cv') as HTMLElement);
