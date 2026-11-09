@@ -41,7 +41,7 @@ export function drawEgg(g: CanvasRenderingContext2D, U: number, x: number, y: nu
   gr.addColorStop(1, d);
   g.fillStyle = gr;
   g.beginPath();
-  g.ellipse(px, py + U / 56, U * 0.4, U * 0.47, 0, 0, Math.PI * 2);
+  g.ellipse(px, py + U / 56, U * 0.44, U * 0.47, 0, 0, Math.PI * 2);
   g.fill();
   if (U >= 24) {
     g.fillStyle = 'rgba(40,20,0,0.35)';

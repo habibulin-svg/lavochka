@@ -80,6 +80,24 @@ def square(im: Image.Image, size: int, pad: float = 0.04) -> Image.Image:
     return c
 
 
+def round_egg(im: Image.Image, aspect: float = 0.93, top: float = 0.22) -> Image.Image:
+    """Яйцо → почти шар, как в аркадных «яйцах динозавров»: острый верх раздаём вширь
+    (каждая строка растягивается тем сильнее, чем ближе к макушке), потом сжимаем до пропорции aspect (ш/в)."""
+    im = im.crop(im.getbbox())
+    w, h = im.size
+    W = round(w * (1 + top))
+    out = Image.new("RGBA", (W, h))
+    for y in range(h):
+        t = y / max(1, h - 1)  # 0 — макушка, 1 — низ
+        k = 1 + top * (1 - t) ** 1.6
+        row = im.crop((0, y, w, y + 1)).resize((max(1, round(w * k)), 1), Image.LANCZOS)
+        out.paste(row, ((W - row.width) // 2, y))
+    out = out.crop(out.getbbox())
+    w, h = out.size
+    nh = round(((w * h) / aspect) ** 0.5)
+    return out.resize((round(nh * aspect), nh), Image.LANCZOS)
+
+
 def round_cut(im: Image.Image, size: int = 160) -> Image.Image:
     """Люк: асфальт вокруг по цвету близок к фону — вместо хромакея круг с мягким краем по центру картинки."""
     im = im.convert("RGB")
@@ -177,7 +195,7 @@ def main(src: str):
     eggs = pieces(cut(op("eggs", "eggs1_2.png")), 3) + pieces(cut(op("eggs", "eggs2_2.png")), 3)
     order = [0, 1, 2, 3, 4, 5]  # зелёное, синее, красное, жёлтое, фиолетовое, оранжевое — как EGG в игре
     for i, j in enumerate(order):
-        save(square(eggs[j], 128), "eggs", f"egg{i}", 90)
+        save(square(round_egg(eggs[j]), 128), "eggs", f"egg{i}", 90)
     save(square(cut(op("eggs", "dino.png")), 256, 0.02), "eggs", "dino", 88)
     c = cut(op("eggs", "ceiling.png"))
     c = c.crop(c.getbbox())
