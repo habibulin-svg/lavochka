@@ -43,3 +43,7 @@
 }
 .pk-loading .pk-cv { visibility: hidden; }
 .pk-loading { background: #0b0907; }
+/* телефон: внизу стик слева и кнопки справа — подсказка над ними */
+@media (pointer: coarse) {
+  .pk-ask { bottom: 132px; }
+}

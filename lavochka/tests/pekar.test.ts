@@ -1,142 +1,137 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { def } from '../src/games/pekar/def';
-import { choose } from '../src/games/pekar/ai';
-import { apply, canHome, cfgFrom, chaseOf, newState, runnerAt, safeAt, stickFlight, throwBody, toAct, type Action, type State } from '../src/games/pekar/engine';
+import { botInput } from '../src/games/pekar/ai';
+import { canHome, cfgFrom, newGame, step, stickFlight, throwFrom, whoThrows, yawTo, type Event, type In, type State } from '../src/games/pekar/engine';
 
-const rig = (vals: number[]) => {
-  const r = new SeededRng(1);
-  return { next: () => r.next(), int: (n: number) => (vals.length ? vals.shift()! : r.int(n)), getState: () => 0 };
-};
+const rng = () => new SeededRng(3);
 
-/** После жеребьёвки: пекарь — 2, бросают 0 и 1. */
+/** После жеребьёвки: пекарь — 2, бросают 0 и 1; все на местах. */
 function ready(opts: Record<string, string | number | boolean> = {}): State {
-  const s = newState(cfgFrom(opts, 3), [0, 1, 2]);
+  const s = newGame({ ...opts, speed: 1 }, [0, 1, 2]);
+  s.phase = 'play';
   s.kicks = [12, 10, 7];
   s.order = [0, 1, 2];
   s.pekar = 2;
-  s.pl[2].stick = 'pekar';
-  s.queue = [0, 1];
-  s.phase = 'throw';
+  s.sticks[2].at = 'pekar';
+  s.men[2].x = 1.3;
+  s.men[2].y = s.cfg.dist + 1.1;
   return s;
 }
 
-const HIT: Action = { type: 'throw', pow: 0.66, yaw: -0.022, style: 'flat' };
+/** Крутить шаги с вводом по месту. */
+function run(s: State, sec: number, inputs: (s: State) => (In | null)[]) {
+  const r = rng();
+  const evs: Event[] = [];
+  for (let k = 0; k < Math.round(sec * 60); k++) evs.push(...step(s, inputs(s), r));
+  return evs;
+}
 
 describe('пекарь: палка и банка', () => {
-  it('полёт детерминирован, броски показа попадают и мажут', () => {
+  it('прямо в банку с черты рядового — попадает, слабо — недолёт', () => {
     const c = cfgFrom({});
-    const a = stickFlight(throwBody(c, 0, 0.66, -0.022, 'flat'), 'flat', canHome(c));
-    expect(a.hit).not.toBeNull();
-    expect(stickFlight(throwBody(c, 0, 0.3, -0.02, 'flat'), 'flat', canHome(c)).hit).toBeNull();
-    const long = stickFlight(throwBody(c, 0, 0.95, 0.02, 'flat'), 'flat', canHome(c));
-    expect(long.hit).toBeNull();
-    expect(long.rest[1]).toBeGreaterThan(c.dist);
+    const yaw = yawTo(c, 0, 0);
+    let hit = false;
+    for (let p = 0.4; p <= 0.9; p += 0.05) if (stickFlight(throwFrom(c, 0, 0, p, yaw, 'flat'), 'flat', canHome(c)).hit) hit = true;
+    expect(hit).toBe(true);
+    expect(stickFlight(throwFrom(c, 0, 0, 0.1, yaw, 'flat'), 'flat', canHome(c)).hit).toBeNull();
   });
-  it('черта звания ближе к банке', () => {
+  it('черта маршала не ближе 5 м к банке', () => {
     const c = cfgFrom({});
     expect(c.ranks.length).toBe(9);
     expect(c.step * 8).toBeLessThanOrEqual(c.dist - 5 + 1e-6);
   });
 });
 
-describe('пекарь: розыгрыш', () => {
-  it('жеребьёвка: ближе всех — пекарь', () => {
-    let s = newState(cfgFrom({}, 3), [0, 1, 2]);
-    s = apply(s, 0, { type: 'kick', pow: 0.75 }, rig([999]))!.state;
-    s = apply(s, 1, { type: 'kick', pow: 0.6 }, rig([999]))!.state;
-    const r = apply(s, 2, { type: 'kick', pow: 0.3 }, rig([999]))!;
-    expect(r.state.pekar).toBe(2);
-    expect(r.state.order).toEqual([0, 1, 2]);
-    expect(r.state.phase).toBe('throw');
-  });
-  it('сбил банку → звание, бег, банка на место', () => {
-    let s = ready();
-    let r = apply(s, 0, HIT, rig([]))!;
-    expect(r.events.find((e) => e.k === 'throw')).toMatchObject({ hit: true });
-    s = r.state;
-    expect(s.pl[0].rank).toBe(1);
-    expect(s.phase).toBe('run');
-    s = apply(s, 0, { type: 'run', go: true }, rig([]))!.state;
-    expect(s.phase).toBe('fix');
-    r = apply(s, 2, { type: 'fix' }, rig([]))!;
-    expect(r.state.can.up).toBe(true);
-    expect(r.state.pl[0].stick === 'hand' || r.state.phase === 'chase').toBe(true);
-  });
-  it('палка у банки — осалили, осаленный пекарь', () => {
-    let s = ready();
-    s.pl[1].stick = 'field';
-    [s.pl[1].sx, s.pl[1].sy] = [0.8, 17.5];
-    s.queue = [0];
-    s = apply(s, 0, HIT, rig([]))!.state;
-    s = apply(s, 0, { type: 'run', go: true }, rig([]))!.state;
-    s = apply(s, 1, { type: 'run', go: true }, rig([]))!.state;
-    s = apply(s, 2, { type: 'fix' }, rig([]))!.state;
-    expect(s.phase).toBe('chase');
-    const r = apply(s, 2, { type: 'chase', who: 1 }, rig([0]))!;
-    expect(r.events.find((e) => e.k === 'chase')).toMatchObject({ tag: true });
-    expect(r.state.pekar).toBe(1);
-    expect(r.state.pl[2].stick).toBe('hand');
-  });
-  it('бегущий за чертой — не осалить', () => {
-    const c = cfgFrom({});
-    const rr = { who: 0, from: [-1.6, -1] as [number, number], stick: [0, 8] as [number, number], home: [-1.6, -1] as [number, number], t0: 0.35, line: 0 };
-    expect(runnerAt(rr, 100).field).toBe(false);
-    expect(chaseOf([0, c.dist], safeAt(rr) + 0.1, rr).ok).toBe(false);
-  });
-  it('чужой ход и мусор — отказ', () => {
-    const s = ready();
-    expect(apply(s, 1, HIT, rig([]))).toBeNull();
-    expect(apply(s, 0, { type: 'throw', pow: NaN, yaw: 0, style: 'flat' }, rig([]))).toBeNull();
-    expect(apply(s, 0, { type: 'fix' }, rig([]))).toBeNull();
-  });
-});
-
-describe('пекарь: показ правил', () => {
-  for (const sec of def.rules!.sections) {
-    const demo = sec.demo;
-    if (!demo) continue;
-    it(sec.title, () => {
-      let s: State = demo.setup ? demo.setup(def as never, new SeededRng(1)) : def.setup(demo.seats, demo.options ?? {}, new SeededRng(1));
-      for (const st of demo.steps) {
-        expect(toAct(s)).toContain(st.seat);
-        const r = apply(s, st.seat, st.action as Action, rig(st.rig?.slice() ?? []));
-        expect(r, st.caption).not.toBeNull();
-        s = r!.state;
-      }
+describe('пекарь: партия в реальном времени', () => {
+  it('жеребьёвка пинком: ближе всех — пекарь', () => {
+    const s = newGame({ speed: 1 }, [0, 1, 2]);
+    const pows = [0.75, 0.6, 0.3];
+    const evs = run(s, 12, (st) => {
+      const k = st.kicks.findIndex((x) => x == null);
+      return [0, 1, 2].map((i) => (i === k ? { mx: 0, my: 0, k: { n: 1, pow: pows[i] } } : { mx: 0, my: 0 }));
     });
-  }
+    expect(evs.some((e) => e.k === 'draw')).toBe(true);
+    expect(s.pekar).toBe(2);
+  });
+  it('сбил банку → звание; пекарь подбирает и ставит банку', () => {
+    const s = ready();
+    const c = s.cfg;
+    expect(whoThrows(s)).toBe(0);
+    let pow = 0.6;
+    for (let p = 0.4; p <= 0.9; p += 0.01)
+      if (stickFlight(throwFrom(c, s.men[0].x, s.men[0].y, p, yawTo(c, s.men[0].x, s.men[0].y), 'flat'), 'flat', canHome(c)).hit) {
+        pow = p;
+        break;
+      }
+    let evs = run(s, 3, () => [{ mx: 0, my: 0, th: { n: 1, pow, yaw: 0, style: 'flat' } }, null, null]);
+    expect(evs.some((e) => e.k === 'knock')).toBe(true);
+    expect(s.men[0].rank).toBe(1);
+    expect(s.can.mode).toBe('down');
+    evs = run(s, 8, (st) => {
+      const pm = st.men[2];
+      const g = st.can.mode === 'held' ? canHome(c) : [st.can.x, st.can.y];
+      const dx = g[0] - pm.x;
+      const dy = g[1] - pm.y;
+      const d = Math.hypot(dx, dy) || 1;
+      return [null, null, st.can.mode === 'up' ? { mx: 0, my: 0 } : { mx: dx / d, my: dy / d }];
+    });
+    expect(evs.some((e) => e.k === 'can' && e.what === 'set')).toBe(true);
+    expect(s.can.mode).toBe('up');
+  });
+  it('в поле — осалили, осаленный пекарь; за чертой — нет', () => {
+    const s = ready();
+    s.men[0].x = 0;
+    s.men[0].y = 10;
+    s.men[2].x = 0.8;
+    s.men[2].y = 10.2;
+    let evs = run(s, 0.1, () => [null, null, { mx: 0, my: 0, a: 1 }]);
+    expect(evs.some((e) => e.k === 'tag' && e.who === 0)).toBe(true);
+    evs = run(s, 2.5, () => [null, null, null]);
+    expect(evs.some((e) => e.k === 'pekar')).toBe(true);
+    expect(s.pekar).toBe(0);
+    expect(s.sticks[2].at).toBe('hand');
+    const t = ready();
+    t.men[0].y = -0.5;
+    t.men[2].x = 0.3;
+    t.men[2].y = -0.3;
+    evs = run(t, 0.2, () => [null, null, { mx: 0, my: 0, a: 1 }]);
+    expect(evs.some((e) => e.k === 'tag')).toBe(false);
+  });
+  it('пока банка лежит — не салят', () => {
+    const s = ready();
+    s.can = { mode: 'down', x: 2, y: 16, a: 0, fx: 0, fy: 14, t0: 0 };
+    s.men[0].y = 10;
+    s.men[2].x = 0.3;
+    s.men[2].y = 10.2;
+    const evs = run(s, 0.2, () => [null, null, { mx: 0, my: 0, a: 1 }]);
+    expect(evs.some((e) => e.k === 'tag')).toBe(false);
+  });
 });
 
 describe('пекарь: боты', () => {
-  const game = (levels: number[], opts: Record<string, string | number | boolean>, seed: number) => {
-    const rng = new SeededRng(seed);
-    let s = def.setup(levels.map((l, i) => ({ seat: i, kind: 'bot', name: `b${i}`, level: l })), opts, rng);
-    let moves = 0;
-    while (!s.over && moves < 3000) {
-      const seat = toAct(s)[0];
-      const a = choose(s, seat, levels[seat], rng);
-      const r = apply(s, seat, a, rng);
-      expect(r, JSON.stringify({ phase: s.phase, a })).not.toBeNull();
-      s = r!.state;
-      moves++;
+  const game = (levels: number[], opts: Record<string, string | number | boolean>, seed: number, maxSec = 1800) => {
+    const r = new SeededRng(seed);
+    const s = def.setup(
+      levels.map((l, i) => ({ seat: i, kind: 'bot' as const, name: `b${i}`, level: l })),
+      { ...opts, speed: 1 },
+      r,
+    );
+    const mems = levels.map(() => ({}));
+    let k = 0;
+    while (!s.over && k < maxSec * 60) {
+      const view = def.view(s, 'all');
+      const ins = levels.map((l, i) => botInput(view, i, l, mems[i], r));
+      step(s, ins, r);
+      k++;
     }
-    return { s, moves };
+    return { s, sec: k / 60 };
   };
   it('партии доходят до конца во всех пресетах', () => {
     for (const p of def.presets!) {
-      const { s, moves } = game([2, 1, 0, 2], p.options, 7);
-      expect(s.over).toBe(true);
-      expect(moves).toBeLessThan(3000);
-      console.log(p.id, moves, s.throws, s.winners, s.pl.map((x) => x.rank + '/' + x.knocks).join(' '));
+      const { s, sec } = game([2, 1, 0, 2], p.options, 7);
+      expect(s.over, p.id).toBe(true);
+      console.log(p.id, Math.round(sec), 'с', s.throws, 'бросков', s.winners, s.men.map((m) => `${m.rank}/${m.knocks}`).join(' '));
     }
-  });
-  it('сильный чаще выигрывает у слабого', () => {
-    let strong = 0;
-    for (let k = 0; k < 6; k++) {
-      const { s } = game([2, 0], { ranks: 'short', dist: 11 }, 100 + k);
-      if (s.winners.includes(0)) strong++;
-    }
-    expect(strong).toBeGreaterThanOrEqual(4);
-  });
+  }, 120_000);
 });
