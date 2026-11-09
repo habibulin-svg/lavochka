@@ -1,0 +1,19 @@
+# Фон двора (лаунчер): вместо процедурного SVG. Широкий 2:1; сверху слева — спокойное тёмное небо под заголовок,
+# справа сверху — место под записку «Слово Мастера», нижняя четверть — пустой асфальт (там стоят гаражи с афишами).
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 2048
+  height: 1024
+  steps: 8
+seeds: [111, 222, 333, 444]
+items:
+- name: dvor-a
+  prompt: 'Cozy hand-painted digital illustration with soft painterly brushwork, warm nostalgic mood, like a background painting of a premium narrative game. Wide panoramic view at eye level of a quiet courtyard in a Russian city in the early 1990s at dusk. Grey prefab nine-storey panel apartment blocks surround the yard, dozens of windows glowing warm yellow and orange, some with curtains, one window lit blue by a television, laundry on a few balconies. Deep indigo evening sky with the first stars in the upper part, fading to a soft orange and pink sunset glow low on the horizon between the buildings. In the middle of the yard a tall old poplar tree, a single street lamp with a warm light cone, a green wooden bench with a bicycle leaning on it. The lower quarter of the picture is a wide calm stretch of dark asphalt with faint chalk hopscotch squares. Calm atmosphere, gentle contrast, muted colors.'
+- name: dvor-b
+  prompt: 'Cozy hand-painted digital illustration with soft painterly brushwork, warm nostalgic mood, like a background painting of a premium narrative game. Wide panoramic view of a Soviet residential courtyard in the early 1990s on a summer evening. On the left a tall grey panel apartment block with rows of warmly lit windows and an entrance porch with a small lamp; on the right distant nine-storey buildings and a factory chimney against a soft sunset. The upper half is a calm deep blue twilight sky with a few stars and a thin crescent moon. In the center a street lamp glowing warm, a big poplar tree, a green wooden bench, a metal climbing frame of a playground. The bottom quarter is an empty dark asphalt courtyard. Soft light, gentle contrast, muted colors.'
+- name: dvor-c
+  prompt: 'Cozy hand-painted digital illustration with soft painterly brushwork, warm nostalgic mood, like a background painting of a premium narrative game. Wide panoramic view at eye level of a courtyard between tall Soviet prefab concrete panel apartment blocks of nine and twelve storeys in the early 1990s, late dusk. The tall panel buildings have long regular grids of small windows, about half of them glowing warm yellow and orange, one window flickering blue from a television, glazed balconies with laundry. Deep violet and indigo twilight sky with first stars, a narrow band of orange and pink sunset glow low between the buildings. In the middle a tall poplar tree, a single street lamp with a warm pool of light, a green wooden bench and a bicycle. The lower quarter of the picture is calm dark asphalt with faint chalk hopscotch. Rich deep colors, gentle contrast.'
+- name: dvor-d
+  prompt: 'Cozy hand-painted digital illustration with soft painterly brushwork, warm nostalgic mood, like a background painting of a premium narrative game. Wide panoramic view of a courtyard between Soviet prefab concrete panel apartment blocks of nine storeys in the early 1990s, late dusk, seen from a slightly raised point. The panel buildings have long regular grids of windows, about half of them glowing warm yellow and orange, one window glowing blue from a television, glazed balconies with laundry. Deep violet and indigo twilight sky with first stars, an orange and pink sunset glow low between the buildings. In the middle distance at the center of the picture stand a tall poplar tree, a street lamp with a warm pool of light, a green wooden bench and a bicycle, all on a small lawn. The whole bottom third of the picture is a wide empty foreground of dark asphalt with faint chalk drawings. Rich deep colors, gentle contrast.'

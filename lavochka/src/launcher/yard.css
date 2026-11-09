@@ -1,19 +1,21 @@
 /* Двор: фон фиксирован, карточки прокручиваются поверх. */
 .yard { position: relative; min-height: 100vh; background: linear-gradient(180deg, #1d1b23, #121016 60vh); }
-.yard-bg { position: absolute; left: 0; top: 0; width: 100%; height: var(--hero-h); z-index: 0; display: block; }
+.yard-bg { position: absolute; left: 0; top: 0; width: 100%; height: var(--bg-h, var(--hero-h)); z-index: 0; display: block; }
 .yard { --hero-h: max(420px, 64vh); }
 .yard-bg .tw { animation: y-tw 3s ease-in-out infinite; }
-.yard-bg .tv { animation: y-tv 1.8s steps(5) infinite; }
-.yard-bg .blink { animation: y-blink 9s steps(1) infinite; }
-.yard-bg .lamp { animation: y-lamp 7s ease-in-out infinite; transform-origin: 560px 466px; }
-@keyframes y-tw { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } }
-@keyframes y-tv { 0% { opacity: 0.55; fill: #8fb3ff; } 25% { opacity: 0.8; fill: #b9d2ff; } 50% { opacity: 0.45; fill: #7aa0f0; } 75% { opacity: 0.75; fill: #cfe0ff; } }
-@keyframes y-blink { 0%, 60% { opacity: 0.85; } 61%, 100% { opacity: 0.08; } }
-@keyframes y-lamp { 0%, 100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: 0.7; } 52% { opacity: 1; } }
+.yard-bg .off { opacity: 0; animation: y-off 20s steps(1) infinite; }
+.yard-bg .tv { mix-blend-mode: screen; animation: y-tv 1.8s steps(5) infinite; }
+.yard-bg .lamp { mix-blend-mode: screen; animation: y-lamp 7s ease-in-out infinite; }
+@keyframes y-tw { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.15; } }
+@keyframes y-off { 0%, 72% { opacity: 0; } 73%, 100% { opacity: 0.9; } }
+@keyframes y-tv { 0% { opacity: 0.25; fill: #8fb3ff; } 25% { opacity: 0.55; fill: #b9d2ff; } 50% { opacity: 0.15; fill: #7aa0f0; } 75% { opacity: 0.45; fill: #cfe0ff; } }
+@keyframes y-lamp { 0%, 100% { opacity: 0.9; } 46% { opacity: 1; } 48% { opacity: 0.55; } 50% { opacity: 0.95; } 52% { opacity: 0.7; } 54% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .yard-bg * { animation: none !important; } }
 
-.yard-shade { position: absolute; left: 0; right: 0; top: 0; height: var(--hero-h); z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(10, 10, 25, 0.3), rgba(10, 10, 25, 0) 25%, rgba(10, 10, 25, 0) 80%, #141218); }
+.yard-shade { position: absolute; left: 0; right: 0; top: 0; height: var(--bg-h, var(--hero-h)); z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 42% at 18% 22%, rgba(10, 10, 25, 0.55), rgba(10, 10, 25, 0) 100%),
+    linear-gradient(180deg, rgba(10, 10, 25, 0.35), rgba(10, 10, 25, 0) 28%, rgba(10, 10, 25, 0) 84%, rgba(20, 18, 24, 0.85)); }
 .yard-spacer { height: calc(var(--hero-h) - 330px - 150px); min-height: 12px; }
 .yard-content { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: 22px 16px 40px; }
 
