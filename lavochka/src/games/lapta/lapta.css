@@ -21,7 +21,7 @@
 .lp-tag.throw { background: #e8452a; color: #fff; }
 .lp-tag.pass { background: #5ab4ea; color: #08223a; }
 .lp-tag:hover { filter: brightness(1.1); }
-.lp-ask { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 4; width: min(540px, calc(100% - 280px)); pointer-events: none; }
+.lp-ask { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 4; width: min(540px, calc(100% - 280px)); pointer-events: none; }
 .lp-ask > * { pointer-events: auto; }
 .lp-steps { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 14px; background: rgba(28, 22, 14, 0.62); font: 12px 'PT Sans', Arial, sans-serif; color: rgba(255,255,255,.55); white-space: nowrap; }
 .lp-steps:empty { display: none; }
@@ -45,9 +45,12 @@
   .lp-banner b { font-size: 28px; }
   .lp-row .nm { max-width: 6em; }
   .lp-hud { font-size: 12px; }
-  .lp-ask { top: auto; bottom: 10px; right: 3%; width: 94%; }
+  .lp-ask { top: 92px; right: 3%; width: 94%; }
   .lp-say { font-size: 14px; }
   .lp-bar button { padding: 8px 13px; font-size: 14px; }
 }
 .lp-loading .lp-cv { visibility: hidden; }
 .lp-loading { background: #0b0907; }
+
+.lp-you { position: absolute; transform: translate(-50%, -100%); z-index: 3; pointer-events: none; padding: 1px 8px; border-radius: 10px; background: #ffe23a; color: #2a1a08; font: bold 12px 'PT Sans', Arial, sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: none; }
+.lp-you::after { content: ''; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #ffe23a; }

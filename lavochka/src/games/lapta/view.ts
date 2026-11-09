@@ -1,39 +1,26 @@
-/* Лапта — экран: 3D-пустырь, удар «рогаткой» (потянул вниз — отпустил), решения касанием пацанов (бирки над головой)
- * или кнопками внизу: кому бежать, кто ловит, в кого кидать или кому пас. Розыгрыш переигрывается по тем же часам
- * и физике, что у комнаты. Музыки нет (решение пользователя) — только звуки. */
+/* Лапта — экран реального времени: 3D-пустырь, свой пацан под управлением (WASD/стрелки или стик на телефоне, кнопки
+ * действий — core/dvorsport/pad.ts), переключение на любого своего, удар «рогаткой» (потянул вниз — отпустил), бросок
+ * касанием бегущего или точки поля. Снимки комнаты сглаживаются; мяч в полёте считается тем же flight(b0), что у комнаты.
+ * Подсказка «что делать сейчас» — внизу. Музыки нет (решение пользователя) — только звуки. */
 import { audioOut, click, Sound, tone } from '../../core/audio';
-import { padOff, padOn } from '../../core/gamepad';
-import { showLoading } from '../../core/loading';
+import { sample } from '../../core/dvorsport/body';
+import { PullAim } from '../../core/dvorsport/input';
+import { Pad } from '../../core/dvorsport/pad';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
-import { sample, type BodyFrame } from '../../core/dvorsport/body';
-import { PullAim } from '../../core/dvorsport/input';
-import { esc, h, sleep } from '../../core/util';
+import { showLoading } from '../../core/loading';
+import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
-import {
-  canRun,
-  def0,
-  flight,
-  formation,
-  HIT_AT,
-  homeSpot,
-  intercept,
-  REACT,
-  runnerAt,
-  strike,
-  type Event,
-  type Runner,
-  type State,
-  type Style,
-} from './engine';
+import { BAT_SPOT, ballPos, defT, flight, mayLeave, strike, type Event, type In, type Man, type State, type Style } from './engine';
 import { LaptaYard } from './scene';
 import './lapta.css';
 
 const PREF_STYLE = 'lapta.style';
+const PREF_CAM = 'lapta.cam';
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
-/** Деревянный щелчок биты по мячу, шлепок мяча в ладони, свист броска. */
 function crack(v: number) {
   const o = audioOut();
   if (!o) return;
@@ -49,329 +36,242 @@ function slap() {
   click(t, { freq: 900, q: 1, dur: 0.06, gain: 0.45 });
   tone(t, { freq: 160, to: 90, dur: 0.08, gain: 0.25 });
 }
-function thud() {
+function whoosh() {
   const o = audioOut();
   if (!o) return;
   const t = o.ctx.currentTime;
-  tone(t, { freq: 120, to: 70, dur: 0.1, gain: 0.3 });
-}
-function whoosh(dur: number) {
-  const o = audioOut();
-  if (!o) return;
-  const t = o.ctx.currentTime;
-  for (let k = 0; k < 5; k++) click(t + (k * dur) / 5, { freq: 400 + k * 80, q: 0.8, dur: dur / 4, gain: 0.05 });
+  for (let k = 0; k < 5; k++) click(t + k * 0.06, { freq: 400 + k * 80, q: 0.8, dur: 0.08, gain: 0.05 });
 }
 
-type Pick = { team: number; who: number; label: string; kind: 'run' | 'catch' | 'throw' | 'pass' };
+interface Snap {
+  at: number;
+  v: State;
+}
+
+/** Смешать два снимка: люди — плавно, остальное — по свежему. */
+function mix(a: State, b: State, k: number): State {
+  if (a.atk !== b.atk || a.cfg.n !== b.cfg.n) return b;
+  return {
+    ...b,
+    t: lerp(a.t, b.t, k),
+    men: b.men.map((team, t) => team.map((m, i) => ({ ...m, x: lerp(a.men[t][i].x, m.x, k), y: lerp(a.men[t][i].y, m.y, k) }))) as [Man[], Man[]],
+  };
+}
 
 export function createView(): GameView<State, Event> {
   let ctx: ViewCtx;
-  let root: HTMLElement;
   let wrap: HTMLElement;
   let yard: LaptaYard;
   let hud: HTMLElement;
   let banner: HTMLElement;
-  let bar: HTMLElement;
-  let tags: HTMLElement;
   let steps: HTMLElement;
   let sayEl: HTMLElement;
-  /** Отметить ударившего бегущим при новом решении «бежать». */
-  let preset = false;
   let raf = 0;
+  let iv = 0;
   let last = 0;
-  let v: State | null = null;
-  /** Место, которое решает с этого экрана сейчас (null — не наш ход или идёт показ). */
-  let act: number | null = null;
-  let busy = false;
+  let latest: State | null = null;
+  let snaps: Snap[] = [];
+  let pad: Pad;
+  let pull: PullAim | null = null;
+  let bannerT = 0;
+  const cleanup: (() => void)[] = [];
+  /** Одноразовые действия: счётчики, ручной выбор пацана, удар и бросок. */
+  const seq = { hit: 0, c: 0, th: 0, d: 0 };
+  let pick = -1;
+  let pickAtk = -1;
+  let hitReq: In['hit'] | null = null;
+  let thReq: In['th'] | null = null;
   let aim = { pow: 0.7, yaw: 0 };
   let aimKey = '';
-  let pull: PullAim | null = null;
-  let showTip: (on: boolean) => void = () => {};
-  let bannerT = 0;
-  /** Выбранные бегущие (решение «бежать»). */
-  let chosen = new Set<number>();
-  let picks: Pick[] = [];
-  /** До какого времени розыгрыша уже показали (стоп-кадр после удара). */
-  let shownT = 0;
-  /** Пацаны, которые сейчас идут по walkTo (не ставить их на место из состояния). */
-  const walking = new Set<string>();
-  const cleanup: (() => void)[] = [];
+  /** Анимации людей по событиям: до какого момента (performance.now) играть клип. */
+  const oneShot = new Map<string, { clip: string; until: number }>();
+  /** Удар: когда начался взмах (для показа). */
+  let swingAt = -1;
+  let swingWho = -1;
+  let sent: { json: string; at: number } | null = null;
   const t0wob = performance.now();
 
   const style = () => store.get<Style>(PREF_STYLE, 'far');
-  const sp = () => Math.max(0.25, ctx.speed());
+  const camMode = () => store.get<string>(PREF_CAM, 'field');
+  const mine = () => (ctx.demo ? [] : ctx.mySeats);
+  /** За какую сторону сейчас управление с этого экрана (вдвоём за одним — по смыслу: подача — бьющие, розыгрыш — защита). */
+  function myTeam(s: State): 0 | 1 | -1 {
+    const m = mine();
+    const has = [m.includes(s.seats[0]), m.includes(s.seats[1])];
+    if (has[0] && has[1]) return s.phase === 'live' ? defT(s) : s.atk;
+    if (has[0]) return 0;
+    if (has[1]) return 1;
+    return -1;
+  }
 
   function say(big: string, small = '', ms = 1400) {
     banner.innerHTML = `<b>${big}</b>${small ? `<span>${small}</span>` : ''}`;
     banner.style.opacity = '1';
-    bannerT = performance.now() + ms / sp();
+    bannerT = performance.now() + ms;
   }
 
-  // ---------------------------------------------------------------- расстановка
-
-  const manTo = (t: number, k: number, x: number, y: number, face: [number, number], clip?: string, speed = 1) => {
-    if (walking.has(`${t}:${k}`)) return;
-    yard.put(t, k, x, y, face);
-    const tn = yard.men[t][k]?.toon;
-    if (tn && clip) tn.play(clip, true, 0.25, speed);
-  };
-
-  /** Где кто стоит по состоянию (вне показа розыгрыша). */
-  function place(s: State) {
-    const c = s.cfg;
-    yard.setField(c);
-    yard.setTeams(c.n);
-    const A = s.atk;
-    const D = def0(s);
-    const st = s.teams[A].st;
-    const server = (() => {
-      for (const i of s.teams[A].queue) if (i !== s.batter) return i;
-      return st.findIndex((x, i) => i !== s.batter && (x === 'ready' || x === 'used'));
-    })();
-    for (let i = 0; i < c.n; i++) {
-      const r = s.play?.runners.find((x) => x.who === i);
-      if (s.phase === 'hit' && i === s.batter) manTo(A, i, HIT_AT.x - 0.75, HIT_AT.y - 0.55, [HIT_AT.x + 3, HIT_AT.y + 2], 'hold2h');
-      else if (s.phase === 'hit' && i === server) manTo(A, i, 1.1, 1.6, [HIT_AT.x, HIT_AT.y], 'idle');
-      else if (r) {
-        const p = runnerAt(c, r, s.play!.t);
-        manTo(A, i, p.x, p.y, [p.x, r.from === 'dom' ? 99 : -99], 'run', 1.3);
-      } else if (st[i] === 'kon') {
-        const [x, y] = homeSpot(c, i, 'kon');
-        manTo(A, i, x, y, [x, 0], 'idle');
-      } else {
-        const [x, y] = homeSpot(c, i, 'dom');
-        manTo(A, i, x, y, [0, c.L / 2], i % 3 === 0 ? 'idle2' : 'idle');
-      }
-    }
-    const fp = s.play?.fpos ?? formation(c);
-    fp.forEach(([x, y], k) => manTo(D, k, x, y, [0, 0], k % 2 ? 'idle2' : 'idle'));
-    // мяч: у подающего, у полевого с мячом или в полёте (стоп-кадр)
-    if (s.play?.holder != null) {
-      const [x, y] = fp[s.play.holder];
-      yard.setBall([x + 0.25, y, 1.1]);
-    } else if (s.play) {
-      const f = sample(flight(s.play.b0).frames, shownT);
-      yard.setBall([f[1], f[2], f[3]]);
-    } else yard.setBall([1.0, 1.6, 1.15]);
-    const bt = s.phase === 'hit' ? yard.men[A][s.batter]?.toon ?? null : null;
-    yard.batIn(bt);
-    // куда упадёт мяч — пока мяч не подобран
-    const land = s.play && !s.play.caught ? flight(s.play.b0).land : null;
-    yard.setLand(land ? [land.x, land.y] : null);
+  function current(): State | null {
+    if (!snaps.length) return latest;
+    const delay = ctx.online ? 90 : 34;
+    const t = performance.now() - delay;
+    while (snaps.length > 2 && snaps[1].at <= t) snaps.shift();
+    const [a, b] = snaps;
+    if (!b || t <= a.at) return a.v;
+    if (t >= b.at) return b.v;
+    return mix(a.v, b.v, (t - a.at) / (b.at - a.at));
   }
 
-  // ---------------------------------------------------------------- табло и выбор
-
-  function drawHud() {
-    if (!v) return;
-    const s = v;
-    const rows = [0, 1]
-      .map((t) => {
-        const atk = s.atk === t;
-        return `<div class="lp-row${atk ? ' cur' : ''}"><i style="background:${SEATS[t].color}"></i><span class="nm">${ctx.name(s.seats[t])}</span><span class="rl">${atk ? '🏏 бьют' : '🧤 в поле'}</span><b>${s.teams[t].score}</b></div>`;
-      })
-      .join('');
-    const tm = s.teams[s.atk];
-    const left = tm.queue.length;
-    const kon = tm.st.filter((x) => x === 'kon').length;
-    const now = s.over
-      ? ''
-      : s.phase === 'hit'
-        ? `Бьёт №${s.batter + 1} · попытка ${s.cfg.tries - s.tries + 1} из ${s.cfg.tries} · с правом удара: ${left}${kon ? ` · в кону: ${kon}` : ''}`
-        : s.phase === 'run'
-          ? 'Кому бежать?'
-          : s.phase === 'catch'
-            ? 'Кто ловит?'
-            : 'Мяч в поле — кидать в бегущего?';
-    hud.innerHTML = `<div class="lp-board">${rows}<div class="lp-head">до ${s.cfg.target}</div></div>${now && s.phase === 'hit' ? `<div class="lp-now">${now}</div>` : ''}`;
-  }
-
-  /** Бирки над теми, кого можно выбрать, и кнопки внизу. */
-  function drawPicks() {
-    tags.innerHTML = '';
-    bar.innerHTML = '';
-    yard.clearMarks();
-    picks = [];
-    drawSteps();
-    if (!v || act == null || busy || v.over) {
-      bar.style.display = 'none';
-      return;
-    }
-    const s = v;
-    const A = s.atk;
-    const D = def0(s);
-    const p = s.play;
-    if (preset && s.phase === 'run' && p) {
-      // ударивший обычно бежит — отмечен заранее, снять можно касанием
-      preset = false;
-      if (!p.caught && canRun(s).includes(p.batter)) chosen.add(p.batter);
-    }
-    if (s.phase === 'run' && p) {
-      for (const w of canRun(s)) picks.push({ team: A, who: w, label: `№${w + 1}${s.teams[A].st[w] === 'kon' ? ' домой' : ' к кону'}`, kind: 'run' });
-      const n = chosen.size;
-      const go = h<HTMLButtonElement>(`<button class="go"${n ? '' : ' disabled'}>Беги!${n ? ` (${[...chosen].map((w) => `№${w + 1}`).join(', ')})` : ''}</button>`);
-      go.onclick = () => send({ type: 'run', who: [...chosen] });
-      const all = h<HTMLButtonElement>(`<button>Все бегут</button>`);
-      all.onclick = () => send({ type: 'run', who: canRun(s) });
-      const stay = h<HTMLButtonElement>(`<button>${p.caught ? 'Стоим — подача' : 'Стоим'}</button>`);
-      stay.onclick = () => send({ type: 'run', who: [] });
-      bar.append(go, ...(picks.length > 1 ? [all] : []), stay);
-    } else if (s.phase === 'catch' && p) {
-      let best = 0;
-      let bt = Infinity;
-      p.fpos.forEach((f, i) => {
-        const ic = intercept(p.b0, f);
-        if (ic.t < bt) (bt = ic.t), (best = i);
-        picks.push({ team: D, who: i, label: `№${i + 1}`, kind: 'catch' });
-      });
-      const near = h<HTMLButtonElement>(`<button class="go">Ловит ближний (№${best + 1})</button>`);
-      near.onclick = () => send({ type: 'catch', who: best });
-      bar.append(near);
-    } else if (s.phase === 'throw' && p) {
-      for (const r of p.runners) picks.push({ team: A, who: r.who, label: `в №${r.who + 1}`, kind: 'throw' });
-      p.fpos.forEach((_, i) => {
-        if (i !== p.holder) picks.push({ team: D, who: i, label: `пас №${i + 1}`, kind: 'pass' });
-      });
-      const hold = h<HTMLButtonElement>(`<button>Не кидать</button>`);
-      hold.onclick = () => send({ type: 'hold' });
-      bar.append(hold);
-    }
-    bar.style.display = bar.children.length ? '' : 'none';
-    drawSteps();
-    for (const pk of picks) {
-      const on = pk.kind === 'run' && chosen.has(pk.who);
-      const el = h<HTMLButtonElement>(`<button class="lp-tag ${pk.kind}${on ? ' on' : ''}">${esc(pk.label)}${on ? ' ✓' : ''}</button>`);
-      el.onclick = (e) => {
-        e.stopPropagation();
-        choosePick(pk);
-      };
-      (el as HTMLElement & { _pk?: Pick })._pk = pk;
-      tags.appendChild(el);
-      yard.mark(pk.team, pk.who, pk.kind === 'throw' ? '#ff4a2a' : pk.kind === 'pass' ? '#7ad0ff' : on ? '#7ad84a' : '#ffe23a');
-    }
-    placeTags();
-  }
-
-  /** Шаги розыгрыша (удар → бег → ловля → осаливание) и что делать сейчас — крупно вверху поля. */
-  function drawSteps() {
-    if (!v || v.over || ctx.demo) {
-      steps.innerHTML = '';
-      sayEl.innerHTML = '';
-      return;
-    }
-    const s = v;
-    const mine = act != null && !busy;
-    const cur = { hit: 0, run: 1, catch: 2, throw: 3 }[s.phase];
-    const meAtk = mine ? (s.phase === 'hit' || s.phase === 'run') : ctx.mySeats.includes(s.seats[s.atk]);
-    const names = ['Удар', 'Бег', 'Ловля', 'Осаливание'];
-    steps.innerHTML = names.map((n, i) => `<span class="${i === cur ? 'on' : i < cur ? 'done' : ''}${i < 2 ? ' atk' : ' def'}">${n}</span>`).join('<i>→</i>');
-    steps.classList.toggle('mine', mine);
-    const p = s.play;
-    let t = '';
-    if (busy) t = '';
-    else if (mine) {
-      if (s.phase === 'hit') t = `<b>Твой удар!</b> Нажми на поле, потяни вниз и отпусти. Вбок — направление.`;
-      else if (s.phase === 'run') t = p && !p.caught ? `<b>Мяч в поле!</b> Кто бежит? Коснись бирки над пацаном — и «Беги!». Или «Стоим».` : `<b>Мяч у полевого.</b> Можно добежать: отметь бирки и «Беги!» — или «Стоим», тогда следующий удар.`;
-      else if (s.phase === 'catch') t = `<b>Ловим!</b> Коснись полевого — он побежит к мячу. Кольцо — куда мяч упадёт.`;
-      else t = `<b>Осаливай!</b> Мяч у вас: красная бирка — бросить в бегущего, голубая — пас своему ближе к нему.`;
-    } else {
-      const who = ctx.name(toActSeat(s));
-      t = s.phase === 'hit' ? `Бьёт ${who}…` : s.phase === 'run' ? `${who} решает, кому бежать…` : s.phase === 'catch' ? `${who} ловит мяч…` : `${who} целится в бегущего…`;
-    }
-    sayEl.innerHTML = t;
-    sayEl.style.display = t ? '' : 'none';
-    void meAtk;
-  }
-
-  const toActSeat = (s: State) => s.seats[s.phase === 'hit' || s.phase === 'run' ? s.atk : def0(s)];
-
-  function placeTags() {
-    for (const el of Array.from(tags.children) as (HTMLElement & { _pk?: Pick })[]) {
-      const pk = el._pk;
-      if (!pk) continue;
-      const m = yard.men[pk.team][pk.who];
-      if (!m) continue;
-      const q = yard.toScreen(m.x, m.y, 2.05);
-      el.style.display = q.vis ? '' : 'none';
-      el.style.left = `${q.x}px`;
-      el.style.top = `${q.y}px`;
-    }
-  }
-
-  function choosePick(pk: Pick) {
-    if (act == null || busy || !v) return;
-    if (pk.kind === 'run') {
-      if (chosen.has(pk.who)) chosen.delete(pk.who);
-      else chosen.add(pk.who);
-      drawPicks();
-    } else if (pk.kind === 'catch') send({ type: 'catch', who: pk.who });
-    else if (pk.kind === 'throw') send({ type: 'throw', at: pk.who });
-    else send({ type: 'pass', to: pk.who });
-  }
-
-  function send(a: Parameters<ViewCtx['act']>[1]) {
-    if (act == null || busy) return;
-    const seat = act;
-    act = null;
-    chosen = new Set();
-    yard.setAim(null, null);
-    drawPicks();
-    showTip(false);
-    Sound.unlock();
-    ctx.act(seat, a);
-  }
-
-  /** Касание поля: ближайший к пальцу пацан из тех, кого можно выбрать. */
-  function tapField(e: PointerEvent) {
-    if (act == null || busy || !v || v.phase === 'hit' || !picks.length) return;
-    const r = yard.canvas.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    let best: Pick | null = null;
-    let bd = 56;
-    for (const pk of picks) {
-      const m = yard.men[pk.team][pk.who];
-      if (!m) continue;
-      for (const z of [0.3, 1.0, 1.7]) {
-        const q = yard.toScreen(m.x, m.y, z);
-        const d = Math.hypot(q.x - px, q.y - py);
-        if (d < bd) (bd = d), (best = pk);
-      }
-    }
-    if (best) choosePick(best);
-  }
-
-  // ---------------------------------------------------------------- удар
+  // ---------------------------------------------------------------- ввод
 
   function wob() {
     const tt = (performance.now() - t0wob) / 1000;
     return Math.sin(tt * 1.7) * 0.018 + Math.sin(tt * 2.9 + 1) * 0.01;
   }
+  const curHit = () => ({ pow: clamp(aim.pow, 0, 1), yaw: clamp(aim.yaw + wob(), -0.7, 0.7), style: style() });
 
-  function curHit() {
-    return { type: 'hit' as const, pow: clamp(aim.pow, 0, 1), yaw: clamp(aim.yaw + wob(), -0.7, 0.7), style: style() };
-  }
-
-  function showAim() {
-    if (!v || act == null || busy || v.phase !== 'hit') return;
-    const a = curHit();
-    const key = `${a.pow.toFixed(3)},${a.yaw.toFixed(3)},${a.style}`;
-    if (key === aimKey) return;
-    aimKey = key;
-    const fl = flight(strike(v.cfg, a.pow, a.yaw, a.style));
-    const tl = fl.land?.t ?? 2;
-    const pts = fl.frames.filter((f) => f[0] <= tl).map((f) => [f[1], f[2], f[3]] as [number, number, number]);
-    yard.setAim(pts, fl.land ? [fl.land.x, fl.land.y] : null);
-  }
+  /** Сейчас мой удар. */
+  const myServe = (s: State | null) => !!s && !s.over && s.phase === 'serve' && myTeam(s) === s.atk;
 
   function hitNow() {
-    if (act == null || busy || !v || v.phase !== 'hit') return;
-    send(curHit());
+    const s = latest;
+    if (!myServe(s)) return;
+    hitReq = { n: ++seq.hit, ...curHit() };
+    yard.setAim(null, null);
+    Sound.unlock();
+  }
+
+  function buildInput(s: State, team: 0 | 1): In {
+    const d = pad.dir();
+    const inp: In = { mx: d.x, my: d.y, k: -1, ai: -1 };
+    const p = team === s.atk ? pickAtk : pick;
+    if (p >= 0) inp.k = p;
+    if (hitReq) inp.hit = hitReq;
+    inp.c = seq.c;
+    inp.d = seq.d;
+    if (thReq) inp.th = thReq;
+    return inp;
+  }
+
+  function sendInputs() {
+    const s = latest;
+    if (!s || s.over || ctx.demo || !ctx.input) return;
+    const team = myTeam(s);
+    if (team < 0) return;
+    if (pad.take('catch')) seq.c++;
+    if (pad.take('dash')) seq.d++;
+    if (pad.take('sw')) switchNext(s, team as 0 | 1);
+    if (pad.take('thr')) throwAt(s, 'runner');
+    if (pad.take('pass')) throwAt(s, 'pass');
+    if (pad.take('hit')) hitNow();
+    const now = performance.now();
+    const m = mine();
+    for (const seat of m) {
+      const t = s.seats.indexOf(seat) as 0 | 1;
+      // вдвоём за одним экраном: вторую сторону ведёт компьютер
+      const inp: In = t === team ? buildInput(s, t) : { mx: 0, my: 0, k: -1, ai: 2 };
+      const json = JSON.stringify(inp);
+      if (sent && sent.json === json && now - sent.at < 300 && m.length === 1) continue;
+      if (m.length === 1) sent = { json, at: now };
+      ctx.input(seat, inp);
+    }
+  }
+
+  /** Переключиться на следующего своего (в нападении — тех, кто может бежать). */
+  function switchNext(s: State, team: 0 | 1) {
+    const n = s.cfg.n;
+    const cur = s.ctrl[team];
+    for (let k = 1; k <= n; k++) {
+      const i = (cur + k) % n;
+      if (team === s.atk && !(s.men[team][i].st === 'run' || mayLeave(s, i))) continue;
+      if (team === s.atk) pickAtk = i;
+      else pick = i;
+      return;
+    }
+  }
+
+  /** Бросок: в ближнего бегущего или пас своему ближе к бегущему. */
+  function throwAt(s: State, what: 'runner' | 'pass' | [number, number]) {
+    const D = defT(s);
+    if (myTeam(s) !== D || s.ball.mode !== 'held' || s.ball.holder !== s.ctrl[D]) return;
+    const h = s.men[D][s.ball.holder];
+    const runners = s.men[s.atk].filter((m) => m.st === 'run');
+    let tx: number;
+    let ty: number;
+    if (Array.isArray(what)) [tx, ty] = what;
+    else if (!runners.length) return;
+    else {
+      const r = runners.reduce((a, m) => (Math.hypot(m.x - h.x, m.y - h.y) < Math.hypot(a.x - h.x, a.y - h.y) ? m : a));
+      if (what === 'runner') [tx, ty] = [r.x, r.y];
+      else {
+        let best: Man | null = null;
+        let bd = Infinity;
+        s.men[D].forEach((m, i) => {
+          if (i === s.ball.holder) return;
+          const d = Math.hypot(m.x - r.x, m.y - r.y);
+          if (d < bd) (bd = d), (best = m);
+        });
+        if (!best) return;
+        [tx, ty] = [(best as Man).x, (best as Man).y];
+      }
+    }
+    thReq = { n: ++seq.th, tx, ty };
+    Sound.unlock();
+  }
+
+  /** Касание поля: свой пацан — переключиться; с мячом в руках — бросок туда. */
+  function tapField(e: PointerEvent) {
+    const s = latest;
+    if (!s || s.over) return;
+    const team = myTeam(s);
+    if (team < 0) return;
+    const r = yard.canvas.getBoundingClientRect();
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    const near = (t: number) => {
+      let best = -1;
+      let bd = 48;
+      s.men[t].forEach((m, i) => {
+        for (const z of [0.3, 1.0, 1.7]) {
+          const q = yard.toScreen(m.x, m.y, z);
+          const d = Math.hypot(q.x - px, q.y - py);
+          if (d < bd) (bd = d), (best = i);
+        }
+      });
+      return best;
+    };
+    const D = defT(s);
+    if (team === D && s.ball.mode === 'held' && s.ball.holder === s.ctrl[D]) {
+      const ra = near(s.atk);
+      if (ra >= 0) return throwAt(s, [s.men[s.atk][ra].x, s.men[s.atk][ra].y]);
+      const fa = near(D);
+      if (fa >= 0 && fa !== s.ball.holder) return throwAt(s, [s.men[D][fa].x, s.men[D][fa].y]);
+      const g = yard.pickGround(e.clientX, e.clientY);
+      if (g) return throwAt(s, [g.x, g.y]);
+      return;
+    }
+    const k = near(team);
+    if (k >= 0) {
+      if (team === s.atk) pickAtk = k;
+      else pick = k;
+    }
   }
 
   function bindInput() {
+    pad = new Pad(wrap, [
+      { id: 'catch', label: 'Ловить', keys: ['Space'] },
+      { id: 'thr', label: 'Бросок', keys: ['KeyE'] },
+      { id: 'pass', label: 'Пас', keys: ['KeyR'] },
+      { id: 'dash', label: 'Рывок', keys: ['ShiftLeft', 'ShiftRight'] },
+      { id: 'sw', label: 'Другой', keys: ['Tab', 'KeyQ'] },
+      { id: 'hit', label: 'Удар', keys: ['Enter'] },
+    ]);
+    pad.enabled = () => {
+      const s = latest;
+      return !!s && !s.over && myTeam(s) >= 0 && !ctx.demo;
+    };
+    cleanup.push(() => pad.dispose());
     pull = new PullAim(yard.canvas, wrap, {
-      enabled: () => act != null && !busy && v?.phase === 'hit',
+      enabled: () => myServe(latest),
       onAim: (pow, side) => {
         aim.pow = pow;
         aim.yaw = clamp(side * 1.3, -0.7, 0.7);
@@ -382,38 +282,31 @@ export function createView(): GameView<State, Event> {
     let down: { x: number; y: number } | null = null;
     const pd = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
     const pu = (e: PointerEvent) => {
-      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 12) tapField(e);
+      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 12 && !myServe(latest)) tapField(e);
       down = null;
     };
     yard.canvas.addEventListener('pointerdown', pd);
     yard.canvas.addEventListener('pointerup', pu);
     cleanup.push(() => (yard.canvas.removeEventListener('pointerdown', pd), yard.canvas.removeEventListener('pointerup', pu)));
+    // удар клавишами: стрелки — прицел (в подаче стрелки не бег), Пробел — удар
     const key = (e: KeyboardEvent) => {
-      if (act == null || busy || !v) return;
+      if (!myServe(latest)) return;
       const tgt = e.target as HTMLElement;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA')) return;
-      let used = true;
-      if (v.phase === 'hit') {
-        if (e.code === 'ArrowLeft') aim.yaw = clamp(aim.yaw - 0.02, -0.7, 0.7);
-        else if (e.code === 'ArrowRight') aim.yaw = clamp(aim.yaw + 0.02, -0.7, 0.7);
-        else if (e.code === 'ArrowUp') aim.pow = clamp(aim.pow + 0.02, 0, 1);
-        else if (e.code === 'ArrowDown') aim.pow = clamp(aim.pow - 0.02, 0, 1);
-        else if (e.code === 'Digit1') store.set(PREF_STYLE, 'far'), controls();
-        else if (e.code === 'Digit2') store.set(PREF_STYLE, 'low'), controls();
-        else if (e.code === 'Digit3') store.set(PREF_STYLE, 'candle'), controls();
-        else if (e.code === 'Space' || e.code === 'Enter') hitNow();
-        else used = false;
-      } else if (/^Digit[1-9]$/.test(e.code)) {
-        const k = Number(e.code.slice(5)) - 1;
-        const pk = picks.find((x) => x.who === k && x.kind !== 'pass') ?? picks.find((x) => x.who === k);
-        if (pk) choosePick(pk);
-      } else if (e.code === 'Enter' || e.code === 'Space') (bar.querySelector('button:not([disabled])') as HTMLButtonElement | null)?.click();
-      else used = false;
-      if (used) e.preventDefault();
+      if (e.code === 'ArrowLeft') aim.yaw = clamp(aim.yaw - 0.02, -0.7, 0.7);
+      else if (e.code === 'ArrowRight') aim.yaw = clamp(aim.yaw + 0.02, -0.7, 0.7);
+      else if (e.code === 'ArrowUp') aim.pow = clamp(aim.pow + 0.02, 0, 1);
+      else if (e.code === 'ArrowDown') aim.pow = clamp(aim.pow - 0.02, 0, 1);
+      else if (e.code === 'Digit1') store.set(PREF_STYLE, 'far'), controls();
+      else if (e.code === 'Digit2') store.set(PREF_STYLE, 'low'), controls();
+      else if (e.code === 'Digit3') store.set(PREF_STYLE, 'candle'), controls();
+      else if (e.code === 'Space') hitNow();
+      else return;
+      aimKey = '';
+      e.preventDefault();
     };
-    window.addEventListener('keydown', key);
-    padOn(key, { map: { keys: { a: 'Space', rt: 'Space' } }, hint: 'стик — прицел и сила · <b>Ⓐ</b> удар / главная кнопка' });
-    cleanup.push(() => (window.removeEventListener('keydown', key), padOff(key)));
+    window.addEventListener('keydown', key, true);
+    cleanup.push(() => window.removeEventListener('keydown', key, true));
   }
 
   function controls() {
@@ -435,279 +328,263 @@ export function createView(): GameView<State, Event> {
         },
       ),
     );
+    box.appendChild(
+      segRow(
+        'Камера',
+        [
+          ['field', 'над полем'],
+          ['me', 'за своим'],
+        ],
+        camMode,
+        (x) => store.set(PREF_CAM, x),
+      ),
+    );
   }
 
-  // ---------------------------------------------------------------- показ розыгрыша
+  // ---------------------------------------------------------------- подсказки
 
-  /** Прогнать часы розыгрыша от a до b (с) — на каждом шаге onT(t). */
-  async function span(a: number, b: number, onT: (t: number) => void, pace = 1) {
-    if (b <= a) {
-      onT(b);
-      return;
-    }
-    const st = performance.now();
-    while (true) {
-      const t = a + (((performance.now() - st) / 1000) * sp() * pace);
-      if (t >= b) break;
-      onT(t);
-      await sleep(16);
-    }
-    onT(b);
+  function drawHud(s: State) {
+    const rows = [0, 1]
+      .map((t) => `<div class="lp-row${s.atk === t ? ' cur' : ''}"><i style="background:${SEATS[t].color}"></i><span class="nm">${ctx.name(s.seats[t])}</span><span class="rl">${s.atk === t ? '🏏 бьют' : '🧤 в поле'}</span><b>${s.score[t]}</b></div>`)
+      .join('');
+    const left = s.cfg.minutes > 0 ? Math.max(0, s.cfg.minutes * 60 - s.t) : -1;
+    const clock = left >= 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : '';
+    const atk = s.men[s.atk];
+    const kon = atk.filter((m) => m.st === 'kon').length;
+    const info = s.phase === 'serve' ? `Бьёт №${s.batter + 1} · попытка ${s.cfg.tries - s.tries + 1} из ${s.cfg.tries} · с правом удара: ${s.queue.length}${kon ? ` · в кону: ${kon}` : ''}` : '';
+    const html = `<div class="lp-board">${rows}<div class="lp-head">до ${s.cfg.target}${clock ? ` · ${clock}` : ''}</div></div>${info ? `<div class="lp-now">${info}</div>` : ''}`;
+    if (hud.innerHTML !== html) hud.innerHTML = html;
   }
 
-  /** Бегущие в момент t. */
-  function runners(rs: Runner[], t: number) {
-    if (!v) return;
-    const c = v.cfg;
-    for (const r of rs) {
-      const p = runnerAt(c, r, t);
-      const tn = yard.men[v.atk][r.who]?.toon;
-      if (t < r.t0) continue;
-      yard.put(v.atk, r.who, p.x, p.y, [p.x, r.from === 'dom' ? 999 : -999]);
-      tn?.play(p.done ? 'idle' : 'run', true, 0.15, 1.35);
-    }
-  }
-
-  const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-
-  async function playHit(ev: Extract<Event, { k: 'hit' }>) {
-    if (!v) return;
-    const A = ev.team;
-    const bt = yard.men[A][ev.who]?.toon ?? null;
-    yard.setAim(null, null);
-    yard.camTo('bat', undefined, 3);
-    // подача: свой подбрасывает мяч к бите
-    const toss0: [number, number, number] = [1.0, 1.55, 1.15];
-    const tossT = 0.6;
-    let swung = false;
-    await span(0, tossT, (t) => {
-      const k = t / tossT;
-      yard.setBall([lerp(toss0[0], HIT_AT.x, k), lerp(toss0[1], HIT_AT.y, k), lerp(toss0[2], HIT_AT.z, k) + Math.sin(k * Math.PI) * 1.1]);
-      // замах: к удару — самая быстрая точка клипа
-      const ph = clamp((t - 0.15) / (tossT - 0.15), 0, 1) * 0.62;
-      bt?.scrub('swing2h', ph, 0.62);
-      yard.batIn(bt, 0);
-    });
-    const fl = flight(ev.b0);
-    if (ev.kind !== 'miss') {
-      crack(Math.hypot(ev.b0.vx, ev.b0.vy, ev.b0.vz) / 30);
-      swung = true;
-    } else whoosh(0.3);
-    const tEnd = ev.kind === 'ok' ? Math.min(0.55, fl.land?.t ?? 0.5) : Math.min(fl.rest, (fl.land?.t ?? 1) + 1.2);
-    let hitSnd = 0;
-    await span(0, tEnd, (t) => {
-      bt?.scrub('swing2h', 0.62 + clamp(t / 0.4, 0, 1) * 0.38, 0.62);
-      yard.batIn(bt, 0);
-      if (ev.kind === 'miss') {
-        // промах: мяч падает за спину
-        const k = clamp(t / 0.5, 0, 1);
-        yard.setBall([HIT_AT.x, HIT_AT.y - k * 0.8, Math.max(0.035, HIT_AT.z - k * k * 1.0)]);
-        return;
-      }
-      const f = sample(fl.frames, t);
-      yard.setBall([f[1], f[2], f[3]]);
-      if (t > 0.2) yard.camTo('field', undefined, 2);
-      if (hitSnd === 0 && fl.land && t >= fl.land.t) (hitSnd = 1), thud();
-    });
-    void swung;
-    shownT = ev.kind === 'ok' ? tEnd : 0;
-    if (ev.kind === 'ok') {
-      yard.camTo('field', undefined, 2);
-      say('Мяч в поле!', `${Math.round(ev.land?.y ?? 0)} м`, 1100);
+  let hintKey = '';
+  function drawHint(s: State) {
+    const team = myTeam(s);
+    const D = defT(s);
+    const cur = s.phase === 'serve' ? 0 : s.phase === 'live' ? (s.ball.mode === 'held' ? 3 : team === s.atk ? 1 : 2) : -1;
+    let t = '';
+    const btn: Record<string, string | null> = { catch: null, thr: null, pass: null, dash: null, sw: null, hit: null };
+    if (s.over) t = '';
+    else if (team < 0) t = '';
+    else if (s.phase === 'pause') t = '';
+    else if (s.phase === 'serve') {
+      if (team === s.atk) {
+        t = `<b>Твой удар!</b> Нажми на поле, потяни вниз и отпусти. Вбок — направление.`;
+        btn.hit = '!Удар';
+      } else t = `Бьют соперники — <b>готовься ловить</b>: беги к мячу, когда отобьют.`;
+    } else if (team === s.atk) {
+      const k = s.ctrl[team];
+      const m = s.men[team][k];
+      btn.sw = 'Другой';
+      if (m.st === 'run') {
+        t = `<b>Беги!</b> ${m.from === 'dom' ? 'К линии кона' : 'Домой — это 2 очка'}. Летит мяч — <b>рывок</b> в сторону.`;
+        btn.dash = '!Рывок';
+      } else if (mayLeave(s, k)) {
+        t = `<b>Мяч в поле!</b> Выбегай ${m.st === 'kon' ? 'домой' : 'к кону'} (стрелки / WASD) — или жди, пока полевой с мячом далеко.`;
+        btn.dash = 'Рывок';
+      } else t = `Этот пацан бежать не может — <b>переключись</b> (Tab / «Другой») на того, кто может.`;
     } else {
-      Sound.nomove();
-      const what = ev.kind === 'miss' ? 'Промах' : ev.kind === 'short' ? 'Недолёт' : 'Аут';
-      say(what, ev.left > 0 ? 'ещё попытка' : ev.kind === 'short' ? 'не долетел до контрольной линии' : 'попытки кончились', 1400);
-      await sleep(900 / sp());
-      bt?.play('hold2h', true, 0.3);
-    }
-  }
-
-  async function playCatch(ev: Extract<Event, { k: 'catch' }>) {
-    if (!v) return;
-    const D = ev.team;
-    const fl = flight(ev.b0);
-    const frames: BodyFrame[] = fl.frames;
-    const tn = yard.men[D][ev.who]?.toon ?? null;
-    const a = Math.max(ev.t0, shownT);
-    const dist = Math.hypot(ev.to[0] - ev.from[0], ev.to[1] - ev.from[1]);
-    let landed = false;
-    let got = false;
-    await span(a, ev.t2, (t) => {
-      // полевой: бежит от реакции до t1
-      const k = ev.t1 > REACT ? clamp((t - REACT) / (ev.t1 - REACT), 0, 1) : 1;
-      const x = lerp(ev.from[0], ev.to[0], k);
-      const y = lerp(ev.from[1], ev.to[1], k);
-      const f = sample(frames, Math.min(t, ev.t1));
-      yard.put(D, ev.who, x, y, k < 1 && dist > 0.3 ? ev.to : [f[1], f[2]]);
-      if (t < ev.t1) tn?.play(k > 0 && k < 1 && dist > 0.3 ? 'run' : 'idle', true, 0.15, 1.3);
-      else if (!got) {
-        got = true;
-        if (ev.air && ev.ok) slap();
-        tn?.play(ev.air ? 'holding' : 'pickup', false, 0.12);
-      }
-      // мяч: летит до t1, потом — в руках (или выронил — у ног)
-      if (t <= ev.t1) yard.setBall([f[1], f[2], f[3]]);
-      else if (ev.air && !ev.ok) yard.setBall([ev.to[0] + 0.3, ev.to[1], 0.035]);
-      else yard.setBall([ev.to[0] + 0.2, ev.to[1], ev.air ? 1.35 : 0.9]);
-      if (!landed && fl.land && t >= fl.land.t && !ev.air) (landed = true), thud();
-      yard.camTo('field', undefined, 2);
-      runners(ev.rs, t);
-    });
-    yard.setLand(null);
-    shownT = ev.t2;
-    if (ev.air && !ev.ok) say('Выронил!', 'свечу не поймали', 1100);
-  }
-
-  async function playThrow(ev: Extract<Event, { k: 'throw' } | { k: 'pass' }>) {
-    if (!v) return;
-    const D = ev.team;
-    const tn = yard.men[D][ev.who]?.toon ?? null;
-    const to = ev.k === 'throw' ? ev.to : ev.at;
-    yard.put(D, ev.who, ev.from[0], ev.from[1], to);
-    tn?.play('throw', false, 0.1, 1.4);
-    const rel = ev.t0 + 0.3;
-    let sw = false;
-    await span(ev.t0, ev.t1, (t) => {
-      if (t < rel) yard.setBall([ev.from[0] + 0.2, ev.from[1], 1.6]);
+      btn.sw = 'Другой';
+      if (s.ball.mode === 'held' && s.ball.holder === s.ctrl[D]) {
+        const runs = s.men[s.atk].some((m) => m.st === 'run');
+        t = runs ? `<b>Осаливай!</b> Коснись бегущего — бросок, или своего — пас. E — в ближнего, R — пас ближе к нему.` : `Мяч у тебя. Бегущих нет — розыгрыш сейчас кончится.`;
+        if (runs) (btn.thr = '!Бросок'), (btn.pass = 'Пас');
+      } else if (s.ball.mode === 'held') t = `Мяч у своего — <b>перекрой бегущего</b> или переключись на того, кто с мячом.`;
       else {
-        if (!sw) (sw = true), whoosh(0.35);
-        const k = clamp((t - rel) / Math.max(0.05, ev.t1 - rel), 0, 1);
-        yard.setBall([lerp(ev.from[0], to[0], k), lerp(ev.from[1], to[1], k), lerp(1.7, 1.1, k) + Math.sin(k * Math.PI) * 0.8]);
-      }
-      yard.camTo('field', undefined, 2);
-      runners(ev.rs, t);
-    });
-    shownT = ev.t1;
-    if (ev.k === 'pass') {
-      slap();
-      yard.men[D][ev.to]?.toon?.play('holding', false, 0.12);
-    } else if (!ev.hit) say('Мимо!', 'мяч улетел — полевой бежит за ним', 1000);
-    else if (ev.hit) {
-      slap();
-      yard.men[v.atk][ev.runner]?.toon?.play('hit', false, 0.08);
-    }
-  }
-
-  async function playFetch(ev: Extract<Event, { k: 'fetch' }>) {
-    if (!v) return;
-    const D = ev.team;
-    const tn = yard.men[D][ev.who]?.toon ?? null;
-    const prev = yard.ball.position.clone();
-    const b0: [number, number, number] = [prev.x, -prev.z, prev.y];
-    let got = false;
-    await span(ev.t0, ev.t1, (t) => {
-      const kb = clamp((t - ev.t0) / 0.7, 0, 1);
-      const kk = 1 - (1 - kb) * (1 - kb);
-      if (!got) yard.setBall([lerp(b0[0], ev.ball[0], kk), lerp(b0[1], ev.ball[1], kk), Math.max(0.035, lerp(b0[2], 0.035, Math.min(1, kb * 2)) + (kb < 0.5 ? Math.sin(kb * 2 * Math.PI) * 0.3 : 0))]);
-      const k = clamp((t - ev.t0) / Math.max(0.1, ev.t1 - ev.t0 - 0.25), 0, 1);
-      yard.put(D, ev.who, lerp(ev.from[0], ev.to[0], k), lerp(ev.from[1], ev.to[1], k), ev.to);
-      if (k < 1) tn?.play('run', true, 0.15, 1.3);
-      else if (!got) {
-        got = true;
-        tn?.play('pickup', false, 0.12);
-        yard.setBall([ev.to[0] + 0.2, ev.to[1], 0.9]);
-      }
-      runners(ev.rs, t);
-    });
-    shownT = ev.t1;
-  }
-
-  async function playHold(ev: Extract<Event, { k: 'hold' }>) {
-    await span(ev.t0, ev.t1, (t) => runners(ev.rs, t), 1.4);
-    shownT = ev.t1;
-  }
-
-  /** Все расходятся по местам (walkTo набора — по земле, с бегом). */
-  async function regroup(s: State, ms = 1800) {
-    const c = s.cfg;
-    const A = s.atk;
-    const D = def0(s);
-    const goals: [number, number, number, number][] = [];
-    formation(c).forEach(([x, y], k) => goals.push([D, k, x, y]));
-    for (let i = 0; i < c.n; i++) {
-      const st = s.teams[A].st[i];
-      const [x, y] = homeSpot(c, i, st === 'kon' ? 'kon' : 'dom');
-      goals.push([A, i, x, y]);
-    }
-    const waits: Promise<void>[] = [];
-    for (const [t, k, x, y] of goals) {
-      const m = yard.men[t][k];
-      const tn = m?.toon;
-      if (!m || !tn) continue;
-      const d = Math.hypot(m.x - x, m.y - y);
-      if (d < 0.3) continue;
-      const key = `${t}:${k}`;
-      walking.add(key);
-      const goal = { x, z: -y };
-      const pr = tn.walkTo([goal], d > 6 ? 7.5 : 3.2).then(() => {
-        walking.delete(key);
-        m.x = x;
-        m.y = y;
-        tn.face(0, t === D ? 0 : -c.L / 2);
-      });
-      waits.push(pr);
-    }
-    // ждём недолго: дальше они дойдут сами, пока идёт следующая подача
-    await Promise.race([Promise.all(waits), sleep(ms / sp())]);
-  }
-
-  /** Пока идут walkTo — держим m.x/m.y по корню (для бирок и колец). */
-  function syncWalkers() {
-    for (const key of walking) {
-      const [t, k] = key.split(':').map(Number);
-      const m = yard.men[t]?.[k];
-      if (m?.toon) {
-        m.x = m.toon.root.position.x;
-        m.y = -m.toon.root.position.z;
+        t = `<b>Ловим!</b> Беги к мячу (стрелки / WASD). С лёта — жми <b>«Ловить»</b> (Пробел), когда мяч у рук; с земли подберёшь сам.`;
+        btn.catch = '!Ловить';
+        btn.dash = 'Рывок';
       }
     }
+    pad.show(btn);
+    pad.visible(team >= 0 && !s.over);
+    const key = `${cur}|${t}`;
+    if (key === hintKey) return;
+    hintKey = key;
+    const names = ['Удар', 'Бег', 'Ловля', 'Осаливание'];
+    steps.innerHTML = team < 0 || s.over ? '' : names.map((n, i) => `<span class="${i === cur ? 'on' : ''}">${n}</span>`).join('<i>→</i>');
+    steps.classList.toggle('mine', !!t && t.includes('<b>'));
+    sayEl.innerHTML = t;
+    sayEl.style.display = t ? '' : 'none';
   }
 
   // ---------------------------------------------------------------- кадр
+
+  function place(s: State, now: number) {
+    const c = s.cfg;
+    yard.setField(c);
+    yard.setTeams(c.n);
+    yard.clearMarks();
+    const team = myTeam(s);
+    const [bx, by] = ballPos(s);
+    for (let t = 0; t < 2; t++) {
+      s.men[t].forEach((m, i) => {
+        const sp = Math.hypot(m.vx, m.vy);
+        const face: [number, number] = sp > 0.4 ? [m.x + m.vx, m.y + m.vy] : t === s.atk ? (m.st === 'kon' ? [m.x, 0] : [0, c.L / 2]) : [bx, by];
+        yard.put(t, i, m.x, m.y, face);
+        const tn = yard.men[t][i]?.toon;
+        if (!tn) return;
+        const os = oneShot.get(`${t}:${i}`);
+        if (t === s.atk && i === swingWho && swingAt > 0) {
+          const k = (now - swingAt) / 450;
+          if (k < 1) {
+            tn.scrub('swing2h', clamp(k, 0, 1), 0.5);
+            return;
+          }
+          swingAt = -1;
+        }
+        if (os && now < os.until) tn.play(os.clip, false, 0.12);
+        else if (sp > 0.5) tn.play('run', true, 0.15, clamp(sp / 4.5, 0.6, 1.8));
+        else if (t === s.atk && i === s.batter && s.phase !== 'live') tn.play('hold2h', true, 0.25);
+        else tn.play(i % 3 ? 'idle' : 'idle2', true, 0.3);
+      });
+    }
+    // кольца: свой — жёлтый; в защите бегущие — красные; с мячом — голубой
+    if (team >= 0) yard.mark(team, s.ctrl[team as 0 | 1], '#ffe23a');
+    if (team === defT(s)) s.men[s.atk].forEach((m, i) => m.st === 'run' && yard.mark(s.atk, i, '#ff4a2a'));
+    if (team === s.atk && s.phase === 'live') s.men[s.atk].forEach((_, i) => i !== s.ctrl[team as 0 | 1] && mayLeave(s, i) && yard.mark(s.atk, i, '#7ad84a'));
+    // мяч
+    yard.setBall(ballPos(s));
+    const bt = s.phase !== 'live' || swingAt > 0 ? (yard.men[s.atk][s.batter]?.toon ?? null) : null;
+    yard.batIn(bt, s.phase === 'serve' && swingAt < 0 ? 1 : 0);
+    const land = s.ball.mode === 'free' && s.ball.b0 && s.ball.air ? flight(s.ball.b0).land : null;
+    yard.setLand(land ? [land.x, land.y] : null);
+    // стрелка «ТЫ» над своим
+    if (team >= 0) {
+      const m = s.men[team as 0 | 1][s.ctrl[team as 0 | 1]];
+      const q = yard.toScreen(m.x, m.y, 2.1);
+      youTag.style.display = q.vis ? 'block' : 'none';
+      youTag.style.left = `${q.x}px`;
+      youTag.style.top = `${q.y}px`;
+    } else youTag.style.display = 'none';
+    // камера
+    if (camMode() === 'me' && team >= 0 && s.phase === 'live') {
+      const m = s.men[team as 0 | 1][s.ctrl[team as 0 | 1]];
+      yard.camTo('follow', { x: m.x, y: m.y }, 2.5);
+    } else if (s.phase === 'serve' && s.atk === team) yard.camTo('bat', undefined, 2);
+    else yard.camTo('field', undefined, 2);
+  }
+
+  let youTag: HTMLElement;
+
+  function showAim(s: State) {
+    if (!myServe(s)) {
+      if (aimKey) yard.setAim(null, null), (aimKey = '');
+      return;
+    }
+    const a = curHit();
+    const key = `${a.pow.toFixed(3)},${a.yaw.toFixed(3)},${a.style}`;
+    if (key === aimKey) return;
+    aimKey = key;
+    const fl = flight(strike(s.cfg, a.pow, a.yaw, a.style));
+    const tl = fl.land?.t ?? 2;
+    const pts = fl.frames.filter((f) => f[0] <= tl).map((f) => [f[1], f[2], f[3]] as [number, number, number]);
+    yard.setAim(pts, fl.land ? [fl.land.x, fl.land.y] : null);
+  }
 
   function frame(now: number) {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     if (document.hidden) return;
-    if (act != null && !busy && v?.phase === 'hit') showAim();
+    const s = current();
+    if (s && Array.isArray(s.men)) {
+      if (s.shot) {
+        // превью карточки: удар — бита только что прошла, мяч уходит в поле
+        yard.setField(s.cfg);
+        yard.setTeams(s.cfg.n);
+        s.men.forEach((team, t) => team.forEach((m, i) => yard.put(t, i, m.x, m.y, [0, s.cfg.L / 2])));
+        const bt = yard.men[s.atk][s.batter]?.toon ?? null;
+        bt?.scrub('swing2h', 0.74, 0.62);
+        yard.batIn(bt, 0);
+        const f = sample(flight(s.ball.b0!).frames, 0.12);
+        yard.setBall([f[1], f[2], f[3]]);
+        yard.camTo('bat');
+        hud.style.display = 'none';
+      } else {
+        place(s, now);
+        drawHud(s);
+        drawHint(s);
+        showAim(s);
+      }
+    }
     if (bannerT && now > bannerT) {
       banner.style.opacity = '0';
       bannerT = 0;
     }
-    syncWalkers();
-    if (v?.shot) {
-      // превью карточки: удар — бита только что прошла, мяч уходит в поле
-      const bt = yard.men[v.atk][v.batter]?.toon ?? null;
-      bt?.scrub('swing2h', 0.74, 0.62);
-      yard.batIn(bt, 0);
-      const f = sample(flight(strike(v.cfg, 0.75, 0.12, 'far')).frames, 0.12);
-      yard.setBall([f[1], f[2], f[3]]);
-    }
     yard.render(dt);
-    if (tags.children.length) placeTags();
   }
 
-  const camFor = (s: State) => {
-    if (s.over) yard.camTo('field', undefined, 1.5);
-    else if (s.phase === 'hit') yard.camTo('bat', undefined, 2);
-    else yard.camTo('field', undefined, 2);
-  };
+  function onEvent(s: State, ev: Event) {
+    const now = performance.now();
+    const shot = (t: number, i: number, clip: string, ms: number) => oneShot.set(`${t}:${i}`, { clip, until: now + ms });
+    switch (ev.k) {
+      case 'hit':
+        swingAt = now;
+        swingWho = ev.who;
+        hitReq = null;
+        if (ev.kind === 'miss') whoosh();
+        else crack(Math.hypot(ev.b0.vx, ev.b0.vy, ev.b0.vz) / 30);
+        if (ev.kind === 'ok') say('Мяч в поле!', myTeam(s) === ev.team ? 'беги, когда полевые далеко' : 'беги ловить!', 1200);
+        else {
+          Sound.nomove();
+          say(ev.kind === 'miss' ? 'Промах' : ev.kind === 'short' ? 'Недолёт' : 'Аут', ev.left > 0 ? 'ещё попытка' : 'попытки кончились', 1400);
+        }
+        break;
+      case 'catch':
+        slap();
+        shot(ev.team, ev.who, ev.air ? 'holding' : 'pickup', 700);
+        thReq = null;
+        if (ev.air) say('Поймал!', '', 700);
+        break;
+      case 'throw':
+        whoosh();
+        thReq = null;
+        shot(ev.team, ev.who, 'throw', 700);
+        break;
+      case 'safe':
+        if (ev.at === 'dom') {
+          Sound.win();
+          say('+2', `${ctx.name(s.seats[ev.team])}: перебежка туда и обратно`, 1300);
+          shot(ev.team, ev.who, 'cheer', 1500);
+        }
+        break;
+      case 'candle':
+        Sound.capture();
+        say('Свеча!', ev.pts ? 'поймали с лёта: +1' : 'поймали с лёта — смена', 1600);
+        break;
+      case 'salit':
+        Sound.capture();
+        shot(ev.team, ev.who, 'hit', 900);
+        say('Осалили!', 'попали мячом в бегущего — смена', 1600);
+        break;
+      case 'swap':
+        pick = -1;
+        pickAtk = -1;
+        if (ev.reason === 'nobat') say('Смена!', 'бить больше некому', 1600);
+        break;
+      case 'dead':
+        pick = -1;
+        pickAtk = -1;
+        thReq = null;
+        break;
+      case 'end': {
+        Sound.win();
+        say('Конец партии!', `${s.score[0]} : ${s.score[1]}`, 4000);
+        break;
+      }
+    }
+  }
 
   return {
     mount(el, c) {
       ctx = c;
-      root = el;
-      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-tags"></div><div class="lp-ask"><div class="lp-steps"></div><div class="lp-say"></div><div class="lp-bar"></div></div><div class="lp-banner"></div></div>`);
-      root.appendChild(wrap);
+      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-you">ТЫ</div><div class="lp-ask"><div class="lp-steps"></div><div class="lp-say"></div></div><div class="lp-banner"></div></div>`);
+      el.appendChild(wrap);
       hud = wrap.querySelector('.lp-hud') as HTMLElement;
       banner = wrap.querySelector('.lp-banner') as HTMLElement;
-      bar = wrap.querySelector('.lp-bar') as HTMLElement;
-      tags = wrap.querySelector('.lp-tags') as HTMLElement;
       steps = wrap.querySelector('.lp-steps') as HTMLElement;
       sayEl = wrap.querySelector('.lp-say') as HTMLElement;
-      bar.style.display = 'none';
+      youTag = wrap.querySelector('.lp-you') as HTMLElement;
       yard = new LaptaYard(wrap.querySelector('.lp-cv') as HTMLElement);
       ctx.hold?.(30000);
       const y = yard;
@@ -719,8 +596,7 @@ export function createView(): GameView<State, Event> {
         try {
           await y.loaded;
           const until = performance.now() + 15000;
-          while ((y.pending > 0 || !y.men[0].length) && performance.now() < until) await sleep(100);
-          if (v) place(v);
+          while ((y.pending > 0 || !y.men[0].length) && performance.now() < until) await new Promise((r) => setTimeout(r, 100));
           await y.warm();
         } catch (e) {
           console.warn('лапта: загрузка поля', e);
@@ -734,112 +610,47 @@ export function createView(): GameView<State, Event> {
       bindInput();
       controls();
       raf = requestAnimationFrame(frame);
+      iv = window.setInterval(sendInputs, 20);
     },
-    setView(s) {
-      v = s;
-      if (!s.play) shownT = 0;
-      place(s);
-      drawHud();
-      camFor(s);
-      if (s.shot) {
-        hud.style.display = 'none';
-        yard.snapCam();
+    setView(v) {
+      latest = v;
+      snaps = [{ at: performance.now(), v }];
+      if (v.cfg) {
+        yard.setField(v.cfg);
+        yard.setTeams(v.cfg.n);
       }
-      drawPicks();
     },
-    async play(events, s) {
-      busy = true;
-      act = null;
-      drawPicks();
-      yard.setAim(null, null);
-      Sound.unlock();
-      for (const ev of events) {
-        if (!v) break;
-        if (ev.k === 'hit') await playHit(ev);
-        else if (ev.k === 'run') {
-          say(ev.who.length > 1 ? 'Побежали!' : 'Побежал!', '', 800);
-          Sound.step();
-        } else if (ev.k === 'catch') await playCatch(ev);
-        else if (ev.k === 'throw' || ev.k === 'pass') await playThrow(ev);
-        else if (ev.k === 'fetch') await playFetch(ev);
-        else if (ev.k === 'hold') await playHold(ev);
-        else if (ev.k === 'safe') {
-          if (ev.at === 'dom') {
-            Sound.win();
-            say('+2', `${ctx.name(v.seats[ev.team])}: перебежка туда и обратно`, 1300);
-            yard.men[ev.team][ev.who]?.toon?.play('cheer', false, 0.15);
-          } else yard.men[ev.team][ev.who]?.toon?.play('idle', true, 0.2);
-        } else if (ev.k === 'candle') {
-          Sound.capture();
-          say('Свеча!', ev.pts ? 'поймали с лёта: +1' : 'поймали с лёта — смена', 1600);
-          await sleep(900 / sp());
-        } else if (ev.k === 'salit') {
-          Sound.capture();
-          say('Осалили!', 'попали мячом в бегущего', 1600);
-          await sleep(1100 / sp());
-        } else if (ev.k === 'swap') {
-          say('Смена!', `бьют ${ctx.name(v.seats[ev.atk])}`, 1500);
-          // меняемся местами: бывшие полевые — в дом, бившие — в поле
-          v = { ...s, play: null };
-          await regroup(v, 2400);
-        } else if (ev.k === 'reset') {
-          yard.setLand(null);
-          await sleep(300 / sp());
-        } else if (ev.k === 'end') {
-          Sound.win();
-          const [a, b] = s.teams;
-          say('Конец партии!', `${a.score} : ${b.score}`, 2500);
-          await sleep(1200 / sp());
-        }
-      }
-      const wasPlay = !!v?.play;
-      v = s;
-      if (wasPlay && !s.play) {
-        shownT = 0;
-        await regroup(s, 1400);
-      }
-      place(s);
-      drawHud();
-      camFor(s);
-      busy = false;
-      drawPicks();
+    async play(_ev, v) {
+      this.setView(v);
     },
-    setTurn(toAct, interactive) {
-      const mine = interactive.find((x) => toAct.includes(x));
-      act = v && !v.over && !ctx.demo && mine != null ? mine : null;
-      chosen = new Set();
-      preset = true;
-      if (act != null && v?.phase === 'hit') {
-        aim = { pow: 0.7, yaw: 0 };
-        aimKey = '';
-      } else yard.setAim(null, null);
-      showTip(act != null && v?.phase === 'hit');
-      drawPicks();
+    realtime(v, events) {
+      latest = v;
+      if (import.meta.env.DEV) (window as unknown as { __lps: State }).__lps = v;
+      snaps.push({ at: performance.now(), v });
+      if (snaps.length > 12) snaps.splice(0, snaps.length - 12);
+      for (const ev of events) onEvent(v, ev);
     },
-    status(s, toAct, interactive) {
+    setTurn() {},
+    status(s) {
+      if (!s) return '';
       if (s.over) return 'Партия окончена';
-      const mine = interactive.includes(toAct[0]);
-      if (!mine) return `Решает ${ctx.name(toAct[0])}…`;
-      return s.phase === 'hit'
-        ? `Ваш удар: №${s.batter + 1}, попытка ${s.cfg.tries - s.tries + 1}`
-        : s.phase === 'run'
-          ? 'Кому бежать? Отметьте и «Беги!» — или «Стоим»'
-          : s.phase === 'catch'
-            ? 'Кто ловит мяч? Коснитесь полевого'
-            : 'В кого кинуть? Бегущий — бросок, свой — пас';
+      return `${SEATS[0].name} ${s.score[0]} : ${s.score[1]} ${SEATS[1].name}`;
     },
     playerStats(s, seat) {
       const t = s.seats.indexOf(seat);
       if (t < 0) return '';
-      return `${s.teams[t].score} оч. · ${s.atk === t ? 'бьют' : 'в поле'}`;
+      return `${s.score[t]} оч. · ${s.atk === t ? 'бьют' : 'в поле'}`;
     },
     saveTitle(s) {
-      return `${s.teams[0].score}:${s.teams[1].score} · бьют ${SEATS[s.atk].name}`;
+      return `${s.score[0]}:${s.score[1]} · бьют ${esc(SEATS[s.atk].name)}`;
     },
     destroy() {
       cancelAnimationFrame(raf);
+      clearInterval(iv);
       cleanup.forEach((f) => f());
       yard?.dispose();
     },
   };
 }
+
+export { BAT_SPOT };

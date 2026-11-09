@@ -1,613 +1,682 @@
-/* Лапта — правила партии (без DOM: их гоняют сервер, боты и тесты). Две команды: нападение бьёт из «дома», защита
- * стоит в поле. Бьющий — по очереди; мяч ему подаёт свой же игрок. Удар действителен, если мяч первым касанием упал
- * в поле за контрольной линией (или за линией кона между боковыми). После действительного удара игроки нападения,
- * у которых нет права удара (уже били), и те, кто ждёт за линией кона, могут бежать — в одну сторону: из дома в кон или
- * из кона домой. Защита ловит мяч и кидает в бегущего: попал — «осалил», команды меняются местами. Пойманный с лёта мяч —
- * «свеча»: очко защите (во дворе — смена). Перебежка туда и обратно — 2 очка. В доме не осталось игроков с правом удара —
- * смена. Играют до заданного счёта.
- *
- * Партия идёт по решениям, а между ними — по часам розыгрыша: бегущие бегут, полевые бегут к мячу, мяч летит по физике
- * набора дворового спорта (core/dvorsport/body.ts). Кто бежит, кто ловит, в кого кидать — решают игроки (и боты),
- * исход считает комната; случайность (поймал ли, попал ли) — только через rng.int, чтобы показ правил подкручивался rig.
+/* Лапта — игра реального времени (без DOM: её крутит комната — сервер, хост P2P или браузер). Каждая сторона управляет
+ * одним своим пацаном (переключается на любого из команды), остальных ведёт ИИ-напарник (ai.ts). Нападение бьёт из «дома»:
+ * удар засчитан, если мяч первым касанием упал в поле за контрольной линией. Пока мяч в игре, бившие и ждущие за коном
+ * могут выбежать в поле — сами решают, когда, и бегут куда хотят (рывок — уклониться). Перебежал из дома за кон — ждёшь там,
+ * вернулся домой — 2 очка и снова право удара. Защита ловит мяч (с лёта — по кнопке вовремя, с земли — подобрать), кидает
+ * в бегущего: попал — «осалил», команды меняются. Пойманный с лёта мяч от удара — «свеча»: очко защите (во дворе — смена).
+ * В доме не осталось никого с правом удара — смена. До счёта (и по времени, если задано).
+ * Мяч в свободном полёте — по кадрам flight(b0) от момента t0 (детерминированно и дёшево); люди — точки со скоростью.
  * Оси: x — поперёк поля, y — от линии дома (0) к линии кона (L), z — вверх. */
-import { body, fly, kick, MAT, type Body, type BodyFrame, type BodyMat } from '../../core/dvorsport/body';
+import { kick, sample, type Body } from '../../core/dvorsport/body';
+import { applySpeed, cleanSpeed, gameSpeed } from '../../core/realtime';
 import type { Options, Rng } from '../../core/types';
+import { aiAttack, aiDefense, aiHit, aiThrow, type Want } from './ai';
+import { BALL_R, cfgFrom, flight, formation, HIT_AT, homeSpot, judge, strike, VF, VR, VT, yKon, type Cfg, type HitKind, type PStatus, type Style } from './field';
 
-/** Мяч по утоптанной земле пустыря: катится меньше, чем по асфальту. */
-export const BALL: BodyMat = { ...MAT.ball, roll: 2.6 };
-export const BALL_R = 0.035;
-/** Где мяч встречает биту: чуть перед домом, на высоте пояса. */
-export const HIT_AT = { x: 0, y: 0.45, z: 1.0 };
-/** Скорость бега: нападающий налегке, полевой — к мячу. */
-export const VR = 6.2;
-export const VF = 5.6;
-/** К летящему мячу «под свечу» — медленнее: надо успеть встать и поймать. */
-export const VF_AIR = 4.4;
-/** Скорость брошенного мяча, м/с. */
-export const VT = 19;
-/** Реакция полевого на удар, замах броска, подобрать мяч, с. */
-export const REACT = 0.35;
-export const WIND = 0.3;
-export const PICK = 0.25;
-/** Ловля: до какой высоты достаёт руками, на сколько дотягивается в воздухе и с земли. */
-export const REACH_Z = 2.2;
-export const ARM = 0.6;
-export const ARM_LOW = 0.4;
+export * from './field';
 
-export type Style = 'candle' | 'far' | 'low';
-export const PITCH: Record<Style, number> = { candle: 1.05, far: 0.6, low: 0.24 };
+export const TICK_MS = 1000 / 60;
+/** Рывок: во сколько раз быстрее, сколько длится и перезарядка, с. */
+export const DASH = { k: 1.75, t: 0.35, cd: 1.4 };
+/** Ловля с лёта: окно после нажатия, с; дотянуться руками (м) и до какой высоты. */
+export const CATCH_WIN = 0.45;
+export const ARM_AIR = 0.75;
+export const ARM_GROUND = 0.55;
+export const REACH = 2.3;
+/** Осалить: мяч ближе этого к бегущему и не выше. */
+export const HIT_R = 0.45;
+export const HIT_Z = 1.9;
+/** Где стоит бьющий и подающий. */
+export const BAT_SPOT: [number, number] = [HIT_AT.x - 0.75, HIT_AT.y - 0.55];
+export const SERVE_SPOT: [number, number] = [1.1, 1.6];
 
-export interface Cfg {
-  /** Игроков в команде. */
-  n: number;
-  /** Длина поля (дом — кон) и ширина, м. */
-  L: number;
-  W: number;
-  /** Контрольная линия от дома, м. */
-  ctrl: number;
-  /** Попыток удара у бьющего. */
-  tries: 1 | 2;
-  /** Свеча: очко защите или смена. */
-  candle: 'point' | 'swap';
-  /** Из дома бежит только тот, кто сам ударил (ярославская лапта). */
-  onlyHitter: boolean;
-  /** До скольких очков. */
-  target: number;
-  /** Предел ударов на партию (страховка): потом — по счёту. */
-  maxHits: number;
+export interface Man {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  /** Нападение: статус; защита — 'ready' (не важен). */
+  st: PStatus;
+  /** Откуда выбежал (для бегущего). */
+  from?: 'dom' | 'kon';
+  /** Рывок: сколько ещё длится и перезарядка. */
+  dash: number;
+  cd: number;
 }
 
-export type PStatus = 'ready' | 'used' | 'kon' | 'run';
-
-export interface Team {
-  score: number;
-  /** Статус каждого игрока команды. */
-  st: PStatus[];
-  /** Очередь на удар (номера игроков со статусом ready). */
-  queue: number[];
-  /** Сдвиг очереди на следующую смену. */
-  rot: number;
-}
-
-export interface Runner {
-  /** Номер игрока в команде нападения. */
-  who: number;
-  from: 'dom' | 'kon';
-  /** Когда побежал (часы розыгрыша). */
+export interface BallS {
+  /** serve — у подающего; free — летит/катится по flight(b0) с момента t0; held — у полевого holder. */
+  mode: 'serve' | 'free' | 'held';
+  b0: Body | null;
   t0: number;
+  holder: number;
+  /** Мяч от удара ещё не касался земли (свеча). */
+  air: boolean;
+  /** Брошен защитой (может осалить) и кем. */
+  thrown: boolean;
+  by: number;
+  /** Где был на прошлом шаге (для проверки касаний отрезком). */
+  px: number;
+  py: number;
+  pz: number;
 }
 
-export interface Play {
-  /** Часы розыгрыша, с от удара. */
-  t: number;
-  /** Мяч после удара (переигрывается физикой на экране). */
-  b0: Body;
-  /** Кто бил. */
-  batter: number;
-  runners: Runner[];
-  /** У кого мяч (полевой) — null, пока мяч не подобран. */
-  holder: number | null;
-  /** Где полевые сейчас (оси игры). */
-  fpos: [number, number][];
-  /** Ловля уже разыграна. */
-  caught: boolean;
-  /** Решений в розыгрыше (страховка от бесконечной перекидки). */
-  moves: number;
-  /** Кто может бежать в этом розыгрыше из дома. */
-  mayRun: number[];
+export interface In {
+  /** Направление бега в осях игры, длина ≤ 1. */
+  mx: number;
+  my: number;
+  /** Кем управлять: номер в команде; −1 — само (бьющий / бегущий / ближний к мячу). */
+  k: number;
+  /** Бот или «за меня — компьютер»: уровень 0…2; −1 — человек. */
+  ai: number;
+  /** Одноразовые действия — по номеру (комната повторяет последний ввод, пока не придёт новый). */
+  hit?: { n: number; pow: number; yaw: number; style: Style };
+  c?: number;
+  th?: { n: number; tx: number; ty: number };
+  d?: number;
+  sp?: number;
 }
-
-export type Phase = 'hit' | 'run' | 'catch' | 'throw';
-
-export interface State {
-  cfg: Cfg;
-  /** Места команд: seats[0] — команда 0. */
-  seats: [number, number];
-  /** Какая команда в нападении. */
-  atk: 0 | 1;
-  teams: [Team, Team];
-  phase: Phase;
-  /** Бьющий и сколько попыток у него осталось. */
-  batter: number;
-  tries: number;
-  play: Play | null;
-  /** Ударов за партию. */
-  hits: number;
-  over: boolean;
-  winners: number[];
-  /** Только превью карточки: кадр с мячом в полёте. */
-  shot?: boolean;
-}
-
-export type Action =
-  | { type: 'hit'; pow: number; yaw: number; style: Style }
-  | { type: 'run'; who: number[] }
-  | { type: 'catch'; who: number }
-  | { type: 'throw'; at: number }
-  | { type: 'pass'; to: number }
-  | { type: 'hold' };
-
-export type HitKind = 'ok' | 'short' | 'out' | 'miss';
 
 export type Event =
-  | { k: 'hit'; team: number; who: number; b0: Body; kind: HitKind; land: { x: number; y: number } | null; style: Style; left: number }
-  | { k: 'run'; team: number; who: number[]; t: number }
-  | {
-      k: 'catch';
-      team: number;
-      who: number;
-      from: [number, number];
-      to: [number, number];
-      /** Когда добежал (поймал / подобрал) и когда мяч у него в руках. */
-      t1: number;
-      t2: number;
-      air: boolean;
-      ok: boolean;
-      b0: Body;
-      rs: Runner[];
-      t0: number;
-    }
-  | { k: 'throw'; team: number; who: number; from: [number, number]; to: [number, number]; t0: number; t1: number; runner: number; hit: boolean; rs: Runner[] }
-  | { k: 'fetch'; team: number; who: number; from: [number, number]; to: [number, number]; ball: [number, number]; t0: number; t1: number; rs: Runner[] }
-  | { k: 'pass'; team: number; who: number; to: number; from: [number, number]; at: [number, number]; t0: number; t1: number; rs: Runner[] }
-  | { k: 'hold'; team: number; t0: number; t1: number; rs: Runner[] }
+  | { k: 'hit'; team: number; who: number; kind: HitKind; b0: Body; t: number; left: number }
+  | { k: 'catch'; team: number; who: number; air: boolean }
+  | { k: 'throw'; team: number; who: number; pass: boolean }
+  | { k: 'run'; team: number; who: number }
+  | { k: 'dash'; team: number; who: number }
   | { k: 'safe'; team: number; who: number; at: 'dom' | 'kon'; pts: number }
   | { k: 'candle'; team: number; pts: number }
   | { k: 'salit'; team: number; who: number }
   | { k: 'swap'; reason: 'salit' | 'candle' | 'nobat'; atk: number }
-  | { k: 'reset' }
+  | { k: 'dead' }
   | { k: 'end'; winners: number[] };
 
-export function cfgFrom(o: Options): Cfg {
-  const n = clampI(Number(o.n ?? 6), 3, 6);
-  const L = Number(o.field ?? 50) || 50;
-  const W = Math.round(L * 0.6);
-  return {
-    n,
-    L,
-    W,
-    ctrl: Number(o.ctrl ?? Math.round(L / 5)) || 10,
-    tries: Number(o.tries ?? 2) === 1 ? 1 : 2,
-    candle: o.candle === 'swap' ? 'swap' : 'point',
-    onlyHitter: o.onlyHitter === true || o.onlyHitter === 'yes',
-    target: Number(o.target ?? 21) || 21,
-    maxHits: 160,
-  };
+export interface State {
+  cfg: Cfg;
+  seats: [number, number];
+  atk: 0 | 1;
+  score: [number, number];
+  /** Часы партии (игровые), с; скорость физики. */
+  t: number;
+  speed: number;
+  spSeen?: number[];
+  phase: 'serve' | 'live' | 'pause';
+  /** До какого времени пауза и что после неё: подача того же бьющего или следующего. */
+  until: number;
+  next: 'serve' | 'batter';
+  /** Когда началась подача / розыгрыш. */
+  since: number;
+  men: [Man[], Man[]];
+  /** Очередь на удар (номера в команде нападения). */
+  queue: number[];
+  rot: [number, number];
+  batter: number;
+  tries: number;
+  ball: BallS;
+  /** Кем управляет каждая сторона и выбирает ли сама. */
+  ctrl: [number, number];
+  auto: [boolean, boolean];
+  /** Последние номера одноразовых действий по сторонам. */
+  seen: { hit: number; c: number; th: number; d: number }[];
+  /** Окно ловли с лёта по сторонам (до какого времени). */
+  catchT: [number, number];
+  /** Кто может выбежать из дома в этом розыгрыше. */
+  mayRun: number[];
+  /** Тихо (никто не бежит, мяч у защиты) с какого времени (−1 — не тихо). */
+  quietT: number;
+  /** ИИ: кто бежит за мячом и с какого времени решено; кто из нападения решил бежать; когда взял мяч. */
+  chase: number;
+  chaseT: number;
+  go: number[];
+  holdT: number;
+  /** Ловля с лёта уже разыграна этим полевым (ИИ) — для этого полёта. */
+  tried: number[];
+  hits: number;
+  over: boolean;
+  winners: number[];
+  /** Только превью карточки. */
+  shot?: boolean;
 }
 
-const clampI = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v) || lo));
+const r3 = (v: number) => Math.round(v * 1000) / 1000;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-const r2 = (v: number) => Math.round(v * 1000) / 1000;
 
-/** Расстановка полевых: доли ширины и длины поля. */
-const FORM: Record<number, [number, number][]> = {
-  3: [[-0.24, 0.42], [0.24, 0.42], [0, 0.8]],
-  4: [[-0.27, 0.38], [0.27, 0.38], [-0.17, 0.76], [0.17, 0.76]],
-  5: [[-0.28, 0.36], [0.28, 0.36], [0, 0.56], [-0.22, 0.8], [0.22, 0.8]],
-  6: [[-0.3, 0.33], [0.3, 0.33], [0, 0.5], [-0.28, 0.72], [0.28, 0.72], [0, 0.92]],
-};
-export function formation(c: Cfg): [number, number][] {
-  return (FORM[c.n] ?? FORM[6]).map(([fx, fy]) => [r2(fx * c.W), r2(fy * c.L)]);
-}
+const man = (x: number, y: number, st: PStatus = 'ready'): Man => ({ x, y, vx: 0, vy: 0, st, dash: 0, cd: 0 });
+const ballServe = (t: number): BallS => ({ mode: 'serve', b0: null, t0: t, holder: -1, air: false, thrown: false, by: -1, px: 0, py: 0, pz: 0 });
 
-/** Дорожка бегущего (x): у каждого игрока своя, вдоль боковых — подальше от полевых. */
-export const lane = (c: Cfg, who: number) => r2((who % 2 ? 1 : -1) * c.W * (0.36 + 0.035 * Math.floor(who / 2)));
-/** Откуда и докуда бегут: чуть за линиями. */
-export const Y_DOM = -0.4;
-export const yKon = (c: Cfg) => c.L + 0.4;
-const runLen = (c: Cfg) => yKon(c) - Y_DOM;
-
-/** Где бегущий в момент t; done — уже за линией. */
-export function runnerAt(c: Cfg, r: Runner, t: number): { x: number; y: number; done: boolean; tEnd: number } {
-  const d = Math.max(0, (t - r.t0) * VR);
-  const D = runLen(c);
-  const tEnd = r.t0 + D / VR;
-  const k = Math.min(1, d / D);
-  const y = r.from === 'dom' ? Y_DOM + k * D : yKon(c) - k * D;
-  return { x: lane(c, r.who), y, done: d >= D, tEnd };
-}
-
-/** Где ждут игроки нападения: в доме — за линией, в кону — за линией кона (оси игры). */
-export function homeSpot(c: Cfg, who: number, at: 'dom' | 'kon'): [number, number] {
-  // в доме — сбоку от площадки бьющего, у левой боковой, двумя рядами
-  return at === 'dom' ? [r2(-3.6 - (who % 3) * 1.25), r2(-1.6 - Math.floor(who / 3) * 1.4)] : [lane(c, who), r2(yKon(c) + 1.2)];
-}
-
-/** Скорость мяча при полной силе — подобрана по длине поля: дальний удар в полную силу улетает чуть за кон. */
-const vmaxCache = new Map<number, number>();
-export function vMax(c: Cfg): number {
-  const k = c.L;
-  const got = vmaxCache.get(k);
-  if (got) return got;
-  let lo = 8;
-  let hi = 70;
-  for (let i = 0; i < 26; i++) {
-    const m = (lo + hi) / 2;
-    const r = fly(kick(body(HIT_AT.x, HIT_AT.y, HIT_AT.z, BALL_R), m, 0, PITCH.far), { mat: BALL, maxT: 12, frameDt: 0, stop: (b) => b.z <= BALL_R + 1e-4 });
-    if ((r.land?.y ?? r.body.y) < c.L * 1.12) lo = m;
-    else hi = m;
-  }
-  const v = (lo + hi) / 2;
-  vmaxCache.set(k, v);
-  return v;
-}
-
-/** Мяч после удара: сила 0…1, направление (yaw: 0 — вдоль поля, плюс — вправо), стиль — угол вверх. */
-export function strike(c: Cfg, pow: number, yaw: number, style: Style): Body {
-  const v = vMax(c) * (0.3 + 0.7 * clamp(pow, 0, 1));
-  const b = kick(body(HIT_AT.x, HIT_AT.y, HIT_AT.z, BALL_R), v, clamp(yaw, -0.75, 0.75), PITCH[style] ?? PITCH.far);
-  return { ...b, vx: r2(b.vx), vy: r2(b.vy), vz: r2(b.vz) };
-}
-
-/** Полёт мяча кадрами (общий для комнаты, ботов и экрана). */
-const flightCache = new Map<string, { frames: BodyFrame[]; land: { x: number; y: number; t: number } | null; rest: number }>();
-export function flight(b0: Body) {
-  const key = `${b0.x},${b0.y},${b0.z},${b0.vx},${b0.vy},${b0.vz}`;
-  let f = flightCache.get(key);
-  if (!f) {
-    const r = fly(b0, { mat: BALL, maxT: 12, frameDt: 1 / 60 });
-    f = { frames: r.frames, land: r.land, rest: r.t };
-    if (flightCache.size > 400) flightCache.clear();
-    flightCache.set(key, f);
-  }
-  return f;
-}
-
-/** Каков удар: в поле за контрольной (или за кон между боковыми), недолёт, аут. */
-export function judge(c: Cfg, land: { x: number; y: number } | null): HitKind {
-  if (!land) return 'out';
-  if (land.y < 0 || Math.abs(land.x) > c.W / 2) return 'out';
-  if (land.y < c.ctrl) return 'short';
-  return 'ok';
-}
-
-/** Перехват: когда полевой из точки f успеет к мячу (в воздухе — до высоты рук, на земле — подобрать). */
-export function intercept(b0: Body, f: [number, number]): { t: number; x: number; y: number; air: boolean; margin: number } {
-  const fl = flight(b0);
-  const tLand = fl.land?.t ?? Infinity;
-  for (const [t, x, y, z] of fl.frames) {
-    if (z > REACH_Z) continue;
-    const air = t < tLand;
-    const run = Math.max(0, (t - REACT) * (air ? VF_AIR : VF));
-    const d = Math.hypot(x - f[0], y - f[1]);
-    const arm = air ? ARM : ARM_LOW;
-    if (air && z < 0.25) continue;
-    if (d <= run + arm) return { t, x, y, air, margin: run + arm - d };
-  }
-  // мяч остановился раньше, чем добежали: бежим к лежащему
-  const last = fl.frames[fl.frames.length - 1];
-  const d = Math.hypot(last[1] - f[0], last[2] - f[1]);
-  return { t: Math.max(last[0], REACT + Math.max(0, d - ARM_LOW) / VF), x: last[1], y: last[2], air: false, margin: 0 };
-}
-
-/** Шанс поймать с лёта по запасу (м). */
-export const catchChance = (margin: number) => (margin > 1.2 ? 0.9 : margin > 0.4 ? 0.72 : 0.45);
-
-/** Бросок в бегущего: когда мяч долетит, куда, на каком расстоянии бросок; null — бегущий успеет за линию. */
-export function aimAt(c: Cfg, from: [number, number], t: number, r: Runner): { t1: number; at: [number, number]; d: number } | null {
-  let ta = t + WIND;
-  let p = runnerAt(c, r, ta);
-  for (let k = 0; k < 8; k++) {
-    p = runnerAt(c, r, ta);
-    ta = t + WIND + Math.hypot(p.x - from[0], p.y - from[1]) / VT;
-  }
-  p = runnerAt(c, r, ta);
-  if (p.done) return null;
-  return { t1: ta, at: [r2(p.x), r2(p.y)], d: Math.hypot(p.x - from[0], p.y - from[1]) };
-}
-
-/** Шанс попасть в бегущего с расстояния d. */
-export const hitChance = (d: number) => clamp(0.78 - d / 16, 0.06, 0.72);
-
-export function newTeam(c: Cfg, rot: number): Team {
-  const queue = Array.from({ length: c.n }, (_, i) => (i + rot) % c.n);
-  return { score: 0, st: Array.from({ length: c.n }, () => 'ready' as PStatus), queue, rot };
-}
-
-export function newState(c: Cfg, seats: [number, number]): State {
+export function newGame(o: Options, seats: [number, number], speed = gameSpeed(o)): State {
+  const c = cfgFrom(o);
   const s: State = {
     cfg: c,
     seats,
     atk: 0,
-    teams: [newTeam(c, 0), newTeam(c, 0)],
-    phase: 'hit',
+    score: [0, 0],
+    t: 0,
+    speed,
+    phase: 'pause',
+    until: 1.0,
+    next: 'serve',
+    since: 0,
+    men: [Array.from({ length: c.n }, (_, i) => man(...homeSpot(c, i, 'dom'))), formation(c).map(([x, y]) => man(x, y))],
+    queue: Array.from({ length: c.n }, (_, i) => i),
+    rot: [0, 0],
     batter: 0,
     tries: c.tries,
-    play: null,
+    ball: ballServe(0),
+    ctrl: [0, 0],
+    auto: [true, true],
+    seen: [
+      { hit: 0, c: 0, th: 0, d: 0 },
+      { hit: 0, c: 0, th: 0, d: 0 },
+    ],
+    catchT: [-1, -1],
+    mayRun: [],
+    quietT: -1,
+    chase: -1,
+    chaseT: -1,
+    go: [],
+    holdT: 0,
+    tried: [],
     hits: 0,
     over: false,
     winners: [],
   };
-  s.batter = s.teams[0].queue[0];
+  s.men[0][0].x = BAT_SPOT[0];
+  s.men[0][0].y = BAT_SPOT[1];
   return s;
 }
 
-export function setup(o: Options, seats: number[]): State {
-  const ss = seats.length >= 2 ? [seats[0], seats[1]] : [seats[0] ?? 0, 1];
-  return newState(cfgFrom(o), ss as [number, number]);
-}
+export const defT = (s: State) => (1 - s.atk) as 0 | 1;
 
-export const def0 = (s: State) => (1 - s.atk) as 0 | 1;
-/** Чьё сейчас решение (место). */
-export function toAct(s: State): number[] {
-  if (s.over) return [];
-  const t = s.phase === 'hit' || s.phase === 'run' ? s.atk : def0(s);
-  return [s.seats[t]];
-}
+export const idleInput = (): In => ({ mx: 0, my: 0, k: -1, ai: 1 });
 
-/** Кто из нападения может побежать сейчас. */
-export function canRun(s: State): number[] {
-  const p = s.play;
-  if (!p) return [];
-  const st = s.teams[s.atk].st;
-  const out: number[] = [];
-  for (let i = 0; i < s.cfg.n; i++) {
-    if (st[i] === 'kon') out.push(i);
-    else if (st[i] === 'used' && p.mayRun.includes(i)) out.push(i);
+export function cleanInput(raw: unknown): In | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+  const out: In = { mx: clamp(num(r.mx), -1, 1), my: clamp(num(r.my), -1, 1), k: Math.round(clamp(num(r.k, -1), -1, 5)), ai: Math.round(clamp(num(r.ai, -1), -1, 2)) };
+  const h = r.hit as Record<string, unknown> | undefined;
+  if (h && typeof h === 'object') {
+    const st = h.style;
+    if (st === 'candle' || st === 'far' || st === 'low') out.hit = { n: Math.round(num(h.n)), pow: clamp(num(h.pow), 0, 1), yaw: clamp(num(h.yaw), -0.75, 0.75), style: st };
   }
+  if (r.c != null) out.c = Math.round(num(r.c));
+  if (r.d != null) out.d = Math.round(num(r.d));
+  const th = r.th as Record<string, unknown> | undefined;
+  if (th && typeof th === 'object') out.th = { n: Math.round(num(th.n)), tx: clamp(num(th.tx), -80, 80), ty: clamp(num(th.ty), -20, 120) };
+  const sp = cleanSpeed(r.sp);
+  if (sp != null) out.sp = sp;
   return out;
 }
 
-const clone = (s: State): State => JSON.parse(JSON.stringify(s));
+/** Кто подаёт: первый в очереди после бьющего (или кто угодно из дома). */
+export function server(s: State): number {
+  for (const i of s.queue) if (i !== s.batter) return i;
+  return s.men[s.atk].findIndex((m, i) => i !== s.batter && (m.st === 'ready' || m.st === 'used'));
+}
 
-/** Прибежавшие к моменту t: за линию, очки за перебежку домой. */
-function arrive(s: State, t: number, ev: Event[]) {
-  const p = s.play!;
-  const tm = s.teams[s.atk];
-  const keep: Runner[] = [];
-  for (const r of p.runners) {
-    const at = runnerAt(s.cfg, r, t);
-    if (!at.done) {
-      keep.push(r);
-      continue;
-    }
-    if (r.from === 'dom') {
-      tm.st[r.who] = 'kon';
-      ev.push({ k: 'safe', team: s.atk, who: r.who, at: 'kon', pts: 0 });
-    } else {
-      tm.st[r.who] = 'ready';
-      tm.queue.push(r.who);
-      tm.score += 2;
-      ev.push({ k: 'safe', team: s.atk, who: r.who, at: 'dom', pts: 2 });
-    }
+/** Может ли игрок нападения сейчас выбежать в поле. */
+export function mayLeave(s: State, i: number): boolean {
+  if (s.phase !== 'live') return false;
+  const m = s.men[s.atk][i];
+  if (m.st === 'kon') return true;
+  return m.st === 'used' && s.mayRun.includes(i);
+}
+
+/** Где мяч сейчас (оси игры). */
+export function ballPos(s: State): [number, number, number] {
+  const b = s.ball;
+  if (b.mode === 'free' && b.b0) {
+    const f = sample(flight(b.b0).frames, s.t - b.t0);
+    return [f[1], f[2], f[3]];
   }
-  p.runners = keep;
+  if (b.mode === 'held') {
+    const m = s.men[defT(s)][b.holder];
+    return [m.x + 0.25, m.y, 1.1];
+  }
+  const sv = server(s);
+  const m = sv >= 0 ? s.men[s.atk][sv] : null;
+  return m ? [m.x - 0.2, m.y, 1.15] : [SERVE_SPOT[0], SERVE_SPOT[1], 1.15];
+}
+
+/** Мяч лежит (докатился). */
+export const ballRests = (s: State) => s.ball.mode === 'free' && !!s.ball.b0 && s.t - s.ball.t0 >= flight(s.ball.b0).rest;
+
+/** Расстояние от точки до отрезка (в плане). */
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  const k = l2 > 0 ? clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1) : 0;
+  return Math.hypot(px - (ax + dx * k), py - (ay + dy * k));
+}
+
+/** Бросок из точки from (высота руки) в точку (tx, ty) — пологий, долетает на высоте пояса; e — ошибка руки, рад. */
+export function throwBody(from: [number, number], tx: number, ty: number, e = 0): Body {
+  const d = Math.max(0.5, Math.hypot(tx - from[0], ty - from[1]));
+  const v = VT;
+  const z0 = 1.7;
+  const pitch = clamp(Math.atan2(1.0 - z0 + (9.81 * d * d) / (2 * v * v), d), -0.2, 0.6);
+  const yaw = Math.atan2(tx - from[0], ty - from[1]) + e;
+  const b = kick({ x: from[0], y: from[1], z: z0, vx: 0, vy: 0, vz: 0, r: BALL_R, a: 0, w: 0 }, v, yaw, pitch);
+  return { ...b, x: r3(b.x), y: r3(b.y), vx: r3(b.vx), vy: r3(b.vy), vz: r3(b.vz) };
+}
+
+/** Упреждение: куда кинуть, чтобы встретить бегущего (по его скорости). */
+export function lead(from: [number, number], m: Man): [number, number] {
+  let t = 0.15;
+  for (let k = 0; k < 6; k++) t = 0.15 + Math.hypot(m.x + m.vx * t - from[0], m.y + m.vy * t - from[1]) / VT;
+  return [m.x + m.vx * t, m.y + m.vy * t];
+}
+
+function pause(s: State, sec: number, next: 'serve' | 'batter') {
+  s.phase = 'pause';
+  s.until = s.t + sec;
+  s.next = next;
+}
+
+function resetBall(s: State) {
+  s.ball = ballServe(s.t);
+  s.go = [];
+  s.chase = -1;
+  s.tried = [];
 }
 
 /** Кто бьёт следующим; нет — смена. */
 function nextBatter(s: State, ev: Event[]) {
-  const tm = s.teams[s.atk];
-  s.play = null;
-  while (tm.queue.length && tm.st[tm.queue[0]] !== 'ready') tm.queue.shift();
-  if (!tm.queue.length) {
+  const st = s.men[s.atk];
+  s.queue = s.queue.filter((i) => st[i].st === 'ready');
+  if (!s.queue.length) {
     swap(s, 'nobat', ev);
     return;
   }
-  s.batter = tm.queue[0];
+  s.batter = s.queue[0];
   s.tries = s.cfg.tries;
-  s.phase = 'hit';
+  resetBall(s);
+  pause(s, 1.0, 'serve');
 }
 
 function swap(s: State, reason: 'salit' | 'candle' | 'nobat', ev: Event[]) {
-  const old = s.teams[s.atk];
+  const c = s.cfg;
+  for (const m of s.men[s.atk]) (m.st = 'ready'), (m.from = undefined), (m.dash = 0);
   s.atk = (1 - s.atk) as 0 | 1;
-  // бывшее нападение — в поле: все со своими местами; новое нападение — все в доме с правом удара
-  old.st = old.st.map(() => 'ready');
-  const nt = s.teams[s.atk];
-  nt.rot = (nt.rot + 1) % s.cfg.n;
-  const fresh = newTeam(s.cfg, nt.rot);
-  nt.st = fresh.st;
-  nt.queue = fresh.queue;
-  s.play = null;
-  s.batter = nt.queue[0];
-  s.tries = s.cfg.tries;
-  s.phase = 'hit';
+  s.rot[s.atk] = (s.rot[s.atk] + 1) % c.n;
+  for (const m of s.men[s.atk]) (m.st = 'ready'), (m.from = undefined), (m.dash = 0);
+  s.queue = Array.from({ length: c.n }, (_, i) => (i + s.rot[s.atk]) % c.n);
+  s.batter = s.queue[0];
+  s.tries = c.tries;
+  s.auto = [true, true];
+  resetBall(s);
   ev.push({ k: 'swap', reason, atk: s.atk });
+  pause(s, 2.4, 'serve');
 }
 
 function checkEnd(s: State, ev: Event[]): boolean {
-  const [a, b] = s.teams;
-  const won = a.score >= s.cfg.target || b.score >= s.cfg.target || s.hits >= s.cfg.maxHits;
-  if (!won) return false;
+  if (s.over) return true;
+  const c = s.cfg;
+  const [a, b] = s.score;
+  const done = a >= c.target || b >= c.target || s.hits >= c.maxHits || (c.minutes > 0 && s.t >= c.minutes * 60);
+  if (!done) return false;
   s.over = true;
-  s.play = null;
-  s.winners = a.score === b.score ? [s.seats[0], s.seats[1]] : [s.seats[a.score > b.score ? 0 : 1]];
+  s.winners = a === b ? [s.seats[0], s.seats[1]] : [s.seats[a > b ? 0 : 1]];
   ev.push({ k: 'end', winners: s.winners });
   return true;
 }
 
-/** Розыгрыш окончен: полевые на места, следующий бьющий. */
-function endPlay(s: State, ev: Event[]) {
-  ev.push({ k: 'reset' });
+/** Розыгрыш окончен: бегущих нет, мяч у защиты. */
+function dead(s: State, ev: Event[]) {
+  ev.push({ k: 'dead' });
   if (checkEnd(s, ev)) return;
   nextBatter(s, ev);
 }
 
-/** После решения: бегущие есть — решает защита; нет — нападение (если кому бежать), иначе розыгрыш окончен. */
-function afterMove(s: State, ev: Event[]) {
-  const p = s.play!;
-  if (s.over) return;
-  if (p.moves > 14) {
-    // страховка: перекидка затянулась — все добегают, розыгрыш окончен
-    const t1 = Math.max(p.t, ...p.runners.map((r) => runnerAt(s.cfg, r, 0).tEnd));
-    ev.push({ k: 'hold', team: def0(s), t0: p.t, t1, rs: p.runners.slice() });
-    p.t = t1;
-    arrive(s, t1 + 1e-6, ev);
-    if (!checkEnd(s, ev)) endPlay(s, ev);
+/** Удар. */
+function doHit(s: State, pow: number, yaw: number, style: Style, ev: Event[]) {
+  const b0 = strike(s.cfg, pow, yaw, style);
+  const kind: HitKind = judge(s.cfg, flight(b0).land);
+  s.hits++;
+  const atk = s.men[s.atk];
+  const who = s.batter;
+  s.ball = { mode: 'free', b0, t0: s.t, holder: -1, air: kind === 'ok', thrown: false, by: -1, px: b0.x, py: b0.y, pz: b0.z };
+  s.tried = [];
+  s.chase = -1;
+  if (kind !== 'ok') {
+    s.tries--;
+    ev.push({ k: 'hit', team: s.atk, who, kind, b0, t: s.t, left: s.tries });
+    if (s.tries <= 0) {
+      atk[who].st = 'used';
+      s.queue = s.queue.filter((i) => i !== who);
+      pause(s, 1.8, 'batter');
+    } else pause(s, 1.8, 'serve');
     return;
   }
-  if (p.runners.length) s.phase = 'throw';
-  else if (canRun(s).length) s.phase = 'run';
-  else endPlay(s, ev);
+  ev.push({ k: 'hit', team: s.atk, who, kind, b0, t: s.t, left: s.tries - 1 });
+  atk[who].st = 'used';
+  s.queue = s.queue.filter((i) => i !== who);
+  s.mayRun = s.cfg.onlyHitter ? [who] : atk.map((m, i) => (m.st === 'used' ? i : -1)).filter((i) => i >= 0);
+  s.phase = 'live';
+  s.since = s.t;
+  s.quietT = -1;
+  s.go = [];
 }
 
-export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
-  if (s0.over || !toAct(s0).includes(seat)) return null;
-  const s = clone(s0);
+/** Двигать человека к желаемой скорости. */
+function steer(m: Man, w: Want, vmax: number, dt: number) {
+  let vx = w.mx * vmax;
+  let vy = w.my * vmax;
+  if (m.dash > 0) (vx *= DASH.k), (vy *= DASH.k);
+  const k = Math.min(1, dt / 0.15);
+  m.vx += (vx - m.vx) * k;
+  m.vy += (vy - m.vy) * k;
+  m.x += m.vx * dt;
+  m.y += m.vy * dt;
+  m.dash = Math.max(0, m.dash - dt);
+  m.cd = Math.max(0, m.cd - dt);
+}
+
+function tryDash(m: Man, team: number, who: number, ev: Event[]) {
+  if (m.cd > 0) return;
+  m.dash = DASH.t;
+  m.cd = DASH.cd;
+  ev.push({ k: 'dash', team, who });
+}
+
+/** Подача: бьющий на площадке. */
+function startServe(s: State) {
+  s.phase = 'serve';
+  s.since = s.t;
+  resetBall(s);
+  s.auto = [true, true];
+}
+
+/** Все — по местам: бьющий, подающий, ждущие, полевые. */
+function walkHome(s: State, dt: number) {
   const c = s.cfg;
-  const ev: Event[] = [];
-  const roll = (p: number) => rng.int(1000) < Math.round(p * 1000);
-  if (s.phase === 'hit') {
-    if (a.type !== 'hit' || !Number.isFinite(a.pow) || !Number.isFinite(a.yaw) || !(a.style in PITCH)) return null;
-    const pow = clamp(a.pow, 0, 1);
-    // перебор силы — бывает промах
-    const miss = pow > 0.93 && roll((pow - 0.93) * 7);
-    const b0 = strike(c, pow, a.yaw, a.style);
-    const fl = flight(b0);
-    const kind: HitKind = miss ? 'miss' : judge(c, fl.land);
-    s.hits++;
-    const tm = s.teams[s.atk];
-    if (kind !== 'ok') {
-      s.tries--;
-      ev.push({ k: 'hit', team: s.atk, who: s.batter, b0, kind, land: miss || !fl.land ? null : { x: r2(fl.land.x), y: r2(fl.land.y) }, style: a.style, left: s.tries });
-      if (s.tries <= 0) {
-        tm.st[s.batter] = 'used';
-        tm.queue = tm.queue.filter((x) => x !== s.batter);
-        if (!checkEnd(s, ev)) nextBatter(s, ev);
-      } else checkEnd(s, ev);
-      return { state: s, events: ev };
+  const A = s.atk;
+  const sv = server(s);
+  const go = (m: Man, x: number, y: number, v: number) => {
+    const dx = x - m.x;
+    const dy = y - m.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 0.03) {
+      m.vx = m.vy = 0;
+      return;
     }
-    ev.push({ k: 'hit', team: s.atk, who: s.batter, b0, kind, land: { x: r2(fl.land!.x), y: r2(fl.land!.y) }, style: a.style, left: s.tries - 1 });
-    tm.st[s.batter] = 'used';
-    tm.queue = tm.queue.filter((x) => x !== s.batter);
-    const used = tm.st.map((x, i) => (x === 'used' ? i : -1)).filter((i) => i >= 0);
-    s.play = {
-      t: 0,
-      b0,
-      batter: s.batter,
-      runners: [],
-      holder: null,
-      fpos: formation(c),
-      caught: false,
-      moves: 0,
-      mayRun: c.onlyHitter ? [s.batter] : used,
-    };
-    s.phase = canRun(s).length ? 'run' : 'catch';
-    return { state: s, events: ev };
-  }
-  const p = s.play;
-  if (!p) return null;
-  p.moves++;
-  if (s.phase === 'run') {
-    if (a.type !== 'run' || !Array.isArray(a.who)) return null;
-    const can = canRun(s);
-    const who = [...new Set(a.who)];
-    if (!who.every((w) => can.includes(w))) return null;
-    const tm = s.teams[s.atk];
-    const t0 = r2(p.t + (p.caught ? 0.15 : 0.35));
-    for (const w of who) {
-      p.runners.push({ who: w, from: tm.st[w] === 'kon' ? 'kon' : 'dom', t0 });
-      tm.st[w] = 'run';
-    }
-    if (who.length) ev.push({ k: 'run', team: s.atk, who, t: t0 });
-    if (!p.caught) {
-      s.phase = 'catch';
-      return { state: s, events: ev };
-    }
-    if (!who.length) {
-      // никто не побежал — мяч подающему, розыгрыш окончен
-      endPlay(s, ev);
-      return { state: s, events: ev };
-    }
-    s.phase = 'throw';
-    return { state: s, events: ev };
-  }
-  if (s.phase === 'catch') {
-    if (a.type !== 'catch' || !Number.isInteger(a.who) || a.who < 0 || a.who >= c.n) return null;
-    const f = p.fpos[a.who];
-    const ic = intercept(p.b0, f);
-    let ok = true;
-    let t2 = ic.t + PICK;
-    if (ic.air) {
-      ok = roll(catchChance(ic.margin));
-      if (!ok) t2 = ic.t + 0.8; // выронил — поднимает
-    }
-    const to: [number, number] = [r2(ic.x), r2(ic.y)];
-    ev.push({ k: 'catch', team: def0(s), who: a.who, from: f, to, t1: r2(ic.t), t2: r2(t2), air: ic.air, ok, b0: p.b0, rs: p.runners.slice(), t0: p.t });
-    p.fpos[a.who] = to;
-    p.holder = a.who;
-    p.caught = true;
-    if (ic.air && ok) {
-      if (c.candle === 'swap') {
-        ev.push({ k: 'candle', team: def0(s), pts: 0 });
-        ev.push({ k: 'reset' });
-        swap(s, 'candle', ev);
-        return { state: s, events: ev };
-      }
-      s.teams[def0(s)].score += 1;
-      ev.push({ k: 'candle', team: def0(s), pts: 1 });
-      if (checkEnd(s, ev)) return { state: s, events: ev };
-    }
-    p.t = r2(t2);
-    arrive(s, p.t, ev);
-    if (checkEnd(s, ev)) return { state: s, events: ev };
-    afterMove(s, ev);
-    return { state: s, events: ev };
-  }
-  if (s.phase === 'throw') {
-    const h = p.holder;
-    if (h == null) return null;
-    const from = p.fpos[h];
-    if (a.type === 'hold') {
-      const t1 = r2(Math.max(p.t, ...p.runners.map((r) => runnerAt(c, r, 0).tEnd)) + 0.01);
-      ev.push({ k: 'hold', team: def0(s), t0: p.t, t1, rs: p.runners.slice() });
-      p.t = t1;
-      arrive(s, t1, ev);
-      if (!checkEnd(s, ev)) endPlay(s, ev);
-      return { state: s, events: ev };
-    }
-    if (a.type === 'pass') {
-      if (!Number.isInteger(a.to) || a.to < 0 || a.to >= c.n || a.to === h) return null;
-      const at = p.fpos[a.to];
-      const t1 = r2(p.t + WIND + Math.hypot(at[0] - from[0], at[1] - from[1]) / VT + 0.15);
-      ev.push({ k: 'pass', team: def0(s), who: h, to: a.to, from, at, t0: p.t, t1, rs: p.runners.slice() });
-      p.holder = a.to;
-      p.t = t1;
-      arrive(s, t1, ev);
-      if (checkEnd(s, ev)) return { state: s, events: ev };
-      afterMove(s, ev);
-      return { state: s, events: ev };
-    }
-    if (a.type !== 'throw' || !Number.isInteger(a.at)) return null;
-    const r = p.runners.find((x) => x.who === a.at);
-    if (!r) return null;
-    const aim = aimAt(c, from, p.t, r);
-    if (aim && roll(hitChance(aim.d))) {
-      ev.push({ k: 'throw', team: def0(s), who: h, from, to: aim.at, t0: p.t, t1: r2(aim.t1), runner: r.who, hit: true, rs: p.runners.slice() });
-      ev.push({ k: 'salit', team: s.atk, who: r.who });
-      ev.push({ k: 'reset' });
-      swap(s, 'salit', ev);
-      return { state: s, events: ev };
-    }
-    // мимо: мяч улетает за бегущего, ближайший полевой бежит за ним
-    const tgt = aim ? aim.at : (() => {
-      const q = runnerAt(c, r, p.t + 1);
-      return [q.x, q.y] as [number, number];
-    })();
-    const t1 = aim ? aim.t1 : p.t + WIND + Math.hypot(tgt[0] - from[0], tgt[1] - from[1]) / VT;
-    const dx = tgt[0] - from[0];
-    const dy = tgt[1] - from[1];
-    const dl = Math.hypot(dx, dy) || 1;
-    const over = 6 + rng.int(60) / 10;
-    const ball: [number, number] = [r2(clamp(tgt[0] + (dx / dl) * over, -c.W / 2 - 4, c.W / 2 + 4)), r2(clamp(tgt[1] + (dy / dl) * over, -6, c.L + 6))];
-    ev.push({ k: 'throw', team: def0(s), who: h, from, to: tgt, t0: p.t, t1: r2(t1), runner: r.who, hit: false, rs: p.runners.slice() });
-    let best = 0;
-    let bt = Infinity;
-    p.fpos.forEach((fp, i) => {
-      const tt = Math.max(t1 + 0.35, p.t + REACT + Math.hypot(ball[0] - fp[0], ball[1] - fp[1]) / VF) + PICK;
-      if (tt < bt) (bt = tt), (best = i);
-    });
-    ev.push({ k: 'fetch', team: def0(s), who: best, from: p.fpos[best], to: ball, ball, t0: r2(t1), t1: r2(bt), rs: p.runners.slice() });
-    p.fpos[best] = ball;
-    p.holder = best;
-    p.t = r2(bt);
-    arrive(s, p.t, ev);
-    if (checkEnd(s, ev)) return { state: s, events: ev };
-    afterMove(s, ev);
-    return { state: s, events: ev };
-  }
-  return null;
+    const sp = Math.min(v, d / dt);
+    m.vx = (dx / d) * sp;
+    m.vy = (dy / d) * sp;
+    m.x += m.vx * dt;
+    m.y += m.vy * dt;
+  };
+  s.men[A].forEach((m, i) => {
+    const [x, y] = i === s.batter ? BAT_SPOT : i === sv ? SERVE_SPOT : homeSpot(c, i, m.st === 'kon' ? 'kon' : 'dom');
+    go(m, x, y, 8);
+  });
+  formation(c).forEach(([x, y], i) => go(s.men[defT(s)][i], x, y, 8));
 }
 
-/** Подпись команды. */
-export const TEAM_NAMES = ['Затулинка', 'Затон'];
+/** Кем управляет сторона, если выбирает сама: нападение — бьющий / бегущий / готовый бежать; защита — ближний к мячу. */
+export function autoCtrl(s: State, t: number): number {
+  const men = s.men[t];
+  const cur = s.ctrl[t];
+  if (t === s.atk) {
+    if (s.phase !== 'live') return s.batter;
+    if (men[cur] && (men[cur].st === 'run' || mayLeave(s, cur))) return cur;
+    const r = men.findIndex((m) => m.st === 'run');
+    if (r >= 0) return r;
+    const k = men.findIndex((_, i) => mayLeave(s, i));
+    return k >= 0 ? k : cur;
+  }
+  if (s.ball.mode === 'held') return s.ball.holder;
+  const [bx, by] = s.ball.mode === 'free' && s.ball.b0 ? chasePoint(s) : ballPos(s);
+  let best = 0;
+  let bd = Infinity;
+  men.forEach((m, i) => {
+    const d = Math.hypot(m.x - bx, m.y - by);
+    if (d < bd) (bd = d), (best = i);
+  });
+  if (men[cur] && Math.hypot(men[cur].x - bx, men[cur].y - by) < bd + 2.5) return cur;
+  return best;
+}
+
+/** Куда бежать за летящим мячом: где он окажется низко (≤ 2 м) не раньше, чем сейчас, — первая такая точка. */
+export function chasePoint(s: State): [number, number] {
+  const b = s.ball;
+  if (!b.b0) return [0, 0];
+  const fl = flight(b.b0);
+  const tt = s.t - b.t0;
+  for (const f of fl.frames) if (f[0] >= tt && f[3] <= 2.0) return [f[1], f[2]];
+  const last = fl.frames[fl.frames.length - 1];
+  return [last[1], last[2]];
+}
+
+/** Шаг симуляции. */
+export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Event[] {
+  const ev: Event[] = [];
+  if (s.over) return ev;
+  // сохранение прежней пошаговой лапты (до реального времени) — доиграть нельзя
+  if (!Array.isArray(s.men)) {
+    s.over = true;
+    s.winners = [];
+    return ev;
+  }
+  const c = s.cfg;
+  const ins = [0, 1].map((t) => inputs[s.seats[t]] ?? idleInput());
+  for (let t = 0; t < 2; t++) applySpeed(s, s.seats[t], ins[t].sp);
+  const dt = (TICK_MS / 1000) * s.speed;
+  s.t = r3(s.t + dt);
+  const A = s.atk;
+  const D = defT(s);
+
+  // свой пацан и одноразовые действия людей
+  const acts = [0, 1].map(() => ({ catch: false, dash: false, th: null as In['th'] | null, hit: null as In['hit'] | null }));
+  for (let t = 0; t < 2; t++) {
+    const inp = ins[t];
+    const seen = s.seen[t];
+    if (inp.ai < 0) {
+      if (inp.k >= 0 && inp.k < c.n) (s.ctrl[t] = inp.k), (s.auto[t] = false);
+      else s.auto[t] = true;
+      if (inp.hit && inp.hit.n !== seen.hit) (seen.hit = inp.hit.n), (acts[t].hit = inp.hit);
+      if (inp.c != null && inp.c !== seen.c) (seen.c = inp.c), (acts[t].catch = true);
+      if (inp.d != null && inp.d !== seen.d) (seen.d = inp.d), (acts[t].dash = true);
+      if (inp.th && inp.th.n !== seen.th) (seen.th = inp.th.n), (acts[t].th = inp.th);
+    } else s.auto[t] = true;
+    if (s.auto[t]) s.ctrl[t] = autoCtrl(s, t);
+  }
+
+  if (s.phase === 'pause') {
+    walkHome(s, dt);
+    if (s.t >= s.until) {
+      if (s.next === 'batter') nextBatter(s, ev);
+      else startServe(s);
+    }
+    return ev;
+  }
+
+  if (s.phase === 'serve') {
+    walkHome(s, dt);
+    const inp = ins[A];
+    let hit = acts[A].hit;
+    // бот бьёт не сразу — подающий подбросил, бьющий приладился
+    if (inp.ai >= 0) hit = s.t - s.since > 1.0 ? aiHit(s, inp.ai, rng) : null;
+    if (hit) doHit(s, hit.pow, hit.yaw, hit.style, ev);
+    return ev;
+  }
+
+  // ---- розыгрыш: ИИ ведёт всех, люди — своего
+  const lvA = ins[A].ai >= 0 ? ins[A].ai : 2;
+  const lvD = ins[D].ai >= 0 ? ins[D].ai : 2;
+  const wants: Want[][] = [aiAttack(s, lvA, rng), aiDefense(s)];
+  if (A === 1) wants.reverse();
+  for (const t of [A, D]) {
+    const inp = ins[t];
+    if (inp.ai >= 0) continue;
+    wants[t][s.ctrl[t]] = { mx: inp.mx, my: inp.my, dash: acts[t].dash };
+  }
+  const atk = s.men[A];
+  const def = s.men[D];
+  atk.forEach((m, i) => {
+    const w = wants[A][i] ?? { mx: 0, my: 0 };
+    const can = m.st === 'run' || mayLeave(s, i);
+    if (w.dash && can) tryDash(m, A, i, ev);
+    steer(m, w, VR, dt);
+    m.x = clamp(m.x, -c.W / 2 - 3, c.W / 2 + 3);
+    if (!can) {
+      // кому нельзя — за своей линией
+      if (m.st === 'kon') m.y = Math.max(m.y, c.L + 0.3);
+      else m.y = Math.min(m.y, -0.3);
+      return;
+    }
+    if (m.st !== 'run') {
+      const out = m.st === 'kon' ? m.y < c.L : m.y > 0;
+      if (out) {
+        m.from = m.st === 'kon' ? 'kon' : 'dom';
+        m.st = 'run';
+        ev.push({ k: 'run', team: A, who: i });
+      } else if (m.st === 'kon') m.y = Math.min(m.y, yKon(c) + 4);
+      else m.y = Math.max(m.y, -6);
+      return;
+    }
+    m.y = clamp(m.y, -3, yKon(c) + 3);
+    if (m.from === 'dom' && m.y >= c.L) {
+      m.st = 'kon';
+      m.from = undefined;
+      ev.push({ k: 'safe', team: A, who: i, at: 'kon', pts: 0 });
+    } else if (m.from === 'kon' && m.y <= 0) {
+      m.st = 'ready';
+      m.from = undefined;
+      s.queue.push(i);
+      s.score[A] += 2;
+      ev.push({ k: 'safe', team: A, who: i, at: 'dom', pts: 2 });
+    } else if (m.from === 'dom' && m.y <= -0.1) {
+      // передумал и вернулся
+      m.st = 'used';
+      m.from = undefined;
+    } else if (m.from === 'kon' && m.y >= c.L + 0.1) {
+      m.st = 'kon';
+      m.from = undefined;
+    }
+  });
+  if (checkEnd(s, ev)) return ev;
+  def.forEach((m, i) => {
+    const w = wants[D][i] ?? { mx: 0, my: 0 };
+    if (w.dash) tryDash(m, D, i, ev);
+    steer(m, w, VF, dt);
+    m.x = clamp(m.x, -c.W / 2 - 6, c.W / 2 + 6);
+    m.y = clamp(m.y, -2, c.L + 7);
+  });
+  if (acts[D].catch) s.catchT[D] = s.t + CATCH_WIN;
+
+  const b = s.ball;
+  if (b.mode === 'free' && b.b0) {
+    const fl = flight(b.b0);
+    const tt = s.t - b.t0;
+    const [x, y, z] = ballPos(s);
+    if (b.air && fl.land && tt >= fl.land.t) b.air = false;
+    // брошенный защитой — в бегущего
+    if (b.thrown) {
+      for (let i = 0; i < atk.length; i++) {
+        const m = atk[i];
+        if (m.st !== 'run') continue;
+        if (Math.min(z, b.pz) <= HIT_Z && segDist(m.x, m.y, b.px, b.py, x, y) < HIT_R) {
+          ev.push({ k: 'salit', team: A, who: i });
+          swap(s, 'salit', ev);
+          return ev;
+        }
+      }
+    }
+    // поймать с лёта (человек — в окно кнопки, ИИ — с шансом) или подобрать с земли
+    let got = -1;
+    let gotAir = false;
+    for (let i = 0; i < def.length && got < 0; i++) {
+      if (b.thrown && i === b.by && tt < 0.4) continue;
+      const m = def[i];
+      const d = segDist(m.x, m.y, b.px, b.py, x, y);
+      if (z <= 0.35) {
+        if (d < ARM_GROUND) got = i;
+        continue;
+      }
+      if (z > REACH || d >= ARM_AIR) continue;
+      const human = ins[D].ai < 0 && i === s.ctrl[D];
+      if (human) {
+        if (s.t <= s.catchT[D]) (got = i), (gotAir = true);
+      } else if (!s.tried.includes(i)) {
+        s.tried.push(i);
+        // пас своему ловят почти всегда, удар с лёта — по уровню
+        const p = b.thrown ? 0.95 : ([0.5, 0.72, 0.88][lvD] ?? 0.72);
+        if (rng.int(1000) < p * 1000) (got = i), (gotAir = true);
+      }
+    }
+    b.px = x;
+    b.py = y;
+    b.pz = z;
+    if (got >= 0) {
+      const candle = gotAir && b.air && !b.thrown;
+      s.ball = { mode: 'held', b0: null, t0: s.t, holder: got, air: false, thrown: false, by: -1, px: x, py: y, pz: z };
+      s.holdT = s.t;
+      s.catchT[D] = -1;
+      s.chase = -1;
+      ev.push({ k: 'catch', team: D, who: got, air: gotAir });
+      if (candle) {
+        if (c.candle === 'swap') {
+          ev.push({ k: 'candle', team: D, pts: 0 });
+          swap(s, 'candle', ev);
+          return ev;
+        }
+        s.score[D] += 1;
+        ev.push({ k: 'candle', team: D, pts: 1 });
+        if (checkEnd(s, ev)) return ev;
+      }
+    }
+  } else if (b.mode === 'held') {
+    const h = b.holder;
+    const m = def[h];
+    const human = ins[D].ai < 0 && h === s.ctrl[D];
+    let th: { tx: number; ty: number; human: boolean } | null = null;
+    if (human && acts[D].th) th = { tx: acts[D].th.tx, ty: acts[D].th.ty, human: true };
+    else if (!human || s.t - s.holdT > 8) {
+      const a = aiThrow(s, lvD);
+      if (a) th = { ...a, human: false };
+    }
+    if (th) {
+      let tx = th.tx;
+      let ty = th.ty;
+      // в бегущего рядом с точкой — с упреждением
+      for (const r of atk) if (r.st === 'run' && Math.hypot(r.x - tx, r.y - ty) < 2.5) [tx, ty] = lead([m.x, m.y], r);
+      let pass = false;
+      for (let i = 0; i < def.length; i++) if (i !== h && Math.hypot(def[i].x - tx, def[i].y - ty) < 1.5) pass = true;
+      const d = Math.hypot(tx - m.x, ty - m.y);
+      const sig = (th.human ? 0.01 : ([0.05, 0.03, 0.018][lvD] ?? 0.03)) + d * 0.0012;
+      const e = ((rng.int(2001) - 1000) / 1000) * sig;
+      const b0 = throwBody([m.x, m.y], tx, ty, e);
+      s.ball = { mode: 'free', b0, t0: s.t, holder: -1, air: false, thrown: true, by: h, px: b0.x, py: b0.y, pz: b0.z };
+      s.tried = [];
+      ev.push({ k: 'throw', team: D, who: h, pass });
+    }
+  }
+
+  // конец розыгрыша: бегущих нет, мяч у защиты (или лежит) — секунда тишины
+  const running = atk.some((m) => m.st === 'run');
+  const calm = !running && (s.ball.mode === 'held' || ballRests(s));
+  if (calm) {
+    if (s.quietT < 0) s.quietT = s.t;
+    if (s.t - s.quietT > 1.2) dead(s, ev);
+  } else s.quietT = -1;
+  // страховка: розыгрыш затянулся
+  if (s.phase === 'live' && s.t - s.since > 45) {
+    for (const m of atk) if (m.st === 'run') (m.st = m.from === 'kon' ? 'kon' : 'used'), (m.from = undefined);
+    dead(s, ev);
+  }
+  return ev;
+}
+
+/** Снимок для сети: числа округлены. */
+export function snapshot(s: State): State {
+  const r = (v: number) => Math.round(v * 1000) / 1000;
+  return {
+    ...s,
+    men: s.men.map((t) => t.map((m) => ({ ...m, x: r(m.x), y: r(m.y), vx: r(m.vx), vy: r(m.vy), dash: r(m.dash), cd: r(m.cd) }))) as [Man[], Man[]],
+    ball: { ...s.ball, px: r(s.ball.px), py: r(s.ball.py), pz: r(s.ball.pz) },
+  };
+}
+
+export { VF, VR };

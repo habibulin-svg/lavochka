@@ -7,3 +7,12 @@
 .ds-tip { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 5px 14px; border-radius: 20px; background: rgba(28, 22, 14, 0.6); color: #fff; font: 14px 'PT Sans', Arial, sans-serif; pointer-events: none; opacity: 0; transition: opacity .3s; white-space: nowrap; z-index: 3; }
 .ds-tip.on { opacity: 1; }
 @media (max-width: 640px) { .ds-gauge-bar { height: 110px; } }
+/* Управление своим пацаном (pad.ts): стик слева внизу и круглые кнопки справа — на телефоне; на ПК — только кнопки-подсказки. */
+.ds-pad { position: absolute; inset: auto 0 0 0; height: 0; z-index: 4; pointer-events: none; }
+.ds-stick { display: none; position: absolute; left: 18px; bottom: 18px; width: 112px; height: 112px; border-radius: 50%; background: rgba(28, 22, 14, 0.35); border: 2px solid rgba(255,255,255,.55); pointer-events: auto; touch-action: none; }
+.ds-stick i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.ds-pad.touch .ds-stick { display: block; }
+.ds-btns { position: absolute; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap-reverse; gap: 8px; justify-content: flex-end; max-width: 240px; pointer-events: auto; }
+.ds-btn { min-width: 64px; height: 44px; padding: 0 12px; border-radius: 22px; border: 2px solid rgba(255,255,255,.9); background: rgba(40, 30, 18, 0.8); color: #fff; font: bold 14px 'PT Sans', Arial, sans-serif; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.35); touch-action: none; }
+.ds-pad.touch .ds-btn { min-width: 70px; height: 56px; border-radius: 28px; font-size: 15px; }
+.ds-btn.hot { background: #d8402e; }

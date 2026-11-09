@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { def } from '../src/games/lapta/def';
-import { apply, cfgFrom, flight, intercept, judge, newState, runnerAt, strike, formation, type State } from '../src/games/lapta/engine';
+import { cfgFrom, cleanInput, flight, idleInput, intercept, judge, newGame, step, strike, type In, type State } from '../src/games/lapta/engine';
 
-const rig = (vals: number[]) => {
-  const r = new SeededRng(1);
-  return { next: () => r.next(), int: (n: number) => (vals.length ? vals.shift()! : r.int(n)), getState: () => 0 };
-};
+const human = (o: Partial<In> = {}): In => ({ mx: 0, my: 0, k: -1, ai: -1, ...o });
+/** Крутить, пока не выполнится условие (не дольше max шагов). */
+function run(s: State, ins: (s: State) => (In | null)[], until: (s: State) => boolean, max = 6000, rng = new SeededRng(3)) {
+  const evs: string[] = [];
+  for (let i = 0; i < max && !until(s) && !s.over; i++) for (const e of step(s, ins(s), rng)) evs.push(e.k + ('kind' in e ? ':' + e.kind : ''));
+  return evs;
+}
 
 describe('лапта: удар и поле', () => {
   it('полёт мяча детерминирован', () => {
     const c = cfgFrom({});
-    const a = flight(strike(c, 0.7, 0.1, 'far'));
-    const b = flight({ ...strike(c, 0.7, 0.1, 'far') });
-    expect(a.land).toEqual(b.land);
+    expect(flight(strike(c, 0.7, 0.1, 'far')).land).toEqual(flight({ ...strike(c, 0.7, 0.1, 'far') }).land);
   });
   it('дальний удар в полную силу — чуть за кон, слабый — недолёт', () => {
     for (const L of [50, 36, 26]) {
@@ -25,7 +26,7 @@ describe('лапта: удар и поле', () => {
     const big = cfgFrom({ field: 50, ctrl: 10 });
     expect(judge(big, flight(strike(big, 0, 0, 'low')).land)).toBe('short');
   });
-  it('аут — за боковую, недолёт — до контрольной', () => {
+  it('аут и недолёт', () => {
     const c = cfgFrom({});
     expect(judge(c, { x: c.W / 2 + 1, y: 20 })).toBe('out');
     expect(judge(c, { x: 0, y: c.ctrl - 1 })).toBe('short');
@@ -35,65 +36,48 @@ describe('лапта: удар и поле', () => {
     const c = cfgFrom({});
     const b0 = strike(c, 0.5, 0, 'candle');
     const land = flight(b0).land!;
-    const ic = intercept(b0, [land.x + 1, land.y]);
-    expect(ic.air).toBe(true);
+    expect(intercept(b0, [land.x + 1, land.y]).air).toBe(true);
+  });
+  it('ввод по сети чистится', () => {
+    expect(cleanInput({ mx: 5, my: -9, k: 9, ai: 7 })).toMatchObject({ mx: 1, my: -1, k: 5, ai: 2 });
+    expect(cleanInput('x')).toBeNull();
+    expect(cleanInput({ hit: { n: 1, pow: 2, yaw: 0, style: 'boom' } })!.hit).toBeUndefined();
   });
 });
 
-describe('лапта: розыгрыш', () => {
-  const st = (): State => newState(cfgFrom({}), [0, 1]);
-  it('удар → бег → ловля → осалили → смена', () => {
-    let s = st();
-    let r = apply(s, 0, { type: 'hit', pow: 0.42, yaw: -0.12, style: 'low' }, rig([]))!;
-    expect(r.events[0]).toMatchObject({ k: 'hit', kind: 'ok' });
-    s = r.state;
-    expect(s.phase).toBe('run');
-    r = apply(s, 0, { type: 'run', who: [0] }, rig([]))!;
-    s = r.state;
-    expect(s.phase).toBe('catch');
-    const f = formation(s.cfg);
-    let best = 0;
-    f.forEach((p, i) => (intercept(s.play!.b0, p).t < intercept(s.play!.b0, f[best]).t ? (best = i) : 0));
-    r = apply(s, 1, { type: 'catch', who: best }, rig([]))!;
-    s = r.state;
-    expect(s.phase).toBe('throw');
-    r = apply(s, 1, { type: 'throw', at: 0 }, rig([0]))!;
-    expect(r.events.map((e) => e.k)).toContain('salit');
-    expect(r.state.atk).toBe(1);
+describe('лапта: розыгрыш в реальном времени', () => {
+  it('человек бьёт, выбегает сам и добегает до кона', () => {
+    const s = newGame({ field: 36, ctrl: 7, n: 4, speed: 1 }, [0, 1], 1);
+    // ждём подачу, бьём далеко вбок от полевых
+    run(s, () => [human(), { ...idleInput(), ai: 0 }], (x) => x.phase === 'serve');
+    const evs = run(s, () => [human({ hit: { n: 1, pow: 0.75, yaw: 0.28, style: 'low' } }), { ...idleInput(), ai: 0 }], (x) => x.phase === 'live', 10);
+    expect(evs).toContain('hit:ok');
+    // бьющий (он же мой пацан) бежит вперёд
+    const evs2 = run(s, () => [human({ my: 1, mx: 0.15 }), { ...idleInput(), ai: 0 }], (x) => x.men[0][0].st === 'kon' || x.atk !== 0, 2000);
+    expect(evs2).toContain('run');
+    expect(s.men[0][0].st === 'kon' || s.atk === 1).toBe(true);
   });
-  it('домой из кона — 2 очка и снова право удара', () => {
-    let s = st();
-    s.teams[0].st[1] = 'kon';
-    s.teams[0].queue = [0, 2, 3, 4, 5];
-    s = apply(s, 0, { type: 'hit', pow: 0.8, yaw: 0.25, style: 'low' }, rig([]))!.state;
-    s = apply(s, 0, { type: 'run', who: [1] }, rig([]))!.state;
-    s = apply(s, 1, { type: 'catch', who: 4 }, rig([]))!.state;
-    const r = apply(s, 1, { type: 'hold' }, rig([]))!;
-    expect(r.state.teams[0].score).toBe(2);
-    expect(r.state.teams[0].st[1]).toBe('ready');
-  });
-  it('бегущий за линией — уже не осалить', () => {
-    const c = cfgFrom({});
-    const p = runnerAt(c, { who: 0, from: 'dom', t0: 0 }, 100);
-    expect(p.done).toBe(true);
-  });
-  it('чужой ход и мусор — отказ', () => {
-    const s = st();
-    expect(apply(s, 1, { type: 'hit', pow: 0.5, yaw: 0, style: 'far' }, rig([]))).toBeNull();
-    expect(apply(s, 0, { type: 'hit', pow: NaN, yaw: 0, style: 'far' }, rig([]))).toBeNull();
-    expect(apply(s, 0, { type: 'run', who: [0] }, rig([]))).toBeNull();
+  it('бегущего можно осалить — команды меняются', () => {
+    let swapped = false;
+    for (let seed = 1; seed < 12 && !swapped; seed++) {
+      const s = newGame({ field: 36, ctrl: 7, n: 4, speed: 1 }, [0, 1], 1);
+      const rng = new SeededRng(seed);
+      run(s, () => [human(), { ...idleInput(), ai: 2 }], (x) => x.phase === 'serve', 600, rng);
+      run(s, () => [human({ hit: { n: 1, pow: 0.45, yaw: 0, style: 'low' } }), { ...idleInput(), ai: 2 }], (x) => x.phase !== 'serve', 10, rng);
+      // бежим прямо на полевых, не уворачиваясь
+      const evs = run(s, () => [human({ my: 1 }), { ...idleInput(), ai: 2 }], (x) => x.atk !== 0, 3000, rng);
+      swapped = evs.includes('salit');
+    }
+    expect(swapped).toBe(true);
   });
   it('боты доигрывают партию во всех пресетах', () => {
+    const rt = def.realtime!;
     for (const pr of def.presets!) {
       const rng = new SeededRng(7);
-      let s = def.setup([{ seat: 0, kind: 'bot', name: 'a', level: 2 }, { seat: 1, kind: 'bot', name: 'b', level: 1 }], pr.options, rng) as State;
+      const s = def.setup([{ seat: 0, kind: 'bot', name: 'a', level: 2 }, { seat: 1, kind: 'bot', name: 'b', level: 1 }], { ...pr.options, speed: 1 }, rng) as State;
       let n = 0;
-      while (!s.over && n < 3000) {
-        const seat = def.toAct(s)[0];
-        const a = def.bot.choose(s, seat, seat === 0 ? 2 : 1, rng) as never;
-        const r = def.apply(s, seat, a, rng);
-        expect(r, `${pr.id}: ${JSON.stringify(a)}`).not.toBeNull();
-        s = r!.state;
+      while (!s.over && n < 200000) {
+        rt.tick(s, [0, 1].map((seat) => rt.input(rt.bot(def.view(s, [seat]), seat, seat ? 1 : 2, {}, rng))), rng);
         n++;
       }
       expect(s.over, pr.id).toBe(true);
