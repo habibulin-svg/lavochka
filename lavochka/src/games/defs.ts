@@ -39,6 +39,7 @@ export const DEFS: Record<string, () => Promise<GameDef>> = {
   billiards: () => import('./billiards/def').then((m) => m.def),
   aerohockey: () => import('./aerohockey/def').then((m) => m.def),
   lapta: () => import('./lapta/def').then((m) => m.def),
+  pekar: () => import('./pekar/def').then((m) => m.def),
   gorodki: () => import('./gorodki/def').then((m) => m.def),
   darts: () => import('./darts/def').then((m) => m.def),
   viktorina: () => Promise.all([import('./viktorina/def'), import('./viktorina/bank').then((b) => b.loadBank())]).then(([m]) => m.def),
