@@ -10,7 +10,8 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { normalOnly } from '../holdem/pbr';
-import { Toon, TOON, TOON_BASE, TOON_CFG, TOON_V } from './pacan3d';
+import { ToonLoader, type Toon } from '../../core/dvorsport/toon';
+import { TOON, TOON_CFG } from './pacan3d';
 
 const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
 /** Рост по умолчанию — для моделей не в метрах (решение пользователя: «нормального размера»). */
@@ -264,23 +265,12 @@ export class Crowd {
     }
   }
 
-  /** Проба ?pacan: пацан бригады с анимациями KayKit. */
+  /** Пацан бригады с анимациями KayKit (общий загрузчик набора дворового спорта). */
+  private toons = new ToonLoader();
   private async spawnToon(seat: number, file: string) {
-    const load = (f: string) => {
-      let p = this.gltfs.get(`toon:${f}`);
-      if (!p) {
-        p = this.loader.loadAsync(`${TOON_BASE}${f}.glb?v=${TOON_V}`);
-        this.gltfs.set(`toon:${f}`, p);
-      }
-      return p;
-    };
-    // модель бригады и общий файл клипов
-    const [g, anims] = await Promise.all([load(file), load('anims')]);
+    const toon = await this.toons.make(file, seat);
     if (this.disposed) return;
-    const model = SkeletonUtils.clone(g.scene);
-    const toon = new Toon(model, anims.animations, seat);
-    const root = new THREE.Group();
-    root.add(model);
+    const root = toon.root;
     const bat = new THREE.Group();
     this.group.add(root, bat);
     this.people.set(seat, { root, bones: {} as Record<BoneName, THREE.Bone>, rest: new Map(), bat, waveT: -1, t: 0, palm: new THREE.Vector3(), fist: null, gripAt: new THREE.Vector3(), toon });
@@ -376,13 +366,13 @@ export class Crowd {
       if (p.waveT > 1.6) p.waveT = -1;
     }
     if (p.waveT >= 0) t.play('cheer', false, 0.15);
-    else if (thr && this.phase != null) t.scrubThrow(this.phase);
+    else if (thr && this.phase != null) t.scrub(TOON_CFG.swing, this.phase, 0.62);
     else t.play(sit ? 'sit' : thr ? TOON_CFG.ready : 'idle');
     t.update(dt);
     p.root.updateMatrixWorld(true);
     // бита на плече (бросающий у черты и стоящие зрители); на замахе (первые 15 % фазы) — плавно в кулак вдоль кости
     const ph = thr && this.phase != null ? this.phase : null;
-    t.placeBat(p.bat, 0.42, ph == null ? 1 : Math.max(0, 1 - ph / 0.15));
+    t.placeBat(p.bat, 0.42, ph == null ? 1 : Math.max(0, 1 - ph / 0.15), TOON_CFG.readyDir);
     p.bat.visible = !sit && (!thr || this.phase == null || this.phase < 0.62);
   }
 

@@ -21,8 +21,6 @@
 .gk-banner { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); padding: 12px 28px; border-radius: 16px; background: rgba(255, 250, 230, 0.93); color: #3a2410; text-align: center; pointer-events: none; box-shadow: 0 6px 30px rgba(0,0,0,.3); opacity: 0; transition: opacity .25s; max-width: 86%; }
 .gk-banner b { display: block; font: bold 40px 'PT Serif', Georgia, serif; color: #b8401e; }
 .gk-banner span { font: 15px 'PT Sans', Arial, sans-serif; }
-.gk-tip { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 5px 14px; border-radius: 20px; background: rgba(28, 22, 14, 0.6); color: #fff; font: 14px 'PT Sans', Arial, sans-serif; pointer-events: none; opacity: 0; transition: opacity .3s; white-space: nowrap; }
-.gk-tip.on { opacity: 1; }
 .gk-figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
 .gk-figs figure { margin: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
 .gk-figs figcaption { font-size: 13px; line-height: 1.25; }

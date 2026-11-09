@@ -1,0 +1,9 @@
+/* Дворовый спорт: шкала силы и подсказка над полем. */
+.ds-gauge { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 3; }
+.ds-gauge.on { opacity: 1; }
+.ds-gauge-bar { width: 18px; height: 160px; border-radius: 8px; background: rgba(28, 22, 14, 0.55); border: 2px solid rgba(255, 255, 255, 0.75); position: relative; overflow: hidden; }
+.ds-gauge-bar i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: #7ac943; }
+.ds-gauge span { font: 12px 'PT Sans', Arial, sans-serif; color: #fff; text-shadow: 0 1px 2px #000; }
+.ds-tip { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 5px 14px; border-radius: 20px; background: rgba(28, 22, 14, 0.6); color: #fff; font: 14px 'PT Sans', Arial, sans-serif; pointer-events: none; opacity: 0; transition: opacity .3s; white-space: nowrap; z-index: 3; }
+.ds-tip.on { opacity: 1; }
+@media (max-width: 640px) { .ds-gauge-bar { height: 110px; } }

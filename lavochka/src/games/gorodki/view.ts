@@ -3,7 +3,9 @@
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { showLoading } from '../../core/loading';
 import { segRow } from '../../core/rtview';
-import { onSettings, settings, store } from '../../core/settings';
+import { store } from '../../core/settings';
+import { PullAim, tip } from '../../core/dvorsport/input';
+import { DvorMusic } from '../../core/dvorsport/music';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
@@ -18,7 +20,6 @@ export const PREF_HINT = 'gorodki.hint';
 const PREF_MUSIC = 'gorodki.music';
 const PREF_STYLE = 'gorodki.style';
 
-const TRACKS = ['match', 'dvor'];
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -66,34 +67,19 @@ export function createView(): GameView<State, Event> {
   let busy = false;
   let aim: Aim = { f: 0.8, ang: 0 };
   let posX = 0;
-  let drag: { x: number; y: number; id: number } | null = null;
   let t0 = performance.now();
-  let music: HTMLAudioElement | null = null;
-  let track = 0;
+  let music: DvorMusic;
+  let pull: PullAim | null = null;
+  let showTip: (on: boolean) => void = () => {};
   let bannerT = 0;
   const cleanup: (() => void)[] = [];
 
   const style = () => store.get<string>(PREF_STYLE, 'flat');
-  const musicOn = () => store.get<string>(PREF_MUSIC, 'on') !== 'off';
   const hintOn = () => store.get<string>(PREF_HINT, 'full') !== 'dir';
 
+  /** Музыка двора (набор дворового спорта): 🔊 стола глушит всё, ♪ — только музыку. */
   function syncMusic() {
-    // 🔊 стола глушит всё, ♪ — только музыку
-    const want = musicOn() && settings.sound && !ctx.demo && !!v && !v.over && !document.hidden;
-    if (!want) {
-      music?.pause();
-      return;
-    }
-    if (!music) {
-      music = new Audio(`/gorodki/music/${TRACKS[track % TRACKS.length]}.ogg`);
-      music.volume = 0.3;
-      music.onended = () => {
-        track++;
-        music = null;
-        syncMusic();
-      };
-    }
-    if (music.paused) void music.play().catch(() => {});
+    music?.sync();
   }
 
   /** Бросок с текущего прицела (с «дыханием» руки). */
@@ -218,32 +204,16 @@ export function createView(): GameView<State, Event> {
   // ---------------------------------------------------------------- ввод
 
   function bindInput() {
-    const cv = yard.canvas;
-    const pdown = (e: PointerEvent) => {
-      if (act == null || busy) return;
-      drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
-      cv.setPointerCapture(e.pointerId);
-      e.preventDefault();
-    };
-    const pmove = (e: PointerEvent) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      const r = cv.getBoundingClientRect();
-      const dy = e.clientY - drag.y;
-      const dx = e.clientX - drag.x;
-      aim.f = clamp(dy / (r.height * 0.55), 0, 1);
-      aim.ang = clamp((-dx / r.width) * 0.32, -0.38, 0.38);
-    };
-    const pup = (e: PointerEvent) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      const r = cv.getBoundingClientRect();
-      const pulled = (e.clientY - drag.y) / r.height;
-      drag = null;
-      if (pulled > 0.06) throwNow();
-    };
-    cv.addEventListener('pointerdown', pdown);
-    cv.addEventListener('pointermove', pmove);
-    cv.addEventListener('pointerup', pup);
-    cv.addEventListener('pointercancel', () => (drag = null));
+    // «рогатка» набора дворового спорта: потянул вниз — сила (до 0,55 высоты), вбок — направление, отпустил — бросок
+    pull = new PullAim(yard.canvas, root.querySelector('.gk-wrap') as HTMLElement, {
+      enabled: () => act != null && !busy,
+      onAim: (pow, side) => {
+        aim.f = pow;
+        aim.ang = clamp(-side * 0.32, -0.38, 0.38);
+      },
+      onRelease: () => throwNow(),
+    });
+    cleanup.push(() => pull?.dispose());
     const key = (e: KeyboardEvent) => {
       if (act == null || busy) return;
       const tgt = e.target as HTMLElement;
@@ -300,20 +270,7 @@ export function createView(): GameView<State, Event> {
         (x) => store.set(PREF_HINT, x)
       )
     );
-    box.appendChild(
-      segRow(
-        '♪ Музыка',
-        [
-          ['on', 'вкл'],
-          ['off', 'выкл'],
-        ],
-        () => (musicOn() ? 'on' : 'off'),
-        (x) => {
-          store.set(PREF_MUSIC, x);
-          syncMusic();
-        }
-      )
-    );
+    box.appendChild(music.row());
     const lupa = segRow(
       'Лупа',
       [
@@ -406,9 +363,10 @@ export function createView(): GameView<State, Event> {
     mount(el, c) {
       ctx = c;
       root = el;
-      const wrap = h(`<div class="gk-wrap"><div class="gk-cv"></div><div class="gk-hud"></div><div class="gk-lupa"><span>город</span></div><div class="gk-banner"></div>
-        ${ctx.demo ? '' : '<div class="gk-tip">Потяните вниз и отпустите — бросок</div>'}</div>`);
+      const wrap = h(`<div class="gk-wrap"><div class="gk-cv"></div><div class="gk-hud"></div><div class="gk-lupa"><span>город</span></div><div class="gk-banner"></div></div>`);
       root.appendChild(wrap);
+      if (!ctx.demo) showTip = tip(wrap, 'Потяните вниз и отпустите — бросок');
+      music = new DvorMusic(PREF_MUSIC, () => !ctx.demo && !!v && !v.over);
       hud = wrap.querySelector('.gk-hud') as HTMLElement;
       banner = wrap.querySelector('.gk-banner') as HTMLElement;
       lupaTag = wrap.querySelector('.gk-lupa') as HTMLElement;
@@ -439,11 +397,6 @@ export function createView(): GameView<State, Event> {
       yard.snapCam();
       bindInput();
       controls();
-      const vis = () => syncMusic();
-      document.addEventListener('visibilitychange', vis);
-      cleanup.push(() => document.removeEventListener('visibilitychange', vis));
-      const off = onSettings(vis);
-      if (typeof off === 'function') cleanup.push(off);
       raf = requestAnimationFrame(frame);
     },
     setView(s) {
@@ -498,7 +451,7 @@ export function createView(): GameView<State, Event> {
         aim = { f: figure(v.cfg.figs[v.p[v.cur].fig] ?? 'pushka').id === 'tir' ? 0.86 : 0.8, ang: clamp(Math.atan2(cx - posX, -lineOf(v)), -0.38, 0.38) };
         t0 = performance.now();
       } else yard.setAim(null);
-      root.querySelector('.gk-tip')?.classList.toggle('on', act != null);
+      showTip(act != null);
     },
     status(s, toAct, interactive) {
       if (s.over) return 'Партия окончена';
@@ -519,8 +472,7 @@ export function createView(): GameView<State, Event> {
     destroy() {
       cancelAnimationFrame(raf);
       cleanup.forEach((f) => f());
-      music?.pause();
-      music = null;
+      music?.dispose();
       yard?.dispose();
     },
   };
