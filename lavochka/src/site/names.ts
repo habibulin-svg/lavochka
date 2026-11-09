@@ -173,6 +173,7 @@ export const NAMES: Record<string, Names> = {
   // — настольный спорт —
   billiards: { ru: ['бильярд онлайн', 'русский бильярд', 'пирамида', 'московская пирамида', 'невская пирамида', 'американка', 'пул', 'восьмёрка', 'снукер'], en: ['Billiards', 'Russian pyramid', 'Pool', '8-ball', '9-ball', 'Snooker'] },
   pekar: { ru: ['пекарь', 'игра пекарь', 'пекаря', 'палки-банки', 'игра в банки', 'банка и палки', 'пекарь с палками и банкой'], en: ['Pekar', 'Baker', 'Russian can knock game', 'tin can and sticks'] },
+  chizh: { ru: ['чиж', 'чижик', 'игра чиж', 'чиж-палка', 'чижик-пыжик игра', 'игра в чижа', 'чиж с битой', 'попа-чижик'], en: ['Chizh', 'Tip-cat', 'Gilli-danda', 'Lippa', 'Russian tip-cat'] },
   lapta: { ru: ['лапта', 'русская лапта', 'лапта онлайн', 'игра лапта', 'лапта с битой и мячом', 'дворовая лапта'], en: ['Lapta', 'Russian lapta', 'Russian baseball'] },
   gorodki: { ru: ['городки', 'городки онлайн', 'игра городки', 'рюхи', 'чушки', 'бита и городки', 'городошный спорт'], en: ['Gorodki', 'Russian skittles', 'Townlets'] },
   viktorina: {
