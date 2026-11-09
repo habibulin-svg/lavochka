@@ -107,25 +107,49 @@
   .yard-actions { width: 100%; }
 }
 
-/* Афиши больших игр: плакаты на асфальте под заголовком, чуть вкось, со скотчем */
-.afishi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin: 0 0 6px; padding-top: 10px; }
+/* Большие игры: ряд гаражей на асфальте под заголовком, на воротах каждого — афиша на скотче */
+.afishi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 0 6px; padding-top: 30px; }
+.garage {
+  position: relative; display: flex; flex-direction: column; text-decoration: none; color: #f3ead6;
+  filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.5));
+}
+.gr-roof {
+  position: relative; display: block; height: 22px; margin: 0 -2px; background: linear-gradient(#2a2c35, #1d1f26); border-bottom: 2px solid #121318;
+  text-align: center; font: 700 12px/22px 'PT Sans', sans-serif; color: #9aa6aa;
+}
+.gr-roof b { font-weight: 700; }
+.gr-cat { position: absolute; right: 26px; bottom: 100%; width: 46px; height: 40px; }
+.gr-door {
+  position: relative; display: flex; flex: 1; flex-direction: column; padding: 24px 22px 32px; background:
+    linear-gradient(90deg, transparent calc(50% - 1.5px), #1a1c22 calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 2px, rgba(0, 0, 0, 0.12) 2px 4px, transparent 4px 16px),
+    linear-gradient(180deg, color-mix(in srgb, var(--g) 88%, white), var(--g) 30%, color-mix(in srgb, var(--g) 80%, black));
+  box-shadow: inset 0 0 0 8px var(--g), inset 0 0 0 11px #1a1c22, inset 0 -30px 40px -20px rgba(0, 0, 0, 0.35);
+}
+.gr-lock { position: absolute; left: calc(50% + 10px); bottom: 44%; width: 10px; height: 16px; border-radius: 2px; background: #0f1014; }
+.gr-chalk {
+  position: absolute; left: 22px; bottom: 4px; z-index: 1; font: 700 22px/1 'Caveat', cursive; color: #f2efe6; opacity: 0.72; transform: rotate(-3deg);
+  text-shadow: 0 0 1px #fff; white-space: nowrap; pointer-events: none;
+}
 .afisha {
-  position: relative; display: flex; flex-direction: column; text-decoration: none; color: #f3ead6; border-radius: 6px;
+  position: relative; display: flex; flex-direction: column; flex: 1; border-radius: 3px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 45%, #17131c), #120f16);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 230, 180, 0.18);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 230, 180, 0.16);
   transform: rotate(var(--rot, 0deg)); transition: transform 0.18s, box-shadow 0.18s;
 }
-.afisha:nth-child(1) { --rot: -1.4deg; } .afisha:nth-child(2) { --rot: 1deg; } .afisha:nth-child(3) { --rot: -0.6deg; }
-.afisha:nth-child(4) { --rot: 1.3deg; } .afisha:nth-child(5) { --rot: -1deg; }
-.afisha::before { /* скотч */
-  content: ''; position: absolute; z-index: 3; left: 50%; top: -9px; width: 64px; height: 20px; transform: translateX(-50%) rotate(-3deg);
-  background: rgba(238, 226, 196, 0.62); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+.garage:nth-child(1) .afisha { --rot: -1.2deg; } .garage:nth-child(2) .afisha { --rot: 0.9deg; } .garage:nth-child(3) .afisha { --rot: -0.5deg; }
+.garage:nth-child(4) .afisha { --rot: 1.1deg; } .garage:nth-child(5) .afisha { --rot: -0.9deg; }
+.afisha::before, .afisha::after { /* скотч по верхним углам */
+  content: ''; position: absolute; z-index: 3; top: -7px; width: 42px; height: 16px;
+  background: rgba(238, 226, 196, 0.6); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
-.afisha:hover { transform: rotate(0deg) translateY(-5px); box-shadow: 0 18px 34px rgba(0, 0, 0, 0.6), 0 0 0 2px #ffd27a, 0 0 30px rgba(255, 200, 110, 0.35); }
-.afisha:focus-visible { outline: 3px solid #ffd27a; outline-offset: 3px; }
-.af-art { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px 6px 0 0; background: var(--tint); }
+.afisha::before { left: -12px; transform: rotate(-32deg); }
+.afisha::after { right: -12px; transform: rotate(32deg); }
+.garage:hover .afisha { transform: rotate(0deg) translateY(-3px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6), 0 0 0 2px #ffd27a, 0 0 28px rgba(255, 200, 110, 0.35); }
+.garage:focus-visible { outline: 3px solid #ffd27a; outline-offset: 3px; }
+.af-art { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 3px 3px 0 0; background: var(--tint); }
 .af-art > img:first-child { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
-.afisha:hover .af-art > img:first-child { transform: scale(1.06); }
+.garage:hover .af-art > img:first-child { transform: scale(1.06); }
 .af-art::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgba(10, 8, 14, 0.85)); }
 .af-logo { position: absolute; z-index: 1; left: 8px; bottom: 6px; max-width: calc(100% - 16px); max-height: 46%; width: auto; height: auto; object-fit: contain; object-position: left bottom; }
 .af-badge {
@@ -140,10 +164,10 @@
 .game-card.big { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), inset 0 0 0 2px #c99a3c; }
 
 @media (max-width: 1000px) {
-  /* лента с прокруткой: видна афиша целиком и край следующей */
-  .afishi { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; margin: 0 -16px 6px; padding: 14px 16px 10px; scrollbar-width: none; }
+  /* лента гаражей с прокруткой: виден гараж целиком и край следующего */
+  .afishi { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 4px; margin: 0 -16px 6px; padding: 30px 16px 16px; scrollbar-width: none; }
   .afishi::-webkit-scrollbar { display: none; }
-  .afisha { flex: 0 0 min(280px, 70vw); scroll-snap-align: start; scroll-margin-left: 16px; }
+  .garage { flex: 0 0 min(290px, 74vw); scroll-snap-align: start; scroll-margin-left: 16px; }
 }
 
 /* Открытая группа: заголовок во всю ширину сетки карточек */

@@ -30,7 +30,8 @@ const WAVE_NAMES: Record<number, string> = {
 
 // ------------------------------------------------------------------ фон
 
-export function scene(): string {
+/** Фон двора. Без гаражей — во дворе: там гаражи с афишами больших игр стоят поверх (afishi.ts). */
+export function scene(garages = true): string {
   const rng = new SeededRng(1993);
   const r = () => rng.next();
   let s = `<svg class="yard-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
@@ -129,8 +130,9 @@ export function scene(): string {
   };
   s += tree(870, 770, 0.95);
 
-  // гаражи
+  // гаражи (во дворе их заменяет ряд гаражей с афишами — сид тот же, чтобы остальная сцена не поменялась)
   const gx0 = 930;
+  const gar0 = s.length;
   for (let i = 0; i < 7; i++) {
     const gx = gx0 + i * 100;
     const col = ['#3a3f4a', '#2f3640', '#40382f', '#2f3a33', '#383447', '#3d3d3d', '#33404a'][i];
@@ -153,6 +155,7 @@ export function scene(): string {
   // кот на крыше гаража
   s += `<g transform="translate(1250,602)" fill="#0c0c10"><ellipse cx="0" cy="-12" rx="16" ry="12"/><circle cx="14" cy="-24" r="8"/><path d="M8 -30 l3 -9 l4 7Z M16 -30 l5 -8 l2 9Z"/><path d="M-16 -10 q-14 -4 -10 -22" stroke="#0c0c10" stroke-width="4" fill="none"/>
     <circle cx="12" cy="-25" r="1.6" fill="#d8e070"/><circle cx="18" cy="-25" r="1.6" fill="#d8e070"/></g>`;
+  if (!garages) s = s.slice(0, gar0);
 
   // земля
   s += `<rect x="0" y="758" width="1600" height="142" fill="url(#y-ground)"/>`;
@@ -303,7 +306,7 @@ export const yard = {
 
   mount() {
     const el = h(`<section class="yard">
-      ${scene()}
+      ${scene(false)}
       <div class="yard-shade"></div>
       <div class="yard-content">
         <header class="yard-top">

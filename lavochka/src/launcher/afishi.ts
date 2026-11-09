@@ -24,20 +24,35 @@ export const AFISHI: Afisha[] = [
 
 export const AFISHA_IDS = new Set(AFISHI.map((a) => a.id));
 
-/** Ряд афиш; щелчок по афише — open(игра). Игры, которых игроку не видно, пропускаются. */
+/** Гаражи под афишами: цвет ворот и что ещё на них (мел, кот на крыше). */
+const GARAGES: { col: string; chalk?: string; cat?: boolean }[] = [
+  { col: '#56606c' },
+  { col: '#62553f', chalk: 'ЦОЙ ЖИВ' },
+  { col: '#4a5c4c', cat: true },
+  { col: '#575070', chalk: 'Вася + Лена' },
+  { col: '#4b6070', chalk: '♥' },
+];
+const CAT = `<svg class="gr-cat" viewBox="-30 -42 50 44" aria-hidden="true"><g fill="#0c0c10"><ellipse cx="0" cy="-12" rx="16" ry="12"/><circle cx="14" cy="-24" r="8"/><path d="M8 -30 l3 -9 l4 7Z M16 -30 l5 -8 l2 9Z"/><path d="M-16 -10 q-14 -4 -10 -22" stroke="#0c0c10" stroke-width="4" fill="none"/></g><circle cx="12" cy="-25" r="1.6" fill="#d8e070"/><circle cx="18" cy="-25" r="1.6" fill="#d8e070"/></svg>`;
+
+/** Ряд гаражей с афишами на воротах; щелчок — open(игра). Игры, которых игроку не видно, пропускаются. */
 export function afishiRow(open: (g: CatalogEntry) => void): HTMLElement {
   const row = h(`<div class="afishi" aria-label="Большие игры"></div>`);
+  let n = 0;
   for (const a of AFISHI) {
     const g = CATALOG.find((c) => c.id === a.id);
     if (!g || !canSee(g.id)) continue;
     const badge = releaseBadge(g.id);
     const last = Number(g.players.match(/(\d+)\D*$/)?.[1] ?? 2);
     const tags = [`${g.players} ${last === 1 ? 'игрок' : last <= 4 ? 'игрока' : 'игроков'}`, ...a.tags];
-    const el = h<HTMLAnchorElement>(`<a class="afisha" href="${gamePath(g.id)}" style="--tint:${g.tint}">
-      <span class="af-art"><img src="/afishi/${g.id}.webp" alt="" loading="lazy" decoding="async">
+    const gar = GARAGES[n % GARAGES.length];
+    const el = h<HTMLAnchorElement>(`<a class="garage" href="${gamePath(g.id)}" style="--tint:${g.tint};--g:${gar.col}">
+      <span class="gr-roof"><b>${17 + n++}</b>${gar.cat ? CAT : ''}</span>
+      <span class="gr-door">${gar.chalk ? `<span class="gr-chalk">${esc(gar.chalk)}</span>` : ''}<span class="gr-lock"></span>
+      <span class="afisha"><span class="af-art"><img src="/afishi/${g.id}.webp" alt="" loading="lazy" decoding="async">
         <img class="af-logo" src="/afishi/${g.id}-logo.webp" alt="${esc(g.title)}" decoding="async">
         ${badge ? `<span class="af-badge">${esc(badge)}</span>` : ''}</span>
-      <span class="af-text"><span class="af-pitch">${esc(a.pitch)}</span><span class="af-tags">${tags.map((t) => `<i>${esc(t)}</i>`).join('')}</span></span>
+      <span class="af-text"><span class="af-pitch">${esc(a.pitch)}</span><span class="af-tags">${tags.map((t) => `<i>${esc(t)}</i>`).join('')}</span></span></span>
+      </span>
     </a>`);
     el.onclick = (e) => {
       if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
