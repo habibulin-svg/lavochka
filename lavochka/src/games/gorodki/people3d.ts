@@ -9,6 +9,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { normalOnly } from '../holdem/pbr';
+import { Toon, TOON, TOON_BASE, TOON_CFG, TOON_V } from './pacan3d';
 
 const BASE = `${import.meta.env.BASE_URL}gorodki/gop/`;
 /** Рост по умолчанию — для моделей не в метрах (решение пользователя: «нормального размера»). */
@@ -116,6 +117,8 @@ interface Person {
   fist: { mesh: THREE.SkinnedMesh; idx: number[] } | null;
   /** Где сейчас кулак с битой (после hold). */
   gripAt: THREE.Vector3;
+  /** Проба ?pacan: стилизованный пацан с готовыми анимациями (pacan3d.ts) — тогда кости и позы выше не нужны. */
+  toon?: Toon;
 }
 
 type V3 = [number, number, number];
@@ -193,6 +196,10 @@ export class Crowd {
     this.pending.add(seat);
     const file = seat >= 90 ? EXTRA[seat - 90] : seat === this.thrower.seat && DBG_LOOK ? DBG_LOOK : LOOKS[seat % LOOKS.length];
     try {
+      if (TOON) {
+        await this.spawnToon(seat, file);
+        return;
+      }
       const g = await this.gltf(file);
       if (this.disposed) return;
       const model = SkeletonUtils.clone(g.scene);
@@ -256,6 +263,24 @@ export class Crowd {
     }
   }
 
+  /** Проба ?pacan: пацан бригады с анимациями KayKit. */
+  private async spawnToon(seat: number, file: string) {
+    let p = this.gltfs.get(`toon:${file}`);
+    if (!p) {
+      p = this.loader.loadAsync(`${TOON_BASE}${file}.glb?v=${TOON_V}`);
+      this.gltfs.set(`toon:${file}`, p);
+    }
+    const g = await p;
+    if (this.disposed) return;
+    const model = SkeletonUtils.clone(g.scene);
+    const toon = new Toon(model, g.animations, seat);
+    const root = new THREE.Group();
+    root.add(model);
+    const bat = new THREE.Group();
+    this.group.add(root, bat);
+    this.people.set(seat, { root, bones: {} as Record<BoneName, THREE.Bone>, rest: new Map(), bat, waveT: -1, t: 0, palm: new THREE.Vector3(), fist: null, gripAt: new THREE.Vector3(), toon });
+  }
+
   /** Радость (выбил фигуру): бросающий подпрыгивает с поднятыми руками, зрители на лавочке тоже вскидывают руки. */
   cheer(seat: number) {
     for (const [k, p] of this.people) if (k === seat || this.sitting.has(k)) p.waveT = k === seat ? 0 : -0.25 - Math.random() * 0.3;
@@ -295,6 +320,10 @@ export class Crowd {
           p.root.rotation.y = Math.atan2(-(0 - x), -(-1 - y)) + Math.PI;
         }
       }
+      if (p.toon) {
+        this.toonUpdate(p, p.toon, thr, sit, dt);
+        continue;
+      }
       for (const [bone, q] of p.rest) bone.quaternion.copy(q);
       p.t += dt;
       this.breathe(p);
@@ -321,6 +350,35 @@ export class Crowd {
       else if (R) this.posHold(p, thr);
       p.bat.visible = !thr || this.phase == null || this.phase < 0.62;
     }
+  }
+
+  /** Проба ?pacan: клип по роли; бросок — время клипа по фазе; радость — один раз. */
+  private toonUpdate(p: Person, t: Toon, thr: boolean, sit: boolean, dt: number) {
+    // почти лицом к городу: бросок из-за плеча идёт вперёд (+ turn — чуть левым плечом вперёд)
+    if (thr) p.root.rotation.y = Math.PI - TOON_CFG.turn;
+    // клип «сидя на стуле» KayKit рассчитан на сиденье ниже нашей лавочки
+    if (sit) p.root.position.y = TOON_CFG.sit;
+    if (!p.bat.children.length) {
+      const proto = this.batProto();
+      if (proto) {
+        const b = proto.clone();
+        b.traverse((o) => ((o as THREE.Mesh).castShadow = true));
+        p.bat.add(b);
+      }
+    }
+    if (p.waveT !== -1) {
+      p.waveT += dt;
+      if (p.waveT > 1.6) p.waveT = -1;
+    }
+    if (p.waveT >= 0) t.play('cheer', false, 0.15);
+    else if (thr && this.phase != null) t.scrubThrow(this.phase);
+    else t.play(sit ? 'sit' : thr ? TOON_CFG.ready : 'idle');
+    t.update(dt);
+    p.root.updateMatrixWorld(true);
+    // бита на плече в стойке; на замахе (первые 15 % фазы) — плавно в кулак вдоль кости
+    const ph = thr && this.phase != null ? this.phase : null;
+    t.placeBat(p.bat, 0.42, !thr ? 0 : ph == null ? 1 : Math.max(0, 1 - ph / 0.15));
+    p.bat.visible = !sit && (!thr || this.phase == null || this.phase < 0.62);
   }
 
   /** Бросающий: правая кисть и бита — по ключевым позам в осях тела, левая — на бите, показывает на город или опущена. */

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { BR, G as GRAV, LOFT, RELEASE_Z, RH, RR, speedOf } from './physics';
+import { TOON, TOON_CAM } from './pacan3d';
 import { Crowd } from './people3d';
 
 export type CamMode = 'aim' | 'flight' | 'city' | 'over';
@@ -45,6 +46,10 @@ export class Yard3D {
   private camGoalPos = new THREE.Vector3(0, 2, 16);
   private camGoalLook = new THREE.Vector3(0, 0, 0);
   private camSpeed = 3;
+  /** Угол обзора: базовый (по пропорциям экрана) и добавка, к которой плавно идёт камера (у пацанов в прицеле шире). */
+  private baseFov = 32;
+  private fovAdd = 0;
+  private fovAddGoal = 0;
   private disposables: { dispose(): void }[] = [];
   /** Двор и реквизит загружены. */
   readonly loaded: Promise<void>;
@@ -319,7 +324,15 @@ export class Yard3D {
   camTo(mode: CamMode, focus?: { x: number; y: number }, speed = 3) {
     const t = this.thrower;
     this.camSpeed = speed;
-    if (mode === 'aim') {
+    this.fovAddGoal = 0;
+    if (mode === 'aim' && TOON) {
+      // пацан ниже взрослого и с крупной головой: камера дальше и шире — он в полный рост слева внизу,
+      // площадка и город — по центру, как раньше (смотрим в ту же точку)
+      const c = TOON_CAM;
+      this.camGoalPos.copy(W(t.x + c.dx, t.line - c.back, c.h));
+      this.camGoalLook.copy(W(t.x * 0.3 + 0.15 + c.lookX, 1.2, c.lookZ));
+      this.fovAddGoal = c.fov;
+    } else if (mode === 'aim') {
       this.camGoalPos.copy(W(t.x + 0.6, t.line - 3.9, 2.0));
       this.camGoalLook.copy(W(t.x * 0.3 + 0.15, 1.2, 0.2));
     } else if (mode === 'flight' && focus) {
@@ -366,6 +379,11 @@ export class Yard3D {
     this.camLook.lerp(this.camGoalLook, k);
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
+    if (Math.abs(this.fovAdd - this.fovAddGoal) > 0.01) {
+      this.fovAdd += (this.fovAddGoal - this.fovAdd) * k;
+      this.camera.fov = this.baseFov + this.fovAdd;
+      this.camera.updateProjectionMatrix();
+    }
     const r = this.renderer;
     const w = this.host.clientWidth;
     const h = this.host.clientHeight;
@@ -414,7 +432,8 @@ export class Yard3D {
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
     this.camera.aspect = w / h;
-    this.camera.fov = w / h < 1 ? 46 : 32;
+    this.baseFov = w / h < 1 ? 46 : 32;
+    this.camera.fov = this.baseFov + this.fovAdd;
     this.camera.updateProjectionMatrix();
   }
 

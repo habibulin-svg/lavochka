@@ -1,0 +1,10 @@
+Городки — проба «дворового спорта»: пацаны бригад (zatulinka, zaton, rastochka, pervomayka, chemskoy, leninskiy .glb)
+
+Собраны скриптом studio/blender/dvor_pacan.py в Blender 5.2 из:
+- KayKit Adventurers 2.0 (FREE), персонаж «Ranger» — Kay Lousberg, www.kaylousberg.com,
+  https://kaylousberg.itch.io/kaykit-adventurers — Creative Commons Zero (CC0 1.0);
+- KayKit Character Animations 1.1 (скелет Rig_Medium) — Kay Lousberg,
+  https://kaylousberg.itch.io/kaykit-character-animations — Creative Commons Zero (CC0 1.0).
+Плащ, колчан, шарф, пряжки, усы и бородка убраны; голова уменьшена; олимпийка бригады (расцветки ГОПС,
+studio/blender/liveries.py), белые кроссовки и кепка-восьмиклинка в ёлочку нарисованы скриптом (свои).
+Чужих логотипов нет.
