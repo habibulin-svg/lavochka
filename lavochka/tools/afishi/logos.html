@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Логотипы для афиш больших игр во дворе. Снимает tools/afishi/make.py безголовым Chrome на прозрачном фоне: logos.html?id=<игра>. -->
+<html lang="ru"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik+Bubbles&family=Rubik+Mono+One&display=block" rel="stylesheet">
+<style>
+@font-face { font-family: 'Geroi Title'; src: url('../../public/geroi/a/fonts/AlegreyaSC-Bold.ttf'); font-weight: 700; font-display: block; }
+html, body { margin: 0; background: transparent; }
+.logo { display: inline-block; padding: 30px 40px; text-align: center; line-height: 1; }
+.logo b, .logo span { display: block; }
+
+/* ГОПС — как в меню игры */
+.gops b { font: 400 210px/0.9 'Russo One'; color: #ffd166; letter-spacing: 0.04em; -webkit-text-stroke: 6px #3b2a1a; paint-order: stroke fill;
+  filter: drop-shadow(0 8px 0 #000) drop-shadow(0 0 18px rgba(0,0,0,.7)); }
+.gops span { font: 400 46px 'Russo One'; letter-spacing: 0.22em; text-transform: uppercase; color: #fff; margin-top: 10px;
+  filter: drop-shadow(0 4px 0 #000) drop-shadow(0 0 10px rgba(0,0,0,.8)); }
+
+/* Герои — латунь, как в игре */
+.geroi b { font: 700 150px/0.95 'Geroi Title'; background: linear-gradient(#fff1c2, #e9c46a 45%, #a8742a 75%, #f3d48a); -webkit-background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 #2a1b0c) drop-shadow(0 0 14px rgba(0,0,0,.85)); }
+.geroi span { font: 700 72px 'Geroi Title'; color: #f3e6c4; margin-top: 4px; filter: drop-shadow(0 3px 0 #1a1008) drop-shadow(0 0 10px rgba(0,0,0,.9)); }
+
+/* Коммерсы — «рыжьё» 90-х: золото с малиновой обводкой */
+.kommersy b { font: 400 150px/1 'Rubik Mono One'; transform: skewX(-8deg); letter-spacing: -0.02em;
+  background: linear-gradient(#fff6c8 0%, #ffd34d 35%, #c98a16 55%, #ffe58a 70%, #b06d0c 100%); -webkit-background-clip: text; color: transparent;
+  -webkit-text-stroke: 3px #5a0f1c; filter: drop-shadow(5px 6px 0 #5a0f1c) drop-shadow(0 0 16px rgba(0,0,0,.8)); }
+.kommersy span { font: 400 40px 'Russo One'; color: #fff; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 12px;
+  filter: drop-shadow(0 3px 0 #5a0f1c) drop-shadow(0 0 8px rgba(0,0,0,.9)); }
+
+/* Вкладыши — жвачка */
+.vkladyshi b { font: 400 160px/1 'Rubik Bubbles'; color: #ff5fa8; transform: rotate(-4deg);
+  filter: drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 7px 0 #7a1d4b) drop-shadow(0 0 14px rgba(0,0,0,.6)); }
+.vkladyshi span { font: 400 44px 'Russo One'; color: #ffe14d; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 8px; transform: rotate(-4deg);
+  -webkit-text-stroke: 2px #7a1d4b; paint-order: stroke fill; filter: drop-shadow(0 4px 0 #7a1d4b); }
+</style></head>
+<body>
+<div class="logo" id="gops"><b>ГОПС</b><span>война районов</span></div>
+<div class="logo" id="geroi"><b>Герои</b><span>кастета и семок</span></div>
+<div class="logo" id="kommersy"><b>КОММЕРСЫ</b><span>от ларька до Лондона</span></div>
+<div class="logo" id="vkladyshi"><b>Вкладыши</b><span>Turbo · Love is · Final</span></div>
+<script>
+const id = new URLSearchParams(location.search).get('id');
+for (const el of document.querySelectorAll('.logo')) { el.className += ' ' + el.id; if (el.id !== id) el.remove(); }
+</script>
+</body></html>

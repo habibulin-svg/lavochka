@@ -1,0 +1,16 @@
+# Афиши больших игр во дворе (лаунчер): обложка «Коммерсов» — без надписей, название кладём поверх.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1792
+  height: 768
+  steps: 8
+seeds: [111, 222, 333, 444]
+items:
+- name: kommersy-kiosk
+  prompt: 'Highly detailed hand-painted digital illustration like a premium tycoon game key art, semi-realistic, rich textures, cinematic warm light. Wide shot. Russia, wild 1990s, winter evening in a district of grey prefab panel blocks: a glowing metal street kiosk packed with bright imported goods, cans of beer, chocolate bars, cigarettes, bottles, Chinese plaid bags in front of it. On the right a stocky young man with a round face and a short dark crew cut, black leather jacket, thick gold chain, confident half smile, holding a fan of banknotes. A used black foreign car with headlights on. Falling snow, orange street lamps, deep blue sky. Clean empty area on the left third of the picture with dark sky. No text, no letters, no signs with writing, no logos, no watermark.'
+- name: kommersy-desk
+  prompt: 'Highly detailed hand-painted digital illustration like a premium tycoon game key art, semi-realistic, rich textures, cinematic warm light. Russia, 1990s businessman office at night: a heavy wooden desk with stacks of dollar banknotes, a brick-sized mobile phone, a calculator, a crystal ashtray, a pager, keys of a foreign car; behind the window a city of panel blocks with lit windows and a glowing street kiosk below. On the right a stocky man with a round face and short dark crew cut in a crimson blazer and gold chain leans over the desk, smirking. The left third of the picture is calm dark wall. No text, no letters, no signs with writing, no logos, no watermark.'
+- name: vkladyshi-table
+  prompt: 'Photograph, top-down view of an old Soviet school desk of light varnished wood with scratches and ink stains, late afternoon window light, soft shadows. In the corners: a few wrapped chewing gum pieces, a ballpoint pen, a crumpled foil wrapper. The center of the desk is empty and clean. Nostalgic 1990s, warm tones, shallow depth of field at the edges. No text, no letters, no logos, no watermark.'

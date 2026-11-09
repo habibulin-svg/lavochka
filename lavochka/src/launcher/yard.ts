@@ -14,6 +14,7 @@ import { sectionPath } from '../site/routes';
 import { searchGames } from '../site/search';
 import { canPlay, canSee, onRelease, releaseBadge, releaseOf } from '../site/release';
 import { plusNote } from '../site/plus';
+import { AFISHA_IDS, afishiRow } from './afishi';
 import { loadStats, onStats } from '../site/stats';
 import './yard.css';
 
@@ -197,6 +198,7 @@ function card(g: CatalogEntry): HTMLElement {
   // ссылка, а не кнопка: открывается в новой вкладке, и поисковик видит адреса игр
   const id = g.of ?? g.id;
   const el = h<HTMLAnchorElement>(cardMarkup(g, { save: ready && hasSave(g), stamp: WAVE_NAMES[g.wave] ?? 'в планах', likes: ready ? likesOfCard(g) : 0, badge: g.members ? '' : releaseBadge(id) }));
+  if (AFISHA_IDS.has(id)) el.classList.add('big');
   el.onclick = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
@@ -325,6 +327,14 @@ export const yard = {
     // шапка сайта (её собирает main.ts: там же решается, куда ведёт поиск)
     el.prepend(this.makeBar());
     (el.querySelector('.yard-top') as HTMLElement).appendChild(masterNote());
+    // афиши больших игр — на асфальте под заголовком
+    (el.querySelector('.yard-spacer') as HTMLElement).after(
+      afishiRow((g) => {
+        Sound.ui();
+        if (!canPlay(g.id)) earlyNote(g);
+        else this.openGame(g);
+      })
+    );
     mountScreen('yard', el);
 
     const sort = el.querySelector('.yard-sort select') as HTMLSelectElement;
