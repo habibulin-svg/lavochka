@@ -6,6 +6,7 @@ import { audioOut, click, Sound, tone } from '../../core/audio';
 import { sample } from '../../core/dvorsport/body';
 import { PullAim } from '../../core/dvorsport/input';
 import { Pad } from '../../core/dvorsport/pad';
+import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/demo';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { showLoading } from '../../core/loading';
@@ -620,7 +621,9 @@ export function createView(): GameView<State, Event> {
         yard.setTeams(v.cfg.n);
       }
     },
-    async play(_ev, v) {
+    async play(events, v) {
+      // показ правил: кусок партии снимками (core/dvorsport/demo.ts)
+      for (const e of events as unknown[]) if (isFrames(e)) await playFrames(e as FramesEvent<State, Event>, (f, evs) => this.realtime!(f, evs), () => ((1000 / 60) * e.every) / Math.max(0.25, ctx.speed()));
       this.setView(v);
     },
     realtime(v, events) {

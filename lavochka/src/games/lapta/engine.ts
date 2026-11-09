@@ -135,6 +135,8 @@ export interface State {
   winners: number[];
   /** Только превью карточки. */
   shot?: boolean;
+  /** Позиция показа правил (только там apply «перематывает» партию). */
+  demo?: boolean;
 }
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -475,10 +477,11 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
     if (inp.ai < 0) {
       if (inp.k >= 0 && inp.k < c.n) (s.ctrl[t] = inp.k), (s.auto[t] = false);
       else s.auto[t] = true;
-      if (inp.hit && inp.hit.n !== seen.hit) (seen.hit = inp.hit.n), (acts[t].hit = inp.hit);
+      // удар — только в свою подачу (раньше времени не «съедаем» нажатие)
+      if (inp.hit && inp.hit.n !== seen.hit && s.phase === 'serve' && t === s.atk) (seen.hit = inp.hit.n), (acts[t].hit = inp.hit);
       if (inp.c != null && inp.c !== seen.c) (seen.c = inp.c), (acts[t].catch = true);
       if (inp.d != null && inp.d !== seen.d) (seen.d = inp.d), (acts[t].dash = true);
-      if (inp.th && inp.th.n !== seen.th) (seen.th = inp.th.n), (acts[t].th = inp.th);
+      if (inp.th && inp.th.n !== seen.th && s.ball.mode === 'held' && t !== s.atk) (seen.th = inp.th.n), (acts[t].th = inp.th);
     } else s.auto[t] = true;
     if (s.auto[t]) s.ctrl[t] = autoCtrl(s, t);
   }
