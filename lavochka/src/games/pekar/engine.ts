@@ -148,6 +148,8 @@ export interface State {
   calm?: number;
   /** Только превью карточки. */
   shot?: boolean;
+  /** Позиция показа правил (только на ней def.apply «перематывает» партию). */
+  demo?: boolean;
 }
 
 export const idleInput = (): In => ({ mx: 0, my: 0 });

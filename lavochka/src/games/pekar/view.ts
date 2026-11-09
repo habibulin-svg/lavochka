@@ -7,6 +7,7 @@ import { showLoading } from '../../core/loading';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { sample } from '../../core/dvorsport/body';
+import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/demo';
 import { PullAim } from '../../core/dvorsport/input';
 import { Pad } from '../../core/dvorsport/pad';
 import { esc, h, sleep } from '../../core/util';
@@ -527,7 +528,10 @@ export function createView(): GameView<State, Event> {
         yard.snapCam();
       }
     },
-    async play(_ev, v) {
+    async play(events, v) {
+      // показ правил: кусок партии снимками — проиграть как живую партию
+      for (const e of events as unknown[])
+        if (isFrames(e)) await playFrames(e as FramesEvent<State, Event>, (f, evs) => this.realtime!(f, evs), () => ((1000 / 60) * e.every) / Math.max(0.25, ctx.speed()));
       take(v);
     },
     realtime(v, events) {

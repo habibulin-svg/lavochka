@@ -2,9 +2,29 @@
  * комната крутит шаги, каждый ведёт своего пацана (бег, рывок), бросает палку «рогаткой», пекарь несёт банку и салит
  * (engine.ts). Без DOM. */
 import { gameSpeed, SPEED_OPTION } from '../../core/realtime';
-import type { GameDef } from '../../core/types';
+import { demoApply, rtStep } from '../../core/dvorsport/demo';
+import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { botInput } from './ai';
-import { cleanInput, idleInput, newGame, rankName, snapshot, step, TICK_MS, type Event, type In, type State } from './engine';
+import {
+  canHome,
+  cleanInput,
+  idleInput,
+  newGame,
+  pekarSpot,
+  rankName,
+  snapshot,
+  step,
+  stickFlight,
+  throwFrom,
+  TICK_MS,
+  VP,
+  VR,
+  waitSpot,
+  yawTo,
+  type Event,
+  type In,
+  type State,
+} from './engine';
 
 export const SEATS = [
   { name: 'Красный', color: '#d8402e', light: '#ff8a6a', dark: '#6e1a10' },
@@ -14,6 +34,140 @@ export const SEATS = [
   { name: 'Фиолетовый', color: '#8a4ac8', light: '#c8a0f0', dark: '#3a1a60' },
   { name: 'Белый', color: '#e8e4da', light: '#ffffff', dark: '#6a665e', ink: '#6a665e' },
 ];
+
+// ---------------------------------------------------------------- показ правил
+// Шаг показа — кусок партии тем же движком (core/dvorsport/demo.ts): ввод мест держится весь шаг, остальные стоят.
+
+const demoSeats: SeatSpec[] = [
+  { seat: 0, kind: 'human', name: 'Петя', level: 0 },
+  { seat: 1, kind: 'bot', name: 'Вова', level: 1 },
+  { seat: 2, kind: 'bot', name: 'Серый', level: 1 },
+];
+const DSP = 0.7;
+const CL = { ranks: 'full', dist: 14, demote: false, target: 5, speed: DSP };
+const DV = { ranks: 'short', dist: 11, demote: true, target: 5, speed: DSP };
+
+/** Позиция показа после жеребьёвки: пекарь — Серый (2), бросают Петя и Вова; все на местах. */
+function pos(opts: Record<string, string | number | boolean>, patch?: (s: State) => void) {
+  return (): State => {
+    const s = newGame(opts, [0, 1, 2]);
+    s.demo = true;
+    s.phase = 'play';
+    s.kicks = [12, 10, 7];
+    s.order = [0, 1, 2];
+    s.pekar = 2;
+    s.sticks[2].at = 'pekar';
+    [s.men[2].x, s.men[2].y] = pekarSpot(s.cfg);
+    patch?.(s);
+    return s;
+  };
+}
+
+/** Направление бега от точки к точке (длина 1). */
+const dir = (a: [number, number], b: [number, number]): In => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const d = Math.hypot(dx, dy) || 1;
+  return { mx: dx / d, my: dy / d };
+};
+/** Шагов движка, чтобы пробежать d метров (с запасом). */
+const run = (d: number, v = VR) => Math.ceil((d / (v * DSP)) * 60) + 4;
+
+/** Сила броска с места, при которой палка сбивает банку (перебор по настоящему полёту). */
+function hitPow(opts: Record<string, string | number | boolean>, x: number, y: number): number {
+  const c = newGame(opts, [0, 1, 2]).cfg;
+  const yaw = yawTo(c, x, y);
+  const ok: number[] = [];
+  for (let p = 0.4; p <= 0.95; p += 0.01) if (stickFlight(throwFrom(c, x, y, p, yaw, 'flat'), 'flat', canHome(c)).hit) ok.push(p);
+  return ok.length ? ok[Math.floor(ok.length / 2)] : 0.66;
+}
+
+const C14 = newGame(CL, [0, 1, 2]).cfg;
+const W0 = waitSpot(C14, 0, 0);
+const PK = pekarSpot(C14);
+const HOME = canHome(C14);
+const HIT0 = hitPow(CL, W0[0], W0[1]);
+const T = (seat: number, inputs: Record<number, In>, caption: string, o: { ticks?: number; until?: string; tail?: number; rig?: number[] } = {}) => ({
+  seat,
+  action: rtStep({ ticks: o.ticks ?? 600, inputs, until: o.until, tail: o.tail }) as never,
+  caption,
+  rig: o.rig,
+});
+const still: In = { mx: 0, my: 0 };
+
+/** Сбитая банка лежит тут, палка Пети — недалеко от банки (показы бега и пекаря). */
+const CAN_DOWN: [number, number] = [1.6, 16.2];
+const STICK0: [number, number] = [-0.6, 12.6];
+const knocked = (s: State) => {
+  s.can = { mode: 'down', x: CAN_DOWN[0], y: CAN_DOWN[1], a: 0.6, fx: HOME[0], fy: HOME[1], t0: 0 };
+  s.sticks[0] = { at: 'ground', x: STICK0[0], y: STICK0[1], a: 0.4 };
+  s.men[0].rank = 1;
+  s.men[0].knocks = 1;
+};
+const B1: [number, number] = [0.4, 11.6];
+
+const DEMOS: Record<string, DemoScript<State, never>> = {
+  kick: {
+    seats: demoSeats,
+    setup: () => {
+      const s = newGame(CL, [0, 1, 2]);
+      s.demo = true;
+      return s;
+    },
+    steps: [
+      T(0, { 0: { ...still, k: { n: 1, pow: 0.75 } } }, 'Петя пинает палку с носка…', { until: 'land', tail: 20 }),
+      T(1, { 1: { ...still, k: { n: 1, pow: 0.6 } } }, '…Вова — чуть ближе…', { until: 'land', tail: 20 }),
+      T(2, { 2: { ...still, k: { n: 1, pow: 0.3 } } }, '…у Серого ближе всех: он и пекарь. Остальные бросают по дальности пинка.', { until: 'draw', tail: 150, ticks: 900 }),
+    ],
+  },
+  throw: {
+    seats: demoSeats,
+    setup: pos(CL),
+    steps: [
+      T(0, { 0: { ...still, th: { n: 1, pow: 0.3, yaw: 0, style: 'flat' } } }, 'Слабо — палка легла, не долетев. Пока Петя её не подберёт, бросать ему нечем.', { until: 'land', tail: 30 }),
+      T(1, { 1: { ...still, th: { n: 1, pow: 0.97, yaw: 0, style: 'flat' } } }, 'Вова перекинул — палка улетела за банку, к самому пекарю.', { until: 'land', tail: 30 }),
+    ],
+  },
+  knock: {
+    seats: demoSeats,
+    setup: pos(CL),
+    steps: [T(0, { 0: { ...still, th: { n: 1, pow: HIT0, yaw: 0, style: 'flat' } } }, 'Точно в банку! Петя теперь ефрейтор — и его черта ближе к банке.', { until: 'land', tail: 60 })],
+  },
+  run: {
+    seats: demoSeats,
+    setup: pos(CL, knocked),
+    steps: [
+      T(0, { 0: dir(W0, STICK0), 2: dir(PK, CAN_DOWN) }, 'Банка лежит — пекарю сперва за ней. Петя бежит за палкой…', { until: 'pick', tail: 6, ticks: run(Math.hypot(STICK0[0] - W0[0], STICK0[1] - W0[1])) }),
+      T(0, { 0: dir(STICK0, [STICK0[0], -1]), 2: dir(CAN_DOWN, HOME) }, '…подобрал — и назад за свою черту: там не осалят. Пекарь несёт банку в кружок.', { ticks: run(STICK0[1] + 1.2) }),
+    ],
+  },
+  tag: {
+    seats: demoSeats,
+    setup: pos(CL, (s) => {
+      knocked(s);
+      s.sticks[0].at = 'hand';
+      // Вова зазевался у своей палки
+      s.sticks[1] = { at: 'ground', x: B1[0] + 0.3, y: B1[1] + 0.9, a: 1 };
+      [s.men[1].x, s.men[1].y] = B1;
+    }),
+    steps: [
+      T(2, { 2: dir(PK, CAN_DOWN) }, 'Пекарь бежит к сбитой банке и подбирает её…', { until: 'can', tail: 6, ticks: run(Math.hypot(CAN_DOWN[0] - PK[0], CAN_DOWN[1] - PK[1]), VP) }),
+      T(2, { 2: dir(CAN_DOWN, HOME) }, '…несёт в кружок и ставит. Пока банка не стояла, салить было нельзя.', { until: 'can', tail: 10 }),
+      T(2, { 2: { ...dir(HOME, B1), a: 1 } }, 'Теперь можно: догнал Вову в поле — осалил! Теперь пекарь — Вова.', { until: 'pekar', tail: 20, ticks: 900 }),
+    ],
+  },
+  ranks: {
+    seats: demoSeats,
+    options: DV,
+    setup: pos(DV, (s) => {
+      s.men[1].rank = 2;
+      [s.men[1].x, s.men[1].y] = [0.6, 8];
+      s.sticks[1] = { at: 'ground', x: 0.7, y: 8.6, a: 0.3 };
+      [s.men[2].x, s.men[2].y] = [1.3, 9.2];
+    }),
+    steps: [T(2, { 2: { mx: -0.5, my: -0.8, a: 1 } }, '«Дворовый короткий»: лейтенант Вова попался пекарю — и печёт уже сержантом.', { until: 'pekar', tail: 30, ticks: 900 })],
+  },
+};
 
 export const def: GameDef<State, never, Event, State> = {
   id: 'pekar',
@@ -66,7 +220,7 @@ export const def: GameDef<State, never, Event, State> = {
   ],
   setup: (seats, opts) => newGame(opts, seats.map((s) => s.seat).sort((a, b) => a - b), gameSpeed(opts)),
   toAct: (s) => (s.over ? [] : s.seats.slice()),
-  apply: () => null,
+  apply: (s, _seat, a, rng) => demoApply(s, a, rng, { step, view: snapshot }) as never,
   view: (s) => snapshot(s),
   result(s) {
     if (!s.over) return null;
@@ -117,35 +271,41 @@ export const def: GameDef<State, never, Event, State> = {
         title: 'Жеребьёвка: кто пекарь',
         html: `<p>Перед игрой каждый ставит палку на носок и <b>пинком</b> выбрасывает её вперёд. У кого палка улетела <b>ближе всех</b> — тот первый пекарь.
           Остальные бросают по дальности пинка: дальше всех — первым. Пнёшь изо всех сил — палка может сорваться с ноги.</p>`,
+        demo: DEMOS.kick,
       },
       {
         title: 'Банка и броски',
         html: `<p>В меловом кружке стоит <b>консервная банка</b>, рядом сторожит пекарь. Игроки по очереди кидают в неё палки из-за <b>своей черты</b>.
           Палка остаётся лежать там, где упала: пока её не подобрал, бросать нечем. Кидают <b>низом</b> — палка крутится плашмя и сметает широко, —
           или <b>навесом</b>, кувырком.</p>`,
+        demo: DEMOS.throw,
       },
       {
         title: 'Звания',
         html: `<p>Сбил банку — получаешь <b>звание</b>: рядовой, ефрейтор, сержант, лейтенант, капитан, майор, полковник, генерал, маршал.
           Чем выше звание, тем <b>ближе к банке</b> твоя черта. Кто сбил банку маршалом — выиграл.</p>`,
+        demo: DEMOS.knock,
       },
       {
         title: 'За палкой — и назад за черту',
         html: `<p>За своей палкой бегаешь сам, когда хочешь. Подобрал — беги обратно <b>за свою черту</b>: там тебя не осалить.
           Удобнее всего бежать, пока банка лежит: пекарь сначала должен сбегать за ней, подобрать и <b>поставить в кружок</b>, а до тех пор салить нельзя.
           Палка, упавшая у самой банки, — самая опасная.</p>`,
+        demo: DEMOS.run,
       },
       {
         title: 'Пекарь салит',
         html: `<p>Когда банка стоит, пекарь гоняется за теми, кто в поле, и <b>салит палкой</b>: догнал и коснулся — или замахнулся рядом.
           Осаленный становится пекарем, а бывший пекарь берёт палку и встаёт за свою черту. Уворачивайтесь рывком.</p>
           <p>Если бросить уже некому — все палки в поле, — идти за ними придётся всё равно: пекарь осалит кого-то одного, остальные успеют.</p>`,
+        demo: DEMOS.tag,
       },
       {
         title: 'Варианты',
         html: `<p><b>Дворовый короткий</b>: званий пять — рядовой, сержант, лейтенант, капитан, генерал, до банки 11 м, а кого осалили, тот не только печёт,
           но и теряет одно звание. <b>Без званий</b>: все бросают с одной черты, побеждает тот, кто первым собьёт пять банок.
           «Скорость игры» замедляет всё движение — успеваешь и прицелиться, и увернуться.</p>`,
+        demo: DEMOS.ranks,
       },
       {
         title: 'Управление',

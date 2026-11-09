@@ -135,3 +135,47 @@ describe('пекарь: боты', () => {
     }
   }, 120_000);
 });
+
+describe('пекарь: показ правил даёт то, что в подписи', () => {
+  const play = (title: string) => {
+    const sec = def.rules!.sections.find((x) => x.title === title)!;
+    const demo = sec.demo!;
+    const rng = new SeededRng(20240607);
+    let s = demo.setup!(def as never, rng) as State;
+    const all: string[] = [];
+    let lastFrames: State | null = null;
+    for (const st of demo.steps) {
+      const r = def.apply(s, st.seat, st.action as never, rng);
+      expect(r, `${title}: ${st.caption}`).not.toBeNull();
+      s = r!.state;
+      for (const e of r!.events as unknown as { k: string; evs: Event[][]; frames: State[] }[]) {
+        for (const evs of e.evs) for (const ev of evs) all.push(`${ev.k}:${'who' in ev ? ev.who : ''}`);
+        lastFrames = e.frames[e.frames.length - 1];
+      }
+    }
+    return { s, all, last: lastFrames! };
+  };
+  it('жеребьёвка — пекарь Серый', () => expect(play('Жеребьёвка: кто пекарь').s.pekar).toBe(2));
+  it('броски — мимо', () => expect(play('Банка и броски').all.some((x) => x.startsWith('knock'))).toBe(false));
+  it('сбил банку — ефрейтор', () => {
+    const r = play('Звания');
+    expect(r.all).toContain('knock:0');
+    expect(r.s.men[0].rank).toBe(1);
+  });
+  it('за палкой и назад за черту', () => {
+    const r = play('За палкой — и назад за черту');
+    expect(r.all).toContain('pick:0');
+    expect(r.s.men[0].y).toBeLessThan(0.1);
+  });
+  it('пекарь ставит банку и салит Вову', () => {
+    const r = play('Пекарь салит');
+    expect(r.all.filter((x) => x.startsWith('can')).length).toBe(2);
+    expect(r.all).toContain('tag:1');
+    expect(r.s.pekar).toBe(1);
+  });
+  it('в дворовом — осаленный теряет звание', () => {
+    const r = play('Варианты');
+    expect(r.s.pekar).toBe(1);
+    expect(r.s.men[1].rank).toBe(1);
+  });
+});
