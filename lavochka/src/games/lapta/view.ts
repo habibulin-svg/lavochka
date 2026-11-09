@@ -7,7 +7,7 @@ import { showLoading } from '../../core/loading';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
 import { sample, type BodyFrame } from '../../core/dvorsport/body';
-import { PullAim, tip } from '../../core/dvorsport/input';
+import { PullAim } from '../../core/dvorsport/input';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
@@ -73,6 +73,10 @@ export function createView(): GameView<State, Event> {
   let banner: HTMLElement;
   let bar: HTMLElement;
   let tags: HTMLElement;
+  let steps: HTMLElement;
+  let sayEl: HTMLElement;
+  /** Отметить ударившего бегущим при новом решении «бежать». */
+  let preset = false;
   let raf = 0;
   let last = 0;
   let v: State | null = null;
@@ -179,7 +183,7 @@ export function createView(): GameView<State, Event> {
           : s.phase === 'catch'
             ? 'Кто ловит?'
             : 'Мяч в поле — кидать в бегущего?';
-    hud.innerHTML = `<div class="lp-board">${rows}<div class="lp-head">до ${s.cfg.target}</div></div>${now ? `<div class="lp-now">${now}</div>` : ''}`;
+    hud.innerHTML = `<div class="lp-board">${rows}<div class="lp-head">до ${s.cfg.target}</div></div>${now && s.phase === 'hit' ? `<div class="lp-now">${now}</div>` : ''}`;
   }
 
   /** Бирки над теми, кого можно выбрать, и кнопки внизу. */
@@ -188,6 +192,7 @@ export function createView(): GameView<State, Event> {
     bar.innerHTML = '';
     yard.clearMarks();
     picks = [];
+    drawSteps();
     if (!v || act == null || busy || v.over) {
       bar.style.display = 'none';
       return;
@@ -196,10 +201,15 @@ export function createView(): GameView<State, Event> {
     const A = s.atk;
     const D = def0(s);
     const p = s.play;
+    if (preset && s.phase === 'run' && p) {
+      // ударивший обычно бежит — отмечен заранее, снять можно касанием
+      preset = false;
+      if (!p.caught && canRun(s).includes(p.batter)) chosen.add(p.batter);
+    }
     if (s.phase === 'run' && p) {
       for (const w of canRun(s)) picks.push({ team: A, who: w, label: `№${w + 1}${s.teams[A].st[w] === 'kon' ? ' домой' : ' к кону'}`, kind: 'run' });
       const n = chosen.size;
-      const go = h<HTMLButtonElement>(`<button class="go"${n ? '' : ' disabled'}>Беги!${n > 1 ? ` (${n})` : ''}</button>`);
+      const go = h<HTMLButtonElement>(`<button class="go"${n ? '' : ' disabled'}>Беги!${n ? ` (${[...chosen].map((w) => `№${w + 1}`).join(', ')})` : ''}</button>`);
       go.onclick = () => send({ type: 'run', who: [...chosen] });
       const all = h<HTMLButtonElement>(`<button>Все бегут</button>`);
       all.onclick = () => send({ type: 'run', who: canRun(s) });
@@ -227,6 +237,7 @@ export function createView(): GameView<State, Event> {
       bar.append(hold);
     }
     bar.style.display = bar.children.length ? '' : 'none';
+    drawSteps();
     for (const pk of picks) {
       const on = pk.kind === 'run' && chosen.has(pk.who);
       const el = h<HTMLButtonElement>(`<button class="lp-tag ${pk.kind}${on ? ' on' : ''}">${esc(pk.label)}${on ? ' ✓' : ''}</button>`);
@@ -240,6 +251,39 @@ export function createView(): GameView<State, Event> {
     }
     placeTags();
   }
+
+  /** Шаги розыгрыша (удар → бег → ловля → осаливание) и что делать сейчас — крупно вверху поля. */
+  function drawSteps() {
+    if (!v || v.over || ctx.demo) {
+      steps.innerHTML = '';
+      sayEl.innerHTML = '';
+      return;
+    }
+    const s = v;
+    const mine = act != null && !busy;
+    const cur = { hit: 0, run: 1, catch: 2, throw: 3 }[s.phase];
+    const meAtk = mine ? (s.phase === 'hit' || s.phase === 'run') : ctx.mySeats.includes(s.seats[s.atk]);
+    const names = ['Удар', 'Бег', 'Ловля', 'Осаливание'];
+    steps.innerHTML = names.map((n, i) => `<span class="${i === cur ? 'on' : i < cur ? 'done' : ''}${i < 2 ? ' atk' : ' def'}">${n}</span>`).join('<i>→</i>');
+    steps.classList.toggle('mine', mine);
+    const p = s.play;
+    let t = '';
+    if (busy) t = '';
+    else if (mine) {
+      if (s.phase === 'hit') t = `<b>Твой удар!</b> Нажми на поле, потяни вниз и отпусти. Вбок — направление.`;
+      else if (s.phase === 'run') t = p && !p.caught ? `<b>Мяч в поле!</b> Кто бежит? Коснись бирки над пацаном — и «Беги!». Или «Стоим».` : `<b>Мяч у полевого.</b> Можно добежать: отметь бирки и «Беги!» — или «Стоим», тогда следующий удар.`;
+      else if (s.phase === 'catch') t = `<b>Ловим!</b> Коснись полевого — он побежит к мячу. Кольцо — куда мяч упадёт.`;
+      else t = `<b>Осаливай!</b> Мяч у вас: красная бирка — бросить в бегущего, голубая — пас своему ближе к нему.`;
+    } else {
+      const who = ctx.name(toActSeat(s));
+      t = s.phase === 'hit' ? `Бьёт ${who}…` : s.phase === 'run' ? `${who} решает, кому бежать…` : s.phase === 'catch' ? `${who} ловит мяч…` : `${who} целится в бегущего…`;
+    }
+    sayEl.innerHTML = t;
+    sayEl.style.display = t ? '' : 'none';
+    void meAtk;
+  }
+
+  const toActSeat = (s: State) => s.seats[s.phase === 'hit' || s.phase === 'run' ? s.atk : def0(s)];
 
   function placeTags() {
     for (const el of Array.from(tags.children) as (HTMLElement & { _pk?: Pick })[]) {
@@ -462,7 +506,7 @@ export function createView(): GameView<State, Event> {
       }
       const f = sample(fl.frames, t);
       yard.setBall([f[1], f[2], f[3]]);
-      if (t > 0.25) yard.camTo('follow', { x: f[1] * 0.6, y: Math.max(4, f[2] * 0.6) }, 2);
+      if (t > 0.2) yard.camTo('field', undefined, 2);
       if (hitSnd === 0 && fl.land && t >= fl.land.t) (hitSnd = 1), thud();
     });
     void swung;
@@ -507,7 +551,7 @@ export function createView(): GameView<State, Event> {
       else if (ev.air && !ev.ok) yard.setBall([ev.to[0] + 0.3, ev.to[1], 0.035]);
       else yard.setBall([ev.to[0] + 0.2, ev.to[1], ev.air ? 1.35 : 0.9]);
       if (!landed && fl.land && t >= fl.land.t && !ev.air) (landed = true), thud();
-      yard.camTo('follow', { x: f[1] * 0.6, y: Math.max(6, f[2] * 0.7) }, 2);
+      yard.camTo('field', undefined, 2);
       runners(ev.rs, t);
     });
     yard.setLand(null);
@@ -531,15 +575,15 @@ export function createView(): GameView<State, Event> {
         const k = clamp((t - rel) / Math.max(0.05, ev.t1 - rel), 0, 1);
         yard.setBall([lerp(ev.from[0], to[0], k), lerp(ev.from[1], to[1], k), lerp(1.7, 1.1, k) + Math.sin(k * Math.PI) * 0.8]);
       }
-      const m = yard.men[D][ev.who];
-      if (m) yard.camTo('follow', { x: lerp(ev.from[0], to[0], 0.5) * 0.7, y: lerp(ev.from[1], to[1], 0.5) }, 2.5);
+      yard.camTo('field', undefined, 2);
       runners(ev.rs, t);
     });
     shownT = ev.t1;
     if (ev.k === 'pass') {
       slap();
       yard.men[D][ev.to]?.toon?.play('holding', false, 0.12);
-    } else if (ev.hit) {
+    } else if (!ev.hit) say('Мимо!', 'мяч улетел — полевой бежит за ним', 1000);
+    else if (ev.hit) {
       slap();
       yard.men[v.atk][ev.runner]?.toon?.play('hit', false, 0.08);
     }
@@ -655,13 +699,14 @@ export function createView(): GameView<State, Event> {
     mount(el, c) {
       ctx = c;
       root = el;
-      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-tags"></div><div class="lp-bar"></div><div class="lp-banner"></div></div>`);
+      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-tags"></div><div class="lp-ask"><div class="lp-steps"></div><div class="lp-say"></div><div class="lp-bar"></div></div><div class="lp-banner"></div></div>`);
       root.appendChild(wrap);
-      if (!ctx.demo) showTip = tip(wrap, 'Потяните вниз и отпустите — удар');
       hud = wrap.querySelector('.lp-hud') as HTMLElement;
       banner = wrap.querySelector('.lp-banner') as HTMLElement;
       bar = wrap.querySelector('.lp-bar') as HTMLElement;
       tags = wrap.querySelector('.lp-tags') as HTMLElement;
+      steps = wrap.querySelector('.lp-steps') as HTMLElement;
+      sayEl = wrap.querySelector('.lp-say') as HTMLElement;
       bar.style.display = 'none';
       yard = new LaptaYard(wrap.querySelector('.lp-cv') as HTMLElement);
       ctx.hold?.(30000);
@@ -763,6 +808,7 @@ export function createView(): GameView<State, Event> {
       const mine = interactive.find((x) => toAct.includes(x));
       act = v && !v.over && !ctx.demo && mine != null ? mine : null;
       chosen = new Set();
+      preset = true;
       if (act != null && v?.phase === 'hit') {
         aim = { pow: 0.7, yaw: 0 };
         aimKey = '';

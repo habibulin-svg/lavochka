@@ -210,7 +210,7 @@ export function runnerAt(c: Cfg, r: Runner, t: number): { x: number; y: number; 
 /** Где ждут игроки нападения: в доме — за линией, в кону — за линией кона (оси игры). */
 export function homeSpot(c: Cfg, who: number, at: 'dom' | 'kon'): [number, number] {
   // в доме — сбоку от площадки бьющего, у левой боковой, двумя рядами
-  return at === 'dom' ? [r2(-c.W / 2 + 5.2 - (who % 3) * 1.3), r2(-1.2 - Math.floor(who / 3) * 1.4)] : [lane(c, who), r2(yKon(c) + 1.2)];
+  return at === 'dom' ? [r2(-3.6 - (who % 3) * 1.25), r2(-1.6 - Math.floor(who / 3) * 1.4)] : [lane(c, who), r2(yKon(c) + 1.2)];
 }
 
 /** Скорость мяча при полной силе — подобрана по длине поля: дальний удар в полную силу улетает чуть за кон. */

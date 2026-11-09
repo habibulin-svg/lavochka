@@ -41,7 +41,11 @@ export class LaptaYard extends DvorYard<CamMode> {
   pending = 0;
 
   constructor(host: HTMLElement) {
-    super(host, { yard: `${BASE}field.glb?v=1`, props: `${BASE}lapta.glb?v=1`, center: [0, 25], backdropR: 88, shadow: [-46, 46, 52, -52] });
+    super(host, { yard: `${BASE}field.glb?v=2`, props: `${BASE}lapta.glb?v=1`, center: [0, 25], backdropR: 88, shadow: [-46, 46, 52, -52] });
+    // поле длинное: ближняя плоскость камеры дальше (5 см по умолчанию губят точность глубины — земля и мел мерцали)
+    this.camera.near = 0.4;
+    this.camera.far = 220;
+    this.camera.updateProjectionMatrix();
     const ball = new THREE.Group();
     ball.add(new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), new THREE.MeshStandardMaterial({ color: '#d8301e', roughness: 0.55 })));
     ball.traverse((o) => ((o as THREE.Mesh).castShadow = true));
@@ -107,7 +111,7 @@ export class LaptaYard extends DvorYard<CamMode> {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(len + w, w), chalk);
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = Math.atan2(y1 - y0, x1 - x0);
-      m.position.copy(W((x0 + x1) / 2, (y0 + y1) / 2, 0.006));
+      m.position.copy(W((x0 + x1) / 2, (y0 + y1) / 2, 0.03));
       m.receiveShadow = true;
       this.lines.add(m);
     };
@@ -120,7 +124,7 @@ export class LaptaYard extends DvorYard<CamMode> {
     for (let x = -hw; x < hw - 0.5; x += 1.6) strip(x, c.ctrl, Math.min(hw, x + 0.9), c.ctrl, 0.06);
     const circ = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.27, 32), chalk);
     circ.rotation.x = -Math.PI / 2;
-    circ.position.copy(W(0.7, 0.7, 0.006));
+    circ.position.copy(W(0.7, 0.7, 0.03));
     this.lines.add(circ);
     // флажки по углам кона
     const pole = new THREE.MeshStandardMaterial({ color: '#d8d0c0', roughness: 0.7 });

@@ -255,7 +255,7 @@ def decal(name, m, x, y, size, ang):
     for lp, (u, v) in zip(f.loops, [(0, 0), (1, 0), (1, 1), (0, 1)]):
         lp[uvl].uv = (u, v)
     o = mesh_obj(name, bm, m, yard)
-    o.location = (x, y, 0.004)
+    o.location = (x, y, 0.022)
     o.rotation_euler.z = ang
 
 def export(path, coll):
@@ -271,10 +271,11 @@ def export(path, coll):
 # ------------------------------------------------------------------ пустырь
 
 # трава и утоптанная площадка с неровным краем
-plane('ground', -110, 110, -60, 140, -0.004, M['grass'], 3.0, coll=yard)
+# слои земли разнесены на сантиметры: на поле в 70 м миллиметровые зазоры мерцали (z-fighting) при движении камеры
+plane('ground', -110, 110, -60, 140, -0.04, M['grass'], 3.0, coll=yard)
 plane('court', -19.5, 19.5, -11.0, 61.0, 0.0, M['dirt'], 2.6, nx=26, ny=48, jitter=0.9, coll=yard)
 # у дома (где бьют и ждут) — земля темнее и плотнее
-plane('clay-dom', -9.0, 9.0, -6.5, 2.2, 0.0015, M['clay'], 1.8, nx=14, ny=8, jitter=0.25, coll=yard)
+plane('clay-dom', -9.0, 9.0, -6.5, 2.2, 0.012, M['clay'], 1.8, nx=14, ny=8, jitter=0.25, coll=yard)
 
 # гаражи: длинный ряд вдоль левого края — дверьми к полю, и дальний ряд за линией кона
 colors = ['green', 'red', 'blue', 'green', 'blue', 'red', 'green', 'red']
