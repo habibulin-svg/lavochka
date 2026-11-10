@@ -8,16 +8,17 @@
  * Мяч в свободном полёте — по кадрам flight(b0) от момента t0 (детерминированно и дёшево); люди — точки со скоростью.
  * Оси: x — поперёк поля, y — от линии дома (0) к линии кона (L), z — вверх. */
 import { kick, sample, type Body } from '../../core/dvorsport/body';
-import { applySpeed, cleanSpeed, gameSpeed } from '../../core/realtime';
+import { applySpeed, cleanSpeed } from '../../core/realtime';
+import { BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import type { Options, Rng } from '../../core/types';
 import { aiAttack, aiDefense, aiHit, aiThrow, type Want } from './ai';
-import { BALL_R, cfgFrom, flight, formation, HIT_AT, homeSpot, judge, strike, VF, VR, VT, yKon, type Cfg, type HitKind, type PStatus, type Style } from './field';
+import { BALL_R, WALLS, cfgFrom, flight, formation, HIT_AT, homeSpot, judge, strike, VF, VR, VT, yKon, type Cfg, type HitKind, type PStatus, type Style } from './field';
 
 export * from './field';
 
 export const TICK_MS = 1000 / 60;
 /** Рывок: во сколько раз быстрее, сколько длится и перезарядка, с. */
-export const DASH = { k: 1.75, t: 0.35, cd: 1.4 };
+export const DASH = { k: BODY.dashK, t: BODY.dashT, cd: BODY.dashCd };
 /** Ловля с лёта: окно после нажатия, с; дотянуться руками (м) и до какой высоты. */
 export const CATCH_WIN = 0.45;
 export const ARM_AIR = 0.75;
@@ -75,6 +76,8 @@ export interface In {
   th?: { n: number; tx: number; ty: number };
   d?: number;
   sp?: number;
+  /** Обучение просит подождать: движок стоит (только если соперник — компьютер). */
+  hold?: boolean;
 }
 
 export type Event =
@@ -137,6 +140,11 @@ export interface State {
   shot?: boolean;
   /** Позиция показа правил (только там apply «перематывает» партию). */
   demo?: boolean;
+  /** Замедление на ударе и ловле (core/dvorsport/sim.ts). */
+  slowUntil?: number;
+  slowK?: number;
+  /** Мяч лёг и лежит с этого времени (для вбрасывания). */
+  restT?: number;
 }
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -145,7 +153,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 const man = (x: number, y: number, st: PStatus = 'ready'): Man => ({ x, y, vx: 0, vy: 0, st, dash: 0, cd: 0 });
 const ballServe = (t: number): BallS => ({ mode: 'serve', b0: null, t0: t, holder: -1, air: false, thrown: false, by: -1, px: 0, py: 0, pz: 0 });
 
-export function newGame(o: Options, seats: [number, number], speed = gameSpeed(o)): State {
+export function newGame(o: Options, seats: [number, number], speed = dsSpeed(o)): State {
   const c = cfgFrom(o);
   const s: State = {
     cfg: c,
@@ -207,6 +215,7 @@ export function cleanInput(raw: unknown): In | null {
   if (th && typeof th === 'object') out.th = { n: Math.round(num(th.n)), tx: clamp(num(th.tx), -80, 80), ty: clamp(num(th.ty), -20, 120) };
   const sp = cleanSpeed(r.sp);
   if (sp != null) out.sp = sp;
+  if (r.hold === true) out.hold = true;
   return out;
 }
 
@@ -294,7 +303,7 @@ function nextBatter(s: State, ev: Event[]) {
   s.batter = s.queue[0];
   s.tries = s.cfg.tries;
   resetBall(s);
-  pause(s, 1.0, 'serve');
+  pause(s, 0.45, 'serve');
 }
 
 function swap(s: State, reason: 'salit' | 'candle' | 'nobat', ev: Event[]) {
@@ -309,7 +318,7 @@ function swap(s: State, reason: 'salit' | 'candle' | 'nobat', ev: Event[]) {
   s.auto = [true, true];
   resetBall(s);
   ev.push({ k: 'swap', reason, atk: s.atk });
-  pause(s, 2.4, 'serve');
+  pause(s, 1.2, 'serve');
 }
 
 function checkEnd(s: State, ev: Event[]): boolean {
@@ -347,8 +356,8 @@ function doHit(s: State, pow: number, yaw: number, style: Style, ev: Event[]) {
     if (s.tries <= 0) {
       atk[who].st = 'used';
       s.queue = s.queue.filter((i) => i !== who);
-      pause(s, 1.8, 'batter');
-    } else pause(s, 1.8, 'serve');
+      pause(s, 1.1, 'batter');
+    } else pause(s, 1.1, 'serve');
     return;
   }
   ev.push({ k: 'hit', team: s.atk, who, kind, b0, t: s.t, left: s.tries - 1 });
@@ -358,28 +367,13 @@ function doHit(s: State, pow: number, yaw: number, style: Style, ev: Event[]) {
   s.phase = 'live';
   s.since = s.t;
   s.quietT = -1;
+  s.restT = undefined;
   s.go = [];
-}
-
-/** Двигать человека к желаемой скорости. */
-function steer(m: Man, w: Want, vmax: number, dt: number) {
-  let vx = w.mx * vmax;
-  let vy = w.my * vmax;
-  if (m.dash > 0) (vx *= DASH.k), (vy *= DASH.k);
-  const k = Math.min(1, dt / 0.15);
-  m.vx += (vx - m.vx) * k;
-  m.vy += (vy - m.vy) * k;
-  m.x += m.vx * dt;
-  m.y += m.vy * dt;
-  m.dash = Math.max(0, m.dash - dt);
-  m.cd = Math.max(0, m.cd - dt);
+  slowmo(s, 0.45, 0.35);
 }
 
 function tryDash(m: Man, team: number, who: number, ev: Event[]) {
-  if (m.cd > 0) return;
-  m.dash = DASH.t;
-  m.cd = DASH.cd;
-  ev.push({ k: 'dash', team, who });
+  if (dash(m)) ev.push({ k: 'dash', team, who });
 }
 
 /** Подача: бьющий на площадке. */
@@ -411,9 +405,9 @@ function walkHome(s: State, dt: number) {
   };
   s.men[A].forEach((m, i) => {
     const [x, y] = i === s.batter ? BAT_SPOT : i === sv ? SERVE_SPOT : homeSpot(c, i, m.st === 'kon' ? 'kon' : 'dom');
-    go(m, x, y, 8);
+    go(m, x, y, 14);
   });
-  formation(c).forEach(([x, y], i) => go(s.men[defT(s)][i], x, y, 8));
+  formation(c).forEach(([x, y], i) => go(s.men[defT(s)][i], x, y, 14));
 }
 
 /** Кем управляет сторона, если выбирает сама: нападение — бьющий / бегущий / готовый бежать; защита — ближний к мячу. */
@@ -464,8 +458,12 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   const c = s.cfg;
   const ins = [0, 1].map((t) => inputs[s.seats[t]] ?? idleInput());
   for (let t = 0; t < 2; t++) applySpeed(s, s.seats[t], ins[t].sp);
-  const dt = (TICK_MS / 1000) * s.speed;
+  // обучение: человек просит подождать, соперник — компьютер, — партия стоит, двигается только его пацан
+  const frozen = [0, 1].some((t) => ins[t].ai < 0 && ins[t].hold && ins[1 - t].ai >= 0);
+  const realDt = (TICK_MS / 1000) * s.speed * dtScale(s);
+  const dt = frozen ? 0 : realDt;
   s.t = r3(s.t + dt);
+  const own = (t: number, i: number) => ins[t].ai < 0 && s.ctrl[t] === i;
   const A = s.atk;
   const D = defT(s);
 
@@ -488,6 +486,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
 
   if (s.phase === 'pause') {
     walkHome(s, dt);
+    separate([...s.men[0], ...s.men[1]]);
     if (s.t >= s.until) {
       if (s.next === 'batter') nextBatter(s, ev);
       else startServe(s);
@@ -497,10 +496,11 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
 
   if (s.phase === 'serve') {
     walkHome(s, dt);
+    separate([...s.men[0], ...s.men[1]], undefined, (i) => i === s.batter && s.atk === 0 || i === s.cfg.n + s.batter && s.atk === 1);
     const inp = ins[A];
     let hit = acts[A].hit;
     // бот бьёт не сразу — подающий подбросил, бьющий приладился
-    if (inp.ai >= 0) hit = s.t - s.since > 1.0 ? aiHit(s, inp.ai, rng) : null;
+    if (inp.ai >= 0) hit = s.t - s.since > 0.6 ? aiHit(s, inp.ai, rng) : null;
     if (hit) doHit(s, hit.pow, hit.yaw, hit.style, ev);
     return ev;
   }
@@ -521,8 +521,8 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
     const w = wants[A][i] ?? { mx: 0, my: 0 };
     const can = m.st === 'run' || mayLeave(s, i);
     if (w.dash && can) tryDash(m, A, i, ev);
-    steer(m, w, VR, dt);
-    m.x = clamp(m.x, -c.W / 2 - 3, c.W / 2 + 3);
+    drive(m, w, VR, frozen && own(A, i) ? realDt : dt);
+    m.x = clamp(m.x, WALLS.x0 + 0.5, WALLS.x1 - 0.5);
     if (!can) {
       // кому нельзя — за своей линией
       if (m.st === 'kon') m.y = Math.max(m.y, c.L + 0.3);
@@ -539,7 +539,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       else m.y = Math.max(m.y, -6);
       return;
     }
-    m.y = clamp(m.y, -3, yKon(c) + 3);
+    m.y = clamp(m.y, WALLS.y0 + 0.5, WALLS.y1 - 0.5);
     if (m.from === 'dom' && m.y >= c.L) {
       m.st = 'kon';
       m.from = undefined;
@@ -563,10 +563,11 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   def.forEach((m, i) => {
     const w = wants[D][i] ?? { mx: 0, my: 0 };
     if (w.dash) tryDash(m, D, i, ev);
-    steer(m, w, VF, dt);
-    m.x = clamp(m.x, -c.W / 2 - 6, c.W / 2 + 6);
-    m.y = clamp(m.y, -2, c.L + 7);
+    drive(m, w, VF, frozen && own(D, i) ? realDt : dt);
+    m.x = clamp(m.x, WALLS.x0 + 0.5, WALLS.x1 - 0.5);
+    m.y = clamp(m.y, WALLS.y0 + 0.5, WALLS.y1 - 0.5);
   });
+  separate([...atk, ...def]);
   if (acts[D].catch) s.catchT[D] = s.t + CATCH_WIN;
 
   const b = s.ball;
@@ -582,6 +583,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
         if (m.st !== 'run') continue;
         if (Math.min(z, b.pz) <= HIT_Z && segDist(m.x, m.y, b.px, b.py, x, y) < HIT_R) {
           ev.push({ k: 'salit', team: A, who: i });
+          slowmo(s, 0.6, 0.3);
           swap(s, 'salit', ev);
           return ev;
         }
@@ -612,6 +614,17 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
     b.px = x;
     b.py = y;
     b.pz = z;
+    // вбрасывание: мяч лежит, а подобрать никто не успел (далеко, за людьми) — его подаёт ближайшему полевому
+    if (got < 0 && ballRests(s)) {
+      if (s.restT == null) s.restT = s.t;
+      else if (s.t - s.restT > 2.5) {
+        let bd = Infinity;
+        def.forEach((m, i) => {
+          const d = Math.hypot(m.x - x, m.y - y);
+          if (d < bd) (bd = d), (got = i);
+        });
+      }
+    } else s.restT = undefined;
     if (got >= 0) {
       const candle = gotAir && b.air && !b.thrown;
       s.ball = { mode: 'held', b0: null, t0: s.t, holder: got, air: false, thrown: false, by: -1, px: x, py: y, pz: z };
@@ -619,6 +632,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       s.catchT[D] = -1;
       s.chase = -1;
       ev.push({ k: 'catch', team: D, who: got, air: gotAir });
+      if (gotAir && !b.thrown) slowmo(s, 0.5, 0.3);
       if (candle) {
         if (c.candle === 'swap') {
           ev.push({ k: 'candle', team: D, pts: 0 });
@@ -662,7 +676,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   const calm = !running && (s.ball.mode === 'held' || ballRests(s));
   if (calm) {
     if (s.quietT < 0) s.quietT = s.t;
-    if (s.t - s.quietT > 1.2) dead(s, ev);
+    if (s.t - s.quietT > 0.5) dead(s, ev);
   } else s.quietT = -1;
   // страховка: розыгрыш затянулся
   if (s.phase === 'live' && s.t - s.since > 45) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { def } from '../src/games/lapta/def';
+import { separate } from '../src/core/dvorsport/sim';
 import { cfgFrom, cleanInput, flight, idleInput, intercept, judge, newGame, step, strike, type In, type State } from '../src/games/lapta/engine';
 
 const human = (o: Partial<In> = {}): In => ({ mx: 0, my: 0, k: -1, ai: -1, ...o });
@@ -59,8 +60,8 @@ describe('лапта: розыгрыш в реальном времени', () =
   });
   it('бегущего можно осалить — команды меняются', () => {
     let swapped = false;
-    for (let seed = 1; seed < 12 && !swapped; seed++) {
-      const s = newGame({ field: 36, ctrl: 7, n: 4, speed: 1 }, [0, 1], 1);
+    for (let seed = 1; seed < 40 && !swapped; seed++) {
+      const s = newGame({ field: 50, ctrl: 10, n: 6, candle: 'point', speed: 1 }, [0, 1], 1);
       const rng = new SeededRng(seed);
       run(s, () => [human(), { ...idleInput(), ai: 2 }], (x) => x.phase === 'serve', 600, rng);
       run(s, () => [human({ hit: { n: 1, pow: 0.45, yaw: 0, style: 'low' } }), { ...idleInput(), ai: 2 }], (x) => x.phase !== 'serve', 10, rng);
@@ -83,5 +84,39 @@ describe('лапта: розыгрыш в реальном времени', () =
       expect(s.over, pr.id).toBe(true);
       expect(def.result(s)).not.toBeNull();
     }
+  });
+});
+
+describe('лапта: розыгрыши не застревают, люди не сливаются', () => {
+  it('у ботов каждый розыгрыш кончается за 35 с игрового времени', () => {
+    const rt = def.realtime!;
+    let worst = 0;
+    for (const pr of def.presets!)
+      for (const seed of [1, 2]) {
+        const rng = new SeededRng(seed);
+        const s = def.setup([{ seat: 0, kind: 'bot', name: 'a', level: seed % 3 }, { seat: 1, kind: 'bot', name: 'b', level: 1 }], pr.options, rng) as State;
+        let start = -1;
+        for (let n = 0; n < 120000 && !s.over; n++) {
+          rt.tick(s, [0, 1].map((seat) => rt.input(rt.bot(def.view(s, [seat]), seat, 1, {}, rng))), rng);
+          if (s.phase === 'live' && start < 0) start = s.t;
+          if (s.phase !== 'live' && start >= 0) (worst = Math.max(worst, s.t - start)), (start = -1);
+        }
+      }
+    expect(worst).toBeGreaterThan(0);
+    expect(worst).toBeLessThan(35);
+  });
+  it('расталкивание разводит людей на два радиуса, детерминированно', () => {
+    const a = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0.2, y: 0.1 }];
+    const b = JSON.parse(JSON.stringify(a));
+    for (let k = 0; k < 6; k++) separate(a), separate(b);
+    expect(a).toEqual(b);
+    for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) expect(Math.hypot(a[i].x - a[j].x, a[i].y - a[j].y)).toBeGreaterThan(0.6);
+  });
+  it('на старте и в подаче никто не стоит в другом', () => {
+    const s = newGame({ n: 6, field: 50 }, [0, 1], 1);
+    const rng = new SeededRng(5);
+    for (let n = 0; n < 200; n++) step(s, [human(), { ...idleInput(), ai: 2 }], rng);
+    const all = [...s.men[0], ...s.men[1]];
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) expect(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y)).toBeGreaterThan(0.55);
   });
 });

@@ -6,6 +6,8 @@ import { audioOut, click, Sound, tone } from '../../core/audio';
 import { sample } from '../../core/dvorsport/body';
 import { PullAim } from '../../core/dvorsport/input';
 import { Pad } from '../../core/dvorsport/pad';
+import { Coach, Tutor, type TutorStep } from '../../core/dvorsport/coach';
+import { GroundMarks } from '../../core/dvorsport/marks3d';
 import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/demo';
 import { segRow } from '../../core/rtview';
 import { store } from '../../core/settings';
@@ -13,7 +15,7 @@ import { showLoading } from '../../core/loading';
 import { esc, h } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
-import { BAT_SPOT, ballPos, defT, flight, mayLeave, strike, type Event, type In, type Man, type State, type Style } from './engine';
+import { BAT_SPOT, ballPos, ballRests, chasePoint, defT, flight, mayLeave, strike, type Event, type In, type Man, type State, type Style } from './engine';
 import { LaptaYard } from './scene';
 import './lapta.css';
 
@@ -64,9 +66,10 @@ export function createView(): GameView<State, Event> {
   let wrap: HTMLElement;
   let yard: LaptaYard;
   let hud: HTMLElement;
-  let banner: HTMLElement;
-  let steps: HTMLElement;
-  let sayEl: HTMLElement;
+  let coach: Coach;
+  let marks: GroundMarks;
+  let tutor: Tutor | null = null;
+  let tutorAsked = false;
   let raf = 0;
   let iv = 0;
   let last = 0;
@@ -74,7 +77,6 @@ export function createView(): GameView<State, Event> {
   let snaps: Snap[] = [];
   let pad: Pad;
   let pull: PullAim | null = null;
-  let bannerT = 0;
   const cleanup: (() => void)[] = [];
   /** Одноразовые действия: счётчики, ручной выбор пацана, удар и бросок. */
   const seq = { hit: 0, c: 0, th: 0, d: 0 };
@@ -105,11 +107,7 @@ export function createView(): GameView<State, Event> {
     return -1;
   }
 
-  function say(big: string, small = '', ms = 1400) {
-    banner.innerHTML = `<b>${big}</b>${small ? `<span>${small}</span>` : ''}`;
-    banner.style.opacity = '1';
-    bannerT = performance.now() + ms;
-  }
+
 
   function current(): State | null {
     if (!snaps.length) return latest;
@@ -150,6 +148,7 @@ export function createView(): GameView<State, Event> {
     inp.c = seq.c;
     inp.d = seq.d;
     if (thReq) inp.th = thReq;
+    if (tutor?.holding) inp.hold = true;
     return inp;
   }
 
@@ -357,64 +356,69 @@ export function createView(): GameView<State, Event> {
     if (hud.innerHTML !== html) hud.innerHTML = html;
   }
 
-  let hintKey = '';
+  /** Что делать сейчас — крупно, со значками клавиш; кнопки телефона — те же действия. */
   function drawHint(s: State) {
     const team = myTeam(s);
     const D = defT(s);
-    const cur = s.phase === 'serve' ? 0 : s.phase === 'live' ? (s.ball.mode === 'held' ? 3 : team === s.atk ? 1 : 2) : -1;
     let t = '';
+    let keys: string[] = [];
+    let hot = false;
     const btn: Record<string, string | null> = { catch: null, thr: null, pass: null, dash: null, sw: null, hit: null };
-    if (s.over) t = '';
-    else if (team < 0) t = '';
-    else if (s.phase === 'pause') t = '';
+    if (s.over || team < 0 || s.phase === 'pause') t = '';
     else if (s.phase === 'serve') {
       if (team === s.atk) {
         t = `<b>Твой удар!</b> Нажми на поле, потяни вниз и отпусти. Вбок — направление.`;
+        keys = ['Пробел'];
+        hot = true;
         btn.hit = '!Удар';
-      } else t = `Бьют соперники — <b>готовься ловить</b>: беги к мячу, когда отобьют.`;
+      } else t = `Бьют соперники — <b>готовься ловить</b>: побежишь к мячу, когда отобьют.`;
     } else if (team === s.atk) {
       const k = s.ctrl[team];
       const m = s.men[team][k];
       btn.sw = 'Другой';
       if (m.st === 'run') {
-        t = `<b>Беги!</b> ${m.from === 'dom' ? 'К линии кона' : 'Домой — это 2 очка'}. Летит мяч — <b>рывок</b> в сторону.`;
+        t = `<b>Беги ${m.from === 'dom' ? 'к кону' : 'домой — это 2 очка'}!</b> Летит мяч — <b>рывок</b> в сторону.`;
+        keys = ['Shift'];
+        hot = true;
         btn.dash = '!Рывок';
       } else if (mayLeave(s, k)) {
-        t = `<b>Мяч в поле!</b> Выбегай ${m.st === 'kon' ? 'домой' : 'к кону'} (стрелки / WASD) — или жди, пока полевой с мячом далеко.`;
+        t = `<b>Мяч в поле!</b> Беги ${m.st === 'kon' ? 'домой' : 'к кону'} по стрелке — или жди, пока полевой с мячом далеко.`;
+        keys = m.st === 'kon' ? ['S'] : ['W'];
+        hot = true;
         btn.dash = 'Рывок';
-      } else t = `Этот пацан бежать не может — <b>переключись</b> (Tab / «Другой») на того, кто может.`;
+      } else {
+        t = `Этот пацан бежать не может — <b>переключись</b> на того, кто может (белое кольцо).`;
+        keys = ['Tab'];
+      }
     } else {
       btn.sw = 'Другой';
       if (s.ball.mode === 'held' && s.ball.holder === s.ctrl[D]) {
         const runs = s.men[s.atk].some((m) => m.st === 'run');
-        t = runs ? `<b>Осаливай!</b> Коснись бегущего — бросок, или своего — пас. E — в ближнего, R — пас ближе к нему.` : `Мяч у тебя. Бегущих нет — розыгрыш сейчас кончится.`;
-        if (runs) (btn.thr = '!Бросок'), (btn.pass = 'Пас');
-      } else if (s.ball.mode === 'held') t = `Мяч у своего — <b>перекрой бегущего</b> или переключись на того, кто с мячом.`;
+        t = runs ? `<b>Осаливай!</b> Коснись бегущего — бросок; своего — пас.` : `Мяч у тебя. Бегущих нет — розыгрыш сейчас кончится.`;
+        if (runs) (keys = ['E']), (hot = true), (btn.thr = '!Бросок'), (btn.pass = 'Пас');
+      } else if (s.ball.mode === 'held') t = `Мяч у своего — <b>перекрой бегущего</b>.`;
       else {
-        t = `<b>Ловим!</b> Беги к мячу (стрелки / WASD). С лёта — жми <b>«Ловить»</b> (Пробел), когда мяч у рук; с земли подберёшь сам.`;
+        const air = s.ball.mode === 'free' && !ballRests(s) && ballPos(s)[2] > 0.5;
+        t = air ? `<b>Ловим!</b> Беги по стрелке под мяч и жми, когда он у рук.` : `<b>Догоняй мяч!</b> Беги по стрелке — подберёшь сам.`;
+        keys = air ? ['Пробел'] : ['W', 'A', 'S', 'D'];
+        hot = true;
         btn.catch = '!Ловить';
         btn.dash = 'Рывок';
       }
     }
     pad.show(btn);
     pad.visible(team >= 0 && !s.over);
-    const key = `${cur}|${t}`;
-    if (key === hintKey) return;
-    hintKey = key;
-    const names = ['Удар', 'Бег', 'Ловля', 'Осаливание'];
-    steps.innerHTML = team < 0 || s.over ? '' : names.map((n, i) => `<span class="${i === cur ? 'on' : ''}">${n}</span>`).join('<i>→</i>');
-    steps.classList.toggle('mine', !!t && t.includes('<b>'));
-    sayEl.innerHTML = t;
-    sayEl.style.display = t ? '' : 'none';
+    coach.say(tutor?.showing ? '' : t, keys, hot);
   }
 
   // ---------------------------------------------------------------- кадр
 
-  function place(s: State, now: number) {
+  function place(s: State, now: number, dt: number) {
     const c = s.cfg;
     yard.setField(c);
     yard.setTeams(c.n);
     yard.clearMarks();
+    marks.begin(dt);
     const team = myTeam(s);
     const [bx, by] = ballPos(s);
     for (let t = 0; t < 2; t++) {
@@ -434,25 +438,52 @@ export function createView(): GameView<State, Event> {
           swingAt = -1;
         }
         if (os && now < os.until) tn.play(os.clip, false, 0.12);
-        else if (sp > 0.5) tn.play('run', true, 0.15, clamp(sp / 4.5, 0.6, 1.8));
+        else if (sp > 0.5) tn.play('run', true, 0.12, clamp(sp / 4.5, 0.7, 2));
         else if (t === s.atk && i === s.batter && s.phase !== 'live') tn.play('hold2h', true, 0.25);
         else tn.play(i % 3 ? 'idle' : 'idle2', true, 0.3);
       });
     }
-    // кольца: свой — жёлтый; в защите бегущие — красные; с мячом — голубой
-    if (team >= 0) yard.mark(team, s.ctrl[team as 0 | 1], '#ffe23a');
-    if (team === defT(s)) s.men[s.atk].forEach((m, i) => m.st === 'run' && yard.mark(s.atk, i, '#ff4a2a'));
-    if (team === s.atk && s.phase === 'live') s.men[s.atk].forEach((_, i) => i !== s.ctrl[team as 0 | 1] && mayLeave(s, i) && yard.mark(s.atk, i, '#7ad84a'));
-    // мяч
-    yard.setBall(ballPos(s));
+    // метки на земле: свой — жёлтое кольцо; на кого переключишься — белое пунктирное; бегущие (в защите) — красные;
+    // куда упадёт мяч — оранжевое крутящееся; стрелка — куда бежать / в кого кидать
+    const L = c.L;
+    if (team >= 0) {
+      const T = team as 0 | 1;
+      const me = s.men[T][s.ctrl[T]];
+      marks.ring('me', me.x, me.y, '#ffe23a', 0.6, { pulse: true });
+      if (s.phase === 'live') {
+        const nx = nextOf(s, T);
+        if (nx >= 0) marks.ring('next', s.men[T][nx].x, s.men[T][nx].y, '#ffffff', 0.55, { dashed: true });
+      }
+      if (T === defT(s)) s.men[s.atk].forEach((m, i) => m.st === 'run' && marks.ring(`run${i}`, m.x, m.y, '#ff4a2a', 0.6));
+      if (s.phase === 'live') {
+        if (T === s.atk && (me.st === 'run' || mayLeave(s, s.ctrl[T]))) {
+          const toKon = me.st === 'run' ? me.from === 'dom' : me.st !== 'kon';
+          marks.arrow('go', me.x, me.y, me.x, toKon ? L + 1 : -1, '#ffe23a');
+        } else if (T !== s.atk && s.ball.mode === 'free') {
+          const [cx, cy] = chasePoint(s);
+          marks.arrow('go', me.x, me.y, cx, cy, '#ffe23a');
+        } else if (T !== s.atk && s.ball.mode === 'held' && s.ball.holder === s.ctrl[T]) {
+          let best: Man | null = null;
+          for (const r of s.men[s.atk]) if (r.st === 'run' && (!best || Math.hypot(r.x - me.x, r.y - me.y) < Math.hypot(best.x - me.x, best.y - me.y))) best = r;
+          if (best) marks.arrow('go', me.x, me.y, best.x, best.y, '#ff4a2a', 30);
+        }
+      }
+    }
+    const land = s.ball.mode === 'free' && s.ball.b0 && s.ball.air ? flight(s.ball.b0).land : null;
+    if (land) marks.ring('land', land.x, land.y, '#ff7a2a', 0.8, { dashed: true });
+    marks.end();
+    yard.setLand(null);
+    // мяч и бита
+    const bp = ballPos(s);
+    yard.setBall(bp);
     const bt = s.phase !== 'live' || swingAt > 0 ? (yard.men[s.atk][s.batter]?.toon ?? null) : null;
     yard.batIn(bt, s.phase === 'serve' && swingAt < 0 ? 1 : 0);
-    const land = s.ball.mode === 'free' && s.ball.b0 && s.ball.air ? flight(s.ball.b0).land : null;
-    yard.setLand(land ? [land.x, land.y] : null);
-    // стрелка «ТЫ» над своим
+    // мяч за краем экрана — указатель
+    coach.edge(s.phase === 'live' ? yard.toScreen(bp[0], bp[1], bp[2]) : null, wrap.clientWidth, wrap.clientHeight);
+    // метка «ТЫ» над своим
     if (team >= 0) {
       const m = s.men[team as 0 | 1][s.ctrl[team as 0 | 1]];
-      const q = yard.toScreen(m.x, m.y, 2.1);
+      const q = yard.toScreen(m.x, m.y, 1.85);
       youTag.style.display = q.vis ? 'block' : 'none';
       youTag.style.left = `${q.x}px`;
       youTag.style.top = `${q.y}px`;
@@ -461,9 +492,43 @@ export function createView(): GameView<State, Event> {
     if (camMode() === 'me' && team >= 0 && s.phase === 'live') {
       const m = s.men[team as 0 | 1][s.ctrl[team as 0 | 1]];
       yard.camTo('follow', { x: m.x, y: m.y }, 2.5);
-    } else if (s.phase === 'serve' && s.atk === team) yard.camTo('bat', undefined, 2);
-    else yard.camTo('field', undefined, 2);
+    } else if (s.phase === 'serve' && s.atk === team) yard.camTo('bat', undefined, 2.5);
+    else yard.camTo('field', undefined, 2.5);
   }
+
+  /** На кого переключит Tab. */
+  function nextOf(s: State, team: 0 | 1): number {
+    const n = s.cfg.n;
+    const cur = s.ctrl[team];
+    for (let k = 1; k < n; k++) {
+      const i = (cur + k) % n;
+      if (team === s.atk && !(s.men[team][i].st === 'run' || mayLeave(s, i))) continue;
+      return i;
+    }
+    return -1;
+  }
+
+  /** Обучение: что сделать — по шагам; пока не сделал, партия ждёт (hold во вводе). */
+  const tutorSaw = { hit: false, dash: false, throw: false };
+  function tutorSteps(): TutorStep[] {
+    const S = () => latest!;
+    const me = () => {
+      const s = S();
+      const t = myTeam(s) as 0 | 1;
+      return s.men[t]?.[s.ctrl[t]];
+    };
+    const atk = () => !!S() && myTeam(S()) === S().atk;
+    const live = () => !!S() && S().phase === 'live';
+    return [
+      { text: '<b>Удар.</b> Нажми на поле мышью или пальцем, потяни вниз и отпусти. Вбок — направление.', keys: ['Пробел'], when: () => atk() && S().phase === 'serve', done: () => tutorSaw.hit },
+      { text: '<b>Мяч в поле — беги к кону!</b> Жми вперёд и держи. Пока не побежишь, игра ждёт.', keys: ['W', '↑'], hold: true, when: () => atk() && live() && !!me() && mayLeave(S(), S().ctrl[S().atk]), done: () => me()?.st === 'run' && atk() },
+      { text: '<b>Рывок</b> — так уворачиваются от брошенного мяча. Игра ждёт.', keys: ['Shift'], hold: true, when: () => atk() && live() && me()?.st === 'run', done: () => tutorSaw.dash },
+      { text: 'Добеги до линии кона по жёлтой стрелке. Полевые будут кидать в тебя мячом — уворачивайся.', when: () => atk() && live() && me()?.st === 'run', done: () => atk() && me()?.st === 'kon' },
+      { text: '<b>Защита.</b> Беги к мячу по жёлтой стрелке; с лёта лови кнопкой, когда мяч у рук.', keys: ['Пробел'], when: () => !atk() && live() && S().ball.mode === 'free', done: () => !atk() && S().ball.mode === 'held' },
+      { text: '<b>Осаливай!</b> Мяч у тебя: коснись бегущего (красное кольцо) — или жми E. Попал — команды меняются.', keys: ['E'], when: () => !atk() && live() && S().ball.mode === 'held' && S().ball.holder === S().ctrl[defT(S())] && S().men[S().atk].some((m) => m.st === 'run'), done: () => tutorSaw.throw },
+    ];
+  }
+
 
   let youTag: HTMLElement;
 
@@ -502,15 +567,17 @@ export function createView(): GameView<State, Event> {
         yard.camTo('bat');
         hud.style.display = 'none';
       } else {
-        place(s, now);
+        place(s, now, dt);
+        // обучение — в первой партии против компьютера (не в показе правил и не по сети); места известны после первого снимка
+        if (!tutorAsked && myTeam(s) >= 0) {
+          tutorAsked = true;
+          if (!ctx.demo && !ctx.online && ctx.mySeats.length === 1 && !Tutor.seen('lapta')) tutor = new Tutor(wrap, 'lapta', tutorSteps());
+        }
+        tutor?.tick();
         drawHud(s);
         drawHint(s);
         showAim(s);
       }
-    }
-    if (bannerT && now > bannerT) {
-      banner.style.opacity = '0';
-      bannerT = 0;
     }
     yard.render(dt);
   }
@@ -518,50 +585,76 @@ export function createView(): GameView<State, Event> {
   function onEvent(s: State, ev: Event) {
     const now = performance.now();
     const shot = (t: number, i: number, clip: string, ms: number) => oneShot.set(`${t}:${i}`, { clip, until: now + ms });
+    const popAt = (t: number, i: number, text: string, cls = '') => {
+      const m = s.men[t]?.[i];
+      if (!m) return;
+      const q = yard.toScreen(m.x, m.y, 2.2);
+      if (q.vis) coach.pop(text, q.x, q.y, cls);
+    };
+    const cheer = (t: number) => s.men[t].forEach((_, i) => i % 2 === 0 && shot(t, i, 'cheer', 1400));
+    const mine = (t: number) => myTeam(s) === t;
     switch (ev.k) {
       case 'hit':
         swingAt = now;
         swingWho = ev.who;
         hitReq = null;
+        tutorSaw.hit = true;
         if (ev.kind === 'miss') whoosh();
-        else crack(Math.hypot(ev.b0.vx, ev.b0.vy, ev.b0.vz) / 30);
-        if (ev.kind === 'ok') say('Мяч в поле!', myTeam(s) === ev.team ? 'беги, когда полевые далеко' : 'беги ловить!', 1200);
         else {
+          crack(Math.hypot(ev.b0.vx, ev.b0.vy, ev.b0.vz) / 30);
+          yard.shake(0.05);
+        }
+        if (ev.kind === 'ok') {
+          const land = flight(ev.b0).land;
+          popAt(ev.team, ev.who, land ? `${Math.round(land.y)} м!` : 'В поле!', 'good');
+        } else {
           Sound.nomove();
-          say(ev.kind === 'miss' ? 'Промах' : ev.kind === 'short' ? 'Недолёт' : 'Аут', ev.left > 0 ? 'ещё попытка' : 'попытки кончились', 1400);
+          coach.banner(ev.kind === 'miss' ? 'Промах' : ev.kind === 'short' ? 'Недолёт' : 'Аут', ev.left > 0 ? 'ещё попытка' : 'попытки кончились', 1300);
         }
         break;
       case 'catch':
         slap();
         shot(ev.team, ev.who, ev.air ? 'holding' : 'pickup', 700);
         thReq = null;
-        if (ev.air) say('Поймал!', '', 700);
+        if (ev.air) {
+          popAt(ev.team, ev.who, 'Поймал с лёта!', 'good');
+          yard.shake(0.04);
+        }
         break;
       case 'throw':
         whoosh();
         thReq = null;
+        if (mine(ev.team)) tutorSaw.throw = true;
         shot(ev.team, ev.who, 'throw', 700);
+        break;
+      case 'dash':
+        if (mine(ev.team)) tutorSaw.dash = true;
         break;
       case 'safe':
         if (ev.at === 'dom') {
           Sound.win();
-          say('+2', `${ctx.name(s.seats[ev.team])}: перебежка туда и обратно`, 1300);
+          popAt(ev.team, ev.who, '+2', 'good');
           shot(ev.team, ev.who, 'cheer', 1500);
-        }
+          cheer(ev.team);
+        } else popAt(ev.team, ev.who, 'В кону!');
         break;
       case 'candle':
         Sound.capture();
-        say('Свеча!', ev.pts ? 'поймали с лёта: +1' : 'поймали с лёта — смена', 1600);
+        coach.banner('Свеча!', ev.pts ? 'поймали с лёта: +1' : 'поймали с лёта — смена', 1500);
+        cheer(ev.team);
         break;
       case 'salit':
         Sound.capture();
         shot(ev.team, ev.who, 'hit', 900);
-        say('Осалили!', 'попали мячом в бегущего — смена', 1600);
+        popAt(ev.team, ev.who, 'Осалил!', 'bad');
+        yard.shake(0.12);
+        coach.banner('Осалили!', mine(ev.team) ? 'тебя осалили — команды меняются' : 'попали в бегущего — команды меняются', 1500);
+        cheer(ev.team === s.atk ? defT(s) : s.atk);
         break;
       case 'swap':
         pick = -1;
         pickAtk = -1;
-        if (ev.reason === 'nobat') say('Смена!', 'бить больше некому', 1600);
+        if (ev.reason === 'nobat') coach.banner('Смена!', 'бить больше некому', 1500);
         break;
       case 'dead':
         pick = -1;
@@ -570,7 +663,7 @@ export function createView(): GameView<State, Event> {
         break;
       case 'end': {
         Sound.win();
-        say('Конец партии!', `${s.score[0]} : ${s.score[1]}`, 4000);
+        coach.banner('Конец партии!', `${s.score[0]} : ${s.score[1]}`, 5000);
         break;
       }
     }
@@ -579,14 +672,15 @@ export function createView(): GameView<State, Event> {
   return {
     mount(el, c) {
       ctx = c;
-      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-you">ТЫ</div><div class="lp-ask"><div class="lp-steps"></div><div class="lp-say"></div></div><div class="lp-banner"></div></div>`);
+      wrap = h(`<div class="lp-wrap"><div class="lp-cv"></div><div class="lp-hud"></div><div class="lp-you">ТЫ</div></div>`);
       el.appendChild(wrap);
       hud = wrap.querySelector('.lp-hud') as HTMLElement;
-      banner = wrap.querySelector('.lp-banner') as HTMLElement;
-      steps = wrap.querySelector('.lp-steps') as HTMLElement;
-      sayEl = wrap.querySelector('.lp-say') as HTMLElement;
       youTag = wrap.querySelector('.lp-you') as HTMLElement;
       yard = new LaptaYard(wrap.querySelector('.lp-cv') as HTMLElement);
+      marks = new GroundMarks(yard.scene);
+      coach = new Coach(wrap);
+      cleanup.push(() => (coach.dispose(), marks.dispose(), tutor?.dispose()));
+
       ctx.hold?.(30000);
       const y = yard;
       const shot = ctx.demo || /[?&]thumb=/.test(location.search);

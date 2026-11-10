@@ -10,10 +10,10 @@ export const BALL_R = 0.035;
 /** Где мяч встречает биту: чуть перед домом, на высоте пояса. */
 export const HIT_AT = { x: 0, y: 0.45, z: 1.0 };
 /** Скорость бега: нападающий налегке, полевой — к мячу. */
-export const VR = 6.2;
-export const VF = 5.6;
+export const VR = 6.8;
+export const VF = 6.6;
 /** К летящему мячу «под свечу» — медленнее: надо успеть встать и поймать. */
-export const VF_AIR = 4.4;
+export const VF_AIR = 5.2;
 /** Скорость брошенного мяча, м/с. */
 export const VT = 19;
 /** Реакция полевого на удар, замах броска, подобрать мяч, с. */
@@ -124,13 +124,17 @@ export function strike(c: Cfg, pow: number, yaw: number, style: Style): Body {
   return { ...b, vx: r2(b.vx), vy: r2(b.vy), vz: r2(b.vz) };
 }
 
+/** Края пустыря: слева гаражи, за коном — дальний ряд гаражей, справа деревья и лавочки, за домом — кусты. Мяч от них
+ * отскакивает, люди за них не выбегают — мяч всегда можно догнать. */
+export const WALLS = { x0: -22, x1: 22, y0: -9, y1: 64, wall: 0.35 };
+
 /** Полёт мяча кадрами (общий для комнаты, ботов и экрана). */
 const flightCache = new Map<string, { frames: BodyFrame[]; land: { x: number; y: number; t: number } | null; rest: number }>();
 export function flight(b0: Body) {
   const key = `${b0.x},${b0.y},${b0.z},${b0.vx},${b0.vy},${b0.vz}`;
   let f = flightCache.get(key);
   if (!f) {
-    const r = fly(b0, { mat: BALL, maxT: 12, frameDt: 1 / 60 });
+    const r = fly(b0, { mat: BALL, maxT: 12, frameDt: 1 / 60, walls: WALLS });
     f = { frames: r.frames, land: r.land, rest: r.t };
     if (flightCache.size > 400) flightCache.clear();
     flightCache.set(key, f);

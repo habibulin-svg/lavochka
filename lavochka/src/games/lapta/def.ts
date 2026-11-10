@@ -1,7 +1,7 @@
 /* Лапта — описание игры: две команды (место на команду), игра реального времени — комната крутит шаги, каждая сторона
  * ведёт своего пацана (переключается на любого), остальных — ИИ-напарник. Без DOM. */
 import { demoApply, rtStep } from '../../core/dvorsport/demo';
-import { gameSpeed, SPEED_OPTION } from '../../core/realtime';
+import { DS_SPEED_OPTION, dsSpeed } from '../../core/dvorsport/sim';
 import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { botInput } from './ai';
 import { cleanInput, idleInput, newGame, snapshot, step, TICK_MS, type Event, type In, type State } from './engine';
@@ -132,7 +132,7 @@ export const def: GameDef<State, never, Event, State> = {
       ],
       default: 15,
     },
-    SPEED_OPTION,
+    DS_SPEED_OPTION,
   ],
   presets: [
     { id: 'classic', label: 'Большая лапта', hint: '6 на 6, поле 50 м, две попытки, свеча — очко, до 15 очков или 15 минут', options: { n: 6, field: 50, ctrl: 10, tries: 2, candle: 'point', onlyHitter: false, target: 15, minutes: 15 } },
@@ -141,7 +141,7 @@ export const def: GameDef<State, never, Event, State> = {
   ],
   setup: (seats, opts) => {
     const ss = seats.map((x) => x.seat).sort((a, b) => a - b);
-    return newGame(opts, [ss[0] ?? 0, ss[1] ?? 1], gameSpeed(opts));
+    return newGame(opts, [ss[0] ?? 0, ss[1] ?? 1], dsSpeed(opts));
   },
   toAct: (s) => (s.over ? [] : [s.seats[0], s.seats[1]]),
   apply: (s, _seat, a, rng) => demoApply(s, a, rng, { step, view: snapshot }) as never,

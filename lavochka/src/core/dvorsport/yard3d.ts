@@ -164,6 +164,13 @@ export class DvorYard<Cam extends string = string> {
   /** Двор и реквизит загружены: игра достаёт прототипы из this.props. */
   protected onLoaded() {}
 
+  private shakeA = 0;
+  private shakeT = 0;
+  /** Толчок камеры: сила в метрах (0,05 — удар битой, 0,12 — осалили). */
+  shake(amount = 0.06) {
+    this.shakeA = Math.max(this.shakeA, amount);
+  }
+
   /** Камера к ракурсу из таблицы shots. */
   camTo(mode: Cam, ...a: unknown[]) {
     const f = this.shots[mode] as ((...a: unknown[]) => Shot) | undefined;
@@ -217,6 +224,14 @@ export class DvorYard<Cam extends string = string> {
     this.camLook.lerp(this.camGoalLook, k);
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
+    // толчок камеры (удар, ловля, осалили): затухающая дрожь
+    if (this.shakeA > 0.002) {
+      this.shakeT += dt;
+      const a = this.shakeA;
+      this.camera.position.x += Math.sin(this.shakeT * 53) * a;
+      this.camera.position.y += Math.sin(this.shakeT * 71 + 1) * a * 0.7;
+      this.shakeA *= Math.exp(-dt * 7);
+    }
     if (Math.abs(this.fovAdd - this.fovAddGoal) > 0.01) {
       this.fovAdd += (this.fovAddGoal - this.fovAdd) * k;
       this.camera.fov = this.baseFov + this.fovAdd;
