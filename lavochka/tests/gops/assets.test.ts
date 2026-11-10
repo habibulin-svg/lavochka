@@ -39,9 +39,9 @@ describe('gops/assets: ссылки игры — на упакованные ф�
   });
 
   it('озвучка: на каждую фразу из picks.json есть файл', () => {
-    const picks: Record<string, string> = JSON.parse(readFileSync(join(PUB, 'gops/a/33-voices-qwen/picks.json'), 'utf8'));
-    const missing = Object.values(picks).filter((f) => !has(`/gops/a/33-voices-qwen/${f.replace('/', '/ogg/').replace(/\.wav$/, '.ogg')}`));
+    const picks: Record<string, string> = JSON.parse(readFileSync(join(PUB, 'gops/a/34-voices-eleven/picks.json'), 'utf8'));
+    const missing = Object.values(picks).filter((f) => !has(`/gops/a/34-voices-eleven/${f.replace('/', '/ogg/').replace(/\.wav$/, '.ogg')}`));
     expect(missing).toEqual([]);
-    expect(readdirSync(join(PUB, 'gops/a/33-voices-qwen')).length).toBeGreaterThanOrEqual(6);
+    expect(readdirSync(join(PUB, 'gops/a/34-voices-eleven')).length).toBeGreaterThanOrEqual(6);
   });
 });

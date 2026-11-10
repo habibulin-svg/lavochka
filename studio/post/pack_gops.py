@@ -126,7 +126,7 @@ def main():
     if 'music' in want:
         for f in sorted(MUSIC.glob('*.ogg')):
             done += copy(f, DST / 'music' / f.name)
-    if 'voices' in want:
+    if 'voices' in want:  # устарело: озвучка теперь ElevenLabs — studio/post/pack_voices.py (34-voices-eleven)
         vdir = SRC / '33-voices-qwen'
         picks = json.loads((vdir / 'picks.json').read_text(encoding='utf-8'))
         for phrase, wav in picks.items():

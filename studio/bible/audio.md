@@ -33,3 +33,5 @@ ACE-Step — «плохо и неинтересно», YuE2 — «абсолют
 ## Озвучка реплик
 
 **Решение пользователя (2026-11-02): озвучка — Qwen3-TTS** (Apache-2.0). Раннер `studio/runners/tts_qwen.py`: VoiceDesign по описанию набора (`docs/gops/texts/voices.json`) → образец `studio/voices/qwen/<набор>.wav` → клон моделью Base на все фразы; лучший дубль — `studio/post/asr_score.py` (`picks.json`). Сравнение с Chatterbox: разборчивость 3,1 % ошибок против 11,2 %. Chatterbox (`runners/tts.py`) больше не используем.
+
+**Решение пользователя (2026-11-11): озвучка — ElevenLabs v4 через RouterAI** вместо Qwen3-TTS («не нравится»). Раннер `studio/runners/tts_eleven.py` (голоса — русские из библиотеки ElevenLabs по voice_id, один дубль), ударения — `studio/post/stress.py` + `studio/voices/stress-fixes.json`, раскладка — `studio/post/pack_voices.py`. Whisper-проверка — по WAV 16 кГц: CER 2,5 %. Qwen (`tts_qwen.py`) и Chatterbox больше не используем.

@@ -1,5 +1,5 @@
-/* «Коммерсы»: голос Коляна — Qwen3-TTS (studio/jobs/kommersy/10-kolyan-voice.json → runners/tts_qwen.py → лучший дубль по Whisper,
- * studio/post/asr_score.py → studio/post/pack_kommersy.py --voice). Реплики не накладываются; через общий микшер (🔊), как звуки. */
+/* «Коммерсы»: голос Коляна — ElevenLabs v4 (решение пользователя 2026-11-11; studio/jobs/kommersy/10-kolyan-voice.json →
+ * studio/post/stress.py → runners/tts_eleven.py → studio/post/pack_voices.py). Реплики не накладываются; через общий микшер (🔊), как звуки. */
 import { audioOut } from '../../core/audio';
 import type { Event, View } from './engine';
 import counts from './voice.json';
