@@ -1,0 +1,98 @@
+{
+ "nar": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/nar.wav",
+  "text": "Дорога уходит в тёмный лес. Над верхушками елей кружат вороны, а где-то вдали, за болотами, догорает закат.",
+  "who": "Ivan Nazarov — рассказчик",
+  "eleven": "lxY8Pn0yWs1Ve9rBceah"
+ },
+ "villain": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/villain.wav",
+  "text": "Вы пришли в мой замок без приглашения. Глупцы! Отсюда ещё никто не уходил живым.",
+  "who": "Evelon — злой маг",
+  "eleven": "mOTbMAOniC3yoEvgo4bi"
+ },
+ "sage": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/sage.wav",
+  "text": "Не спешите, путники. Сила не в мече, а в терпении. Выслушайте меня, и я укажу вам дорогу.",
+  "who": "Arcad — добрый маг, мудрец",
+  "eleven": "kuR1PV7xDOsP38QMSEvD"
+ },
+ "oldman": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/oldman.wav",
+  "text": "Эх, сынки… Давно тут никто не проходил. Садитесь к огню, расскажу вам, что за лесом творится.",
+  "who": "Arty Grumson — старик",
+  "eleven": "2Zst4rvX5S2nMbiauLDN"
+ },
+ "king": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/king.wav",
+  "text": "Я правитель этого города. Освободите мою землю от чудовищ, и награда будет достойной.",
+  "who": "Tsar — король, вельможа",
+  "eleven": "RGy9Pi4dN4jZx6BL6lef"
+ },
+ "soldier": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/soldier.wav",
+  "text": "Стоять! Кто такие? Оружие на землю, иначе пеняйте на себя. Проход в город закрыт.",
+  "who": "Egor Gadzhiyev — стражник, воин",
+  "eleven": "6A9D8WSMm4rFsg2DWFeE"
+ },
+ "rogue": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/rogue.wav",
+  "text": "Ну что, дорогие мои, кошельки на стол. Да не бойтесь, мы люди честные — берём только деньги.",
+  "who": "Mishka Yaponcik — разбойник, пройдоха",
+  "eleven": "RLRdvNFwJJct2XZOgfzy"
+ },
+ "commoner": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/commoner.wav",
+  "text": "Заходите, гости дорогие! Ночлег у нас недорогой, похлёбка горячая, а пиво своё, домашнее.",
+  "who": "VASKO — простой мужик, трактирщик, гном",
+  "eleven": "Vl27Cllkuw8BhyPqus2n"
+ },
+ "young": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/young.wav",
+  "text": "Спасибо вам! Я уж думал, никогда не выберусь из этой темницы. Возьмите меня с собой, я пригожусь.",
+  "who": "Eugene — юноша, эльф",
+  "eleven": "m0OQuJtWCw1V23P0pQmG"
+ },
+ "monster": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/monster.wav",
+  "text": "Кто топчет мой мост? Мясо пришло само… Сейчас я вас съем, косточки обглодаю!",
+  "who": "Nester Surovy (ниже на тон) — людоед, тролль",
+  "eleven": "pM78bgjPVk0JXtaEnFoj"
+ },
+ "imp": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/imp.wav",
+  "text": "Хи-хи! Попались, попались! А ну, угадайте загадку, а не то останетесь тут навсегда!",
+  "who": "Darth — гоблин, бес, клурк",
+  "eleven": "ZEchI3lWet1JsdNubYRY"
+ },
+ "ghost": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/ghost.wav",
+  "text": "Уходите… Это место проклято. Сто лет я брожу по этим залам и не могу найти покоя.",
+  "who": "Amid Hasan — призрак, нежить",
+  "eleven": "X0jd19oPQ0cVJcbpmAuX"
+ },
+ "girl": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/girl.wav",
+  "text": "Помогите, прошу вас! Колдун запер меня в этой башне. Только вы можете меня спасти.",
+  "who": "Ekaterina — девушка, принцесса",
+  "eleven": "GN4wbsbejSnGSa1AzjH5"
+ },
+ "lady": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/lady.wav",
+  "text": "Я знаю, зачем вы пришли. Но за мою помощь придётся заплатить, путники. Подумайте хорошенько.",
+  "who": "Elen Kuragina — королева, волшебница",
+  "eleven": "TPIitICAZ8CqlGZ81AKm"
+ },
+ "crone": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/crone.wav",
+  "text": "Ох, касатики, позолотите ручку — всю правду скажу. Ждёт вас дальняя дорога да лихая беда.",
+  "who": "Lea Wander — старуха, гадалка",
+  "eleven": "ZAs871VKqeAhWHigmemn"
+ },
+ "child": {
+  "wav": "G:/Claude/Shish/studio/voices/zs/child.wav",
+  "text": "Дяденьки, а вы правда рыцари? А у вас настоящий меч? Пойдёмте, я покажу, где живёт дракон!",
+  "who": "Lunya — ребёнок",
+  "eleven": "rSfuQoQ3FY8SVKeraMAp"
+ }
+}

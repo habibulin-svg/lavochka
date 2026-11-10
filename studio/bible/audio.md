@@ -37,3 +37,5 @@ ACE-Step — «плохо и неинтересно», YuE2 — «абсолют
 **Решение пользователя (2026-11-11): озвучка — ElevenLabs v4 через RouterAI** вместо Qwen3-TTS («не нравится»). Раннер `studio/runners/tts_eleven.py` (голоса — русские из библиотеки ElevenLabs по voice_id, один дубль), ударения — `studio/post/stress.py` + `studio/voices/stress-fixes.json`, раскладка — `studio/post/pack_voices.py`. Whisper-проверка — по WAV 16 кГц: CER 2,5 %. Qwen (`tts_qwen.py`) и Chatterbox больше не используем.
 
 **Большие объёмы — локально Fun-CosyVoice3-0.5B (решение пользователя 2026-11-11).** `studio/runners/tts_cosyvoice.py`: клонирование по образцу с текстом, Apache-2.0. По Whisper разборчивее ElevenLabs (2,5 % против 4,0 %); F5-TTS_RUSSIAN и ESpeech теряют короткие фразы.
+
+**«Заколдованная страна» (2026-11-11):** рассказчик + 15 ролей, образцы — ElevenLabs (`studio/voices/zs/make_refs.py`), разметка «кто говорит» — агенты на Haiku, весь конвейер и раскладка — `lavochka/tools/zakoldovannaya/voice/` (Opus 32k: рассказ — речь, хватает).

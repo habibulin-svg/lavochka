@@ -19,7 +19,7 @@ import { Music, moodOf } from './ui/music';
 import { PlanView } from './ui/plan';
 import { openSaveDialog } from './ui/saves';
 import { openSheet } from './ui/sheet';
-import { Narrator, openVoiceDialog } from './ui/tts';
+import { Narrator, openVoiceDialog } from './ui/voice';
 import { siteTitle } from './world';
 
 export function createView(): GameView<View, Ev> {
@@ -38,6 +38,7 @@ export function createView(): GameView<View, Ev> {
   let create: CreateView;
   const music = new Music();
   const voice = new Narrator();
+  voice.onSpeak = (s) => music.duck(s);
   let v: View | null = null;
   let interactive: number[] = [];
   let toAct: number[] = [];

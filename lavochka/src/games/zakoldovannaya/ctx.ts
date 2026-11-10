@@ -5,6 +5,7 @@ import { fmtHp, mainRoll, qty } from './dice';
 import { addItem, alive, capacity, hasItem, itemName, levelUps, learn, removeItem, slotOf, type Hero } from './hero';
 import type { Cond, Give, Take, Who } from './script';
 import { GM, type Entry, type State } from './state';
+import { vkey } from './vkey';
 
 /** Событие для экрана (анимации, звуки). Сам рассказ — в state.story. */
 export type Ev =
@@ -30,6 +31,10 @@ export function story(c: Ctx, e: Entry): void {
   if (c.s.story.length > STORY_MAX) c.s.story.splice(0, c.s.story.length - STORY_MAX);
 }
 export const say = (c: Ctx, text: string, img?: string) => story(c, { k: 'say', text, ...(img ? { img } : {}) });
+/** Рассказ по шаблону сцены: подстановки + ключ озвучки шаблона (запись есть у шаблона, а не у текста с именем). */
+export function sayT(c: Ctx, tpl: string, subj?: number, img?: string): void {
+  story(c, { k: 'say', text: fill(c, tpl, subj), ...(/\{(name|leader|n)\}/.test(tpl) ? { v: vkey(tpl) } : {}), ...(img ? { img } : {}) });
+}
 export const sys = (c: Ctx, text: string) => story(c, { k: 'sys', text });
 export const gmNote = (c: Ctx, text: string) => story(c, { k: 'gm', text, gmOnly: true });
 

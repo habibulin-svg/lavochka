@@ -1,7 +1,7 @@
 /* Исполнитель сцен: идёт по шагам, копит рассказ, останавливается на вопросах, бросках, боях, лавках и играх. */
 import { MAGIC } from './book';
 import { sceneByKey } from './content';
-import { applyGive, applyTake, die, evalCond, heal, fill, gmNote, hero, leader, living, resolveWho, rollD, rollMain, say, story, sys, type Ctx } from './ctx';
+import { applyGive, applyTake, die, evalCond, heal, fill, gmNote, hero, leader, living, resolveWho, rollD, rollMain, say, sayT, story, sys, type Ctx } from './ctx';
 import { qty } from './dice';
 import { alive, heroNeed, meleeAttack, missileAttacks, saveNeed, wards, type Hero } from './hero';
 import type { Ask, Fight, RollSpec, Scene, Step } from './script';
@@ -106,7 +106,7 @@ function expandEach(c: Ctx, fr: Frame, idx: number): void {
 function exec(c: Ctx, sc: Scene, step: Step, path: Path, fr: Frame): void {
   const subj = fr.subj;
   const idx = path[path.length - 1] as number;
-  if (typeof step === 'string') return say(c, fill(c, step, subj));
+  if (typeof step === 'string') return sayT(c, step, subj);
   if ('finish' in step) {
     say(c, step.say);
     c.s.result = { win: step.finish === 'win', text: step.say };
@@ -114,7 +114,7 @@ function exec(c: Ctx, sc: Scene, step: Step, path: Path, fr: Frame): void {
     c.s.scene = null;
     return;
   }
-  if ('say' in step && !('give' in step) && !('take' in step) && !('kill' in step)) return say(c, fill(c, step.say, subj), 'img' in step ? step.img : undefined);
+  if ('say' in step && !('give' in step) && !('take' in step) && !('kill' in step)) return sayT(c, step.say, subj, 'img' in step ? step.img : undefined);
   if ('gm' in step && typeof (step as any).gm === 'string' && Object.keys(step).length === 1) return gmNote(c, step.gm);
   if ('ask' in step) return doAsk(c, step, path, fr, idx);
   if ('if' in step) {
@@ -137,13 +137,13 @@ function exec(c: Ctx, sc: Scene, step: Step, path: Path, fr: Frame): void {
   if ('give' in step) {
     const who = step.who;
     const heroes = resolveWho(c, who, subj, 'party');
-    if (step.say) say(c, fill(c, step.say, subj));
+    if (step.say) sayT(c, step.say, subj);
     applyGive(c, step.give, heroes, (who ?? (subj != null ? 'subject' : 'party')) === 'party');
     return;
   }
   if ('take' in step) {
     const heroes = resolveWho(c, step.who, subj, 'party');
-    if (step.say) say(c, fill(c, step.say, subj));
+    if (step.say) sayT(c, step.say, subj);
     applyTake(c, step.take, heroes);
     return;
   }
@@ -203,7 +203,7 @@ function exec(c: Ctx, sc: Scene, step: Step, path: Path, fr: Frame): void {
     return;
   }
   if ('kill' in step) {
-    if (step.say) say(c, fill(c, step.say, subj));
+    if (step.say) sayT(c, step.say, subj);
     for (const h of resolveWho(c, step.kill, subj, 'subject')) die(c, h);
     return;
   }

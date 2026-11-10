@@ -78,6 +78,13 @@ export class Music {
     this.cur = null;
     this.mood = null;
   }
+  /** Тише, пока говорит ведущий. */
+  duck(on: boolean): void {
+    const v = on ? 0.12 : 0.35;
+    if (v === this.vol) return;
+    this.vol = v;
+    if (this.cur) this.fade(this.cur, v, 500);
+  }
   toggle(): boolean {
     const on = !this.on();
     store.set(PREF_MUSIC, on ? 'on' : 'off');
