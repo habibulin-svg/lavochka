@@ -26,9 +26,9 @@ import {
 } from './engine';
 
 const LV = [
-  { err: 1.8, react: 0.45, tErr: 0.075, pow: 0.12, yaw: 0.14, thPow: 0.08, thYaw: 0.07, def: 0.3, run: 0.82, wait: 1.3, smart: false },
-  { err: 1.1, react: 0.3, tErr: 0.04, pow: 0.07, yaw: 0.07, thPow: 0.05, thYaw: 0.045, def: 0.6, run: 0.95, wait: 0.8, smart: true },
-  { err: 0.6, react: 0.18, tErr: 0.022, pow: 0.04, yaw: 0.04, thPow: 0.032, thYaw: 0.03, def: 0.85, run: 1, wait: 0.5, smart: true },
+  { cErr: 0.28, err: 1.6, react: 0.45, tErr: 0.075, pow: 0.12, yaw: 0.14, thPow: 0.08, thYaw: 0.07, def: 0.3, run: 0.82, wait: 0.8, smart: false },
+  { cErr: 0.16, err: 1.0, react: 0.3, tErr: 0.04, pow: 0.07, yaw: 0.07, thPow: 0.05, thYaw: 0.045, def: 0.6, run: 0.95, wait: 0.5, smart: true },
+  { cErr: 0.08, err: 0.6, react: 0.18, tErr: 0.022, pow: 0.04, yaw: 0.04, thPow: 0.032, thYaw: 0.03, def: 0.85, run: 1, wait: 0.3, smart: true },
 ];
 
 const gauss = (rng: Rng) => {
@@ -175,12 +175,25 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
     // где перехватить: первая точка спуска на высоте рук, куда успеваю
     if (!mem.goal) {
       let goal: [number, number, boolean] | null = null;
-      for (const fr of f.frames) {
+      mem.cPress = Infinity;
+      // когда успевает под чижа каждый водящий: ловить идут двое первых, остальные — к месту падения
+      const when = (q: { x: number; y: number }, run: number) => {
+        for (const fr of f.frames) {
+          if (fr[0] <= tt || fr[0] > f.land || fr[3] > 1.9 || fr[3] < 0.4) continue;
+          if (Math.max(0, Math.hypot(fr[1] - q.x, fr[2] - q.y) - 0.35) / (VR * run) <= fr[0] - tt) return fr[0];
+        }
+        return Infinity;
+      };
+      const mine = when(m, lv.run);
+      const ahead = s.men.filter((q, j) => j !== i && j !== s.batter && when(q, 1) < mine).length;
+      for (const fr of ahead >= 2 ? [] : f.frames) {
         if (fr[0] <= tt || fr[0] > f.land) continue;
         if (fr[3] > 1.9 || fr[3] < 0.4) continue;
         const need = Math.max(0, Math.hypot(fr[1] - m.x, fr[2] - m.y) - 0.35) / (VR * lv.run);
         if (need <= fr[0] - tt) {
           goal = [fr[1], fr[2], true];
+          // «Ловить» — к моменту, когда чиж будет у рук; рука ошибается по времени (окно кнопки ~0,45 с)
+          mem.cPress = fr[0] - CATCH.win * 0.35 + gauss(rng) * lv.cErr;
           break;
         }
       }
@@ -188,10 +201,9 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
       mem.goal = goal ? [goal[0] + gauss(rng) * lv.err * 0.6, goal[1] + gauss(rng) * lv.err, true] : [f.rest[0], f.rest[1], false];
     }
     Object.assign(out, toward(m.x, m.y, mem.goal[0], mem.goal[1], 0.15, lv.run));
-    const [cx, cy, cz] = chAt(s);
-    if (airborne(s) && Math.hypot(m.x - cx, m.y - cy) < CATCH.reach * 0.85 && cz > CATCH.z0 && cz < CATCH.z1 && !(mem.cAt > s.t)) {
+    if (airborne(s) && tt >= mem.cPress) {
       out.c = ++mem.c;
-      mem.cAt = s.t + CATCH.win * 0.8;
+      mem.cPress = Infinity;
     }
     return out;
   }

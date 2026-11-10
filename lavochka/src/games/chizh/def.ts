@@ -1,8 +1,8 @@
 /* Чиж — описание игры: от двух до шести игроков, каждый сам за себя; бьющий — по очереди (кто поймал или попал в кон).
  * Игра реального времени: комната крутит шаги, каждый ведёт своего пацана (бег, рывок), бьющий подбивает чижа
  * «рогаткой» и бьёт в момент, водящие ловят и бросают в кон (engine.ts). Без DOM. */
-import { gameSpeed, SPEED_OPTION } from '../../core/realtime';
 import { demoApply, rtStep } from '../../core/dvorsport/demo';
+import { DS_SPEED_OPTION, dsSpeed } from '../../core/dvorsport/sim';
 import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { botInput } from './ai';
 import {
@@ -42,7 +42,7 @@ const demoSeats: SeatSpec[] = [
   { seat: 1, kind: 'bot', name: 'Вова', level: 1 },
   { seat: 2, kind: 'bot', name: 'Серый', level: 1 },
 ];
-const DSP = 0.7;
+const DSP = 1;
 type O = Record<string, string | number | boolean>;
 const CL: O = { kon: 'circle', score: 'merki', tries: 3, bonus: 2, burn: false, target: 200, speed: DSP };
 const GO: O = { kon: 'square', score: 'hits', tries: 3, bonus: 0, burn: true, targetHits: 10, speed: DSP };
@@ -345,14 +345,14 @@ export const def: GameDef<State, never, Event, State> = {
       default: 2,
     },
     { key: 'burn', label: 'Попал в кон — очки сгорают', hint: 'Очки этого выхода (счёт по удару)', type: 'toggle', default: false },
-    SPEED_OPTION,
+    DS_SPEED_OPTION,
   ],
   presets: [
     { id: 'classic', label: 'Классика: кон и мерки', hint: 'круг, 3 попытки, 2 добивания, мерками до 200', options: { kon: 'circle', score: 'merki', target: 200, tries: 3, bonus: 2, burn: false } },
     { id: 'gorod', label: 'Квадрат-город', hint: 'квадрат, очко за удар за черту, в город попали — очки сгорают; до 10', options: { kon: 'square', score: 'hits', targetHits: 10, tries: 3, bonus: 0, burn: true } },
     { id: 'bystryi', label: 'Быстрый двор', hint: 'круг, 2 попытки, 1 добивание, мерками до 100', options: { kon: 'circle', score: 'merki', target: 100, tries: 2, bonus: 1, burn: false } },
   ],
-  setup: (seats, opts) => newGame(opts, seats.map((s) => s.seat).sort((a, b) => a - b), gameSpeed(opts)),
+  setup: (seats, opts) => newGame(opts, seats.map((s) => s.seat).sort((a, b) => a - b), dsSpeed(opts)),
   toAct: (s) => (s.over ? [] : s.seats.slice()),
   apply: (s, _seat, a, rng) => demoApply(s, a, rng, { step, view: snapshot }) as never,
   view: (s) => snapshot(s),

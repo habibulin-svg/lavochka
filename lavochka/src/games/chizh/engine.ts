@@ -9,7 +9,8 @@
  *
  * Шаг симуляции — TICK_MS, физика медленнее жизни во столько, сколько выбрано «Скоростью игры». Ввод места: куда бежать
  * (оси игры: x вбок, y от кона в поле), счётчики разовых действий — новое значение счётчика = нажатие. */
-import { applySpeed, cleanSpeed, gameSpeed } from '../../core/realtime';
+import { applySpeed, cleanSpeed } from '../../core/realtime';
+import { BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import { body, fly, MAT, sample, type Body, type BodyFrame, type BodyMat } from '../../core/dvorsport/body';
 import type { Options, Rng } from '../../core/types';
 
@@ -19,15 +20,14 @@ export const BAT = 0.6;
 export const CH_R = 0.013;
 /** Чиж по утоптанной земле: падает и почти сразу встаёт (острые концы втыкаются). */
 export const CH_MAT: BodyMat = { ...MAT.chizh, roll: 7, scrub: 0.65 };
-/** Бег (водящие и бьющий одинаково) и рывок: во сколько раз быстрее, сколько длится и перезарядка, с. */
-export const VR = 5.6;
-export const DASH = { k: 1.7, t: 0.35, cd: 1.4 };
+/** Бег (водящие и бьющий одинаково) — как в жизни (core/dvorsport/sim.ts), рывок — там же. */
+export const VR = BODY.run;
 /** Подбив: чиж с земли вверх (ударили по концу). */
 export const POP = { vz: 4.0, vy: 0.22, z0: 0.05, spin: 16 };
 /** Удар по летящему чижу: на каком расстоянии от бьющего, на какой высоте (лучше всего — best, «пояс»). */
 export const SWING = { reach: 0.95, z0: 0.2, z1: 1.35, best: 0.7, span: 0.6 };
 /** Ловля: сама — чиж влетел в руки; с кнопкой «Ловить» — дальше; окно кнопки, с. */
-export const CATCH = { auto: 0.4, reach: 1.15, z0: 0.15, z1: 2.3, win: 0.45 };
+export const CATCH = { auto: 0.3, reach: 1.0, z0: 0.15, z1: 2.1, win: 0.45, hand: 1.3 };
 /** Отбить бросок водящего: дотягивается битой. */
 export const DEFEND = { reach: 1.05, z0: 0.08, z1: 1.7 };
 /** Подобрать лежащего чижа; подбить чижа на добивании — с какого расстояния. */
@@ -245,6 +245,8 @@ export interface In {
   d?: number;
   st?: number;
   sp?: number;
+  /** Обучение первой партии: «подожди» — пока игрок не сделает шаг, время стоит (только против компьютера). */
+  hold?: boolean;
 }
 
 export type Phase = 'tee' | 'pop' | 'fly' | 'field' | 'back' | 'bonus' | 'pause';
@@ -306,6 +308,9 @@ export interface State {
   winners: number[];
   shot?: boolean;
   demo?: boolean;
+  /** Замедление на хорошем ударе и ловле (sim.slowmo). */
+  slowUntil?: number;
+  slowK?: number;
 }
 
 export const idleInput = (): In => ({ mx: 0, my: 0 });
@@ -320,6 +325,7 @@ export function cleanInput(raw: unknown): In | null {
   for (const k of ['s', 'c', 'd', 'st'] as const) if (r[k] != null) out[k] = Math.round(num(r[k]));
   const sp = cleanSpeed(r.sp);
   if (sp != null) out.sp = sp;
+  if (r.hold === true) out.hold = true;
   return out;
 }
 
@@ -327,7 +333,7 @@ export function fieldSpot(k: number): [number, number] {
   return FIELD_SPOTS[k % FIELD_SPOTS.length];
 }
 
-export function newGame(o: Options, seats: number[], speed = gameSpeed(o)): State {
+export function newGame(o: Options, seats: number[], speed = dsSpeed(o)): State {
   const c = cfgFrom(o, seats.length);
   const n = c.n;
   const s: State = {
@@ -435,7 +441,7 @@ function out(s: State, who: number, ev: Event[], burn = false) {
   if (!burn) b.score += b.run;
   b.run = 0;
   ev.push({ k: 'out', who: s.batter, next: who });
-  pause(s, 1.7, 'swap', who);
+  pause(s, 1.1, 'swap', who);
 }
 
 /** Промах у кона (не попал по чижу или чиж не улетел за черту) или на добивании. */
@@ -454,7 +460,7 @@ function missed(s: State, ev: Event[], short: boolean) {
   if (s.tries <= 0) {
     const ord = s.order;
     out(s, ord[(ord.indexOf(s.batter) + 1) % ord.length], ev);
-  } else pause(s, 1.0, 'tee');
+  } else pause(s, 0.6, 'tee');
 }
 
 /** После добивания: ещё есть — добивать, нет — мерить. */
@@ -484,32 +490,27 @@ function measure(s: State, ev: Event[]) {
   }
   s.kons++;
   if (checkEnd(s, ev)) return;
-  pause(s, c.score === 'merki' ? 2.6 : 1.2, 'kon');
+  pause(s, c.score === 'merki' ? 1.7 : 0.8, 'kon');
 }
 
 function move(s: State, i: number, inp: In | null | undefined, dt: number, rooted: boolean, minY: number) {
   const m = s.men[i];
   const seen = s.seen[i];
+  let dsh = false;
   if (inp?.d != null && inp.d > seen.d) {
     seen.d = inp.d;
-    if (m.cd <= 0 && !rooted) (m.dash = DASH.t), (m.cd = DASH.cd);
+    dsh = !rooted;
   }
-  m.dash = Math.max(0, m.dash - dt);
-  m.cd = Math.max(0, m.cd - dt);
   if (rooted) {
     m.vx = m.vy = 0;
+    m.dash = Math.max(0, m.dash - dt);
+    m.cd = Math.max(0, m.cd - dt);
     return;
   }
-  let dx = inp?.mx ?? 0;
-  let dy = inp?.my ?? 0;
-  const l = Math.hypot(dx, dy);
-  if (l > 1) (dx /= l), (dy /= l);
-  const v = VR * (m.dash > 0 ? DASH.k : 1);
-  const k = Math.min(1, dt / 0.15);
-  m.vx += (dx * v - m.vx) * k;
-  m.vy += (dy * v - m.vy) * k;
-  m.x = clamp(m.x + m.vx * dt, -BOUND.x, BOUND.x);
-  m.y = clamp(m.y + m.vy * dt, Math.max(BOUND.y0, minY), BOUND.y1);
+  if (dsh) dash(m);
+  drive(m, { mx: inp?.mx ?? 0, my: inp?.my ?? 0 }, VR, dt);
+  m.x = clamp(m.x, -BOUND.x, BOUND.x);
+  m.y = clamp(m.y, Math.max(BOUND.y0, minY), BOUND.y1);
 }
 
 const pressed = (q: In | null | undefined, k: 's' | 'c' | 'st', seen: State['seen'][number]) => {
@@ -527,7 +528,10 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
   const n = c.n;
   const inp = (i: number) => inputs[s.seats[i]];
   for (let i = 0; i < n; i++) applySpeed(s, s.seats[i], inp(i)?.sp);
-  const dt = (TICK_MS / 1000) * s.speed;
+  // обучение: игрок ещё не сделал шаг — время стоит, двигается только он сам
+  const frozen = s.seats.some((_, i) => inp(i)?.hold === true);
+  const realDt = (TICK_MS / 1000) * s.speed;
+  const dt = frozen ? 0 : realDt * dtScale(s);
   s.t += dt;
   const B = s.batter;
 
@@ -569,8 +573,11 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
   const atTee = (s.phase === 'tee' || s.phase === 'pop') && s.strike === 0;
   for (let i = 0; i < n; i++) {
     const rooted = (i === B && (atTee || s.phase === 'pop')) || i === s.holder;
-    move(s, i, inp(i), dt, rooted, i !== B && atTee ? c.line + 1 : -Infinity);
+    if (frozen && !inp(i)?.hold) continue;
+    move(s, i, inp(i), frozen ? realDt : dt, rooted, i !== B && atTee ? c.line + 1 : -Infinity);
   }
+  // не стоять друг в друге: бьющий у кона и водящий с чижом не сдвигаются
+  separate(s.men, BODY.r, (i) => (i === B && (atTee || s.phase === 'pop')) || i === s.holder);
   // «Ловить» у водящих: окно после нажатия
   for (let i = 0; i < n; i++) if (i !== B && pressed(inp(i), 'c', s.seen[i])) s.catchT[i] = s.t + CATCH.win;
   const bq = inp(B);
@@ -637,6 +644,7 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
           const b0 = hitBody(x, y, z, fr2[3] - fr[3], aim.pow, aim.yaw, q, s.strike > 0 ? BONUS_K : 1);
           s.ch = { mode: 'fly', x, y, a: fr[4], b0, t0: s.t, kind: 'hit' };
           ev.push({ k: 'hit', who: B, q: r3(q) });
+          if (q > 0.8) slowmo(s, 0.45, 0.35);
           setPhase(s, 'fly');
           break;
         }
@@ -656,13 +664,15 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
         for (let i = 0; i < n; i++) {
           if (i === B) continue;
           const m = s.men[i];
-          const d = Math.hypot(m.x - x, m.y - y);
+          // досягаемость — до руки (на высоте плеча): выше головы чиж дальше, чем кажется на земле
+          const d = Math.hypot(m.x - x, m.y - y, Math.max(0, z - CATCH.hand));
           const btn = s.catchT[i] >= s.t;
           if (z < CATCH.z0 || z > CATCH.z1) continue;
-          if ((d < CATCH.auto && z > 0.3 && z < 2) || (btn && d < CATCH.reach)) if (d < bd) (bd = d), (best = i);
+          if ((d < CATCH.auto && z > 0.6 && z < 1.8) || (btn && d < CATCH.reach)) if (d < bd) (bd = d), (best = i);
         }
         if (best >= 0) {
           ev.push({ k: 'catch', who: best, batter: B });
+          slowmo(s, 0.6, 0.3);
           s.ch = { mode: 'held', x: r3(x), y: r3(y), a: 0 };
           s.holder = best;
           s.kons++;
@@ -752,6 +762,7 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
           const b0 = defendBody(x, y, z, (fr2[1] - fr[1]) * 100, (fr2[2] - fr[2]) * 100);
           s.ch = { mode: 'fly', x, y, a: fr[4], b0, t0: s.t, kind: 'def' };
           ev.push({ k: 'def', who: B });
+          slowmo(s, 0.4, 0.35);
           setPhase(s, 'fly');
           break;
         }

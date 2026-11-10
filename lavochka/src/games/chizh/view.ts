@@ -5,10 +5,12 @@
  * и клавиши по камере. Подсказка внизу всегда говорит, что можно сделать сейчас. Музыки нет (решение пользователя). */
 import { audioOut, click, Sound, tone } from '../../core/audio';
 import { showLoading } from '../../core/loading';
+import { Coach, Tutor, type TutorStep } from '../../core/dvorsport/coach';
 import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/demo';
+import { GroundMarks } from '../../core/dvorsport/marks3d';
 import { PullAim } from '../../core/dvorsport/input';
 import { Pad } from '../../core/dvorsport/pad';
-import { esc, h, sleep } from '../../core/util';
+import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { SEATS } from './def';
 import {
@@ -88,14 +90,18 @@ export function createView(): GameView<State, Event> {
   let wrap: HTMLElement;
   let yard: ChizhYard;
   let hud: HTMLElement;
-  let banner: HTMLElement;
-  let ask: HTMLElement;
+  let coach: Coach;
+  let marks: GroundMarks;
+  let youTag: HTMLElement;
+  let tutor: Tutor | null = null;
+  let tutorAsked = false;
+  /** Что игрок уже сделал сам (шаги обучения). */
+  const tutorSaw = { pop: false, hit: false, move: false, catchBtn: false, pick: false, throw: false, def: false, bonus: false };
   let pad: Pad;
   let pull: PullAim | null = null;
   let raf = 0;
   let iv = 0;
   let last = 0;
-  let bannerT = 0;
   let hintT = 0;
   let latest: State | null = null;
   let latestAt = 0;
@@ -121,9 +127,14 @@ export function createView(): GameView<State, Event> {
   };
 
   function say(big: string, small = '', ms = 1400) {
-    banner.innerHTML = `<b>${big}</b>${small ? `<span>${small}</span>` : ''}`;
-    banner.style.opacity = '1';
-    bannerT = performance.now() + ms;
+    // имена приходят разметкой (цвет игрока), а табло печатает текст как есть
+    const plain = (x: string) => x.replace(/<[^>]+>/g, '');
+    coach.banner(plain(big), plain(small), ms);
+  }
+  /** Всплывающая надпись над точкой поля (оси игры). */
+  function popAt(text: string, x: number, y: number, z = 2.2, cls = '') {
+    const q = yard.toScreen(x, y, z);
+    if (q.vis) coach.pop(text, q.x, q.y, cls);
   }
 
   function mine(s: State): number[] {
@@ -160,6 +171,15 @@ export function createView(): GameView<State, Event> {
     if (ctrl < 0) return 0;
     const m = s.men[ctrl];
     if (ctrl === s.batter) return s.phase === 'tee' || s.phase === 'pop' ? (s.strike > 0 ? awayYaw(s.ch.x, s.ch.y) : 0) : awayYaw(s.ch.x, s.ch.y);
+    // водящему: в полёте — к месту ловли, чиж на земле — к чижу (оба далеко — иначе на кон)
+    const to = (x: number, y: number) => (Math.hypot(x - m.x, y - m.y) > 3 ? Math.atan2(x - m.x, y - m.y) : yawToKon(m.x, m.y));
+    if (s.phase === 'fly' && s.ch.b0 && airborne(s, nowT())) {
+      // смотреть на летящего чижа (видно, как он подлетает); куда бежать — стрелка на земле
+      const [cx, cy] = chAt(s, nowT());
+      return to(cx, cy);
+    }
+    if (s.phase === 'field' && s.holder < 0) return to(s.ch.x, s.ch.y);
+    if (s.phase === 'bonus') return to(s.ch.x, s.ch.y);
     return yawToKon(m.x, m.y);
   }
 
@@ -208,9 +228,14 @@ export function createView(): GameView<State, Event> {
       q.s++;
       q.c++;
       Sound.unlock();
+      if (s.phase === 'fly' && ctrl !== s.batter) tutorSaw.catchBtn = true;
+      if (s.phase === 'back' && ctrl === s.batter) tutorSaw.def = true;
     }
     if (pad.take('dash')) q.d++;
-    if (pad.take('st')) q.st++;
+    if (pad.take('st')) {
+      q.st++;
+      tutorSaw.bonus = true;
+    }
     if (pad.take('thr') && canPull(s)) {
       if (!aim.on) aim = { pow: s.holder === ctrl ? 0.5 : 0.85, yaw: 0, on: true };
       release();
@@ -226,6 +251,8 @@ export function createView(): GameView<State, Event> {
       const qi = sq(i);
       const inp: In = i === ctrl ? { mx: d.x * c + d.y * sn, my: -d.x * sn + d.y * c, s: qi.s, c: qi.c, d: qi.d, st: qi.st } : { mx: 0, my: 0, s: qi.s, c: qi.c, d: qi.d, st: qi.st };
       if (i === ctrl && thReq) inp.th = thReq;
+      if (i === ctrl && tutor?.holding) inp.hold = true;
+      if (i === ctrl && s.phase === 'fly' && Math.hypot(d.x, d.y) > 0.3) tutorSaw.move = true;
       ctx.input(s.seats[i], inp);
     }
   }
@@ -272,46 +299,74 @@ export function createView(): GameView<State, Event> {
 
   // ---------------------------------------------------------------- подсказка и табло
 
+  /** Чиж в «поясе» сейчас (по досчитанной высоте) — момент жать «Бей!». */
+  function inBelt(s: State): boolean {
+    if (s.phase !== 'pop') return false;
+    const q = hitQuality(chAt(s, nowT())[2]);
+    return q != null && q > 0.45;
+  }
+
   function hint(s: State) {
     let t = '';
+    let keys: string[] = [];
+    let hot = false;
     const me = ctrl;
     const B = s.batter;
+    const T = nowT();
     if (s.over || s.phase === 'pause') t = '';
     else if (me < 0) {
       t = s.phase === 'tee' || s.phase === 'pop' ? `Бьёт ${nm(B)}…` : s.phase === 'fly' ? 'Летит! Водящие ловят…' : s.phase === 'field' ? 'Водящие бегут за чижом…' : s.phase === 'back' ? 'Бросок в кон!' : `${nm(B)} добивает…`;
     } else if (me === B) {
       const near = Math.hypot(s.men[me].x - s.ch.x, s.men[me].y - s.ch.y) < BONUS_REACH;
-      t =
-        s.phase === 'tee'
-          ? `<b>Вы бьёте!</b> Потяните вниз (сила) и вбок (куда), отпустите — чиж подлетит. Попыток: ${s.tries}.`
-          : s.phase === 'pop'
-            ? '<b>Бей!</b> — пробел или тап, когда чиж у пояса (зелёный).'
-            : s.phase === 'fly'
-              ? 'Летит! Только бы не поймали…'
-              : s.phase === 'field'
-                ? 'Водящие бегут за чижом. <b>Встаньте у кона</b> — бросят, отбейте «Бей!».'
-                : s.phase === 'back'
-                  ? '<b>Бей!</b> — отбейте чижа, пока он не лёг в кон.'
-                  : near
-                    ? `<b>Добивание</b> (ещё ${s.strikes}): потяните и отпустите — подбить, потом «Бей!». «Считать» (C) — хватит.`
-                    : `<b>Добивание:</b> бегите к чижу (WASD, стрелки, стик). «Считать» (C) — хватит, меряем.`;
+      if (s.phase === 'tee') {
+        t = `<b>Твой удар!</b> Нажми на поле, потяни вниз и отпусти — чиж подлетит. Вбок — куда бить. Попыток: ${s.tries}.`;
+        keys = ['Enter'];
+        hot = true;
+      } else if (s.phase === 'pop') {
+        const belt = inBelt(s);
+        t = belt ? '<b>БЕЙ!</b>' : chAt(s, T)[2] > SWING.best ? 'Чиж падает… жди пояса' : 'Чиж взлетает… <b>жди</b>, пока загорится зелёным';
+        keys = ['Пробел'];
+        hot = belt;
+      } else if (s.phase === 'fly') t = 'Летит! Только бы не поймали…';
+      else if (s.phase === 'field') {
+        t = 'Водящие бегут за чижом. <b>Встань у кона</b> по стрелке — бросят, отбей.';
+        keys = ['W', 'A', 'S', 'D'];
+      } else if (s.phase === 'back') {
+        const [cx, cy, cz] = chAt(s, T);
+        const close = Math.hypot(s.men[me].x - cx, s.men[me].y - cy) < 2.5 && cz < 1.8;
+        t = close ? '<b>ОТБЕЙ!</b>' : 'Летит в кон — <b>отбей</b>, когда будет рядом!';
+        keys = ['Пробел'];
+        hot = close;
+      } else if (near) {
+        t = `<b>Добивание</b> (ещё ${s.strikes}): потяни и отпусти — подбить, потом бей. Хватит — считать.`;
+        keys = ['Enter', 'C'];
+        hot = true;
+      } else {
+        t = `<b>Добивание:</b> беги к чижу по стрелке. Хватит — считать мерки.`;
+        keys = ['W', 'C'];
+      }
     } else {
-      t =
-        s.phase === 'tee' || s.phase === 'pop'
-          ? `Бьёт ${nm(B)}. Встаньте в поле за чертой — куда полетит чиж?`
-          : s.phase === 'fly'
-            ? '<b>Ловите!</b> Бегите к белому кольцу и «Ловить!» (пробел), когда чиж рядом.'
-            : s.phase === 'field'
-              ? s.holder === me
-                ? '<b>Бросайте в кон!</b> Потяните вниз и отпустите — кольцо покажет, где ляжет чиж.'
-                : s.holder < 0
-                  ? '<b>Бегите к чижу!</b> Кто первым подберёт — бросает в кон.'
-                  : `${nm(s.holder)} бросает в кон…`
-              : s.phase === 'back'
-                ? 'Летит в кон…'
-                : `${nm(B)} добивает — отбегите подальше и ловите!`;
+      if (s.phase === 'tee' || s.phase === 'pop') t = `Бьёт ${nm(B)}. Встань в поле за чертой — куда полетит чиж?`;
+      else if (s.phase === 'fly') {
+        const [cx, cy, cz] = chAt(s, T);
+        const close = airborne(s, T) && Math.hypot(s.men[me].x - cx, s.men[me].y - cy, Math.max(0, cz - 1.3)) < 2.2;
+        t = close ? '<b>ЛОВИ!</b>' : '<b>Лови!</b> Беги к оранжевому кольцу — жми, когда чиж у рук.';
+        keys = close ? ['Пробел'] : ['W', 'A', 'S', 'D'];
+        hot = true;
+      } else if (s.phase === 'field') {
+        if (s.holder === me) {
+          t = '<b>Брось в кон!</b> Потяни вниз и отпусти — кольцо покажет, где ляжет чиж.';
+          keys = ['Enter'];
+          hot = true;
+        } else if (s.holder < 0) {
+          t = '<b>Беги к чижу!</b> Кто первым подберёт — бросает в кон.';
+          keys = ['W', 'Shift'];
+          hot = true;
+        } else t = `${nm(s.holder)} бросает в кон…`;
+      } else if (s.phase === 'back') t = 'Летит в кон…';
+      else t = `${nm(B)} добивает — отбеги подальше и лови!`;
     }
-    if (ask.innerHTML !== t) ask.innerHTML = t;
+    coach.say(tutor?.showing ? '' : t, keys, hot);
     const act = actNow(s);
     const pullNow = canPull(s);
     pad.show({
@@ -324,6 +379,22 @@ export function createView(): GameView<State, Event> {
     pad.visible(me >= 0 && !s.over);
   }
 
+  /** Обучение первой партии: шаги по ролям (бьёшь ты или водишь — как выпадет). Пока шаг с hold не сделан, время стоит. */
+  function tutorSteps(): TutorStep[] {
+    const S = () => latest!;
+    const bat = () => !!latest && ctrl === latest.batter;
+    return [
+      { text: '<b>Подбей чижа.</b> Нажми на поле, потяни вниз и отпусти — чиж подлетит. Вбок — куда бить. Игра ждёт.', keys: ['Enter'], hold: true, when: () => bat() && S().phase === 'tee', done: () => tutorSaw.pop },
+      { text: '<b>Бей!</b> Жми, когда чиж загорится зелёным — он на уровне пояса. Рано — уйдёт влево, поздно — вправо.', keys: ['Пробел'], when: () => bat() && S().phase === 'pop', done: () => tutorSaw.hit },
+      { text: '<b>Лови!</b> Чиж летит к оранжевому кольцу — беги туда по стрелке. Игра ждёт, пока не побежишь.', keys: ['W', 'A', 'S', 'D'], hold: true, when: () => !bat() && S().phase === 'fly' && airborne(S(), nowT()), done: () => tutorSaw.move },
+      { text: 'Чиж у рук — <b>жми «Ловить»</b>! Поймал — бьёшь сам.', keys: ['Пробел'], when: () => !bat() && S().phase === 'fly' && airborne(S(), nowT()) && tutorSaw.move, done: () => tutorSaw.catchBtn },
+      { text: '<b>Беги к чижу</b> по стрелке и подбери — кто первым добежал, бросает в кон.', keys: ['W', 'Shift'], when: () => !bat() && S().phase === 'field' && S().holder < 0, done: () => tutorSaw.pick },
+      { text: '<b>Брось в кон.</b> Потяни вниз и отпусти — кольцо покажет, где ляжет чиж. Попал — бьёшь ты. Игра ждёт.', keys: ['Enter'], hold: true, when: () => S().phase === 'field' && S().holder === ctrl, done: () => tutorSaw.throw },
+      { text: 'Водящий бросает в кон — <b>отбей</b>, когда чиж подлетит!', keys: ['Пробел'], when: () => bat() && S().phase === 'back', done: () => tutorSaw.def },
+      { text: '<b>Добивание:</b> подбеги к чижу и подбей ещё раз — дальше от кона больше мерок. Хватит — «Считать».', keys: ['C'], when: () => bat() && S().phase === 'bonus', done: () => tutorSaw.bonus },
+    ];
+  }
+
   function drawHud(s: State) {
     const c = s.cfg;
     const rows = s.men
@@ -334,9 +405,9 @@ export function createView(): GameView<State, Event> {
         return `<div class="cz-row${i === s.batter ? ' cur' : ''}${i === ctrl ? ' me' : ''}"><i style="background:${SEATS[seat % SEATS.length].color}"></i><span class="nm">${ctx.name(seat)} ${role}</span><span class="rl">${sc}</span></div>`;
       })
       .join('');
-    const goal = c.score === 'merki' ? `до ${c.target} мерок` : `до ${c.target} очков`;
+    const goal = c.score === 'merki' ? `Цель: <b>${c.target}</b> мерок` : `Цель: <b>${c.target}</b> очков`;
     const sub = s.strike > 0 || s.phase === 'bonus' ? `добивание · ещё ${s.strikes}` : `попыток: ${s.tries}`;
-    const html = `<div class="cz-board"><div class="cz-head">${esc(goal)} · ${sub}</div>${rows}</div>`;
+    const html = `<div class="cz-board"><div class="cz-head">${goal} · ${sub}</div>${rows}</div>`;
     if (hud.innerHTML !== html) hud.innerHTML = html;
   }
 
@@ -349,6 +420,10 @@ export function createView(): GameView<State, Event> {
     };
     switch (ev.k) {
       case 'pop':
+        if (ev.who === ctrl) {
+          tutorSaw.pop = true;
+          if (ev.bonus) tutorSaw.bonus = true;
+        }
         tn(ev.who)?.play('swing1h', false, 0.04, 2.8);
         busy(ev.who, 0.35);
         crack(0.45);
@@ -357,9 +432,17 @@ export function createView(): GameView<State, Event> {
         tn(ev.who)?.play('swing1h', false, 0.03, 1.8);
         busy(ev.who, 0.7);
         crack(0.6 + ev.q * 0.4);
-        if (ev.who === ctrl) say(ev.q > 0.85 ? 'В пояс!' : ev.q > 0.5 ? 'Есть!' : 'Краем…', '', 700);
+        if (ev.who === ctrl) tutorSaw.hit = true;
+        {
+          const m = s.men[ev.who];
+          const f = s.ch.b0 ? chFlight(s.ch.b0) : null;
+          const d = f ? Math.hypot(f.rest[0], f.rest[1]) : 0;
+          popAt(ev.q > 0.85 ? `В пояс! ${d.toFixed(0)} м` : ev.q > 0.5 ? `${d.toFixed(0)} м` : 'Краем…', m.x, m.y, 2.2, ev.q > 0.85 ? 'good' : '');
+          if (ev.q > 0.8) yard.shake(0.05);
+        }
         break;
       case 'whiff':
+        popAt('Мимо!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'bad');
         tn(ev.who)?.play('swing1h', false, 0.03, 1.8);
         busy(ev.who, 0.7);
         whoosh(0.25);
@@ -373,20 +456,24 @@ export function createView(): GameView<State, Event> {
         break;
       case 'point':
         Sound.capture();
-        say(`+1`, `${nm(ev.who)}: за этот выход ${ev.run}`, 900);
+        popAt('+1', s.ch.x, s.ch.y, 0.6, 'good');
         break;
       case 'catch':
         slap();
         Sound.capture();
         tn(ev.who)?.play('holding', false, 0.06);
         busy(ev.who, 1.0);
-        say('Поймал!', `${nm(ev.who)} бьёт`, 1500);
+        say('Поймал с лёта!', `${nm(ev.who)} бьёт`, 1500);
+        popAt('Поймал!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good');
+        yard.shake(0.08);
         break;
       case 'pick':
+        if (ev.who === ctrl) tutorSaw.pick = true;
         tn(ev.who)?.play('pickup', false, 0.06, 1.8);
         busy(ev.who, 0.5);
         break;
       case 'throw':
+        if (ev.who === ctrl) tutorSaw.throw = true;
         tn(ev.who)?.play('throw', false, 0.06, 1.4);
         busy(ev.who, 0.9);
         whoosh(0.4);
@@ -395,13 +482,18 @@ export function createView(): GameView<State, Event> {
         tn(ev.who)?.play('swing1h', false, 0.03, 1.8);
         busy(ev.who, 0.7);
         crack(0.8);
-        say('Отбил!', '', 900);
+        popAt('Отбил!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good');
+        yard.shake(0.05);
         break;
       case 'kon':
+        if (s.batter === ctrl) tutorSaw.def = true;
         Sound.capture();
+        popAt(ev.burnt ? `−${ev.burnt}` : 'В кону!', s.ch.x, s.ch.y, 0.6, 'bad');
+        yard.shake(0.06);
         say(ev.burnt ? 'В городе!' : 'В кону!', ev.burnt ? `сгорело ${ev.burnt} — бьёт ${nm(ev.who)}` : `бьёт ${nm(ev.who)}`, 1600);
         break;
       case 'nokon':
+        if (s.batter === ctrl) tutorSaw.def = true;
         if (s.cfg.bonus > 0 && s.cfg.score === 'merki') say('Мимо кона', `${nm(s.batter)} добивает`, 1100);
         break;
       case 'score':
@@ -410,7 +502,8 @@ export function createView(): GameView<State, Event> {
         Sound.win();
         tn(ev.who)?.play('cheer', false, 0.15);
         busy(ev.who, 1.5);
-        say(`${ev.pts} мерок`, `${nm(ev.who)} · ${ev.d.toFixed(1)} м от кона`, 2200);
+        popAt(`+${ev.pts}`, s.ch.x, s.ch.y, 0.6, 'good');
+        say(`${ev.pts} мерок`, `${nm(ev.who)} · ${ev.d.toFixed(1)} м от кона · всего ${total(s.men[ev.who])} из ${s.cfg.target}`, 2000);
         break;
       case 'out':
         break;
@@ -474,19 +567,46 @@ export function createView(): GameView<State, Event> {
     else if (ch.mode === 'ground') yard.setChizh(ch.x, ch.y, 0, 0, ch.a, true);
     else yard.setChizh(cx, cy, cz, ca, ch.b0 ? Math.atan2(ch.b0.vx, ch.b0.vy) + Math.PI / 2 : 0, false);
     yard.glow = ch.mode === 'pop' && isBatter(s) ? (hitQuality(cz) ?? 0) : 0;
-    // кольцо — где ловить отбитого чижа (спуск на высоте груди) — всем
-    if (ch.mode === 'fly' && ch.b0 && airborne(s, T)) {
-      yard.setLand(catchSpot(ch.b0));
-    } else yard.setLand(null);
+    // метки на земле: где ловить (оранжевое крутится), кто ловит (белое), я (жёлтое), стрелка — куда бежать
+    marks.begin(dt);
+    const air = ch.mode === 'fly' && !!ch.b0 && airborne(s, T);
+    if (air) {
+      const [lx, ly] = catchSpot(ch.b0!);
+      marks.ring('land', lx, ly, '#ff7a2a', 0.85, { dashed: true });
+      // кто ближе к месту — тот, скорее всего, и ловит
+      let best = -1;
+      let bt = Infinity;
+      s.men.forEach((m, i) => {
+        if (i === s.batter) return;
+        const d = Math.hypot(m.x - lx, m.y - ly);
+        if (d < bt) (bt = d), (best = i);
+      });
+      if (best >= 0 && best !== ctrl) marks.ring('catcher', s.men[best].x, s.men[best].y, '#ffffff', 0.6, { dashed: true });
+      if (ctrl >= 0 && ctrl !== s.batter) marks.arrow('go', s.men[ctrl].x, s.men[ctrl].y, lx, ly, '#ffe23a', 8);
+    }
+    if (ctrl >= 0 && !s.shot && s.phase !== 'pause') {
+      const me = s.men[ctrl];
+      marks.ring('me', me.x, me.y, '#ffe23a', 0.6, { pulse: true });
+      if (s.holder >= 0 && s.holder !== ctrl) marks.ring('holder', s.men[s.holder].x, s.men[s.holder].y, '#ff4a2a', 0.6);
+      if (s.phase === 'field' && s.holder < 0 && ctrl !== s.batter) marks.arrow('go', me.x, me.y, s.ch.x, s.ch.y, '#ffe23a', 8);
+      if (s.phase === 'field' && s.holder === ctrl) marks.arrow('go', me.x, me.y, 0, 0, '#ff7a2a', 10);
+      if (ctrl === s.batter && s.phase === 'bonus' && Math.hypot(me.x - s.ch.x, me.y - s.ch.y) > BONUS_REACH) marks.arrow('go', me.x, me.y, s.ch.x, s.ch.y, '#ffe23a', 8);
+      if (ctrl === s.batter && s.phase === 'field') marks.arrow('go', me.x, me.y, s.ch.x * 0.05 - 0.25, s.ch.y * 0.05, '#ffe23a', 4);
+    }
+    // кон, куда бросать, подсвечен, пока чиж у водящего или летит в кон
+    if (s.phase === 'back' || (s.phase === 'field' && s.holder >= 0)) marks.ring('kon', 0, 0, '#ff7a2a', c.r + 0.25, { pulse: true });
+    marks.end();
+    // чиж за краем экрана — указатель; «ТЫ» над своим
+    coach.edge(ch.mode !== 'tee' && ch.mode !== 'held' ? yard.toScreen(cx, cy, cz) : null, wrap.clientWidth, wrap.clientHeight, 'чиж');
+    if (ctrl >= 0 && disp[ctrl] && !s.shot) {
+      const q = yard.toScreen(disp[ctrl].x, disp[ctrl].y, 1.9);
+      youTag.style.display = q.vis ? 'block' : 'none';
+      youTag.style.left = `${q.x}px`;
+      youTag.style.top = `${q.y}px`;
+    } else youTag.style.display = 'none';
     // замер — пока пауза после кона
     if (s.phase !== 'pause') tapeTo = null;
     yard.setTape(tapeTo, BAT);
-    // кольца: я — жёлтое, бьющий для водящих — красное
-    yard.clearMarks();
-    if (ctrl >= 0 && !s.shot) {
-      yard.mark(ctrl, '#ffe23a');
-      if (s.holder >= 0 && s.holder !== ctrl) yard.mark(s.holder, '#ff4a2a');
-    }
     // прицел: бьющему — куда улетит при ударе в пояс, водящему с чижом — где ляжет
     if (aim.on && canPull(s)) {
       const m = s.men[ctrl];
@@ -527,13 +647,13 @@ export function createView(): GameView<State, Event> {
       const ax = atCh ? s.ch.x : d.x;
       const ay = atCh ? s.ch.y : d.y;
       const back = atCh ? 4.5 : bat ? 4.5 : 6.5;
-      const up = atCh ? 3.4 : 4.2;
+      const up = atCh ? 3.4 : bat ? 4.2 : 5.6;
       const side = atCh ? 2.6 : 0.8;
-      let lx = ax + sx * (atCh ? AHEAD : 10);
-      let ly = ay + sy * (atCh ? AHEAD : 10);
+      let lx = ax + sx * (atCh ? AHEAD : bat ? 10 : 6);
+      let ly = ay + sy * (atCh ? AHEAD : bat ? 10 : 6);
       let lz = atCh ? 0.3 : 0.4;
       // отбитый чиж в воздухе — взгляд за ним (наполовину)
-      if (ch.mode === 'fly' && airborne(s, T)) {
+      if (bat && ch.mode === 'fly' && airborne(s, T)) {
         lx = (lx + cx) / 2;
         ly = (ly + cy) / 2;
         lz = Math.max(0.4, cz * 0.5);
@@ -550,11 +670,12 @@ export function createView(): GameView<State, Event> {
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     if (document.hidden) return;
-    if (bannerT && now > bannerT) {
-      banner.style.opacity = '0';
-      bannerT = 0;
-    }
     draw(dt);
+    if (latest && !tutorAsked && ctrl >= 0) {
+      tutorAsked = true;
+      if (!ctx.demo && !ctx.online && ctx.mySeats.length === 1 && !Tutor.seen('chizh')) tutor = new Tutor(wrap, 'chizh', tutorSteps());
+    }
+    tutor?.tick();
     if (latest && now > hintT) {
       hintT = now + 120;
       hint(latest);
@@ -577,12 +698,14 @@ export function createView(): GameView<State, Event> {
   return {
     mount(el, c) {
       ctx = c;
-      wrap = h(`<div class="cz-wrap"><div class="cz-cv"></div><div class="cz-hud"></div><div class="cz-ask"><div class="cz-say"></div></div><div class="cz-banner"></div></div>`);
+      wrap = h(`<div class="cz-wrap"><div class="cz-cv"></div><div class="cz-hud"></div><div class="cz-you">ТЫ</div></div>`);
       el.appendChild(wrap);
       hud = wrap.querySelector('.cz-hud') as HTMLElement;
-      banner = wrap.querySelector('.cz-banner') as HTMLElement;
-      ask = wrap.querySelector('.cz-say') as HTMLElement;
+      youTag = wrap.querySelector('.cz-you') as HTMLElement;
       yard = new ChizhYard(wrap.querySelector('.cz-cv') as HTMLElement);
+      marks = new GroundMarks(yard.scene);
+      coach = new Coach(wrap);
+      cleanup.push(() => (coach.dispose(), marks.dispose(), tutor?.dispose()));
       ctx.hold?.(30000);
       const y = yard;
       const shot = ctx.demo || /[?&]thumb=/.test(location.search);
@@ -612,7 +735,7 @@ export function createView(): GameView<State, Event> {
       take(v);
       if (v.shot) {
         hud.style.display = 'none';
-        ask.style.display = 'none';
+        coach.el.style.display = 'none';
         draw(0.016);
         yard.snapCam();
       }
