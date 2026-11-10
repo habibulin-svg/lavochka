@@ -5,6 +5,10 @@
 import type { Rng } from '../../core/types';
 import {
   canHome,
+  catchable,
+  CATCH_R,
+  CATCH_Z,
+  stickFlight,
   clamp,
   dist2,
   flyStick,
@@ -26,9 +30,9 @@ import {
 
 /** Дрожь руки (направление, сила), перебор, осторожность (запас по времени до пекаря, с), задержка броска (с). */
 const LV = [
-  { yaw: 0.075, pow: 0.1, tries: 12, safe: 0.1, wait: 1.4, lead: 0 },
-  { yaw: 0.05, pow: 0.07, tries: 30, safe: 0.5, wait: 0.9, lead: 0.3 },
-  { yaw: 0.035, pow: 0.05, tries: 50, safe: 0.8, wait: 0.6, lead: 0.4 },
+  { yaw: 0.075, pow: 0.1, tries: 12, safe: 0.1, wait: 0.7, lead: 0 },
+  { yaw: 0.05, pow: 0.07, tries: 30, safe: 0.5, wait: 0.45, lead: 0.3 },
+  { yaw: 0.035, pow: 0.05, tries: 50, safe: 0.8, wait: 0.3, lead: 0.4 },
 ];
 
 const gauss = (rng: Rng) => {
@@ -107,7 +111,14 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
     let g: [number, number];
     if (s.can.mode === 'down' || s.can.mode === 'fly') g = [s.can.x, s.can.y];
     else if (s.can.mode === 'held') g = home;
-    else {
+    else if (s.fly >= 0 && s.cfg.catch && level > 0 && (mem.tryCatch ??= rng.next() < (level === 2 ? 0.9 : 0.5)) && catchPoint(s, m)) {
+      // палка летит мимо — встать на её пути за банкой и поймать
+      const cp = catchPoint(s, m)!;
+      g = cp;
+      const now = catchable(s);
+      if (now && Math.hypot(now.x - m.x, now.y - m.y) < CATCH_R * 0.9) out.a = ++mem.a;
+    } else {
+      if (s.fly < 0) mem.tryCatch = undefined;
       // кого догнать: того, до кого успеть раньше, чем он уйдёт за черту
       let best = -1;
       let bt = Infinity;
@@ -137,9 +148,9 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
   const pk = s.pekar >= 0 ? s.men[s.pekar] : null;
   if (whoThrows(s) === i) {
     mem.tWait ??= s.t + lv.wait * s.speed * (0.7 + rng.next() * 0.6);
-    // встать поближе к середине черты
-    Object.assign(out, toward(m.x, m.y, clamp(m.x, -1.2, 1.2), Math.min(m.y, line - 0.2), 0.3));
-    if (s.t >= mem.tWait && Math.abs(m.vx) + Math.abs(m.vy) < 0.4) {
+    // бросает с места, где стоит за чертой (только шаг назад, если вылез за неё)
+    if (m.y > line - 0.1) Object.assign(out, toward(m.x, m.y, m.x, line - 0.3, 0.2));
+    if (s.t >= mem.tWait) {
       mem.thIn = { n: ++mem.th, ...bestThrow(s, i, lv, rng) };
       out.th = mem.thIn;
       mem.tWait = undefined;
@@ -195,4 +206,20 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
   }
   Object.assign(out, toward(m.x, m.y, hx, hy, 0.5));
   return out;
+}
+
+/** Куда встать, чтобы поймать палку, летящую мимо банки: первая точка её пути за банкой (невысоко), куда пекарь успеет. */
+function catchPoint(s: State, m: { x: number; y: number }): [number, number] | null {
+  const st = s.sticks[s.fly];
+  if (!st?.b0 || !st.aim || s.can.mode !== 'up') return null;
+  const c = s.cfg;
+  const f = stickFlight(st.b0, st.style!, canHome(c));
+  if (f.hit) return null;
+  const t0 = s.t - st.t0!;
+  for (const [t, x, y, z] of f.frames) {
+    if (t < t0 || z > CATCH_Z || y < c.dist - 0.1) continue;
+    const need = Math.max(0, Math.hypot(x - m.x, y - m.y) - CATCH_R * 0.8) / VP;
+    if (need <= t - t0) return [x, y];
+  }
+  return null;
 }

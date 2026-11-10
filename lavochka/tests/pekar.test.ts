@@ -64,7 +64,7 @@ describe('пекарь: партия в реальном времени', () => 
         pow = p;
         break;
       }
-    let evs = run(s, 3, () => [{ mx: 0, my: 0, th: { n: 1, pow, yaw: 0, style: 'flat' } }, null, null]);
+    let evs = run(s, 4, () => [{ mx: 0, my: 0, th: { n: 1, pow, yaw: 0, style: 'flat' } }, null, null]);
     expect(evs.some((e) => e.k === 'knock')).toBe(true);
     expect(s.men[0].rank).toBe(1);
     expect(s.can.mode).toBe('down');
@@ -171,6 +171,11 @@ describe('пекарь: показ правил даёт то, что в под�
     const r = play('Пекарь салит');
     expect(r.all.filter((x) => x.startsWith('can')).length).toBe(2);
     expect(r.all).toContain('tag:1');
+    expect(r.s.pekar).toBe(1);
+  });
+  it('пекарь ловит палку, летящую мимо, — печёт Вова', () => {
+    const r = play('Пекарь ловит палку');
+    expect(r.all).toContain('catch:1');
     expect(r.s.pekar).toBe(1);
   });
   it('в дворовом — осаленный теряет звание', () => {

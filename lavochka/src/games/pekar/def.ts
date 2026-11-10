@@ -1,7 +1,7 @@
 /* Пекарь — описание игры: от двух до шести игроков, каждый сам за себя; пекарь — по очереди. Игра реального времени:
  * комната крутит шаги, каждый ведёт своего пацана (бег, рывок), бросает палку «рогаткой», пекарь несёт банку и салит
  * (engine.ts). Без DOM. */
-import { gameSpeed, SPEED_OPTION } from '../../core/realtime';
+import { DS_SPEED_OPTION, dsSpeed } from '../../core/dvorsport/sim';
 import { demoApply, rtStep } from '../../core/dvorsport/demo';
 import type { DemoScript, GameDef, SeatSpec } from '../../core/types';
 import { botInput } from './ai';
@@ -43,7 +43,7 @@ const demoSeats: SeatSpec[] = [
   { seat: 1, kind: 'bot', name: 'Вова', level: 1 },
   { seat: 2, kind: 'bot', name: 'Серый', level: 1 },
 ];
-const DSP = 0.7;
+const DSP = 1;
 const CL = { ranks: 'full', dist: 14, demote: false, target: 5, speed: DSP };
 const DV = { ranks: 'short', dist: 11, demote: true, target: 5, speed: DSP };
 
@@ -106,7 +106,28 @@ const knocked = (s: State) => {
 };
 const B1: [number, number] = [0.4, 11.6];
 
+/** Ловля: Вова перекидывает, пекарь стоит на пути палки за банкой и ловит её, когда она рядом. */
+const W1 = waitSpot(C14, 1, 0);
+const LONG1 = { type: 'throw' as const, pow: 0.97, yaw: 0, style: 'flat' as const };
+const CATCH_AT = (() => {
+  const f = stickFlight(throwFrom(C14, W1[0], W1[1], LONG1.pow, yawTo(C14, W1[0], W1[1]) + LONG1.yaw, 'flat'), 'flat', HOME);
+  const pt = f.frames.find((fr) => fr[2] >= C14.dist + 1.2 && fr[3] < 1.6) ?? f.frames[f.frames.length - 1];
+  // нажать чуть раньше, чем палка поравняется с пекарем (окно ловли — пока она в 1,1 м)
+  return { x: pt[1] + 0.5, y: pt[2], ticks: Math.max(1, Math.ceil((pt[0] - 0.2) * 60)) };
+})();
+
 const DEMOS: Record<string, DemoScript<State, never>> = {
+  catch: {
+    seats: demoSeats,
+    setup: pos(CL, (s) => {
+      s.last = 0;
+      [s.men[2].x, s.men[2].y] = [CATCH_AT.x, CATCH_AT.y];
+    }),
+    steps: [
+      T(1, { 1: { ...still, th: { n: 1, ...LONG1 } } }, 'Вова перекинул — палка летит мимо банки. Пекарь стоит за банкой на её пути…', { ticks: CATCH_AT.ticks }),
+      T(2, { 2: { ...still, a: 1 } }, '…и ловит её своей палкой! Поймал — печёт хозяин палки, Вова.', { until: 'pekar', tail: 20, ticks: 300 }),
+    ],
+  },
   kick: {
     seats: demoSeats,
     setup: () => {
@@ -210,15 +231,16 @@ export const def: GameDef<State, never, Event, State> = {
       ],
       default: 5,
     },
+    { key: 'catch', label: 'Пекарь ловит палки', hint: 'Палку, летящую мимо банки, пекарь может поймать из-за банки — тогда печёт её хозяин', type: 'toggle', default: true },
     { key: 'demote', label: 'Пекарь теряет звание', hint: 'Кого осалили — тот пекарь и на ступень ниже', type: 'toggle', default: false },
-    SPEED_OPTION,
+    DS_SPEED_OPTION,
   ],
   presets: [
     { id: 'classic', label: 'Классика со званиями', hint: 'рядовой → маршал, 14 м до банки; сбил маршалом — победа', options: { ranks: 'full', dist: 14, demote: false, target: 5 } },
     { id: 'dvor', label: 'Дворовый короткий', hint: '5 званий, 11 м, осаленный теряет звание', options: { ranks: 'short', dist: 11, demote: true, target: 5 } },
     { id: 'schet', label: 'Без званий', hint: 'одна черта в 11 м, до пяти сбитых банок', options: { ranks: 'none', dist: 11, demote: false, target: 5 } },
   ],
-  setup: (seats, opts) => newGame(opts, seats.map((s) => s.seat).sort((a, b) => a - b), gameSpeed(opts)),
+  setup: (seats, opts) => newGame(opts, seats.map((s) => s.seat).sort((a, b) => a - b), dsSpeed(opts)),
   toAct: (s) => (s.over ? [] : s.seats.slice()),
   apply: (s, _seat, a, rng) => demoApply(s, a, rng, { step, view: snapshot }) as never,
   view: (s) => snapshot(s),
@@ -299,6 +321,14 @@ export const def: GameDef<State, never, Event, State> = {
           Осаленный становится пекарем, а бывший пекарь берёт палку и встаёт за свою черту. Уворачивайтесь рывком.</p>
           <p>Если бросить уже некому — все палки в поле, — идти за ними придётся всё равно: пекарь осалит кого-то одного, остальные успеют.</p>`,
         demo: DEMOS.tag,
+      },
+      {
+        title: 'Пекарь ловит палку',
+        html: `<p>Палку, которая летит <b>мимо банки</b>, пекарь может поймать — остановить своей палкой. Ловить можно только <b>из-за банки</b>,
+          не стоя между банкой и игроками. Поймал — печёт <b>хозяин палки</b>, а бывший пекарь встаёт за свою черту. Поэтому перекидывать банку опасно.</p>
+          <p>Пекарем: когда палка летит мимо, на земле появится кольцо — встань туда и жми «Лови!» (пробел), когда палка рядом. Рано или поздно — не поймаешь.
+          Вариант можно выключить в настройках.</p>`,
+        demo: DEMOS.catch,
       },
       {
         title: 'Варианты',

@@ -9,7 +9,8 @@
  *
  * Шаг симуляции — TICK_MS, физика медленнее жизни во столько, сколько выбрано «Скоростью игры». Ввод места: куда бежать
  * (оси игры), счётчики разовых действий (бросок, пинок, «действие», рывок) — новое значение счётчика = нажатие. */
-import { gameSpeed, applySpeed, cleanSpeed } from '../../core/realtime';
+import { applySpeed, cleanSpeed } from '../../core/realtime';
+import { BODY, dash as dashStart, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import type { Options, Rng } from '../../core/types';
 import {
   canFlight,
@@ -34,15 +35,20 @@ import {
   type Cfg,
   type Style,
 } from './field';
-import type { Body } from '../../core/dvorsport/body';
+import { sample as sampleAt, type Body } from '../../core/dvorsport/body';
 
 export * from './field';
 
 export const TICK_MS = 1000 / 60;
 /** Рывок: во сколько раз быстрее, сколько длится и перезарядка, с. */
-export const DASH = { k: 1.7, t: 0.35, cd: 1.4 };
+export const DASH = { k: BODY.dashK, t: BODY.dashT, cd: BODY.dashCd };
 /** Салит и сам, коснувшись (м), — без кнопки. */
-export const TOUCH = 0.55;
+export const TOUCH = 2 * BODY.r + 0.1;
+/** Ловля палки пекарем: на каком расстоянии от палки (м) и до какой высоты она в руках. */
+export const CATCH_R = 1.1;
+export const CATCH_Z = 2.0;
+/** Сколько секунд после «Лови!» рука наготове. */
+export const CATCH_WIN = 0.4;
 /** Сколько ждать бросающего, с: потом ход переходит дальше (чтобы один не держал всех). */
 export const TURN_WAIT = 25;
 /** Ближе какой отметки пекарю нельзя (половина пути от черты рядового до банки). */
@@ -110,6 +116,7 @@ export type Event =
   | { k: 'pick'; who: number }
   | { k: 'can'; what: 'pick' | 'set' }
   | { k: 'tag'; who: number; by: number }
+  | { k: 'catch'; who: number; by: number; x: number; y: number }
   | { k: 'pekar'; who: number; old: number; rank: number }
   | { k: 'skip'; who: number }
   | { k: 'end'; winners: number[] };
@@ -144,6 +151,11 @@ export interface State {
   throws: number;
   over: boolean;
   winners: number[];
+  /** Замедление (сбитая банка, осалили) — core/dvorsport/sim.ts. */
+  slowUntil?: number;
+  slowK?: number;
+  /** До каких пор пекарь держит руку наготове (ловля палки). */
+  catchT?: number;
   /** До каких пор пекарь не салит (только что сменился). */
   calm?: number;
   /** Только превью карточки. */
@@ -170,7 +182,7 @@ export function cleanInput(raw: unknown): In | null {
   return out;
 }
 
-export function newGame(o: Options, seats: number[], speed = gameSpeed(o)): State {
+export function newGame(o: Options, seats: number[], speed = dsSpeed(o)): State {
   const c = cfgFrom(o, seats.length);
   const n = c.n;
   const s: State = {
@@ -225,6 +237,22 @@ export function whoThrows(s: State): number {
   return -1;
 }
 
+
+/** Ловить можно палку, что летит мимо банки, — стоя за банкой (не между банкой и игроками). Где палка сейчас (оси игры),
+ * если её можно поймать; null — нельзя. */
+export function catchable(s: State, t = s.t): { x: number; y: number; z: number } | null {
+  const c = s.cfg;
+  if (!c.catch || s.phase !== 'play' || s.fly < 0 || s.pekar < 0 || s.can.mode !== 'up') return null;
+  const st = s.sticks[s.fly];
+  if (!st.b0 || !st.aim) return null;
+  const f = stickFlight(st.b0, st.style!, canHome(c));
+  if (f.hit) return null;
+  const fr = sampleAt(f.frames, t - st.t0!);
+  return fr[3] < CATCH_Z ? { x: fr[1], y: fr[2], z: fr[3] } : null;
+}
+/** Пекарь стоит за банкой. */
+export const behindCan = (s: State) => s.pekar >= 0 && s.men[s.pekar].y >= s.cfg.dist - 0.2;
+
 /** Победа: сбил банку маршалом (или набрал банок без званий); страховка — по званию. */
 function checkEnd(s: State, ev: Event[]): boolean {
   const c = s.cfg;
@@ -256,26 +284,17 @@ function regroup(s: State, only: number[] | null) {
 
 function move(s: State, i: number, inp: In | null | undefined, dt: number) {
   const m = s.men[i];
-  const seen = s.seats[i] != null ? s.seen[i] : null;
+  const seen = s.seen[i];
   if (inp?.d != null && seen && inp.d > seen.d) {
     seen.d = inp.d;
-    if (m.cd <= 0) (m.dash = DASH.t), (m.cd = DASH.cd);
+    dashStart(m);
   }
-  m.dash = Math.max(0, m.dash - dt);
-  m.cd = Math.max(0, m.cd - dt);
-  let dx = inp?.mx ?? 0;
-  let dy = inp?.my ?? 0;
-  const l = Math.hypot(dx, dy);
-  if (l > 1) (dx /= l), (dy /= l);
   const pk = i === s.pekar;
-  const v = (pk ? (s.can.mode === 'held' ? VP_CAN : VP) : VR) * (m.dash > 0 ? DASH.k : 1);
-  // разгон за ~0,15 с: не дёргается, но и не скользит
-  const k = Math.min(1, dt / 0.15);
-  m.vx += (dx * v - m.vx) * k;
-  m.vy += (dy * v - m.vy) * k;
-  m.x = clamp(m.x + m.vx * dt, -BOUND.x, BOUND.x);
+  const v = pk ? (s.can.mode === 'held' ? VP_CAN : VP) : VR;
+  drive(m, { mx: inp?.mx ?? 0, my: inp?.my ?? 0 }, v, dt);
+  m.x = clamp(m.x, -BOUND.x, BOUND.x);
   // пекарь не заходит ближе к чертам, чем полполя: караулить у черты нельзя
-  m.y = clamp(m.y + m.vy * dt, pk ? pekarMinY(s.cfg) : BOUND.y0, s.cfg.dist + BOUND.y1);
+  m.y = clamp(m.y, pk ? pekarMinY(s.cfg) : BOUND.y0, s.cfg.dist + BOUND.y1);
 }
 
 /** Шаг симуляции: s меняется на месте. */
@@ -286,7 +305,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   const n = c.n;
   const inp = (i: number) => inputs[s.seats[i]];
   for (let i = 0; i < n; i++) applySpeed(s, s.seats[i], inp(i)?.sp);
-  const dt = (TICK_MS / 1000) * s.speed;
+  const dt = (TICK_MS / 1000) * s.speed * dtScale(s);
   s.t += dt;
 
   if (s.phase === 'pause') {
@@ -302,9 +321,10 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       regroup(s, [old, who]);
       ev.push({ k: 'pekar', who, old, rank: s.men[who].rank });
       // новому пекарю — секунда дойти до банки: кто рядом, успеет отбежать
-      s.calm = s.t + 1.2;
+      s.calm = s.t + 0.9;
       s.swapTo = -1;
     }
+    separate(s.men, BODY.r);
     s.next = null;
     s.phase = 'play';
     s.turnT = s.t;
@@ -331,7 +351,33 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       m.knocks++;
       if (c.ranks.length > 1) m.rank++;
       ev.push({ k: 'knock', who: i, rank: m.rank, knocks: m.knocks });
+      slowmo(s, 1.0, 0.3);
       if (checkEnd(s, ev)) return ev;
+    }
+    // пекарь ловит палку, что летит мимо: нажал «Лови!», палка рядом и невысоко, он за банкой
+    const p0 = s.pekar;
+    const qp = p0 >= 0 ? inp(p0) : null;
+    if (p0 >= 0 && qp?.a != null && qp.a > s.seen[p0].a) {
+      s.seen[p0].a = qp.a;
+      // «Лови!» держит руку наготове CATCH_WIN с: палка влетит в руки — поймана
+      s.catchT = s.t + CATCH_WIN * s.speed;
+    }
+    if (p0 >= 0 && s.t <= (s.catchT ?? -1)) {
+      const cp = catchable(s);
+      const pm = s.men[p0];
+      if (cp && behindCan(s) && dist2([pm.x, pm.y], [cp.x, cp.y]) < CATCH_R) {
+        st.at = 'hand';
+        st.b0 = undefined;
+        s.fly = -1;
+        ev.push({ k: 'catch', who: i, by: p0, x: cp.x, y: cp.y });
+        slowmo(s, 0.8, 0.3);
+        s.phase = 'pause';
+        s.until = s.t + 1.1;
+        s.next = 'swap';
+        s.swapTo = i;
+        s.catchT = -1;
+        return ev;
+      }
     }
     if (tt >= f.t) {
       [st.x, st.y, st.a] = f.rest;
@@ -352,7 +398,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
           s.sticks[s.pekar].at = 'pekar';
           ev.push({ k: 'draw', pekar: s.pekar, order: idx.filter((k) => k !== s.pekar) });
           s.phase = 'pause';
-          s.until = s.t + 1.6;
+          s.until = s.t + 1.2;
           s.next = 'reset';
           return ev;
         }
@@ -363,6 +409,11 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
 
   if (s.phase === 'kick') {
     const k = kicker(s);
+    // чей пинок — тот на середине черты, остальные на своих местах (никто ни в ком не стоит)
+    if (k >= 0)
+      s.men.forEach((m, j) => {
+        [m.x, m.y] = j === k ? [-0.25, -0.35] : waitSpot(c, j, 0);
+      });
     const q = k >= 0 ? inp(k) : null;
     if (k >= 0 && q?.k && q.k.n > s.seen[k].k) {
       s.seen[k].k = q.k.n;
@@ -370,8 +421,10 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       // что есть силы — палка может сорваться с носка
       const slip = pow > 0.82 && rng.int(1000) < Math.round((pow - 0.82) * 3000);
       const b0 = kickBody(slip ? pow * 0.35 : pow, k, slip);
-      s.men[k].x = -0.25;
-      s.men[k].y = -0.35;
+      // пинает с середины черты, а кто пинал до него — назад на своё место
+      s.men.forEach((m, j) => {
+        [m.x, m.y] = j === k ? [-0.25, -0.35] : waitSpot(c, j, 0);
+      });
       s.sticks[k] = { at: 'fly', x: b0.x, y: b0.y, a: 0, b0, t0: s.t, style: 'lob', aim: false };
       s.fly = k;
       const f = stickFlight(b0, 'lob', null);
@@ -380,8 +433,9 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
     return ev;
   }
 
-  // бег
+  // бег; потом развести тех, кто налез друг на друга (пекарь с банкой в руках — не двигаем)
   for (let i = 0; i < n; i++) move(s, i, inp(i), dt);
+  separate(s.men, BODY.r);
 
   // подобрать свою палку — касанием
   for (let i = 0; i < n; i++) {
@@ -423,8 +477,9 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       }
       if (best >= 0 && (bd < TOUCH || (pressed && bd < REACH))) {
         ev.push({ k: 'tag', who: best, by: p });
+        slowmo(s, 0.8, 0.3);
         s.phase = 'pause';
-        s.until = s.t + 1.6;
+        s.until = s.t + 1.1;
         s.next = 'swap';
         s.swapTo = best;
         return ev;

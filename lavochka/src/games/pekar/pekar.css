@@ -47,3 +47,5 @@
 @media (pointer: coarse) {
   .pk-ask { bottom: 132px; }
 }
+.pk-me { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,.2); font-size: 13px; color: #ffe8b0; }
+.pk-me b { color: #fff; }

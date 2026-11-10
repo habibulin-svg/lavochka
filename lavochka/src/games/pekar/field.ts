@@ -10,9 +10,9 @@ export const STICK_R = 0.025;
 export const CAN_R = 0.05;
 export const CAN_H = 0.12;
 /** Бег: игрок за палкой, пекарь, пекарь с банкой в руках. */
-export const VR = 5.4;
-export const VP = 5.4;
-export const VP_CAN = 4.6;
+export const VR = 6.8;
+export const VP = 6.6;
+export const VP_CAN = 5.4;
 /** На сколько пекарь дотягивается палкой, м; подобрать палку и банку — с какого расстояния. */
 export const REACH = 1.1;
 export const GRAB = 0.7;
@@ -43,6 +43,8 @@ export interface Cfg {
   target: number;
   /** Стал пекарем — звание вниз на ступень. */
   demote: boolean;
+  /** Пекарь может поймать (остановить своей палкой) палку, летящую мимо банки, — хозяин палки печёт (вариант ru.wiki). */
+  catch: boolean;
   /** Страховка: бросков за партию. */
   maxThrows: number;
 }
@@ -63,6 +65,7 @@ export function cfgFrom(o: Options, n = 4): Cfg {
     step,
     target: clampI(Number(o.target ?? 5), 1, 20),
     demote: o.demote === true || o.demote === 'yes',
+    catch: o.catch == null ? true : o.catch === true || o.catch === 'yes',
     maxThrows: 400,
   };
 }
