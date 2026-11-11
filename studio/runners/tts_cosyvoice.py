@@ -35,18 +35,20 @@ def main():
     ap.add_argument('job')
     ap.add_argument('out')
     ap.add_argument('--only')
+    ap.add_argument('--keys', help='через запятую — только эти реплики')
+    ap.add_argument('--seed', type=int, default=7, help='другой сид — другой дубль (переозвучка неразборчивых)')
     ap.add_argument('--br', default='64k', help='битрейт Opus (рассказ «Заколдованной страны» — 32k)')
     a = ap.parse_args()
     job = json.loads(pathlib.Path(a.job).read_text(encoding='utf-8'))
     out = pathlib.Path(a.out)
     todo = [(k, v) for k, v in job['lines'].items()
-            if (not a.only or k.startswith(a.only)) and not (out / f'{k}.ogg').exists()]
+            if (not a.only or k.startswith(a.only)) and (not a.keys or k in a.keys.split(',')) and not (out / f'{k}.ogg').exists()]
     segs = lambda v: v['segs'] if 'segs' in v else [[v['voice'], v['text']]]  # noqa: E731
     print(f'реплик {len(todo)}, символов {sum(len(t) for _, v in todo for _, t in segs(v))}', flush=True)
     if not todo:
         return
     cv = AutoModel(model_dir='G:/ai/models/tts/cosyvoice3')
-    torch.manual_seed(7)
+    torch.manual_seed(a.seed)
     for i, (k, v) in enumerate(todo, 1):
         parts = []
         for j, (voice, text) in enumerate(segs(v)):
