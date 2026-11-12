@@ -17,7 +17,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
     reportCompressedSize: false,
     // ГОПС — отдельное полноэкранное приложение (docs/gops/CODE.md)
-    rollupOptions: { input: { main: 'index.html', gops: 'gops.html', geroi: 'geroi.html' } },
+    rollupOptions: { input: { main: 'index.html', gops: 'gops.html', geroi: 'geroi.html', musicStudio: 'music-studio.html' } },
   },
   // модули three.js, которые грузятся лениво (3D-холдем): заранее, иначе Vite перезагружает страницу посреди партии
   optimizeDeps: {

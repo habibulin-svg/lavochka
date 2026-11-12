@@ -199,6 +199,7 @@ export const NAMES: Record<string, Names> = {
   shariki: { ru: ['зума', 'шарики зума', 'лягушка шарики', 'зума делюкс', 'шарики стрелялка', 'цепочка шариков'], en: ['Zuma', 'Marble shooter', 'Zuma Deluxe', 'Ball shooter'] },
   eggs: { ru: ['лопни шарики', 'пузыри', 'бабл шутер', 'пузырьки стрелялка', 'стрелять шариками'], en: ['Bubble shooter', 'Puzzle Bobble', 'Bust-a-Move'] },
   geroi: { ru: ['Герои кастета', 'герои меча и магии', 'герои 3', 'герои онлайн', 'пошаговая стратегия', 'бой на гексах', 'стратегия в браузере'], en: ['Heroes of Might and Magic', 'HoMM', 'Heroes 3', 'turn-based strategy'] },
+  musicstudio: { ru: ['музыкальная студия', 'конструктор музыки', 'сделать музыку онлайн', 'секвенсор из сэмплов', 'танцевальная музыка 90-х', 'Dance With Me'], en: ['Lavochka Music Studio', 'music maker', 'dance music maker', 'sample sequencer'] },
   gops: { ru: ['ГОПС: война районов', 'гопники', 'война районов', 'пошаговая артиллерия', 'артиллерия онлайн', 'игра про гопников'], en: ['GOPS', 'artillery game'] },
   petardy: { ru: ['гопники', 'стенка на стенку', 'петарды'], en: ['Beat em up'] },
 };
