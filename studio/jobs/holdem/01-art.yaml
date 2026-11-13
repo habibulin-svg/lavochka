@@ -1,0 +1,65 @@
+# Холдем 3D (полировка 2026-11-14): то, что было нарисовано кодом на canvas (tex3d.ts), — моделью.
+# Сукно — одно большое полотно на весь стол (без повтора); фишки и фишка дилера — вид строго сверху, вырезка BiRefNet;
+# номиналы на фишках и надписи на сукне — кодом (цифры и кириллицу модель путает). Заставка — стол в комнате 90-х.
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем вовсе.
+# studio/run.cmd run.py jobs/holdem/01-art.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic photo, crisp details, soft even studio lighting, rich colors.
+seeds: [41, 42, 43]
+items:
+  # ---------------------------------------------------------------- сукно
+  - name: felt
+    width: 1536
+    height: 960
+    prompt: >-
+      Top-down flat lay macro photo of deep emerald green casino poker table felt cloth, wool baize with a fine short nap,
+      subtle woven fibers and tiny lint specks, very slight uneven wear, the plain green cloth fills the whole frame edge to edge,
+      uniform soft diffuse lighting. {style}
+  # ---------------------------------------------------------------- фишки (вид сверху)
+  - name: chip-white
+    prompt: >-
+      One clay casino poker chip seen exactly from above, perfectly round, ivory white chip with six navy blue rectangular edge inserts,
+      a molded ring of small card suit symbols, a plain smooth round blank ivory center inlay, matte clay surface with fine scuffs,
+      centered, the chip fills most of the frame, on a plain flat light gray background. {style}
+  - name: chip-red
+    prompt: >-
+      One clay casino poker chip seen exactly from above, perfectly round, deep red chip with six white rectangular edge inserts,
+      a molded ring of small card suit symbols, a plain smooth round blank red center inlay, matte clay surface with fine scuffs,
+      centered, the chip fills most of the frame, on a plain flat light gray background. {style}
+  - name: chip-green
+    prompt: >-
+      One clay casino poker chip seen exactly from above, perfectly round, forest green chip with six white rectangular edge inserts,
+      a molded ring of small card suit symbols, a plain smooth round blank green center inlay, matte clay surface with fine scuffs,
+      centered, the chip fills most of the frame, on a plain flat light gray background. {style}
+  - name: chip-black
+    prompt: >-
+      One clay casino poker chip seen exactly from above, perfectly round, charcoal black chip with six pale gold rectangular edge inserts,
+      a molded ring of small card suit symbols, a plain smooth round blank black center inlay, matte clay surface with fine scuffs,
+      centered, the chip fills most of the frame, on a plain flat light gray background. {style}
+  - name: chip-purple
+    prompt: >-
+      One clay casino poker chip seen exactly from above, perfectly round, royal purple chip with six lavender white rectangular edge inserts,
+      a molded ring of small card suit symbols, a plain smooth round blank purple center inlay, matte clay surface with fine scuffs,
+      centered, the chip fills most of the frame, on a plain flat light gray background. {style}
+  # ---------------------------------------------------------------- фишка дилера
+  - name: button
+    prompt: >-
+      One round white acrylic poker dealer button puck seen exactly from above, perfectly round, glossy ivory white with a thin engraved black ring
+      near the edge and a plain smooth blank white center, tiny surface scratches, centered, the puck fills most of the frame,
+      on a plain flat dark gray background. {style}
+  # ---------------------------------------------------------------- заставка загрузки
+  - name: loading
+    width: 1536
+    height: 960
+    prompt: >-
+      A dim cozy Soviet apartment living room at night in the 1990s, an oval green felt poker table with a brown leather padded rail in the middle,
+      stacks of clay poker chips and a deck of playing cards on the felt, an orange silk fringed lampshade glowing warm above the table,
+      a red oriental carpet hanging on the wallpapered wall, a polished wooden cabinet with crystal glasses, an old television,
+      empty wooden chairs around the table, cinematic warm light pooling on the table and deep soft shadows around, shallow depth of field. {style}

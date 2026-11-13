@@ -8,7 +8,9 @@ import { normalOnly, pbr } from './pbr';
 
 export const FLOOR = -3;
 export const CEIL = 8;
-const RX = 13;
+/** Полуширина комнаты: за стульями у торцов стола (до x ≈ 10,8) должно остаться место до серванта и батареи —
+ * при 13 стул восьмого-девятого игрока въезжал в сервант. */
+const RX = 14.5;
 const RZ_FAR = -12;
 const RZ_NEAR = 15;
 
@@ -288,15 +290,16 @@ export function buildRoom(): { group: THREE.Group; lamp: THREE.SpotLight; shade:
     const b = new THREE.Box3().setFromObject(cab);
     placeModel(g, 'wine_bottles_01', { x: (b.min.x + b.max.x) / 2 - 0.15, z: (b.min.z + b.max.z) / 2, ry: -Math.PI / 2, h: 1.35, y: FLOOR + 3.62 });
   });
-  placeModel(g, 'vintage_wooden_drawer_01', { x: -9.3, z: -9.6, ry: 0.55, h: 3.2 }, (stand) => {
+  placeModel(g, 'vintage_wooden_drawer_01', { x: -RX + 3.4, z: -9.6, ry: 0.55, h: 3.2 }, (stand) => {
     const top = new THREE.Box3().setFromObject(stand).max.y;
-    placeModel(g, 'television_02', { x: -9.3, z: -9.5, ry: 0.55, h: 2.9, y: top });
+    // телевизор — с диагональю 51–54 см (был ростом 72 см — крупнее человека за столом)
+    placeModel(g, 'television_02', { x: -RX + 3.4, z: -9.5, ry: 0.55, h: 2.3, y: top });
   });
-  placeModel(g, 'Rockingchair_01', { x: 9.0, z: 9.5, ry: -2.4, h: 4.6 });
+  placeModel(g, 'Rockingchair_01', { x: RX - 4, z: 9.5, ry: -2.4, h: 4.6 });
   {
     // свечение экрана телевизора
     const glow = new THREE.PointLight('#7a9ae0', 2.5, 7, 2);
-    glow.position.set(-8.0, FLOOR + 4.3, -8.0);
+    glow.position.set(-RX + 4.7, FLOOR + 4.0, -8.0);
     g.add(glow);
   }
 

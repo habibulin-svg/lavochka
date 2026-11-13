@@ -40,9 +40,11 @@ export const VIEW_PREF: ViewPref = {
 /** seat — 3D-комната; flat — стол сверху (он же показ правил и запасной без WebGL). */
 type Mode = 'seat' | 'flat';
 const MODE_NAME: Record<Mode, string> = { seat: '3D-комната', flat: 'стол' };
+/** Скорость разовых реакций людей-видео (ролики сняты неторопливо; под неё подобраны HIT и REST). */
+const RATE = 1.5;
 /** Люди-видео: через сколько мс от начала реакции рука дошла до фишек/карт и сколько ещё досматривать (скорость 1). */
-const HIT: Record<string, number> = { fold: 950, check: 850, call: 1150, raise: 1250, allin: 950 };
-const REST: Record<string, number> = { fold: 900, check: 650, call: 950, raise: 1150, allin: 1350 };
+const HIT: Record<string, number> = { fold: 760, check: 680, call: 920, raise: 1000, allin: 760 };
+const REST: Record<string, number> = { fold: 520, check: 420, call: 620, raise: 800, allin: 1100 };
 
 function webglOk(): boolean {
   try {
@@ -195,9 +197,12 @@ class HoldemView implements GameView<View, Event> {
     let a = Math.PI / 2 + (k / n) * Math.PI * 2;
     if (this.is3d) {
       // в 3D посередине дальнего края стоит крупье: игроки — по кругу без этого места (поровну с двух сторон)
-      const step = (Math.PI * 2) / (n + 1);
-      const u = k * step;
-      a = Math.PI / 2 + (u < Math.PI - step / 2 - 1e-6 ? u : u + step);
+      // соперники — поровну слева и справа от неё (при чётном числе игроков слева на одного больше): каждая сторона — ровно
+      // по своей половине стола. Раньше при 4, 6, 8 игроках один садился вплотную к крупье, а место напротив пустовало.
+      const left = n === 2 ? 0 : Math.ceil((n - 1) / 2);
+      const right = n - 1 - left;
+      const u = k === 0 ? 0 : k <= left ? (Math.PI * k) / (left + 1) : Math.PI + (Math.PI * (k - left)) / (right + 1);
+      a = Math.PI / 2 + (n === 2 && k === 1 ? (Math.PI * 4) / 3 : u);
     }
     return { x: C.x + Math.cos(a) * 410, y: C.y + Math.sin(a) * 250 + (k === 0 && !this.is3d ? 20 : 0) };
   }
@@ -519,7 +524,7 @@ class HoldemView implements GameView<View, Event> {
     const snd = (f: () => void) => {
       if (!this.ff) f();
     };
-    this.gl?.setRate(1.25 * Math.min(1.6, this.ctx.speed()));
+    this.gl?.setRate(RATE * Math.min(1.6, this.ctx.speed()));
     const zero = () => this.v!.bet.map(() => 0);
     /** Ставки круга — в банк (крупье сгребает). */
     const collect = async () => {
@@ -527,12 +532,12 @@ class HoldemView implements GameView<View, Event> {
       if (dir()) {
         shoot(DEALER);
         dealer('collect');
-        await pause(1100);
+        await pause(850);
       }
       this.v = { ...this.v!, bet: zero() };
       this.draw();
       snd(() => Sound.place());
-      await pause(dir() ? 600 : 0);
+      await pause(dir() ? 350 : 0);
     };
     const winners = new Set(events.flatMap((e) => (e.type === 'win' ? [e.seat] : [])));
     const lost = new Set<number>();
@@ -578,12 +583,12 @@ class HoldemView implements GameView<View, Event> {
             shoot(DEALER);
             dealer(ev.street === 'flop' ? 'flop' : 'card');
             // рука крупье над серединой стола — карты ложатся
-            await pause(ev.street === 'flop' ? 700 : 900);
+            await pause(ev.street === 'flop' ? 600 : 750);
           } else dealer(ev.street === 'flop' ? 'flop' : 'card');
           this.v = { ...this.v!, board: [...this.v!.board, ...ev.cards], bet: zero() };
           this.draw({ x: C.x, y: C.y - 200 });
           snd(() => Sound.card());
-          await pause(dir() ? 1300 : 520);
+          await pause(dir() ? (ev.street === 'flop' ? 1150 : 900) : 520);
         } else if (ev.type === 'show') {
           if (!shown) {
             await collect();
@@ -677,7 +682,7 @@ class HoldemView implements GameView<View, Event> {
             if (first != null && first !== this.viewer && v.phase !== 'over') {
               const fa = this.anchor(v, first);
               dealer(Math.abs(fa.x - C.x) < 60 ? 'point_front' : fa.x < C.x ? 'point_left' : 'point_right');
-              await pause(1100);
+              await pause(850);
             }
           }
         } else if (ev.type === 'bust') {
@@ -699,7 +704,7 @@ class HoldemView implements GameView<View, Event> {
     this.renderSkip();
     // ходит бот — он «думает» (камера уже на нём): не мгновенно, но и не томительно
     if (!this.ff && v.phase !== 'over' && v.turn != null && !this.ctx.mySeats.includes(v.turn) && events.some((e) => e.type === 'act' || e.type === 'deal' || e.type === 'street'))
-      await sleep(((dir() ? 1000 : 700) + Math.random() * 900) / sp());
+      await sleep(((dir() ? 450 : 500) + Math.random() * 650) / sp());
   }
 
   setTurn(toAct: number[], interactive: number[]) {

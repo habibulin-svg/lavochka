@@ -1,8 +1,32 @@
-/* Холдем 3D — текстуры, нарисованные на canvas: печать на сукне, тюль, шёлк абажура, фишки, баттон.
+/* Холдем 3D — текстуры, собранные на canvas. Сукно, фишки и фишка дилера — картинки конвейера (studio/jobs/holdem/01-art.yaml →
+ * export_art.py → public/tex/holdem/gen/): кодом поверх них — только печать на сукне, номиналы и надписи (цифры и кириллицу модель
+ * путает). Пока картинка в пути — нарисованный заместитель. Тюль и шёлк абажура — пока рисованные.
  * Фактуры материалов (кожа, дерево, паркет, ткань) — фотографии, см. pbr.ts. */
 import * as THREE from 'three';
 
 type Paint = (g: CanvasRenderingContext2D, w: number, h: number) => void;
+
+const GEN = `${import.meta.env.BASE_URL}tex/holdem/gen/`;
+let onLoad: () => void = () => {};
+/** Кого дёрнуть, когда картинка конвейера легла в текстуру (перерисовать кадр). */
+export function onGenLoad(f: () => void) {
+  onLoad = f;
+}
+
+/** Текстура на canvas: сразу — заместитель (paint без картинки), а когда придёт картинка конвейера — она и печать поверх. */
+function genTex(file: string, w: number, h: number, paint: (g: CanvasRenderingContext2D, img: HTMLImageElement | null) => void): THREE.CanvasTexture {
+  const t = canvasTex(w, h, (g) => paint(g, null));
+  const img = new Image();
+  img.onload = () => {
+    const g = (t.image as HTMLCanvasElement).getContext('2d')!;
+    g.clearRect(0, 0, w, h);
+    paint(g, img);
+    t.needsUpdate = true;
+    onLoad();
+  };
+  img.src = GEN + file;
+  return t;
+}
 
 export function canvasTex(w: number, h: number, paint: Paint, repeat: [number, number] | number = 1, color = true): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -48,14 +72,38 @@ function speckle(g: CanvasRenderingContext2D, w: number, h: number, amount: numb
 export function feltTexture(plain = false): THREE.Texture {
   const W = 2048;
   const H = 1272;
-  const map = canvasTex(W, H, (g) => {
-    const gr = g.createRadialGradient(W / 2, H * 0.46, 60, W / 2, H / 2, W * 0.62);
-    gr.addColorStop(0, '#2c8a52');
-    gr.addColorStop(0.55, '#1d6a3c');
-    gr.addColorStop(1, '#114628');
-    g.fillStyle = gr;
-    g.fillRect(0, 0, W, H);
-    speckle(g, W, H, 0.07, 160000, 7, 1.2);
+  const map = genTex('felt.webp', W, H, (g, img) => {
+    if (img) {
+      // настоящее сукно (одно полотно на весь стол) — к бортам чуть темнее: свет абажура собран в середине
+      // снимок — крупный план: одним полотном ворс выходил с травинку («футбольный газон»). Кладём его мелко, плиткой 6×6
+      // с зеркалом через одну (швов нет), и приглушаем ровным зелёным — остаётся тонкая фактура сукна.
+      const N = 6;
+      const tw = W / N;
+      const th = H / N;
+      for (let i = 0; i < N; i++)
+        for (let j = 0; j < N; j++) {
+          g.save();
+          g.translate(i * tw + (i % 2 ? tw : 0), j * th + (j % 2 ? th : 0));
+          g.scale(i % 2 ? -1 : 1, j % 2 ? -1 : 1);
+          g.drawImage(img, 0, 0, tw + 0.5, th + 0.5);
+          g.restore();
+        }
+      g.fillStyle = 'rgba(20, 104, 62, 0.45)';
+      g.fillRect(0, 0, W, H);
+      const sh = g.createRadialGradient(W / 2, H * 0.48, W * 0.2, W / 2, H / 2, W * 0.62);
+      sh.addColorStop(0, 'rgba(0,0,0,0)');
+      sh.addColorStop(1, 'rgba(0,12,4,0.38)');
+      g.fillStyle = sh;
+      g.fillRect(0, 0, W, H);
+    } else {
+      const gr = g.createRadialGradient(W / 2, H * 0.46, 60, W / 2, H / 2, W * 0.62);
+      gr.addColorStop(0, '#1f7a4c');
+      gr.addColorStop(0.55, '#176040');
+      gr.addColorStop(1, '#0e4028');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, W, H);
+      speckle(g, W, H, 0.07, 160000, 7, 1.2);
+    }
     if (plain) return;
     // линия ставок — овал внутри стола
     g.strokeStyle = 'rgba(255, 226, 150, 0.28)';
@@ -149,14 +197,16 @@ export interface ChipKind {
   color: string;
   edge: string;
   ink: string;
+  /** Картинка фишки сверху (конвейер). */
+  img: string;
 }
 
 export const CHIP_KINDS: ChipKind[] = [
-  { v: 500, color: '#5b2a8a', edge: '#f1e6ff', ink: '#f1e6ff' },
-  { v: 100, color: '#161616', edge: '#f1f1f1', ink: '#f6e2a0' },
-  { v: 25, color: '#1f7a3a', edge: '#f4fff0', ink: '#ffffff' },
-  { v: 5, color: '#b5221a', edge: '#fff2ee', ink: '#ffffff' },
-  { v: 1, color: '#e8e4da', edge: '#2a5aa8', ink: '#2a5aa8' },
+  { v: 500, color: '#5b2a8a', edge: '#f1e6ff', ink: '#f6ecff', img: 'chip_purple.webp' },
+  { v: 100, color: '#1c1c1c', edge: '#e6d49a', ink: '#f6e2a0', img: 'chip_black.webp' },
+  { v: 25, color: '#1f7a3a', edge: '#f4fff0', ink: '#ffffff', img: 'chip_green.webp' },
+  { v: 5, color: '#b5221a', edge: '#fff2ee', ink: '#ffffff', img: 'chip_red.webp' },
+  { v: 1, color: '#e8e4da', edge: '#2a5aa8', ink: '#2a5aa8', img: 'chip_white.webp' },
 ];
 
 /** Бок фишки: шесть вставок-«кирпичиков» и тонкие полоски. */
@@ -180,8 +230,21 @@ export function chipSideTex(k: ChipKind): THREE.CanvasTexture {
 
 /** Верх фишки: вставки по краю (продолжают бок), внутреннее кольцо, номинал. */
 export function chipTopTex(k: ChipKind): THREE.CanvasTexture {
-  return canvasTex(256, 256, (g, w) => {
+  const w = 256;
+  return genTex(k.img, w, w, (g, img) => {
     const c = w / 2;
+    if (img) {
+      // фишка — картинкой; номинал — кодом, «тиснением» по гладкой середине
+      g.drawImage(img, 0, 0, w, w);
+      g.font = `bold ${k.v >= 100 ? 62 : 74}px Georgia, serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillStyle = 'rgba(0,0,0,0.35)';
+      g.fillText(String(k.v), c + 1.5, c + 6);
+      g.fillStyle = k.ink;
+      g.fillText(String(k.v), c, c + 4);
+      return;
+    }
     g.fillStyle = k.color;
     g.beginPath();
     g.arc(c, c, c, 0, Math.PI * 2);
@@ -217,17 +280,21 @@ export function chipTopTex(k: ChipKind): THREE.CanvasTexture {
 
 /** Баттон дилера. */
 export function buttonTex(): THREE.CanvasTexture {
-  return canvasTex(256, 256, (g, w) => {
+  const w = 256;
+  return genTex('button.webp', w, w, (g, img) => {
     const c = w / 2;
-    g.fillStyle = '#f6f1e2';
-    g.beginPath();
-    g.arc(c, c, c, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = '#2a1a0a';
-    g.lineWidth = 6;
-    g.beginPath();
-    g.arc(c, c, c - 18, 0, Math.PI * 2);
-    g.stroke();
+    if (img) g.drawImage(img, 0, 0, w, w);
+    else {
+      g.fillStyle = '#f6f1e2';
+      g.beginPath();
+      g.arc(c, c, c, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = '#2a1a0a';
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(c, c, c - 18, 0, Math.PI * 2);
+      g.stroke();
+    }
     g.fillStyle = '#2a1a0a';
     g.font = 'bold 120px Georgia, serif';
     g.textAlign = 'center';

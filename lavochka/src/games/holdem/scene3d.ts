@@ -15,7 +15,7 @@ import { cardUrl, deckImage, deckProgress, preloadDeck } from '../../cards/rende
 import type { DeckStyle } from '../../core/settings';
 import { bolsterProfile, cardGeometry, sweepEllipse } from './geo3d';
 import { buildRoom, makeChair, onRoomLoad, FLOOR } from './room3d';
-import { buttonTex, cardStandIn, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture } from './tex3d';
+import { buttonTex, cardStandIn, CHIP_KINDS, chipSideTex, chipTopTex, feltTexture, onGenLoad } from './tex3d';
 import { LOADING } from './loading';
 import { DEALER, type DealerAct, type People, type PersonPlace, type Gesture } from './people3d';
 
@@ -70,30 +70,32 @@ type Pt = { x: number; y: number };
 /** Угол обзора камеры (вид сверху и вид «за столом» без видео-людей). */
 const FOV = 47;
 /** Вид «как в Apple»: общие карты — на столько впереди снимаемого (от его линии стола), камера — на столько от него. */
-const STAGE_BOARD = 3.5;
+const STAGE_BOARD = 3.8;
 const STAGE_CAM = 12.5;
-/** Общие карты в этом виде: карта ≈ 19 см (втрое больше настоящей) — читается издалека, но не заслоняет стол. */
-const STAGE_CARD = 0.78;
+/** Общие карты в этом виде: карта ≈ 22 см — крупнее настоящей (как и весь стол: он в полтора раза шире настоящего).
+ * Читаемость берём не размером, а картинкой: контраст и насыщенность лица карты, без бликов (см. paint). */
+const STAGE_CARD = 0.88;
 /** Карты соперника — меньше общих (как настоящие у его рук). */
-const STAGE_HOLE = 0.62;
+const STAGE_HOLE = 0.75;
 /** Ближе к камере (по полу) — подписи прячем. */
 const STAGE_HIDE = 3.6;
 /** Вещи на сукне в кадре «как в Apple»: f — от линии стола снимаемого вперёд (к камере), r — вправо (как видит камера). */
 const SLOT = {
   hole: { f: 1.25, r: -1.55 },
-  stack: { f: 1.0, r: 2.15 },
-  bet: { f: 2.2, r: 1.0 },
-  button: { f: 1.05, r: -2.75 },
-  pot: { f: 5.3, r: 0.2 },
-  /** Моя ставка — внизу кадра слева (справа — мои карты). */
-  mine: { f: 6.1, r: -2.0 },
+  stack: { f: 1.0, r: 2.3 },
+  bet: { f: 2.25, r: 1.0 },
+  button: { f: 1.05, r: -2.9 },
+  /** Банк — сбоку от общих карт, как на настоящем столе. */
+  pot: { f: 3.8, r: -3.7 },
+  /** Моя ставка — внизу кадра посередине, передо мной (справа — мои карты). */
+  mine: { f: 5.6, r: -0.5 },
 };
 /** Узкий экран (телефон стоя): кадр по ширине впритык к общим картам — стопка и фишка дилера ближе к середине,
  * банк левее (справа внизу крупные свои карты). */
 const SLOT_NARROW: Partial<typeof SLOT> = {
   stack: { f: 1.0, r: 1.65 },
   button: { f: 2.15, r: -1.85 },
-  pot: { f: 5.3, r: -1.1 },
+  pot: { f: 5.9, r: -1.1 },
 };
 
 const CX = 500;
@@ -112,9 +114,16 @@ const CARD_W = 1;
 const CARD_H = 1.55;
 const CARD_T = 0.014;
 /** Смещение мип-уровня текстуры карт (меньше нуля — чётче): индекс мелкой карты на сукне не расплывается. */
-const CARD_LOD_BIAS = -0.6;
-const CHIP_R = 0.2;
-const CHIP_H = 0.055;
+const CARD_LOD_BIAS = -0.9;
+
+/** Смена кадра: прошлый кадр тает поверх нового столько мс. Дольше (было 650) — прошлый человек «призраком» висит на новом. */
+const CUT_MS = 220;
+/** Лицо карты на сукне: насыщенность и контраст (1 — как на картинке колоды). */
+const CARD_SAT = 1.3;
+const CARD_CONTRAST = 1.35;
+/** Фишка — в той же мере крупнее настоящей, что и карта (у настоящих карта шире фишки в 1,6 раза). */
+const CHIP_R = 0.26;
+const CHIP_H = 0.064;
 
 const to3 = (x: number, y: number, h = 0) => new THREE.Vector3(((x - CX) / 100) * K, h, ((y - CY) / 100) * K);
 
@@ -182,6 +191,17 @@ interface Moving {
   key?: string;
   /** Долетело (фишки ставки — кучка перед игроком растёт). */
   land?: () => void;
+  /** Ещё столько секунд лежит на месте (раздача по одной карте, а не пачкой). */
+  wait?: number;
+}
+
+/** Предсказуемая «случайность» по ключу вещи (−1…1): карта лежит чуть неровно, но не прыгает при перерисовке. */
+function jitter(key: string, salt: number): number {
+  let h = 2166136261 ^ salt;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0x5bd1e995);
+  return (((h ^ (h >>> 15)) >>> 0) / 4294967296) * 2 - 1;
 }
 
 interface SeatPlace {
@@ -327,6 +347,7 @@ export class Table3D {
     sc.background = new THREE.Color('#1a120c');
     onTextureLoad(() => this.kick());
     onRoomLoad(() => this.kick());
+    onGenLoad(() => this.kick());
     // отражения на лаке, фишках и картах: сначала простая комната, потом — снимок настоящего интерьера (HDRI)
     const pm = new THREE.PMREMGenerator(this.renderer);
     sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -424,7 +445,7 @@ export class Table3D {
     const t = buttonTex();
     const side = new THREE.MeshPhysicalMaterial({ color: '#efe8d4', roughness: 0.35, clearcoat: 0.6 });
     const top = new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.35, clearcoat: 0.6 });
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.09, 48), [side, top, top]);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.1, 48), [side, top, top]);
     m.castShadow = true;
     m.visible = false;
     this.scene.add(m);
@@ -613,14 +634,31 @@ export class Table3D {
 
   private paint(mesh: THREE.Mesh, c: Card | null) {
     mesh.userData.card = c;
-    // бумага с лёгким лаком; без тонового сжатия — красные масти не уходят в оранжевый, а белое под лампой не выгорает
+    // матовая бумага: без лака и отражений комнаты — на карте, видной вскользь, блик съедал контраст рисунка.
+    // Без тонового сжатия — красные масти не уходят в оранжевый; цвет чуть холодный — гасит желтизну тёплой лампы, бумага белая.
     const mk = (t: THREE.Texture) => {
-      const m = new THREE.MeshPhysicalMaterial({ map: t, color: '#b9b3a9', roughness: 0.6, clearcoat: 0.12, clearcoatRoughness: 0.5, envMapIntensity: 0.5, alphaTest: 0.5, transparent: true, toneMapped: false });
-      // карты на сукне видны вскользь и мелко: мип-уровень на полступени чётче — индекс читается, а не расплывается
+      const m = new THREE.MeshStandardMaterial({ map: t, color: '#bfc4cc', roughness: 0.95, metalness: 0, envMapIntensity: 0.12, alphaTest: 0.5, transparent: true, toneMapped: false });
+      // карты на сукне видны вскользь и мелко: мип-уровень почти на ступень чётче, а рисунок — контрастнее и насыщеннее
+      // (чёрное чернее, красное краснее, бумага светлее) — индекс читается с места игрока
       m.onBeforeCompile = (sh) => {
-        sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', THREE.ShaderChunk.map_fragment.replace('texture2D( map, vMapUv )', `texture2D( map, vMapUv, ${CARD_LOD_BIAS.toFixed(2)} )`));
+        sh.fragmentShader = sh.fragmentShader.replace(
+          '#include <map_fragment>',
+          THREE.ShaderChunk.map_fragment
+            .replace('texture2D( map, vMapUv )', `texture2D( map, vMapUv, ${CARD_LOD_BIAS.toFixed(2)} )`)
+            .replace(
+              'diffuseColor *= sampledDiffuseColor;',
+              `{
+                vec3 cc = sampledDiffuseColor.rgb;
+                float l = dot( cc, vec3( 0.2126, 0.7152, 0.0722 ) );
+                cc = mix( vec3( l ), cc, ${CARD_SAT.toFixed(2)} );
+                cc = ( cc - 0.35 ) * ${CARD_CONTRAST.toFixed(2)} + 0.35;
+                sampledDiffuseColor.rgb = clamp( cc, 0.0, 1.0 );
+              }
+              diffuseColor *= sampledDiffuseColor;`
+            )
+        );
       };
-      m.customProgramCacheKey = () => 'card-lod';
+      m.customProgramCacheKey = () => 'card-lod-crisp';
       return m;
     };
     const old = mesh.material as THREE.Material[];
@@ -707,6 +745,7 @@ export class Table3D {
     const seen = new Set<string>();
     const wasBoard = this.boardKeys;
     this.lastItems = items;
+    let fresh = 0;
     items.forEach((it, i) => {
       seen.add(it.key);
       const tg = this.target(it);
@@ -724,6 +763,8 @@ export class Table3D {
         mesh.quaternion.copy(enter && it.card ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI)) : tg.quat);
         this.scene.add(mesh);
         m = { obj: mesh, pos: tg.pos, quat: tg.quat, scale: tg.scale ?? it.s, seat: it.seat, key: it.key };
+        // крупье кладёт карты по одной
+        if (enter && !snap && !this.fast) m.wait = (fresh++ * 0.13) / Math.max(0.5, this.speed);
         // сразу своего размера (в кадре «как в Apple» карты мельче) — не сдувается на лету
         mesh.scale.setScalar((tg.scale ?? it.s) * (enter ? 0.85 : 1));
         this.cards.set(it.key, m);
@@ -747,9 +788,15 @@ export class Table3D {
       if (exit) {
         // в кадре: крупье собирает карты к себе, игрок сбрасывает — вперёд, к середине стола
         if (st && wasBoard.has(k)) m.seat = st.seat;
-        m.pos = !st || m.seat !== st.seat ? to3(exit.x, exit.y, 0.3) : st.base.clone().addScaledVector(st.fwd, st.seat === DEALER ? 0.5 : 3.2).setY(0.3);
-        m.quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI));
-        m.dying = 0.5;
+        // ложатся на сукно рубашкой вверх, чуть вразброс, и лежат (раньше повисали над столом и пропадали в воздухе);
+        // крупье забирает свои сразу, сброс игрока лежит перед ним, пока он в кадре
+        const lie = 0.02 + CARD_T / 2 + (jitter(k, 4) + 1) * 0.004;
+        const mine = !!st && m.seat === st.seat;
+        m.pos = mine ? st!.base.clone().addScaledVector(st!.fwd, st!.seat === DEALER ? 0.5 : 2.9 + jitter(k, 2) * 0.15) : to3(exit.x, exit.y);
+        if (mine) m.pos.addScaledVector(this.right(st!), jitter(k, 3) * 0.3);
+        m.pos.setY(lie);
+        m.quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, (mine ? Math.atan2(st!.fwd.x, st!.fwd.z) : 0) + jitter(k, 1) * 0.5, Math.PI, 'YXZ'));
+        m.dying = mine && st!.seat !== DEALER ? 6 * Math.max(0.5, this.speed) : 0.5;
         this.dying.push(m);
       } else this.drop(m.obj);
     }
@@ -809,7 +856,7 @@ export class Table3D {
     this.button.obj.userData.on = !!button;
     this.button.seat = button?.seat;
     if (button) {
-      this.button.pos = st && button.seat === st.seat ? this.slot('button', 0.065) : to3(button.x, button.y, 0.065);
+      this.button.pos = st && button.seat === st.seat ? this.slot('button', 0.07) : to3(button.x, button.y, 0.07);
       if (!this.button.obj.userData.placed || snap) {
         this.button.obj.position.copy(this.button.pos);
         this.button.obj.userData.placed = true;
@@ -821,6 +868,7 @@ export class Table3D {
   }
 
   private jump(m: Moving) {
+    m.wait = 0;
     m.obj.position.copy(m.pos);
     m.obj.quaternion.copy(m.quat);
     m.obj.scale.setScalar(m.scale);
@@ -857,11 +905,25 @@ export class Table3D {
     const cols: number[][] = [];
     const per = bank ? 10 : 8;
     const maxCols = bank ? 6 : 7;
-    for (const k of CHIP_KINDS) {
+    // размен «как у живого игрока»: не две фишки по 500, а понемногу каждого номинала — мелкие вперёд, остаток крупными
+    const asc = [...CHIP_KINDS].reverse();
+    const counts = new Map<number, number>();
+    asc.forEach((k, i) => {
+      const next = asc[i + 1]?.v;
       let cnt = Math.floor(left / k.v);
-      // слишком много мелких — пусть лучше будет меньше фишек
-      cnt = Math.min(cnt, per * 2);
+      if (next) {
+        // не больше столбика мелочи — и так, чтобы остаток делился на следующий номинал
+        // (фишки по одной — только остаток, не кратный пяти)
+        cnt = k.v === 1 ? left % next : Math.min(cnt, per);
+        while (cnt > 0 && (left - cnt * k.v) % next) cnt--;
+        if ((left - cnt * k.v) % next) cnt = Math.floor(left / k.v);
+      }
       left -= cnt * k.v;
+      counts.set(k.v, cnt);
+    });
+    for (const k of CHIP_KINDS) {
+      // слишком много — пусть лучше будет меньше фишек
+      let cnt = Math.min(counts.get(k.v) ?? 0, per * 2);
       while (cnt > 0 && cols.length < maxCols) {
         const n = Math.min(per, cnt);
         cols.push(Array(n).fill(k.v));
@@ -931,6 +993,8 @@ export class Table3D {
     const cut = this.camInit && !!shot && !!was && was.seat !== shot.seat;
     if (cut && !this.fast) this.snapshot();
     this.stage = null;
+    // в кадре «как в Apple» камера смотрит через середину стола на высоте абажура — бахрома ложилась на лицо снимаемому
+    if (this.shade && shot) this.shade.visible = false;
     if (shot) {
       // как в Apple poker: соперник в верхней трети, под ним сукно с банком и общими картами (они кладутся перед ним),
       // камера — там, где сидели бы мы напротив него
@@ -1006,8 +1070,11 @@ export class Table3D {
     this.fade.style.transition = 'none';
     this.fade.style.opacity = '1';
     void this.fade.offsetWidth;
-    this.fade.style.transition = `opacity ${Math.round(650 / Math.max(0.5, this.speed))}ms ease-in-out`;
+    this.fade.style.transition = `opacity ${Math.round(CUT_MS / Math.max(0.5, this.speed))}ms ease-out`;
     this.fade.style.opacity = '0';
+    // подписи — уже нового кадра: проявляются вместе с ним, а не висят над прошлым человеком
+    const ms = Math.round(CUT_MS / Math.max(0.5, this.speed));
+    this.labels.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: ms, easing: 'ease-in' });
   }
 
   /** Кого снимать: того, чей ход; на своём ходу и между раздачами — кого снимали; сначала — того, кто напротив. */
@@ -1061,6 +1128,7 @@ export class Table3D {
     if (it.board) {
       const i = this.lastItems.filter((x) => x.board).indexOf(it);
       const s = it.s * STAGE_CARD;
+      // общие карты крупье кладёт ровно, в линию
       const pos = st.base.clone().addScaledVector(st.fwd, STAGE_BOARD).addScaledVector(this.right(st), (i - 2) * CARD_W * s * 1.07).setY(0.02 + CARD_T / 2);
       return { pos, quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0, 'YXZ')), scale: s };
     }
@@ -1070,7 +1138,7 @@ export class Table3D {
       const s = it.s * STAGE_CARD * STAGE_HOLE;
       // запас от края сукна — пол-веера из двух карт
       const pos = this.slot('hole', 0.02 + CARD_T / 2 + i * 0.006, (CARD_W + CARD_H) * s * 0.5 + 0.35).addScaledVector(this.right(st), (i - 0.5) * CARD_W * s * 1.02);
-      return { pos, quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw - (i - 0.5) * 0.12, 0, 'YXZ')), scale: s };
+      return { pos, quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw - (i - 0.5) * 0.12 + jitter(it.key, 1) * 0.05, 0, 'YXZ')), scale: s };
     }
     return this.cardTarget(it);
   }
@@ -1212,6 +1280,11 @@ export class Table3D {
     let moving = false;
     const step = (m: Moving) => {
       const o = m.obj;
+      if (m.wait && m.wait > 0) {
+        m.wait -= dt;
+        moving = true;
+        return;
+      }
       if (o.position.distanceToSquared(m.pos) > 1e-6 || o.quaternion.angleTo(m.quat) > 1e-3 || Math.abs(o.scale.x - m.scale) > 1e-3) {
         // по пути карта и фишки чуть подлетают над столом
         const d = o.position.distanceTo(m.pos);
