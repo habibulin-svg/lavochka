@@ -201,6 +201,7 @@ export const def: GameDef<State, Action, Event, State> = {
   toAct,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),
   view,
+  redact: (ev, seats) => (seats !== 'all' && ev.type === 'trade' && !seats.includes(ev.seat) ? { ...ev, cards: [] } : ev),
   result(s) {
     if (!s.result) return null;
     return { winners: s.result.winners, text: s.result.text };

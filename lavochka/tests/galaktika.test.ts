@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RiggedRng, SeededRng } from '../src/core/rng';
 import { choose, winProb } from '../src/games/galaktika/ai';
 import { ADJ, PLANET_TERRS, TERRS } from '../src/games/galaktika/data';
+import { def } from '../src/games/galaktika/def';
 import { apply, cfgFrom, goalDone, newState, setKind, syncCounts, toAct, tradeValue, view, type State } from '../src/games/galaktika/engine';
 
 const T = (n: string) => TERRS.findIndex((t) => t.name === n);
@@ -123,5 +124,12 @@ describe('Освоение галактики', () => {
       }
       expect(s.phase).toBe('over');
     }
+  });
+
+  it('redact: чужой обмен не раскрывает карточки', () => {
+    const ev = { type: 'trade' as const, seat: 0, cards: [1, 2, 3], n: 4 };
+    expect(def.redact!(ev, [1])).toMatchObject({ cards: [], n: 4 });
+    expect(def.redact!(ev, [0])).toEqual(ev);
+    expect(def.redact!(ev, 'all')).toEqual(ev);
   });
 });

@@ -103,6 +103,7 @@ class SaperView implements GameView<State, Event> {
 
   destroy() {
     clearInterval(this.timer);
+    this.cancelPress(false);
     this.ro?.disconnect();
   }
 

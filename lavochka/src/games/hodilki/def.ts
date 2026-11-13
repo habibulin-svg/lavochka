@@ -268,7 +268,7 @@ function apply(s0: State, seat: number, a: Action, rng: { int(n: number): number
     if (phase !== 'answer' || !s0.riddle || !s0.riddle.waiting.includes(seat)) return null;
     const text = String(a.text ?? '').trim().slice(0, 120);
     // бот называет свою удачу, человек печатает ответ — сверяем с ответом загадки, если он известен
-    const solved = a.correct === true || (!!text && !!s0.riddle.answer && answerMatches(text, s0.riddle.answer));
+    const solved = (a.correct === true && !!s0.bots?.includes(seat)) || (!!text && !!s0.riddle.answer && answerMatches(text, s0.riddle.answer));
     const r: RiddleState = {
       ...s0.riddle,
       solved: solved ? [...s0.riddle.solved, seat] : s0.riddle.solved.slice(),
@@ -852,6 +852,7 @@ export const def: GameDef<State, Action, Event, State> = {
       map: board.id,
       maps: Array(10).fill(board.id),
       seats: ids,
+      bots: seats.filter((x) => x.kind === 'bot').map((x) => x.seat),
       pos: Array(10).fill(0),
       skip: Array(10).fill(0),
       route: Array(10).fill(null),

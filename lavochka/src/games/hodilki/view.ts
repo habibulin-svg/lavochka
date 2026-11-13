@@ -773,10 +773,11 @@ class HodilkiView implements GameView<State, Event> {
 
   // ---------- тайлы ----------
 
+  private tilesRaf = 0;
   private queueTiles() {
     if (this.tilesQueued) return;
     this.tilesQueued = true;
-    requestAnimationFrame(() => {
+    this.tilesRaf = requestAnimationFrame(() => {
       this.tilesQueued = false;
       this.updateTiles(this.cam, true);
     });
@@ -1521,6 +1522,7 @@ class HodilkiView implements GameView<State, Event> {
     this.ro.disconnect();
     this.stopCam();
     if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.tilesRaf) cancelAnimationFrame(this.tilesRaf);
     document.removeEventListener('keydown', this.onKey);
   }
 }

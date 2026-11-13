@@ -25,13 +25,13 @@
 | Пачка | Игры | Статус |
 |---|---|---|
 | 01 | dvor geo foxgeese cribbage konchinka bluff bulls ludo bagchal kunken | идёт |
-| 02 | hodilki brick2026 loto saper puluk pinochle salta xiangqi poedinok balda renju | идёт |
+| 02 | hodilki brick2026 loto saper puluk pinochle salta xiangqi poedinok balda renju | ревью готово, идёт проверка Sonnet |
 | 03 | sea igroteka star patolli bura schnapsen polkovodec pentago razvedchik pipes kozel | идёт |
 | 04 | billiards djio chapaev gadanie erudit daldos baccarat senet whoami sunduchok chaupar musicstudio shel | идёт |
 | 05 | chess avtomaty vkosmos okey rummy vozboy hangman vput sto polet tak beglye | идёт |
-| 06 | domino checkers zarulem galaktika mahjong fidchell raspisnoy skat seka morskaya king devyatka | идёт |
-| 07 | viktorina konversiya ur basketball shariki hive canasta cenariska azul shagdy g2048 drunkard | не начата |
-| 08 | akcii lapta magiya vorona tanchiki astro shifrovka vataku blokus shatra perudo brick | не начата |
+| 06 | domino checkers zarulem galaktika mahjong fidchell raspisnoy skat seka morskaya king devyatka | ревью готово, идёт проверка Sonnet |
+| 07 | viktorina konversiya ur basketball shariki hive canasta cenariska azul shagdy g2048 drunkard | идёт |
+| 08 | akcii lapta magiya vorona tanchiki astro shifrovka vataku blokus shatra perudo brick | идёт |
 | 09 | puzzles borodino football cah partizany petteia danetki quoridor tafl mancala abalone hearts | не начата |
 | 10 | western crocodile hockey spy aerohockey srazhenie fanorona seabattle perekati mill santorini akulina | не начата |
 | 11 | mahjong4 pekar pinbol treasures tarot shtos go shogi govno strelki ttt petardy | не начата |

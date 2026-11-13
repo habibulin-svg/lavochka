@@ -1087,7 +1087,10 @@ describe('кинь-двинь: «Лукоморье», части 2–4', () => 
     // бот называет свою удачу сам
     let d = turn(stand('luk4', q - 1), 0, 1, rng);
     d = def.apply(d.state, 0, { type: 'ask', text: 'загадка', answer: 'ветер' }, rng)!;
-    d = def.apply(d.state, 1, { type: 'answer', correct: true }, rng)!;
+    // человек флагом `correct` отгадку не засчитает — только текстом; бот (место в `bots`) — может
+    const human = def.apply(d.state, 1, { type: 'answer', correct: true }, rng)!;
+    expect(human.state.riddle?.solved).toEqual([]);
+    d = def.apply({ ...d.state, bots: [1] }, 1, { type: 'answer', correct: true }, rng)!;
     expect(d.state.riddle?.solved).toEqual([1]);
   });
 

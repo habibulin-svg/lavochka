@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import type { SeatSpec } from '../src/core/types';
-import { apply, cardNums, free, lastCalled, makeCard, openWith, setup, toAct, type Action, type State } from '../src/games/loto/engine';
+import { apply, cardNums, makeView, free, lastCalled, makeCard, openWith, setup, toAct, type Action, type State } from '../src/games/loto/engine';
 import { EDITIONS } from '../src/games/loto/world-data';
 
 const seats: SeatSpec[] = [
@@ -108,5 +108,16 @@ describe('Лото «Вокруг света»', () => {
     expect(s.sheets[0].length).toBe(10);
     expect(s.sheets[1].length).toBe(10);
     expect(s.deck.length + 1).toBe(120);
+  });
+});
+
+describe('Лото «Вокруг света»: скрытые ответы', () => {
+  it('чужой выбранный номер не уходит в вид, пока раунд не закрыт', () => {
+    const s = setup(seats, { mode: 'world', edition: '80' }, new SeededRng(5));
+    s.answers = { 0: 17, 1: 0 };
+    const v = makeView(s, [1]);
+    expect(v.answers[0]).toBe(-1);
+    expect(v.answers[1]).toBe(0);
+    expect(makeView(s, [0]).answers[0]).toBe(17);
   });
 });

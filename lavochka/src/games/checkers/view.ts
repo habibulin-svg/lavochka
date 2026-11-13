@@ -33,6 +33,7 @@ class CheckersView implements GameView<S, E> {
   private clocks!: HTMLElement;
   private recvAt = Date.now();
   private tick: ReturnType<typeof setInterval> | undefined;
+  private destroyed = false;
   private flagSent = 0;
   private s: S | null = null;
   private n = 0;
@@ -462,6 +463,7 @@ class CheckersView implements GameView<S, E> {
   }
 
   destroy() {
+    this.destroyed = true;
     clearInterval(this.tick);
   }
 
@@ -515,7 +517,7 @@ class CheckersView implements GameView<S, E> {
           const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
           const lift = 1 + Math.sin(Math.PI * t) * (m.caps.length || m.path.length > 1 ? 0.16 : 0.06);
           el.setAttribute('transform', `translate(${from.x + (b.x - from.x) * e},${from.y + (b.y - from.y) * e}) scale(${lift})`);
-          if (t < 1) requestAnimationFrame(step);
+          if (t < 1 && !this.destroyed) requestAnimationFrame(step);
           else res();
         };
         requestAnimationFrame(step);

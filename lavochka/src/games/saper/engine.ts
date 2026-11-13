@@ -334,8 +334,10 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng, now = gameNo
 /** Что видят места seats: мины и закрытые числа — только на кончившемся поле; в «Наперегонки» чужие поля — одним счётом. */
 export function view(s: State, seats: number[] | 'all'): State {
   const boards = s.boards.map((b, k) => {
-    const over = s.done || b.st === 'won' || b.st === 'lost';
     const mineSeat = s.cfg.mode === 'race' ? s.seats[k] : -1;
+    // «Наперегонки»: раскладка общая, поэтому чужое кончившееся поле открывается, лишь когда кончилась вся партия
+    const own = s.cfg.mode !== 'race' || seats === 'all' || seats.includes(mineSeat);
+    const over = s.done || (own && (b.st === 'won' || b.st === 'lost'));
     if (s.cfg.mode === 'race' && !over && seats !== 'all' && !seats.includes(mineSeat))
       return { ...b, mine: [], open: [], num: [], mark: [], owner: [], hidden: true };
     if (over) return b;

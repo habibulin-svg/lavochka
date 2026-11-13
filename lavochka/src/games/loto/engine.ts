@@ -427,5 +427,9 @@ export type View = Omit<State, 'bag' | 'deck'> & { bagLeft: number; deckLeft: nu
 
 export function makeView(s: State, seats: number[] | 'all'): View {
   const { bag, deck, ...rest } = s;
-  return { ...JSON.parse(JSON.stringify(rest)), bagLeft: bag.length, deckLeft: deck.length, me: seats === 'all' ? [] : seats };
+  const v = JSON.parse(JSON.stringify(rest));
+  // «Вокруг света»: чужой выбранный номер скрыт, пока раунд не закрыт (видно лишь «ответил»/«пас»)
+  if (seats !== 'all' && !s.over)
+    for (const p of Object.keys(v.answers)) if (!seats.includes(Number(p)) && v.answers[p] > 0) v.answers[p] = -1;
+  return { ...v, bagLeft: bag.length, deckLeft: deck.length, me: seats === 'all' ? [] : seats };
 }

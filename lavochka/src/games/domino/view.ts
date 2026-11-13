@@ -47,6 +47,7 @@ class DominoView implements GameView<View, Event> {
   private viewer = 0;
   private hidden = false;
   private actSeat: number | null = null;
+  private autoTimer: ReturnType<typeof setTimeout> | undefined;
   private selected: Bone | null = null;
   private opts: Placement[] = [];
   /** Колбаса: ходы открытой кости. */
@@ -438,7 +439,8 @@ class DominoView implements GameView<View, Event> {
       if (this.kmoves.length === 1 && this.ctx.autoSingle()) {
         const only = this.kmoves[0];
         this.draw();
-        setTimeout(() => this.actSeat === seat && this.send(only), 350);
+        clearTimeout(this.autoTimer);
+        this.autoTimer = setTimeout(() => this.actSeat === seat && this.send(only), 350);
       }
     } else if (seat != null) this.opts = placements(v, v.hands[seat], v.phase === 'more');
     this.draw();
@@ -487,6 +489,10 @@ class DominoView implements GameView<View, Event> {
     const sc = v.cfg.variant === 'general' ? `<span title="Навешано генералов">🎖 ${v.scores[side]}</span>` : `<span title="Записано очков">${v.scores[side]} оч.${v.hang[side] ? ` <small>(+${v.hang[side]})</small>` : ''}</span>`;
     const sto = v.sto === side ? ' · <b title="Кон «на сто»">на сто</b>' : '';
     return `<span title="Костей на руке">${handCount(v, seat)} к.</span> · ${sc}${sto}`;
+  }
+
+  destroy() {
+    clearTimeout(this.autoTimer);
   }
 }
 
