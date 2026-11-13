@@ -91,7 +91,7 @@ describe('Lavochka Music Studio — проект', () => {
     expect(q.bpm).toBe(140);
     expect(q.name).toBe('Мой трек');
     expect(q.blocks.map(b => [b.track, b.bar, b.sample])).toEqual([[2, 8, two.id]]);
-    expect(q.tracks[2]).toEqual({ vol: 0.5, pan: -0.3, mute: false, solo: false });
+    expect(q.tracks[2]).toEqual({ vol: 0.5, pan: -0.3, mute: false, solo: false, fx: { echo: 0, time: 1, reverb: 0, filter: 0 } });
     expect(q.loop).toEqual({ from: 8, to: 16 });
     const bad = parseProject({ bpm: 999, bars: 1e9, blocks: [{ track: 99, bar: 0, sample: two.id }, { track: 0, bar: 0, sample: 'нет' }, null], tracks: 'x' }, kit);
     expect(bad.bpm).toBe(kit.bpms[0]);

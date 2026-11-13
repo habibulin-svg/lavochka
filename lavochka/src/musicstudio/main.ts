@@ -5,8 +5,10 @@ import { store } from '../core/settings';
 import { DEMOS, buildDemo } from './demo';
 import { Engine } from './engine';
 import {
-  KitIndex, TRACKS, canPlace, chordAt, move, newProject, nextFree, parseProject, place, remove, serialize, setBars,
-  songEnd, type Block, type Group, type Kit, type KitSample, type Project,
+  ECHO_TIMES, GROOVE_PRESETS, GROOVE_ROWS, KitIndex, MAX_GROOVES, STEPS, TRACKS, applyPreset, canPlace, chordAt, cycleStep,
+  deleteGroove, fxOn, grooveEmpty, move, newFx, newGroove, newProject, nextFree, nextGrooveId, parseGroove, parseProject, place,
+  remove, saveGroove, serialize, setBars, setGrooveBars, songEnd, type Block, type Groove, type Group, type Kit, type KitSample,
+  type Project, type Track,
 } from './project';
 import { setUiSound, ui, uiSoundOn, type UiSound } from './uisound';
 import { SLOTS, autosave, fromLink, loadSlots, readAuto, readSlot, shareLink, writeSlot } from './saves';
@@ -22,6 +24,7 @@ const GROUP: Record<Group, { title: string; color: string }> = {
   fx: { title: 'Эффекты', color: '#8fc3d8' },
   rap: { title: 'Выкрики', color: '#a6dc58' },
   voice: { title: 'Вокал', color: '#ffa6d0' },
+  groove: { title: 'Мои грувы', color: '#ffb58a' },
 };
 const STAR = ['', '★', '★★', '★★★', '★★★★'];
 
@@ -69,10 +72,10 @@ class Studio {
   lastSnd = 0;
 
   constructor(readonly kit: Kit, host: HTMLElement, p: Project) {
-    this.ix = new KitIndex(kit);
     this.p = p;
     this.group = kit.groups[0];
     this.engine = new Engine(kit, p);
+    this.ix = this.engine.ix; // один указатель сэмплов на студию и звук (в нём и грувы проекта)
     this.engine.onStop = () => this.playBtn.classList.remove('on');
     host.append(this.root);
     this.root.id = 'ms';
@@ -87,6 +90,10 @@ class Studio {
       ui(b.classList.contains('ms-tab') ? 'tab' : b.closest('.ms-head') ? 'toggle' : 'click');
     });
     window.addEventListener('beforeunload', () => autosave(this.p));
+    // панель эффектов закрывается щелчком мимо неё
+    document.addEventListener('pointerdown', e => {
+      if (this.fxPop && !(e.target as Element | null)?.closest?.('.ms-head .fx')) this.closeFx();
+    });
   }
 
   // ── каркас ────────────────────────────────────────────────────────────────
@@ -123,7 +130,10 @@ class Studio {
     const help = el('button', 'ms-btn', '?');
     help.title = 'Как пользоваться';
     help.onclick = () => this.help();
-    top.append(logo, tr, this.lcd, this.tempo, zoom, this.nameEl, el('div', 'ms-spacer'), this.sndBtn, menu, help);
+    const groove = el('button', 'ms-btn groove', '🥁 Грув');
+    groove.title = 'Groove Generator — собрать свой ритм на 16 шагов';
+    groove.onclick = () => this.grooveEditor();
+    top.append(logo, tr, this.lcd, this.tempo, zoom, groove, this.nameEl, el('div', 'ms-spacer'), this.sndBtn, menu, help);
 
     const ruler = el('div', 'ms-ruler');
     const corner = el('div', 'corner', 'такты ▸ щёлкни — курсор, протяни — петля');
@@ -234,7 +244,13 @@ class Studio {
         this.engine.mix();
       };
       pan.onchange = () => this.saved();
-      h.append(n, m, s, vol, pan);
+      const fx = el('button', 'fx' + (fxOn(t.fx) ? ' on' : ''), 'FX');
+      fx.title = 'Эффекты дорожки: эхо, реверб, фильтр';
+      fx.onclick = e => {
+        e.stopPropagation();
+        this.fxPanel(i, fx);
+      };
+      h.append(n, m, s, vol, pan, fx);
     });
   }
 
@@ -300,6 +316,14 @@ class Studio {
       };
       this.tabs.append(t);
     }
+    const gt = el('button', 'ms-tab' + (this.group === 'groove' ? ' on' : ''), `🥁 ${GROUP.groove.title} <small>${this.p.grooves.length}</small>`);
+    gt.style.background = GROUP.groove.color;
+    gt.onclick = () => {
+      this.group = 'groove';
+      this.renderTabs();
+      this.renderTiles();
+    };
+    this.tabs.append(gt);
     const tools = el('div', 'ms-tools');
     const sel = el('select') as HTMLSelectElement;
     for (const [v, l] of [['chord', 'по аккорду'], ['abc', 'по алфавиту'], ['len', 'по длине']] as const) {
@@ -318,7 +342,7 @@ class Studio {
   }
 
   renderTiles(): void {
-    const list = this.kit.samples.filter(s => s.group === this.group);
+    const list = this.group === 'groove' ? [...this.ix.grooves.values()] : this.kit.samples.filter(s => s.group === this.group);
     const by = {
       chord: (a: KitSample, b: KitSample) => (a.family ?? a.name).localeCompare(b.family ?? b.name) || a.star - b.star,
       abc: (a: KitSample, b: KitSample) => a.name.localeCompare(b.name),
@@ -335,7 +359,20 @@ class Studio {
       t.title = 'Щелчок — послушать и выбрать (потом щёлкни по дорожке); перетащи на дорожку; двойной щелчок — поставить у курсора';
       t.addEventListener('pointerdown', e => this.tilePointer(e, s, t));
       t.addEventListener('dblclick', () => this.quickPlace(s));
+      if (s.groove) {
+        const ed = el('button', 'ms-tile-edit', '✎');
+        ed.title = 'Изменить грув';
+        ed.addEventListener('pointerdown', e => e.stopPropagation());
+        ed.addEventListener('dblclick', e => e.stopPropagation());
+        ed.onclick = () => this.grooveEditor(s.groove);
+        t.append(ed);
+      }
       this.tiles.append(t);
+    }
+    if (this.group === 'groove') {
+      const add = el('div', 'ms-tile add', '＋ Новый грув <small>Groove Generator: ритм на 16 шагов</small>');
+      add.onclick = () => this.grooveEditor();
+      this.tiles.append(add);
     }
   }
 
@@ -351,6 +388,7 @@ class Studio {
   }
 
   after(structural: boolean): void {
+    this.ix.useProject(this.p);
     if (structural) {
       setBars(this.p, this.ix, Math.max(this.p.bars, songEnd(this.p, this.ix) + 8));
       this.renderSheet();
@@ -378,6 +416,7 @@ class Studio {
     to.push(serialize(this.p));
     const q = parseProject(JSON.parse(s), this.kit);
     Object.assign(this.p, q);
+    this.ix.useProject(this.p);
     this.sel = null;
     this.renderAll();
     this.engine.mix();
@@ -459,6 +498,7 @@ class Studio {
     const secs = shown * this.engine.barSec;
     const chord = chordAt(this.p, this.ix, bar);
     this.lcd.innerHTML = `${String(bar + 1).padStart(3, '0')}:${beat + 1} <small>${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, '0')}</small><small>${chord ? '♫ ' + chord : ''}</small><small>${this.p.bpm} BPM</small>`;
+    this.grooveView?.(this.engine.loopStep());
     this.playEl.style.display = pos == null ? 'none' : '';
     if (pos != null) {
       const x = pos * this.barW;
@@ -636,6 +676,7 @@ class Studio {
     if (tg?.tagName === 'INPUT' && tg.type === 'text') return;
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (this.fxPop) return this.closeFx();
       if (this.over) return this.close();
       if (this.armed) {
         this.armed = null;
@@ -668,13 +709,20 @@ class Studio {
 
   // ── окна ──────────────────────────────────────────────────────────────────
   toast(msg: string, ms = 1800): void {
+    this.toastEl(msg, ms);
+  }
+
+  toastEl(msg: string, ms = 1800): HTMLDivElement {
     const t = el('div', 'ms-toast', esc(msg));
     document.body.append(t);
     window.setTimeout(() => (t.style.opacity = '0'), ms);
     window.setTimeout(() => t.remove(), ms + 400);
+    return t;
   }
 
   open(html: string | HTMLElement): HTMLDivElement {
+    this.closeFx();
+    this.runOnClose();
     if (this.over) this.over.remove();
     this.over = null;
     this.snd('open');
@@ -691,8 +739,15 @@ class Studio {
 
   close(): void {
     if (this.over) this.snd('close');
+    this.runOnClose();
     this.over?.remove();
     this.over = null;
+  }
+
+  runOnClose(): void {
+    const f = this.onClose;
+    this.onClose = null;
+    f?.();
   }
 
   menu(focus?: 'save'): void {
@@ -722,7 +777,7 @@ class Studio {
       this.load(newProject(this.kit, this.p.bpm));
       this.close();
     });
-    btn('⤓ Свести в WAV', () => void this.exportWav());
+    btn('⤓ Свести в OGG', () => void this.exportSong());
     btn('🔗 Поделиться ссылкой', () => void this.share());
     const demos = el('div', 'col');
     for (const d of DEMOS) {
@@ -798,22 +853,314 @@ class Studio {
 <tr><td>Звёздочки</td><td>★ ★★ ★★★ ★★★★ — четыре аккорда песни (Am · F · C · G). Ставь их по очереди — получится гармония. Без звёздочек — подходит к любому месту</td></tr>
 <tr><td>♪ на сэмпле</td><td>подходит к аккорду, где стоит курсор</td></tr>
 <tr><td>M / S</td><td>выключить дорожку / слушать только её; ползунки — громкость и панорама</td></tr>
+<tr><td>FX</td><td>эффекты дорожки: эхо в такт песне, реверб (зал), фильтр — влево глушит верх, вправо — низ. Крути прямо во время игры</td></tr>
+<tr><td>🥁 Грув</td><td>Groove Generator: расставь удары бочки, хлопка, хэтов… на 16 шагов (щелчок — удар, ещё раз — акцент, ещё — пусто) или возьми готовый рисунок. Грув ложится в библиотеку «Мои грувы» и ставится на дорожку как сэмпл</td></tr>
 <tr><td>128 / 140</td><td>темп: 128 — хаус и дрим-хаус, 140 — евродэнс и транс. Трек можно переключать на ходу</td></tr>
 <tr><td>Отменить</td><td>Ctrl+Z, вернуть — Ctrl+Y</td></tr>
-<tr><td>Меню</td><td>Esc: сохранить, загрузить, демо, свести в WAV, ссылка</td></tr>
+<tr><td>Меню</td><td>Esc: сохранить, загрузить, демо, свести в OGG, ссылка</td></tr>
 <tr><td>🔊</td><td>тихие звуки кнопок — вкл/выкл; на музыку трека и сведение не влияют</td></tr>
 </table>`);
   }
 
-  async exportWav(): Promise<void> {
+  async exportSong(): Promise<void> {
     if (!this.p.blocks.length) return this.toast('Пустой трек — нечего сводить');
-    this.toast('Свожу…', 2500);
-    const blob = await this.engine.exportWav();
-    const a = el('a') as HTMLAnchorElement;
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.p.name.replace(/[\\/:*?"<>|]+/g, '_') || 'trek'}.wav`;
-    a.click();
-    window.setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    if (this.exporting) return;
+    this.exporting = true;
+    const t = this.toastEl('Свожу… 0 %', 600000);
+    try {
+      const { blob, ext } = await this.engine.exportSong(k => (t.textContent = `Свожу… ${Math.round(k * 100)} %`));
+      const a = el('a') as HTMLAnchorElement;
+      a.href = URL.createObjectURL(blob);
+      a.download = `${this.p.name.replace(/[\\/:*?"<>|]+/g, '_') || 'trek'}.${ext}`;
+      a.click();
+      window.setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      this.lastExport = blob;
+      this.toast(`Готово: ${a.download} · ${(blob.size / 1048576).toFixed(1).replace('.', ',')} МБ${ext === 'wav' ? ' (браузер не умеет OGG — сведено в WAV)' : ''}`, 3500);
+    } catch (e) {
+      console.error(e);
+      this.toast('Свести не получилось');
+    } finally {
+      t.remove();
+      this.exporting = false;
+    }
+  }
+
+  exporting = false;
+  /** Последнее сведение — для проверки из консоли. */
+  lastExport: Blob | null = null;
+
+  // ── эффекты дорожки ───────────────────────────────────────────────────────
+  fxPop: HTMLDivElement | null = null;
+
+  closeFx(): void {
+    if (this.fxPop) this.snd('close');
+    this.fxPop?.remove();
+    this.fxPop = null;
+  }
+
+  fxPanel(i: number, btn: HTMLElement): void {
+    const wasOpen = this.fxPop?.dataset.track === String(i);
+    this.closeFx();
+    if (wasOpen) return;
+    this.snd('open');
+    const t: Track = this.p.tracks[i];
+    const pop = el('div', 'ms-fx');
+    pop.dataset.track = String(i);
+    pop.addEventListener('pointerdown', e => e.stopPropagation());
+    const lit = () => btn.classList.toggle('on', fxOn(t.fx));
+    const changed = () => {
+      lit();
+      this.engine.mix();
+    };
+    const knob = (label: string, min: number, max: number, get: () => number, put: (v: number) => void, hint: string, ends?: [string, string]) => {
+      const row = el('label', 'knob');
+      const r = el('input') as HTMLInputElement;
+      r.type = 'range';
+      r.min = String(min);
+      r.max = String(max);
+      r.step = '0.01';
+      r.value = String(get());
+      r.title = `${hint} (двойной щелчок — выкл)`;
+      r.oninput = () => {
+        put(+r.value);
+        changed();
+      };
+      r.onchange = () => this.saved();
+      r.ondblclick = () => {
+        put(0);
+        r.value = '0';
+        changed();
+        this.saved();
+      };
+      row.append(el('span', '', label));
+      if (ends) {
+        const w = el('div', 'ends');
+        w.append(el('small', '', ends[0]), r, el('small', '', ends[1]));
+        row.append(w);
+      } else row.append(r);
+      return row;
+    };
+    const times = el('div', 'times');
+    const renderTimes = () => {
+      times.innerHTML = '';
+      ECHO_TIMES.forEach((et, k) => {
+        const b = el('button', 'ms-btn' + (t.fx.time === k ? ' on' : ''), et.label);
+        b.title = `Эхо через ${et.label} такта`;
+        b.onclick = () => {
+          t.fx.time = k;
+          renderTimes();
+          changed();
+          this.saved();
+        };
+        times.append(b);
+      });
+    };
+    renderTimes();
+    const reset = el('button', 'ms-btn', 'Сбросить');
+    reset.onclick = () => {
+      t.fx = newFx();
+      changed();
+      this.saved();
+      this.fxPop?.remove();
+      this.fxPop = null;
+      this.fxPanel(i, btn);
+    };
+    pop.append(
+      el('h4', '', `Дорожка ${i + 1} · эффекты`),
+      knob('Эхо', 0, 1, () => t.fx.echo, v => (t.fx.echo = v), 'Сколько эха (и как долго оно тянется)'),
+      times,
+      knob('Реверб', 0, 1, () => t.fx.reverb, v => (t.fx.reverb = v), 'Зал: сколько звука уходит в реверберацию'),
+      knob('Фильтр', -1, 1, () => t.fx.filter, v => (t.fx.filter = Math.abs(v) < 0.03 ? 0 : v),
+        'Влево — глушит верх (НЧ-фильтр), вправо — срезает низ (ВЧ-фильтр); в середине — выкл', ['НЧ', 'ВЧ']),
+      reset,
+    );
+    document.body.append(pop);
+    const r = btn.getBoundingClientRect();
+    const w = pop.offsetWidth;
+    const h = pop.offsetHeight;
+    pop.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.left))}px`;
+    pop.style.top = `${r.bottom + h + 8 > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4}px`;
+    this.fxPop = pop;
+  }
+
+  // ── Groove Generator ──────────────────────────────────────────────────────
+  grooveView: ((step: number | null) => void) | null = null;
+  onClose: (() => void) | null = null;
+
+  grooveEditor(src?: Groove): void {
+    this.engine.stop();
+    this.closeFx();
+    if (!src && this.p.grooves.length >= MAX_GROOVES) return this.toast(`Грувов уже ${MAX_GROOVES} — убери ненужные`);
+    const isNew = !src;
+    const g: Groove = src ? parseGroove(JSON.parse(JSON.stringify(src)))! : newGroove(nextGrooveId(this.p), `Грув ${this.p.grooves.length + 1}`);
+    if (isNew) applyPreset(g, 'house');
+    let looping = false;
+    const w = this.open('<h2>Groove Generator</h2>');
+    w.classList.add('wide', 'ms-gg');
+    this.onClose = () => {
+      this.engine.stopPreview();
+      this.grooveView = null;
+    };
+    const top = el('div', 'gg-top');
+    const name = el('input') as HTMLInputElement;
+    name.type = 'text';
+    name.value = g.name;
+    name.maxLength = 40;
+    name.oninput = () => (g.name = name.value.trim() || 'Грув');
+    const play = el('button', 'ms-btn play', '▶');
+    play.title = 'Слушать грув по кругу';
+    const refresh = () => {
+      if (looping) void this.engine.loopGroove(g);
+    };
+    play.onclick = () => {
+      looping = !looping;
+      play.classList.toggle('on', looping);
+      play.textContent = looping ? '⏹' : '▶';
+      if (looping) void this.engine.loopGroove(g);
+      else this.engine.stopPreview();
+    };
+    const len = el('div', 'ms-group');
+    const preset = el('select') as HTMLSelectElement;
+    const swing = el('input') as HTMLInputElement;
+    const grid = el('div', 'gg-grid');
+    const cells: HTMLButtonElement[][] = [];
+    const renderGrid = () => {
+      grid.innerHTML = '';
+      cells.length = 0;
+      grid.style.setProperty('--steps', String(g.bars * STEPS));
+      GROOVE_ROWS.forEach((row, ri) => {
+        const r = g.rows[ri];
+        const sel = el('select') as HTMLSelectElement;
+        sel.title = row.title;
+        for (const h of row.hits) {
+          const o = el('option', '', esc(h.name)) as HTMLOptionElement;
+          o.value = h.id;
+          o.selected = h.id === r.sound;
+          sel.append(o);
+        }
+        sel.onchange = () => {
+          r.sound = sel.value;
+          if (looping) refresh();
+          else void this.engine.previewHit(r.sound);
+        };
+        const lab = el('div', 'gg-lab');
+        lab.append(el('span', '', row.title), sel);
+        grid.append(lab);
+        const line: HTMLButtonElement[] = [];
+        for (let k = 0; k < g.bars * STEPS; k++) {
+          const c = el('button', 'gg-step' + (k % 4 === 0 ? ' beat' : '') + (Math.floor(k / 4) % 2 ? ' odd' : '')) as HTMLButtonElement;
+          const paint = () => {
+            c.classList.toggle('on', r.pat[k] !== '.');
+            c.classList.toggle('acc', r.pat[k] === 'X');
+          };
+          paint();
+          c.onclick = () => {
+            cycleStep(g, ri, k);
+            paint();
+            this.snd(r.pat[k] === '.' ? 'click' : 'toggle');
+            if (looping) refresh();
+            else if (r.pat[k] !== '.') void this.engine.previewHit(r.sound, r.pat[k] === 'X');
+          };
+          line.push(c);
+          grid.append(c);
+        }
+        cells.push(line);
+      });
+    };
+    const renderLen = () => {
+      len.innerHTML = '';
+      for (const b of [1, 2] as const) {
+        const x = el('button', 'ms-btn' + (g.bars === b ? ' on' : ''), b === 1 ? '1 такт' : '2 такта');
+        x.onclick = () => {
+          setGrooveBars(g, b);
+          renderLen();
+          renderGrid();
+          refresh();
+        };
+        len.append(x);
+      }
+    };
+    preset.append(el('option', '', 'Готовый рисунок…'));
+    for (const pr of GROOVE_PRESETS) {
+      const o = el('option', '', esc(pr.title)) as HTMLOptionElement;
+      o.value = pr.id;
+      preset.append(o);
+    }
+    preset.onchange = () => {
+      applyPreset(g, preset.value);
+      preset.selectedIndex = 0;
+      swing.value = String(g.swing);
+      renderGrid();
+      refresh();
+    };
+    swing.type = 'range';
+    swing.min = '0';
+    swing.max = '0.5';
+    swing.step = '0.01';
+    swing.value = String(g.swing);
+    swing.title = 'Свинг: запаздывание каждой второй шестнадцатой';
+    swing.oninput = () => {
+      g.swing = +swing.value;
+      refresh();
+    };
+    const sw = el('label', 'gg-swing', 'Свинг');
+    sw.append(swing);
+    const clear = el('button', 'ms-btn', 'Очистить');
+    clear.onclick = () => {
+      for (const r of g.rows) r.pat = '.'.repeat(g.bars * STEPS);
+      renderGrid();
+      refresh();
+    };
+    top.append(play, name, len, preset, sw, clear);
+    renderLen();
+    renderGrid();
+    this.grooveView = (step: number | null) => {
+      for (const line of cells) line.forEach((c, k) => c.classList.toggle('now', k === step));
+    };
+    const foot = el('div', 'gg-foot');
+    const commit = (andPlace: boolean) => {
+      if (grooveEmpty(g)) return this.toast('Грув пустой — поставь хоть один удар');
+      let dropped = 0;
+      this.edit(() => (dropped = saveGroove(this.p, this.ix, g)));
+      this.group = 'groove';
+      this.renderTabs();
+      this.renderTiles();
+      this.close();
+      if (dropped) this.toast(`Грув стал длиннее — блоков не поместилось: ${dropped}, они убраны (Ctrl+Z — вернуть)`, 3500);
+      else this.toast(isNew ? `«${g.name}» — в библиотеке «Мои грувы»` : `«${g.name}» сохранён`);
+      if (andPlace) this.quickPlace(this.ix.get(g.id)!);
+    };
+    const save = el('button', 'ms-btn', isNew ? '💾 В библиотеку' : '💾 Сохранить');
+    save.onclick = () => commit(false);
+    const put = el('button', 'ms-btn', '⤵ И на дорожку');
+    put.title = 'Сохранить в библиотеку и поставить у курсора';
+    put.onclick = () => commit(true);
+    foot.append(save, put);
+    if (!isNew) {
+      const copyB = el('button', 'ms-btn', '⧉ Копией');
+      copyB.title = 'Сохранить как новый грув, этот не трогать';
+      copyB.onclick = () => {
+        if (this.p.grooves.length >= MAX_GROOVES) return this.toast(`Грувов уже ${MAX_GROOVES}`);
+        g.id = nextGrooveId(this.p);
+        g.name = `${g.name} (копия)`.slice(0, 40);
+        commit(false);
+      };
+      const del = el('button', 'ms-btn danger', '🗑 Убрать');
+      del.title = 'Убрать грув из библиотеки (и с дорожек)';
+      del.onclick = () => {
+        const used = this.p.blocks.filter(b => b.sample === g.id).length;
+        if (used && !confirm(`Грув стоит на дорожках (${used}). Убрать его вместе с блоками?`)) return;
+        this.edit(() => deleteGroove(this.p, this.ix, g.id));
+        this.renderTabs();
+        this.renderTiles();
+        this.close();
+      };
+      foot.append(copyB, del);
+    }
+    const cancel = el('button', 'ms-btn', 'Закрыть');
+    cancel.onclick = () => this.close();
+    foot.append(cancel);
+    w.append(top, grid, el('p', 'gg-hint', 'Щелчок по клетке — удар, ещё раз — акцент (громче), ещё раз — пусто. Слева в строке — выбор звука. Темп — как у трека.'), foot);
   }
 
   async share(): Promise<void> {
