@@ -361,7 +361,7 @@ export function apply(s0: State, seat: number, a: Action, _rng: Rng): { state: S
   return { state: s, events: ev };
 }
 
-/** Что знает место x: себя; предатели — друг друга; разведчик — предателей (не зная, кто снайпер). Конец игры — всё. */
+/** Что знает место x: себя; предатели — друг друга; разведчик — всех предателей (снайпер для него тоже «предатель»). Конец игры — всё. */
 export function knowledge(s: State, x: number): Record<number, Role> {
   if (s.phase === 'over') return { ...s.roles };
   const me = s.roles[x];

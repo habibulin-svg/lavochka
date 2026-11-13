@@ -255,20 +255,44 @@ function suicide(s: State, from: number, to: number, seat: number): boolean {
   return bad;
 }
 
+/** Фишка уже стоит на at (доска — после хода): запрещено ли здесь остановиться (Шедлер: между двумя чужими без взятия). */
+function badStop(s: State, at: number, seat: number): boolean {
+  return rulesOf(s).noSuicide && between(s, at, seat) && !captures(s, at, seat).length;
+}
+
+/** Прыжок from→to допустим, если на to можно остановиться или цепочка продолжится до допустимой остановки (path — уже пройденные клетки). */
+function jumpViable(s: State, from: number, to: number, seat: number, path: number[]): boolean {
+  if (!rulesOf(s).noSuicide) return true;
+  const b = s.board;
+  const pc = b[from];
+  b[to] = pc;
+  b[from] = 0;
+  let ok = !badStop(s, to, seat);
+  if (!ok) {
+    const used = [...path, to];
+    for (const q of jumpsFrom(s, to)) if (!used.includes(q) && jumpViable(s, to, q, seat, used)) ok = true;
+  }
+  b[from] = pc;
+  b[to] = 0;
+  return ok;
+}
+
 export function legal(s: State): Action[] {
   if (s.over) return [];
   const seat = s.turn;
   if (s.phase === 'place') return placeSpots(s).map((to) => ({ type: 'place', to }));
   if (s.chain >= 0) {
-    const out: Action[] = chainJumps(s).map((to) => ({ type: 'move', from: s.chain, to }));
-    out.push({ type: 'stop' });
+    const out: Action[] = chainJumps(s)
+      .filter((to) => jumpViable(s, s.chain, to, seat, s.last))
+      .map((to) => ({ type: 'move', from: s.chain, to }));
+    if (!badStop(s, s.chain, seat)) out.push({ type: 'stop' });
     return out;
   }
   const out: Action[] = [];
   s.board.forEach((v, p) => {
     if (sideOf(v) !== seat) return;
     for (const q of stepsFrom(s, p)) if (!suicide(s, p, q, seat)) out.push({ type: 'move', from: p, to: q });
-    for (const q of jumpsFrom(s, p)) out.push({ type: 'move', from: p, to: q });
+    for (const q of jumpsFrom(s, p)) if (jumpViable(s, p, q, seat, [p])) out.push({ type: 'move', from: p, to: q });
   });
   return out;
 }
@@ -278,7 +302,7 @@ function hasMove(s: State): boolean {
   if (s.phase === 'place') return s.board.includes(0);
   for (let p = 0; p < s.board.length; p++) {
     if (sideOf(s.board[p]) !== s.turn) continue;
-    if (jumpsFrom(s, p).length) return true;
+    for (const q of jumpsFrom(s, p)) if (jumpViable(s, p, q, s.turn, [p])) return true;
     for (const q of stepsFrom(s, p)) if (!suicide(s, p, q, s.turn)) return true;
   }
   return false;

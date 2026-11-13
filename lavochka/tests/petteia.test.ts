@@ -243,4 +243,12 @@ describe('боты', () => {
     expect(r2.state.phase).toBe('play');
     expect(pt.apply(r2.state, 0, { type: 'scatter' })).toBeNull();
   });
+
+  it('Шедлер: прыжок между двумя чужими без взятия запрещён', () => {
+    const W = pt.MAN[0];
+    const B = pt.MAN[1];
+    // белый (2,3) прыгает через (3,3) на (4,3); по бокам (4,2) и (4,4) — чужие, взять нечем
+    const s = pos([[2, 3, W], [3, 3, B], [4, 2, B], [4, 4, B], [4, 1, B], [4, 5, B]], 0, { kind: 'schadler' });
+    expect(mv(s, [2, 3], [4, 3])).toBeNull();
+  });
 });

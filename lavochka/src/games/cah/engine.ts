@@ -459,7 +459,7 @@ export function makeView(s: State, seats: number[] | 'all'): View {
     win: s.phase === 'reveal' && last ? last.win : [],
     history: s.history,
     deck: s.deck.length,
-    blanks: s.deck.some(isBlank) || s.discard.some(isBlank) || s.seats.some((x) => s.hands[x].some(isBlank)),
+    blanks: s.deck.some(isBlank) || s.discard.some(isBlank) || s.seats.some((x) => sees(x) && s.hands[x].some(isBlank)),
   };
 }
 
