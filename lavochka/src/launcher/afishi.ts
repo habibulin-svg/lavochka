@@ -20,6 +20,7 @@ export const AFISHI: Afisha[] = [
   { id: 'kommersy', pitch: 'От ларька на Затулинке до лондонского клуба: сделки, крыша, дефолт.', tags: ['с 1988 по 2003', 'по сети'] },
   { id: 'vkladyshi', pitch: 'Карточная игра на настоящих вкладышах 90-х: жвачки, альбом и партии с соседом.', tags: ['по сети'] },
   { id: 'zakoldovannaya', pitch: 'Первая советская RPG 1990 года: 15 приключений по книге и кампании.', tags: [] },
+  { id: 'musicstudio', pitch: 'Собери танцевальный хит 90-х из 1312 сэмплов: 16 дорожек, евродэнс, хаус, транс.', tags: ['бесплатно', 'свести в WAV'] },
 ];
 
 export const AFISHA_IDS = new Set(AFISHI.map((a) => a.id));
@@ -31,6 +32,7 @@ const GARAGES: { col: string; chalk?: string; cat?: boolean }[] = [
   { col: '#4a5c4c', cat: true },
   { col: '#575070', chalk: 'Вася + Лена' },
   { col: '#4b6070', chalk: '♥' },
+  { col: '#5e4a5a', chalk: 'DJ' },
 ];
 const CAT = `<svg class="gr-cat" viewBox="-30 -42 50 44" aria-hidden="true"><g fill="#0c0c10"><ellipse cx="0" cy="-12" rx="16" ry="12"/><circle cx="14" cy="-24" r="8"/><path d="M8 -30 l3 -9 l4 7Z M16 -30 l5 -8 l2 9Z"/><path d="M-16 -10 q-14 -4 -10 -22" stroke="#0c0c10" stroke-width="4" fill="none"/></g><circle cx="12" cy="-25" r="1.6" fill="#d8e070"/><circle cx="18" cy="-25" r="1.6" fill="#d8e070"/></svg>`;
 

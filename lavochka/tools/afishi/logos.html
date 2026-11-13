@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Логотипы для афиш больших игр во дворе. Снимает tools/afishi/make.py безголовым Chrome на прозрачном фоне: logos.html?id=<игра>. -->
 <html lang="ru"><head><meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik+Bubbles&family=Rubik+Mono+One&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik+Bubbles&family=Rubik+Mono+One&family=Pacifico&display=block" rel="stylesheet">
 <style>
 @font-face { font-family: 'Geroi Title'; src: url('../../public/geroi/a/fonts/AlegreyaSC-Bold.ttf'); font-weight: 700; font-display: block; }
 html, body { margin: 0; background: transparent; }
@@ -31,12 +31,22 @@ html, body { margin: 0; background: transparent; }
   filter: drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 7px 0 #7a1d4b) drop-shadow(0 0 14px rgba(0,0,0,.6)); }
 .vkladyshi span { font: 400 44px 'Russo One'; color: #ffe14d; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 8px; transform: rotate(-4deg);
   -webkit-text-stroke: 2px #7a1d4b; paint-order: stroke fill; filter: drop-shadow(0 4px 0 #7a1d4b); }
+
+/* Lavochka Music Studio — хром пульта и клубный неон конца 90-х */
+.musicstudio b { font: 400 118px/1 'Rubik Mono One'; letter-spacing: -0.01em; transform: skewX(-6deg);
+  background: linear-gradient(#ffffff 0%, #dfe6f2 30%, #7d8798 48%, #2c3340 52%, #a9b4c6 70%, #ffffff 100%); -webkit-background-clip: text; color: transparent;
+  -webkit-text-stroke: 3px #1a1030; filter: drop-shadow(0 5px 0 #1a1030) drop-shadow(0 0 16px rgba(0,0,0,.8)); }
+.musicstudio small { display: block; font: 400 50px 'Rubik Mono One'; letter-spacing: 0.32em; color: #e8ecf4; margin-top: 6px; transform: skewX(-6deg);
+  -webkit-text-stroke: 2px #1a1030; paint-order: stroke fill; filter: drop-shadow(0 4px 0 #1a1030); }
+.musicstudio span { font: 400 92px 'Pacifico'; color: #fff0fa; margin-top: -4px; transform: rotate(-4deg);
+  text-shadow: 0 0 6px #ff4fc0, 0 0 18px #ff2fb0, 0 0 36px #c21fff; -webkit-text-stroke: 1px #ff6ad0; }
 </style></head>
 <body>
 <div class="logo" id="gops"><b>ГОПС</b><span>война районов</span></div>
 <div class="logo" id="geroi"><b>Герои</b><span>кастета и семок</span></div>
 <div class="logo" id="kommersy"><b>КОММЕРСЫ</b><span>от ларька до Лондона</span></div>
 <div class="logo" id="vkladyshi"><b>Вкладыши</b><span>Turbo · Love is · Final</span></div>
+<div class="logo" id="musicstudio"><b>LAVOCHKA</b><small>MUSIC STUDIO</small><span>Dance With Me!</span></div>
 <script>
 const id = new URLSearchParams(location.search).get('id');
 for (const el of document.querySelectorAll('.logo')) { el.className += ' ' + el.id; if (el.id !== id) el.remove(); }

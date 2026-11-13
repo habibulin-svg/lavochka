@@ -8,6 +8,7 @@ import {
   KitIndex, TRACKS, canPlace, chordAt, move, newProject, nextFree, parseProject, place, remove, serialize, setBars,
   songEnd, type Block, type Group, type Kit, type KitSample, type Project,
 } from './project';
+import { setUiSound, ui, uiSoundOn, type UiSound } from './uisound';
 import { SLOTS, autosave, fromLink, loadSlots, readAuto, readSlot, shareLink, writeSlot } from './saves';
 
 const GROUP: Record<Group, { title: string; color: string }> = {
@@ -63,6 +64,9 @@ class Studio {
   tabs = el('div', 'ms-tabs');
   tiles = el('div', 'ms-tiles');
   over: HTMLDivElement | null = null;
+  sndBtn = el('button', 'ms-btn', '');
+  /** Когда прозвучал последний «смысловой» звук — чтобы общий щелчок кнопки его не перекрывал. */
+  lastSnd = 0;
 
   constructor(readonly kit: Kit, host: HTMLElement, p: Project) {
     this.ix = new KitIndex(kit);
@@ -76,13 +80,19 @@ class Studio {
     this.renderAll();
     requestAnimationFrame(() => this.frame());
     window.addEventListener('keydown', e => this.key(e));
+    // общий щелчок кнопок (и в окнах): после onclick кнопки — если она сама не прозвучала
+    document.addEventListener('click', e => {
+      const b = (e.target as Element | null)?.closest?.('button');
+      if (!b || performance.now() - this.lastSnd < 80) return;
+      ui(b.classList.contains('ms-tab') ? 'tab' : b.closest('.ms-head') ? 'toggle' : 'click');
+    });
     window.addEventListener('beforeunload', () => autosave(this.p));
   }
 
   // ── каркас ────────────────────────────────────────────────────────────────
   build(): void {
     const top = el('div', 'ms-top');
-    const logo = el('div', 'ms-logo', '<b>LAVOCHKA MUSIC STUDIO</b><i>DANCE WITH ME!</i>');
+    const logo = el('div', 'ms-logo', '<img src="/music-studio/ui/logo.webp" alt="Lavochka Music Studio — Dance With Me!" width="107" height="48">');
     const tr = el('div', 'ms-group');
     const home = el('button', 'ms-btn', '⏮');
     home.title = 'В начало (Home)';
@@ -105,10 +115,15 @@ class Studio {
     const menu = el('button', 'ms-btn', '☰');
     menu.title = 'Меню (Esc)';
     menu.onclick = () => this.menu();
+    this.sndBtn.onclick = () => {
+      setUiSound(!uiSoundOn());
+      this.renderSnd();
+    };
+    this.renderSnd();
     const help = el('button', 'ms-btn', '?');
     help.title = 'Как пользоваться';
     help.onclick = () => this.help();
-    top.append(logo, tr, this.lcd, this.tempo, zoom, this.nameEl, el('div', 'ms-spacer'), menu, help);
+    top.append(logo, tr, this.lcd, this.tempo, zoom, this.nameEl, el('div', 'ms-spacer'), this.sndBtn, menu, help);
 
     const ruler = el('div', 'ms-ruler');
     const corner = el('div', 'corner', 'такты ▸ щёлкни — курсор, протяни — петля');
@@ -144,6 +159,29 @@ class Studio {
     this.renderTiles();
     this.nameEl.textContent = this.p.name;
     this.loopBtn.classList.toggle('on', !!this.p.loop);
+  }
+
+  renderSnd(): void {
+    this.sndBtn.textContent = uiSoundOn() ? '🔊' : '🔇';
+    this.sndBtn.title = `Звуки кнопок: ${uiSoundOn() ? 'вкл' : 'выкл'} (на музыку трека не влияет)`;
+    this.sndBtn.classList.toggle('off', !uiSoundOn());
+  }
+
+  snd(s: UiSound): void {
+    ui(s);
+    this.lastSnd = performance.now();
+  }
+
+  /** Поставить сэмпл со звуком «положил» (или «нельзя»). */
+  put(track: number, bar: number, id: string): void {
+    if (!canPlace(this.p, this.ix, track, bar, id)) return this.snd('bad');
+    this.snd('drop');
+    this.edit(() => place(this.p, this.ix, track, bar, id));
+  }
+
+  drop(id: number): void {
+    this.snd('del');
+    this.edit(() => remove(this.p, id));
   }
 
   renderTempo(): void {
@@ -240,10 +278,10 @@ class Studio {
     d.innerHTML = `${esc(s.name.replace(/ \*+$/, ''))} <small>${STAR[s.star]}</small>`;
     d.title = `${s.name} · ${s.bars} такт. · ${GROUP[s.group].title}${s.chord ? ' · аккорд ' + s.chord : ''}\nПеретащить — сдвинуть, с Ctrl — копия; двойной щелчок или Delete — убрать`;
     d.addEventListener('pointerdown', e => this.blockPointer(e, b, d));
-    d.addEventListener('dblclick', () => this.edit(() => remove(this.p, b.id)));
+    d.addEventListener('dblclick', () => this.drop(b.id));
     d.addEventListener('contextmenu', e => {
       e.preventDefault();
-      this.edit(() => remove(this.p, b.id));
+      this.drop(b.id);
     });
     return d;
   }
@@ -457,6 +495,7 @@ class Studio {
     const moveH = (ev: PointerEvent) => {
       if (!ghost) {
         if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+        this.snd('pick');
         ghost = el('div', 'ms-block ghost');
         ghost.style.background = GROUP[s.group].color;
         ghost.style.width = `${s.bars * this.barW - 2}px`;
@@ -490,6 +529,7 @@ class Studio {
       ghost.remove();
       const h = this.hit(ev.clientX - grabBars * this.barW + this.barW / 2, ev.clientY);
       if (h) onDrop(h.track, Math.max(0, h.bar), ev.ctrlKey || ev.altKey);
+      else this.snd('bad');
     };
     if (touch && !ignore) {
       // палец по библиотеке: тянуть — прокрутка списка, короткое касание — послушать и выбрать (потом касание дорожки)
@@ -507,8 +547,9 @@ class Studio {
 
   tilePointer(e: PointerEvent, s: KitSample, t: HTMLElement): void {
     if (e.button !== 0) return;
-    this.drag(e, s, 0, (track, bar) => this.edit(() => place(this.p, this.ix, track, bar, s.id)), undefined, () => {
+    this.drag(e, s, 0, (track, bar) => this.put(track, bar, s.id), undefined, () => {
       this.armed = this.armed?.id === s.id ? null : s;
+      this.snd(this.armed ? 'pick' : 'click');
       this.tiles.querySelectorAll('.armed').forEach(x => x.classList.remove('armed'));
       if (this.armed) t.classList.add('armed');
       t.classList.add('playing');
@@ -523,7 +564,12 @@ class Studio {
     const s = this.ix.get(b.sample)!;
     const r = d.getBoundingClientRect();
     const grab = Math.floor((e.clientX - r.left) / this.barW);
-    this.drag(e, s, grab, (track, bar, cp) => this.edit(() => (cp ? place(this.p, this.ix, track, bar, s.id) : move(this.p, this.ix, b.id, track, bar))), b.id, () => {
+    this.drag(e, s, grab, (track, bar, cp) => {
+      if (cp) return this.put(track, bar, s.id);
+      if (!canPlace(this.p, this.ix, track, bar, s.id, b.id)) return this.snd('bad');
+      this.snd('drop');
+      this.edit(() => move(this.p, this.ix, b.id, track, bar));
+    }, b.id, () => {
       this.sel = b.id;
       this.lanes.forEach(l => l.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')));
       d.classList.add('sel');
@@ -537,9 +583,11 @@ class Studio {
     if (!h) return;
     if (this.armed) {
       const s = this.armed;
-      if (!canPlace(this.p, this.ix, track, h.bar, s.id)) return this.toast('Здесь занято — выбери свободное место');
-      this.edit(() => place(this.p, this.ix, track, h.bar, s.id));
-      return;
+      if (!canPlace(this.p, this.ix, track, h.bar, s.id)) {
+        this.snd('bad');
+        return this.toast('Здесь занято — выбери свободное место');
+      }
+      return this.put(track, h.bar, s.id);
     }
     this.sel = null;
     this.setCursor(h.bar, true);
@@ -575,11 +623,12 @@ class Studio {
 
   quickPlace(s: KitSample): void {
     for (let t = 0; t < TRACKS; t++) {
-      if (canPlace(this.p, this.ix, t, this.cursor, s.id)) return this.edit(() => place(this.p, this.ix, t, this.cursor, s.id));
+      if (canPlace(this.p, this.ix, t, this.cursor, s.id)) return this.put(t, this.cursor, s.id);
     }
     const t = this.p.blocks.length ? this.p.blocks[this.p.blocks.length - 1].track : 0;
     const bar = nextFree(this.p, this.ix, t, this.cursor, s.id);
-    if (bar != null) this.edit(() => place(this.p, this.ix, t, bar, s.id));
+    if (bar != null) this.put(t, bar, s.id);
+    else this.snd('bad');
   }
 
   key(e: KeyboardEvent): void {
@@ -601,7 +650,7 @@ class Studio {
     } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel != null) {
       const id = this.sel;
       this.sel = null;
-      this.edit(() => remove(this.p, id));
+      this.drop(id);
     } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
       e.preventDefault();
       this.undo(e.shiftKey);
@@ -626,7 +675,9 @@ class Studio {
   }
 
   open(html: string | HTMLElement): HTMLDivElement {
-    this.close();
+    if (this.over) this.over.remove();
+    this.over = null;
+    this.snd('open');
     const o = el('div', 'ms-over');
     const w = el('div', 'ms-win');
     if (typeof html === 'string') w.innerHTML = html;
@@ -639,6 +690,7 @@ class Studio {
   }
 
   close(): void {
+    if (this.over) this.snd('close');
     this.over?.remove();
     this.over = null;
   }
@@ -711,6 +763,17 @@ class Studio {
       saves.append(row);
     }
     w.append(el('h3', '', 'Сохранить / загрузить'), saves);
+    const sb = el('button', 'ms-btn', '');
+    const sbText = () => (sb.textContent = `${uiSoundOn() ? '🔊' : '🔇'} Звуки кнопок: ${uiSoundOn() ? 'вкл' : 'выкл'}`);
+    sbText();
+    sb.onclick = () => {
+      setUiSound(!uiSoundOn());
+      sbText();
+      this.renderSnd();
+    };
+    const sc = el('div', 'col');
+    sc.append(sb);
+    w.append(el('h3', '', 'Звук'), sc);
     const out = el('div', 'col');
     const yard = el('button', 'ms-btn', '🏠 Во двор');
     yard.onclick = () => {
@@ -738,6 +801,7 @@ class Studio {
 <tr><td>128 / 140</td><td>темп: 128 — хаус и дрим-хаус, 140 — евродэнс и транс. Трек можно переключать на ходу</td></tr>
 <tr><td>Отменить</td><td>Ctrl+Z, вернуть — Ctrl+Y</td></tr>
 <tr><td>Меню</td><td>Esc: сохранить, загрузить, демо, свести в WAV, ссылка</td></tr>
+<tr><td>🔊</td><td>тихие звуки кнопок — вкл/выкл; на музыку трека и сведение не влияют</td></tr>
 </table>`);
   }
 

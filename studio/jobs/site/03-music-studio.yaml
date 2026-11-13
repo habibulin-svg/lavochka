@@ -1,0 +1,18 @@
+# Lavochka Music Studio «Dance With Me!»: оформление секвенсора (фон пульта, клубный фон) и ключевой арт афиши на гараже.
+# Дух Dance eJay конца 90-х: хромированный пульт, клубный неон. Надписи не рисуем — логотип кладём поверх (tools/afishi/logos.html).
+# studio\run.cmd run.py studio\jobs\site\03-music-studio.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1792
+  height: 768
+  steps: 8
+seeds: [111, 222, 333]
+items:
+- name: ms-keyart
+  prompt: 'Highly detailed glossy digital illustration like a late 1990s dance music CD-ROM box cover, vivid saturated colors, cinematic. A chrome silver DJ mixing console with glowing sliders and knobs, two turntables with vinyl records, a big beige CRT computer monitor showing colorful rectangular blocks in rows like a music sequencer, stacks of big speakers, a mirror disco ball above throwing light spots. Background: a dark night club with magenta, cyan and violet laser beams, haze and smoke, dancing silhouettes far away. The bottom left quarter of the picture is dark and calm. No text, no letters, no logos, no watermark.'
+- name: ms-club
+  prompt: 'Wide atmospheric photograph of an empty dark 1990s night club dance floor, deep violet and magenta neon light, thin cyan laser beams across thick haze, a mirror disco ball with soft light spots, out of focus bokeh lights, very dark and calm overall, low contrast, smooth gradients, wallpaper. No people, no text, no letters, no logos, no watermark.'
+- name: ms-chrome
+  prompt: 'Close-up flat frontal view of a brushed aluminium chrome panel of a late 1990s hi-fi audio rack, horizontal brushed metal grain, soft reflections, subtle bevelled edges, small screws in the corners, a thin glowing violet neon strip along the bottom edge, mostly plain empty metal surface, even studio lighting, high detail texture. No text, no letters, no knobs, no logos, no watermark.'

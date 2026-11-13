@@ -110,7 +110,7 @@
 }
 
 /* Большие игры: ряд гаражей на асфальте под заголовком, на воротах каждого — афиша на скотче */
-.afishi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 0 6px; padding-top: 30px; }
+.afishi { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin: 0 0 6px; padding-top: 30px; }
 .garage {
   position: relative; display: flex; flex-direction: column; text-decoration: none; color: #f3ead6;
   filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.5));
@@ -140,7 +140,7 @@
   transform: rotate(var(--rot, 0deg)); transition: transform 0.18s, box-shadow 0.18s;
 }
 .garage:nth-child(1) .afisha { --rot: -1.2deg; } .garage:nth-child(2) .afisha { --rot: 0.9deg; } .garage:nth-child(3) .afisha { --rot: -0.5deg; }
-.garage:nth-child(4) .afisha { --rot: 1.1deg; } .garage:nth-child(5) .afisha { --rot: -0.9deg; }
+.garage:nth-child(4) .afisha { --rot: 1.1deg; } .garage:nth-child(5) .afisha { --rot: -0.9deg; } .garage:nth-child(6) .afisha { --rot: 0.7deg; }
 .afisha::before, .afisha::after { /* скотч по верхним углам */
   content: ''; position: absolute; z-index: 3; top: -7px; width: 42px; height: 16px;
   background: rgba(238, 226, 196, 0.6); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);

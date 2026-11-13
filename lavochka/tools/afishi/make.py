@@ -20,6 +20,7 @@ PUB = ROOT / 'public'
 OUT = PUB / 'afishi'
 TMP = Path('G:/temp/afishi')
 GEN = Path('G:/temp/studio/out/site/01-afishi')
+MS_GEN = Path('G:/temp/studio/out/site/03-music-studio')  # Lavochka Music Studio: studio/jobs/site/03-music-studio.yaml
 CHROME = next((p for p in [r'C:\Program Files\Google\Chrome\Application\chrome.exe', os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe')] if os.path.exists(p)), 'chrome')
 W, H = 640, 360
 LOGO_H = 220  # высота логотипа в файле (на афише ~70–90 px — запас под ретину)
@@ -44,7 +45,7 @@ def fit_h(img: Image.Image, h: int) -> Image.Image:
 def logos():
     TMP.mkdir(parents=True, exist_ok=True)
     page = (ROOT / 'tools/afishi/logos.html').as_uri()
-    for gid in ['gops', 'geroi', 'kommersy', 'vkladyshi']:
+    for gid in ['gops', 'geroi', 'kommersy', 'vkladyshi', 'musicstudio']:
         png = TMP / f'logo-{gid}.png'
         subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--allow-file-access-from-files', f'--user-data-dir={TMP / "chrome"}',
                         '--default-background-color=00000000', '--window-size=1600,700', '--virtual-time-budget=6000',
@@ -103,6 +104,24 @@ def art():
     v = Path(os.environ.get('VKL_BG', '')) if os.environ.get('VKL_BG') else GEN / 'vkladyshi-table-111.png'
     if v:
         save(vkladyshi(Image.open(v).convert('RGB')), 'vkladyshi.webp')
+    if (MS_GEN / 'ms-keyart-222.png').exists():
+        save(cover(Image.open(MS_GEN / 'ms-keyart-222.png').convert('RGB'), 0.6, 0.5), 'musicstudio.webp')
+
+
+def studio_ui():
+    """Оформление секвенсора Lavochka Music Studio: public/music-studio/ui/ — хром пульта, клубный фон, логотип для шапки."""
+    ui = PUB / 'music-studio/ui'
+    ui.mkdir(parents=True, exist_ok=True)
+    ch = Image.open(MS_GEN / 'ms-chrome-222.png').convert('RGB')
+    # середина панели без винтов и краёв; тянется по ширине шапки и библиотеки
+    ch = ch.crop((120, 120, ch.width - 120, ch.height - 140)).resize((1200, 300), Image.LANCZOS)
+    ch.save(ui / 'chrome.webp', 'WEBP', quality=78, method=6)
+    club = Image.open(MS_GEN / 'ms-club-111.png').convert('RGB').resize((1600, 686), Image.LANCZOS)
+    club.save(ui / 'club.webp', 'WEBP', quality=70, method=6)
+    lg = Image.open(OUT / 'musicstudio-logo.webp')
+    fit_h(lg, 120).save(ui / 'logo.webp', 'WEBP', quality=90, method=6)
+    for f in ('chrome.webp', 'club.webp', 'logo.webp'):
+        print('→', ui / f, Image.open(ui / f).size)
 
 
 if __name__ == '__main__':
@@ -111,3 +130,5 @@ if __name__ == '__main__':
         logos()
     if 'art' in what:
         art()
+    if 'studio' in what or what == ['logos', 'art']:
+        studio_ui()
