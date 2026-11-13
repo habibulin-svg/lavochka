@@ -208,7 +208,9 @@ export const def: GameDef<State, Action, Event, View> = {
   ],
   setup: (seats, o, rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
-    return newState(ids, decksOf(o, rng), rng, Number(o.hero ?? HERO_HP) || HERO_HP);
+    // терпение — только из списка выбора: сетевая комната принимает опции от хозяина как есть
+    const hero = Number(o.hero);
+    return newState(ids, decksOf(o, rng), rng, [20, 30, 40].includes(hero) ? hero : HERO_HP);
   },
   toAct,
   apply: (s, seat, a, rng) => apply(s, seat, a, rng),

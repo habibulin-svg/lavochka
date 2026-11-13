@@ -37,3 +37,7 @@
 
 ## Проверки
 `npx tsc --noEmit -p .` — чисто; `GAMES_ONLY=vkladyshi npx vitest run tests/games-[1-8].test.ts tests/vkladyshi*.test.ts` — 32 passed.
+
+
+## Решение Opus
+- «Подставить себе колоду c:… через опции комнаты на сервере» — уже закрыто правкой ядра К1: на сервере опции проходят `fitOptions`, а `c:…` не входит в `choices` колоды; своя колода на сервере берётся только из коллекции (`server/vkladyshi.ts` `start`). Заодно исправлена регрессия К1: в локальной игре своя колода против бота снова принимается (`trustedOptions`).

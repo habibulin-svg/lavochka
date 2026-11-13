@@ -160,6 +160,7 @@ export function startLocal(mod: GameModule, seats: SeatSpec[], options: Options,
   const room = new Room({
     def,
     options,
+    trustedOptions: true,
     seats,
     code: 'LOCAL',
     ownerKey,
@@ -212,7 +213,7 @@ export async function hostGame(mod: GameModule, seats: SeatSpec[], options: Opti
       let host: P2PHost;
       host = await p2pHost((link) => (room ? room.connect(link) : pending.push(link)));
       code = host.code;
-      room = new Room({ def, options, seats, code, ownerKey });
+      room = new Room({ def, options, trustedOptions: true, seats, code, ownerKey });
       pending.forEach((l) => room!.connect(l));
       const [a, b] = localPair();
       room.connect(a);

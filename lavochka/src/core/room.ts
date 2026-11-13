@@ -123,6 +123,9 @@ interface Conn {
 export interface RoomConfig {
   def: GameDef;
   options: Options;
+  /** Правила задал сам хозяин в своём браузере (локальная игра, P2P): берутся как есть — там бывают скрытые значения
+   * вне choices (своя колода «Вкладышей» «c:…»). Правила из сети (сервер) — только через fitOptions. */
+  trustedOptions?: boolean;
   seats: SeatSpec[];
   code: string;
   ownerKey: string;
@@ -181,7 +184,7 @@ export class Room {
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
     this.code = cfg.code;
-    this.options = fitOptions(cfg.def, cfg.options);
+    this.options = cfg.trustedOptions ? { ...cfg.options } : fitOptions(cfg.def, cfg.options);
     this.seats = cfg.seats.map((s) => ({ ...s }));
     if (cfg.snapshot) this.auth = new Authority(this.def, cfg.snapshot.seats, cfg.snapshot.options, cfg.snapshot);
     if (this.auth) queueMicrotask(() => this.scheduleWake());

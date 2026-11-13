@@ -197,3 +197,16 @@ describe('Вкладыши: баланс (прикидка)', () => {
     }
   });
 });
+
+describe('Вкладыши: опции комнаты', () => {
+  it('терпение вне списка выбора заменяется обычным', async () => {
+    const { def } = await import('../src/games/vkladyshi/def');
+    const seats = [0, 1].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));
+    for (const hero of [-5, 0, 1e9, 'x', 25]) {
+      const s = def.setup(seats, { deck0: 'garage', deck1: 'team', hero } as any, rng());
+      expect(s.over).toBe(false);
+      expect(s.players[0].hero).toBe(30);
+    }
+    expect(def.setup(seats, { deck0: 'garage', deck1: 'team', hero: 20 } as any, rng()).players[0].hero).toBe(20);
+  });
+});

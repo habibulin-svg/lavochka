@@ -464,6 +464,7 @@ export function createView(): GameView<View, Event> {
     destroy() {
       ro?.disconnect();
       offFit();
+      clearTimeout(pressT);
       music.stop();
       document.removeEventListener('keydown', onKey);
       document.querySelectorAll('.vk-zoom, .vk-toast').forEach((x) => x.remove());

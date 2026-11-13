@@ -328,3 +328,18 @@ describe('комната: чужое место посреди партии', ()
     expect(w.mySeats).toEqual([]);
   });
 });
+
+describe('комната: правила хозяина в своём браузере', () => {
+  it('локальная комната берёт скрытое значение вне choices (своя колода «Вкладышей»), серверная — нет', async () => {
+    const def = await DEFS.vkladyshi();
+    const seats: SeatSpec[] = [
+      { seat: 0, kind: 'human', name: 'Я', level: 1 },
+      { seat: 1, kind: 'bot', name: '', level: 1 },
+    ];
+    const local = new Room({ def, options: { deck0: 'c:x', hero: 30 }, trustedOptions: true, seats, code: 'L', ownerKey: 'k' });
+    const net = new Room({ def, options: { deck0: 'c:x', hero: 30 }, seats, code: 'N', ownerKey: 'k' });
+    rooms.push(local, net);
+    expect((local as unknown as { options: Record<string, unknown> }).options.deck0).toBe('c:x');
+    expect((net as unknown as { options: Record<string, unknown> }).options.deck0).toBeUndefined();
+  });
+});
