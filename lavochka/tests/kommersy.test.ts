@@ -456,3 +456,34 @@ describe('Коммерсы: партии ботов', () => {
     expect(rows.length).toBe(12);
   }, 120000);
 });
+
+describe('Коммерсы: защита от чужих данных', () => {
+  const r = () => new RiggedRng(new SeededRng(3));
+  it('соперник неизвестного вида и крыша без денег — отказ, деньги не портятся', () => {
+    const s = newState([0, 1]);
+    s.players[0].cash = 1000;
+    expect(apply(s, 0, { type: 'rival', kind: 'toString' as never, target: 1 }, r())).toBeNull();
+    expect(apply(s, 0, { type: 'rival', kind: 'xx' as never, target: 1 }, r())).toBeNull();
+    s.players[0].stats.svyazi = 50;
+    s.players[0].cash = 0;
+    expect(apply(s, 0, { type: 'krysha', to: 'police' }, r())).toBeNull();
+    s.players[0].cash = 100000;
+    expect(apply(s, 0, { type: 'krysha', to: 'police' }, r())).not.toBeNull();
+  });
+  it('чужую карточку не показывают с последствиями выбора, свою — показывают; анонимку не подписывают', () => {
+    let s = newState([0, 1]);
+    s.ask = { seat: 0, cell: 'news', title: 'т', text: 'т', choices: [{ label: 'a', ok: true, fx: { stats: { heat: 5 } }, hint: ['органы ↑'], riskHint: 'риск' }] };
+    s.phase = 'choose';
+    expect(view(s, [1]).ask!.choices[0].fx).toBeUndefined();
+    expect(view(s, [1]).ask!.choices[0].hint).toBeUndefined();
+    expect(view(s, [0]).ask!.choices[0].fx).toBeDefined();
+    const ev = { t: 'rival', seat: 0, target: 1, kind: 'donos', ok: true } as const;
+    expect((def.redact!(ev, [1]) as typeof ev).seat).toBe(-1);
+    expect((def.redact!(ev, [0]) as typeof ev).seat).toBe(0);
+    s = newState([0, 1]);
+  });
+  it('настройки из комнаты приводятся к допустимым', () => {
+    const s = def.setup([{ seat: 0, kind: 'human', name: 'a' }, { seat: 1, kind: 'human', name: 'b' }] as never, { start: 'abc', chance: -5, diff: 9 }, new SeededRng(1));
+    expect(s.opts).toEqual({ diff: 2, start: 0, chance: 0, buh: false });
+  });
+});

@@ -229,7 +229,7 @@ class KommersyView implements GameView<View, Event> {
   setView(v: View) {
     const fresh = !this.v && v.phase === 'roll' && v.players.every((p) => p.pos === 0 && !p.assets.length);
     this.v = v;
-    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => say('start', true), 800);
+    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say('start', true), 800);
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
     if (v.roll) this.tray.show([v.roll]);
     // остаток хода с прошлого отрезка: в лотке — сколько досходить
@@ -449,6 +449,7 @@ class KommersyView implements GameView<View, Event> {
     const old = this.v;
     let risk: string | null = null;
     for (const ev of events) {
+      if (this.dead) return;
       const r = 'seat' in ev && ev.seat === mine ? REACT[ev.t] : undefined;
       if (r) this.kolyan.play(r);
       const line = kolyan == null ? null : voiceKey(ev, kolyan, old, v);
@@ -540,7 +541,9 @@ class KommersyView implements GameView<View, Event> {
     this.banner.hidden = true;
   }
 
+  private dead = false;
   destroy() {
+    this.dead = true;
     this.music.stop();
     this.kolyan.stop();
     this.panel?.remove();

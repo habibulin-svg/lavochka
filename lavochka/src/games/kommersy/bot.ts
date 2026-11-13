@@ -126,8 +126,9 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
       if (a) return { type: 'sell', uid: a.uid };
     }
     if (me.krysha === 'bandit' && v.m >= mm(2000, 1)) {
-      if ((me.stats.svyazi ?? 0) >= 30) return { type: 'krysha', to: 'police' };
-      if (me.tier >= 3) return { type: 'krysha', to: 'own' };
+      const unit = Math.max(30, 0.7 * my.income);
+      if ((me.stats.svyazi ?? 0) >= 30 && me.cash >= unit) return { type: 'krysha', to: 'police' };
+      if (me.tier >= 3 && me.cash >= 3 * unit) return { type: 'krysha', to: 'own' };
     }
     const dark = me.tier >= 3 && me.assets.find((a) => dealById(a.id)?.heat);
     if (dark) return { type: 'sell', uid: dark.uid };

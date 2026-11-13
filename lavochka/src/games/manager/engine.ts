@@ -1194,7 +1194,8 @@ function applyFx(x: Ctx, seat: number, card: Card) {
       return;
     }
     case 'birthday':
-      for (const p of alive(s)) if (p !== seat) charge(x, p, fx.n, seat, 'на день рождения');
+      // платят не те, чей ход: долга им не открыть (долг считается за ходящего) — отдают сколько есть, не больше
+      for (const p of alive(s)) if (p !== seat) give(x, p, seat, Math.min(fx.n, Math.max(0, s.cash[p])), 'на день рождения');
       return;
     case 'skip':
       s.skip[seat] = true;

@@ -676,7 +676,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       growAsset(s, p, x, GROW_PAY, ev);
     } else if (a.type === 'rival') {
       const q = s.players.find((x) => x.seat === a.target);
-      if (!q || rivalWhy(s, p, q, a.kind) !== null) return null;
+      if (!q || !Object.prototype.hasOwnProperty.call(RIVAL_NAME, a.kind) || rivalWhy(s, p, q, a.kind) !== null) return null;
       rival(s, p, q, a.kind, rng, ev);
     } else if (a.type === 'sell') {
       const x = p.assets.find((q) => q.uid === a.uid);
@@ -687,11 +687,11 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       ev.push({ t: 'sell', seat, name: x.name, sum });
     } else if (a.type === 'manager') {
       const x = p.assets.find((q) => q.uid === a.uid);
-      if (!x || x.kind !== 'biz' || x.manager === a.on) return null;
+      if (!x || x.kind !== 'biz' || typeof a.on !== 'boolean' || x.manager === a.on) return null;
       if (!a.on && hoursFree(p) < x.hours - Math.ceil(x.hours * 0.15)) return null;
       x.manager = a.on;
     } else if (a.type === 'krysha') {
-      if (a.to === p.krysha || !kryshaOk(s, p, a.to)) return null;
+      if (a.to === p.krysha || !kryshaOk(s, p, a.to) || p.cash < kryshaCost(s, p, a.to)) return null;
       if (p.krysha === 'bandit') {
         p.enemies++;
         addStat(p, 'avt', -5);
@@ -1233,6 +1233,19 @@ export interface View {
 
 const hint = (v: number, words: string[]) => words[Math.min(words.length - 1, Math.floor(v / (101 / words.length)))];
 
+/** Чужую карточку показываем без последствий выбора: направления «органов» и «совести» — секрет хода. */
+function askFor(ask: Ask | null, seats: number[] | 'all'): Ask | null {
+  const a = clone(ask);
+  if (!a || seats === 'all' || seats.includes(a.seat)) return a;
+  for (const c of a.choices) {
+    delete c.fx;
+    delete c.risk;
+    delete c.hint;
+    delete c.riskHint;
+  }
+  return a;
+}
+
 export function view(s: State, seats: number[] | 'all'): View {
   const me = seats === 'all' ? null : (seats.find((x) => s.players.some((p) => p.seat === x)) ?? null);
   const players = s.players.map((p): PlayerView => {
@@ -1263,7 +1276,7 @@ export function view(s: State, seats: number[] | 'all'): View {
       }
     : null;
   return {
-    me, m: s.m, len: s.len, cells: [...s.cells], turn: s.players[s.turn].seat, phase: s.phase, roll: s.roll, target: s.target, ask: clone(s.ask), players, my,
+    me, m: s.m, len: s.len, cells: [...s.cells], turn: s.players[s.turn].seat, phase: s.phase, roll: s.roll, target: s.target, ask: askFor(s.ask, seats), players, my,
     crisis: inCrisis(s.m) || s.m < s.crisisUntil, diff: s.opts.diff, buh: s.opts.buh, fired: [...s.fired],
     books: clone((s.books ?? []).filter((b) => seats === 'all' || seats.includes(b.seat))),
     booksWait: (s.books ?? []).filter((b) => b.ans == null).map((b) => b.seat),

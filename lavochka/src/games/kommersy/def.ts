@@ -12,10 +12,14 @@ export const SEATS = HEROES.slice(0, 6).map((h) => {
   return { ...look, name: h.name };
 });
 
+const num = (v: unknown, d: number, a: number, b: number) => {
+  const x = Number(v ?? d);
+  return Number.isFinite(x) ? Math.max(a, Math.min(b, Math.round(x))) : d;
+};
 const opts = (o: Record<string, unknown>) => ({
-  diff: Number(o.diff ?? 1),
-  start: Number(o.start ?? 0),
-  chance: Number(o.chance ?? 0),
+  diff: num(o.diff, 1, 0, 2),
+  start: num(o.start, 0, 0, mm(2003, 6)),
+  chance: num(o.chance, 0, 0, 3),
   buh: o.buh === true || o.buh === 1 || o.buh === 'true',
 });
 
@@ -210,7 +214,13 @@ export const def: GameDef<State, Action, Event, View> = {
   bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, level, rng) => choose(v, seat, level, rng) },
   describe: (ev, name) => describe(ev, name),
   // совесть и органы в итоге выбора — только самому игроку
-  redact: (ev, seats) => (ev.t === 'fx' && ev.secret && seats !== 'all' && !seats.includes(ev.seat) ? { ...ev, secret: undefined } : ev),
+  redact: (ev, seats) => {
+    if (seats === 'all') return ev;
+    if (ev.t === 'fx' && ev.secret && !seats.includes(ev.seat)) return { ...ev, secret: undefined };
+    // анонимку не подписывают: кто донёс, знает только он сам (если не вычислили)
+    if (ev.t === 'rival' && ev.kind === 'donos' && ev.ok && !seats.includes(ev.seat)) return { ...ev, seat: -1 };
+    return ev;
+  },
   rules: {
     goal: `Пройти путь от ларька на Затулинке (май 1988) до покупки лондонского клуба «${CLUB}» (июль 2003): сделки, крыша и чиновники, учёба и близкие — и не потерять себя.`,
     sections: RULES,

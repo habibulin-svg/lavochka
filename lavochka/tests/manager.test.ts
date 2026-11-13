@@ -19,6 +19,36 @@ function act(s: State, seat: number, a: Action, rig?: number[], r0?: RiggedRng):
   return res!.state;
 }
 
+describe('Менеджер: деньги', () => {
+  it('«день рождения»: платят и те, у кого нет денег, — долга за ходящего не открывается, отдают что есть', () => {
+    let tested = 0;
+    for (const map of ['manager', 'odessa', 'nep', 'biznes'] as const) {
+      const b = boardOf(map);
+      const deck = b.decks.findIndex((d) => d.cards.some((c) => c.fx.k === 'birthday'));
+      if (deck < 0) continue;
+      const idx = b.decks[deck].cards.findIndex((c) => c.fx.k === 'birthday');
+      const cell = b.cells.findIndex((c, i) => c.kind === 'card' && c.deck === deck && i >= 2);
+      if (cell < 0) continue;
+      let s = newState(map, [0, 1, 2], {}, rng());
+      s.decks[deck] = [idx];
+      s.pos[0] = cell - 2;
+      s.cash[1] = 5;
+      s.cash[2] = 1_000_000;
+      // у соперника есть имущество: в старом коде ему открывался долг, а платить за него садился тот, кто тянул карточку
+      s.owner[b.cells.findIndex((c) => c.kind === 'prop')] = 1;
+      const own = s.cash[0];
+      s = act(s, 0, { type: 'roll' }, [0, 0]);
+      expect(s.phase, map).not.toBe('debt');
+      expect(s.debt, map).toBeNull();
+      expect(s.out[1], map).toBe(false);
+      expect(s.cash[1], map).toBe(0);
+      expect(s.cash[0], map).toBeGreaterThan(own);
+      tested++;
+    }
+    expect(tested).toBeGreaterThan(0);
+  });
+});
+
 describe('Менеджер', () => {
   it('после броска фишку переставляет сам игрок: фаза move, подсвеченная клетка, бот — отдельным действием', () => {
     for (const map of ['manager', 'nep', 'kosmos', 'biznes', 'biznesmen', 'imperiya', 'odessa'] as const) {
