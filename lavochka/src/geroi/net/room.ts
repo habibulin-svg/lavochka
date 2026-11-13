@@ -4,7 +4,7 @@ import { botAction } from '../bot/bot';
 import { type BattleEvent, type BattleState, act, actionError, createBattle, currentUnit, resign } from '../sim/battle';
 import { FACTIONS } from '../sim/creatures';
 import { ARMY_ROUNDS, type DraftState, draftAdvance, draftPick, newDraft } from '../sim/draft';
-import { BUDGETS, type ClockView, type DraftView, type NetClientMsg, type NetPeer, type NetServerMsg, type ResultView, cleanAction } from './protocol';
+import { BUDGETS, type ClockView, type DraftView, type NetClientMsg, type NetPeer, type NetServerMsg, type ResultView, battleViewFor, cleanAction } from './protocol';
 
 export const HERO_MS = 25_000;
 export const ARMY_MS = 15_000;
@@ -209,8 +209,14 @@ export class ArenaRoom {
     // пока идёт показ, часы ходящего стоят: удар не должен есть его время
     const show = Math.min(MAX_SHOW_MS, events.length * EVENT_MS);
     this.since = this.now() + show;
-    this.broadcast({ t: 'step', events, state: s, clock: this.clock(show) });
+    this.broadcastStep(events, show);
     if (s.over) this.finishGame(s.winner, 'battle');
+  }
+
+  /** Шаг боя каждому своим снимком: чужая ловушка и счётчик бросков не уходят. */
+  private broadcastStep(events: BattleEvent[], show: number): void {
+    const clock = this.clock(show);
+    for (const p of this.peers) p.send({ t: 'step', events, state: battleViewFor(this.state!, this.seatOf(p)), clock });
   }
 
   private forfeit(side: number, why: 'resign' | 'gone'): void {
@@ -221,7 +227,7 @@ export class ArenaRoom {
     }
     const events = resign(this.state!, side);
     this.since = this.now();
-    this.broadcast({ t: 'step', events, state: this.state!, clock: this.clock(0) });
+    this.broadcastStep(events, 0);
     this.finishGame(1 - side, why);
   }
 
@@ -276,7 +282,7 @@ export class ArenaRoom {
       return;
     }
     const wait = Math.max(0, this.since - this.now());
-    p.send({ t: 'start', state: this.state, seat: this.seatOf(p), names: this.names(), clock: this.clock(wait), result: this.result ?? undefined, you: p.id });
+    p.send({ t: 'start', state: battleViewFor(this.state, this.seatOf(p)), seat: this.seatOf(p), names: this.names(), clock: this.clock(wait), result: this.result ?? undefined, you: p.id });
   }
 
   private sendDraftAll(): void {

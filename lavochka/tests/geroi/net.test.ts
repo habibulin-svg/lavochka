@@ -158,7 +158,7 @@ describe('geroi/room', () => {
     expect(JSON.stringify(room.state)).toBe(version);
     room.message(me, { t: 'act', a: { t: 'defend' } });
     expect(a.last('step').state).toEqual(b.last('step').state);
-    expect(a.last('step').state).toEqual(JSON.parse(JSON.stringify(room.state)));
+    expect(a.last('step').state).toEqual(JSON.parse(JSON.stringify({ ...room.state, rng: 0 })));
   });
 
   it('время вышло — за игрока ходит бот, запас не уходит в минус', () => {

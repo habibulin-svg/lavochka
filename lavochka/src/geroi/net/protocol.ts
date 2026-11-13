@@ -92,6 +92,12 @@ export interface BattleNet {
   rtc(to: string, data: unknown): void;
 }
 
+/** Снимок боя для места: без счётчика бросков (по нему можно заранее знать удачу и мораль) и без чужой ловушки «Подлянки».
+ * seat = null — зритель: ловушки не видит никто, кроме хозяина. Сам бой не меняется. */
+export function battleViewFor(s: BattleState, seat: number | null): BattleState {
+  return { ...s, rng: 0, trap: s.trap && s.trap.owner === seat ? s.trap : undefined };
+}
+
 const isCell = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < CELLS;
 const isUnit = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < 16;
 

@@ -24,7 +24,7 @@ import { type MapRecord, type RecStep, diffJson, patchJson } from './record';
 import type { TownFaction } from '../sim/adv/town';
 import { isPaidFaction } from '../sim/creatures';
 import { type MapClientMsg, type MapClock, type MapRatingView, type MapDraftStep, type MapSeatView, type MapServerMsg, BOT_LEVELS, MAP_FACTIONS, MAP_FACTIONS_ALL, cleanAdvAction, cleanGen, cleanPick, eventsView, worldView } from './mapproto';
-import { type ClockView, cleanAction } from './protocol';
+import { type ClockView, battleViewFor, cleanAction } from './protocol';
 
 /** Запас хода на всю партию и прибавка в начале каждого своего хода. */
 export const MAP_BANK_MS = 8 * 60_000;
@@ -982,7 +982,7 @@ export class MapRoom {
     if (!f || seat === null) return;
     const side = f.seats.indexOf(seat);
     const name = (s: number | null): string => (s === null ? 'Нейтралы' : this.seats[s].name);
-    p.send({ t: 'start', state: f.state, seat: side, names: [name(f.seats[0]), name(f.seats[1])], clock: this.fightClock(f, Math.max(0, f.since - this.now())), you: p.id });
+    p.send({ t: 'start', state: battleViewFor(f.state, side), seat: side, names: [name(f.seats[0]), name(f.seats[1])], clock: this.fightClock(f, Math.max(0, f.since - this.now())), you: p.id });
   }
 
   private fightClock(f: Fight, waitMs: number): ClockView {
@@ -1010,7 +1010,7 @@ export class MapRoom {
     const show = Math.min(MAX_SHOW_MS, events.length * EVENT_MS);
     f.since = this.now() + show;
     const inIt = (p: MapPeer): boolean => f.seats.includes(this.seatOf(p));
-    for (const p of this.peers) if (inIt(p)) p.send({ t: 'step', events, state: f.state, clock: this.fightClock(f, show) });
+    for (const p of this.peers) if (inIt(p)) p.send({ t: 'step', events, state: battleViewFor(f.state, f.seats.indexOf(this.seatOf(p))), clock: this.fightClock(f, show) });
     if (!f.state.over) return;
     for (const p of this.peers) if (inIt(p)) p.send({ t: 'result', result: { winner: f.state.winner, why: 'battle' } });
     this.fights.splice(this.fights.indexOf(f), 1);

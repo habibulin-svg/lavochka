@@ -97,6 +97,9 @@ export function evaluate(s: BattleState, side: number): number {
 function afterAction(s: BattleState, a: Action): BattleState {
   const copy = cloneBattle(s);
   copy.expect = true;
+  // чужую ловушку «Подлянки» бот не видит: иначе он обходил бы её, как будто знает
+  const side = currentUnit(s)!.side;
+  if (copy.trap && copy.trap.owner !== side) copy.trap = undefined;
   act(copy, a);
   return copy;
 }

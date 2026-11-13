@@ -252,6 +252,9 @@ export function worldView(w: World, seat: number | null): World {
   return {
     ...w,
     rng: 0,
+    // где зарыт осколок — знает только сервер: иначе клиент с правкой найдёт его сразу
+    shard: -1,
+    shardHint: [0, 0],
     players: w.players.map((p) => (p.id === seat ? p : { ...p, res: { ...ZERO }, explored: [], obelisks: [], keys: [], scrap: {}, memory: undefined, memWeek: undefined, loan: undefined })),
     heroes: w.heroes.filter((h) => h.owner === seat || (ex[h.cell] && !heroHiddenFrom(w, h, seat))),
     towns: w.towns.map((t) => (t.owner === seat ? t : {

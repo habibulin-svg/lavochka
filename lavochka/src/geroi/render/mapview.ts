@@ -314,9 +314,13 @@ export class MapView {
 
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2) {}
 
+  /** Закрыт до конца загрузки: докончить init нельзя — приложение уже отдано другому виду. */
+  private destroyed = false;
+
   async init(w: World): Promise<void> {
     this.w = w;
     this.app = await takeApp(this.host);
+    if (this.destroyed) return releaseApp(this.app);
     this.app.stage.addChild(this.world);
     await this.buildGround(w);
     this.objs.sortableChildren = true;
@@ -324,6 +328,7 @@ export class MapView {
     await this.buildDecor(w);
     await this.syncObjects(w);
     await this.syncHeroes(w);
+    if (this.destroyed) return;
     this.app.ticker.add(this.onTick);
     window.addEventListener('keydown', this.keyDown);
     window.addEventListener('keyup', this.keyUp);
@@ -801,6 +806,8 @@ export class MapView {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     window.removeEventListener('keydown', this.keyDown);
     window.removeEventListener('keyup', this.keyUp);
     window.removeEventListener('resize', this.fitCam);

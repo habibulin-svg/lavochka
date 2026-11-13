@@ -95,12 +95,20 @@ async function quick(c: QuickConfig, fast = false): Promise<void> {
 }
 
 async function resume(s: Save): Promise<void> {
-  if (s.adv) return startAdv(s.adv, s.state);
-  stop();
-  menu.hide();
-  const g = new Game(host, audio, { who: s.who, restore: s });
-  wire(g);
-  await g.start();
+  try {
+    if (s.adv) return await startAdv(s.adv, s.state);
+    stop();
+    menu.hide();
+    const g = new Game(host, audio, { who: s.who, restore: s });
+    wire(g);
+    await g.start();
+  } catch (e) {
+    // сохранение от старой версии или испорченное: не оставлять пустой экран
+    console.error(e);
+    stop();
+    menu.title();
+    alert('Не удалось загрузить сохранение: оно от другой версии игры или повреждено.');
+  }
 }
 
 // ------------------------------------------------------------------ Арена

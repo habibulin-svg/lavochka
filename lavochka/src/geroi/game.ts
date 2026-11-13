@@ -108,7 +108,13 @@ export class Game {
     this.host.append(this.root);
     this.buildHud();
     const loading = showLoading({ art: '/geroi/a/brand/title.webp', title: 'К бою…', font: "'Geroi Title', Georgia, serif", color: '#f0d48a' });
-    await this.view.init(this.state);
+    try {
+      await this.view.init(this.state);
+    } catch (e) {
+      // закрыли, пока грузилось: сцена уже разобрана, это не ошибка
+      if (!this.dead) throw e;
+    }
+    if (this.dead) return loading.done();
     this.view.sync(this.state);
     loading.done();
     this.view.onPointer = (p) => this.hover(p);

@@ -194,8 +194,12 @@ export class BattleView {
 
   constructor(private readonly host: HTMLElement, private readonly audio: Audio2) {}
 
+  /** Закрыт до конца загрузки: докончить init нельзя — приложение уже отдано другому виду. */
+  private destroyed = false;
+
   async init(s: BattleState): Promise<void> {
     this.app = await takeApp(this.host);
+    if (this.destroyed) return releaseApp(this.app);
     this.app.stage.addChild(this.stage);
     const bg = new Sprite(await Assets.load<Texture>(`/geroi/a/fields/${s.field}.webp`));
     bg.width = STAGE_W;
@@ -244,6 +248,7 @@ export class BattleView {
       this.sprites.set(u.id, sp);
       this.unitsLayer.addChild(sp.root);
     }));
+    if (this.destroyed) return;
     this.app.ticker.add(this.onTick);
     window.addEventListener('resize', this.resize);
     this.fit();
@@ -263,8 +268,11 @@ export class BattleView {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     window.removeEventListener('resize', this.resize);
     this.canvasEvents.abort();
+    // приложение ещё не взято: init сам вернёт его, когда дождётся
     if (!this.app) return;
     this.app.ticker.remove(this.onTick);
     releaseApp(this.app);

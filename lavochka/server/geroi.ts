@@ -225,9 +225,47 @@ export function geroiMailOf(user: number): (MailSummary & { code: string })[] {
   return out.sort((a, b) => Number(b.yours) - Number(a.yours) || Number(a.over) - Number(b.over));
 }
 
+/** Сколько раз подряд часы комнаты упали: после порога комнату больше не тикаем (одна сломанная не должна стопорить остальные). */
+const tickFails = new WeakMap<object, number>();
+const TICK_FAIL_LIMIT = 8;
+
+/** Часы всех комнат: ошибка в одной (например, партия по переписке со старого файла) не прерывает обход и не валит остальные. */
+export function tickRooms(log: (s: string) => void = console.log): void {
+  for (const [code, r] of rooms) {
+    const fails = tickFails.get(r) ?? 0;
+    if (fails >= TICK_FAIL_LIMIT) continue;
+    try {
+      r.tick();
+      if (fails) tickFails.set(r, 0);
+    } catch (e) {
+      tickFails.set(r, fails + 1);
+      log(`Герои: комната ${code} упала на часах (${fails + 1}/${TICK_FAIL_LIMIT}): ${(e as Error)?.stack ?? e}`);
+    }
+  }
+}
+
+/** Кончившиеся партии по переписке живут в памяти и на диске неделю (посмотреть итог, скачать запись); потом — убрать, а не ждать перезапуска. */
+export function purgeMail(): void {
+  if (!mailDir) return;
+  for (const [code, r] of rooms) {
+    if (!(r instanceof MapRoom) || !r.mail || r.phase !== 'over' || !r.isEmpty) continue;
+    const path = mailFile(code);
+    try {
+      if (existsSync(path) && Date.now() - statSync(path).mtimeMs <= MAIL_KEEP_MS) continue;
+      if (existsSync(path)) unlinkSync(path);
+    } catch {
+      continue;
+    }
+    rooms.delete(code);
+  }
+}
+
+let ticks = 0;
 function ensureClock(): void {
   clock ??= setInterval(() => {
-    for (const r of rooms.values()) r.tick();
+    tickRooms();
+    // раз в минуту
+    if (++ticks % 240 === 0) purgeMail();
   }, 250);
 }
 

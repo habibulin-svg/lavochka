@@ -145,7 +145,13 @@ export class AdvGame {
     this.buildHud();
     this.fitHud();
     const loading = showLoading({ art: '/geroi/a/brand/title.webp', title: 'Карта грузится…', font: "'Geroi Title', Georgia, serif", color: '#f0d48a' });
-    await this.view.init(this.world);
+    try {
+      await this.view.init(this.world);
+    } catch (e) {
+      // закрыли, пока грузилось: сцена уже разобрана, это не ошибка
+      if (!this.dead) throw e;
+    }
+    if (this.dead) return loading.done();
     this.collectBodies();
     this.view.onHover = (c) => this.hover(c);
     this.view.onClick = (c, right) => this.click(c, right);
@@ -575,7 +581,8 @@ export class AdvGame {
     if (newTurn) {
       if (w.day !== this.lastDay) {
         this.lastDay = w.day;
-        writeAuto(this.saveData());
+        // по сети мир — чужой вид без тумана и чужих ресурсов: им нельзя затирать автосохранение своей партии
+        if (!this.net) writeAuto(this.saveData());
       }
       return () => {
         this.startTurn(true);

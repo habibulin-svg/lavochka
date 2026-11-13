@@ -20,7 +20,9 @@ export interface Save {
 function all(): (Save | null)[] {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) ?? '[]') as (Save | null)[];
-    return Array.from({ length: SLOTS + 1 }, (_, i) => list[i] ?? null);
+    // ячейка не того вида (испорчена или чужая версия) — пустая, а не вылет в меню загрузки
+    const ok = (x: Save | null | undefined): x is Save => !!x && typeof x === 'object' && typeof x.at === 'number' && Array.isArray(x.who) && (!!x.state || !!x.adv);
+    return Array.from({ length: SLOTS + 1 }, (_, i) => (ok(list[i]) ? list[i] : null));
   } catch {
     return Array(SLOTS + 1).fill(null);
   }
