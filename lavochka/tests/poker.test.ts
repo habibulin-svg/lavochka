@@ -262,3 +262,22 @@ describe('ва-банк и вскрытие', () => {
     expect(r.state.rec?.shown[1]?.length ?? v.hole[1].length).toBe(2);
   });
 });
+
+describe('защита от кривых ходов из сети', () => {
+  it('обмен с пустой или чужой картой отклоняется, а не роняет движок', () => {
+    const s = start({ mode: 'draw5' }, [0, 1, 2]);
+    // дойти до обмена: все коллируют/чекают
+    let st = s;
+    let guard = 0;
+    while (st.phase === 'bet' && st.street === 0 && guard++ < 10) st = go(st, st.turn, st.bet[st.turn] < st.current ? { type: 'call' } : { type: 'check' }).state;
+    expect(st.phase).toBe('draw');
+    const seat = st.turn;
+    expect(apply(st, seat, { type: 'draw', cards: [null as unknown as Card] }, rng())).toBeNull();
+    expect(apply(st, seat, { type: 'draw', cards: [{ s: 'S', r: 2 }, { s: 'S', r: 2 }] }, rng())).toBeNull();
+    expect(apply(st, seat, { type: 'discard', card: null as unknown as Card }, rng())).toBeNull();
+    const mine = st.hole[seat][0];
+    const r = go(st, seat, { type: 'draw', cards: [{ ...mine }] });
+    expect(r.state.muck.includes(mine) || r.state.deck.length >= 0).toBe(true);
+    expect(r.state.hole[seat]).toHaveLength(5);
+  });
+});

@@ -734,6 +734,7 @@ class HoldemView implements GameView<View, Event> {
   }
 
   destroy() {
+    clearTimeout(this.bannerTimer);
     this.ctx.hold?.(0);
     if (this.ff) this.ctx.hurry?.(false);
     this.gl?.destroy();

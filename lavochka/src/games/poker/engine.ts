@@ -914,17 +914,19 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (s.phase === 'draw') {
     if (a.type !== 'draw' || !Array.isArray(a.cards) || a.cards.length > maxDraw(s) || s.drew[seat]) return null;
     const hand = s.hole[seat];
-    if (!a.cards.every((c) => hand.some((x) => sameCard(x, c))) || new Set(a.cards.map((c) => c.s + c.r)).size !== a.cards.length) return null;
-    const keep = hand.filter((c) => !a.cards.some((x) => sameCard(x, c)));
-    s.muck.push(...a.cards);
+    // из сети может прийти что угодно: карты — только объекты, и берём собственные карты руки, а не присланные
+    if (!a.cards.every((c) => c && typeof c === 'object' && hand.some((x) => sameCard(x, c))) || new Set(a.cards.map((c) => c.s + c.r)).size !== a.cards.length) return null;
+    const out = hand.filter((c) => a.cards.some((x) => sameCard(x, c)));
+    const keep = hand.filter((c) => !out.includes(c));
+    s.muck.push(...out);
     const got: Card[] = [];
-    for (let i = 0; i < a.cards.length; i++) got.push(draw1(s, rng));
+    for (let i = 0; i < out.length; i++) got.push(draw1(s, rng));
     s.hole[seat] = [...keep, ...got];
     s.up[seat] = s.hole[seat].map(() => false);
     s.drew[seat] = true;
-    s.drawn[seat] = a.cards.length;
-    ev.push({ type: 'draw', seat, count: a.cards.length, cards: got });
-    s.rec?.acts.push({ k: 'draw', street: s.street, seat, out: a.cards.map((c) => ({ s: c.s, r: c.r })), got: got.slice() });
+    s.drawn[seat] = out.length;
+    ev.push({ type: 'draw', seat, count: out.length, cards: got });
+    s.rec?.acts.push({ k: 'draw', street: s.street, seat, out: out.map((c) => ({ s: c.s, r: c.r })), got: got.slice() });
     return afterDraw(s, ev, rng);
   }
   if (!canAct(s, seat)) return null;
