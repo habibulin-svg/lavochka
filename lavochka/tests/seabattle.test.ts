@@ -53,6 +53,15 @@ describe('стрельба', () => {
     expect(s.shots[1][at('А2')]).toBe(3);
     expect(s.turn).toBe(0);
   });
+  it('при «касаться» обводки нет: рядом может стоять живой корабль', () => {
+    const c = cfgFrom({ touch: true });
+    let s = newState(c);
+    s = { ...s, phase: 'battle', turn: 0, ships: [[[0]], [[0, 1], [2]]] as never, ready: [true, true] };
+    s = apply(s, 0, { type: 'shoot', cells: [0] }, rng())!.state;
+    s = apply(s, 0, { type: 'shoot', cells: [1] }, rng())!.state;
+    expect(s.shots[0][2]).toBe(0);
+    expect(s.shots[0][11]).toBe(0);
+  });
   it('в одну клетку дважды не стреляют', () => {
     let s = placed();
     s = apply(s, 0, { type: 'shoot', cells: [0] }, rng())!.state;

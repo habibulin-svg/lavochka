@@ -34,17 +34,21 @@ export interface Cfg {
 
 export function cfgFrom(o: Options): Cfg {
   const digits = o.symbols !== 'colors';
-  const len = Math.max(3, Math.min(digits ? 6 : 5, Number(o.len) || 4));
+  let len = Math.max(3, Math.min(digits ? 6 : 5, Number(o.len) || 4));
   const colors = Math.max(4, Math.min(8, Number(o.colors) || 8));
   const blank = !digits && o.blank === true;
+  const repeats = digits ? o.repeats === true : o.repeats !== false;
+  const kinds = digits ? 10 : colors + (blank ? 1 : 0);
+  // без повторов код не длиннее числа знаков (иначе его не загадать)
+  if (!repeats) len = Math.min(len, kinds);
   const look: Look = digits ? 'wood' : o.look === 'grey' ? 'grey' : 'logika';
   return {
     mode: o.mode === 'rounds' ? 'rounds' : 'duel',
     len,
-    kinds: digits ? 10 : colors + (blank ? 1 : 0),
+    kinds,
     digits,
     blank,
-    repeats: digits ? o.repeats === true : o.repeats !== false,
+    repeats,
     rows: Math.max(0, Math.min(16, Number(o.rows ?? 0) || 0)),
     rounds: Math.max(2, Math.min(8, Number(o.rounds) || 2)),
     look,

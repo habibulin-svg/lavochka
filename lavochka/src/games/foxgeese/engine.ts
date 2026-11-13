@@ -285,6 +285,11 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
       s.over = true;
       s.winner = 0;
       events.push({ type: 'end', winner: 0, why: 'huffed' });
+    } else if (!legal(s).length) {
+      // сфукали, а осаждающим ходить нечем — они в тупике, партия не должна зависнуть
+      s.over = true;
+      s.winner = 1;
+      events.push({ type: 'end', winner: 1, why: 'stuck' });
     }
     // после «фука» осаждающие ходят как обычно
     return { state: s, events };

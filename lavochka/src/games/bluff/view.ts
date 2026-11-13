@@ -293,7 +293,7 @@ class BluffView implements GameView<View, Event> {
         await this.showBanner('«Не верю!»', 600 / speed);
         // открыть проверенные карты
         const n = this.pileKeys.length;
-        this.pileKeys = this.pileKeys.slice(0, n - ev.cards.length);
+        this.pileKeys = this.pileKeys.slice(0, n - (cur.plays[cur.plays.length - 1]?.n ?? ev.cards.length));
         this.shown = ev.shown;
         this.v = { ...cur, pileCount: this.pileKeys.length, plays: cur.plays.slice(0, -1) };
         this.draw();

@@ -230,7 +230,13 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng, now = gameNo
 }
 
 function puzzleView(p: Puzzle, withSol: boolean): PuzzleView {
-  return { kind: p.kind, level: p.level, stage: p.stage, data: p.data, ...(withSol ? { sol: p.sol } : {}) };
+  // подсказки лежат в условии «Задачек» — клиенту их не отдаём, он получает их по одной по запросу (подсказка стоит очко)
+  let data = p.data;
+  if (data && typeof data === 'object' && 'hints' in data) {
+    const { hints: _hints, ...rest } = data as Record<string, unknown>;
+    data = rest;
+  }
+  return { kind: p.kind, level: p.level, stage: p.stage, data, ...(withSol ? { sol: p.sol } : {}) };
 }
 
 export function view(s: State, seats: number[] | 'all'): View {

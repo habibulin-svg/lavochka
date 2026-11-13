@@ -139,3 +139,14 @@ describe('городки: правила', () => {
     expect(def.result(s)!.winners).toEqual([0]);
   }, 60_000);
 });
+
+describe('журнал: подпись подхода', () => {
+  it('кон 8 м — «с кона», полукон 4 м — «с полукона»', () => {
+    const mk = (line: number) =>
+      ({ k: 'throw', seat: 0, t: 0, line, fig: 'pushka', before: [], after: [], lost: false, out: [], markBack: false, moved: [] }) as never;
+    const n = () => 'Я';
+    expect(def.describe!(mk(-8), n)).toContain('с кона');
+    expect(def.describe!(mk(-4), n)).toContain('с полукона');
+    expect(def.describe!(mk(-6.5), n)).toContain('с полукона');
+  });
+});

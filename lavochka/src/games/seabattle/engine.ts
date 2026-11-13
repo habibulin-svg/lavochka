@@ -228,8 +228,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (ship.every((x) => shots[seat][x] === 2)) {
       r.sunk = ship.slice();
       sunk[seat].push(ship.slice());
-      // обводим потопленный
-      for (const x of ship) for (const n of around(x)) if (shots[seat][n] === 0) shots[seat][n] = 3;
+      // обводим потопленный (если корабли могут касаться — рядом может стоять живой, не обводим)
+      if (!s0.cfg.touch) for (const x of ship) for (const n of around(x)) if (shots[seat][n] === 0) shots[seat][n] = 3;
     }
     res.push(r);
   }

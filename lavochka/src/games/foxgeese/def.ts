@@ -36,7 +36,7 @@ const P = (x: number, y: number) => geo(cfgFrom({})).at[y * 7 + x];
 const Mv = (seat: number, x: number, y: number, x2: number, y2: number, caption?: string) => ({ seat, action: { type: 'move', from: P(x, y), to: P(x2, y2) } as Action, caption });
 const At = (seat: number, type: 'place' | 'huff', x: number, y: number, caption?: string) => ({ seat, action: { type, at: P(x, y) } as Action, caption });
 
-function pos(mans: [number, number][], foxes: [number, number][], turn: number, o: Options = {}): State {
+function pos(mans: [number, number][], foxes: [number, number][], turn: number, o: Options = { lines: 'all' }): State {
   const s = newState(cfgFrom(o));
   s.board.fill(EMPTY);
   for (const [x, y] of mans) s.board[P(x, y)] = MAN;

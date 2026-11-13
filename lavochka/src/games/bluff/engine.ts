@@ -190,8 +190,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     const right = liar ? seat : prev;
     const count = s.pile.length;
     s.hands[taker] = [...s.hands[taker], ...s.pile];
-    ev.push({ type: 'check', seat, of: prev, cards: cards.slice(), shown: shown.slice(), liar, taker, count });
-    s.reveal = { checker: seat, liar, seat: prev, cards: cards.slice(), taker };
+    ev.push({ type: 'check', seat, of: prev, cards: shown.slice(), shown: shown.slice(), liar, taker, count });
+    s.reveal = { checker: seat, liar, seat: prev, cards: shown.slice(), taker };
     s.pile = [];
     s.plays = [];
     s.rank = null;

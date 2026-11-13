@@ -5,6 +5,7 @@ import { candidates } from '../src/games/dvor/kinds/bulls';
 import { countKenken } from '../src/games/dvor/kinds/kenken';
 import { countStopki } from '../src/games/dvor/kinds/stopki';
 import { STAGES, KIDS } from '../src/games/dvor/stages';
+import { cfgOf, newState, view } from '../src/games/dvor/engine';
 
 describe('двор: типы задач', () => {
   for (const K of Object.values(KINDS))
@@ -45,5 +46,15 @@ describe('двор: типы задач', () => {
         expect(s.lead[k], `${s.id}: вступление к ${k}`).toBeTruthy();
       }
     }
+  });
+});
+
+describe('двор: подсказки не уходят клиенту заранее', () => {
+  it('«Задачки»: в условии для игрока нет hints, а подсказка по запросу работает', () => {
+    const s = newState(cfgOf({ mode: 'train', kind: 'zadachka', count: 1, lvl: 0 }), [0], new SeededRng(3));
+    expect((s.list[0].data as { hints?: string[] }).hints?.length).toBeGreaterThan(0);
+    const v = view(s, [0]);
+    expect(v.boards[0].cur?.data).not.toHaveProperty('hints');
+    expect(JSON.stringify(v)).not.toContain(((s.list[0].data as { hints: string[] }).hints)[0]);
   });
 });

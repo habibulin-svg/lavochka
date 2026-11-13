@@ -86,7 +86,7 @@ export const def: GameDef<State, Action, Event, State> = {
       label: 'Рядов на разгадку',
       type: 'select',
       choices: [
-        { value: 0, label: 'сколько угодно' },
+        { value: 0, label: 'сколько угодно (до 30)' },
         { value: 6, label: '6' },
         { value: 10, label: '10' },
         { value: 12, label: '12' },

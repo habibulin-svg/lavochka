@@ -758,7 +758,7 @@ function land(x: Ctx, seat: number) {
 
 function court(x: Ctx, seat: number) {
   const { s } = x;
-  if (s.shadow[seat] > 0 && s.courts[seat] > 0) {
+  if (s.shadow[seat] > 0 && s.inspector[seat] && s.courts[seat] > 0) {
     note(x, seat, 'второй раз в суде — выходит из игры');
     bankrupt(x, seat, null);
     return;

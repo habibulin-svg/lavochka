@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { choose } from '../src/games/bulls/ai';
-import { apply, cfgFrom, makeView, newState, score, toAct, type State } from '../src/games/bulls/engine';
+import { apply, cfgFrom, makeView, newState, randomCode, score, toAct, validCode, type State } from '../src/games/bulls/engine';
 
 const DUEL = { symbols: 'digits', len: 4, repeats: false, mode: 'duel' };
 const LOGIKA = { symbols: 'colors', len: 5, colors: 8, repeats: true, mode: 'rounds', rows: 12, rounds: 2 };
@@ -76,4 +76,27 @@ describe('быки и коровы', () => {
     }
     expect(total / G).toBeLessThan(7);
   }, 60_000);
+
+  it('цветные фишки без повторов: длина не больше числа цветов, код загадывается', () => {
+    const c = cfgFrom({ symbols: 'colors', colors: 4, len: 5, repeats: false });
+    expect(c.len).toBe(4);
+    const code = randomCode(c, new SeededRng(3));
+    expect(validCode(c, code)).toBe(true);
+  });
+
+  it('бот на 6 цифрах с повторами отвечает без полного перебора', () => {
+    const cfg = cfgFrom({ symbols: 'digits', len: 6, repeats: true, mode: 'duel' });
+    const s = newState(cfg, 1, new SeededRng(5));
+    const rng = new SeededRng(9);
+    const sec = randomCode(cfg, rng);
+    s.secrets = [null, sec];
+    s.phase = 'guess';
+    let guess = [0, 1, 2, 3, 4, 5];
+    const [b, w] = score(sec, guess, cfg.kinds);
+    s.tries = [[{ code: guess, bulls: b, cows: w }], []];
+    for (const level of [1, 2]) {
+      const a = choose(s, 0, level, rng);
+      expect(a?.type).toBe('guess');
+    }
+  });
 });

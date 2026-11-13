@@ -360,7 +360,8 @@ export const def: GameDef<State, Action, Event, State> = {
     ),
   toAct,
   apply: (s, seat, a) => apply(s, seat, a),
-  view: (s) => s,
+  // будущие вопросы клиенту не отдаём (в них — ответы); после конца партии виден весь список для итога
+  view: (s) => (s.over ? s : { ...s, qs: s.qs.map((q, k) => (k > s.i ? { e: '' } : q)) }),
   result(s) {
     if (!s.over) return null;
     const best = Math.max(...s.seats.map((x) => s.score[x]));

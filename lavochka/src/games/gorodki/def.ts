@@ -139,7 +139,7 @@ export const def: GameDef<State, Action, Event, State> = {
       const n = ev.out.length;
       const tail = ev.markBack ? ' Марка задела соседей — вернули на место.' : '';
       const mv = ev.moved.length ? ` Из пригорода — на отметку: ${ev.moved.length}.` : '';
-      return `🪵 ${name(ev.seat)} — «${figName(ev.fig)}», ${ev.line <= -10 ? 'с кона' : ev.line <= -6 ? 'с полукона' : 'с полукона'}: ${n ? `выбито <b>${n}</b>` : 'мимо'}.${tail}${mv}`;
+      return `🪵 ${name(ev.seat)} — «${figName(ev.fig)}», ${ev.line <= -7 ? 'с кона' : 'с полукона'}: ${n ? `выбито <b>${n}</b>` : 'мимо'}.${tail}${mv}`;
     }
     if (ev.k === 'figure') return `✅ ${name(ev.seat)} выбил «${figName(ev.fig)}»${ev.next ? `, дальше — «${figName(ev.next)}»` : ''} (бит: ${ev.throws}).`;
     if (ev.k === 'finish') return `🏆 ${name(ev.seat)} выбил все фигуры за <b>${ev.throws}</b> ${bits(ev.throws)}!`;

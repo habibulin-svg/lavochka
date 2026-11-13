@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../src/core/rng';
 import { ENTITIES, members, REGION_COUNTRIES, SETS } from '../src/games/geo/data';
-import { apply, newState, optsOf } from '../src/games/geo/def';
+import { apply, def, newState, optsOf } from '../src/games/geo/def';
 
 describe('география', () => {
   it('у каждого объекта есть название и слой; id уникальны', () => {
@@ -63,5 +63,14 @@ describe('география', () => {
     const r = apply(s, 1, { type: 'pick', id: wrong })!;
     expect(r.state.score).toEqual({ 0: 4, 1: 0, 2: 5 });
     expect(r.state.over).toBe(true);
+  });
+
+  it('view не выдаёт будущие вопросы до конца партии', () => {
+    const s = newState([0], optsOf({ mode: 'quiz', ask: 'flag', pick: 'name', count: 5 }), new SeededRng(2));
+    const v = def.view(s, [0]);
+    expect(v.qs.length).toBe(5);
+    expect(v.qs[0]).toEqual(s.qs[0]);
+    for (let k = 1; k < 5; k++) expect(v.qs[k]).toEqual({ e: '' });
+    expect(def.view({ ...s, over: true }, [0]).qs).toEqual(s.qs);
   });
 });

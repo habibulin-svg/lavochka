@@ -170,4 +170,23 @@ describe('Тафл', () => {
     s.board[at(0, 3)] = tf.ATT;
     expect(tf.movesFrom(s, at(0, 3))).not.toContain(at(0, 0));
   });
+
+  it('асальто: «фук», после которого осаждающим нечем ходить, не вешает партию', () => {
+    const cfg = fg.cfgFrom({ mode: 'asalto', look: 'map' });
+    const G = fg.geo(cfg);
+    const s = fg.newState(cfg);
+    s.board.fill(fg.EMPTY);
+    const at = (x: number, y: number) => G.at[y * 7 + x];
+    s.board[at(3, 0)] = fg.MAN; // из последнего ряда крепости идти некуда
+    s.board[at(2, 1)] = fg.FOX;
+    s.board[at(4, 2)] = fg.FOX;
+    s.place = 0;
+    s.turn = 0;
+    s.huff = [at(2, 1)];
+    const r = fg.apply(s, 0, { type: 'huff', at: at(2, 1) });
+    expect(r).not.toBeNull();
+    expect(r!.state.over).toBe(true);
+    expect(r!.state.winner).toBe(1);
+    expect(fg.toAct(r!.state)).toEqual([]);
+  });
 });

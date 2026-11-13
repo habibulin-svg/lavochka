@@ -28,6 +28,7 @@ const protImg = (s: Spirit) => `${IMG}prot-${s}.webp`;
 const powerImg = (p: Power) => `${IMG}power-${p}.webp`;
 
 export function createView(): GameView<V, Event> {
+  let glideStop: (() => void) | null = null;
   let ctx: ViewCtx<Action> | null = null;
   let wrap: HTMLElement | null = null;
   let board: HTMLElement | null = null;
@@ -311,13 +312,17 @@ export function createView(): GameView<V, Event> {
     const t0 = performance.now();
     return new Promise((res) => {
       let fin = false;
+      let timer = 0;
       const finish = () => {
         if (fin) return;
         fin = true;
+        clearTimeout(timer);
+        if (glideStop === finish) glideStop = null;
         el.setAttribute('transform', `translate(${b.x},${b.y})`);
         res();
       };
-      setTimeout(finish, ms + 80);
+      timer = window.setTimeout(finish, ms + 80);
+      glideStop = finish;
       const tick = (t: number) => {
         if (fin) return;
         const k = Math.min(1, (t - t0) / ms);
@@ -476,6 +481,7 @@ export function createView(): GameView<V, Event> {
     },
 
     destroy() {
+      glideStop?.();
       cam?.destroy();
       wrap?.remove();
       panel?.remove();

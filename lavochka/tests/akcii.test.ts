@@ -164,6 +164,23 @@ describe('Акционеры: деньги и собственность', () =>
     expect(s.courts[0]).toBe(1);
   });
 
+  it('суд: повторный теневик без карточки инспектора не выбывает, с обеими карточками — выбывает', () => {
+    const court = CELLS.find((c) => c.kind === 'court')!.id;
+    let s = newState([0, 1]);
+    at(s, 0, court - 1);
+    s.shadow[0] = 1;
+    s.courts[0] = 1;
+    s = act(s, 0, { type: 'roll' }, [0]);
+    expect(s.out[0]).toBe(false);
+    s = newState([0, 1]);
+    at(s, 0, court - 1);
+    s.shadow[0] = 1;
+    s.inspector[0] = true;
+    s.courts[0] = 1;
+    s = act(s, 0, { type: 'roll' }, [0]);
+    expect(s.out[0]).toBe(true);
+  });
+
   it('биржа: указатель меняет курс компании; при понижении угроза банкротства разоряет владельца', () => {
     const exch = CELLS.find((c) => c.kind === 'exchange' && c.id > BIG0)!.id;
     const estrada = firmByName('Эстрада');

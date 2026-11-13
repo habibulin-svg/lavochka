@@ -326,7 +326,8 @@ function endTurn(s: State, ev: Event[]) {
     const h = s.heroes[seat];
     if (o.rounds && s.turns >= o.rounds) {
       const best = [...s.seats].sort((a, b) => score(s.heroes[b]) - score(s.heroes[a]));
-      finish(s, ev, `Прошло ${o.rounds} кругов: дальше всех продвинулся ${s.names[best[0]]}`, [best[0]]);
+      const top = best.filter((b) => score(s.heroes[b]) === score(s.heroes[best[0]]));
+      finish(s, ev, `Прошло ${o.rounds} кругов: дальше всех ${top.length > 1 ? 'продвинулись ' + top.map((b) => s.names[b]).join(' и ') : 'продвинулся ' + s.names[best[0]]}`, top);
       return;
     }
     if (h.mag != null) continue;

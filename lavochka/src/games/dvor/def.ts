@@ -1,6 +1,7 @@
 /* «А у нас во дворе» — дворовая олимпиада головоломок: прятки, классики, казаки-разбойники… — повод для задач.
  * Олимпиада (по этапам) или тренировка одного типа; одному или наперегонки. Без DOM. */
 import type { DemoScript, GameDef, Options, SeatSpec } from '../../core/types';
+import { gameNow } from '../../core/clock';
 import { presetTables, type RecordTable } from '../../core/records';
 import { SeededRng } from '../../core/rng';
 import { esc } from '../../core/util';
@@ -53,12 +54,12 @@ function botChoose(v: View, seat: number, level: number, rng: { next(): number; 
   const K = kindOf(p.kind);
   const u = (((seat + 1) * 2654435761 + b.i * 40503 + b.t0) >>> 0) / 4294967296;
   const target = K.par[p.level] * [1.6, 1.0, 0.6][level] * (0.6 + 0.8 * u) * 1000;
-  const elapsed = Date.now() - b.t0;
+  const elapsed = gameNow() - b.t0;
   const thinks = b.thinks ?? 0;
   // «время не идёт»: десятки ходов почти мгновенно (тесты, «пропустить») — решаем сразу
   const ready = elapsed >= target || (thinks >= 40 && elapsed < thinks * 50);
   const hints = b.hints?.length ?? 0;
-  if (level === 0 && hints < 1 && Date.now() - b.t0 >= target * 0.5 && rng.next() < 0.05) return { t: 'hint' };
+  if (level === 0 && hints < 1 && gameNow() - b.t0 >= target * 0.5 && rng.next() < 0.05) return { t: 'hint' };
   if (!ready) return { t: 'think' };
   // лёгкий иногда ошибается
   if (level === 0 && (b.wrong ?? 0) < 1 && rng.next() < 0.25) return { t: 'ans', a: null };

@@ -34,13 +34,32 @@ function codesFor(c: Cfg): number[][] {
   return v;
 }
 
-function consistent(c: Cfg, tries: Try[]): number[][] {
-  return codesFor(c).filter((code) =>
+/** Пространство больше этого не материализуем (10^6 кодов — сотни МБ и долгий отбор на каждый ход). */
+const BIG = 100000;
+const LEFT_CAP = 3000;
+
+function consistent(c: Cfg, tries: Try[], rng: Rng): number[][] {
+  const ok = (code: number[]) =>
     tries.every((t) => {
       const [b, w] = score(code, t.code, c.kinds);
       return b === t.bulls && w === t.cows;
-    })
-  );
+    });
+  if (c.kinds ** c.len <= BIG) return codesFor(c).filter(ok);
+  // большое пространство: идём по кодам по кругу со случайного места и берём первые подходящие
+  const total = c.kinds ** c.len;
+  const start = rng.int(total);
+  const out: number[][] = [];
+  const code = new Array<number>(c.len);
+  for (let i = 0; i < total && out.length < LEFT_CAP; i++) {
+    let x = (start + i) % total;
+    for (let j = c.len - 1; j >= 0; j--) {
+      code[j] = x % c.kinds;
+      x = Math.floor(x / c.kinds);
+    }
+    if (!c.repeats && new Set(code).size !== c.len) continue;
+    if (ok(code)) out.push(code.slice());
+  }
+  return out;
 }
 
 function pick<T>(a: T[], rng: Rng): T {
@@ -53,7 +72,7 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
   if (s.phase === 'secret') return { type: 'secret', code: randomCode(c, rng) };
   const tries = s.tries[seat];
   if (!tries.length || (level === 0 && rng.next() < 0.45)) return { type: 'guess', code: randomCode(c, rng) };
-  const left = consistent(c, tries);
+  const left = consistent(c, tries, rng);
   if (!left.length) return { type: 'guess', code: randomCode(c, rng) };
   if (level < 2 || left.length <= 2) return { type: 'guess', code: pick(left, rng) };
   // сложный: какая из подходящих попыток дробит выборку возможных кодов на самые мелкие кучки
