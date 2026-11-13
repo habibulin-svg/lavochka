@@ -85,6 +85,8 @@ export interface Board {
   by?: number;
   ready?: number[];
   thinks?: number;
+  /** Когда дело закрыто (мс) — боты в бригаде не листают дальше, пока люди читают разгадку. */
+  t1?: number;
 }
 
 export interface State {
@@ -118,8 +120,9 @@ export type Action =
 export type Event =
   | { type: 'open'; seat: number; i: number }
   | { type: 'hint'; seat: number; i: number; k: number }
-  | { type: 'wrong'; seat: number; i: number; k: number }
-  | { type: 'free'; seat: number; i: number; text: string }
+  /** hide — в «Сыщике» и «Кто быстрее» чужие версии другим игрокам не показываем (redact: k = -1, text = ''). */
+  | { type: 'wrong'; seat: number; i: number; k: number; hide?: boolean }
+  | { type: 'free'; seat: number; i: number; text: string; hide?: boolean }
   | { type: 'solved'; seat: number; i: number; mark: Mark }
   | { type: 'skip'; seat: number; i: number }
   | { type: 'finish'; seat: number; score: number }
@@ -275,7 +278,7 @@ function close(s: State, b: Board, seat: number, ok: boolean, now: number, self?
   let pts = ok ? scoreOf(k.lv, b.hints, wrong, par) : 0;
   if (self === 1) pts = Math.max(1, Math.floor(pts / 2));
   const mark: Mark = { ok, pts, sec, hints: b.hints, wrong, par, ...(self != null ? { self } : {}) };
-  return { b: { ...b, phase: 'done', score: b.score + pts, marks: [...b.marks, mark], by: seat, ready: [] }, mark };
+  return { b: { ...b, phase: 'done', score: b.score + pts, marks: [...b.marks, mark], by: seat, ready: [], t1: now }, mark };
 }
 
 export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.now()): { state: State; events: Event[] } | null {
@@ -309,7 +312,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.n
       const n = Number(a.k);
       if (!Number.isInteger(n) || n < 0 || n > 3 || b0.wrongs.includes(n)) return null;
       if (n !== k.ok) {
-        ev.push({ type: 'wrong', seat, i: b0.i, k: n });
+        ev.push({ type: 'wrong', seat, i: b0.i, k: n, ...(s0.cfg.mode !== 'team' ? { hide: true } : {}) });
         if (race) {
           const out = [...(b0.out ?? []), seat];
           b = { ...b0, out };
@@ -341,7 +344,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng, now = Date.n
       const text = String(a.text ?? '').slice(0, 2000).trim();
       if (!text) return null;
       b = { ...b0, phase: 'check', text, by: seat };
-      ev.push({ type: 'free', seat, i: b0.i, text });
+      ev.push({ type: 'free', seat, i: b0.i, text, ...(s0.cfg.mode !== 'team' ? { hide: true } : {}) });
       break;
     }
     case 'self': {
@@ -403,14 +406,19 @@ export function view(s: State, seats: number[] | 'all'): View {
     const own = n === SHARED || seats === 'all' || seats.includes(n);
     const bv: BoardView = { ...b };
     if (own && b.i < s.list.length) bv.cur = caseView(s.list[b.i], b.hints, b.phase !== 'solve');
-    else delete bv.text;
+    else {
+      // чужая доска в «Сыщике»: тот же список дел — не показываем, какие версии он зачеркнул и что написал
+      delete bv.text;
+      bv.wrongs = [];
+    }
     boards[n] = bv;
   }
   return { cfg: s.cfg, seats: s.seats, total: s.list.length, max: maxScore(s), shared: s.cfg.mode !== 'solo', boards, scores: s.scores };
 }
 
 export function redact(ev: Event, seats: number[] | 'all'): Event | null {
-  return ev;
+  if (seats === 'all' || (ev.type !== 'wrong' && ev.type !== 'free') || !ev.hide || seats.includes(ev.seat)) return ev;
+  return ev.type === 'wrong' ? { ...ev, k: -1 } : { ...ev, text: '' };
 }
 
 /** Звание по доле от возможного. */

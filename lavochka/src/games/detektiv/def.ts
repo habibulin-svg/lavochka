@@ -24,9 +24,9 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'hint':
       return `${name(ev.seat)} берёт наводку`;
     case 'wrong':
-      return `${name(ev.seat)}: версия ${'АБВГ'[ev.k]} не подтвердилась`;
+      return ev.k >= 0 ? `${name(ev.seat)}: версия ${'АБВГ'[ev.k]} не подтвердилась` : `${name(ev.seat)} ошибся с версией`;
     case 'free':
-      return `${name(ev.seat)} записал версию: «${esc(ev.text.slice(0, 120))}${ev.text.length > 120 ? '…' : ''}»`;
+      return !ev.text ? `${name(ev.seat)} записал версию` : `${name(ev.seat)} записал версию: «${esc(ev.text.slice(0, 120))}${ev.text.length > 120 ? '…' : ''}»`;
     case 'solved': {
       const m = ev.mark;
       return `✔ ${name(ev.seat)} раскрывает дело ${ev.i + 1} за ${fmtSec(m.sec)} — <b>+${m.pts}</b>${m.par ? ' (в срок)' : ''}`;
@@ -50,7 +50,15 @@ const SKILL = [0.5, 0.72, 0.9];
 function botChoose(v: View, seat: number, level: number, rng: { next(): number; int(n: number): number }): Action {
   const b = v.boards[v.shared ? SHARED : seat];
   if (!b || b.i >= v.total) return { t: 'think' };
-  if (b.phase === 'done') return (b.ready ?? []).includes(seat) && v.cfg.mode === 'race' ? { t: 'think' } : { t: 'next' };
+  if (b.phase === 'done') {
+    if ((b.ready ?? []).includes(seat) && v.cfg.mode === 'race') return { t: 'think' };
+    // в бригаде бот не листает дело, пока люди читают разгадку (в тестах «думаю» идут без пауз — тогда сразу)
+    if (v.cfg.mode === 'team' && b.t1 != null) {
+      const th = b.thinks ?? 0;
+      if (Date.now() - b.t1 < 6000 && !(th >= 40 && Date.now() - b.t1 < th * 300)) return { t: 'think' };
+    }
+    return { t: 'next' };
+  }
   const cur = b.cur;
   if (!cur) return { t: 'think' };
   if (b.phase === 'check') {

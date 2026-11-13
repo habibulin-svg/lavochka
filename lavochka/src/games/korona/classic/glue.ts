@@ -7,7 +7,7 @@ import { esc } from '../../../core/util';
 import { botAction } from './ai';
 import { advOf, apply, newState, result, thingName, type Action, type Event } from './engine';
 import { HIDDEN_CARDS } from './special-cards2';
-import type { CHero, CState } from './state';
+import type { CHero, CState, Prompt } from './state';
 
 export type { CState } from './state';
 export type CAction = Action;
@@ -43,13 +43,22 @@ const hideHand = (h: CHero): CHero => ({
   }),
 });
 
+/** Чужой вопрос: без служебных данных; а что игрок видит в колоде (верхняя карта, две/три карты на выбор) — не показываем. */
+export function hidePrompt(p: Prompt): Prompt {
+  const out: Prompt = { ...p, data: undefined };
+  if (p.kind === 'dragon' || p.kind === 'c1_pick3') return { ...out, opts: p.opts.map((o) => ({ ...o, label: 'карта' })) };
+  if (p.kind === 'c2_pick' && p.data?.tag === 'ack' && /^Верхняя карта/.test(p.q)) return { ...out, q: 'смотрит верхнюю карту колоды' };
+  return out;
+}
+
 export function classicView(s: CState, seats: number[] | 'all'): ClassicView {
   const mine = (o: number) => seats === 'all' || seats.includes(o);
   const { deck, ...rest } = s;
   const heroes: CState['heroes'] = {};
   for (const o of s.seats) heroes[o] = mine(o) ? s.heroes[o] : hideHand(s.heroes[o]);
-  const prompt = s.prompt && !mine(s.prompt.seat) ? { ...s.prompt, data: undefined } : s.prompt;
-  return { ...rest, heroes, prompt, log: s.log.slice(-24), deckLeft: deck.length };
+  const prompt = s.prompt ? (mine(s.prompt.seat) ? s.prompt : hidePrompt(s.prompt)) : s.prompt;
+  const pending = s.pending?.map((p) => (mine(p.seat) ? p : hidePrompt(p)));
+  return { ...rest, heroes, prompt, ...(pending ? { pending } : {}), log: s.log.slice(-24), deckLeft: deck.length };
 }
 
 export function classicRedact(e: unknown, seats: number[] | 'all'): never | CEvent | null {
