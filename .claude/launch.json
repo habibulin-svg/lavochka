@@ -78,6 +78,18 @@
         "G:/temp/studio/out/music-studio/proto"
       ],
       "port": 8790
+    },
+    {
+      "name": "music-kit",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8791",
+        "-d",
+        "G:/temp/studio/out/music-studio/kit"
+      ],
+      "port": 8791
     }
   ]
 }
