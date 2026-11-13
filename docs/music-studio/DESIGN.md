@@ -123,7 +123,7 @@ _Замысел пользователя 2026-11-13: клон по духу и �
   - оформление конвейером: панель, логотип, афиша на гараже;
   - звуки интерфейса;
   - эффекты, Groove Generator, запись голоса, свои WAV;
-  - ~~библиотека 1000+ сэмплов~~ — сделано, §7; демо-миксы `demo.ts` ещё ссылаются на имена прототипа (таблица замен — §7);
+  - ~~библиотека 1000+ сэмплов~~ — сделано, §7; ~~демо-миксы на имена кита~~ — сделано (таблица замен — §7);
   - проверка на живом телефоне.
 
 ## 7. Библиотека кита (2026-11-13): 1312 сэмплов на темп
@@ -159,7 +159,7 @@ _Замысел пользователя 2026-11-13: клон по духу и �
 
 **Женский вокал — как сделан и почему не YuE2.** Распевы ElevenLabs v4 (тег `[sings]`, голоса Sarah и Rachel из общей библиотеки) → участки-«ноты» по pyin → сдвиг каждого к ближайшему звуку аккорда (лёгкий «автотюн» конца 90-х, без формант-коррекции) → 4 звёздочки + нейтральная версия на A/E. YuE2 отложен: он поёт целую песню, а не фразу, сетку и строй пришлось бы выравнивать после отделения голоса (Demucs в venv нет), видеокарта одна и занята по очереди; на слух качество распевов ElevenLabs и YuE2 ещё никто не сравнивал. **Проверить на слух пользователю:** выкрики и особенно женский вокал (подтяжка высоты может звучать «роботом»).
 
-**Демо-миксы секвенсора (`src/musicstudio/demo.ts`) ссылаются на имена прототипа** — их больше нет, такие места пропускаются. Замены (прототип → кит): Groove Euro → `Euro Grp.5 Vers.1`; Groove House → `House Grp.5 Vers.1`; Groove Dream → `Dream Grp.5 Vers.1`; Shaker → `Shaker A`; Warm Strings → `Night On Moon`; Riser 4 → `Riser Long`; Crash → `Crash A`; Organ → `Organ One`; Fill Snare → `Euro Fill Snare`; Fill Toms → `House Fill Toms`; Trance Arp → `Whirl-Pool`; Laser → `Laser A`; Kick 4-4 → `Kick A 4-4`; Hook → `Hook A`; Davay → `Davay Davay`; Downer 2 → `Downer Mid`; Hihat 16 → `Hihat A 16th`; Open Hat → `Open Hat A`; Choir Am-F-C-G → `Choir Of Angels Am-F-C-G`; Jump → `Jump Jump`. Без изменений: Euro Offbeat, House Pluck, House Piano, Rolling, Acid Pedal, Anthem Stab, Dream Piano Am-F-C-G, Come On, Hands Up, Lets Go, Diskoteka, Vse Na Tantspol, Dance With Me.
+**Демо-миксы секвенсора (`src/musicstudio/demo.ts`) переведены на имена кита (2026-11-13).** Замены (прототип → кит): Groove Euro → `Euro Grp.5 Vers.1`; Groove House → `House Grp.5 Vers.1`; Groove Dream → `Dream Grp.5 Vers.1`; Shaker → `Shaker A`; Warm Strings → `Night On Moon`; Riser 4 → `Riser Long`; Crash → `Crash A`; Organ → `Organ One`; Fill Snare → `Euro Fill Snare`; Fill Toms → `House Fill Toms`; Trance Arp → `Whirl-Pool`; Laser → `Laser A`; Kick 4-4 → `Kick A 4-4`; Hook → `Hook A`; Davay → `Davay Davay`; Downer 2 → `Downer Mid`; Hihat 16 → `Hihat A 16th`; Open Hat → `Open Hat A`; Choir Am-F-C-G → `Choir Of Angels Am-F-C-G`; Jump → `Jump Jump`. Без изменений: Euro Offbeat, House Pluck, House Piano, Rolling, Acid Pedal, Anthem Stab, Dream Piano Am-F-C-G, Come On, Hands Up, Lets Go, Diskoteka, Vse Na Tantspol, Dance With Me.
 
 ## 6. Решения пользователя (2026-11-13)
 
