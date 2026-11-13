@@ -363,3 +363,14 @@ describe('вдвоём', () => {
     expect(makeView(s, [1 - bidder]).snos?.every((c) => c.r === 0)).toBe(true);
   });
 });
+
+describe('журнал вдвоём', () => {
+  it('снос описывается без имени получателя, чужая карта не показывается', () => {
+    const name = (n: number) => (n === -1 ? 'Игрок' : `P${n}`);
+    const txt = (card?: Card) => def.describe!({ type: 'give', seat: 0, to: -1, card }, name)!;
+    expect(txt(C('9H'))).toContain('сносит');
+    expect(txt(C('9H'))).not.toContain('Игрок');
+    expect(txt()).toBe('P0 сносит карту');
+    expect(def.redact!({ type: 'give', seat: 0, to: -1, card: C('9H') }, [1])).toMatchObject({ card: undefined });
+  });
+});

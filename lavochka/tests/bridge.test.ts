@@ -13,3 +13,18 @@ describe('бридж: гонор в роббере', () => {
     expect(honours(deal, 'H')).toBeNull();
   });
 });
+
+describe('бридж: скрытые данные', () => {
+  it('очки силы чужих рук не уходят в вид (кроме мини-бриджа, где они открыты)', async () => {
+    const { def } = await import('../src/games/bridge/def');
+    const { SeededRng } = await import('../src/core/rng');
+    const seats = [0, 1, 2, 3].map((seat) => ({ seat, kind: 'bot' as const, name: 'x', level: 1 }));
+    const s = def.setup(seats, { format: 'rubber' }, new SeededRng(3));
+    const v = def.view(s, [0]);
+    expect(v.hcp[0]).toBe(s.hcp[0]);
+    expect(v.hcp[1] + v.hcp[2] + v.hcp[3]).toBe(0);
+    expect(v.deal.flat()).toHaveLength(0);
+    const m = def.setup(seats, { format: 'mini' }, new SeededRng(3));
+    expect(def.view(m, [0]).hcp).toEqual(m.hcp);
+  });
+});

@@ -48,6 +48,7 @@ function describe(ev: Event, name: (seat: number) => string): string | null {
     case 'prikup':
       return `${name(ev.seat)}: прикуп за ${ev.bid}${ev.dark ? ' (втёмную)' : ''} — ${ev.cards.map(cn).join(' ')}`;
     case 'give':
+      if (ev.to === -1) return ev.card ? `${name(ev.seat)} сносит ${cn(ev.card)}` : `${name(ev.seat)} сносит карту`;
       return ev.card ? `${name(ev.seat)} отдаёт ${name(ev.to)} ${cn(ev.card)}` : `${name(ev.seat)} отдаёт карту ${name(ev.to)}`;
     case 'raise':
       return `${name(ev.seat)} поднимает заказ до <b>${ev.value}</b>`;

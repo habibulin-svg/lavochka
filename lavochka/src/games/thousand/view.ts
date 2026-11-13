@@ -34,6 +34,9 @@ class ThousandView implements GameView<View, Event> {
   private askMarriage: Card | null = null;
   /** Идёт анимация play(): setTurn в это время только снимает управление (не перерисовывает и не убирает «Дальше»). */
   private busy = false;
+  /** Стол закрыт: показ событий не продолжается, ожидание «Дальше» снимается. */
+  private dead = false;
+  private holdEnd: (() => void) | null = null;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -374,9 +377,11 @@ class ThousandView implements GameView<View, Event> {
       const end = () => {
         clearTimeout(t);
         b.remove();
+        if (this.holdEnd === end) this.holdEnd = null;
         done();
       };
       const t = setTimeout(end, ms);
+      this.holdEnd = end;
       b.onclick = end;
       if (ms > 2000) this.btns.appendChild(b);
     });
@@ -403,6 +408,7 @@ class ThousandView implements GameView<View, Event> {
     const speed = this.ctx.speed();
     this.clearTurn();
     for (const ev of events) {
+      if (this.dead) return;
       if (ev.type === 'play') {
         const cur = this.v!;
         const t = cur.trick && cur.trick.cards.length < cur.players.length ? cur.trick : { leader: ev.seat, cards: [] };
@@ -519,6 +525,7 @@ class ThousandView implements GameView<View, Event> {
         await this.showBanner(`Тысяча! Победа: ${this.plain(ev.winner)}`, 0);
       }
     }
+    if (this.dead) return;
     this.v = v;
     this.draw({ x: this.g.c.x, y: this.g.prik });
   }
@@ -572,6 +579,8 @@ class ThousandView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.dead = true;
+    this.holdEnd?.();
     this.cs.destroy();
   }
 }

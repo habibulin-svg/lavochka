@@ -497,6 +497,8 @@ export function makeView(s: State, seats: number[] | 'all'): View {
     ...s,
     hands: s.hands.map((h, p) => (see(p) ? h.slice() : [])),
     deal: s.phase === 'over' ? s.deal.map((h) => h.slice()) : [[], [], [], []],
+    // очки силы чужих рук открыты только в мини-бридже (там они по правилам видны всем)
+    hcp: s.cfg.format === 'mini' ? s.hcp.slice() : s.hcp.map((x, p) => (see(p) ? x : 0)),
     counts: s.hands.map((h, p) => v.counts?.[p] ?? h.length),
   };
 }
