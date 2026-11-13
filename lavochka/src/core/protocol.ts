@@ -69,7 +69,7 @@ export type ClientMsg =
   | { t: 'rtc'; to: string; data: unknown };
 
 export type RoomMsg =
-  | { t: 'welcome'; code: string; game: string; options: Options; mySeats: number[]; owner: boolean }
+  | { t: 'welcome'; code: string; game: string; options: Options; mySeats: number[]; owner: boolean; vid?: string }
   /** Лобби: места, варианты (хозяин мог сменить) и свои места этого экрана. */
   | { t: 'lobby'; seats: SeatStatus[]; options: Options; mySeats: number[] }
   | {

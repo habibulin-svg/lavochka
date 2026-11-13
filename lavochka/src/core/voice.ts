@@ -151,7 +151,7 @@ export class Voice {
   tiles(): VoiceTile[] {
     const out: VoiceTile[] = [];
     for (const m of this.members) {
-      const me = m.id === this.client.id;
+      const me = m.id === this.client.voiceId;
       const p = this.peers.get(m.id);
       out.push({
         id: m.id,
@@ -180,8 +180,8 @@ export class Voice {
 
   /** Соединения — со всеми, кто в чате; с ушедшими — закрыть. */
   private sync() {
-    const ids = new Set(this.members.map((m) => m.id).filter((id) => id !== this.client.id));
-    if (!this.members.some((m) => m.id === this.client.id)) return;
+    const ids = new Set(this.members.map((m) => m.id).filter((id) => id !== this.client.voiceId));
+    if (!this.members.some((m) => m.id === this.client.voiceId)) return;
     for (const id of ids) if (!this.peers.has(id)) this.openPeer(id);
     for (const id of [...this.peers.keys()]) if (!ids.has(id)) this.closePeer(id);
   }
@@ -199,7 +199,7 @@ export class Voice {
     }
     const p: Peer = {
       pc,
-      polite: this.client.id > id,
+      polite: this.client.voiceId > id,
       making: false,
       ignore: false,
       stream: null,

@@ -18,8 +18,12 @@ export class RoomClient {
   /** Пока интерфейс игры грузится, сообщения копятся здесь (кроме ping). */
   private held: RoomMsg[] | null = [];
   welcome: Extract<RoomMsg, { t: 'welcome' }> | null = null;
-  /** Свой clientId (для голосового чата). */
+  /** Свой clientId: по нему комната возвращает место; другим не показывается. */
   readonly id: string;
+  /** Свой номер в голосовом чате (комната выдаёт в welcome; старая комната — clientId). */
+  get voiceId(): string {
+    return this.welcome?.vid ?? this.id;
+  }
   private welcomeWaiters: { ok: (w: Extract<RoomMsg, { t: 'welcome' }>) => void; fail: (e: Error) => void }[] = [];
 
   constructor(

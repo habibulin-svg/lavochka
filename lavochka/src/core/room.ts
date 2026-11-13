@@ -112,6 +112,8 @@ interface Conn {
   holdUntil: number;
   /** В голосовом чате (и с камерой ли). */
   voice: { video: boolean } | null;
+  /** Номер в голосовом чате: его видят все, поэтому это не clientId (по clientId возвращают место за столом). */
+  vid: string;
   /** Молчит до этого момента (правило игры в чате). */
   muteUntil?: number;
   /** Часы клиента относительно комнаты (игры с def.clock). */
@@ -200,7 +202,7 @@ export class Room {
 
   connect(link: Link) {
     if (this.closed) return link.close();
-    const conn: Conn = { link, clientId: null, name: '', avatar: null, look: null, seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, fast: false, holdUntil: 0, voice: null };
+    const conn: Conn = { link, clientId: null, name: '', avatar: null, look: null, seats: [], owner: false, lastSeen: Date.now(), idleSeq: 0, fast: false, holdUntil: 0, voice: null, vid: Math.random().toString(36).slice(2, 12) };
     this.conns.add(conn);
     link.onMessage = (m) => this.onMsg(conn, m);
     link.onClose = () => this.drop(conn);
@@ -300,7 +302,7 @@ export class Room {
         }
         if (size > 32000) return;
         const data = conn.link.video === false ? noVideoSend(m.data) : m.data;
-        for (const c of this.conns) if (c.voice && c.clientId === m.to) this.send(c, { t: 'rtc', from: conn.clientId, data });
+        for (const c of this.conns) if (c.voice && c.clientId && c.vid === m.to) this.send(c, { t: 'rtc', from: conn.vid, data });
         return;
       }
       default:
@@ -312,7 +314,7 @@ export class Room {
   private voiceList() {
     const members: VoiceMember[] = [...this.conns]
       .filter((c) => c.voice && c.clientId)
-      .map((c) => ({ id: c.clientId!, name: c.seats.length === 1 ? this.seatName(c.seats[0]) : c.name, seat: c.seats.length === 1 ? c.seats[0] : null, video: c.voice!.video }));
+      .map((c) => ({ id: c.vid, name: c.seats.length === 1 ? this.seatName(c.seats[0]) : c.name, seat: c.seats.length === 1 ? c.seats[0] : null, video: c.voice!.video }));
     this.broadcast({ t: 'voice', members });
   }
 
@@ -350,7 +352,7 @@ export class Room {
       }
     }
 
-    this.send(conn, { t: 'welcome', code: this.code, game: this.def.id, options: this.options, mySeats: conn.seats, owner: conn.owner });
+    this.send(conn, { t: 'welcome', code: this.code, game: this.def.id, options: this.options, mySeats: conn.seats, owner: conn.owner, vid: conn.vid });
     this.syncBurst(conn);
     if (this.auth) {
       this.sendStart(conn);
@@ -366,13 +368,19 @@ export class Room {
     }
   }
 
-  /** Место для подключившегося: своё прежнее → прежнее по имени → любое свободное. */
+  /** Место для подключившегося: своё прежнее → прежнее по имени → любое свободное.
+   * Посреди партии чужое место (по имени или «свободное») — только когда его хозяин не вернулся за время ожидания:
+   * иначе зритель или соперник во второй вкладке забирал место (и карты) того, кто просто обновил страницу. */
   private pickSeat(conn: Conn): number | null {
     const remote = this.seats.filter((s) => s.kind === 'remote').map((s) => s.seat);
     const onlineIds = new Set([...this.conns].filter((c) => c !== conn && c.clientId).map((c) => c.clientId));
     const free = (seat: number) => {
       const h = this.holders.get(seat);
-      return !h || !onlineIds.has(h.clientId);
+      if (!h) return true;
+      if (onlineIds.has(h.clientId)) return false;
+      if (!this.auth) return true;
+      const since = this.offSince.get(seat);
+      return since == null || Date.now() - since >= this.grace();
     };
     for (const s of remote) if (this.holders.get(s)?.clientId === conn.clientId) return s;
     for (const s of remote) if (free(s) && this.holders.get(s)?.name === conn.name) return s;
