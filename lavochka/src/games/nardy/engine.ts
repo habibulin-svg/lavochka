@@ -86,7 +86,7 @@ export function cfgFrom(o: Options): Cfg {
     return { mode: o.mode as Mode, target: Math.max(1, Math.min(25, Number(o.target) || 1)), head: 'free', block6: 'allow', mars: false, koks: false, cube: false, cascade: false, steal: false };
   const greek = mode === 'plakoto' || mode === 'fevga' || mode === 'portes';
   if (greek)
-    return { mode, target: Math.max(1, Math.min(25, Number(o.target) || (tavli ? 5 : 1))), head: 'free', block6: 'rule', mars: true, koks: false, cube: false, cascade: false, steal: false, tavli };
+    return { mode, target: Math.max(1, Math.min(25, Number(o.target) || (tavli ? 5 : 1))), head: 'free', block6: 'rule', mars: bool(o.mars, true), koks: false, cube: false, cascade: false, steal: false, tavli };
   return {
     mode,
     target: Math.max(1, Math.min(25, Number(o.target) || 1)),
@@ -526,7 +526,7 @@ export function legalSteps(s: State): Step[] {
   });
   const max = Math.max(...scored.map((x) => x.n));
   let res = scored.filter((x) => x.n === max).map((x) => x.st);
-  if (max === 1 && s.left.length === 2 && s.left[0] !== s.left[1]) {
+  if (max === 1 && !isRoman(s.cfg) && s.left.length === 2 && s.left[0] !== s.left[1]) {
     const hi = Math.max(...res.map((x) => x.die));
     res = res.filter((x) => x.die === hi);
   }
@@ -639,11 +639,17 @@ function isCascade(s: State) {
 
 function endTurn(s: State, events: Event[]) {
   const p = s.cur;
+  const wasStealing = s.stealing;
   if (!s.stealing) s.turns[p]++;
   s.stealing = false;
   s.headMoves = 0;
   s.left = [];
   s.queue = [];
+  // доиграл чужой остаток каскада — теперь он бросает сам (ход не возвращается)
+  if (wasStealing) {
+    s.phase = 'roll';
+    return;
+  }
   s.cur = 1 - p;
   if (s.steal.length) {
     // соперник доигрывает остаток каскада, потом бросает сам
@@ -802,7 +808,7 @@ export function finals(s: State, limit = 6000): { state: State; steps: Step[] }[
   let res = [...out.values()];
   const max = Math.max(...res.map((r) => r.steps.length));
   res = res.filter((r) => r.steps.length === max);
-  if (max === 1 && s.left.length === 2 && s.left[0] !== s.left[1]) {
+  if (max === 1 && !isRoman(s.cfg) && s.left.length === 2 && s.left[0] !== s.left[1]) {
     const hi = Math.max(...res.map((r) => r.steps[0].die));
     res = res.filter((r) => r.steps[0].die === hi);
   }
