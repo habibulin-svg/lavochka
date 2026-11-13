@@ -33,6 +33,7 @@ export class GopsRelay {
   desynced = false;
   /** Кто шлёт снимок после рассинхрона; после последней части часы идут дальше с того же кадра. */
   private snapFrom = -1;
+  private desyncTurn = 0;
   private resume = false;
 
   constructor(public setup: NetSetup, private seed: number) {}
@@ -68,6 +69,7 @@ export class GopsRelay {
     if (i < 0) return;
     const [gone] = this.peers.splice(i, 1);
     if (this.talking.delete(gone.p.id)) this.voiceList();
+    if (this.desynced && gone.p.id === this.snapFrom) this.reassignSnapshot();
     // его бригады стоят: ввод — пустой
     for (const s of this.sidesOf(gone)) {
       this.held[s] = {};
@@ -75,6 +77,19 @@ export class GopsRelay {
     }
     if (this.started) this.broadcast({ t: 'left', name: gone.p.name });
     else this.lobby();
+  }
+
+  /** Тот, кто должен был прислать снимок, вышел: просим другого; никого не осталось — сверку снимаем (вернувшиеся доиграют журнал). */
+  private reassignSnapshot(): void {
+    const src = this.peers.find((x) => x.host) ?? this.peers[0];
+    if (!src) {
+      this.desynced = false;
+      this.hashes.clear();
+      this.resume = true;
+      return;
+    }
+    this.snapFrom = src.p.id;
+    this.broadcast({ t: 'desync', turn: this.desyncTurn, upto: this.frame, from: src.p.id });
   }
 
   /** Бригады, которыми правит участник: хозяин — все 'host', гость — свою. */
@@ -133,15 +148,18 @@ export class GopsRelay {
         return;
       }
       case 'hash': {
+        if (!Number.isSafeInteger(m.turn) || typeof m.h !== 'number') return;
         const first = this.hashes.get(m.turn);
-        if (first === undefined) this.hashes.set(m.turn, m.h >>> 0);
-        else if (first !== m.h >>> 0 && !this.desynced) {
+        if (first === undefined) {
+          if (this.hashes.size < 5000) this.hashes.set(m.turn, m.h >>> 0); // чужой поток номеров память не раздувает
+        } else if (first !== m.h >>> 0 && !this.desynced) {
           // стоп часам: досылаем накопленные кадры, просим снимок у хозяина (нет его — у первого в комнате)
           this.desynced = true;
           this.broadcast({ t: 'f', upto: this.frame, ins: this.pending });
           this.pending = [];
           const src = this.peers.find((x) => x.host) ?? this.peers[0];
           this.snapFrom = src.p.id;
+          this.desyncTurn = m.turn;
           this.broadcast({ t: 'desync', turn: m.turn, upto: this.frame, from: src.p.id });
         }
         return;

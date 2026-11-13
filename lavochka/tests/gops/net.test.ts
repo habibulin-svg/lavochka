@@ -228,4 +228,37 @@ describe('gops/net: восстановление после рассинхрон
     const f = guest.box.filter((m) => m.t === 'f').at(-1);
     expect(f?.t === 'f' && f.upto - upto).toBeLessThan(8);
   });
+
+  it('тот, чей снимок ждали, вышел во время рассинхрона: просят другого, а без никого — сверку снимают (часы не стоят вечно)', () => {
+    const relay = new GopsRelay(SETUP, 11);
+    const host = peer(1, 'Х'), guest = peer(2, 'Г');
+    relay.add(host, true);
+    relay.add(guest, false);
+    relay.message(guest, { t: 'claim', side: 1 });
+    relay.message(host, { t: 'start' });
+    let t = 0;
+    for (let i = 0; i < 100; i++) relay.tick((t += 1000 / 60));
+    relay.message(host, { t: 'hash', turn: 1, h: 1 });
+    relay.message(guest, { t: 'hash', turn: 1, h: 2 });
+    expect(relay.desynced).toBe(true);
+    relay.remove(host);
+    const d = guest.box.filter((m) => m.t === 'desync').at(-1);
+    expect(d?.t === 'desync' && d.from).toBe(2);
+    expect(d?.t === 'desync' && d.turn).toBe(1);
+    expect(relay.desynced).toBe(true);
+    relay.remove(guest);
+    expect(relay.desynced).toBe(false);
+  });
+
+  it('чужой мусор в hash не раздувает память и не роняет комнату', () => {
+    const relay = new GopsRelay(SETUP, 11);
+    const host = peer(1, 'Х');
+    relay.add(host, true);
+    relay.message(host, { t: 'start' });
+    for (let i = 0; i < 20000; i++) relay.message(host, { t: 'hash', turn: i, h: i });
+    relay.message(host, { t: 'hash', turn: 1.5, h: 1 });
+    relay.message(host, { t: 'hash', turn: Number.NaN, h: 1 });
+    expect((relay as unknown as { hashes: Map<number, number> }).hashes.size).toBeLessThanOrEqual(5000);
+    expect(relay.desynced).toBe(false);
+  });
 });

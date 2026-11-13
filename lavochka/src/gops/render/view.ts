@@ -66,6 +66,7 @@ export class GameView {
 
   async init(w: World, brigades: string[], theme: string, time?: string): Promise<void> {
     await this.app.init({ resizeTo: this.host, background: themeArt(theme, time).sky, antialias: true, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
+    if (this.gone) return this.teardown(); // партию закрыли, пока холст создавался
     this.host.appendChild(this.app.canvas);
     const art = themeArt(theme, time);
     const [ground, far, near, ...sheets] = await Promise.all([
@@ -111,7 +112,12 @@ export class GameView {
     this.cam.x = this.cam.tx = w.mask.w / 2;
     this.cam.y = this.cam.ty = w.mask.h / 2;
     this.cam.zoom = this.startZoom(w);
+    this.ready = true;
+    if (this.gone) this.teardown();
   }
+
+  private gone = false;
+  private ready = false;
 
   private waterColor = 0x334455;
 
@@ -708,8 +714,17 @@ export class GameView {
     }
   }
 
+  /** Закрыть партию; если init ещё идёт — он сам уберёт всё, дойдя до конца. */
   destroy(): void {
+    this.gone = true;
+    if (this.ready) this.teardown();
+  }
+
+  private teardown(): void {
+    // холст-текстуру земли делает сама партия (остальные текстуры — общие, из Assets, их не трогаем)
+    this.terrain?.sprite.texture.destroy(true);
     this.app.destroy(true, { children: true });
+    this.ready = false;
   }
 }
 

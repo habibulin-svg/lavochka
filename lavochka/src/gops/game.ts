@@ -89,6 +89,8 @@ export class Game {
   /** Рассинхрон: ждём кадра snapAt (свой снимок отправить) или чужой снимок. */
   private resync: { at: number; mine: boolean; sent: boolean } | null = null;
   private talk: Talk | null = null;
+  /** destroy() позвали (в том числе пока грузился холст) — start() дальше ничего не заводит. */
+  private dead = false;
 
   constructor(private host: HTMLElement, private setup: GameSetup) {}
 
@@ -129,6 +131,7 @@ export class Game {
     const loading = showLoading({ art: brandArt(`loading-${Math.max(1, Math.min(4, s.mission?.chapter || 1))}-1`), title: s.title ?? 'Загрузка…', font: "'Russo One', sans-serif", color: '#ffd166' });
     await this.view.init(this.world, s.sides.map((x) => x.brigade), s.theme, s.time);
     loading.done();
+    if (this.dead) return; // вышли в меню, пока грузилось: ни HUD, ни таймеров, ни кадров
     if (s.mission?.objective.type === 'king_of_hill') this.view.zone = zonePx(this.world, s.mission.objective.zone);
     // боссы: бригада врага с boss — крупнее и с именем; при старте — баннер
     const bosses = (s.mission?.enemies ?? []).flatMap((e, i) => (e.boss ? [[i + 1, e.name ?? 'Босс'] as [number, string]] : []));
@@ -404,12 +407,13 @@ export class Game {
   }
 
   destroy(): void {
+    this.dead = true;
     cancelAnimationFrame(this.raf);
     clearInterval(this.timer);
     this.off.abort();
     this.controls.dispose();
     this.audio.dispose();
-    this.hud.el.remove();
+    this.hud?.destroy();
     this.talk?.destroy();
     this.view.destroy();
   }

@@ -69,6 +69,8 @@ export class Hud {
   private bar: HTMLElement;
   private music!: HTMLButtonElement;
   private pauseBox: HTMLElement | null = null;
+  /** Снять слушатель Enter с экрана передачи (если он открыт). */
+  private dropHandoff: (() => void) | null = null;
 
   constructor(host: HTMLElement, private brigades: string[]) {
     this.el = div('hud');
@@ -295,9 +297,14 @@ export class Hud {
     box.append(card);
     this.el.append(box);
     this.who.hidden = true; // «Ходит …» уже крупно на экране передачи
-    const done = () => {
+    const drop = () => {
       window.removeEventListener('keydown', key, true);
       box.remove();
+      this.dropHandoff = null;
+    };
+    this.dropHandoff = drop;
+    const done = () => {
+      drop();
       go();
     };
     const key = (e: KeyboardEvent) => {
@@ -306,6 +313,13 @@ export class Hud {
     btn.addEventListener('click', done);
     window.addEventListener('keydown', key, true);
     btn.focus();
+  }
+
+  /** Партия кончилась: убрать HUD и всё, что он повесил на окно. */
+  destroy(): void {
+    this.dropHandoff?.();
+    clearTimeout(this.whoTimer);
+    this.el.remove();
   }
 
   /** Подсказка внизу (совет миссии) — гаснет через ms. */

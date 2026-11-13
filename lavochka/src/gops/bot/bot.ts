@@ -1,10 +1,10 @@
 /* Бот ГОПС: перебирает оружие × угол × силу, прогоняет полёт тем же кодом физики (stepBody по маске,
  * мир не меняется), оценивает урон в точке взрыва по формуле explode. Уровни — шириной перебора и «дрожанием руки».
- * Работает у хоста, по сети уходит его ввод — поэтому здесь можно и float. */
+ * В сети бота считает каждый браузер сам (rng от сида партии), поэтому всё, что он решает, должно быть одинаково у всех. */
 import { type Body, stepBody } from '../sim/body';
 import { ANG_FULL, ONE, fromAngle, len, toPx } from '../sim/fx';
 import { WEAPONS } from '../sim/weapons';
-import { AIM_MAX, CHARGE_MAX, type Input, TICK_HZ, type World, wormById } from '../sim/world';
+import { AIM_MAX, CHARGE_MAX, type Input, TICK_HZ, type World, ready, wormById } from '../sim/world';
 import { WORM_R, type Worm } from '../sim/worm';
 
 export type BotLevel = 'easy' | 'medium' | 'hard';
@@ -101,7 +101,7 @@ function think(w: World, me: Worm, level: BotLevel, rand: () => number): Plan {
   const ammo = w.teams[w.team].ammo;
   let best: Plan = { weapon: 'kuryu', facing: me.facing, aim: 0, charge: 0, fuse: 3, score: -1 };
   for (const id of L.weapons) {
-    if ((ammo[id] ?? 0) === 0) continue;
+    if ((ammo[id] ?? 0) === 0 || !ready(w, id)) continue; // оружие с задержкой миссии ещё не выдали — не тратить ход впустую
     const def = WEAPONS[id];
     if (def.target) {
       // по точке: над каждым видимым врагом

@@ -47,4 +47,22 @@ describe('gops/bot: партии ботов', () => {
     expect(finished).toBeGreaterThanOrEqual(1);
     expect(hardWins).toBeGreaterThanOrEqual(1);
   }, 120_000);
+
+  it('бот не берёт оружие, которое по условию миссии ещё не выдали (задержка)', () => {
+    const lv = level('m03');
+    const sp = dealSpawns(lv.spawns, 2, 2);
+    const w = createWorld({
+      mask: decodeMask(lv), waterY: lv.water_y, seed: 5,
+      teams: sp.map((s) => ({ spawns: s, hp: 100, ammo: { ...CORE_AMMO } })),
+    });
+    w.delays = { mukha: 99, limonka: 99, obrez: 99, sling: 99, makarov: 99, carbide: 99, mortar: 99, kalash: 99, uppercut: 99, kukuruznik: 99 };
+    const bot = new Bot('medium', lcg(5));
+    const used = new Set<string>();
+    for (let t = 0; t < 60 * 60 * 2 && w.phase !== 'over'; t++) {
+      const inp = bot.input(w);
+      if (inp.weapon) used.add(inp.weapon);
+      step(w, inp);
+    }
+    for (const id of used) expect(w.delays[id] ?? 0).toBe(0);
+  }, 60_000);
 });
