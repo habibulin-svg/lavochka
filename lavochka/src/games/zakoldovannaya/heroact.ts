@@ -53,7 +53,7 @@ export function sellPrice(id: string): number {
 
 export function buy(c: Ctx, h: Hero, list: Ware[], id: string, n = 1): boolean {
   const w = list.find((x) => x.id === id);
-  if (!w || n < 1 || n > 100) return false;
+  if (!w || !Number.isInteger(n) || n < 1 || n > 100) return false;
   const price = priceFor(h, w) * n;
   if (h.gold < price) return false;
   const slot = slotOf(id);
@@ -204,8 +204,8 @@ export function drink(c: Ctx, h: Hero, bottle: number): boolean {
 export function giveTo(c: Ctx, from: Hero, to: Hero, gold?: number, id?: string, bottle?: number): boolean {
   if (!alive(to) || from === to) return false;
   if (gold) {
-    const n = Math.min(from.gold, Math.floor(gold), capacity(to) - to.gold);
-    if (n <= 0) return false;
+    const n = Math.min(from.gold, Math.floor(Number(gold)), capacity(to) - to.gold);
+    if (!(n > 0)) return false;
     from.gold -= n;
     to.gold += n;
     sys(c, `${from.name} передаёт ${to.name} ${n} мон.`);
@@ -306,8 +306,8 @@ export function castOutside(c: Ctx, h: Hero, id: string, target?: number, bottle
 
 /** Обмен денег на игровые очки в лавке (1:1, не больше 1000 за раз). */
 export function exchange(c: Ctx, h: Hero, n: number): boolean {
-  const k = Math.min(1000, Math.floor(n), h.gold);
-  if (k <= 0) return false;
+  const k = Math.min(1000, Math.floor(Number(n)), h.gold);
+  if (!(k > 0)) return false;
   h.gold -= k;
   sys(c, `${h.name} меняет ${k} мон. на игровые очки.`);
   addXp(c, h, k);

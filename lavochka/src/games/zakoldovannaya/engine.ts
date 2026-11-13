@@ -11,7 +11,7 @@ import { MONSTER } from './monsters';
 import type { Foe, Give } from './script';
 import { GM, type State } from './state';
 import * as w from './world';
-import { startGamble, gambleAct } from './gamble';
+import { startGamble, gambleAct, finishGamble } from './gamble';
 
 export type Action =
   // оформление героя
@@ -68,6 +68,30 @@ export type Action =
   | { t: 'gm-fight'; foes: Foe[] }
   | { t: 'gm-give'; seat: number; give: Give }
   | { t: 'gm-event' };
+
+/** Награда ведущего-человека из сети: только числа в пределах, бутылочки 1–25, волшебные вещи 26–43. */
+function cleanGive(g: Give | undefined): Give | null {
+  if (!g || typeof g !== 'object') return null;
+  const out: Give = {};
+  const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.trunc(v))) : undefined);
+  const gold = num(g.gold, 0, 5000);
+  const xp = num(g.xp, 0, 5000);
+  const hp = num(g.hp, -50, 50);
+  const hpMax = num(g.hpMax, -20, 20);
+  if (gold) out.gold = gold;
+  if (xp) out.xp = xp;
+  if (hp) out.hp = hp;
+  if (hpMax) out.hpMax = hpMax;
+  if (Array.isArray(g.bottles)) {
+    const b = g.bottles.map((x) => num(x, 1, 25)).filter((x): x is number => x != null).slice(0, 5);
+    if (b.length) out.bottles = b;
+  }
+  if (typeof g.item === 'string' && /^magic:\d+$/.test(g.item)) {
+    const n = Number(g.item.slice(6));
+    if (n >= 26 && n <= 43) out.item = g.item;
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 // ---------- крючки интерпретатора
 
@@ -208,7 +232,23 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): ApplyResult
   const c: Ctx = { s, rng, ev: [] };
   const ok = act(c, seat, a);
   if (!ok) return null;
+  settle(c);
   return { state: s, events: c.ev };
+}
+
+/** Вещи вне очереди (бутылочка с ядом) могут убрать из партии того, кого ждала лавка, игра или весь отряд: ждать больше некого. */
+function settle(c: Ctx): void {
+  const s = c.s;
+  if (s.result || s.phase === 'create' || s.combat) return;
+  if (!living(s).length) {
+    afterScene(c);
+    return;
+  }
+  const wt = s.scene?.wait;
+  if (wt?.k === 'shop' && living(s).every((x) => wt.done.includes(x.seat))) {
+    s.scene!.wait = undefined;
+    run(c);
+  } else if (wt?.k === 'gamble' && living(s).every((x) => wt.game.done?.includes(x.seat))) finishGamble(c);
 }
 
 function act(c: Ctx, seat: number, a: Action): boolean {
@@ -226,12 +266,14 @@ function act(c: Ctx, seat: number, a: Action): boolean {
       }
       case 'gm-give': {
         const t = hero(c, a.seat);
-        if (!t || !alive(t)) return false;
-        applyGive(c, a.give, [t], false);
+        const give = cleanGive(a.give);
+        if (!t || !alive(t) || !give) return false;
+        applyGive(c, give, [t], false);
         return true;
       }
       case 'gm-fight': {
-        const foes = (a.foes ?? []).filter((f) => MONSTER[f.m]).slice(0, 12);
+        // из пульта приходят только карточка и число: переопределения и кубики в «сколько» с сети не берём
+        const foes: Foe[] = (Array.isArray(a.foes) ? a.foes : []).filter((f) => f && MONSTER[f.m]).slice(0, 12).map((f) => ({ m: f.m, n: Math.max(1, Math.min(12, Math.floor(Number(f.n)) || 1)) }));
         if (!foes.length || s.scene || s.combat) return false;
         s.custom = [{ fight: foes, win: [{ say: 'Опасность повержена.' }] }];
         return startScene(c, 'custom');

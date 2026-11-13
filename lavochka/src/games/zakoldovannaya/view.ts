@@ -182,8 +182,8 @@ export function createView(): GameView<View, Ev> {
       return h ? heroLine(h) : '';
     },
     destroy() {
-      music.stop();
-      voice.stop();
+      music.destroy();
+      voice.destroy();
     },
   };
 }

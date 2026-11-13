@@ -30,6 +30,8 @@ export class Music {
   private mood: Mood | null = null;
   private i: Record<string, number> = {};
   private vol = 0.35;
+  /** Треки, что сейчас затухают (их тоже глушим при закрытии). */
+  private fading = new Set<HTMLAudioElement>();
   on(): boolean {
     return store.get<string>(PREF_MUSIC, 'on') !== 'off';
   }
@@ -57,7 +59,13 @@ export class Music {
     this.cur = a;
     void a.play().catch(() => {});
     this.fade(a, this.vol, 1500);
-    if (old) this.fade(old, 0, 1200, () => old.pause());
+    if (old) {
+      this.fading.add(old);
+      this.fade(old, 0, 1200, () => {
+        old.pause();
+        this.fading.delete(old);
+      });
+    }
   }
   private fade(a: HTMLAudioElement, to: number, ms: number, done?: () => void): void {
     const from = a.volume;
@@ -73,10 +81,25 @@ export class Music {
   stop(): void {
     if (this.cur) {
       const a = this.cur;
-      this.fade(a, 0, 600, () => a.pause());
+      this.fading.add(a);
+      this.fade(a, 0, 600, () => {
+        a.pause();
+        this.fading.delete(a);
+      });
     }
     this.cur = null;
     this.mood = null;
+  }
+  /** Закрыть окно игры: музыка гаснет сразу (плавное затухание на кадрах не идёт во вкладке, которую не видно). */
+  destroy(): void {
+    for (const a of [this.cur, ...this.fading]) {
+      if (!a) continue;
+      a.onended = null;
+      a.pause();
+    }
+    this.cur = null;
+    this.mood = null;
+    this.fading.clear();
   }
   /** Тише, пока говорит ведущий. */
   duck(on: boolean): void {

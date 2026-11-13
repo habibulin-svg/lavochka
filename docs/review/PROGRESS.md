@@ -13,8 +13,8 @@
 |---|---|---|---|---|
 | 1 | Тест требований CLAUDE.md (`tests/requirements.test.ts`) | — | **готово** | `FINDINGS.md` §1 |
 | 4 | Ядро и сервер | Opus | ревью готово; **исправлены** К1 (падение сервера), К2 (захват места), В4 (потеря hello); открыты В1–В3, В5, М1–М5 | `core.md` |
-| 2 | 153 игры, 13 пачек | Haiku → проверка и починка Sonnet | см. таблицу | `games/batch-NN.md` |
-| 3 | Сложные игры | Sonnet | начат, прерван лимитом | `deep/<id>.md` |
+| 2 | 153 игры, 13 пачек | Haiku → проверка и починка Sonnet | **готово**, все пачки в коммитах | `games/batch-NN.md` |
+| 3 | Сложные игры | Sonnet | готово (кроме zakoldovannaya — доводится) | `deep/<id>.md` |
 
 Промпты агентов: `haiku-prompt.md` (ревью пачки), `verify-prompt.md` (проверка + починка), `deep-prompt.md` (глубокое).
 
@@ -31,17 +31,17 @@ zakoldovannaya bridge thousand secret-hitler detektiv kruzhok nardy shishbesh du
 | 04 | billiards djio chapaev gadanie erudit daldos baccarat senet whoami sunduchok chaupar musicstudio shel | готово, в коммите |
 | 05 | chess avtomaty vkosmos okey rummy vozboy hangman vput sto polet tak beglye | готово, в коммите |
 | 06 | domino checkers zarulem galaktika mahjong fidchell raspisnoy skat seka morskaya king devyatka | готово, в коммите |
-| 07 | viktorina konversiya ur basketball shariki hive canasta cenariska azul shagdy g2048 drunkard | ревью Haiku идёт (возобновлено после лимита) |
+| 07 | viktorina konversiya ur basketball shariki hive canasta cenariska azul shagdy g2048 drunkard | готово, в коммите |
 | 08 | akcii lapta magiya vorona tanchiki astro shifrovka vataku blokus shatra perudo brick | готово, в коммите |
-| 09 | puzzles borodino football cah partizany petteia danetki quoridor tafl mancala abalone hearts | ревью готово; проверка Sonnet идёт (возобновлена) |
+| 09 | puzzles borodino football cah partizany petteia danetki quoridor tafl mancala abalone hearts | готово, в коммите |
 | 10 | western crocodile hockey spy aerohockey srazhenie fanorona seabattle perekati mill santorini akulina | готово, в коммите |
-| 11 | mahjong4 pekar pinbol treasures tarot shtos go shogi govno strelki ttt petardy | ревью готово; проверка Sonnet идёт |
+| 11 | mahjong4 pekar pinbol treasures tarot shtos go shogi govno strelki ttt petardy | готово, в коммите |
 | 12 | gorodki poezd hanafuda hat tanki shen terc surakarta khrap chinesecheckers janggi hex | готово, в коммите |
-| 13 | chizh solitaire darts eggs ochko paperball kamisado deberts yahtzee dots reversi elektronika | ревью Haiku идёт (возобновлено) |
+| 13 | chizh solitaire darts eggs ochko paperball kamisado deberts yahtzee dots reversi elektronika | готово, в коммите |
 
 ## Слой 3 — глубокое ревью
 
 | Игра | Статус |
 |---|---|
-| preferans, poker+holdem, mafia(+secret-hitler), durak | начаты, прерваны лимитом (в рабочей копии частичные правки mafia, preferans — не коммитить без доведения) |
-| gops, geroi, kommersy, manager+monopol, vkladyshi, zakoldovannaya, bridge, thousand, detektiv, kruzhok, nardy, shishbesh, korona | не начаты |
+| preferans, poker+holdem, mafia+secret-hitler, durak, vkladyshi, thousand+bridge, gops, kommersy+manager+monopol, geroi, kruzhok, nardy+shishbesh(+ludo, chaupar), korona+detektiv | готово, в коммитах |
+| zakoldovannaya | доводится после лимита |

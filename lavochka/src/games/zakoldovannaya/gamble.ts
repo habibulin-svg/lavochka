@@ -47,6 +47,8 @@ export function gambleAct(c: Ctx, h: Hero, a: { t: string; n?: number; picks?: n
   if (spec.game === 'cards') {
     const picks = [...new Set((a.picks ?? []).map(Number).filter((x) => x >= 1 && x <= 6))];
     if (!picks.length || picks.length > 5) return false;
+    // ставка идёт на каждый номер: на все сразу денег должно хватать
+    if (n * picks.length > h.gold) return false;
     // ставка на каждый номер; остальные номера разбирают соперники, банк — угадавшему
     const f = d6(c);
     c.ev.push({ k: 'roll', seat: 0, label: `Карты: выпало`, dice: [{ die: 'd6', face: f }], v: f });
@@ -91,6 +93,12 @@ function apply(c: Ctx, h: Hero, delta: number, game: string): void {
     if (delta > 0) h.hpMax = Math.max(h.hpMax, h.hp);
     if (h.hp <= 0) die(c, h, 'проиграл последние очки риска');
   } else h.gold = Math.max(0, h.gold + delta);
+}
+
+/** Игра заканчивается, когда все живые встали из-за стола (или у соперника кончились деньги). */
+export function finishGamble(c: Ctx): void {
+  const wt = c.s.scene?.wait;
+  if (wt?.k === 'gamble') finish(c, wt.spec, wt.game);
 }
 
 function finish(c: Ctx, path: Path, g: { net?: Record<number, number> }): void {

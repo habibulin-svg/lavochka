@@ -34,6 +34,8 @@ export class Narrator {
   private seen = -1;
   private queue: string[] = [];
   private cur: HTMLAudioElement | null = null;
+  /** Окно игры закрыто: запоздавшая загрузка списка записей уже ничего не запускает. */
+  private dead = false;
   /** Приглушить музыку, пока говорит ведущий. */
   onSpeak?: (speaking: boolean) => void;
   on(): boolean {
@@ -61,6 +63,7 @@ export class Narrator {
   }
   private async push(keys: string[]): Promise<void> {
     const set = await known();
+    if (this.dead) return;
     this.queue.push(...keys.filter((k) => set.has(k)));
     if (this.queue.length > QUEUE_MAX) this.queue.splice(0, this.queue.length - QUEUE_MAX);
     if (!this.cur) this.next();
@@ -99,6 +102,11 @@ export class Narrator {
     }
     this.cur = null;
     this.onSpeak?.(false);
+  }
+  /** Закрыть: тишина насовсем. */
+  destroy(): void {
+    this.dead = true;
+    this.stop();
   }
   /** Громкость и скорость — сразу и на звучащей записи. */
   apply(): void {

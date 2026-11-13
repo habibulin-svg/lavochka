@@ -391,6 +391,8 @@ export function foesAct(c: Ctx, pickTargets?: Record<number, number>): boolean {
       if (t.kind === 'hero' && !alive(t.h)) break;
     }
   }
+  // броски удачи павших в этот же ход (их добил другой удар) не ждём: иначе очередь пуста, а бой не кончен
+  cb.saves = cb.saves.filter((sv) => alive(hero(c, sv.seat)!));
   cb.phase = cb.saves.length ? 'saves' : 'foes';
   if (cb.saves.length) {
     cb.queue = [...new Set(cb.saves.map((s) => s.seat))];

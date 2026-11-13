@@ -265,7 +265,7 @@ function leaderBot(v: View, h: Hero, level: number, rng: Rng): Action | null {
   };
   const allHurt = hurt(level ? 0.5 : 0.3);
   // павших несут в храм Форпоста (по правилу «Форпост»), если хватает на воскрешение
-  const revive = v.opts.death === 'forpost' && v.heroes.some((x) => x.dead && x.cls) && v.heroes.reduce((a, x) => a + (x.dead ? 0 : x.gold), 0) >= 100;
+  const revive = v.opts.death === 'forpost' && v.heroes.some((x) => (x.dead || x.stone) && x.cls) && v.heroes.reduce((a, x) => a + (x.dead || x.stone ? 0 : x.gold), 0) >= 100;
   if (where.k === 'site') {
     const plan = planOf(s, where.site);
     if (!plan) return null;
