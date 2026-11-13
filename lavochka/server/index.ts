@@ -285,6 +285,11 @@ setTimeout(() => accountsReady && backoffice.sample().catch(() => {}), 30_000).u
 // тексты из админки (server/content.ts): новости, блог, «Слово Мастера», картинки; после правки — пререндер страниц
 const content = new Content(accounts, ROOT, DATA, existsSync(DIST) ? prerenderProcess(ROOT, DATA, existsSync('/srv/lavochka')) : null, log);
 setRoomErrorHook((e, where, game) => accountsReady && backoffice.serverError(e, where, game));
+// последний рубеж: исключение из таймера комнаты (боты, реальное время) не должно гасить все столы
+process.on('uncaughtException', (e) => {
+  log('необработанное исключение: ' + (e?.stack ?? e));
+  if (accountsReady) backoffice.serverError(e, 'uncaughtException');
+});
 process.on('unhandledRejection', (e) => {
   log('необработанная ошибка: ' + e);
   if (accountsReady) backoffice.serverError(e, 'unhandledRejection');
@@ -720,16 +725,30 @@ wss.on('connection', (ws, req) => {
     } catch {
       return;
     }
-    if (link) return link.onMessage?.(msg);
-    if (!pending) return;
+    if (link) return deliver(msg);
+    // пока комната подключает (запросы в базу), «hello» и прочее ждут в очереди, а не теряются
+    if (!pending) return void (early.length < 50 && early.push(msg));
     pending = false;
     handleFirst(ws, msg, req)
-      .then((l) => (link = l))
+      .then((l) => {
+        link = l;
+        early.splice(0).forEach(deliver);
+      })
       .catch((e) => {
         log('ошибка: ' + e);
         ws.close();
       });
   });
+  const early: any[] = [];
+  /** Ошибка игры на одном сообщении не роняет сервер со всеми комнатами. */
+  function deliver(msg: any) {
+    try {
+      link?.onMessage?.(msg);
+    } catch (e) {
+      log('ошибка в комнате: ' + ((e as Error)?.stack ?? e));
+      if (accountsReady) backoffice.serverError(e, 'сообщение комнаты');
+    }
+  }
   ws.on('close', () => link?.onClose?.());
   ws.on('error', () => link?.onClose?.());
 });

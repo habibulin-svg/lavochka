@@ -274,3 +274,35 @@ describe('комната: аккаунты по местам (кон «Вкла�
     expect(closed).toBe(1);
   }, 90_000);
 });
+
+describe('комната: правила из сети не роняют сервер', () => {
+  it('fitOptions: выдуманный вариант отбрасывается, число — в пределах, скрытые — только простые', async () => {
+    const { fitOptions } = await import('../src/core/room');
+    const sea = await DEFS.sea();
+    const o = fitOptions(sea, { game: 'zzz', seed: 7, junk: { a: 1 }, 'bad key': 1 });
+    expect(o.game).toBeUndefined();
+    expect(o.seed).toBe(7);
+    expect(o).not.toHaveProperty('junk');
+    expect(o).not.toHaveProperty('bad key');
+    const num = sea.options?.find((x) => x.type === 'number' && x.max != null);
+    if (num) expect(fitOptions(sea, { [num.key]: 1e9 })[num.key]).toBe(num.max);
+  });
+
+  it('ошибка игры при раздаче оставляет стол в лобби с сообщением, а не бросает исключение', async () => {
+    const base = await DEFS.shishbesh();
+    const def = { ...base, setup: () => { throw new Error('плохие правила'); } };
+    const seats: SeatSpec[] = [
+      { seat: 3, kind: 'human', name: 'Хозяин', level: 1 },
+      { seat: 1, kind: 'bot', name: '', level: 1 },
+    ];
+    const room = new Room({ def, options: {}, seats, code: 'BAD', ownerKey: 'key', botDelay: 0 });
+    rooms.push(room);
+    const [a, b] = localPair();
+    room.connect(a);
+    const owner = new AutoClient(def, b, 'Хозяин', 'key', 1);
+    await until(() => owner.has('lobby'), 5000, 'лобби');
+    expect(() => owner.client.start(true)).not.toThrow();
+    await until(() => owner.log.some((m) => m.t === 'error'), 5000, 'сообщение об ошибке');
+    expect(owner.has('start')).toBe(false);
+  });
+});

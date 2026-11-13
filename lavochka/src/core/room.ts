@@ -14,7 +14,7 @@ import { ClockSync, clampPress, pressWindow } from './clocksync';
 import { PROTOCOL_VERSION, type ClientMsg, type HostOp, type Link, type Me, type RoomMsg, type SeatStatus, type VoiceMember } from './protocol';
 import { SeededRng, randomSeed } from './rng';
 import { startTicker, type Ticker } from './ticker';
-import type { GameDef, GameResult, Options, SeatKind, SeatSpec } from './types';
+import type { GameDef, GameResult, OptionValue, Options, SeatKind, SeatSpec } from './types';
 
 const HEARTBEAT_MS = 2000;
 const TIMEOUT_MS = 10000;
@@ -46,6 +46,35 @@ interface Occupant {
 
 /** Аватар из сети: только значок из списка или фото с сервисов входа. */
 /** Куда сообщать о сбоях ботов (сервер пишет их в «Ошибки» админки); в браузере не задано. */
+/**
+ * Правила из сети — только допустимые значения: у объявленной настройки тип как у умолчания, выбор — из choices,
+ * число — конечное и в пределах min/max; недопустимое отбрасывается (игра возьмёт умолчание). Скрытые настройки
+ * (сид раскладки и т. п.) — только простые значения. Иначе один `create` с выдуманным вариантом ронял сервер.
+ */
+export function fitOptions(def: GameDef, raw: unknown, base: Options = {}): Options {
+  const out: Options = { ...base };
+  if (!raw || typeof raw !== 'object') return out;
+  const r = raw as Record<string, unknown>;
+  const declared = new Set((def.options ?? []).map((o) => o.key));
+  for (const o of def.options ?? []) {
+    if (!Object.hasOwn(r, o.key)) continue;
+    let v = r[o.key] as OptionValue;
+    if (typeof v !== typeof o.default) continue;
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) continue;
+      if (o.min != null) v = Math.max(o.min, v);
+      if (o.max != null) v = Math.min(o.max, v);
+    }
+    if (o.choices && !o.choices.some((c) => c.value === v)) continue;
+    out[o.key] = v;
+  }
+  for (const [k, v] of Object.entries(r)) {
+    if (declared.has(k) || !/^\w{1,30}$/.test(k)) continue;
+    if (typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 200)) out[k] = v;
+  }
+  return out;
+}
+
 export let roomErrorHook: ((e: unknown, where: string, game: string) => void) | null = null;
 export function setRoomErrorHook(f: typeof roomErrorHook) {
   roomErrorHook = f;
@@ -150,7 +179,7 @@ export class Room {
   constructor(private cfg: RoomConfig) {
     this.def = cfg.def;
     this.code = cfg.code;
-    this.options = cfg.options;
+    this.options = fitOptions(cfg.def, cfg.options);
     this.seats = cfg.seats.map((s) => ({ ...s }));
     if (cfg.snapshot) this.auth = new Authority(this.def, cfg.snapshot.seats, cfg.snapshot.options, cfg.snapshot);
     if (this.auth) queueMicrotask(() => this.scheduleWake());
@@ -664,12 +693,7 @@ export class Room {
   /** Сменить варианты и число мест до начала партии. Люди с убранных мест пересаживаются на свободные. */
   private setup(raw: unknown, count: number): string | null {
     const def = this.def;
-    const options: Options = { ...this.options };
-    if (raw && typeof raw === 'object')
-      for (const o of def.options ?? []) {
-        const v = (raw as Options)[o.key];
-        if (v !== undefined && typeof v === typeof o.default) options[o.key] = v;
-      }
+    const options: Options = fitOptions(def, raw, this.options);
     const range = Array.from({ length: def.players.max - def.players.min + 1 }, (_, i) => def.players.min + i);
     const listed = (def.countsFor?.(options) ?? []).filter((n) => range.includes(n));
     const allowed = listed.length ? listed : range;
@@ -715,12 +739,26 @@ export class Room {
       s.look = o.look;
       if (s.kind === 'remote') s.name = this.seatName(s.seat);
     }
-    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.gameOptions());
+    if (!this.begin()) return;
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
     this.rtStart();
     this.scheduleWake();
+  }
+
+  /** Раздача новой партии. Ошибка игры (необычные правила, старая версия) не роняет комнату: стол остаётся в лобби. */
+  private begin(): boolean {
+    try {
+      this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.gameOptions());
+      return true;
+    } catch (e) {
+      roomErrorHook?.(e, 'начало партии', this.def.id);
+      this.auth = null;
+      this.conns.forEach((c) => c.clientId && this.send(c, { t: 'error', text: 'Партия не началась: игра не приняла эти правила. Выберите другие.' }));
+      this.lobbyAll();
+      return false;
+    }
   }
 
   /** Аккаунт за каждым местом (сервер ставит link.user); правила партии — с поправкой onStart. */
@@ -760,7 +798,7 @@ export class Room {
   private restart() {
     this.botToken++;
     if (this.def.again) this.options = this.def.again(this.options);
-    this.auth = new Authority(this.def, this.seats.map((s) => ({ ...s })), this.gameOptions());
+    if (!this.begin()) return;
     this.conns.forEach((c) => c.clientId && this.sendStart(c));
     this.save();
     this.pumpBots();
