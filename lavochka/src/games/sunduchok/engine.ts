@@ -160,7 +160,7 @@ export function apply(s0: State, seat: number, a: Action, _rng: Rng): { state: S
     s.hands[seat] = [...s.hands[seat], ...give];
     s.lacks[seat] = [];
     if (!s.cfg.suit) s.lacks[t] = addKnown(s.lacks[t], a.rank);
-    if (!s.hands[t].some((c) => c.r === a.rank)) s.known[t] = s.known[t].filter((x) => x !== a.rank);
+    s.known[t] = s.known[t].filter((x) => x !== a.rank); // не выводим из скрытой руки (в варианте с мастью у t могут остаться карты ранга)
     s.last = { seat, target: t, rank: a.rank, suit: a.suit, got: give.length, fish: false, lucky: false };
     layChests(s, seat, ev);
     // ход продолжается (если ещё есть чем)

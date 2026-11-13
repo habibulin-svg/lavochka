@@ -4,7 +4,7 @@
  *   Сложный — в свободных клетках считает шансы по оставшемуся шузу, ставку подстраивает под счёт партии:
  *             отстаёт под конец — рискует, ведёт — ставит по минимуму. */
 import type { Rng } from '../../core/types';
-import { bankChoices, bankerDraws, betRange, MIN_BET, total, uncovered, val, type Action, type View } from './engine';
+import { bankChoices, bankerDraws, betRange, MIN_BET, total, uncovered, type Action, type View } from './engine';
 
 const round10 = (n: number) => Math.max(MIN_BET, Math.round(n / 10) * 10);
 
@@ -32,18 +32,9 @@ function drawEdge(v: View, who: 'P' | 'B', rng: Rng): number {
       draw += outcome((p + c) % 10, c);
       stand += outcome(p, null);
     } else {
-      // банкир в свободной клетке: двух карт понтёра не знаем — перебираем подходящие
+      // банкир в свободной клетке: карты понтёра открыты — считаем по ним
       const b = total(v.banker);
-      const p3 = v.player.length === 3 ? val(v.player[2]) : null;
-      let pt: number;
-      for (;;) {
-        const two = (cardVal() + cardVal()) % 10;
-        if (two >= 8) continue;
-        if (p3 == null ? two >= 5 : two <= 5) {
-          pt = p3 == null ? two : (two + p3) % 10;
-          break;
-        }
-      }
+      const pt = total(v.player);
       const c = cardVal();
       draw += Math.sign((b + c) % 10 - pt);
       stand += Math.sign(b - pt);

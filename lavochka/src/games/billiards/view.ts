@@ -96,6 +96,11 @@ class BilliardsView implements GameView<View, Event> {
   private anim: Ball[] | null = null;
   private busy = false;
   private raf = 0;
+  private timers = new Set<number>();
+  private later(fn: () => void, ms: number) {
+    const id = window.setTimeout(() => { this.timers.delete(id); fn(); }, ms);
+    this.timers.add(id);
+  }
   private ro!: ResizeObserver;
   private onKey = (e: KeyboardEvent) => this.key(e);
   /** Приближение стола (телефон): масштаб к «столу целиком», точка стола в центре экрана, пальцы щипка. */
@@ -494,7 +499,7 @@ class BilliardsView implements GameView<View, Event> {
     this.dragPower = 0;
     this.send({ type: 'shot', cue: this.cue, angle: this.aim, power: this.power, spinX: this.spin.x, spinY: this.spin.y, call });
     // ответа нет (ход отклонён) — снять кий через секунду
-    setTimeout(() => {
+    this.later(() => {
       if (this.pending && !this.busy) {
         this.pending = null;
         this.kick();
@@ -1133,7 +1138,7 @@ class BilliardsView implements GameView<View, Event> {
             const p = pk[a][j] >= 0 ? pk[a][j] : pk[b][j];
             this.falls.push({ id, x: last[j][0], y: last[j][1], pocket: p, t0: now });
             // в сетку (вернувшиеся на стол уберёт setView)
-            if (style.nets) setTimeout(() => this.inPockets[p].push(id), 220 / speed);
+            if (style.nets) this.later(() => this.inPockets[p].push(id), 220 / speed);
           }
           return { id, x: last[j][0], y: last[j][1], on: false };
         }
@@ -1203,6 +1208,8 @@ class BilliardsView implements GameView<View, Event> {
 
   destroy() {
     this.ro.disconnect();
+    for (const t of this.timers) clearTimeout(t);
+    this.timers.clear();
     window.removeEventListener('keydown', this.onKey);
     if (this.raf) cancelAnimationFrame(this.raf);
     Sfx.rolling(0);
