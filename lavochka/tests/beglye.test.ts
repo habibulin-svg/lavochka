@@ -138,5 +138,18 @@ describe('Беглые', () => {
       expect(res.finished, `${n} игроков`).toBe(true);
     }
   }, 120_000);
+
+  it('«Остаться» нельзя, пока есть куда идти; однозначный путь проходится целиком', () => {
+    const s0 = freeState([0, 1]);
+    const from = NEIGH.findIndex((n) => n.some((a) => NEIGH[a].length === 1 && a !== FINISH && NEIGH[NEIGH[a][0]].length > 0));
+    expect(from).toBeGreaterThan(-1);
+    const a1 = NEIGH[from].find((a) => NEIGH[a].length === 1 && a !== FINISH && NEIGH[NEIGH[a][0]].length > 0)!;
+    const s: State = { ...s0, turn: 0, phase: 'move', left: 2, pos: s0.pos.map((p, i) => (i === 0 ? from : p)) };
+    expect(apply(s, 0, { type: 'stay' }, rng())).toBeNull();
+    const r = apply(s, 0, { type: 'step', to: a1 }, rng())!;
+    // второй шаг сделан сам по единственной дороге
+    expect(r.state.left).toBe(0);
+    expect(r.state.pos[0]).toBe(NEIGH[a1][0]);
+  });
 });
 

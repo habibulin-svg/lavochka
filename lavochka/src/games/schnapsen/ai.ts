@@ -7,7 +7,7 @@
 import type { Rng } from '../../core/types';
 import { SeededRng } from '../../core/rng';
 import { makeDeck, sameCard, SUITS, type Card } from '../../cards/deck';
-import { apply, beats, canClose, canExchange, legal, marriages, meldValue, POINTS, POWER, score, strict, type Action, type Event, type State, type View } from './engine';
+import { apply, beats, canClose, canMeld, canExchange, legal, marriages, meldValue, POINTS, POWER, score, strict, type Action, type Event, type State, type View } from './engine';
 
 const has = (list: Card[], c: Card) => list.some((x) => sameCard(x, c));
 
@@ -28,7 +28,7 @@ function medium(v: View | State, seat: number, rng: Rng): Action {
   const T = v.trump;
   const hand = v.hands[seat];
   const moves = legal(v, seat);
-  const mar = marriages(v, seat);
+  const mar = canMeld(v, seat) ? marriages(v, seat) : [];
   const inMarriage = (c: Card) => (c.r === 12 || c.r === 13) && mar.includes(c.s);
   const cheap = (cs: Card[]) => cs.slice().sort((a, b) => cost(a) - cost(b))[0];
   const cost = (c: Card) => POINTS[c.r] + (c.s === T ? 12 + POWER[c.r] : 0) + (inMarriage(c) ? 15 : 0);
@@ -113,7 +113,7 @@ function candidates(v: View | State, seat: number): Action[] {
   if (!v.lead && !v.meld) {
     if (canExchange(v, seat)) return [{ type: 'exchange' }]; // меняться выгодно всегда
     if (canClose(v, seat)) out.push({ type: 'close' });
-    const mar = marriages(v, seat);
+    const mar = canMeld(v, seat) ? marriages(v, seat) : [];
     for (const c of legal(v, seat)) {
       if ((c.r === 12 || c.r === 13) && mar.includes(c.s)) out.push({ type: 'play', card: c, meld: true });
       else out.push({ type: 'play', card: c });
@@ -220,7 +220,7 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
   if (v.cfg.manual && !v.lead && v.tricks[seat] && score(v, seat) >= 66) return { type: 'claim' };
   if (level === 0) {
     if (!v.lead && !v.meld) {
-      const mar = marriages(v, seat);
+      const mar = canMeld(v, seat) ? marriages(v, seat) : [];
       if (mar.length && rng.next() < 0.6) return { type: 'play', card: v.hands[seat].find((c) => c.s === mar[0] && c.r === 13)!, meld: true };
     }
     const moves = legal(v, seat);

@@ -103,12 +103,19 @@ export function mountAuto(game: AutoGame, root: HTMLElement, opts?: ArcadeOpts):
   // игра опрашивает кнопки раз в кадр: короткий тап держим хотя бы MIN_HOLD мс
   const MIN_HOLD = 90;
   const downAt = new Map<TiaInput, number>();
+  const holdTimers = new Set<ReturnType<typeof setTimeout>>();
   const press = (k: TiaInput, down: boolean) => {
     const n = Math.max(0, (held.get(k) ?? 0) + (down ? 1 : -1));
     held.set(k, n);
     if (n > 0) downAt.set(k, performance.now());
     const since = performance.now() - (downAt.get(k) ?? 0);
-    if (n === 0 && since < MIN_HOLD) setTimeout(() => (held.get(k) ?? 0) === 0 && machine?.set(k, false), MIN_HOLD - since);
+    if (n === 0 && since < MIN_HOLD) {
+      const t = setTimeout(() => {
+        holdTimers.delete(t);
+        if (!dead && (held.get(k) ?? 0) === 0) machine?.set(k, false);
+      }, MIN_HOLD - since);
+      holdTimers.add(t);
+    }
     else machine?.set(k, n > 0);
     if (k === 'b1' || k === 'b2') sh.lit(k, n > 0);
   };
@@ -208,6 +215,7 @@ export function mountAuto(game: AutoGame, root: HTMLElement, opts?: ArcadeOpts):
     },
     destroy() {
       dead = true;
+      holdTimers.forEach(clearTimeout);
       cancelAnimationFrame(raf);
       beeper?.close();
       window.removeEventListener('keydown', kd);

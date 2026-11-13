@@ -112,4 +112,14 @@ describe('Шнапсен', () => {
     }
     expect(hardWins).toBeGreaterThanOrEqual(4);
   });
+
+  it('боты в 66 после закрытия прикупа не объявляют марьяж', () => {
+    for (const level of [0, 1, 2]) {
+      for (let i = 0; i < 20; i++) {
+        const s = pos(['KS QS 10D JC 9H 9D', 'AC 10C KH JD QD 9S'], 'JH', 'AS KD 10S', { closed: { seat: 1, oppTricks: 0 } as sn.State['closed'] }, { deck: 24 });
+        const a = choose(sn.makeView(s, [0]), 0, level, new SeededRng(i));
+        expect(a && sn.apply(s, 0, a, rng)).not.toBeNull();
+      }
+    }
+  });
 });

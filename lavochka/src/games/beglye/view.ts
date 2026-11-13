@@ -140,7 +140,7 @@ export function createView(): GameView<State, Event> {
       return;
     }
     if (st.phase === 'move') {
-      add(`Остаться на месте`, '', { type: 'stay' });
+      if (!NEIGH[st.pos[seat]].length) add(`Остаться на месте`, '', { type: 'stay' });
       return;
     }
   }

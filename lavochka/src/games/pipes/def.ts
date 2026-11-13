@@ -117,8 +117,8 @@ export const def: GameDef<State, Action, Event, State> = {
     table: recTable,
     tables: () => presetTables(def, recTable),
     score: (s) => {
-      const b = s.boards[0];
-      return b?.done ? { values: { ms: b.t1 - b.t0, turns: b.turns } } : null;
+      const b = s.boards.find((x) => x.done);
+      return b ? { values: { ms: b.t1 - b.t0, turns: b.turns } } : null;
     },
   },
 

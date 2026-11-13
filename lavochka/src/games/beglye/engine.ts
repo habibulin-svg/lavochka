@@ -307,12 +307,25 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       ev.push({ type: 'win', seat });
       return { state: s, events: ev };
     }
-    if (s.left <= 0) pass(s, seat, ev);
+    // однозначная дорога (один сосед) — оставшиеся шаги проходим целиком, выбор только на развилках
+    while (s.left > 0 && NEIGH[s.pos[seat]].length === 1) {
+      const to = NEIGH[s.pos[seat]][0];
+      s.pos[seat] = to;
+      s.left--;
+      ev.push({ type: 'step', seat, to });
+      if (to === FINISH) {
+        s.winner = seat;
+        ev.push({ type: 'win', seat });
+        return { state: s, events: ev };
+      }
+    }
+    if (s.left <= 0 || !NEIGH[s.pos[seat]].length) pass(s, seat, ev);
     return { state: s, events: ev };
   }
 
   if (a.type === 'stay') {
-    if (s.phase !== 'move') return null;
+    // добровольно оставаться нельзя: «Остаться» — только когда идти некуда
+    if (s.phase !== 'move' || NEIGH[s.pos[seat]].length) return null;
     pass(s, seat, ev);
     return { state: s, events: ev };
   }
