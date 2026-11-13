@@ -504,7 +504,8 @@ export function deal(s0: State, rng: Rng): { state: State; events: Event[] } {
     darkBidder: null,
     round: s0.round + 1,
   };
-  const ev: Event[] = [{ type: 'deal', round: s.round, dealer, counts: hands.map((h) => h.length), hands: hands.map((h) => h.slice()) }];
+  // пас втёмную: первая рука решает, не глядя, — её карты в событии не отдаём
+  const ev: Event[] = [{ type: 'deal', round: s.round, dealer, counts: hands.map((h) => h.length), hands: hands.map((h, i) => (s.phase === 'dark' && i === first ? [] : h.slice())) }];
   if (forced) startRaspasy(s, ev);
   return { state: s, events: ev };
 }
@@ -1087,7 +1088,8 @@ export function makeView(raw: State, seats: number[] | 'all'): View {
   return {
     ...s,
     hands: s.hands.map((h, i) => (see(i) ? h.slice() : [])),
-    prikup: prikupShown && (s.kind !== 'raspasy' || s.cfg.raspPrikup) ? s.prikup.slice() : [],
+    // распасы: вторая карта прикупа открывается только перед второй взяткой
+    prikup: !prikupShown || (s.kind === 'raspasy' && !s.cfg.raspPrikup) ? [] : s.kind === 'raspasy' ? s.prikup.slice(0, Math.min(2, s.tricksPlayed + 1)) : s.prikup.slice(),
     discard: seats === 'all' || seats.includes(s.declarer) ? s.discard.slice() : [],
     counts: s.hands.map((h, i) => v.counts?.[i] ?? h.length),
     me: seats === 'all' ? s.seats.slice() : seats.slice(),

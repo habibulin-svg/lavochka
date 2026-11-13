@@ -41,3 +41,12 @@
 ## elektronika
 - Не GameDef: это аркадный модуль (`index.ts` — `ArcadeModule`, в `src/games/defs.ts` не зарегистрирован). Логику прошивки (`games.ts`, эмулятор) не разбирал.
 - — `player.ts`: `destroy()` снимает все слушатели (`keydown`, `keyup`, `blur`, `visibilitychange`, `pagehide`), `padOff`, `cancelAnimationFrame`, `beeper.close()`. Замечаний нет.
+
+## Проверка (Sonnet)
+- chizh: автоловля без кнопки при `d < CATCH.auto` (0.3 м, высота 0.6–1.8) — спорно (это «чиж попал в руки» стоящему рядом пацану; движок и бот так задуманы, правила не противоречат; спросить у пользователя: оставить касание или требовать кнопку «ловить»)
+- chizh: утечек в view нет — подтверждено, ничего не требуется
+- solitaire: `seed` в view восстанавливает колоду — подтверждено, исправлено (def.ts: в View вместо seed случайный `deal`, не связан с колодой; view.ts: dealId по `deal`, номер раздачи убран с экрана; запись рекордов core/records.ts берёт seed из Authority, не из view — не затронута; tests/solitaire.test.ts)
+- solitaire: setTimeout подсказки без clearTimeout — подтверждено, исправлено (view.ts: hintTimer, сброс в destroy)
+- darts: setTimeout(floor) не отменяется в destroy — подтверждено (только поздний звук), исправлено (darts/view.ts: sndTimers)
+- kamisado: ранг башни растёт до 4 — спорно (очки и дальность ограничены рангом 3, толчок на 4 клетки согласуется с «четверными сумо» в пресете марафона; в оригинале выше тройного нет — спросить, нужен ли ранг 4)
+- ochko, eggs, paperball, deberts, yahtzee, dots, reversi, elektronika: замечаний не было

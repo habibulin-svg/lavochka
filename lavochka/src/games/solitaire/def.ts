@@ -44,6 +44,8 @@ export interface State {
   level: Level;
   /** Номер раздачи: колода — shuffle(cards, SeededRng(seed)). */
   seed: number;
+  /** Случайный номер раздачи для клиента (seed в view не уходит: по нему восстанавливается вся колода). */
+  deal?: number;
   deck: Card[];
   seats: number[];
   boards: Record<number, Board>;
@@ -67,7 +69,8 @@ export interface View {
   game: GameId;
   cfg: Cfg;
   level: Level;
-  seed: number;
+  /** Опознавательный номер раздачи, не связан с колодой. */
+  deal: number;
   seats: number[];
   /** Колода для зрителя: закрытые на его доске карты — null. */
   deck: (Card | null)[];
@@ -239,7 +242,7 @@ function view(s: State, seats: number[] | 'all'): View {
   }
   const sum: View['sum'] = {};
   for (const x of s.seats) sum[x] = summaryOf(s, s.deck, s.boards[x]);
-  return { game: s.game, cfg: s.cfg, level: s.level, seed: s.seed, seats: s.seats, deck, boards, sum, order: s.order };
+  return { game: s.game, cfg: s.cfg, level: s.level, deal: s.deal ?? 0, seats: s.seats, deck, boards, sum, order: s.order };
 }
 
 function result(s: State) {
@@ -368,13 +371,15 @@ export const def: GameDef<State, Action, Event, View> = {
     const c = cfgOf({ ...o, game });
     const level = (hasLevels(game, c) && LEVELS.some((l) => l.id === o.level) ? o.level : hasLevels(game, c) ? 'easy' : 'any') as Level;
     const seed = Number(o.seed) > 0 ? Number(o.seed) : pickSeed(game, c, level, rng);
-    return newState(
+    const st = newState(
       game,
       c,
       level,
       seed,
       seats.map((x) => x.seat).sort((a, b) => a - b)
     );
+    st.deal = 1 + rng.int(2_000_000_000);
+    return st;
   },
   // «Сыграть ещё» — новая раздача того же уровня
   again: ({ seed, ...rest }) => rest,

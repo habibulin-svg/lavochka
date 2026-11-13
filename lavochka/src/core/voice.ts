@@ -81,9 +81,13 @@ export class Voice {
     return typeof RTCPeerConnection !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   }
 
+  /** Счётчик входов: выход или уход со стола во время запроса разрешения отменяет начатый вход. */
+  private gen = 0;
+
   /** Войти в голосовой чат (спросит разрешение на микрофон, с камерой — и на неё). hd — камера почётче (её покажут крупно). */
   async join(video: boolean, hd = false) {
     if (this.joined) return;
+    const gen = ++this.gen;
     const [local, ice] = await Promise.all([
       navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -91,7 +95,8 @@ export class Voice {
       }),
       iceServers(),
     ]);
-    if (this.joined) {
+    // пока спрашивали разрешение, вошли другим вызовом, вышли из чата или ушли со стола — микрофон не держим
+    if (this.joined || gen !== this.gen) {
       local.getTracks().forEach((t) => t.stop());
       return;
     }
@@ -109,6 +114,7 @@ export class Voice {
   }
 
   leave() {
+    this.gen++;
     if (!this.joined) return;
     this.joined = false;
     this.client.voice(false);

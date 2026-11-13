@@ -130,6 +130,7 @@ export function createView(): GameView<State, Event> {
   let music: HTMLAudioElement | null = null;
   let track = 0;
   const cleanup: (() => void)[] = [];
+  const sndTimers: number[] = [];
   let turnArgs: [number[], number[]] | null = null;
   // раскладка
   let W = 0;
@@ -676,9 +677,9 @@ export function createView(): GameView<State, Event> {
       else floor();
       fallers.push({ seat: ev.seat, x: L.x, y: L.y, vx: (Math.random() - 0.5) * 0.4, vy: 0.5 + Math.random() * 0.4, rot: -1.2, vr: 6 + Math.random() * 4, t0: nowS });
       floats.push({ x: L.x, y: L.y, text: L.res === 'wire' ? 'отскок!' : L.res === 'dart' ? 'в дротик!' : L.res === 'off' ? 'мимо' : 'не воткнулся', t0: performance.now(), color: '#ff9a7a' });
-      if (L.res !== 'weak') setTimeout(floor, 650 / sp);
+      if (L.res !== 'weak') sndTimers.push(window.setTimeout(floor, 650 / sp));
     } else {
-      setTimeout(floor, 100);
+      sndTimers.push(window.setTimeout(floor, 100));
       floats.push({ x: 0, y: -0.2, text: 'не долетел', t0: performance.now(), color: '#ff9a7a' });
     }
     (turnHits ??= []).push(ev.hit);
@@ -843,6 +844,7 @@ export function createView(): GameView<State, Event> {
     },
     destroy() {
       cancelAnimationFrame(raf);
+      sndTimers.forEach((t) => clearTimeout(t));
       cleanup.forEach((f) => f());
       music?.pause();
       music = null;

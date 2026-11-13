@@ -31,9 +31,10 @@ export const isMafia = (r: Role) => r === 'mafia' || r === 'don';
 
 /** Состав ролей на n игроков. */
 export function roleSet(n: number, v: Variant): Role[] {
-  const mafia = v === 'sport' ? 3 : Math.max(1, Math.floor(n / 3.5));
+  // спортивная: 3 мафии (с доном) — на 10 и больше; за столом поменьше мафии столько же не ставим — иначе она выигрывает в первую же ночь (6 игроков: 3 против 3)
+  const mafia = v === 'sport' ? (n >= 10 ? 3 : n >= 7 ? 2 : 1) : Math.max(1, Math.floor(n / 3.5));
   const out: Role[] = [];
-  if (v === 'sport') out.push('don', 'mafia', 'mafia');
+  if (v === 'sport') out.push('don', ...Array<Role>(mafia - 1).fill('mafia'));
   else for (let i = 0; i < mafia; i++) out.push('mafia');
   out.push('sheriff');
   if (v === 'extended') {
@@ -358,7 +359,10 @@ export function makeView(s: State, seats: number[] | 'all'): View {
   for (const [k, v] of Object.entries(s.night)) if (mine.includes(+k) || (mafiaMe && isMafia(s.roles[+k]))) night[+k] = v;
   const checks: State['checks'] = {};
   for (const x of mine) if (s.checks[x]) checks[x] = s.checks[x];
-  return { ...s, roles, night, checks, pending: s.pending.filter((x) => mine.includes(x)), me: mine.slice() };
+  // выбор проверки дона и последнее лечение доктора — только их владельцам
+  const donMe = mine.some((x) => s.roles[x] === 'don');
+  const docMe = mine.some((x) => s.roles[x] === 'doctor');
+  return { ...s, roles, night, checks, donCheck: donMe ? s.donCheck : -1, lastHeal: docMe ? s.lastHeal : -1, pending: s.pending.filter((x) => mine.includes(x)), me: mine.slice() };
 }
 
 /** Знает ли игрок роль места (своя, своя мафия, открытая). */

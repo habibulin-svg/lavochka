@@ -72,6 +72,7 @@ class SolitaireView implements GameView<View, Event> {
   private stageKey = '';
   /** Пирамида: выбранная карта (стопка). */
   private sel: number | null = null;
+  private hintTimer = 0;
   private hintOn: { from: number; n: number; to: number | null } | null = null;
   private t0 = Date.now();
   private tEnd = 0;
@@ -222,7 +223,7 @@ class SolitaireView implements GameView<View, Event> {
     this.ensureStage(v);
     this.v = v;
     this.chooseSeat(v);
-    const id = `${v.game}:${v.seed}:${this.seat}`;
+    const id = `${v.game}:${v.deal}:${this.seat}`;
     if (id !== this.dealId) {
       this.dealId = id;
       this.t0 = Date.now();
@@ -347,7 +348,7 @@ class SolitaireView implements GameView<View, Event> {
     const vt = variantText(v);
     const conv = convergence(v.game, v.cfg);
     this.info.innerHTML = `<div><b>${GAME_LABEL[v.game]}</b>${vt ? ` <small>· ${esc(vt)}</small>` : ''}</div>
-      <div><small>Раздача: ${lvl ? lvl.label.toLowerCase() : ''}${hasLevel(v.game, v.cfg, v.level) ? '' : ' — отобранных нет, выпала случайная'} · № ${v.seed}</small></div>
+      <div><small>Раздача: ${lvl ? lvl.label.toLowerCase() : ''}${hasLevel(v.game, v.cfg, v.level) ? '' : ' — отобранных нет, выпала случайная'}</small></div>
       ${v.level === 'any' && conv ? `<div><small>Сходится: ${esc(conv)}</small></div>` : ''}
       <div>⏱ <b>${fmt(t)}</b> · ходов <b>${b.moves}</b>${score}</div>
       <div>${what}: <b>${prog}</b> из ${total}<div class="so-bar"><i style="width:${Math.round((prog / total) * 100)}%"></i></div></div>`;
@@ -391,7 +392,8 @@ class SolitaireView implements GameView<View, Event> {
     if (m.t === 'stock') this.hintOn = { from: this.c().kinds.indexOf('stock'), n: 1, to: null };
     else this.hintOn = { from: m.f, n: m.n, to: m.to };
     this.draw();
-    setTimeout(() => {
+    clearTimeout(this.hintTimer);
+    this.hintTimer = window.setTimeout(() => {
       this.hintOn = null;
       this.draw();
     }, 1600);
@@ -600,6 +602,7 @@ class SolitaireView implements GameView<View, Event> {
     this.stopCascade?.();
     this.cs?.destroy();
     clearInterval(this.tick);
+    clearTimeout(this.hintTimer);
     document.removeEventListener('keydown', this.onKey);
   }
 }

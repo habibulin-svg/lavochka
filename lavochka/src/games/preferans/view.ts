@@ -33,6 +33,7 @@ class PrefView implements GameView<View, Event> {
   private selected: Card[] = [];
   /** Идёт анимация play(): setTurn в это время только снимает управление. */
   private busy = false;
+  private dead = false;
   /** Что в панели: лист пульки или таблица очков (запоминается на устройстве). */
   private sheetMode: 'pulka' | 'table' = 'pulka';
 
@@ -408,6 +409,7 @@ class PrefView implements GameView<View, Event> {
     const speed = this.ctx.speed();
     this.clearTurn();
     for (const ev of events) {
+      if (this.dead) return;
       const cur = this.v!;
       if (ev.type === 'play') {
         const t = cur.trick ?? { leader: ev.seat, cards: [] };
@@ -542,6 +544,7 @@ class PrefView implements GameView<View, Event> {
   }
 
   destroy() {
+    this.dead = true;
     this.cs.destroy();
   }
 }

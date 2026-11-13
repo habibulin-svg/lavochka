@@ -350,3 +350,20 @@ describe('«Классика»: заявки втёмную', () => {
     expect(apply(s, s.turn, { type: 'dark-bid', bid: { misere: true } }, new SeededRng(1))).toBeNull();
   });
 });
+
+describe('глубокое ревью: скрытое', () => {
+  it('распасы: вторая карта прикупа открывается только перед второй взяткой', () => {
+    const s = deal(newState(cfgFrom({}), [0, 1, 2]), rng()).state;
+    let r = s;
+    while (r.phase === 'bid') r = go(r, r.turn, { type: 'pass' }).state;
+    expect(r.kind).toBe('raspasy');
+    expect(makeView(r, [0]).prikup).toHaveLength(1);
+    expect(makeView(r, []).prikup).toHaveLength(1);
+  });
+  it('пас втёмную: в событии сдачи нет карт первой руки', () => {
+    const r = deal(newState(cfgFrom({ variant: 'classic', opening: 0 } as Options), [0, 1, 2]), new SeededRng(4));
+    expect(r.state.phase).toBe('dark');
+    const ev = r.events[0];
+    expect(ev.type === 'deal' && ev.hands![r.state.turn]).toEqual([]);
+  });
+});

@@ -36,6 +36,31 @@ describe('роли', () => {
   });
 });
 
+describe('утечки и составы (ревью)', () => {
+  it('спортивная за малым столом не выигрывает мафией в первую ночь', () => {
+    for (const n of [6, 7, 8, 9]) {
+      const set = roleSet(n, 'sport');
+      expect(set.length).toBe(n);
+      const m = set.filter((r) => r === 'mafia' || r === 'don').length;
+      expect(m * 2).toBeLessThan(n);
+      expect(set).toContain('don');
+    }
+    const s = setup([0, 1, 2, 3, 4, 5], { variant: 'sport' } as never, rng());
+    const r = night(s, {});
+    expect(r.state.phase).toBe('day');
+  });
+  it('выбор проверки дона и лечение доктора не видны чужим', () => {
+    const roles: Role[] = ['don', 'mafia', 'mafia', 'sheriff', 'civ', 'civ', 'civ', 'civ', 'civ', 'civ'];
+    const s = { ...pos(roles, { variant: 'sport' }), donCheck: 3, lastHeal: 4, meet: false };
+    expect(makeView(s, [5]).donCheck).toBe(-1);
+    expect(makeView(s, [5]).lastHeal).toBe(-1);
+    expect(makeView(s, [0]).donCheck).toBe(3);
+    const s2 = { ...s, roles: s.roles.map((r, i) => (i === 6 ? 'doctor' : r)) as Role[] };
+    expect(makeView(s2, [6]).lastHeal).toBe(4);
+    expect(makeView(s2, [1]).lastHeal).toBe(-1);
+  });
+});
+
 describe('ночь', () => {
   it('выстрел мафии и проверка комиссара (видит только он)', () => {
     const s = pos(['civ', 'mafia', 'sheriff', 'civ', 'civ', 'civ']);
