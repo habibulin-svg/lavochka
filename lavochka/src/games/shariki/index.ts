@@ -26,6 +26,7 @@ class Game {
   private raf = 0;
   private last = 0;
   private ended = false;
+  private endTimer: ReturnType<typeof setTimeout> | undefined;
   private fx = new Fx();
   private t = 0;
   /** Отдача лягушки после выстрела (1 → 0). */
@@ -168,7 +169,7 @@ class Game {
     this.hud();
     if ((z.won || z.lost) && !this.ended) {
       this.ended = true;
-      setTimeout(() => this.finish(), 600);
+      this.endTimer = setTimeout(() => this.finish(), 600);
     }
   }
 
@@ -242,6 +243,7 @@ class Game {
 
   destroy() {
     cancelAnimationFrame(this.raf);
+    clearTimeout(this.endTimer);
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('resize', this.onResize);
     this.el.remove();
