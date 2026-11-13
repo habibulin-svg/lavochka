@@ -1,6 +1,6 @@
-﻿import type { GameDef, Rng } from '../../core/types';
+﻿import type { GameDef, Rng, SeatSpec } from '../../core/types';
 import { SEATS } from '../hodilki/core';
-import { NEIGH, TO_FINISH, apply, describe, newState, toAct, view, type Action, type Event, type State } from './engine';
+import { IDX, NEIGH, TO_FINISH, apply, describe, newState, toAct, view, type Action, type Event, type State } from './engine';
 
 export const SEATS_LOCAL = SEATS.slice(0, 6);
 
@@ -22,6 +22,20 @@ export function choose(s: State, seat: number, level: number, rng: Rng): Action 
     }
   }
   return { type: 'step', to: pick };
+}
+
+/* Показ правил: грани кубика — индексы FACES (0 «Побег», 1 «Юрьев день», 2 лес, 3 плен, 4 острог, 5 зверь). */
+const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS_LOCAL[seat].name, level: 1 }));
+const roll = (seat: number, face: number, caption: string) => ({ seat, action: { type: 'roll' } as Action, rig: [face], caption });
+const step = (seat: number, cell: string, caption: string) => ({ seat, action: { type: 'step', to: IDX[cell] } as Action, caption });
+/** Позиция для показа: где стоят двое и кто из них уже на воле. */
+function demoPos(pos: [string, string], free: [boolean, boolean]): State {
+  const s = newState([0, 1]);
+  pos.forEach((c, i) => {
+    s.pos[i] = IDX[c];
+    s.hold[i] = free[i] ? 'none' : 'monastery';
+  });
+  return s;
 }
 
 export const def: GameDef<State, Action, Event, State> = {
@@ -46,6 +60,7 @@ export const def: GameDef<State, Action, Event, State> = {
     s.pos[0] = 12;
     s.pos[1] = 200;
     s.pos[2] = 350;
+    for (const i of [0, 1, 2]) s.hold[i] = 'none';
     s.phase = 'roll';
     return s;
   },
@@ -59,6 +74,17 @@ export const def: GameDef<State, Action, Event, State> = {
           что написано в легенде: лошадь — два пункта, лодка — вниз по течению, арест, плен, острог, гибель.</p>
           <p>Две особые грани — <b>«Побег»</b> и <b>«Юрьев день»</b>: только с ними можно выйти из монастыря и от помещика,
           а «Побег» ещё и выпускает из острога и из плена, и даёт лишний бросок.</p>`,
+        demo: {
+          seats: demoSeats,
+          intro: 'Оба в монастыре. Выйти можно только с «Побегом» или «Юрьевым днём».',
+          steps: [
+            roll(0, 4, 'Выпала грань с острогом — из монастыря с ней не выйти, ход переходит.'),
+            roll(1, 0, '«Побег»! Фигурка на воле, и за «Побег» положен лишний бросок.'),
+            step(1, '2', 'Обычный ход — на один пункт.'),
+            roll(1, 1, 'Лишний бросок: «Юрьев день». Знака на пункте нет — ещё один шаг.'),
+            step(1, '6', 'Шаг вперёд — дальше кубик у соперника.'),
+          ],
+        },
       },
       {
         title: 'Монастырь, острог, плен',
@@ -66,11 +92,30 @@ export const def: GameDef<State, Action, Event, State> = {
           Кирилло-Белозерскому монастырю, и с этапа выпускает только «Побег». Плен у татар и ногайцев и шайка разбойников
           держат до «Побега».</p>
           <p>Смерть (заел зверь, утоп, умер от болезни) — фигурка ставится обратно в монастырь и начинает путь заново.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => demoPos(['8', 'mon'], [true, false]),
+          intro: 'Первый стоит в лесу, второй ещё в монастыре.',
+          steps: [
+            roll(0, 2, 'На грани есть лес, и на пункте — лес: заблудился, ход пропал.'),
+            roll(1, 1, '«Юрьев день» отпускает из монастыря и от помещика.'),
+            step(1, '2', 'На воле — шаг на один пункт.'),
+          ],
+        },
       },
       {
         title: 'Дороги и развилки',
         html: `<p>От монастыря идут несколько дорог: каждый «убежавший» выбирает путь <b>по своему вкусу</b>, а у развилок
           решает сам. Побеждает тот, кто первым дойдёт до устья Дона.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => demoPos(['5', 'mon'], [true, false]),
+          intro: 'От этого пункта расходятся несколько дорог.',
+          steps: [
+            roll(0, 3, 'Знаков с грани здесь нет — обычный шаг.'),
+            step(0, '21', 'На развилке игрок сам выбирает дорогу.'),
+          ],
+        },
       },
     ],
   },

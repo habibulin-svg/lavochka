@@ -77,6 +77,8 @@ export interface State {
   winner: number | null;
   log: string[];
   moves: number;
+  /** «Побег» дал лишний бросок: после хода кубик снова у того же игрока. */
+  extra?: boolean;
 }
 
 export type Action =
@@ -112,7 +114,8 @@ export function newState(seats: number[]): State {
     phase: 'roll',
     left: 0,
     face: FACES[0].id,
-    hold: CELLS.map(() => 'none' as Hold),
+    // все начинают в Кирилло-Белозерском монастыре: выйти — только с «Побегом» или «Юрьевым днём»
+    hold: CELLS.map(() => 'monastery' as Hold),
     arrests: CELLS.map(() => 0),
     boat: CELLS.map(() => false),
     winner: null,
@@ -141,6 +144,13 @@ export const TO_FINISH = distTo(FINISH);
 export const TO_START = distTo(START);
 
 const pass = (s: State, seat: number, ev: Event[]) => {
+  if (s.extra) {
+    // лишний бросок за «Побег»: ход остаётся у того же игрока
+    s.extra = false;
+    s.phase = 'roll';
+    s.left = 0;
+    return;
+  }
   s.turn = nextSeat(s, seat);
   s.phase = 'roll';
   s.left = 0;
@@ -156,51 +166,54 @@ function tryFree(s: State, seat: number, face: Face, ev: Event[]): boolean {
   if (!byEscape && !byYuriev) return false;
   s.hold[seat] = 'none';
   ev.push({ type: 'free', seat, why: face.name });
-  if (byEscape) ev.push({ type: 'extra', seat });
+  if (byEscape) {
+    s.extra = true;
+    ev.push({ type: 'extra', seat });
+  }
   return true;
 }
 
-/** Разыграть знак клетки, если он есть на выпавшей грани. */
-function cellSign(s: State, seat: number, face: Face, ev: Event[], rng: Rng) {
+/** Разыграть знак клетки, если он есть на выпавшей грани. true — ход пропал (заблудился в лесу). */
+function cellSign(s: State, seat: number, face: Face, ev: Event[], rng: Rng): boolean {
   const cell = CELLS[s.pos[seat]];
   const hit = cell.signs.filter((x) => face.symbols.includes(x));
-  if (!hit.length) return;
+  if (!hit.length) return false;
   for (const sign of hit) {
     if (sign === 'death') {
       s.pos[seat] = START;
-      s.hold[seat] = 'none';
+      s.hold[seat] = 'monastery';
       s.boat[seat] = false;
       s.arrests[seat] = 0;
       ev.push({ type: 'death', seat, why: SIGN_NAME[sign] });
-      return;
+      return false;
     }
     if (sign === 'plen') {
       s.hold[seat] = 'plen';
       s.boat[seat] = false;
       ev.push({ type: 'hold', seat, hold: 'plen', why: 'татары взяли в плен' });
-      return;
+      return false;
     }
     if (sign === 'robber') {
       s.hold[seat] = 'robber';
       s.boat[seat] = false;
       ev.push({ type: 'hold', seat, hold: 'robber', why: 'ушёл в шайку разбойников' });
-      return;
+      return false;
     }
     if (sign === 'monastery') {
       s.hold[seat] = 'monastery';
       ev.push({ type: 'hold', seat, hold: 'monastery', why: 'монастырь: сидеть до побега' });
-      return;
+      return false;
     }
     if (sign === 'resident') {
       s.hold[seat] = 'resident';
       ev.push({ type: 'hold', seat, hold: 'resident', why: 'помещик: сидеть до Юрьева дня' });
-      return;
+      return false;
     }
     if (sign === 'ostrog') {
       s.hold[seat] = 'ostrog';
       s.boat[seat] = false;
       ev.push({ type: 'jail', seat });
-      return;
+      return false;
     }
     if (sign === 'arrest') {
       s.arrests[seat]++;
@@ -209,7 +222,7 @@ function cellSign(s: State, seat: number, face: Face, ev: Event[], rng: Rng) {
         s.boat[seat] = false;
         s.arrests[seat] = 0;
         ev.push({ type: 'jail', seat });
-        return;
+        return false;
       }
       continue;
     }
@@ -217,7 +230,7 @@ function cellSign(s: State, seat: number, face: Face, ev: Event[], rng: Rng) {
       // заблудился: ход пропадает
       s.left = 0;
       ev.push({ type: 'hold', seat, hold: 'none', why: 'заблудился в лесу — ход пропал' });
-      return;
+      return true;
     }
     if (sign === 'horse' || sign === 'cart') {
       const n = 2;
@@ -234,6 +247,7 @@ function cellSign(s: State, seat: number, face: Face, ev: Event[], rng: Rng) {
     }
   }
   void rng;
+  return false;
 }
 
 export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: State; events: Event[] } | null {
@@ -251,6 +265,7 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (s.hold[seat] === 'ostrog') {
       if (face.escape) {
         s.hold[seat] = 'none';
+        s.extra = true;
         ev.push({ type: 'free', seat, why: 'побег с этапа' });
         ev.push({ type: 'extra', seat });
       } else {
@@ -266,8 +281,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     }
     // освобождение и знак клетки
     const freed = tryFree(s, seat, face, ev);
-    if (s.hold[seat] === 'none') cellSign(s, seat, face, ev, rng);
-    if (s.hold[seat] !== 'none') {
+    const lost = s.hold[seat] === 'none' && cellSign(s, seat, face, ev, rng);
+    if (s.hold[seat] !== 'none' || lost) {
       pass(s, seat, ev);
       return { state: s, events: ev };
     }

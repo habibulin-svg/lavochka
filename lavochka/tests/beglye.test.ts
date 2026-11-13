@@ -7,6 +7,11 @@ import {
 } from '../src/games/beglye/engine';
 
 const rng = (seed = 5) => new RiggedRng(new SeededRng(seed));
+/** Начало партии, но все уже вышли из монастыря. */
+const freeState = (seats: number[]): State => {
+  const s = newState(seats);
+  return { ...s, hold: s.hold.map(() => 'none' as const) };
+};
 
 /** Бросок с подкрученной гранью (индекс в FACES). */
 function roll(s: State, seat: number, face: string, r = rng()): State {
@@ -37,7 +42,7 @@ describe('Беглые', () => {
   });
 
   it('обычный ход: бросок и один пункт по любой дороге', () => {
-    const s = newState([0, 1]);
+    const s = freeState([0, 1]);
     const r = roll(s, 0, 'a');
     expect(r.phase).toBe('move');
     expect(r.left).toBe(1);
@@ -61,7 +66,7 @@ describe('Беглые', () => {
 
   it('второй «арест» отправляет в острог, откуда ведут по этапу', () => {
     const arrestCell = CELLS.findIndex((c) => c.signs.includes('arrest'));
-    let s = newState([0, 1]);
+    let s = freeState([0, 1]);
     s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? arrestCell : p)) };
     s = roll(s, 0, 'c'); // первый арест — просто идём дальше
     expect(s.hold[0]).toBe('none');
@@ -77,11 +82,42 @@ describe('Беглые', () => {
 
   it('гибель возвращает в монастырь', () => {
     const deathCell = CELLS.findIndex((c) => c.signs.includes('death'));
-    let s = newState([0, 1]);
+    let s = freeState([0, 1]);
     s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? deathCell : p)) };
     s = roll(s, 0, 'c');
     expect(s.pos[0]).toBe(START);
+    expect(s.hold[0]).toBe('monastery'); // путь заново — снова из монастыря
+  });
+
+  it('все начинают в монастыре: выйти можно только с «Побегом» или «Юрьевым днём»', () => {
+    let s = newState([0, 1]);
+    expect(s.hold[0]).toBe('monastery');
+    s = roll(s, 0, 'a');
+    expect(s.pos[0]).toBe(START);
+    expect(s.turn).toBe(1);
+    s = roll(s, 1, 'yuriev');
+    expect(s.hold[1]).toBe('none');
+    expect(s.phase).toBe('move');
+  });
+
+  it('«Побег» даёт лишний бросок после хода', () => {
+    let s = roll(newState([0, 1]), 0, 'escape');
     expect(s.hold[0]).toBe('none');
+    const st = apply(s, 0, { type: 'step', to: NEIGH[START][0] }, rng())!.state;
+    expect(st.turn).toBe(0);
+    expect(st.phase).toBe('roll');
+    s = roll(st, 0, 'escape'); // второй «Побег» на воле ничего не даёт
+    s = apply(s, 0, { type: 'step', to: NEIGH[s.pos[0]][0] }, rng())!.state;
+    expect(s.turn).toBe(1);
+  });
+
+  it('заблудился в лесу — ход пропал', () => {
+    const forest = CELLS.findIndex((c) => c.signs.includes('forest'));
+    let s = freeState([0, 1]);
+    s = { ...s, pos: s.pos.map((p, i) => (i === 0 ? forest : p)) };
+    s = roll(s, 0, 'a');
+    expect(s.pos[0]).toBe(forest);
+    expect(s.turn).toBe(1);
   });
 
   it('дошедший до устья Дона побеждает', () => {
