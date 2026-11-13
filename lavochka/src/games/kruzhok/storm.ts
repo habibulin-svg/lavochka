@@ -117,6 +117,7 @@ export function mountStorm(stage: HTMLElement, panel: HTMLElement) {
       clock();
       say(`Мимо — минус ${PENALTY} секунд.`, 'bad');
       board.input(null);
+      if (left <= 0) return stop();
       board.draw([], [{ sq: m.to, kind: 'bad' }]);
       await sleep(500);
       if (alive && my === gen && running) void next();

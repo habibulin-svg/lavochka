@@ -1,4 +1,5 @@
 /* Шахматный кружок — журнал ученика: разряд и лесенка разрядов, рейтинг по дням, серия, задачи по темам. */
+import { store } from '../../core/settings';
 import { esc, h } from '../../core/util';
 import { loadThemeIndex, THEMES } from './data';
 import { currentUser } from '../../site/account';
@@ -83,6 +84,7 @@ export function mountJournal(stage: HTMLElement, panel: HTMLElement, onReset: ()
     resetEtudes();
     resetLessons();
     resetPath();
+    store.set('kruzhok.mated', []);
     onReset();
   };
 

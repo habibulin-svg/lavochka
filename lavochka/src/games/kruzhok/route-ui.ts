@@ -96,7 +96,11 @@ export function mountRouteCard(host: HTMLElement, open: (item: RouteItem) => voi
       if (pending) {
         say(`Михалыч разбирает твои партии с компьютером… 0 из ${pending}`);
         let n = 0;
-        await reviewPending(stockfish, () => alive, () => say(`Михалыч разбирает твои партии с компьютером… ${++n} из ${pending}`));
+        try {
+          await reviewPending(stockfish, () => alive, () => say(`Михалыч разбирает твои партии с компьютером… ${++n} из ${pending}`));
+        } catch {
+          // движок не запустился или его прервали — маршрут строим по тому, что уже разобрано
+        }
         if (!alive) return;
       }
       say('Михалыч листает журнал…');

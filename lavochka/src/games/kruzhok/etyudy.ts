@@ -7,7 +7,7 @@ import { store } from '../../core/settings';
 import { esc, h, sleep } from '../../core/util';
 import { Board } from '../chess/board';
 import { play, type Move, type State } from '../chess/engine';
-import { fromUci, lineRu, position, ruSan, toFen, toUci } from '../chess/notation';
+import { checkMark, fromUci, lineRu, position, ruSan, toFen, toUci } from '../chess/notation';
 import { levelOf, mountMihalych } from '../chess/mihalych';
 import { score, stockfish } from '../chess/stockfish';
 import { loadEtudes, type Etude } from './data';
@@ -288,7 +288,9 @@ export function mountEtude(stage: HTMLElement, panel: HTMLElement, id: string, b
     }
     if (id !== run || !alive) return;
     const v = a.lines[0] ? -score(a.lines[0]) : 0; // за ученика
-    const keeps = e.goal === 'win' ? v >= 300 : e.goal === 'draw' ? v >= -80 : v >= 9000;
+    // мат поставлен другим ходом: у матованной позиции у движка нет линий — считаем сами
+    const mated = checkMark(before, m) === '#';
+    const keeps = mated || (e.goal === 'win' ? v >= 300 : e.goal === 'draw' ? v >= -80 : v >= 9000);
     const ru = ruSan(before, m);
     const reply = a.best ? fromUci(s, a.best) : null;
     if (keeps) {

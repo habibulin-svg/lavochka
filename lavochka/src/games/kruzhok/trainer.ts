@@ -250,6 +250,8 @@ export function mountTrainer(stage: HTMLElement, panel: HTMLElement, o: TrainerO
     if (mate || ply >= pz!.moves.length) return solved();
     busy = true;
     const my = gen;
+    // пока соперник «думает», «Показать решение» нажимать нельзя: оно разошлось бы с его ходом
+    buttons([]);
     say('Верно! Соперник отвечает…', 'ok');
     await sleep(600);
     if (!alive || my !== gen) return;

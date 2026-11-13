@@ -105,10 +105,13 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
     board.input(s.turn, (m) => {
       const ru = ruSan(s, m);
       const fen = toFen(play(s, m));
-      plies = plies.slice(0, at + 1);
-      // тот же ход, что дальше по записи, — просто идём вперёд
-      plies.push({ fen, ru, move: m });
-      at++;
+      // тот же ход, что дальше по записи, — просто идём вперёд, не стирая остальное
+      if (plies[at + 1]?.fen === fen) at++;
+      else {
+        plies = plies.slice(0, at + 1);
+        plies.push({ fen, ru, move: m });
+        at++;
+      }
       m.captured ? Sound.capture() : Sound.place();
       show();
     });
@@ -186,7 +189,7 @@ export function mountAnalysis(stage: HTMLElement, panel: HTMLElement, o: Analysi
         const text = fenInput.value.trim();
         try {
           const s = position(text);
-          if (!s.board.includes('K') || !s.board.includes('k')) throw new Error('нет короля');
+          if (s.board.filter((p) => p === 'K').length !== 1 || s.board.filter((p) => p === 'k').length !== 1) throw new Error('нужен ровно один король у каждой стороны');
           q('.kz-err').textContent = '';
           reset(toFen(s));
         } catch {
