@@ -198,14 +198,22 @@ export class Vk {
     });
   }
 
+  /** Можно ли сейчас наградить игрока: не чаще REWARD_GAP и не больше REWARD_DAY в сутки — общий счёт для партий
+   * с ботом и сетевых (иначе два своих аккаунта и «Сыграть ещё» по кругу давали монеты без предела). */
+  private mayReward(uid: number, now: number): 'ok' | 'gap' | 'limit' {
+    const list = (this.rewards.get(uid) ?? []).filter((t) => now - t < 86_400_000);
+    if (list.length && now - list[list.length - 1] < REWARD_GAP) return 'gap';
+    if (list.length >= REWARD_DAY) return 'limit';
+    list.push(now);
+    this.rewards.set(uid, list);
+    return 'ok';
+  }
+
   rewardBot(b: any, ctx: Ctx) {
     return this.change(ctx, (c, uid) => {
-      const now = ctx.now ?? Date.now();
-      const list = (this.rewards.get(uid) ?? []).filter((t) => now - t < 86_400_000);
-      if (list.length && now - list[list.length - 1] < REWARD_GAP) return { coins: 0 };
-      if (list.length >= REWARD_DAY) return { coins: 0, limit: true };
-      list.push(now);
-      this.rewards.set(uid, list);
+      const may = this.mayReward(uid, ctx.now ?? Date.now());
+      if (may === 'gap') return { coins: 0 };
+      if (may === 'limit') return { coins: 0, limit: true };
       return { coins: reward(c, !!b?.win) };
     });
   }
@@ -366,7 +374,7 @@ export class Vk {
         }
       }
       // сетевая партия двух людей — награда как за бота
-      if (people.length === 2) for (const uid of people) reward(await get(uid), uid === w);
+      if (people.length === 2) for (const uid of people) if (this.mayReward(uid, Date.now()) === 'ok') reward(await get(uid), uid === w);
       if (touched.size) await this.put(...touched.entries());
     });
   }

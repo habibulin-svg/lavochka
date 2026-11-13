@@ -103,15 +103,16 @@ export class Plus {
     return { code: 200, body: { url: this.pay.subscription + '&Email=' + encodeURIComponent(u.email) } };
   }
 
-  /** Уведомление от подписки по ссылке? Сумма подписки, а номер не наш: не заказ подписки и не неоплаченный
-   * донат на ту же сумму. Подпись проверит linkResult. */
+  /** Уведомление от подписки по ссылке? Сумма подписки, а номер не наш: не заказ подписки и не донат на ту же
+   * сумму — ни неоплаченный, ни уже оплаченный (повтор уведомления о донате 299 ₽ дарил месяц «Лавочки+»).
+   * Подпись проверит linkResult. */
   async isLinkPayment(p: Record<string, string>): Promise<boolean> {
     if (!this.pay?.subscription || !/^\d+$/.test(String(p.InvId ?? ''))) return false;
     if (Math.round(Number(p.OutSum) * 100) !== PLUS_PRICE) return false;
     const inv = Number(p.InvId);
     if (isPlusInv(inv) && (await this.acc.store.plusOrder(inv))) return false;
     const d = await this.acc.store.donation(inv);
-    return !(d && d.paidAt == null && d.amount === PLUS_PRICE);
+    return !(d && d.amount === PLUS_PRICE);
   }
 
   /** Платёж подписки по ссылке: игрок — по почте, к сроку +месяц, права — с запасом PLUS_GRACE. Текст ответа или null. */

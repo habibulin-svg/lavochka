@@ -292,6 +292,9 @@ describe('подписка по ссылке Robokassa (ROBOKASSA_SUBSCRIPTION)'
     const don = new Donate(acc, link);
     const d = Number(((await don.start({ amount: 299 }, ctx())).body.form as any).fields.InvId);
     expect(await plus.isLinkPayment(ext(d, 'igrok@x.ru'))).toBe(false);
+    // повтор уведомления об уже оплаченном донате на 299 ₽ — тоже донат, а не месяц подписки
+    await acc.store.markDonationPaid(d, Date.now());
+    expect(await plus.isLinkPayment(ext(d, 'igrok@x.ru'))).toBe(false);
     // другая сумма — не подписка
     expect(await plus.isLinkPayment(ext(777, 'igrok@x.ru', '100.00'))).toBe(false);
     // без ROBOKASSA_SUBSCRIPTION ничего не узнаём
