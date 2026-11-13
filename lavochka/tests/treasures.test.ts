@@ -29,6 +29,18 @@ describe('Клад', () => {
       expect(made).toBeLessThanOrEqual(moves);
     }
   });
+  it('кирпич не падает: стоит на месте, пока играют подсказками', () => {
+    const b = new Board(levelSpec(3));
+    const [[bx, by]] = b.addBricks(1, 99);
+    const id = b.cells[by][bx].tile!.id;
+    for (let i = 0; i < 40 && !b.won; i++) {
+      const h = b.hint();
+      if (!h || b.moves <= 0) break;
+      b.swap(...h);
+      // кирпич может разбиться рядом лежащим рядом, но с места не двигается
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (b.cells[y][x].tile?.id === id) expect([x, y], `ход ${i}`).toEqual([bx, by]);
+    }
+  });
   it('ход без ряда не засчитывается', () => {
     const b = new Board(levelSpec(2));
     for (let y = 0; y < N; y++)

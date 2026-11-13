@@ -73,6 +73,18 @@ describe('таро: сдача и счёт', () => {
     expect(a.halfPts).toBe(8);
     expect(a.oudlers).toBe(1);
   });
+  it('снос: козырей не больше, чем не хватает до полного прикупа после всех обычных', () => {
+    let s = setup([0, 1, 2, 3], {}, new SeededRng(3));
+    for (let i = 0; i < 4; i++) s = apply(s, s.turn, { type: 'pass' }, rng)!.state;
+    const first = s.turn;
+    s = apply(s, first, { type: 'bid', c: 1 }, rng)!.state;
+    for (let i = 0; i < 3; i++) s = apply(s, s.turn, { type: 'pass' }, rng)!.state;
+    expect(s.phase).toBe('discard');
+    const hand = [W(1), W(2), W(3), W(4), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    s.hands[first] = hand;
+    expect(apply(s, first, { type: 'discard', cards: [2, 3, 4, 5, 6, 7] }, rng)).toBeNull();
+    expect(apply(s, first, { type: 'discard', cards: [W(1), W(2), W(3), W(4), 2, 3] }, rng)).not.toBeNull();
+  });
   it('торги: все пасуют — пересдача; взявший при малой видит прикуп и сносит', () => {
     let s = setup([0, 1, 2, 3], {}, new SeededRng(3));
     const d0 = s.deal;

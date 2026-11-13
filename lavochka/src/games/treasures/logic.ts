@@ -346,10 +346,10 @@ export class Board {
     // падение
     const falls: Step['falls'] = [];
     for (let x = 0; x < N; x++) {
-      // по столбцу снизу вверх, камни — опора: падаем сегментами между камнями
+      // по столбцу снизу вверх, камни и кирпичи — опора: падаем сегментами между камнями
       let write = N - 1;
       for (let y = N - 1; y >= -1; y--) {
-        if (y === -1 || this.cells[y][x].stone) {
+        if (y === -1 || this.cells[y][x].stone || this.cells[y][x].tile?.special === 'brick') {
           // досыпать сверху сегмент [y+1 .. write]
           let k = 0;
           for (let wy = write; wy > y; wy--) {

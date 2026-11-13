@@ -501,3 +501,15 @@ describe('польский дурак', () => {
     }
   }, 60_000);
 });
+
+describe('погоны', () => {
+  it('ходивший сам шестёркой погон не получает', () => {
+    // колода пуста; Вовка ходит шестёркой, Ленка кроет последней картой и выходит, Вовка остаётся с картами
+    const s = pos({ pogony: true }, ['6S 9H', '7S'], '');
+    s.trump = 'H';
+    const a = act(s, 0, { type: 'attack', cards: cl('6S') });
+    const b = act(a, 1, { type: 'beat', i: 0, card: cd('7S') });
+    expect(b.fool).toBe(0);
+    expect(b.pogony[0]).toBe(0);
+  });
+});

@@ -825,7 +825,7 @@ function finishGame(s: State, ev: Event[], fool: number | null, rng: Rng) {
     for (const x of s.losers) s.fools[x]++;
     // погоны: последний кон против дурака закончили шестёрками
     const lp = s.lastPlay;
-    if (s.cfg.pogony && lp.length && lp.length <= 2 && lp.every((c) => c.r === 6)) {
+    if (s.cfg.pogony && s.defender === fool && lp.length && lp.length <= 2 && lp.every((c) => c.r === 6)) {
       pog = lp.length;
       s.pogony[fool] += pog;
     }

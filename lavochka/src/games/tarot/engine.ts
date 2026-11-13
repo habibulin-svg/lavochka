@@ -396,6 +396,9 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (a.type !== 'discard' || !Array.isArray(a.cards) || a.cards.length !== k || new Set(a.cards).size !== k) return null;
     const hand = s.hands[seat];
     if (a.cards.some((c) => !hand.includes(c) || !canDiscard(hand, c, k))) return null;
+    // козырей в снос — только сколько не хватает до k после всех обычных карт
+    const plainN = hand.filter((x) => !isTrump(x) && !isKing(x) && !OUDLERS.includes(x)).length;
+    if (a.cards.filter(isTrump).length > Math.max(0, k - plainN)) return null;
     s.ecart = a.cards.slice();
     s.ecartShown = a.cards.filter(isTrump);
     s.hands[seat] = hand.filter((c) => !a.cards.includes(c));
