@@ -59,3 +59,5 @@
   .ds-role span { font-size: 12px; line-height: 1.2; }
   .ds-say { padding: 7px 12px; }
 }
+/* снимок превью карточки (?thumb=): только поле, без кнопок и подсказок */
+.thumb-board .ds-pad, .thumb-board .ds-coach, .thumb-board .ds-banner, .thumb-board .ds-edge { display: none !important; }

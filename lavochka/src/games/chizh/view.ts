@@ -740,8 +740,10 @@ export function createView(): GameView<State, Event> {
       el.appendChild(wrap);
       hud = wrap.querySelector('.cz-hud') as HTMLElement;
       youTag = wrap.querySelector('.cz-you') as HTMLElement;
-      // площадка партии: выбранная или следующая по очереди (в показе правил и превью — всегда «за гаражами»)
-      place = ctx.demo || /[?&]thumb=/.test(location.search) ? PLACES[0] : nextPlace('chizh');
+      // площадка партии: выбранная или следующая по очереди (в показе правил — всегда «за гаражами»)
+      // превью карточки снимается на площадке из адреса (&place=school), без неё — гаражи
+      const thumbPlace = /[?&]thumb=/.test(location.search) ? (PLACES.find((p) => p.id === new URLSearchParams(location.search).get('place')) ?? PLACES[0]) : null;
+      place = thumbPlace ?? (ctx.demo ? PLACES[0] : nextPlace('chizh'));
       yard = new ChizhYard(wrap.querySelector('.cz-cv') as HTMLElement, place);
       marks = new GroundMarks(yard.scene);
       fx = new Fx(yard.scene);

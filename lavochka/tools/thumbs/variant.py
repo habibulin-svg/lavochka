@@ -9,6 +9,8 @@
 
 Превью карточки игры (def.showcase(), без пресета): --main → public/thumbs/<игра>.webp
   python tools/thumbs/variant.py manager manager - --main
+3D-игры (WebGL) — с --gl; площадка дворового спорта — --q place=school:
+  python tools/thumbs/variant.py lapta lapta - --main --gl --q place=school --wait 25000
 """
 import argparse
 import os
@@ -34,6 +36,8 @@ ap.add_argument('--seed', type=int, default=7)
 ap.add_argument('--top', type=int, help='верх вырезаемой полосы, px от верха квадрата')
 ap.add_argument('--size', type=int, default=800, help='сторона квадрата снимка')
 ap.add_argument('--wait', type=int, default=8000, help='сколько мс дать странице дорисоваться')
+ap.add_argument('--q', default='', help='добавка к адресу снимка, например "place=school" (площадка дворового спорта)')
+ap.add_argument('--gl', action='store_true', help='WebGL через SwiftShader (3D-игры: с --disable-gpu холст пустой)')
 ap.add_argument('--main', action='store_true', help='превью карточки: позиция def.showcase(), файл public/thumbs/<игра>.webp')
 a = ap.parse_args()
 
@@ -41,11 +45,13 @@ name = a.path.replace('/', '-')
 TMP.mkdir(parents=True, exist_ok=True)
 png = TMP / f'{name}.png'
 url = f'http://localhost:5173/?thumb={a.game}' if a.main else f'http://localhost:5173/?thumb={a.game}&preset={a.preset}&steps={a.steps}&seed={a.seed}' + (f'&n={a.n}' if a.n else '')
+if a.q:
+    url += '&' + a.q
 # профиль Chrome — на D (на C места нет), после снимка удаляется
 profile = TMP / '_chrome'
 env = {**os.environ, 'TEMP': str(TMP), 'TMP': str(TMP)}
 subprocess.run(
-    [CHROME, '--headless=new', f'--user-data-dir={profile}', '--disk-cache-size=1', '--disable-gpu', '--hide-scrollbars', '--mute-audio', f'--window-size={a.size},{a.size}',
+    [CHROME, '--headless=new', f'--user-data-dir={profile}', '--disk-cache-size=1', *(['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] if a.gl else ['--disable-gpu']), '--hide-scrollbars', '--mute-audio', f'--window-size={a.size},{a.size}',
      f'--virtual-time-budget={a.wait}', f'--screenshot={png}', url],
     check=True, capture_output=True, env=env,
 )

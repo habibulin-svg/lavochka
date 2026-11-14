@@ -371,6 +371,8 @@ const MIME: Record<string, string> = {
   '.ogg': 'audio/ogg',
   '.wasm': 'application/wasm',
   '.glb': 'model/gltf-binary',
+  '.gltf': 'model/gltf+json',
+  '.bin': 'application/octet-stream',
 };
 
 function json(res: ServerResponse, code: number, body: unknown) {

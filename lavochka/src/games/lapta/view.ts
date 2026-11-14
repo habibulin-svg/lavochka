@@ -585,7 +585,13 @@ export function createView(): GameView<State, Event> {
         // превью карточки: удар — бита только что прошла, мяч уходит в поле
         yard.setField(s.cfg);
         yard.setTeams(s.cfg.n);
-        s.men.forEach((team, t) => team.forEach((m, i) => yard.put(t, i, m.x, m.y, [0, s.cfg.L / 2])));
+        s.men.forEach((team, t) =>
+          team.forEach((m, i) => {
+            yard.put(t, i, m.x, m.y, [0, s.cfg.L / 2]);
+            // полевые — в стойке, а не в T-позе
+            if (!(t === s.atk && i === s.batter)) yard.men[t][i]?.toon?.play(i % 3 ? 'idle' : 'idle2', true, 0);
+          }),
+        );
         const bt = yard.men[s.atk][s.batter]?.toon ?? null;
         bt?.scrub('swing2h', 0.74, 0.62);
         yard.batIn(bt, 0);
@@ -727,8 +733,10 @@ export function createView(): GameView<State, Event> {
       el.appendChild(wrap);
       hud = wrap.querySelector('.lp-hud') as HTMLElement;
       youTag = wrap.querySelector('.lp-you') as HTMLElement;
-      // площадка партии: выбранная или следующая по очереди (в показе правил и превью — всегда «за гаражами»)
-      place = ctx.demo || /[?&]thumb=/.test(location.search) ? PLACES[0] : nextPlace('lapta');
+      // площадка партии: выбранная или следующая по очереди (в показе правил — всегда «за гаражами»)
+      // превью карточки снимается на площадке из адреса (&place=school), без неё — гаражи
+      const thumbPlace = /[?&]thumb=/.test(location.search) ? (PLACES.find((p) => p.id === new URLSearchParams(location.search).get('place')) ?? PLACES[0]) : null;
+      place = thumbPlace ?? (ctx.demo ? PLACES[0] : nextPlace('lapta'));
       yard = new LaptaYard(wrap.querySelector('.lp-cv') as HTMLElement, place);
       marks = new GroundMarks(yard.scene);
       fx = new Fx(yard.scene);

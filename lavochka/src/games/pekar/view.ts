@@ -664,8 +664,10 @@ export function createView(): GameView<State, Event> {
       wrap = h(`<div class="pk-wrap"><div class="pk-cv"></div><div class="pk-hud"></div></div>`);
       el.appendChild(wrap);
       hud = wrap.querySelector('.pk-hud') as HTMLElement;
-      // площадка партии: выбранная или следующая по очереди (в показе правил и превью — всегда «за гаражами»)
-      place = ctx.demo || /[?&]thumb=/.test(location.search) ? PLACES[0] : nextPlace('pekar');
+      // площадка партии: выбранная или следующая по очереди (в показе правил — всегда «за гаражами»)
+      // превью карточки снимается на площадке из адреса (&place=school), без неё — гаражи
+      const thumbPlace = /[?&]thumb=/.test(location.search) ? (PLACES.find((p) => p.id === new URLSearchParams(location.search).get('place')) ?? PLACES[0]) : null;
+      place = thumbPlace ?? (ctx.demo ? PLACES[0] : nextPlace('pekar'));
       yard = new PekarYard(wrap.querySelector('.pk-cv') as HTMLElement, place);
       coach = new Coach(wrap);
       marks = new GroundMarks(yard.scene);
