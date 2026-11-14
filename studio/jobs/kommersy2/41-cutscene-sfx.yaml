@@ -1,0 +1,170 @@
+# kommersy2, партия 41: звуки роликов. Сгенерировано cutscenes.py sfxjob --game kommersy2 из 41-cutscene-mix.yaml — правки вносить туда.
+out: G:/temp/studio/out/kommersy2/41-cutscene-sfx
+seeds:
+- 1
+sounds:
+- duration: 2
+  level: normal
+  max: 1.2
+  prompt: soft cinematic boom with a warm orchestral swell, emotional trailer hit
+  name: shared--sting
+- name: c01-intro--steps-grass
+  duration: 2
+  level: quiet
+  max: 1.0
+  prompt: leather shoes walking on wet grass, slow steps
+- name: c01-intro--crowd-ghost
+  duration: 3
+  level: quiet
+  max: 2.5
+  prompt: distant echo of a stadium crowd cheering, dreamy and faint
+- name: c01-intro--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: empty football stadium at dawn, wind under the roof, distant birds, airy echo
+- name: c02-champion--roar
+  duration: 3
+  level: loud
+  max: 2.5
+  prompt: stadium crowd explodes in a massive roar of joy
+- name: c02-champion--confetti
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: confetti cannons popping and paper confetti fluttering
+- name: c02-champion--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: huge stadium crowd celebrating a title, chanting and singing
+- name: c03-final--kick
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: football kicked hard on a wet pitch, single thump
+- name: c03-final--save
+  duration: 1
+  level: normal
+  max: 0.6
+  prompt: goalkeeper gloves slapping a wet ball, splash
+- name: c03-final--roar
+  duration: 3
+  level: loud
+  max: 2.5
+  prompt: stadium crowd erupts in a huge roar after a penalty save
+- name: c03-final--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: heavy rain on a stadium at night, tense crowd murmur
+- name: c04-crash--thunder
+  duration: 3
+  level: normal
+  max: 2.5
+  prompt: distant rolling thunder over a city
+- name: c04-crash--phones
+  duration: 3
+  level: quiet
+  max: 2.5
+  prompt: several office phones ringing unanswered in another room
+- name: c04-crash--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: heavy rain against office windows at night, low computer hum
+- name: c05-last-match--lights-off
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: big floodlight switching off with a heavy electric clunk, echo
+- name: c05-last-match--lights-off2
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: big floodlight switching off with a heavy electric clunk, distant echo
+- name: c05-last-match--steps-stairs
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: slow footsteps up concrete stadium stairs, echo
+- name: c05-last-match--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: empty stadium at night, quiet wind, distant city
+- name: c06-tolmachevo--door
+  duration: 1
+  level: normal
+  max: 0.8
+  prompt: automatic glass airport door sliding open
+- name: c06-tolmachevo--snow-steps
+  duration: 3
+  level: quiet
+  max: 2.5
+  prompt: footsteps crunching on hard frozen snow with a rolling suitcase
+- name: c06-tolmachevo--exhale
+  duration: 1
+  level: quiet
+  max: 0.8
+  prompt: man exhaling sharply in freezing cold air, a shiver
+- name: c06-tolmachevo--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: freezing night at an airport, wind, distant cars idling, snow creaking
+- name: c07-crypto--chime
+  duration: 2
+  level: normal
+  max: 1.2
+  prompt: rising sparkling digital chime, coins shimmer
+- name: c07-crypto--laugh
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: a man laughing quietly in disbelief, short
+- name: c07-crypto--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet apartment at night, faint city traffic outside, laptop fan
+- name: c08-hospital--breath
+  duration: 2
+  level: quiet
+  max: 1.5
+  prompt: a slow deep calm breath of a man waking up
+- name: c08-hospital--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet hospital room in the morning, soft heart monitor beeps, birds outside the window
+- name: c09-end-quiet--leaves
+  duration: 3
+  level: quiet
+  max: 2.5
+  prompt: dry autumn leaves rustling and blowing across asphalt
+- name: c09-end-quiet--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: quiet courtyard in late autumn evening, light wind in dry leaves, distant city
+- name: c10-end-tyndex--applause
+  duration: 4
+  level: normal
+  max: 3.5
+  prompt: group of people in an office applauding and cheering warmly
+- name: c10-end-tyndex--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: big modern office at night, soft air conditioning hum, distant city
+- name: c11-end-island--kids
+  duration: 3
+  level: quiet
+  max: 2.5
+  prompt: small children laughing happily and running on a wooden pier
+- name: c11-end-island--bed
+  duration: 7
+  level: ambience
+  max: 8.0
+  prompt: gentle tropical sea waves at sunset, palm leaves rustling, seagulls

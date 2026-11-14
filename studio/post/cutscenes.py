@@ -56,12 +56,20 @@ def geroi_clips(src):
     return c
 
 
+def kommersy2_clips(src):
+    # «Коммерсы 2.0»: один ключ на ролик (CUT_PICK в jobs/kommersy2/make_jobs.py) → c01-intro-2-v1.mp4 → c01-intro
+    import re
+    return {re.sub(r'-\d-v1$', '', p.stem): p for p in sorted((src / '31-videos').glob('c[0-9][0-9]-*-v1.mp4'))}
+
+
 # GOPS: вступление, наезд на главный момент, стоп-кадр с притемнением. Герои: петля (конец переходит в начало) — окно кампании
 GAMES = {
     'gops': {'src': 'gops', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
              'dst': 'lavochka/public/gops/a/40-cutscenes', 'clips': gops_clips, 'loop': False},
     'geroi': {'src': 'geroi', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
               'dst': 'lavochka/public/geroi/a/cutscenes', 'clips': geroi_clips, 'loop': True},
+    'kommersy2': {'src': 'kommersy2', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
+                  'dst': 'lavochka/public/kommersy/a/cutscenes', 'clips': kommersy2_clips, 'loop': False},
 }
 GAME = 'gops'
 SRC = WORK = SFX = MIX = SFXJOB = DST = None

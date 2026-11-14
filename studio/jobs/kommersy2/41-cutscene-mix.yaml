@@ -1,0 +1,92 @@
+# Коммерсы 2.0, партия 41: раскладка звуков роликов (по промптам движения 31-videos и листам 40-cutscenes/sheets). Время — секунды от начала ролика (~5 с).
+# G:/ai/ComfyUI/venv/Scripts/python.exe -X utf8 studio/post/cutscenes.py --game kommersy2 sfxjob → runners/sfx.py → upscale → edit
+shared:
+  - {id: sting, duration: 2, level: normal, max: 1.2, prompt: "soft cinematic boom with a warm orchestral swell, emotional trailer hit"}
+clips:
+  - name: c01-intro
+    beat: 1.6
+    focus: [0.5, 0.35]
+    note: "Колян в верблюжьем пальто и шарфе на пустом стадионе, руки вверх"
+    bed: {duration: 7, gain: -6, prompt: "empty football stadium at dawn, wind under the roof, distant birds, airy echo"}
+    sounds:
+      - {id: steps-grass, at: 0.3, gain: -2, duration: 2, level: quiet, max: 1.0, prompt: "leather shoes walking on wet grass, slow steps"}
+      - {id: crowd-ghost, at: 1.6, gain: -4, duration: 3, level: quiet, max: 2.5, prompt: "distant echo of a stadium crowd cheering, dreamy and faint"}
+  - name: c02-champion
+    beat: 1.0
+    focus: [0.45, 0.3]
+    note: "кубок над головами, конфетти, хозяин обнимает тренера"
+    bed: {duration: 7, gain: -4, prompt: "huge stadium crowd celebrating a title, chanting and singing"}
+    sounds:
+      - {id: roar, at: 0.8, gain: 0, duration: 3, level: loud, max: 2.5, prompt: "stadium crowd explodes in a massive roar of joy"}
+      - {id: confetti, at: 1.2, gain: -4, duration: 2, level: quiet, max: 1.5, prompt: "confetti cannons popping and paper confetti fluttering"}
+  - name: c03-final
+    beat: 1.4
+    focus: [0.75, 0.55]
+    note: "дождь, вратарь в прыжке берёт пенальти, игроки бегут к нему"
+    bed: {duration: 7, gain: -6, prompt: "heavy rain on a stadium at night, tense crowd murmur"}
+    sounds:
+      - {id: kick, at: 0.9, gain: 0, duration: 1, level: normal, max: 0.6, prompt: "football kicked hard on a wet pitch, single thump"}
+      - {id: save, at: 1.4, gain: 0, duration: 1, level: normal, max: 0.6, prompt: "goalkeeper gloves slapping a wet ball, splash"}
+      - {id: roar, at: 1.6, gain: 0, duration: 3, level: loud, max: 2.5, prompt: "stadium crowd erupts in a huge roar after a penalty save"}
+  - name: c04-crash
+    beat: 2.0
+    focus: [0.6, 0.35]
+    note: "ночной офис, дождь, красные графики падают, Колян ослабляет галстук"
+    bed: {duration: 7, gain: -6, prompt: "heavy rain against office windows at night, low computer hum"}
+    sounds:
+      - {id: thunder, at: 2.0, gain: -2, duration: 3, level: normal, max: 2.5, prompt: "distant rolling thunder over a city"}
+      - {id: phones, at: 0.5, gain: -6, duration: 3, level: quiet, max: 2.5, prompt: "several office phones ringing unanswered in another room"}
+  - name: c05-last-match
+    beat: null
+    focus: [0.6, 0.4]
+    note: "пустой стадион ночью, прожекторы гаснут, Колян уходит"
+    bed: {duration: 7, gain: -6, prompt: "empty stadium at night, quiet wind, distant city"}
+    sounds:
+      - {id: lights-off, at: 0.8, gain: -2, duration: 1, level: normal, max: 0.8, prompt: "big floodlight switching off with a heavy electric clunk, echo"}
+      - {id: lights-off2, at: 2.2, gain: -4, duration: 1, level: normal, max: 0.8, prompt: "big floodlight switching off with a heavy electric clunk, distant echo"}
+      - {id: steps-stairs, at: 3.0, gain: -4, duration: 2, level: quiet, max: 1.5, prompt: "slow footsteps up concrete stadium stairs, echo"}
+  - name: c06-tolmachevo
+    beat: 1.2
+    focus: [0.5, 0.45]
+    note: "мороз −35, Колян с чемоданом выходит из аэропорта, пар изо рта"
+    bed: {duration: 7, gain: -6, prompt: "freezing night at an airport, wind, distant cars idling, snow creaking"}
+    sounds:
+      - {id: door, at: 0.2, gain: -2, duration: 1, level: normal, max: 0.8, prompt: "automatic glass airport door sliding open"}
+      - {id: snow-steps, at: 0.6, gain: -2, duration: 3, level: quiet, max: 2.5, prompt: "footsteps crunching on hard frozen snow with a rolling suitcase"}
+      - {id: exhale, at: 1.2, gain: 0, duration: 1, level: quiet, max: 0.8, prompt: "man exhaling sharply in freezing cold air, a shiver"}
+  - name: c07-crypto
+    beat: 2.0
+    focus: [0.35, 0.5]
+    note: "ночь, ноутбук, золотой график взлетает, Колян смеётся"
+    bed: {duration: 7, gain: -6, prompt: "quiet apartment at night, faint city traffic outside, laptop fan"}
+    sounds:
+      - {id: chime, at: 1.0, gain: -2, duration: 2, level: normal, max: 1.2, prompt: "rising sparkling digital chime, coins shimmer"}
+      - {id: laugh, at: 2.2, gain: -2, duration: 2, level: quiet, max: 1.5, prompt: "a man laughing quietly in disbelief, short"}
+  - name: c08-hospital
+    beat: null
+    focus: [0.4, 0.4]
+    note: "больничная палата, утро, жена держит его за руку, он открывает глаза"
+    bed: {duration: 7, gain: -6, prompt: "quiet hospital room in the morning, soft heart monitor beeps, birds outside the window"}
+    sounds:
+      - {id: breath, at: 1.0, gain: -4, duration: 2, level: quiet, max: 1.5, prompt: "a slow deep calm breath of a man waking up"}
+  - name: c09-end-quiet
+    beat: null
+    focus: [0.5, 0.6]
+    note: "пустая скамейка во дворе, шарф, первые снежинки"
+    bed: {duration: 7, gain: -6, prompt: "quiet courtyard in late autumn evening, light wind in dry leaves, distant city"}
+    sounds:
+      - {id: leaves, at: 0.5, gain: -4, duration: 3, level: quiet, max: 2.5, prompt: "dry autumn leaves rustling and blowing across asphalt"}
+  - name: c10-end-tyndex
+    beat: 1.6
+    focus: [0.7, 0.4]
+    note: "верхний этаж штаб-квартиры, сотрудники аплодируют, огни города"
+    bed: {duration: 7, gain: -6, prompt: "big modern office at night, soft air conditioning hum, distant city"}
+    sounds:
+      - {id: applause, at: 0.4, gain: 0, duration: 4, level: normal, max: 3.5, prompt: "group of people in an office applauding and cheering warmly"}
+  - name: c11-end-island
+    beat: null
+    focus: [0.6, 0.5]
+    note: "тропический остров на закате, внуки бегут по пирсу к деду"
+    bed: {duration: 7, gain: -6, prompt: "gentle tropical sea waves at sunset, palm leaves rustling, seagulls"}
+    sounds:
+      - {id: kids, at: 0.5, gain: -2, duration: 3, level: quiet, max: 2.5, prompt: "small children laughing happily and running on a wooden pier"}

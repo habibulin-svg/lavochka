@@ -263,10 +263,12 @@ class KommersyView implements GameView<View, Event> {
   }
 
   setView(v: View) {
+    const first = !this.v;
     const fresh = !this.v && v.phase === 'roll' && v.players.every((p) => p.pos === 0 && !p.assets.length);
     this.v = v;
-    if (fresh && v.season === 2) void this.clip('c01-intro').then(() => !this.dead && say('s2_start', true));
-    else if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say('start', true), 800);
+    // второй сезон с 2004-го: дела переезжают с героем, поэтому «свежесть» — по месяцу и фишкам
+    if (v.season === 2 && first && v.m === 0 && v.phase === 'roll' && v.players.every((p) => p.pos === 0)) void this.clip('c01-intro').then(() => !this.dead && say('s2_start', true));
+    else if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say(v.season === 2 ? 's2_start' : 'start', true), 800);
     // концовка второго сезона — свой ролик поверх итогов
     if (v.phase === 'over' && v.season === 2) {
       const e = v.players.find((p) => p.seat === (v.me ?? this.me()))?.ending;
