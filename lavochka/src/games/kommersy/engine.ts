@@ -1379,6 +1379,8 @@ export interface PlayerView {
   /** Второй сезон: клуб (виден всем) и трофеи. */
   club2?: Club2;
   trophies?: string[];
+  /** Второй сезон: переболел (облик Коляна после болезни). */
+  ill?: true;
 }
 /** Дело в виде: настоящий доход в месяц сейчас (с управляющим, нишей, кризисом) и куда можно вырасти. */
 export interface AssetView extends Asset {
@@ -1474,6 +1476,7 @@ export function view(s: State, seats: number[] | 'all'): View {
       }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
       ...(p.club2 ? { club2: clone(p.club2) } : {}),
       ...(p.trophies ? { trophies: [...p.trophies] } : {}),
+      ...(p.ill != null ? { ill: true as const } : {}),
     };
   });
   const mp = me == null ? null : P(s, me);

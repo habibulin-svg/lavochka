@@ -32,6 +32,7 @@ VOICES = {
     'botan': 'u3pPktIMgx1Kt5EJ391v',        # Dimitri — молодой, бодрый
     'maloy': 'rSfuQoQ3FY8SVKeraMAp',        # Lunya — «Little Fairy»
     'kolyan': '6A9D8WSMm4rFsg2DWFeE',       # Egor Gadzhiyev — чёткий, командный
+    'kommentator': 'u3pPktIMgx1Kt5EJ391v',  # «Коммерсы 2.0»: комментатор матчей — Dimitri (молодой, бодрый), мой выбор по §11
 }
 AF = ('silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,'
       'areverse,loudnorm=I=-16:TP=-1.5:LRA=7')

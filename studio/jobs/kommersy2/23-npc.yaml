@@ -1,0 +1,92 @@
+# Коммерсы 2.0, партия 23-npc — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 22
+items:
+- name: trener
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 42-year-old southern European football manager in 2005, fictional, slim, dark hair with grey temples, stubble, sharp arrogant
+    smile, a long dark grey overcoat over a suit. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural
+    skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: zvezda
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 24-year-old West African football striker in 2006, fictional, athletic, short twisted hair, a diamond stud earring, a red club
+    training jacket, playful confident grin. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural
+    skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: kapitan
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 30-year-old English football captain in 2005, fictional, ginger buzz cut, square jaw, a red club tracksuit jacket, serious honest
+    look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat
+    chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: agent
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 45-year-old football agent in London in 2005, fictional, slicked-back hair, tanned, open-collar silk shirt, gold watch, two phones
+    on the table, a salesman smile. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture,
+    realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: sheikh
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 50-year-old Gulf Arab investor in 2007, fictional, neatly trimmed black beard, white thobe and white ghutra headdress, calm polite
+    expression. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid
+    flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: amerikanec
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 55-year-old American businessman in 2008, fictional, silver hair, tanned, a navy blazer with an open shirt, wide confident smile.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: fanat
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 35-year-old English football ultras leader in 2006, fictional, shaved head, tattoos on forearms, a red-and-white scarf and a dark
+    bomber jacket, tough grin. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture,
+    realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: kreditor
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 50-year-old London banker in 2008, fictional, thin, rimless glasses, perfect grey suit and dark tie, cold polite expression. He
+    or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: zhena
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 34-year-old Russian woman, wife of a rich businessman, in 2007, fictional, long light-brown hair, elegant beige cashmere sweater,
+    small pearl earrings, intelligent warm but strict look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera.
+    Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: syn
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 17-year-old Russian teenage boy in 2012, fictional, broad face like his father, short hair, a hoodie and headphones around the
+    neck, sulky look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic.
+    Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: doch
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 15-year-old Russian teenage girl in 2012, fictional, long dark hair in a ponytail, a denim jacket, bright curious eyes. He or
+    she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: vnuki
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 30-year-old Russian young mother in 2020 sitting with a 4-year-old boy on her lap, fictional, casual knitted clothes, both smiling.
+    He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key
+    green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: sooosnovatel
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 27-year-old Russian programmer from Novosibirsk in 2010, fictional, skinny, messy hair, glasses, a checked flannel shirt, a laptop
+    on the table, shy smart smile. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture,
+    realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: venchur
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 40-year-old Russian venture capitalist in Moscow in 2014, fictional, short beard, trendy round glasses, a white shirt with rolled
+    sleeves, a smartwatch, appraising look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin
+    texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: regulyator
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 52-year-old Russian government official in 2017, fictional, balding, a dark blue suit, a small flag pin on the lapel, a thick
+    folder of papers on the table, stern look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural
+    skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: vrach
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 45-year-old Russian doctor in 2020, fictional, a white medical coat over green scrubs, a stethoscope around the neck, a surgical
+    mask pulled down under the chin, kind tired eyes. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera.
+    Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: zheka
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 54-year-old Russian man in 2021, an old friend from the 1990s, fictional, lean, grey crew cut, a scar on the cheek, a worn leather
+    jacket, ironic grin. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic.
+    Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: seryoga
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 54-year-old Russian man in 2021, an old friend from the 1990s, fictional, heavy, bald, a warm smile, a knitted sweater, simple
+    and kind. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid
+    flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: kurer
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 25-year-old courier in Moscow in 2019, fictional, a bright yellow delivery jacket and a cap, a big insulated backpack on the chair,
+    cheerful tired face. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic.
+    Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.
+- name: zhurnalistka
+  prompt: Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 30-year-old Russian business journalist in 2016, fictional, short bob haircut, a smartphone recording on the table, a black blazer,
+    sharp curious look. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic.
+    Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.

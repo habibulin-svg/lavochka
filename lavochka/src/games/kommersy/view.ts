@@ -10,9 +10,9 @@ import {
   type Cell, type Krysha, type Skill, type Stat,
 } from './data';
 import { RIVAL_DARK, RIVAL_NAME, RIVAL_NAME2, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
-import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
+import { KolyanCam, kolyanImg, lookOf, type Reaction } from './kolyan';
 import { S1, s2Access, season, type Season } from './season';
-import { CRASH_FROM } from './s2data';
+import { CRASH_FROM, IT_FROM, TIER_ID2, m2 } from './s2data';
 import { encodeLegacy, legacyFromView } from './legacy';
 import { offerS2, saveLegacy } from './paid';
 import { Music, eraMusic } from './music';
@@ -88,15 +88,21 @@ function roadGeo(r: number): RoadGeo {
 
 /** Панорама: местность по уровню, вариант по эпохе (где у местности его нет — ближайший), часть — по отрезку. */
 function pano(z: Season, tier: number, m: number) {
-  // второй сезон: своих панорам пока нет (этап 6) — акт клуба в Лондоне, «Цифра» — на местностях первого сезона
-  const place = z.id === 2 ? (m < CRASH_FROM ? 'london' : ['bazar', 'center', 'center', 'moscow', 'london', 'moscow'][tier]) : z.tierId[tier];
-  const era = z.id === 2 ? 'new' : z.eraOf(m);
-
+  const road = Math.floor(m / 3) % 3;
+  const part = road + 1;
+  if (z.id === 2) {
+    // второй сезон (studio/jobs/kommersy2): клуб — стадион, Сити и Ривьера/Альпы по полугодиям; крах — Сити под дождём; «Цифра» — уровень × эпоха
+    if (m < CRASH_FROM) return { src: `${A}/pano/${['stadium', 'city', 'riviera'][Math.floor(m / 6) % 3]}-club-${part}.webp`, road };
+    if (m < IT_FROM) return { src: `${A}/pano/city-crash-${part}.webp`, road };
+    return { src: `${A}/pano/${TIER_ID2[tier]}-${m < m2(2015, 1) ? 'it1' : 'it2'}-${part}.webp`, road };
+  }
+  const place = z.tierId[tier];
+  const era = z.eraOf(m);
   const have: Record<string, string[]> = { dvor: ['soviet', 'wild'], kiosk: ['soviet', 'wild'], bazar: ['wild', 'new'], center: ['wild', 'new'], oblast: ['wild', 'new'], moscow: ['new'], london: ['new'] };
   const want = era === 'soviet' ? 'soviet' : era === 'new' ? 'new' : 'wild';
   const list = have[place];
   const e = list.includes(want) ? want : want === 'soviet' ? list[0] : list[list.length - 1];
-  return { src: `${A}/pano/${place}-${e}-${(Math.floor(m / 3) % 3) + 1}.webp`, road: Math.floor(m / 3) % 3 };
+  return { src: `${A}/pano/${place}-${e}-${part}.webp`, road };
 }
 
 /** Кто смотрит с карточки. */
@@ -108,6 +114,19 @@ const NPC_BY_CARD: Record<string, string> = {
   'e-mat': 'mother', 'e-rebenok': 'girl', 'e-drug': 'drug', 'r-dolg': 'drug', 'r-kabak': 'drug', 'r-podarok': 'mother', 's-english': 'zhurnalist', 's-london': 'yurist', 's-buh': 'chelnochnitsa',
 };
 const NPC_BY_CELL: Partial<Record<Cell, string>> = { deal: 'chelnochnitsa', routine: 'drug', study: 'drug', rest: 'girl', news: 'zhurnalist', event: 'mother', naezd: 'brigadir', check: 'nalogovik' };
+/** Второй сезон (studio/jobs/kommersy2, партия 23-npc): кто смотрит с карточки — по карточке, иначе по клетке и акту. */
+const NPC_BY_CARD2: Record<string, string> = {
+  'l-bunt': 'zvezda', 'l-ultimatum': 'trener', 'l-premiya': 'kapitan', 'l-sbory': 'trener', 'l-doping': 'vrach',
+  'n1-zalog': 'kreditor', 'n1-sponsor': 'sheikh', 'n1-stadion': 'amerikanec', 'n1-domoj': 'seryoga', 'n1-tv': 'agent',
+  'e1-travma': 'zvezda', 'e1-skandal': 'zhurnalistka', 'r1-stavki': 'fanat', 'r1-vecherinka': 'zhena', 'w1-tribuna': 'fanat',
+  'x-margin': 'kreditor', 'x-club': 'sheikh', 'x-biz': 'amerikanec', 'x-dolgi': 'kreditor',
+  'w3-pacany': 'seryoga', 'w3-vnuki': 'vnuki', 'w3-doch': 'doch', 'w3-zheka': 'zheka', 'w3-banya': 'regulyator', 'w3-otpusk': 'zhena', 'w3-yubiley': 'seryoga',
+  'e3-svadba': 'syn', 'e3-serdce': 'vrach', 'e3-fleshka': 'syn', 'k3-starye': 'zheka', 'k3-zakaz': 'zhurnalistka', 'k3-korporaciya': 'venchur',
+  'r3-zarplaty': 'sooosnovatel', 'r3-noutbuk': 'sooosnovatel', 'r3-ofis': 'sooosnovatel', 'r3-konferenciya': 'venchur', 'r3-mashina': 'kurer',
+  'z-chekap': 'vrach', 'z-doktor': 'vrach', 'z-privivka': 'vrach', 'z-sport': 'doch', 'z-dacha': 'zhena', 'ill-1': 'vrach', 'ill-2': 'zhena', 'ill-3': 'vrach',
+};
+const NPC_BY_CELL2_CLUB: Partial<Record<Cell, string>> = { deal: 'agent', transfer: 'agent', locker: 'trener', routine: 'kapitan', study: 'trener', rest: 'zhena', news: 'zhurnalistka', event: 'zhena', naezd: 'kreditor', check: 'kreditor' };
+const NPC_BY_CELL2_IT: Partial<Record<Cell, string>> = { deal: 'venchur', hype: 'venchur', routine: 'sooosnovatel', study: 'sooosnovatel', rest: 'zhena', news: 'zhurnalistka', event: 'doch', naezd: 'kreditor', check: 'regulyator' };
 /** Реакция Коляна на свои события. */
 const REACT: Partial<Record<Event['t'], Reaction>> = { buy: 'deal', risk: 'lose', fall: 'lose', out: 'lose', club: 'win' };
 const SHOW_STATS: Stat[] = ['health', 'mood', 'stress', 'name', 'avt', 'svyazi', 'blizkie'];
@@ -318,7 +337,7 @@ class KommersyView implements GameView<View, Event> {
     this.setBg(pn.src);
     this.dateEl.innerHTML = `<b>${z.dateText(v.m)}</b> · ${z.eraName[z.eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${z.placeName(v.m, me.tier)}</span>`;
     this.drawRoad();
-    this.kolyan.set(me.hero === 'kolyan' ? z.yearOf(v.m) : null);
+    this.kolyan.set(me.hero === 'kolyan' ? lookOf(z, v.m, me.ill != null) : null);
     const thinking = v.phase === 'choose' && v.ask?.seat === me.seat;
     if (thinking) this.kolyan.play('think');
     else if (this.kolyan.now === 'think') this.kolyan.play('idle');
@@ -376,7 +395,7 @@ class KommersyView implements GameView<View, Event> {
       .map((p) => {
         const { x, y } = this.tokenXY(p.seat);
         const hero = season(v.season).heroes.find((hh) => hh.id === p.hero);
-        const img = p.hero === 'kolyan' ? `<img src="${kolyanImg(season(v.season).yearOf(v.m))}" alt="">` : `<span>${esc(hero?.name[0] ?? '?')}</span>`;
+        const img = p.hero === 'kolyan' ? `<img src="${kolyanImg(lookOf(season(v.season), v.m, p.ill != null))}" alt="">` : `<span>${esc(hero?.name[0] ?? '?')}</span>`;
         const on = (v.ask ? v.ask.seat : v.turn) === p.seat ? ' on' : '';
         const out = p.out > 0 ? ' out' : '';
         return `<div class="km-token${on}${out}" data-seat="${p.seat}" style="left:${x}%;top:${y}%;--c:${this.seatColor(p.seat)}">${img}</div>`;
@@ -654,7 +673,10 @@ function fxChips(c: Ask['choices'][number]) {
 }
 
 function cardHtml(ask: Ask, mine: boolean, who: string, m = 0, z: Season = S1) {
-  const npc = (ask.card && NPC_BY_CARD[ask.card]) || NPC_BY_CELL[ask.cell];
+  const npc =
+    z.id === 2
+      ? (ask.card && NPC_BY_CARD2[ask.card]) || (m < IT_FROM ? NPC_BY_CELL2_CLUB : NPC_BY_CELL2_IT)[ask.cell]
+      : (ask.card && NPC_BY_CARD[ask.card]) || NPC_BY_CELL[ask.cell];
   const face = npc ? `<img class="km-npc" src="${A}/people/${npc}.webp" alt="">` : '';
   const offers = ask.deals
     ? `<div class="km-offers">${ask.deals

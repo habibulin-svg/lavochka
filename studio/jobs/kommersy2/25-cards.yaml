@@ -1,0 +1,1192 @@
+# Коммерсы 2.0, партия 25-cards — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1152
+  height: 768
+  steps: 8
+seeds:
+- 55
+- 66
+items:
+- name: t-star
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sleek London office with a view of a floodlit stadium at dusk, an agent in a sharp suit leaning over a desk pointing at a photo of a young striker in a red and white
+    kit, a stocky broad-faced Russian man with a short dark buzz cut in his late 30s listening with a folded-flip-phone in hand. No text, no letters, no logos.
+- name: t-sell
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass-walled boardroom in London, 2006, a polished table with a model of a grand stadium and stacks of banknotes, a stocky broad-faced Russian man with a short dark
+    buzz cut in his late 30s staring out the window at a footballer in a red and white kit training on the green pitch below. No text, no letters, no logos.
+- name: t-young
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dusty Brazilian street pitch under a hot afternoon sun, a thin teenage boy in a worn yellow shirt juggling a ball with astonishing skill while two scouts with notebooks
+    watch from a shaded wall, kids gathering around. No text, no letters, no logos.
+- name: t-akademiya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big architectural model of a football academy with small pitches and dormitories on a table, a stocky Russian man in his late 30s and an architect in glasses leaning
+    over it, outside a window rows of boys in red and white training kits run drills on a green field. No text, no letters, no logos.
+- name: t-trener
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A confident tall coach in a long dark overcoat stepping out of a black car in front of a modern stadium entrance in London drizzle, adjusting his collar with a calm
+    arrogant smile while photographers with long lenses crowd around. No text, no letters, no logos.
+- name: t-arenda
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tunnel inside a stadium with floodlights shining at the far end, a midfielder in a red and white kit carrying a sports bag shakes hands with a club official in a
+    dark coat, a courier van waiting outside the gate. No text, no letters, no logos.
+- name: t-veteran
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet empty locker room after training, a tired thirty-four-year-old defender with greying stubble sitting on a bench with his boots in his hands, a stocky Russian
+    man in his late 30s sitting opposite him, a single lamp over the bench. No text, no letters, no logos.
+- name: l-bunt
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A noisy dressing room, a muscular striker in a red and white kit standing with arms crossed and a stubborn look, teammates exchanging glances behind him, a stocky
+    Russian man with a short dark buzz cut in his late 30s standing in the doorway with raised eyebrows. No text, no letters, no logos.
+- name: l-ultimatum
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A coach's office with a big tactical board covered in magnets and arrows, a stern middle-aged coach in a tracksuit pounding his fist on the desk, a stocky Russian
+    man in a suit leaning back in a leather chair calmly looking at him, evening light through blinds. No text, no letters, no logos.
+- name: l-premiya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tunnel before a derby match, a football captain with an armband and a red and white kit leaning toward a stocky Russian man in a dark coat, quietly rubbing thumb
+    and fingers together, roaring stadium crowd visible as a bright blur ahead. No text, no letters, no logos.
+- name: l-sbory
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy alpine training camp, players in red and white tracksuits jogging along a pine-lined path with snowy peaks behind them, a coach with a stopwatch at the front,
+    a stocky Russian man in a thick coat watching from a wooden chalet terrace with a mug. No text, no letters, no logos.
+- name: l-doping
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small clinic room at a football training ground, a doctor in a white coat holding a small sealed sample bottle and glancing nervously at a stocky Russian man in
+    a dark suit who watches him with a heavy stare, a nearby bin and a bright cold lamp. No text, no letters, no logos.
+- name: r1-yahta
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A gigantic white superyacht with a helicopter on its upper deck anchored in a turquoise Mediterranean bay at sunset, a stocky broad-faced Russian man in his late 30s
+    in a white shirt standing on the pool deck with a glass of champagne, guests laughing. No text, no letters, no logos.
+- name: r1-samolet
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A white private jet parked on a runway at dawn with its stairs lowered, a stocky Russian man with a short dark buzz cut in a coat climbing the stairs with a briefcase,
+    a London skyline fading in the pink haze behind him. No text, no letters, no logos.
+- name: r1-alpy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A luxurious timber chalet on a snowy alpine slope at golden hour, a stone terrace with a hot tub steaming, a stocky Russian man in a thick sweater and a banker in
+    a ski jacket clinking glasses with the peaks glowing pink behind them. No text, no letters, no logos.
+- name: r1-vecherinka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glamorous winter party in a ski-resort restaurant, waiters carrying towers of champagne bottles, glittering women in fur and men in dinner jackets dancing, a stocky
+    Russian man in his late 30s in the middle of the crowd laughing with a raised glass, snow falling outside. No text, no letters, no logos.
+- name: r1-stavki
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A smoky London betting shop interior with bright racks of glowing screens showing football matches, a friendly bookmaker in a shirt and tie leaning on the counter
+    and holding a slip of paper out to a stocky Russian man in a coat, who hesitates with a pen. No text, no letters, no logos.
+- name: n1-zalog
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand City of London bank office with tall windows and oak panels, a smiling banker sliding a thick stack of papers across a table to a stocky Russian man in his
+    late 30s who holds a pen, models of glass skyscrapers and the stadium on the shelf behind. No text, no letters, no logos.
+- name: n1-sponsor
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright photo studio, football players in red and white shirts posing in a row while a marketing team in suits points toward them and a man in a Middle Eastern business
+    robe approves, large camera lights and a plain blank shirt held up on a hanger. No text, no letters, no logos.
+- name: n1-stadion
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. Architects in hard hats unrolling a giant blueprint on the hood of a car in front of an old brick football stadium, a stocky Russian man with a short dark buzz cut
+    looking up at a dazzling rendering of a vast new arena, grey London sky. No text, no letters, no logos.
+- name: n1-domoj
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A night kitchen in a London mansion, a stocky Russian man in a bathrobe pressing a flip phone to his ear, rubbing his forehead, a half-eaten sandwich and a tea mug
+    on the counter, on a laptop screen a downward colorful graph. No text, no letters, no logos.
+- name: n1-tv
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cheerful modern London club office, executives in red ties watching a wall-sized screen showing a roaring stadium broadcast, a banker pouring coffee, a stocky Russian
+    man in his late 30s grinning with arms spread as a bright chart bar climbs on a monitor. No text, no letters, no logos.
+- name: w1-tribuna
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A fan stand at a noisy stadium evening, a stocky Russian man in his late 30s in a red and white scarf and a jacket sitting among cheerful working-class fans, holding
+    a paper cup of beer, fans around him singing and waving red and white flags. No text, no letters, no logos.
+- name: w1-semya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy London suburban kitchen in the afternoon, a ten-year-old boy in a school uniform showing a drawing to his father, a stocky Russian man in a sweater, while a
+    woman at the window stares wistfully at the rainy street, a pot steaming on the stove. No text, no letters, no logos.
+- name: w1-priem
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand embassy reception hall with chandeliers, men in dark suits holding champagne flutes and little plates, a stocky Russian man in a tuxedo standing among them
+    with a polite stiff smile, a waiter with a silver tray passing by. No text, no letters, no logos.
+- name: s1-english
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunlit London study with bookshelves, a stocky broad-faced Russian man in his late 30s in shirtsleeves sitting at a desk with a notebook and a tape recorder, a friendly
+    young English tutor pointing to a map of London on the wall, a teapot between them. No text, no letters, no logos.
+- name: s1-menedzhment
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern business-school lecture hall with tiered seats, a professor at a whiteboard covered with colorful pie charts and curves, a stocky Russian man in a suit among
+    young students taking notes, and a football lying under his desk. No text, no letters, no logos.
+- name: c1-nalog
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tense meeting room in a London law firm, two tax inspectors with leather briefcases and grey faces sitting across a table from a stocky Russian man and a sharp lawyer
+    in a pinstripe suit, a wall of thick file folders behind them, rain on the window. No text, no letters, no logos.
+- name: e1-travma
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football pitch under floodlights, a star striker in a red and white kit lying on the grass clutching his knee, a physiotherapist running with a bag, teammates and
+    a referee gathered, a stretcher cart coming, the stunned crowd in the stands. No text, no letters, no logos.
+- name: e1-skandal
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A morning London street corner with a newsstand piled with colorful tabloid newspapers showing blurry pictures of a stadium and a stack of cash, a stocky Russian man
+    in a long dark coat stopping to look at them, a red bus passing. No text, no letters, no logos.
+- name: x-margin
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A frantic trading floor in September 2008, traders with phones at their ears and hands on their heads, giant screens full of red falling graphs, a stocky broad-faced
+    Russian man in his early 40s with a hoodie under a blazer standing frozen in the middle of the chaos. No text, no letters, no logos.
+- name: x-club
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A plush London club reception room with leather sofas, three buyers waiting in a row, a sheikh in white robes with golden cufflinks, an American in a rumpled suit
+    with a folder, and a group of fans in red and white scarves, while a stocky Russian man looks at them from the doorway. No text, no letters, no logos.
+- name: x-biz
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A long wooden table in a Moscow office with stacks of documents and keys, a stocky Russian man in his early 40s with a hoodie under his jacket signing a paper, three
+    groups of visitors waiting behind him: managers in work jackets, men in black leather coats, and officials in grey suits. No text, no letters, no logos.'
+- name: x-dolgi
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunlit auction hall on a grey day, an auctioneer with a gavel raised near a big yacht model, a private jet toy and a chalet painting on easels, creditors in dark
+    suits dividing stacks of banknotes at a table while a stocky Russian man in his early 40s watches from the back. No text, no letters, no logos.
+- name: r3-noutbuk
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cramped brick garage workshop in a snowy Akademgorodok in 2010, a stocky man in his early 40s in a hoodie staring in dismay at a laptop with a spilled tea mug and
+    a steaming puddle on the desk, a space heater glowing, papers scattered. No text, no letters, no logos.
+- name: r3-ofis
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright open-plan startup office with colorful bean bags, a coffee machine, a kicker table and electric scooters parked by the wall, young developers in hoodies grinning
+    while a stocky Russian man in his early 40s looks around with hands on hips. No text, no letters, no logos.
+- name: r3-konferenciya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A packed modern conference hall in Moscow, rows of young people with laptops and phones, a speaker on a stage in front of an enormous glowing screen with colorful
+    graphs, a stocky Russian man in his late 40s with a short greying beard walking in the aisle with a coffee cup. No text, no letters, no logos.
+- name: r3-mashina
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy courtyard in front of a dusty old black SUV with a dented bumper next to a sleek silent electric car on a charging cable, a stocky man in his late 40s with
+    a short greying beard looking from one to the other, a salesman holding keys. No text, no letters, no logos.
+- name: r3-zarplaty
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A noisy open office at a tech company, a young programmer at a monitor with a smug face holding a phone with a job offer, others glancing at him, while a stocky Russian
+    man with a short greying beard in his late 40s stands at the end of the room rubbing his chin. No text, no letters, no logos.
+- name: s3-kod
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A late evening classroom at a night coding course, a stocky Russian man in his late 40s with a short greying beard in glasses frowning at a laptop full of colorful
+    lines of code among young students, a projector glowing on the wall, a cup of tea going cold. No text, no letters, no logos.
+- name: s3-dolina
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny California startup accelerator with palm trees outside tall windows, a young team pitching on a small stage in front of a screen with colorful graphs, a stocky
+    Russian man in a hoodie with a short greying beard sitting among mentors with a sleepless tired grin and a paper cup. No text, no letters, no logos.
+- name: s3-venchur
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright lecture room at an investor school, a grey-haired former founder with a tired face standing at a flipchart with scribbled arrows and a crossed-out rocket
+    sketch, students listening, a stocky Russian man in a blazer taking notes in the first row. No text, no letters, no logos.
+- name: s3-blokchein
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A noisy Novosibirsk student cafe, a thin young student drawing circles and arrows on a paper napkin and holding up a shiny golden coin, a stocky Russian man in his
+    late 40s with a short greying beard leaning on his elbows listening with squinting skepticism, laptops on the table. No text, no letters, no logos.
+- name: s3-sport
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright gym in the morning, a stocky Russian man in his late 40s with a short greying beard in a sweaty t-shirt gripping a barbell with a strained face, a muscular
+    trainer with a stopwatch cheering him on, a doctor in a white coat watching with a clipboard by the door. No text, no letters, no logos.
+- name: w3-pacany
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A summer dacha porch with a samovar and a table with a laptop, a lanky young man in a t-shirt pitching with hands and screen full of colorful graphs, an older stocky
+    Russian man in his late 40s with a short greying beard sitting and listening with a half-smile, apple trees behind. No text, no letters, no logos.
+- name: w3-vnuki
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunlit dacha garden in the afternoon, two small children running with a ball across the grass while a smiling woman in her thirties holds a phone out toward a grey-bearded
+    stocky man in his late 40s sitting on the bench with a laptop, pine trees and a wooden porch behind them. No text, no letters, no logos.
+- name: w3-doch
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy Novosibirsk apartment kitchen in the evening, a young woman with a laptop sitting beside her father, a stocky man in his late 40s with a short greying beard,
+    both looking at lines of code on the screen, a window with a snowy city at night, mugs of tea. No text, no letters, no logos.
+- name: w3-zheka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An airport arrivals hall, a lean tanned man in a bright shirt and sunglasses with a backpack and a laptop bag spreading his arms toward a stocky Russian man in his
+    late 40s with a short greying beard who laughs and walks to hug him, palm-tree souvenir tote on the floor. No text, no letters, no logos.
+- name: w3-banya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A rustic Russian wooden banya steam room, a stocky man in his late 40s with a short greying beard and a felt hat sitting on a bench wrapped in a white sheet, a smiling
+    official in a sheet beside him, birch brooms, a pitcher of kvass, steam swirling in the warm lamp light. No text, no letters, no logos.
+- name: w3-otpusk
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A turquoise sea beach at sunset, a stocky Russian man in his late 40s with a short greying beard in a linen shirt lying on a sun lounger with a drink, an abandoned
+    laptop bag with its zipper open in the sand beside him, calm waves and a palm tree. No text, no letters, no logos.
+- name: w3-yubiley
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A huge yard party in Novosibirsk, long tables set outdoors between Soviet apartment blocks with kids on swings, balloons, a cake with fifty candles, neighbors and
+    old friends cheering, a stocky Russian man in his early 50s with a short grey beard raising a glass at the center. No text, no letters, no logos.
+- name: n3-btc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A basement computer room with humming equipment, a young student with a messy hair showing a golden coin on his palm to a stocky Russian man in his early 40s in a
+    hoodie, a laptop showing a glowing chart behind them, tangled cables on the floor. No text, no letters, no logos.
+- name: n3-kipr
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny bank office on a Mediterranean island with palm trees outside the window, a smooth banker in a light suit sliding a glossy brochure across a desk to a stocky
+    Russian man in a hoodie and blazer, a blue sea view and an air conditioner humming. No text, no letters, no logos.
+- name: n3-good
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cheerful office where a young team jumps up and down celebrating at their monitors showing a skyrocketing colorful graph, a woman with a phone showing a blogger's
+    video, balloons, a stocky Russian man in his late 40s with a short greying beard clapping with a delighted grin. No text, no letters, no logos.
+- name: n3-vykup
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sleek glass meeting room on a high floor of a skyscraper, executives in dark suits on one side of a polished table offering a thick contract, a stocky Russian man
+    in his late 40s with a short greying beard weighing a pen, city lights twinkling behind. No text, no letters, no logos.
+- name: n3-grow
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass office terrace at sunset above a modern tech park, an investor in a smart jacket gesturing toward a rising glass skyline on the horizon, a stocky Russian man
+    in his late 40s with a short greying beard and a laptop bag listening thoughtfully. No text, no letters, no logos.
+- name: n3-grant
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern innovation-park building with glass walls and a green lawn, a queue of young founders in hoodies holding laptops and posters, a woman at a reception desk
+    taking folders, snowflakes starting to fall, a stocky Russian man in his late 40s looking at the crowd. No text, no letters, no logos.
+- name: n3-vc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A casual rooftop lounge in Moscow with a city skyline at dusk, a friendly man in a smart-casual jacket waving a tablet toward a row of colorful startup sketches on
+    a screen, a stocky Russian man in his late 40s with a short greying beard sipping coffee and considering. No text, no letters, no logos.
+- name: n3-fixer
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A heavy wood-paneled office in Moscow, a smooth elderly man in an expensive suit with a thick leather folder sitting behind a big desk, smiling slyly, a stocky Russian
+    man in his early 50s with a short grey beard sitting across with a skeptical look, a tall clock on the wall. No text, no letters, no logos.
+- name: n3-pomoshnik
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright modern office, a calm young woman at a standing desk with a laptop and a tidy wall calendar of colorful blocks, handing a tablet to a stocky Russian man in
+    his late 40s with a short greying beard who looks relieved, a pile of messy notes behind him. No text, no letters, no logos.
+- name: e3-bank
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow street in front of a bank branch with its metal shutters pulled down, a crowd of worried people with phones and folders gathered at the glass door, a stocky
+    Russian man in his early 50s with a short grey beard in a coat standing in the slush looking up at the dark windows. No text, no letters, no logos.
+- name: e3-fleshka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A half-packed apartment in the middle of a move, cardboard boxes scattered, a stocky Russian man in his late 40s with a short greying beard on his knees pulling out
+    drawers and shaking a bag, a tiny USB stick glinting under the sofa, a bare light bulb overhead. No text, no letters, no logos.
+- name: e3-serdce
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dark apartment at night, blue and white flashing lights of an ambulance on the walls, a paramedic in a white jacket with a medical case leaning over a stocky man
+    in his late 40s with a short greying beard sitting on the edge of a bed clutching his chest, his wife anxious in the doorway. No text, no letters, no logos.
+- name: e3-svadba
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny London garden wedding with white chairs and flowers, a young groom in a suit hugging a bride in a white dress, guests applauding on a lawn, an empty seat in
+    the first row with a phone on it, a mansion in the background. No text, no letters, no logos.
+- name: e3-vzlom
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tense office at night with rows of monitors showing swirling red warnings and a spreading colorful map of glowing dots, young engineers in hoodies hunched over keyboards
+    with energy drinks, a stocky Russian man in his late 40s with a short greying beard standing behind them with a grim face. No text, no letters, no logos.
+- name: c3-blok
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim operations room with a wall of monitors going dark one by one, an engineer in a hoodie throwing up hands, a stocky Russian man in his late 40s with a short greying
+    beard holding a phone to his ear while rows of server lights blink in a window behind. No text, no letters, no logos.
+- name: c3-dannye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A huge cold data center hall with endless rows of black server racks and blue lights, a stocky Russian man in his early 50s with a short grey beard in a warm jacket
+    walking along an aisle with an engineer who points at a blueprint on a tablet. No text, no letters, no logos.
+- name: c3-nalog
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tidy accounting office, two inspectors in grey suits with thick folders going through stacks of papers on a table, a nervous accountant wiping her glasses, a stocky
+    Russian man in his late 40s with a short greying beard standing by the window with a phone, daylight through blinds. No text, no letters, no logos.
+- name: c3-antimonopol
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big government conference room with a long table and tall windows, officials in dark suits with folders on one side, a stocky Russian man in his early 50s with a
+    short grey beard and a lawyer on the other, a screen showing a pie chart with one huge slice. No text, no letters, no logos.
+- name: k3-korporaciya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass meeting room at the top of a Moscow skyscraper at dusk, a row of sharp executives in dark suits leaning in with intimidating smiles toward a stocky Russian
+    man in his late 40s with a short greying beard, a giant contract on the table, the lit city below. No text, no letters, no logos.
+- name: k3-starye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy Moscow courtyard at dusk beside a cafe, two big broad men in black leather jackets and gold chains from the 90s stepping out of an old dark car, smiling too
+    widely at a stocky Russian man in a modern coat with a short greying beard who stands still with a phone. No text, no letters, no logos.
+- name: k3-zakaz
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tidy newsroom desk with a glowing monitor showing a long article with a blurry photo of a stadium, a journalist in glasses typing, while in the background through
+    a glass door a stocky Russian man in his late 40s with a short greying beard reads a printout with a tight jaw. No text, no letters, no logos.
+- name: z-chekap
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright modern clinic corridor, a stocky Russian man in his early 50s with a short grey beard in a white robe sitting on a medical couch while a nurse takes a blood
+    sample and a doctor looks at a screen with an ultrasound image, white walls and soft daylight. No text, no letters, no logos.
+- name: z-doktor
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A warm home office in the morning, a calm doctor in a white coat with a stethoscope placing a blood pressure cuff on the arm of a thin grey-haired man in his 50s sitting
+    at his desk beside a laptop, a glass of water, a small bowl of colorful vitamins, a sunny window. No text, no letters, no logos.
+- name: z-dacha
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A wooden country house among birch trees in spring, a thin grey-haired man in his 50s in a wool sweater sits on the porch with a laptop and a steaming mug, a video
+    call glowing on the screen, a smoking bathhouse chimney behind him, soft morning light. No text, no letters, no logos.
+- name: z-privivka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright clinic corridor in 2021, a thin grey-haired man in his 50s wearing a face mask rolls up his sleeve while a nurse in a white coat and mask prepares a small
+    vial, a few masked people wait on chairs, cold daylight from tall windows. No text, no letters, no logos.
+- name: z-sport
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. Early morning in a pine park, a thin grey-haired man in his 50s in a tracksuit jogs along a misty path, glancing at a smartwatch on his wrist, a young woman jogging
+    beside him smiling, golden low sun through the trees. No text, no letters, no logos.
+- name: a1-agent
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glossy office with a long table, a smooth agent in a slim suit slides a thick folder of papers toward a stocky broad-faced Russian man with a short dark buzz cut
+    in his late 30s, a pair of goalkeeper gloves and a red-and-white jersey lie on the table, afternoon light, tense smile. No text, no letters, no logos.
+- name: a1-vratar
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A floodlit football stadium on a grey evening, a goalkeeper in a green kit sits on the grass holding his head as the ball rolls into the net behind him, fans in red
+    and white scarves whistle and wave from the stands. No text, no letters, no logos.
+- name: a1-shtab
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A club meeting room with a big table, a coach in a tracksuit presents to three specialists with open laptops, a whiteboard full of colorful diagrams, a fitness trainer
+    holding a stopwatch, bright fluorescent light, 2005 era. No text, no letters, no logos.
+- name: a1-medcentr
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern sports rehabilitation center under construction, a doctor in a white coat holds blueprints and points at a pool and gym equipment, a football player on crutches
+    watches, glass walls, bright daylight, a red-and-white club bag on a bench. No text, no letters, no logos.
+- name: a1-skauty
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A scout in a light jacket stands on a dusty African football pitch at golden hour, filming barefoot teenage boys playing with a patched ball using a small camcorder,
+    red dust, goalposts made of sticks, a warm and lively scene. No text, no letters, no logos.
+- name: a1-nazvanie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A large English football stadium at dusk, workers on a crane lift a huge plain blue panel onto the stand facade, two businessmen in suits shake hands in the foreground
+    with the red-and-white pitch glowing behind them. No text, no letters, no logos.
+- name: a1-bosman
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny hotel terrace in Spain, a young confident midfielder in sunglasses and a white shirt leans back in a chair, a manager hand slides a pen and a folded contract
+    toward him, a sports car parked behind, palm trees. No text, no letters, no logos.
+- name: a1-zimnee
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. Late evening in a club office, a worried coach holds an old flip phone to his ear, a wall clock showing near midnight, a snowy training pitch visible through the window,
+    scattered papers and a half-eaten sandwich on the desk. No text, no letters, no logos.
+- name: a1-dvor
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy Novosibirsk courtyard with grey panel apartment blocks, a skinny kid in a patched winter jacket drives a football hard toward a goal marked between two trash
+    cans, a wooden fence splintering behind him, a friend filming on a camcorder, dusk. No text, no letters, no logos.
+- name: a1-vzyatka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim London restaurant corner, a sly agent in a camel coat leans toward a stocky broad-faced Russian man with a short dark buzz cut in a dark suit, a thick plain
+    envelope half hidden under a napkin on the table between wine glasses, candle light, conspiratorial mood. No text, no letters, no logos.
+- name: a1-pereplata
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football stadium bench in drizzle, an expensive-looking striker in a red-and-white tracksuit jacket sits alone with arms crossed, substitutes in a row beside him,
+    the match going on in front, an agent gesturing angrily from the stand above. No text, no letters, no logos.
+- name: a1-pereved
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A training pitch on a cloudy morning, a coach shouts instructions and gestures wildly while three foreign players in red-and-white bibs look confused, a young interpreter
+    with a clipboard hurries toward them, cones scattered on the grass. No text, no letters, no logos.
+- name: a1-moloko
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football academy corridor, a scared eighteen-year-old in a red-and-white club tracksuit sits holding a gym bag, while a rich executive in a long coat and a club
+    chairman in a suit talk in the background beside a glass trophy cabinet, warm light. No text, no letters, no logos.
+- name: a1-kapitan
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football locker room, a captain with a red armband stands up from the bench pointing at a coach with a tactics board, players split into two groups on opposite sides,
+    boots and towels around, tense light from a bare bulb. No text, no letters, no logos.
+- name: a1-vecherinka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grey early morning outside a nightclub, three tired footballers in rumpled clothes stumble out as photographers with big cameras and flashes crowd around them, rain
+    puddles reflecting neon, a coach waits in the distance with a stopwatch. No text, no letters, no logos.
+- name: a1-pressa
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A press room with rows of journalists holding recorders and cameras toward an empty chair and a microphone on a table, behind a closed door a worried press officer
+    looks at a clock, cold white light, scattered cups of coffee. No text, no letters, no logos.
+- name: a1-ultras
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A packed football stand with a sea of red-and-white scarves and smoke, fans hold up a huge plain white banner stretched across the terrace, drums and flags waving,
+    floodlights glowing against a night sky. No text, no letters, no logos.
+- name: a1-derbi
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tunnel before a football match, players in red-and-white kits stand in line biting their nails and tapping their feet, the roaring stadium glowing bright at the
+    end of the tunnel, a captain breathes deep with eyes closed. No text, no letters, no logos.
+- name: a1-kontrakt
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A locker room where players in towels read a newspaper spread open on a bench, stars glance sideways at each other, one slams his locker, scattered boots and kit bags,
+    hard fluorescent light, suspicious silence. No text, no letters, no logos.
+- name: a1-kaprizy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football club training ground, a young flashy new signing in designer sunglasses steps out of a sports car dragging a huge suitcase, a personal chef in a tall white
+    hat holds a tray behind him, the team stretches impatiently on the pitch. No text, no letters, no logos.
+- name: a1-molodye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A club canteen with two long tables, veteran players in tracksuits sit at one table laughing over big plates, while young teenage players sit alone at a corner table
+    with their trays, the cook watching sadly from the counter, warm light. No text, no letters, no logos.
+- name: a1-zheny
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A hotel lobby, glamorous wives with shopping bags and sunglasses stand together arms crossed, while footballers with suitcases wait by the revolving door, a tour bus
+    visible outside, a club manager rubbing his forehead. No text, no letters, no logos.
+- name: a1-pelmeni
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football club kitchen, a stocky broad-faced Russian man with a short dark buzz cut in a dark jacket proudly holds out a huge steaming pot of dumplings, an English
+    chef in a tall hat stands offended with folded arms, players in tracksuits peer at the pot in disbelief, bright steam rising. No text, no letters, no logos.
+- name: a1-uvolnenie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tidy office doorway, five footballers in red-and-white training jackets stand in a row with serious faces, the captain in front holding a folded sheet of paper,
+    a stocky broad-faced Russian man with a short dark buzz cut in a suit looks up from behind his desk, cold afternoon light. No text, no letters, no logos.
+- name: a1-travma-dukha
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A silent football locker room after a lost final, players sit slumped on benches with heads down and muddy boots, a silver medal hangs forgotten in one hand, a coach
+    stands at the doorway staring at the floor, dim blue light. No text, no letters, no logos.
+- name: a1-kapitan-povyazka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A football training pitch at dusk, an injured captain sits on a bench with a bandaged knee holding a red armband, two players stand a few meters apart turning their
+    backs on each other, a physio kneels beside him. No text, no letters, no logos.
+- name: a2-ohrana
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A mansion driveway in London in the evening, a tall security chief in a black overcoat points at two dark armored cars lined up near iron gates, a stocky broad-faced
+    Russian man with a short dark buzz cut in a long coat listens, tabloid papers tucked under his arm, wet cobbles gleaming. No text, no letters, no logos.
+- name: a2-kollekciya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An elegant auction house hall with rows of bidders holding paddles, an auctioneer at a podium gestures toward a large golden-framed painting of a stormy sea on an
+    easel, a stocky broad-faced Russian man with a short dark buzz cut in a dark suit lifts his paddle, chandeliers glittering. No text, no letters, no logos.
+- name: a2-bal
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand ballroom with round tables and crystal chandeliers, a stocky broad-faced Russian man with a short dark buzz cut in a tuxedo awkwardly holds a champagne flute
+    beside an elegant elderly lady in a long gown, waiters pass with trays, an orchestra plays, children drawings on easels. No text, no letters, no logos.
+- name: a2-shkola
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A stately old English school with red brick towers, a stocky broad-faced Russian man with a short dark buzz cut in a dark coat and his teenage son in a navy blazer
+    and tie walk up the gravel path, boys in uniforms playing cricket on a green lawn behind them, overcast light. No text, no letters, no logos.
+- name: a2-remont
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand English mansion hall with scaffolding, a designer in a fashionable scarf unrolls colorful sketches of marble columns and a glass winter garden on a dusty table,
+    a stocky broad-faced Russian man with a short dark buzz cut in a rolled-up shirt looks skeptically at them, sunlight through tall windows. No text, no letters, no logos.
+- name: a2-skachki
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny English racecourse, ladies in huge extravagant hats and men in morning coats gather around a luxury box with champagne flutes, horses thundering past on the
+    green track below, a stocky broad-faced Russian man with a short dark buzz cut in a grey top hat looks lost, bright afternoon light. No text, no letters, no logos.
+- name: a2-fondovyj
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A busy London trading floor in 2006, brokers in shirtsleeves shout into phones before screens full of rising green graphs, one broker waves a thick folder at a stocky
+    broad-faced Russian man with a short dark buzz cut in a dark suit who watches with narrowed eyes, bright office lights. No text, no letters, no logos.
+- name: a2-bank
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A marble-floored bank hall in the City of London, a polished banker in a pinstriped suit opens a leather portfolio for a stocky broad-faced Russian man with a short
+    dark buzz cut in a dark suit, a glowing glass tower seen through tall windows, a trolley of papers behind them. No text, no letters, no logos.
+- name: a2-nedvizhimost
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A rooftop terrace overlooking the London skyline at golden hour, a developer in a sharp suit unrolls a large model plan of an entire city block on a table, cranes
+    and glass towers around, a stocky broad-faced Russian man with a short dark buzz cut leans over it with a coffee cup. No text, no letters, no logos.
+- name: a2-tvprava
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A TV studio control room with many glowing monitors showing a football match in red and white, a media executive in a suit slides a contract across the desk to a stocky
+    broad-faced Russian man with a short dark buzz cut, a cameraman and a headset-wearing producer in the background. No text, no letters, no logos.
+- name: a2-sponsory
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass conference room, three executives in different suits each hold up a bright jersey sleeve sample in red, gold and green fabrics toward a stocky broad-faced
+    Russian man with a short dark buzz cut who sits at the head of the table, a pint of beer, a bank tower model and a wristwatch box on the table. No text, no letters, no logos.
+- name: a2-ipoteka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A smoky New York bar at night, a worried banker in a loosened tie speaks quietly to a stocky broad-faced Russian man with a short dark buzz cut in a dark suit, a TV
+    in the corner glows with a house-and-arrow graph, rain on the window, glasses of whisky on the bar. No text, no letters, no logos.
+- name: a2-polo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A green English polo field, a man in a riding helmet and white trousers hands the reins of a tall chestnut horse to a stocky broad-faced Russian man with a short dark
+    buzz cut who stares up at the huge animal nervously, grooms and spectators in sun hats watching, bright sunshine. No text, no letters, no logos.
+- name: a2-zvonok-domoj
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big London mansion study at night, a stocky broad-faced Russian man with a short dark buzz cut in a rolled-up shirt holds a heavy desk phone to his ear, a framed
+    black-and-white photo of a grey Soviet courtyard on the desk, a warm lamp glow, rain on the window. No text, no letters, no logos.
+- name: a2-regbi
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A London back street pitch at golden evening, a stocky broad-faced Russian man with a short dark buzz cut in his early 40s in a tracksuit kicks a worn football past
+    laughing friends in mismatched shirts, a brick wall behind them, a dog watching, a warm friendly mood. No text, no letters, no logos.
+- name: a2-spa
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A luxurious spa with a steaming pool, a stocky broad-faced Russian man with a short dark buzz cut in a white bathrobe sits uneasily on a lounge chair holding a cell
+    phone, a smiling wife in a robe pulls it away from his hand, candles and cucumber water, soft light. No text, no letters, no logos.
+- name: a2-sommelye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A formal London dinner, a long table with crystal glasses and many forks, a stocky broad-faced Russian man with a short dark buzz cut in a tuxedo stares at an array
+    of cutlery in confusion while a sommelier in a black vest pours red wine, elegant guests whisper politely. No text, no letters, no logos.
+- name: a2-brokery
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A university lecture hall in the City, a professor in glasses draws steep dark graphs of arrows going up and then down on a chalkboard, students in suits take notes
+    with laptops, a stocky broad-faced Russian man with a short dark buzz cut in the back row frowns, warm window light. No text, no letters, no logos.
+- name: a2-fca
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A stern government office with dark wood panels, two officials in grey suits sit across a desk from a stocky broad-faced Russian man with a short dark buzz cut with
+    a thick binder of documents open, a map of the world with many dots between islands on the wall, cold grey daylight. No text, no letters, no logos.
+- name: a2-viza
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A crowded immigration office in London, a stocky broad-faced Russian man with a short dark buzz cut in a dark coat holds a stack of stamped documents and a passport
+    at a counter, a tired officer behind glass, a queue of people with folders waiting, harsh fluorescent light. No text, no letters, no logos.
+- name: a2-fifa
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sports federation office, two inspectors in blazers flip through piles of transfer paperwork at a long table, a screen showing connected dots and arrows, a stocky
+    broad-faced Russian man with a short dark buzz cut stands nervously with hands in pockets, a window with a floodlit stadium. No text, no letters, no logos.
+- name: a2-pokushenie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A rainy night at the iron gates of a London mansion, two broad guards in black coats hold a thin man in a trench coat with a camera strapped around his neck, a flashlight
+    beam on his face, parked dark cars shining. No text, no letters, no logos.
+- name: a2-dochka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A London nightlife scene, a teenage boy in a leather jacket steps out of a shiny luxury car at a nightclub entrance, photographers flashes burst around him, a security
+    guard holds the door, blurred neon lights at night. No text, no letters, no logos.
+- name: a2-kriz
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A luxurious City dinner in 2007, bankers in tuxedos laugh loudly raising glasses at a long table under chandeliers, a stocky broad-faced Russian man with a short dark
+    buzz cut sits in the middle silent and uneasy, a big window showing glass skyscrapers lit against a dark sky. No text, no letters, no logos.
+- name: a2-bolit
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A private clinic office on Harley Street, a grey-haired doctor in a white coat looks at a printed chart and shakes his head, a stocky broad-faced Russian man with
+    a short dark buzz cut in his early 40s sits tiredly with his tie loosened, a model of a heart on the desk, soft window light. No text, no letters, no logos.
+- name: a2-panika
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A mansion living room in autumn 2008, a stocky broad-faced Russian man with a short dark buzz cut in his early 40s in a hoodie under a jacket stares at a TV full of
+    red falling graphs, a cell phone ringing on the table, cold cups of tea, grey daylight from the window. No text, no letters, no logos.
+- name: a2-druzya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big empty mansion lounge at night, a stocky broad-faced Russian man with a short dark buzz cut in a hoodie sits on a sofa looking at a silent cell phone, champagne
+    bottles and glasses from an old party left on a table, a single lamp glowing. No text, no letters, no logos.
+- name: a2-zhena
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim mansion kitchen at night, a stocky broad-faced Russian man with a short dark buzz cut in a wrinkled shirt sits at a table with his head in his hands, his wife
+    in a dressing gown puts a gentle hand on his shoulder and a cup of tea before him, warm light under a lamp. No text, no letters, no logos.
+- name: a2-deshevo
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A London liquidation auction room, items of bankrupt funds piled on tables: paintings, computers, office chairs, an auctioneer calls from a stand, a stocky broad-faced
+    Russian man with a short dark buzz cut in a hoodie under a jacket examines a pile of papers, hesitating, grey light. No text, no letters, no logos.'
+- name: a2-chasy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A narrow Mayfair pawnshop, an appraiser with a magnifying loupe examines a luxury wristwatch under a bright lamp, a stocky broad-faced Russian man with a short dark
+    buzz cut in a hoodie under a jacket sits across the counter beside a wooden box of many shining watches, rainy window. No text, no letters, no logos.
+- name: a2-bessonnica
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dark mansion bedroom at night, a stocky broad-faced Russian man with a short dark buzz cut in a t-shirt lies on his back staring at the ceiling, a glowing clock
+    on the nightstand showing three in the morning, a small bottle of pills and a glass of water beside it, a city glow through the curtains. No text, no letters, no logos.
+- name: a2-zhurnalisty
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A rainy London morning at mansion gates, a crowd of reporters with cameras, fuzzy microphones and umbrellas press against the iron bars, flashes popping, a butler
+    glances from behind a curtain in the house window. No text, no letters, no logos.
+- name: a2-audit
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big mansion drawing room, two auditors in grey suits with clipboards and calculators walk among furniture marking items with small tags, a stocky broad-faced Russian
+    man with a short dark buzz cut in a hoodie stands by a window with arms crossed, a butler stands holding a tray of tea. No text, no letters, no logos.
+- name: a2-sovet
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big mansion study at dusk, a stocky broad-faced Russian man with a short dark buzz cut in a hoodie sits at a desk holding a phone to his ear and smiling slightly
+    for the first time in weeks, a snow-covered pine courtyard photo on the wall behind him, a soft warm lamp light. No text, no letters, no logos.
+- name: a2-opis
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand mansion hall, a butler in a black tailcoat holds out a thick paper inventory, a stocky broad-faced Russian man with a short dark buzz cut in a hoodie looks
+    around at big paintings, a grand piano and sports cars visible through the window, afternoon light, packing boxes stacked. No text, no letters, no logos.
+- name: b3-n-innograd
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern innovation campus in Russia in 2010, glass buildings among new trees and a white model of a city, a stocky broad-faced Russian man with a short dark buzz
+    cut in his early 40s in a hoodie under a jacket looks at a plan with a smiling official, bright cold sunshine. No text, no letters, no logos.
+- name: b3-n-ipo-soc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A crowded trading floor with huge screens showing a glowing rising chart, traders in shirts cheer and clap, a stock exchange bell rings, a young founder in a hoodie
+    stands on a balcony, 2012, bright festive mood. No text, no letters, no logos.
+- name: b3-n-sankcii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A government meeting room in Moscow, officials in dark suits sit around a table with laptops and thick folders, a big screen shows a map of Russia in bright colors,
+    a stocky broad-faced Russian man with a short dark buzz cut in his late 40s with a short greying beard presents with a pointer, grey daylight. No text, no letters, no logos.
+- name: b3-n-rubl
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow street at night in 2014, a currency exchange window glows with an electronic board of changing numbers, a long queue of anxious people in winter coats, a
+    stocky broad-faced Russian man with a short dark buzz cut in his late 40s with a short greying beard passes by with a laptop bag, snow falling. No text, no letters, no logos.
+- name: b3-n-neft
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet open-space office in 2015, rows of developers sit idle with feet up on desks and coffee cups, a wall monitor shows a glowing chart falling down, a stocky broad-faced
+    Russian man with a short dark buzz cut in his late 40s with a short greying beard looks out of a Moscow-City window. No text, no letters, no logos.
+- name: b3-n-ico
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright startup conference stage in 2017, a consultant in a trendy blazer presents a glowing golden coin on a huge screen with soaring colorful graphs, the audience
+    of young people in hoodies take photos with smartphones, a stocky broad-faced Russian man with a short dark buzz cut with a short greying beard watches skeptically. No text, no letters, no logos.
+- name: b3-n-crash-krypto
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A night warehouse full of rows of humming computer machines with glowing fans and tangled cables, two tired men in hoodies sit on boxes looking at a screen with a
+    steep red chart falling, a dim blue light, 2018. No text, no letters, no logos.
+- name: b3-n-covid
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A 2020 apartment at night, a thin man in his 50s with a mask pulled down sits at a laptop on a kitchen table looking at a screen with a steeply rising glowing graph,
+    an empty street seen through the window, a cup of tea. No text, no letters, no logos.
+- name: b3-n-nalog-it
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern office in Moscow in 2021, a thin grey-haired man in his 50s signs documents while a lawyer in a suit points at a stack of papers, programmers with laptops
+    wait at desks behind glass, bright morning light, a big window. No text, no letters, no logos.
+- name: b3-n-nft
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny Silicon Valley rooftop party in 2021, an artist in colorful clothes shows a tablet displaying a gallery of cartoon monkey portraits to a thin grey-haired man
+    in his 50s in a casual jacket, palm trees, golden hour. No text, no letters, no logos.
+- name: b3-n-razrab
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright open-space tech office in 2011, a young bearded programmer in a hoodie with a backpack shakes hands with a stocky broad-faced Russian man with a short dark
+    buzz cut, rows of monitors with colorful code glowing behind them, daylight from tall windows. No text, no letters, no logos.
+- name: b3-n-gosza
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A heavy government office corridor in 2015, a stocky broad-faced Russian man with a short greying beard in a suit holds a thick folder, an official in a grey suit
+    across a long varnished desk slides a stack of papers toward him, tall stacks of folders on shelves, dull fluorescent light. No text, no letters, no logos.
+- name: b3-n-angel
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy evening restaurant terrace in 2012, two prosperous middle-aged men in blazers lean over a table with wine glasses and a tablet showing a glowing chart, city
+    lights twinkling behind them, one gesturing eagerly with an open hand. No text, no letters, no logos.
+- name: b3-n-mobila
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A startup office in 2013, a young developer holds a smartphone beside a large desktop monitor with a clumsy old-style website layout, colorful sketches of phone screens
+    pinned on a glass wall, a stocky Russian man with a buzz cut studies them with folded arms, warm afternoon light. No text, no letters, no logos.
+- name: b3-n-bloger
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright studio apartment in 2018, a trendy young blogger with a ring light and a smartphone on a tripod smiles at the camera, shelves of colorful gadgets behind,
+    a stocky grey-bearded Russian man in a jacket watches skeptically from a sofa holding a coffee cup. No text, no letters, no logos.
+- name: b3-n-ii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A university lecture hall corner in Akademgorodok in 2018, three students in sweaters crowd around a laptop showing a glowing scan image with colorful heat maps, snow
+    and pine trees visible through the window, one student enthusiastically explaining. No text, no letters, no logos.
+- name: b3-c-pozharnye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cramped open-plan office in 2009, two firefighters in dark uniforms and helmets stand in a doorway pointing at a tangle of cables and electric scooters blocking
+    the corridor, programmers with laptops look up startled, a red fire extinguisher on the wall. No text, no letters, no logos.
+- name: b3-c-trudovaya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A late-night office in 2010, a stern inspector with a clipboard stands among desks where young programmers sleep on sofas and camp mattresses with blankets, pizza
+    boxes and empty cups everywhere, monitors still glowing, early morning grey light in the windows. No text, no letters, no logos.
+- name: b3-c-pd
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A server room in 2016, a serious woman in a dark business suit with a tablet walks between tall racks of blinking servers with green lights, a stocky grey-bearded
+    Russian man follows her nervously, cold blue light and cable bundles overhead. No text, no letters, no logos.
+- name: b3-c-licenziya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small private school classroom in 2014, children and adults at desks with laptops, a strict official woman with a folder of papers stands at the back examining the
+    room while a teacher stands at a whiteboard with colorful diagrams, soft daylight. No text, no letters, no logos.
+- name: b3-c-suveren
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A telecom hub room in 2019, engineers in work jackets install a large black rack-mounted device among thick bundles of cables, a stocky grey-bearded Russian man in
+    a coat and a young auditor with a laptop watch from the side, blue indicator lights glow. No text, no letters, no logos.
+- name: b3-c-messenger
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright customer support office in 2018, operators with headsets stare at phones and monitors, a large wall screen shows a bar chart with a sharp drop, phones on
+    desks display empty notification icons, an anxious manager runs a hand through his hair. No text, no letters, no logos.
+- name: b3-c-reestr
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small IT office in 2013, a young administrator at a desk with two monitors showing a red warning page, colleagues crowded around him, phones ringing on every desk,
+    a stocky Russian man with a short buzz cut leans on a desk frowning, afternoon light. No text, no letters, no logos.
+- name: b3-c-kassy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cramped warehouse shop office in 2017, a young courier packs boxes beside a table where a technician connects a small white receipt printer with a cable to a laptop,
+    a stocky grey-bearded Russian man holds a roll of paper, stacks of parcels around. No text, no letters, no logos.
+- name: b3-c-bank-krypto
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bank branch interior in 2021, a thin grey-haired man in his 50s in a dark coat sits across the desk from a polite bank clerk who shakes her head, a stack of papers
+    between them, a window with grey rainy Moscow light. No text, no letters, no logos.
+- name: b3-c-covid
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass office in Moscow-City in 2020, an inspector in a mask and gloves aims a handheld thermometer at an employee's forehead at the entrance, tape markers on the
+    floor for distance, a table with face masks and sanitizer bottles, bright daylight. No text, no letters, no logos.
+- name: b3-k-pr
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim home office at night in 2010, a stocky broad-faced Russian man in his early 40s in a hoodie under a jacket sits at a laptop scrolling a long screen of colorful
+    anonymous comments, a lamp glowing, a cup of cold tea beside him. No text, no letters, no logos.
+- name: b3-k-zhaloba
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small tech office in 2012, a young lawyer with a tablet and a stocky Russian man with a short buzz cut look at a stack of papers spread on a table, a courier in
+    a jacket hands a thick envelope at the door, tall windows and city rooftops outside. No text, no letters, no logos.
+- name: b3-k-peremanit
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A half-empty open-space office in 2011, three desks abandoned with swivel chairs pushed back and monitors off, remaining programmers whisper by the coffee machine
+    glancing at them, a stocky Russian man with a short buzz cut stands at the doorway looking at the empty seats. No text, no letters, no logos.
+- name: b3-k-demping
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small agency office in 2012, a salesman holds an old phone to his ear and waves a hand in a helpless gesture, a whiteboard behind him covered in falling arrows and
+    price tags drawn in marker, colleagues watching tensely, warm lamp light. No text, no letters, no logos.
+- name: b3-k-troll
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern startup meeting room in 2013, a stocky Russian man with a short buzz cut holds a thick official envelope, reading the papers with narrowed eyes while a young
+    designer shows a phone screen with a big rounded button, a glass wall with sticky notes behind them. No text, no letters, no logos.
+- name: b3-k-ddos
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tense office at night in 2012, a row of admins at monitors watching a jagged red line chart spike while one holds a phone and shouts, server lights blinking red
+    in a glass-walled room behind them, a stocky Russian man with a short buzz cut standing behind them with arms crossed. No text, no letters, no logos.
+- name: b3-k-klon
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright startup office in 2012, two developers at a table compare two nearly identical phone screens side by side with colorful icons, one of them pointing in disbelief,
+    a stocky Russian man with a short buzz cut leaning over their shoulders, whiteboard with sketches. No text, no letters, no logos.
+- name: b3-k-partner
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy courtyard in Akademgorodok in 2010, a stocky broad-faced Russian man in his early 40s in a good coat meets a heavy-set old acquaintance in a worn leather jacket
+    with a laptop bag, pine trees and brick garages behind, cold afternoon light, breath visible in the air. No text, no letters, no logos.
+- name: b3-k-brigada
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass-walled office lobby in 2014, three burly men in expensive suits stand in a row with folded arms and polite smiles in front of a reception desk, a stocky grey-bearded
+    Russian man in a jacket stands facing them calmly, a young receptionist watches nervously. No text, no letters, no logos.
+- name: b3-k-reider
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tech office in 2010, uniformed police officers carry open cardboard boxes of papers and computers out of the door while employees stand along the wall with hands
+    at their sides, a stocky Russian man with a short buzz cut in a hoodie under a jacket talks on the phone, grey daylight. No text, no letters, no logos.
+- name: c3-rest-godovshina
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A candlelit restaurant in London in 2012, a stocky broad-faced Russian man with a short dark buzz cut in a dark suit hands a large bouquet of roses to a smiling woman
+    in an elegant dress across a white tablecloth, champagne glasses, warm golden light. No text, no letters, no logos.
+- name: c3-rest-london
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A busy arrivals hall at a big airport in 2010, a stocky Russian man in his early 40s with a short dark buzz cut and a carry-on bag hugs his tall young adult son, travelers
+    with suitcases passing by, soft morning light through high windows. No text, no letters, no logos.
+- name: c3-rest-svadba-dochki
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand banquet hall in 2014, a stocky Russian man in a dark tuxedo with a short greying beard leads his bride daughter in a white dress down the aisle between round
+    tables of cheering guests, garlands of flowers and balloons, warm chandelier light. No text, no letters, no logos.
+- name: c3-rest-vnuk
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny living room in 2016, a stocky Russian grandfather with a short greying beard sits on the floor with arms outstretched while a toddler takes wobbly steps toward
+    him across a carpet, colorful toys scattered, a smiling woman with a camera nearby. No text, no letters, no logos.
+- name: c3-rest-rybalka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A misty dawn on a wide river bank in Siberia in 2008, a stocky Russian man with a short dark buzz cut in a quilted jacket sits on a folding stool holding a fishing
+    rod beside a green tent, a pot hanging over a small campfire, a friend pouring tea from a thermos. No text, no letters, no logos.
+- name: c3-rest-banya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A wooden Russian bathhouse yard in Novosibirsk in 2008, a stocky Russian man with a short dark buzz cut wrapped in a sheet laughs with three middle-aged friends holding
+    birch twig bundles and wooden mugs of kvass, steam rising from the door, pine trees around. No text, no letters, no logos.
+- name: c3-rest-vlozhis
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy cafe in Novosibirsk in 2010, a thin energetic young friend with messy hair excitedly shows a laptop with colorful charts to a stocky Russian man in his early
+    40s with a short buzz cut, coffee cups and a notebook on the table, afternoon window light. No text, no letters, no logos.
+- name: c3-rest-lavochka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Soviet panel-block courtyard in Novosibirsk at golden sunset in 2008, older men in jackets sit on a wooden bench cracking sunflower seeds beside a stocky Russian
+    man with a short buzz cut, birch trees, a kids' playground and a parked old Lada in the background. No text, no letters, no logos.
+- name: c3-rest-45
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A homely kitchen in 2012, a stocky Russian man with a short dark buzz cut blows out candles on a homemade pie on the table, a smiling woman in an apron claps beside
+    him, balloons and colorful gift bags on a chair, warm evening light. No text, no letters, no logos.
+- name: c3-rest-zhena
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny seaside terrace on the Riviera in 2011, a stocky Russian man in a linen shirt presents a bouquet and an envelope to his smiling wife in a summer dress, a white
+    table with croissants, blue sea and palm trees behind them. No text, no letters, no logos.
+- name: c3-rest-teplica
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny dacha garden in 2012, a stocky Russian man in a sun hat and rolled-up trousers leans on a spade among neat tomato beds and a plastic greenhouse, a neighbor
+    with a wheelbarrow chatting over the fence, a watering can in the grass. No text, no letters, no logos.
+- name: c3-rest-novyj-god
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy living room on New Year's Eve in 2016, a family gathers around a decorated tree with colorful garlands, a stocky Russian man with a short greying beard in a
+    sweater holds a grandchild, a laptop on a table shows a smiling young man on a video call, a laid festive table. No text, no letters, no logos.
+- name: c3-rest-klass
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A school gym hall in 2012 decorated with balloons, grown-up men and women in smart clothes gather around long tables with homemade salads and bottles of lemonade,
+    a stocky Russian man with a short buzz cut in a suit is hugged by a laughing old classmate, warm light. No text, no letters, no logos.
+- name: c3-rest-sergey
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A busy car repair garage in Novosibirsk in 2008, a stocky mechanic in blue overalls wiping his hands on a rag proudly shows a hydraulic lift with a car to a stocky
+    Russian man in a jacket with a short dark buzz cut, tools on the wall, bright lamp light. No text, no letters, no logos.
+- name: c3-rut-remont
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A half-renovated apartment kitchen in 2008, a stocky Russian man with a short dark buzz cut and his wife look at rolled-out design plans on a ladder-propped table,
+    a worker in overalls with a paint roller stands by a bare wall, bags of plaster and tiles on the floor. No text, no letters, no logos.
+- name: c3-rut-smartfon
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright electronics store in 2012, a stocky Russian man with a short buzz cut in a jacket holds a sleek new smartphone up to examine its camera while a smiling young
+    salesperson gestures at a glass display of phones, white lighting. No text, no letters, no logos.
+- name: c3-rut-mashina
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A highway roadside near a pine forest in 2008, a stocky Russian man in a leather jacket stands beside an old dusty foreign sedan with the hood up and steam rising,
+    a pickup truck pulling over to help, low golden sun on the horizon. No text, no letters, no logos.
+- name: c3-rut-kofe
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern IT office kitchen in 2012, a young programmer in a hoodie stands behind a shiny espresso machine pouring coffee into paper cups while a group of coders in
+    front hold out their hands eagerly, monitors glowing in the room behind them. No text, no letters, no logos.
+- name: c3-rut-server
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A server room at night in 2010, a stocky Russian man with a short buzz cut in a hoodie under a jacket crouches by an open rack with a laptop on his knees and cables
+    in his hands, a young admin holding a flashlight, red warning lights blinking, empty energy drink cans on the floor. No text, no letters, no logos.
+- name: c3-rut-pereezd
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A half-packed office in 2012, employees carry boxes with monitors and plants past a window with a view of a gritty industrial district, a stocky Russian man with a
+    short buzz cut studies a floor plan unrolled on a desk, bare walls and stacked chairs. No text, no letters, no logos.
+- name: c3-rut-licenzii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An accounting office in 2010, a stern female accountant in glasses places a thick invoice on a desk in front of a stocky Russian man with a short buzz cut who scratches
+    his head, a computer monitor and a calculator between them, gloomy afternoon light. No text, no letters, no logos.
+- name: c3-rut-pitanie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright office kitchen in 2014, programmers at a long table open takeaway boxes and plastic containers of noodles and pizza, one holds his stomach with a grimace,
+    a female accountant in the doorway with a bundle of receipts, afternoon light. No text, no letters, no logos.
+- name: c3-rut-stoyanka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern office reception in 2013, a courier in a branded-less jacket hands a stocky Russian man with a short buzz cut a thick pile of paper slips, a view of a crowded
+    city street with parked cars and a traffic camera on a pole through the window. No text, no letters, no logos.
+- name: c3-rut-podpiska
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet evening living room in 2018, a stocky grey-bearded Russian man in a sweater sits on a sofa with a smartphone showing a long scrolling list of colorful app
+    tiles, a laptop and a TV remote beside him, a warm floor lamp glow. No text, no letters, no logos.
+- name: c3-uch-english
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright small classroom in Novosibirsk in 2011, a stocky Russian man in his early 40s with a short dark buzz cut sits at a table with headphones and a notebook while
+    a young smiling tutor points at a picture of a palm-lined campus, a globe on the shelf. No text, no letters, no logos.
+- name: c3-uch-ii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy cafe in Novosibirsk in 2018, a thin young programmer with messy hair draws a neural network diagram with circles and arrows on a paper napkin for a stocky Russian
+    man with a short grey beard who leans in curiously, coffee cups and laptops on the table. No text, no letters, no logos.
+- name: c3-uch-pitch
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern conference hall in 2013, a stocky Russian man in a blazer and sneakers stands on a small stage with a clicker in his hand and a slide of colorful graphs behind
+    him, a female coach in the front row holding up three fingers, a small audience. No text, no letters, no logos.
+- name: c3-uch-finansy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tidy evening classroom in 2009, a confident woman in a business jacket stands at a whiteboard filled with arrows and coins drawings while adult students with notebooks
+    and a stocky Russian man with a short buzz cut take notes, warm lamp light. No text, no letters, no logos.
+- name: c3-uch-komanda
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright meeting room with a glass wall in 2014, a stocky Russian man with a short buzz cut sits in a circle of managers on chairs with a coach at a flip chart, sticky
+    notes on the wall, through the glass a dozen programmers at their desks. No text, no letters, no logos.
+- name: c3-uch-pitanie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright kitchen in 2014, a calm dietitian in a white coat draws colorful vegetable sections on a plate diagram, a stocky Russian man with a short greying beard looks
+    with a grimace at a bowl of salad next to a steaming plate of dumplings. No text, no letters, no logos.
+- name: c3-uch-joga
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny studio with wooden floors in 2016, a stocky Russian man with a short greying beard in a stretched t-shirt tries a clumsy forward bend on a purple mat among
+    slim young people in leggings, a smiling instructor adjusting his back, big windows. No text, no letters, no logos.
+- name: c3-ev-davlenie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet apartment kitchen in 2012, a stocky Russian man with a short buzz cut sits at the table with a blood pressure cuff on his arm and a digital monitor showing
+    glowing digits, a cup of strong tea and a pill box next to him, evening light. No text, no letters, no logos.
+- name: c3-ev-spina
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass meeting room in 2013, colleagues around a long table look worried while a stocky Russian man with a short buzz cut rises awkwardly holding his lower back with
+    one hand and leaning on the table with the other, laptops open, bright daylight. No text, no letters, no logos.
+- name: c3-ev-bessonnica
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dark bedroom at night in 2012, a stocky Russian man with a short buzz cut lies awake on his back staring at the ceiling, a laptop glowing faintly on the bedside
+    table, a digital clock and city lights glimmering through the blinds, his wife asleep beside him. No text, no letters, no logos.
+- name: c3-ev-vygoranie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An empty open-space office at dusk in 2015, a stocky Russian man with a short greying beard sits slumped at a desk staring blankly at a monitor with colorful graphs,
+    a cold coffee cup and scattered papers, soft orange light across the rows of empty chairs. No text, no letters, no logos.
+- name: c3-ev-gipertoniya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A hallway of a modern apartment in 2017, two paramedics in orange uniforms with a medical bag and a stretcher bring care to a stocky grey-bearded Russian man sitting
+    pale on a bench holding his head, his worried daughter standing beside him, a flashing light reflected on the wall. No text, no letters, no logos.
+- name: c3-ev-zhena-bolna
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A hospital corridor in 2012, a stocky Russian man with a short buzz cut stands anxiously with his hands in his hair beside a calm doctor in a white coat with a clipboard,
+    bright clinic lights, a bench with a coat on it and a bouquet of flowers. No text, no letters, no logos.
+- name: c3-ev-sin
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A stylish London cafe in 2012, a tall young man in a smart jacket with a laptop explains something with open hands to a stocky Russian man with a short buzz cut in
+    a suit, red double-decker bus passing outside the rain-spotted window, steaming cups. No text, no letters, no logos.
+- name: c3-ev-ugon
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An empty office parking lot at dusk in 2009, a stocky Russian man with a short buzz cut in a hoodie under a jacket stands with his hands on his head beside a vacant
+    parking space with fresh tire marks, a security guard with a phone gesturing, snow flurries. No text, no letters, no logos.
+- name: c3-ev-kontrakt
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern open-space office in 2012, a young bearded programmer in a hoodie carries a box with a plant and a mug through the room toward the exit, colleagues stare
+    from their monitors, a stocky Russian man with a short buzz cut stands in the doorway of his glass cabin. No text, no letters, no logos.
+- name: c3-ev-podarok
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A sunny rural village porch in 2008, a smiling elderly former worker in a quilted vest hands a stocky Russian man with a short dark buzz cut a folded greeting card
+    and a jar of pickles, a wooden gate and apple trees behind, warm afternoon light. No text, no letters, no logos.
+- name: c3-zap-maski
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet empty office in 2020, a single employee in a blue face mask works at a monitor far from the others, plastic dividers on the desks and a bottle of sanitizer,
+    a stocky grey-bearded Russian man in a mask passes through a glass door, pale daylight. No text, no letters, no logos.
+- name: c3-zap-udalenka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A spacious office in 2020 filled with open cardboard boxes of new laptops stacked on tables, young staff in face masks pick up their laptops and carry them out in
+    backpacks, a technician hooks a cable to a router, bright daylight through large windows. No text, no letters, no logos.
+- name: c3-zap-trenazher
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright living room in 2020, a stocky grey-bearded Russian man in sportswear steps onto a new treadmill beside dumbbells on a rubber mat, his smiling daughter adjusts
+    the settings on the display, a closed window showing a deserted street outside. No text, no letters, no logos.
+- name: c3-zap-kislorod
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A calm bedroom in 2021, a small white oxygen concentrator device humming on a floor beside a bed with a patterned blanket, a doctor in a mask and gloves shows a thin
+    grey-haired man in his 50s how to use the soft tube, soft morning light. No text, no letters, no logos.
+- name: c3-zap-dieta
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tidy home kitchen in 2020, a stocky grey-bearded Russian man in an apron stands before a counter with neat glass containers of chicken, vegetables and eggs, a printed
+    weekly menu with colored squares stuck to the fridge, morning sun. No text, no letters, no logos.
+- name: c3-zap-son
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A calm bedroom at night in 2020, a stocky grey-bearded Russian man lies in bed under a duvet with his smartphone placed on a far shelf charging, a small lamp turned
+    off, a laptop closed on a desk across the room, moonlight through the curtains. No text, no letters, no logos.
+- name: c3-zap-kurit
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright doctor's office in 2020, a doctor in a white coat holds a gray lung scan against a light panel, a thin grey-haired man in his 50s sits across the desk holding
+    a pack of cigarettes in his hand and sighing, window light and a plant on the sill. No text, no letters, no logos.
+- name: c3-zap-sanatorij
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A quiet Siberian sanatorium courtyard in autumn, a thin grey-haired man in his 50s in a wool robe sitting on a wooden bench among birches and pines, a nurse in white
+    pouring steaming herbal tea, soft golden morning light, a thermos and a folded blanket beside him. No text, no letters, no logos.
+- name: c3-zap-dyhanie
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright doctor's office in winter 2020, a young woman doctor in a white coat and mask demonstrating a deep breath with raised arms, a stocky broad-faced Russian man
+    with a short grey-flecked beard and a short dark buzz cut copying her, a plastic lung model on the desk, window with snow. No text, no letters, no logos.
+- name: c3-zap-analizy
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern private clinic corridor in 2020, a nurse in a mask and gloves holding a tray of blood sample tubes, a man in his late 40s sitting on a leather bench rolling
+    up his sleeve, a large white CT scanner visible through a glass door, cool bluish light. No text, no letters, no logos.
+- name: ill-1
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An intensive care ward at night, a grey-haired man in his 50s lying in a bed with an oxygen mask, doctors in full protective suits and visors leaning over monitors
+    with green waves, cold blue light, tubes and a ventilator beside the bed. No text, no letters, no logos.
+- name: ill-2
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A hospital courtyard in the cold evening, a woman in a winter coat and mask, a grown daughter and a small boy holding a paper bag of fruit, all looking up at a lit
+    window on the fourth floor, falling snow, breath steam, yellow window light. No text, no letters, no logos.
+- name: ill-3
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim office with a desk lamp, a stocky broad-faced Russian man with a grey beard on a smartphone call, a family friend in a suit leaning over a map of hospitals,
+    a doctor in a white coat arriving in a hallway through an open door, tense night mood. No text, no letters, no logos.
+- name: h-ugol
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A huge open-pit coal mine in Kuzbass at dawn, giant yellow dump trucks climbing a terraced black slope, two managers in orange helmets and vests with tablets standing
+    on the edge, orange sun through smoky haze, wintry steppe beyond. No text, no letters, no logos.
+- name: h-magaziny
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A row of twenty small neighbourhood grocery stores on a snowy Novosibirsk street, warm lit windows full of colorful goods, a saleswoman in an apron carrying a crate
+    out, customers with shopping bags, old Lada cars parked, blue dusk. No text, no letters, no logos.
+- name: h-tc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A shopping mall interior with three glass floors, long escalators, shop windows with mannequins, families with shopping bags and kids with ice cream, a manager in
+    a suit holding a tablet on a balcony watching the atrium, bright daylight from a glass roof. No text, no letters, no logos.
+- name: london-dom
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A white Georgian mansion with tall columns on a quiet London square in spring, black iron railings and a glossy black door, a chauffeur opening the door of a dark
+    limousine, a stocky broad-faced Russian man in a suit stepping out, cherry blossom trees. No text, no letters, no logos.
+- name: akcii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A broker's trading floor in the City of London in 2005, men in shirts and ties staring at big screens with bright green rising graphs, one man on a flip phone, a stack
+    of papers on the desk, a window with rain and glass towers. No text, no letters, no logos.
+- name: narod-ipo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A long queue of ordinary people in winter coats and fur hats outside a bank branch in 2007, holding passports and papers, a smiling bank employee with a clipboard
+    at the door, a glowing banner of rising arrows, grey Moscow snow, breath steam. No text, no letters, no logos.
+- name: restoran
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cosy Russian restaurant in Mayfair at night, a table with a glass jar of red caviar, an ice bucket with a vodka bottle, men in suits cheering at a big wall screen
+    showing a football match with red and white shirts, wood paneling, warm lamps. No text, no letters, no logos.
+- name: portal
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small Novosibirsk office in 2008, three young men at old CRT monitors showing a colorful news page with photos and a forum, a kettle and mugs, a printed city map
+    on the wall, winter dusk in the window, an editor laughing at a joke. No text, no letters, no logos.
+- name: eshop
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cramped warehouse in 2008 stacked with cardboard boxes of electronics, a courier in a jacket loading a TV and a laptop box into the back of an old Lada Niva, a girl
+    with a headset taking orders at a desk, a computer screen with product photos. No text, no letters, no logos.
+- name: seo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A tiny office with six young programmers in hoodies and a pizza box, monitors showing climbing line graphs and a search page with a list of colorful links, a whiteboard
+    with arrows, a tired boss with a flip phone, night window. No text, no letters, no logos.
+- name: pabliki
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright creative loft in 2011, a young man and a girl laughing at a laptop full of funny cat pictures and colorful memes, a wall monitor with a rising follower counter
+    shown as a glowing chart, energy drinks and headphones on the desk. No text, no letters, no logos.
+- name: socgames
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A small game studio in 2011, a developer showing a monitor with a cartoon farm with cartoon carrots and a little scarecrow, two colleagues in hoodies laughing, a glowing
+    chart of coins on a second screen, sticky notes on a glass wall. No text, no letters, no logos.
+- name: doska
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A shabby classifieds office in 2011, a young operator at a computer scrolling through a page with small photos of a garage, a Niva car and a basket of kittens, a woman
+    on the phone, a corkboard with pinned photos, daylight from a window. No text, no letters, no logos.
+- name: kvartira-ak
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A two-room flat in Akademgorodok near a pine forest, three students in sweaters with laptops and books at a table, a landlord handing over keys, a window with tall
+    pines and a distant reservoir, winter evening light, bunk bed in the corner. No text, no letters, no logos.
+- name: socset
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A group of old school friends in 2008 gathered around a laptop in a Siberian courtyard flat, laughing at a screen with many small profile photos and connecting lines,
+    a teapot and sandwiches, a window with a block of flats and a playground. No text, no letters, no logos.
+- name: app
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright studio in 2013, programmers in hoodies holding smartphones showing colorful app screens, a designer sketching a pizza-shaped button on a tablet, a bank manager
+    in a suit watching, whiteboard with phone outlines, a pizza box on the table. No text, no letters, no logos.
+- name: mobgames
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A subway car in 2014, passengers of all ages holding smartphones playing a colorful match-three puzzle with candy-like gems, a girl smiling, a man in a suit tapping
+    the screen, glowing sparkles on a phone, soft tunnel lights. No text, no letters, no logos.
+- name: mining
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A former factory hall converted into a mining farm, long steel racks of video cards with glowing green lights and spinning fans, thick bundles of cables, two technicians
+    in hoodies with a tablet, hot blue-orange light, a snowy yard seen through a high window. No text, no letters, no logos.
+- name: taxi
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow evening street in 2013, a young woman holding a smartphone with a glowing map and a moving car dot, a yellow taxi arriving at the curb, a driver waving, a
+    man in a suit checking his phone, wet asphalt, city lights. No text, no letters, no logos.
+- name: birzha
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass office floor in 2017, traders in hoodies facing a huge wall of screens with green and red candle charts and coin icons, a woman at a laptop smiling at a rising
+    graph, energy drinks, neon blue light, night city beyond. No text, no letters, no logos.
+- name: dostavka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy Moscow street at dusk in 2016, a courier in a bright jacket with a large insulated cube backpack riding a bicycle, a second courier handing a paper bag to
+    a woman at a door, steam rising, yellow window lights. No text, no letters, no logos.
+- name: school
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy online school studio, a teacher in a hoodie speaking to a camera on a tripod in front of a bright screen with colorful code, a laptop and a ring light, a student
+    at home watching on a laptop through a split view, a mug of tea. No text, no letters, no logos.
+- name: dc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A big hangar data center, endless rows of tall black server racks with blinking blue and green lights, a technician in a high-vis vest walking down the aisle with
+    a tablet, a large diesel generator behind a glass wall, cold light, security guard at a door. No text, no letters, no logos.
+- name: ofis-siti
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A glass skyscraper office on the forty-fifth floor in Moscow-City, a stocky broad-faced Russian man with a short grey beard in a suit standing at a floor-to-ceiling
+    window looking at the huge sunset city below, glass tables and designers working behind him. No text, no letters, no logos.
+- name: kino
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy living room in the evening, a family on a sofa watching a series on a big wall TV with a glowing film scene, popcorn in a bowl, a boy in pajamas, a laptop with
+    a rising subscriber chart nearby, warm lamp light. No text, no letters, no logos.
+- name: marketplace
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. An enormous warehouse the size of an airfield, long shelves with colorful boxes, workers in orange vests with scanners pushing carts, small orange robots moving between
+    aisles, a forklift, daylight from skylights, a manager on a mezzanine with a tablet. No text, no letters, no logos.
+- name: cloud
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A modern server hall with glass walls and softly glowing blue racks, a young engineer in a hoodie with a laptop on a stool in the aisle, a cloud-shaped light installation
+    above, a glowing chart of rented minutes on a wall screen, quiet and clean. No text, no letters, no logos.
+- name: facerec
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A busy stadium entrance in 2019, a camera on a pole scanning a crowd of fans in scarves, a security operator at a monitor with face outlines in green frames, a metro
+    hall behind with commuters, bluish technical light. No text, no letters, no logos.
+- name: voice
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A warm Russian kitchen in the evening, a small round smart speaker glowing on a shelf, a grandmother stirring a pot while a boy in pajamas points at the speaker, music
+    notes drifting in the air, a window with city lights. No text, no letters, no logos.
+- name: ailab
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow research lab with a hundred young mathematicians at desks, whiteboards covered with graphs and neural-network sketches, a wall of video-card servers glowing
+    in the next room, a stocky grey-bearded man in a suit speaking with a young woman in glasses. No text, no letters, no logos.
+- name: superapp
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A close shot of a hand holding a modern smartphone with one glowing rounded icon, a taxi, a pizza, a card and a ticket appearing as colorful holograms above the screen,
+    an evening street background with softly blurred lights. No text, no letters, no logos.
+- name: villa
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A villa on the French Riviera, pine trees over a turquoise bay, a white wooden pier with a motor boat, a stocky broad-faced Russian man with a short dark buzz cut
+    in a linen shirt sitting on a terrace, a phone lying face down on the table, warm sun. No text, no letters, no logos.
+- name: h-neftyanka
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow courthouse hallway in 2004, tense businessmen in dark suits whispering, a bailiff carrying a trolley of folders, a TV in the corner with a glowing building
+    shot, a rainy window, a quiet atmosphere with men looking down. No text, no letters, no logos.
+- name: h-champ2006
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A packed English football stadium at night, thousands of fans in red and white shirts and scarves singing and waving, confetti and fireworks over the pitch, players
+    in red and white lifting a golden trophy, a stocky Russian man in a suit clapping in a box. No text, no letters, no logos.
+- name: h-rubl-konv
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow currency exchange office in 2006, a smiling cashier at a window handing over banknotes, customers in coats and with flip phones queueing, a glowing electronic
+    rate board, bright daylight from the street. No text, no letters, no logos.
+- name: h-narod-ipo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy Moscow street in 2007 with a long line of pensioners and workers in coats and fur hats, holding passports, waiting at the door of a big state bank, a bank
+    clerk in a suit handing out leaflets, a glowing portrait of a smiling family on an advertisement. No text, no letters, no logos.
+- name: h-cl2008
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A huge floodlit stadium in Moscow at night under a heavy rain, rain drops sparkling in lights, players in red and white shirts embracing and kneeling on the wet pitch
+    after a penalty shootout, rows of fans in ponchos cheering, a big cup shining. No text, no letters, no logos.
+- name: h-lehman
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A New York financial street in September 2008, employees in suits carrying cardboard boxes out of a glass tower, a trading floor on a big screen with red falling graphs,
+    a stunned crowd looking up, gloomy morning light, scattered papers. No text, no letters, no logos.
+- name: h-crash-club
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A wood-paneled boardroom in London, a stocky broad-faced Russian man in his early 40s in a suit standing at a window looking at an empty stadium below, a row of grim
+    bankers in suits sitting at a long table, stacks of papers, grey rainy light. No text, no letters, no logos.
+- name: h-crash-biz
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A half-empty office with moving boxes and a lonely man in a coat at a desk with an open laptop, two buyers in black coats examining a shop interior, price tags hanging,
+    a street window with grey sleet, a flip phone ringing on the desk. No text, no letters, no logos.
+- name: h-crash-dolgi
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A grand auction hall in London, an auctioneer with a wooden gavel on a podium, a large screen showing a glittering white yacht and a private jet, wealthy bidders holding
+    paddles, a few Russian men in suits looking away, chandelier light. No text, no letters, no logos.
+- name: h-tolmachevo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A snowy airport in Siberia at night in deep frost, a stocky broad-faced Russian man in his early 40s in a thin city coat with a single suitcase stepping out of the
+    terminal, breath steam, orange lamps, an old Lada waiting at the curb, blowing snow. No text, no letters, no logos.
+- name: h-pizza
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy Florida kitchen in 2010, a young programmer in a T-shirt at a laptop with a glowing coin chart, a pizza delivery man at the door holding two large pizza boxes,
+    a stack of pizza boxes on the table, a window with palm trees, a smile. No text, no letters, no logos.
+- name: h-innograd
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A construction site and a model of a futuristic technology city outside Moscow, men in hard hats and suits around a large scale model of glass buildings, a crane on
+    a snowy field, a young woman with a tablet, cold bright winter light. No text, no letters, no logos.
+- name: h-ipo-soc
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A stock exchange floor in 2012, men in suits and a young founder in a hoodie ringing a golden bell, big screens full of green rising charts, balloons and confetti
+    falling, cheering traders with raised arms, bright light. No text, no letters, no logos.
+- name: h-kipr
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Cypriot bank street in March 2013, pensioners and businessmen in light shirts at a closed glass door of a bank, an ATM with a long queue of tense people, palm trees,
+    a bank clerk behind the glass shaking his head, harsh midday sun. No text, no letters, no logos.
+- name: h-gox
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A dim apartment in 2014, a young man in a hoodie at a laptop with a red falling chart, a second man with his head in his hands, glowing monitors with scrolling data,
+    empty cups and pizza boxes, rain on the window, cold blue light. No text, no letters, no logos.
+- name: h-sankcii
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow business center lobby in 2014, foreign investors in coats with suitcases and phones walking toward the exit, a Russian manager in a suit watching them with
+    an open palm, a screen with falling bars, grey winter light through glass. No text, no letters, no logos.
+- name: h-rubl
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow currency exchange point on a December evening, a crowd of people in winter coats pressing to a window, an electronic board with big rapidly changing numbers,
+    a woman clutching a bag of cash, a worried cashier, snow flurries, red lights. No text, no letters, no logos.
+- name: h-neft50
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cold grey oil field with nodding pumpjacks under a low sky, men in orange helmets looking at a tablet, a digital billboard in the nearby city showing fewer advertisements,
+    an advertising manager in a suit staring at a falling graph on a laptop, 2015 gloom. No text, no letters, no logos.
+- name: h-brexit
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A rainy London street in June 2016, a for-sale board on a stone townhouse, a tense couple under an umbrella looking at the house, commuters with smartphones, a blurred
+    stack of coins falling as an animated chart in a shop window, grey light. No text, no letters, no logos.
+- name: h-dannye
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow server room in 2016, engineers in hoodies hauling heavy new storage servers on a cart, a pile of cardboard boxes, a manager with a tablet frowning at a long
+    cost list, blue racks, cold light, a large wall clock. No text, no letters, no logos.
+- name: h-ico
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A crowded conference hall in 2017, young men in sneakers and jackets with laptops, a speaker on stage in front of a giant glowing coin and a rising green chart, people
+    queuing to pay at a stand with a laptop and a card reader, neon purple light. No text, no letters, no logos.
+- name: h-crypto-crash
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A late-night office in 2018 with a dozen young traders in hoodies staring at monitors with bright red plunging graphs, a man lifting his hands to his head, a stack
+    of coffee cups, a bitcoin-like golden coin falling off a desk, cold light. No text, no letters, no logos.
+- name: h-messenger
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow metro hall in 2018, commuters staring at smartphones with spinning loading circles, an engineer on a roof with satellite dishes at dusk, a server room with
+    flickering lights, a cartoon paper-plane icon dissolving into sparks, tense mood. No text, no letters, no logos.
+- name: h-mundial
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A joyful Moscow street in summer 2018, crowds of fans from many countries in colorful scarves and face paint singing together, a street vendor with ball-shaped souvenirs,
+    an old English fan in a red and white scarf smiling, a stadium in the distance. No text, no letters, no logos.
+- name: h-suveren
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A government server room in 2019, an official in a suit opening a heavy steel cabinet with a large red lever, engineers in hoodies watching, racks with cables and
+    blinking lights, a window with the Moscow skyline, formal grey atmosphere. No text, no letters, no logos.
+- name: h-covid
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A deserted Moscow street in spring 2020, an empty restaurant with chairs on tables behind a glass door, a lone person in a face mask with a bag, a big city screen
+    with falling graphs, distant glass skyscrapers, cold morning light. No text, no letters, no logos.
+- name: h-izolyaciya
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cozy Russian apartment in April 2020, a family in homewear, a father on a laptop video call, a child in a headset taking an online lesson, a courier in a mask leaving
+    a bag at the door, a TV with a series, a window with an empty courtyard. No text, no letters, no logos.
+- name: h-it-nalog
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A cheerful IT company open space in 2021, young developers in hoodies raising coffee cups, a big wall screen with a colorful rising chart, a manager in a shirt with
+    a smartphone and a smile, a cake on a desk, sunlight from tall windows. No text, no letters, no logos.
+- name: h-nft
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A bright gallery in 2021, visitors in masks looking at a huge digital screen with a colorful cartoon ape portrait, a young artist drawing monkeys on a graphics tablet,
+    people holding smartphones to take photos, glowing neon light, a gallery floor. No text, no letters, no logos.
+- name: h-crypto-may
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A mining hall in China in May 2021, rows of video-card racks with fans switched off and darkened lights, workers in masks loading racks into trucks in a gloomy yard
+    at dusk, a big red falling chart on a laptop, thick cables on the floor. No text, no letters, no logos.
+- name: h-bolezn
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A hospital room at dawn in winter 2021, a thin grey-haired man in his 50s lying in bed with an oxygen mask, a nurse in full protective suit checking a monitor with
+    green waves, a window with a snowy hospital courtyard, cold blue light. No text, no letters, no logos.
+- name: h-btc-pik
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A Moscow taxi interior at night in November 2021, a smiling driver in a cap turning to a passenger and showing a smartphone with a glowing orange coin chart at a high
+    peak, city lights blurred in the window, a passenger in a coat laughing. No text, no letters, no logos.
+- name: h-final2
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A calm office at the end of December 2021, a thin grey-haired man in his 50s in a warm sweater standing at a large window with city lights and snow, a young doctor
+    in a white coat handing a folder of papers, a decorated tree glowing in the corner. No text, no letters, no logos.
+- name: h-doch-ngu
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A graduation hall at Novosibirsk State University in summer, a young woman in a black gown holding a red diploma and a laptop bag, a proud stocky grey-bearded man
+    in a suit and a woman applauding in the audience, pine trees visible through tall windows. No text, no letters, no logos.
+- name: h-vnuk
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, warm cinematic light. A full-bleed scene filling the whole image edge to edge, set in the 2000s-2010s,
+    in Russia unless stated otherwise. A maternity hospital hallway in 2015, a stocky broad-faced Russian man with a short grey beard in a white gown holding a newborn baby wrapped in a blue blanket and
+    smiling widely, his daughter in bed beside him, a bouquet of balloons, warm window light. No text, no letters, no logos.

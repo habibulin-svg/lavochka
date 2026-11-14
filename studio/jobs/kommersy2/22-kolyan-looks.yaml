@@ -1,0 +1,44 @@
+# Коммерсы 2.0, партия 22-kolyan-looks — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds:
+- 11
+- 22
+- 33
+items:
+- name: 2004-club
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 37-year-old Russian businessman, owner of an English football club, in 2004: stocky broad-shouldered build, round broad face,
+    small narrow eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, heavier, rich and pleased with himself. He wears a camel cashmere coat over a dark polo-neck
+    sweater and a red-and-white knitted football scarf. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera.
+    Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 2008-crash
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 41-year-old Russian businessman in autumn 2008 after losing his fortune: stocky broad-shouldered build, round broad face, small
+    narrow eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, tired and haggard, dark circles under the eyes, unshaven stubble. He wears a crumpled white shirt
+    with an open collar and a loosened tie, no jacket. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera.
+    Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 2010-it
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 43-year-old Russian man who became an IT entrepreneur in 2010: stocky broad-shouldered build, round broad face, small narrow
+    eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, a bit slimmer, curious and energetic. He wears a grey zip hoodie under a dark blazer, a simple plastic-strap
+    watch. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin texture, realistic. Solid flat
+    chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 2015-beard
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 48-year-old Russian tech investor in 2015: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full
+    cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, now with a short neat grey-streaked beard, grey at the temples, confident calm look. He wears a black crew-neck t-shirt under
+    an expensive unstructured navy jacket. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera. Natural skin
+    texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'
+- name: 2021-ill
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 54-year-old Russian man in late 2021 recovering after a serious illness: stocky broad-shouldered build, round broad face, small
+    narrow eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, but now noticeably thin and gaunt, hollow cheeks, completely grey buzz cut and grey stubble, pale
+    skin, tired but warm eyes. He wears a soft light-grey knitted sweater, loose on him. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of
+    the frame, looking at the camera. Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing.
+    No text, no logos.'
+- name: 2030-island
+  prompt: 'Photorealistic portrait photo, square 1:1, shot on a 50mm lens. A 63-year-old Russian retired millionaire on a tropical island in 2030: stocky broad-shouldered build, round broad face, small
+    narrow eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, a cocky lopsided half-smile, old, white hair and a white beard, deeply tanned, relaxed happy squint. He wears a white linen
+    shirt unbuttoned at the neck and a straw panama hat. He or she sits at a table, framed from the waist up, forearms and hands resting on the table edge at the bottom of the frame, looking at the camera.
+    Natural skin texture, realistic. Solid flat chroma-key green background (#00B140) and a chroma-key green table surface, warm soft overhead light. No green in clothing. No text, no logos.'

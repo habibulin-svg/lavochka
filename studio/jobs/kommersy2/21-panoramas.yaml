@@ -1,0 +1,288 @@
+# Коммерсы 2.0, партия 21-panoramas — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1792
+  height: 896
+  steps: 8
+seeds:
+- 111
+- 222
+items:
+- name: stadium-club-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: a big modern football stadium with a red roof and steel arches beside a river, crowds of fans in red scarves walking to it, a matchday street with pubs. mid 2000s 2004-2008: modern European
+    cars, glass and steel architecture, wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: stadium-club-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: the training ground of a football club, green pitches with goals, a low modern clubhouse, players running drills far away, parked luxury cars. mid 2000s 2004-2008: modern European cars, glass
+    and steel architecture, wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: stadium-club-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: a busy street on match day next to the stadium, a club shop with red shirts in the windows, a pub with fans outside, mounted police, a bridge. mid 2000s 2004-2008: modern European cars, glass
+    and steel architecture, wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: city-club-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the City of London: glass skyscrapers and old stone banks, the dome of a great cathedral in the distance, black taxis and red buses. mid 2000s 2004-2008: modern European cars, glass and steel architecture,
+    wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the
+    right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: city-club-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: Canary Wharf business district with tall glass towers over the docks, water, a light railway on a viaduct. mid 2000s 2004-2008: modern European cars, glass and steel architecture, wealthy and
+    confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right edge at
+    mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: city-club-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: an elegant street of Mayfair with luxury shops, a grand hotel with a canopy, supercars, a small green square. mid 2000s 2004-2008: modern European cars, glass and steel architecture, wealthy
+    and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right edge
+    at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: city-crash-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the City of London: glass skyscrapers and old stone banks, the dome of a great cathedral in the distance, black taxis and red buses. autumn 2008 financial crisis: grey rainy evening, wet pavements reflecting
+    lights, fallen leaves, gloomy mood, few people with umbrellas. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the
+    right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: city-crash-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: Canary Wharf business district with tall glass towers over the docks, water, a light railway on a viaduct. autumn 2008 financial crisis: grey rainy evening, wet pavements reflecting lights,
+    fallen leaves, gloomy mood, few people with umbrellas. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: city-crash-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    London: an elegant street of Mayfair with luxury shops, a grand hotel with a canopy, supercars, a small green square. autumn 2008 financial crisis: grey rainy evening, wet pavements reflecting lights,
+    fallen leaves, gloomy mood, few people with umbrellas. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: riviera-club-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the French Riviera: a marina with huge white luxury yachts, palm trees along the promenade, terraces of an old town on a hill, turquoise sea. mid 2000s 2004-2008: modern European cars, glass and steel
+    architecture, wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and
+    leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no
+    board game tiles.'
+- name: riviera-club-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the Swiss Alps: a ski resort village with wooden chalets, a cable car, snowy peaks, a helicopter on a pad, bright winter sun. mid 2000s 2004-2008: modern European cars, glass and steel architecture,
+    wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the
+    right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: riviera-club-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a Mediterranean coast: a luxury villa with a swimming pool on a cliff, cypress trees, a winding coastal road, a yacht in the bay. mid 2000s 2004-2008: modern European cars, glass and steel architecture,
+    wealthy and confident mood, early summer, bright clear day. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the
+    right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: garazh-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok near Novosibirsk: a row of old brick garages at the edge of a pine and birch forest, one garage open with computers and cables inside, squirrels. early 2010s 2009-2014: modern cars, early
+    smartphones era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of
+    the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: garazh-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok: Soviet-modernist research institute buildings among tall pine trees, a small student cafe, bicycles, a bus stop. early 2010s 2009-2014: modern cars, early smartphones era, fresh renovation,
+    crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: garazh-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok: five-storey brick apartment blocks in a pine forest, a courtyard with a playground, a small shop, a path to the reservoir shore. early 2010s 2009-2014: modern cars, early smartphones
+    era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: garazh-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok near Novosibirsk: a row of old brick garages at the edge of a pine and birch forest, one garage open with computers and cables inside, squirrels. late 2010s 2015-2021: electric scooters,
+    delivery couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through
+    the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: garazh-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok: Soviet-modernist research institute buildings among tall pine trees, a small student cafe, bicycles, a bus stop. late 2010s 2015-2021: electric scooters, delivery couriers with big backpacks,
+    LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: garazh-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Akademgorodok: five-storey brick apartment blocks in a pine forest, a courtyard with a playground, a small shop, a path to the reservoir shore. late 2010s 2015-2021: electric scooters, delivery couriers
+    with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the
+    picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kovorking-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: an old red-brick factory converted into lofts and a coworking space, big arched windows, a coffee kiosk, bikes and scooters. early 2010s 2009-2014: modern cars, early smartphones
+    era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kovorking-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Novosibirsk: a renovated industrial courtyard with street food trucks, string lights, young people with laptops on wooden benches. early 2010s 2009-2014: modern cars, early smartphones era, fresh renovation,
+    crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: kovorking-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Novosibirsk: a business center street with glass offices, a big shopping mall, a metro entrance, trams, a modern bridge over the Ob river in the distance. early 2010s 2009-2014: modern cars, early smartphones
+    era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kovorking-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    central Novosibirsk: an old red-brick factory converted into lofts and a coworking space, big arched windows, a coffee kiosk, bikes and scooters. late 2010s 2015-2021: electric scooters, delivery couriers
+    with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the
+    picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kovorking-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Novosibirsk: a renovated industrial courtyard with street food trucks, string lights, young people with laptops on wooden benches. late 2010s 2015-2021: electric scooters, delivery couriers with big
+    backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: kovorking-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Novosibirsk: a business center street with glass offices, a big shopping mall, a metro entrance, trams, a modern bridge over the Ob river in the distance. late 2010s 2015-2021: electric scooters, delivery
+    couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: tehnopark-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park in a Siberian pine forest: modern glass and white office buildings, a round conference hall, landscaped paths, parking lot. early 2010s 2009-2014: modern cars, early smartphones era,
+    fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: tehnopark-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park campus: a data center with cooling units, solar panels on roofs, a startup incubator with a glass atrium, pine trees. early 2010s 2009-2014: modern cars, early smartphones era, fresh
+    renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: tehnopark-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park: a wide plaza with a fountain, a modern cafe, a pedestrian bridge between glass buildings, forest around. early 2010s 2009-2014: modern cars, early smartphones era, fresh renovation,
+    crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: tehnopark-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park in a Siberian pine forest: modern glass and white office buildings, a round conference hall, landscaped paths, parking lot. late 2010s 2015-2021: electric scooters, delivery couriers
+    with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the
+    picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: tehnopark-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park campus: a data center with cooling units, solar panels on roofs, a startup incubator with a glass atrium, pine trees. late 2010s 2015-2021: electric scooters, delivery couriers with
+    big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: tehnopark-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    a technology park: a wide plaza with a fountain, a modern cafe, a pedestrian bridge between glass buildings, forest around. late 2010s 2015-2021: electric scooters, delivery couriers with big backpacks,
+    LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: siti-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the Moscow business district of tall glass skyscrapers on the river embankment, twisted and spired towers, a wide bridge, river boats. early 2010s 2009-2014: modern cars, early smartphones era, fresh
+    renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: siti-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: the foot of glass skyscrapers, a shopping mall entrance, black business cars, an elevated road interchange, a metro station. early 2010s 2009-2014: modern cars, early smartphones era, fresh
+    renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: siti-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: an embankment park with walking paths opposite the skyscraper district, a river with a pleasure boat, a pedestrian bridge. early 2010s 2009-2014: modern cars, early smartphones era, fresh renovation,
+    crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves at the right
+    edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board game tiles.'
+- name: siti-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    the Moscow business district of tall glass skyscrapers on the river embankment, twisted and spired towers, a wide bridge, river boats. late 2010s 2015-2021: electric scooters, delivery couriers with
+    big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: siti-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: the foot of glass skyscrapers, a shopping mall entrance, black business cars, an elevated road interchange, a metro station. late 2010s 2015-2021: electric scooters, delivery couriers with big
+    backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: siti-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: an embankment park with walking paths opposite the skyscraper district, a river with a pleasure boat, a pedestrian bridge. late 2010s 2015-2021: electric scooters, delivery couriers with big
+    backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: dolina-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Silicon Valley, California: a sprawling tech company campus with low glass buildings, palm trees, green lawns, colorful bicycles, a big parking lot. early 2010s 2009-2014: modern cars, early smartphones
+    era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: dolina-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    California: a sunny suburban main street with cafes and a small venture capital office, palm trees, Spanish-style houses, golden hills behind. early 2010s 2009-2014: modern cars, early smartphones era,
+    fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: dolina-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    California: a multi-lane highway between golden hills with office parks, a big glass headquarters ring building far away, palm trees. early 2010s 2009-2014: modern cars, early smartphones era, fresh
+    renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture and leaves
+    at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark, no board
+    game tiles.'
+- name: dolina-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Silicon Valley, California: a sprawling tech company campus with low glass buildings, palm trees, green lawns, colorful bicycles, a big parking lot. late 2010s 2015-2021: electric scooters, delivery
+    couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: dolina-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    California: a sunny suburban main street with cafes and a small venture capital office, palm trees, Spanish-style houses, golden hills behind. late 2010s 2015-2021: electric scooters, delivery couriers
+    with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the
+    picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: dolina-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    California: a multi-lane highway between golden hills with office parks, a big glass headquarters ring building far away, palm trees. late 2010s 2015-2021: electric scooters, delivery couriers with
+    big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of the picture
+    and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos, no watermark,
+    no board game tiles.'
+- name: tyndex-it1-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: the headquarters of a giant fictional internet company, a huge modern glass office building with a bright yellow-red accent color, a plaza with young employees. early 2010s 2009-2014: modern
+    cars, early smartphones era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the
+    middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: tyndex-it1-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: a corporate tech campus with a running track on the roof, a big cafeteria pavilion, yellow self-driving delivery robots on the sidewalk, birch trees. early 2010s 2009-2014: modern cars, early
+    smartphones era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle of
+    the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: tyndex-it1-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: a huge data center and a logistics hub of a tech giant, yellow delivery vans, a robot taxi without a driver at a stop, a modern residential district beyond. early 2010s 2009-2014: modern cars,
+    early smartphones era, fresh renovation, crisp snowy winter, low golden sun, long blue shadows. A single clear winding road enters from the left edge, curves in a pronounced S-shape through the middle
+    of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing, no logos,
+    no watermark, no board game tiles.'
+- name: tyndex-it2-1
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: the headquarters of a giant fictional internet company, a huge modern glass office building with a bright yellow-red accent color, a plaza with young employees. late 2010s 2015-2021: electric
+    scooters, delivery couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape
+    through the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with
+    writing, no logos, no watermark, no board game tiles.'
+- name: tyndex-it2-2
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: a corporate tech campus with a running track on the roof, a big cafeteria pavilion, yellow self-driving delivery robots on the sidewalk, birch trees. late 2010s 2015-2021: electric scooters,
+    delivery couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through
+    the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'
+- name: tyndex-it2-3
+  prompt: 'Highly detailed hand-painted digital illustration like a premium isometric tycoon game background, semi-realistic, rich textures, long soft shadows. Wide panoramic high-angle three-quarter view.
+    Moscow: a huge data center and a logistics hub of a tech giant, yellow delivery vans, a robot taxi without a driver at a stop, a modern residential district beyond. late 2010s 2015-2021: electric scooters,
+    delivery couriers with big backpacks, LED screens without letters, warm late summer evening, golden light. A single clear winding road enters from the left edge, curves in a pronounced S-shape through
+    the middle of the picture and leaves at the right edge at mid height; the road is empty and clearly visible along its whole length. Tiny distant people only. No text, no letters, no signs with writing,
+    no logos, no watermark, no board game tiles.'

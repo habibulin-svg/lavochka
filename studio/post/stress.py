@@ -1,6 +1,6 @@
 """Ударения для озвучки реплик: ruaccent + проверенные пользователем поправки (studio/voices/stress-fixes.json).
 
-G:/ai/venvs/qwentts/Scripts/python.exe -X utf8 studio/post/stress.py <выход.json> [<выход.md>]
+G:/ai/venvs/qwentts/Scripts/python.exe -X utf8 studio/post/stress.py <выход.json> [<выход.md>] [<реплики.json>]
 
 Берёт реплики ГОПС (docs/gops/texts/voices.json) и «Коммерсов» (studio/jobs/kommersy/10-kolyan-voice.json).
 Выход: json {набор/ситуация-NN: {text, say, stress}} — stress с «+» перед ударной гласной (формат Silero и Яндекса);
@@ -83,7 +83,7 @@ def main():
     out, md = {}, ['# Ударения в репликах — проверить глазами',
                    '', 'Ударная гласная — заглавная; односложные без отметки; ⚠ — слова не из словаря ruaccent. '
                    'Поправки — в studio/voices/stress-fixes.json.']
-    for game, p in SRC:
+    for game, p in ([('Реплики', pathlib.Path(sys.argv[3]))] if len(sys.argv) > 3 else SRC):
         d = json.loads(p.read_text(encoding='utf-8'))
         for k, v in d.items():
             if k.startswith('_') or not isinstance(v, dict):
