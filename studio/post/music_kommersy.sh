@@ -1,7 +1,8 @@
 #!/bin/sh
 # «Коммерсы»: песни YuE2 (flac) → ogg для игры, громкость выровнена (EBU R128, −16 LUFS), конец — затухание.
 # sh studio/post/music_kommersy.sh   → lavochka/public/kommersy/a/music/<песня>-<сид>.ogg
-SRC=G:/temp/studio/out/kommersy/06-music
+# второй сезон: SRC=G:/temp/studio/out/kommersy2/27-music sh studio/post/music_kommersy.sh
+SRC=${SRC:-G:/temp/studio/out/kommersy/06-music}
 DST=lavochka/public/kommersy/a/music
 FF=G:/ai/ffmpeg/bin/ffmpeg
 mkdir -p "$DST"
