@@ -12,7 +12,7 @@ import {
 import { RIVAL_DARK, RIVAL_NAME, RIVAL_NAME2, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, lookOf, type Reaction } from './kolyan';
 import { S1, s2Access, season, type Season } from './season';
-import { CRASH_FROM, IT_FROM, TIER_ID2, m2 } from './s2data';
+import { BTC_FROM, CRASH_FROM, IT_FROM, TIER_ID2, btcPrice, m2 } from './s2data';
 import { encodeLegacy, legacyFromView } from './legacy';
 import { offerS2, saveLegacy } from './paid';
 import { Music, eraMusic } from './music';
@@ -26,6 +26,10 @@ const ICON: Record<Cell, string> = { deal: '💼', routine: '🧾', study: '📚
 /** Звук клетки второго сезона — пока из первого (свои звуки — этап 6). */
 const CELL_SFX: Partial<Record<Cell, Cell>> = { transfer: 'deal', locker: 'event', match: 'event', hype: 'news' };
 /** Клетки второго сезона — свои звуки (studio/jobs/kommersy2/28-sfx.yaml). */
+/** Сюжетные даты второго сезона с роликом (studio/jobs/kommersy2 CUTS). */
+const HIST_CLIP: Record<string, string> = {
+  champ2006: 'c02-champion', cl2008: 'c03-final', lehman: 'c04-crash', 'crash-club': 'c05-last-match', tolmachevo: 'c06-tolmachevo', 'btc-pik': 'c07-crypto',
+};
 const CELL_SFX2: Partial<Record<Cell, Sfx>> = { transfer: 's2-transfer', locker: 's2-locker', match: 's2-tribuna', hype: 's2-notify' };
 
 /** Дорога — те же кривые, по которым нарисован асфальт на панорамах (roads.json, общий с studio/post/road_templates.py). */
@@ -261,7 +265,14 @@ class KommersyView implements GameView<View, Event> {
   setView(v: View) {
     const fresh = !this.v && v.phase === 'roll' && v.players.every((p) => p.pos === 0 && !p.assets.length);
     this.v = v;
-    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say(v.season === 2 ? 's2_start' : 'start', true), 800);
+    if (fresh && v.season === 2) void this.clip('c01-intro').then(() => !this.dead && say('s2_start', true));
+    else if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say('start', true), 800);
+    // концовка второго сезона — свой ролик поверх итогов
+    if (v.phase === 'over' && v.season === 2) {
+      const e = v.players.find((p) => p.seat === (v.me ?? this.me()))?.ending;
+      const c = e === 'dead' ? 'c09-end-quiet' : e === 'tyndex' ? 'c10-end-tyndex' : e === 'island' ? 'c11-end-island' : null;
+      if (c) void this.clip(c);
+    }
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
     if (v.roll) this.tray.show([v.roll]);
     // остаток хода с прошлого отрезка: в лотке — сколько досходить
@@ -491,6 +502,7 @@ class KommersyView implements GameView<View, Event> {
       <div class="km-money"><div><span>Наличные</span><b>${money(me.cash)}</b></div><div><span>Капитал</span><b>${money(me.worth)}</b></div>
         ${my ? `<div><span>Доход/мес</span><b class="plus">+${money(my.income)}</b></div><div><span>Расход/мес</span><b class="minus">−${money(my.expenses)}</b></div>` : ''}</div>
       ${my ? `<div class="km-hours"><span>Часы ${my.hours.used}/${my.hours.avail}</span><i><b style="width:${hoursPct}%"${my.hours.used > my.hours.avail ? ' class="bad"' : ''}></b></i></div>` : ''}
+      ${s2Html(v, dis)}
       ${me.debt > 0 ? `<div class="km-debt">Долг ${money(me.debt)} <button class="km-mini txt" data-act="repay"${dis}>Погасить</button></div>` : ''}
       ${my?.job ? `<div class="km-job">Работа: ${esc(my.job.name)} (+${money(my.job.salary)}, ${my.job.hours} ч) <button class="km-mini txt" data-act="quit"${dis}>Уволиться</button></div>` : ''}
       <div class="km-stats">${SHOW_STATS.map((k) => bar(k, me.stats[k] ?? 0)).join('')}
@@ -499,7 +511,6 @@ class KommersyView implements GameView<View, Event> {
       <h4>Дела</h4><ul class="km-assets">${assets}</ul>
       ${v.season === 2 ? '' : `<div class="km-krysha">Крыша: <b>${KRYSHA_NAME[me.krysha]}</b> ${kr}</div>`}
       ${rivals ? `<h4>Соперники</h4><ul class="km-assets km-rivals">${rivals}</ul>` : ''}
-      ${s2Html(v, dis)}
       <h4>${season(v.season).goal}</h4><ul class="km-club">${club}</ul>
       ${me.falls.length ? `<div class="km-falls">Падал ${me.falls.length} раз${me.falls.length % 10 >= 2 && me.falls.length % 10 <= 4 && (me.falls.length < 10 || me.falls.length > 20) ? 'а' : ''} — и поднимался</div>` : ''}`;
   }
@@ -558,6 +569,7 @@ class KommersyView implements GameView<View, Event> {
           risk = null;
           break;
         case 'hist':
+          if (v.season === 2 && HIST_CLIP[ev.id]) await this.clip(HIST_CLIP[ev.id]);
           sfx(ev.id === 'lehman' || ev.id === 'crash-club' ? 's2-crash' : ev.id === 'crash-dolgi' ? 's2-hammer' : 'hist', 0.8);
           await this.showBanner(`${art(`h-${ev.id}`)}<small>${season(v.season).dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
@@ -569,12 +581,20 @@ class KommersyView implements GameView<View, Event> {
           sfx('club');
           await this.showBanner(ev.name ? `<b>${esc(ev.name)}</b><p>${this.ctx.name(ev.seat)} покупает контрольный пакет!</p>` : `<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
           break;
-        case 'match':
+        case 'match': {
+          // свисток и заход комментатора, потом счёт: гол — рёв трибун, поражение — стон
+          const big = /финал/i.test(ev.title);
+          const [g1, g2] = ev.score.split(':').map(Number);
+          const draw = !ev.win && g1 === g2;
           sfx('s2-whistle', 0.6);
-          setTimeout(() => sfx(ev.win ? 's2-goal' : 's2-groan', 0.7), 500);
-          if (ev.seat === mine) say(ev.win ? 'kom_win' : Math.random() < 0.2 ? 'kom_draw' : 'kom_lose', true);
-          await this.showBanner(`<small>${esc(ev.title)}</small><b>${ev.win ? 'Победа' : 'Поражение'} · ${esc(ev.score)}</b>`, ev.win ? 'club' : 'fall', 1800);
+          if (ev.seat === mine) say(/Дерби/.test(ev.title) ? 'kom_derby' : big ? 'kom_cup_final' : 'kom_start', true);
+          await this.showBanner(`<small>«${CLUB}» · ${esc(ev.title)}</small><b>⚽ Свисток!</b>`, 'match', 1500);
+          sfx(ev.win ? 's2-goal' : 's2-groan', 0.7);
+          if (ev.win) setTimeout(() => sfx('s2-net', 0.6), 150);
+          if (ev.seat === mine) say(ev.win ? (Math.random() < 0.5 ? 'kom_goal' : 'kom_win') : draw ? 'kom_draw' : 'kom_lose', true);
+          await this.showBanner(`<small>${esc(ev.title)}</small><b class="km-score">${esc(ev.score)}</b><p>${ev.win ? 'Победа!' : draw ? 'Ничья — очко потеряно' : 'Поражение'}</p>`, ev.win ? 'club' : 'fall', big ? 2600 : 2000);
           break;
+        }
         case 'tour':
           if (ev.final && ev.trophies?.length) {
             sfx('s2-goal');
@@ -590,6 +610,7 @@ class KommersyView implements GameView<View, Event> {
           if (ev.seat === mine) sfx('s2-crypto', 0.8);
           break;
         case 'health':
+          if (ev.seat === mine && ev.ok && v.players.find((p) => p.seat === mine)?.ill) await this.clip('c08-hospital');
           sfx('s2-heart', 0.7);
           await this.showBanner(`<small>Декабрь 2021-го · проверка здоровья</small><b>${ev.ok ? 'Выкарабкался' : 'Не выкарабкался'}</b><p>${this.ctx.name(ev.seat)}: здоровье ${ev.health}</p>`, ev.ok ? 'club' : 'fall', 2600);
           break;
@@ -621,6 +642,44 @@ class KommersyView implements GameView<View, Event> {
     this.setView(v);
   }
 
+  /** Ролик второго сезона (studio/post/cutscenes.py → a/cutscenes) поверх всего, один раз за партию; щелчок, Esc или «Пропустить» — дальше. */
+  private seen = new Set<string>();
+  private clip(name: string): Promise<void> {
+    if (this.ctx.demo || this.dead || this.seen.has(name)) return Promise.resolve();
+    this.seen.add(name);
+    return new Promise((done) => {
+      const box = h(`<div class="km-clip"><video playsinline preload="auto" src="${A}/cutscenes/${name}.mp4"></video><button class="btn km-clip-skip">Пропустить ›</button></div>`);
+      const vid = box.querySelector('video') as HTMLVideoElement;
+      const key = (e: KeyboardEvent) => {
+        if (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        e.stopPropagation();
+        end();
+      };
+      const end = () => {
+        if (!box.isConnected) return;
+        clearTimeout(guard);
+        vid.pause();
+        box.remove();
+        window.removeEventListener('keydown', key, true);
+        this.music.duck(false);
+        done();
+      };
+      const guard = window.setTimeout(end, 20000);
+      vid.onended = () => setTimeout(end, 400);
+      vid.onerror = end;
+      box.onclick = end;
+      window.addEventListener('keydown', key, true);
+      document.body.appendChild(box);
+      this.music.duck(true);
+      // без жеста пользователя звук не дают — тогда хотя бы без звука
+      void vid.play().catch(() => {
+        vid.muted = true;
+        void vid.play().catch(end);
+      });
+    });
+  }
+
   private async showBanner(html: string, kind: string, ms: number) {
     this.banner.className = `km-banner ${kind}`;
     this.banner.innerHTML = html;
@@ -632,29 +691,67 @@ class KommersyView implements GameView<View, Event> {
   private dead = false;
   destroy() {
     this.dead = true;
+    document.querySelectorAll('.km-clip').forEach((el) => (el as HTMLElement).click());
     this.music.stop();
     this.kolyan.stop();
     this.panel?.remove();
   }
 }
 
-/** Второй сезон: клуб, здоровье и запас, стартапы, биткоины (полные панели — этап 7). */
+/** Второй сезон: панели «Здоровье» (цель сезона), «Клуб», «Семья», «Крипта», «Портфель». */
 function s2Html(v: View, dis: string): string {
   if (v.season !== 2) return '';
   const me = v.players.find((p) => p.seat === v.me);
   const x = v.my?.s2;
   const c = me?.club2;
+  // pct — длина полоски, val — подпись (дух от −50 до 50, слава до 999 — CLUB_RANGE)
+  const bar = (name: string, val: number, bad = false, pct = val) =>
+    `<div class="km-stat"><span>${name}</span><i><b style="width:${Math.max(2, Math.min(100, pct))}%"${bad ? ' class="bad"' : ''}></b></i><em>${Math.round(val)}</em></div>`;
+  const cups = (t: string[]) => (t.length ? `<div class="km-cups">${t.map((n) => `<span title="${esc(n)}">🏆<small>${esc(n)}</small></span>`).join('')}</div>` : '');
   const club = c
-    ? `<h4>«Лондон Юнайтед» · ${c.place}-е место</h4><div class="km-job">Состав ${c.sostav} · Тренер ${'★'.repeat(c.trener)} · Дух ${c.duh} · Фанаты ${c.fans} · Слава ${c.slava} · зарплаты ${money(c.wages)}/мес</div>${c.trophies.length ? `<div class="km-job">🏆 ${c.trophies.map(esc).join(', ')}</div>` : ''}`
-    : me?.trophies?.length ? `<div class="km-job">🏆 ${me.trophies.map(esc).join(', ')}</div>` : '';
-  if (!x) return club;
-  const health = `<div class="km-job">Возраст ${x.age} · запас здоровья ${x.zapas} · в декабре 2021-го нужно здоровье ≥ ${x.survive}${x.ill ? ` · болезнь отняла ${x.ill}` : ''}${x.cto ? ' · есть техдиректор' : ''}</div>`;
-  const ven = x.ventures.length ? `<h4>Стартапы</h4><ul class="km-assets">${x.ventures.map((q) => `<li><b>${esc(q.name)}</b><small>${['идея', 'посев', 'раунд A', 'раунд B'][q.stage]} · вложено ${money(q.invested)}</small></li>`).join('')}</ul>` : '';
+    ? `<section class="km-s2 club"><h4>«Лондон Юнайтед» <em>${c.place}-е место</em></h4><div class="km-stats">${bar('Состав', c.sostav)}${bar('Дух', c.duh, c.duh < 0, c.duh + 50)}${bar('Фанаты', c.fans, c.fans < 30)}${bar('Слава', c.slava, false, c.slava / 5)}</div>
+       <div class="km-job">Тренер ${'★'.repeat(c.trener)}${'☆'.repeat(Math.max(0, 5 - c.trener))} · зарплаты ${money(c.wages)}/мес · сыграно ${c.played}, очков ${c.pts}</div>${cups(c.trophies)}</section>`
+    : me?.trophies?.length
+      ? `<section class="km-s2 club">${cups(me.trophies)}</section>`
+      : '';
+  if (!x || !me) return club;
+  const hp = me.stats.health ?? 0;
+  const health = `<section class="km-s2 health"><h4>Здоровье <em>${Math.round(hp)} · нужно ${x.survive} к декабрю 2021-го</em></h4>
+    <div class="km-hp"><b class="${hp < x.survive ? 'bad' : ''}" style="width:${Math.max(2, Math.min(100, hp))}%"></b><i style="left:${x.survive}%" title="порог декабря 2021-го"></i></div>
+    <div class="km-job">Возраст ${x.age} · запас ${x.zapas}${x.ill ? ` · болезнь отняла ${x.ill}` : ''}${x.cto ? ' · есть техдиректор' : ''}</div></section>`;
+  const y = season(2).yearOf(v.m);
+  const fam = [['👩', 'жена'], ['👦', 'сын'], ['👧', y >= 2012 ? 'дочь, НГУ' : 'дочь'], ...(y >= 2016 ? [['👶', 'внук']] : [])]
+    .map(([i, n]) => `<span>${i}<small>${n}</small></span>`)
+    .join('');
+  const family = `<section class="km-s2 fam"><h4>Семья <em>${Math.round(me.stats.blizkie ?? 0)}</em></h4><div class="km-fam">${fam}</div></section>`;
+  const ven = x.ventures.length
+    ? `<section class="km-s2"><h4>Портфель</h4><ul class="km-ven">${x.ventures
+        .map(
+          (q) =>
+            `<li><b>${esc(q.name)}</b><span class="km-steps">${[0, 1, 2, 3].map((i) => `<i class="${i <= q.stage ? 'on' : ''}"></i>`).join('')}</span><small>${['идея', 'посев', 'раунд A', 'раунд B'][q.stage]} · вложено ${money(q.invested)}</small></li>`,
+        )
+        .join('')}</ul></section>`
+    : '';
   const b = x.btc;
   const btc = b
-    ? `<div class="km-job">₿ ${b.amount >= 1 ? Math.round(b.amount) : b.amount.toFixed(2)} по $${b.price} = ${money(b.value)} · ${b.where === 'flash' ? 'на флешке' : 'на бирже'} <button class="km-mini txt" data-act="btc" data-op="sell"${dis}>Продать</button> <button class="km-mini txt" data-act="btc" data-op="${b.where === 'flash' ? 'exchange' : 'flash'}"${dis}>${b.where === 'flash' ? 'на биржу' : 'на флешку'}</button></div>`
+    ? `<section class="km-s2 btc"><h4>Крипта <em>₿ ${b.amount >= 1 ? Math.round(b.amount) : b.amount.toFixed(2)} = ${money(b.value)}</em></h4>${btcChart(v.m)}
+       <div class="km-job">$${b.price} за монету · ${b.where === 'flash' ? 'на флешке' : 'на бирже'} <button class="km-mini txt" data-act="btc" data-op="sell"${dis}>Продать</button> <button class="km-mini txt" data-act="btc" data-op="${b.where === 'flash' ? 'exchange' : 'flash'}"${dis}>${b.where === 'flash' ? 'на биржу' : 'на флешку'}</button></div></section>`
     : '';
-  return club + health + btc + ven;
+  return health + club + family + btc + ven;
+}
+
+/** Цена биткоина с июля 2010-го по сей месяц — в логарифме, иначе всё до 2017-го лежит на полу. */
+function btcChart(m: number): string {
+  if (m <= BTC_FROM) return '';
+  const lo = Math.log10(0.05);
+  const hi = Math.log10(70000);
+  const pts: string[] = [];
+  for (let t = BTC_FROM; t <= m; t++) {
+    const xx = ((t - BTC_FROM) / (m - BTC_FROM)) * 200;
+    const yy = 40 - ((Math.log10(Math.max(0.05, btcPrice(t))) - lo) / (hi - lo)) * 38;
+    pts.push(`${xx.toFixed(1)},${yy.toFixed(1)}`);
+  }
+  return `<svg class="km-btc" viewBox="0 0 200 42" preserveAspectRatio="none"><polyline points="${pts.join(' ')}"/></svg>`;
 }
 
 /** Иллюстрация карточки, сделки или исторической даты

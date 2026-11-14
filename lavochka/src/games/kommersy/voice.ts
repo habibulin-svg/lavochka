@@ -40,14 +40,20 @@ export function say(key: string, force = false) {
   });
 }
 
+/** Второй сезон: у части дат есть и общие реплики ситуации — через раз говорит их. */
+const HIST_ALT: Record<string, string> = { lehman: 'crash', 'crash-biz': 'crash', 'crash-dolgi': 'crash_bottom', tolmachevo: 'it_start', bolezn: 'ill' };
+
 /** Что сказал бы Колян (место seat) на событие: old — вид до событий, v — после. */
 export function voiceKey(ev: Event, seat: number, old: View | null, v: View): [string, boolean] | null {
   const me = (x: View | null) => x?.players.find((p) => p.seat === seat);
   switch (ev.t) {
     case 'hist':
-      return [`h_${ev.id.replace(/-/g, '_')}`, true];
-    case 'over':
-      return me(v)?.club ? null : ['over', true];
+      return [HIST_ALT[ev.id] && Math.random() < 0.5 ? HIST_ALT[ev.id] : `h_${ev.id.replace(/-/g, '_')}`, true];
+    case 'over': {
+      if (ev.season !== 2) return me(v)?.club ? null : ['over', true];
+      const e = me(v)?.ending;
+      return [e === 'island' || e === 'tyndex' ? e : 'over_s2', true];
+    }
     case 'auction':
     case 'resold':
     case 'risk':
@@ -58,6 +64,7 @@ export function voiceKey(ev: Event, seat: number, old: View | null, v: View): [s
       return ev.seat === seat && ev.label === 'Мимо' ? ['pass', false] : null;
     case 'move':
       if (ev.seat !== seat) return null;
+      if (ev.cell === 'transfer') return ['transfer', false];
       return ev.cell === 'naezd' || ev.cell === 'check' ? [ev.cell, false] : (ev.cell === 'study' || ev.cell === 'rest') && Math.random() < 0.5 ? [ev.cell, false] : null;
     case 'fall':
       return ev.seat === seat ? [`fall_${ev.kind}`, true] : null;
@@ -76,7 +83,9 @@ export function voiceKey(ev: Event, seat: number, old: View | null, v: View): [s
       if (ev.seat !== seat) return null;
       return !ev.ok ? ['venture_bad', false] : ev.stage >= 4 ? ['venture_exit', true] : Math.random() < 0.5 ? ['venture_ok', false] : null;
     case 'btc':
-      return ev.seat === seat && ev.buy ? ['btc_buy', false] : null;
+      if (ev.seat !== seat) return null;
+      // продал дороже, чем в среднем покупали в 2010-х ($1000), — довольный, дешевле — досада
+      return ev.buy ? ['btc_buy', false] : [ev.price >= 1000 ? 'btc_up' : 'btc_down', false];
     case 'health':
       return ev.seat === seat && ev.ok ? ['health_ok', true] : null;
     case 'period': {

@@ -140,3 +140,36 @@
 /* финал первого сезона: переход во второй (view.ts → resultExtra) */
 .km-s2-offer { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: rgba(200, 160, 60, 0.14); border: 1px solid rgba(200, 160, 60, 0.45); text-align: center; }
 .km-s2-offer p { margin: 0 0 10px; }
+
+/* ролики второго сезона */
+.km-clip { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: #000; cursor: pointer; animation: km-clip-in 0.4s ease; }
+.km-clip video { width: 100%; height: 100%; object-fit: contain; }
+.km-clip-skip { position: absolute; right: 16px; bottom: 16px; opacity: 0.75; }
+@keyframes km-clip-in { from { opacity: 0; } }
+
+/* панели второго сезона */
+.km-s2 { margin: 8px 0; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); }
+.km-s2 h4 { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 0 0 4px; }
+.km-s2 h4 em { font-style: normal; font-weight: 400; opacity: 0.75; font-size: 12px; text-align: right; }
+.km-s2.health { border-left: 4px solid #c9383a; }
+.km-s2.club { border-left: 4px solid #1b3f8f; }
+.km-s2.fam { border-left: 4px solid #3f9b4a; }
+.km-s2.btc { border-left: 4px solid #e0a21b; }
+.km-hp { position: relative; height: 12px; border-radius: 6px; background: rgba(127, 127, 127, 0.25); }
+.km-hp b { display: block; height: 100%; border-radius: 6px; background: #3f9b4a; transition: width 0.4s; }
+.km-hp b.bad { background: #c9383a; }
+.km-hp i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: currentColor; opacity: 0.8; }
+.km-cups, .km-fam { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.km-cups span, .km-fam span { display: flex; flex-direction: column; align-items: center; font-size: 20px; line-height: 1.1; }
+.km-cups small, .km-fam small { font-size: 10px; opacity: 0.75; max-width: 7em; text-align: center; }
+.km-ven { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.km-ven li { display: grid; grid-template-columns: 1fr auto; gap: 0 6px; }
+.km-ven small { grid-column: 1 / -1; opacity: 0.75; font-size: 11px; }
+.km-steps { display: flex; gap: 2px; align-items: center; }
+.km-steps i { width: 10px; height: 6px; border-radius: 2px; background: rgba(127, 127, 127, 0.3); }
+.km-steps i.on { background: #3b7fc4; }
+.km-btc { display: block; width: 100%; height: 42px; }
+.km-btc polyline { fill: none; stroke: #e0a21b; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+.km-banner.match { border-top: 6px solid #3f9b4a; background: rgba(12, 40, 20, 0.92); }
+.km-banner b.km-score { font-size: clamp(30px, 5vw, 54px); letter-spacing: 0.04em; }

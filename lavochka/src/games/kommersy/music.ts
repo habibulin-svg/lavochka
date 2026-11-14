@@ -11,7 +11,7 @@ export const PREF_MUSIC = 'km.music';
 
 export type Era = 'y88' | 'y90' | 'y93' | 'y96' | 'y99' | 'y02' | 'london'
   // второй сезон (studio/jobs/kommersy2/27-music.yaml)
-  | 's2club' | 's2crash' | 's2it1' | 's2it2' | 's2covid' | 's2ill';
+  | 's2club' | 's2crash' | 's2it1' | 's2it2' | 's2covid' | 's2ill' | 's2end';
 
 /** Песни эпохи; у каждой два варианта (сиды 11 и 22). */
 const SONGS: Record<Era, string[]> = {
@@ -27,13 +27,15 @@ const SONGS: Record<Era, string[]> = {
   s2it1: ['s2-taiga'],
   s2it2: ['s2-hype', 's2-taiga'],
   s2covid: ['s2-izolyaciya'],
-  s2ill: ['s2-reanimaciya', 's2-novaya-zatulinka'],
+  s2ill: ['s2-reanimaciya'],
+  s2end: ['s2-novaya-zatulinka'],
 };
 const TRACKS = Object.fromEntries(Object.entries(SONGS).map(([e, l]) => [e, l.flatMap((s) => [`${s}-11`, `${s}-22`])])) as Record<Era, string[]>;
 
 export function eraMusic(v: View): Era {
   if (v.season === 2) {
     // клуб → крах → «Цифра» (гараж, хайп) → самоизоляция 2020 → болезнь и после неё
+    if (v.phase === 'over') return 's2end';
     if (v.players.some((p) => p.ill)) return 's2ill';
     const y = season(2).yearOf(v.m);
     return v.m < CRASH_FROM ? 's2club' : v.m < IT_FROM ? 's2crash' : y >= 2020 ? 's2covid' : y >= 2015 ? 's2it2' : 's2it1';
@@ -101,6 +103,10 @@ export class Music {
     }
     this.cur = null;
     this.era = null;
+  }
+  /** Тише на время ролика и обратно. */
+  duck(on: boolean): void {
+    if (this.cur) this.fade(this.cur, on ? this.vol * 0.15 : this.vol, 500);
   }
   toggle(): boolean {
     const on = !this.on();

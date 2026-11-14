@@ -226,6 +226,7 @@ export interface VariantPage {
 
 export const VARIANTS: VariantPage[] = [
   { path: 'nardy/dlinnye', game: 'nardy', preset: 'long' },
+  { path: 'kommersy/sezon-2', game: 'kommersy', preset: 's2-2004' },
   { path: 'petteyya/latrunkuli', game: 'petteia', preset: 'latrunculi' },
   { path: 'nardy/korotkie', game: 'nardy', preset: 'short' },
   { path: 'nardy/tabula', game: 'nardy', preset: 'tabula' },

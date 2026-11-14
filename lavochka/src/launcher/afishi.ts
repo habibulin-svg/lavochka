@@ -11,13 +11,15 @@ export interface Afisha {
   pitch: string;
   /** Метки под пояснением (игроки берутся из каталога). */
   tags: string[];
+  /** Ленточка на углу афиши, когда нет метки раннего доступа («Сезон 2»). */
+  ribbon?: string;
 }
 
 /** Порядок — как на дворе. Факты — из каталога и def.ts игр. */
 export const AFISHI: Afisha[] = [
   { id: 'gops', pitch: 'Пошаговая артиллерия гопников в больших кепках: разрушаемая земля, кампания на 66 миссий.', tags: ['по сети'] },
   { id: 'geroi', pitch: 'Пошаговая стратегия: бой на гексах, четыре фракции, Арена с драфтом и рейтингом.', tags: ['по сети'] },
-  { id: 'kommersy', pitch: 'От ларька на Затулинке до лондонского клуба: сделки, крыша, дефолт.', tags: ['с 1988 по 2003', 'по сети'] },
+  { id: 'kommersy', pitch: 'От ларька на Затулинке до лондонского клуба, а во втором сезоне — крах 2008-го, стартапы, биткоин и ковид.', tags: ['1988–2021', 'по сети'], ribbon: 'Сезон 2' },
   { id: 'vkladyshi', pitch: 'Карточная игра на настоящих вкладышах 90-х: жвачки, альбом и партии с соседом.', tags: ['по сети'] },
   { id: 'zakoldovannaya', pitch: 'Первая советская RPG 1990 года: 15 приключений по книге и кампании.', tags: [] },
   { id: 'musicstudio', pitch: 'Собери танцевальный хит 90-х из 1312 сэмплов: 16 дорожек, евродэнс, хаус, транс.', tags: ['бесплатно', 'свести в WAV'] },
@@ -43,7 +45,7 @@ export function afishiRow(open: (g: CatalogEntry) => void): HTMLElement {
   for (const a of AFISHI) {
     const g = CATALOG.find((c) => c.id === a.id);
     if (!g || !canSee(g.id)) continue;
-    const badge = releaseBadge(g.id);
+    const badge = releaseBadge(g.id) || a.ribbon;
     const last = Number(g.players.match(/(\d+)\D*$/)?.[1] ?? 2);
     const tags = [`${g.players} ${last === 1 ? 'игрок' : last <= 4 ? 'игрока' : 'игроков'}`, ...a.tags];
     const gar = GARAGES[n % GARAGES.length];
