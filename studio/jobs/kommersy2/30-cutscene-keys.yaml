@@ -1,0 +1,53 @@
+# Коммерсы 2.0, партия 30-cutscene-keys — сгенерировано make_jobs.py, правки — там.
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1280
+  height: 704
+  steps: 8
+seeds:
+- 1
+- 2
+items:
+- name: c01-intro
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. Dawn in an empty huge London football stadium with red seats,
+    a stocky broad-faced Russian man with a short dark buzz cut in his late 30s in a camel coat and a red-and-white knitted scarf walks out of the players tunnel onto the green pitch, arms spread wide,
+    mist over the grass. No text, no letters, no logos.
+- name: c02-champion
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A football pitch at night under floodlights, players in red
+    and white kits lift a big silver cup, golden confetti in the air, a stocky broad-faced Russian man with a short dark buzz cut in his late 30s in a camel coat hugging the coach, fans in the stands. No
+    text, no letters, no logos.
+- name: c03-final
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A rainy night at a big stadium final, a goalkeeper in green
+    diving across the goal to save a penalty, players in red and white kits watching, heavy rain in the floodlights. No text, no letters, no logos.
+- name: c04-crash
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A London office at night with rain on huge windows, a stocky
+    broad-faced Russian man with a short dark buzz cut in his early 40s in a crumpled white shirt and loosened tie stands at the window, monitors behind him glowing red with falling graphs, papers on the
+    floor. No text, no letters, no logos.
+- name: c05-last-match
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. An empty football stadium at night after the last match, a stocky
+    broad-faced Russian man with a short dark buzz cut in his early 40s sits alone in the empty red stands with a red-and-white scarf in his hands, floodlights on. No text, no letters, no logos.
+- name: c06-tolmachevo
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A Siberian airport at night in severe frost, minus thirty five,
+    snow and steam, a stocky broad-faced Russian man with a short dark buzz cut in his early 40s in a thin city coat with one suitcase walks out of the terminal, taxis with exhaust smoke. No text, no letters,
+    no logos.
+- name: c07-crypto
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A modern apartment at night, a stocky broad-faced Russian man
+    with a short dark buzz cut in his late 40s with a short grey-streaked beard sits at a laptop, a golden glowing chart rising steeply on the screen lights his face, a city skyline in the window. No text,
+    no letters, no logos.
+- name: c08-hospital
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A calm hospital room in morning light, a stocky broad-faced
+    Russian man with a short dark buzz cut in his fifties, thin and grey-haired, lies in a hospital bed, his wife sits beside him holding his hand, sunlight through blinds, flowers on the windowsill. No
+    text, no letters, no logos.
+- name: c09-end-quiet
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A quiet courtyard of Soviet panel blocks in late autumn, an
+    empty wooden bench with a red-and-white knitted scarf on it, fallen yellow leaves, first snowflakes, soft evening light in windows. No text, no letters, no logos.
+- name: c10-end-tyndex
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. The top floor of a huge glass tech headquarters at night, a
+    stocky broad-faced Russian man with a short dark buzz cut in his fifties with a grey beard in a dark jacket stands at the panoramic window above the city lights, young employees applauding behind him.
+    No text, no letters, no logos.
+- name: c11-end-island
+  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A small tropical island at sunset, an old stocky broad-faced
+    Russian man with a short dark buzz cut with white hair and a white beard in a white linen shirt and a straw panama hat sits on a wooden pier, two small grandchildren run along the pier, a wooden house
+    among palms, turquoise sea. No text, no letters, no logos.

@@ -145,12 +145,61 @@ def reactions():
             'clips': [{'name': r, 'keys': [f'kolyan-{y}' for y in LOOK_YEARS], 'prompt': f'{a} {{style}}'} for r, a in REACTIONS.items()]}
 
 
+# ---------------------------------------------------------------- ролики (§11): ключевой кадр Z-Image → Wan 2.2 → звук и апскейл (post/cutscenes.py)
+K_ART = ('Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. ')
+K_TAIL = ' No text, no letters, no logos.'
+KOL = 'a stocky broad-faced Russian man with a short dark buzz cut'
+CUTS = {
+    'c01-intro': (f'Dawn in an empty huge London football stadium with red seats, {KOL} in his late 30s in a camel coat and a red-and-white knitted scarf walks out of the players tunnel onto the green pitch, arms spread wide, mist over the grass.',
+                  'he walks forward onto the pitch and slowly raises his arms, looking around the empty stands in awe, morning mist drifts, the camera slowly pulls back revealing the whole stadium'),
+    'c02-champion': (f'A football pitch at night under floodlights, players in red and white kits lift a big silver cup, golden confetti in the air, {KOL} in his late 30s in a camel coat hugging the coach, fans in the stands.',
+                     'the players lift the cup high and jump, confetti falls, the owner hugs the coach and laughs, flares glow in the stands, the camera circles slowly'),
+    'c03-final': ('A rainy night at a big stadium final, a goalkeeper in green diving across the goal to save a penalty, players in red and white kits watching, heavy rain in the floodlights.',
+                  'the goalkeeper dives and saves the ball, rain splashes, the players in red and white run to him and pile on in joy, the camera pushes in'),
+    'c04-crash': (f'A London office at night with rain on huge windows, {KOL} in his early 40s in a crumpled white shirt and loosened tie stands at the window, monitors behind him glowing red with falling graphs, papers on the floor.',
+                  'he slowly lowers his head and loosens his tie, the red graphs keep falling on the monitors, rain streams down the glass, lightning flashes, the camera slowly pushes in'),
+    'c05-last-match': (f'An empty football stadium at night after the last match, {KOL} in his early 40s sits alone in the empty red stands with a red-and-white scarf in his hands, floodlights on.',
+                       'the floodlights switch off one by one, he folds the scarf and stands up, slowly walks away up the stairs, the camera stays still'),
+    'c06-tolmachevo': (f'A Siberian airport at night in severe frost, minus thirty five, snow and steam, {KOL} in his early 40s in a thin city coat with one suitcase walks out of the terminal, taxis with exhaust smoke.',
+                       'he steps out into the frost, his breath turns to thick steam, he pulls up his collar and shivers, then grins, snow sparkles in the lamp light, the camera follows him'),
+    'c07-crypto': (f'A modern apartment at night, {KOL} in his late 40s with a short grey-streaked beard sits at a laptop, a golden glowing chart rising steeply on the screen lights his face, a city skyline in the window.',
+                   'the golden chart keeps rising, his eyes widen and he leans closer, then laughs and leans back in disbelief, the screen glow pulses, the camera slowly pushes in'),
+    'c08-hospital': (f'A calm hospital room in morning light, {KOL} in his fifties, thin and grey-haired, lies in a hospital bed, his wife sits beside him holding his hand, sunlight through blinds, flowers on the windowsill.',
+                     'he slowly opens his eyes and smiles weakly, she squeezes his hand and wipes a tear, sunlight moves across the bed, the camera gently pushes in'),
+    'c09-end-quiet': ('A quiet courtyard of Soviet panel blocks in late autumn, an empty wooden bench with a red-and-white knitted scarf on it, fallen yellow leaves, first snowflakes, soft evening light in windows.',
+                      'first snowflakes slowly fall, leaves move in the wind, a window lights up, the scarf flutters slightly on the bench, the camera slowly pulls back'),
+    'c10-end-tyndex': (f'The top floor of a huge glass tech headquarters at night, {KOL} in his fifties with a grey beard in a dark jacket stands at the panoramic window above the city lights, young employees applauding behind him.',
+                       'the employees applaud and cheer, he turns from the window and smiles, raises a hand in thanks, city lights twinkle below, the camera slowly circles'),
+    'c11-end-island': (f'A small tropical island at sunset, an old {KOL.replace("a stocky", "stocky")} with white hair and a white beard in a white linen shirt and a straw panama hat sits on a wooden pier, two small grandchildren run along the pier, a wooden house among palms, turquoise sea.',
+                       'the grandchildren run to him and he laughs and opens his arms, waves roll gently, palm leaves sway, seagulls fly, the camera slowly pulls back over the sea'),
+}
+
+
+def cut_keys():
+    return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': LICENSE,
+            'defaults': {'width': 1280, 'height': 704, 'steps': 8}, 'seeds': [1, 2],
+            'items': [{'name': k, 'prompt': f'{K_ART}{v[0]}{K_TAIL}'} for k, v in CUTS.items()]}
+
+
+# отбор ключевых кадров по листу 30-cutscene-keys (сид)
+CUT_PICK = {'c01-intro': 2, 'c02-champion': 1, 'c03-final': 2, 'c04-crash': 1, 'c05-last-match': 1, 'c06-tolmachevo': 2,
+            'c07-crypto': 2, 'c08-hospital': 1, 'c09-end-quiet': 2, 'c10-end-tyndex': 2, 'c11-end-island': 1}
+
+
+def cut_videos():
+    return {'keys': 'G:/temp/studio/out/kommersy2/30-cutscene-keys', 'server': 'comfy-big',
+            'defaults': {'width': 1280, 'height': 704, 'frames': 121, 'steps': 30}, 'seeds': [1],
+            'clips': [{'name': k, 'keys': [f'{k}-{CUT_PICK[k]}'], 'prompt': f'{v[1]}. Cinematic painted animation, semi-realistic, smooth natural motion.'} for k, v in CUTS.items()]}
+
+
 JOBS = {
     '21-panoramas': panoramas(),
     '22-kolyan-looks': people(LOOKS, [11, 22, 33]),
     '23-npc': people(NPC, [11, 22]),
     '24-kolyan-reactions': reactions(),
     '25-cards': cards(),
+    '30-cutscene-keys': cut_keys(),
+    '31-videos': cut_videos(),
 }
 
 if __name__ == '__main__':
