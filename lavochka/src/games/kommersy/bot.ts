@@ -52,8 +52,12 @@ function s2Score(fx: Fx, v: View, level: number): number {
   s += (c.sostav ?? 0) * 2 + (c.duh ?? 0) * 0.6 + (c.fans ?? 0) * 0.5 + (c.slava ?? 0) + (c.trener ?? 0) * 8 - (c.wages ?? 0) / 1e5;
   // здоровье: Средний держит его выше 40, Сложный ещё и копит запас к 2021-му
   const hp = me.stats.health ?? 50;
-  if (level >= 1 && fx.stats?.health) s += fx.stats.health * (hp < 45 ? 1.5 : 0.4);
-  if (fx.zapas) s += fx.zapas * (level >= 2 ? 2.5 : level === 1 ? 0 : 0.2);
+  // Сложный с пятидесяти лет (2017-й) бережёт себя к ковиду — держит здоровье выше 60
+  const keep = level >= 2 && v.m >= m2(2017, 1) ? 60 : 40;
+  if (level >= 1 && fx.stats?.health) s += fx.stats.health * (hp < keep ? 1.5 : 0.4);
+  // Лёгкий жмёт наугад, но красную шкалу здоровья замечает и он
+  else if (fx.stats?.health && hp < 40) s += fx.stats.health * 1.5;
+  if (fx.zapas) s += fx.zapas * (level >= 2 ? 4 : level === 1 ? 0 : 0.2);
   if (fx.cto) s += !x?.cto && (me.skills.cifra ?? 0) < 3 ? (level >= 1 ? 30 : 5) : -10;
   if (fx.skills?.cifra && level >= 2 && (me.skills.cifra ?? 0) < 3 && !x?.cto) s += 15;
   if (fx.venture) s += level === 0 ? 2 : me.cash > 4e5 ? 3 : -5;
@@ -93,7 +97,8 @@ function dealPick(v: View, level: number, rng: Rng): number {
       score = 40;
     } else {
       const payback = (o.price + (o.fee ?? 0)) / Math.max(1, o.income * (o.mgr ? 0.76 : 1));
-      const limit = o.loan > 0 ? (level >= 2 ? 16 : 10) : 30;
+      // второй сезон: IT-дела окупаются дольше — Средний тоже берёт их в кредит (порог 15 мес.)
+      const limit = o.loan > 0 ? (level >= 2 ? 16 : v.season === 2 ? 15 : 10) : 30;
       if (payback > limit) continue;
       score = (o.income * 12) / Math.max(1, o.price) * Math.log10(10 + o.income);
     }
@@ -110,7 +115,7 @@ function dealPick(v: View, level: number, rng: Rng): number {
       const sum = c.sum ?? 0;
       let score = 0;
       if (level === 0) score = rng.next() < 0.3 ? 99 : 0;
-      else if (c.buy === 'venture') score = me.cash > sum * (level >= 2 ? 4 : 6) ? 4 + (me.skills.chuyka ?? 0) : 0;
+      else if (c.buy === 'venture') score = me.cash > sum * (level >= 2 ? 2 : 6) ? (level >= 2 ? 9 : 4) + (me.skills.chuyka ?? 0) : 0;
       // Сложный читает открытую историю цены: берёт до взлётов, не берёт на пиках
       else if (level >= 2) score = btcCheap(v.m) ? 30 : 0;
       else score = me.cash > sum * 5 ? 2 : 0;
@@ -155,7 +160,8 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
   }
   const bizIncome = my.income - (my.job?.salary ?? 0);
   if (my.job && level >= 1 && bizIncome > my.job.salary * 2.5) return { type: 'quit' };
-  if (level >= 1 && my.hours.used > my.hours.avail) {
+  // во втором сезоне перегрузка бьёт по здоровью — красную шкалу часов замечает и Лёгкий (через раз)
+  if ((level >= 1 || (v.season === 2 && rng.next() < 0.5)) && my.hours.used > my.hours.avail) {
     const a = me.assets.filter((x) => x.kind === 'biz' && !x.manager).sort((x, y) => y.hours - x.hours)[0];
     if (a) return { type: 'manager', uid: a.uid, on: true };
   }
@@ -172,7 +178,8 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
   if (v.season === 2 && level >= 1 && me.tier >= 4) {
     // «Тындекс»: не хватает только денег — продавать дела; часов — продать мелкое
     const rest = my.club.filter((c) => !c.ok && c.id !== 'date').map((c) => c.id);
-    if (level === 1 && rest.length === 1 && rest[0] === 'cash' && me.worth > tyndexPrice(v.diff) * 1.15) {
+    // продажа дела освобождает и часы — «деньги + часы» решаются тем же
+    if (level === 1 && rest.includes('cash') && rest.every((k) => k === 'cash' || k === 'hours') && me.worth > tyndexPrice(v.diff) * 1.15) {
       const a = [...me.assets].sort((x, y) => y.value - x.value)[0];
       if (a) return { type: 'sell', uid: a.uid };
     }

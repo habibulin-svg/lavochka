@@ -33,6 +33,13 @@ export interface Btc {
   value: number;
 }
 
+/** Удар болезни 2021-го до поправок (возраст, стресс, инфаркты, запас) — §10.1: выжил ~50/75/90 %. */
+const ILL_BASE = 31;
+/** Пресет «с 2017-го»: Колян уже поднялся — капитал под короткую гонку за «Тындексом». */
+const START_2017_CASH = 3e8;
+/** «Сделка»: доля в стартапе — от капитала, биткоины — не больше этой суммы за раз. Вторые дороги к богатству (§10.1: ни одна > 50 %). */
+const VENTURE_SHARE = 0.04;
+const BTC_DEAL_MAX = 2e7;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export const isS2 = (s: { opts: { season?: number } }) => s.opts.season === 2;
 export const ageOf = (s: State) => Z(s).yearOf(s.m) - BORN;
@@ -60,7 +67,7 @@ export function initS2(s: State) {
       // наследие первого сезона (§9): акт клуба одиночный — Колян того, кто купил клуб
       if (s.opts.legacy && s.players.length === 1) applyLegacy(p, s.opts.legacy);
     } else if (s.m >= START_2017) {
-      p.cash = 1.2e8;
+      p.cash = START_2017_CASH;
       addStat(p, 'name', 10);
       addStat(p, 'svyazi', 10);
       p.skills.cifra = Math.min(SKILL_MAX, p.skills.cifra + 2);
@@ -257,11 +264,11 @@ export function dealExtras(s: State, p: Player, rng: Rng, choices: AskChoice[]) 
   const at = choices.findIndex((c) => c.buy === 'pass');
   const add: AskChoice[] = [];
   if (rng.next() < 0.35 && !many) {
-    const sum = round(Math.max(unitOf(s, p) * 2, marketWorth(s, p) * 0.01));
+    const sum = round(Math.max(unitOf(s, p) * 2, marketWorth(s, p) * VENTURE_SHARE));
     add.push({ label: `Доля в стартапе — ${money(sum)}`, ok: p.cash >= sum, why: p.cash >= sum ? undefined : 'не хватает денег', buy: 'venture', sum, hint: ['большинство умирает, один из десяти — ×30'] });
   }
-  if (s.m >= BTC_BIG && rng.next() < 0.3) {
-    const sum = round(Math.min(3e6, unitOf(s, p) * 2));
+  if (s.m >= BTC_BIG && rng.next() < 0.4) {
+    const sum = round(Math.min(BTC_DEAL_MAX, unitOf(s, p) * 10));
     add.push({ label: `Биткоины на ${money(sum)} (по $${btcPrice(s.m)})`, ok: p.cash >= sum, why: p.cash >= sum ? undefined : 'не хватает денег', buy: 'btc', sum });
   }
   choices.splice(at < 0 ? choices.length : at, 0, ...add);
@@ -329,7 +336,7 @@ export function afterS2(s: State, p: Player, ev: Event[], rng: Rng) {
   // ---- стартапы: бросок развития по стадии
   for (const x of [...(p.ventures ?? [])]) {
     const r = rng.next();
-    const die = [0.3, 0.22, 0.16, 0.12][x.stage] * k * (x.pacany ? 1.6 : 1);
+    const die = [0.15, 0.12, 0.09, 0.06][x.stage] * k * (x.pacany ? 1.6 : 1);
     const adv = (0.27 + 0.02 * (p.skills.cifra ?? 0) + 0.03 * (p.skills.chuyka ?? 0)) * k;
     if (r < die) {
       p.ventures = p.ventures!.filter((v) => v !== x);
@@ -338,7 +345,7 @@ export function afterS2(s: State, p: Player, ev: Event[], rng: Rng) {
       x.stage++;
       if (x.stage >= 4) {
         const r2 = rng.next();
-        const mul = x.pacany ? (r2 < 0.3 ? 50 : 3) : r2 < 0.06 + 0.01 * (p.skills.chuyka ?? 0) ? 10 + rng.next() * 10 : r2 < 0.35 ? 2.5 + rng.next() * 2.5 : 1 + rng.next() * 0.6;
+        const mul = x.pacany ? (r2 < 0.3 ? 50 : 3) : r2 < 0.12 + 0.01 * (p.skills.chuyka ?? 0) ? 25 + rng.next() * 40 : r2 < 0.4 ? 3 + rng.next() * 3 : 1 + rng.next() * 0.6;
         const sum = round(x.invested * mul);
         p.cash += sum;
         p.ventures = p.ventures!.filter((v) => v !== x);
@@ -357,7 +364,7 @@ export function afterS2(s: State, p: Player, ev: Event[], rng: Rng) {
   // ---- возраст: здоровье само убывает, после 50 — быстрее
   if (Math.floor(s.m / 12) > Math.floor(from / 12)) {
     const age = ageOf(s);
-    addStat(p, 'health', -((age < 45 ? 1 : age < 50 ? 2 : 3) + (p.stats.stress > 50 ? 1 : 0)));
+    addStat(p, 'health', -((age < 45 ? 2 : age < 50 ? 3 : 4) + (p.stats.stress > 50 ? 1 : 0)));
   }
   // ---- здоровье на нуле до 2021-го — тяжёлая больница, но не смерть
   if (p.stats.health <= 0 && p.out === 0) {
@@ -402,9 +409,9 @@ export function historyS2(s: State, id: string, ev: Event[]) {
       addStat(p, 'mood', 5);
     }
     if (id === 'bolezn') {
-      // удар по здоровью = база − запас + возраст + стресс + падения
+      // удар по здоровью = база − 2 × запас + возраст + стресс + падения: подготовка решает
       const infarkt = p.falls.filter((f) => f.kind === 'infarkt').length;
-      const hit = Math.max(5, Math.round(32 + Math.max(0, ageOf(s) - 50) * 2 + p.stats.stress * 0.25 + infarkt * 4 - (p.zapas ?? 0)));
+      const hit = Math.max(5, Math.round(ILL_BASE + Math.max(0, ageOf(s) - 50) * 2 + p.stats.stress * 0.25 + infarkt * 4 - 2 * (p.zapas ?? 0)));
       p.ill = hit;
       addStat(p, 'health', -hit);
     }

@@ -11,7 +11,7 @@ import {
   afterS2, applyFxS2, cardOkS2, dealExtras, endingS2, extraWorth, historyS2, hypeAsk, hypeIn, hypeOut, initS2, isS2, itIncome, itValue, matchAsk, monthS2,
   playMatch, addVenture, buyBtc, sellBtc, storyCard, survived, tyndexCheck, tyndexPrice, unitS2, type Btc, type Club2, type Venture,
 } from './s2logic';
-import { START_2009, btcPrice as btcPriceAt, clubNet, type Sector } from './s2data';
+import { LOAN_SHARE2, START_2009, btcPrice as btcPriceAt, clubNet, type Sector } from './s2data';
 import type { Legacy } from './legacy';
 
 export interface Asset {
@@ -520,7 +520,7 @@ function dealAsk(s: State, p: Player, rng: Rng): Ask | null {
   const list = availableDeals(s, p);
   if (!list.length) return null;
   const t = tier(s, p);
-  const purse = Math.max(0, p.cash) + loanLimit(p);
+  const purse = Math.max(0, p.cash) + loanLim(s, p);
   const fit = list.filter((d) => d.price <= purse * 1.2);
   const deals: Offer[] = [];
   for (let k = 0; k < 3; k++) {
@@ -552,7 +552,7 @@ function offerChoice(s: State, p: Player, o: Offer, di: number, fee = 0): AskCho
   o.mgr = o.kind === 'biz' && (o.hours > free || free - o.hours < 40);
   const h = o.mgr ? mgrH : o.hours;
   o.loan = Math.max(0, o.price + fee - Math.max(0, p.cash));
-  const why = bad ?? (h > free ? 'не хватает часов' : o.loan > 0 && (p.stats.name < 15 || o.loan > loanLimit(p)) ? 'не хватает денег' : undefined);
+  const why = bad ?? (h > free ? 'не хватает часов' : o.loan > 0 && (p.stats.name < 15 || o.loan > loanLim(s, p)) ? 'не хватает денег' : undefined);
   const how = [o.mgr ? 'с управляющим' : '', o.loan > 0 ? `в кредит ${money(o.loan)}` : ''].filter(Boolean).join(', ');
   return { label: `${o.name}${how ? ` — ${how}` : ''}`, ok: !why, why, buy: 'deal', di };
 }
@@ -568,7 +568,9 @@ function needFail(s: State, p: Player, d: DealT): string | null {
   return null;
 }
 
-export const loanLimit = (p: Player) => Math.max(0, Math.max(500, worth(p) * 0.6) * (p.stats.name / 50) - debt(p));
+/** Сколько ещё дадут в долг: доля капитала × Имя/50 (во втором сезоне банки после 2008-го осторожнее — LOAN_SHARE2). */
+export const loanLimit = (p: Player, share = 0.6) => Math.max(0, Math.max(500, worth(p) * share) * (p.stats.name / 50) - debt(p));
+const loanLim = (s: State, p: Player) => loanLimit(p, isS2(s) ? LOAN_SHARE2 : 0.6);
 
 /** Выбор предлагает то, что у игрока уже есть: второй раз не женятся и второй мобильник не покупают. */
 const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.fixer && p.fixer) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
@@ -1255,7 +1257,7 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
   }
   // долги: кредит сам, распродажа, разорение
   if (p.cash < 0) {
-    const lim = loanLimit(p);
+    const lim = loanLim(s, p);
     if (p.stats.name >= 10 && lim >= -p.cash) {
       const need = -p.cash;
       const rate = rateOf(s, s.m);
@@ -1480,7 +1482,7 @@ export function view(s: State, seats: number[] | 'all'): View {
         loans: clone(mp.loans), income: round(income(s, mp)), expenses: round(expenses(s, mp)), hours: { avail: hoursAvail(mp), used: hoursUsed(mp) },
         club: clubCheck(s, mp), heatHint: hint(mp.stats.heat, ['тихо', 'присматриваются', 'под колпаком', 'вот-вот возьмут']),
         sovestHint: hint(mp.stats.sovest, ['спит плохо', 'неспокойно', 'нормально', 'спит спокойно']), prep: [...mp.prep], advisor: mp.advisor, insurance: mp.insurance,
-        upkeep: round(mp.upkeep), over: mp.over, job: mp.job, loanLimit: round(loanLimit(mp)),
+        upkeep: round(mp.upkeep), over: mp.over, job: mp.job, loanLimit: round(loanLim(s, mp)),
         rivals: s.players
           .filter((q) => q !== mp)
           .map((q) => ({ seat: q.seat, acts: (Object.keys(RIVAL_NAME) as Rival[]).map((kind) => ({ kind, why: rivalWhy(s, mp, q, kind), cost: rivalCost(s, mp, kind) })) })),

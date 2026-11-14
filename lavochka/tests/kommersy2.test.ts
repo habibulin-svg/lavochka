@@ -17,7 +17,11 @@ describe('Коммерсы 2.0: календарь и старт', () => {
     expect(S2.dateText(LAST2)).toBe('декабрь 2021');
     expect(S2.segMonths(m2(2008, 9))).toBe(1);
     expect(S2.segMonths(m2(2020, 4))).toBe(1);
-    expect(S2.segMonths(m2(2012, 1))).toBe(3);
+    // вне кризиса: «Цифра» — треть года, клуб — полгода; отрезок не залезает в кризисное окно
+    expect(S2.segMonths(m2(2012, 1))).toBe(4);
+    expect(S2.segMonths(m2(2012, 3))).toBe(2);
+    expect(S2.segMonths(m2(2005, 1))).toBe(6);
+    expect(S2.segMonths(m2(2008, 7))).toBe(2);
   });
 
   it('с 2004-го — Колян-хозяин клуба, дела дома на автопилоте; в сети акт клуба не играется — старт с 2009-го', () => {
@@ -39,8 +43,10 @@ describe('Коммерсы 2.0: календарь и старт', () => {
     expect(it3.has('transfer')).toBe(false);
   });
 
-  it('карточек второго сезона — не меньше шестидесяти', () => {
-    expect(CARDS2.length).toBeGreaterThanOrEqual(60);
+  it('колода второго сезона — ~220 карточек, id не повторяются, у каждой карточки 1–3 выбора', () => {
+    expect(CARDS2.length).toBeGreaterThanOrEqual(210);
+    expect(new Set(CARDS2.map((c) => c.id)).size).toBe(CARDS2.length);
+    for (const c of CARDS2) expect(c.choices.length, c.id).toBeGreaterThanOrEqual(1), expect(c.choices.length, c.id).toBeLessThanOrEqual(3);
   });
 });
 

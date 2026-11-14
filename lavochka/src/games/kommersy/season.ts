@@ -47,13 +47,13 @@ export interface Season {
 }
 
 /** Календарь сезона с месяца 0 = (year, month) и помесячными кризисными окнами. */
-export function calendar(year: number, month: number, crisis: [number, number][]) {
+export function calendar(year: number, month: number, crisis: [number, number][], base: (m: number) => number = () => 3) {
   const yearOf = (m: number) => year + Math.floor((m + month - 1) / 12);
   const monthOf = (m: number) => (m + month - 1) % 12;
   const mm = (y: number, mo: number) => (y - year) * 12 + mo - month;
   const dateText = (m: number) => `${D.MONTHS[monthOf(m)]} ${yearOf(m)}`;
   const inCrisis = (m: number) => crisis.some(([a, b]) => m >= a && m <= b);
-  const segMonths = (m: number) => (inCrisis(m) ? 1 : Math.min(3, Math.max(1, crisis.reduce((d, [a]) => (a > m ? Math.min(d, a - m) : d), 3))));
+  const segMonths = (m: number) => (inCrisis(m) ? 1 : Math.min(base(m), Math.max(1, crisis.reduce((d, [a]) => (a > m ? Math.min(d, a - m) : d), base(m)))));
   return { yearOf, monthOf, mm, dateText, inCrisis, segMonths };
 }
 
@@ -97,7 +97,7 @@ export const S2: Season = {
   startYear: T.S2_YEAR,
   startMonth: T.S2_MONTH,
   last: T.LAST2,
-  ...calendar(T.S2_YEAR, T.S2_MONTH, T.CRISIS2),
+  ...calendar(T.S2_YEAR, T.S2_MONTH, T.CRISIS2, T.segBase2),
   eraOf: T.eraOf2,
   eraName: T.ERA_NAME2,
   cellWeights: T.CELL_WEIGHTS2,
