@@ -52,3 +52,10 @@
 @keyframes ds-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
 .ds-pop.big { font-size: 40px; animation-duration: 1.7s; }
 @media (max-width: 860px) { .ds-role { font-size: 13px; } .ds-role b { font-size: 12px; padding: 3px 8px; } .ds-pop.big { font-size: 30px; } }
+/* узкий экран: подсказки во всю ширину (от середины экрана им доставалась половина — плашка роли шла столбиком) */
+@media (max-width: 860px) {
+  .ds-coach { left: 3%; right: 3%; transform: none; max-width: none; }
+  .ds-role { padding: 3px 10px 3px 3px; gap: 6px; }
+  .ds-role span { font-size: 12px; line-height: 1.2; }
+  .ds-say { padding: 7px 12px; }
+}

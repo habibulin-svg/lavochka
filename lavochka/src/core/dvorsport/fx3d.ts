@@ -124,7 +124,7 @@ export class Fx {
     c.a0 = 0.8;
     c.max = c.life = 0.12;
     c.sp.material.color.set(color);
-    this.ring(x, y, z, color, 1.1 * power);
+    this.ring(x, y, z, color, 0.7 * power);
   }
 
   /** Кольцо-волна на земле или в воздухе. */

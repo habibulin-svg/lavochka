@@ -76,6 +76,8 @@ export function createView(): GameView<State, Event> {
   let marks: GroundMarks;
   let fx: Fx;
   let place: Place = PLACES[0];
+  /** С какой стороны смотрит камера (−1 — пекарю на черты, 1 — к банке; 0 — ещё не было). */
+  let camSide = 0;
   let tutor: Tutor | null = null;
   let tutorAsked = false;
   const saw = { throw: false, pick: false, back: false, dash: false, can: false, tag: false, catch: false };
@@ -536,8 +538,14 @@ export function createView(): GameView<State, Event> {
     else if (s.phase === 'kick') yard.camTo('throw', { x: 0, y: 0 }, 2.5);
     else if (ctrl >= 0 && disp[ctrl]) {
       const d = disp[ctrl];
-      if (facing(s) < 0) yard.shot({ pos: [d.x * 0.8 - 0.6, d.y + 6.2, 3.4], look: [d.x * 0.5, d.y - 7, 0.2], fov: 6, speed: 3 });
+      const f = facing(s);
+      if (f < 0) yard.shot({ pos: [d.x * 0.8 - 0.6, d.y + 6.2, 3.4], look: [d.x * 0.5, d.y - 7, 0.2], fov: 6, speed: 3 });
       else yard.shot({ pos: [d.x * 0.8 + 0.7, d.y - 5.4, 3.1], look: [d.x * 0.4, Math.max(d.y + 4, d.y + (c.dist - d.y) * 0.7), 0.2], fov: 4, speed: 3 });
+      // разворот на 180° (стал пекарем / перестал) — плавный облёт шёл через землю: переходим сразу
+      if (f !== camSide) {
+        if (camSide !== 0) yard.snapCam();
+        camSide = f;
+      }
     } else yard.camTo('field', undefined, 2);
   }
 
