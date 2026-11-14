@@ -30,7 +30,8 @@ PANO_PICK: dict[str, str] = {}   # 'stadium-club-2': '222'
 LOOK_PICK = {'2004-club': '33', '2008-crash': '11', '2010-it': '33', '2015-beard': '22', '2021-ill': '22', '2030-island': '22'}
 LOOKS = {'2004': '2004-club', '2008': '2008-crash', '2010': '2010-it', '2015': '2015-beard', '2021': '2021-ill', '2030': '2030-island'}
 NPC_PICK: dict[str, str] = {}    # 'trener': '22' (по умолчанию 11)
-CARD_PICK: dict[str, str] = {}   # 't-star': '66' (по умолчанию 55)
+# по листам: 66 — где у 55 рамка (найдена автоматически: светлая ровная кайма), надписи или брак
+CARD_PICK: dict[str, str] = {"a1-vzyatka": "66", "a2-audit": "66", "a2-bessonnica": "66", "a2-druzya": "66", "a2-ipoteka": "66", "a2-pokushenie": "66", "a2-zhena": "66", "a2-zvonok-domoj": "66", "b3-k-ddos": "66", "b3-k-demping": "66", "b3-k-peremanit": "66", "b3-k-pr": "66", "b3-n-covid": "66", "b3-n-crash-krypto": "66", "b3-n-ipo-soc": "66", "c3-blok": "66", "c3-ev-bessonnica": "66", "h-crash-dolgi": "66", "h-gox": "66", "h-izolyaciya": "66", "ill-3": "66", "n1-domoj": "66", "n1-tv": "66", "n3-btc": "66", "n3-fixer": "66", "r3-noutbuk": "66", "restoran": "66", "voice": "66", "w1-semya": "66", "x-club": "66", "n1-sponsor": "66", "e3-bank": "66", "l-ultimatum": "66"}
 
 
 def panos():

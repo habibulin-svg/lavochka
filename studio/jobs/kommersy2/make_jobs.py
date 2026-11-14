@@ -64,12 +64,16 @@ PLACES = {
         'Moscow: a huge data center and a logistics hub of a tech giant, yellow delivery vans, a robot taxi without a driver at a stop, a modern residential district beyond']),
 }
 
+# Где эпоха по умолчанию не к месту (снежная зима в Калифорнии) — своя.
+ERA_AT = {('dolina', 'it1'): 'early 2010s 2009-2014: modern cars, early smartphones era, green spring hills, bright clear morning sun, long soft shadows'}
+
+
 def panoramas():
     items = []
     for place, p in PLACES.items():
         for era in p['eras']:
             for i, part in enumerate(p['parts'], 1):
-                items.append({'name': f'{place}-{era}-{i}', 'prompt': f'{PAINT}{part}. {ERA[era]}. {ROAD}{TAIL}'})
+                items.append({'name': f'{place}-{era}-{i}', 'prompt': f'{PAINT}{part}. {ERA_AT.get((place, era), ERA[era])}. {ROAD}{TAIL}'})
     return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': LICENSE,
             'defaults': {'width': 1792, 'height': 896, 'steps': 8}, 'seeds': [111, 222], 'items': items}
 
