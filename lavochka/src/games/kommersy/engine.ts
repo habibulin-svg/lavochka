@@ -7,6 +7,11 @@ import {
   type CardT, type Cell, type Choice, type DealT, type Ending, type Fx, type HistT, type Kind, type Krysha, type Skill, type Stat,
 } from './data';
 import { S1, season, type Season } from './season';
+import {
+  afterS2, applyFxS2, cardOkS2, dealExtras, endingS2, extraWorth, historyS2, hypeAsk, hypeIn, hypeOut, initS2, isS2, itIncome, itValue, matchAsk, monthS2,
+  playMatch, addVenture, buyBtc, sellBtc, storyCard, survived, tyndexCheck, tyndexPrice, unitS2, type Btc, type Club2, type Venture,
+} from './s2logic';
+import { START_2009, btcPrice as btcPriceAt, clubNet, type Sector } from './s2data';
 
 export interface Asset {
   uid: number;
@@ -18,6 +23,16 @@ export interface Asset {
   hours: number;
   manager: boolean;
   mul: number;
+  // ---- второй сезон
+  /** IT-дело: аудитория 0–100 и включены ли деньги. */
+  aud?: number;
+  monet?: boolean;
+  sector?: string;
+  /** Дело дома: присмотрено до этого месяца («слетал домой»). */
+  guard?: number;
+  /** Фонд хайпа: вложено и мода при входе. */
+  basis?: number;
+  h0?: number;
 }
 export interface Loan {
   left: number;
@@ -26,7 +41,7 @@ export interface Loan {
 }
 export interface Fall {
   m: number;
-  kind: 'razor' | 'jail' | 'pokushenie' | 'zapoi';
+  kind: 'razor' | 'jail' | 'pokushenie' | 'zapoi' | 'infarkt';
 }
 export interface Player {
   seat: number;
@@ -68,10 +83,28 @@ export interface Player {
   rivalM?: number;
   /** Остаток хода, не поместившийся в прошлый отрезок: досходится первым ходом нового. */
   carry?: number;
+  // ---- второй сезон (в первом этих полей нет)
+  club2?: Club2;
+  trophies?: string[];
+  /** Сюжетные карточки в очереди (крах, болезнь). */
+  story?: string[];
+  /** Запас здоровья к болезни 2021-го. */
+  zapas?: number;
+  ventures?: Venture[];
+  btc?: Btc;
+  cto?: boolean;
+  /** Крах: поправка к итоговому миллиону; есть — значит, Колян прошёл акт клуба. */
+  crash?: number;
+  /** Отрезок, в котором уже слетал домой. */
+  homeM?: number;
+  /** Удар болезни 2021-го. */
+  ill?: number;
 }
 export type Rival = 'demping' | 'peremanit' | 'naezd' | 'donos';
 export const RIVAL_NAME: Record<Rival, string> = { demping: 'Сбить цены', peremanit: 'Переманить управляющего', naezd: 'Наехать через крышу', donos: 'Донести' };
 export const RIVAL_DARK: Record<Rival, boolean> = { demping: false, peremanit: false, naezd: true, donos: true };
+/** Второй сезон: братва ушла в прошлое — вместо наезда заказная статья, вместо доноса жалоба регулятору. */
+export const RIVAL_NAME2: Record<Rival, string> = { demping: 'Сбить цены', peremanit: 'Переманить команду', naezd: 'Заказная статья', donos: 'Жалоба регулятору' };
 
 export interface AskChoice {
   label: string;
@@ -84,9 +117,13 @@ export interface AskChoice {
   /** Что даст выбор и чем рискуешь — для кнопки (fxHint). */
   hint?: string[];
   riskHint?: string;
-  buy?: 'deal' | 'pass' | 'club' | 'auction';
+  buy?: 'deal' | 'pass' | 'club' | 'auction' | 'hype' | 'hypeOut' | 'venture' | 'btc';
   /** Номер предложения в ask.deals. */
   di?: number;
+  /** Второй сезон: тактика матча, сектор хайпа, сумма вложения. */
+  tac?: number;
+  sector?: string;
+  sum?: number;
 }
 /** Предложение на клетке «Сделка»: как вести (сам / управляющий) и сколько взять в кредит — уже посчитано. */
 export interface Offer {
@@ -167,7 +204,11 @@ export type Action =
   | { type: 'quit' }
   | { type: 'krysha'; to: Krysha }
   | { type: 'buh'; sum: number }
-  | { type: 'rival'; kind: Rival; target: number };
+  | { type: 'rival'; kind: Rival; target: number }
+  /** Второй сезон: включить деньги в IT-деле, слетать домой к делу, биткоины — продать или переложить. */
+  | { type: 'monet'; uid: number }
+  | { type: 'home'; uid: number }
+  | { type: 'btc'; op: 'sell' | 'flash' | 'exchange' };
 
 export type Event =
   | { t: 'roll'; seat: number; d: number }
@@ -185,13 +226,18 @@ export type Event =
   | { t: 'hist'; id: string; title: string; text: string }
   | { t: 'fall'; seat: number; kind: Fall['kind'] }
   | { t: 'out'; seat: number; kind: 'jail' | 'hosp' | 'away'; months: number }
-  | { t: 'club'; seat: number }
+  | { t: 'club'; seat: number; name?: string }
+  | { t: 'tour'; seat: number; place: number; final?: boolean; trophies?: string[] }
+  | { t: 'match'; seat: number; title: string; score: string; win: boolean }
+  | { t: 'venture'; seat: number; name: string; stage: number; ok: boolean; sum?: number }
+  | { t: 'btc'; seat: number; buy: boolean; sum: number; price: number }
+  | { t: 'health'; seat: number; ok: boolean; health: number }
   | { t: 'auction'; seat: number; name: string; fee: number }
   | { t: 'resold'; seat: number; from: number; name: string; fee: number }
   | { t: 'unsold'; name: string }
   | { t: 'buh'; seat: number; ok: boolean; sum: number; ans: number }
   | { t: 'rival'; seat: number; target: number; kind: Rival; ok: boolean }
-  | { t: 'over' };
+  | { t: 'over'; season?: number };
 
 // ---------------------------------------------------------------- помощники
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -200,17 +246,20 @@ export const round = (v: number) => (Math.abs(v) >= 1000 ? Math.round(v / 10) * 
 
 export function money(v: number): string {
   const a = Math.abs(v);
-  const s = a >= 1e6 ? `${(a / 1e6).toFixed(a >= 1e8 ? 0 : 1).replace('.', ',')} млн` : a >= 1e4 ? `${Math.round(a / 1000)} тыс.` : `${Math.round(a)}`;
+  const s = a >= 1e9 ? `${(a / 1e9).toFixed(a >= 1e10 ? 0 : 1).replace('.', ',')} млрд` : a >= 1e6 ? `${(a / 1e6).toFixed(a >= 1e8 ? 0 : 1).replace('.', ',')} млн` : a >= 1e4 ? `${Math.round(a / 1000)} тыс.` : `${Math.round(a)}`;
   return `${v < 0 ? '−' : ''}$${s}`;
 }
 
 export const debt = (p: Player) => p.loans.reduce((s, l) => s + l.left, 0);
-export const worth = (p: Player) => p.cash + p.assets.reduce((s, a) => s + a.value, 0) - debt(p);
+export function worth(p: Player) {
+  const v = p.cash + p.assets.reduce((s, a) => s + a.value, 0) - debt(p);
+  return p.club2 || p.ventures || p.btc ? v + extraWorth(p) : v;
+}
 /** Сезон партии: календарь, сделки, карточки, история (season.ts). */
 export const Z = (s: { opts: { season?: number } }): Season => season(s.opts.season);
 export const tier = (s: State, p: Player) => Z(s).tierOf(worth(p));
 /** Единица трат карточек: траты растут вместе с доходом («начинаешь шиковать»). */
-const unitOf = (s: State, p: Player) => Math.max(30, 0.7 * income(s, p));
+export const unitOf = (s: State, p: Player) => (isS2(s) ? unitS2(s, p, income(s, p)) : Math.max(30, 0.7 * income(s, p)));
 const rateOf = (s: State, m: number) => Z(s).loanRate[Z(s).eraOf(m)];
 
 export function hoursAvail(p: Player) {
@@ -218,7 +267,9 @@ export function hoursAvail(p: Player) {
   return 220 + p.hoursBonus + p.skills.poryadok * 8 - family;
 }
 export function hoursUsed(p: Player) {
-  return (p.job?.hours ?? 0) + p.study + p.assets.reduce((s, a) => s + (a.manager ? Math.ceil(a.hours * 0.15) : a.hours), 0);
+  const h = (p.job?.hours ?? 0) + p.study + p.assets.reduce((s, a) => s + (a.manager ? Math.ceil(a.hours * 0.15) : a.hours), 0);
+  // клуб ест часы хозяина
+  return p.club2 ? h + 80 : h;
 }
 export const hoursFree = (p: Player) => hoursAvail(p) - hoursUsed(p);
 
@@ -231,21 +282,27 @@ export function assetIncome(s: State, p: Player, a: Asset, m = s.m) {
   if (!a.manager && p.over) v *= 0.8;
   if (p.out > 0 && !a.manager) v *= 0.3;
   if (a.manager) v *= 0.88;
-  return v;
+  return a.aud != null ? itIncome(a, v) : v;
 }
 /** Цена дела при продаже: от дохода (полтора года выручки), но не меньше 60 % и не больше 250 % вложенного. */
 export function assetValue(s: State, p: Player, a: Asset) {
   if (a.kind !== 'biz') return a.value;
+  if (a.aud != null) return itValue(s, a);
   return clamp(18 * assetIncome(s, p, a), 0.6 * a.value, 2.5 * a.value);
 }
-export const marketWorth = (s: State, p: Player) => p.cash + p.assets.reduce((t, a) => t + assetValue(s, p, a), 0) - debt(p);
+export function marketWorth(s: State, p: Player) {
+  const v = p.cash + p.assets.reduce((t, a) => t + assetValue(s, p, a), 0) - debt(p);
+  return p.club2 || p.ventures || p.btc ? v + extraWorth(p) : v;
+}
 export const income = (s: State, p: Player) => (p.job?.salary ?? 0) + p.assets.reduce((t, a) => t + assetIncome(s, p, a), 0);
 export function expenses(s: State, p: Player) {
   const biz = p.assets.reduce((t, a) => t + assetIncome(s, p, a), 0);
   const basket = 25 + 0.12 * (biz + (p.job?.salary ?? 0));
   const dan = biz * ({ none: 0, bandit: 0.2, police: 0.25, own: 0.1 } as Record<Krysha, number>)[p.krysha];
   const loans = p.loans.reduce((t, l) => t + l.pay, 0);
-  return basket + dan + loans + p.upkeep;
+  const v = basket + dan + loans + p.upkeep;
+  // второй сезон: дыра клуба (ТВ + билеты + спонсоры − зарплаты − стадион) — тоже расход хозяина
+  return p.club2 ? v - clubNet(p.club2) : v;
 }
 
 /** Сменить крышу самому: менты — при связях, своя охрана — с уровня «Центр»; братву не выбирают — она приходит сама. */
@@ -254,6 +311,7 @@ export const kryshaCost = (s: State, p: Player, to: Krysha) => (to === 'police' 
 
 /** Условия покупки клуба: что выполнено. */
 export function clubCheck(s: State, p: Player) {
+  if (isS2(s)) return tyndexCheck(s, p);
   const n = CLUB_NEED[clamp(s.opts.diff, 0, 2)];
   return [
     { id: 'cash', label: `Деньги ${money(CLUB_PRICE)}`, ok: p.cash >= CLUB_PRICE },
@@ -269,12 +327,14 @@ export const clubReady = (s: State, p: Player) => clubCheck(s, p).every((c) => c
 // ---------------------------------------------------------------- начало партии
 export function newState(seats: number[], opts: Partial<Opts> = {}, heroes: string[] = [], rng?: Rng): State {
   const o: Opts = { diff: opts.diff ?? 1, start: opts.start ?? 0, chance: opts.chance ?? 0, buh: opts.buh ?? false, season: opts.season ?? 1 };
+  // второй сезон: акт клуба — одиночный (один клуб на всех не поделить), сеть — с 2009-го
+  if (o.season === 2 && seats.length > 1 && o.start < START_2009) o.start = START_2009;
   const z = season(o.season);
   const players = seats.map((seat, i): Player => {
     const h = z.heroes.find((x) => x.id === heroes[i]) ?? z.heroes[i % z.heroes.length];
     const stats = { ...z.base } as Record<Stat, number>;
     for (const [k, v] of Object.entries(h.stats)) stats[k as Stat] = v!;
-    const skills: Record<Skill, number> = { trade: 0, schet: 0, bazar: 0, sila: 0, english: 0, poryadok: 0 };
+    const skills = { trade: 0, schet: 0, bazar: 0, sila: 0, english: 0, poryadok: 0 } as Record<Skill, number>;
     for (const [k, v] of Object.entries(h.skills)) skills[k as Skill] = v!;
     const c = o.chance;
     // «Второй шанс»: опыт прошлой попытки — навыки, деньги, память о датах
@@ -296,6 +356,7 @@ export function newState(seats: number[], opts: Partial<Opts> = {}, heroes: stri
     opts: o, players, m: o.start, len: z.segMonths(o.start), cells: [], turn: 0, first: 0, phase: 'roll', roll: null, target: null, ask: null,
     crisisMul: 1, crisisUntil: 0, fired: z.history.filter((x) => x.m < o.start).map((x) => x.id), uid: 1,
   };
+  if (isS2(s)) initS2(s);
   s.cells = makeCells(s.m, rng, Z(s));
   return s;
 }
@@ -317,7 +378,7 @@ export function makeCells(m: number, rng?: Rng, z: Season = S1): Cell[] {
 }
 
 // ---------------------------------------------------------------- последствия
-function addStat(p: Player, k: Stat, v: number) {
+export function addStat(p: Player, k: Stat, v: number) {
   const [a, b] = STAT_RANGE[k];
   // связи насыщаются: с 50 прибавка тает, у сотни — ноль (иначе к середине партии у всех 100)
   if (k === 'svyazi' && v > 0) v *= Math.min(1, (100 - p.stats.svyazi) / 50);
@@ -361,7 +422,7 @@ function growAsset(s: State, p: Player, a: Asset, k: number, ev: Event[]) {
   ev.push({ t: 'grow', seat: p.seat, from, name: n.name, sum });
 }
 
-function setOut(s: State, p: Player, kind: 'jail' | 'hosp' | 'away', months: number, ev: Event[]) {
+export function setOut(s: State, p: Player, kind: 'jail' | 'hosp' | 'away', months: number, ev: Event[]) {
   if (months <= 0) return;
   p.out = Math.max(p.out, months);
   p.outKind = kind;
@@ -426,9 +487,10 @@ export function applyFx(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[]) {
     if (fx.hosp >= 2) fall(s, p, 'pokushenie', ev);
   }
   if (fx.away) setOut(s, p, 'away', fx.away, ev);
+  if (isS2(s)) applyFxS2(s, p, fx, rng, ev, sc);
 }
 
-function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
+export function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
   p.falls.push({ m: s.m, kind });
   ev.push({ t: 'fall', seat: p.seat, kind });
 }
@@ -514,6 +576,7 @@ export function cardOk(s: State, p: Player, c: CardT) {
   const n = c.need;
   if (n?.krysha && !n.krysha.includes(p.krysha)) return false;
   if (n?.deal && !p.assets.some((a) => a.id === n.deal)) return false;
+  if (c.story || (isS2(s) && !cardOkS2(p, c))) return false;
   return (c.from == null || s.m >= c.from) && (c.to == null || s.m <= c.to) && (c.minTier == null || t >= c.minTier) && (c.maxTier == null || t <= c.maxTier) && !owned(p, main.fx) && !(main.need?.growable && !growTarget(s, p));
 }
 
@@ -545,6 +608,11 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
   }
   const card = bag.length ? bag[rng.int(bag.length)] : null;
   if (!card) return { seat: p.seat, cell, title: 'Тихо', text: 'Ничего не случилось.', choices: [{ label: 'Дальше', ok: true }] };
+  return askOf(s, p, cell, card);
+}
+
+/** Вопрос по карточке: выборы с подсказками, что даст и чем рискуешь. */
+function askOf(s: State, p: Player, cell: Cell, card: CardT): Ask {
   const choices: AskChoice[] = card.choices.map((ch) => {
     const why = choiceWhy(s, p, ch);
     const hint = fxHint(s, p, ch.fx);
@@ -553,7 +621,7 @@ function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
     return { label: ch.label, ok: !why, why, dark: ch.dark, fx: ch.fx, risk: ch.risk, hint, riskHint };
   });
   if (!choices.some((c) => c.ok)) choices.push({ label: 'Дальше', ok: true });
-  if (cell === 'rest' && clubReady(s, p)) choices.unshift({ label: 'Купить «Лондон Юнайтед»', ok: true, buy: 'club' });
+  if (cell === 'rest' && clubReady(s, p)) choices.unshift({ label: `Купить ${Z(s).goal}`, ok: true, buy: 'club' });
   return { seat: p.seat, cell, title: card.title, text: card.text, card: card.id, choices };
 }
 
@@ -597,8 +665,16 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
   if (fx.jail) out.push(`тюрьма ${fx.jail} мес`);
   if (fx.hosp) out.push(`больница ${fx.hosp} мес`);
   if (fx.away) out.push(`уехать на ${fx.away} мес`);
+  if (fx.club) for (const [k, v] of Object.entries(fx.club)) if (v) out.push(k === 'wages' ? `зарплаты ${plusMoney(v)}/мес` : `${CLUB_HINT[k]} ${signed(v)}`);
+  if (fx.zapas) out.push(`запас здоровья +${fx.zapas}`);
+  if (fx.loan) out.push(`кредит ${money(round(fx.loan * sc))}`);
+  if (fx.cto) out.push('технический директор');
+  if (fx.venture) out.push(fx.venture > 1 ? 'доли в стартапах' : 'доля в стартапе');
+  if (fx.btc) out.push('немного биткоинов');
+  if (fx.btcLose) out.push('биткоины на флешке пропадут');
   return out;
 }
+const CLUB_HINT: Record<string, string> = { sostav: 'Состав', trener: 'Тренер', duh: 'Дух', fans: 'Фанаты', slava: 'Слава' };
 
 interface Snap {
   cash: number;
@@ -616,10 +692,15 @@ interface Snap {
   fixer: boolean;
   dreams: number;
   study: number;
+  club?: string;
+  zapas?: number;
+  ventures?: number;
+  btc?: number;
 }
 const snap = (s: State, p: Player): Snap => ({
   cash: p.cash, income: income(s, p), upkeep: p.upkeep, hoursBonus: p.hoursBonus, stats: { ...p.stats }, skills: { ...p.skills }, krysha: p.krysha, enemies: p.enemies,
   assets: new Map(p.assets.map((a) => [a.uid, a.name])), out: p.out, insurance: p.insurance, advisor: p.advisor, fixer: !!p.fixer, dreams: p.dreams.length, study: p.study,
+  ...(isS2(s) ? { club: JSON.stringify(p.club2 ?? null), zapas: p.zapas ?? 0, ventures: p.ventures?.length ?? 0, btc: p.btc?.amount ?? 0 } : {}),
 });
 
 /** Что изменилось у игрока после выбора: [видно всем, только ему самому]. */
@@ -653,7 +734,20 @@ function fxDiff(s: State, a: Snap, p: Player): [string[], string[]] {
   if (b.dreams > a.dreams) out.push('мечта сбылась');
   if (b.study > a.study) out.push(`учёба +${b.study - a.study} ч`);
   if (b.out > a.out) out.push(`${p.outKind === 'jail' ? 'тюрьма' : p.outKind === 'hosp' ? 'больница' : 'нет в городе'} ${b.out} мес`);
+  if (b.club !== a.club && p.club2) {
+    const was = JSON.parse(a.club ?? 'null') as Club2 | null;
+    for (const k of Object.keys(CLUB_HINT) as (keyof Club2)[]) {
+      const d = was ? (p.club2[k] as number) - (was[k] as number) : 0;
+      if (d) out.push(`${CLUB_HINT[k]} ${signed(d)}`);
+    }
+    if (was && p.club2.wages !== was.wages) out.push(`зарплаты ${plusMoney(round(p.club2.wages - was.wages))}/мес`);
+  }
+  if ((b.zapas ?? 0) > (a.zapas ?? 0)) out.push(`запас здоровья +${b.zapas! - a.zapas!}`);
+  if ((b.ventures ?? 0) > (a.ventures ?? 0)) out.push('доля в стартапе');
+  if ((b.btc ?? 0) > (a.btc ?? 0)) out.push('биткоины');
+  if ((b.btc ?? 0) < (a.btc ?? 0)) out.push('биткоины пропали');
   return [out, secret];
+
 }
 
 // ---------------------------------------------------------------- ход
@@ -674,9 +768,12 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
   if (!p) return null;
   const mine = s.players[s.turn].seat === seat;
 
-  if (a.type === 'sell' || a.type === 'manager' || a.type === 'grow' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha' || a.type === 'rival') {
+  if (a.type === 'sell' || a.type === 'manager' || a.type === 'grow' || a.type === 'repay' || a.type === 'quit' || a.type === 'krysha' || a.type === 'rival' || a.type === 'monet' || a.type === 'home' || a.type === 'btc') {
     if (!mine || s.phase !== 'roll') return null;
-    if (a.type === 'grow') {
+    if (a.type === 'monet' || a.type === 'home' || a.type === 'btc') {
+      if (!isS2(s) || !actS2(s, p, a, ev)) return null;
+    } else if (a.type === 'krysha' && isS2(s)) return null;
+    else if (a.type === 'grow') {
       const x = p.assets.find((q) => q.uid === a.uid);
       if (!x || growWhy(s, p, x) !== null) return null;
       growAsset(s, p, x, GROW_PAY, ev);
@@ -752,7 +849,9 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     if (cell === 'period') {
       // всё для клуба готово — купить можно и в конце квартала, не дожидаясь «Выходного»
       if (clubReady(s, p)) {
-        s.ask = { seat: p.seat, cell, title: 'Лондон ждёт', text: 'Всё готово: деньги, имя, связи, язык. Лондонские юристы ждут звонка.', choices: [{ label: 'Купить «Лондон Юнайтед»', ok: true, buy: 'club' }, { label: 'Ещё не время', ok: true }] };
+        s.ask = isS2(s)
+          ? { seat: p.seat, cell, title: 'Совет директоров ждёт', text: `Всё готово: деньги, имя, связи, технический директор. Контрольный пакет ${Z(s).goal} — ваш, если скажете «да».`, choices: [{ label: `Купить ${Z(s).goal}`, ok: true, buy: 'club' }, { label: 'Ещё не время', ok: true }] }
+          : { seat: p.seat, cell, title: 'Лондон ждёт', text: 'Всё готово: деньги, имя, связи, язык. Лондонские юристы ждут звонка.', choices: [{ label: 'Купить «Лондон Юнайтед»', ok: true, buy: 'club' }, { label: 'Ещё не время', ok: true }] };
         s.phase = 'choose';
         return { state: s, events: ev };
       }
@@ -760,7 +859,8 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       return { state: s, events: ev };
     }
     if (cell === 'rest' && p.skills.bazar) addStat(p, 'svyazi', p.skills.bazar);
-    s.ask = (cell === 'deal' && dealAsk(s, p, rng)) || cardAsk(s, p, cell === 'deal' ? 'news' : cell, rng);
+    if (isS2(s)) s.ask = askS2(s, p, cell, rng);
+    else s.ask = (cell === 'deal' && dealAsk(s, p, rng)) || cardAsk(s, p, cell === 'deal' ? 'news' : cell, rng);
     s.phase = 'choose';
     return { state: s, events: ev };
   }
@@ -771,6 +871,15 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
     const ch = ask.choices[a.i];
     if (!ch || !ch.ok) return null;
     ev.push({ t: 'pick', seat, title: ask.title, label: ch.label, dark: ch.dark });
+    if (ch.buy === 'club' && isS2(s)) {
+      // «Тындекс» куплен — но сезон идёт дальше: впереди ковид и проверка здоровья
+      p.cash -= tyndexPrice(s.opts.diff);
+      p.club = true;
+      ev.push({ t: 'club', seat, name: Z(s).goal });
+      s.ask = null;
+      next(s, ev, rng);
+      return { state: s, events: ev };
+    }
     if (ch.buy === 'club') {
       p.cash -= CLUB_PRICE;
       p.club = true;
@@ -805,6 +914,14 @@ export function apply(s0: State, seat: number, a: Action, rng: Rng): { state: St
       next(s, ev, rng);
       return { state: s, events: ev };
     }
+    if (isS2(s)) {
+      if (ask.card && p.story?.[0] === ask.card) p.story.shift();
+      if (ch.tac != null && p.club2) playMatch(s, p, ch.tac, rng, ev);
+      if (ch.buy === 'hype' && ch.sector && ch.sum) hypeIn(s, p, ch.sector as Sector, ch.sum, ev);
+      if (ch.buy === 'hypeOut' && ch.sector) hypeOut(s, p, ch.sector as Sector, ev);
+      if (ch.buy === 'venture' && ch.sum) addVenture(s, p, rng, ev, ch.sum);
+      if (ch.buy === 'btc' && ch.sum) buyBtc(s, p, Math.min(ch.sum, Math.max(0, p.cash)), ev);
+    }
     if (ch.buy === 'deal' && ask.deals && ch.di != null) buy(s, p, ask.deals[ch.di], ev);
     if (ch.fx) {
       const before = snap(s, p);
@@ -838,7 +955,7 @@ export function rivalWhy(s: State, p: Player, q: Player, k: Rival): string | nul
   if (p.cash < rivalCost(s, p, k)) return 'не хватает денег';
   if (k === 'demping' && !shared(p, q)) return 'нет общей ниши';
   if (k === 'peremanit' && !q.assets.some((a) => a.manager)) return 'нет управляющих';
-  if (k === 'naezd' && p.krysha !== 'bandit') return 'нужна братва';
+  if (k === 'naezd' && p.krysha !== 'bandit' && !isS2(s)) return 'нужна братва';
   if (k === 'donos' && q.outKind === 'jail') return 'уже сидит';
   return null;
 }
@@ -858,6 +975,13 @@ function rival(s: State, p: Player, q: Player, k: Rival, rng: Rng, ev: Event[]) 
     b.manager = false;
     addStat(q, 'stress', 6);
     p.incomeBoost = Math.min(2, p.incomeBoost * 1.03);
+  } else if (k === 'naezd' && isS2(s)) {
+    // заказная статья: бьёт по имени соперника, но и своя совесть страдает
+    addStat(q, 'name', -6);
+    addStat(q, 'stress', 5);
+    addStat(p, 'sovest', -6);
+    addStat(p, 'heat', 3);
+    p.enemies++;
   } else if (k === 'naezd') {
     // без крыши соперник почти беззащитен; братва слабеет к двухтысячному
     ok = rng.next() < (q.krysha === 'none' ? 0.8 : 0.35) * (s.m > Z(s).banditWeak ? 0.6 : 1) + 0.04 * p.skills.sila;
@@ -1051,6 +1175,7 @@ function month(s: State, p: Player, m: number) {
       p.outKind = null;
     }
   }
+  if (isS2(s)) monthS2(s, p, m);
 }
 
 function history(s: State, h: HistT, ev: Event[]) {
@@ -1081,9 +1206,11 @@ function history(s: State, h: HistT, ev: Event[]) {
     }
     p.assets = p.assets.filter((a) => !(a.kind === 'paper' && a.value === 0));
   }
+  if (isS2(s)) historyS2(s, h.id, ev);
 }
 
 function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
+  if (isS2(s)) afterS2(s, p, ev, rng);
   // часы: перегрузка бьёт по здоровью, настроению и доходу своих дел
   p.over = hoursUsed(p) > hoursAvail(p);
   if (p.over) {
@@ -1109,7 +1236,8 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
     setOut(s, p, 'hosp', 1, ev);
     addStat(p, 'health', -8);
     p.stats.mood = -10;
-    fall(s, p, 'zapoi', ev);
+    // во втором сезоне Колян не мальчик: вместо запоя — инфаркт
+    fall(s, p, isS2(s) ? 'infarkt' : 'zapoi', ev);
   }
   // посадка: внимание органов на пределе
   if (p.stats.heat >= 90 && p.outKind !== 'jail' && rng.next() < (p.stats.heat - 75) / 40) {
@@ -1142,8 +1270,14 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
         p.assets = [];
         p.loans = [];
         p.upkeep = 0;
-        p.cash = p.stats.blizkie >= 40 ? 300 : 80;
-        if (!p.job) p.job = { name: 'на подхвате у старого знакомого', salary: 120, hours: 100 };
+        if (isS2(s)) {
+          p.cash = p.stats.blizkie >= 40 ? 3e4 : 1e4;
+          p.ventures = [];
+          if (!p.job) p.job = { name: 'разработчик по найму', salary: 3000, hours: 120 };
+        } else {
+          p.cash = p.stats.blizkie >= 40 ? 300 : 80;
+          if (!p.job) p.job = { name: 'на подхвате у старого знакомого', salary: 120, hours: 100 };
+        }
         addStat(p, 'name', -8);
         addStat(p, 'mood', -15);
         fall(s, p, 'razor', ev);
@@ -1165,9 +1299,56 @@ export function endingOf(s: State, p: Player): Ending {
 function finish(s: State, ev: Event[]) {
   s.phase = 'over';
   s.ask = null;
-  for (const p of s.players) p.ending = endingOf(s, p);
-  ev.push({ t: 'over' });
+  for (const p of s.players) {
+    if (isS2(s)) {
+      // декабрь 2021-го: проверка здоровья после болезни — ниже порога смерть
+      ev.push({ t: 'health', seat: p.seat, ok: survived(s, p), health: p.stats.health });
+      p.ending = endingS2(s, p);
+    } else p.ending = endingOf(s, p);
+  }
+  ev.push(isS2(s) ? { t: 'over', season: 2 } : { t: 'over' });
 }
+
+// ---------------------------------------------------------------- второй сезон: клетки и кнопки
+function askS2(s: State, p: Player, cell: Cell, rng: Rng): Ask {
+  const st = storyCard(s, p);
+  if (st) return askOf(s, p, st.cell, st);
+  if (cell === 'match') return matchAsk(s, p) ?? cardAsk(s, p, 'news', rng);
+  if (cell === 'hype') return hypeAsk(s, p, rng);
+  if (cell === 'deal') {
+    const a = dealAsk(s, p, rng);
+    if (!a) return cardAsk(s, p, 'news', rng);
+    dealExtras(s, p, rng, a.choices);
+    return a;
+  }
+  return cardAsk(s, p, cell, rng);
+}
+
+/** Кнопки второго сезона до броска: включить деньги в IT-деле, слетать домой к делу, биткоины. */
+function actS2(s: State, p: Player, a: Extract<Action, { type: 'monet' | 'home' | 'btc' }>, ev: Event[]): boolean {
+  if (a.type === 'monet') {
+    const x = p.assets.find((q) => q.uid === a.uid);
+    if (!x || x.aud == null || x.monet) return false;
+    x.monet = true;
+    return true;
+  }
+  if (a.type === 'home') {
+    const x = p.assets.find((q) => q.uid === a.uid);
+    if (!x || !p.club2 || !Z(s).deal(x.id)?.home || p.homeM === s.m) return false;
+    x.guard = s.m + 12;
+    p.club2.duh = Math.max(-50, p.club2.duh - 6);
+    p.study += 40;
+    p.homeM = s.m;
+    return true;
+  }
+  if (!p.btc || p.btc.amount <= 0) return false;
+  if (a.op === 'sell') return sellBtc(s, p, ev);
+  if (a.op !== 'flash' && a.op !== 'exchange') return false;
+  if (p.btc.where === a.op) return false;
+  p.btc.where = a.op;
+  return true;
+}
+
 
 // ---------------------------------------------------------------- что видит игрок
 export interface PlayerView {
@@ -1189,6 +1370,9 @@ export interface PlayerView {
   club: boolean;
   ending: Ending | null;
   enemies: number;
+  /** Второй сезон: клуб (виден всем) и трофеи. */
+  club2?: Club2;
+  trophies?: string[];
 }
 /** Дело в виде: настоящий доход в месяц сейчас (с управляющим, нишей, кризисом) и куда можно вырасти. */
 export interface AssetView extends Asset {
@@ -1215,6 +1399,19 @@ export interface MyView {
   loanLimit: number;
   /** Что можно сделать против каждого соперника (и почему нельзя). */
   rivals: { seat: number; acts: { kind: Rival; why: string | null; cost: number }[] }[];
+  /** Второй сезон — только своё: стартапы и биткоины соперников скрыты. */
+  s2?: {
+    age: number;
+    zapas: number;
+    /** Порог проверки здоровья в декабре 2021-го. */
+    survive: number;
+    ventures: Venture[];
+    btc: (Btc & { price: number }) | null;
+    cto: boolean;
+    ill: number | null;
+    /** Можно слетать домой в этом отрезке. */
+    home: boolean;
+  };
 }
 export interface View {
   me: number | null;
@@ -1269,6 +1466,8 @@ export function view(s: State, seats: number[] | 'all'): View {
         const d = Z(s).deal(a.id);
         return { ...clone(a), now: round(assetIncome(s, p, a)), niche: d && a.kind !== 'paper' ? Math.round(nicheMul(d, s.m) * 100) / 100 : 1, grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
       }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
+      ...(p.club2 ? { club2: clone(p.club2) } : {}),
+      ...(p.trophies ? { trophies: [...p.trophies] } : {}),
     };
   });
   const mp = me == null ? null : P(s, me);
@@ -1281,8 +1480,18 @@ export function view(s: State, seats: number[] | 'all'): View {
         rivals: s.players
           .filter((q) => q !== mp)
           .map((q) => ({ seat: q.seat, acts: (Object.keys(RIVAL_NAME) as Rival[]).map((kind) => ({ kind, why: rivalWhy(s, mp, q, kind), cost: rivalCost(s, mp, kind) })) })),
+        ...(isS2(s)
+          ? {
+              s2: {
+                age: Z(s).yearOf(s.m) - 1967, zapas: mp.zapas ?? 0, survive: [15, 25, 35][clamp(s.opts.diff, 0, 2)], ventures: clone(mp.ventures ?? []),
+                btc: mp.btc && mp.btc.amount > 0 ? { ...mp.btc, value: round(mp.btc.value), price: btcPriceAt(s.m) } : null, cto: !!mp.cto, ill: mp.ill ?? null,
+                home: !!mp.club2 && mp.homeM !== s.m,
+              },
+            }
+          : {}),
       }
     : null;
+
   return {
     me, m: s.m, len: s.len, cells: [...s.cells], turn: s.players[s.turn].seat, phase: s.phase, roll: s.roll, target: s.target, ask: askFor(s.ask, seats), players, my,
     season: Z(s).id, crisis: Z(s).inCrisis(s.m) || s.m < s.crisisUntil, diff: s.opts.diff, buh: s.opts.buh, fired: [...s.fired],

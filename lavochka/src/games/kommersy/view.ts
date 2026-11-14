@@ -9,9 +9,10 @@ import {
   CELL_COLOR, CELL_NAME, CLUB, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME,
   type Cell, type Krysha, type Skill, type Stat,
 } from './data';
-import { RIVAL_DARK, RIVAL_NAME, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
+import { RIVAL_DARK, RIVAL_NAME, RIVAL_NAME2, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
 import { S1, season, type Season } from './season';
+import { CRASH_FROM } from './s2data';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
 import { say, voiceKey } from './voice';
@@ -19,7 +20,9 @@ import roadsJson from './roads.json';
 import './kommersy.css';
 
 const A = '/kommersy/a';
-const ICON: Record<Cell, string> = { deal: '💼', routine: '🧾', study: '📚', rest: '🌿', news: '📰', event: '❗', naezd: '🚘', check: '🔍', period: '☀' };
+const ICON: Record<Cell, string> = { deal: '💼', routine: '🧾', study: '📚', rest: '🌿', news: '📰', event: '❗', naezd: '🚘', check: '🔍', period: '☀', transfer: '🔁', locker: '👟', match: '⚽', hype: '🚀' };
+/** Звук клетки второго сезона — пока из первого (свои звуки — этап 6). */
+const CELL_SFX: Partial<Record<Cell, Cell>> = { transfer: 'deal', locker: 'event', match: 'event', hype: 'news' };
 
 /** Дорога — те же кривые, по которым нарисован асфальт на панорамах (roads.json, общий с studio/post/road_templates.py). */
 const ROADS: number[][] = roadsJson.roads;
@@ -83,8 +86,10 @@ function roadGeo(r: number): RoadGeo {
 
 /** Панорама: местность по уровню, вариант по эпохе (где у местности его нет — ближайший), часть — по отрезку. */
 function pano(z: Season, tier: number, m: number) {
-  const place = z.tierId[tier];
-  const era = z.eraOf(m);
+  // второй сезон: своих панорам пока нет (этап 6) — акт клуба в Лондоне, «Цифра» — на местностях первого сезона
+  const place = z.id === 2 ? (m < CRASH_FROM ? 'london' : ['bazar', 'center', 'center', 'moscow', 'london', 'moscow'][tier]) : z.tierId[tier];
+  const era = z.id === 2 ? 'new' : z.eraOf(m);
+
   const have: Record<string, string[]> = { dvor: ['soviet', 'wild'], kiosk: ['soviet', 'wild'], bazar: ['wild', 'new'], center: ['wild', 'new'], oblast: ['wild', 'new'], moscow: ['new'], london: ['new'] };
   const want = era === 'soviet' ? 'soviet' : era === 'new' ? 'new' : 'wild';
   const list = have[place];
@@ -104,7 +109,7 @@ const NPC_BY_CELL: Partial<Record<Cell, string>> = { deal: 'chelnochnitsa', rout
 /** Реакция Коляна на свои события. */
 const REACT: Partial<Record<Event['t'], Reaction>> = { buy: 'deal', risk: 'lose', fall: 'lose', out: 'lose', club: 'win' };
 const SHOW_STATS: Stat[] = ['health', 'mood', 'stress', 'name', 'avt', 'svyazi', 'blizkie'];
-const FALL: Record<string, string> = { razor: 'Разорился', jail: 'Сел', pokushenie: 'Покушение', zapoi: 'Запой' };
+const FALL: Record<string, string> = { razor: 'Разорился', jail: 'Сел', pokushenie: 'Покушение', zapoi: 'Запой', infarkt: 'Инфаркт' };
 
 class KommersyView implements GameView<View, Event> {
   private ctx!: ViewCtx<Action>;
@@ -194,6 +199,9 @@ class KommersyView implements GameView<View, Event> {
       else if (act === 'quit') this.send({ type: 'quit' });
       else if (act === 'krysha') this.send({ type: 'krysha', to: el.dataset.to as Krysha });
       else if (act === 'rival') this.send({ type: 'rival', kind: el.dataset.kind as Rival, target: Number(el.dataset.target) });
+      else if (act === 'monet') this.send({ type: 'monet', uid: Number(el.dataset.uid) });
+      else if (act === 'home') this.send({ type: 'home', uid: Number(el.dataset.uid) });
+      else if (act === 'btc') this.send({ type: 'btc', op: el.dataset.op as 'sell' | 'flash' | 'exchange' });
     });
   }
 
@@ -256,14 +264,14 @@ class KommersyView implements GameView<View, Event> {
 
   saveTitle(v: View) {
     const p = v.players.find((x) => x.seat === (v.me ?? this.me())) ?? v.players[0];
-    return `${season(v.season).dateText(v.m)} · ${season(v.season).tiers[p.tier]} · ${money(p.worth)}`;
+    return `${season(v.season).dateText(v.m)} · ${season(v.season).placeName(v.m, p.tier)} · ${money(p.worth)}`;
   }
 
   playerStats(v: View, seat: number) {
     const p = v.players.find((x) => x.seat === seat);
     if (!p) return '';
     const out = p.outKind ? ` · ${p.outKind === 'jail' ? 'в тюрьме' : p.outKind === 'hosp' ? 'в больнице' : 'уехал'}` : '';
-    return `${money(p.worth)} · ${season(v.season).tiers[p.tier]}${out}`;
+    return `${money(p.worth)} · ${season(v.season).placeName(v.m, p.tier)}${out}`;
   }
 
   // ---------------------------------------------------------------- отрисовка
@@ -281,7 +289,7 @@ class KommersyView implements GameView<View, Event> {
     const pn = pano(z, me.tier, v.m);
     this.road = pn.road;
     this.setBg(pn.src);
-    this.dateEl.innerHTML = `<b>${z.dateText(v.m)}</b> · ${z.eraName[z.eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${z.tiers[me.tier]}</span>`;
+    this.dateEl.innerHTML = `<b>${z.dateText(v.m)}</b> · ${z.eraName[z.eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${z.placeName(v.m, me.tier)}</span>`;
     this.drawRoad();
     this.kolyan.set(me.hero === 'kolyan' ? z.yearOf(v.m) : null);
     const thinking = v.phase === 'choose' && v.ask?.seat === me.seat;
@@ -387,9 +395,9 @@ class KommersyView implements GameView<View, Event> {
       const lo = k === 'mood' ? -50 : 0;
       const pct = ((val - lo) / ((k === 'mood' ? 50 : 100) - lo)) * 100;
       const bad = k === 'stress' ? val > 60 : k === 'mood' ? val < 0 : val < 25;
-      return `<div class="km-stat"><span>${STAT_NAME[k]}</span><i><b style="width:${Math.max(2, Math.min(100, pct))}%"${bad ? ' class="bad"' : ''}></b></i><em>${val}</em></div>`;
+      return `<div class="km-stat"><span>${k === "blizkie" && this.v?.season === 2 ? "Семья" : STAT_NAME[k]}</span><i><b style="width:${Math.max(2, Math.min(100, pct))}%"${bad ? ' class="bad"' : ''}></b></i><em>${val}</em></div>`;
     };
-    const skills = (Object.keys(SKILL_NAME) as Skill[])
+    const skills = (Object.keys(SKILL_NAME) as Skill[]).filter((k) => me.skills[k] != null)
       .map((k) => `<span class="km-skill" title="${SKILL_NAME[k]}">${SKILL_NAME[k]} ${'●'.repeat(me.skills[k])}${'○'.repeat(SKILL_MAX - me.skills[k])}</span>`)
       .join('');
     const assets = me.assets.length
@@ -403,8 +411,12 @@ class KommersyView implements GameView<View, Event> {
             const old = a.niche >= 1 ? '' : `<span class="km-old">${a.niche <= 0.35 ? `ниша отжила: доход ${pct} % от лучших лет` : `ниша стареет: доход ${pct} %`}</span>`;
             const g = a.grow;
             const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(season(v.season).deal(d.next)!.name)}» (пока рано)` : '';
-            const growBtn = g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '';
-            return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${d?.heat ? ' · органы ↑' : ''}${grows}${old}</small><span class="km-acts">${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></span></li>`;
+            const s2 = v.season === 2;
+            const monetBtn = s2 && a.aud != null && !a.monet ? `<button class="km-mini txt" data-act="monet" data-uid="${a.uid}"${dis} title="включить рекламу и подписку: появится доход, рост замедлится">₽ вкл</button>` : '';
+            const homeBtn = s2 && d?.home && v.my?.s2?.home ? `<button class="km-mini txt" data-act="home" data-uid="${a.uid}"${dis} title="слетать домой: дело год не падает, но дух клуба −6 и 40 часов">✈ домой</button>` : '';
+            const aud = a.aud != null ? ` · аудитория ${Math.round(a.aud)}${a.monet ? '' : ' (деньги не включены)'}` : '';
+            const growBtn = monetBtn + homeBtn + (g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '');
+            return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${aud}${d?.heat ? ' · органы ↑' : ''}${grows}${old}</small><span class="km-acts">${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></span></li>`;
           })
           .join('')
       : '<li class="km-none">Дел пока нет</li>';
@@ -418,7 +430,7 @@ class KommersyView implements GameView<View, Event> {
       .map((r) => {
         const btns = r.acts
           .map((a) => {
-            const tip = `${RIVAL_NAME[a.kind]} · ${money(a.cost)}${a.why ? ` — ${a.why}` : ''}`;
+            const tip = `${(v.season === 2 ? RIVAL_NAME2 : RIVAL_NAME)[a.kind]} · ${money(a.cost)}${a.why ? ` — ${a.why}` : ''}`;
             return `<button class="km-mini${RIVAL_DARK[a.kind] ? ' dark' : ''}" data-act="rival" data-kind="${a.kind}" data-target="${r.seat}" title="${esc(tip)}"${free && !a.why ? '' : ' disabled'}>${RICON[a.kind]}</button>`;
           })
           .join('');
@@ -427,7 +439,7 @@ class KommersyView implements GameView<View, Event> {
       .join('');
     const hoursPct = my ? Math.min(100, (my.hours.used / my.hours.avail) * 100) : 0;
     this.sheet.innerHTML = `
-      <div class="km-me"><div><b>${esc(season(v.season).heroes.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${season(v.season).tiers[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
+      <div class="km-me"><div><b>${esc(season(v.season).heroes.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${season(v.season).placeName(v.m, me.tier)}${v.season === 2 ? '' : ` · ${KRYSHA_NAME[me.krysha]}`}</small></div></div>
       <div class="km-money"><div><span>Наличные</span><b>${money(me.cash)}</b></div><div><span>Капитал</span><b>${money(me.worth)}</b></div>
         ${my ? `<div><span>Доход/мес</span><b class="plus">+${money(my.income)}</b></div><div><span>Расход/мес</span><b class="minus">−${money(my.expenses)}</b></div>` : ''}</div>
       ${my ? `<div class="km-hours"><span>Часы ${my.hours.used}/${my.hours.avail}</span><i><b style="width:${hoursPct}%"${my.hours.used > my.hours.avail ? ' class="bad"' : ''}></b></i></div>` : ''}
@@ -437,9 +449,10 @@ class KommersyView implements GameView<View, Event> {
         ${my ? `<div class="km-hint">Органы: <b>${my.heatHint}</b> · Совесть: <b>${my.sovestHint}</b></div>` : ''}</div>
       <div class="km-skills">${skills}</div>
       <h4>Дела</h4><ul class="km-assets">${assets}</ul>
-      <div class="km-krysha">Крыша: <b>${KRYSHA_NAME[me.krysha]}</b> ${kr}</div>
+      ${v.season === 2 ? '' : `<div class="km-krysha">Крыша: <b>${KRYSHA_NAME[me.krysha]}</b> ${kr}</div>`}
       ${rivals ? `<h4>Соперники</h4><ul class="km-assets km-rivals">${rivals}</ul>` : ''}
-      <h4>«${CLUB}»</h4><ul class="km-club">${club}</ul>
+      ${s2Html(v, dis)}
+      <h4>${season(v.season).goal}</h4><ul class="km-club">${club}</ul>
       ${me.falls.length ? `<div class="km-falls">Падал ${me.falls.length} раз${me.falls.length % 10 >= 2 && me.falls.length % 10 <= 4 && (me.falls.length < 10 || me.falls.length > 20) ? 'а' : ''} — и поднимался</div>` : ''}`;
   }
 
@@ -474,7 +487,7 @@ class KommersyView implements GameView<View, Event> {
             await sleep(160 / speed);
           }
           Sound.place();
-          if (ev.cell !== 'period') sfx(`cell-${ev.cell}`, 0.8);
+          if (ev.cell !== 'period') sfx(`cell-${CELL_SFX[ev.cell] ?? ev.cell}` as `cell-${'deal' | 'routine' | 'study' | 'rest' | 'news' | 'event' | 'naezd' | 'check'}`, 0.8);
           break;
         }
         case 'pick':
@@ -500,12 +513,25 @@ class KommersyView implements GameView<View, Event> {
           await this.showBanner(`${art(`h-${ev.id}`)}<small>${season(v.season).dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
         case 'fall':
-          sfx(`fall-${ev.kind}`);
+          sfx(`fall-${ev.kind === 'infarkt' ? 'zapoi' : ev.kind}`);
           await this.showBanner(`<b>${FALL[ev.kind]}</b><p>${this.ctx.name(ev.seat)} — падал, но поднимался.</p>`, 'fall', 2200);
           break;
         case 'club':
           sfx('club');
-          await this.showBanner(`<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
+          await this.showBanner(ev.name ? `<b>${esc(ev.name)}</b><p>${this.ctx.name(ev.seat)} покупает контрольный пакет!</p>` : `<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
+          break;
+        case 'match':
+          sfx(ev.win ? 'club' : 'cell-event', 0.7);
+          await this.showBanner(`<small>${esc(ev.title)}</small><b>${ev.win ? 'Победа' : 'Поражение'} · ${esc(ev.score)}</b>`, ev.win ? 'club' : 'fall', 1800);
+          break;
+        case 'tour':
+          if (ev.final) await this.showBanner(`<small>Итоги сезона</small><b>${ev.place}-е место</b>${ev.trophies?.length ? `<p>🏆 ${ev.trophies.map(esc).join(', ')}</p>` : ''}`, 'hist', 2200);
+          break;
+        case 'venture':
+          if (ev.seat === mine && (ev.stage >= 4 || !ev.ok)) await this.showBanner(ev.ok ? `<b>Выход стартапа</b><p>«${esc(ev.name)}»: ${money(ev.sum ?? 0)}</p>` : `<b>Стартап закрылся</b><p>«${esc(ev.name)}» — деньги сгорели.</p>`, ev.ok ? 'club' : 'fall', 1600);
+          break;
+        case 'health':
+          await this.showBanner(`<small>Декабрь 2021-го · проверка здоровья</small><b>${ev.ok ? 'Выкарабкался' : 'Не выкарабкался'}</b><p>${this.ctx.name(ev.seat)}: здоровье ${ev.health}</p>`, ev.ok ? 'club' : 'fall', 2600);
           break;
         case 'buy':
         case 'grow':
@@ -552,7 +578,27 @@ class KommersyView implements GameView<View, Event> {
   }
 }
 
-/** Иллюстрация карточки, сделки или исторической даты (studio/jobs/kommersy 11-cards → pack_kommersy.py); нет файла — не показывается. */
+/** Второй сезон: клуб, здоровье и запас, стартапы, биткоины (полные панели — этап 7). */
+function s2Html(v: View, dis: string): string {
+  if (v.season !== 2) return '';
+  const me = v.players.find((p) => p.seat === v.me);
+  const x = v.my?.s2;
+  const c = me?.club2;
+  const club = c
+    ? `<h4>«Лондон Юнайтед» · ${c.place}-е место</h4><div class="km-job">Состав ${c.sostav} · Тренер ${'★'.repeat(c.trener)} · Дух ${c.duh} · Фанаты ${c.fans} · Слава ${c.slava} · зарплаты ${money(c.wages)}/мес</div>${c.trophies.length ? `<div class="km-job">🏆 ${c.trophies.map(esc).join(', ')}</div>` : ''}`
+    : me?.trophies?.length ? `<div class="km-job">🏆 ${me.trophies.map(esc).join(', ')}</div>` : '';
+  if (!x) return club;
+  const health = `<div class="km-job">Возраст ${x.age} · запас здоровья ${x.zapas} · в декабре 2021-го нужно здоровье ≥ ${x.survive}${x.ill ? ` · болезнь отняла ${x.ill}` : ''}${x.cto ? ' · есть техдиректор' : ''}</div>`;
+  const ven = x.ventures.length ? `<h4>Стартапы</h4><ul class="km-assets">${x.ventures.map((q) => `<li><b>${esc(q.name)}</b><small>${['идея', 'посев', 'раунд A', 'раунд B'][q.stage]} · вложено ${money(q.invested)}</small></li>`).join('')}</ul>` : '';
+  const b = x.btc;
+  const btc = b
+    ? `<div class="km-job">₿ ${b.amount >= 1 ? Math.round(b.amount) : b.amount.toFixed(2)} по $${b.price} = ${money(b.value)} · ${b.where === 'flash' ? 'на флешке' : 'на бирже'} <button class="km-mini txt" data-act="btc" data-op="sell"${dis}>Продать</button> <button class="km-mini txt" data-act="btc" data-op="${b.where === 'flash' ? 'exchange' : 'flash'}"${dis}>${b.where === 'flash' ? 'на биржу' : 'на флешку'}</button></div>`
+    : '';
+  return club + health + btc + ven;
+}
+
+/** Иллюстрация карточки, сделки или исторической даты
+ (studio/jobs/kommersy 11-cards → pack_kommersy.py); нет файла — не показывается. */
 const art = (id: string, cls = 'km-art') => `<img class="${cls}" src="${A}/cards/${id}.webp" alt="" onerror="this.remove()">`;
 
 function booksHtml(b: Books | undefined, who: string) {

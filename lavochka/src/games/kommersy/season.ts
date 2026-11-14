@@ -3,6 +3,7 @@
  * второй (2004–2021, docs/kommersy/SEASON2.md) — своими таблицами. */
 import * as D from './data';
 import type { CardT, Cell, DealT, HistT, Hero, Stat } from './data';
+import * as T from './s2data';
 
 export interface Season {
   id: 1 | 2;
@@ -37,6 +38,12 @@ export interface Season {
   history: HistT[];
   /** С этого месяца бандитская крыша — обуза, а наезд слабее. */
   banditWeak: number;
+  /** Местность для вида (акт клуба во втором сезоне — Лондон, а не уровень). */
+  placeName(m: number, t: number): string;
+  /** Цель сезона — что покупают в конце. */
+  goal: string;
+  /** Финалы: id → название. */
+  endings: Record<string, string>;
 }
 
 /** Календарь сезона с месяца 0 = (year, month) и помесячными кризисными окнами. */
@@ -79,11 +86,47 @@ export const S1: Season = {
   cards: D.CARDS,
   history: D.HISTORY,
   banditWeak: 147,
+  placeName: (_m, t) => D.TIERS[t],
+  goal: `«${D.CLUB}»`,
+  endings: { ...D.ENDINGS, club: `«${D.CLUB}»` },
 };
 
-export const SEASONS: Record<number, Season> = { 1: S1 };
+/** Второй сезон: январь 2004 → декабрь 2021 — клуб, крах, «Цифра» (docs/kommersy/SEASON2.md). */
+export const S2: Season = {
+  id: 2,
+  startYear: T.S2_YEAR,
+  startMonth: T.S2_MONTH,
+  last: T.LAST2,
+  ...calendar(T.S2_YEAR, T.S2_MONTH, T.CRISIS2),
+  eraOf: T.eraOf2,
+  eraName: T.ERA_NAME2,
+  cellWeights: T.CELL_WEIGHTS2,
+  loanRate: { club: 0.006, crash: 0.02, it1: 0.012, it2: 0.01 },
+  deposit: { club: 0.002, crash: 0, it1: 0.003, it2: 0.002 },
+  tiers: T.TIERS2,
+  tierId: T.TIER_ID2,
+  tierAt: T.TIER_AT2,
+  scale: T.SCALE2,
+  tierOf: tierOfAt(T.TIER_AT2),
+  heroes: T.HEROES2,
+  base: T.BASE2,
+  deals: T.DEALS2,
+  deal: byId(T.DEALS2),
+  cards: T.CARDS2,
+  history: T.HISTORY2,
+  banditWeak: 0,
+  placeName: T.placeName2,
+  goal: T.TYNDEX,
+  endings: T.ENDINGS2,
+};
+
+export const SEASONS: Record<number, Season> = { 1: S1, 2: S2 };
 
 /** Сезон по номеру (из opts.season или View.season); нет такого — первый. */
 export const season = (n: number | undefined): Season => SEASONS[n ?? 1] ?? S1;
 
 export { tierOfAt, byId };
+
+/** Доступ ко второму сезону в интерфейсе (ранний доступ; платный — этап 4). Клиент подменяет проверку (index.ts),
+ * на сервере и в тестах — нет: пресеты сезона не показываются, но опция season: 2 работает. */
+export const s2Access = { check: (): boolean => false };

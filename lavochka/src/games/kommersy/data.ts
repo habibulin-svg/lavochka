@@ -30,12 +30,15 @@ export const eraOf = (m: number): Era => (m < mm(1992, 1) ? 'soviet' : m < mm(19
 export const ERA_NAME: Record<Era, string> = { soviet: 'перестройка', wild: 'лихие', late: 'передел', new: 'нулевые' };
 
 // ---------------------------------------------------------------- клетки
-export type Cell = 'deal' | 'routine' | 'study' | 'rest' | 'news' | 'event' | 'naezd' | 'check' | 'period';
+/** transfer, locker, match, hype — клетки второго сезона (клуб и «Цифра»). */
+export type Cell = 'deal' | 'routine' | 'study' | 'rest' | 'news' | 'event' | 'naezd' | 'check' | 'period' | 'transfer' | 'locker' | 'match' | 'hype';
 export const CELL_NAME: Record<Cell, string> = {
   deal: 'Сделка', routine: 'Рутина', study: 'Учёба', rest: 'Выходной', news: 'Новости', event: 'Событие', naezd: 'Наезд', check: 'Проверка', period: 'Новый квартал',
+  transfer: 'Трансфер', locker: 'Раздевалка', match: 'Матч', hype: 'Хайп',
 };
 export const CELL_COLOR: Record<Cell, string> = {
   deal: '#3f9b4a', routine: '#e08a2c', study: '#e3c43a', rest: '#8a5bb8', news: '#3b7fc4', event: '#c9383a', naezd: '#2b2b2b', check: '#8b8f96', period: '#f2b632',
+  transfer: '#1fb5a8', locker: '#7a1f2b', match: '#f4f4f0', hype: '#e040c8',
 };
 /** Доли клеток по эпохам: бандиты сильны в 1991–96, проверки растут после 1999. */
 export const CELL_WEIGHTS: Record<Era, Partial<Record<Cell, number>>> = {
@@ -66,8 +69,9 @@ export const HIDDEN: Stat[] = ['heat', 'sovest'];
 export const STAT_RANGE: Record<Stat, [number, number]> = {
   health: [0, 100], mood: [-50, 50], stress: [0, 100], name: [0, 100], avt: [0, 100], svyazi: [0, 100], heat: [0, 100], blizkie: [0, 100], sovest: [0, 100],
 };
-export type Skill = 'trade' | 'schet' | 'bazar' | 'sila' | 'english' | 'poryadok';
-export const SKILL_NAME: Record<Skill, string> = { trade: 'Торговля', schet: 'Счёт', bazar: 'Базар', sila: 'Сила', english: 'Английский', poryadok: 'Порядок' };
+/** cifra и chuyka — навыки второго сезона (в первом их нет в состоянии). */
+export type Skill = 'trade' | 'schet' | 'bazar' | 'sila' | 'english' | 'poryadok' | 'cifra' | 'chuyka';
+export const SKILL_NAME: Record<Skill, string> = { trade: 'Торговля', schet: 'Счёт', bazar: 'Базар', sila: 'Сила', english: 'Английский', poryadok: 'Порядок', cifra: 'Цифра', chuyka: 'Чуйка' };
 export const SKILL_MAX = 5;
 
 export type Krysha = 'none' | 'bandit' | 'police' | 'own';
@@ -125,6 +129,10 @@ export interface DealT {
   /** Гибнет в этом месяце (МММ, ГКО). */
   dies?: number;
   text: string;
+  /** Второй сезон: IT-дело (аудитория → монетизация), сектор хайпа, дело дома на автопилоте. */
+  it?: boolean;
+  sector?: string;
+  home?: boolean;
 }
 const D = (id: string, name: string, kind: Kind, tier: number, from: number, peak: number, price: number, income: number, hours: number, risk: number, text: string, more: Partial<DealT> = {}): DealT =>
   ({ id, name, kind, tier, from, peak, price, income, hours, risk, text, ...more });
@@ -223,6 +231,22 @@ export interface Fx {
   incomeBoost?: number;
   /** Закрыть своё дело этого вида (палёнку после отравления). */
   close?: string;
+  // ---- второй сезон
+  /** Параметры клуба (акт I). */
+  club?: Partial<Record<'sostav' | 'trener' | 'duh' | 'fans' | 'slava' | 'wages', number>>;
+  /** Запас здоровья к болезни 2021-го. */
+  zapas?: number;
+  /** Кредит в единицах трат (× unit). */
+  loan?: number;
+  /** Технический директор (дочь, Жека, нанятый) — заменяет «Цифру» для «Тындекса». */
+  cto?: boolean;
+  /** Доля в стартапе: 1 — один, 2 — пакет фонда. */
+  venture?: number;
+  /** Купить биткоины (малая сумма по карточке). */
+  btc?: number;
+  btcLose?: boolean;
+  /** Крах: поправка к итоговому миллиону (доля). */
+  crash?: number;
 }
 
 export interface Choice {
@@ -246,7 +270,9 @@ export interface CardT {
   minTier?: number;
   maxTier?: number;
   /** Карточка выпадает только тому, у кого такая крыша / такое дело. */
-  need?: { krysha?: Krysha[]; deal?: string };
+  need?: { krysha?: Krysha[]; deal?: string; club?: boolean; btc?: boolean };
+  /** Сюжетная: не тянется с клетки, приходит сама из истории (крах, болезнь). */
+  story?: boolean;
   choices: Choice[];
 }
 const C = (id: string, cell: Cell, title: string, text: string, choices: Choice[], more: Partial<CardT> = {}): CardT => ({ id, cell, title, text, choices, ...more });
@@ -544,4 +570,4 @@ export const ENDINGS = {
   soulless: 'Олигарх без души',
   honest: 'Честный, но небогатый',
 } as const;
-export type Ending = keyof typeof ENDINGS | 'club';
+export type Ending = keyof typeof ENDINGS | 'club' | 'dead' | 'tyndex' | 'island' | 'pension' | 'zatulinka' | 'lonely';

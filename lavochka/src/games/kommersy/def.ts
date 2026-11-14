@@ -4,7 +4,8 @@ import type { DemoScript, GameDef, GameResult, Rng, SeatSpec } from '../../core/
 import { SEATS as HSEATS } from '../hodilki/core';
 import { choose } from './bot';
 import { CELL_NAME, CLUB, CLUB_PRICE, ENDINGS, HEROES, TIERS, mm, type Cell } from './data';
-import { season } from './season';
+import { s2Access, season } from './season';
+import { ENDINGS2, START_2009, START_2017, TYNDEX } from './s2data';
 import { apply, marketWorth, money, newState, toAct, view, type Action, type Event, type State, type View } from './engine';
 
 const COLOR: Record<string, string> = { kolyan: '#5a5a5a', seryoga: '#2a9a3a', vovka: '#d8241c', lenka: '#2060d0', svetka: '#e85a9a', dimon: '#8a3ac8', tanka: '#e8b020', zheka: '#1a9a9a', mihalych: '#6a4a2a' };
@@ -22,6 +23,7 @@ const opts = (o: Record<string, unknown>) => ({
   start: num(o.start, 0, 0, mm(2003, 6)),
   chance: num(o.chance, 0, 0, 3),
   buh: o.buh === true || o.buh === 1 || o.buh === 'true',
+  season: num(o.season, 1, 1, 2),
 });
 
 // ---------------------------------------------------------------- показ правил
@@ -158,12 +160,34 @@ function result(s: State): GameResult | null {
   const scores: Record<number, number> = {};
   const worth = (p: State['players'][number]) => marketWorth(s, p);
   for (const p of s.players) scores[p.seat] = Math.round(worth(p));
+  if (s.opts.season === 2) {
+    // второй сезон: побеждает выживший владелец «Тындекса»; нет такого — самый богатый из выживших
+    const name = (p: State['players'][number]) => ENDINGS2[p.ending as keyof typeof ENDINGS2] ?? '';
+    const win = s.players.filter((p) => p.ending === 'tyndex' || p.ending === 'island');
+    if (win.length) return { winners: win.map((p) => p.seat), text: `купил ${TYNDEX}: ${name(win[0])}`, scores };
+    if (s.players.length === 1) return { winners: [], text: name(s.players[0]), scores };
+    const alive = s.players.filter((p) => p.ending !== 'dead');
+    const best = Math.max(0, ...alive.map((p) => worth(p)));
+    return { winners: alive.filter((p) => worth(p) === best).map((p) => p.seat), text: `${TYNDEX} никто не купил — богаче всех из выживших`, scores };
+  }
   const club = s.players.filter((p) => p.club);
   if (club.length) return { winners: club.map((p) => p.seat), text: `купил «${CLUB}»`, scores };
   if (s.players.length === 1) return { winners: [], text: `не успел: ${ENDINGS[s.players[0].ending as keyof typeof ENDINGS] ?? ''}`, scores };
   const best = Math.max(...s.players.map((p) => worth(p)));
   return { winners: s.players.filter((p) => worth(p) === best).map((p) => p.seat), text: 'клуб никто не купил — богаче всех к июлю 2003-го', scores };
 }
+
+const PRESETS1 = [
+  { id: 'full', label: 'С 1988', hint: 'весь путь: 15 лет, от дембеля до Лондона', options: { season: 1, start: 0, diff: 1, chance: 0 } },
+  { id: 'y1992', label: 'С 1992', hint: 'свобода торговли, денег на старте больше', options: { season: 1, start: mm(1992, 2), diff: 1, chance: 0 } },
+  { id: 'y1998', label: 'С 1998', hint: 'после дефолта: короткая партия на час', options: { season: 1, start: mm(1998, 9), diff: 1, chance: 0 } },
+  { id: 'chance', label: 'Второй шанс', hint: 'с 1988, но с опытом прошлой попытки', options: { season: 1, start: 0, diff: 1, chance: 1 } },
+];
+export const PRESETS2 = [
+  { id: 's2-2004', label: 'Сезон 2: с 2004', hint: 'весь путь: клуб в Лондоне, крах, «Цифра», ковид — одиночная', options: { season: 2, start: 0, diff: 1, chance: 0, buh: false } },
+  { id: 's2-2009', label: 'Сезон 2: с 2009', hint: 'только «Цифра»: миллион в Академгородке; сеть — гонка за «Тындексом»', options: { season: 2, start: START_2009, diff: 1, chance: 0, buh: false } },
+  { id: 's2-2017', label: 'Сезон 2: с 2017', hint: 'короткая партия на час: крипта, ковид, финал', options: { season: 2, start: START_2017, diff: 1, chance: 0, buh: false } },
+];
 
 export const def: GameDef<State, Action, Event, View> = {
   id: 'kommersy',
@@ -172,13 +196,28 @@ export const def: GameDef<State, Action, Event, View> = {
   seats: SEATS,
   options: [
     {
+      key: 'season',
+      label: 'Сезон',
+      hint: 'второй сезон — 2004–2021: клуб, крах, «Цифра» (ранний доступ)',
+      type: 'select',
+      choices: [
+        { value: 1, label: 'Сезон 1 (1988–2003)' },
+        { value: 2, label: 'Сезон 2 (2004–2021)' },
+      ],
+      default: 1,
+      showIf: () => s2Access.check(),
+    },
+    {
       key: 'start',
       label: 'Начало',
       type: 'select',
       choices: [
-        { value: 0, label: 'май 1988 — закон о кооперации' },
-        { value: mm(1992, 2), label: 'февраль 1992 — свобода торговли' },
-        { value: mm(1998, 9), label: 'сентябрь 1998 — после дефолта' },
+        { value: 0, label: 'май 1988 — закон о кооперации', showIf: (o) => o.season !== 2 },
+        { value: mm(1992, 2), label: 'февраль 1992 — свобода торговли', showIf: (o) => o.season !== 2 },
+        { value: mm(1998, 9), label: 'сентябрь 1998 — после дефолта', showIf: (o) => o.season !== 2 },
+        { value: 0, label: 'январь 2004 — хозяин клуба (одиночная)', showIf: (o) => o.season === 2 },
+        { value: START_2009, label: 'январь 2009 — «Цифра», с миллионом', showIf: (o) => o.season === 2 },
+        { value: START_2017, label: 'январь 2017 — крипта, ковид, финал', showIf: (o) => o.season === 2 },
       ],
       default: 0,
     },
@@ -194,15 +233,13 @@ export const def: GameDef<State, Action, Event, View> = {
       ],
       default: 1,
     },
-    { key: 'buh', label: 'Бухгалтерия', hint: 'в конце квартала баланс сводишь сам: сошлось — органы спокойнее и растёт «Счёт»', type: 'toggle', default: false },
-    { key: 'chance', label: 'Второй шанс', hint: 'опыт прошлой попытки: навыки, деньги, память о датах', type: 'number', min: 0, max: 3, step: 1, default: 0 },
+    { key: 'buh', label: 'Бухгалтерия', showIf: (o) => o.season !== 2, hint: 'в конце квартала баланс сводишь сам: сошлось — органы спокойнее и растёт «Счёт»', type: 'toggle', default: false },
+    { key: 'chance', label: 'Второй шанс', hint: 'опыт прошлой попытки: навыки, деньги, память о датах', type: 'number', min: 0, max: 3, step: 1, default: 0, showIf: (o) => o.season !== 2 },
   ],
-  presets: [
-    { id: 'full', label: 'С 1988', hint: 'весь путь: 15 лет, от дембеля до Лондона', options: { start: 0, diff: 1, chance: 0 } },
-    { id: 'y1992', label: 'С 1992', hint: 'свобода торговли, денег на старте больше', options: { start: mm(1992, 2), diff: 1, chance: 0 } },
-    { id: 'y1998', label: 'С 1998', hint: 'после дефолта: короткая партия на час', options: { start: mm(1998, 9), diff: 1, chance: 0 } },
-    { id: 'chance', label: 'Второй шанс', hint: 'с 1988, но с опытом прошлой попытки', options: { start: 0, diff: 1, chance: 1 } },
-  ],
+  // второй сезон — в раннем доступе (платный доступ — этап 4): его пресеты видны только тем, у кого есть доступ
+  get presets() {
+    return s2Access.check() ? [...PRESETS1, ...PRESETS2] : PRESETS1;
+  },
   setup: (seats: SeatSpec[], o, rng: Rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     return newState(ids, opts(o), ids.map((i) => HEROES[i]?.id), rng);
@@ -228,7 +265,7 @@ export const def: GameDef<State, Action, Event, View> = {
   },
 };
 
-const FALL = { razor: 'разорился', jail: 'сел', pokushenie: 'пережил покушение', zapoi: 'ушёл в запой' };
+const FALL = { razor: 'разорился', jail: 'сел', pokushenie: 'пережил покушение', zapoi: 'ушёл в запой', infarkt: 'пережил инфаркт' };
 const OUT = { jail: 'в тюрьме', hosp: 'в больнице', away: 'уехал' };
 
 export function describe(ev: Event, name: (seat: number) => string): string | null {
@@ -277,9 +314,20 @@ export function describe(ev: Event, name: (seat: number) => string): string | nu
     case 'buh':
       return ev.ok ? `📒 ${name(ev.seat)}: баланс сошёлся, ${money(ev.sum)}` : `📒 ${name(ev.seat)}: записал ${money(ev.ans)}, а вышло ${money(ev.sum)} — налоговая заметила`;
     case 'club':
-      return `🏆 ${name(ev.seat)} покупает «${CLUB}»!`;
+      return ev.name ? `🏆 ${name(ev.seat)} покупает ${ev.name}!` : `🏆 ${name(ev.seat)} покупает «${CLUB}»!`;
+    case 'tour':
+      return ev.final ? `⚽ Итоги сезона: ${ev.place}-е место${ev.trophies?.length ? ` · 🏆 ${ev.trophies.join(', ')}` : ''}` : `⚽ Итоги тура: ${ev.place}-е место`;
+    case 'match':
+      return `⚽ ${ev.title}: ${ev.win ? 'победа' : 'поражение'}, ${ev.score}`;
+    case 'venture':
+      return ev.stage >= 4 && ev.ok ? `🚀 ${name(ev.seat)}: стартап «${ev.name}» вышел — ${money(ev.sum ?? 0)}` : !ev.ok ? `💨 ${name(ev.seat)}: стартап «${ev.name}» закрылся` : ev.stage === 0 ? `🌱 ${name(ev.seat)} берёт долю в стартапе «${ev.name}» за ${money(ev.sum ?? 0)}` : `📈 ${name(ev.seat)}: «${ev.name}» — следующий раунд`;
+    case 'btc':
+      return `₿ ${name(ev.seat)} ${ev.buy ? 'покупает' : 'продаёт'} биткоины на ${money(ev.sum)} (по $${ev.price})`;
+    case 'health':
+      return ev.ok ? `❤ ${name(ev.seat)} выкарабкался: здоровье ${ev.health}` : `🕯 ${name(ev.seat)} не выкарабкался`;
     case 'over':
-      return '🏁 Июль 2003-го.';
+      return ev.season === 2 ? '🏁 Декабрь 2021-го.' : '🏁 Июль 2003-го.';
+
   }
   return null;
 }

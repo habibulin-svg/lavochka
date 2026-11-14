@@ -1,6 +1,13 @@
 import type { GameModule } from '../../core/view';
 import { def } from './def';
 import { createView } from './view';
+import { s2Access } from './season';
+import { hasRight } from '../../core/rights';
+import { currentUser } from '../../site/account';
+
+// второй сезон — ранний доступ (право early_access, у Мастера — всё); в разработке виден всегда
+s2Access.check = () => import.meta.env.DEV || hasRight(currentUser()?.rights ?? [], 'early_access');
+
 
 const help = `<p><b>Ход.</b> «Бросить кубик» (или <kbd>Пробел</kbd>, или тап по свободному месту поля), затем поставьте фишку на подсвеченную клетку — щелчком по клетке или кнопкой «Поставить фишку».</p>
 <p><b>Клетка.</b> Выпала карточка — выберите вариант. На «Сделке» три предложения: нажмите на то, что берёте, или откажитесь. 🩸 — тёмное дело: быстрее, но органы запомнят.</p>
