@@ -45,7 +45,7 @@ export function voiceKey(ev: Event, seat: number, old: View | null, v: View): [s
   const me = (x: View | null) => x?.players.find((p) => p.seat === seat);
   switch (ev.t) {
     case 'hist':
-      return [`h_${ev.id}`, true];
+      return [`h_${ev.id.replace(/-/g, '_')}`, true];
     case 'over':
       return me(v)?.club ? null : ['over', true];
     case 'auction':
@@ -67,6 +67,18 @@ export function voiceKey(ev: Event, seat: number, old: View | null, v: View): [s
       return ev.seat === seat ? [ev.ok ? 'buh_ok' : 'buh_bad', false] : null;
     case 'rival':
       return ev.seat === seat ? ['rival', false] : ev.target === seat ? ['rival_hit', false] : null;
+    // второй сезон
+    case 'match':
+      return ev.seat === seat ? [ev.win ? 'match_win' : 'match_lose', false] : null;
+    case 'tour':
+      return ev.seat === seat && ev.final && ev.trophies?.length ? ['trophy', true] : null;
+    case 'venture':
+      if (ev.seat !== seat) return null;
+      return !ev.ok ? ['venture_bad', false] : ev.stage >= 4 ? ['venture_exit', true] : Math.random() < 0.5 ? ['venture_ok', false] : null;
+    case 'btc':
+      return ev.seat === seat && ev.buy ? ['btc_buy', false] : null;
+    case 'health':
+      return ev.seat === seat && ev.ok ? ['health_ok', true] : null;
     case 'period': {
       const a = me(old);
       const b = me(v);

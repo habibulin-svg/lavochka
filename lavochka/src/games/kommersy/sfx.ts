@@ -7,7 +7,10 @@ const DIR = '/kommersy/a/sfx/';
 export type Sfx =
   | 'cell-deal' | 'cell-routine' | 'cell-study' | 'cell-rest' | 'cell-news' | 'cell-event' | 'cell-naezd' | 'cell-check' | 'cell-period'
   | 'buy' | 'sell' | 'dark' | 'hist'
-  | 'fall-razor' | 'fall-jail' | 'fall-pokushenie' | 'fall-zapoi' | 'out-hosp' | 'club';
+  | 'fall-razor' | 'fall-jail' | 'fall-pokushenie' | 'fall-zapoi' | 'out-hosp' | 'club'
+  // второй сезон (studio/jobs/kommersy2/28-sfx.yaml)
+  | 's2-tribuna' | 's2-whistle' | 's2-goal' | 's2-net' | 's2-groan' | 's2-locker' | 's2-transfer' | 's2-crash' | 's2-hammer'
+  | 's2-keyboard' | 's2-notify' | 's2-crypto' | 's2-launch' | 's2-heart' | 's2-waves' | 's2-gulls';
 
 const cache = new Map<string, Promise<AudioBuffer | null>>();
 

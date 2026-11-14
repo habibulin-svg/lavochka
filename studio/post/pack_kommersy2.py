@@ -119,6 +119,16 @@ def main():
         if f.exists():
             Image.open(f).convert('RGB').resize((576, 384), Image.LANCZOS).save(OUT / 'cards' / f'{nm}.webp', quality=78)
     print('иллюстраций', len(names))
+    sfx()
+
+
+def sfx():
+    import shutil
+    (OUT / 'sfx').mkdir(parents=True, exist_ok=True)
+    fs = sorted((SRC / '28-sfx' / 'ogg').glob('*.ogg'))
+    for f in fs:
+        shutil.copyfile(f, OUT / 'sfx' / f.name)
+    print('звуков', len(fs))
 
 
 VOICE = pathlib.Path('G:/temp/kommersy2-voice')
@@ -153,4 +163,4 @@ def keys():
 
 if __name__ == '__main__':
     arg = sys.argv[1:]
-    roads() if 'roads' in arg else voice() if 'voice' in arg else keys() if 'keys' in arg else main()
+    roads() if 'roads' in arg else voice() if 'voice' in arg else keys() if 'keys' in arg else sfx() if 'sfx' in arg else main()

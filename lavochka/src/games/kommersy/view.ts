@@ -16,7 +16,7 @@ import { CRASH_FROM, IT_FROM, TIER_ID2, m2 } from './s2data';
 import { encodeLegacy, legacyFromView } from './legacy';
 import { offerS2, saveLegacy } from './paid';
 import { Music, eraMusic } from './music';
-import { sfx } from './sfx';
+import { sfx, type Sfx } from './sfx';
 import { say, voiceKey } from './voice';
 import roadsJson from './roads.json';
 import './kommersy.css';
@@ -25,6 +25,8 @@ const A = '/kommersy/a';
 const ICON: Record<Cell, string> = { deal: '💼', routine: '🧾', study: '📚', rest: '🌿', news: '📰', event: '❗', naezd: '🚘', check: '🔍', period: '☀', transfer: '🔁', locker: '👟', match: '⚽', hype: '🚀' };
 /** Звук клетки второго сезона — пока из первого (свои звуки — этап 6). */
 const CELL_SFX: Partial<Record<Cell, Cell>> = { transfer: 'deal', locker: 'event', match: 'event', hype: 'news' };
+/** Клетки второго сезона — свои звуки (studio/jobs/kommersy2/28-sfx.yaml). */
+const CELL_SFX2: Partial<Record<Cell, Sfx>> = { transfer: 's2-transfer', locker: 's2-locker', match: 's2-tribuna', hype: 's2-notify' };
 
 /** Дорога — те же кривые, по которым нарисован асфальт на панорамах (roads.json, общий с studio/post/road_templates.py). */
 const ROADS: number[][] = roadsJson.roads;
@@ -259,7 +261,7 @@ class KommersyView implements GameView<View, Event> {
   setView(v: View) {
     const fresh = !this.v && v.phase === 'roll' && v.players.every((p) => p.pos === 0 && !p.assets.length);
     this.v = v;
-    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say('start', true), 800);
+    if (fresh && v.players.some((p) => p.hero === 'kolyan')) setTimeout(() => !this.dead && say(v.season === 2 ? 's2_start' : 'start', true), 800);
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
     if (v.roll) this.tray.show([v.roll]);
     // остаток хода с прошлого отрезка: в лотке — сколько досходить
@@ -533,7 +535,8 @@ class KommersyView implements GameView<View, Event> {
             await sleep(160 / speed);
           }
           Sound.place();
-          if (ev.cell !== 'period') sfx(`cell-${CELL_SFX[ev.cell] ?? ev.cell}` as `cell-${'deal' | 'routine' | 'study' | 'rest' | 'news' | 'event' | 'naezd' | 'check'}`, 0.8);
+          if (ev.cell in CELL_SFX2) sfx(CELL_SFX2[ev.cell]!, 0.8);
+          else if (ev.cell !== 'period') sfx(`cell-${CELL_SFX[ev.cell] ?? ev.cell}` as `cell-${'deal' | 'routine' | 'study' | 'rest' | 'news' | 'event' | 'naezd' | 'check'}`, 0.8);
           break;
         }
         case 'pick':
@@ -555,7 +558,7 @@ class KommersyView implements GameView<View, Event> {
           risk = null;
           break;
         case 'hist':
-          sfx('hist', 0.8);
+          sfx(ev.id === 'lehman' || ev.id === 'crash-club' ? 's2-crash' : ev.id === 'crash-dolgi' ? 's2-hammer' : 'hist', 0.8);
           await this.showBanner(`${art(`h-${ev.id}`)}<small>${season(v.season).dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
         case 'fall':
@@ -567,16 +570,27 @@ class KommersyView implements GameView<View, Event> {
           await this.showBanner(ev.name ? `<b>${esc(ev.name)}</b><p>${this.ctx.name(ev.seat)} покупает контрольный пакет!</p>` : `<b>«${CLUB}»</b><p>${this.ctx.name(ev.seat)} покупает лондонский клуб!</p>`, 'club', 3200);
           break;
         case 'match':
-          sfx(ev.win ? 'club' : 'cell-event', 0.7);
+          sfx('s2-whistle', 0.6);
+          setTimeout(() => sfx(ev.win ? 's2-goal' : 's2-groan', 0.7), 500);
+          if (ev.seat === mine) say(ev.win ? 'kom_win' : Math.random() < 0.2 ? 'kom_draw' : 'kom_lose', true);
           await this.showBanner(`<small>${esc(ev.title)}</small><b>${ev.win ? 'Победа' : 'Поражение'} · ${esc(ev.score)}</b>`, ev.win ? 'club' : 'fall', 1800);
           break;
         case 'tour':
+          if (ev.final && ev.trophies?.length) {
+            sfx('s2-goal');
+            if (ev.seat === mine) say('kom_title', true);
+          }
           if (ev.final) await this.showBanner(`<small>Итоги сезона</small><b>${ev.place}-е место</b>${ev.trophies?.length ? `<p>🏆 ${ev.trophies.map(esc).join(', ')}</p>` : ''}`, 'hist', 2200);
           break;
         case 'venture':
+          if (ev.seat === mine) sfx(!ev.ok ? 'dark' : ev.stage >= 4 ? 's2-launch' : 's2-notify', 0.8);
           if (ev.seat === mine && (ev.stage >= 4 || !ev.ok)) await this.showBanner(ev.ok ? `<b>Выход стартапа</b><p>«${esc(ev.name)}»: ${money(ev.sum ?? 0)}</p>` : `<b>Стартап закрылся</b><p>«${esc(ev.name)}» — деньги сгорели.</p>`, ev.ok ? 'club' : 'fall', 1600);
           break;
+        case 'btc':
+          if (ev.seat === mine) sfx('s2-crypto', 0.8);
+          break;
         case 'health':
+          sfx('s2-heart', 0.7);
           await this.showBanner(`<small>Декабрь 2021-го · проверка здоровья</small><b>${ev.ok ? 'Выкарабкался' : 'Не выкарабкался'}</b><p>${this.ctx.name(ev.seat)}: здоровье ${ev.health}</p>`, ev.ok ? 'club' : 'fall', 2600);
           break;
         case 'buy':
