@@ -2,10 +2,11 @@
  * параметры Коляна, силы среды, исторические даты, падения («Падал, но поднимался») и покупка клуба. */
 import type { Rng } from '../../core/types';
 import {
-  CARDS, CELL_WEIGHTS, CLUB_NEED, CLUB_PRICE, DEALS, HEROES, HISTORY, KRYSHA_NAME, LAST, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, STAT_RANGE, BASE,
-  dealById, eraOf, inCrisis, nicheMul, segMonths, tierOf,
-  type CardT, type Cell, type Choice, type DealT, type Ending, type Fx, type Kind, type Krysha, type Skill, type Stat,
+  CLUB_NEED, CLUB_PRICE, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, STAT_RANGE,
+  nicheMul,
+  type CardT, type Cell, type Choice, type DealT, type Ending, type Fx, type HistT, type Kind, type Krysha, type Skill, type Stat,
 } from './data';
+import { S1, season, type Season } from './season';
 
 export interface Asset {
   uid: number;
@@ -130,6 +131,8 @@ export interface Opts {
   start: number;
   chance: number;
   buh: boolean;
+  /** Сезон: 1 — 1988–2003, 2 — 2004–2021 (в старых сохранениях поля нет — первый). */
+  season?: number;
 }
 
 export interface State {
@@ -178,7 +181,7 @@ export type Event =
   /** Остаток хода с прошлого отрезка. */
   | { t: 'carry'; seat: number; d: number }
   | { t: 'sell'; seat: number; name: string; sum: number }
-  | { t: 'period'; m: number; len: number }
+  | { t: 'period'; m: number; len: number; season?: number }
   | { t: 'hist'; id: string; title: string; text: string }
   | { t: 'fall'; seat: number; kind: Fall['kind'] }
   | { t: 'out'; seat: number; kind: 'jail' | 'hosp' | 'away'; months: number }
@@ -203,10 +206,12 @@ export function money(v: number): string {
 
 export const debt = (p: Player) => p.loans.reduce((s, l) => s + l.left, 0);
 export const worth = (p: Player) => p.cash + p.assets.reduce((s, a) => s + a.value, 0) - debt(p);
-export const tier = (p: Player) => tierOf(worth(p));
+/** Сезон партии: календарь, сделки, карточки, история (season.ts). */
+export const Z = (s: { opts: { season?: number } }): Season => season(s.opts.season);
+export const tier = (s: State, p: Player) => Z(s).tierOf(worth(p));
 /** Единица трат карточек: траты растут вместе с доходом («начинаешь шиковать»). */
 const unitOf = (s: State, p: Player) => Math.max(30, 0.7 * income(s, p));
-const rateOf = (m: number) => ({ soviet: 0.03, wild: 0.08, late: 0.05, new: 0.025 })[eraOf(m)];
+const rateOf = (s: State, m: number) => Z(s).loanRate[Z(s).eraOf(m)];
 
 export function hoursAvail(p: Player) {
   const family = p.dreams.includes('svadba') ? 15 : 0;
@@ -220,7 +225,7 @@ export const hoursFree = (p: Player) => hoursAvail(p) - hoursUsed(p);
 /** Доход дела в месяц m сейчас. */
 export function assetIncome(s: State, p: Player, a: Asset, m = s.m) {
   if (a.kind === 'paper') return 0;
-  const d = dealById(a.id);
+  const d = Z(s).deal(a.id);
   let v = a.income * a.mul * p.incomeBoost * (d ? nicheMul(d, m) : 1);
   if (m < s.crisisUntil) v *= Math.max(0.1, 1 - (1 - s.crisisMul) * Math.min(1, (d?.crisis ?? 0.5) * 2));
   if (!a.manager && p.over) v *= 0.8;
@@ -244,7 +249,7 @@ export function expenses(s: State, p: Player) {
 }
 
 /** Сменить крышу самому: менты — при связях, своя охрана — с уровня «Центр»; братву не выбирают — она приходит сама. */
-export const kryshaOk = (s: State, p: Player, to: Krysha) => to === 'none' || (to === 'police' && p.stats.svyazi >= 30) || (to === 'own' && tier(p) >= 3);
+export const kryshaOk = (s: State, p: Player, to: Krysha) => to === 'none' || (to === 'police' && p.stats.svyazi >= 30) || (to === 'own' && tier(s, p) >= 3);
 export const kryshaCost = (s: State, p: Player, to: Krysha) => (to === 'police' ? 1 : to === 'own' ? 3 : 0) * unitOf(s, p);
 
 /** Условия покупки клуба: что выполнено. */
@@ -263,10 +268,11 @@ export const clubReady = (s: State, p: Player) => clubCheck(s, p).every((c) => c
 
 // ---------------------------------------------------------------- начало партии
 export function newState(seats: number[], opts: Partial<Opts> = {}, heroes: string[] = [], rng?: Rng): State {
-  const o: Opts = { diff: opts.diff ?? 1, start: opts.start ?? 0, chance: opts.chance ?? 0, buh: opts.buh ?? false };
+  const o: Opts = { diff: opts.diff ?? 1, start: opts.start ?? 0, chance: opts.chance ?? 0, buh: opts.buh ?? false, season: opts.season ?? 1 };
+  const z = season(o.season);
   const players = seats.map((seat, i): Player => {
-    const h = HEROES.find((x) => x.id === heroes[i]) ?? HEROES[i % HEROES.length];
-    const stats = { ...BASE } as Record<Stat, number>;
+    const h = z.heroes.find((x) => x.id === heroes[i]) ?? z.heroes[i % z.heroes.length];
+    const stats = { ...z.base } as Record<Stat, number>;
     for (const [k, v] of Object.entries(h.stats)) stats[k as Stat] = v!;
     const skills: Record<Skill, number> = { trade: 0, schet: 0, bazar: 0, sila: 0, english: 0, poryadok: 0 };
     for (const [k, v] of Object.entries(h.skills)) skills[k as Skill] = v!;
@@ -282,21 +288,21 @@ export function newState(seats: number[], opts: Partial<Opts> = {}, heroes: stri
       seat, hero: h.id, cash: startCash * (1 + c), assets: [], loans: [],
       job: o.start >= 40 ? null : { name: 'грузчик на овощебазе', salary: 55, hours: 120 },
       stats, skills, krysha: 'none', enemies: 0, out: 0, outKind: null,
-      prep: c > 0 ? HISTORY.filter((x) => x.loss).slice(0, c * 2).map((x) => x.id) : [],
+      prep: c > 0 ? z.history.filter((x) => x.loss).slice(0, c * 2).map((x) => x.id) : [],
       hoursBonus: 0, upkeep: 0, study: 0, dreams: [], insurance: false, advisor: false, incomeBoost: 1, over: false, falls: [], club: false, pos: 0, ending: null,
     };
   });
   const s: State = {
-    opts: o, players, m: o.start, len: segMonths(o.start), cells: [], turn: 0, first: 0, phase: 'roll', roll: null, target: null, ask: null,
-    crisisMul: 1, crisisUntil: 0, fired: HISTORY.filter((x) => x.m < o.start).map((x) => x.id), uid: 1,
+    opts: o, players, m: o.start, len: z.segMonths(o.start), cells: [], turn: 0, first: 0, phase: 'roll', roll: null, target: null, ask: null,
+    crisisMul: 1, crisisUntil: 0, fired: z.history.filter((x) => x.m < o.start).map((x) => x.id), uid: 1,
   };
-  s.cells = makeCells(s.m, rng);
+  s.cells = makeCells(s.m, rng, Z(s));
   return s;
 }
 
 /** Отрезок дороги: шесть клеток по долям эпохи и «Новый квартал». Без rng (показ) — ровный порядок. */
-export function makeCells(m: number, rng?: Rng): Cell[] {
-  const w = CELL_WEIGHTS[eraOf(m)];
+export function makeCells(m: number, rng?: Rng, z: Season = S1): Cell[] {
+  const w = z.cellWeights[z.eraOf(m)];
   const bag: Cell[] = [];
   for (const [c, n] of Object.entries(w)) for (let i = 0; i < n!; i++) bag.push(c as Cell);
   const out: Cell[] = [];
@@ -325,8 +331,8 @@ function pickAsset(p: Player, rng: Rng, pred: (a: Asset) => boolean = (a) => a.k
 
 /** Во что может вырасти дело сейчас: следующая ступень уже появилась и ещё жива, второй такой нет. */
 export function growNext(s: State, p: Player, a: Asset): DealT | undefined {
-  const d = dealById(a.id);
-  const n = d?.next ? dealById(d.next) : undefined;
+  const d = Z(s).deal(a.id);
+  const n = d?.next ? Z(s).deal(d.next) : undefined;
   return n && !hasBiz(p, n) && s.m >= n.from && s.m <= n.peak + 24 && (!n.dies || s.m < n.dies) ? n : undefined;
 }
 /** Доплата за расширение: доля разницы цен (своё дело идёт в зачёт). Сам — 80 %, карточка «Расширяться?» — удачный случай, 60 %. */
@@ -432,14 +438,14 @@ function fall(s: State, p: Player, kind: Fall['kind'], ev: Event[]) {
 const hasBiz = (p: Player, d: DealT) => d.kind === 'biz' && p.assets.some((a) => a.id === d.id);
 
 /** Дело — ступень ниже того, что уже есть (купил видеопрокат или кабельное — видеосалон не нужен): не предлагаем. */
-function below(p: Player, d: DealT) {
-  for (let n = d.next; n; n = dealById(n)?.next) if (p.assets.some((a) => a.id === n && a.kind === 'biz')) return true;
+function below(s: State, p: Player, d: DealT) {
+  for (let n = d.next; n; n = Z(s).deal(n)?.next) if (p.assets.some((a) => a.id === n && a.kind === 'biz')) return true;
   return false;
 }
 export function availableDeals(s: State, p: Player) {
-  const alive = DEALS.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d) && !p.grown?.includes(d.id) && !below(p, d));
+  const alive = Z(s).deals.filter((d) => s.m >= d.from && s.m <= d.peak + 24 && (!d.dies || s.m < d.dies) && !hasBiz(p, d) && !p.grown?.includes(d.id) && !below(s, p, d));
   // капитал обогнал время (100 млн в 1998-м, а дел для «Лондона» ещё нет) — предлагаем самые крупные из живых
-  const t = Math.min(tier(p), Math.max(...alive.map((d) => d.tier)));
+  const t = Math.min(tier(s, p), Math.max(...alive.map((d) => d.tier)));
   return alive.filter((d) => d.tier >= t - 1 && d.tier <= t + 1);
 }
 
@@ -447,7 +453,7 @@ export function availableDeals(s: State, p: Player) {
 function dealAsk(s: State, p: Player, rng: Rng): Ask | null {
   const list = availableDeals(s, p);
   if (!list.length) return null;
-  const t = tier(p);
+  const t = tier(s, p);
   const purse = Math.max(0, p.cash) + loanLimit(p);
   const fit = list.filter((d) => d.price <= purse * 1.2);
   const deals: Offer[] = [];
@@ -473,7 +479,7 @@ function dealAsk(s: State, p: Player, rng: Rng): Ask | null {
 
 /** Можно ли взять предложение и как: сам, если часы позволяют и остаётся запас, иначе — управляющий; не хватает денег — кредит. */
 function offerChoice(s: State, p: Player, o: Offer, di: number, fee = 0): AskChoice {
-  const d = dealById(o.id)!;
+  const d = Z(s).deal(o.id)!;
   const bad = needFail(s, p, d);
   const free = hoursFree(p);
   const mgrH = Math.ceil(o.hours * 0.15);
@@ -503,7 +509,7 @@ const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)
 
 /** Карточка не выпадает, если её главное предложение (первый выбор) уже есть или его нечем принять. */
 export function cardOk(s: State, p: Player, c: CardT) {
-  const t = tier(p);
+  const t = tier(s, p);
   const main = c.choices[0];
   const n = c.need;
   if (n?.krysha && !n.krysha.includes(p.krysha)) return false;
@@ -529,11 +535,11 @@ function choiceWhy(s: State, p: Player, ch: Choice): string | undefined {
 
 function cardAsk(s: State, p: Player, cell: Cell, rng: Rng): Ask {
   // карточка, где ни один выбор не доступен, ничего не меняет («Крыша просит» без крыши) — её не тянем
-  const list = CARDS.filter((c) => c.cell === cell && cardOk(s, p, c) && c.choices.some((ch) => !choiceWhy(s, p, ch)));
+  const list = Z(s).cards.filter((c) => c.cell === cell && cardOk(s, p, c) && c.choices.some((ch) => !choiceWhy(s, p, ch)));
   const bag: CardT[] = [];
   for (const c of list) {
     // собрался в Лондон (с «Центра») — английский и советник попадаются вдвое чаще
-    const london = tier(p) >= 3 && c.choices.some((x) => x.fx.skills?.english || x.fx.advisor || x.fx.fixer);
+    const london = tier(s, p) >= 3 && c.choices.some((x) => x.fx.skills?.english || x.fx.advisor || x.fx.fixer);
     const w = c.id === 'k-pokushenie' ? Math.min(4, p.enemies) : c.choices.some((x) => x.need?.asset || x.need?.growable) && !p.assets.length ? 0 : london ? 4 : 2;
     for (let i = 0; i < w; i++) bag.push(c);
   }
@@ -570,7 +576,7 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
     out.push(`расширить «${grow.name}» до «${n.name}», доплата ${money(growCost(n, grow, GROW_PAY_CARD))}`);
   } else if (fx.asset) out.push(ASSET_HINT[fx.asset]);
   if (fx.incomeBoost) out.push(`доход дел ${signed(Math.round((fx.incomeBoost - 1) * 100))} %`);
-  if (fx.close) out.push(`закрыть «${dealById(fx.close)?.name ?? fx.close}»`);
+  if (fx.close) out.push(`закрыть «${Z(s).deal(fx.close)?.name ?? fx.close}»`);
   for (const [k, v] of Object.entries(fx.stats ?? {}) as [Stat, number][]) {
     if (!v) continue;
     if (k === 'heat') out.push(`органы ${arrow(v)}`);
@@ -854,7 +860,7 @@ function rival(s: State, p: Player, q: Player, k: Rival, rng: Rng, ev: Event[]) 
     p.incomeBoost = Math.min(2, p.incomeBoost * 1.03);
   } else if (k === 'naezd') {
     // без крыши соперник почти беззащитен; братва слабеет к двухтысячному
-    ok = rng.next() < (q.krysha === 'none' ? 0.8 : 0.35) * (s.m > 147 ? 0.6 : 1) + 0.04 * p.skills.sila;
+    ok = rng.next() < (q.krysha === 'none' ? 0.8 : 0.35) * (s.m > Z(s).banditWeak ? 0.6 : 1) + 0.04 * p.skills.sila;
     p.enemies++;
     if (ok) {
       const big = [...q.assets].filter((a) => a.kind === 'biz').sort((x, y) => y.income - x.income)[0];
@@ -869,7 +875,7 @@ function rival(s: State, p: Player, q: Player, k: Rival, rng: Rng, ev: Event[]) 
     }
     addStat(p, 'sovest', -8);
   } else {
-    addStat(q, 'heat', 15 + (q.assets.some((a) => dealById(a.id)?.heat) ? 10 : 0));
+    addStat(q, 'heat', 15 + (q.assets.some((a) => Z(s).deal(a.id)?.heat) ? 10 : 0));
     addStat(p, 'sovest', -10);
     addStat(p, 'name', -3);
     // стукача вычисляют
@@ -937,7 +943,7 @@ function audit(s: State, p: Player, b: Books, ev: Event[]) {
 
 function buy(s: State, p: Player, o: Offer, ev: Event[]) {
   if (o.loan > 0) {
-    const rate = rateOf(s.m);
+    const rate = rateOf(s, s.m);
     p.loans.push({ left: o.loan, rate, pay: o.loan * (rate + 1 / 12) });
     p.cash += o.loan;
   }
@@ -1006,15 +1012,15 @@ function period(s: State, ev: Event[], rng: Rng) {
     for (const p of s.players) month(s, p, m);
   }
   s.m = from + s.len;
-  ev.push({ t: 'period', m: s.m, len: s.len });
-  for (const h of HISTORY) if (h.m > from && h.m <= s.m && !s.fired.includes(h.id)) history(s, h, ev);
+  ev.push({ t: 'period', m: s.m, len: s.len, ...(Z(s).id !== 1 ? { season: Z(s).id } : {}) });
+  for (const h of Z(s).history) if (h.m > from && h.m <= s.m && !s.fired.includes(h.id)) history(s, h, ev);
   for (const p of s.players) afterPeriod(s, p, ev, rng);
-  if (s.m > LAST) {
+  if (s.m > Z(s).last) {
     finish(s, ev);
     return;
   }
-  s.len = segMonths(s.m);
-  s.cells = makeCells(s.m, rng);
+  s.len = Z(s).segMonths(s.m);
+  s.cells = makeCells(s.m, rng, Z(s));
   for (const p of s.players) {
     p.pos = p.out > 0 ? SEG_CELLS + 1 : 0;
     if (p.out > 0) p.carry = 0;
@@ -1028,11 +1034,11 @@ function month(s: State, p: Player, m: number) {
   const inc = (p.job?.salary ?? 0) + p.assets.reduce((t, a) => t + assetIncome(s, p, a, m), 0);
   p.cash += inc - expenses(s, p);
   // вклад до востребования: свободные деньги в банке работают (до дефолта)
-  if (p.cash > 0) p.cash *= 1 + ({ soviet: 0.003, wild: 0.01, late: 0.012, new: 0.006 } as const)[eraOf(m)];
+  if (p.cash > 0) p.cash *= 1 + Z(s).deposit[Z(s).eraOf(m)];
   for (const l of p.loans) l.left = l.left * (1 + l.rate) - l.pay;
   p.loans = p.loans.filter((l) => l.left > 1);
   for (const a of p.assets) {
-    const d = dealById(a.id);
+    const d = Z(s).deal(a.id);
     if (a.kind === 'paper' && d?.grow) a.value *= 1 + d.grow;
     // за решёткой тёмное дело органы на него не вешают
     if (d?.heat && p.outKind !== 'jail') addStat(p, 'heat', d.heat / 3);
@@ -1047,7 +1053,7 @@ function month(s: State, p: Player, m: number) {
   }
 }
 
-function history(s: State, h: (typeof HISTORY)[number], ev: Event[]) {
+function history(s: State, h: HistT, ev: Event[]) {
   s.fired.push(h.id);
   ev.push({ t: 'hist', id: h.id, title: h.title, text: h.text });
   if (h.crisis) {
@@ -1067,7 +1073,7 @@ function history(s: State, h: (typeof HISTORY)[number], ev: Event[]) {
   // обвалы бумаг: МММ и ГКО сгорают, ваучеры обращаются в деньги
   for (const p of s.players) {
     for (const a of p.assets) {
-      const d = dealById(a.id);
+      const d = Z(s).deal(a.id);
       if (d?.dies && d.dies <= s.m) {
         if (d.id === 'vauchery') p.cash += a.value;
         a.value = 0;
@@ -1087,7 +1093,7 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
   }
   p.study = 0;
   // кто на виду — обрастает связями
-  const t = tier(p);
+  const t = tier(s, p);
   if (t >= 3 && s.m % 6 < s.len) addStat(p, 'svyazi', t >= 5 ? 2 : 1);
   // связи забываются: раз в квартал уходит часть — чем их больше, тем быстрее; их надо поддерживать (баня, охота, Москва)
   if (p.stats.svyazi > 30 && s.m % 3 < s.len) addStat(p, 'svyazi', -(1 + Math.floor((p.stats.svyazi - 30) / 30)));
@@ -1097,7 +1103,7 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
   if (p.stats.stress > 70) addStat(p, 'health', -3);
   if (p.stats.heat > 0) addStat(p, 'heat', p.krysha === 'police' || p.krysha === 'own' ? -5 : -3);
   // после двухтысячного бандитская крыша — обуза
-  if (p.krysha === 'bandit' && s.m > 147) addStat(p, 'heat', 3);
+  if (p.krysha === 'bandit' && s.m > Z(s).banditWeak) addStat(p, 'heat', 3);
   // запой: настроение на дне — квартал вылетает
   if (p.stats.mood <= -30 && p.out === 0) {
     setOut(s, p, 'hosp', 1, ev);
@@ -1120,7 +1126,7 @@ function afterPeriod(s: State, p: Player, ev: Event[], rng: Rng) {
     const lim = loanLimit(p);
     if (p.stats.name >= 10 && lim >= -p.cash) {
       const need = -p.cash;
-      const rate = rateOf(s.m);
+      const rate = rateOf(s, s.m);
       p.loans.push({ left: need, rate, pay: need * (rate + 1 / 12) });
       p.cash = 0;
     } else {
@@ -1222,6 +1228,8 @@ export interface View {
   ask: Ask | null;
   players: PlayerView[];
   my: MyView | null;
+  /** Номер сезона: данные — season(v.season). */
+  season: number;
   crisis: boolean;
   diff: number;
   buh: boolean;
@@ -1255,10 +1263,10 @@ export function view(s: State, seats: number[] | 'all'): View {
       delete stats.sovest;
     }
     return {
-      seat: p.seat, hero: p.hero, cash: round(p.cash), worth: round(marketWorth(s, p)), tier: tier(p), pos: p.pos, out: p.out, outKind: p.outKind, krysha: p.krysha,
+      seat: p.seat, hero: p.hero, cash: round(p.cash), worth: round(marketWorth(s, p)), tier: tier(s, p), pos: p.pos, out: p.out, outKind: p.outKind, krysha: p.krysha,
       stats, skills: { ...p.skills }, assets: p.assets.map((a): AssetView => {
         const n = growNext(s, p, a);
-        const d = dealById(a.id);
+        const d = Z(s).deal(a.id);
         return { ...clone(a), now: round(assetIncome(s, p, a)), niche: d && a.kind !== 'paper' ? Math.round(nicheMul(d, s.m) * 100) / 100 : 1, grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
       }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
     };
@@ -1277,7 +1285,7 @@ export function view(s: State, seats: number[] | 'all'): View {
     : null;
   return {
     me, m: s.m, len: s.len, cells: [...s.cells], turn: s.players[s.turn].seat, phase: s.phase, roll: s.roll, target: s.target, ask: askFor(s.ask, seats), players, my,
-    crisis: inCrisis(s.m) || s.m < s.crisisUntil, diff: s.opts.diff, buh: s.opts.buh, fired: [...s.fired],
+    season: Z(s).id, crisis: Z(s).inCrisis(s.m) || s.m < s.crisisUntil, diff: s.opts.diff, buh: s.opts.buh, fired: [...s.fired],
     books: clone((s.books ?? []).filter((b) => seats === 'all' || seats.includes(b.seat))),
     booksWait: (s.books ?? []).filter((b) => b.ans == null).map((b) => b.seat),
   };

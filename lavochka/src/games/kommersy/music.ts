@@ -2,7 +2,7 @@
  * Эпоха — по году пути: синти-поп 88-го, евро-диско 90-го, евродэнс, эстрада, поп-рок, нулевые; клуб куплен — «Лондонский туман».
  * Плавная смена, внутри эпохи — по кругу в случайном порядке; выключатель запоминается. */
 import { store } from '../../core/settings';
-import { yearOf } from './data';
+import { season } from './season';
 import type { View } from './engine';
 
 const DIR = '/kommersy/a/music/';
@@ -24,7 +24,7 @@ const TRACKS = Object.fromEntries(Object.entries(SONGS).map(([e, l]) => [e, l.fl
 
 export function eraMusic(v: View): Era {
   if (v.players.some((p) => p.club)) return 'london';
-  const y = yearOf(v.m);
+  const y = season(v.season).yearOf(v.m);
   return y >= 2001 ? 'y02' : y >= 1998 ? 'y99' : y >= 1995 ? 'y96' : y >= 1992 ? 'y93' : y >= 1990 ? 'y90' : 'y88';
 }
 

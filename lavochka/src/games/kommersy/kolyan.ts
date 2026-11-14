@@ -1,19 +1,17 @@
 // Колян в панели: ролики-реакции Wan 2.2 по облику года (studio/jobs/kommersy/09-kolyan-reactions.yaml → tools/videogen/pack_kolyan.mjs).
 // Фон в роликах уже запечён цветом подложки портретов — вырезать на лету ничего не нужно.
-import { yearOf } from './data';
 
 const A = '/kommersy/a';
 
 export type Reaction = 'idle' | 'think' | 'deal' | 'win' | 'lose';
 const LOOP: Reaction[] = ['idle', 'think'];
 
-/** Облик Коляна по месяцу игры (0 — май 1988). */
-export function kolyanLook(m: number): number {
-  const y = yearOf(m);
+/** Облик Коляна по году. */
+export function kolyanLook(y: number): number {
   return y >= 2001 ? 2003 : y >= 1996 ? 1996 : y >= 1993 ? 1993 : y >= 1990 ? 1990 : 1988;
 }
 
-export const kolyanImg = (m: number) => `${A}/people/kolyan-${kolyanLook(m)}.webp`;
+export const kolyanImg = (y: number) => `${A}/people/kolyan-${kolyanLook(y)}.webp`;
 
 export class KolyanCam {
   readonly el: HTMLElement;
@@ -35,16 +33,17 @@ export class KolyanCam {
   }
 
   /** Показать или спрятать; при смене облика — сразу новый. */
-  set(m: number | null) {
-    this.el.hidden = m === null;
-    if (m === null) {
+  /** Год партии (облик) или null — панель скрыта. */
+  set(y: number | null) {
+    this.el.hidden = y === null;
+    if (y === null) {
       this.video.pause();
       return;
     }
-    const look = kolyanLook(m);
+    const look = kolyanLook(y);
     if (look === this.look) return;
     this.look = look;
-    this.video.poster = kolyanImg(m);
+    this.video.poster = kolyanImg(y);
     this.play(this.cur === 'think' ? 'think' : 'idle');
   }
 

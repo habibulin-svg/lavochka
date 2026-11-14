@@ -484,6 +484,6 @@ describe('Коммерсы: защита от чужих данных', () => {
   });
   it('настройки из комнаты приводятся к допустимым', () => {
     const s = def.setup([{ seat: 0, kind: 'human', name: 'a' }, { seat: 1, kind: 'human', name: 'b' }] as never, { start: 'abc', chance: -5, diff: 9 }, new SeededRng(1));
-    expect(s.opts).toEqual({ diff: 2, start: 0, chance: 0, buh: false });
+    expect(s.opts).toEqual({ diff: 2, start: 0, chance: 0, buh: false, season: 1 });
   });
 });

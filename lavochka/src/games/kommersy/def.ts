@@ -3,7 +3,8 @@
 import type { DemoScript, GameDef, GameResult, Rng, SeatSpec } from '../../core/types';
 import { SEATS as HSEATS } from '../hodilki/core';
 import { choose } from './bot';
-import { CELL_NAME, CLUB, CLUB_PRICE, ENDINGS, HEROES, TIERS, dateText, mm, type Cell } from './data';
+import { CELL_NAME, CLUB, CLUB_PRICE, ENDINGS, HEROES, TIERS, mm, type Cell } from './data';
+import { season } from './season';
 import { apply, marketWorth, money, newState, toAct, view, type Action, type Event, type State, type View } from './engine';
 
 const COLOR: Record<string, string> = { kolyan: '#5a5a5a', seryoga: '#2a9a3a', vovka: '#d8241c', lenka: '#2060d0', svetka: '#e85a9a', dimon: '#8a3ac8', tanka: '#e8b020', zheka: '#1a9a9a', mihalych: '#6a4a2a' };
@@ -253,7 +254,7 @@ export function describe(ev: Event, name: (seat: number) => string): string | nu
     case 'sell':
       return `💵 ${name(ev.seat)} продаёт «${ev.name}» за ${money(ev.sum)}`;
     case 'period':
-      return `📅 <b>${dateText(ev.m)}</b>`;
+      return `📅 <b>${season(ev.season).dateText(ev.m)}</b>`;
     case 'hist':
       return `📰 <b>${ev.title}.</b> <i>${ev.text}</i>`;
     case 'fall':

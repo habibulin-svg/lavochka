@@ -6,11 +6,12 @@ import { DiceTray } from '../../core/dice';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import {
-  CELL_COLOR, CELL_NAME, CLUB, ERA_NAME, HEROES, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME, TIERS, TIER_ID,
-  dateText, dealById, eraOf, type Cell, type Krysha, type Skill, type Stat,
+  CELL_COLOR, CELL_NAME, CLUB, KRYSHA_NAME, SEG_CELLS, SKILL_MAX, SKILL_NAME, STAT_NAME,
+  type Cell, type Krysha, type Skill, type Stat,
 } from './data';
 import { RIVAL_DARK, RIVAL_NAME, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
+import { S1, season, type Season } from './season';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
 import { say, voiceKey } from './voice';
@@ -81,9 +82,9 @@ function roadGeo(r: number): RoadGeo {
 }
 
 /** Панорама: местность по уровню, вариант по эпохе (где у местности его нет — ближайший), часть — по отрезку. */
-function pano(tier: number, m: number) {
-  const place = TIER_ID[tier];
-  const era = eraOf(m);
+function pano(z: Season, tier: number, m: number) {
+  const place = z.tierId[tier];
+  const era = z.eraOf(m);
   const have: Record<string, string[]> = { dvor: ['soviet', 'wild'], kiosk: ['soviet', 'wild'], bazar: ['wild', 'new'], center: ['wild', 'new'], oblast: ['wild', 'new'], moscow: ['new'], london: ['new'] };
   const want = era === 'soviet' ? 'soviet' : era === 'new' ? 'new' : 'wild';
   const list = have[place];
@@ -255,14 +256,14 @@ class KommersyView implements GameView<View, Event> {
 
   saveTitle(v: View) {
     const p = v.players.find((x) => x.seat === (v.me ?? this.me())) ?? v.players[0];
-    return `${dateText(v.m)} · ${TIERS[p.tier]} · ${money(p.worth)}`;
+    return `${season(v.season).dateText(v.m)} · ${season(v.season).tiers[p.tier]} · ${money(p.worth)}`;
   }
 
   playerStats(v: View, seat: number) {
     const p = v.players.find((x) => x.seat === seat);
     if (!p) return '';
     const out = p.outKind ? ` · ${p.outKind === 'jail' ? 'в тюрьме' : p.outKind === 'hosp' ? 'в больнице' : 'уехал'}` : '';
-    return `${money(p.worth)} · ${TIERS[p.tier]}${out}`;
+    return `${money(p.worth)} · ${season(v.season).tiers[p.tier]}${out}`;
   }
 
   // ---------------------------------------------------------------- отрисовка
@@ -276,12 +277,13 @@ class KommersyView implements GameView<View, Event> {
     const v = this.v;
     if (!v) return;
     const me = this.myPlayer();
-    const pn = pano(me.tier, v.m);
+    const z = season(v.season);
+    const pn = pano(z, me.tier, v.m);
     this.road = pn.road;
     this.setBg(pn.src);
-    this.dateEl.innerHTML = `<b>${dateText(v.m)}</b> · ${ERA_NAME[eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${TIERS[me.tier]}</span>`;
+    this.dateEl.innerHTML = `<b>${z.dateText(v.m)}</b> · ${z.eraName[z.eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${z.tiers[me.tier]}</span>`;
     this.drawRoad();
-    this.kolyan.set(me.hero === 'kolyan' ? v.m : null);
+    this.kolyan.set(me.hero === 'kolyan' ? z.yearOf(v.m) : null);
     const thinking = v.phase === 'choose' && v.ask?.seat === me.seat;
     if (thinking) this.kolyan.play('think');
     else if (this.kolyan.now === 'think') this.kolyan.play('idle');
@@ -338,8 +340,8 @@ class KommersyView implements GameView<View, Event> {
     this.tokensEl.innerHTML = v.players
       .map((p) => {
         const { x, y } = this.tokenXY(p.seat);
-        const hero = HEROES.find((hh) => hh.id === p.hero);
-        const img = p.hero === 'kolyan' ? `<img src="${kolyanImg(v.m)}" alt="">` : `<span>${esc(hero?.name[0] ?? '?')}</span>`;
+        const hero = season(v.season).heroes.find((hh) => hh.id === p.hero);
+        const img = p.hero === 'kolyan' ? `<img src="${kolyanImg(season(v.season).yearOf(v.m))}" alt="">` : `<span>${esc(hero?.name[0] ?? '?')}</span>`;
         const on = (v.ask ? v.ask.seat : v.turn) === p.seat ? ' on' : '';
         const out = p.out > 0 ? ' out' : '';
         return `<div class="km-token${on}${out}" data-seat="${p.seat}" style="left:${x}%;top:${y}%;--c:${this.seatColor(p.seat)}">${img}</div>`;
@@ -372,7 +374,7 @@ class KommersyView implements GameView<View, Event> {
     }
     const mine = this.interactive.includes(ask.seat);
     this.cardEl.hidden = false;
-    this.cardEl.innerHTML = cardHtml(ask, mine, this.ctx.name(ask.seat), this.v!.m);
+    this.cardEl.innerHTML = cardHtml(ask, mine, this.ctx.name(ask.seat), this.v!.m, season(this.v!.season));
   }
 
   private drawSheet() {
@@ -393,14 +395,14 @@ class KommersyView implements GameView<View, Event> {
     const assets = me.assets.length
       ? me.assets
           .map((a) => {
-            const d = dealById(a.id);
+            const d = season(v.season).deal(a.id);
             const mgr = a.kind === 'biz' ? `<button class="km-mini${a.manager ? ' on' : ''}" data-act="manager" data-uid="${a.uid}" data-on="${a.manager ? 0 : 1}"${dis} title="управляющий">👔</button>` : '';
             const inc = a.kind === 'paper' ? `${money(a.value)} в бумагах` : `${a.now >= 0 ? '+' : ''}${money(a.now)}/мес${a.manager ? ' (управляющему 12 %)' : ''} · ${a.manager ? Math.ceil(a.hours * 0.15) : a.hours} ч`;
             // ниша после пика: дело не пропадает, но о старении говорим прямо
             const pct = Math.round(a.niche * 100);
             const old = a.niche >= 1 ? '' : `<span class="km-old">${a.niche <= 0.35 ? `ниша отжила: доход ${pct} % от лучших лет` : `ниша стареет: доход ${pct} %`}</span>`;
             const g = a.grow;
-            const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(dealById(d.next)!.name)}» (пока рано)` : '';
+            const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(season(v.season).deal(d.next)!.name)}» (пока рано)` : '';
             const growBtn = g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '';
             return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${d?.heat ? ' · органы ↑' : ''}${grows}${old}</small><span class="km-acts">${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></span></li>`;
           })
@@ -425,7 +427,7 @@ class KommersyView implements GameView<View, Event> {
       .join('');
     const hoursPct = my ? Math.min(100, (my.hours.used / my.hours.avail) * 100) : 0;
     this.sheet.innerHTML = `
-      <div class="km-me"><div><b>${esc(HEROES.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${TIERS[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
+      <div class="km-me"><div><b>${esc(season(v.season).heroes.find((x) => x.id === me.hero)?.name ?? '')}</b><small>${season(v.season).tiers[me.tier]} · ${KRYSHA_NAME[me.krysha]}</small></div></div>
       <div class="km-money"><div><span>Наличные</span><b>${money(me.cash)}</b></div><div><span>Капитал</span><b>${money(me.worth)}</b></div>
         ${my ? `<div><span>Доход/мес</span><b class="plus">+${money(my.income)}</b></div><div><span>Расход/мес</span><b class="minus">−${money(my.expenses)}</b></div>` : ''}</div>
       ${my ? `<div class="km-hours"><span>Часы ${my.hours.used}/${my.hours.avail}</span><i><b style="width:${hoursPct}%"${my.hours.used > my.hours.avail ? ' class="bad"' : ''}></b></i></div>` : ''}
@@ -495,7 +497,7 @@ class KommersyView implements GameView<View, Event> {
           break;
         case 'hist':
           sfx('hist', 0.8);
-          await this.showBanner(`${art(`h-${ev.id}`)}<small>${dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
+          await this.showBanner(`${art(`h-${ev.id}`)}<small>${season(v.season).dateText(v.m)}</small><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p>`, 'hist', 2600);
           break;
         case 'fall':
           sfx(`fall-${ev.kind}`);
@@ -578,7 +580,7 @@ function fxChips(c: Ask['choices'][number]) {
   return (chips ? `<span class="km-fx">${chips}</span>` : '') + (c.riskHint ? `<small class="km-risk">⚠ ${esc(c.riskHint)}</small>` : '');
 }
 
-function cardHtml(ask: Ask, mine: boolean, who: string, m = 0) {
+function cardHtml(ask: Ask, mine: boolean, who: string, m = 0, z: Season = S1) {
   const npc = (ask.card && NPC_BY_CARD[ask.card]) || NPC_BY_CELL[ask.cell];
   const face = npc ? `<img class="km-npc" src="${A}/people/${npc}.webp" alt="">` : '';
   const offers = ask.deals
@@ -589,11 +591,11 @@ function cardHtml(ask: Ask, mine: boolean, who: string, m = 0) {
           // с управляющим доход сразу за вычетом его доли — как потом в «Делах»
           const net = round(o.income * (o.mgr ? 0.88 : 1));
           const pay = o.kind === 'paper' ? 'бумаги: цена растёт' : `окупится за ${Math.max(1, Math.round(o.price / Math.max(1, net)))} мес`;
-          const nx = dealById(o.id)?.next ? dealById(dealById(o.id)!.next!) : undefined;
-          const grow = nx ? `<em class="km-grow">⬆ растёт в «${esc(nx.name)}»${nx.from > m ? ` (откроется: ${dateText(nx.from)})` : ''}</em>` : '';
-          const dark = dealById(o.id)?.heat ? '<em class="km-dark">🩸 тёмное дело: внимание органов растёт каждый месяц</em>' : '';
+          const nx = z.deal(o.id)?.next ? z.deal(z.deal(o.id)!.next!) : undefined;
+          const grow = nx ? `<em class="km-grow">⬆ растёт в «${esc(nx.name)}»${nx.from > m ? ` (откроется: ${z.dateText(nx.from)})` : ''}</em>` : '';
+          const dark = z.deal(o.id)?.heat ? '<em class="km-dark">🩸 тёмное дело: внимание органов растёт каждый месяц</em>' : '';
           return `<button class="km-offer" data-choice="${ci}"${!mine || !ch.ok ? ' disabled' : ''}>${art(o.id, 'km-thumb')}<div>
-            <b>${dealById(o.id)?.heat ? '🩸 ' : ''}${esc(o.name)}</b><small>${esc(o.text)}</small>
+            <b>${z.deal(o.id)?.heat ? '🩸 ' : ''}${esc(o.name)}</b><small>${esc(o.text)}</small>
             <span>${money(o.price)} · ${o.kind === 'paper' ? '' : `+${money(net)}/мес · `}${o.mgr ? 'с управляющим' : `${o.hours} ч`}</span>${grow}${dark}
             <em>${ch.ok ? (o.loan ? `в кредит ${money(o.loan)} · ` : '') + pay : esc(ch.why ?? '')}</em></div></button>`;
         })
