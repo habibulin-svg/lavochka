@@ -12,6 +12,7 @@ import {
   playMatch, addVenture, buyBtc, sellBtc, storyCard, survived, tyndexCheck, tyndexPrice, unitS2, type Btc, type Club2, type Venture,
 } from './s2logic';
 import { START_2009, btcPrice as btcPriceAt, clubNet, type Sector } from './s2data';
+import type { Legacy } from './legacy';
 
 export interface Asset {
   uid: number;
@@ -170,6 +171,8 @@ export interface Opts {
   buh: boolean;
   /** Сезон: 1 — 1988–2003, 2 — 2004–2021 (в старых сохранениях поля нет — первый). */
   season?: number;
+  /** Второй сезон с 2004-го: Колян из финала первого (legacy.ts); нет — канонический. В первом сезоне поля нет. */
+  legacy?: Legacy;
 }
 
 export interface State {
@@ -327,6 +330,7 @@ export const clubReady = (s: State, p: Player) => clubCheck(s, p).every((c) => c
 // ---------------------------------------------------------------- начало партии
 export function newState(seats: number[], opts: Partial<Opts> = {}, heroes: string[] = [], rng?: Rng): State {
   const o: Opts = { diff: opts.diff ?? 1, start: opts.start ?? 0, chance: opts.chance ?? 0, buh: opts.buh ?? false, season: opts.season ?? 1 };
+  if (opts.legacy && o.season === 2) o.legacy = opts.legacy;
   // второй сезон: акт клуба — одиночный (один клуб на всех не поделить), сеть — с 2009-го
   if (o.season === 2 && seats.length > 1 && o.start < START_2009) o.start = START_2009;
   const z = season(o.season);

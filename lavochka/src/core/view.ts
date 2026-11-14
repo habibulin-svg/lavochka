@@ -1,5 +1,5 @@
 /* Интерфейс отрисовки игры (DOM). Стол сборника — общий, а поле и анимации у каждой игры свои. */
-import type { GameDef, Options } from './types';
+import type { GameDef, GameResult, Options } from './types';
 
 export interface ViewCtx<A = any> {
   /** Отправить действие от имени места. */
@@ -67,6 +67,8 @@ export interface GameView<V = any, E = any> {
   focusSeat?(view: V): number | null;
   /** Имя места по ходу партии (турнир: за стол пересаживают других игроков); null — имя из лобби. */
   seatName?(view: V, seat: number): string | null;
+  /** Своё под итогом партии (окно «Победа»): «Коммерсы» — переход во второй сезон. */
+  resultExtra?(view: V, result: GameResult): HTMLElement | null;
   destroy?(): void;
 }
 
@@ -93,6 +95,9 @@ export interface GameModule {
   ownSaves?: boolean;
   /** Свой блок в начале карточки «Новая партия» (список недорешённого); launch — начать с этими настройками и текущими местами. */
   home?(box: HTMLElement, launch: (options: Options, table?: LaunchTable) => void): void;
+  /** Перед запуском с экрана игры (новая, продолжение, загрузка): поправить правила или вернуть null — не запускать
+   * (платное без покупки — игра сама показывает окно покупки). Сервер проверяет право ещё раз (GameDef.needRight). */
+  prepare?(options: Options): Options | null;
   /** Сетевые комнаты — только через сервер, что бы ни стояло в настройках (у «Вкладышей» там кон и колоды игроков). */
   serverRooms?: boolean;
   /** Свой блок в лобби сетевой комнаты (кон во «Вкладышах»); mode 'server' — комната на сервере. Блок сам следит, жив ли он (isConnected). */

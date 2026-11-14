@@ -136,3 +136,7 @@
 .km-res li.up { color: #8fe08f; }
 .km-res li.down { color: #ff8f86; }
 .km-res-risk { color: #ffc062; font-weight: 600; margin-top: 6px !important; }
+
+/* финал первого сезона: переход во второй (view.ts → resultExtra) */
+.km-s2-offer { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: rgba(200, 160, 60, 0.14); border: 1px solid rgba(200, 160, 60, 0.45); text-align: center; }
+.km-s2-offer p { margin: 0 0 10px; }

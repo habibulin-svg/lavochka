@@ -127,6 +127,8 @@ export const season = (n: number | undefined): Season => SEASONS[n ?? 1] ?? S1;
 
 export { tierOfAt, byId };
 
-/** Доступ ко второму сезону в интерфейсе (ранний доступ; платный — этап 4). Клиент подменяет проверку (index.ts),
- * на сервере и в тестах — нет: пресеты сезона не показываются, но опция season: 2 работает. */
+/** Куплен ли второй сезон (право kommersy_s2) — только для показа: замок у выбора сезона, окно покупки.
+ * Клиент подменяет проверку (index.ts); сервер проверяет право сам (GameDef.needRight → server/index.ts). */
 export const s2Access = { check: (): boolean => false };
+/** Сохранённое наследие первого сезона (localStorage, index.ts): есть — на старте второго сезона можно взять своего Коляна. */
+export const legacyStore = { get: (): string | null => null };

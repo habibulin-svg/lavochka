@@ -18,8 +18,8 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { Link } from '../src/core/protocol';
-import { cleanLook, Room, setRoomErrorHook } from '../src/core/room';
-import type { SeatSpec } from '../src/core/types';
+import { cleanLook, fitOptions, Room, setRoomErrorHook } from '../src/core/room';
+import type { Options, SeatSpec } from '../src/core/types';
 import { DEFS } from '../src/games/defs';
 import { Ratings, flushGeroiMail, geroiFirst, geroiMailOf, geroiRooms, initGeroiMail } from './geroi';
 import { gopsFirst, gopsRooms } from './gops';
@@ -41,7 +41,7 @@ import { Player, playerApi } from './player';
 import { Support, supportApi } from './support';
 import { Backoffice, backofficeApi } from './backoffice';
 import { mayPlay } from '../src/core/release';
-import { hasRight } from '../src/core/rights';
+import { hasRight, RIGHTS, type RightId } from '../src/core/rights';
 import { Content, contentApi, prerenderProcess } from './content';
 import { robokassaFromEnv } from './pay/robokassa';
 
@@ -147,6 +147,11 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     const seats = sanitizeSeats(msg.seats, def.seats.length);
     if (!seats || seats.length < def.players.min || seats.length > def.players.max) return fail('Неверная рассадка.');
     const options = msg.options && typeof msg.options === 'object' ? msg.options : {};
+    // платные правила (второй сезон «Коммерсов» — право kommersy_s2): платит только хозяин, гости по коду — бесплатно.
+    // Проверяем по правилам, какими их увидит комната (fitOptions), и снова — при смене правил в лобби (Room.allow).
+    const allow = await paidAllow(def, req);
+    const no2 = allow(fitOptions(def, options));
+    if (no2) return fail(no2);
     const code = genCode();
     const ownerKey = randomBytes(16).toString('hex');
     const room = new Room({
@@ -155,6 +160,7 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
       seats,
       code,
       ownerKey,
+      allow,
       onEmpty: () => scheduleEmpty(code),
       // «Вкладыши»: свои колоды вошедших, кон и награды (server/vkladyshi.ts)
       ...(def.id === 'vkladyshi'
@@ -178,6 +184,18 @@ async function handleFirst(ws: WebSocket, msg: any, req: IncomingMessage): Promi
     return attach(ws, room, req);
   }
   return fail('Непонятный запрос.');
+}
+
+/** Платные правила игры (GameDef.needRight): проверка по правам создателя комнаты — он хозяин стола. */
+async function paidAllow(def: GameDef, req: IncomingMessage): Promise<(o: Options) => string | null> {
+  if (!def.needRight) return () => null;
+  const u = await userOf(req);
+  const rights = u ? await accounts.store.rights(u.id, Date.now()).catch(() => []) : [];
+  return (o) => {
+    const need = def.needRight!(o);
+    if (!need || hasRight(rights, need as RightId)) return null;
+    return u ? `Эти правила — платное дополнение (${RIGHTS[need as RightId] ?? need}). Его покупает хозяин стола, гости играют бесплатно.` : 'Эти правила — платное дополнение: войдите на сайт, чтобы открыть его.';
+  };
 }
 
 /** Камера за столом — по праву video (подписка «Лавочка+»); голос — всем. База недоступна — не мешаем.

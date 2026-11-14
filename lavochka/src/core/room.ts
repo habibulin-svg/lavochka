@@ -126,6 +126,8 @@ export interface RoomConfig {
   /** Правила задал сам хозяин в своём браузере (локальная игра, P2P): берутся как есть — там бывают скрытые значения
    * вне choices (своя колода «Вкладышей» «c:…»). Правила из сети (сервер) — только через fitOptions. */
   trustedOptions?: boolean;
+  /** Можно ли хозяину эти правила (платные — по его праву, сервер): текст отказа или null. Проверяется и при смене правил в лобби. */
+  allow?(options: Options): string | null;
   seats: SeatSpec[];
   code: string;
   ownerKey: string;
@@ -705,6 +707,8 @@ export class Room {
   private setup(raw: unknown, count: number): string | null {
     const def = this.def;
     const options: Options = fitOptions(def, raw, this.options);
+    const no = this.cfg.allow?.(options);
+    if (no) return no;
     const range = Array.from({ length: def.players.max - def.players.min + 1 }, (_, i) => def.players.min + i);
     const listed = (def.countsFor?.(options) ?? []).filter((n) => range.includes(n));
     const allowed = listed.length ? listed : range;

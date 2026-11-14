@@ -11,8 +11,10 @@ import {
 } from './data';
 import { RIVAL_DARK, RIVAL_NAME, RIVAL_NAME2, money, round, type Action, type Ask, type Books, type Event, type Rival, type View } from './engine';
 import { KolyanCam, kolyanImg, type Reaction } from './kolyan';
-import { S1, season, type Season } from './season';
+import { S1, s2Access, season, type Season } from './season';
 import { CRASH_FROM } from './s2data';
+import { encodeLegacy, legacyFromView } from './legacy';
+import { offerS2, saveLegacy } from './paid';
 import { Music, eraMusic } from './music';
 import { sfx } from './sfx';
 import { say, voiceKey } from './voice';
@@ -252,7 +254,7 @@ class KommersyView implements GameView<View, Event> {
   }
 
   status(v: View, toAct: number[], interactive: number[]) {
-    if (v.phase === 'over') return 'Июль 2003-го. Итоги.';
+    if (v.phase === 'over') return v.season === 2 ? 'Декабрь 2021-го. Итоги.' : 'Июль 2003-го. Итоги.';
     const who = this.ctx.name(toAct[0] ?? v.turn).replace(/<[^>]+>/g, '');
     const mine = interactive.includes(toAct[0]);
     if (v.phase === 'buh') return v.booksWait.some((x) => interactive.includes(x)) ? 'Сведите баланс за отрезок' : 'Бухгалтерия: ждём остальных';
@@ -260,6 +262,31 @@ class KommersyView implements GameView<View, Event> {
     if (v.phase === 'move' && v.roll == null) return mine ? 'Остаток хода с прошлого отрезка — поставьте фишку' : `${who} досходит остаток хода`;
     if (v.phase === 'move') return mine ? 'Поставьте фишку на подсвеченную клетку' : `${who} ходит`;
     return mine ? 'Бросайте кубик' : `${who} бросает кубик`;
+  }
+
+  /** Финал первого сезона с клубом (§2, §9): наследие — в браузер; куплен второй сезон — «Продолжить», нет — предложение. */
+  resultExtra(v: View) {
+    if (this.ctx.demo) return null;
+    const seat = v.me ?? this.me();
+    const lg = legacyFromView(v, seat, this.ctx.name(seat).replace(/<[^>]+>/g, ''));
+    if (!lg) return null;
+    saveLegacy(lg);
+    const owned = s2Access.check();
+    const box = h(`<div class="km-s2-offer">${
+      owned
+        ? `<p><b>Второй сезон — 2004–2021.</b> ${esc(lg.n)} — хозяин «${CLUB}»: Лондон, кризис, «Цифра», ковид.</p>`
+        : `<p><b>Это не конец.</b> Во втором сезоне узнаете, как Колян падал, поднимался, пережил ковид и стал IT-предпринимателем.</p>`
+    }<button class="btn primary">${owned ? 'Продолжить во втором сезоне' : 'Купить сезон 2 — 300 ₽'}</button></div>`);
+    (box.querySelector('button') as HTMLButtonElement).onclick = () => {
+      Sound.ui();
+      if (!s2Access.check()) return offerS2();
+      box.closest('.modal')?.remove();
+      const options = { season: 2, start: 0, diff: v.diff, chance: 0, buh: false, heir: 1, legacy: encodeLegacy(lg) };
+      void Promise.all([import('../../core/session'), import('./index')]).then(([ss, m]) =>
+        ss.startLocal(m.default, [{ seat: 0, kind: 'human', level: 1, name: lg.n }], options),
+      );
+    };
+    return box;
   }
 
   saveTitle(v: View) {

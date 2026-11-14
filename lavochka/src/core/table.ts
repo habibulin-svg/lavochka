@@ -704,6 +704,8 @@ export class Table {
        <h2>${r.winners.length > 1 ? 'Победители' : r.winners.length ? 'Победа!' : 'Партия окончена'}</h2><p>${names ? `<b>${names}</b> — ` : ''}${esc(r.text)}.</p></div></div>`);
     const offer = this.o.record?.();
     if (offer) body.appendChild(offerBlock(offer));
+    const extra = this.current ? this.view.resultExtra?.(this.current, r) : null;
+    if (extra) body.appendChild(extra);
     this.resultModal = modal(body, btns, offer ? { cls: 'recs-modal' } : {});
   }
 

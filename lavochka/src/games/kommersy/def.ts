@@ -4,7 +4,8 @@ import type { DemoScript, GameDef, GameResult, Rng, SeatSpec } from '../../core/
 import { SEATS as HSEATS } from '../hodilki/core';
 import { choose } from './bot';
 import { CELL_NAME, CLUB, CLUB_PRICE, ENDINGS, HEROES, TIERS, mm, type Cell } from './data';
-import { s2Access, season } from './season';
+import { legacyStore, s2Access, season } from './season';
+import { parseLegacy } from './legacy';
 import { ENDINGS2, START_2009, START_2017, TYNDEX } from './s2data';
 import { apply, marketWorth, money, newState, toAct, view, type Action, type Event, type State, type View } from './engine';
 
@@ -24,7 +25,12 @@ const opts = (o: Record<string, unknown>) => ({
   chance: num(o.chance, 0, 0, 3),
   buh: o.buh === true || o.buh === 1 || o.buh === 'true',
   season: num(o.season, 1, 1, 2),
+  // наследие первого сезона — только во втором и только с 2004-го (newState сам отбросит в сети)
+  ...(num(o.season, 1, 1, 2) === 2 && num(o.start, 0, 0, mm(2003, 6)) === 0 && parseLegacy(o.legacy) ? { legacy: parseLegacy(o.legacy)! } : {}),
 });
+/** Второй сезон — платное дополнение (право kommersy_s2): тот же разбор, что у партии, — подменой опций не обойти. */
+export const isSeason2 = (o: Record<string, unknown>) => opts(o).season === 2;
+export const S2_RIGHT = 'kommersy_s2';
 
 // ---------------------------------------------------------------- показ правил
 const demoSeats: SeatSpec[] = [0, 1].map((seat) => ({ seat, kind: 'bot', name: SEATS[seat].name, level: 1 }));
@@ -198,14 +204,30 @@ export const def: GameDef<State, Action, Event, View> = {
     {
       key: 'season',
       label: 'Сезон',
-      hint: 'второй сезон — 2004–2021: клуб, крах, «Цифра» (ранний доступ)',
+      hint: 'второй сезон — 2004–2021: клуб, крах, «Цифра»; дополнение за 300 ₽',
       type: 'select',
       choices: [
         { value: 1, label: 'Сезон 1 (1988–2003)' },
-        { value: 2, label: 'Сезон 2 (2004–2021)' },
+        {
+          value: 2,
+          get label() {
+            return s2Access.check() ? 'Сезон 2 (2004–2021)' : '🔒 Сезон 2 (2004–2021) — 300 ₽';
+          },
+        },
       ],
       default: 1,
-      showIf: () => s2Access.check(),
+    },
+    {
+      key: 'heir',
+      label: 'Колян',
+      hint: 'свой — из финала первого сезона: Имя, Авторитет, Связи, навыки, падения, свои дела',
+      type: 'select',
+      choices: [
+        { value: 1, label: 'мой, из сезона 1' },
+        { value: 0, label: 'канонический' },
+      ],
+      default: 1,
+      showIf: (o) => o.season === 2 && Number(o.start) === 0 && !!legacyStore.get(),
     },
     {
       key: 'start',
@@ -236,10 +258,9 @@ export const def: GameDef<State, Action, Event, View> = {
     { key: 'buh', label: 'Бухгалтерия', showIf: (o) => o.season !== 2, hint: 'в конце квартала баланс сводишь сам: сошлось — органы спокойнее и растёт «Счёт»', type: 'toggle', default: false },
     { key: 'chance', label: 'Второй шанс', hint: 'опыт прошлой попытки: навыки, деньги, память о датах', type: 'number', min: 0, max: 3, step: 1, default: 0, showIf: (o) => o.season !== 2 },
   ],
-  // второй сезон — в раннем доступе (платный доступ — этап 4): его пресеты видны только тем, у кого есть доступ
-  get presets() {
-    return s2Access.check() ? [...PRESETS1, ...PRESETS2] : PRESETS1;
-  },
+  // второй сезон — платное дополнение: пресеты видны всем, запуск без права открывает окно покупки (index.ts → prepare)
+  presets: [...PRESETS1, ...PRESETS2],
+  needRight: (o) => (isSeason2(o) ? S2_RIGHT : null),
   setup: (seats: SeatSpec[], o, rng: Rng) => {
     const ids = seats.map((x) => x.seat).sort((a, b) => a - b);
     return newState(ids, opts(o), ids.map((i) => HEROES[i]?.id), rng);

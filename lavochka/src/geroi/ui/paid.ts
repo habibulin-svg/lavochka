@@ -1,7 +1,8 @@
 /* Полная игра (решение пользователя 2026-11-06): база — 4 фракции, «Арена», случайные карты, кампании 1–2 — бесплатно;
  * вторая четвёрка фракций и кампании 3–7 — разовой покупкой 300 ₽ (src/core/buy.ts, server/buy.ts, право geroi_full).
- * Здесь только показ: куплено ли, замок на выборе, окно покупки. Сеть проверяет право сама (server/geroi.ts → peer.full). */
+ * Здесь только показ: куплено ли, замок на выборе, окно покупки (заказ и касса — общие, core/buyui.ts). Сеть проверяет право сама (server/geroi.ts → peer.full). */
 import { PRODUCTS } from '../../core/buy';
+import { startBuy, takeBuyReturn } from '../../core/buyui';
 import { FACTIONS, type Faction, isPaidFaction } from '../sim/creatures';
 import { button, h, modal } from './common';
 import { SALE_OPEN } from '../sale';
@@ -62,42 +63,15 @@ async function buy(btn: HTMLButtonElement, err: HTMLElement): Promise<void> {
     return;
   }
   btn.disabled = true;
-  try {
-    const r = await fetch('/api/buy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ product: PRODUCT.id }) });
-    const b = (await r.json().catch(() => ({}))) as { form?: { action: string; fields: Record<string, string> }; message?: string };
-    if (b.form) return goPay(b.form);
-    err.textContent = b.message ?? 'Оплата сейчас недоступна. Попробуйте позже.';
-  } catch {
-    err.textContent = 'Нет связи с сервером.';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-/** На страницу оплаты Robokassa — обычной формой (POST); поля и подпись дал сервер. */
-function goPay(form: { action: string; fields: Record<string, string> }): void {
-  const f = document.createElement('form');
-  f.method = 'post';
-  f.action = form.action;
-  f.acceptCharset = 'utf-8';
-  for (const [k, v] of Object.entries(form.fields)) {
-    const i = document.createElement('input');
-    i.type = 'hidden';
-    i.name = k;
-    i.value = v;
-    f.appendChild(i);
-  }
-  document.body.appendChild(f);
-  f.submit();
+  const e = await startBuy(PRODUCT.id);
+  if (e) err.textContent = e;
+  btn.disabled = false;
 }
 
 /** Возврат с кассы: ?buy=spasibo — спасибо (право придёт уведомлением, обычно сразу), ?buy=otmena — не вышло. */
 export function buyReturn(host: HTMLElement): void {
-  const q = new URLSearchParams(location.search);
-  const v = q.get('buy');
+  const v = takeBuyReturn();
   if (!v) return;
-  q.delete('buy');
-  history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : ''));
   const { box, close } = modal(host, 'g-buy');
   box.append(
     h('h2', '', v === 'spasibo' ? 'Спасибо!' : 'Оплата не прошла'),

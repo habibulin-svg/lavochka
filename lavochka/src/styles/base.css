@@ -421,3 +421,9 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700;
 @media (max-width: 600px) { .gp-hint { font-size: 11px; white-space: normal; text-align: center; } }
 /* у SVG-клеток (пункты нард, поля) рамки нет — подсвечиваем обводкой и свечением */
 .gp-on svg .gp-focus { outline: none !important; box-shadow: none !important; stroke: #ffd23f !important; stroke-width: 3px !important; filter: drop-shadow(0 0 4px #ffd23f) drop-shadow(0 0 2px #ffd23f); }
+
+/* окно разовой покупки (core/buyui.ts) */
+.buy-offer ul { margin: 6px 0 10px; padding-left: 20px; text-align: left; }
+.buy-offer li { margin: 4px 0; }
+.buy-offer .buy-why { font-weight: 600; }
+.buy-offer .dim { opacity: 0.7; font-size: 0.9em; }

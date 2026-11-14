@@ -2,6 +2,7 @@
  * аудитория и монетизация IT-дел, хайп секторов, стартапы, биткоин, возраст и здоровье, болезнь 2021-го, «Тындекс» и концовки.
  * Движок зовёт эти функции только при opts.season === 2 — первый сезон их не видит. */
 import type { Rng } from '../../core/types';
+import { applyLegacy } from './legacy';
 import { SKILL_MAX, type CardT, type Fx, type Stat } from './data';
 import {
   BORN, BTC_BIG, BTC_FROM, BTC_SMALL, CLUB_NAME, CLUB_RANGE, CLUB_START, COVID_UP, CRASH_FROM, ENDINGS2, ISLAND_NEED, IT_FROM, SECTOR_NAME, STAGES, STAGE_MUL,
@@ -56,6 +57,8 @@ export function initS2(s: State) {
         const d = Z(s).deal(id)!;
         p.assets.push({ uid: s.uid++, id, name: d.name, kind: d.kind, value: d.price, income: d.income, hours: d.hours, manager: d.kind === 'biz', mul: 1 });
       }
+      // наследие первого сезона (§9): акт клуба одиночный — Колян того, кто купил клуб
+      if (s.opts.legacy && s.players.length === 1) applyLegacy(p, s.opts.legacy);
     } else if (s.m >= START_2017) {
       p.cash = 1.2e8;
       addStat(p, 'name', 10);

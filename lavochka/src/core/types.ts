@@ -169,6 +169,9 @@ export interface GameDef<S = any, A = any, E = any, V = any> {
   seatsFor?(n: number): number[];
   options?: OptionDef[];
   presets?: Preset[];
+  /** Право хозяина, без которого такие правила не запускаются (платный второй сезон «Коммерсов» — kommersy_s2).
+   * Сервер проверяет его при создании комнаты и при смене правил в лобби; локально и P2P — клиент (GameModule.prepare). */
+  needRight?(opts: Options): string | null;
   setup(seats: SeatSpec[], opts: Options, rng: Rng): S;
   /** Настройки для «Сыграть ещё» — убрать одноразовое (сид, восстановленный ход). По умолчанию — те же. */
   again?(opts: Options): Options;

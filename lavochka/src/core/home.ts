@@ -120,6 +120,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     resume.innerHTML = `<div>Есть незаконченная партия (ход ${snap.seq}).</div><div class="row"><button class="btn small" data-a="drop">Забыть</button><button class="btn primary" data-a="cont">Продолжить</button></div>`;
     (resume.querySelector('[data-a=cont]') as HTMLButtonElement).onclick = () => {
       Sound.unlock();
+      if (mod.prepare && !mod.prepare({ ...snap.options })) return;
       startLocal(mod, snap.seats, snap.options, snap);
     };
     (resume.querySelector('[data-a=drop]') as HTMLButtonElement).onclick = () => {
@@ -136,6 +137,7 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
     pickSlot(def.id, 'load', (_i, s) => {
       if (!s) return;
       Sound.unlock();
+      if (mod.prepare && !mod.prepare({ ...s.snap.options })) return;
       startLocal(mod, s.snap.seats, s.snap.options, s.snap);
     });
   };
@@ -271,8 +273,10 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
 
   // ---------- запуск
   q('[data-a=start]').onclick = () => launch({ ...draft.options });
-  function launch(options: Options, table?: LaunchTable) {
+  function launch(raw: Options, table?: LaunchTable) {
     Sound.unlock();
+    const options = mod.prepare ? mod.prepare({ ...raw }) : raw;
+    if (!options) return;
     const list = table?.seats ?? seatsFor(table ? table.count : draft.count);
     // свой стол (турнир): один человек — первый «человек» из лобби или первое место, остальные — боты
     // турнир по сети: человек — первое место, за ним места для друзей
@@ -303,6 +307,6 @@ export function openHome(mod: GameModule, onBack: () => void, fixed?: Record<str
   renderCounts();
   showScreen('home');
   ready = true;
-  if (o.resume && snap) startLocal(mod, snap.seats, snap.options, snap);
+  if (o.resume && snap && (!mod.prepare || mod.prepare({ ...snap.options }))) startLocal(mod, snap.seats, snap.options, snap);
   else if (o.rules) showRules();
 }
