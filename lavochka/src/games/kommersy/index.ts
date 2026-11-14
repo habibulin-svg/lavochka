@@ -9,7 +9,7 @@ import { takeBuyReturn } from '../../core/buyui';
 import { modal } from '../../core/ui';
 import { store } from '../../core/settings';
 import { hasRight } from '../../core/rights';
-import { currentUser } from '../../site/account';
+import { currentUser, loadAccount } from '../../site/account';
 
 // второй сезон — платное дополнение (право kommersy_s2, у Мастера — всё); сервер проверяет право сам
 s2Access.check = () => hasRight(currentUser()?.rights ?? [], 'kommersy_s2');
@@ -40,6 +40,11 @@ function home(box: HTMLElement, launch: (options: Options, table?: { count: numb
   box.hidden = true;
   const v = takeBuyReturn();
   if (!v) return;
+  // право пришло только что — аккаунт перечитать, и лишь потом решать, открыт ли сезон
+  void loadAccount(true).then(() => thanks(v, launch));
+}
+
+function thanks(v: 'spasibo' | 'otmena', launch: (options: Options, table?: { count: number }) => void) {
   const owned = s2Access.check();
   const lg = parseLegacy(legacyStore.get());
   const start = () => launch({ season: 2, start: 0, diff: 1, chance: 0, buh: false, heir: 1 }, { count: 1 });
