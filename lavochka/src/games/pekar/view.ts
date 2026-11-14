@@ -11,6 +11,8 @@ import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/dem
 import { Coach, Tutor, type TutorStep } from '../../core/dvorsport/coach';
 import { PullAim } from '../../core/dvorsport/input';
 import { GroundMarks } from '../../core/dvorsport/marks3d';
+import { nextPlace, placeRow, PLACES, type Place } from '../../core/dvorsport/places';
+import { boom, Fx, thump, whistle } from '../../core/dvorsport/fx3d';
 import { Pad } from '../../core/dvorsport/pad';
 import { esc, h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
@@ -72,6 +74,8 @@ export function createView(): GameView<State, Event> {
   let hud: HTMLElement;
   let coach: Coach;
   let marks: GroundMarks;
+  let fx: Fx;
+  let place: Place = PLACES[0];
   let tutor: Tutor | null = null;
   let tutorAsked = false;
   const saw = { throw: false, pick: false, back: false, dash: false, can: false, tag: false, catch: false };
@@ -232,6 +236,7 @@ export function createView(): GameView<State, Event> {
         },
       ),
     );
+    box.appendChild(placeRow(yard, () => place, (p) => ((place = p), fx.dustColor.set(p.dust))));
   }
 
   // ---------------------------------------------------------------- подсказка и табло
@@ -285,6 +290,11 @@ export function createView(): GameView<State, Event> {
       else t = 'Ждём, пока все соберут палки…';
     }
     coach.say(tutor?.showing ? '' : t, keys, hot);
+    // кто ты сейчас и зачем — всегда на виду; сменилась роль — крупно по центру
+    if (s.over || me < 0) coach.role('');
+    else if (s.phase === 'kick') coach.role('Жеребьёвка', 'пни палку <b>подальше</b>: чья ляжет ближе всех — тот пекарь', '#7a5a2a', false);
+    else if (me === s.pekar) coach.role('Ты пекарь', 'сторожи банку и <b>осаль</b> того, кто выбежит за палкой, — печь будет он', '#c8501e');
+    else coach.role('Сбивай банку', s.cfg.ranks.length > 1 ? 'сбил — <b>звание выше</b> и черта ближе; забери палку и вернись за черту, пока не осалили' : 'сбил — <b>очко</b>; забери палку и вернись за черту, пока не осалили', '#2a6fb8');
     const pk = me >= 0 && me === s.pekar && s.phase === 'play';
     const catching = pk && !!catchable(s);
     pad.show({
@@ -346,8 +356,15 @@ export function createView(): GameView<State, Event> {
       case 'knock': {
         clank(1);
         Sound.win();
-        yard.shake(0.07);
+        boom(0.9);
         const c = s.cfg;
+        {
+          const hm = canHome(c);
+          fx.burst(hm[0], hm[1], 0.2, '#ffe9a0', 1.5);
+          fx.dust(hm[0], hm[1], 1.6);
+        }
+        yard.impact(2);
+        if (ev.who === ctrl) coach.flash('good'), whistle();
         tn(ev.who)?.play('cheer', false, 0.15);
         busy(ev.who, 1.2);
         // кто за чертами — радуется: банка лежит, можно бежать
@@ -358,7 +375,7 @@ export function createView(): GameView<State, Event> {
           }
         });
         const home = canHome(c);
-        popAt('Сбил!', home[0], home[1], 0.9, 'good');
+        popAt('Сбил!', home[0], home[1], 0.9, 'good big');
         if (c.ranks.length > 1) popAt(ev.rank >= c.ranks.length ? 'Победа!' : `Новое звание: ${c.ranks[ev.rank]}`, at(ev.who).x, at(ev.who).y, 2.2, 'good');
         else popAt(`Сбил: ${ev.knocks}`, at(ev.who).x, at(ev.who).y, 2.2, 'good');
         if (ev.who === ctrl) coach.banner(c.ranks.length > 1 && ev.rank < c.ranks.length ? c.ranks[ev.rank] : 'Сбил!', 'банка лежит — беги за палкой!', 1400);
@@ -366,6 +383,8 @@ export function createView(): GameView<State, Event> {
       }
       case 'land':
         knock();
+        thump(0.6);
+        fx.dust(ev.x, ev.y, 1);
         if (!ev.hit && s.phase === 'play') popAt(ev.y < s.cfg.dist - 1 ? 'Недолёт' : ev.y > s.cfg.dist + 1 ? 'Перелёт' : 'Мимо!', ev.x, ev.y, 0.5, 'bad');
         break;
       case 'pick':
@@ -376,28 +395,34 @@ export function createView(): GameView<State, Event> {
       case 'can':
         knock();
         if (ctrl === s.pekar) saw.can = true;
-        if (ev.what === 'set') popAt('Банка на месте!', canHome(s.cfg)[0], canHome(s.cfg)[1], 0.9);
+        if (ev.what === 'set') popAt('Банка на месте!', canHome(s.cfg)[0], canHome(s.cfg)[1], 0.9), fx.ring(canHome(s.cfg)[0], canHome(s.cfg)[1], 0.05, '#8aff6a', 1.6);
         break;
       case 'tag':
         slap();
+        boom(1);
         Sound.capture();
-        yard.shake(0.12);
+        fx.burst(at(ev.who).x, at(ev.who).y, 1.2, '#ff8a5a', 1.6);
+        fx.dust(at(ev.who).x, at(ev.who).y, 1.6);
+        yard.impact(3);
+        coach.flash(ev.who === ctrl ? 'bad' : ev.by === ctrl ? 'good' : '');
         tn(ev.by)?.play('swing1h', false, 0.08, 1.4);
         busy(ev.by, 0.9);
         tn(ev.who)?.play('hit', false, 0.08);
         busy(ev.who, 0.9);
         if (ev.by === ctrl) saw.tag = true;
-        popAt('Осалил!', at(ev.who).x, at(ev.who).y, 2.2, 'bad');
+        popAt('Осалил!', at(ev.who).x, at(ev.who).y, 2.2, 'bad big');
         coach.banner('Осалил!', `${plain(ev.who)} теперь пекарь`, 1500);
         break;
       case 'catch':
         slap();
         Sound.capture();
-        yard.shake(0.08);
+        fx.burst(ev.x, ev.y, 1.3, '#c8ffb0', 1);
+        yard.impact(2);
+        coach.flash(ev.who === ctrl ? 'bad' : ev.by === ctrl ? 'good' : '');
         tn(ev.by)?.play('holding', false, 0.08);
         busy(ev.by, 0.9);
         if (ev.by === ctrl) saw.catch = true;
-        popAt('Поймал!', ev.x, ev.y, 1.6, 'good');
+        popAt('Поймал!', ev.x, ev.y, 1.6, 'good big');
         coach.banner('Поймал палку!', `${plain(ev.who)} теперь пекарь`, 1500);
         break;
       case 'pekar':
@@ -461,6 +486,7 @@ export function createView(): GameView<State, Event> {
       const v = Math.hypot(m.vx, m.vy);
       const face: [number, number] = v > 0.5 ? [d.x + m.vx, d.y + m.vy] : i === s.pekar && s.phase === 'play' ? [d.x, d.y - 5] : [home[0], home[1]];
       yard.put(i, d.x, d.y, face);
+      fx.steps(`m${i}`, d.x, d.y, v * s.speed, dt);
       const tn = yard.men[i]?.toon ?? null;
       // клип: бег — по скорости на экране (физика замедлена «скоростью игры»)
       const vs = v * s.speed;
@@ -472,6 +498,7 @@ export function createView(): GameView<State, Event> {
       if (st.at === 'fly' && st.b0 && st.t0 != null) {
         const f = stickFlight(st.b0, st.style ?? 'flat', st.aim ? home : null);
         const fr = sample(f.frames, T - st.t0);
+        if (fr[3] > 0.2) fx.trail(fr[1], fr[2], fr[3], '#fff0c8', 0.2);
         if ((st.style ?? 'lob') === 'flat') yard.stickAt(i, fr[1], fr[2], fr[3], fr[4], Math.PI / 2);
         else yard.stickAt(i, fr[1], fr[2], fr[3], Math.atan2(st.b0.vx, st.b0.vy), fr[4]);
       } else if (st.at === 'ground') yard.stickAt(i, st.x, st.y, 0.025, st.a);
@@ -583,6 +610,12 @@ export function createView(): GameView<State, Event> {
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     if (document.hidden) return;
+    // стоп-кадр на ударе: мир замер на долю секунды
+    if (yard.frozen) {
+      yard.render(0);
+      return;
+    }
+    fx.update(dt, yard.camera);
     draw(dt);
     if (latest && !tutorAsked && ctrl >= 0 && latest.phase === 'play') {
       tutorAsked = true;
@@ -623,10 +656,15 @@ export function createView(): GameView<State, Event> {
       wrap = h(`<div class="pk-wrap"><div class="pk-cv"></div><div class="pk-hud"></div></div>`);
       el.appendChild(wrap);
       hud = wrap.querySelector('.pk-hud') as HTMLElement;
-      yard = new PekarYard(wrap.querySelector('.pk-cv') as HTMLElement);
+      // площадка партии: выбранная или следующая по очереди (в показе правил и превью — всегда «за гаражами»)
+      place = ctx.demo || /[?&]thumb=/.test(location.search) ? PLACES[0] : nextPlace('pekar');
+      yard = new PekarYard(wrap.querySelector('.pk-cv') as HTMLElement, place);
       coach = new Coach(wrap);
       marks = new GroundMarks(yard.scene);
-      cleanup.push(() => (coach.dispose(), marks.dispose(), tutor?.dispose()));
+      fx = new Fx(yard.scene);
+      fx.dustColor.set(place.dust);
+      if (!c.demo && !/[?&]thumb=/.test(location.search)) yard.setLift(0.1);
+      cleanup.push(() => (coach.dispose(), marks.dispose(), fx.dispose(), tutor?.dispose()));
       ctx.hold?.(30000);
       const y = yard;
       const shot = ctx.demo || /[?&]thumb=/.test(location.search);

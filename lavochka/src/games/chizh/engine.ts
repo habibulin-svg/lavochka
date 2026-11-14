@@ -10,7 +10,7 @@
  * Шаг симуляции — TICK_MS, физика медленнее жизни во столько, сколько выбрано «Скоростью игры». Ввод места: куда бежать
  * (оси игры: x вбок, y от кона в поле), счётчики разовых действий — новое значение счётчика = нажатие. */
 import { applySpeed, cleanSpeed } from '../../core/realtime';
-import { BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
+import { isReady, settleTo, settling, BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import { body, fly, MAT, sample, type Body, type BodyFrame, type BodyMat } from '../../core/dvorsport/body';
 import type { Options, Rng } from '../../core/types';
 
@@ -311,6 +311,9 @@ export interface State {
   /** Замедление на хорошем ударе и ловле (sim.slowmo). */
   slowUntil?: number;
   slowK?: number;
+  /** Расход по местам своим ходом и «приготовились» (sim.settleTo). */
+  settle?: { until: number; to: ([number, number] | null)[] } | null;
+  readyT?: number;
 }
 
 export const idleInput = (): In => ({ mx: 0, my: 0 });
@@ -376,6 +379,15 @@ export function regroup(s: State) {
     m.vx = m.vy = 0;
   });
   s.ch = { mode: 'tee', x: 0, y: 0, a: 0 };
+}
+
+/** Места по ролям: бьющий у кона, водящие в поле. only — только этим (остальные стоят, где стояли). */
+function spots(s: State, only?: (i: number) => boolean): ([number, number] | null)[] {
+  let k = 0;
+  return s.men.map((_, i) => {
+    const p: [number, number] = i === s.batter ? BATTER_SPOT : fieldSpot(k++);
+    return !only || only(i) ? p : null;
+  });
 }
 
 /** Очки игрока с учётом этого выхода. */
@@ -537,21 +549,20 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
 
   if (s.phase === 'pause') {
     if (s.t < s.until) return ev;
+    // по местам идут сами: игра ждёт, пока дойдут (sim.settling), потом «приготовились»
     if (s.next === 'swap') {
       s.batter = s.swapTo;
       s.tries = c.tries;
       ev.push({ k: 'batter', who: s.batter });
-      regroup(s);
+      settleTo(s, spots(s));
     } else if (s.next === 'kon') {
       s.tries = c.tries;
-      regroup(s);
+      settleTo(s, spots(s));
     } else {
       // та же попытка заново: чиж — в кон, бьющий — к кону (водящие стоят, где стояли)
-      s.ch = { mode: 'tee', x: 0, y: 0, a: 0 };
-      const b = s.men[s.batter];
-      [b.x, b.y] = BATTER_SPOT;
-      b.vx = b.vy = 0;
+      settleTo(s, spots(s, (i) => i === s.batter), 2);
     }
+    s.ch = { mode: 'tee', x: 0, y: 0, a: 0 };
     s.strike = 0;
     s.strikes = 0;
     s.holder = -1;
@@ -565,6 +576,14 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
       if (q?.th) sn.th = Math.max(sn.th, q.th.n);
       for (const k of ['s', 'c', 'st'] as const) if (q?.[k] != null) sn[k] = Math.max(sn[k], q[k]!);
     }
+    return ev;
+  }
+
+  if (s.settle) {
+    // обучение время не держит: иначе до своего шага не дойти
+    if (frozen) s.t += realDt;
+    if (settling(s, s.men, frozen ? realDt : dt)) return ev;
+    s.phaseT = s.t;
     return ev;
   }
 
@@ -590,7 +609,7 @@ export function step(s: State, inputs: (In | null | undefined)[], _rng: Rng): Ev
       const q = bq;
       const bm = s.men[B];
       const near = s.phase === 'tee' || Math.hypot(bm.x - s.ch.x, bm.y - s.ch.y) < BONUS_REACH;
-      if (q?.th && q.th.n > s.seen[B].th) {
+      if (q?.th && q.th.n > s.seen[B].th && isReady(s)) {
         s.seen[B].th = q.th.n;
         if (near) {
           const dir = s.phase === 'tee' ? 0 : awayYaw(s.ch.x, s.ch.y);

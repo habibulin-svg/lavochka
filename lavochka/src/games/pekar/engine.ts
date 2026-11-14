@@ -10,7 +10,7 @@
  * Шаг симуляции — TICK_MS, физика медленнее жизни во столько, сколько выбрано «Скоростью игры». Ввод места: куда бежать
  * (оси игры), счётчики разовых действий (бросок, пинок, «действие», рывок) — новое значение счётчика = нажатие. */
 import { applySpeed, cleanSpeed } from '../../core/realtime';
-import { BODY, dash as dashStart, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
+import { approach, isReady, settleTo, settling, BODY, dash as dashStart, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import type { Options, Rng } from '../../core/types';
 import {
   canFlight,
@@ -158,6 +158,9 @@ export interface State {
   catchT?: number;
   /** До каких пор пекарь не салит (только что сменился). */
   calm?: number;
+  /** Расход по местам своим ходом и «приготовились» (sim.settleTo). */
+  settle?: { until: number; to: ([number, number] | null)[] } | null;
+  readyT?: number;
   /** Только превью карточки. */
   shot?: boolean;
   /** Позиция показа правил (только на ней def.apply «перематывает» партию). */
@@ -270,16 +273,14 @@ function checkEnd(s: State, ev: Event[]): boolean {
   return true;
 }
 
-/** Все по местам: после жеребьёвки (пекарь — к банке) и после осаливания (новый пекарь — к банке, старый — за черту). */
+/** Все по местам — своим ходом: после жеребьёвки (пекарь — к банке) и после осаливания (новый пекарь — к банке, старый —
+ * за черту). Игра ждёт, пока дойдут (sim.settling); остальные в это время бегают как бегали. */
 function regroup(s: State, only: number[] | null) {
   const c = s.cfg;
-  s.men.forEach((m, i) => {
-    if (only && !only.includes(i)) return;
-    const [x, y] = i === s.pekar ? pekarSpot(c) : waitSpot(c, i, m.rank);
-    m.x = x;
-    m.y = y;
-    m.vx = m.vy = 0;
-  });
+  settleTo(
+    s,
+    s.men.map((m, i) => (only && !only.includes(i) ? null : i === s.pekar ? pekarSpot(c) : waitSpot(c, i, m.rank))),
+  );
 }
 
 function move(s: State, i: number, inp: In | null | undefined, dt: number) {
@@ -320,11 +321,8 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       if (c.demote && s.men[who].rank > 0) s.men[who].rank--;
       regroup(s, [old, who]);
       ev.push({ k: 'pekar', who, old, rank: s.men[who].rank });
-      // новому пекарю — секунда дойти до банки: кто рядом, успеет отбежать
-      s.calm = s.t + 0.9;
       s.swapTo = -1;
     }
-    separate(s.men, BODY.r);
     s.next = null;
     s.phase = 'play';
     s.turnT = s.t;
@@ -334,6 +332,18 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
       if (q?.th) s.seen[i].th = Math.max(s.seen[i].th, q.th.n);
       if (q?.a != null) s.seen[i].a = Math.max(s.seen[i].a, q.a);
     }
+    return ev;
+  }
+
+  if (s.settle) {
+    // кто не идёт на место — бегает как бегал (за палкой, за черту); салить и бросать пока нельзя
+    const st = s.settle;
+    for (let i = 0; i < n; i++) if (!st.to[i]) move(s, i, inp(i), dt);
+    if (settling(s, s.men, dt)) return ev;
+    separate(s.men, BODY.r);
+    // новому пекарю — секунда оглядеться: кто рядом, успеет отбежать
+    s.calm = s.t + 0.9;
+    s.turnT = s.t;
     return ev;
   }
 
@@ -410,21 +420,21 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   if (s.phase === 'kick') {
     const k = kicker(s);
     // чей пинок — тот на середине черты, остальные на своих местах (никто ни в ком не стоит)
+    // выходит к черте сам, а не «телепортом»; пинает, когда встал
+    let at = false;
     if (k >= 0)
       s.men.forEach((m, j) => {
-        [m.x, m.y] = j === k ? [-0.25, -0.35] : waitSpot(c, j, 0);
+        const [x, y] = j === k ? [-0.25, -0.35] : waitSpot(c, j, 0);
+        const d = approach(m, x, y, dt, 6);
+        if (j === k && d < 0.25) at = true;
       });
     const q = k >= 0 ? inp(k) : null;
-    if (k >= 0 && q?.k && q.k.n > s.seen[k].k) {
+    if (k >= 0 && at && q?.k && q.k.n > s.seen[k].k) {
       s.seen[k].k = q.k.n;
       const pow = q.k.pow;
       // что есть силы — палка может сорваться с носка
       const slip = pow > 0.82 && rng.int(1000) < Math.round((pow - 0.82) * 3000);
       const b0 = kickBody(slip ? pow * 0.35 : pow, k, slip);
-      // пинает с середины черты, а кто пинал до него — назад на своё место
-      s.men.forEach((m, j) => {
-        [m.x, m.y] = j === k ? [-0.25, -0.35] : waitSpot(c, j, 0);
-      });
       s.sticks[k] = { at: 'fly', x: b0.x, y: b0.y, a: 0, b0, t0: s.t, style: 'lob', aim: false };
       s.fly = k;
       const f = stickFlight(b0, 'lob', null);
@@ -495,7 +505,7 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   }
   if (w >= 0) {
     const q = inp(w);
-    if (q?.th && q.th.n > s.seen[w].th) {
+    if (q?.th && q.th.n > s.seen[w].th && isReady(s)) {
       s.seen[w].th = q.th.n;
       const m = s.men[w];
       const b0 = throwFrom(c, m.x, m.y, q.th.pow, yawTo(c, m.x, m.y) + q.th.yaw, q.th.style);

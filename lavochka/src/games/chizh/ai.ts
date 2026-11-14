@@ -26,9 +26,9 @@ import {
 } from './engine';
 
 const LV = [
-  { cErr: 0.28, err: 1.6, react: 0.45, tErr: 0.075, pow: 0.12, yaw: 0.14, thPow: 0.08, thYaw: 0.07, def: 0.3, run: 0.82, wait: 0.8, smart: false },
-  { cErr: 0.16, err: 1.0, react: 0.3, tErr: 0.04, pow: 0.07, yaw: 0.07, thPow: 0.05, thYaw: 0.045, def: 0.6, run: 0.95, wait: 0.5, smart: true },
-  { cErr: 0.08, err: 0.6, react: 0.18, tErr: 0.022, pow: 0.04, yaw: 0.04, thPow: 0.032, thYaw: 0.03, def: 0.85, run: 1, wait: 0.3, smart: true },
+  { cErr: 0.28, err: 1.6, react: 0.45, tErr: 0.075, pow: 0.12, yaw: 0.14, thPow: 0.08, thYaw: 0.07, def: 0.3, run: 0.82, wait: 0.95, smart: false },
+  { cErr: 0.16, err: 1.0, react: 0.3, tErr: 0.04, pow: 0.07, yaw: 0.07, thPow: 0.05, thYaw: 0.045, def: 0.6, run: 0.95, wait: 0.75, smart: true },
+  { cErr: 0.08, err: 0.6, react: 0.18, tErr: 0.022, pow: 0.04, yaw: 0.04, thPow: 0.032, thYaw: 0.03, def: 0.85, run: 1, wait: 0.6, smart: true },
 ];
 
 const gauss = (rng: Rng) => {
@@ -88,7 +88,8 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
   out.c = mem.c;
   out.d = mem.d;
   out.st = mem.st;
-  if (s.phase === 'pause') {
+  // пауза, расход по местам, «приготовились» — ждём; отсчёт «подумать» начнётся после
+  if (s.phase === 'pause' || s.settle || s.t < (s.readyT ?? 0)) {
     mem.plan = undefined;
     mem.flyKey = undefined;
     return out;

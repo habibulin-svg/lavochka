@@ -4,12 +4,13 @@
  * кольца выбора под ногами. Оси игры: x — поперёк, y — от дома к кону, z — вверх → three (x, z, −y). */
 import * as THREE from 'three';
 import { DvorYard, W } from '../../core/dvorsport/yard3d';
+import { PLACES, type Place } from '../../core/dvorsport/places';
 import { ToonLoader, type Toon } from '../../core/dvorsport/toon';
 import { yKon, type Cfg } from './engine';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export type CamMode = 'bat' | 'field' | 'follow' | 'kon';
+export type CamMode = 'bat' | 'field' | 'follow' | 'kon' | 'live';
 
 const BASE = `${import.meta.env.BASE_URL}dvorsport/`;
 /** Бригады команд: Затулинка и Затон (олимпийки ГОПС). */
@@ -40,8 +41,8 @@ export class LaptaYard extends DvorYard<CamMode> {
   /** Сколько пацанов ещё грузится. */
   pending = 0;
 
-  constructor(host: HTMLElement) {
-    super(host, { yard: `${BASE}field.glb?v=2`, props: `${BASE}lapta.glb?v=1`, center: [0, 25], backdropR: 88, shadow: [-46, 46, 52, -52] });
+  constructor(host: HTMLElement, place: Place = PLACES[0]) {
+    super(host, { yard: place.yard, backdrop: place.backdrop, look: place.look, props: `${BASE}lapta.glb?v=1`, center: [0, 25], backdropR: 88, shadow: [-46, 46, 52, -52] });
     // поле длинное: ближняя плоскость камеры дальше (5 см по умолчанию губят точность глубины — земля и мел мерцали)
     this.camera.near = 0.4;
     this.camera.far = 220;
@@ -73,6 +74,15 @@ export class LaptaYard extends DvorYard<CamMode> {
         return { pos: [0, -11 - L * 0.3, 6.5 + L * 0.3], look: [0, L * 0.3, 0], fov: 6 };
       },
       follow: (f: { x: number; y: number }) => ({ pos: [f.x * 0.5, f.y - 17, 12], look: [f.x * 0.8, f.y + 1, 0.5], fov: 4 }),
+      // «трансляция»: в кадре свой пацан и мяч — чем они ближе, тем крупнее план
+      live: (f: { x: number; y: number; bx: number; by: number }) => {
+        const span = Math.hypot(f.bx - f.x, f.by - f.y);
+        const cx = f.x * 0.62 + f.bx * 0.38;
+        const cy = f.y * 0.62 + f.by * 0.38;
+        const back = clamp(8.5 + span * 0.72, 10, 36);
+        const hgt = clamp(4.6 + span * 0.4, 5.5, 21);
+        return { pos: [cx * 0.75, cy - back, hgt], look: [cx, cy + span * 0.08, 0.9], fov: 4 };
+      },
       kon: () => {
         const L = this.cfg?.L ?? 50;
         return { pos: [0, L * 0.45, 12], look: [0, L * 0.8, 0] };
@@ -234,8 +244,8 @@ export class LaptaYard extends DvorYard<CamMode> {
   }
 
   /** Камера к ракурсу. */
-  override camTo(mode: CamMode, focus?: { x: number; y: number }, speed = 2.5) {
-    if (mode === 'follow' && !focus) mode = 'field';
+  override camTo(mode: CamMode, focus?: { x: number; y: number; bx?: number; by?: number }, speed = 2.5) {
+    if ((mode === 'follow' || mode === 'live') && !focus) mode = 'field';
     this.shot({ ...this.shots[mode]!(focus as never), speed });
   }
 

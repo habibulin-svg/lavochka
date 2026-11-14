@@ -1,0 +1,109 @@
+# Дворовый спорт: новые площадки (школьный стадион, двор между пятиэтажками, деревенский выгон) — текстуры и задники.
+# python studio/run.py studio/jobs/dvorsport/01-places.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+seeds: [11, 12]
+items:
+  # ---- школьный стадион
+  - name: cinder
+    prompt: >-
+      Seamless tileable texture, top-down photograph of an old school stadium running track surface made of reddish-brown crushed brick cinder and fine gravel,
+      compacted, dusty, slightly uneven, small stones, even soft daylight, photorealistic.
+  - name: turf
+    prompt: >-
+      Seamless tileable texture, top-down photograph of a trampled school football field: short dry green grass with many bare brown earth patches,
+      worn, dusty, clover, even soft daylight, photorealistic.
+  - name: school-wall
+    prompt: >-
+      Seamless tileable texture, flat frontal orthographic photograph of the facade of a Soviet school building made of white silicate brick,
+      two rows of large rectangular windows with white wooden frames divided into panes, evenly spaced, red brick decorative bands between floors,
+      the wall fills the entire frame edge to edge, no sky, no ground, no people, no text, even daylight, photorealistic.
+  - name: fence-concrete
+    prompt: >-
+      Seamless tileable texture, flat frontal orthographic photograph of a Soviet grey precast concrete fence panel with embossed diamond rhombus relief pattern,
+      weathered, stains and moss at the bottom, fills the entire frame edge to edge, no sky, no ground, no text, even daylight, photorealistic.
+  - name: backdrop-school
+    width: 1920
+    height: 640
+    prompt: >-
+      Wide panoramic photograph taken at eye level from a school stadium in a Russian provincial town in the 1990s, clear summer midday:
+      in the distance a row of tall green poplars, behind them nine-storey grey panel apartment buildings and a brick boiler house chimney,
+      bright blue sky with white cumulus clouds. Flat horizon, the bottom of the frame is green grass. No people, no cars, no text, photorealistic.
+  # ---- двор между пятиэтажками
+  - name: asphalt
+    prompt: >-
+      Seamless tileable texture, top-down photograph of old cracked grey asphalt of a Soviet courtyard, patches of sand and dust, small cracks with grass,
+      faded, even soft daylight, photorealistic.
+  - name: panel-wall
+    prompt: >-
+      Seamless tileable texture, flat frontal orthographic photograph of the facade of a Soviet five-storey panel apartment building khrushchevka,
+      grey concrete panels with visible seams, two rows of windows with white frames and curtains, small balconies with laundry and painted railings,
+      the wall fills the entire frame edge to edge, no sky, no ground, no people, no text, even daylight, photorealistic.
+  - name: sand
+    prompt: >-
+      Seamless tileable texture, top-down photograph of yellow river sand in a children's sandbox, footprints, small twigs, even soft daylight, photorealistic.
+  - name: brick-red
+    prompt: >-
+      Seamless tileable texture, flat frontal photograph of an old dark red brick wall of a Soviet transformer substation, weathered mortar, stains,
+      even daylight, photorealistic.
+  - name: backdrop-dvor
+    width: 1920
+    height: 640
+    prompt: >-
+      Wide panoramic photograph taken at eye level from a courtyard in a Russian city in the 1990s, golden hour before sunset, long warm light:
+      five-storey grey panel apartment buildings with balconies and hanging laundry all along the horizon, old poplars and lindens between them,
+      a television tower far away, orange and pink sky with thin clouds. Flat horizon, the bottom of the frame is trampled grass. No people, no cars, no text, photorealistic.
+  # ---- деревенский выгон
+  - name: meadow
+    prompt: >-
+      Seamless tileable texture, top-down photograph of a village pasture meadow: short green grass grazed by cows, clover, dandelion leaves, plantain,
+      a few small bare patches, even soft daylight, photorealistic.
+  - name: path
+    prompt: >-
+      Seamless tileable texture, top-down photograph of a trampled dry earth village footpath, light brown packed soil, fine dust, small grass tufts,
+      even soft daylight, photorealistic.
+  - name: log-wall
+    prompt: >-
+      Seamless tileable texture, flat frontal orthographic photograph of the wall of an old Russian village log house, dark weathered horizontal logs,
+      one window with carved white and blue wooden window frame nalichnik in the middle, the wall fills the entire frame edge to edge,
+      no sky, no ground, no roof, no people, no text, even daylight, photorealistic.
+  - name: picket
+    prompt: >-
+      Flat frontal orthographic photograph of an old grey weathered wooden picket fence, vertical pointed boards with gaps between them, two horizontal rails,
+      isolated on a plain pure white background, the fence spans the entire width of the frame edge to edge, photorealistic, even daylight.
+  - name: shingle
+    prompt: >-
+      Seamless tileable texture, flat photograph of an old grey corrugated asbestos slate roof of a village house, moss, lichen stains, even daylight, photorealistic.
+  - name: haystack
+    prompt: >-
+      A single big round-topped haystack of dry yellow hay in a field, whole haystack fully visible from the base to the top,
+      isolated on a plain pure white background, centered, photorealistic, soft daylight.
+  - name: pine-tree
+    width: 832
+    height: 1216
+    prompt: >-
+      A single tall Scots pine tree, whole tree from trunk base to the top fully visible, orange-brown trunk, dark green crown,
+      isolated on a plain pure white background, centered, photorealistic, soft daylight.
+  - name: backdrop-village
+    width: 1920
+    height: 640
+    prompt: >-
+      Wide panoramic photograph taken at eye level from a meadow at the edge of a Russian village, summer morning, soft light haze:
+      in the distance a line of wooden village houses with gardens and fences, a birch grove, a dark pine forest on low hills along the whole horizon,
+      a river bend glinting, pale blue sky with high thin clouds. Flat horizon, the bottom of the frame is green meadow grass. No people, no cars, no text, photorealistic.
+  # луг заново: на «pasture» модель рисовала коров
+  - name: lawn
+    prompt: >-
+      Seamless tileable texture, top-down close photograph of short dense green wild grass lawn with clover leaves and plantain leaves,
+      uniform even coverage, a few tiny yellow flowers, even soft daylight, photorealistic.
+  # стог заново: «haystack» дал современный рулон
+  - name: stog
+    prompt: >-
+      A single tall traditional hand-stacked haystack shaped like a big rounded cone dome, taller than wide, loose dry golden hay,
+      a wooden pole sticking out of the top, whole stack fully visible from the ground to the top,
+      isolated on a plain pure white background, centered, side view, photorealistic, soft daylight.

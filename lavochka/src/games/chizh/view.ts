@@ -8,6 +8,8 @@ import { showLoading } from '../../core/loading';
 import { Coach, Tutor, type TutorStep } from '../../core/dvorsport/coach';
 import { isFrames, playFrames, type FramesEvent } from '../../core/dvorsport/demo';
 import { GroundMarks } from '../../core/dvorsport/marks3d';
+import { nextPlace, placeRow, PLACES, type Place } from '../../core/dvorsport/places';
+import { boom, Fx, thump, whistle } from '../../core/dvorsport/fx3d';
 import { PullAim } from '../../core/dvorsport/input';
 import { Pad } from '../../core/dvorsport/pad';
 import { h, sleep } from '../../core/util';
@@ -92,6 +94,8 @@ export function createView(): GameView<State, Event> {
   let hud: HTMLElement;
   let coach: Coach;
   let marks: GroundMarks;
+  let fx: Fx;
+  let place: Place = PLACES[0];
   let youTag: HTMLElement;
   let tutor: Tutor | null = null;
   let tutorAsked = false;
@@ -367,6 +371,10 @@ export function createView(): GameView<State, Event> {
       else t = `${nm(B)} добивает — отбеги подальше и лови!`;
     }
     coach.say(tutor?.showing ? '' : t, keys, hot);
+    // кто ты сейчас и зачем — всегда на виду; сменилась роль — крупно по центру
+    if (s.over || me < 0) coach.role('');
+    else if (me === s.batter) coach.role('Ты бьёшь', s.cfg.score === 'merki' ? 'подбей чижа и выбей <b>подальше от кона</b>: чем дальше ляжет — тем больше мерок' : 'подбей чижа и выбей <b>за черту</b> — очко; попадут в город — очки сгорят', '#c8501e');
+    else coach.role('Ты водишь', '<b>поймай чижа с лёта</b> или закинь его в кон — и бить будешь ты', '#2a6fb8');
     const act = actNow(s);
     const pullNow = canPull(s);
     pad.show({
@@ -432,13 +440,19 @@ export function createView(): GameView<State, Event> {
         tn(ev.who)?.play('swing1h', false, 0.03, 1.8);
         busy(ev.who, 0.7);
         crack(0.6 + ev.q * 0.4);
+        boom(0.4 + ev.q * 0.6);
+        {
+          const [hx, hy, hz] = chAt(s);
+          fx.burst(hx, hy, hz, ev.q > 0.85 ? '#b8ff9a' : '#fff2b0', 0.7 + ev.q * 0.8);
+        }
+        yard.impact(ev.q > 0.85 ? 2 : 1);
+        if (ev.q > 0.85 && ev.who === ctrl) coach.flash('good');
         if (ev.who === ctrl) tutorSaw.hit = true;
         {
           const m = s.men[ev.who];
           const f = s.ch.b0 ? chFlight(s.ch.b0) : null;
           const d = f ? Math.hypot(f.rest[0], f.rest[1]) : 0;
-          popAt(ev.q > 0.85 ? `В пояс! ${d.toFixed(0)} м` : ev.q > 0.5 ? `${d.toFixed(0)} м` : 'Краем…', m.x, m.y, 2.2, ev.q > 0.85 ? 'good' : '');
-          if (ev.q > 0.8) yard.shake(0.05);
+          popAt(ev.q > 0.85 ? `В пояс! ${d.toFixed(0)} м` : ev.q > 0.5 ? `${d.toFixed(0)} м` : 'Краем…', m.x, m.y, 2.2, ev.q > 0.85 ? 'good big' : '');
         }
         break;
       case 'whiff':
@@ -453,6 +467,8 @@ export function createView(): GameView<State, Event> {
         break;
       case 'land':
         thud();
+        thump(0.5);
+        fx.dust(ev.x, ev.y, 0.9);
         break;
       case 'point':
         Sound.capture();
@@ -464,8 +480,10 @@ export function createView(): GameView<State, Event> {
         tn(ev.who)?.play('holding', false, 0.06);
         busy(ev.who, 1.0);
         say('Поймал с лёта!', `${nm(ev.who)} бьёт`, 1500);
-        popAt('Поймал!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good');
-        yard.shake(0.08);
+        popAt('Поймал!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good big');
+        fx.burst(s.men[ev.who].x, s.men[ev.who].y, 1.7, '#c8ffb0', 1);
+        yard.impact(2);
+        coach.flash(ev.who === ctrl ? 'good' : ev.batter === ctrl ? 'bad' : '');
         break;
       case 'pick':
         if (ev.who === ctrl) tutorSaw.pick = true;
@@ -482,14 +500,22 @@ export function createView(): GameView<State, Event> {
         tn(ev.who)?.play('swing1h', false, 0.03, 1.8);
         busy(ev.who, 0.7);
         crack(0.8);
-        popAt('Отбил!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good');
-        yard.shake(0.05);
+        popAt('Отбил!', s.men[ev.who].x, s.men[ev.who].y, 2.2, 'good big');
+        boom(0.8);
+        {
+          const [hx, hy, hz] = chAt(s);
+          fx.burst(hx, hy, hz, '#fff2b0', 1.2);
+        }
+        yard.impact(2);
         break;
       case 'kon':
         if (s.batter === ctrl) tutorSaw.def = true;
         Sound.capture();
-        popAt(ev.burnt ? `−${ev.burnt}` : 'В кону!', s.ch.x, s.ch.y, 0.6, 'bad');
-        yard.shake(0.06);
+        popAt(ev.burnt ? `−${ev.burnt}` : 'В кону!', s.ch.x, s.ch.y, 0.6, 'bad big');
+        fx.ring(0, 0, 0.05, '#ff8a5a', 2.2);
+        fx.dust(s.ch.x, s.ch.y, 1.4);
+        yard.impact(2);
+        coach.flash(ev.who === ctrl ? 'good' : s.batter === ctrl ? 'bad' : '');
         say(ev.burnt ? 'В городе!' : 'В кону!', ev.burnt ? `сгорело ${ev.burnt} — бьёт ${nm(ev.who)}` : `бьёт ${nm(ev.who)}`, 1600);
         break;
       case 'nokon':
@@ -502,7 +528,9 @@ export function createView(): GameView<State, Event> {
         Sound.win();
         tn(ev.who)?.play('cheer', false, 0.15);
         busy(ev.who, 1.5);
-        popAt(`+${ev.pts}`, s.ch.x, s.ch.y, 0.6, 'good');
+        popAt(`+${ev.pts}`, s.ch.x, s.ch.y, 0.6, 'good big');
+        fx.ring(s.ch.x, s.ch.y, 0.05, '#8aff6a', 2);
+        if (ev.who === ctrl) coach.flash('good'), whistle();
         say(`${ev.pts} мерок`, `${nm(ev.who)} · ${ev.d.toFixed(1)} м от кона · всего ${total(s.men[ev.who])} из ${s.cfg.target}`, 2000);
         break;
       case 'out':
@@ -548,6 +576,7 @@ export function createView(): GameView<State, Event> {
       const v = Math.hypot(m.vx, m.vy);
       const face: [number, number] = v > 0.5 ? [d.x + m.vx, d.y + m.vy] : i === s.batter && (s.phase === 'tee' || s.phase === 'pop') ? [d.x + 0.3, d.y + 5] : [cx, cy];
       yard.put(i, d.x, d.y, face);
+      fx.steps(`m${i}`, d.x, d.y, v * s.speed, dt);
       const tn = yard.men[i]?.toon ?? null;
       const vs = v * s.speed;
       if (tn && now > d.busy) {
@@ -565,7 +594,10 @@ export function createView(): GameView<State, Event> {
     if (ch.mode === 'held' && s.holder >= 0 && yard.men[s.holder]?.toon) yard.chizhInHand(yard.men[s.holder].toon!);
     else if (ch.mode === 'tee') yard.setChizh(0, 0, 0, 0, Math.PI / 2, true);
     else if (ch.mode === 'ground') yard.setChizh(ch.x, ch.y, 0, 0, ch.a, true);
-    else yard.setChizh(cx, cy, cz, ca, ch.b0 ? Math.atan2(ch.b0.vx, ch.b0.vy) + Math.PI / 2 : 0, false);
+    else {
+      yard.setChizh(cx, cy, cz, ca, ch.b0 ? Math.atan2(ch.b0.vx, ch.b0.vy) + Math.PI / 2 : 0, false);
+      if ((ch.mode === 'fly' || ch.mode === 'back') && cz > 0.25) fx.trail(cx, cy, cz, ch.mode === 'back' ? '#ffd0c0' : '#fff6c8', 0.2);
+    }
     yard.glow = ch.mode === 'pop' && isBatter(s) ? (hitQuality(cz) ?? 0) : 0;
     // метки на земле: где ловить (оранжевое крутится), кто ловит (белое), я (жёлтое), стрелка — куда бежать
     marks.begin(dt);
@@ -670,6 +702,12 @@ export function createView(): GameView<State, Event> {
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     if (document.hidden) return;
+    // стоп-кадр на ударе: мир замер на долю секунды
+    if (yard.frozen) {
+      yard.render(0);
+      return;
+    }
+    fx.update(dt, yard.camera);
     draw(dt);
     if (latest && !tutorAsked && ctrl >= 0) {
       tutorAsked = true;
@@ -702,10 +740,16 @@ export function createView(): GameView<State, Event> {
       el.appendChild(wrap);
       hud = wrap.querySelector('.cz-hud') as HTMLElement;
       youTag = wrap.querySelector('.cz-you') as HTMLElement;
-      yard = new ChizhYard(wrap.querySelector('.cz-cv') as HTMLElement);
+      // площадка партии: выбранная или следующая по очереди (в показе правил и превью — всегда «за гаражами»)
+      place = ctx.demo || /[?&]thumb=/.test(location.search) ? PLACES[0] : nextPlace('chizh');
+      yard = new ChizhYard(wrap.querySelector('.cz-cv') as HTMLElement, place);
       marks = new GroundMarks(yard.scene);
+      fx = new Fx(yard.scene);
+      fx.dustColor.set(place.dust);
+      if (ctx.controls && !ctx.demo) ctx.controls.appendChild(placeRow(yard, () => place, (p) => ((place = p), fx.dustColor.set(p.dust))));
+      if (!c.demo && !/[?&]thumb=/.test(location.search)) yard.setLift(0.1);
       coach = new Coach(wrap);
-      cleanup.push(() => (coach.dispose(), marks.dispose(), tutor?.dispose()));
+      cleanup.push(() => (coach.dispose(), marks.dispose(), fx.dispose(), tutor?.dispose()));
       ctx.hold?.(30000);
       const y = yard;
       const shot = ctx.demo || /[?&]thumb=/.test(location.search);

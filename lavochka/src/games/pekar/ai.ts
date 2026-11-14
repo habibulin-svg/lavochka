@@ -30,9 +30,9 @@ import {
 
 /** Дрожь руки (направление, сила), перебор, осторожность (запас по времени до пекаря, с), задержка броска (с). */
 const LV = [
-  { yaw: 0.075, pow: 0.1, tries: 12, safe: 0.1, wait: 0.7, lead: 0 },
-  { yaw: 0.05, pow: 0.07, tries: 30, safe: 0.5, wait: 0.45, lead: 0.3 },
-  { yaw: 0.035, pow: 0.05, tries: 50, safe: 0.8, wait: 0.3, lead: 0.4 },
+  { yaw: 0.075, pow: 0.1, tries: 12, safe: 0.1, wait: 0.95, lead: 0 },
+  { yaw: 0.05, pow: 0.07, tries: 30, safe: 0.5, wait: 0.75, lead: 0.3 },
+  { yaw: 0.035, pow: 0.05, tries: 50, safe: 0.8, wait: 0.6, lead: 0.4 },
 ];
 
 const gauss = (rng: Rng) => {
@@ -88,6 +88,11 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
   out.a = mem.a;
   out.d = mem.d;
   if (s.phase === 'pause') return out;
+  // расход по местам и «приготовились»: кто идёт на место — ждёт; отсчёт «подумать» начнётся после
+  if (s.settle?.to[i] || (s.t < (s.readyT ?? 0) && !s.settle)) {
+    mem.tWait = undefined;
+    if (s.settle?.to[i]) return out;
+  }
   const c = s.cfg;
   const m = s.men[i];
 
@@ -96,7 +101,7 @@ export function botInput(s: State, seat: number, level: number, mem: Record<stri
       mem.kWait = undefined;
       return out;
     }
-    mem.kWait ??= s.t + 0.5 * s.speed;
+    mem.kWait ??= s.t + 0.9 * s.speed;
     if (s.t >= mem.kWait) {
       mem.kIn = { n: ++mem.k, pow: clamp(0.74 + gauss(rng) * (0.04 + lv.pow), 0.3, 1) };
       out.k = mem.kIn;

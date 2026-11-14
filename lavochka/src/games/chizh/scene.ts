@@ -4,6 +4,7 @@
  * Оси игры: x — вбок, y — от кона в поле, z — вверх → three (x, z, −y). */
 import * as THREE from 'three';
 import { DvorYard, W } from '../../core/dvorsport/yard3d';
+import { PLACES, type Place } from '../../core/dvorsport/places';
 import { BRIGADES, ToonLoader, type Toon } from '../../core/dvorsport/toon';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -37,8 +38,8 @@ export class ChizhYard extends DvorYard<'field' | 'tee'> {
   glow = 0;
   private glowMesh: THREE.Mesh;
 
-  constructor(host: HTMLElement) {
-    super(host, { yard: `${BASE}field.glb?v=2`, props: `${BASE}chizh.glb?v=1`, center: [0, 14], backdropR: 80, shadow: [-30, 30, 40, -30] });
+  constructor(host: HTMLElement, place: Place = PLACES[0]) {
+    super(host, { yard: place.yard, backdrop: place.backdrop, look: place.look, props: `${BASE}chizh.glb?v=1`, center: [0, 14], backdropR: 80, shadow: [-30, 30, 40, -30] });
     // пока грузится — болванка-чиж, потом модель из Blender
     const tmp = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.14, 8), new THREE.MeshStandardMaterial({ color: '#c8a070' }));
     this.chizh.add(tmp);

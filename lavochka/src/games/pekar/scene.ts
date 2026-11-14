@@ -4,6 +4,7 @@
  * палки с изолентой его цвета. Оси игры: x — вбок, y — от черты (0) к банке, z — вверх → three (x, z, −y). */
 import * as THREE from 'three';
 import { DvorYard, W } from '../../core/dvorsport/yard3d';
+import { PLACES, type Place } from '../../core/dvorsport/places';
 import { BRIGADES, ToonLoader, type Toon } from '../../core/dvorsport/toon';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -44,8 +45,8 @@ export class PekarYard extends DvorYard<CamMode> {
   pending = 0;
   colors: string[] = [];
 
-  constructor(host: HTMLElement) {
-    super(host, { yard: `${BASE}field.glb?v=1`, props: `${BASE}pekar.glb?v=1`, center: [0, 8], backdropR: 70, shadow: [-24, 24, 30, -26] });
+  constructor(host: HTMLElement, place: Place = PLACES[0]) {
+    super(host, { yard: place.yard, backdrop: place.backdrop, look: place.look, props: `${BASE}pekar.glb?v=1`, center: [0, 8], backdropR: 70, shadow: [-24, 24, 30, -26] });
     // пока грузится — простая банка-болванка, потом её сменит модель из Blender
     const tmp = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.12, 20), new THREE.MeshStandardMaterial({ color: '#b8b8b0', metalness: 0.8, roughness: 0.35 }));
     tmp.position.y = 0.06;

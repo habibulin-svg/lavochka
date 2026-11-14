@@ -116,15 +116,20 @@ describe('чиж: боты', () => {
       let run = 0;
       let worst = 0;
       let slow = 0;
-      for (let t = 0; t < 60 * 60 * 20 && !s.over; t++) {
+      let jump = 0;
+      for (let t = 0; t < 60 * 60 * 35 && !s.over; t++) {
         const inp: In[] = s.seats.map((seat, i) => botInput(JSON.parse(JSON.stringify(s)), seat, i % 3, mem[i], brng));
+        const was = s.men.map((m) => [m.x, m.y]);
         slow += step(s, inp, rng).filter((e) => e.k === 'slow').length;
+        // по местам идут сами: за шаг никто не «прыгает» (смена бьющего, новый кон)
+        s.men.forEach((m, i) => (jump = Math.max(jump, Math.hypot(m.x - was[i][0], m.y - was[i][1]))));
         run = s.phase === 'tee' || s.phase === 'pause' ? 0 : run + 1 / 60;
         worst = Math.max(worst, run);
       }
       expect(s.over).toBe(true);
       expect(worst).toBeLessThan(25);
       expect(slow).toBe(0);
+      expect(jump).toBeLessThan(1.5);
     }
   });
   it('обучение: «подожди» во вводе — время стоит, свой пацан бегает, подбив проходит', () => {

@@ -119,18 +119,23 @@ describe('пекарь: боты', () => {
     );
     const mems = levels.map(() => ({}));
     let k = 0;
+    let jump = 0;
     while (!s.over && k < maxSec * 60) {
       const view = def.view(s, 'all');
       const ins = levels.map((l, i) => botInput(view, i, l, mems[i], r));
+      const was = s.men.map((m) => [m.x, m.y]);
       step(s, ins, r);
+      // по местам идут сами: за шаг никто не «прыгает» (жеребьёвка, смена пекаря)
+      s.men.forEach((m, i) => (jump = Math.max(jump, Math.hypot(m.x - was[i][0], m.y - was[i][1]))));
       k++;
     }
-    return { s, sec: k / 60 };
+    return { s, sec: k / 60, jump };
   };
   it('партии доходят до конца во всех пресетах', () => {
     for (const p of def.presets!) {
-      const { s, sec } = game([2, 1, 0, 2], p.options, 7);
+      const { s, sec, jump } = game([2, 1, 0, 2], p.options, 7);
       expect(s.over, p.id).toBe(true);
+      expect(jump, `${p.id}: телепорт`).toBeLessThan(1);
       console.log(p.id, Math.round(sec), 'с', s.throws, 'бросков', s.winners, s.men.map((m) => `${m.rank}/${m.knocks}`).join(' '));
     }
   }, 120_000);

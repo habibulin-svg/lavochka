@@ -38,7 +38,12 @@ export class Coach {
     this.last = key;
     this.sayEl.innerHTML = html ? `${k ? `<span class="ds-keys">${k}</span>` : ''}<span>${html}</span>` : '';
     this.sayEl.classList.toggle('hot', hot);
-    this.el.style.display = html ? '' : 'none';
+    this.sayEl.style.display = html ? '' : 'none';
+    this.show();
+  }
+
+  private show() {
+    this.el.style.display = this.last.split('|')[0] || this.roleKey.split('|')[0] ? '' : 'none';
   }
 
   /** Всплывающая надпись над точкой поля (px холста): «+2», «Поймал с лёта!». */
@@ -47,15 +52,62 @@ export class Coach {
     p.style.left = `${x}px`;
     p.style.top = `${y}px`;
     this.host.appendChild(p);
-    setTimeout(() => p.remove(), 1400);
+    setTimeout(() => p.remove(), 1800);
   }
 
-  /** Большая надпись по центру на ms. */
-  banner(big: string, small = '', ms = 1300) {
+  private banUntil = 0;
+  private banQ = 0;
+  /** Большая надпись по центру на ms. after — не перебивать ту, что уже висит: показать следом. */
+  banner(big: string, small = '', ms = 1300, after = false) {
+    const now = performance.now();
+    clearTimeout(this.banQ);
+    if (after && now < this.banUntil) {
+      this.banQ = window.setTimeout(() => this.banner(big, small, ms), this.banUntil - now + 60);
+      return;
+    }
+    this.banUntil = now + ms;
     this.banEl.innerHTML = `<b>${esc(big)}</b>${small ? `<span>${esc(small)}</span>` : ''}`;
     this.banEl.classList.add('on');
     clearTimeout(this.banT);
     this.banT = window.setTimeout(() => this.banEl.classList.remove('on'), ms);
+  }
+
+  private roleEl: HTMLElement | null = null;
+  private roleKey = '';
+  /** Кто ты сейчас и зачем — плашка вверху по центру, всегда на виду: «ТЫ БЬЁШЬ · выбей мяч подальше». Сменилась роль —
+   * ещё и крупно по центру на пару секунд (announce = false — без этого). Пусто — спрятать. */
+  role(title: string, goal = '', color = '#b8401e', announce = true) {
+    const key = `${title}|${goal}|${color}`;
+    if (key === this.roleKey) return;
+    // первую роль партии не объявляем крупно (плашка и так на виду) — только смену
+    const prev = this.roleKey.split('|')[0];
+    const changed = !!prev && prev !== title;
+    this.roleKey = key;
+    if (!this.roleEl) {
+      this.roleEl = h(`<div class="ds-role"></div>`);
+      this.el.prepend(this.roleEl);
+    }
+    this.roleEl.style.display = title ? '' : 'none';
+    this.show();
+    if (!title) return;
+    this.roleEl.innerHTML = `<b style="background:${color}">${esc(title)}</b>${goal ? `<span>${goal}</span>` : ''}`;
+    this.roleEl.classList.remove('new');
+    void this.roleEl.offsetWidth;
+    this.roleEl.classList.add('new');
+    if (changed && announce) this.banner(title, goal.replace(/<[^>]+>/g, ''), 2000, true);
+  }
+
+  private flashEl: HTMLElement | null = null;
+  /** Вспышка по краям экрана на большом событии: 'good' — зелёная, 'bad' — красная, '' — белая. */
+  flash(cls = '') {
+    if (!this.flashEl) {
+      this.flashEl = h(`<div class="ds-flash"></div>`);
+      this.host.appendChild(this.flashEl);
+    }
+    const f = this.flashEl;
+    f.className = `ds-flash ${cls}`;
+    void f.offsetWidth;
+    f.classList.add('on');
   }
 
   /** Указатель на точку за краем экрана (p — экранные координаты из toScreen; vis — перед камерой). */
@@ -81,9 +133,13 @@ export class Coach {
   }
 
   dispose() {
+    clearTimeout(this.banQ);
+    clearTimeout(this.banT);
     this.el.remove();
     this.banEl.remove();
     this.ptr.remove();
+    this.roleEl?.remove();
+    this.flashEl?.remove();
   }
 }
 

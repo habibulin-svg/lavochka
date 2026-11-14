@@ -91,19 +91,25 @@ describe('лапта: розыгрыши не застревают, люди н�
   it('у ботов каждый розыгрыш кончается за 35 с игрового времени', () => {
     const rt = def.realtime!;
     let worst = 0;
+    let jump = 0;
     for (const pr of def.presets!)
       for (const seed of [1, 2]) {
         const rng = new SeededRng(seed);
         const s = def.setup([{ seat: 0, kind: 'bot', name: 'a', level: seed % 3 }, { seat: 1, kind: 'bot', name: 'b', level: 1 }], pr.options, rng) as State;
         let start = -1;
         for (let n = 0; n < 120000 && !s.over; n++) {
+          const was = s.men.map((t) => t.map((m) => [m.x, m.y]));
+          const atk = s.atk;
           rt.tick(s, [0, 1].map((seat) => rt.input(rt.bot(def.view(s, [seat]), seat, 1, {}, rng))), rng);
+          // по местам идут сами: за шаг никто не «прыгает» (смена сторон, новая подача)
+          if (s.atk === atk) s.men.forEach((t, a) => t.forEach((m, i) => (jump = Math.max(jump, Math.hypot(m.x - was[a][i][0], m.y - was[a][i][1])))));
           if (s.phase === 'live' && start < 0) start = s.t;
           if (s.phase !== 'live' && start >= 0) (worst = Math.max(worst, s.t - start)), (start = -1);
         }
       }
     expect(worst).toBeGreaterThan(0);
     expect(worst).toBeLessThan(35);
+    expect(jump).toBeLessThan(2.5);
   });
   it('расталкивание разводит людей на два радиуса, детерминированно', () => {
     const a = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0.2, y: 0.1 }];

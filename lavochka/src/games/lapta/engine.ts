@@ -9,7 +9,7 @@
  * Оси: x — поперёк поля, y — от линии дома (0) к линии кона (L), z — вверх. */
 import { kick, sample, type Body } from '../../core/dvorsport/body';
 import { applySpeed, cleanSpeed } from '../../core/realtime';
-import { BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
+import { approach, BODY, dash, drive, dsSpeed, dtScale, separate, slowmo } from '../../core/dvorsport/sim';
 import type { Options, Rng } from '../../core/types';
 import { aiAttack, aiDefense, aiHit, aiThrow, type Want } from './ai';
 import { BALL_R, WALLS, cfgFrom, flight, formation, HIT_AT, homeSpot, judge, strike, VF, VR, VT, yKon, type Cfg, type HitKind, type PStatus, type Style } from './field';
@@ -318,7 +318,7 @@ function swap(s: State, reason: 'salit' | 'candle' | 'nobat', ev: Event[]) {
   s.auto = [true, true];
   resetBall(s);
   ev.push({ k: 'swap', reason, atk: s.atk });
-  pause(s, 1.2, 'serve');
+  pause(s, 1.8, 'serve');
 }
 
 function checkEnd(s: State, ev: Event[]): boolean {
@@ -376,6 +376,9 @@ function tryDash(m: Man, team: number, who: number, ev: Event[]) {
   if (dash(m)) ev.push({ k: 'dash', team, who });
 }
 
+/** Сколько бот-бьющий прилаживается перед ударом, с (по уровню). */
+const BOT_HIT = [1.5, 1.25, 1.05];
+
 /** Подача: бьющий на площадке. */
 function startServe(s: State) {
   s.phase = 'serve';
@@ -384,31 +387,28 @@ function startServe(s: State) {
   s.auto = [true, true];
 }
 
-/** Все — по местам: бьющий, подающий, ждущие, полевые. */
-function walkHome(s: State, dt: number) {
+/** Все — по местам своим ходом (бегом издалека, шагом у места): бьющий, подающий, ждущие, полевые.
+ * Возвращает, сколько осталось идти: [бьющему и подающему, самому дальнему из остальных]. */
+function walkHome(s: State, dt: number): [number, number] {
   const c = s.cfg;
   const A = s.atk;
   const sv = server(s);
-  const go = (m: Man, x: number, y: number, v: number) => {
-    const dx = x - m.x;
-    const dy = y - m.y;
-    const d = Math.hypot(dx, dy);
-    if (d < 0.03) {
-      m.vx = m.vy = 0;
-      return;
-    }
-    const sp = Math.min(v, d / dt);
-    m.vx = (dx / d) * sp;
-    m.vy = (dy / d) * sp;
-    m.x += m.vx * dt;
-    m.y += m.vy * dt;
-  };
+  let key = 0;
+  let rest = 0;
   s.men[A].forEach((m, i) => {
+    const main = i === s.batter || i === sv;
     const [x, y] = i === s.batter ? BAT_SPOT : i === sv ? SERVE_SPOT : homeSpot(c, i, m.st === 'kon' ? 'kon' : 'dom');
-    go(m, x, y, 14);
+    const d = approach(m, x, y, dt, WALK_V);
+    if (main) key = Math.max(key, d);
+    else rest = Math.max(rest, d);
   });
-  formation(c).forEach(([x, y], i) => go(s.men[defT(s)][i], x, y, 14));
+  formation(c).forEach(([x, y], i) => (rest = Math.max(rest, approach(s.men[defT(s)][i], x, y, dt, WALK_V))));
+  return [key, rest];
 }
+/** Скорость расхода по местам, м/с (быстрее бега в игре — чтобы смена не тянулась, но видно, что бегут сами). */
+const WALK_V = 10;
+/** Сколько самое большее ждать расхода по местам после паузы, с. */
+const WALK_MAX = 4.5;
 
 /** Кем управляет сторона, если выбирает сама: нападение — бьющий / бегущий / готовый бежать; защита — ближний к мячу. */
 export function autoCtrl(s: State, t: number): number {
@@ -485,9 +485,10 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   }
 
   if (s.phase === 'pause') {
-    walkHome(s, dt);
+    const [key, rest] = walkHome(s, dt);
     separate([...s.men[0], ...s.men[1]]);
-    if (s.t >= s.until) {
+    // подача — когда бьющий с подающим на местах, а полевые почти дошли (или ждать надоело)
+    if (s.t >= s.until && ((key < 0.3 && rest < 6) || s.t >= s.until + WALK_MAX)) {
       if (s.next === 'batter') nextBatter(s, ev);
       else startServe(s);
     }
@@ -495,12 +496,13 @@ export function step(s: State, inputs: (In | null | undefined)[], rng: Rng): Eve
   }
 
   if (s.phase === 'serve') {
-    walkHome(s, dt);
+    const [, rest] = walkHome(s, dt);
     separate([...s.men[0], ...s.men[1]], undefined, (i) => i === s.batter && s.atk === 0 || i === s.cfg.n + s.batter && s.atk === 1);
     const inp = ins[A];
     let hit = acts[A].hit;
     // бот бьёт не сразу — подающий подбросил, бьющий приладился
-    if (inp.ai >= 0) hit = s.t - s.since > 0.6 ? aiHit(s, inp.ai, rng) : null;
+    // и не раньше, чем полевые встали по местам: бить в пустое поле нечестно
+    if (inp.ai >= 0) hit = s.t - s.since > BOT_HIT[inp.ai] && (rest < 1.5 || s.t - s.since > WALK_MAX) ? aiHit(s, inp.ai, rng) : null;
     if (hit) doHit(s, hit.pow, hit.yaw, hit.style, ev);
     return ev;
   }
