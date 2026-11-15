@@ -1,6 +1,7 @@
-# Коммерсы 2.0 — ролики на MiniMax H3 (локально, 4 шага), проба
+# Коммерсы 2.0, партия 33-videos-h3 — сгенерировано make_jobs.py, правки — там.
 keys: G:/temp/studio/out/kommersy2/30-cutscene-keys
 server: comfy-big
+workflow: minimax_h3_i2v
 defaults:
   width: 1344
   height: 768
@@ -11,15 +12,16 @@ seeds:
 clips:
 - name: c01-intro
   keys:
-  - c01-intro-2
-  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he walks forward onto the pitch and slowly raises his arms,
-    looking around the empty stands in awe, morning mist drifts, the camera slowly pulls back revealing the whole stadium. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound
-    of the scene, no music, no speech.'
+  - c01-intro-8
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he looks around the empty stands in awe, slowly raises his arms
+    higher and laughs happily, his scarf moves in the wind, morning mist drifts over the pitch, the camera slowly pulls back revealing the whole stadium. One continuous shot, no cuts, no text, no subtitles.
+    Audio: natural ambient sound of the scene, no music, no speech.'
 - name: c02-champion
   keys:
-  - c02-champion-1
-  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the players lift the cup high and jump, confetti falls, the
-    owner hugs the coach and laughs, flares glow in the stands, the camera circles slowly. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+  - c02-champion-9
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. they lift the trophy higher and shout with joy, the owner hugs
+    the captain, confetti keeps falling, flares glow in the blurred stands, the camera slowly circles around them. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the
+    scene, no music, no speech.'
 - name: c03-final
   keys:
   - c03-final-2
@@ -69,5 +71,21 @@ clips:
   prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the grandchildren run to him and he laughs and opens his arms,
     waves roll gently, palm leaves sway, seagulls fly, the camera slowly pulls back over the sea. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music,
     no speech.'
-workflow: minimax_h3_i2v
-negative: ''
+- name: c12-end-pension
+  keys:
+  - c12-end-pension-4
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he closes the laptop and smiles, his wife pours tea, the daughter
+    laughs and hugs him from behind, pine branches sway in the warm wind, the camera slowly pulls back. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no
+    music, no speech.'
+- name: c13-end-zatulinka
+  keys:
+  - c13-end-zatulinka-5
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he slams a domino tile on the table and laughs with his old
+    friends, they clap him on the shoulder, a kid rides by on a bicycle, laundry flutters in the wind, the camera slowly pulls back over the courtyard. One continuous shot, no cuts, no text, no subtitles.
+    Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c14-end-lonely
+  keys:
+  - c14-end-lonely-9
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he slowly puts down his fork and looks at the empty chairs,
+    the chandelier light flickers, rain streams down the tall windows, the camera slowly pulls back leaving him tiny and alone in the hall. One continuous shot, no cuts, no text, no subtitles. Audio: natural
+    ambient sound of the scene, no music, no speech.'

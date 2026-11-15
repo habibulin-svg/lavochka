@@ -11,13 +11,25 @@ seeds:
 - 2
 items:
 - name: c01-intro
-  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. Dawn in an empty huge London football stadium with red seats,
-    a stocky broad-faced Russian man with a short dark buzz cut in his late 30s in a camel coat and a red-and-white knitted scarf walks out of the players tunnel onto the green pitch, arms spread wide,
-    mist over the grass. No text, no letters, no logos.
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. Dawn in an empty huge London football stadium with red seats
+    and morning mist over the green pitch. Medium shot from the front: a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow
+    eyes, wide nose, full cheeks, very short dark buzz cut, thick neck, 37 years old, in a camel cashmere coat and a red-and-white knitted football scarf, stands at the edge of the pitch with his arms spread
+    wide, proud and amazed, the empty stands behind him. No text, no letters, no logos.'
+  seeds:
+  - 7
+  - 8
+  - 9
+  - 10
 - name: c02-champion
-  prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A football pitch at night under floodlights, players in red
-    and white kits lift a big silver cup, golden confetti in the air, a stocky broad-faced Russian man with a short dark buzz cut in his late 30s in a camel coat hugging the coach, fans in the stands. No
-    text, no letters, no logos.
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A football pitch at night under floodlights after winning the
+    league, golden confetti in the air. Medium shot: a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full
+    cheeks, very short dark buzz cut, thick neck, 38 years old, in a camel cashmere coat and a red-and-white scarf, and the team captain in a red kit hold a big silver trophy high together, both laughing,
+    blurred celebrating fans in the stands far behind. No text, no letters, no logos.'
+  seeds:
+  - 7
+  - 8
+  - 9
+  - 10
 - name: c03-final
   prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A rainy night at a big stadium final, a goalkeeper in green
     diving across the goal to save a penalty, players in red and white kits watching, heavy rain in the floodlights. No text, no letters, no logos.
@@ -51,3 +63,33 @@ items:
   prompt: Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A small tropical island at sunset, an old stocky broad-faced
     Russian man with a short dark buzz cut with white hair and a white beard in a white linen shirt and a straw panama hat sits on a wooden pier, two small grandchildren run along the pier, a wooden house
     among palms, turquoise sea. No text, no letters, no logos.
+- name: c12-end-pension
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A cozy wooden veranda of a big country house near Moscow on
+    a summer evening, a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks, very short dark buzz
+    cut, thick neck, in his fifties with a short grey beard, in a linen shirt, sits at a table with a laptop and a cup of tea, his wife and grown-up daughter laugh beside him, a pine forest and a garden
+    behind. No text, no letters, no logos.'
+  seeds:
+  - 3
+  - 4
+  - 5
+  - 6
+- name: c13-end-zatulinka
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A courtyard of old Soviet five-storey panel blocks in a Siberian
+    city on a summer evening, a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks, very short
+    dark buzz cut, thick neck, in his fifties, grey stubble, in a simple old jacket, sits on a wooden bench playing dominoes with old friends from his youth, laundry on lines, kids on bicycles behind. No
+    text, no letters, no logos.'
+  seeds:
+  - 3
+  - 4
+  - 5
+  - 6
+- name: c14-end-lonely
+  prompt: 'Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. A huge empty marble dining hall of a rich mansion at night,
+    a very long table with dozens of empty chairs, a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full
+    cheeks, very short dark buzz cut, thick neck, in his fifties with a grey beard, in an expensive dark suit, sits alone at the far end of the table under a giant chandelier, a single plate in front of
+    him, sad tired lonely expression, not smiling. No text, no letters, no logos.'
+  seeds:
+  - 7
+  - 8
+  - 9
+  - 10

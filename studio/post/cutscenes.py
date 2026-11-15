@@ -59,7 +59,8 @@ def geroi_clips(src):
 def kommersy2_clips(src):
     # «Коммерсы 2.0»: один ключ на ролик (CUT_PICK в jobs/kommersy2/make_jobs.py) → c01-intro-2-v1.mp4 → c01-intro
     import re
-    return {re.sub(r'-\d-v1$', '', p.stem): p for p in sorted((src / '31-videos').glob('c[0-9][0-9]-*-v1.mp4'))}
+    # с 2026-11-15 — MiniMax H3 (33-videos-h3, со своим звуком), раньше Wan 2.2 5B (31-videos)
+    return {re.sub(r'-\d-v1$', '', p.stem): p for p in sorted((src / '33-videos-h3').glob('c[0-9][0-9]-*-v1.mp4'))}
 
 
 # GOPS: вступление, наезд на главный момент, стоп-кадр с притемнением. Герои: петля (конец переходит в начало) — окно кампании
@@ -69,7 +70,7 @@ GAMES = {
     'geroi': {'src': 'geroi', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
               'dst': 'lavochka/public/geroi/a/cutscenes', 'clips': geroi_clips, 'loop': True},
     'kommersy2': {'src': 'kommersy2', 'work': '40-cutscenes', 'sfx': '41-cutscene-sfx', 'mix': '41-cutscene-mix.yaml', 'sfxjob': '41-cutscene-sfx.yaml',
-                  'dst': 'lavochka/public/kommersy/a/cutscenes', 'clips': kommersy2_clips, 'loop': False},
+                  'dst': 'lavochka/public/kommersy/a/cutscenes', 'clips': kommersy2_clips, 'loop': False, 'native': True},
 }
 GAME = 'gops'
 SRC = WORK = SFX = MIX = SFXJOB = DST = None
@@ -151,6 +152,8 @@ def sfxjob(names=None):
 
 
 def upscale(names):
+    if GAMES[GAME].get('native'):
+        return upscale_plain(names)
     import spandrel
     import torch
     import torch.nn.functional as F
@@ -166,6 +169,7 @@ def upscale(names):
                                 '-c:v', 'libx264', '-preset', 'medium', '-crf', '14', '-pix_fmt', 'yuv420p', str(out)], stdin=subprocess.PIPE)
         for f in frames(CLIPS[name], w, h):
             with torch.no_grad():
+                f = fit(f)
                 x = torch.from_numpy(f.copy()).cuda().permute(2, 0, 1)[None].half() / 255
                 x = F.interpolate(x, size=(H // 2, W // 2), mode='bicubic', antialias=True)  # 960 × 528 → ×4 → вниз до 1920
                 y = model(x).clamp(0, 1)
@@ -173,6 +177,22 @@ def upscale(names):
             enc.stdin.write((y[0].permute(1, 2, 0) * 255).round().byte().cpu().numpy().tobytes())
         enc.stdin.close()
         enc.wait()
+        print('апскейл', name, flush=True)
+
+
+def upscale_plain(names):
+    """MiniMax H3 даёт 1344×768 — до 1920 всего ×1,43: lanczos + лёгкая резкость на процессоре, видеокарта не нужна."""
+    d = WORK / 'up'
+    d.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        out = d / f'{name}.mp4'
+        if out.exists():
+            continue
+        w, h = size(CLIPS[name])
+        ch = min(h, round(w * H / W))  # кадр под W:H, как fit()
+        vf = f'crop={w}:{ch}:0:{(h - ch) // 2},scale={W}:{H}:flags=lanczos,unsharp=5:5:0.6'
+        subprocess.run([FFMPEG, '-v', 'error', '-y', '-i', str(CLIPS[name]), '-an', '-vf', vf, '-r', str(FPS),
+                        '-c:v', 'libx264', '-preset', 'medium', '-crf', '14', '-pix_fmt', 'yuv420p', str(out)], check=True)
         print('апскейл', name, flush=True)
 
 
@@ -202,6 +222,18 @@ def zoom_at(t: float, dur: float, beat):
     return z + 0.18 * p, p, total
 
 
+def fit(f: np.ndarray) -> np.ndarray:
+    """Подрезать кадр по краям до пропорций W:H (H3 даёт 1344×768 — шире не тянуть)."""
+    h, w = f.shape[:2]
+    if abs(w / h - W / H) < 0.01:
+        return f
+    if w / h > W / H:
+        cw = round(h * W / H)
+        return f[:, (w - cw) // 2:(w - cw) // 2 + cw]
+    ch = round(w * H / W)
+    return f[(h - ch) // 2:(h - ch) // 2 + ch]
+
+
 def crop(f: np.ndarray, z: float, fx: float, fy: float) -> np.ndarray:
     img = Image.fromarray(f)
     cw, ch = W / z, H / z
@@ -229,7 +261,15 @@ def mix_audio(c, dur: float, total: float, wav: pathlib.Path, shared, fades=True
         n = min(len(a), len(buf) - i)
         buf[i:i + n] += a[:n] * 10 ** (gain_db / 20)
 
-    if c.get('bed'):
+    if GAMES[GAME].get('native') and CLIPS.get(c['name']):
+        # звук из самой модели (MiniMax H3) — под движение ролика; раскладка 41-cutscene-mix не нужна
+        tmp = WORK / f"{c['name']}--native.wav"
+        subprocess.run([FFMPEG, '-v', 'error', '-y', '-i', str(CLIPS[c['name']]), '-vn', '-ac', '2', '-ar', str(sr), str(tmp)], check=True)
+        a, _ = sf.read(tmp, always_2d=True)
+        i = int(PRE * sr)
+        n = min(len(a), len(buf) - i)
+        buf[i:i + n] += a[:n] * 10 ** (c.get('native_gain', -2) / 20)
+    elif c.get('bed'):
         bed = f"{c['name']}--bed"
         for k in range(math.ceil(total / 6)):  # фон петлёй, если короче ролика
             put(bed, k * 6.0, c['bed'].get('gain', -4))
@@ -260,12 +300,12 @@ def edit(names):
         if not src.exists():
             src = CLIPS[name]
         w, h = size(src)
-        fr = [f if (w, h) == (W, H) else np.asarray(Image.fromarray(f).resize((W, H), Image.LANCZOS)) for f in frames(src, w, h)]
+        fr = [f if (w, h) == (W, H) else np.asarray(Image.fromarray(fit(f)).resize((W, H), Image.LANCZOS)) for f in frames(src, w, h)]
         if GAMES[GAME]['loop']:
             info[name] = edit_loop(c, fr, name)
             continue
         dur = len(fr) / FPS
-        beat = c.get('beat')
+        beat = None if GAMES[GAME].get('native') else c.get('beat')  # наезды раскладки — под старые ролики
         fx, fy = c.get('focus') or (0.5, 0.5)
         _, _, total = zoom_at(0, dur, beat)
         wav = WORK / f'{name}.wav'

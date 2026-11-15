@@ -149,11 +149,14 @@ def reactions():
 K_ART = ('Hand-painted digital illustration, semi-realistic, detailed oil-painting look, rich textures, cinematic light, wide cinematic shot. ')
 K_TAIL = ' No text, no letters, no logos.'
 KOL = 'a stocky broad-faced Russian man with a short dark buzz cut'
+# полный облик Коляна (как у обликов 22-kolyan-looks): иначе ролик рисует чужого человека
+KOL_FULL = 'a Russian man with realistic natural proportions and a natural face: stocky broad-shouldered build, round broad face, small narrow eyes, wide nose, full cheeks, very short dark buzz cut, thick neck'
 CUTS = {
-    'c01-intro': (f'Dawn in an empty huge London football stadium with red seats, {KOL} in his late 30s in a camel coat and a red-and-white knitted scarf walks out of the players tunnel onto the green pitch, arms spread wide, mist over the grass.',
-                  'he walks forward onto the pitch and slowly raises his arms, looking around the empty stands in awe, morning mist drifts, the camera slowly pulls back revealing the whole stadium'),
-    'c02-champion': (f'A football pitch at night under floodlights, players in red and white kits lift a big silver cup, golden confetti in the air, {KOL} in his late 30s in a camel coat hugging the coach, fans in the stands.',
-                     'the players lift the cup high and jump, confetti falls, the owner hugs the coach and laughs, flares glow in the stands, the camera circles slowly'),
+    # c01, c02 переделаны (пользователь 2026-11-15: Колян не похож, лица плохие): средний план, полный облик Коляна, мало лиц
+    'c01-intro': (f'Dawn in an empty huge London football stadium with red seats and morning mist over the green pitch. Medium shot from the front: {KOL_FULL}, 37 years old, in a camel cashmere coat and a red-and-white knitted football scarf, stands at the edge of the pitch with his arms spread wide, proud and amazed, the empty stands behind him.',
+                  'he looks around the empty stands in awe, slowly raises his arms higher and laughs happily, his scarf moves in the wind, morning mist drifts over the pitch, the camera slowly pulls back revealing the whole stadium'),
+    'c02-champion': (f'A football pitch at night under floodlights after winning the league, golden confetti in the air. Medium shot: {KOL_FULL}, 38 years old, in a camel cashmere coat and a red-and-white scarf, and the team captain in a red kit hold a big silver trophy high together, both laughing, blurred celebrating fans in the stands far behind.',
+                     'they lift the trophy higher and shout with joy, the owner hugs the captain, confetti keeps falling, flares glow in the blurred stands, the camera slowly circles around them'),
     'c03-final': ('A rainy night at a big stadium final, a goalkeeper in green diving across the goal to save a penalty, players in red and white kits watching, heavy rain in the floodlights.',
                   'the goalkeeper dives and saves the ball, rain splashes, the players in red and white run to him and pile on in joy, the camera pushes in'),
     'c04-crash': (f'A London office at night with rain on huge windows, {KOL} in his early 40s in a crumpled white shirt and loosened tie stands at the window, monitors behind him glowing red with falling graphs, papers on the floor.',
@@ -172,24 +175,40 @@ CUTS = {
                        'the employees applaud and cheer, he turns from the window and smiles, raises a hand in thanks, city lights twinkle below, the camera slowly circles'),
     'c11-end-island': (f'A small tropical island at sunset, an old {KOL.replace("a stocky", "stocky")} with white hair and a white beard in a white linen shirt and a straw panama hat sits on a wooden pier, two small grandchildren run along the pier, a wooden house among palms, turquoise sea.',
                        'the grandchildren run to him and he laughs and opens his arms, waves roll gently, palm leaves sway, seagulls fly, the camera slowly pulls back over the sea'),
+    # концовки без роликов (пользователь 2026-11-15)
+    'c12-end-pension': (f'A cozy wooden veranda of a big country house near Moscow on a summer evening, {KOL_FULL}, in his fifties with a short grey beard, in a linen shirt, sits at a table with a laptop and a cup of tea, his wife and grown-up daughter laugh beside him, a pine forest and a garden behind.',
+                        'he closes the laptop and smiles, his wife pours tea, the daughter laughs and hugs him from behind, pine branches sway in the warm wind, the camera slowly pulls back'),
+    'c13-end-zatulinka': (f'A courtyard of old Soviet five-storey panel blocks in a Siberian city on a summer evening, {KOL_FULL}, in his fifties, grey stubble, in a simple old jacket, sits on a wooden bench playing dominoes with old friends from his youth, laundry on lines, kids on bicycles behind.',
+                          'he slams a domino tile on the table and laughs with his old friends, they clap him on the shoulder, a kid rides by on a bicycle, laundry flutters in the wind, the camera slowly pulls back over the courtyard'),
+    'c14-end-lonely': (f'A huge empty marble dining hall of a rich mansion at night, a very long table with dozens of empty chairs, {KOL_FULL}, in his fifties with a grey beard, in an expensive dark suit, sits alone at the far end of the table under a giant chandelier, a single plate in front of him, sad tired lonely expression, not smiling.',
+                       'he slowly puts down his fork and looks at the empty chairs, the chandelier light flickers, rain streams down the tall windows, the camera slowly pulls back leaving him tiny and alone in the hall'),
 }
 
 
 def cut_keys():
     return {'workflow': 'z_image_turbo', 'server': 'comfy-big', 'license': LICENSE,
             'defaults': {'width': 1280, 'height': 704, 'steps': 8}, 'seeds': [1, 2],
-            'items': [{'name': k, 'prompt': f'{K_ART}{v[0]}{K_TAIL}'} for k, v in CUTS.items()]}
+            'items': [{'name': k, 'prompt': f'{K_ART}{v[0]}{K_TAIL}', **({'seeds': [7, 8, 9, 10]} if k in REDO2 else {'seeds': [3, 4, 5, 6]} if k in REDO_KEYS else {})} for k, v in CUTS.items()]}
+
+
+REDO_KEYS = ('c01-intro', 'c02-champion', 'c12-end-pension', 'c13-end-zatulinka', 'c14-end-lonely')
+# вторая попытка без карикатурной полуулыбки — сиды 7–10
+REDO2 = ('c01-intro', 'c02-champion', 'c14-end-lonely')
 
 
 # отбор ключевых кадров по листу 30-cutscene-keys (сид)
-CUT_PICK = {'c01-intro': 2, 'c02-champion': 1, 'c03-final': 2, 'c04-crash': 1, 'c05-last-match': 1, 'c06-tolmachevo': 2,
-            'c07-crypto': 2, 'c08-hospital': 1, 'c09-end-quiet': 2, 'c10-end-tyndex': 2, 'c11-end-island': 1}
+CUT_PICK = {'c01-intro': 8, 'c02-champion': 9, 'c03-final': 2, 'c04-crash': 1, 'c05-last-match': 1, 'c06-tolmachevo': 2,
+            'c07-crypto': 2, 'c08-hospital': 1, 'c09-end-quiet': 2, 'c10-end-tyndex': 2, 'c11-end-island': 1,
+            'c12-end-pension': 4, 'c13-end-zatulinka': 5, 'c14-end-lonely': 9}
 
 
 def cut_videos():
-    return {'keys': 'G:/temp/studio/out/kommersy2/30-cutscene-keys', 'server': 'comfy-big',
-            'defaults': {'width': 1280, 'height': 704, 'frames': 121, 'steps': 30}, 'seeds': [1],
-            'clips': [{'name': k, 'keys': [f'{k}-{CUT_PICK[k]}'], 'prompt': f'{v[1]}. Cinematic painted animation, semi-realistic, smooth natural motion.'} for k, v in CUTS.items()]}
+    # MiniMax H3 локально (выбор пользователя 2026-11-15 после проб Wan 5B / 14B / H3): 1344×768, 24 к/с, 4 шага, со звуком
+    return {'keys': 'G:/temp/studio/out/kommersy2/30-cutscene-keys', 'server': 'comfy-big', 'workflow': 'minimax_h3_i2v',
+            'defaults': {'width': 1344, 'height': 768, 'frames': 124, 'steps': 4}, 'seeds': [1],
+            'clips': [{'name': k, 'keys': [f'{k}-{CUT_PICK[k]}'],
+                       'prompt': f'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. {v[1]}. '
+                                 'One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'} for k, v in CUTS.items()]}
 
 
 JOBS = {
@@ -199,7 +218,7 @@ JOBS = {
     '24-kolyan-reactions': reactions(),
     '25-cards': cards(),
     '30-cutscene-keys': cut_keys(),
-    '31-videos': cut_videos(),
+    '33-videos-h3': cut_videos(),
 }
 
 if __name__ == '__main__':

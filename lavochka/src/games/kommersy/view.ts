@@ -92,6 +92,11 @@ function roadGeo(r: number): RoadGeo {
   return geo;
 }
 
+/** Ролик концовки второго сезона. */
+const ENDING_CLIP: Record<string, string> = {
+  dead: 'c09-end-quiet', tyndex: 'c10-end-tyndex', island: 'c11-end-island', pension: 'c12-end-pension', zatulinka: 'c13-end-zatulinka', lonely: 'c14-end-lonely',
+};
+
 /** Панорама: местность по уровню, вариант по эпохе (где у местности его нет — ближайший), часть — по отрезку. */
 function pano(z: Season, tier: number, m: number) {
   const road = Math.floor(m / 3) % 3;
@@ -273,7 +278,7 @@ class KommersyView implements GameView<View, Event> {
     // концовка второго сезона — свой ролик поверх итогов
     if (v.phase === 'over' && v.season === 2) {
       const e = v.players.find((p) => p.seat === (v.me ?? this.me()))?.ending;
-      const c = e === 'dead' ? 'c09-end-quiet' : e === 'tyndex' ? 'c10-end-tyndex' : e === 'island' ? 'c11-end-island' : null;
+      const c = e ? ENDING_CLIP[e] : undefined;
       if (c) void this.clip(c);
     }
     this.shownPos = new Map(v.players.map((p) => [p.seat, p.pos]));
