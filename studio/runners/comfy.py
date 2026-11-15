@@ -1,5 +1,6 @@
 """Клиент ComfyUI API: отправить граф, дождаться, скачать картинки."""
 import json
+import os
 import time
 import urllib.parse
 import urllib.request
@@ -29,7 +30,8 @@ class Comfy:
         return json.loads(self._get('/object_info/' + urllib.parse.quote(node)))[node]
 
     def submit(self, graph: dict) -> str:
-        body = json.dumps({'prompt': graph, 'client_id': self.client_id}).encode()
+        # STUDIO_FRONT=1 — в начало очереди (несколько картинок, пока сервер занят длинной партией другой задачи)
+        body = json.dumps({'prompt': graph, 'client_id': self.client_id, **({'front': True} if os.environ.get('STUDIO_FRONT') == '1' else {})}).encode()
         req = urllib.request.Request(self.base + '/prompt', body, {'Content-Type': 'application/json'})
         try:
             with _opener.open(req, timeout=30) as r:

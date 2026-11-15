@@ -9,6 +9,8 @@ import { mountCoach, uciMoves } from './coach';
 import { logMyGame } from '../kruzhok/mygames';
 import { pieceDefs, pieceRef } from './pieces';
 import './chess.css';
+import { TavreliView } from './tavreli/view';
+import type { TEvent, TState } from './tavreli/engine';
 
 const NS = 'http://www.w3.org/2000/svg';
 const SQ = 80;
@@ -561,6 +563,62 @@ class ChessView implements GameView<State, Event> {
   }
 }
 
-export function createView(): GameView<State, Event> {
-  return new ChessView();
+/** Таврели — свой вид (tavreli/view.ts): карточка одна, вид выбирается по первой позиции (у таврелей в ней поле tav). */
+class SwitchView implements GameView<State | TState, Event | TEvent> {
+  private root!: HTMLElement;
+  private ctx!: ViewCtx;
+  private inner: GameView | null = null;
+  private tav = false;
+  /** Очередь, пришедшая до первой позиции, — передать виду, как только он появится. */
+  private turn: [number[], number[]] | null = null;
+
+  mount(root: HTMLElement, ctx: ViewCtx) {
+    this.root = root;
+    this.ctx = ctx;
+  }
+
+  private pick(s: State | TState): GameView {
+    const tav = 'tav' in s && s.tav === true;
+    if (!this.inner || tav !== this.tav) {
+      this.inner?.destroy?.();
+      if (this.inner) {
+        this.root.innerHTML = '';
+        this.ctx.controls.innerHTML = '';
+      }
+      this.tav = tav;
+      this.inner = tav ? new TavreliView() : new ChessView();
+      this.inner.mount(this.root, this.ctx);
+    }
+    return this.inner;
+  }
+
+  private replayTurn() {
+    if (this.turn) this.inner?.setTurn(...this.turn);
+  }
+
+  setView(s: State | TState) {
+    this.pick(s).setView(s);
+    // очередь могла прийти раньше позиции (вид без позиции её не принял) — повторяем
+    this.replayTurn();
+  }
+  play(events: (Event | TEvent)[], s: State | TState) {
+    return this.pick(s).play(events, s);
+  }
+  setTurn(toAct: number[], interactive: number[]) {
+    this.turn = [toAct, interactive];
+    this.inner?.setTurn(toAct, interactive);
+  }
+  status(s: State | TState, toAct: number[], interactive: number[]) {
+    return this.pick(s).status?.(s, toAct, interactive) ?? '';
+  }
+  playerStats(s: State | TState, seat: number) {
+    return this.pick(s).playerStats?.(s, seat) ?? '';
+  }
+  destroy() {
+    this.inner?.destroy?.();
+  }
+}
+
+export function createView(): GameView<State | TState, Event | TEvent> {
+  return new SwitchView();
 }

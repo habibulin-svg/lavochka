@@ -248,6 +248,7 @@ export const VARIANTS: VariantPage[] = [
   { path: 'shahmaty/senterezh', game: 'chess', preset: 'senterej' },
   { path: 'shahmaty/marselskie', game: 'chess', preset: 'marseillais' },
   { path: 'shahmaty/shatar', game: 'chess', preset: 'shatar' },
+  { path: 'shahmaty/tavreli', game: 'chess', preset: 'tavreli' },
   { path: 'pasyans/kosynka', game: 'solitaire', preset: 'klondike' },
   { path: 'pasyans/kosynka-po-tri', game: 'solitaire', preset: 'klondike3' },
   { path: 'pasyans/pauk', game: 'solitaire', preset: 'spider1' },

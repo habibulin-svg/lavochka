@@ -1,0 +1,47 @@
+# Таврели (пресет шахмат, 2026-11-15): фигуры — точёные деревянные «таврели»-шайбы, как в настоящих наборах
+# (толстые круглые шашки, светлые и вишнёво-красные). Символы фигур рисуются кодом поверх верхней грани
+# (выжженный знак), как надписи — модель их не пишет. Вид — строго сверху (шайба на поле) и вид сбоку (стенка для башни).
+# Отрицания Z-Image понимает наоборот — ненужное не упоминаем.
+# studio/run.cmd run.py jobs/tavreli/01-pieces.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic studio product photo, crisp details, soft even lighting, natural wood grain.
+seeds: [31, 32, 33, 34]
+items:
+  - name: top-light
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of pale polished birch wood with fine wood grain,
+      perfectly round with a smooth flat top face and a softly rounded edge, seen from directly above, the whole piece in frame, centered,
+      on a plain flat white background. {style}
+  - name: top-dark
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of dark cherry red lacquered wood with visible wood grain,
+      perfectly round with a smooth flat top face and a softly rounded edge, seen from directly above, the whole piece in frame, centered,
+      on a plain flat white background. {style}
+  - name: side-light
+    width: 1536
+    height: 1024
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of pale polished birch wood with fine wood grain,
+      seen exactly from the side at eye level, a short wide cylinder with a softly rounded edge, the whole piece in frame, centered,
+      on a plain flat white background. {style}
+  - name: side-dark
+    width: 1536
+    height: 1024
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of dark cherry red lacquered wood with visible wood grain,
+      seen exactly from the side at eye level, a short wide cylinder with a softly rounded edge, the whole piece in frame, centered,
+      on a plain flat white background. {style}
+  - name: tower
+    width: 1024
+    height: 1536
+    prompt: >-
+      A tall stack of six round thick wooden game pieces like checkers, alternating pale birch wood and dark cherry red lacquered wood,
+      stacked into a slightly uneven tower standing on a wooden chessboard, three-quarter view from above, shallow depth of field,
+      warm evening light. {style}

@@ -1,0 +1,15 @@
+/* Таврели: состав башни, счётчик высоты, цель «встать на свою». */
+.ch-board .tv-own { fill: none; stroke: rgba(40, 110, 200, 0.6); stroke-width: 5; stroke-dasharray: 10 7; }
+.ch-board .tv-count circle { stroke: #1a0c04; stroke-width: 2; }
+.ch-board .tv-count circle.w { fill: #f3e2c0; }
+.ch-board .tv-count circle.b { fill: #7a1a0c; }
+.ch-board .tv-count text { font: 700 15px 'PT Sans', sans-serif; text-anchor: middle; dominant-baseline: central; fill: #1a0c04; }
+.ch-board .tv-count circle.b + text { fill: #fbe8c4; }
+.tv-tower { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.tv-list { display: flex; flex-direction: column; gap: 4px; }
+.tv-item { display: flex; align-items: center; gap: 8px; text-align: left; justify-content: flex-start; }
+.tv-item.on { outline: 2px solid #ffb020; }
+.tv-item small { opacity: 0.7; margin-left: auto; }
+.tv-chip { display: inline-block; width: 16px; height: 10px; border-radius: 50%; border: 1px solid #1a0c04; flex: none; }
+.tv-chip.w { background: #ecd3a4; }
+.tv-chip.b { background: #8a2412; }

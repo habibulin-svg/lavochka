@@ -6,8 +6,8 @@
  */
 import type { Options, Rng } from '../../core/types';
 
-export type Variant = 'classic' | '960' | 'shatranj' | 'chaturanga' | 'makruk' | 'sittuyin' | 'senterej' | 'marseillais' | 'shatar';
-export const VARIANTS: Variant[] = ['classic', '960', 'shatranj', 'chaturanga', 'makruk', 'sittuyin', 'senterej', 'marseillais', 'shatar'];
+export type Variant = 'classic' | '960' | 'shatranj' | 'chaturanga' | 'makruk' | 'sittuyin' | 'senterej' | 'marseillais' | 'shatar' | 'tavreli';
+export const VARIANTS: Variant[] = ['classic', '960', 'shatranj', 'chaturanga', 'makruk', 'sittuyin', 'senterej', 'marseillais', 'shatar', 'tavreli'];
 
 /** Правила варианта. Буквы фигур везде одни (FEN), а ходят Q и B по-разному:
  *  Q — ферзь или «фарзин» (шаг по диагонали); B — слон, «фил» (прыжок на две по диагонали) или «кхон» (шаг по диагонали или вперёд). */
@@ -51,6 +51,8 @@ export const RULES: Record<Variant, Rules> = {
   sittuyin: { ...OLD, b: 'khon', promo: [], stalemate: 'draw', nMoves: 50, place: true, start: '8/8/4pppp/pppp4/4PPPP/PPPP4/8/8' },
   senterej: { ...OLD, stalemate: 'draw', nMoves: 50, werera: true, start: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' },
   marseillais: { ...BASE, twice: true },
+  // таврели — свой движок (tavreli/engine.ts), правила шахмат к ним не применяются
+  tavreli: BASE,
   shatar: { ...BASE, double: false, castle: false, promo: ['Q'], bare: 'draw', noKnightMate: true, start: 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR' },
 };
 export const rulesOf = (s: { cfg: Cfg }) => RULES[s.cfg.variant] ?? BASE;
@@ -105,7 +107,7 @@ export interface MoveRec {
   seat: number;
 }
 
-export type EndReason = 'mate' | 'stalemate' | 'resign' | 'time' | 'repetition' | 'fifty' | 'material' | 'agreed' | 'bare' | 'count';
+export type EndReason = 'mate' | 'stalemate' | 'resign' | 'time' | 'repetition' | 'fifty' | 'material' | 'agreed' | 'bare' | 'count' | 'quiet';
 
 export interface State {
   cfg: Cfg;

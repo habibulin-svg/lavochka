@@ -2,6 +2,15 @@
 import type { GameDef, SeatSpec } from '../../core/types';
 import { choose } from './ai';
 import { apply, fromFen, newGame, setup, sq, toAct, cfgFrom, type Action, type EndReason, type Event, type State, type Variant } from './engine';
+import { applyT, newTGame, toAct as tToAct, type TAction, type TEvent, type TState } from './tavreli/engine';
+import { chooseT } from './tavreli/ai';
+import { TAVRELI_RULES } from './tavreli/rules';
+
+/** Таврели — свой движок на той же карточке: состояние отличается полем tav. */
+type S = State | TState;
+type A = Action | TAction;
+type E = Event | TEvent;
+const isT = (s: S): s is TState => 'tav' in s && s.tav === true;
 
 export const SEATS = [
   { name: 'Белые', color: '#efe0c0', light: '#fffaf0', dark: '#8a7a5a', ink: '#7a5f30' },
@@ -19,15 +28,18 @@ const REASON: Record<EndReason, string> = {
   agreed: 'ничья по согласию',
   bare: 'голый король',
   count: 'счёт ходов кончился — ничья',
+  quiet: '75 ходов без взятий и ходов ратником — ничья',
 };
 
 /** Причина, когда у неё есть победитель (в старинных шахматах пат и голый король — победа). */
 const WIN: Partial<Record<EndReason, string>> = { stalemate: 'пат — и победа', bare: 'у соперника голый король' };
 
-function describe(ev: Event, name: (seat: number) => string): string | null {
+function describe(ev: E, name: (seat: number) => string): string | null {
   switch (ev.type) {
     case 'start':
       return ev.variant === '960' ? `Фишер 960: позиция № ${ev.sp}.` : null;
+    case 'tmove':
+      return `${ev.seat === 0 ? `${ev.num}.` : `${ev.num}…`} <b>${ev.san}</b>${ev.check && !ev.san.endsWith('#') ? ' — шах!' : ''}`;
     case 'move':
       return `${ev.seat === 0 ? `${ev.num}.` : `${ev.num}…`} <b>${ev.san}</b>${ev.check && !ev.san.endsWith('#') ? ' — шах!' : ''}`;
     case 'pass':
@@ -75,9 +87,10 @@ const OLD: { id: Variant; label: string; hint: string }[] = [
   { id: 'senterej', label: 'Сентередж', hint: 'Эфиопские: до первого взятия — до шести ходов подряд' },
   { id: 'marseillais', label: 'Марсельские', hint: 'Два хода за раз; шах первым ходом — второй пропадает' },
   { id: 'shatar', label: 'Шатар', hint: 'Монгольские: начинают с d4 d5, мат конём не считается' },
+  { id: 'tavreli', label: 'Таврели', hint: 'Русские шахматы: фигуры не рубят, а берут в плен — растут башни' },
 ];
 
-export const def: GameDef<State, Action, Event, State> = {
+export const def: GameDef<S, A, E, S> = {
   id: 'chess',
   title: 'Шахматы',
   players: { min: 2, max: 2, default: 2 },
@@ -98,6 +111,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'senterej', label: 'сентередж — эфиопские' },
         { value: 'marseillais', label: 'марсельские — два хода за раз' },
         { value: 'shatar', label: 'шатар — монгольские' },
+        { value: 'tavreli', label: 'таврели — русские шахматы с башнями' },
       ],
       default: 'classic',
     },
@@ -138,17 +152,17 @@ export const def: GameDef<State, Action, Event, State> = {
     ...OLD.map((o) => ({ id: o.id, label: o.label, hint: o.hint, options: { variant: o.id, clock: 0, inc: 0 } })),
   ],
 
-  setup: (_seats, opts, rng) => setup([0, 1], opts, rng),
-  toAct,
-  apply: (s, seat, a) => apply(s, seat, a),
+  setup: (_seats, opts, rng) => (opts.variant === 'tavreli' ? newTGame(cfgFrom(opts), Date.now()) : setup([0, 1], opts, rng)),
+  toAct: (s) => (isT(s) ? tToAct(s) : toAct(s)),
+  apply: (s, seat, a) => (isT(s) ? applyT(s, seat, a as TAction) : apply(s, seat, a as Action)),
   view: (s) => s,
   result(s) {
     if (s.phase !== 'over' || !s.reason) return null;
     const scores = { 0: s.winner === 0 ? 1 : s.winner === 1 ? 0 : 0.5, 1: s.winner === 1 ? 1 : s.winner === 0 ? 0 : 0.5 };
     if (s.winner == null) return { winners: [0, 1], text: REASON[s.reason], scores };
-    return { winners: [s.winner], text: s.reason === 'mate' ? 'поставили мат' : WIN[s.reason] ?? REASON[s.reason], scores };
+    return { winners: [s.winner], text: s.reason === 'mate' ? (isT(s) ? 'пленили волхва' : 'поставили мат') : WIN[s.reason] ?? REASON[s.reason], scores };
   },
-  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose },
+  bot: { levels: ['Лёгкий', 'Средний', 'Сложный'], choose: (v, seat, lv, rng) => (isT(v) ? chooseT(v, seat, lv, rng) : choose(v, seat, lv, rng)) },
   describe,
 
   // позиция «посреди партии» — итальянская партия, белые готовят атаку
@@ -348,6 +362,7 @@ export const def: GameDef<State, Action, Event, State> = {
           mv(0, 'd1', 'b3', 'Бэрс ходит как ферзь.'),
         ]),
       },
+      ...TAVRELI_RULES,
       {
         title: 'Шахматные часы',
         html: `<p>С часами у каждого свой запас времени на партию. Пока вы думаете, идут ваши часы; сделали ход — пошли часы соперника.

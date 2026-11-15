@@ -1,0 +1,35 @@
+# Таврели, вторая партия (пользователь 2026-11-15: у настоящих таврелей знаки и на боковых гранях — видно, что в башне).
+# Нужна шайба с хорошо видной стенкой: вид 3/4 сверху, стенка — примерно четверть ширины. Гранёная (восьмигранник, как
+# у настоящих наборов) и круглая — выбрать по листу. Знак рисуется кодом и на верхней грани, и на передней грани стенки.
+# studio/run.cmd run.py jobs/tavreli/02-pieces-3q.yaml   (comfy-big на :8188)
+workflow: z_image_turbo
+server: comfy-big
+license: Apache-2.0 (Z-Image-Turbo)
+defaults:
+  width: 1024
+  height: 1024
+  steps: 8
+style: >-
+  Detailed realistic studio product photo, crisp details, soft even lighting, natural wood grain.
+seeds: [41, 42, 43, 44]
+items:
+  - name: oct-light
+    prompt: >-
+      One octagonal wooden game piece, a flat eight-sided prism like a thick checker with eight flat smooth side faces,
+      made of pale polished birch wood, smooth flat top face, seen from above at a 40 degree angle so the top face and the front side faces are visible,
+      the whole piece in frame, centered, on a plain flat white background. {style}
+  - name: oct-dark
+    prompt: >-
+      One octagonal wooden game piece, a flat eight-sided prism like a thick checker with eight flat smooth side faces,
+      made of dark cherry red lacquered wood, smooth flat top face, seen from above at a 40 degree angle so the top face and the front side faces are visible,
+      the whole piece in frame, centered, on a plain flat white background. {style}
+  - name: round-light
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of pale polished birch wood with fine wood grain,
+      smooth flat top face and a straight smooth side wall, seen from above at a 40 degree angle so the top face and the front of the side wall are visible,
+      the whole piece in frame, centered, on a plain flat white background. {style}
+  - name: round-dark
+    prompt: >-
+      One round thick wooden game piece like a large checker, made of dark cherry red lacquered wood with visible wood grain,
+      smooth flat top face and a straight smooth side wall, seen from above at a 40 degree angle so the top face and the front of the side wall are visible,
+      the whole piece in frame, centered, on a plain flat white background. {style}
