@@ -158,6 +158,7 @@ class KommersyView implements GameView<View, Event> {
   private shownPos = new Map<number, number>();
   private road = 0;
   private bgSrc = '';
+  private preloaded = new Set<string>();
   private music = new Music();
   private musicBtn!: HTMLButtonElement;
   private kolyan = new KolyanCam();
@@ -348,8 +349,15 @@ class KommersyView implements GameView<View, Event> {
     const me = this.myPlayer();
     const z = season(v.season);
     const pn = pano(z, me.tier, v.m);
-    this.road = pn.road;
-    this.setBg(pn.src);
+    this.setBg(pn.src, pn.road);
+    // следующая панорама — заранее, чтобы на смене отрезка не ждать загрузки
+    if (v.len) {
+      const nx = pano(z, me.tier, v.m + v.len).src;
+      if (nx !== pn.src && !this.preloaded.has(nx)) {
+        this.preloaded.add(nx);
+        new Image().src = nx;
+      }
+    }
     this.dateEl.innerHTML = `<b>${z.dateText(v.m)}</b> · ${z.eraName[z.eraOf(v.m)]}${v.len === 1 ? ' · помесячно' : ''}${v.crisis ? ' <span class="km-crisis">кризис</span>' : ''}<span class="km-place">${z.placeName(v.m, me.tier)}</span>`;
     this.drawRoad();
     this.kolyan.set(me.hero === 'kolyan' ? lookOf(z, v.m, me.ill != null) : null);
@@ -364,20 +372,34 @@ class KommersyView implements GameView<View, Event> {
     if (!this.ctx.demo) this.music.set(eraMusic(v));
   }
 
-  private setBg(src: string) {
+  /** Дорога меняется вместе с картинкой: пока новая панорама грузится, ячейки стоят на старой дороге (иначе разъезжаются). */
+  private setBg(src: string, road: number) {
     if (src === this.bgSrc) return;
     const first = !this.bgSrc;
     this.bgSrc = src;
     if (first) {
       this.bg.src = src;
+      this.road = road;
       return;
     }
-    this.bg2.src = src;
-    this.bg2.classList.add('on');
-    setTimeout(() => {
-      this.bg.src = src;
-      this.bg2.classList.remove('on');
-    }, 900);
+    const img = new Image();
+    img.src = src;
+    void img
+      .decode()
+      .catch(() => undefined)
+      .then(() => {
+        if (this.bgSrc !== src || !this.v) return;
+        this.road = road;
+        this.drawRoad();
+        this.drawTokens();
+        this.bg2.src = src;
+        this.bg2.classList.add('on');
+        setTimeout(() => {
+          if (this.bgSrc !== src) return;
+          this.bg.src = src;
+          this.bg2.classList.remove('on');
+        }, 900);
+      });
   }
 
   private drawRoad() {
@@ -471,12 +493,12 @@ class KommersyView implements GameView<View, Event> {
             const pct = Math.round(a.niche * 100);
             const old = a.niche >= 1 ? '' : `<span class="km-old">${a.niche <= 0.35 ? `ниша отжила: доход ${pct} % от лучших лет` : `ниша стареет: доход ${pct} %`}</span>`;
             const g = a.grow;
-            const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}` : d?.next ? ` · растёт в «${esc(season(v.season).deal(d.next)!.name)}» (пока рано)` : '';
+            const grows = g ? ` · растёт в «${esc(g.name)}» за ${money(g.cost)}${g.loan > 0 && !g.why ? `, в кредит ${money(g.loan)}` : ''}` : d?.next ? ` · растёт в «${esc(season(v.season).deal(d.next)!.name)}» (пока рано)` : '';
             const s2 = v.season === 2;
             const monetBtn = s2 && a.aud != null && !a.monet ? `<button class="km-mini txt" data-act="monet" data-uid="${a.uid}"${dis} title="включить рекламу и подписку: появится доход, рост замедлится">₽ вкл</button>` : '';
             const homeBtn = s2 && d?.home && v.my?.s2?.home ? `<button class="km-mini txt" data-act="home" data-uid="${a.uid}"${dis} title="слетать домой: дело год не падает, но дух клуба −6 и 40 часов">✈ домой</button>` : '';
             const aud = a.aud != null ? ` · аудитория ${Math.round(a.aud)}${a.monet ? '' : ' (деньги не включены)'}` : '';
-            const growBtn = monetBtn + homeBtn + (g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '');
+            const growBtn = monetBtn + homeBtn + (g ? `<button class="km-mini" data-act="grow" data-uid="${a.uid}"${free && !g.why ? '' : ' disabled'} title="${esc(`расширить до «${g.name}»: доплата ${money(g.cost)}${g.loan > 0 && !g.why ? `, из них в кредит ${money(g.loan)}` : ''}${g.why ? ` — ${g.why}` : ''}`)}">⬆</button>` : '');
             return `<li><b>${d?.heat ? '🩸 ' : ''}${esc(a.name)}</b><small>${inc}${aud}${d?.heat ? ' · органы ↑' : ''}${grows}${old}</small><span class="km-acts">${growBtn}${mgr}<button class="km-mini" data-act="sell" data-uid="${a.uid}"${dis} title="продать">💵</button></span></li>`;
           })
           .join('')

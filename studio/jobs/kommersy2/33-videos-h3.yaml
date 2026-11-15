@@ -1,0 +1,73 @@
+# Коммерсы 2.0 — ролики на MiniMax H3 (локально, 4 шага), проба
+keys: G:/temp/studio/out/kommersy2/30-cutscene-keys
+server: comfy-big
+defaults:
+  width: 1344
+  height: 768
+  frames: 124
+  steps: 4
+seeds:
+- 1
+clips:
+- name: c01-intro
+  keys:
+  - c01-intro-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he walks forward onto the pitch and slowly raises his arms,
+    looking around the empty stands in awe, morning mist drifts, the camera slowly pulls back revealing the whole stadium. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound
+    of the scene, no music, no speech.'
+- name: c02-champion
+  keys:
+  - c02-champion-1
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the players lift the cup high and jump, confetti falls, the
+    owner hugs the coach and laughs, flares glow in the stands, the camera circles slowly. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c03-final
+  keys:
+  - c03-final-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the goalkeeper dives and saves the ball, rain splashes, the
+    players in red and white run to him and pile on in joy, the camera pushes in. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c04-crash
+  keys:
+  - c04-crash-1
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he slowly lowers his head and loosens his tie, the red graphs
+    keep falling on the monitors, rain streams down the glass, lightning flashes, the camera slowly pushes in. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene,
+    no music, no speech.'
+- name: c05-last-match
+  keys:
+  - c05-last-match-1
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the floodlights switch off one by one, he folds the scarf and
+    stands up, slowly walks away up the stairs, the camera stays still. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c06-tolmachevo
+  keys:
+  - c06-tolmachevo-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he steps out into the frost, his breath turns to thick steam,
+    he pulls up his collar and shivers, then grins, snow sparkles in the lamp light, the camera follows him. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene,
+    no music, no speech.'
+- name: c07-crypto
+  keys:
+  - c07-crypto-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the golden chart keeps rising, his eyes widen and he leans closer,
+    then laughs and leans back in disbelief, the screen glow pulses, the camera slowly pushes in. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music,
+    no speech.'
+- name: c08-hospital
+  keys:
+  - c08-hospital-1
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. he slowly opens his eyes and smiles weakly, she squeezes his
+    hand and wipes a tear, sunlight moves across the bed, the camera gently pushes in. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c09-end-quiet
+  keys:
+  - c09-end-quiet-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. first snowflakes slowly fall, leaves move in the wind, a window
+    lights up, the scarf flutters slightly on the bench, the camera slowly pulls back. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c10-end-tyndex
+  keys:
+  - c10-end-tyndex-2
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the employees applaud and cheer, he turns from the window and
+    smiles, raises a hand in thanks, city lights twinkle below, the camera slowly circles. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music, no speech.'
+- name: c11-end-island
+  keys:
+  - c11-end-island-1
+  prompt: 'Semi-realistic painted cinematic style, the scene opens exactly on image 1 and keeps its look, faces stay consistent and detailed. the grandchildren run to him and he laughs and opens his arms,
+    waves roll gently, palm leaves sway, seagulls fly, the camera slowly pulls back over the sea. One continuous shot, no cuts, no text, no subtitles. Audio: natural ambient sound of the scene, no music,
+    no speech.'
+workflow: minimax_h3_i2v
+negative: ''

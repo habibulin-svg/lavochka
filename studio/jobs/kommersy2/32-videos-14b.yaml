@@ -1,0 +1,68 @@
+# Коммерсы 2.0 — ролики на Wan 2.2 I2V-A14B (проба и переделка 31-videos)
+keys: G:/temp/studio/out/kommersy2/30-cutscene-keys
+server: comfy-big
+defaults:
+  width: 1024
+  height: 560
+  frames: 81
+  steps: 6
+  split: 3
+seeds:
+- 1
+clips:
+- name: c01-intro
+  keys:
+  - c01-intro-2
+  prompt: he walks forward onto the pitch and slowly raises his arms, looking around the empty stands in awe, morning mist drifts, the camera slowly pulls back revealing the whole stadium. Cinematic painted
+    animation, semi-realistic, smooth natural motion.
+- name: c02-champion
+  keys:
+  - c02-champion-1
+  prompt: the players lift the cup high and jump, confetti falls, the owner hugs the coach and laughs, flares glow in the stands, the camera circles slowly. Cinematic painted animation, semi-realistic,
+    smooth natural motion.
+- name: c03-final
+  keys:
+  - c03-final-2
+  prompt: the goalkeeper dives and saves the ball, rain splashes, the players in red and white run to him and pile on in joy, the camera pushes in. Cinematic painted animation, semi-realistic, smooth natural
+    motion.
+- name: c04-crash
+  keys:
+  - c04-crash-1
+  prompt: he slowly lowers his head and loosens his tie, the red graphs keep falling on the monitors, rain streams down the glass, lightning flashes, the camera slowly pushes in. Cinematic painted animation,
+    semi-realistic, smooth natural motion.
+- name: c05-last-match
+  keys:
+  - c05-last-match-1
+  prompt: the floodlights switch off one by one, he folds the scarf and stands up, slowly walks away up the stairs, the camera stays still. Cinematic painted animation, semi-realistic, smooth natural motion.
+- name: c06-tolmachevo
+  keys:
+  - c06-tolmachevo-2
+  prompt: he steps out into the frost, his breath turns to thick steam, he pulls up his collar and shivers, then grins, snow sparkles in the lamp light, the camera follows him. Cinematic painted animation,
+    semi-realistic, smooth natural motion.
+- name: c07-crypto
+  keys:
+  - c07-crypto-2
+  prompt: the golden chart keeps rising, his eyes widen and he leans closer, then laughs and leans back in disbelief, the screen glow pulses, the camera slowly pushes in. Cinematic painted animation, semi-realistic,
+    smooth natural motion.
+- name: c08-hospital
+  keys:
+  - c08-hospital-1
+  prompt: he slowly opens his eyes and smiles weakly, she squeezes his hand and wipes a tear, sunlight moves across the bed, the camera gently pushes in. Cinematic painted animation, semi-realistic, smooth
+    natural motion.
+- name: c09-end-quiet
+  keys:
+  - c09-end-quiet-2
+  prompt: first snowflakes slowly fall, leaves move in the wind, a window lights up, the scarf flutters slightly on the bench, the camera slowly pulls back. Cinematic painted animation, semi-realistic,
+    smooth natural motion.
+- name: c10-end-tyndex
+  keys:
+  - c10-end-tyndex-2
+  prompt: the employees applaud and cheer, he turns from the window and smiles, raises a hand in thanks, city lights twinkle below, the camera slowly circles. Cinematic painted animation, semi-realistic,
+    smooth natural motion.
+- name: c11-end-island
+  keys:
+  - c11-end-island-1
+  prompt: the grandchildren run to him and he laughs and opens his arms, waves roll gently, palm leaves sway, seagulls fly, the camera slowly pulls back over the sea. Cinematic painted animation, semi-realistic,
+    smooth natural motion.
+workflow: wan22_i2v_14b
+negative: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走

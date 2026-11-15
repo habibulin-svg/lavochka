@@ -172,7 +172,10 @@ export function choose(v: View, seat: number, level: number, rng: Rng): Action |
       const n = g && !g.why ? season(v.season).deal(g.id) : undefined;
       if (!g || !n) continue;
       const gain = n.income * (a.manager ? 0.88 : 1) - a.now;
-      if (gain > 0 && g.cost / gain < (level >= 2 ? 14 : 10) && me.cash - g.cost > my.expenses * 2) return { type: 'grow', uid: a.uid };
+      const cashOk = me.cash - g.cost > my.expenses * 2;
+      // в кредит (на тех же условиях, что покупка) — когда доход окупает доплату быстро, а платёж банку прибавка покрывает
+      const creditOk = g.loan > 0 && g.cost / gain < (level >= 2 ? 10 : 7) && gain > g.loan / 12 && me.cash > my.expenses;
+      if (gain > 0 && g.cost / gain < (level >= 2 ? 14 : 10) && (cashOk || creditOk)) return { type: 'grow', uid: a.uid };
     }
   }
   if (v.season === 2 && level >= 1 && me.tier >= 4) {

@@ -1,4 +1,4 @@
-"""Ролики: ключевой кадр (картинка) → Wan 2.2 TI2V-5B → mp4. Apache-2.0.
+"""Ролики: ключевой кадр (картинка) → Wan 2.2 (TI2V-5B или I2V-A14B, поле workflow) → mp4. Apache-2.0.
 
 studio/run.cmd runners/video.py <задание.yaml> [--only имя] [--dry]
 
@@ -71,7 +71,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     keys = pathlib.Path(job['keys'])
 
-    wf = json.loads((ROOT / 'workflows' / 'wan22_i2v.json').read_text(encoding='utf-8'))
+    # workflow: wan22_i2v (TI2V-5B, по умолчанию) | wan22_i2v_14b (I2V-A14B + lightx2v, 16 к/с)
+    wf_name = job.get('workflow', 'wan22_i2v')
+    wf = json.loads((ROOT / 'workflows' / f'{wf_name}.json').read_text(encoding='utf-8'))
+    wf.pop('_about', None)
     comfy = Comfy(AI['servers'][job.get('server', 'comfy-big')])
     if not a.dry and not comfy.alive():
         sys.exit('ComfyUI comfy-big не запущен')
@@ -109,7 +112,7 @@ def main():
                 (out / file).write_bytes(data)
                 manifest.append({
                     'file': file, 'clip': clip['name'], 'key': key, 'seed': seed, 'prompt': values['prompt'],
-                    'workflow': 'wan22_i2v', 'license': 'Apache-2.0 (Wan 2.2 TI2V-5B)',
+                    'workflow': wf_name, 'license': 'Apache-2.0 (Wan 2.2 ' + ('I2V-A14B' if '14b' in wf_name else 'TI2V-5B') + ')',
                     'frames': values.get('frames'), 'sec': round(time.time() - t0),
                     'made': datetime.datetime.now().isoformat(timespec='seconds'),
                 })

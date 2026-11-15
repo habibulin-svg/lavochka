@@ -247,6 +247,8 @@ export interface Fx {
   btcLose?: boolean;
   /** Крах: поправка к итоговому миллиону (доля). */
   crash?: number;
+  /** IT-дела: множитель дохода (льготы резидента). */
+  itMul?: number;
 }
 
 export interface Choice {

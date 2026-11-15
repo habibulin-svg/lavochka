@@ -128,6 +128,7 @@ export function applyFxS2(s: State, p: Player, fx: Fx, rng: Rng, ev: Event[], un
   }
   if (fx.cto) p.cto = true;
   if (fx.crash) p.crash = (p.crash ?? 0) + fx.crash;
+  if (fx.itMul) for (const a of p.assets) if (a.aud != null) a.mul *= fx.itMul;
   if (fx.venture) for (let i = 0; i < fx.venture; i++) addVenture(s, p, rng, ev, round(Math.max(unit * 2, marketWorth(s, p) * 0.01)), fx.venture === 1 && i === 0 && !!fx.stats?.avt);
   if (fx.btc) buyBtc(s, p, Math.min(BTC_SMALL, Math.max(0, p.cash)), ev);
   if (fx.btcLose && p.btc && p.btc.where === 'flash') {
@@ -418,11 +419,11 @@ export function historyS2(s: State, id: string, ev: Event[]) {
   }
 }
 
-/** Январь 2009-го: от империи остаётся $0,8–1,2 млн — по выборам краха и тому, как держал дела дома. */
+/** Январь 2009-го: от империи остаётся $0,7–1,4 млн — по выборам краха и тому, как держал дела дома. */
 function settleCrash(s: State, p: Player, ev: Event[]) {
   const home = p.assets.filter((a) => Z(s).deal(a.id)?.home);
   const biz = home.length ? home.reduce((t, a) => t + a.mul, 0) / home.length : 0.7;
-  const cash = round(1e6 * clamp(1 + (p.crash ?? 0) + (biz - 0.8) * 0.5, 0.8, 1.2));
+  const cash = round(1e6 * clamp(1 + (p.crash ?? 0) + (biz - 0.8) * 0.5, 0.7, 1.4));
   const c = p.club2;
   if (c) {
     p.trophies = [...c.trophies];

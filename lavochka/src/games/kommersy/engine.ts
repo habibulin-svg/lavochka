@@ -253,6 +253,8 @@ export function money(v: number): string {
   return `${v < 0 ? '−' : ''}$${s}`;
 }
 
+/** Платёж месяца: последний — не больше остатка с процентами. */
+export const loanPay = (l: Loan) => Math.min(l.pay, Math.max(0, l.left * (1 + l.rate)));
 export const debt = (p: Player) => p.loans.reduce((s, l) => s + l.left, 0);
 export function worth(p: Player) {
   const v = p.cash + p.assets.reduce((s, a) => s + a.value, 0) - debt(p);
@@ -302,7 +304,7 @@ export function expenses(s: State, p: Player) {
   const biz = p.assets.reduce((t, a) => t + assetIncome(s, p, a), 0);
   const basket = 25 + 0.12 * (biz + (p.job?.salary ?? 0));
   const dan = biz * ({ none: 0, bandit: 0.2, police: 0.25, own: 0.1 } as Record<Krysha, number>)[p.krysha];
-  const loans = p.loans.reduce((t, l) => t + l.pay, 0);
+  const loans = p.loans.reduce((t, l) => t + loanPay(l), 0);
   const v = basket + dan + loans + p.upkeep;
   // второй сезон: дыра клуба (ТВ + билеты + спонсоры − зарплаты − стадион) — тоже расход хозяина
   return p.club2 ? v - clubNet(p.club2) : v;
@@ -404,21 +406,28 @@ export function growNext(s: State, p: Player, a: Asset): DealT | undefined {
 export const GROW_PAY = 0.8;
 export const GROW_PAY_CARD = 0.6;
 export const growCost = (n: DealT, a: Asset, k = GROW_PAY) => round(Math.max(0, n.price - a.value) * k);
+/** Сколько доплаты за расширение взять в кредит — на тех же условиях, что и покупка дела; null — банк не даст. */
+export function growLoan(s: State, p: Player, sum: number): number | null {
+  const loan = Math.max(0, sum - Math.max(0, p.cash));
+  return loan > 0 && (p.stats.name < 15 || loan > loanLim(s, p)) ? null : loan;
+}
 export function growWhy(s: State, p: Player, a: Asset): string | null {
   const n = growNext(s, p, a);
   if (!n) return 'расти некуда';
-  if (p.cash < growCost(n, a)) return 'не хватает денег';
+  if (growLoan(s, p, growCost(n, a)) == null) return 'не хватает денег';
   return null;
 }
 function growTarget(s: State, p: Player) {
   return p.assets.find((a) => {
     const n = growNext(s, p, a);
-    return !!n && p.cash >= growCost(n, a, GROW_PAY_CARD);
+    return !!n && growLoan(s, p, growCost(n, a, GROW_PAY_CARD)) != null;
   });
 }
 function growAsset(s: State, p: Player, a: Asset, k: number, ev: Event[]) {
   const n = growNext(s, p, a)!;
   const sum = growCost(n, a, k);
+  const loan = growLoan(s, p, sum) ?? 0;
+  if (loan > 0) takeLoan(s, p, loan);
   p.cash -= sum;
   const from = a.name;
   if (!(p.grown ??= []).includes(a.id)) p.grown.push(a.id);
@@ -573,7 +582,12 @@ export const loanLimit = (p: Player, share = 0.6) => Math.max(0, Math.max(500, w
 const loanLim = (s: State, p: Player) => loanLimit(p, isS2(s) ? LOAN_SHARE2 : 0.6);
 
 /** Выбор предлагает то, что у игрока уже есть: второй раз не женятся и второй мобильник не покупают. */
-const owned = (p: Player, fx: Fx) => !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.fixer && p.fixer) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
+/** Выбор только поднимает навыки, а они все уже на максимуме — предлагать нечего. */
+const maxed = (p: Player, fx: Fx) => {
+  const up = Object.entries(fx.skills ?? {}).filter(([, v]) => v! > 0);
+  return up.length > 0 && up.every(([k]) => p.skills[k as Skill] >= SKILL_MAX);
+};
+const owned = (p: Player, fx: Fx) => maxed(p, fx) || !!((fx.dream && p.dreams.includes(fx.dream)) || (fx.item && p.items?.includes(fx.item)) || (fx.advisor && p.advisor) || (fx.fixer && p.fixer) || (fx.insurance && p.insurance) || (fx.krysha && p.krysha === fx.krysha));
 
 /** Карточка не выпадает, если её главное предложение (первый выбор) уже есть или его нечем принять. */
 export function cardOk(s: State, p: Player, c: CardT) {
@@ -588,6 +602,7 @@ export function cardOk(s: State, p: Player, c: CardT) {
 
 function choiceWhy(s: State, p: Player, ch: Choice): string | undefined {
   const n = ch.need;
+  if (maxed(p, ch.fx)) return 'навык на максимуме';
   if (owned(p, ch.fx)) return 'уже есть';
   const cost = (ch.fx.cash ?? 0) < 0 ? -ch.fx.cash! : 0;
   if (cost && p.cash < cost) return 'не хватает денег';
@@ -675,6 +690,8 @@ export function fxHint(s: State, p: Player, fx: Fx): string[] {
   if (fx.zapas) out.push(`запас здоровья +${fx.zapas}`);
   if (fx.loan) out.push(`кредит ${money(round(fx.loan * sc))}`);
   if (fx.cto) out.push('технический директор');
+  if (fx.crash) out.push(`в 2009-й увезёшь ${plusMoney(round(fx.crash * 1e6))}`);
+  if (fx.itMul) out.push(`доход IT-дел +${Math.round((fx.itMul - 1) * 100)} %`);
   if (fx.venture) out.push(fx.venture > 1 ? 'доли в стартапах' : 'доля в стартапе');
   if (fx.btc) out.push('немного биткоинов');
   if (fx.btcLose) out.push('биткоины на флешке пропадут');
@@ -1049,7 +1066,7 @@ export function bookLines(s: State, p: Player): BookLine[] {
   L.push({ label: 'Жизнь: еда, одежда, квартира', sum: -round(25 + 0.12 * (biz + (p.job?.salary ?? 0))) });
   const dan = round(biz * ({ none: 0, bandit: 0.2, police: 0.25, own: 0.1 } as Record<Krysha, number>)[p.krysha]);
   if (dan) L.push({ label: p.krysha === 'own' ? 'Охрана' : 'Крыше', sum: -dan });
-  const loans = round(p.loans.reduce((t, l) => t + l.pay, 0));
+  const loans = round(p.loans.reduce((t, l) => t + loanPay(l), 0));
   if (loans) L.push({ label: 'Кредиты', sum: -loans });
   if (p.upkeep) L.push({ label: 'Содержание: машина, дача, привычки', sum: -round(p.upkeep) });
   return L;
@@ -1071,12 +1088,15 @@ function audit(s: State, p: Player, b: Books, ev: Event[]) {
   ev.push({ t: 'buh', seat: p.seat, ok, sum, ans: b.ans! });
 }
 
+/** Кредит банка: платёж — проценты плюс 1/12 долга, пока не выплачен. */
+function takeLoan(s: State, p: Player, sum: number) {
+  const rate = rateOf(s, s.m);
+  p.loans.push({ left: sum, rate, pay: sum * (rate + 1 / 12) });
+  p.cash += sum;
+}
+
 function buy(s: State, p: Player, o: Offer, ev: Event[]) {
-  if (o.loan > 0) {
-    const rate = rateOf(s, s.m);
-    p.loans.push({ left: o.loan, rate, pay: o.loan * (rate + 1 / 12) });
-    p.cash += o.loan;
-  }
+  if (o.loan > 0) takeLoan(s, p, o.loan);
   p.cash -= o.price;
   p.assets.push({ uid: s.uid++, id: o.id, name: o.name, kind: o.kind, value: o.price, income: o.income, hours: o.hours, manager: o.mgr, mul: 1 });
   ev.push({ t: 'buy', seat: p.seat, name: o.name, sum: o.price });
@@ -1165,7 +1185,7 @@ function month(s: State, p: Player, m: number) {
   p.cash += inc - expenses(s, p);
   // вклад до востребования: свободные деньги в банке работают (до дефолта)
   if (p.cash > 0) p.cash *= 1 + Z(s).deposit[Z(s).eraOf(m)];
-  for (const l of p.loans) l.left = l.left * (1 + l.rate) - l.pay;
+  for (const l of p.loans) l.left = l.left * (1 + l.rate) - loanPay(l);
   p.loans = p.loans.filter((l) => l.left > 1);
   for (const a of p.assets) {
     const d = Z(s).deal(a.id);
@@ -1387,7 +1407,7 @@ export interface AssetView extends Asset {
   now: number;
   /** Ниша: доля дохода от лучших лет (1 — живая, 0,35 — отжила). */
   niche: number;
-  grow: { id: string; name: string; cost: number; why: string | null } | null;
+  grow: { id: string; name: string; cost: number; loan: number; why: string | null } | null;
 }
 export interface MyView {
   loans: Loan[];
@@ -1472,7 +1492,7 @@ export function view(s: State, seats: number[] | 'all'): View {
       stats, skills: { ...p.skills }, assets: p.assets.map((a): AssetView => {
         const n = growNext(s, p, a);
         const d = Z(s).deal(a.id);
-        return { ...clone(a), now: round(assetIncome(s, p, a)), niche: d && a.kind !== 'paper' ? Math.round(nicheMul(d, s.m) * 100) / 100 : 1, grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), why: growWhy(s, p, a) } : null };
+        return { ...clone(a), now: round(assetIncome(s, p, a)), niche: d && a.kind !== 'paper' ? Math.round(nicheMul(d, s.m) * 100) / 100 : 1, grow: n ? { id: n.id, name: n.name, cost: growCost(n, a), loan: growLoan(s, p, growCost(n, a)) ?? 0, why: growWhy(s, p, a) } : null };
       }), debt: round(debt(p)), falls: clone(p.falls), dreams: [...p.dreams], club: p.club, ending: p.ending, enemies: p.enemies,
       ...(p.club2 ? { club2: clone(p.club2) } : {}),
       ...(p.trophies ? { trophies: [...p.trophies] } : {}),
