@@ -1,4 +1,4 @@
-/* Манкала — описание игры: калах и оваре пресетами; 2 игрока; боты (минимакс); правила с показом. Без DOM. */
+/* Манкала — описание игры: калах, оваре, тогыз кумалак, бао и катра пресетами; 2 игрока; боты (минимакс); правила с показом. Без DOM. */
 import type { GameDef, SeatSpec } from '../../core/types';
 import { choose } from './ai';
 import { apply, cfgFrom, makeView, newState, setup, toAct, type Action, type Event, type State } from './engine';
@@ -29,7 +29,14 @@ function pos(variant: string, pits: number[], store: [number, number] = [0, 0], 
   s.tuz = tuz;
   return s;
 }
-const S = (seat: number, pit: number, caption?: string) => ({ seat, action: { type: 'sow', pit } as Action, caption });
+const S = (seat: number, pit: number, caption?: string, dir?: 1 | -1) => ({ seat, action: (dir ? { type: 'sow', pit, dir } : { type: 'sow', pit }) as Action, caption });
+/** Бао и катра: лунки места 0 — внешний ряд слева направо, затем внутренний справа налево; места 1 — так же со своей стороны. */
+const four = (variant: string, mine: number[], theirs: number[]) => {
+  const s = pos(variant, [...mine, ...theirs]);
+  s.store = [mine.reduce((a, b) => a + b, 0), theirs.reduce((a, b) => a + b, 0)];
+  return s;
+};
+const twos = (n: number, set: Record<number, number> = {}) => Array.from({ length: n }, (_, i) => set[i] ?? 2);
 
 export const def: GameDef<State, Action, Event, State> = {
   id: 'mancala',
@@ -45,6 +52,8 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 'kalah', label: 'калах — с домами, повторный ход' },
         { value: 'oware', label: 'оваре — бери по 2 и 3' },
         { value: 'togyz', label: 'тогыз кумалак — 2×9 лунок, туздык' },
+        { value: 'bao', label: 'бао — 4×8, посев по кругу, бери напротив' },
+        { value: 'katra', label: 'катра — 4×6, Мадагаскар' },
       ],
       default: 'kalah',
     },
@@ -59,7 +68,7 @@ export const def: GameDef<State, Action, Event, State> = {
         { value: 6, label: '6' },
       ],
       default: 4,
-      showIf: (o) => o.variant !== 'oware' && o.variant !== 'togyz',
+      showIf: (o) => o.variant === 'kalah' || o.variant == null,
     },
   ],
   presets: [
@@ -67,6 +76,8 @@ export const def: GameDef<State, Action, Event, State> = {
     { id: 'kalah6', label: 'Калах (6)', hint: 'По 6 камней — дольше', options: { variant: 'kalah', seeds: 6 } },
     { id: 'oware', label: 'Оваре', hint: 'Африканская: бери по 2 и 3, корми соперника', options: { variant: 'oware' } },
     { id: 'togyz', label: 'Тогыз кумалак', hint: 'Казахская и киргизская: 9 лунок по 9 камней, туздык, до 82', options: { variant: 'togyz' } },
+    { id: 'bao', label: 'Бао', hint: 'Восточная Африка: 4 ряда по 8, сеешь по своей половине, бери камни напротив — оставь соперника без хода', options: { variant: 'bao' } },
+    { id: 'katra', label: 'Катра', hint: 'Мадагаскар: 4 ряда по 6, посев «реле», возьми все камни соперника', options: { variant: 'katra' } },
   ],
 
   setup: (seats, opts) => setup(seats.map((x) => x.seat), opts),
@@ -84,7 +95,7 @@ export const def: GameDef<State, Action, Event, State> = {
   showcase: () => pos('kalah', [0, 5, 3, 7, 1, 2, 4, 0, 6, 2, 1, 3], [9, 5], 0),
 
   rules: {
-    goal: 'Собрать больше камней, чем соперник: в свой дом (калах), взятками (оваре) или в казан (тогыз кумалак — 82 из 162).',
+    goal: 'Собрать больше камней, чем соперник: в свой дом (калах), взятками (оваре) или в казан (тогыз кумалак — 82 из 162). В бао и катре — забрать все камни соперника или оставить его без хода.',
     sections: [
       {
         title: 'Раскладка',
@@ -142,6 +153,32 @@ export const def: GameDef<State, Action, Event, State> = {
           setup: () => pos('togyz', [2, 5, 0, 7, 3, 1, 4, 0, 6, 3, 2, 8, 0, 2, 1, 6, 4, 2], [30, 31]),
           intro: 'У Ленки в пятой лунке два камня.',
           steps: [S(0, 8, 'Шесть камней из девятой: первый — в неё же, последний — в пятую лунку Ленки, там стало три. Туздык Вовки!')],
+        },
+      },
+      {
+        title: 'Бао и катра: четыре ряда, посев «реле»',
+        html: `<p>Доска в <b>четыре ряда</b>: два ближних — твои (внешний и внутренний), два дальних — соперника. Сеют <b>только по своей половине</b>,
+          по кругу из двух своих рядов. Направление каждый ход выбираешь сам: коснись лунки, а потом соседней — куда сеять.
+          Последний камень упал в <b>непустую</b> лунку — выгребаешь её и сеешь дальше в ту же сторону; в пустую — ход окончен.
+          В бао из лунки с одним камнем ходить нельзя, в катре — можно.</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => four('katra', [2, 0, 1, 0, 0, 3, 1, 2, 0, 1, 2, 1], twos(12)),
+          intro: 'Катра, доска 4×6. У Вовки в левой лунке нижнего ряда два камня.',
+          steps: [S(0, 0, 'Два камня вправо: последний — в третью лунку, где уже был камень. Вовка выгребает её и сеет дальше — до пустой лунки.', 1)],
+        },
+      },
+      {
+        title: 'Бао и катра: взятие',
+        html: `<p>Последний камень упал в непустую лунку <b>своего внутреннего ряда</b>, а в лунке соперника напротив есть камни — забираешь их
+          и вместе с камнями своей лунки сеешь дальше в ту же сторону; взятия могут идти цепочкой. В катре, если напротив пусто,
+          а весь твой внутренний ряд занят, можно взять из внешнего ряда соперника. Цель — <b>забрать все камни</b> соперника;
+          в бао проигрывает тот, кому нечем ходить (остались одни одиночки).</p>`,
+        demo: {
+          seats: demoSeats,
+          setup: () => four('bao', [2, 1, 0, 2, 0, 0, 2, 0, 1, 2, 0, 1, 1, 0, 2, 1], twos(16, { 15: 3 })),
+          intro: 'Простое бао, 4×8. Справа у Вовки во внутреннем ряду один камень, напротив у Ленки — три.',
+          steps: [S(0, 6, 'Два камня вправо: последний — во внутренний ряд, к одному камню. Напротив три — Вовка берёт их и сеет все пять дальше.', 1)],
         },
       },
     ],

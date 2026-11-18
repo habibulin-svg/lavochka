@@ -33,3 +33,8 @@
 .mc-store.long b { bottom: auto; top: 50%; left: auto; right: 1.5%; transform: translateY(-50%); }
 .mc-store.long small { top: 50%; left: auto; right: calc(1.5% + 3.4em); transform: translateY(-50%); background: rgba(40, 24, 8, 0.55); padding: 1px 8px; border-radius: 999px; }
 .mc-hint { font-size: 13.5px; }
+/* бао и катра: число — в углу лунки; выбранная лунка и соседние «куда сеять» */
+.mc-board.four .mc-hole b { bottom: auto; top: -4%; left: auto; right: -6%; transform: none; font-size: clamp(9px, 1.3cqw, 14px); padding: 0 5px; }
+.mc-hole.sel { box-shadow: 0 0 0 4px #fff, 0 0 18px 4px rgba(255, 230, 140, 0.9); }
+.mc-hole.dir { cursor: pointer; box-shadow: 0 0 0 3px #7fd36a, 0 0 16px 3px rgba(120, 220, 100, 0.7); background: rgba(140, 230, 120, 0.14); }
+.mc-hole.dir::after { content: attr(data-arrow); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #eaffd8; font-size: clamp(14px, 2.6cqw, 30px); text-shadow: 0 1px 3px #000; pointer-events: none; }

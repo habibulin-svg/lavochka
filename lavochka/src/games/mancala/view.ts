@@ -1,13 +1,15 @@
 /* Манкала — отрисовка: резная доска-картинка (tools/boards/mancala.py, геометрия — layout.ts), свой ряд снизу.
  * Камни — картинки с тенью: стеклянные шарики (калах), семена цезальпинии (оваре), окатыши-кумалаки (тогыз);
  * в лунке лежат россыпью в несколько слоёв, в казанах тогыза — рядами вдоль паза. Сверху — зоны касания и счётчики.
- * Ход — касание своей лунки; раскладка показывается по камню. Туздык — кольцо цвета хозяина. */
+ * Ход — касание своей лунки; раскладка показывается по камню. Туздык — кольцо цвета хозяина.
+ * Бао и катра — четыре ряда, свои два снизу; ход — лунка, затем соседняя лунка, куда сеять (направление). */
 import { Sound } from '../../core/audio';
 import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
-import { legal, pitsPerRow, type Event, type State } from './engine';
+import { isFour, legal, pitsPerRow, type Event, type State } from './engine';
+import { fOwner, fPit } from './four';
 import { SEATS } from './def';
-import { KALAH, TOGYZ, type BoardGeo, type Hole } from './layout';
+import { BAO, KALAH, KATRA, TOGYZ, type BoardGeo, type Hole } from './layout';
 import './mancala.css';
 
 const TEX = `${import.meta.env.BASE_URL}tex/mancala/`;
@@ -16,6 +18,7 @@ const SPRITES: Record<string, string[]> = {
   oware: Array.from({ length: 4 }, (_, i) => `seed${i}`),
   togyz: Array.from({ length: 6 }, (_, i) => `kum${i}`),
 };
+SPRITES.bao = SPRITES.katra = SPRITES.oware;
 /** Больше этого камней в лунке не рисуем (дальше — только число). */
 const MAX_PIT = 26;
 const MAX_STORE = 96;
@@ -78,6 +81,8 @@ class MancalaView implements GameView<State, Event> {
   private me = 0;
   private hot = -1;
   private kind = '';
+  /** Бао и катра: выбранная лунка, ждём направление. */
+  private sel = -1;
 
   mount(root: HTMLElement, ctx: ViewCtx) {
     this.ctx = ctx;
@@ -91,10 +96,30 @@ class MancalaView implements GameView<State, Event> {
       const s = this.s;
       if (!el || !s || this.actSeat == null) return;
       const pit = Number(el.dataset.pit);
-      if (!legal(s, this.actSeat).includes(pit)) return;
+      const seat = this.actSeat;
+      if (isFour(s.cfg.variant) && this.sel >= 0) {
+        const d = neighbour(pitsPerRow(s.cfg), this.sel, pit);
+        if (d) {
+          e.preventDefault();
+          e.stopPropagation();
+          const from = this.sel;
+          this.sel = -1;
+          this.actSeat = null;
+          Sound.unlock();
+          this.ctx.act(seat, { type: 'sow', pit: from, dir: d });
+          return;
+        }
+      }
+      if (!legal(s, seat).includes(pit)) return;
       e.preventDefault();
       e.stopPropagation();
-      const seat = this.actSeat;
+      if (isFour(s.cfg.variant)) {
+        // сначала лунка, потом — куда сеять
+        this.sel = this.sel === pit ? -1 : pit;
+        Sound.unlock();
+        this.draw();
+        return;
+      }
       this.actSeat = null;
       Sound.unlock();
       this.ctx.act(seat, { type: 'sow', pit });
@@ -102,7 +127,8 @@ class MancalaView implements GameView<State, Event> {
   }
 
   private geo(s: State): BoardGeo {
-    return s.cfg.variant === 'togyz' ? TOGYZ : KALAH;
+    const v = s.cfg.variant;
+    return v === 'togyz' ? TOGYZ : v === 'katra' ? KATRA : isFour(v) ? BAO : KALAH;
   }
 
   private draw() {
@@ -115,6 +141,8 @@ class MancalaView implements GameView<State, Event> {
       this.kind = s.cfg.variant;
       this.board.style.setProperty('--img', `url("${TEX}${g.img}")`);
       this.board.style.aspectRatio = String(g.aspect);
+      this.board.style.width = `min(100cqw, calc(100cqh * ${g.aspect.toFixed(3)}))`;
+      this.board.classList.toggle('four', !!g.rows);
       this.board.dataset.kind = s.cfg.variant;
       for (const f of SPRITES[s.cfg.variant]) new Image().src = `${TEX}${f}.webp`;
     }
@@ -147,6 +175,47 @@ class MancalaView implements GameView<State, Event> {
       const cls = `mc-hole${ok.includes(p) ? ' can' : ''}${p === this.hot ? ' hot' : ''}${s.last?.captured.includes(p) ? ' took' : ''}${t >= 0 ? ' tuz' : ''}`;
       hits += `<div class="${cls}" data-pit="${p}" style="${box(hole)}${t >= 0 ? `;--tc:${SEATS[t].color}` : ''}"><b class="${up ? 'up' : ''}">${t >= 0 ? 'туздык' : s.pits[p]}</b></div>`;
     };
+    if (g.rows) {
+      // четыре ряда: сверху внешний и внутренний соперника (его столбцы — справа налево), снизу свой внутренний и внешний
+      const opp = 1 - me;
+      const sel = this.actSeat != null ? this.sel : -1;
+      const at = [
+        (x: number) => fPit(N, opp, false, N - 1 - x),
+        (x: number) => fPit(N, opp, true, N - 1 - x),
+        (x: number) => fPit(N, me, true, x),
+        (x: number) => fPit(N, me, false, x),
+      ];
+      // стрелка «куда сеять» — от выбранной лунки к соседней
+      const where = new Map<number, [number, number]>();
+      g.rows.forEach((rowHoles, r) => rowHoles.forEach((_, x) => where.set(at[r](x), [r, x])));
+      const arrow = (p: number) => {
+        const [r0, x0] = where.get(sel)!;
+        const [r1, x1] = where.get(p)!;
+        return x1 > x0 ? '→' : x1 < x0 ? '←' : r1 > r0 ? '↓' : '↑';
+      };
+      g.rows.forEach((rowHoles, r) =>
+        rowHoles.forEach((hole, x) => {
+          const p = at[r](x);
+          put(hole, s.pits[p], p + 1, false, MAX_PIT);
+          const can = ok.includes(p) && fOwner(N, p) === this.actSeat;
+          const dir = sel >= 0 && neighbour(N, sel, p) !== 0;
+          const cls = `mc-hole${can ? ' can' : ''}${p === sel ? ' sel' : ''}${dir ? ' dir' : ''}${p === this.hot ? ' hot' : ''}${s.last?.captured.includes(p) ? ' took' : ''}`;
+          hits += `<div class="${cls}" data-pit="${p}"${dir ? ` data-arrow="${arrow(p)}"` : ''} style="${box(hole)}"><b>${s.pits[p]}</b></div>`;
+        }),
+      );
+      this.board.style.setProperty('--d', `${(d * 100).toFixed(2)}%`);
+      this.board.innerHTML = `<div class="mc-stones">${stones.join('')}</div>${hits}`;
+      if (!this.ctx.demo)
+        this.hint.textContent =
+          this.actSeat != null
+            ? sel >= 0
+              ? 'Куда сеять: коснитесь соседней лунки со стрелкой (или другой своей лунки).'
+              : 'Ваш ход: коснитесь своей лунки (два нижних ряда), затем соседней — куда сеять.'
+            : s.over
+              ? 'Партия окончена.'
+              : '';
+      return;
+    }
     mine.forEach((p, i) => pitEl(p, g.bottom[i], false));
     theirs.forEach((p, i) => pitEl(p, g.top[i], true));
     const storeEl = (seat: number, hole: Hole, own: boolean) => {
@@ -175,8 +244,20 @@ class MancalaView implements GameView<State, Event> {
       this.s = cur;
       this.hot = ev.pit;
       this.draw();
-      for (const q of ev.path) {
-        await sleep(Math.max(40, 160 / sp));
+      const lifts = ev.lifts ?? [];
+      const four = isFour(cur.cfg.variant);
+      for (let i = 0; i < ev.path.length; i++) {
+        const q = ev.path[i];
+        const up = lifts.find((l) => l.at === i);
+        if (up) {
+          // реле или взятие: лунку (и взятые лунки соперника) выгребают в руку
+          await sleep(Math.max(60, 220 / sp));
+          if (up.pits.length > 1) Sound.capture();
+          for (const x of up.pits) cur.pits[x] = 0;
+          this.hot = up.pits[0];
+          this.draw();
+        }
+        await sleep(four ? Math.max(25, 110 / sp) : Math.max(40, 160 / sp));
         if (q === -1) cur.store[0]++;
         else if (q === -2) cur.store[1]++;
         else cur.pits[q]++;
@@ -184,7 +265,7 @@ class MancalaView implements GameView<State, Event> {
         Sound.step();
         this.draw();
       }
-      if (ev.captured.length) {
+      if (ev.captured.length && !lifts.length) {
         await sleep(300 / sp);
         Sound.capture();
       }
@@ -202,6 +283,7 @@ class MancalaView implements GameView<State, Event> {
     if (who != null) this.me = who;
     else if (mine.length === 1) this.me = mine[0];
     this.actSeat = s && !s.over && !this.ctx.demo ? (who ?? null) : null;
+    if (this.actSeat == null) this.sel = -1;
     this.draw();
   }
 
@@ -211,8 +293,16 @@ class MancalaView implements GameView<State, Event> {
   }
 
   playerStats(v: State, seat: number) {
+    if (isFour(v.cfg.variant)) return `камней: ${v.store[seat]}`;
     return `${v.cfg.variant === 'kalah' ? 'в доме' : v.cfg.variant === 'togyz' ? 'в казане' : 'взято'}: ${v.store[seat]}`;
   }
+}
+
+/** Бао и катра: to — соседка from по кругу его половины? 1 — по ходу номеров (против часовой со своей стороны), -1 — назад. */
+function neighbour(n: number, from: number, to: number): 1 | -1 | 0 {
+  const base = from - (from % (2 * n));
+  const nb = (d: number) => base + ((((from - base + d) % (2 * n)) + 2 * n) % (2 * n));
+  return to === nb(1) ? 1 : to === nb(-1) ? -1 : 0;
 }
 
 /** Место лунки на доске (проценты). */

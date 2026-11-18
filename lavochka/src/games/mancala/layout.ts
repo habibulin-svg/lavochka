@@ -24,6 +24,8 @@ export interface BoardGeo {
   cap: number;
   /** Камни в лунке — двумя ровными столбиками (тогыз), а не россыпью. */
   columns?: boolean;
+  /** Четыре ряда (бао, катра), сверху вниз. */
+  rows?: Hole[][];
 }
 
 const row = (n: number, x0: number, dx: number, y: number, rx: number, ry: number): Hole[] => Array.from({ length: n }, (_, i) => ({ x: x0 + i * dx, y, rx, ry }));
@@ -52,3 +54,15 @@ export const TOGYZ: BoardGeo = {
   cap: 7,
   columns: true,
 };
+
+/** Бао (4×8) и катра (4×6): ряды сверху вниз — внешний и внутренний соперника, свой внутренний и внешний. Домов нет. */
+function four(img: string, cols: number): BoardGeo {
+  const W = 160 + 180 * cols;
+  const H = 860;
+  const r = (y: number) => Array.from({ length: cols }, (_, i) => ({ x: (170 + 180 * i) / W, y: y / H, rx: 74 / W, ry: 78 / H }));
+  const rows = [r(130), r(315), r(545), r(730)];
+  const none = { x: 0, y: 0, rx: 0, ry: 0 };
+  return { img, aspect: W / H, bottom: rows[3], top: rows[0], mine: none, theirs: none, stone: 0.42, cap: 7, rows };
+}
+export const BAO = four('bao.webp', 8);
+export const KATRA = four('katra.webp', 6);

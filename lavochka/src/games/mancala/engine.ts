@@ -8,27 +8,30 @@
  * соперника сделал там 2 или 3 — забираешь, и так же из предыдущих лунок соперника подряд, пока там 2 или 3.
  * Забрать сразу все камни соперника нельзя (взятие отменяется). Если у соперника пусто — обязан ходом дать ему камни;
  * не можешь — партия кончается, свои камни забираешь себе. 25 и больше — победа; бесконечный круг — каждый берёт свои.
- * Тогыз кумалак — 2×9 лунок, туздык: правила в togyz.ts.
+ * Тогыз кумалак — 2×9 лунок, туздык: правила в togyz.ts. Бао и катра — 4 ряда, посев «реле»: правила в four.ts.
  */
 import type { Options } from '../../core/types';
+import { FOUR_SEEDS, fApply, fFinish, fLegal, fourCols, fSide, isFour, type FourVariant } from './four';
 import { TOGYZ_SEEDS, tApply, tFinish, tLegal, tRow } from './togyz';
 
 export interface Cfg {
-  variant: 'kalah' | 'oware' | 'togyz';
+  variant: 'kalah' | 'oware' | 'togyz' | FourVariant;
   seeds: number;
 }
 
 export function cfgFrom(o: Options): Cfg {
-  const variant = o.variant === 'oware' ? 'oware' : o.variant === 'togyz' ? 'togyz' : 'kalah';
+  const v = String(o.variant);
+  const variant: Cfg['variant'] = v === 'oware' || v === 'togyz' || isFour(v) ? v : 'kalah';
   const seeds = [3, 4, 5, 6].includes(Number(o.seeds)) ? Number(o.seeds) : 4;
-  return { variant, seeds: variant === 'oware' ? 4 : variant === 'togyz' ? TOGYZ_SEEDS : seeds };
+  return { variant, seeds: variant === 'oware' ? 4 : variant === 'togyz' ? TOGYZ_SEEDS : isFour(variant) ? FOUR_SEEDS : seeds };
 }
 
 export interface State {
   cfg: Cfg;
-  /** Лунки 0–5 — место 0 (слева направо снизу), 6–11 — место 1 (справа налево сверху); в тогыз кумалаке — 0–8 и 9–17. */
+  /** Лунки 0–5 — место 0 (слева направо снизу), 6–11 — место 1 (справа налево сверху); в тогыз кумалаке — 0–8 и 9–17;
+   *  в бао и катре — по 2N на место, нумерация в four.ts. */
   pits: number[];
-  /** Дом (калах), взятое (оваре) или казан (тогыз). */
+  /** Дом (калах), взятое (оваре), казан (тогыз) или камней на своей стороне (бао, катра). */
   store: [number, number];
   /** Туздык каждого (номер лунки на стороне соперника) или -1; только в тогыз кумалаке. */
   tuz: [number, number];
@@ -39,17 +42,24 @@ export interface State {
   winner: number | null;
 }
 
-export type Action = { type: 'sow'; pit: number };
-export type Event = { type: 'sow'; seat: number; pit: number; path: number[]; captured: number[]; again: boolean; tuz?: boolean } | { type: 'end'; winner: number | null; store: [number, number] };
+/** dir — направление посева в бао и катре: 1 — против часовой стрелки (со своей стороны), -1 — по часовой. */
+export type Action = { type: 'sow'; pit: number; dir?: 1 | -1 };
+export type Event =
+  | { type: 'sow'; seat: number; pit: number; path: number[]; captured: number[]; again: boolean; tuz?: boolean; lifts?: { at: number; pits: number[] }[] }
+  | { type: 'end'; winner: number | null; store: [number, number] };
 
 /** Лунок в ряду. */
-export const pitsPerRow = (cfg: Cfg) => (cfg.variant === 'togyz' ? 9 : 6);
+export const pitsPerRow = (cfg: Cfg) => (cfg.variant === 'togyz' ? 9 : isFour(cfg.variant) ? fourCols(cfg.variant) : 6);
+/** Всего лунок на доске. */
+export const pitCount = (cfg: Cfg) => pitsPerRow(cfg) * (isFour(cfg.variant) ? 4 : 2);
 export const own = (seat: number, pit: number) => (seat === 0 ? pit < 6 : pit >= 6);
 const rowOf = (seat: number, cfg?: Cfg) => (cfg?.variant === 'togyz' ? tRow(seat) : seat === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11]);
 export const opposite = (pit: number) => 11 - pit;
 
 export function newState(cfg: Cfg): State {
-  return { cfg, pits: Array(pitsPerRow(cfg) * 2).fill(cfg.seeds), store: [0, 0], tuz: [-1, -1], turn: 0, moves: 0, last: null, over: false, winner: null };
+  const four = isFour(cfg.variant);
+  const n = pitCount(cfg);
+  return { cfg, pits: Array(n).fill(cfg.seeds), store: four ? [(n / 2) * cfg.seeds, (n / 2) * cfg.seeds] : [0, 0], tuz: [-1, -1], turn: 0, moves: 0, last: null, over: false, winner: null };
 }
 
 export function setup(_s: number[], opts: Options): State {
@@ -98,6 +108,7 @@ function sowRaw(s: State, seat: number, pit: number) {
 /** Можно ли пойти из лунки. */
 export function legal(s: State, seat: number): number[] {
   if (s.cfg.variant === 'togyz') return tLegal(s, seat);
+  if (isFour(s.cfg.variant)) return fLegal(s, seat);
   const row = rowOf(seat).filter((p) => s.pits[p] > 0);
   if (s.cfg.variant === 'oware') {
     // соперник пуст — только ходы, которые дают ему камни
@@ -107,9 +118,29 @@ export function legal(s: State, seat: number): number[] {
   return row;
 }
 
+/** Все ходы: в бао и катре — каждая лунка в оба направления. */
+export function actions(s: State, seat: number): Action[] {
+  const pits = legal(s, seat);
+  if (!isFour(s.cfg.variant)) return pits.map((pit) => ({ type: 'sow', pit }));
+  return pits.flatMap((pit) => [{ type: 'sow', pit, dir: 1 } as Action, { type: 'sow', pit, dir: -1 } as Action]);
+}
+
 export function apply(s0: State, seat: number, a: Action): { state: State; events: Event[] } | null {
   if (s0.over || seat !== s0.turn || !a || a.type !== 'sow' || !legal(s0, seat).includes(a.pit)) return null;
   const s: State = { ...s0, store: [...s0.store] as [number, number] };
+  if (isFour(s.cfg.variant)) {
+    const r = fApply(s, seat, a.pit, a.dir === -1 ? -1 : 1);
+    s.moves++;
+    s.turn = 1 - seat;
+    const ev: Event[] = [{ type: 'sow', seat, pit: a.pit, path: r.path, captured: r.captured, again: false, lifts: r.lifts }];
+    const w = fFinish(s);
+    if (w !== false) {
+      s.over = true;
+      s.winner = w;
+      ev.push({ type: 'end', winner: w, store: [...s.store] as [number, number] });
+    }
+    return { state: s, events: ev };
+  }
   if (s.cfg.variant === 'togyz') {
     const t = tApply(s, seat, a.pit);
     s.moves++;
@@ -191,4 +222,4 @@ function finish(s: State, ev: Event[]) {
 }
 
 export const makeView = (s: State): State => s;
-export { rowOf };
+export { rowOf, fSide, isFour };

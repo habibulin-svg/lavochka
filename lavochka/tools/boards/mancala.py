@@ -6,6 +6,7 @@
   * kalah.webp — резная доска на 2×6 лунок и два дома по краям (тёмное дерево сапеле, волокно вдоль доски);
   * togyz.webp — доска тогыз кумалака как турнирный деревянный кейс: светлое дерево, латунные петли,
     2×9 отсеков со скошенными стенками, номера краской, длинный казан вдоль петли;
+  * bao.webp (4×8) и katra.webp (4×6) — четырёхрядные доски без домов: светлое дерево, желобок между половинами;
   * marble0..6 — стеклянные шарики разных цветов (калах), seed0..3 — серые семена цезальпинии (оваре),
     kum0..5 — тёмные шарики-кумалаки и tuz — белый (метка туздыка); у камней тень уже в картинке.
 Геометрия лунок — та же, что в src/games/mancala/layout.ts (доли ширины и высоты доски).
@@ -198,6 +199,29 @@ def togyz_board(out: Path):
     img.save(out / 'togyz.webp', 'WEBP', quality=86, method=6)
 
 
+FOUR_H = 860
+FOUR_ROWS = (130, 315, 545, 730)
+
+
+def four_board(name, cols, out: Path):
+    """Бао/катра: 4 ряда круглых лунок, по два у каждого; между половинами — неглубокий желобок."""
+    W, H = 160 + 180 * cols, FOUR_H
+    alb = wood(W, H, (190, 128, 74), (120, 72, 36), 31 + cols, 'x', 28, 22)
+    dist = rounded_rect_dist(W, H, 90)
+    hgt = np.clip(dist / 26.0, 0, 1) ** 0.5 * 28.0
+    mask = np.clip(dist + 0.5, 0, 1)
+    ao = np.ones((H, W), np.float32)
+    for yc in FOUR_ROWS:
+        for i in range(cols):
+            carve(hgt, ao, W, H, 170 + 180 * i, yc, 74, 78, 52)
+    yy = np.mgrid[0:H, 0:W][0].astype(np.float32)
+    groove = np.exp(-((yy - H / 2) / 5) ** 2) * (dist > 40)
+    hgt -= groove * 6
+    alb = alb * (1 - 0.25 * groove[..., None])
+    img = shade(hgt, alb, mask, ao)
+    img.save(out / f'{name}.webp', 'WEBP', quality=86, method=6)
+
+
 def sprite(kind, seed, size=96):
     S = size * 3
     rng = np.random.default_rng(seed)
@@ -260,6 +284,8 @@ def main(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     board('kalah', out)
     togyz_board(out)
+    four_board('bao', 8, out)
+    four_board('katra', 6, out)
     for i in range(7):
         sprite('marble', i).save(out / f'marble{i}.webp', 'WEBP', quality=90, method=6)
     for i in range(4):
