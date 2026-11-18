@@ -71,6 +71,7 @@ export const def: GameDef<State, Action, Event, State> = {
     },
     { key: 'fly', label: 'Полёт с тремя фишками', hint: 'Когда осталось три фишки, можно ходить на любую пустую точку', type: 'toggle', default: true, showIf: (o) => Number(o.men) >= 9 },
     { key: 'diag', label: 'Диагонали в углах', type: 'toggle', default: false, showIf: (o) => Number(o.men) === 9 },
+    { key: 'single', label: 'Две мельницы — одна фишка', hint: 'Турнирное правило: построил две мельницы одним ходом — всё равно снимаешь одну фишку', type: 'toggle', default: false, showIf: (o) => Number(o.men) !== 3 },
     { key: 'set', label: 'Фишки уже расставлены', hint: 'Как в советской коробке: каждый начинает со своей половины доски', type: 'toggle', default: false, showIf: (o) => Number(o.men) >= 9 },
     {
       key: 'look',
@@ -85,10 +86,11 @@ export const def: GameDef<State, Action, Event, State> = {
     },
   ],
   presets: [
-    { id: 'nine', label: 'Девять камней', hint: 'Классика: расставить по 9, ходить, с тремя — летать', options: { men: 9, fly: true, diag: false, set: false, look: 'wood' } },
-    { id: 'soviet', label: 'Советская', hint: 'Коробка с буквами А–Ж: по 9 фишек уже стоят на своих половинах, доска с диагоналями', options: { men: 9, fly: true, diag: true, set: true, look: 'soviet' } },
-    { id: 'twelve', label: 'Двенадцать камней', hint: 'Доска с диагоналями, по 12 фишек; заполнили доску — ничья', options: { men: 12, fly: true, set: false, look: 'stone' } },
-    { id: 'six', label: 'Шесть камней', hint: 'Два квадрата, по 6 фишек, без полёта', options: { men: 6, look: 'wood' } },
+    { id: 'nine', label: 'Девять камней', hint: 'Классика: расставить по 9, ходить, с тремя — летать', options: { men: 9, fly: true, diag: false, set: false, single: false, look: 'wood' } },
+    { id: 'tournament', label: 'Турнирная', hint: "Nine men's morris по международным правилам: за две мельницы разом — одна фишка", options: { men: 9, fly: true, diag: false, set: false, single: true, look: 'stone' } },
+    { id: 'soviet', label: 'Советская', hint: 'Коробка с буквами А–Ж: по 9 фишек уже стоят на своих половинах, доска с диагоналями', options: { men: 9, fly: true, diag: true, set: true, single: false, look: 'soviet' } },
+    { id: 'twelve', label: 'Двенадцать камней', hint: 'Доска с диагоналями, по 12 фишек; заполнили доску — ничья', options: { men: 12, fly: true, set: false, single: false, look: 'stone' } },
+    { id: 'six', label: 'Шесть камней', hint: 'Два квадрата, по 6 фишек, без полёта', options: { men: 6, single: false, look: 'wood' } },
     { id: 'three', label: 'Малая', hint: 'По 3 фишки на поле 3×3: кто первым выстроит ряд', options: { men: 3, look: 'stone' } },
   ],
 
@@ -152,6 +154,19 @@ export const def: GameDef<State, Action, Event, State> = {
           setup: () => pos([R(0, 0), R(0, 7), R(2, 2)], [R(0, 1), R(1, 1), R(1, 3), R(1, 5), R(2, 5)], [0, 0], 0),
           intro: 'У белых три фишки — им можно летать.',
           steps: [Mv(0, R(2, 2), R(0, 6), 'Перелёт через всю доску — мельница слева!'), Tk(0, R(0, 1))],
+        },
+      },
+      {
+        title: 'Турнирная мельница',
+        html: `<p>Это та же «мельница на девять камней» — по-английски <i>Nine men's morris</i> — по правилам международных турниров.
+          Отличие одно: если одним ходом построил <b>две мельницы</b> сразу, снимаешь всё равно <b>одну</b> фишку соперника.
+          Остальное — как в обычной: расстановка по 9, ходы по линиям, с тремя фишками — полёт, с двумя — проигрыш.</p>`,
+        demo: {
+          seats: demoSeats,
+          options: { single: true, look: 'stone' },
+          setup: () => pos([R(0, 0), R(0, 1), R(0, 3), R(0, 4)], [R(1, 1), R(1, 5), R(2, 7)], [5, 6], 0, { single: true, look: 'stone' }),
+          intro: 'Белые ставят фишку в угол — замкнутся сразу две линии.',
+          steps: [Pl(0, R(0, 2), 'Две мельницы разом!'), Tk(0, R(1, 1), 'Но по турнирным правилам снимают только одну фишку…'), Pl(1, R(1, 3), '…и ход переходит к чёрным.')],
         },
       },
       {

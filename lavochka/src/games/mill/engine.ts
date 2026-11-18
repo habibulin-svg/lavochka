@@ -5,6 +5,7 @@
  *   12 — три квадрата с диагоналями в углах (по 12 фишек); заполнили доску расстановкой — ничья.
  * Сначала фишки по очереди ставят на пустые точки, потом ходят на соседнюю точку по линии. Три своих в ряд по линии —
  * «мельница»: снимаешь фишку соперника (не из его мельниц, если есть другие); две мельницы разом — две фишки.
+ * Турнирные правила (Nine men's morris): за две мельницы одним ходом снимают только одну фишку (cfg.single).
  * Проигрывает тот, у кого осталось две фишки или нет хода. 50 ходов подряд без снятия — ничья.
  * Советская расстановка (коробка с буквами А–Ж): по 9 фишек уже стоят на своей половине доски с диагоналями, расстановки нет. */
 import type { Options } from '../../core/types';
@@ -20,6 +21,8 @@ export interface Cfg {
   set: boolean;
   /** Диагонали в углах (у 12 — всегда). */
   diag: boolean;
+  /** Две мельницы одним ходом — снимают одну фишку (турнирные правила). */
+  single: boolean;
   look: Look;
 }
 
@@ -32,6 +35,7 @@ export function cfgFrom(o: Options): Cfg {
     fly: men >= 9 && o.fly !== false,
     set,
     diag: men === 12 || (men === 9 && o.diag === true) || men === 3,
+    single: men !== 3 && o.single === true,
     look: o.look === 'soviet' ? 'soviet' : o.look === 'stone' ? 'stone' : 'wood',
   };
 }
@@ -258,7 +262,7 @@ export function step(s0: State, a: Action): { state: State; events: Event[] } {
   } else if (made) {
     const opp = mine(1 - seat);
     const have = s.board.filter((v) => v === opp).length;
-    s.take = Math.min(made, have);
+    s.take = Math.min(s.cfg.single ? 1 : made, have);
     if (s.take > 0) return { state: s, events };
   }
   if (a.type === 'take' && s.take > 0) {

@@ -1,4 +1,5 @@
-/* Шашки — правила (без DOM): русские, международные (10×10), бразильские, столбовые (башни), Ласка (7×7) и турецкие;
+/* Шашки — правила (без DOM): русские, международные (10×10), бразильские, столбовые (башни), Ласка (7×7), турецкие,
+ * армянские (тама) и кены;
  * поддавки и «фук» по-дворовому — на любой доске.
  *
  * Доска n×n, индекс = ряд * n + вертикаль (a1 = 0, ряд 0 — со стороны белых). Играют только тёмные поля: (ряд + вертикаль) чётно.
@@ -10,10 +11,16 @@
  * Турецкие: все 64 поля, по 16 шашек на 2-м и 3-м рядах; ходят и бьют по вертикали и горизонтали — простая вперёд и вбок,
  * дамка — на любое расстояние; побитые снимаются сразу; бить обязательно наибольшее число; дамка в серии не разворачивается
  * назад; простая, дошедшая до последнего ряда в бою, становится дамкой только в конце хода.
+ * Армянские (тама): как турецкие, но простая ходит ещё и вперёд по диагонали, дамка (тама) ходит во все 8 сторон;
+ * бьют все только по вертикали и горизонтали, больше всех; простая, ставшая дамкой в бою, бьёт дальше как дамка;
+ * разворот дамки в серии не запрещён.
+ * Кены (осетинские, «кавказские» шашки): простая (кен) ходит вперёд и вбок, может перепрыгнуть своего кена; бьёт вперёд,
+ * вбок и назад; дамка (перец) — по вертикали и горизонтали издалека; бить обязательно, но правила большинства нет;
+ * десять ходов (20 полуходов) без взятий — ничья.
  */
 import type { Options } from '../../core/types';
 
-export type Variant = 'russian' | 'international' | 'brazil' | 'bashni' | 'lasca' | 'turkish';
+export type Variant = 'russian' | 'international' | 'brazil' | 'bashni' | 'lasca' | 'turkish' | 'armenian' | 'keny';
 
 export interface Cfg {
   variant: Variant;
@@ -28,7 +35,7 @@ export interface Cfg {
 
 export const DEFAULT_CFG: Cfg = { variant: 'russian', giveaway: false, fuk: false, clock: 0, inc: 0 };
 
-const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca', 'turkish'];
+const VARIANTS: Variant[] = ['russian', 'international', 'brazil', 'bashni', 'lasca', 'turkish', 'armenian', 'keny'];
 
 export function cfgFrom(o: Options): Cfg {
   const v = String(o.variant) as Variant;
@@ -59,8 +66,16 @@ interface Rules {
   /** Ничья через столько полуходов: в обычных — у обоих есть дамки, никто не бил и не ходил простой;
    *  в столбовых — никто не бил и не делал дамку (соотношение сил не менялось). */
   quietLimit: number;
-  /** Турецкие: ходы по вертикали и горизонтали, все поля доски. */
+  /** Турецкие, армянские, кены: ходы по вертикали и горизонтали, все поля доски, побитые снимаются сразу. */
   ortho?: boolean;
+  /** Армянские: простая ходит и вперёд по диагонали, дамка ходит во все 8 сторон (бьют всё равно только прямо). */
+  diag?: boolean;
+  /** Кены: простая может перепрыгнуть своего кена (вперёд или вбок). */
+  ownJump?: boolean;
+  /** Турецкие: дамка в серии не разворачивается назад. */
+  noReverse?: boolean;
+  /** Ничья по quietLimit считается по любым полуходам без взятий (кены). */
+  quietAny?: boolean;
 }
 
 export const RULES: Record<Variant, Rules> = {
@@ -69,7 +84,9 @@ export const RULES: Record<Variant, Rules> = {
   brazil: { n: 8, rows: 3, maxCapture: true, promoteMid: 'none', backCapture: true, flying: true, columns: false, quietLimit: 50 },
   bashni: { n: 8, rows: 3, maxCapture: false, promoteMid: 'continue', backCapture: true, flying: true, columns: true, quietLimit: 30 },
   lasca: { n: 7, rows: 3, maxCapture: false, promoteMid: 'stop', backCapture: false, flying: false, columns: true, quietLimit: 30 },
-  turkish: { n: 8, rows: 2, maxCapture: true, promoteMid: 'none', backCapture: false, flying: true, columns: false, quietLimit: 30, ortho: true },
+  turkish: { n: 8, rows: 2, maxCapture: true, promoteMid: 'none', backCapture: false, flying: true, columns: false, quietLimit: 30, ortho: true, noReverse: true },
+  armenian: { n: 8, rows: 2, maxCapture: true, promoteMid: 'continue', backCapture: false, flying: true, columns: false, quietLimit: 30, ortho: true, diag: true },
+  keny: { n: 8, rows: 2, maxCapture: false, promoteMid: 'continue', backCapture: true, flying: true, columns: false, quietLimit: 20, ortho: true, ownJump: true, quietAny: true },
 };
 
 const ORTHO = [
@@ -96,7 +113,7 @@ export interface MoveRec {
   seat: number;
 }
 
-export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'material' | 'endgame' | 'agreed' | 'time';
+export type EndReason = 'nomoves' | 'resign' | 'repetition' | 'kings' | 'material' | 'quiet' | 'endgame' | 'agreed' | 'time';
 
 export interface State {
   game: 'draughts';
@@ -185,7 +202,7 @@ export function newGame(cfg: Cfg): State {
   const { n, rows } = RULES[cfg.variant];
   const board = Array<string>(n * n).fill('');
   if (RULES[cfg.variant].ortho) {
-    // турецкие: 2-й и 3-й ряды, первый пустой
+    // турецкие, армянские, кены: 2-й и 3-й ряды, первый пустой
     for (let sq = 0; sq < n * n; sq++) {
       const r = Math.floor(sq / n);
       if (r === 1 || r === 2) board[sq] = 'w';
@@ -249,7 +266,7 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
   work[from] = '';
   const caps: number[] = [];
   const path: number[] = [];
-  const dirs = (king: boolean) => (rules.ortho ? (king ? ORTHO : ORTHO.filter(([dr]) => dr !== -fwd)) : king || rules.backCapture ? DIRS : DIRS.filter(([dr]) => dr === fwd));
+  const dirs = (king: boolean) => (rules.ortho ? (king || rules.backCapture ? ORTHO : ORTHO.filter(([dr]) => dr !== -fwd)) : king || rules.backCapture ? DIRS : DIRS.filter(([dr]) => dr === fwd));
   // турецкие: дамка в серии не разворачивается назад
   let lastDir: number[] | null = null;
   // побитую в обычных шашках второй раз не бьют; в столбовых она уже ушла, а башня под ней — снова цель
@@ -270,11 +287,11 @@ function capturesFrom(b: string[], n: number, from: number, rules: Rules, out: M
     return lands.length ? { v: t, lands } : null;
   };
 
-  const canCapture = (sq: number, king: boolean) => dirs(king).some(([dr, df]) => !(rules.ortho && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) && victimAt(sq, king, dr, df));
+  const canCapture = (sq: number, king: boolean) => dirs(king).some(([dr, df]) => !(rules.noReverse && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) && victimAt(sq, king, dr, df));
 
   const dfs = (sq: number, king: boolean) => {
     for (const [dr, df] of dirs(king)) {
-      if (rules.ortho && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) continue;
+      if (rules.noReverse && king && lastDir && lastDir[0] === -dr && lastDir[1] === -df) continue;
       const hit = victimAt(sq, king, dr, df);
       if (!hit) continue;
       caps.push(hit.v);
@@ -309,12 +326,20 @@ function quietFrom(b: string[], n: number, from: number, rules: Rules, out: Move
   const c = colorOf(p);
   if (rules.ortho) {
     const fwd = c === 0 ? 1 : -1;
-    for (const [dr, df] of isKing(p) ? ORTHO : ORTHO.filter(([d]) => d !== -fwd)) {
+    const king = isKing(p);
+    const men = ORTHO.filter(([d]) => d !== -fwd);
+    const dirs = king ? (rules.diag ? [...ORTHO, ...DIRS] : ORTHO) : rules.diag ? [...men, ...DIRS.filter(([d]) => d === fwd)] : men;
+    for (const [dr, df] of dirs) {
       let t = step(n, from, dr, df);
       while (t >= 0 && b[t] === '') {
-        out.push({ from, path: [t], caps: [], promo: !isKing(p) && lastRow(n, c, t) });
-        if (!isKing(p)) break;
+        out.push({ from, path: [t], caps: [], promo: !king && lastRow(n, c, t) });
+        if (!king) break;
         t = step(n, t, dr, df);
+      }
+      // кены: прыжок через своего кена на свободное поле за ним
+      if (!king && rules.ownJump && t >= 0 && b[t] === (c === 0 ? 'w' : 'b')) {
+        const l = step(n, t, dr, df);
+        if (l >= 0 && b[l] === '') out.push({ from, path: [l], caps: [], promo: lastRow(n, c, l) });
       }
     }
     return;
@@ -382,6 +407,7 @@ export function play(s: State, m: Move): State {
   const turn = (1 - s.turn) as 0 | 1;
   let kq: number;
   if (rules.columns) kq = m.caps.length || m.promo ? 0 : s.kq + 1;
+  else if (rules.quietAny) kq = m.caps.length ? 0 : s.kq + 1;
   else {
     const kings = (c: number) => b.some((x) => own(x, c) && isKing(x));
     kq = kings(0) && kings(1) && !m.caps.length && isKing(p) ? s.kq + 1 : 0;
@@ -525,7 +551,7 @@ export function apply(s0: State, seat: number, a: Action, now: number = Date.now
       if (checkStuck(s, ev)) return { state: s, events: ev };
       const rules = RULES[s.cfg.variant];
       if (s.keys.filter((k) => k === key).length >= 3) finish(s, null, 'repetition', ev);
-      else if (s.kq >= rules.quietLimit) finish(s, null, rules.columns ? 'material' : 'kings', ev);
+      else if (s.kq >= rules.quietLimit) finish(s, null, rules.columns ? 'material' : rules.quietAny ? 'quiet' : 'kings', ev);
       else if (s.eg && s.eg >= endgameLimit(s)) finish(s, null, 'endgame', ev);
       return { state: s, events: ev };
     }

@@ -185,6 +185,46 @@ describe('столбовые и Ласка', () => {
   });
 });
 
+describe('тама и кены', () => {
+  const AR = cfgFrom({ variant: 'armenian' });
+  const KE = cfgFrom({ variant: 'keny' });
+  it('тама: простая шагает и по диагонали вперёд, но бьёт только прямо', () => {
+    const s = newGame(AR);
+    expect(s.board.filter((p) => p === 'w').length).toBe(16);
+    expect(names(s)).toContain('b3:c4');
+    expect(names(s)).not.toContain('b3:b2');
+    // диагональная жертва не бьётся, прямая — да
+    expect(names(fromList(AR, { w: ['d4', 'a2'], b: ['e5', 'h8'] }))).not.toContain('d4:f6');
+    expect(names(fromList(AR, { w: ['d4', 'a2'], b: ['d3', 'h8'] }))).not.toContain('d4:d2');
+  });
+  it('тама: дамка ходит во все 8 сторон, бьёт только прямо', () => {
+    const k = fromList(AR, { W: ['d4'], b: ['f6', 'h8'] });
+    expect(names(k)).toContain('d4:a1');
+    expect(names(k)).not.toContain('d4:g7');
+  });
+  it('тама: стала дамкой в бою — бьёт дальше как дамка, больше всех', () => {
+    const s = fromList(AR, { w: ['d6', 'a2'], b: ['d7', 'f8', 'h5', 'a7'] });
+    expect(names(s).sort()).toEqual(['d6:d8:h8:h1', 'd6:d8:h8:h2', 'd6:d8:h8:h3', 'd6:d8:h8:h4']);
+    expect(go(s, 'd6', 'd8', 'h8', 'h4').board[sqOf(8, 'h4')]).toBe('W');
+  });
+  it('кены: шаг вперёд и вбок, прыжок через своего, без диагоналей', () => {
+    const s = newGame(KE);
+    expect(names(s)).toContain('d2:d4');
+    expect(names(s)).not.toContain('b3:c4');
+    expect(names(fromList(KE, { w: ['d4', 'e4'], b: ['h8'] }))).toContain('d4:f4');
+  });
+  it('кены: бьют назад, правила большинства нет', () => {
+    expect(names(fromList(KE, { w: ['d4', 'a2'], b: ['d3', 'h8'] }))).toEqual(['d4:d2']);
+    // одна шашка влево или две вверх — можно любую ветку
+    const s = fromList(KE, { w: ['d4', 'a1'], b: ['c4', 'd5', 'd7', 'h1'] });
+    expect(names(s)).toEqual(expect.arrayContaining(['d4:b4', 'd4:d6:d8']));
+  });
+  it('кены: 10 ходов без взятий — ничья', () => {
+    const s = go({ ...fromList(KE, { w: ['a2'], b: ['h7'] }), kq: 19 }, 'a2', 'a3');
+    expect(s.reason).toBe('quiet');
+  });
+});
+
 describe('уголки', () => {
   const UG = ccfgFrom({ variant: 'ugolki' });
   const at = (sq: string) => sqOf(8, sq);

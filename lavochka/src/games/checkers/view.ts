@@ -6,7 +6,7 @@ import { h, sleep } from '../../core/util';
 import type { GameView, ViewCtx } from '../../core/view';
 import { woodTexture, WOODS } from '../../core/wood';
 import { arrived, cMoves, homeOf, pieceCount, type CEvent, type CState } from './corners';
-import { colorOf, dark, isKing, legalMoves, properMoves, RULES, sqName, type Event, type Move, type State } from './engine';
+import { colorOf, dark, isKing, legalMoves, properMoves, RULES, sqName, type Event, type Move, type State, type Variant } from './engine';
 import './checkers.css';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -100,12 +100,12 @@ class CheckersView implements GameView<S, E> {
   /** Турецкие: доска без шахматки — все поля игровые. */
   private uni = false;
   private needBuild(st: { n: number; cfg?: { variant?: string } }) {
-    return st.n !== this.n || (st.cfg?.variant === 'turkish') !== this.uni;
+    return st.n !== this.n || !!(st.cfg && RULES[st.cfg.variant as Variant]?.ortho) !== this.uni;
   }
 
   private build(n: number) {
     this.n = n;
-    this.uni = this.s?.cfg?.variant === 'turkish';
+    this.uni = !!(this.s?.cfg && RULES[this.s.cfg.variant as Variant]?.ortho);
     const SQ = this.SQ;
     const light = woodTexture(WOODS.maple, 256, 31);
     const darkW = woodTexture(WOODS.walnut, 256, 17);
