@@ -75,3 +75,45 @@ html, body { margin: 0; height: 100%; background: var(--dz-bg); color: var(--dz-
 .dz-stars s { color: #5a4a3a; text-decoration: none; }
 .dz-result td { padding: 3px 8px; }
 .dz-critic { font-family: 'PT Serif', serif; font-style: italic; color: var(--dz-dim); border-left: 3px solid var(--dz-gold2); padding: 6px 10px; margin: 12px 0; }
+
+/* меню */
+.dz-screen[hidden] { display: none; }
+.dz-logo { font-family: 'PT Serif', serif; font-size: clamp(38px, 8vw, 72px); color: var(--dz-gold); text-align: center; line-height: 1; margin: 28px 0 8px;
+  text-shadow: 0 2px 0 #5a3a10, 0 6px 24px #000; }
+.dz-logo span { display: block; font-size: 0.42em; letter-spacing: 6px; text-transform: uppercase; color: var(--dz-dim); }
+.dz-corner { position: fixed; right: 12px; top: 10px; display: flex; gap: 8px; z-index: 30; }
+.dz-foot { text-align: center; color: #7a6a58; font-size: 12px; margin-top: 18px; }
+.dz-season { font-family: 'PT Serif', serif; color: var(--dz-gold); margin: 26px 0 6px; border-bottom: 1px solid #5a4024; padding-bottom: 4px; }
+.dz-hallcard { background: #1a120ecc; border: 1px solid #4a3420; border-radius: 14px; padding: 12px 14px; margin: 10px 0; }
+.dz-hallcard > b { font-size: 18px; color: var(--dz-ink); }
+.dz-hallcard > i { color: var(--dz-dim); font-size: 13px; margin-left: 6px; }
+.dz-hallcard p { color: var(--dz-dim); margin: 6px 0 8px; font-size: 14px; }
+.dz-con { padding: 10px 14px; font-size: 16px; }
+.dz-stars-s { color: var(--dz-gold); float: right; letter-spacing: 1px; }
+.dz-stars-s s, .dz-stars s { color: #5a4a3a; text-decoration: none; }
+.dz-poster { margin: 10px auto 18px; max-width: 420px; background: linear-gradient(#f3e6c8, #e4d2a8); color: #2a1a10; border-radius: 6px; padding: 22px 20px 16px;
+  text-align: center; font-family: 'PT Serif', serif; box-shadow: 0 10px 40px #000a; border: 6px double #8a5a2a; }
+.dz-poster-hall { font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.dz-poster-city { font-style: italic; margin-bottom: 10px; }
+.dz-poster-title { font-size: 28px; color: #7a1c28; margin: 8px 0 12px; }
+.dz-poster-piece { margin: 10px 0; }
+.dz-poster-piece small { display: block; font-size: 13px; color: #5a4030; margin-top: 3px; font-family: 'PT Sans', sans-serif; }
+.dz-poster-foot { margin-top: 12px; border-top: 1px solid #8a5a2a; padding-top: 8px; font-style: italic; }
+.dz-field { display: flex; align-items: center; gap: 10px; margin: 8px 0; color: var(--dz-dim); }
+.dz-field select, .dz-field input, .dz-arr select { flex: 1; padding: 10px; border-radius: 10px; background: #1d1310; color: var(--dz-ink); border: 1px solid var(--dz-gold2); font: inherit; min-width: 0; }
+.dz-field { flex-wrap: nowrap; }
+.dz-field > :first-child { flex: 0 0 auto; }
+.dz-arr { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
+.dz-arr td, .dz-arr th { padding: 4px; border-bottom: 1px solid #3a2a1a; text-align: left; }
+.dz-arr th { color: var(--dz-gold); font-weight: 400; }
+.dz-load span { color: var(--dz-dim); }
+.dz-hint { position: absolute; left: 50%; bottom: calc(34% + 14px); transform: translateX(-50%) translateY(10px); max-width: min(620px, 92%); background: #1d1310ee; border: 1px solid var(--dz-gold);
+  color: var(--dz-ink); padding: 10px 16px; border-radius: 12px; font-size: 16px; text-align: center; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 5; }
+.dz-hint.on { opacity: 1; transform: translateX(-50%); }
+.dz-hint kbd { display: inline-block; min-width: 18px; padding: 0 6px; border: 1px solid #fff6; border-radius: 5px; background: #fff2; font-family: inherit; }
+.dz-concert.portrait .dz-hint { bottom: calc(54% + 14px); }
+.dz-mbtns { margin-top: 12px; }
+.dz-mbtns .dz-btn { text-align: center; }
+
+/* снимок для превью: только сцена */
+.dz-concert.shot .dz-ribbon, .dz-concert.shot .dz-top, .dz-concert.shot .dz-hint, .dz-concert.shot .dz-msg { display: none; }

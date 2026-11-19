@@ -13,6 +13,14 @@ export interface Stage {
   point(lane: number): void;
   /** Палочка поднята перед началом. */
   raise?(on: boolean): void;
+  /** Облёт зала перед началом. */
+  intro?(): Promise<void>;
+  /** Пропустить облёт. */
+  skip?(): void;
+  /** Поклон после концерта. */
+  outro?(): Promise<void>;
+  /** Игра пошла: сцену рисует цикл концерта. */
+  playing?(): void;
   resize(): void;
   destroy(): void;
 }

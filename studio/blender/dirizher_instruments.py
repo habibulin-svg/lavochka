@@ -456,10 +456,11 @@ def horn(name):
         pts.append((r * math.cos(a), 0.012 * math.sin(a * 2.3), r * math.sin(a)))
     rs = [0.0055 + 0.006 * (k / 119) ** 2 for k in range(120)]
     parts = [obj(name + '_coil', tube(pts, rs, seg=10), BRASS())]
-    lead = [(-0.03, -0.16, 0.12), (-0.02, -0.08, 0.12), (0.02, 0, 0.115)]
+    # мундштучная трубка поднимается от витков к губам: витки — на уровне груди
+    lead = [(0.02, 0, 0.115), (0.0, -0.06, 0.2), (-0.03, -0.13, 0.28), (-0.03, -0.2, 0.31)]
     parts.append(obj(name + '_lead', tube(lead, 0.005, seg=8), BRASS()))
     parts.append(obj(name + '_mp', lathe([(0.004, 0), (0.006, 0.05), (0.01, 0.075)], 12), SILVER()))
-    parts[-1].location = (-0.03, -0.235, 0.12)
+    parts[-1].location = (-0.03, -0.275, 0.31)
     parts[-1].rotation_euler = (math.pi / 2, 0, 0)
     bp = bell_profile(0.012, 0.155, 0.36, 0, flare=3.5)
     bm = lathe(bp, 28)
@@ -474,7 +475,7 @@ def horn(name):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     o = join(parts, name)
     o.parent = root
-    empty('lips', (-0.03, -0.31, 0.12), root)
+    empty('lips', (-0.03, -0.35, 0.31), root)
     empty('grip_l', (-0.05, -0.03, 0.06), root)
     empty('grip_r', (0.36, 0.0, -0.06), root)  # правая рука в раструбе
     return root

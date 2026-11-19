@@ -23,6 +23,12 @@ export interface ConcertSetup {
   from?: number;
   /** Разработка и показ: дирижирует сам (всё в точку). */
   auto?: boolean;
+  /** Подсказки обучения над лентой (первые вступления, первая фермата и т. п.). */
+  tutor?: boolean;
+  /** Сыгранность пьесы 0..3: промах вступления стоит меньше. */
+  rehearsed?: number;
+  /** Репетиция: строки, которые молчат. */
+  mute?: number[];
 }
 
 export interface ConcertResult {
@@ -55,6 +61,7 @@ export class Concert {
   stage: Stage | null = null;
   onEnd: (r: ConcertResult) => void = () => {};
   onPause: () => void = () => {};
+  onHelp: () => void = () => {};
 
   constructor(
     root: HTMLElement,
@@ -73,14 +80,17 @@ export class Concert {
         <div class="dz-hall" title="Зал"><span class="dz-hall-ico">👏</span><div class="dz-hall-bar"><i></i></div></div>
         <div class="dz-score">0</div>
         <div class="dz-combo"></div>
+        <button class="dz-ico" data-a="help" title="Как играть">?</button>
       </div>
-      <div class="dz-msg"></div>`;
+      <div class="dz-msg"></div>
+      <div class="dz-hint"></div>`;
     root.appendChild(this.el);
     const q = (s: string) => this.el.querySelector(s) as HTMLElement;
     this.hud = { score: q('.dz-score'), combo: q('.dz-combo'), hall: q('.dz-hall'), hallBar: q('.dz-hall-bar i'), title: q('.dz-title'), msg: q('.dz-msg') };
     this.hud.title.textContent = `${setup.score.composer}. ${setup.score.title}`;
     this.hud.hall.hidden = !setup.concert;
     q('[data-a=pause]').onclick = () => this.onPause();
+    q('[data-a=help]').onclick = () => this.onHelp();
     this.ribbon = new Ribbon(setup.score, this.chart, (i) => this.player?.perf.mood[i] ?? 70);
     this.ribbon.onLane = (i) => this.lane(i);
     this.el.appendChild(this.ribbon.el);
@@ -107,9 +117,10 @@ export class Concert {
     return [...new Set(this.setup.score.parts.map((p) => p.instr))].filter((i) => INSTR[i]);
   }
 
-  async start(onProgress?: (k: number) => void): Promise<void> {
+  async start(onProgress?: (k: number) => void, waitFor?: Promise<unknown>): Promise<void> {
     if (this.setup.hall) this.orch.setHall(this.setup.hall.rt60);
     await this.orch.load(this.instruments(), onProgress);
+    if (waitFor) await waitFor;
     if (this.disposed) return;
     await this.orch.ctx.resume();
     this.player = new ScorePlayer(this.orch, this.setup.score, this.chart, {
@@ -120,8 +131,20 @@ export class Concert {
       from: this.setup.from,
     });
     this.player.onEvent = (e) => this.event(e);
+    this.player.missLevel = 0.25 + 0.12 * (this.setup.rehearsed ?? 0);
+    for (const m of this.setup.mute ?? []) this.player.muted.add(m);
     this.layout();
     this.stage?.bind(this.player.perf, this.chart);
+    if (this.stage?.intro) {
+      if (this.setup.hall) this.say(this.setup.hall.name, 3.2);
+      const skip = () => this.stage?.skip?.();
+      window.addEventListener('keydown', skip, { once: true });
+      this.stageEl.addEventListener('pointerdown', skip, { once: true });
+      this.orch.applause(0.35, 3.5);
+      await this.stage.intro();
+      window.removeEventListener('keydown', skip);
+    }
+    this.stage?.playing?.();
     await this.countIn();
     if (this.disposed) return;
     this.player.start();
@@ -133,6 +156,7 @@ export class Concert {
       this.last = t;
       if (this.paused || !this.player) return;
       if (this.setup.auto) this.autoplay();
+      if (this.setup.tutor) this.tutor();
       this.player.update();
       this.ribbon.draw(this.player.perf, dt);
       this.stage?.update(dt, this.player.perf);
@@ -190,18 +214,23 @@ export class Concert {
       if (e.on) this.say('Держите!', 0.8);
     } else if (e.kind === 'fail') {
       this.say('Публика уходит…', 2);
-      setTimeout(() => this.finish(), 1800);
-    } else if (e.kind === 'end') setTimeout(() => this.finish(), 1200);
+      setTimeout(() => void this.finish(), 1800);
+    } else if (e.kind === 'end') setTimeout(() => void this.finish(), 1200);
     else if (e.kind === 'dyn') this.stage?.dynamics(e.level);
   }
 
   private finished = false;
-  private finish(): void {
+  private async finish(): Promise<void> {
     if (this.finished || !this.player) return;
     this.finished = true;
     const p = this.player.perf;
     const r = p.result();
     this.player.stop();
+    if (!r.stars) this.orch.boo();
+    else this.orch.applause(0.25 + r.stars * 0.15, 4.5);
+    cancelAnimationFrame(this.raf);
+    await this.stage?.outro?.();
+    if (this.disposed) return;
     this.onEnd({ score: p.score, stars: r.stars, acc: r.acc, failed: p.failed, bestCombo: p.bestCombo, tally: { ...p.tally }, mood: [...p.mood], missByLane: this.missByLane, chart: this.chart });
   }
 
@@ -236,6 +265,51 @@ export class Concert {
     }
   }
   private autoDone = new Set<number>();
+
+  // ---- обучение: подсказка над лентой перед первыми отметками каждого вида
+  private hinted = new Set<string>();
+  private hintCount = 0;
+  private hintT = 0;
+  private tutor(): void {
+    const p = this.player!.perf;
+    const keys = keysFor(this.chart.lanes.length).map((k) => ['A', 'S', 'D', 'F', 'J', 'K', 'L', ';'][k]);
+    const el = this.el.querySelector('.dz-hint') as HTMLElement;
+    if (this.hintT && performance.now() > this.hintT) {
+      el.classList.remove('on');
+      this.hintT = 0;
+    }
+    for (const m of this.chart.marks) {
+      const ds = p.secTo(m.tick);
+      if (ds > 1.8) break;
+      if (ds < 0.2 || p.quality.has(m.id)) continue;
+      let key = '';
+      let text = '';
+      if (m.kind === 'cue' && this.hintCount < 5) {
+        key = `cue${m.id}`;
+        const l = this.chart.lanes[m.lane];
+        text = `${l.name} вступают — нажмите <kbd>${keys[m.lane]}</kbd> (или кнопку «${l.short}»), когда круг дойдёт до линии`;
+      } else if (m.kind === 'cut' && !this.hinted.has('cut')) {
+        key = 'cut';
+        text = `Квадрат — <b>снятие</b>: нажмите <kbd>${keys[m.lane]}</kbd> на последнем аккорде`;
+      } else if (m.kind === 'hold' && !this.hinted.has('hold')) {
+        key = 'hold';
+        text = '<b>Фермата</b>: зажмите <kbd>Пробел</kbd> (или палец на сцене) и отпустите в конце полосы';
+      } else if ((m.kind === 'up' || m.kind === 'down') && !this.hinted.has(m.kind)) {
+        key = m.kind;
+        text = m.kind === 'up' ? '<b>Громче!</b> — <kbd>↑</kbd> или проведите по сцене вверх' : '<b>Тише!</b> — <kbd>↓</kbd> или проведите по сцене вниз';
+      } else if (m.kind === 'beat' && !this.hinted.has('beat')) {
+        key = 'beat';
+        text = '<b>Темп за вами</b>: стучите <kbd>Пробел</kbd> на каждую долю — быстрее, и оркестр ускорится';
+      }
+      if (!key || this.hinted.has(key)) continue;
+      this.hinted.add(key);
+      if (m.kind === 'cue') this.hintCount++;
+      el.innerHTML = text;
+      el.classList.add('on');
+      this.hintT = performance.now() + 2600;
+      break;
+    }
+  }
 
   lane(i: number): void {
     if (this.paused || !this.player) return;

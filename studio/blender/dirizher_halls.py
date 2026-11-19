@@ -150,28 +150,35 @@ def stage(w=20.0, depth=11.0, wood=(0.32, 0.17, 0.08), risers=True):
 
 
 def audience(rows, row0=-3.0, gap=0.95, width=18.0, z0=-1.1, rise=0.12, seat=(0.45, 0.03, 0.04), people=0.85, curve=0.0, seed=1):
-    """Партер: ряды кресел (бархат) и публика (тёмные фигуры: торс, голова)."""
+    """Партер: ряды кресел (бархат; ряд — несколько длинных блоков по дуге) и публика (тёмные фигуры: торс, голова)."""
     rnd = random.Random(seed)
     chairs, bodies, heads = [], [], []
     for r in range(rows):
         y = row0 - r * gap
         z = z0 + r * rise
         n = int(width / 0.55)
-        for i in range(n):
-            x = -width / 2 + (i + 0.5) * width / n
-            if abs(x) < 0.6:
-                continue  # проход
-            yy = y - curve * (x / (width / 2)) ** 2
-            rz = math.atan2(x, -yy) * 0.3
-            chairs.append((0.5, 0.5, 0.45, (x, yy, z + 0.22), rz))
-            chairs.append((0.5, 0.1, 0.55, (x, yy - 0.25, z + 0.6), rz))
-            if rnd.random() < people:
-                bodies.append((0.38, 0.22, 0.55, (x, yy, z + 0.72), rz))
-                heads.append((x, yy + 0.02, z + 1.12))
-    add('seats', boxes(chairs), mat('velvet', *seat and [seat], rough=1.0))
+        seg = 6
+        for side in (-1, 1):
+            # ряд по каждую сторону прохода — блоками по seg кресел
+            xs = [x for x in (-width / 2 + (i + 0.5) * width / n for i in range(n)) if (x > 0.6 if side > 0 else x < -0.6)]
+            for k in range(0, len(xs), seg):
+                part = xs[k:k + seg]
+                cx = (part[0] + part[-1]) / 2
+                cy = y - curve * (cx / (width / 2)) ** 2
+                rz = math.atan2(cx, -cy) * 0.3
+                L = part[-1] - part[0] + 0.5
+                chairs.append((L, 0.5, 0.45, (cx, cy, z + 0.22), rz))
+                chairs.append((L, 0.1, 0.55, (cx, cy - 0.25, z + 0.6), rz))
+            for x in xs:
+                yy = y - curve * (x / (width / 2)) ** 2
+                rz = math.atan2(x, -yy) * 0.3
+                if rnd.random() < people:
+                    bodies.append((0.38, 0.22, 0.55, (x, yy, z + 0.72), rz))
+                    heads.append((x, yy + 0.02, z + 1.12))
+    add('seats', boxes(chairs), mat('velvet', seat, rough=1.0))
     if bodies:
-        add('people', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9))
-        add('heads', merge([sphere(0.11, h, 6) for h in heads]), mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8))
+        add('people', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
+        add('heads', merge([sphere(0.11, h, 5) for h in heads]), mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8), smooth=True)
 
 
 def chandelier(c, r=1.2, tiers=3, light=(1.0, 0.85, 0.6), name='chandelier'):
@@ -216,14 +223,13 @@ def balcony_side(x_sign, y0, y1, z, depth=2.2, front=(0.9, 0.8, 0.6), gilt=True,
         add(f'balcfront{x_sign}{t}', box(0.15, y1 - y0, 1.0, (x - x_sign * depth / 2, (y0 + y1) / 2, zz + 0.6)), wallm)
         if gilt:
             add(f'balcgold{x_sign}{t}', box(0.18, y1 - y0, 0.08, (x - x_sign * depth / 2, (y0 + y1) / 2, zz + 1.1)), gold)
-        audience(1, row0=0, width=0.01, people=0)  # (не нужно — публика на балконах — силуэты ниже)
         bodies = []
         for k in range(int((y1 - y0) / 0.6)):
             y = y0 + 0.3 + k * 0.6
             if random.random() < 0.8:
                 bodies.append((0.3, 0.38, 0.5, (x + x_sign * 0.4, y, zz + 0.55), 0))
         if bodies:
-            add(f'balcpeople{x_sign}{t}', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9))
+            add(f'balcpeople{x_sign}{t}', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
 
 
 def columns(xs, y0, y1, n, h, r, m, z0=0.0, caps=True):
@@ -460,7 +466,7 @@ def h_shoebox(name, w, length, h, wall, ceil, coffer_color, col_m, gold_organ, b
     ceiling(w, -length, 11, h - 1.4, ceil, coffers=7, coffer_color=coffer_color)
     organ(0, 10.6, 3.2, w * 0.55, h - 6, gold=gold_organ, n=41)
     # хоры/места за оркестром
-    add('choir', box(w * 0.8, 3, 2.4, (0, 9.2, 1.2)), mat('choir_seats', (0.4, 0.06, 0.06), rough=1))
+    add('choir', box(w * 0.8, 3, 2.0, (0, 9.4, 1.0)), mat('choir_seats', (0.22, 0.1, 0.05), rough=0.8))
     if caryatids:
         gold = mat('caryatid', (0.82, 0.6, 0.27), metal=1.0, rough=0.3)
         cs = []

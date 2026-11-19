@@ -248,6 +248,72 @@ export class Orchestra {
     }
   }
 
+  private clapBuf: AudioBuffer | null = null;
+
+  /** Аплодисменты: много хлопков вразнобой (шум через полосовой фильтр), сила 0..1, длительность с. */
+  applause(level: number, sec: number): void {
+    const ctx = this.ctx;
+    if (!this.clapBuf) {
+      const len = 6;
+      const n = Math.round(len * ctx.sampleRate);
+      const b = ctx.createBuffer(2, n, ctx.sampleRate);
+      let seed = 4242;
+      const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 0x100000000;
+      for (let c = 0; c < 2; c++) {
+        const d = b.getChannelData(c);
+        for (let who = 0; who < 70; who++) {
+          const rate = 0.22 + rnd() * 0.16;
+          const amp = 0.25 + rnd() * 0.75;
+          for (let t = rnd() * rate; t < len; t += rate * (0.9 + rnd() * 0.2)) {
+            const i0 = Math.round(t * ctx.sampleRate);
+            const clapLen = Math.round(0.012 * ctx.sampleRate);
+            for (let k = 0; k < clapLen && i0 + k < n; k++) d[i0 + k] += (rnd() * 2 - 1) * amp * Math.exp(-k / (clapLen / 4)) * 0.08;
+          }
+        }
+      }
+      this.clapBuf = b;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = this.clapBuf;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1800;
+    bp.Q.value = 0.6;
+    const g = ctx.createGain();
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(level, t + 0.5);
+    g.gain.setValueAtTime(level, t + Math.max(0.6, sec - 1.2));
+    g.gain.linearRampToValueAtTime(0, t + sec);
+    src.connect(bp).connect(g).connect(this.out);
+    g.connect(this.verb);
+    src.start(t, Math.random() * 3);
+    src.stop(t + sec + 0.1);
+  }
+
+  /** Недовольный гул публики (провал). */
+  boo(): void {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    for (let k = 0; k < 6; k++) {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(110 + k * 23, t);
+      o.frequency.linearRampToValueAtTime(80 + k * 17, t + 2.2);
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.03, t + 0.4);
+      g.gain.linearRampToValueAtTime(0, t + 2.4);
+      o.connect(f).connect(g).connect(this.out);
+      o.start(t + k * 0.05);
+      o.stop(t + 2.5);
+    }
+  }
+
   /** Тишина: снять всё (пауза, выход). */
   silence(): void {
     for (const v of [...this.voices]) this.release(v, this.ctx.currentTime);

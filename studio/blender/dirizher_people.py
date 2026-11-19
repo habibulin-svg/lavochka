@@ -164,7 +164,7 @@ for o in parts:
             elif 'eyebrow' in nm:
                 recolor(n.image, tuple(int(c_ * 0.8) for c_ in L['hair_rgb']))
                 n.image['_done'] = 1
-            elif 'shoes' in nm and 'diffuse' in n.image.name.lower():
+            elif 'shoe' in nm and not any(k_ in n.image.name.lower() for k_ in ('normal', '_ao', 'bump', 'spec')):
                 recolor(n.image, (20, 20, 22))
                 n.image['_done'] = 1
 
@@ -183,6 +183,13 @@ for o in parts:
                     nt.links.remove(lk)
             bsdf.inputs['Alpha'].default_value = 1.0
         m.surface_render_method = 'DITHERED'
+        if 'shoe' in o.name.lower():
+            # концертные туфли — чёрные, лаковые (текстура у части моделей белая)
+            for lk in list(nt.links):
+                if lk.to_socket == bsdf.inputs['Base Color']:
+                    nt.links.remove(lk)
+            bsdf.inputs['Base Color'].default_value = (0.015, 0.015, 0.017, 1)
+            bsdf.inputs['Roughness'].default_value = 0.3
         if 'high-poly' in o.name:
             bsdf.inputs['Roughness'].default_value = 0.25
         elif 'elegantsuit' in o.name.lower():

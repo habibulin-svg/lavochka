@@ -37,6 +37,8 @@ export class ScorePlayer {
   private lastCtx = 0;
   private running = false;
   private rnd = 1;
+  /** Громкость группы после промаха вступления (растёт с сыгранностью). */
+  missLevel = 0.25;
   /** Строка выключена (репетиция: послушать без группы). */
   muted = new Set<number>();
   /** Подписчики на события исполнения (лента, сцена, счёт). */
@@ -96,7 +98,7 @@ export class ScorePlayer {
     const ctx = this.orch.ctx;
     if (e.kind === 'judge' && e.mark.lane >= 0 && (e.mark.kind === 'cue' || e.mark.kind === 'solo')) {
       const q = this.perf.noteQuality(e.mark.id, e.mark.lane);
-      this.orch.laneLevel(e.mark.lane, e.grade === 'miss' ? 0.25 : Math.max(0.45, q), ctx.currentTime, e.grade === 'miss' ? 0.3 : 0.08);
+      this.orch.laneLevel(e.mark.lane, e.grade === 'miss' ? this.missLevel : Math.max(0.45, q), ctx.currentTime, e.grade === 'miss' ? 0.3 : 0.08);
     } else if (e.kind === 'dyn') this.orch.dynamics(e.level);
     this.onEvent(e);
   }
@@ -114,7 +116,7 @@ export class ScorePlayer {
     // вступление прошло, а команды не было — группа робеет
     for (const m of this.chart.marks) {
       if (m.tick > perf.tick) break;
-      if (m.tick > before && m.lane >= 0 && m.kind === 'cue' && !perf.quality.has(m.id)) this.orch.laneLevel(m.lane, 0.32, now, 0.05);
+      if (m.tick > before && m.lane >= 0 && m.kind === 'cue' && !perf.quality.has(m.id)) this.orch.laneLevel(m.lane, Math.max(0.32, this.missLevel), now, 0.05);
     }
     // снять отзвучавшие
     this.active = this.active.filter((a) => {

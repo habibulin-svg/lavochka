@@ -8,6 +8,9 @@ import type { ScoreJson } from './core/score';
 import { FlatStage } from './scene/stage';
 import { Scene3D } from './scene/scene3d';
 import { initGamepad } from '../core/gamepad';
+import { App } from './app';
+import { mayPlay, type Release } from '../core/release';
+import type { RightGrant } from '../core/rights';
 
 const host = document.getElementById('dirizher')!;
 const q = new URLSearchParams(location.search);
@@ -50,10 +53,35 @@ async function devPiece(id: string): Promise<void> {
     c.pause(paused);
     c.say(paused ? 'Пауза' : '', paused ? 0 : 0.1);
   };
+  if (q.get('shot') === '1') c.el.classList.add('shot');
   if (import.meta.env.DEV) Object.assign((window as unknown as { __dz: object }).__dz, { concert: c });
   await c.start();
 }
 
+async function access(): Promise<{ ok: boolean; signedIn: boolean }> {
+  if (import.meta.env.DEV) return { ok: true, signedIn: true };
+  const get = (url: string) =>
+    fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  const [me, stats] = await Promise.all([get('/api/auth/me'), get('/api/stats')]);
+  const rights: RightGrant[] = me?.user?.rights ?? [];
+  const release: Release = stats?.release ?? {};
+  return { ok: mayPlay(release, 'dirizher', rights), signedIn: !!me?.user };
+}
+
+function locked(signedIn: boolean): void {
+  host.innerHTML = `<div class="dz-screen"><div class="dz-panel">
+    <div class="dz-logo"><span>Симулятор</span> дирижёра</div>
+    <div class="dz-sub">Игра в раннем доступе — для подписчиков «Лавочки+».</div>
+    <button class="dz-btn primary" onclick="location.href='/dirizher/'">${signedIn ? 'Оформить «Лавочку+»' : 'Войти или оформить «Лавочку+»'}</button>
+    <button class="dz-btn" onclick="location.href='/'">Во двор, к другим играм</button></div></div>`;
+}
+
 const piece = q.get('piece');
 if (piece) void devPiece(piece);
-else host.textContent = 'Меню — скоро';
+else
+  void access().then((a) => {
+    if (!a.ok) return locked(a.signedIn);
+    new App(host).title();
+  });

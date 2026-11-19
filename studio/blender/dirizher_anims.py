@@ -494,6 +494,14 @@ def run_timpani():
 
 
 V = Vector
+
+
+def horn_axes():
+    """Валторна: мундштучная трубка (её −Y) — к губам, назад; раструб (её +X) — вправо-вниз, к правому бедру.
+    Ось витков (её +Z) — тогда влево-вверх: витки наклонены перед грудью."""
+    return V((-0.7, 0, 0.7)), V((0, 1, 0))
+
+
 SETUPS = {
     'violin': lambda: run_violin('violin', 'bow_violin', 0.75),
     'viola': lambda: run_violin('viola', 'bow_viola', 0.74),
@@ -507,7 +515,7 @@ SETUPS = {
     'trumpet': lambda: run_brass('trumpet', V((0, -0.2, 1)), V((0, -1, -0.2)),
                                  lambda w: (wpos(node(w, 'grip_l')) + V((0.035, 0, 0)), V((-1, 0, 0.2)), V((0, 0, 1))),
                                  lambda w, k: (wpos(node(w, 'grip_r')) + V((0, 0.01, 0.045)), V((0, -0.3, -1)), V((0, 1, 0)))),
-    'horn': lambda: run_brass('horn', V((0, 0, 1)), V((0, 1, 0)),
+    'horn': lambda: run_brass('horn', *horn_axes(),
                               lambda w: (wpos(node(w, 'grip_l')) + V((0, 0.03, 0.03)), V((0, -0.4, -1)), V((1, 0, 0))),
                               lambda w, k: (wpos(node(w, 'grip_r')), V((0, -0.3, -1)), V((0, 1, 0)))),
     'trombone': lambda: run_brass('trombone', V((0, 0, 1)), V((0, -1, -0.12)),

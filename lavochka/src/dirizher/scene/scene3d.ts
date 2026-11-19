@@ -15,7 +15,7 @@ import { barsOf, laneOf, notesOf, PPQ, type InstrId, type ScoreJson } from '../c
 import type { Stage } from './stage';
 
 const BASE = `${import.meta.env.BASE_URL}dirizher/`;
-const V = 1; // версия моделей (кэш)
+const V = 3; // версия моделей (кэш)
 
 /** Какой файл движений у инструмента. */
 const ANIM_OF: Partial<Record<InstrId, string>> = {
@@ -24,8 +24,8 @@ const ANIM_OF: Partial<Record<InstrId, string>> = {
   hn: 'horn', tp: 'trumpet', tb: 'trombone', tu: 'tuba', timp: 'timpani',
 };
 const BODIES = { m: ['m1', 'm2', 'm3', 'm4', 'm5'], f: ['f1', 'f2', 'f3', 'f4', 'f5'] };
-/** Пока женские движения не готовы — все на мужских. */
-const SEXES: ('m' | 'f')[] = ['m'];
+/** Кто сидит на месте: примерно поровну мужчин и женщин, вразнобой, но одинаково от раза к разу. */
+const sexOf = (i: number): 'm' | 'f' => (((i * 2654435761) >>> 0) % 100 < 46 ? 'f' : 'm');
 
 /** Рассадка: [угол от оси (рад, минус — слева), радиус, высота подиума] для каждого места. */
 interface Seat {
@@ -230,7 +230,7 @@ export class Scene3D implements Stage {
     const jobs = seats.map(async (s, i) => {
       const anim = ANIM_OF[s.instr];
       if (!anim) return;
-      const sex = SEXES[i % SEXES.length];
+      const sex = sexOf(i);
       const bodyId = BODIES[sex][(vi++ * 3 + i) % BODIES[sex].length];
       const [body, act] = await Promise.all([this.load(`m/${bodyId}.glb`), this.load(`a/${anim}_${sex}.glb`)]);
       if (this.disposed) return;
@@ -426,17 +426,112 @@ export class Scene3D implements Stage {
     this.renderer.domElement.style.height = '100%';
     const aspect = r.width / r.height;
     this.camera.aspect = aspect;
-    // узкий экран — камера выше и дальше, чтобы влез весь полукруг
-    const k = aspect < 1.3 ? 1.35 : 1;
-    this.camera.fov = aspect < 1 ? 58 : 42;
-    // сзади-сверху: голова дирижёра — ниже первого ряда оркестра, руки с палочкой — на фоне сцены
-    this.camera.position.set(0, 5.3 * k, 3.9 * k);
-    this.camera.lookAt(0, 0.3, -3.9);
+    // сзади-сверху: голова дирижёра — ниже первого ряда оркестра, руки с палочкой — на фоне сцены; вверху кадра — зал.
+    // Узкий экран (телефон стоя) — шире угол и круче сверху: весь полукруг, меньше стены
+    if (aspect < 1.15) this.game = { pos: new THREE.Vector3(0, 6.3, 4.4), at: new THREE.Vector3(0, 0.2, -3.6), fov: 66 };
+    else {
+      const k = aspect < 1.4 ? 1.2 : 1;
+      this.game = { pos: new THREE.Vector3(0, 5.0 * k, 4.2 * k), at: new THREE.Vector3(0, 1.2, -4.6), fov: 48 };
+    }
+    if (!this.cam) this.setPose(this.game);
+  }
+
+  private game: Pose = { pos: new THREE.Vector3(0, 5, 4.2), at: new THREE.Vector3(0, 1.2, -4.6), fov: 48 };
+  /** Пролёт камеры (вступление, поклон): позы по очереди. */
+  private cam: { path: Pose[]; times: number[]; t: number; done: () => void } | null = null;
+  private loopRaf = 0;
+  private lastT = 0;
+  /** Сцена рисует себя сама (до начала игры и после конца); во время игры — update() из цикла концерта. */
+  private idleLoop = true;
+
+  private setPose(p: Pose): void {
+    this.camera.position.copy(p.pos);
+    this.camera.lookAt(p.at);
+    this.camera.fov = p.fov;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Камера по пути из поз (с плавностью); пока летит — сцена рисуется своим циклом. */
+  private fly(path: Pose[], times: number[]): Promise<void> {
+    return new Promise((resolve) => {
+      this.cam = { path, times, t: 0, done: resolve };
+      this.lastT = performance.now();
+      const loop = (now: number) => {
+        if (this.disposed || !this.cam) return;
+        const dt = Math.min(0.1, (now - this.lastT) / 1000);
+        this.lastT = now;
+        this.stepCam(dt);
+        if (this.idleLoop) {
+          for (const p of this.people) p.mixer.update(dt);
+          this.conductor?.idle(dt);
+          this.renderer.render(this.scene, this.camera);
+        }
+        if (this.cam) this.loopRaf = requestAnimationFrame(loop);
+      };
+      this.loopRaf = requestAnimationFrame(loop);
+    });
+  }
+
+  private stepCam(dt: number): void {
+    const c = this.cam;
+    if (!c) return;
+    c.t += dt;
+    let i = 0;
+    let t0 = 0;
+    while (i < c.times.length && c.t > t0 + c.times[i]) {
+      t0 += c.times[i];
+      i++;
+    }
+    if (i >= c.times.length) {
+      this.setPose(c.path[c.path.length - 1]);
+      const done = c.done;
+      this.cam = null;
+      done();
+      return;
+    }
+    const u = (c.t - t0) / c.times[i];
+    const e = u * u * (3 - 2 * u);
+    const a = c.path[i];
+    const b = c.path[i + 1];
+    this.setPose({ pos: a.pos.clone().lerp(b.pos, e), at: a.at.clone().lerp(b.at, e), fov: a.fov + (b.fov - a.fov) * e });
+  }
+
+  /** Вступление: зал со сцены (ярусы, люстра, публика) → пролёт над оркестром → за спину дирижёра. */
+  async intro(): Promise<void> {
+    await this.ready;
+    this.idleLoop = true;
+    const hall = { pos: new THREE.Vector3(0, 4.5, -7.5), at: new THREE.Vector3(0, 4.5, 14), fov: 60 };
+    const hall2 = { pos: new THREE.Vector3(0, 6.5, -6), at: new THREE.Vector3(0, 3, 8), fov: 58 };
+    const over = { pos: new THREE.Vector3(0, 8, -1), at: new THREE.Vector3(0, 0.5, -4), fov: 55 };
+    this.setPose(hall);
+    await this.fly([hall, hall2, over, this.game], [1.6, 1.3, 1.3]);
+  }
+
+  /** Пропустить облёт (нажали клавишу). */
+  skip(): void {
+    if (this.cam) this.cam.t = 1e9;
+  }
+
+  /** Поклон: дирижёр поворачивается к публике и кланяется, камера — из зала. */
+  async outro(): Promise<void> {
+    this.idleLoop = true;
+    for (const p of this.people) {
+      p.play.setEffectiveWeight(0);
+      p.rest.setEffectiveWeight(1);
+    }
+    this.conductor?.bow();
+    const front = { pos: new THREE.Vector3(0, 3.0, 8.5), at: new THREE.Vector3(0, 1.8, -2.5), fov: 50 };
+    await this.fly([{ pos: this.camera.position.clone(), at: this.game.at.clone(), fov: this.camera.fov }, front, front], [1.4, 2.6]);
+  }
+
+  /** Игра началась: рисует цикл концерта. */
+  playing(): void {
+    this.idleLoop = false;
   }
 
   destroy(): void {
     this.disposed = true;
+    cancelAnimationFrame(this.loopRaf);
     this.conductor = null;
     this.ro.disconnect();
     this.renderer.dispose();
@@ -444,6 +539,12 @@ export class Scene3D implements Stage {
   }
 }
 
+
+interface Pose {
+  pos: THREE.Vector3;
+  at: THREE.Vector3;
+  fov: number;
+}
 
 type Gesture = 'none' | 'cue' | 'up' | 'hush' | 'hold';
 const LEFT_ARM = /^(clavicle_l|upperarm_l|lowerarm_l|hand_l|thumb_\d+_l|index_\d+_l|middle_\d+_l|ring_\d+_l|pinky_\d+_l)\./;
@@ -494,11 +595,38 @@ class Maestro {
       a.setEffectiveWeight(0);
       this.left[gname] = a;
     }
+    const bw = byName('bow');
+    if (bw) this.bowAct = this.mixer.clipAction(bw);
     const h = byName('hold');
     if (h) {
       this.hold = this.mixer.clipAction(h);
       this.hold.play();
       this.hold.setEffectiveWeight(0);
+    }
+  }
+
+  private bowAct: THREE.AnimationAction | null = null;
+  private bowing = false;
+
+  /** До начала: палочка поднята, такт не идёт. */
+  idle(dt: number): void {
+    if (this.bowing) {
+      this.root.rotation.y += (0 - this.root.rotation.y) * Math.min(1, dt * 3);
+      this.mixer.update(dt);
+      return;
+    }
+    this.update(dt, this.cur, 0, false, 0);
+  }
+
+  bow(): void {
+    this.bowing = true;
+    this.mixer.stopAllAction();
+    if (this.bowAct) {
+      this.bowAct.reset();
+      this.bowAct.setLoop(THREE.LoopOnce, 1);
+      this.bowAct.clampWhenFinished = true;
+      this.bowAct.setEffectiveWeight(1);
+      this.bowAct.play();
     }
   }
 
@@ -512,6 +640,7 @@ class Maestro {
   }
 
   update(dt: number, num: number, phase: number, frozen: boolean, turn: number): void {
+    if (this.bowing) return this.idle(dt);
     const n = num === 6 || num === 2 ? 2 : num === 3 || num === 9 ? 3 : 4;
     this.cur = n;
     for (const [k, a] of Object.entries(this.beats)) {
