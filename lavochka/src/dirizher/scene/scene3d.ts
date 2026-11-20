@@ -15,7 +15,7 @@ import { barsOf, laneOf, notesOf, PPQ, type InstrId, type ScoreJson } from '../c
 import type { Stage } from './stage';
 
 const BASE = `${import.meta.env.BASE_URL}dirizher/`;
-const V = 3; // версия моделей (кэш)
+const V = 4; // версия моделей (кэш)
 
 /** Какой файл движений у инструмента. */
 const ANIM_OF: Partial<Record<InstrId, string>> = {
@@ -95,7 +95,19 @@ interface Musician {
   w: number;
   lane: number;
   phase: number;
+  /** Кости для позы настроения (понурый — спина и голова вниз). */
+  slumpBones: THREE.Bone[];
+  /** Понурость 0..1 (плавно). */
+  slump: number;
+  /** Позы костей до наклона: вернуть перед следующим кадром (если кость не анимирована — наклон не копится). */
+  slumpBase: THREE.Quaternion[] | null;
 }
+
+/** Наклон костей вперёд (спина, шея, голова): доля от полной понурости. */
+const SLUMP = { spine_02: 0.14, spine_03: 0.1, neck_01: 0.18, head: 0.26 } as Record<string, number>;
+const _q = new THREE.Quaternion();
+const _qp = new THREE.Quaternion();
+const _ax = new THREE.Vector3();
 
 export class Scene3D implements Stage {
   private renderer: THREE.WebGLRenderer;
@@ -249,11 +261,19 @@ export class Scene3D implements Stage {
         const bone = root.getObjectByName(o.parent!.name);
         if (bone) bone.add(o.clone());
       }
+      // мелочь, которой с камеры не видно (ресницы, брови, струны, мелкие детали инструментов), — прочь: меньше вызовов
+      // отрисовки (на музыканта их ~15, а музыкантов 40+); на телефоне — и глаза (инструменты не трогаем)
+      const tinyBody = this.small ? 650 : 130;
+      const drop: THREE.Object3D[] = [];
       root.traverse((o) => {
-        if ((o as THREE.Mesh).isMesh) {
-          o.frustumCulled = false;
-        }
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        m.frustumCulled = false;
+        const g = m.geometry;
+        const tris = (g.index ? g.index.count : g.attributes.position.count) / 3;
+        if (tris < ((m as THREE.SkinnedMesh).isSkinnedMesh ? tinyBody : 130)) drop.push(m);
       });
+      for (const m of drop) m.removeFromParent();
       const mixer = new THREE.AnimationMixer(root);
       const clip = (n: string) => act.animations.find((a) => a.name === n) ?? act.animations[0];
       const rest = mixer.clipAction(clip('rest'));
@@ -281,7 +301,8 @@ export class Scene3D implements Stage {
         st.rotateY(Math.PI);
         this.scene.add(st);
       }
-      this.people.push({ seat: s, root, mixer, rest, play, w: 0, lane: -1, phase: 0 });
+      const slumpBones = Object.keys(SLUMP).map((n) => root.getObjectByName(n) as THREE.Bone).filter(Boolean);
+      this.people.push({ seat: s, root, mixer, rest, play, w: 0, lane: -1, phase: 0, slumpBones, slump: 0, slumpBase: null });
     });
     // дирижёр: тело + движения (a/conductor_m.glb: ready, beat2/3/4, l_cue/l_up/l_hush, hold, bow) и палочка
     const maestro = Promise.all([this.load('m/maestro.glb'), this.load('a/conductor_m.glb')]).then(([g, a]) => {
@@ -369,7 +390,16 @@ export class Scene3D implements Stage {
       p.play.setEffectiveWeight(p.w);
       p.rest.setEffectiveWeight(1 - p.w);
       p.play.timeScale = frozen ? 0.05 : bpm / 60;
+      if (p.slumpBase) {
+        p.slumpBones.forEach((b, i) => b.quaternion.copy(p.slumpBase![i]));
+        p.slumpBase = null;
+      }
       p.mixer.update(dt);
+      // настрой группы виден: при плохом — сидят понуро (играя — чуть меньше, надо видеть инструмент)
+      const mood = p.lane >= 0 ? perf.mood[p.lane] ?? 70 : 70;
+      const ws = Math.max(0, Math.min(1, (58 - mood) / 38)) * (1 - 0.45 * p.w);
+      p.slump += (ws - p.slump) * Math.min(1, dt * 1.5);
+      if (p.slump > 0.01) this.bend(p);
     }
     if (this.conductor) {
       const bars = this.bars;
@@ -394,6 +424,21 @@ export class Scene3D implements Stage {
         (g.material as THREE.MeshBasicMaterial).opacity = 0.12 * soon + 0.35 * this.glowT[li];
       });
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Наклонить спину и голову вперёд (вокруг оси «вправо» музыканта) поверх движения. */
+  private bend(p: Musician): void {
+    _ax.set(1, 0, 0).applyQuaternion(p.root.quaternion);
+    p.slumpBase = p.slumpBones.map((b) => b.quaternion.clone());
+    for (const b of p.slumpBones) {
+      const k = SLUMP[b.name] ?? 0;
+      b.parent!.getWorldQuaternion(_qp);
+      // поворот в мире → в системе родителя: qp⁻¹ · q · qp
+      _q.setFromAxisAngle(_ax, k * p.slump);
+      _q.premultiply(_qp.clone().invert()).multiply(_qp);
+      b.quaternion.premultiply(_q);
+      b.updateMatrixWorld(true);
+    }
   }
 
   judge(m: Mark, g: Grade): void {

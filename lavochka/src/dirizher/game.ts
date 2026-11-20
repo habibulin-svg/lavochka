@@ -119,7 +119,8 @@ export class Concert {
 
   async start(onProgress?: (k: number) => void, waitFor?: Promise<unknown>): Promise<void> {
     if (this.setup.hall) this.orch.setHall(this.setup.hall.rt60);
-    await this.orch.load(this.instruments(), onProgress);
+    // только зоны, которые сыграет партитура (а не все сэмплы инструментов)
+    await this.orch.loadFiles(await this.orch.scoreFiles(this.setup.score), onProgress);
     if (waitFor) await waitFor;
     if (this.disposed) return;
     await this.orch.ctx.resume();

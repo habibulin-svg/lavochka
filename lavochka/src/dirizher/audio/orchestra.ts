@@ -5,7 +5,7 @@
  * (release), поэтому фермата и живой темп ничего не обрывают. Шины: инструмент (панорама по месту) → строка ленты
  * (громкость = уверенность группы) → оркестр (динамика) → зал (реверб) → выход. */
 
-import type { InstrId } from '../core/score';
+import { notesOf, TempoMap, type InstrId, type ScoreJson } from '../core/score';
 
 export interface SampleZone {
   /** Опорная нота MIDI. */
@@ -111,12 +111,57 @@ export class Orchestra {
     return this.index;
   }
 
-  /** Загрузить сэмплы инструментов; onProgress(0..1). */
+  /** Загрузить все сэмплы инструментов; onProgress(0..1). */
   async load(instrs: InstrId[], onProgress?: (k: number) => void): Promise<void> {
     const idx = await this.loadIndex();
-    const files = [...new Set(instrs.flatMap((i) => idx[i]?.zones.map((z) => `${idx[i]!.from ?? i}/${z.file}`) ?? []))].filter((f) => !this.buffers.has(f));
+    await this.loadFiles(instrs.flatMap((i) => idx[i]?.zones.map((z) => `${idx[i]!.from ?? i}/${z.file}`) ?? []), onProgress);
+  }
+
+  /** Ближайшая зона ноты среди всех (как zoneFor, но без оглядки на загруженное) — файл. */
+  private fileFor(instr: InstrId, pitch: number, vel: number, art: number): string | null {
+    const s = this.index[instr];
+    if (!s) return null;
+    const want: 0 | 1 = vel >= 80 ? 1 : 0;
+    let best: SampleZone | null = null;
+    let bestD = 1e9;
+    for (const z of s.zones) {
+      const d = Math.abs(z.n - pitch) * 2 + (z.v === want ? 0 : 5) + ((z.a ?? 0) === art ? 0 : 40);
+      if (d < bestD) {
+        bestD = d;
+        best = z;
+      }
+    }
+    return best ? `${s.from ?? instr}/${best.file}` : null;
+  }
+
+  /** Какие файлы понадобятся партитуре — по порядку первого звучания (нужно для «грузить только своё и по очереди»).
+   * Нота короче 0,2 с играется коротким приёмом; около порога (живой темп, репетиция) берём оба приёма.
+   * fromSec/toSec — только ноты в этом окне (секунды по партитуре). */
+  async scoreFiles(score: ScoreJson, fromSec = 0, toSec = 1e9): Promise<string[]> {
+    await this.loadIndex();
+    const tm = new TempoMap(score.tempo);
+    const all: { t: number; f: string }[] = [];
+    for (const p of score.parts)
+      for (const n of notesOf(p)) {
+        const t = tm.sec(n.tick);
+        if (t < fromSec || t >= toSec) continue;
+        const d = tm.sec(n.tick + n.dur) - t;
+        const arts = n.art ? [n.art] : d < 0.12 ? [1] : d < 0.36 ? [0, 1] : [0];
+        for (const a of arts) {
+          const f = this.fileFor(p.instr, n.pitch, n.vel, a);
+          if (f) all.push({ t, f });
+        }
+      }
+    all.sort((a, b) => a.t - b.t);
+    return [...new Set(all.map((x) => x.f))];
+  }
+
+  /** Загрузить файлы сэмплов (по порядку списка, 6 потоков); уже загруженные пропускаются. */
+  async loadFiles(list: string[], onProgress?: (k: number) => void): Promise<void> {
+    const files = [...new Set(list)].filter((f) => !this.buffers.has(f) && !this.loading.has(f));
     let done = 0;
     const queue = [...files];
+    for (const f of files) this.loading.add(f);
     const worker = async () => {
       while (queue.length) {
         const f = queue.shift()!;
@@ -124,14 +169,18 @@ export class Orchestra {
           const ab = await (await fetch(BASE + f)).arrayBuffer();
           this.buffers.set(f, await this.ctx.decodeAudioData(ab));
         } catch {
-          /* нет файла — нота промолчит */
+          /* нет файла — нота возьмёт соседнюю зону или промолчит */
         }
+        this.loading.delete(f);
         onProgress?.(++done / Math.max(1, files.length));
       }
     };
     await Promise.all(Array.from({ length: 6 }, worker));
+    // файлы, которые грузит другой вызов, — дождаться
+    while (list.some((f) => this.loading.has(f))) await new Promise((r) => setTimeout(r, 50));
     onProgress?.(1);
   }
+  private loading = new Set<string>();
 
   /** Раскладка шин: инструмент → строка ленты; pan — место на сцене (−1 слева … 1 справа). */
   setup(lanes: InstrId[][], pan: Partial<Record<InstrId, number>>): void {

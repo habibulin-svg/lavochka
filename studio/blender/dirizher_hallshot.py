@@ -1,6 +1,6 @@
 """Симулятор дирижёра: снимок зала (glb) с заданной точки — проверка, узнаётся ли зал.
 
-blender -b --factory-startup --python studio/blender/dirizher_hallshot.py -- <зал.glb> <выход.png> [вид: auditorium|stage]
+blender -b --factory-startup --python studio/blender/dirizher_hallshot.py -- <зал.glb> <выход.png> [вид: auditorium|stage|organ]
 Точки — как у камеры игры при облёте (в координатах Blender: публика — к −Y).
 """
 import math
@@ -22,6 +22,11 @@ if VIEW == 'auditorium':
     cam.location = Vector((0, 7.5, 4.5))
     target = Vector((0, -14, 4.5))
     cam.data.angle = math.radians(75)
+elif VIEW == 'organ':
+    # из зала на сцену: хоры, орган, потолок
+    cam.location = Vector((0, -12, 6))
+    target = Vector((0, 12, 7))
+    cam.data.angle = math.radians(80)
 else:
     cam.location = Vector((0, -4.2, 5.0))
     target = Vector((0, 4.6, 1.2))

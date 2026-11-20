@@ -73,7 +73,7 @@ export class App {
     if (!this.musicScore || this.music || this.concert) return;
     const m = new Autoplay(orch, this.musicScore, { loop: true, volume: 0.35 });
     this.music = m;
-    await orch.load(m.instruments());
+    await m.preload();
     if (this.music === m && !this.concert) m.start();
   }
 
@@ -543,7 +543,7 @@ export class App {
       const s = applyArrangement(score, a);
       const ap = new Autoplay(orch, s, { maxSec: 25, volume: 0.9 });
       this.preview = ap;
-      await orch.load(ap.instruments());
+      await ap.preload(25);
       if (this.preview === ap) ap.start();
     });
     this.on('[data-a=reset]', () => {

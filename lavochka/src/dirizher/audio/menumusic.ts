@@ -12,12 +12,14 @@ export class Autoplay {
   private active: { e: number; v: Voice | null }[] = [];
   private len: number;
   stopped = false;
+  private score: ScoreJson;
 
   constructor(
     private orch: Orchestra,
     score: ScoreJson,
     private opts: { loop?: boolean; volume?: number; maxSec?: number } = {}
   ) {
+    this.score = score;
     const tm = new TempoMap(score.tempo);
     for (const p of score.parts)
       for (const n of notesOf(p)) this.notes.push({ t: tm.sec(n.tick), e: tm.sec(n.tick + n.dur), pitch: n.pitch, vel: n.vel, art: n.art, instr: p.instr });
@@ -32,6 +34,15 @@ export class Autoplay {
 
   instruments(): InstrId[] {
     return [...new Set(this.notes.map((n) => n.instr))];
+  }
+
+  /** Загрузить сэмплы: сначала первые секунды (после них можно start()), остальное — в фоне по порядку звучания. */
+  async preload(firstSec = 8): Promise<void> {
+    const until = this.len;
+    const early = await this.orch.scoreFiles(this.score, 0, firstSec);
+    await this.orch.loadFiles(early);
+    if (this.stopped) return;
+    void this.orch.scoreFiles(this.score, firstSec, until).then((rest) => (this.stopped ? null : this.orch.loadFiles(rest)));
   }
 
   start(): void {

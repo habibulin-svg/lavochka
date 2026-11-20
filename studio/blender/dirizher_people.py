@@ -202,6 +202,94 @@ for o in parts:
         bpy.ops.object.shape_key_remove(all=True, apply_mix=True)
         o.select_set(False)
 
+
+
+def long_skirt(suit, body):
+    """Юбка костюма (выше колена) → концертная, до щиколоток: подол вытягивается кольцами вниз с лёгким расширением,
+    веса новых точек — от ближайшей точки ноги (сидя юбка идёт за голенями)."""
+    import bmesh
+    from mathutils import Vector
+    from mathutils.kdtree import KDTree
+    bco = np.array([v.co[:] for v in body.data.vertices])
+    zmin, zmax = bco[:, 2].min(), bco[:, 2].max()
+    H = zmax - zmin
+    bm = bmesh.new()
+    bm.from_mesh(suit.data)
+    bm.verts.ensure_lookup_table()
+    sz = min(v.co.z for v in bm.verts)
+    hem = [e for e in bm.edges if e.is_boundary and max(v.co.z for v in e.verts) < sz + 0.04 * H]
+    if not hem:
+        print('подол не найден')
+        bm.free()
+        return
+    hv = {v for e in hem for v in e.verts}
+    cx = sum(v.co.x for v in hv) / len(hv)
+    cy = sum(v.co.y for v in hv) / len(hv)
+    z0 = sum(v.co.z for v in hv) / len(hv)
+    z1 = zmin + 0.05 * H
+    # разрез сзади: у подола два конца (вершины с одним ребром подола) — в новых кольцах сводим их в одну точку
+    deg = {}
+    for e in hem:
+        for v in e.verts:
+            deg[v] = deg.get(v, 0) + 1
+    ends = [v for v, d in deg.items() if d == 1]
+    mid = (ends[0].co + ends[1].co) / 2 if len(ends) == 2 else None
+    n = 6
+    edges = hem
+    new_all = []
+    base_of = {v: v for v in hv}
+    for k in range(1, n + 1):
+        r = bmesh.ops.extrude_edge_only(bm, edges=edges)
+        nv = [g for g in r['geom'] if isinstance(g, bmesh.types.BMVert)]
+        edges = [g for g in r['geom'] if isinstance(g, bmesh.types.BMEdge) and all(v in nv for v in g.verts)]
+        u = k / n
+        for v in nv:
+            # исходная точка подола: у новой вершины одна связь с прошлым кольцом
+            prev = next(e.other_vert(v) for e in v.link_edges if e.other_vert(v) not in nv)
+            b = base_of[prev]
+            base_of[v] = b
+            flare = 1 + 0.22 * u
+            bx, by = (mid.x, mid.y) if mid is not None and b in ends else (b.co.x, b.co.y)
+            v.co.x = cx + (bx - cx) * flare
+            v.co.y = cy + (by - cy) * flare
+            v.co.z = z0 + (z1 - z0) * u
+        new_all += nv
+    bmesh.ops.remove_doubles(bm, verts=new_all, dist=1e-5)
+    new_all = [v for v in new_all if v.is_valid]
+    bm.verts.index_update()
+    idx = [v.index for v in new_all]
+    bm.to_mesh(suit.data)
+    bm.free()
+    # веса: от ближайшей точки тела ниже подола
+    kd = KDTree(len(bco))
+    for i, c in enumerate(bco):
+        if c[2] < z0 + 0.02 * H:
+            kd.insert(Vector(c), i)
+    kd.balance()
+    groups = {g.index: g.name for g in body.vertex_groups}
+    sv = {g.name: g for g in suit.vertex_groups}
+    for i in idx:
+        _, j, _ = kd.find(suit.data.vertices[i].co)
+        for ge in body.data.vertices[j].groups:
+            nm = groups[ge.group]
+            g = sv.get(nm) or suit.vertex_groups.new(name=nm)
+            sv[nm] = g
+            g.add([i], ge.weight, 'REPLACE')
+    # ноги под юбкой не нужны (и не протыкают её): убрать кожу от щиколотки до старого подола
+    bb = bmesh.new()
+    bb.from_mesh(body.data)
+    gone = [v for v in bb.verts if z1 + 0.03 * H < v.co.z < z0 + 0.01 * H]
+    bmesh.ops.delete(bb, geom=gone, context='VERTS')
+    bb.to_mesh(body.data)
+    bb.free()
+    print('юбка удлинена: колец', n, 'точек', len(idx), f'подол {z0:.3f} → {z1:.3f}')
+
+
+if not L["g"]:
+    suit = next((o for o in parts if 'elegantsuit' in o.name.lower()), None)
+    if suit:
+        long_skirt(suit, base)
+
 # одна сетка
 for o in parts:
     me = o.data

@@ -526,110 +526,259 @@ def h_horseshoe(name, tiers, front, inside, curtain_c, ceiling_c, chand_r=2.2, s
     chandelier((0, -14, top - 1.0), r=chand_r, tiers=4)
 
 
-def h_vineyard():
-    stage(w=16, depth=8, wood=(0.55, 0.38, 0.2))
-    yellow = mat('berlin_wall', (0.86, 0.72, 0.42), rough=0.7)
-    white = mat('cloud', (0.92, 0.92, 0.9), rough=0.6)
+def ell(cx, cy, rr, k, a):
+    """Точка эллипса: угол a от оси +Y (к сцене), полуось по X — rr, по Y — rr·k."""
+    return cx + rr * math.sin(a), cy + rr * k * math.cos(a)
+
+
+def tier_ring(name, cx, cy, r, k, z, depth, a0, a1, front, back, slab, rail=None, wall_h=3.0, rows=3, boxes_every=0.0,
+              people=0.85, seg=72, lamps=None):
+    """Ярус по дуге эллипса: пол-плита, барьер (front) с поручнем (rail), задняя стена (back), ряды публики,
+    перегородки лож (каждые boxes_every рад), светильники на барьере."""
     crowd = mat('crowd', (0.035, 0.03, 0.03), rough=0.9)
-    seats = mat('velvet', (0.2, 0.2, 0.35), rough=1)
-    # террасы вокруг сцены (за оркестром тоже)
-    for k, (a0, a1, r, z) in enumerate([(-2.6, -1.0, 12, 0.5), (1.0, 2.6, 12, 0.5), (-0.9, 0.9, 13, 2.5), (2.2, 4.1, 14, 3.0),
-                                        (-0.6, 0.6, -14, 1.0), (-1.6, -0.7, 15, 4.0), (0.7, 1.6, 15, 4.0)]):
-        bm = ring_band(abs(r), z - 3, z, a0, a1, 16, 0, 0 if r > 0 else -6)
-        add(f'terrace_wall{k}', bm, yellow)
-        items, ppl = [], []
-        for row in range(4):
-            rr = abs(r) + 0.4 + row * 0.9
-            n = int((a1 - a0) * rr / 0.6)
-            for i in range(n):
-                a = a0 + (a1 - a0) * (i + 0.5) / n
-                x, y = rr * math.sin(a), (0 if r > 0 else -6) + rr * math.cos(a)
-                items.append((0.5, 0.5, 0.45, (x, y, z + row * 0.4 + 0.2), -a))
-                if random.random() < 0.85:
-                    ppl.append((0.36, 0.3, 0.55, (x, y, z + row * 0.4 + 0.7), -a))
-        add(f'terrace_seats{k}', boxes(items), seats)
-        add(f'terrace_people{k}', boxes(ppl), crowd)
-    # шатёр потолка и «облака»
-    tent = mat('tent', (0.9, 0.88, 0.82), rough=0.8)
+    head = mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8)
     bm = bmesh.new()
-    top = bm.verts.new((0, -2, 22))
-    ring = [bm.verts.new((22 * math.sin(2 * math.pi * k / 5), -2 + 22 * math.cos(2 * math.pi * k / 5), 12)) for k in range(5)]
-    for k in range(5):
-        bm.faces.new((top, ring[(k + 1) % 5], ring[k]))
+    inner, outer = [], []
+    for i in range(seg + 1):
+        a = a0 + (a1 - a0) * i / seg
+        inner.append(bm.verts.new((*ell(cx, cy, r, k, a), z)))
+        outer.append(bm.verts.new((*ell(cx, cy, r + depth, k, a), z)))
+    for i in range(seg):
+        bm.faces.new((inner[i], outer[i], outer[i + 1], inner[i + 1]))
+    # низ плиты (видно из партера)
+    lo_i = [bm.verts.new((v.co.x, v.co.y, z - 0.35)) for v in inner]
+    lo_o = [bm.verts.new((v.co.x, v.co.y, z - 0.35)) for v in outer]
+    for i in range(seg):
+        bm.faces.new((lo_i[i + 1], lo_o[i + 1], lo_o[i], lo_i[i]))
+    add(f'{name}_slab', bm, slab)
+    add(f'{name}_front', merge([ring_band(r, z - 0.35, z + 1.0, a0, a1, seg, cx, cy, r * k, inward=False),
+                                ring_band(r - 0.02, z - 0.35, z + 1.0, a0, a1, seg, cx, cy, r * k)]), front)
+    if rail:
+        add(f'{name}_rail', ring_band(r - 0.05, z + 0.95, z + 1.08, a0, a1, seg, cx, cy, r * k), rail)
+    add(f'{name}_back', ring_band(r + depth, z, z + wall_h, a0, a1, seg, cx, cy, (r + depth) * k), back)
+    ppl, hs, parts = [], [], []
+    for row in range(rows):
+        rr = r + 0.6 + row * (depth - 0.8) / max(1, rows - 1) if rows > 1 else r + depth / 2
+        n = int(abs(a1 - a0) * rr / 0.62)
+        zz = z + row * 0.35
+        for i in range(n):
+            a = a0 + (a1 - a0) * (i + 0.5) / n
+            x, y = ell(cx, cy, rr, k, a)
+            if random.random() < people:
+                rz = math.atan2(x - cx, -(y - cy))
+                ppl.append((0.38, 0.3, 0.5, (x, y, zz + 0.55), rz))
+                hs.append(sphere(0.11, (x, y, zz + 0.95), 5))
+    if ppl:
+        add(f'{name}_people', boxes(ppl), crowd, smooth=True)
+        add(f'{name}_heads', merge(hs), head, smooth=True)
+    if boxes_every:
+        a = a0
+        while a <= a1 + 1e-6:
+            x0, y0 = ell(cx, cy, r, k, a)
+            x1, y1 = ell(cx, cy, r + depth, k, a)
+            L = math.hypot(x1 - x0, y1 - y0)
+            parts.append((0.12, L, wall_h * 0.85, ((x0 + x1) / 2, (y0 + y1) / 2, z + wall_h * 0.42), -math.atan2(x1 - x0, y1 - y0)))
+            a += boxes_every
+        add(f'{name}_boxes', boxes(parts), front)
+    if lamps:
+        glow = mat('lamp', lamps, emit=5.0)
+        n = max(1, int(abs(a1 - a0) * r / 2.2))
+        add(f'{name}_lamps', merge([sphere(0.09, (*ell(cx, cy, r - 0.1, k, a0 + (a1 - a0) * (i + 0.5) / n), z + 1.25), 6) for i in range(n)]), glow)
+
+
+def choir_steps(name, w, y0, rows, z0, dz, dy, seat_c, riser_c, people=0.85):
+    """Хоры за оркестром: ступени с креслами и публикой."""
+    items, seats, ppl, hs = [], [], [], []
+    for row in range(rows):
+        y = y0 + row * dy
+        z = z0 + row * dz
+        items.append((w, dy + 0.02, z, (0, y, z / 2), 0))
+        seats.append((w - 0.4, 0.45, 0.4, (0, y + 0.15, z + 0.2), 0))
+        n = int(w / 0.62)
+        for i in range(n):
+            x = -w / 2 + (i + 0.5) * w / n
+            if random.random() < people:
+                ppl.append((0.36, 0.3, 0.5, (x, y + 0.1, z + 0.6), 0))
+                hs.append(sphere(0.11, (x, y + 0.1, z + 1.0), 5))
+    add(f'{name}_steps', boxes(items), riser_c)
+    add(f'{name}_seats', boxes(seats), seat_c)
+    add(f'{name}_people', boxes(ppl), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
+    add(f'{name}_heads', merge(hs), mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8), smooth=True)
+
+
+def big_organ(cx, cy, z0, w, h, case_c, pipe_c, towers=5):
+    """Большой концертный орган: корпус, башни труб (выше по краям и в центре), ряды мелких труб."""
+    case = mat('organ_case2', case_c, rough=0.45)
+    pipe = mat('pipes2', pipe_c, metal=1.0, rough=0.22)
+    add('organ_case', box(w, 1.6, h, (cx, cy + 0.8, z0 + h / 2)), case)
+    ps, tw = [], []
+    tws = w / towers
+    for t in range(towers):
+        tx = cx - w / 2 + (t + 0.5) * tws
+        th = h * (0.95 if t in (0, towers - 1, towers // 2) else 0.75)
+        n = 9
+        for i in range(n):
+            x = tx - tws / 2 + (i + 0.5) * tws / n
+            hh = th * (0.6 + 0.4 * (1 - abs((i - n / 2) / (n / 2))))
+            ps.append(cyl(tws / n * 0.4, hh, (x, cy - 0.15, z0 + 0.5 + hh / 2), 10))
+        tw.append(box(tws * 0.98, 0.5, 0.35, (tx, cy - 0.1, z0 + th + 0.7)))
+        tw.append(box(tws * 0.98, 0.5, 0.3, (tx, cy - 0.1, z0 + 0.35)))
+    for row in range(2):
+        for i in range(int(w / 0.22)):
+            x = cx - w / 2 + (i + 0.5) * 0.22
+            hh = 1.2 + 0.4 * row
+            ps.append(cyl(0.07, hh, (x, cy - 0.45, z0 + 0.5 + row * (h * 0.45) + hh / 2), 6))
+    add('organ_pipes', merge(ps), pipe)
+    add('organ_cornice', merge(tw), case)
+
+
+def h_vineyard():
+    """Берлинская филармония: «виноградник» — блоки террас на разной высоте со всех сторон, белые барьеры,
+    шатёр из парусов, «облака»-отражатели над сценой, орган слева сзади."""
+    stage(w=16, depth=8, wood=(0.62, 0.44, 0.24))
+    wood = mat('berlin_wood', (0.66, 0.5, 0.3), rough=0.55)
+    white = mat('berlin_white', (0.93, 0.92, 0.88), rough=0.6)
+    seats = mat('berlin_seat', (0.32, 0.3, 0.42), rough=1)
+    gold = mat('berlin_gold', (0.9, 0.72, 0.35), metal=0.6, rough=0.35)
+    add('floor', cyl(30, 0.3, (0, -2, -1.3), 64), wood)
+    # кольца блоков-террас: (радиус, высота, сколько блоков, сдвиг угла); за оркестром — тоже
+    rings = [(10.5, 0.6, 9, 0.0), (13.5, 2.2, 11, 0.25), (16.5, 4.0, 13, 0.1), (19.5, 5.8, 15, 0.3), (22.5, 7.6, 15, 0.05)]
+    for ri, (R, Z, n, off) in enumerate(rings):
+        span = 2 * math.pi / n
+        for b in range(n):
+            a_mid = -math.pi + (b + 0.5 + off) * span
+            # первое кольцо прямо за оркестром не ставим — там подиумы
+            if ri == 0 and abs(a_mid) < 1.0:
+                continue
+            z = Z + (random.random() - 0.5) * 0.9
+            a0, a1 = a_mid - span * 0.42, a_mid + span * 0.42
+            tier_ring(f'v{ri}_{b}', 0, -2, R, 1.0, z, 2.4, a0, a1, white, wood, wood, rail=gold, wall_h=1.6, rows=3, seg=10)
+            add(f'v{ri}_{b}_under', ring_band(R + 0.02, -1.2, z - 0.35, a0, a1, 10, 0, -2, R), wood)
+            add(f'v{ri}_{b}_seats', merge([ring_band(R + 0.6 + row * 0.8, z + row * 0.35, z + row * 0.35 + 0.45, a0, a1, 10, 0, -2) for row in range(3)]), seats)
+    add('walls_out', ring_band(27, -1.3, 18, -math.pi, math.pi, 64, 0, -2), mat('berlin_wall', (0.86, 0.74, 0.5), rough=0.7))
+    big_organ(-15, 14, 7, 9, 8, (0.62, 0.5, 0.36), (0.88, 0.88, 0.86), towers=3)
+    tent = mat('tent', (0.95, 0.94, 0.9), rough=0.8)
+    bm = bmesh.new()
+    top = bm.verts.new((0, -2, 23))
+    n = 10
+    ring1 = [bm.verts.new((*ell(0, -2, 14, 1, 2 * math.pi * k / n), 20.5 + 0.8 * (k % 2))) for k in range(n)]
+    ring2 = [bm.verts.new((*ell(0, -2, 27.5, 1, 2 * math.pi * k / n + math.pi / n), 17.5)) for k in range(n)]
+    for k in range(n):
+        bm.faces.new((top, ring1[(k + 1) % n], ring1[k]))
+        bm.faces.new((ring1[k], ring1[(k + 1) % n], ring2[k]))
+        bm.faces.new((ring1[k], ring2[k], ring2[(k - 1) % n]))
     add('tent', bm, tent)
-    add('clouds', merge([cyl(1.4, 0.3, (x, y, 11), 12, 1.2) for x, y in [(0, 2), (-3, 4), (3, 4), (-2, 0), (2, 0), (0, 5.5), (-4, 1.5), (4, 1.5)]]), white)
-    add('walls_out', ring_band(24, -3, 14, -math.pi, math.pi, 48, 0, -2), yellow)
+    add('clouds', merge([cyl(1.5, 0.35, (x, y, 12.5), 12, 1.25) for x, y in [(0, 3), (-3.2, 4.6), (3.2, 4.6), (-2.2, 0.8), (2.2, 0.8), (0, 6.2), (-4.6, 2.2), (4.6, 2.2), (0, -1.2)]]), white)
+    add('cloud_lights', merge([sphere(0.12, (x + dx, y, 12.25), 6) for x, y in [(0, 3), (-3.2, 4.6), (3.2, 4.6), (0, 6.2)] for dx in (-0.5, 0.5)]), mat('lamp', (1.0, 0.9, 0.7), emit=6.0))
+    audience(8, row0=-3.0, width=16, curve=1.5, seat=(0.32, 0.3, 0.42))
 
 
 def h_oval():
-    stage(w=20, depth=10)
-    red = mat('albert_red', (0.42, 0.06, 0.06), rough=0.9)
-    cream = mat('albert_cream', (0.85, 0.78, 0.62), rough=0.6)
+    """Королевский Альберт-холл: овал, ложи с красным бархатом, кремовые ярусы с золотом, наверху — галерея с колоннами;
+    за оркестром — крутые хоры и огромный орган; стеклянный купол на железных рёбрах и «грибы»-отражатели."""
+    stage(w=20, depth=9)
+    red = mat('albert_red', (0.45, 0.05, 0.06), rough=0.95)
+    deep = mat('albert_deep', (0.25, 0.03, 0.04), rough=0.95)
+    cream = mat('albert_cream', (0.86, 0.78, 0.6), rough=0.6)
+    terra = mat('albert_terra', (0.62, 0.36, 0.24), rough=0.7)
     gold = mat('gold', (0.85, 0.62, 0.28), metal=1.0, rough=0.28)
-    crowd = mat('crowd', (0.035, 0.03, 0.03), rough=0.9)
-    for t, (z, r) in enumerate([(1.5, 18), (4.5, 20), (7.5, 22), (10.5, 24)]):
-        add(f'oval_tier{t}', ring_band(r, z - 1, z, -math.pi, math.pi, 64, 0, -6, ry=r * 0.82), red if t % 2 == 0 else cream)
-        add(f'oval_gold{t}', ring_band(r - 0.05, z - 0.1, z, -math.pi, math.pi, 64, 0, -6, ry=r * 0.82), gold)
-        ppl = []
-        for k in range(90):
-            a = 2 * math.pi * k / 90
-            x, y = (r + 0.7) * math.sin(a), -6 + (r + 0.7) * 0.82 * math.cos(a)
-            if y > 8 and abs(x) < 9:
-                continue
-            if random.random() < 0.85:
-                ppl.append((0.4, 0.4, 0.55, (x, y, z + 0.1), -a))
-        add(f'oval_people{t}', boxes(ppl), crowd)
-    organ(0, 13.5, 3, 14, 11, gold=False, n=51)
-    # купол и «грибы»
-    glass = mat('dome_glass', (0.25, 0.3, 0.38), rough=0.2, emit=0.15)
-    add('dome', cyl(26, 0.4, (0, -6, 19), 64), glass)
-    mush = mat('mushroom', (0.75, 0.72, 0.68), rough=0.6)
-    add('mushrooms', merge([cyl(1.1, 0.5, ((rr := 3 + 3 * (k % 4)) * math.sin(a := k * 2.4), -6 + rr * math.cos(a), 15), 12, 0.6) for k in range(36)]), mush)
+    cx, cy, k = 0, -6, 0.8
+    skip = 0.62  # за сценой — хоры и орган
+    add('arena', cyl(19, 0.3, (cx, cy, -1.3), 64), mat('albert_floor', (0.35, 0.2, 0.12), rough=0.6))
+    for t, (z, r, depth, front, back, rows, bx, wall) in enumerate([
+            (0.6, 17.0, 2.4, cream, terra, 4, 0.0, 2.6),
+            (3.6, 19.0, 2.4, red, deep, 2, 0.105, 2.8),
+            (6.6, 19.6, 2.4, red, deep, 2, 0.105, 2.8),
+            (9.6, 20.2, 3.0, cream, terra, 3, 0.0, 2.6),
+            (12.4, 21.0, 2.6, cream, cream, 2, 0.0, 3.4)]):
+        tier_ring(f'oval{t}', cx, cy, r, k, z, depth, skip, 2 * math.pi - skip, front, back, front if t else terra,
+                  rail=gold, wall_h=wall, rows=rows, boxes_every=bx, lamps=(1.0, 0.82, 0.55) if t in (1, 2) else None)
+        add(f'oval_wall{t}', ring_band(r + depth, z + wall, z + 3.0, skip, 2 * math.pi - skip, 72, cx, cy, (r + depth) * k), terra)
+    cols = []
+    for i in range(60):
+        a = skip + (2 * math.pi - 2 * skip) * (i + 0.5) / 60
+        x, y = ell(cx, cy, 21.2, k, a)
+        cols.append(cyl(0.22, 3.2, (x, y, 14.0), 10))
+    add('gallery_cols', merge(cols), cream)
+    add('frieze', ring_band(23.6, 15.6, 17.0, -math.pi, math.pi, 72, cx, cy, 23.6 * k), terra)
+    choir_steps('choir', 18, 9.0, 12, 0.8, 0.55, 0.85, red, deep)
+    add('choir_wall_l', box(0.6, 13, 22, (-9.3, 14.5, 10)), terra)
+    add('choir_wall_r', box(0.6, 13, 22, (9.3, 14.5, 10)), terra)
+    # торцы ярусов у сцены — глухие стены до хоров
+    add('side_l', box(12, 0.6, 22, (-15.2, 8.4, 10)), terra)
+    add('side_r', box(12, 0.6, 22, (15.2, 8.4, 10)), terra)
+    add('organ_back', box(26, 0.6, 22, (0, 21.0, 9)), terra)
+    big_organ(0, 19.0, 8.0, 17, 11, (0.42, 0.26, 0.14), (0.86, 0.78, 0.55), towers=7)
+    glass = mat('dome_glass', (0.32, 0.36, 0.42), rough=0.2, emit=0.25)
+    add('dome', cyl(24, 0.4, (cx, cy, 20.5), 64, 8), glass)
+    iron = mat('iron', (0.12, 0.12, 0.13), metal=0.8, rough=0.5)
+    ribs = []
+    for i in range(24):
+        a = 2 * math.pi * i / 24
+        x, y = ell(cx, cy, 12, k, a)
+        ribs.append((0.25, 24, 0.35, (x, y, 20.0), -a))
+    add('dome_ribs', boxes(ribs), iron)
+    mush = mat('mushroom', (0.8, 0.77, 0.72), rough=0.55)
+    ms, ls = [], []
+    for i in range(85):
+        rr = 2.5 + 13 * math.sqrt((i + 0.5) / 85)
+        a = i * 2.39996
+        x, y = ell(cx, cy + 3, rr, 0.85, a)
+        ms.append(cyl(0.95, 0.35, (x, y, 15.8 + 0.4 * math.sin(i)), 12, 0.35))
+        ls.append(sphere(0.08, (x, y, 15.55), 4))
+    add('mushrooms', merge(ms), mush, smooth=True)
+    add('mushroom_lights', merge(ls), mat('lamp', (1.0, 0.85, 0.6), emit=4.0))
     audience(14, row0=-3.0, width=22, curve=2.0)
 
 
 def h_sydney():
+    """Сиднейский оперный театр, концертный зал: стены из белой берёзы рёбрами, трибуны из щёточника
+    (красно-коричневое дерево), хоры за оркестром под Большим органом, прозрачные кольца-отражатели над сценой."""
     stage(w=18, depth=9, wood=(0.7, 0.55, 0.38))
-    birch = mat('birch', (0.88, 0.82, 0.7), rough=0.6)
-    brush = mat('brushbox', (0.5, 0.25, 0.15), rough=0.5)
+    birch = mat('birch', (0.9, 0.84, 0.72), rough=0.55)
+    birch2 = mat('birch_dark', (0.76, 0.68, 0.55), rough=0.6)
+    brush = mat('brushbox', (0.52, 0.24, 0.13), rough=0.5)
+    seat = mat('syd_seat', (0.6, 0.14, 0.24), rough=0.95)
     acrylic = mat('acrylic', (0.85, 0.88, 0.92), rough=0.15, metal=0.1)
-    crowd = mat('crowd', (0.035, 0.03, 0.03), rough=0.9)
-    # хор/места за оркестром — ступенями
-    items, ppl = [], []
-    for row in range(6):
-        y = 10 + row * 0.9
-        z = 1 + row * 0.45
-        items.append((16, 0.85, 0.5, (0, y, z), 0))
-        for i in range(24):
-            if random.random() < 0.8:
-                ppl.append((0.35, 0.3, 0.5, (-7.8 + i * 0.68, y, z + 0.5), 0))
-    add('choir_terraces', boxes(items), brush)
-    add('choir_people', boxes(ppl), crowd)
-    # рёбра стен из белой берёзы
+    cx, cy, k = 0, -2, 1.0
+    add('floor', cyl(21, 0.3, (cx, cy, -1.3), 64), brush)
+    add('wall', ring_band(20.5, -1.3, 21, -math.pi, math.pi, 72, cx, cy, 20.5 * k), birch2)
     ribs = []
-    for k in range(40):
-        a = -math.pi + 2 * math.pi * k / 40
-        x, y = 19 * math.sin(a), -4 + 17 * math.cos(a)
-        ribs.append((0.25, 0.8, 18, (x, y, 7), -a))
+    for i in range(56):
+        a = -math.pi + 2 * math.pi * i / 56
+        x, y = ell(cx, cy, 20.0, k, a)
+        ribs.append((0.35, 1.1, 22, (x, y, 9.7), -math.atan2(x - cx, (y - cy) / k)))
     add('birch_ribs', boxes(ribs), birch)
-    # кольца-отражатели над сценой (прозрачные «бублики»)
-    for k, (x, y, z, r) in enumerate([(0, 3, 10, 2.2), (-4, 2, 10.5, 1.8), (4, 2, 10.5, 1.8), (0, 7, 11, 2.0), (-3.5, 6.5, 11.2, 1.6), (3.5, 6.5, 11.2, 1.6), (0, -1, 10.6, 1.8)]):
+    for t, (z, r) in enumerate([(1.2, 15.0), (4.6, 16.6)]):
+        tier_ring(f'syd{t}', cx, cy, r, k, z, 2.6, 0.75, 2 * math.pi - 0.75, brush, birch2, brush, rail=birch,
+                  wall_h=2.2, rows=3, lamps=(1.0, 0.86, 0.6) if t == 0 else None)
+    choir_steps('choir', 16, 9.6, 8, 1.0, 0.5, 0.85, seat, brush)
+    add('organ_wall', box(22, 0.6, 20, (0, 18.3, 9)), birch2)
+    big_organ(0, 16.9, 5.6, 14, 10, (0.55, 0.28, 0.15), (0.88, 0.88, 0.86), towers=5)
+    vault = []
+    for i in range(28):
+        a = 2 * math.pi * i / 28
+        x, y = ell(cx, cy, 10, k, a)
+        vault.append((0.5, 20, 0.6, (x, y, 19.5), -a))
+    add('vault_ribs', boxes(vault), birch)
+    add('ceiling', cyl(21, 0.4, (cx, cy, 20.5), 64), birch2)
+    for i, (x, y, z, r) in enumerate([(0, 3, 10, 2.2), (-4, 2, 10.5, 1.8), (4, 2, 10.5, 1.8), (0, 7, 11, 2.0), (-3.5, 6.5, 11.2, 1.6),
+                                      (3.5, 6.5, 11.2, 1.6), (0, -1, 10.6, 1.8), (-7, 4.5, 11.5, 1.5), (7, 4.5, 11.5, 1.5)]):
         bm = bmesh.new()
         bmesh.ops.create_circle(bm, cap_ends=False, segments=32, radius=r)
         me = bpy.data.meshes.new('_t')
         bm.to_mesh(me)
         bm.free()
-        o = bpy.data.objects.new(f'ring{k}', me)
+        o = bpy.data.objects.new(f'ring{i}', me)
         bpy.context.scene.collection.objects.link(o)
         o.location = (x, y, z)
-        mod = o.modifiers.new('sk', 'SKIN')
+        o.modifiers.new('sk', 'SKIN')
         for v in me.skin_vertices[0].data:
-            v.radius = (0.35, 0.35)
+            v.radius = (0.3, 0.3)
         bpy.context.view_layer.objects.active = o
         bpy.ops.object.modifier_apply(modifier='sk')
         me.materials.append(acrylic)
-    add('ceiling', cyl(22, 0.4, (0, -4, 17), 48), birch)
-    audience(16, row0=-3.0, width=22, curve=1.2, seat=(0.55, 0.12, 0.25))
+    audience(16, row0=-3.0, width=22, curve=1.2, seat=(0.6, 0.14, 0.24))
 
 
 HALLS = {
