@@ -237,7 +237,9 @@ export class Concert {
   private drawHud(): void {
     const p = this.player!.perf;
     this.hud.score.textContent = p.score.toLocaleString('ru-RU');
-    this.hud.combo.textContent = p.combo >= 5 ? `серия ${p.combo} · ×${p.mult}` : '';
+    const bpm = Math.round(p.tm.bpm(p.tick) * p.opts.speed * p.live);
+    const tempo = Math.abs(p.live - 1) > 0.04 ? `♩ = ${bpm} ${p.live > 1 ? '▲' : '▼'}` : '';
+    this.hud.combo.textContent = [tempo, p.combo >= 5 ? `серия ${p.combo} · ×${p.mult}` : ''].filter(Boolean).join(' · ');
     this.hud.hallBar.style.width = `${p.hall}%`;
     this.hud.hall.classList.toggle('low', p.hall < 25);
   }

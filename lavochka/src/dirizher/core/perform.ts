@@ -66,7 +66,6 @@ export class Performance {
   private judged = new Set<number>();
   private hold: { mark: Mark; since: number; held: boolean } | null = null;
   private batonDown = false;
-  private beatTaps: number[] = [];
   private dynTarget = 1;
   /** Секунды с начала (для тапов палочки). */
   private clockSec = 0;
@@ -211,12 +210,10 @@ export class Performance {
       this.batonDown = i.down;
       if (i.down) {
         // тап палочки в «ускоряй»: темп за тапами
-        this.beatTaps.push(this.clockSec);
-        if (this.beatTaps.length > 4) this.beatTaps.shift();
         const f = this.findMark((m) => m.kind === 'beat', -1);
         if (f) {
           this.judgeMark(f.m, f.err, ev);
-          this.followTaps(f.m);
+          if (this.lastGrade !== 'miss') this.followTaps(f.m);
         }
         // фермата впереди — нажали заранее: держим
         const nh = this.upcomingHold();
@@ -253,15 +250,19 @@ export class Performance {
     if (!this.judged.has(h.mark.id)) this.judgeMark(h.mark, null, ev);
   }
 
+  /** Прошлый попавший тап палочки: когда (с) и на какой доле (тик). */
+  private lastBeat: { sec: number; tick: number } | null = null;
+
+  /** Темп за палочкой: сравнить промежуток между двумя тапами с расстоянием между их долями по партитуре. */
   private followTaps(m: Mark): void {
-    if (this.beatTaps.length < 2) return;
-    const n = this.beatTaps.length;
-    const iv = (this.beatTaps[n - 1] - this.beatTaps[0]) / (n - 1);
-    const beatSec = (this.chart.marks.find((x) => x.kind === 'beat' && x.tick > m.tick)?.tick ?? m.tick + PPQ) - m.tick;
-    const nominal = (beatSec * 60) / (this.tm.bpm(m.tick) * PPQ * this.opts.speed);
-    if (iv <= 0.05 || iv > 3) return;
-    const want = Math.max(0.6, Math.min(1.6, nominal / iv));
-    this.live += (want - this.live) * 0.5;
+    const prev = this.lastBeat;
+    this.lastBeat = { sec: this.clockSec, tick: m.tick };
+    if (!prev || m.tick <= prev.tick || m.tick - prev.tick > PPQ * 8) return;
+    const actual = this.clockSec - prev.sec;
+    const nominal = (this.tm.sec(m.tick) - this.tm.sec(prev.tick)) / this.opts.speed;
+    if (actual < 0.08 || actual > 4) return;
+    const want = Math.max(0.6, Math.min(1.7, nominal / actual));
+    this.live += (want - this.live) * 0.6;
   }
 
   private lastGrade: Grade = 'miss';

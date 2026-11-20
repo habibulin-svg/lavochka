@@ -66,6 +66,8 @@ export interface SpecialJson {
   /** solo: кто солирует; accel/rit: во сколько раз меняется темп к концу участка. */
   instr?: InstrId;
   to?: number;
+  /** accel/rit: тап палочкой — раз в столько долей (по умолчанию на каждую). */
+  every?: number;
 }
 
 export interface ScoreJson {

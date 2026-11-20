@@ -177,7 +177,7 @@ describe('dirizher: карьера', () => {
     expect(c.money).toBeGreaterThan(0);
     expect(unlocked(c, CONCERTS[1].id)).toBe(true);
     expect(nextConcert(c)).toBe(CONCERTS[1].id);
-    expect(openPieces(c)).toContain('b7-2');
+    expect(openPieces(c)).toContain('morning');
     c.money = 1000;
     expect(buy(c, 'hire-str')).toBe(true);
     expect(widenFor(c, [['vn1', 'vc'], ['fl']])).toEqual([1.1, 1]);
@@ -202,5 +202,37 @@ describe('dirizher: переложение', () => {
     }
     expect(canPlay('timp', 'vn1')).toBe(false);
     expect(canPlay('vn1', 'hn')).toBe(true);
+  });
+});
+
+describe('dirizher: темп за палочкой', () => {
+  const load = (id: string) => JSON.parse(readFileSync(`public/dirizher/scores/${id}.json`, 'utf8')) as ScoreJson;
+  it('в хитах есть тапы палочки, идеальный дирижёр проходит на 5 звёзд', () => {
+    for (const id of ['mountain', 'danube', 'morning']) {
+      const s = load(id);
+      const c = buildChart(s, DIFFS.normal);
+      expect(c.marks.some((m) => m.kind === 'beat'), id).toBe(true);
+      const { p } = play(s, 'normal', true, true);
+      expect(p.failed, id).toBe(false);
+      expect(p.result().stars, id).toBe(5);
+    }
+  });
+  it('частые тапы в зоне ускорения гонят оркестр быстрее партитуры', () => {
+    const s = load('mountain');
+    const chart = buildChart(s, DIFFS.normal);
+    const p = new Performance(s, chart, { concert: false, speed: 1 });
+    const beats = chart.marks.filter((m) => m.kind === 'beat');
+    // дойти до зоны
+    while (p.tick < beats[0].tick - 10) p.step(1 / 120);
+    const t0 = p.tick;
+    // дирижёр торопит: каждый тап на 20 % раньше, чем пришла бы доля при текущем темпе
+    for (let k = 0; k < 12; k++) {
+      p.input({ kind: 'baton', down: true });
+      p.input({ kind: 'baton', down: false });
+      const wait = p.secTo(beats[k + 1].tick) * 0.8;
+      for (let f = 0; f < Math.round(wait * 120); f++) p.step(1 / 120);
+    }
+    expect(p.live).toBeGreaterThan(1.1);
+    expect(p.tick).toBeGreaterThan(t0);
   });
 });

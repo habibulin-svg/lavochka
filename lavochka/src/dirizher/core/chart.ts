@@ -182,13 +182,19 @@ export function buildChart(s: ScoreJson, d: Difficulty): Chart {
         // тапы в такт на каждой доле участка
         for (let t = x.tick; t < x.tick + x.len; ) {
           marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0 });
-          t += beatAt(t);
+          t += beatAt(t) * (x.every ?? 1);
         }
       } else if (x.kind === 'cresc' || x.kind === 'sforzando') marks.push({ id: 0, kind: 'up', lane: -1, tick: x.tick, len: x.len });
       else if (x.kind === 'subito_p') marks.push({ id: 0, kind: 'down', lane: -1, tick: x.tick, len: x.len });
       else if (x.kind === 'solo' && x.instr) {
         const li = laneOf(lanes, x.instr);
-        if (li >= 0) marks.push({ id: 0, kind: 'solo', lane: li, tick: x.tick, len: x.len, instr: x.instr });
+        if (li < 0) continue;
+        // соло — это и есть вступление группы: близкая отметка той же строки становится звездой, новой не ставим
+        const near = marks.find((m) => m.lane === li && Math.abs(tm.sec(m.tick) - tm.sec(x.tick)) < d.minGap);
+        if (near) {
+          near.kind = 'solo';
+          near.instr = x.instr;
+        } else marks.push({ id: 0, kind: 'solo', lane: li, tick: x.tick, len: x.len, instr: x.instr });
       }
     }
   marks.sort((a, b) => a.tick - b.tick || a.lane - b.lane);
