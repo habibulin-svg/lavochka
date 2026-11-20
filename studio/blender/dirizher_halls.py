@@ -22,6 +22,14 @@ OUT = args[0]
 ONLY = args[1:]
 
 MATS = {}
+# места зрителей: [x, y, пол z, поворот] — в <зал>.seats.json; людей ставит игра (dirizher_audience.py, InstancedMesh)
+SEATS = []
+
+
+def seat_at(x, y, floor):
+    """Зритель на месте (x, y), ноги на полу floor; смотрит на середину сцены (модель смотрит на −Y)."""
+    fx, fy = 0 - x, 3.0 - y
+    SEATS.append([round(x, 2), round(y, 2), round(floor, 2), round(math.atan2(fx, -fy), 3)])
 
 
 def mat(name, rgb, metal=0.0, rough=0.6, emit=0.0):
@@ -44,6 +52,7 @@ def mat(name, rgb, metal=0.0, rough=0.6, emit=0.0):
 def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     MATS.clear()
+    SEATS.clear()
 
 
 def add(name, bm, material, smooth=False):
@@ -173,12 +182,8 @@ def audience(rows, row0=-3.0, gap=0.95, width=18.0, z0=-1.1, rise=0.12, seat=(0.
                 yy = y - curve * (x / (width / 2)) ** 2
                 rz = math.atan2(x, -yy) * 0.3
                 if rnd.random() < people:
-                    bodies.append((0.38, 0.22, 0.55, (x, yy, z + 0.72), rz))
-                    heads.append((x, yy + 0.02, z + 1.12))
+                    seat_at(x, yy + 0.08, z)
     add('seats', boxes(chairs), mat('velvet', seat, rough=1.0))
-    if bodies:
-        add('people', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
-        add('heads', merge([sphere(0.11, h, 5) for h in heads]), mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8), smooth=True)
 
 
 def chandelier(c, r=1.2, tiers=3, light=(1.0, 0.85, 0.6), name='chandelier'):
@@ -227,9 +232,7 @@ def balcony_side(x_sign, y0, y1, z, depth=2.2, front=(0.9, 0.8, 0.6), gilt=True,
         for k in range(int((y1 - y0) / 0.6)):
             y = y0 + 0.3 + k * 0.6
             if random.random() < 0.8:
-                bodies.append((0.3, 0.38, 0.5, (x + x_sign * 0.4, y, zz + 0.55), 0))
-        if bodies:
-            add(f'balcpeople{x_sign}{t}', boxes(bodies), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
+                seat_at(x + x_sign * 0.4, y, zz + 0.125)
 
 
 def columns(xs, y0, y1, n, h, r, m, z0=0.0, caps=True):
@@ -388,10 +391,8 @@ def horseshoe(tiers, r, color_front, color_inside, gold=True, y_c=-14.0, depth=2
             parts.append((0.08, depth, 2.4, (x, y, z + 1.2), -a))
             if k < nb and random.random() < 0.75:
                 am = a + (a1 - a0) / nb / 2
-                ppl.append((0.35, 0.35, 0.55, ((r + 0.6) * math.sin(am), y_c + (r + 0.6) * math.cos(am), z + 1.0), -am))
+                seat_at((r + 0.6) * math.sin(am), y_c + (r + 0.6) * math.cos(am), z + 0.28)
         add(f'tier{t}_parts', boxes(parts), front)
-        if ppl:
-            add(f'tier{t}_people', boxes(ppl), crowd)
 
 
 # ---------------------------------------------------------------- залы
@@ -565,12 +566,7 @@ def tier_ring(name, cx, cy, r, k, z, depth, a0, a1, front, back, slab, rail=None
             a = a0 + (a1 - a0) * (i + 0.5) / n
             x, y = ell(cx, cy, rr, k, a)
             if random.random() < people:
-                rz = math.atan2(x - cx, -(y - cy))
-                ppl.append((0.38, 0.3, 0.5, (x, y, zz + 0.55), rz))
-                hs.append(sphere(0.11, (x, y, zz + 0.95), 5))
-    if ppl:
-        add(f'{name}_people', boxes(ppl), crowd, smooth=True)
-        add(f'{name}_heads', merge(hs), head, smooth=True)
+                seat_at(x, y, zz)
     if boxes_every:
         a = a0
         while a <= a1 + 1e-6:
@@ -598,12 +594,9 @@ def choir_steps(name, w, y0, rows, z0, dz, dy, seat_c, riser_c, people=0.85):
         for i in range(n):
             x = -w / 2 + (i + 0.5) * w / n
             if random.random() < people:
-                ppl.append((0.36, 0.3, 0.5, (x, y + 0.1, z + 0.6), 0))
-                hs.append(sphere(0.11, (x, y + 0.1, z + 1.0), 5))
+                seat_at(x, y + 0.1, z)
     add(f'{name}_steps', boxes(items), riser_c)
     add(f'{name}_seats', boxes(seats), seat_c)
-    add(f'{name}_people', boxes(ppl), mat('crowd', (0.035, 0.03, 0.03), rough=0.9), smooth=True)
-    add(f'{name}_heads', merge(hs), mat('crowd_head', (0.12, 0.085, 0.07), rough=0.8), smooth=True)
 
 
 def big_organ(cx, cy, z0, w, h, case_c, pipe_c, towers=5):
@@ -808,6 +801,9 @@ for name, fn in HALLS.items():
     reset()
     random.seed(hash(name) % 1000)
     fn()
+    import json
+    with open(os.path.join(OUT, f'{name}.seats.json'), 'w', encoding='utf8') as fj:
+        json.dump(SEATS, fj, separators=(',', ':'))
     out = os.path.join(OUT, f'{name}.glb')
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_yup=True, export_apply=True)
     tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')

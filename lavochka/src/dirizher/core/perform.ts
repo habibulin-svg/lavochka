@@ -180,7 +180,7 @@ export class Performance {
     for (let i = Math.max(0, this.next - 1); i < this.chart.marks.length; i++) {
       const m = this.chart.marks[i];
       if (m.tick > this.tick + PPQ * 2) break;
-      if (m.kind === 'beat' && Math.abs(m.tick - this.tick) < PPQ * 2) return true;
+      if (m.kind === 'beat' && m.tempo && Math.abs(m.tick - this.tick) < PPQ * 2) return true;
     }
     return false;
   }
@@ -204,8 +204,12 @@ export class Performance {
     if (this.ended || this.failed) return ev;
     if (i.kind === 'lane') {
       const f = this.findMark((m) => m.lane === i.lane && (m.kind === 'cue' || m.kind === 'cut' || m.kind === 'solo'), i.lane);
-      if (f) this.judgeMark(f.m, f.err, ev);
-      else ev.push({ kind: 'stray', lane: i.lane });
+      if (f) {
+        this.judgeMark(f.m, f.err, ev);
+        // показ группе — тот же взмах палочки: доля рядом засчитывается (одной мышью играть можно)
+        const b = this.findMark((m) => m.kind === 'beat' && !m.tempo, -1);
+        if (b && Math.abs(b.err) <= WINDOW.good) this.judgeMark(b.m, b.err, ev);
+      } else ev.push({ kind: 'stray', lane: i.lane });
     } else if (i.kind === 'baton') {
       this.batonDown = i.down;
       if (i.down) {
@@ -213,7 +217,7 @@ export class Performance {
         const f = this.findMark((m) => m.kind === 'beat', -1);
         if (f) {
           this.judgeMark(f.m, f.err, ev);
-          if (this.lastGrade !== 'miss') this.followTaps(f.m);
+          if (this.lastGrade !== 'miss') this.followTaps(f.m, f.m.tempo ? 0.6 : 0.12);
         }
         // фермата впереди — нажали заранее: держим
         const nh = this.upcomingHold();
@@ -254,7 +258,7 @@ export class Performance {
   private lastBeat: { sec: number; tick: number } | null = null;
 
   /** Темп за палочкой: сравнить промежуток между двумя тапами с расстоянием между их долями по партитуре. */
-  private followTaps(m: Mark): void {
+  private followTaps(m: Mark, k: number): void {
     const prev = this.lastBeat;
     this.lastBeat = { sec: this.clockSec, tick: m.tick };
     if (!prev || m.tick <= prev.tick || m.tick - prev.tick > PPQ * 8) return;
@@ -262,7 +266,7 @@ export class Performance {
     const nominal = (this.tm.sec(m.tick) - this.tm.sec(prev.tick)) / this.opts.speed;
     if (actual < 0.08 || actual > 4) return;
     const want = Math.max(0.6, Math.min(1.7, nominal / actual));
-    this.live += (want - this.live) * 0.6;
+    this.live += (want - this.live) * k;
   }
 
   private lastGrade: Grade = 'miss';
@@ -280,10 +284,11 @@ export class Performance {
     this.lastGrade = grade;
     const q = grade === 'bravo' ? 1 : grade === 'good' ? 0.85 : grade === 'miss' ? 0 : 0.55;
     if (m.kind === 'cue' || m.kind === 'solo') this.quality.set(m.id, q);
+    const light = m.kind === 'beat' && !m.tempo;
     if (grade === 'miss') {
       this.combo = 0;
       this.tally.miss++;
-      if (this.opts.concert) this.hall = Math.max(0, this.hall - 7);
+      if (this.opts.concert) this.hall = Math.max(0, this.hall - (light ? 2 : 7));
       if (m.lane >= 0) this.mood[m.lane] = Math.max(0, this.mood[m.lane] - 6);
     } else {
       this.combo++;
@@ -291,9 +296,11 @@ export class Performance {
       if (grade === 'bravo') this.tally.bravo++;
       else if (grade === 'good') this.tally.good++;
       else this.tally.off++;
-      this.hall = Math.min(100, this.hall + (grade === 'bravo' ? 3 : grade === 'good' ? 2 : 1));
+      this.hall = Math.min(100, this.hall + (light ? (grade === 'bravo' ? 1 : 0.5) : grade === 'bravo' ? 3 : grade === 'good' ? 2 : 1));
       if (m.lane >= 0) this.mood[m.lane] = Math.min(100, this.mood[m.lane] + (grade === 'bravo' ? 3 : 1.5));
-      this.addScore(grade === 'bravo' ? 100 : grade === 'good' ? 70 : 35);
+      // ровная палочка подбадривает весь оркестр понемногу
+      else if (light) for (let i = 0; i < this.mood.length; i++) this.mood[i] = Math.min(100, this.mood[i] + (grade === 'bravo' ? 0.4 : 0.2));
+      this.addScore(light ? (grade === 'bravo' ? 30 : grade === 'good' ? 20 : 10) : grade === 'bravo' ? 100 : grade === 'good' ? 70 : 35);
     }
     ev.push({ kind: 'judge', mark: m, grade, err: err ?? 0 });
     if (this.opts.concert && this.hall <= 0 && !this.failed) {

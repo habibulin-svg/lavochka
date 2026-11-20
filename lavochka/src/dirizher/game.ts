@@ -290,7 +290,7 @@ export class Concert {
       if (m.kind === 'cue' && this.hintCount < 5) {
         key = `cue${m.id}`;
         const l = this.chart.lanes[m.lane];
-        text = `${l.name} вступают — нажмите <kbd>${keys[m.lane]}</kbd> (или кнопку «${l.short}»), когда круг дойдёт до линии`;
+        text = `${l.name} вступают — нажмите <kbd>${keys[m.lane]}</kbd> или щёлкните по ним на сцене, когда круг дойдёт до линии`;
       } else if (m.kind === 'cut' && !this.hinted.has('cut')) {
         key = 'cut';
         text = `Квадрат — <b>снятие</b>: нажмите <kbd>${keys[m.lane]}</kbd> на последнем аккорде`;
@@ -299,10 +299,12 @@ export class Concert {
         text = '<b>Фермата</b>: зажмите <kbd>Пробел</kbd> (или палец на сцене) и отпустите в конце полосы';
       } else if ((m.kind === 'up' || m.kind === 'down') && !this.hinted.has(m.kind)) {
         key = m.kind;
-        text = m.kind === 'up' ? '<b>Громче!</b> — <kbd>↑</kbd> или проведите по сцене вверх' : '<b>Тише!</b> — <kbd>↓</kbd> или проведите по сцене вниз';
+        text = m.kind === 'up' ? '<b>Громче!</b> — <kbd>↑</kbd>, колесо мыши вверх или проведите по сцене вверх' : '<b>Тише!</b> — <kbd>↓</kbd>, колесо мыши вниз или проведите по сцене вниз';
       } else if (m.kind === 'beat' && !this.hinted.has('beat')) {
         key = 'beat';
-        text = '<b>Темп за вами</b>: стучите <kbd>Пробел</kbd> на каждую долю — быстрее, и оркестр ускорится';
+        text = m.tempo
+          ? '<b>Темп за вами</b>: стучите <kbd>Пробел</kbd> (или клик по сцене) на каждую долю — быстрее, и оркестр ускорится'
+          : '<b>Ведите такт</b>: <kbd>Пробел</kbd> или клик по пустому месту сцены, когда точка дойдёт до линии';
       }
       if (!key || this.hinted.has(key)) continue;
       this.hinted.add(key);
@@ -324,6 +326,7 @@ export class Concert {
   baton(down: boolean): void {
     if (this.paused || !this.player || down === this.batonDown) return;
     this.batonDown = down;
+    if (down) this.stage?.beat?.();
     this.player.input({ kind: 'baton', down });
   }
 
@@ -365,19 +368,29 @@ export class Concert {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
     });
-    // сцена: тап/удержание — палочка, свайп — динамика
+    // сцена: тап/клик по группе — вступление, по пустому месту — палочка (удержание — фермата), свайп — динамика;
+    // мышь: группа под курсором подсвечивается, колесо — громче/тише
     const st = this.stageEl;
     let sy = 0;
     let sid = -1;
     let swiped = false;
+    let onLane = false;
     st.addEventListener('pointerdown', (e) => {
       if (sid >= 0) return;
       sid = e.pointerId;
       sy = e.clientY;
       swiped = false;
-      this.baton(true);
+      const lane = this.stage?.pick?.(e.clientX, e.clientY) ?? -1;
+      onLane = lane >= 0;
+      if (onLane) this.lane(lane);
+      else this.baton(true);
     });
     st.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'mouse' && sid < 0) {
+        const lane = this.stage?.pick?.(e.clientX, e.clientY) ?? -1;
+        this.stage?.hover?.(lane);
+        st.style.cursor = lane >= 0 ? 'pointer' : 'crosshair';
+      }
       if (e.pointerId !== sid || swiped) return;
       const dy = e.clientY - sy;
       if (Math.abs(dy) > 40) {
@@ -385,13 +398,26 @@ export class Concert {
         this.dyn(dy < 0 ? 'up' : 'down');
       }
     });
+    st.addEventListener('pointerleave', () => this.stage?.hover?.(-1));
     const end = (e: PointerEvent) => {
       if (e.pointerId !== sid) return;
       sid = -1;
-      this.baton(false);
+      if (!onLane) this.baton(false);
     };
     st.addEventListener('pointerup', end);
     st.addEventListener('pointercancel', end);
+    let wheelAt = 0;
+    st.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const now = performance.now();
+        if (now - wheelAt < 250 || Math.abs(e.deltaY) < 4) return;
+        wheelAt = now;
+        this.dyn(e.deltaY < 0 ? 'up' : 'down');
+      },
+      { passive: false }
+    );
     // геймпад
     const codes = keyLanes.map((k) => KEYS[k]);
     const btns = ['x', 'a', 'b', 'y', 'lb', 'rb', 'lt', 'left'] as const;

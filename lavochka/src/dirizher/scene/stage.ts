@@ -11,6 +11,12 @@ export interface Stage {
   dynamics(level: number): void;
   /** Дирижёр показывает группе (нажали её кнопку). */
   point(lane: number): void;
+  /** Игрок взмахнул палочкой. */
+  beat?(): void;
+  /** Какая группа под указателем (координаты окна); −1 — никакая. */
+  pick?(x: number, y: number): number;
+  /** Подсветить группу под курсором мыши (−1 — снять). */
+  hover?(lane: number): void;
   /** Палочка поднята перед началом. */
   raise?(on: boolean): void;
   /** Облёт зала перед началом. */

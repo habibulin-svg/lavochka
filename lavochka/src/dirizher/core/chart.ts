@@ -21,14 +21,17 @@ export interface Difficulty {
   phraseBars: number;
   /** Сколько отметок в минуту хочется (реже — режем фразы мельче, чаще — убираем слабые). */
   perMin: number;
+  /** «Ведите такт»: доля палочкой всю пьесу — раз в столько долей (0 — раз в такт); не чаще minBeatSec. */
+  beatEvery: number;
+  minBeatSec: number;
 }
 
 export const DIFFS: Record<'learn' | 'easy' | 'normal' | 'hard' | 'master', Difficulty> = {
-  learn: { lanes: 3, cuts: false, specials: false, minGap: 3, maxChord: 1, mergeBeats: 8, phraseBars: 16, perMin: 12 },
-  easy: { lanes: 3, cuts: false, specials: true, minGap: 2.2, maxChord: 2, mergeBeats: 6, phraseBars: 12, perMin: 24 },
-  normal: { lanes: 4, cuts: true, specials: true, minGap: 1.6, maxChord: 2, mergeBeats: 4, phraseBars: 8, perMin: 40 },
-  hard: { lanes: 6, cuts: true, specials: true, minGap: 1.2, maxChord: 3, mergeBeats: 3, phraseBars: 8, perMin: 65 },
-  master: { lanes: 8, cuts: true, specials: true, minGap: 0.9, maxChord: 4, mergeBeats: 2, phraseBars: 6, perMin: 100 },
+  learn: { lanes: 4, cuts: false, specials: false, minGap: 1.8, maxChord: 1, mergeBeats: 6, phraseBars: 8, perMin: 24, beatEvery: 0, minBeatSec: 1.2 },
+  easy: { lanes: 6, cuts: false, specials: true, minGap: 1.4, maxChord: 2, mergeBeats: 4, phraseBars: 6, perMin: 36, beatEvery: 0, minBeatSec: 1.0 },
+  normal: { lanes: 6, cuts: true, specials: true, minGap: 1.1, maxChord: 2, mergeBeats: 3, phraseBars: 4, perMin: 55, beatEvery: 2, minBeatSec: 0.7 },
+  hard: { lanes: 8, cuts: true, specials: true, minGap: 0.8, maxChord: 3, mergeBeats: 2, phraseBars: 4, perMin: 80, beatEvery: 1, minBeatSec: 0.45 },
+  master: { lanes: 8, cuts: true, specials: true, minGap: 0.6, maxChord: 4, mergeBeats: 2, phraseBars: 2, perMin: 110, beatEvery: 1, minBeatSec: 0.36 },
 };
 export type DiffId = keyof typeof DIFFS;
 
@@ -45,6 +48,8 @@ export interface Mark {
   len: number;
   /** solo: кто встаёт. */
   instr?: InstrId;
+  /** beat: доля ускорения/замедления — палочка ведёт темп (иначе — просто «ведите такт»). */
+  tempo?: boolean;
 }
 
 export interface Chart {
@@ -181,7 +186,7 @@ export function buildChart(s: ScoreJson, d: Difficulty): Chart {
       else if (x.kind === 'accel' || x.kind === 'rit') {
         // тапы в такт на каждой доле участка
         for (let t = x.tick; t < x.tick + x.len; ) {
-          marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0 });
+          marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0, tempo: true });
           t += beatAt(t) * (x.every ?? 1);
         }
       } else if (x.kind === 'cresc' || x.kind === 'sforzando') marks.push({ id: 0, kind: 'up', lane: -1, tick: x.tick, len: x.len });
@@ -197,6 +202,31 @@ export function buildChart(s: ScoreJson, d: Difficulty): Chart {
         } else marks.push({ id: 0, kind: 'solo', lane: li, tick: x.tick, len: x.len, instr: x.instr });
       }
     }
+  // «ведите такт»: доли палочкой всю пьесу (кроме участков ускорения/замедления — там свои — и около ферматы)
+  {
+    let first = Infinity;
+    let last = 0;
+    for (const p of s.parts)
+      for (const n of notesOf(p)) {
+        first = Math.min(first, n.tick);
+        last = Math.max(last, n.tick);
+      }
+    const zones = (d.specials ? s.specials ?? [] : []).filter((x) => x.kind === 'accel' || x.kind === 'rit');
+    const holds = marks.filter((m) => m.kind === 'hold');
+    let lastSec = -1e9;
+    for (const b of bars) {
+      const step = d.beatEvery > 0 ? b.beat * d.beatEvery : b.num * b.beat;
+      for (let t = b.tick; t < b.tick + b.num * b.beat; t += step) {
+        if (t < first || t > last) continue;
+        if (zones.some((z) => t >= z.tick - b.beat && t < z.tick + z.len)) continue;
+        if (holds.some((h) => t > h.tick - b.beat * 2 && t < h.tick + h.len + b.beat)) continue;
+        const sec = tm.sec(t);
+        if (sec - lastSec < d.minBeatSec - 1e-6) continue;
+        lastSec = sec;
+        marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0 });
+      }
+    }
+  }
   marks.sort((a, b) => a.tick - b.tick || a.lane - b.lane);
   marks.forEach((m, i) => (m.id = i));
   // длина фразы вступления — до следующей отметки этой строки

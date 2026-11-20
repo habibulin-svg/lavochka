@@ -135,9 +135,11 @@ export class ScorePlayer {
       // небрежность: настрой группы и промах вступления
       const q = n.cue >= 0 ? perf.quality.get(n.cue) : 1;
       const mood = perf.mood[n.lane] ?? 70;
-      const sloppy = (1 - mood / 100) * 0.035 + (q === 0 ? 0.045 : 0);
+      // наказание — тише и чуть неровно, но без фальши: случайная расстройка каждой ноты в унисоне десятков голосов
+      // звучит как расстроенный оркестр (так и было: «много фальши» на первой же партии)
+      const sloppy = (1 - mood / 100) * 0.015 + (q === 0 ? 0.02 : 0);
       const jitter = (this.rand() - 0.5) * 2 * sloppy;
-      const detune = (this.rand() - 0.5) * 2 * ((1 - mood / 100) * 12 + (q === 0 ? 8 : 0));
+      const detune = (this.rand() - 0.5) * 2 * ((1 - mood / 100) * 3 + (q === 0 ? 3 : 0));
       const when = Math.max(now, now + (n.tick - perf.tick) * spt + Math.max(0, jitter));
       // короткая нота — коротким приёмом (у кого он есть)
       const art = n.art || ((n.end - n.tick) * spt < 0.2 ? 1 : 0);

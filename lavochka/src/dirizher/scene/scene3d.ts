@@ -15,7 +15,7 @@ import { barsOf, laneOf, notesOf, PPQ, type InstrId, type ScoreJson } from '../c
 import type { Stage } from './stage';
 
 const BASE = `${import.meta.env.BASE_URL}dirizher/`;
-const V = 4; // версия моделей (кэш)
+const V = 5; // версия моделей (кэш)
 
 /** Какой файл движений у инструмента. */
 const ANIM_OF: Partial<Record<InstrId, string>> = {
@@ -108,6 +108,12 @@ const SLUMP = { spine_02: 0.14, spine_03: 0.1, neck_01: 0.18, head: 0.26 } as Re
 const _q = new THREE.Quaternion();
 const _qp = new THREE.Quaternion();
 const _ax = new THREE.Vector3();
+const _AX_X = new THREE.Vector3(1, 0, 0);
+const _AX_Y = new THREE.Vector3(0, 1, 0);
+const _ray = new THREE.Raycaster();
+const _plane = new THREE.Plane();
+const _up = new THREE.Vector3(0, 1, 0);
+const _hit = new THREE.Vector3();
 
 export class Scene3D implements Stage {
   private renderer: THREE.WebGLRenderer;
@@ -199,6 +205,7 @@ export class Scene3D implements Stage {
     if (hall) {
       try {
         const g = await this.load(`h/${hall}.glb`);
+        this.texturize(g.scene);
         this.scene.add(g.scene);
         hallOk = true;
       } catch {
@@ -206,6 +213,7 @@ export class Scene3D implements Stage {
       }
     }
     if (!hallOk) this.stageFloor();
+    else void this.audience(hall!);
     // состав
     const counts: Partial<Record<InstrId, number>> = {};
     for (const p of this.score.parts) counts[p.instr] = (counts[p.instr] ?? 0) + 1;
@@ -322,6 +330,93 @@ export class Scene3D implements Stage {
     if (this.chart) this.bindLanes();
   }
 
+  /** Фототекстуры Poly Haven (CC0, public/dirizher/t/) на материалы зала по имени: паркет — сцена, панели — дерево,
+   * бархат — кресла и ложи, штукатурка — стены; цвет материала остаётся (бархат и стены — серые, красятся им).
+   * Развёртки у сеток зала нет — UV проекцией по кубу в метрах. */
+  private texturize(root: THREE.Object3D): void {
+    const tl = new THREE.TextureLoader();
+    const cache = new Map<string, THREE.Texture>();
+    const tex = (name: string, srgb: boolean) => {
+      let t = cache.get(name);
+      if (!t) {
+        t = tl.load(`${BASE}t/${name}.webp?v=${V}`);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 4;
+        if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+        cache.set(name, t);
+      }
+      return t;
+    };
+    const KIND: [RegExp, string, number, boolean][] = [
+      // [имя материала, текстура, метров на повтор, оставить цвет]
+      [/stage_wood|riser|arena|albert_floor|^floor/i, 'rectangular_parquet', 2.2, false],
+      [/wood|brush|birch|organ_case|shell|bench|dk_/i, 'wooden_panels', 2.5, true],
+      [/velvet|seat|red|deep|curtain|box/i, 'velour_velvet', 0.8, true],
+      [/wall|cream|terra|ceiling|plaster|tent|cloud|col_white|frieze|balcony/i, 'beige_wall_001', 3, true],
+    ];
+    const done = new Set<THREE.Material>();
+    root.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      if (!mat?.isMeshStandardMaterial || mat.emissiveIntensity > 0.01 && mat.emissive.getHex()) return;
+      const k = KIND.find(([re]) => re.test(mat.name));
+      if (!k) return;
+      const [, name, meters, keep] = k;
+      boxUV(mesh, meters);
+      if (done.has(mat)) return;
+      done.add(mat);
+      mat.map = tex(name, true);
+      mat.normalMap = tex(`${name}_n`, false);
+      mat.normalScale.set(0.8, 0.8);
+      if (!keep) mat.color.set('#ffffff');
+      else if (name === 'wooden_panels') mat.color.multiplyScalar(1.6);
+      mat.needsUpdate = true;
+    });
+  }
+
+  /** Публика: места из h/<зал>.seats.json ([x, y, пол, поворот] в осях Blender), люди — 8 видов (p/a1…a8.glb,
+   * dirizher_audience.py) InstancedMesh-ами; на телефоне — каждый третий. */
+  private async audience(hall: string): Promise<void> {
+    const r = await fetch(`${BASE}h/${hall}.seats.json?v=${V}`).catch(() => null);
+    if (!r?.ok || this.disposed) return;
+    const seats = (await r.json()) as [number, number, number, number][];
+    const kinds = await Promise.all([1, 2, 3, 4, 5, 6, 7, 8].map((k) => this.load(`p/a${k}.glb`).catch(() => null)));
+    if (this.disposed) return;
+    const ok = kinds.map((g, i) => (g ? i : -1)).filter((i) => i >= 0);
+    if (!ok.length) return;
+    const byKind: THREE.Matrix4[][] = kinds.map(() => []);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const sc = new THREE.Vector3();
+    const pos = new THREE.Vector3();
+    seats.forEach(([x, y, z, rot], i) => {
+      if (this.small && i % 3) return;
+      const h = ((i * 2654435761) >>> 0) % 1000;
+      const kind = ok[h % ok.length];
+      q.setFromAxisAngle(_AX_Y, rot + ((h % 7) - 3) * 0.03);
+      const k = 0.95 + (h % 11) * 0.01;
+      sc.set(k, k, k);
+      pos.set(x, z, -y);
+      byKind[kind].push(m.compose(pos, q, sc).clone());
+    });
+    kinds.forEach((g, ki) => {
+      const list = byKind[ki];
+      if (!g || !list.length) return;
+      g.scene.updateMatrixWorld(true);
+      g.scene.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const im = new THREE.InstancedMesh(mesh.geometry, mesh.material, list.length);
+        const local = mesh.matrixWorld;
+        list.forEach((mm, i) => im.setMatrixAt(i, m.multiplyMatrices(mm, local)));
+        im.instanceMatrix.needsUpdate = true;
+        im.computeBoundingSphere();
+        this.scene.add(im);
+      });
+    });
+  }
+
   bind(_perf: Performance, chart: Chart): void {
     this.chart = chart;
     this.bars = barsOf(this.score);
@@ -407,6 +502,7 @@ export class Scene3D implements Stage {
       while (bi + 1 < bars.length && bars[bi + 1].tick <= perf.tick) bi++;
       const b = bars[bi];
       const phase = b ? (perf.tick - b.tick) / (b.num * b.beat) : 0;
+      this.conductor.energy = perf.dyn;
       this.conductor.update(dt, b?.num ?? 4, phase, frozen, this.turnTo);
     }
     // пятна групп: скоро вступление — разгорается
@@ -421,7 +517,7 @@ export class Scene3D implements Stage {
           if (s > -0.2) soon = Math.max(soon, 1 - Math.max(0, s) / 2);
         }
         this.glowT[li] = Math.max(0, this.glowT[li] - dt * 2);
-        (g.material as THREE.MeshBasicMaterial).opacity = 0.12 * soon + 0.35 * this.glowT[li];
+        (g.material as THREE.MeshBasicMaterial).opacity = 0.12 * soon + 0.35 * this.glowT[li] + (this.hovered === li ? 0.14 : 0);
       });
     this.renderer.render(this.scene, this.camera);
   }
@@ -444,11 +540,41 @@ export class Scene3D implements Stage {
   judge(m: Mark, g: Grade): void {
     if (m.lane >= 0 && g !== 'miss') this.glowT[m.lane] = 1;
   }
+
+  /** Группа под указателем: луч из камеры на высоту плеч сидящих — ближайший музыкант (не дальше 1,3 м); подиум — палочка. */
+  pick(x: number, y: number): number {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    if (!r.width) return -1;
+    _ray.setFromCamera(new THREE.Vector2(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1), this.camera);
+    let best = -1;
+    let bestD = 1.3;
+    for (const p of this.people) {
+      if (p.lane < 0) continue;
+      _plane.set(_up, -(p.seat.pos.y + 0.9));
+      if (!_ray.ray.intersectPlane(_plane, _hit)) continue;
+      if (Math.hypot(_hit.x, _hit.z) < 1.2) return -1;
+      const d = Math.hypot(_hit.x - p.seat.pos.x, _hit.z - p.seat.pos.z);
+      if (d < bestD) {
+        bestD = d;
+        best = p.lane;
+      }
+    }
+    return best;
+  }
+
+  private hovered = -1;
+  hover(lane: number): void {
+    this.hovered = lane;
+  }
   fermata(on: boolean): void {
     this.conductor?.gesture(on ? 'hold' : 'none');
   }
   dynamics(level: number): void {
     this.conductor?.gesture(level > 1 ? 'up' : 'hush');
+  }
+  /** Взмах палочкой (тап игрока). */
+  beat(): void {
+    this.conductor?.ictus();
   }
   /** Показ группе: дирижёр поворачивается к ней и выбрасывает левую руку. */
   point(lane: number): void {
@@ -456,7 +582,7 @@ export class Scene3D implements Stage {
     if (ps.length) {
       const x = ps.reduce((a, p) => a + p.seat.pos.x, 0) / ps.length;
       const z = ps.reduce((a, p) => a + p.seat.pos.z, 0) / ps.length;
-      this.turnTo = Math.atan2(x, -z) * 0.6;
+      this.turnTo = Math.atan2(x, -z) * 0.8;
     }
     this.conductor?.gesture('cue');
   }
@@ -475,13 +601,14 @@ export class Scene3D implements Stage {
     // Узкий экран (телефон стоя) — шире угол и круче сверху: весь полукруг, меньше стены
     if (aspect < 1.15) this.game = { pos: new THREE.Vector3(0, 6.3, 4.4), at: new THREE.Vector3(0, 0.2, -3.6), fov: 66 };
     else {
-      const k = aspect < 1.4 ? 1.2 : 1;
-      this.game = { pos: new THREE.Vector3(0, 5.0 * k, 4.2 * k), at: new THREE.Vector3(0, 1.2, -4.6), fov: 48 };
+      // ниже и ближе, чем раньше: дирижёр — главный герой, его руки с палочкой видны над оркестром
+      const k = aspect < 1.4 ? 1.15 : 1;
+      this.game = { pos: new THREE.Vector3(0, 4.7 * k, 4.1 * k), at: new THREE.Vector3(0, 0.9, -4.4), fov: 52 };
     }
     if (!this.cam) this.setPose(this.game);
   }
 
-  private game: Pose = { pos: new THREE.Vector3(0, 5, 4.2), at: new THREE.Vector3(0, 1.2, -4.6), fov: 48 };
+  private game: Pose = { pos: new THREE.Vector3(0, 4.7, 4.1), at: new THREE.Vector3(0, 0.9, -4.4), fov: 52 };
   /** Пролёт камеры (вступление, поклон): позы по очереди. */
   private cam: { path: Pose[]; times: number[]; t: number; done: () => void } | null = null;
   private loopRaf = 0;
@@ -642,6 +769,11 @@ class Maestro {
     }
     const bw = byName('bow');
     if (bw) this.bowAct = this.mixer.clipAction(bw);
+    for (const n of ['upperarm_r', 'lowerarm_r', 'hand_r', 'upperarm_l', 'spine_02', 'spine_03', 'neck_01', 'head']) {
+      const b = root.getObjectByName(n) as THREE.Bone | undefined;
+      if (b) this.live[n] = b;
+    }
+    this.baseY = root.position.y;
     const h = byName('hold');
     if (h) {
       this.hold = this.mixer.clipAction(h);
@@ -652,6 +784,73 @@ class Maestro {
 
   private bowAct: THREE.AnimationAction | null = null;
   private bowing = false;
+  /** Кости живого слоя и их позы до него (неанимированные кости иначе копили бы поворот). */
+  private live: Record<string, THREE.Bone> = {};
+  private liveBase: [THREE.Bone, THREE.Quaternion][] | null = null;
+  private baseY = 0;
+  /** Сила взмахов (громкость оркестра) и толчок от взмаха игрока. */
+  energy = 1;
+  private kick = 0;
+  /** Сгладить боковое положение руки. */
+  private side = 0;
+
+  /** Игрок взмахнул палочкой: рука резче падает на долю. */
+  ictus(): void {
+    this.kick = 1;
+  }
+
+  private rot(b: THREE.Bone | undefined, ax: THREE.Vector3, angle: number): void {
+    if (!b || !angle) return;
+    _ax.copy(ax).applyQuaternion(this.root.quaternion);
+    b.parent!.getWorldQuaternion(_qp);
+    _q.setFromAxisAngle(_ax, angle);
+    _q.premultiply(_qp.clone().invert()).multiply(_qp);
+    b.quaternion.premultiply(_q);
+    b.updateMatrixWorld(true);
+  }
+
+  /** Живой слой поверх запечённой схемы такта: руки выше и шире, корпус и голова за рукой, кивок и «присед» на долю.
+   * Оси — в системе дирижёра: вперёд +Z, его левая рука — +X, вверх — +Y. */
+  private alive(dt: number, num: number, phase: number, frozen: boolean): void {
+    const L = this.live;
+    this.liveBase = Object.values(L).map((b) => [b, b.quaternion.clone()]);
+    const calm = 1 - this.hw;
+    if (calm < 0.02) return;
+    const n = Math.max(1, num);
+    const pos = phase * n;
+    const bi = Math.floor(pos) % n;
+    const bf = pos - Math.floor(pos);
+    this.kick = Math.max(0, this.kick - dt * 3);
+    const A = Math.min(1.6, 0.55 + 0.45 * this.energy + 0.35 * this.kick) * calm;
+    // доля: рука падает к точке удара и отскакивает (отскок — большая часть доли)
+    const drop = Math.pow(1 - bf, 3);
+    const lift = Math.sin(Math.min(1, bf * 1.3) * Math.PI * 0.5);
+    // схема такта: куда идёт рука на каждой доле (рад. поворота вокруг вертикали; + — к себе влево)
+    const PAT: Record<number, number[]> = { 2: [0.1, -0.15], 3: [0.05, -0.5, 0.15], 4: [0.05, 0.42, -0.5, 0.15] };
+    const pat = PAT[n] ?? PAT[4];
+    const a0 = pat[bi];
+    const a1 = pat[(bi + 1) % n];
+    const e = bf * bf * (3 - 2 * bf);
+    const want = (a0 + (a1 - a0) * e) * A;
+    this.side += (want - this.side) * Math.min(1, dt * 14);
+    const X = _AX_X;
+    const Y = _AX_Y;
+    // правая: выше (кисть у плеча–головы), вверх-вниз по доле, вбок по схеме
+    this.rot(L.upperarm_r, X, -(0.55 + 0.32 * A * lift - 0.28 * A * drop));
+    this.rot(L.upperarm_r, Y, this.side);
+    this.rot(L.lowerarm_r, X, -0.25 * A * lift);
+    this.rot(L.hand_r, X, 0.35 * A * drop - 0.15 * lift);
+    // левая: на громком — зеркалит правую, на тихом — приподнята у груди
+    const forte = Math.max(0, Math.min(1, (this.energy - 1) * 3));
+    this.rot(L.upperarm_l, X, -(0.3 + forte * (0.3 + 0.3 * A * lift - 0.25 * A * drop)));
+    this.rot(L.upperarm_l, Y, -this.side * forte);
+    // корпус за рукой, наклон на удар, голова кивает на сильную долю
+    this.rot(L.spine_03, Y, this.side * 0.35);
+    this.rot(L.spine_02, X, 0.06 * A * drop);
+    this.rot(L.head, X, (bi === 0 ? 0.16 : 0.07) * A * drop);
+    this.rot(L.neck_01, Y, this.side * 0.25);
+    this.root.position.y = this.baseY - 0.035 * A * drop;
+  }
 
   /** До начала: палочка поднята, такт не идёт. */
   idle(dt: number): void {
@@ -664,6 +863,9 @@ class Maestro {
   }
 
   bow(): void {
+    if (this.liveBase) for (const [b, q] of this.liveBase) b.quaternion.copy(q);
+    this.liveBase = null;
+    this.root.position.y = this.baseY;
     this.bowing = true;
     this.mixer.stopAllAction();
     if (this.bowAct) {
@@ -705,6 +907,45 @@ class Maestro {
     // поворот к группе и обратно
     this.yaw += ((this.gT > 0 ? turn : 0) - this.yaw) * Math.min(1, dt * 4);
     this.root.rotation.y = Math.PI + this.yaw;
+    if (this.liveBase) for (const [b, q] of this.liveBase) b.quaternion.copy(q);
+    this.liveBase = null;
     this.mixer.update(dt);
+    this.alive(dt, this.cur, phase, frozen);
   }
+}
+
+/** UV проекцией по кубу в мировых метрах: по нормали — какая плоскость (пол — XZ, стены — XY или ZY). */
+function boxUV(mesh: THREE.Mesh, meters: number): void {
+  const g = mesh.geometry as THREE.BufferGeometry;
+  const pos = g.attributes.position;
+  const nor = g.attributes.normal;
+  if (!pos || !nor) return;
+  mesh.updateMatrixWorld(true);
+  const m = mesh.matrixWorld;
+  const nm = new THREE.Matrix3().getNormalMatrix(m);
+  const p = new THREE.Vector3();
+  const n = new THREE.Vector3();
+  const uv = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i).applyMatrix4(m);
+    n.fromBufferAttribute(nor, i).applyMatrix3(nm);
+    const ax = Math.abs(n.x);
+    const ay = Math.abs(n.y);
+    const az = Math.abs(n.z);
+    let u: number;
+    let v: number;
+    if (ay >= ax && ay >= az) {
+      u = p.x;
+      v = p.z;
+    } else if (ax >= az) {
+      u = p.z;
+      v = p.y;
+    } else {
+      u = p.x;
+      v = p.y;
+    }
+    uv[i * 2] = u / meters;
+    uv[i * 2 + 1] = v / meters;
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }

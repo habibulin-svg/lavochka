@@ -89,13 +89,30 @@ describe('dirizher: отметки', () => {
   it('вступления по фразам групп', () => {
     const c = buildChart(toy(), DIFFS.easy);
     const cues = c.marks.filter((m) => m.kind === 'cue');
-    // струнные: такт 1 и 11 (пауза 2 такта); духовые: такт 5 (в строке «Духовые»); литавры: 9 и 16
+    // 6 строк: скрипки — такт 1 и 11 (пауза 2 такта); деревянные (строка 3): такт 5; литавры (строка 5): 9 и 16
     // (короткая пьеса реже желаемого — длинные фразы режутся на «мысли», поэтому вступлений может быть больше)
+    expect(c.lanes).toHaveLength(6);
     expect(cues.filter((m) => m.lane === 0).map((m) => m.tick / BAR)).toEqual(expect.arrayContaining([0, 10]));
-    expect(cues.filter((m) => m.lane === 1)[0].tick / BAR).toBe(4);
-    expect(cues.filter((m) => m.lane === 2).map((m) => m.tick / BAR)).toEqual([8, 15]);
+    expect(cues.filter((m) => m.lane === 3)[0].tick / BAR).toBe(4);
+    expect(cues.filter((m) => m.lane === 5).map((m) => m.tick / BAR)).toEqual([8, 15]);
     expect(c.marks.some((m) => m.kind === 'hold')).toBe(true);
     expect(buildChart(toy(), DIFFS.learn).marks.some((m) => m.kind === 'hold')).toBe(false);
+  });
+  it('«ведите такт»: доли палочкой всю пьесу, не чаще minBeatSec; показ группе засчитывает долю', () => {
+    for (const d of ['learn', 'easy', 'normal', 'hard'] as const) {
+      const c = buildChart(toy(), DIFFS[d]);
+      const beats = c.marks.filter((m) => m.kind === 'beat' && !m.tempo);
+      expect(beats.length, d).toBeGreaterThan(8);
+      for (let k = 1; k < beats.length; k++) expect((beats[k].tick - beats[k - 1].tick) / Q / 2, d).toBeGreaterThanOrEqual(DIFFS[d].minBeatSec - 1e-6);
+    }
+    expect(buildChart(toy(), DIFFS.learn).lanes.length).toBeGreaterThanOrEqual(4);
+    const s = toy();
+    const c = buildChart(s, DIFFS.easy);
+    const p = new Performance(s, c, { concert: false, speed: 1 });
+    const cue = c.marks.find((m) => m.kind === 'cue' && c.marks.some((b) => b.kind === 'beat' && b.tick === m.tick))!;
+    while (p.secTo(cue.tick) > 0) p.step(1 / 240);
+    const ev = p.input({ kind: 'lane', lane: cue.lane });
+    expect(ev.filter((e) => e.kind === 'judge').map((e) => (e as { mark: { kind: string } }).mark.kind).sort()).toEqual(['beat', 'cue']);
   });
   it('снятия только со сложности «normal»', () => {
     expect(buildChart(toy(), DIFFS.easy).marks.some((m) => m.kind === 'cut')).toBe(false);
@@ -221,7 +238,7 @@ describe('dirizher: темп за палочкой', () => {
     const s = load('mountain');
     const chart = buildChart(s, DIFFS.normal);
     const p = new Performance(s, chart, { concert: false, speed: 1 });
-    const beats = chart.marks.filter((m) => m.kind === 'beat');
+    const beats = chart.marks.filter((m) => m.kind === 'beat' && m.tempo);
     // дойти до зоны
     while (p.tick < beats[0].tick - 10) p.step(1 / 120);
     const t0 = p.tick;
