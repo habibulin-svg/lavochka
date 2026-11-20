@@ -407,6 +407,7 @@ export class Scene3D implements Stage {
       g.scene.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh) return;
+        this.crowdShader(mesh.material as THREE.Material);
         const im = new THREE.InstancedMesh(mesh.geometry, mesh.material, list.length);
         const local = mesh.matrixWorld;
         list.forEach((mm, i) => im.setMatrixAt(i, m.multiplyMatrices(mm, local)));
@@ -415,6 +416,47 @@ export class Scene3D implements Stage {
         this.scene.add(im);
       });
     });
+  }
+
+  /** Публика живая: каждый чуть покачивается (своя фаза — от места), на хлопках и аплодисментах — подпрыгивает. */
+  private crowd = { uT: { value: 0 }, uClap: { value: 0 } };
+  private cheerT = 0;
+  private crowdShader(m: THREE.Material): void {
+    if (m.userData.crowd) return;
+    m.userData.crowd = true;
+    const u = this.crowd;
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uT = u.uT;
+      sh.uniforms.uClap = u.uClap;
+      sh.vertexShader =
+        'uniform float uT;\nuniform float uClap;\n' +
+        sh.vertexShader.replace(
+          '#include <begin_vertex>',
+          `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  float ph = dot(instanceMatrix[3].xyz, vec3(1.7, 0.0, 2.3));
+  float hh = clamp(position.y / 1.3, 0.0, 1.0);
+  transformed.x += sin(uT * 0.6 + ph) * 0.03 * hh;
+  transformed.z += sin(uT * 0.45 + ph * 1.3) * 0.015 * hh;
+  transformed.y += uClap * abs(sin(uT * 8.0 + ph)) * 0.035 * hh;
+#endif`
+        );
+    };
+    m.needsUpdate = true;
+  }
+  /** Зал хлопнул (доля в хлопках). */
+  clapped(): void {
+    this.crowd.uClap.value = Math.max(this.crowd.uClap.value, 1);
+  }
+  /** Аплодисменты: зал оживлён sec секунд. */
+  cheer(sec: number): void {
+    this.cheerT = Math.max(this.cheerT, sec);
+  }
+  private stepCrowd(dt: number): void {
+    this.crowd.uT.value += dt;
+    this.cheerT = Math.max(0, this.cheerT - dt);
+    const want = this.cheerT > 0 ? 1 : 0;
+    this.crowd.uClap.value = Math.max(want, this.crowd.uClap.value - dt * 2.5);
   }
 
   bind(_perf: Performance, chart: Chart): void {
@@ -519,6 +561,7 @@ export class Scene3D implements Stage {
         this.glowT[li] = Math.max(0, this.glowT[li] - dt * 2);
         (g.material as THREE.MeshBasicMaterial).opacity = 0.12 * soon + 0.35 * this.glowT[li] + (this.hovered === li ? 0.14 : 0);
       });
+    this.stepCrowd(dt);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -640,6 +683,7 @@ export class Scene3D implements Stage {
         if (this.idleLoop) {
           for (const p of this.people) p.mixer.update(dt);
           this.conductor?.idle(dt);
+          this.stepCrowd(dt);
           this.renderer.render(this.scene, this.camera);
         }
         if (this.cam) this.loopRaf = requestAnimationFrame(loop);
@@ -676,6 +720,7 @@ export class Scene3D implements Stage {
   async intro(): Promise<void> {
     await this.ready;
     this.idleLoop = true;
+    this.cheer(3.5);
     const hall = { pos: new THREE.Vector3(0, 4.5, -7.5), at: new THREE.Vector3(0, 4.5, 14), fov: 60 };
     const hall2 = { pos: new THREE.Vector3(0, 6.5, -6), at: new THREE.Vector3(0, 3, 8), fov: 58 };
     const over = { pos: new THREE.Vector3(0, 8, -1), at: new THREE.Vector3(0, 0.5, -4), fov: 55 };
@@ -696,6 +741,7 @@ export class Scene3D implements Stage {
       p.rest.setEffectiveWeight(1);
     }
     this.conductor?.bow();
+    this.cheer(5);
     const front = { pos: new THREE.Vector3(0, 3.0, 8.5), at: new THREE.Vector3(0, 1.8, -2.5), fov: 50 };
     await this.fly([{ pos: this.camera.position.clone(), at: this.game.at.clone(), fov: this.camera.fov }, front, front], [1.4, 2.6]);
   }

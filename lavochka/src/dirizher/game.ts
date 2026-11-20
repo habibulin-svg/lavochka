@@ -93,6 +93,7 @@ export class Concert {
     q('[data-a=help]').onclick = () => this.onHelp();
     this.ribbon = new Ribbon(setup.score, this.chart, (i) => this.player?.perf.mood[i] ?? 70);
     this.ribbon.onLane = (i) => this.lane(i);
+    this.ribbon.onBaton = (down) => this.baton(down);
     this.el.appendChild(this.ribbon.el);
     this.bindInput();
     const ro = new ResizeObserver(() => this.layout());
@@ -221,7 +222,10 @@ export class Concert {
     if (e.kind === 'judge') {
       this.ribbon.judged(e.mark.lane, e.grade);
       // хлопки зала: попали в долю — публика хлопает разом, громкость — за динамикой оркестра
-      if (e.mark.clap && e.grade !== 'miss') this.orch.clap((this.player?.perf.dyn ?? 1) * (e.grade === 'bravo' ? 0.9 : 0.6));
+      if (e.mark.clap && e.grade !== 'miss') {
+        this.orch.clap((this.player?.perf.dyn ?? 1) * (e.grade === 'bravo' ? 0.9 : 0.6));
+        this.stage?.clapped?.();
+      }
       if (e.grade === 'miss' && e.mark.lane >= 0) this.missByLane[e.mark.lane]++;
       this.stage?.judge(e.mark, e.grade);
     } else if (e.kind === 'fermata') {

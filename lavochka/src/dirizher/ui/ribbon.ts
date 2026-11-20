@@ -47,6 +47,9 @@ export class Ribbon {
   /** Подсказки клавиш. */
   showKeys = true;
   onLane: (lane: number) => void = () => {};
+  /** Кнопка строки «Палочка»: нажали / отпустили (держать — фермата). */
+  onBaton: (down: boolean) => void = () => {};
+  private batonBtn: HTMLButtonElement | null = null;
 
   constructor(
     private score: ScoreJson,
@@ -73,6 +76,26 @@ export class Ribbon {
       this.btns.push(b);
       this.flash.push(0);
     });
+    if (chart.baton) {
+      const b = document.createElement('button');
+      b.className = 'dz-lane-btn baton';
+      b.style.setProperty('--c', '#c8c0ff');
+      b.innerHTML = '<b>Палочка</b><i>␣</i>';
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        b.setPointerCapture(e.pointerId);
+        b.classList.add('on');
+        this.onBaton(true);
+      });
+      const up = () => {
+        b.classList.remove('on');
+        this.onBaton(false);
+      };
+      b.addEventListener('pointerup', up);
+      b.addEventListener('pointercancel', up);
+      this.el.appendChild(b);
+      this.batonBtn = b;
+    }
   }
 
   private rows(): number {
@@ -95,8 +118,8 @@ export class Ribbon {
     this.cv.style.height = `${r.height}px`;
     // кнопки: у линии палочки
     const n = this.rows();
-    this.btns.forEach((b, i) => {
-      const row = this.rowOf(i);
+    [...this.btns, ...(this.batonBtn ? [this.batonBtn] : [])].forEach((b, i) => {
+      const row = i < this.btns.length ? this.rowOf(i) : 0;
       if (this.vertical) {
         const cw = this.w / n;
         Object.assign(b.style, { left: `${row * cw + 2}px`, top: `${this.h - 56}px`, width: `${cw - 4}px`, height: '52px' });
@@ -251,7 +274,8 @@ export class Ribbon {
   private drawMark(m: Mark, s: number, sEnd: number, perf: Performance, G: ReturnType<Ribbon['geo']>): void {
     const g = this.g;
     const row = this.rowOf(m.lane);
-    const color = m.lane < 0 ? '#c8c0ff' : this.chart.lanes[m.lane].color;
+    // палочка: доля — сиреневая, ускорение — золотая, хлопки зала — розовая с ладошкой
+    const color = m.lane >= 0 ? this.chart.lanes[m.lane].color : m.clap ? '#ff8fb8' : m.tempo ? '#ffd166' : '#c8c0ff';
     const done = perf.quality.has(m.id);
     const q = perf.quality.get(m.id);
     const [x, y] = G.at(row, s);
@@ -312,6 +336,14 @@ export class Ribbon {
     }
     g.fill();
     g.stroke();
+    if (m.clap) {
+      g.font = `${Math.round(r * 1.1)}px sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('👏', r * 1.9, 0);
+      g.textBaseline = 'alphabetic';
+      g.textAlign = 'left';
+    }
     g.restore();
   }
 }
