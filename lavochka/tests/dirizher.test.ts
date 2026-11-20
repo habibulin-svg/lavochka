@@ -225,7 +225,7 @@ describe('dirizher: переложение', () => {
 describe('dirizher: темп за палочкой', () => {
   const load = (id: string) => JSON.parse(readFileSync(`public/dirizher/scores/${id}.json`, 'utf8')) as ScoreJson;
   it('в хитах есть тапы палочки, идеальный дирижёр проходит на 5 звёзд', () => {
-    for (const id of ['mountain', 'danube', 'morning']) {
+    for (const id of ['mountain', 'danube', 'morning', 'cancan']) {
       const s = load(id);
       const c = buildChart(s, DIFFS.normal);
       expect(c.marks.some((m) => m.kind === 'beat'), id).toBe(true);
@@ -233,6 +233,17 @@ describe('dirizher: темп за палочкой', () => {
       expect(p.failed, id).toBe(false);
       expect(p.result().stars, id).toBe(5);
     }
+  });
+  it('Марш Радецкого: зал хлопает за палочкой в теме, трио — без хлопков', () => {
+    const s = load('radetzky');
+    const c = buildChart(s, DIFFS.hard);
+    const claps = c.marks.filter((m) => m.clap);
+    expect(claps.length).toBeGreaterThan(60);
+    const trio = s.marks!.find((m) => m[1] === 'Trio')![0];
+    const dc = s.marks!.find((m) => m[1] === 'E')![0];
+    expect(claps.some((m) => m.tick >= trio && m.tick < dc)).toBe(false);
+    const { p } = play(s, 'hard', true, true);
+    expect(p.result().stars).toBe(5);
   });
   it('частые тапы в зоне ускорения гонят оркестр быстрее партитуры', () => {
     const s = load('mountain');

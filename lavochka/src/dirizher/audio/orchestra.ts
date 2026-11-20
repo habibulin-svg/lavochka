@@ -341,6 +341,39 @@ export class Orchestra {
     src.stop(t + sec + 0.1);
   }
 
+  /** Зал хлопает в такт: десятки хлопков почти разом (разброс ±18 мс), сила 0..1. */
+  clap(level: number): void {
+    const ctx = this.ctx;
+    if (!this.syncClap) {
+      const n = Math.round(0.16 * ctx.sampleRate);
+      const b = ctx.createBuffer(2, n, ctx.sampleRate);
+      let seed = 777;
+      const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 0x100000000;
+      for (let c = 0; c < 2; c++) {
+        const d = b.getChannelData(c);
+        for (let who = 0; who < 60; who++) {
+          const i0 = Math.round((0.004 + rnd() * 0.036) * ctx.sampleRate);
+          const amp = 0.3 + rnd() * 0.7;
+          const len = Math.round((0.008 + rnd() * 0.008) * ctx.sampleRate);
+          for (let k = 0; k < len && i0 + k < n; k++) d[i0 + k] += (rnd() * 2 - 1) * amp * Math.exp(-k / (len / 4)) * 0.09;
+        }
+      }
+      this.syncClap = b;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = this.syncClap;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1500 + Math.random() * 300;
+    bp.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.value = Math.max(0.05, Math.min(1.2, level));
+    src.connect(bp).connect(g).connect(this.out);
+    g.connect(this.verb);
+    src.start();
+  }
+  private syncClap: AudioBuffer | null = null;
+
   /** Недовольный гул публики (провал). */
   boo(): void {
     const ctx = this.ctx;

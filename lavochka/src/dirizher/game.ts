@@ -159,11 +159,23 @@ export class Concert {
       if (this.setup.auto) this.autoplay();
       if (this.setup.tutor) this.tutor();
       this.player.update();
+      this.clapZone();
       this.ribbon.draw(this.player.perf, dt);
       this.stage?.update(dt, this.player.perf);
       this.drawHud();
     };
     this.raf = requestAnimationFrame(loop);
+  }
+
+  private inClap = false;
+  /** Зашли в хлопки зала или вышли: дирижёр поворачивается к публике, подсказка. */
+  private clapZone(): void {
+    const t = this.player!.perf.tick;
+    const on = (this.setup.score.specials ?? []).some((x) => x.kind === 'clap' && t >= x.tick && t < x.tick + x.len);
+    if (on === this.inClap) return;
+    this.inClap = on;
+    this.stage?.audience?.(on);
+    if (on) this.say('Зал хлопает — ведите хлопки палочкой!', 1.8);
   }
 
   /** «Палочка поднята»: отсчёт долей первого такта. */
@@ -208,6 +220,8 @@ export class Concert {
   private event(e: PerfEvent): void {
     if (e.kind === 'judge') {
       this.ribbon.judged(e.mark.lane, e.grade);
+      // хлопки зала: попали в долю — публика хлопает разом, громкость — за динамикой оркестра
+      if (e.mark.clap && e.grade !== 'miss') this.orch.clap((this.player?.perf.dyn ?? 1) * (e.grade === 'bravo' ? 0.9 : 0.6));
       if (e.grade === 'miss' && e.mark.lane >= 0) this.missByLane[e.mark.lane]++;
       this.stage?.judge(e.mark, e.grade);
     } else if (e.kind === 'fermata') {
@@ -302,7 +316,9 @@ export class Concert {
         text = m.kind === 'up' ? '<b>Громче!</b> — <kbd>↑</kbd>, колесо мыши вверх или проведите по сцене вверх' : '<b>Тише!</b> — <kbd>↓</kbd>, колесо мыши вниз или проведите по сцене вниз';
       } else if (m.kind === 'beat' && !this.hinted.has('beat')) {
         key = 'beat';
-        text = m.tempo
+        text = m.clap
+          ? '<b>Зал хлопает</b>: <kbd>Пробел</kbd> или клик по сцене на долю — публика хлопает за палочкой; громче/тише — <kbd>↑</kbd><kbd>↓</kbd>'
+          : m.tempo
           ? '<b>Темп за вами</b>: стучите <kbd>Пробел</kbd> (или клик по сцене) на каждую долю — быстрее, и оркестр ускорится'
           : '<b>Ведите такт</b>: <kbd>Пробел</kbd> или клик по пустому месту сцены, когда точка дойдёт до линии';
       }

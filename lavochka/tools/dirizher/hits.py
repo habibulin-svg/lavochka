@@ -295,7 +295,286 @@ def danube():
     s.save()
 
 
+# ---------------------------------------------------------------- Штраус-отец. «Марш Радецкого»
+# Ноты сняты с полной партитуры (IMSLP #593660, набор Vasic; оригинал — общественное достояние): мелодия первых скрипок,
+# гармония — по басам и средним голосам; переложение своё. Размер 2/2 (доля — половинная), половинная ≈ 116.
+# Зал хлопает в теме A (в «да капо» — и в середине): особое место clap — палочка ведёт хлопки, громкость — динамика.
+def radetzky():
+    s = Score('radetzky', '«Марш Радецкого»', 'Иоганн Штраус-отец', 2, 2)
+    BAR = PPQ * 4
+    s.tempo = [[0, 232]]
+    INTRO = 'D6/8 D6/8 D6/8 r/8 D6/8 D6/8 D6/8 r/8 | F#6/4 E6/4 D6/4. C#6/8 | B5/8 A#5/8 B5/8 C#6/8 D6/4 E6/4 | A5/4 r/4 r/4 F#5/8 E#5/8'
+    INTRO_B = 'D3/8 D3/8 D3/8 r/8 D3/8 D3/8 D3/8 r/8 | D4/4 C#4/4 B3/4. A3/8 | G#3/4 r/4 r/4 E3/4 | A3/4 r/4 r/2'
+    A1 = 'F#5/8 r/8 F#5/8 E#5/8 F#5/8 r/8 F#5/8 E#5/8'
+    A2 = 'F#5/8 r/8 E5/8 r/8 D5/8 r/8 F#5/8 E#5/8'
+    A4 = 'F#5/8 r/8 B5/8 r/8 A5/8 r/8 A5/8 F#5/8'
+    A_TAIL = ['G#5/8 r/8 F#6/8 r/8 E6/2', 'r/4 E6/8 r/8 D6/2', 'A5/4. B5/8 A5/8 G5/8 F#5/8 E5/8']
+    A_MEL = ' | '.join([A1, A2, A1, A4, 'G5/8 r/8 B5/8 r/8 A5/8 r/8 A5/8 E5/8', A4, 'E5/8 r/8 C#6/4 D5/8 r/8 B5/4',
+                        'C#5/8 r/8 A5/8 G#5/8 A5/8 B5/8 A5/8 G5/8', A1, A2, A1, A4] + A_TAIL)
+    A_END = 'D5/4 D5/4 D5/4 D6/8 C#6/8'      # перед серединой: затакт ре-до#
+    A_END2 = 'D5/4 D5/4 D5/4 F#5/8 E#5/8'    # перед трио — затакт темы
+    A_FINE = 'D5/4 D6/4 D6/4 r/4'
+    A_HARM = [('D', 'D'), ('D', 'D'), ('D', 'D'), ('D', 'D'), ('A7c', 'A7c'), ('D', 'D'), ('E', 'E'), ('A', 'A7'),
+              ('D', 'D'), ('D', 'D'), ('D', 'D'), ('D', 'Df'), ('E7', 'A'), ('D', 'Df'), ('G', 'A'), ('D', 'D')]
+    B1 = 'D6/8 r/8 D6/8 C#6/8 D6/8 r/8 D6/8 C#6/8'
+    B2 = 'D6/8 r/8 G6/8 r/8 G5/8 r/8 D6/8 C#6/8'
+    B5 = 'F#5+A5/2 E5+G5/8 r/8 A4/16 G5+B5/16 r/8'
+    B6 = 'G5+B5/2 F#5+A5/8 r/8 F#5/16 D6/16 r/8'
+    B11 = 'C#6/8 r/8 C#6/8 A#5/8 B5/8 r/8 D6/8 r/8'
+    B13 = 'F#5+F#6/4 F#5+F#6/8 F#5+F#6/8 F#5+F#6/4 F#5+F#6/8 F#5+F#6/8'
+    B_MEL = ' | '.join([B1, B2, B1, 'D6/8 r/8 F#6/8 r/8 A5/8 r/8 A4/16 D5/16 r/8', B5, B6,
+                        'A5+C#6/8 r/8 A5+C#6/8 G5+B5/8 F#5+A5/8 r/8 E5+G5/8 r/8', 'G5+B5/8 r/8 G5+B5/8 F#5+A5/8 E5+G5/8 r/8 D5+F#5/8 r/8',
+                        B5, B6, B11, B11, B13, B13, 'F#5+F#6/4 r/4 r/2', 'r/2 r/4 F#5/8 E#5/8'])
+    B_HARM = [('G', 'G'), ('G', 'G'), ('D', 'D'), ('D', 'D'), ('A7p', 'A7p'), ('Dp', 'Dp'), ('A7p', 'A7p'), ('Dp', 'Dp'), ('A7p', 'A7p'), ('Dp', 'Dp'),
+              ('F#', 'Bm'), ('F#', 'Bm'), ('F#', 'Bm'), ('F#', 'Bm'), ('F#', None), (None, None)]
+    T1 = 'E4/8 C#5/8 C#5/4. r/8 r/4'
+    T2 = 'E4/8 C#5/8 C#5/2 C#5/8 D5/8'
+    T3 = 'E5/8 A5/8 A5/8 r/8 A5/8 r/8 A5/8 r/8'
+    T4 = 'C#5/2. B4/8 C#5/8'
+    T5 = 'D5/8 G#5/8 B5/2 A5/4'
+    T6 = 'G#5/4 F#5/8 r/8 F#5/8 r/8 F#5/8 r/8'
+    T7B = 'E5/8 A5/8 C#6/8 r/8 D5/8 G#5/8 B5/8 r/8'
+    F_PART = [T5, T6, T3, T4, T5, T6, 'C#5/8 E5/8 A5/8 C#6/8 E6/4 D6/8 C#6/8', 'B5/8 A5/8 G#5/8 F#5/8 E5/8 D5/8 C#5/8 B4/8']
+    TRIO_IN = 'E5/2. B4/4 | G#5/4 E5/4 B5/4 G#5/4 | E6/4 r/4 r/2 | r/1'
+    TRIO = ' | '.join([T1, T2, T3, T4, T5, T6, T3, 'C#5/2. r/4',                      # 1-я вольта
+                       T1, T2, T3, T4, T5, T6, T7B, 'A5/2 r/4 B4/8 C#5/8'] + F_PART  # 2-я вольта, F
+                      + [T1, T2, T3, T4, T5, T6, T7B, 'A5/4 A5/4 A5/4 r/4'])
+    TH = [('A', 'A'), ('A', 'A'), ('A', 'A'), ('A', 'A'), ('E', 'E'), ('E7', 'E7'), ('A', 'A'), ('A', 'A')]
+    F_HARM = [('E', 'E'), ('E7', 'E7'), ('A', 'A'), ('A', 'A'), ('E', 'E'), ('E7', 'E7'), ('A', 'A'), ('E7', 'E7')]
+    TRIO_HARM = TH + TH[:6] + [('A', 'E'), ('A', 'A')] + F_HARM + TH[:6] + [('A', 'E'), ('A', 'A')]
+    # аккорд: бас (корень, квинта) и «па» — средние голоса
+    CH = {'D': ('D3', 'A2', 'F#4+A4+D5'), 'Df': ('D3', 'F#2', 'F#4+A4+D5'), 'Dp': ('A2', 'A3', 'F#4+A4+D5'),
+          'A': ('A2', 'E2', 'E4+A4+C#5'), 'A7': ('A2', 'E2', 'E4+G4+C#5'), 'A7c': ('C#3', 'A2', 'E4+G4+A4'), 'A7p': ('A2', 'A3', 'E4+G4+C#5'),
+          'E': ('E3', 'E3', 'E4+G#4+B4'), 'E7': ('E3', 'B2', 'D4+G#4+B4'), 'G': ('G2', 'B2', 'G4+B4+D5'),
+          'F#': ('F#2', 'C#3', 'F#4+A#4+C#5'), 'Bm': ('B2', 'F#2', 'F#4+B4+D5')}
+
+    def tr(text, k):
+        return [(d, [p + k for p in ps]) for d, ps in seq(text)]
+
+    def accomp(t0, harm, v, brass=False, drums=True):
+        """Марш «ум-па»: бас на сильных четвертях (корень, квинта), аккорд на слабых; барабаны, литавры, медь на громком."""
+        for b, (h1, h2) in enumerate(harm):
+            for half, h in enumerate((h1, h2)):
+                if h is None:
+                    continue
+                root, fifth, chord = CH[h]
+                t = t0 + b * BAR + half * PPQ * 2
+                bass = root if half == 0 else fifth
+                s.put('cb', 'Contrabass', seq(f'{bass}/4 r/4'), t, v, 2 if v < 80 else 1, 0.7)
+                s.put('vc', 'Violoncello', seq(f'{bass}/4 r/4'), t, v - 4, 2 if v < 80 else 1, 0.7)
+                s.put('bn', 'Bassoon', seq(f'{bass}/4 r/4'), t, v - 10, 1, 0.6)
+                s.put('vn2', 'Violin II', seq(f'r/4 {chord}/4'), t, v - 10, 1, 0.5)
+                s.put('va', 'Viola', seq(f'r/4 {chord.split("+")[0]}/4'), t, v - 12, 1, 0.5)
+                s.put('hn', 'Horn', seq(f'r/4 {chord}/4'), t, v - 14, 1, 0.6)
+                if brass:
+                    s.put('tb', 'Trombone', tr(f'{chord}/4 r/4', -12), t, v - 10, 1, 0.6)
+                    s.put('tu', 'Tuba', seq(f'{root}/4 r/4'), t, v - 12, 1, 0.6)
+                    if half == 0:
+                        s.put('timp', 'Timpani', seq(f'{"D2" if root[0] in "DFB" else "A1"}/4 r/4'), t, v - 16, 1)
+                if drums:
+                    # малый — дробь на слабые, большой — на сильную, тарелки — с большим на громком
+                    s.put('perc', 'Snare', seq('D2/8 r/8 D2/8 D2/8'), t, v - 30, 1)
+                    s.put('perc', 'Bass drum', seq('B1/4 r/4'), t, v - 20, 1)
+                    if brass and half == 0:
+                        s.put('perc', 'Cymbals', seq('C#3/4 r/4'), t, v - 25, 1)
+
+    def melody(t0, text, v, parts):
+        for instr, name, k, dv in parts:
+            s.put(instr, name, tr(text, k), t0, v + dv, 0 if instr in ('vn1', 'vc') else 1, 0.8)
+
+    V1 = [('vn1', 'Violin I', 0, 0), ('fl', 'Flute', 0, -8), ('cl', 'Clarinet', 0, -10)]
+    TUTTI = V1 + [('ob', 'Oboe', 0, -8), ('picc', 'Piccolo', 12, -18), ('tp', 'Trumpet', -12, -12)]
+
+    def march(t, dc):
+        """Вступление, A, B, A' — первый раз и «да капо»; возвращает конец."""
+        s.marks.append([t, 'A' if not dc else 'E'])
+        for instr, name, k, dv in TUTTI:
+            s.put(instr, name, tr(INTRO, k), t, 112 + dv, 0 if instr == 'vn1' else 1, 0.85)
+        for instr, name in (('vc', 'Violoncello'), ('cb', 'Contrabass'), ('bn', 'Bassoon'), ('tb', 'Trombone'), ('tu', 'Tuba')):
+            s.put(instr, name, seq(INTRO_B), t, 110, 0, 0.85)
+        s.put('perc', 'Snare', seq('D2/8 D2/8 D2/8 r/8 D2/8 D2/8 D2/8 r/8'), t, 100, 1)
+        s.put('timp', 'Timpani', seq('D2/8 D2/8 D2/8 r/8 D2/8 D2/8 D2/8 r/8 | D2/2 A1/2 | E2/2 r/4 E2/4 | A1/4 r/4 r/2'), t, 104, 1)
+        s.specials.append({'kind': 'sforzando', 'tick': t, 'len': PPQ})
+        t += 4 * BAR
+        for k in range(2):
+            if k == 1:
+                # середина B
+                s.marks.append([t, 'C' if not dc else 'G'])
+                melody(t, B_MEL, 100, TUTTI)
+                s.put('vc', 'Violoncello', tr(' | '.join([B1, B2, B1, 'D6/8 r/8 F#6/8 r/8 A5/8 r/8 r/4']), -24), t, 104, 0, 0.8)
+                accomp(t, B_HARM, 96, brass=True)
+                s.specials.append({'kind': 'subito_p', 'tick': t + 4 * BAR, 'len': PPQ})
+                s.specials.append({'kind': 'cresc', 'tick': t + 10 * BAR, 'len': PPQ * 2})
+                if dc:
+                    s.specials.append({'kind': 'clap', 'tick': t, 'len': 14 * BAR})
+                t += 16 * BAR
+            mel = A_MEL + ' | ' + (A_END if k == 0 else (A_FINE if dc else A_END2))
+            s.marks.append([t, ('D' if k else 'B') if not dc else ('H' if k else 'F')])
+            v = 76 if not dc else 84
+            melody(t, mel, v, V1)
+            accomp(t, A_HARM, v, brass=False)
+            # громкий конец темы — тутти
+            for instr, name, k2, dv in TUTTI[3:]:
+                s.put(instr, name, tr(' | '.join(A_TAIL), k2), t + 12 * BAR, 106 + dv, 1, 0.8)
+            s.put('tb', 'Trombone', seq('E3+G#3+D4/2 r/4 A2/4 | D3+F#3+A3/2 r/4 F#2/4 | G2/4 r/4 A2/4 r/4'), t + 12 * BAR, 104, 1, 0.8)
+            s.specials.append({'kind': 'cresc', 'tick': t + 11 * BAR, 'len': PPQ * 2})
+            s.specials.append({'kind': 'clap', 'tick': t, 'len': 15 * BAR})
+            t += 16 * BAR
+        return t
+
+    t = march(0, False)
+    # трио — без хлопков, тихо и певуче
+    s.marks.append([t, 'Trio'])
+    melody(t, TRIO_IN, 96, [('vn1', 'Violin I', 0, 0), ('vc', 'Violoncello', -12, 0), ('cb', 'Contrabass', -24, -6), ('hn', 'Horn', -12, -6), ('bn', 'Bassoon', -12, -6)])
+    t += 4 * BAR
+    melody(t, TRIO, 64, [('vn1', 'Violin I', 0, 0), ('vc', 'Violoncello', -12, -2), ('cl', 'Clarinet', 0, -10)])
+    accomp(t, TRIO_HARM, 58, brass=False, drums=False)
+    s.specials.append({'kind': 'subito_p', 'tick': t, 'len': PPQ})
+    s.specials.append({'kind': 'solo', 'tick': t, 'len': 4 * BAR, 'instr': 'vc'})
+    f = t + 16 * BAR
+    s.specials.append({'kind': 'cresc', 'tick': f, 'len': PPQ * 2})
+    melody(f, ' | '.join(F_PART), 96, [('fl', 'Flute', 0, -6), ('ob', 'Oboe', 0, -6), ('tp', 'Trumpet', -12, -10)])
+    accomp(f, F_HARM, 92, brass=True)
+    s.specials.append({'kind': 'subito_p', 'tick': f + 8 * BAR, 'len': PPQ})
+    t += len(TRIO_HARM) * BAR
+    # да капо
+    t = march(t, True)
+    s.end = t
+    s.save('своё переложение по партитуре IMSLP #593660 (Штраус-отец, общественное достояние)')
+
+
+# ---------------------------------------------------------------- Оффенбах. «Канкан» (Адский галоп из «Орфея в аду»)
+# Мелодия и гармония сняты с набранной партитуры IMSLP #1005532 (мелодия Оффенбаха — общественное достояние; переложение
+# той партитуры не берём — оркестровка своя). 2/4, четверть ≈ 170. Тема C — в соль мажоре (до-бекар), середина D — тише,
+# с треугольником. Во второй раз тему C зал хлопает, в последний раз оркестр разгоняется за палочкой.
+def cancan():
+    s = Score('cancan', '«Канкан» (Адский галоп из «Орфея в аду»)', 'Жак Оффенбах', 2, 4)
+    BAR = PPQ * 2
+    s.tempo = [[0, 170]]
+    C_MEL = ['G5/2', 'A5/8 C6/8 B5/8 A5/8', 'D6/4 D6/4', 'D6/8 E6/8 B5/8 C6/8', 'A5/4 A5/4', 'A5/8 C6/8 B5/8 A5/8',
+             'G5/8 G6/8 F#6/8 E6/8', 'D6/8 C6/8 B5/8 A5/8', 'G5/2', 'A5/8 C6/8 B5/8 A5/8', 'D6/4 D6/4', 'D6/8 E6/8 B5/8 C6/8',
+             'A5/4 A5/4', 'A5/8 C6/8 B5/8 A5/8', 'G5/8 D6/8 A5/8 B5/8']
+    C_HARM = ['G', 'D7', 'G', 'G', 'D7', 'D7', 'G', 'D7', 'G', 'D7', 'G', 'G', 'D7', 'D7', 'GD']
+    D_MEL = ['A4/8 E5/8 E5/8 F#5/8', 'E5/8 D5/8 D5/8 F#5/8', 'G5/8 B5/8 D6/8 B5/8', 'B5/8 A5/8 A5/4', 'B5/8 C#5/8 C#5/8 B5/8',
+             'A5/8 D5/8 D5/8 F#5/8', 'F#5/8 E5/8 F#5/8 E5/8', 'F#5/8 E5/8 F#5/8 E5/8', 'A4/8 E5/8 E5/8 F#5/8', 'E5/8 D5/8 D5/8 F#5/8',
+             'G5/8 B5/8 D6/8 B5/8', 'B5/8 A5/8 A5/4']
+    D_HARM = ['A7', 'D', 'G', 'D', 'A7', 'D', 'E7', 'A', 'A7', 'D', 'G', 'D']
+    CH = {'G': ('G2', 'D3', 'B3+D4+G4'), 'D7': ('D3', 'A2', 'A3+C4+F#4'), 'D': ('D3', 'A2', 'A3+D4+F#4'),
+          'A7': ('A2', 'E3', 'C#4+E4+G4'), 'A': ('A2', 'E3', 'C#4+E4+A4'), 'E7': ('E2', 'B2', 'D4+G#4+B4')}
+
+    def tr(text, k):
+        return [(d, [p + k for p in ps]) for d, ps in seq(text)]
+
+    def mel(t0, bars, v, parts):
+        text = ' | '.join(bars)
+        for instr, name, k, dv in parts:
+            s.put(instr, name, tr(text, k), t0, v + dv, 0 if instr in ('vn1', 'vc') else 1, 0.75)
+
+    def oompah(t0, harm, v, brass):
+        """Галоп: бас восьмыми на долях, аккорд — на слабых восьмых; барабан на долях."""
+        for b, h in enumerate(harm):
+            for half, hh in enumerate(['G', 'D7'] if h == 'GD' else [h, h]):
+                root, fifth, chord = CH[hh]
+                t = t0 + b * BAR + half * PPQ
+                s.put('cb', 'Contrabass', seq(f'{root}/8 r/8'), t, v, 1, 0.6)
+                s.put('vc', 'Violoncello', seq(f'{root}/8 r/8'), t, v - 4, 1, 0.6)
+                s.put('bn', 'Bassoon', seq(f'{root}/8 r/8'), t, v - 10, 1, 0.6)
+                s.put('vn2', 'Violin II', seq(f'r/8 {chord}/8'), t, v - 10, 1, 0.5)
+                s.put('va', 'Viola', seq(f'r/8 {chord.split("+")[0]}/8'), t, v - 12, 1, 0.5)
+                s.put('hn', 'Horn', seq(f'r/8 {chord}/8'), t, v - 14, 1, 0.5)
+                s.put('perc', 'Bass drum', seq('B1/8 r/8'), t, v - 22, 1)
+                if brass:
+                    s.put('tb', 'Trombone', seq(f'r/8 {chord}/8'), t, v - 12, 1, 0.5)
+                    s.put('tu', 'Tuba', seq(f'{root}/8 r/8'), t, v - 12, 1, 0.6)
+                    s.put('perc', 'Snare', seq('r/8 D2/16 D2/16'), t, v - 30, 1)
+                    if half == 0:
+                        s.put('timp', 'Timpani', seq(f'{"D2" if root[0] in "DA" else "G1"}/8 r/8'), t, v - 18, 1)
+
+    TOP = [('vn1', 'Violin I', 0, 0), ('fl', 'Flute', 12, -10), ('ob', 'Oboe', 0, -8), ('cl', 'Clarinet', -12, -10)]
+    LOUD = TOP + [('picc', 'Piccolo', 12, -16), ('tp', 'Trumpet', -12, -10)]
+
+    def theme(t, v, parts, brass, last=False):
+        for rep in range(2):
+            ending = 'G5/4 D5/4' if rep == 0 else ('G5/4 G6/4' if not last else 'G5/4 r/4')
+            mel(t, C_MEL + [ending], v + rep * 6, parts)
+            oompah(t, C_HARM + ['G'], v + rep * 6, brass)
+            t += 16 * BAR
+        return t
+
+    def middle(t):
+        mel(t, D_MEL, 64, [('vn1', 'Violin I', 0, 0), ('fl', 'Flute', 12, -8)])
+        for b, h in enumerate(D_HARM):
+            root, fifth, chord = CH[h]
+            bt = t + b * BAR
+            for instr, name, text, dv in (('cb', 'Contrabass', f'{root}/2', 0), ('vc', 'Violoncello', f'{root}/2', -2),
+                                          ('vn2', 'Violin II', f'{chord}/2', -8), ('va', 'Viola', f'{chord.split("+")[0]}/2', -10)):
+                s.put(instr, name, seq(text), bt, 60 + dv, 1, 0.35)
+            s.put('perc', 'Triangle', seq('A5/8 r/8 A5/8 r/8' if b % 2 else 'A5/8 r/8 r/4'), bt, 70, 1)
+        return t + 12 * BAR
+
+    t = 0
+    # вступление: ре на точечном ритме, нарастание, доминанта
+    s.marks.append([0, 'A'])
+    for b in range(3):
+        for instr, name, ch, v in (('vn1', 'Violin I', 'D5+D6', 70), ('vn2', 'Violin II', 'A4+D5', 66), ('va', 'Viola', 'F#4', 64),
+                                   ('vc', 'Violoncello', 'D3', 68), ('cb', 'Contrabass', 'D2', 68), ('fl', 'Flute', 'D6', 60), ('hn', 'Horn', 'A3+D4', 60)):
+            s.put(instr, name, seq(f'{ch}/8. {ch}/16 {ch}/8. {ch}/16'), b * BAR, v + b * 14, 1, 0.8)
+    for instr, name, ch in (('vn1', 'Violin I', 'D5'), ('vn2', 'Violin II', 'A4+C5+F#5'), ('va', 'Viola', 'D4'), ('vc', 'Violoncello', 'D3'),
+                            ('cb', 'Contrabass', 'D2'), ('fl', 'Flute', 'D6'), ('ob', 'Oboe', 'C5'), ('hn', 'Horn', 'F#4'), ('tp', 'Trumpet', 'A4'),
+                            ('tb', 'Trombone', 'D3+A3'), ('timp', 'Timpani', 'D2')):
+        s.put(instr, name, seq(f'r/8 r/8 {ch}/4'), 3 * BAR, 112, 1, 0.7)
+    s.put('perc', 'Snare', seq('D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 | D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 | '
+                                'D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 | r/4 C#3/4'), 0, 80, 1)
+    s.specials.append({'kind': 'cresc', 'tick': 0, 'len': PPQ})
+    s.specials.append({'kind': 'sforzando', 'tick': 3 * BAR + PPQ, 'len': PPQ})
+    t = 4 * BAR
+    s.marks.append([t, 'B'])
+    t = theme(t, 92, TOP, False)
+    s.marks.append([t, 'C'])
+    s.specials.append({'kind': 'subito_p', 'tick': t, 'len': PPQ})
+    t = middle(t)
+    s.marks.append([t, 'D'])
+    s.specials.append({'kind': 'clap', 'tick': t, 'len': 31 * BAR})
+    s.specials.append({'kind': 'sforzando', 'tick': t, 'len': PPQ})
+    t = theme(t, 102, LOUD, True)
+    s.marks.append([t, 'E'])
+    s.specials.append({'kind': 'subito_p', 'tick': t, 'len': PPQ})
+    t = middle(t)
+    # последний раз — разгон за палочкой (раз в такт)
+    s.marks.append([t, 'F'])
+    s.specials.append({'kind': 'sforzando', 'tick': t, 'len': PPQ})
+    s.specials.append({'kind': 'accel', 'tick': t, 'len': 31 * BAR, 'to': 1.25, 'every': 2})
+    s.tempo_ramp(t, t + 32 * BAR, 170, 205, BAR)
+    t = theme(t, 108, LOUD, True, last=True)
+    # кода: держат ре, бас спускается гаммой; точечный ритм; удары; последний аккорд
+    s.marks.append([t, 'G'])
+    s.tempo.append([t, 205])
+    held = 'D6/2 | D6/2 | D6/2 | D6/2 | D6/2 | D6/2'
+    for instr, name, k, v in (('vn1', 'Violin I', 0, 110), ('fl', 'Flute', 12, 100), ('picc', 'Piccolo', 12, 92), ('ob', 'Oboe', -12, 100),
+                              ('vn2', 'Violin II', -5, 104), ('hn', 'Horn', -24, 100)):
+        s.put(instr, name, tr(held, k), t, v, 0, 1.0)
+    for instr, name, k in (('vc', 'Violoncello', 0), ('cb', 'Contrabass', -12), ('bn', 'Bassoon', 0), ('tb', 'Trombone', 0), ('tu', 'Tuba', -12)):
+        s.put(instr, name, tr('A3/4 G3/4 | F#3/4 E3/4 | D3/4 D3/4 | C#3/4 B2/4 | A2/4 G2/4 | F#2/4 E2/4', k), t, 110, 0, 0.9)
+    s.put('perc', 'Cymbals', seq('C#3/2 | r/2 | r/2 | r/2 | C#3/2 | r/2'), t, 100, 1)
+    s.specials.append({'kind': 'cresc', 'tick': t, 'len': PPQ})
+    t += 6 * BAR
+    chord = 'D4+F#4+A4+D5'
+    hits = f'{chord}/8. {chord}/16 {chord}/8. {chord}/16 | {chord}/8. {chord}/16 {chord}/8. {chord}/16 | {chord}/4 r/4 | {chord}/4 r/4 | A3+C#4+E4+A4/4 r/4 | {chord}/4 r/4 | {chord}/2 | {chord}/2 | {chord}/4 r/4'
+    for instr, name, k, v in (('vn1', 'Violin I', 12, 118), ('vn2', 'Violin II', 0, 114), ('va', 'Viola', -12, 112), ('fl', 'Flute', 12, 108),
+                              ('ob', 'Oboe', 0, 108), ('cl', 'Clarinet', 0, 106), ('hn', 'Horn', -12, 110), ('tp', 'Trumpet', 0, 114), ('tb', 'Trombone', -12, 112)):
+        s.put(instr, name, tr(hits, k), t, v, 1, 0.85)
+    for instr, name in (('vc', 'Violoncello'), ('cb', 'Contrabass'), ('tu', 'Tuba'), ('bn', 'Bassoon')):
+        s.put(instr, name, seq('D3/8. D3/16 D3/8. D3/16 | D3/8. D3/16 D3/8. D3/16 | D3/4 r/4 | D3/4 r/4 | A2/4 r/4 | D3/4 r/4 | D2/2 | D2/2 | D2/4 r/4'), t, 116, 1, 0.85)
+    s.put('timp', 'Timpani', seq('D2/8 D2/8 D2/8 D2/8 | D2/8 D2/8 D2/8 D2/8 | D2/4 r/4 | D2/4 r/4 | A1/4 r/4 | D2/4 r/4 | D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 | D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 D2/16 | D2/4 r/4'), t, 112, 1)
+    s.put('perc', 'Cymbals', seq('r/2 | r/2 | C#3/4 r/4 | C#3/4 r/4 | C#3/4 r/4 | C#3/4 r/4 | C#3/2 | r/2 | C#3/4 r/4'), t, 110, 1)
+    s.specials.append({'kind': 'fermata', 'tick': t + 6 * BAR, 'len': BAR * 2})
+    s.end = t + 9 * BAR
+    s.save('своё переложение (мелодия Оффенбаха — общественное достояние; ноты сверены с IMSLP #1005532)')
+
+
 if __name__ == '__main__':
     mountain()
     morning()
     danube()
+    radetzky()
+    cancan()

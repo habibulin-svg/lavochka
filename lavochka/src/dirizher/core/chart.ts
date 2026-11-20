@@ -50,6 +50,8 @@ export interface Mark {
   instr?: InstrId;
   /** beat: доля ускорения/замедления — палочка ведёт темп (иначе — просто «ведите такт»). */
   tempo?: boolean;
+  /** beat: зал хлопает — палочка ведёт хлопки публики. */
+  clap?: boolean;
 }
 
 export interface Chart {
@@ -212,6 +214,7 @@ export function buildChart(s: ScoreJson, d: Difficulty): Chart {
         last = Math.max(last, n.tick);
       }
     const zones = (d.specials ? s.specials ?? [] : []).filter((x) => x.kind === 'accel' || x.kind === 'rit');
+    const claps = (s.specials ?? []).filter((x) => x.kind === 'clap');
     const holds = marks.filter((m) => m.kind === 'hold');
     let lastSec = -1e9;
     for (const b of bars) {
@@ -223,7 +226,9 @@ export function buildChart(s: ScoreJson, d: Difficulty): Chart {
         const sec = tm.sec(t);
         if (sec - lastSec < d.minBeatSec - 1e-6) continue;
         lastSec = sec;
-        marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0 });
+        // в хлопках зала — та же доля, но публика хлопает за палочкой
+        const clap = claps.some((z) => t >= z.tick && t < z.tick + z.len);
+        marks.push({ id: 0, kind: 'beat', lane: -1, tick: t, len: 0, ...(clap ? { clap: true } : {}) });
       }
     }
   }

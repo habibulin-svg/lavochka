@@ -56,7 +56,7 @@ export interface PartJson {
 }
 
 /** Особые места (ставятся руками в таблице пьес или переложением). */
-export type SpecialKind = 'fermata' | 'accel' | 'rit' | 'cresc' | 'subito_p' | 'sforzando' | 'solo';
+export type SpecialKind = 'fermata' | 'accel' | 'rit' | 'cresc' | 'subito_p' | 'sforzando' | 'solo' | 'clap';
 
 export interface SpecialJson {
   kind: SpecialKind;

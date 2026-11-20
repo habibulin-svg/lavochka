@@ -213,7 +213,7 @@ export class Scene3D implements Stage {
       }
     }
     if (!hallOk) this.stageFloor();
-    else void this.audience(hall!);
+    else void this.loadAudience(hall!);
     // состав
     const counts: Partial<Record<InstrId, number>> = {};
     for (const p of this.score.parts) counts[p.instr] = (counts[p.instr] ?? 0) + 1;
@@ -377,7 +377,7 @@ export class Scene3D implements Stage {
 
   /** Публика: места из h/<зал>.seats.json ([x, y, пол, поворот] в осях Blender), люди — 8 видов (p/a1…a8.glb,
    * dirizher_audience.py) InstancedMesh-ами; на телефоне — каждый третий. */
-  private async audience(hall: string): Promise<void> {
+  private async loadAudience(hall: string): Promise<void> {
     const r = await fetch(`${BASE}h/${hall}.seats.json?v=${V}`).catch(() => null);
     if (!r?.ok || this.disposed) return;
     const seats = (await r.json()) as [number, number, number, number][];
@@ -575,6 +575,10 @@ export class Scene3D implements Stage {
   /** Взмах палочкой (тап игрока). */
   beat(): void {
     this.conductor?.ictus();
+  }
+  /** Хлопки зала: дирижёр разворачивается к публике вполоборота. */
+  audience(on: boolean): void {
+    if (this.conductor) this.conductor.toHall = on ? 1 : 0;
   }
   /** Показ группе: дирижёр поворачивается к ней и выбрасывает левую руку. */
   point(lane: number): void {
@@ -790,6 +794,9 @@ class Maestro {
   private baseY = 0;
   /** Сила взмахов (громкость оркестра) и толчок от взмаха игрока. */
   energy = 1;
+  /** 1 — повернуться к залу (хлопки публики). */
+  toHall = 0;
+  private hallYaw = 0;
   private kick = 0;
   /** Сгладить боковое положение руки. */
   private side = 0;
@@ -906,7 +913,8 @@ class Maestro {
     this.hold?.setEffectiveWeight(this.hw);
     // поворот к группе и обратно
     this.yaw += ((this.gT > 0 ? turn : 0) - this.yaw) * Math.min(1, dt * 4);
-    this.root.rotation.y = Math.PI + this.yaw;
+    this.hallYaw += (this.toHall * (this.gT > 0 ? 0.3 : 1) * 2.4 - this.hallYaw) * Math.min(1, dt * 2.5);
+    this.root.rotation.y = Math.PI + this.yaw + this.hallYaw;
     if (this.liveBase) for (const [b, q] of this.liveBase) b.quaternion.copy(q);
     this.liveBase = null;
     this.mixer.update(dt);
