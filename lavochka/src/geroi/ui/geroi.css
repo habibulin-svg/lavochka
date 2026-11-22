@@ -262,9 +262,9 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-town::before { content: ''; position: absolute; inset: -1500px; background: #0c0a08; }
 .a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; user-select: none; -webkit-user-select: none; }
 /* постройки — чёткая игровая графика поверх живописной панорамы: приглушаем насыщенность и контраст, дальним рядам — дымка */
-.a-bld { position: absolute; cursor: pointer; --haze: 0; filter: saturate(calc(0.86 - var(--haze))) contrast(calc(0.93 - var(--haze) * 0.5)) brightness(calc(0.98 + var(--haze) * 0.4)) sepia(0.1) drop-shadow(0 4px 5px #0006); transition: filter .12s; -webkit-user-drag: none; }
+.a-bld { position: absolute; cursor: pointer; --haze: 0; filter: saturate(calc(1 - var(--haze) * 0.6)) brightness(calc(1 + var(--haze) * 0.25)) drop-shadow(0 3px 4px #0005); transition: filter .12s; -webkit-user-drag: none; }
 .a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
-.a-bld-ground { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(closest-side, #1e1a0e8c, #1e1a0e40 60%, transparent); }
+.a-bld-ground { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(closest-side, #1e1a0e55, #1e1a0e22 60%, transparent); }
 .a-town > .a-resbar { position: absolute; left: 16px; top: 14px; }
 .a-town-side { position: absolute; right: 16px; top: 14px; width: 270px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; }
 .a-town-side h2 { font: 700 26px 'Geroi Title', Georgia, serif; margin: 0; color: var(--brass2); }
