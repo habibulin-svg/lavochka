@@ -1,0 +1,18 @@
+# «Герои»: проба доработки юнитов (пользователь 2026-11-22: «тот же визуальный стиль, но модельки проработаннее»; люди одного роста).
+# FLUX 3 Klein, референс — прежний эталон существа; дальше — оживление Wan 2.2 14B (w4).
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33, 44]
+defaults: {width: 768, height: 1024, steps: 16, ref_mp: 0.6}
+style: 'Stylized 3D game character render in the same style and colours as <ref_image_0>, but more detailed and refined: clear friendly
+  face with eyes, nose and mouth, natural adult human proportions (head about one sixth of the height, not a big-headed chibi), well
+  modelled hands, cloth folds, stitched leather, wood grain on the weapon. Full body from boots to the top of the weapon, standing in a
+  relaxed ready pose, three-quarter view facing right, camera slightly above. Plain flat very light grey background, soft even light,
+  only a faint contact shadow under the boots. No text.'
+items:
+- {name: militia, image: refs/militia-src.png, prompt: 'The same sturdy peasant militiaman from <ref_image_0>: blue padded linen tunic,
+    blue cap, short dark beard, leather belt and strap, brown trousers and boots, holding a long wooden pitchfork upright. {style}'}
+- {name: bandit, image: refs/bandit-src.png, prompt: 'The same forest bandit from <ref_image_0>: green hooded cloak with the hood up but
+    his face clearly visible under it, a sly young face with stubble, leather belt, brown boots, a knotted wooden club resting on his
+    shoulder. {style}'}

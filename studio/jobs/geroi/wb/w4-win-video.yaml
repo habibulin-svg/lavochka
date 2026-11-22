@@ -1,0 +1,22 @@
+workflow: wan22_14b_i2v
+server: comfy-big
+license: Apache-2.0 (Wan 2.2 I2V A14B + lightx2v)
+ext: mp4
+seeds:
+- 7
+- 8
+defaults:
+  width: 1024
+  height: 576
+  negative: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, text, letters, subtitles
+  frames: 81
+items:
+- name: v-win-33
+  image: w1-win-keys/win-banner-33.png
+  prompt: Painted victory scene. The young warrior on top of the log tower lifts the banner pole higher and holds it perfectly upright; the deep blue banner with the golden sun ripples and flaps strongly
+    in the wind; the soldiers below cheer, raise their spears and shields and shout. Clouds drift slowly. Slow gentle push-in of the camera. The gouache painting style, colours and brushwork stay exactly
+    the same. No text.
+- name: v-win-22
+  image: w1-win-keys/win-banner-22.png
+  prompt: Painted victory scene. The young warrior on the palisade raises the banner pole high and holds it perfectly upright; the deep blue banner with the golden sun ripples and flaps strongly in the
+    wind; the soldiers below cheer and raise spears and shields. Clouds drift slowly. Slow gentle push-in. The gouache painting style stays exactly the same. No text.

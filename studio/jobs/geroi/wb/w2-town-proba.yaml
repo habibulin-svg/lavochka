@@ -1,0 +1,16 @@
+# «Герои»: проба построек в стиле панорамы (замечание пользователя 2026-11-22: «как будто криво зафотошопили»).
+# FLUX 3 Klein с двумя референсами: <ref_image_0> — старая постройка (форма), <ref_image_1> — панорама города (мазок, свет, палитра).
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33]
+defaults: {width: 1024, height: 768, steps: 16, ref_mp: 0.6, image2: refs/zat-site.png}
+style: 'Repaint this exact building from <ref_image_0> — same shape, roof, details and proportions — as a hand-painted gouache illustration
+  in exactly the painterly style, brushwork, warm afternoon light from the left and muted natural palette of the landscape painting
+  <ref_image_1>. The building stands on its own small patch of grass and trodden earth that fades softly at the edges. Three-quarter
+  view from slightly above, the whole building in frame, centered, isolated on a plain flat very light grey background. No text.'
+items:
+- {name: hall, image: refs/zat-hall.png, prompt: 'A large log town hall with a clock tower. {style}'}
+- {name: tavern, image: refs/zat-tavern.png, prompt: 'A log tavern with a beer mug sign. {style}'}
+- {name: smithy, image: refs/zat-smithy.png, prompt: 'An open log smithy with a glowing forge and a smoking brick chimney. {style}'}
+- {name: fort, image: refs/zat-fort.png, prompt: 'A square log fort with corner towers and crenellated walls. {style}'}

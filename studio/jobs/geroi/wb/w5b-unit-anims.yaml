@@ -1,0 +1,46 @@
+workflow: wan22_14b_i2v
+server: comfy-big
+license: Apache-2.0 (Wan 2.2 I2V A14B + lightx2v)
+ext: mp4
+seeds:
+- 7
+defaults:
+  width: 576
+  height: 768
+  negative: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, text, letters, subtitles, camera movement, zoom, walking
+    away, background objects
+  frames: 49
+items:
+- name: militia-attack2
+  image: w3-units-refine/militia-33.png
+  prompt: 'Seen from the side: the militiaman steps forward to the right and thrusts his pitchfork horizontally to the right, side-on, arms extended, then pulls it back and stands as before. The pitchfork
+    stays the same length and shape. The camera is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged;
+    the 3D character render style stays exactly the same.'
+- name: militia-hit
+  image: w3-units-refine/militia-33.png
+  prompt: 'The militiaman is struck: he flinches and staggers half a step backwards to the left, grimacing, then recovers to his standing pose. The camera is completely static, locked off, the character
+    stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.'
+- name: militia-defend
+  image: w3-units-refine/militia-33.png
+  prompt: The militiaman braces himself, crouches slightly and holds the pitchfork shaft across his body with both hands like a barrier, then stays in this guard. The camera is completely static, locked
+    off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.
+- name: militia-death
+  image: w3-units-refine/militia-33.png
+  prompt: 'The militiaman is defeated: he drops to his knees and slowly collapses onto his side on the ground and lies still; the pitchfork falls next to him. The camera is completely static, locked off,
+    the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.'
+- name: bandit-walk
+  image: w3-units-refine/bandit-11.png
+  prompt: The bandit marches on the spot, lifting his knees in a steady walking rhythm, the club on his shoulder. The camera is completely static, locked off, the character stays in the same place in the
+    centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.
+- name: bandit-hit
+  image: w3-units-refine/bandit-11.png
+  prompt: 'The bandit is struck: he flinches and staggers half a step backwards to the left, then recovers. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.'
+- name: bandit-defend
+  image: w3-units-refine/bandit-11.png
+  prompt: The bandit crouches slightly and raises his club across his body in a guard, then stays in this guard. The camera is completely static, locked off, the character stays in the same place in the
+    centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.
+- name: bandit-death
+  image: w3-units-refine/bandit-11.png
+  prompt: 'The bandit is defeated: he drops to his knees and slowly collapses onto his side on the ground and lies still; the club falls next to him. The camera is completely static, locked off, the character
+    stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D character render style stays exactly the same.'

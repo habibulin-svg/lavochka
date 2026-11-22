@@ -1,0 +1,22 @@
+# «Герои»: новый ролик победы (замечание пользователя 2026-11-22: старый непонятный, флаг держат криво).
+# Модели — конвейер Webbook (просьба пользователя): кадр FLUX 3 Klein → видео Wan 2.2 14B. Стиль — библия geroi.md, B «гуашь».
+workflow: flux3_klein
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 22, 33, 44]
+defaults: {width: 1280, height: 720, steps: 16}
+style: 'Rich gouache painting, classic 1990s fantasy strategy game art made cleaner and more refined, confident brush strokes,
+  saturated but harmonious colors, warm golden sunlight and soft shadows. Northern fantasy wooden architecture: log walls, steep plank
+  roofs, carved gables, palisades. No churches, no domes, no crosses. No text, no letters.'
+items:
+- name: win-banner
+  prompt: 'Cinematic medium-wide shot, clear simple composition with one focal point. On top of a wooden palisade tower of a captured
+    log fort, a young warrior in a padded tunic and leather bracers holds a tall wooden pole perfectly upright with both hands; a large
+    square banner, deep blue with a golden sun emblem, unfurls in the wind above him against a bright sky with big white clouds. Below
+    the tower, a small crowd of soldiers with spears and round shields cheer with raised arms. Golden late-afternoon light, green
+    hills and a river in the distance. {style}'
+- name: win-hill
+  prompt: 'Cinematic wide shot, clear simple composition. A victorious small army stands on a green hilltop in golden evening light,
+    soldiers with spears and round shields raising their arms in triumph; in the center a standard-bearer holds a tall straight pole
+    with a large deep blue banner with a golden sun emblem streaming in the wind. Below the hill, a wooden log town with smoke from
+    chimneys, a river and fields. Big glowing clouds. {style}'
