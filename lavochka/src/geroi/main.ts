@@ -336,7 +336,20 @@ function showCampaigns(): void {
   audio.music('campaigns');
 }
 
+/** Сценарий уже запускается (ролики, брифинг): повторное нажатие «Начать» не начинает второй. */
+let launching = false;
+
 async function playScenario(c: CampaignDef, i: number, diff: Difficulty): Promise<void> {
+  if (launching) return;
+  launching = true;
+  try {
+    await launchScenario(c, i, diff);
+  } finally {
+    launching = false;
+  }
+}
+
+async function launchScenario(c: CampaignDef, i: number, diff: Difficulty): Promise<void> {
   stop();
   saveProgress(c.id, { ...progressOf(c.id), diff });
   audio.music(null);
@@ -456,6 +469,8 @@ async function main(): Promise<void> {
   if (found) {
     const w = buildScenario(found.c.scenarios[found.i], (q.get('diff') as Difficulty | null) ?? 'normal', null);
     w.name = `${found.c.title}: ${found.c.scenarios[found.i].title}`;
+    // &reveal — без тумана (только разработка: смотреть края и всю карту)
+    if (import.meta.env.DEV && q.has('reveal')) for (const p of w.players) for (let c = 0; c < p.explored.length; c++) p.explored[c] = 1;
     return startAdv(w);
   }
   const fa = qFaction('a');

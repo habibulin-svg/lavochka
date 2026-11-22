@@ -3,7 +3,7 @@
 import type { HeroPick } from '../heroes';
 import { type Purse, WATER } from './data';
 import { SHARD, addToArmy, rankOfXp } from './hero';
-import { type AdvEvent, type World, allied, cellOf, emptyArmy, heroById, makeHero, neighbors, placeObject, playerHeroes, playerTowns, reveal, xOf, yOf } from './world';
+import { type AdvEvent, type World, allied, cellOf, emptyArmy, giveArtifact, heroById, makeHero, neighbors, placeObject, playerHeroes, playerTowns, reveal, xOf, yOf } from './world';
 
 /** Клетка в описании сценария: [x, y] или метка объекта, города, героя. */
 export type At = [number, number] | string;
@@ -59,7 +59,9 @@ export type ScnAct =
   | { t: 'show'; goal: string }
   | { t: 'flag'; id: string }
   /** Флаг объекта или города с меткой — игроку. */
-  | { t: 'give'; tag: string; player: number };
+  | { t: 'give'; tag: string; player: number }
+  /** Осколок кастета — герою с меткой (трофей с разбитого врага). */
+  | { t: 'shard'; to: string };
 
 export interface Goal {
   id: string;
@@ -233,6 +235,8 @@ function doAct(w: World, s: ScnState, a: ScnAct, ev: AdvEvent[]): void {
     }
     case 'team':
       w.players[a.player].team = a.team;
+      // новый союзник человека играет как средний бот (решение пользователя)
+      for (const p of w.players) if (p.bot && p.id !== s.human && allied(w, p.id, s.human)) p.bot = 'medium';
       break;
     case 'res': {
       const p = w.players[a.player];
@@ -251,6 +255,11 @@ function doAct(w: World, s: ScnState, a: ScnAct, ev: AdvEvent[]): void {
     case 'flag':
       if (!s.flags.includes(a.id)) s.flags.push(a.id);
       break;
+    case 'shard': {
+      const h = w.heroes.find((x) => x.tag === a.to) ?? playerHeroes(w, s.human)[0];
+      if (h && !Object.values(h.arts).includes(SHARD) && !h.bag.includes(SHARD)) giveArtifact(h, SHARD, ev);
+      break;
+    }
     case 'give': {
       for (const x of [...w.objects, ...w.towns].filter((o) => o.tag === a.tag)) {
         x.owner = a.player;

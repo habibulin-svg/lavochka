@@ -19,14 +19,30 @@ export const icon = (name: string, size = 24): HTMLImageElement => {
 };
 
 /** Цена значками: чего не хватает — красным. */
-export function priceRow(cost: Purse, p?: Player): HTMLElement {
+/** Подсказки к цифрам героя (лист героя): что каждая значит в бою. */
+const STAT_HELP: Record<string, string> = {
+  'Атака': 'прибавляется к атаке всех его отрядов в бою: каждое очко перевеса над защитой врага — +5 % урона.',
+  'Защита': 'прибавляется к защите всех его отрядов в бою: враг с меньшей атакой бьёт слабее.',
+  'Сила магии': 'сила и длительность заклинаний.',
+  'Знание': 'запас маны: 10 за очко.',
+  'Мораль': 'каждое очко — около 4 % шанса, что отряд в бою сразу походит ещё раз. Мораль ниже нуля — такой же шанс, что отряд пропустит ход. Механизмам и духам мораль не нужна. Поднимают её Лидерство, вещи и места на карте.',
+  'Удача': 'каждое очко — около 4 % шанса, что удар отряда нанесёт двойной урон. Поднимают её навык Удача, вещи, фонтаны удачи.',
+};
+
+/** Цена; с `each` (цена за одного) — «итого (за одного)», если берут несколько. */
+export function priceRow(cost: Purse, p?: Player, each?: Purse): HTMLElement {
   const row = h('span', 'a-price');
   for (const r of RES) {
     const v = cost[r];
     if (!v) continue;
     const c = h('span', p && p.res[r] < v ? 'lack' : '');
     c.title = RES_NAME[r];
+    const one = each?.[r];
     c.append(icon(`icon-${r}`, 22), String(v));
+    if (one && one !== v) {
+      c.title = `${RES_NAME[r]}: всего ${v}, за одного ${one}`;
+      c.append(h('small', 'a-each', ` (${one})`));
+    }
     row.append(c);
   }
   if (!row.children.length) row.textContent = 'даром';
@@ -171,7 +187,7 @@ export function heroSheet(host: HTMLElement, world: () => World, id: number, act
     const stats = h('div', 'a-stats');
     for (const [ic, label, v] of [['stat-01', 'Атака', heroAtk(x)], ['stat-02', 'Защита', heroDef(x)], ['stat-03', 'Сила магии', heroPower(x)], ['stat-04', 'Знание', heroKnow(x)], ['stat-05', 'Мораль', heroMorale(x)], ['stat-06', 'Удача', heroLuck(x)], ['stat-07', 'Ход', `${x.mp}/${heroMaxMp(x)}`], ['stat-09', 'Мана', `${x.mana}/${heroMaxMana(x)}`]] as [string, string, number | string][]) {
       const c = h('span');
-      c.title = label;
+      c.title = STAT_HELP[label] ? `${label}: ${STAT_HELP[label]}` : label;
       c.append(icon(ic, 34), h('b', '', String(v)));
       stats.append(c);
     }

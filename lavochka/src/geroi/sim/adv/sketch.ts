@@ -222,6 +222,8 @@ export function buildSketch(sk: Sketch): World {
     return a;
   };
   const solid = new Set<number>();
+  /** Полоса вокруг города: картинка шире своих клеток, и дорога вплотную к стене залезала под забор (замечание пользователя). */
+  const skirt = new Set<number>();
 
   for (const t of sk.towns) {
     const [x, y] = t.at;
@@ -231,6 +233,13 @@ export function buildSketch(sk: Sketch): World {
     for (const b of footprint(x, y, TOWN_W, TOWN_H)) {
       w.block[b] = 1;
       solid.add(b);
+    }
+    const left = x - (TOWN_W >> 1);
+    for (let yy = y - TOWN_H - 2; yy <= y; yy++) {
+      for (let xx = left - 1; xx <= left + TOWN_W; xx++) {
+        if (xx < 0 || yy < 0 || xx >= W || yy >= H || (xx === x && yy === y)) continue;
+        skirt.add(cellOf(w, xx, yy));
+      }
     }
     const town = makeTown(w, t.faction, t.owner, c, t.name);
     for (const b of t.built ?? []) if (!town.built.includes(b)) town.built.push(b);
@@ -271,7 +280,7 @@ export function buildSketch(sk: Sketch): World {
 
   // дороги: кратчайший путь между опорными точками, лес рубим, через воду — мост
   for (const chain of sk.roads ?? []) {
-    for (let i = 0; i + 1 < chain.length; i++) layRoad(w, cellOf(w, ...chain[i]), cellOf(w, ...chain[i + 1]), solid, mount, clearDecor);
+    for (let i = 0; i + 1 < chain.length; i++) layRoad(w, cellOf(w, ...chain[i]), cellOf(w, ...chain[i + 1]), solid, mount, clearDecor, skirt);
   }
 
   for (const [x, y] of sk.walls ?? []) {
@@ -315,7 +324,7 @@ export function buildSketch(sk: Sketch): World {
   return w;
 }
 
-function layRoad(w: World, from: number, to: number, solid: Set<number>, mount: Uint8Array, clearDecor: (c: number) => void): void {
+function layRoad(w: World, from: number, to: number, solid: Set<number>, mount: Uint8Array, clearDecor: (c: number) => void, skirt: Set<number>): void {
   // Дейкстра на целых весах: поле 2, лес 5, вода 9 (мост)
   const n = w.w * w.h;
   const dist = new Int32Array(n).fill(1 << 30);
@@ -337,7 +346,7 @@ function layRoad(w: World, from: number, to: number, solid: Set<number>, mount: 
         if (nx < 0 || ny < 0 || nx >= w.w || ny >= w.h) continue;
         const nc = cellOf(w, nx, ny);
         if ((solid.has(nc) && nc !== to) || mount[nc]) continue;
-        const step = w.terrain[nc] === WATER ? 9 : w.block[nc] ? 5 : w.road[nc] ? 1 : 2;
+        const step = (w.terrain[nc] === WATER ? 9 : w.block[nc] ? 5 : w.road[nc] ? 1 : 2) + (skirt.has(nc) && nc !== to ? 12 : 0);
         const nd = d + step;
         if (nd >= dist[nc]) continue;
         dist[nc] = nd;

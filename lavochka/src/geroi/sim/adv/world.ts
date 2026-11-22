@@ -553,7 +553,7 @@ export function placeObject(w: World, o: Omit<MapObject, 'id'>): MapObject {
   return obj;
 }
 
-function giveArtifact(h: AdvHero, art: string, ev: AdvEvent[]): void {
+export function giveArtifact(h: AdvHero, art: string, ev: AdvEvent[]): void {
   const a = ARTIFACTS[art];
   const slot = ART_SLOTS.find((s) => s.slot === a.slot && !h.arts[s.id]);
   if (slot) h.arts[slot.id] = art;
@@ -1910,8 +1910,24 @@ export function applyBattle(w: World, s: BattleState): AdvEvent[] {
     } else afterArmy(t.garrison, s, 1);
   } else {
     const o = objById(w, d.id)!;
+    const keeper = o.owner;
     if (won) afterGuard(w, o, h, ev);
     else if (o.army) afterArmy(o.army, s, 1);
+    // застава игрока под набегом: хозяину — прямо, чем кончилось (иначе ищи по карте, чей флаг)
+    if (keeper >= 0 && keeper !== h.owner && defOf(o).effect.t === 'garrison') {
+      const who = w.players[h.owner]?.name ?? 'Враг';
+      ev.push(won
+        ? { e: 'msg', title: 'Застава пала', text: `${who} взял заставу. Отбей её — встань на вход с войском.`, to: keeper }
+        : { e: 'msg', title: 'Набег отбит', text: `Застава выстояла: ${who} разбит.`, to: keeper });
+    }
+  }
+  if (d.k === 'town') {
+    const t = townById(w, d.id)!;
+    const keeper = owners[1];
+    if (keeper >= 0 && keeper !== h.owner) {
+      const who = w.players[h.owner]?.name ?? 'Враг';
+      ev.push(won ? { e: 'msg', title: `${t.name} пал`, text: `${who} взял город.`, to: keeper } : { e: 'msg', title: 'Осада отбита', text: `${t.name} выстоял: ${who} разбит.`, to: keeper });
+    }
   }
   checkPlayers(w, ev);
   scnCheck(w, ev);

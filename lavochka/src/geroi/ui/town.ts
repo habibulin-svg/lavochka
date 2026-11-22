@@ -98,7 +98,14 @@ export class TownScreen {
       img.style.bottom = `${1080 - (top + ((low - top) * row) / 2)}px`;
       img.style.width = `${width}px`;
       img.onclick = () => this.openBuilding(art);
-      this.scene.append(img);
+      // дальние ряды — в дымке, как сама панорама; под каждой постройкой — пятно тени на земле, чтобы не «висела» поверх картины
+      img.style.setProperty('--haze', String(Math.max(0, 2 - row) * 0.06));
+      const ground = h('div', 'a-bld-ground');
+      ground.style.left = `${x - width * 0.44}px`;
+      ground.style.width = `${width * 0.88}px`;
+      ground.style.height = `${width * 0.16}px`;
+      ground.style.bottom = `${1080 - (top + ((low - top) * row) / 2) - width * 0.05}px`;
+      this.scene.append(ground, img);
     }
     resBar(this.res, p);
     this.side.replaceChildren();
@@ -241,7 +248,8 @@ export class TownScreen {
         const avail = cast ? Math.trunc(t.forge / c.cost) : t.avail[c.tier - 1];
         const row = h('div', 'a-recruit-row');
         const info = h('div');
-        info.append(h('b', '', c.name), h('p', 'dim', cast ? `Можно отлить: ${avail}` : `Есть: ${avail} · в неделю +${weeklyGrowth(t, c.tier)}`), priceRow(creaturePrice(c, 1), p));
+        let price = priceRow(creaturePrice(c, 1), p);
+        info.append(h('b', '', c.name), h('p', 'dim', cast ? `Можно отлить: ${avail}` : `Есть: ${avail} · в неделю +${weeklyGrowth(t, c.tier)}`), price);
         const r = h('input');
         r.type = 'range';
         r.min = '1';
@@ -254,6 +262,10 @@ export class TownScreen {
         }, 'g-btn small');
         const check = (): void => {
           n.textContent = r.value;
+          // итог за выбранное число и в скобках — за одного
+          const fresh = priceRow(creaturePrice(c, Number(r.value)), p, creaturePrice(c, 1));
+          price.replaceWith(fresh);
+          price = fresh;
           go.disabled = avail < 1 || !!actionError(w, { t: 'recruit', town: t.id, cre: c.id, count: Number(r.value) });
         };
         r.oninput = check;
@@ -453,7 +465,8 @@ export class TownScreen {
           const left = mercLeft(t, c.id);
           const row = h('div', 'a-recruit-row');
           const info = h('div');
-          info.append(h('b', '', `${c.name} · ${f.name}`), h('p', 'dim', `Есть: ${left}`), priceRow(mercPrice(c, 1), p));
+          let price = priceRow(mercPrice(c, 1), p);
+          info.append(h('b', '', `${c.name} · ${f.name}`), h('p', 'dim', `Есть: ${left}`), price);
           const r = h('input');
           r.type = 'range';
           r.min = '1';
@@ -466,6 +479,9 @@ export class TownScreen {
           }, 'g-btn small');
           const check = (): void => {
             n.textContent = r.value;
+            const fresh = priceRow(mercPrice(c, Number(r.value)), p, mercPrice(c, 1));
+            price.replaceWith(fresh);
+            price = fresh;
             go.disabled = left < 1 || !!actionError(w, { t: 'merc', town: t.id, cre: c.id, count: Number(r.value) });
           };
           r.oninput = check;

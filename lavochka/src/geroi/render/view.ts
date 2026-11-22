@@ -17,11 +17,27 @@ const FIELD_X = (STAGE_W - (FIELD_W + 0.5) * HEX_W) / 2;
 const FIELD_Y = 232;
 /** Рост на поле по ступеням, px сцены; в атласе фигура ~133 px. */
 const TIER_H = [92, 100, 108, 122, 136, 166, 200];
+/** Пешие люди — одного роста, какого бы уровня ни были (разбойники 2-го уровня были выше ополченцев 1-го — замечание пользователя).
+ *  Рост по уровню остаётся у зверей, чудищ, всадников и машин. */
+const HUMAN_H = 98;
+const HUMANS = new Set([
+  'zatulye-militia', 'zatulye-spearman', 'zatulye-slinger', 'zatulye-strelets', 'zatulye-vataga', 'zatulye-brodnik', 'zatulye-boatman', 'zatulye-ushkuynik', 'zatulye-herbalist', 'zatulye-wisewoman',
+  'kuznya-apprentice', 'kuznya-smith', 'kuznya-riveter', 'kuznya-repeater', 'kuznya-founder', 'kuznya-firemistress',
+  'akademiya-student', 'akademiya-adept',
+  'plotina-lockguard', 'plotina-gatekeeper', 'plotina-harpooner', 'plotina-whaler', 'plotina-seawitch', 'plotina-tidewitch',
+  'ostrog-recruit', 'ostrog-druzhinnik', 'ostrog-skiarcher', 'ostrog-snowarcher', 'ostrog-shaman', 'ostrog-thundershaman',
+  'bazar-pickpocket', 'bazar-cutpurse', 'bazar-pepperthrower', 'bazar-peppermaster', 'bazar-mirrorman', 'bazar-miragemaster',
+  'kurgany-seeress', 'kurgany-mourner', 'neutral-bandit',
+]);
+/** Рост существа на поле. */
+export const unitH = (cre: string): number => (HUMANS.has(cre) ? HUMAN_H : TIER_H[CREATURES[cre].tier - 1]);
 /** Высота высоких препятствий в пикселях сцены (существо — около 100). */
 const OBST_TALL: Record<number, number> = { 1: 120, 3: 120, 4: 270, 7: 160, 9: 270, 11: 110, 12: 150, 13: 170, 15: 230, 16: 140 };
 /** Ширина низких препятствий. */
 const OBST_WIDE: Record<number, number> = { 2: 132, 5: 124, 6: 120, 8: 124, 10: 118, 14: 124 };
 const OBST: Record<string, number[]> = { meadow: [1, 2, 3, 4, 9, 10], swamp: [1, 3, 4, 5, 9], ash: [1, 6, 8, 10], pine: [1, 2, 3, 4, 7, 10] };
+/** Лужа грязи — плоское препятствие. */
+const FLAT_OBST = 5;
 const SCHOOL_COLOR: Record<School, number> = { fire: 0xff7a2a, water: 0x58b8ff, earth: 0xb9a15a, air: 0xc9e4ff };
 
 export function cellCenter(c: number): { x: number; y: number } {
@@ -92,14 +108,13 @@ class UnitSprite {
     private readonly art: { meta: Atlas; frames: Record<string, Texture[]> },
     private readonly sideColor: number,
   ) {
-    const c = CREATURES[u.cre];
-    const k = TIER_H[c.tier - 1] / (art.meta.origin[1] - art.meta.top[1]);
+    const k = unitH(u.cre) / (art.meta.origin[1] - art.meta.top[1]);
     this.body.anchor.set(art.meta.origin[0] / art.meta.frame, art.meta.origin[1] / art.meta.frame);
     this.body.scale.set(u.side === 0 ? k : -k, k);
     this.badge.addChild(this.plate, this.label);
     this.label.anchor.set(0.5);
     this.veilLabel.anchor.set(0.5);
-    this.veilLabel.position.set(0, -TIER_H[c.tier - 1] - 8);
+    this.veilLabel.position.set(0, -unitH(u.cre) - 8);
     this.veil.addChild(this.veilMist, this.veilLabel);
     this.veil.visible = false;
     this.root.addChild(this.body, this.veil, this.badge);
@@ -219,7 +234,12 @@ export class BattleView {
       sp.scale.set(k);
       sp.position.set(p.x, p.y + 14);
       sp.zIndex = p.y;
-      this.unitsLayer.addChild(shadowSprite(p.x, p.y + 12, Math.min(sp.width * 0.95, 110)), sp);
+      // плоская лужа лежит в грунте: без тени и ниже всех, иначе выглядит наклейкой поверх поля
+      if (n === FLAT_OBST) {
+        sp.anchor.set(0.5, 0.6);
+        sp.zIndex = -1000;
+        this.unitsLayer.addChild(sp);
+      } else this.unitsLayer.addChild(shadowSprite(p.x, p.y + 12, Math.min(sp.width * 0.95, 110)), sp);
     }));
     this.unitsLayer.sortableChildren = true;
     this.stage.addChild(this.unitsLayer, this.fx);
@@ -381,7 +401,7 @@ export class BattleView {
   }
 
   private headOf(sp: UnitSprite): { x: number; y: number } {
-    return { x: sp.root.x, y: sp.root.y - TIER_H[CREATURES[sp.u.cre].tier - 1] * 0.75 };
+    return { x: sp.root.x, y: sp.root.y - unitH(sp.u.cre) * 0.75 };
   }
 
   private async moveAlong(sp: UnitSprite, path: number[]): Promise<void> {

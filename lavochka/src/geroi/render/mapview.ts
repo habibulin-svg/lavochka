@@ -37,6 +37,10 @@ const ATLAS_SIZE = ATLAS_CELL * 2;
 const BASE_TERRAINS = 8;
 /** Сколько клеток на одну плитку текстуры грунта. */
 const GROUND_SCALE = 8;
+/** Рамка за краем карты (клеток): грунт продолжается, по ней — густой лес, чтобы край не обрывался в черноту. */
+const BORDER = 6;
+/** Глубина лесной стены за краем (клеток). */
+const BORDER_TREES = 3;
 
 const FRAG = `#version 300 es
 precision highp float;
@@ -99,13 +103,8 @@ float segDist(vec2 p, vec2 a, vec2 b) {
 
 const int NT = ${TERRAINS.length};
 
-void main() {
-  vec2 cell = vUV * uSize;
-  /* Местность: у каждой клетки — пятно-ядро вокруг центра; в точке побеждает местность с наибольшим весом.
-   * Края — плавные кривые вместо ступенек сетки, кромка чёткая, с тонкой тенью (как нарисованный переход). */
-  /* изгиб кромки — плавный, без мелкой «рвани» */
-  vec2 warp = vec2(vnoise(cell * 0.7) + 0.5 * vnoise(cell * 1.5 + 7.0), vnoise(cell * 0.7 + 17.3) + 0.5 * vnoise(cell * 1.5 + 23.0)) / 1.5 - 0.5;
-  vec2 p = cell + warp * 0.7;
+/* Местность в точке: у каждой клетки — пятно-ядро вокруг центра, побеждает наибольший вес; diff — 0 на кромке, 1 внутри. */
+void pick(vec2 p, out int top, out int sec, out float diff) {
   vec2 base = floor(p);
   float w[NT];
   for (int k = 0; k < NT; k++) w[k] = 0.0;
@@ -117,19 +116,40 @@ void main() {
     float r = length(max(abs(d) - 0.18, 0.0));
     w[id] += exp(-r * r * 9.0);
   }
-  int top = 0; int sec = 0; float wt = -1.0; float ws = -1.0;
+  top = 0; sec = 0; float wt = -1.0; float ws = -1.0;
   for (int k = 0; k < NT; k++) {
     float v = w[k];
     if (v > wt) { ws = wt; sec = top; wt = v; top = k; }
     else if (v > ws) { ws = v; sec = k; }
   }
-  if (ws < 0.0) { ws = 0.0; sec = top; }
-  float diff = (wt - ws) / max(wt + ws, 1e-4); /* 0 на кромке, 1 внутри */
+  if (ws < 0.002) { ws = 0.0; sec = top; }
+  diff = (wt - ws) / max(wt + ws, 1e-4);
+}
+
+void main() {
+  vec2 cell = vUV * uSize;
+  /* Местность: у каждой клетки — пятно-ядро вокруг центра; в точке побеждает местность с наибольшим весом.
+   * Края — плавные кривые вместо ступенек сетки; берег чёткий, между грунтами — широкий переход. */
+  /* изгиб кромки — плавный, без мелкой «рвани» */
+  vec2 warp = vec2(vnoise(cell * 0.7) + 0.5 * vnoise(cell * 1.5 + 7.0), vnoise(cell * 0.7 + 17.3) + 0.5 * vnoise(cell * 1.5 + 23.0)) / 1.5 - 0.5;
+  int top; int sec; float diff;
+  pick(cell + warp * 0.7, top, sec, diff);
+  /* между двумя грунтами (не у воды — там кромка совпадает с непроходимыми клетками) — крупный изгиб:
+   * прямоугольные пятна наброска становятся неровными языками */
+  if (top != ${WATER} && sec != ${WATER}) {
+    vec2 big = vec2(fbm(cell * 0.23 + 41.0), fbm(cell * 0.23 + 77.0)) - 0.5;
+    int t2; int s2; float d2;
+    pick(cell + warp * 0.7 + big * 2.6, t2, s2, d2);
+    if (t2 != ${WATER} && s2 != ${WATER}) { top = t2; sec = s2; diff = d2; }
+  }
   vec3 col = terrain(top, cell);
-  if (ws > 0.002) {
+  if (sec != top) {
     vec3 other = terrain(sec, cell);
-    col = mix(other, col, smoothstep(0.0, 0.06, diff));
     bool water = top == ${WATER} || sec == ${WATER};
+    /* у воды кромка чёткая (берег), между грунтами — широкий рваный переход: биомы перетекают, а не режутся (замечание пользователя) */
+    float soft = water ? 0.06 : 0.55;
+    float grain = water ? 0.0 : (fbm(cell * 2.7 + 11.0) - 0.5) * 0.5;
+    col = mix(other, col, smoothstep(0.0, soft, diff + grain * soft));
     if (top == ${WATER}) {
       /* вода: у берега светлее и пена, вдали — глубже */
       col *= mix(1.08, 0.78, smoothstep(0.05, 0.9, diff));
@@ -140,8 +160,8 @@ void main() {
       /* берег: мокрая тёмная полоса у самой воды */
       col *= 1.0 - 0.28 * (1.0 - smoothstep(0.0, 0.18, diff));
     } else {
-      /* кромка между двумя грунтами: тонкая тень */
-      col *= 1.0 - 0.22 * (1.0 - smoothstep(0.0, 0.1, diff));
+      /* кромка между двумя грунтами: едва заметная тень */
+      col *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, 0.25, diff));
     }
   } else if (top == ${WATER}) {
     col *= 0.78;
@@ -178,9 +198,14 @@ void main() {
   col = mix(vec3(luma), col, 0.8) * 0.9;
   /* лёгкая неровность освещения */
   col *= 0.97 + 0.06 * fbm(cell * 0.35 + 5.0);
-  /* туман */
-  float fog = texture(uFog, vUV).r;
+  /* за краем карты: та же местность, темнее к рамке и в конце — в темноту */
+  vec2 beyond = max(-cell, cell - uSize);
+  float outside = max(beyond.x, beyond.y) + (fbm(cell * 0.6) - 0.5) * 1.2;
+  col *= 1.0 - 0.38 * smoothstep(0.0, 3.0, outside);
+  /* туман (за краем — как у ближайшей клетки карты) */
+  float fog = texture(uFog, clamp(vUV, 0.5 / uSize, 1.0 - 0.5 / uSize)).r;
   float seen = smoothstep(0.3, 0.72, fog + (fbm(cell * 1.3) - 0.5) * 0.34);
+  seen *= 1.0 - smoothstep(${BORDER}.0 - 2.5, ${BORDER}.0 - 0.3, outside);
   finalColor = vec4(mix(vec3(0.045, 0.037, 0.03), col, seen), 1.0);
 }`;
 
@@ -268,6 +293,17 @@ class HeroSprite {
   }
 }
 
+/** Брёвна и куча дров среди украшений выглядели как ресурс «дерево», который можно подобрать (замечание пользователя):
+ *  рисуем вместо них украшение того же размера. Мир не меняется — сохранения и сиды прежние. */
+/** Местности, у которых есть свой набор украшений (остальные — луговой). */
+const DECOR_KINDS = new Set(['ash', 'coast', 'heath', 'meadow', 'pine', 'saltflat', 'snow', 'swamp']);
+const DECOR_ALIAS: Record<string, string> = {
+  'decor-meadow-7': 'decor-meadow-3',
+  'decor-swamp-4': 'decor-swamp-8',
+  'decor-snow-8': 'decor-snow-4',
+  'decor-coast-3': 'decor-coast-7',
+};
+
 export class MapView {
   app!: Application;
   private readonly canvasEvents = new AbortController();
@@ -280,6 +316,7 @@ export class MapView {
   private fxLayer = new Container();
   private objSprites = new Map<number, Container>();
   private decorSprites: { sp: Sprite; cell: number; sh: Sprite }[] = [];
+  private borderSprites: { sp: Sprite; cell: number }[] = [];
   /** Тени декора — под всеми объектами, над грунтом. */
   private shadows = new Container();
   private townSprites = new Map<number, Container>();
@@ -326,6 +363,7 @@ export class MapView {
     this.objs.sortableChildren = true;
     this.world.addChild(this.cursor, this.objs, this.overlay, this.fxLayer);
     await this.buildDecor(w);
+    await this.buildBorder(w);
     await this.syncObjects(w);
     await this.syncHeroes(w);
     if (this.destroyed) return;
@@ -423,10 +461,14 @@ export class MapView {
     }
     this.idsSource = new BufferImageSource({ resource: this.idsData, width: w.w, height: w.h, format: 'rgba8unorm', scaleMode: 'nearest', alphaMode: 'no-premultiply-alpha' });
     this.fogSource = new BufferImageSource({ resource: this.fogData, width: w.w, height: w.h, format: 'rgba8unorm', scaleMode: 'linear', alphaMode: 'no-premultiply-alpha' });
+    // грунт выходит за край карты на BORDER клеток: там продолжается местность крайних клеток и стоит лесная стена
     const W = w.w * TILE;
     const H = w.h * TILE;
+    const bx = BORDER * TILE;
+    const ux = BORDER / w.w;
+    const uy = BORDER / w.h;
     const geometry = new Geometry({
-      attributes: { aPosition: [0, 0, W, 0, W, H, 0, H], aUV: [0, 0, 1, 0, 1, 1, 0, 1] },
+      attributes: { aPosition: [-bx, -bx, W + bx, -bx, W + bx, H + bx, -bx, H + bx], aUV: [-ux, -uy, 1 + ux, -uy, 1 + ux, 1 + uy, -ux, 1 + uy] },
       indexBuffer: [0, 1, 2, 0, 2, 3],
     });
     this.uniforms = { uniforms: { uTime: 0 } };
@@ -444,9 +486,46 @@ export class MapView {
     this.world.addChildAt(this.shadows, 1);
   }
 
+  /** Лесная стена за краем карты: высокие деревья местности ближайшей клетки; видна, когда виден край. Мир не меняется. */
+  private async buildBorder(w: World): Promise<void> {
+    const spots: { x: number; y: number; edge: number; art: string; size: number }[] = [];
+    const hash = (x: number, y: number, k: number): number => {
+      let v = Math.imul(x + 1013, 73856093) ^ Math.imul(y + 2029, 19349663) ^ Math.imul(k + 7, 83492791);
+      v = Math.imul(v ^ (v >>> 13), 1274126177);
+      return ((v ^ (v >>> 16)) >>> 0) / 4294967296;
+    };
+    for (let y = -BORDER_TREES; y < w.h + BORDER_TREES; y++) {
+      for (let x = -BORDER_TREES; x < w.w + BORDER_TREES; x++) {
+        if (x >= 0 && y >= 0 && x < w.w && y < w.h) continue;
+        const ex = Math.max(0, Math.min(w.w - 1, x));
+        const ey = Math.max(0, Math.min(w.h - 1, y));
+        const edge = ey * w.w + ex;
+        if (w.terrain[edge] === WATER) continue;
+        const depth = Math.max(ex - x, x - ex, ey - y, y - ey);
+        if (hash(x, y, 0) > (depth === 1 ? 0.8 : 0.95)) continue;
+        const id = TERRAINS[w.terrain[edge]]?.id ?? 'meadow';
+        const kind = DECOR_KINDS.has(id) ? id : 'meadow';
+        // высокие деревья (варианты 1, 2, 6): стена, а не россыпь камешков
+        const pick = [0, 1, 5][Math.floor(hash(x, y, 1) * 3)];
+        spots.push({ x, y, edge, art: `decor-${kind}-${pick + 1}`, size: [1.9, 2.1, 1.3, 1.2, 1.3, 2.4, 1.3, 1.2][pick] * (0.9 + hash(x, y, 2) * 0.3) });
+      }
+    }
+    await Promise.all(spots.map(async (d) => {
+      const tex = await artTexture(d.art);
+      const sp = new Sprite(tex);
+      sp.anchor.set(0.5, 1);
+      sp.scale.set((d.size * TILE) / Math.max(1, tex.width));
+      sp.position.set((d.x + 0.5 + (hash(d.x, d.y, 3) - 0.5) * 0.5) * TILE, (d.y + 1) * TILE - 4);
+      sp.zIndex = (d.y + 1) * TILE;
+      sp.tint = 0xc8c8c8;
+      this.borderSprites.push({ sp, cell: d.edge });
+      this.objs.addChild(sp);
+    }));
+  }
+
   private async buildDecor(w: World): Promise<void> {
     await Promise.all(w.decor.map(async (d) => {
-      const tex = await artTexture(d.art);
+      const tex = await artTexture(DECOR_ALIAS[d.art] ?? d.art);
       const sp = new Sprite(tex);
       const k = (d.size * TILE) / tex.width;
       sp.anchor.set(0.5, 1);
@@ -596,6 +675,7 @@ export class MapView {
     for (let c = 0; c < w.w * w.h; c++) this.fogData[c * 4] = ex[c] ? 255 : 0;
     this.fogSource.update();
     for (const d of this.decorSprites) d.sp.visible = d.sh.visible = !!ex[d.cell];
+    for (const d of this.borderSprites) d.sp.visible = !!ex[d.cell];
     for (const o of w.objects) {
       const sp = this.objSprites.get(o.id);
       if (sp) sp.visible = !!ex[o.cell];
@@ -716,7 +796,7 @@ export class MapView {
     const vh = this.app.screen.height;
     const W = this.w.w * k;
     const H = this.w.h * k;
-    const margin = 2 * k;
+    const margin = 3 * k;
     this.world.x = W + margin * 2 <= vw ? (vw - W) / 2 : Math.min(margin, Math.max(vw - W - margin, this.world.x));
     this.world.y = H + margin * 2 <= vh ? (vh - H) / 2 : Math.min(margin, Math.max(vh - H - margin, this.world.y));
     this.onCamera();

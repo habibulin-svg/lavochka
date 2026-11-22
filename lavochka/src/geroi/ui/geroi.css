@@ -261,8 +261,10 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 /* полосы за пределами 16:9 закрываем, чтобы сквозь них не было видно и не щёлкалось по карте */
 .a-town::before { content: ''; position: absolute; inset: -1500px; background: #0c0a08; }
 .a-town-scene { position: absolute; inset: 0; background-size: cover; background-position: center; user-select: none; -webkit-user-select: none; }
-.a-bld { position: absolute; cursor: pointer; filter: drop-shadow(0 6px 6px #0007); transition: filter .12s; -webkit-user-drag: none; }
+/* постройки — чёткая игровая графика поверх живописной панорамы: приглушаем насыщенность и контраст, дальним рядам — дымка */
+.a-bld { position: absolute; cursor: pointer; --haze: 0; filter: saturate(calc(0.86 - var(--haze))) contrast(calc(0.93 - var(--haze) * 0.5)) brightness(calc(0.98 + var(--haze) * 0.4)) sepia(0.1) drop-shadow(0 4px 5px #0006); transition: filter .12s; -webkit-user-drag: none; }
 .a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
+.a-bld-ground { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(closest-side, #1e1a0e8c, #1e1a0e40 60%, transparent); }
 .a-town > .a-resbar { position: absolute; left: 16px; top: 14px; }
 .a-town-side { position: absolute; right: 16px; top: 14px; width: 270px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; }
 .a-town-side h2 { font: 700 26px 'Geroi Title', Georgia, serif; margin: 0; color: var(--brass2); }
@@ -284,6 +286,7 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 .a-price { display: inline-flex; flex-wrap: wrap; gap: 10px; font: 600 17px 'Geroi Num', sans-serif; }
 .a-price span { display: inline-flex; align-items: center; gap: 4px; }
 .a-price .lack { color: #ef7d66; }
+.a-price .a-each { font-size: 14px; opacity: 0.7; margin-left: -2px; }
 .a-recruit-row { display: grid; grid-template-columns: 96px 1fr 170px 40px 110px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid #3a2e1e; }
 .a-recruit-row p { margin: 2px 0; font-size: 16px; }
 .a-recruit-row b { font: 700 19px 'Geroi Title', Georgia, serif; }

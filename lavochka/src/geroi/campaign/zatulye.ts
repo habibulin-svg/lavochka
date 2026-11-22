@@ -75,7 +75,7 @@ const s11: ScenarioDef = {
       {
         id: 'hello', when: { t: 'day', day: 0 }, do: [{
           t: 'msg', title: HINT,
-          text: 'Щёлкни по клетке — Серёга проложит путь, щёлкни ещё раз — пойдёт. Запас хода на день — полоска у портрета справа. Задания — кнопка 📜.',
+          text: 'Щёлкни по клетке — Серёга проложит путь, щёлкни ещё раз — пойдёт. Запас хода на день — полоска у портрета справа. Задания — кнопка 📜. Заглянуть в город, не двигая героя, — кнопка города справа.',
         }],
       },
       { id: 'mill-near', when: { t: 'near', at: 'mill', r: 6 }, do: [{ t: 'msg', title: HINT, text: 'Лесопилка. Встань на вход — над ней поднимется твой флаг, и каждый день она даст два бревна.' }] },
@@ -310,7 +310,7 @@ const s13: ScenarioDef = {
 const s14: ScenarioDef = {
   id: 'c1-4',
   title: 'Первый осколок',
-  brief: 'Обелиск в холмах гудит, как трансформатор на Затулинке: под ним лежит осколок кастета. Перед ним стоит войско Старшого. Димон — с нами: Сомов омут прикроет юг.',
+  brief: 'Обелиск в холмах гудит, как трансформатор на Затулинке: осколок кастета уже выкопан — он у Старшого, и его лагерь стоит у обелиска. Старшой не будет ждать: его передовой отряд уже идёт на юг. Димон — с нами: Сомов омут прикроет юг.',
   before: ['c1-3b', 'c1-4a'],
   carry: true,
   sketch: () => ({
@@ -361,8 +361,6 @@ const s14: ScenarioDef = {
       { at: [35, 50], owner: 1, pick: DIMON, army: [['zatonye-frog', 16], ['zatonye-reedling', 30], ['zatonye-wisp', 6], ['zatonye-willow', 3]], level: 6, tag: 'dimon' },
     ],
     objects: [
-      { kind: 'obelisk', at: [8, 24] },
-      { kind: 'obelisk', at: [40, 40] },
       { kind: 'stack', at: [28, 22], army: [['kuznya-steamhound', 8]] },
       { kind: 'stack', at: [32, 22], army: [['kuznya-riveter', 14]] },
       { kind: 'mine-wood', at: [4, 40], owner: 0 },
@@ -381,7 +379,7 @@ const s14: ScenarioDef = {
       { kind: 'gloryhill', at: [14, 14], army: [['neutral-boar', 8]] },
       { kind: 'stables', at: [20, 41] },
       { kind: 'tradepost', at: [5, 52] },
-      { kind: 'signpost', at: [16, 47], text: 'Обелиски показывают кусок карты к осколку. Встань туда, где он зарыт, и копай (⛏).' },
+      { kind: 'signpost', at: [16, 47], text: 'На север — холмы и лагерь Старшого у обелиска. Осколок у него.' },
     ],
     roads: [
       [[10, 47], [20, 44], [32, 49]],
@@ -389,30 +387,48 @@ const s14: ScenarioDef = {
       [[30, 21], [38, 16], [48, 9]],
       [[32, 49], [40, 41], [36, 27]],
     ],
-    shard: [30, 19],
   }),
   spec: {
     goals: [
+      { id: 'vanguard', text: 'Разбить передовой отряд Старшого', cond: { t: 'gone', tags: ['vanguard'] }, optional: true },
       { id: 'starshoy', text: 'Разбить Старшого', cond: { t: 'gone', tags: ['starshoy'] } },
-      { id: 'shard', text: 'Раскопать осколок у обелиска в холмах', cond: { t: 'shard' } },
+      { id: 'shard', text: 'Забрать у Старшого осколок кастета', cond: { t: 'shard' } },
     ],
     lose: [MAIN_DEAD, NO_TOWNS],
     triggers: [
       {
         id: 'hello', when: { t: 'day', day: 0 }, do: [
-          { t: 'msg', title: 'Союз', text: 'Димон — союзник: его войска тебя не тронут, ресурсы можно передать кнопкой 🤝. Лагерь Старшого — у обелиска в холмах.' },
-          { t: 'reveal', at: [30, 19], r: 4 },
+          { t: 'msg', title: 'Союз', text: 'Димон — союзник: его войска тебя не тронут, ресурсы можно передать кнопкой 🤝. Лагерь Старшого — у обелиска в холмах. Осколок у него: разобьёшь — заберёшь.' },
+          { t: 'reveal', at: [30, 19], r: 5 },
         ],
       },
+      {
+        id: 'vanguard-out', when: { t: 'day', day: 2 }, do: [
+          { t: 'hero', owner: 2, pick: { cls: 'kuznya-master', n: 2 }, at: [40, 22], army: [['kuznya-apprentice', 16], ['kuznya-wasp', 8], ['kuznya-steamhound', 3]], level: 4, tag: 'vanguard' },
+          { t: 'show', goal: 'vanguard' },
+          { t: 'msg', title: 'Передовой отряд', text: 'Из лагеря вышел передовой отряд Старшого и идёт на юг — к Сомову омуту или к Заречью. Встреть его, пока он не взял шахты.' },
+        ],
+      },
+      { id: 'vanguard-down', when: { t: 'gone', tags: ['vanguard'] }, do: [{ t: 'msg', title: 'Передовой отряд разбит', text: 'Пленный клёпальщик говорит: Старшой держит осколок при себе и ждёт подмогу из Кузни. Тянуть нельзя.' }] },
       { id: 'taunt', when: { t: 'day', day: 5 }, do: [{ t: 'msg', title: 'Старшой', text: '— Слышь, малой. Кастет не твой. Отдай по-хорошему, пока я добрый.' }] },
       {
-        id: 'starshoy-out', when: { t: 'any', of: [{ t: 'day', day: 12 }, { t: 'near', at: [30, 19], r: 8 }] }, do: [
+        id: 'starshoy-out', when: { t: 'any', of: [{ t: 'day', day: 9 }, { t: 'near', at: [30, 19], r: 9 }, { t: 'gone', tags: ['vanguard'] }] }, do: [
           { t: 'hero', owner: 2, pick: STARSHOY, at: [34, 16], army: [['kuznya-wasp', 14], ['kuznya-riveter', 10], ['kuznya-steamhound', 5], ['kuznya-founder', 2], ['kuznya-walkcannon', 1]], level: 7, tag: 'starshoy' },
-          { t: 'msg', title: 'Старшой', text: 'Из лагеря у обелиска вышел сам Старшой.' },
+          { t: 'msg', title: 'Старшой', text: 'Из лагеря у обелиска вышел сам Старшой. Осколок при нём.' },
         ],
       },
-      { id: 'near-shard', when: { t: 'near', at: [30, 19], r: 4 }, do: [{ t: 'msg', title: 'Обелиск гудит', text: 'Осколок где-то здесь. Встань на клетку и копай: кнопка ⛏ или D.' }] },
-      { id: 'beaten', when: { t: 'gone', tags: ['starshoy'] }, do: [{ t: 'msg', title: 'Старшой бежал', text: 'Войско разбито. Старшой ушёл в туман — но он ещё вернётся.' }] },
+      {
+        id: 'reinforce', when: { t: 'day', day: 16 }, do: [
+          { t: 'hero', owner: 2, pick: { cls: 'kuznya-master', n: 4 }, at: [50, 6], army: [['kuznya-riveter', 12], ['kuznya-steamhound', 6], ['kuznya-founder', 2]], level: 5, tag: 'reinforce' },
+          { t: 'msg', title: 'Подмога из Кузни', text: 'С северо-востока подошла подмога Старшого. Чем дольше тянешь, тем их больше.' },
+        ],
+      },
+      {
+        id: 'beaten', when: { t: 'gone', tags: ['starshoy'] }, do: [
+          { t: 'shard', to: 'main' },
+          { t: 'msg', title: 'Старшой бежал', text: 'Войско разбито. Старшой ушёл в туман, а осколок выронил — он тёплый, как тот, что у Серёги в кулаке.' },
+        ],
+      },
     ],
   },
 };

@@ -32,7 +32,7 @@ export function cutscenes(host: HTMLElement, ids: string[], full = false): Promi
       v.pause();
       v.removeAttribute('src');
       box.remove();
-      window.removeEventListener('keydown', key);
+      window.removeEventListener('keydown', key, true);
       resolve(skipped);
     };
     const lastRow = (): boolean => row + 1 >= (CUTSCENE_TEXT[ids[shot]] ?? []).length;
@@ -88,6 +88,11 @@ export function cutscenes(host: HTMLElement, ids: string[], full = false): Promi
       else showShot();
     };
     const key = (e: KeyboardEvent): void => {
+      // пробел не должен ещё раз нажать кнопку «Начать», оставшуюся в фокусе под роликом
+      if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (e.key === 'Escape') finish(true);
       else if (e.key === ' ' || e.key === 'Enter') next();
     };
@@ -95,13 +100,15 @@ export function cutscenes(host: HTMLElement, ids: string[], full = false): Promi
       if ((e.target as HTMLElement).closest('.c-skip')) return;
       next();
     };
-    window.addEventListener('keydown', key);
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    window.addEventListener('keydown', key, true);
     showShot();
   });
 }
 
 /** Брифинг: что происходит и задания. */
 export function briefing(host: HTMLElement, c: CampaignDef, i: number, onGo: () => void, onBack: () => void): void {
+  (document.activeElement as HTMLElement | null)?.blur?.();
   const s = c.scenarios[i];
   const box = h('div', 'g-modal');
   const card = h('div', 'g-panel c-brief');

@@ -65,7 +65,8 @@ export function buildScenario(def: ScenarioDef, diff: Difficulty, carry: Carry |
   attachScenario(w, def.id, human, def.spec);
   for (const p of w.players) {
     if (p.id === human) for (const k of Object.keys(p.res) as (keyof typeof p.res)[]) p.res[k] = Math.round(p.res[k] * d.res);
-    else if (p.bot) p.bot = shiftBot(p.bot, diff);
+    // союзник человека — всегда средний: на лёгкой лёгкий союзник только мешает, на трудной сильный играл бы за игрока
+    else if (p.bot) p.bot = allied(w, p.id, human) ? 'medium' : shiftBot(p.bot, diff);
   }
   // нейтралы и чужие гарнизоны — по сложности
   const scale = (a: AdvHero['army'] | undefined): void => {

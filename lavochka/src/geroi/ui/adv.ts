@@ -419,15 +419,9 @@ export class AdvGame {
     const town = townAt(w, tcell);
     if (town && town.owner === this.me && (!x || x.cell === tcell)) return this.openTown(town.id);
     if (!x) return;
-    // свой город: первый щелчок — зайти (путь к воротам уже проложен), второй — отправить туда героя
-    if (town && town.owner === this.me && this.target !== tcell) {
-      const path = pathOf(reachOf(w, x), tcell);
-      if (path.length) {
-        this.target = tcell;
-        this.view.showPath(path, pathDays(w, x, path), false);
-      }
-      return this.openTown(town.id);
-    }
+    // свой город при выбранном герое — как любая клетка: первый щелчок прокладывает путь, второй ведёт героя
+    // (зайти в город, не двигая героя, — кнопка города справа); дороги нет — просто открыть город
+    if (town && town.owner === this.me && this.target !== tcell && !pathOf(reachOf(w, x), tcell).length) return this.openTown(town.id);
     if (this.target === tcell) {
       void this.go(x.id, tcell);
       return;
@@ -545,7 +539,7 @@ export class AdvGame {
           if (!bot || !this.fast) this.audio.sfx(e.name);
           break;
         case 'msg':
-          if (!bot || e.to === this.me) msgs.push({ title: e.title ?? '', text: e.text });
+          if ((!bot && e.to === undefined) || e.to === this.me) msgs.push({ title: e.title ?? '', text: e.text });
           break;
         case 'gain':
           await flush();
@@ -587,6 +581,8 @@ export class AdvGame {
       return () => {
         this.startTurn(true);
         for (const m of msgs) this.message(m.title, m.text);
+        // задание могло закрыться за ночь (опыт в лаборатории, срок): иначе конец сценария не показывался
+        if (w.over) this.afterAction();
       };
     }
     if (walker && !bot) this.view.selectHero(walker);
@@ -1232,7 +1228,8 @@ export class AdvGame {
       'Щелчок по клетке — показать путь, второй щелчок туда же — идти.',
       'Зелёные точки — дойдёт сегодня, жёлтые — позже. Красный крест — там бой.',
       'Щелчок по герою или замку — открыть; правая кнопка — сведения.',
-      'Свой замок — щелчок по нему на карте или по карточке справа: зайти и строить. Путь к воротам при этом уже проложен — щёлкни по замку ещё раз, и герой пойдёт туда.',
+      'Свой замок при выбранном герое — как любая клетка: первый щелчок прокладывает путь, второй ведёт героя в город. Зайти в город, не двигая героя, — карточка замка справа.',
+      'Мораль героя — шанс, что отряд в бою походит ещё раз (ниже нуля — пропустит ход). Удача — шанс двойного удара. Подробно — в листе героя, наведи на цифры.',
       'Экран двигают стрелки и край окна, колёсико — масштаб, средняя кнопка — тащить.',
       'H — следующий герой, E — конец хода, B — заклинания, D — копать.',
       'Esc — пауза, M — весь звук, пробел — идти по показанному пути.',
@@ -1317,7 +1314,11 @@ export class AdvGame {
     box.append(h('p', 'g-heroline a-rating', `Рейтинг: ${mine.r} (${mine.delta >= 0 ? '+' : ''}${mine.delta})`));
   }
 
+  private endShown = false;
+
   private showEnd(): void {
+    if (this.endShown) return;
+    this.endShown = true;
     const w = this.world;
     if (w.scn && this.scnEnd) return this.showScnEnd();
     this.audio.music('victory');
