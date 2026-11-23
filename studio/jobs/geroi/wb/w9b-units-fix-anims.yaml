@@ -1,0 +1,268 @@
+# Переделка брака w7 (подставки под существами) — 2026-11-23
+workflow: wan22_14b_i2v
+server: comfy-big
+license: Apache-2.0 (Wan 2.2 I2V A14B + lightx2v)
+ext: mp4
+seeds:
+- 7
+defaults:
+  negative: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, text, letters, subtitles, camera movement, zoom, walking
+    away, background objects
+items:
+- name: neutral-griffin-idle
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: The character hovers in the air on the spot, wings beating slowly and steadily, body gently bobbing. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-griffin-walk
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: The character flies on the spot, wings beating fast in a steady rhythm. The camera is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat
+    light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-griffin-attack
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the
+    same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-griffin-hit
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-griffin-defend
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-griffin-death
+  image: w9-units-fix/neutral-griffin-23.png
+  prompt: The character is hit hard and quickly falls to the ground, lying flat and completely still for the rest of the clip. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-harpooner-idle
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-harpooner-walk
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-harpooner-attack
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: The character aims to the right and shoots or throws its missile to the right with a clear release and recoil, then returns to its pose. The camera is completely static, locked off, the character
+    stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-harpooner-hit
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-harpooner-defend
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-harpooner-death
+  image: w9-units-fix/plotina-harpooner-23.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-stormbird-idle
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: The character hovers in the air on the spot, wings beating slowly and steadily, body gently bobbing. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-stormbird-walk
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: The character flies on the spot, wings beating fast in a steady rhythm. The camera is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat
+    light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-stormbird-attack
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the
+    same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-stormbird-hit
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-stormbird-defend
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-stormbird-death
+  image: w9-units-fix/plotina-stormbird-23.png
+  prompt: The character is hit hard and quickly falls to the ground, lying flat and completely still for the rest of the clip. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-thunderbird-idle
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: The character hovers in the air on the spot, wings beating slowly and steadily, body gently bobbing. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-thunderbird-walk
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: The character flies on the spot, wings beating fast in a steady rhythm. The camera is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat
+    light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-thunderbird-attack
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the
+    same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-thunderbird-hit
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-thunderbird-defend
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-thunderbird-death
+  image: w9-units-fix/plotina-thunderbird-23.png
+  prompt: The character is hit hard and quickly falls to the ground, lying flat and completely still for the rest of the clip. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-triton-idle
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-triton-walk
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-triton-attack
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the
+    same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-triton-hit
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-triton-defend
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-triton-death
+  image: w9-units-fix/plotina-triton-23.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-tritonherd-idle
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-tritonherd-walk
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-tritonherd-attack
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the
+    same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: plotina-tritonherd-hit
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-tritonherd-defend
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: plotina-tritonherd-death
+  image: w9-units-fix/plotina-tritonherd-23.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the 3D render style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640

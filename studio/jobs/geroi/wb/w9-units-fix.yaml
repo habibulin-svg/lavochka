@@ -1,0 +1,58 @@
+# Переделка брака w7 (подставки под существами) — 2026-11-23
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 23
+defaults:
+  steps: 16
+  ref_mp: 0.6
+items:
+- name: neutral-griffin
+  image: refs/c-neutral-griffin.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game creature render in the same style, shape and colours as <ref_image_0>, but more detailed
+    and refined: clear readable eyes and face, well modelled limbs, fur, scales, feathers, metal or stone texture as appropriate. The figure is flying in the air with wings spread wide, nothing below it,
+    no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point to the top, three-quarter view facing right, camera slightly above. Plain flat very light grey
+    background, soft even light, only a faint contact shadow underneath. No text.'
+- name: plotina-harpooner
+  image: refs/c-plotina-harpooner.png
+  width: 768
+  height: 1024
+  prompt: 'The same character from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game character render in the same style and colours as <ref_image_0>, but more detailed and
+    refined: clear friendly face with eyes, nose and mouth, natural adult human proportions (head about one sixth of the height, not a big-headed chibi), well modelled hands, cloth folds, stitched leather,
+    wood and metal texture. The figure is standing with both boots directly on the bare flat floor, no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point
+    to the top, three-quarter view facing right, camera slightly above. Plain flat very light grey background, soft even light, only a faint contact shadow underneath. No text.'
+- name: plotina-stormbird
+  image: refs/c-plotina-stormbird.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game creature render in the same style, shape and colours as <ref_image_0>, but more detailed
+    and refined: clear readable eyes and face, well modelled limbs, fur, scales, feathers, metal or stone texture as appropriate. The figure is flying in the air with wings spread wide, nothing below it,
+    no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point to the top, three-quarter view facing right, camera slightly above. Plain flat very light grey
+    background, soft even light, only a faint contact shadow underneath. No text.'
+- name: plotina-thunderbird
+  image: refs/c-plotina-thunderbird.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game creature render in the same style, shape and colours as <ref_image_0>, but more detailed
+    and refined: clear readable eyes and face, well modelled limbs, fur, scales, feathers, metal or stone texture as appropriate. The figure is flying in the air with wings spread wide, nothing below it,
+    no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point to the top, three-quarter view facing right, camera slightly above. Plain flat very light grey
+    background, soft even light, only a faint contact shadow underneath. No text.'
+- name: plotina-triton
+  image: refs/c-plotina-triton.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game creature render in the same style, shape and colours as <ref_image_0>, but more detailed
+    and refined: clear readable eyes and face, well modelled limbs, fur, scales, feathers, metal or stone texture as appropriate. The figure is standing with its own feet and tail directly on the bare flat
+    floor, no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point to the top, three-quarter view facing right, camera slightly above. Plain flat very
+    light grey background, soft even light, only a faint contact shadow underneath. No text.'
+- name: plotina-tritonherd
+  image: refs/c-plotina-tritonherd.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature from <ref_image_0>, keeping its design, outfit, weapon and colours. Stylized 3D game creature render in the same style, shape and colours as <ref_image_0>, but more detailed
+    and refined: clear readable eyes and face, well modelled limbs, fur, scales, feathers, metal or stone texture as appropriate. The figure is standing with its own feet and tail directly on the bare flat
+    floor, no rock, no ice floe and no stand anywhere in the picture. The whole figure in frame from the lowest point to the top, three-quarter view facing right, camera slightly above. Plain flat very
+    light grey background, soft even light, only a faint contact shadow underneath. No text.'
