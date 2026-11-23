@@ -10,6 +10,7 @@ import {
 import { type AdvAction, type ArmyRef, HERO_COST, type World, actionError, heroAt, mercLeft, mercSeen, repairCost } from '../sim/adv/world';
 import { type Act, ArmyPicker, heroSheet, icon, marketDialog, priceRow, resBar } from './advparts';
 import { button, creatureIcon, h, modal } from './common';
+import { PLACED } from './townplace';
 
 /** Постройка на панораме 1920×1080: ряд (0 — дальний), x, ширина в ближнем ряду. Правый край занят панелью замка. */
 const LAYOUT: Record<string, [number, number, number]> = {
@@ -87,7 +88,23 @@ export class TownScreen {
     }
     const [top, low] = GROUND[t.faction] ?? GROUND_DEFAULT;
     const layers = [...arts.entries()].map(([art, d]) => ({ art, d, pos: LAYOUT[UNIQ[art] ?? art] })).filter((x) => x.pos).sort((a, b) => a.pos[0] - b.pos[0]);
-    for (const { art, d, pos } of layers) {
+    // город одной картиной: постройки вырезаны из неё же и встают ровно на свои места
+    const placed = PLACED[t.faction];
+    if (placed) {
+      for (const [art, d] of [...arts].filter(([a]) => placed[a]).sort(([a], [b]) => placed[a][3] - placed[b][3])) {
+        const at = placed[art];
+        const img = h('img', 'a-bld a-bld-placed');
+        img.src = `/geroi/a/towns/${t.faction}-${art}.webp`;
+        img.alt = d.name;
+        img.title = d.name;
+        img.style.left = `${at[0]}px`;
+        img.style.top = `${at[1]}px`;
+        img.style.width = `${at[2]}px`;
+        img.onclick = () => this.openBuilding(art);
+        this.scene.append(img);
+      }
+    }
+    for (const { art, d, pos } of placed ? [] : layers) {
       const [row, x, size] = pos;
       const width = size * rowScale(row);
       const img = h('img', 'a-bld');

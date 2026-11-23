@@ -1,0 +1,522 @@
+# Переделка p1: люди, духи и стоявшие на подставке — без портрета (к людям прилипало его лицо и плащ), манера словами
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+defaults:
+  steps: 20
+  ref_mp: 0.6
+items:
+- name: neutral-griffin
+  image: refs/c-neutral-griffin.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: neutral-kikimora
+  image: refs/c-neutral-kikimora.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: neutral-nomad
+  image: refs/c-neutral-nomad.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-boatman
+  image: refs/c-zatulye-boatman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-brodnik
+  image: refs/c-zatulye-brodnik.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-herbalist
+  image: refs/c-zatulye-herbalist.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-rider
+  image: refs/c-zatulye-rider.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-slinger
+  image: refs/c-zatulye-slinger.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-spearman
+  image: refs/c-zatulye-spearman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-strelets
+  image: refs/c-zatulye-strelets.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-ushkuynik
+  image: refs/c-zatulye-ushkuynik.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-vataga
+  image: refs/c-zatulye-vataga.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatulye-wisewoman
+  image: refs/c-zatulye-wisewoman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatonye-omutnitsa
+  image: refs/c-zatonye-omutnitsa.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: zatonye-vodyanitsa
+  image: refs/c-zatonye-vodyanitsa.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-apprentice
+  image: refs/c-kuznya-apprentice.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-firemistress
+  image: refs/c-kuznya-firemistress.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-founder
+  image: refs/c-kuznya-founder.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-repeater
+  image: refs/c-kuznya-repeater.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-riveter
+  image: refs/c-kuznya-riveter.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-smith
+  image: refs/c-kuznya-smith.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: akademiya-adept
+  image: refs/c-akademiya-adept.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: akademiya-fallenstar
+  image: refs/c-akademiya-fallenstar.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: akademiya-student
+  image: refs/c-akademiya-student.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: akademiya-wanderstar
+  image: refs/c-akademiya-wanderstar.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-gatekeeper
+  image: refs/c-plotina-gatekeeper.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-harpooner
+  image: refs/c-plotina-harpooner.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-lockguard
+  image: refs/c-plotina-lockguard.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-seawitch
+  image: refs/c-plotina-seawitch.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-stormbird
+  image: refs/c-plotina-stormbird.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-stormtitan
+  image: refs/c-plotina-stormtitan.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-thunderbird
+  image: refs/c-plotina-thunderbird.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-tidewitch
+  image: refs/c-plotina-tidewitch.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-triton
+  image: refs/c-plotina-triton.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-tritonherd
+  image: refs/c-plotina-tritonherd.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: plotina-whaler
+  image: refs/c-plotina-whaler.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-bearguard
+  image: refs/c-ostrog-bearguard.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-bearknight
+  image: refs/c-ostrog-bearknight.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-druzhinnik
+  image: refs/c-ostrog-druzhinnik.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-recruit
+  image: refs/c-ostrog-recruit.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-shaman
+  image: refs/c-ostrog-shaman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-skiarcher
+  image: refs/c-ostrog-skiarcher.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-snowarcher
+  image: refs/c-ostrog-snowarcher.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-thundershaman
+  image: refs/c-ostrog-thundershaman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: ostrog-wolfrider
+  image: refs/c-ostrog-wolfrider.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-carpetace
+  image: refs/c-bazar-carpetace.png
+  width: 1024
+  height: 768
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-carpetrider
+  image: refs/c-bazar-carpetrider.png
+  width: 1024
+  height: 768
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-cutpurse
+  image: refs/c-bazar-cutpurse.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-miragemaster
+  image: refs/c-bazar-miragemaster.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-mirrorman
+  image: refs/c-bazar-mirrorman.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-peppermaster
+  image: refs/c-bazar-peppermaster.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-pepperthrower
+  image: refs/c-bazar-pepperthrower.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: bazar-pickpocket
+  image: refs/c-bazar-pickpocket.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-ancestoreagle
+  image: refs/c-kurgany-ancestoreagle.png
+  width: 1024
+  height: 768
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-barrowidol
+  image: refs/c-kurgany-barrowidol.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-barrowkhan
+  image: refs/c-kurgany-barrowkhan.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-barrowknight
+  image: refs/c-kurgany-barrowknight.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-boneeagle
+  image: refs/c-kurgany-boneeagle.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-bronzeknight
+  image: refs/c-kurgany-bronzeknight.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-ghosthorse
+  image: refs/c-kurgany-ghosthorse.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-greatancestor
+  image: refs/c-kurgany-greatancestor.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-mourner
+  image: refs/c-kurgany-mourner.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-riderless
+  image: refs/c-kurgany-riderless.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-seeress
+  image: refs/c-kurgany-seeress.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>, exactly the same: same mount, carpet, vehicle or companion, same outfit, headgear, weapon, colours, skin colour and gender, same pose idea. A real person
+    with natural adult proportions and an expressive weathered face, believable cloth, leather, fur, wood and iron with wear. Semi-realistic hand-painted oil illustration with visible soft brushwork, warm
+    natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter view facing right, nothing under the feet,
+    no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-shadowherd
+  image: refs/c-kurgany-shadowherd.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-shadowwanderer
+  image: refs/c-kurgany-shadowwanderer.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-stonebaba
+  image: refs/c-kurgany-stonebaba.png
+  width: 768
+  height: 1024
+  prompt: 'The same being as <ref_image_0>, exactly the same: same body, shape, parts, outfit, colours and skin colour, same pose idea. Believable anatomy and real materials with wear. Semi-realistic hand-painted
+    oil illustration with visible soft brushwork, warm natural light from the left, earthy muted colours, like a classic fantasy painting. Whole figure in frame from the lowest point to the very top, three-quarter
+    view facing right, nothing under the feet, no rock, no base, no pedestal, plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'

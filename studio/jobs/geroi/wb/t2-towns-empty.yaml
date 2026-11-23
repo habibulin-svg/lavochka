@@ -1,0 +1,41 @@
+# Сгенерировано make_towns.py — правки вносить туда.
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+- 33
+defaults:
+  steps: 20
+  ref_mp: 2.0
+  width: 1920
+  height: 1088
+items:
+- name: zatonye-empty
+  image: refs/t-zatonye-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: kuznya-empty
+  image: refs/t-kuznya-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: akademiya-empty
+  image: refs/t-akademiya-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: plotina-empty
+  image: refs/t-plotina-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: ostrog-empty
+  image: refs/t-ostrog-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: bazar-empty
+  image: refs/t-bazar-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'
+- name: kurgany-empty
+  image: refs/t-kurgany-whole.png
+  prompt: 'The same painting as <ref_image_0>, exactly the same landscape, sky, water, trees, light, colours and brushwork, but every building, tower, tent, wall and fence is gone: in their places lie empty
+    building plots with bare trodden ground, a few cut logs and stones, the same paths still crossing the land. Nothing else changes.'

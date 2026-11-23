@@ -1,0 +1,16 @@
+# Проба стиля: разбойник — облик строго по эталону, у портрета берём только манеру письма
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33]
+defaults: {steps: 20, ref_mp: 0.6, width: 768, height: 1024}
+items:
+- name: neutral-bandit
+  image: refs/c-neutral-bandit.png
+  image2: refs/z-portrait.png
+  prompt: >-
+    The forest bandit from <ref_image_0>: same green hooded cloak, same clothes, belt, boots and club, same colours.
+    Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person or its clothes):
+    a semi-realistic lean young robber with natural adult proportions, a sly stubbled face in the shadow of the green hood,
+    worn wool and leather with dirt and patches. Full figure standing, three-quarter view facing right, from the feet to the top of the hood all in frame,
+    plain flat light grey background, faint contact shadow. Not cartoon, not chibi, no outlines. No text.

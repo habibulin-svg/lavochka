@@ -1,0 +1,12 @@
+# Проба: та же картина без построек — фон недостроенного города (Затулье, 2026-11-23)
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33]
+defaults: {steps: 20, ref_mp: 2.0, width: 1920, height: 1088}
+items:
+- name: zatulye-empty
+  image: refs/z-whole.png
+  prompt: >-
+    The same painting as <ref_image_0>, exactly the same landscape, lake, sky, trees, flowers, light, colours and brushwork, but every building, fort, tent and fence is gone:
+    in their places lie empty grassy building plots with trodden bare earth, a few cut logs and stones, the same dirt paths still crossing the meadow. Nothing else changes.

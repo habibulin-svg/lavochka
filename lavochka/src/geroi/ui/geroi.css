@@ -264,6 +264,8 @@ html, body { margin: 0; height: 100%; background: #0e0b08; color: var(--ink); fo
 /* постройки — чёткая игровая графика поверх живописной панорамы: приглушаем насыщенность и контраст, дальним рядам — дымка */
 .a-bld { position: absolute; cursor: pointer; --haze: 0; filter: saturate(calc(1 - var(--haze) * 0.6)) brightness(calc(1 + var(--haze) * 0.25)) drop-shadow(0 3px 4px #0005); transition: filter .12s; -webkit-user-drag: none; }
 .a-bld:hover { filter: drop-shadow(0 0 10px #ffe9a8) brightness(1.08); }
+.a-bld-placed { filter: none; }
+.a-bld-placed:hover { filter: drop-shadow(0 0 8px #ffe9a8) brightness(1.06); }
 .a-bld-ground { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(closest-side, #1e1a0e55, #1e1a0e22 60%, transparent); }
 .a-town > .a-resbar { position: absolute; left: 16px; top: 14px; }
 .a-town-side { position: absolute; right: 16px; top: 14px; width: 270px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #1f1812f2; border: 1px solid var(--brass); border-radius: 8px; }

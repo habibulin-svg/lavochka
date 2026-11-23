@@ -1,0 +1,143 @@
+# Препятствия поля боя в живописной манере (2026-11-24)
+workflow: flux3_klein_ref1
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+defaults:
+  steps: 20
+  ref_mp: 0.6
+items:
+- name: obst-1
+  image: refs/o-1.png
+  width: 768
+  height: 896
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-10
+  image: refs/o-10.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-11
+  image: refs/o-11.png
+  width: 768
+  height: 896
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-12
+  image: refs/o-12.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-13
+  image: refs/o-13.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-14
+  image: refs/o-14.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-15
+  image: refs/o-15.png
+  width: 768
+  height: 896
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-16
+  image: refs/o-16.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-2
+  image: refs/o-2.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-3
+  image: refs/o-3.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-4
+  image: refs/o-4.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-5
+  image: refs/o-5.png
+  width: 768
+  height: 896
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-6
+  image: refs/o-6.png
+  width: 768
+  height: 896
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-7
+  image: refs/o-7.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-8
+  image: refs/o-8.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-9
+  image: refs/o-9.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-trap-mirage
+  image: refs/o-trap-mirage.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-trap-pepper
+  image: refs/o-trap-pepper.png
+  width: 768
+  height: 1024
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'
+- name: obst-trap-pit
+  image: refs/o-trap-pit.png
+  width: 1024
+  height: 768
+  prompt: 'The same object as <ref_image_0>, exactly the same: same shape, parts and colours, same view from above at an angle. Semi-realistic hand-painted oil illustration with visible soft brushwork,
+    warm natural light from the left, earthy muted colours, believable weathered materials of stone, wood, earth and moss. The whole object in frame, plain flat light grey background, faint contact shadow.
+    Not cartoon, no outlines. No text.'

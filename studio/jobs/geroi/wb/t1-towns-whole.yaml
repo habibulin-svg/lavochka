@@ -1,0 +1,70 @@
+# Сгенерировано make_towns.py — правки вносить туда.
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+- 57
+- 91
+defaults:
+  steps: 20
+  ref_mp: 1.0
+  width: 1920
+  height: 1088
+items:
+- name: zatonye-whole
+  image: refs/t-zatonye-layout.png
+  image2: refs/t-zatonye-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of a Slavic fantasy swamp town on a marshy meadow among reeds, ponds and old willows, in the exact painterly brushwork and
+    palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on wooden piles and earth mounds, plank
+    walkways and boardwalks over the water lead to every door, reed fences, fishing nets on poles, punts moored at the walkways, stacks of peat and firewood fill the space between them. One shared light:
+    soft misty morning light, a thin fog over the water, the far buildings fade into the haze; consistent cast shadows fall on the ground and on neighbouring buildings. Believable weathered architecture
+    and materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: kuznya-whole
+  image: refs/t-kuznya-layout.png
+  image2: refs/t-kuznya-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of a dwarven Slavic fantasy forge town on dark volcanic ash ground with glowing lava cracks, in the exact painterly brushwork
+    and palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on heavy stone foundations cut into
+    the black slope, stone stairs and terraces, paved ore roads with cart rails lead to every gate, heaps of ore and coal, anvils, crates, chains and iron scrap fill the space between them, smoke rises
+    from chimneys. One shared light: red sunset sky with orange glow from the forges and the lava, long dark shadows, smoky haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring
+    buildings. Believable weathered architecture and materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: akademiya-whole
+  image: refs/t-akademiya-layout.png
+  image2: refs/t-akademiya-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of a Slavic fantasy scholars'' town in a clearing of a tall pine forest by the sea, in the exact painterly brushwork and
+    palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on mossy granite foundations and terraces,
+    stone-paved paths and little bridges lead to every door, boulders, fern and blueberry bushes, lanterns on posts, telescopes and stacks of books under awnings fill the space between them. One shared
+    light: clear cool afternoon light under a deep blue sky, crisp shadows of the pines, soft blue haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring buildings. Believable
+    weathered architecture and materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: plotina-whole
+  image: refs/t-plotina-layout.png
+  image2: refs/t-plotina-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of a Slavic fantasy town of dam builders on a rocky sea coast with a waterfall falling from the cliffs, in the exact painterly
+    brushwork and palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on cut stone foundations on
+    the rock shelves, stone stairs, sluice channels with running water and wooden bridges lead to every door, waterwheels, mooring posts, coiled ropes, barrels and lobster traps fill the space between them.
+    One shared light: stormy grey sky with sunbeams breaking through, wet glistening stone, sea spray haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring buildings.
+    Believable weathered architecture and materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: ostrog-whole
+  image: refs/t-ostrog-layout.png
+  image2: refs/t-ostrog-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of a northern Slavic fantasy fortress town in deep winter snow at the edge of a fir forest, in the exact painterly brushwork
+    and palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on log foundations banked with snow,
+    trodden snowy paths and ski tracks lead to every door, snow-covered woodpiles, sledges, log fences, frozen barrels and smoke rising from every chimney fill the space between them. One shared light:
+    low golden winter sun, long blue shadows on the snow, frosty haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring buildings. Believable weathered architecture and
+    materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: bazar-whole
+  image: refs/t-bazar-layout.png
+  image2: refs/t-bazar-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of an eastern caravan trading town on a white salt flat by a turquoise lake, in the exact painterly brushwork and palette
+    of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on whitewashed adobe platforms, paved streets with
+    colourful awnings lead to every door, market stalls, carpets, clay jars, bales, camels and carts fill the space between them. One shared light: bright hot noon sun, short sharp shadows, shimmering heat
+    haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring buildings. Believable weathered architecture and materials, earthy natural colours, rich detail, painted like
+    a classic fantasy town screen, not cartoon, no black outlines. No text.'
+- name: kurgany-whole
+  image: refs/t-kurgany-layout.png
+  image2: refs/t-kurgany-site.png
+  prompt: 'Repaint <ref_image_0> as one single coherent hand-painted oil painting of an ancient Slavic fantasy steppe town among burial mounds on a heather moor with standing stones, in the exact painterly
+    brushwork and palette of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>, but make them truly belong to the land: buildings stand on earth mounds and old stone
+    platforms, trodden heath paths lined with stones lead to every door, standing stones, carved wooden idols, cairns, grave banners and crow-haunted posts fill the space between them. One shared light:
+    quiet violet dusk light, low warm sun on the horizon, soft purple haze on the far buildings; consistent cast shadows fall on the ground and on neighbouring buildings. Believable weathered architecture
+    and materials, earthy natural colours, rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.'

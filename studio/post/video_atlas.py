@@ -99,20 +99,37 @@ def main():
     widths = al.sum(1)
     top = int(np.argmax(widths > widths.max() * 0.18))
     foot_x = float(np.median(xs[ys > bottom - 12]))
-    k = HEIGHT / (bottom - top)
+    # широкие (медведь, конь) — по ширине кадра: справа и слева остаётся запас на удар и падение
+    k = min(HEIGHT / (bottom - top), FRAME * 0.62 / (xs.max() - xs.min() + 1))
     print(f'опора x={foot_x:.0f} низ={bottom} рост={bottom - top}px → ×{k:.3f}', flush=True)
 
-    rows = []
-    meta = {'frame': FRAME, 'origin': list(ORIGIN), 'muzzle': [ORIGIN[0] + 44, ORIGIN[1] - 110], 'top': [ORIGIN[0], ORIGIN[1] - HEIGHT], 'anims': {}}
-    for row, (anim, key, n, fps, loop) in enumerate(ANIMS):
+    # сначала вырезаем все кадры, потом масштаб — чтобы и самое размашистое движение (взлёт, замах) влезло в кадр 320
+    cut_rows = []
+    for anim, key, n, fps, loop in ANIMS:
         fr = frames_of(clips.get(key, clips['idle']))
         if loop:
             i, j = loop_span(fr, max(12, len(fr) // 3))
             fr = fr[i:j]
         idx = np.linspace(0, len(fr) - 1 - (1 if loop else 0), n).round().astype(int)
+        cut_rows.append([cut(fr[t]) for t in idx])
+        print(anim, key, clips.get(key, '—'), flush=True)
+    x0 = y0 = 1e9
+    x1 = y1 = -1e9
+    for cells in cut_rows:
+        for o in cells:
+            al2 = np.asarray(o)[..., 3] > 60
+            if al2.any():
+                yy, xx = np.nonzero(al2)
+                x0, x1, y0, y1 = min(x0, xx.min()), max(x1, xx.max()), min(y0, yy.min()), max(y1, yy.max())
+    fit = min(ORIGIN[0] / max(foot_x - x0, 1), (FRAME - ORIGIN[0]) / max(x1 - foot_x, 1), ORIGIN[1] / max(bottom - y0, 1), (FRAME - ORIGIN[1]) / max(y1 - bottom, 1)) * 0.97
+    if fit < k:
+        print(f'масштаб ×{k:.3f} → ×{fit:.3f}: размах движения', flush=True)
+        k = fit
+    rows = []
+    meta = {'frame': FRAME, 'origin': list(ORIGIN), 'muzzle': [ORIGIN[0] + 44, ORIGIN[1] - 110], 'top': [ORIGIN[0], ORIGIN[1] - (bottom - top) * k], 'anims': {}}
+    for row, ((anim, key, n, fps, loop), cells0) in enumerate(zip(ANIMS, cut_rows)):
         cells = []
-        for t in idx:
-            o = cut(fr[t])
+        for o in cells0:
             w, h = o.size
             o = o.resize((round(w * k), round(h * k)), Image.LANCZOS)
             cell = Image.new('RGBA', (FRAME, FRAME))
@@ -120,7 +137,6 @@ def main():
             cells.append(cell)
         rows.append(cells)
         meta['anims'][anim] = {'row': row, 'fps': fps, 'loop': loop, 'frames': n}
-        print(anim, key, clips.get(key, '—'), flush=True)
     cols = max(len(r) for r in rows)
     atlas = Image.new('RGBA', (cols * FRAME, len(rows) * FRAME))
     for r, cells in enumerate(rows):

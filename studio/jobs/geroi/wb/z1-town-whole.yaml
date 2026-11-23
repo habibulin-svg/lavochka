@@ -1,0 +1,18 @@
+# Проба «город одной картиной» (Затулье, 2026-11-23): схема расстановки → цельная живописная картина
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33, 57, 91]
+defaults: {steps: 20, ref_mp: 1.0, width: 1920, height: 1088}
+items:
+- name: zatulye-whole
+  image: refs/z-layout.png
+  image2: refs/z-site.png
+  prompt: >-
+    Repaint <ref_image_0> as one single coherent hand-painted oil painting of a Slavic fantasy town on a meadow by a lake,
+    in the exact painterly brushwork, palette and light of <ref_image_1>. Keep every building at the same place, size and design as in <ref_image_0>,
+    but make them truly belong to the land: each stands on the ground with stone or log foundations, earth banks and low terraces follow the slope,
+    trodden dirt paths and plank walkways lead to every door, wattle fences, haystacks, woodpiles, carts, barrels and vegetable gardens fill the space between them.
+    One shared warm late-afternoon sunlight from the left, long consistent shadows fall on the ground and on neighbouring buildings,
+    soft atmospheric haze on the far buildings. Believable architecture of weathered carved logs, planks and shingles, earthy natural colours,
+    rich detail, painted like a classic fantasy town screen, not cartoon, no black outlines. No text.

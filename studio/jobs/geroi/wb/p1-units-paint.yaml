@@ -1,0 +1,1109 @@
+# Сгенерировано make_units_paint.py — правки вносить туда.
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+defaults:
+  steps: 20
+  ref_mp: 0.6
+items:
+- name: neutral-boar
+  image: refs/c-neutral-boar.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-crab
+  image: refs/c-neutral-crab.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-griffin
+  image: refs/c-neutral-griffin.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-kikimora
+  image: refs/c-neutral-kikimora.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-leshak
+  image: refs/c-neutral-leshak.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-lynx
+  image: refs/c-neutral-lynx.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-nomad
+  image: refs/c-neutral-nomad.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-poloz
+  image: refs/c-neutral-poloz.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-raven
+  image: refs/c-neutral-raven.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-salamander
+  image: refs/c-neutral-salamander.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-scorpion
+  image: refs/c-neutral-scorpion.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-sirin
+  image: refs/c-neutral-sirin.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-stonegiant
+  image: refs/c-neutral-stonegiant.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: neutral-wolf
+  image: refs/c-neutral-wolf.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatulye-boatman
+  image: refs/c-zatulye-boatman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-brodnik
+  image: refs/c-zatulye-brodnik.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-herbalist
+  image: refs/c-zatulye-herbalist.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-rider
+  image: refs/c-zatulye-rider.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-slinger
+  image: refs/c-zatulye-slinger.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-spearman
+  image: refs/c-zatulye-spearman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-strelets
+  image: refs/c-zatulye-strelets.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-thundertur
+  image: refs/c-zatulye-thundertur.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatulye-tur
+  image: refs/c-zatulye-tur.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatulye-ushkuynik
+  image: refs/c-zatulye-ushkuynik.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-vataga
+  image: refs/c-zatulye-vataga.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatulye-wisewoman
+  image: refs/c-zatulye-wisewoman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: zatonye-bogtroll
+  image: refs/c-zatonye-bogtroll.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-frog
+  image: refs/c-zatonye-frog.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-mistserpent
+  image: refs/c-zatonye-mistserpent.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-oldwillow
+  image: refs/c-zatonye-oldwillow.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-omutnitsa
+  image: refs/c-zatonye-omutnitsa.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-phantomserpent
+  image: refs/c-zatonye-phantomserpent.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-reedling
+  image: refs/c-zatonye-reedling.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-sedgeling
+  image: refs/c-zatonye-sedgeling.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-toad
+  image: refs/c-zatonye-toad.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-troll
+  image: refs/c-zatonye-troll.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-vodyanitsa
+  image: refs/c-zatonye-vodyanitsa.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-wanderwisp
+  image: refs/c-zatonye-wanderwisp.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-willow
+  image: refs/c-zatonye-willow.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: zatonye-wisp
+  image: refs/c-zatonye-wisp.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: kuznya-apprentice
+  image: refs/c-kuznya-apprentice.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-colossus
+  image: refs/c-kuznya-colossus.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-firemistress
+  image: refs/c-kuznya-firemistress.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-forgecolossus
+  image: refs/c-kuznya-forgecolossus.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-forgehound
+  image: refs/c-kuznya-forgehound.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-founder
+  image: refs/c-kuznya-founder.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-repeater
+  image: refs/c-kuznya-repeater.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-riveter
+  image: refs/c-kuznya-riveter.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-smith
+  image: refs/c-kuznya-smith.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kuznya-steamhound
+  image: refs/c-kuznya-steamhound.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-stingwasp
+  image: refs/c-kuznya-stingwasp.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-walkcannon
+  image: refs/c-kuznya-walkcannon.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-walkmortar
+  image: refs/c-kuznya-walkmortar.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kuznya-wasp
+  image: refs/c-kuznya-wasp.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same contraption as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable machine of forged iron, riveted plates, brass, wood and glowing coals, with soot, rust and wear. Whole figure in frame from the lowest point to the very top,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: akademiya-adept
+  image: refs/c-akademiya-adept.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: akademiya-borguard
+  image: refs/c-akademiya-borguard.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-crystal
+  image: refs/c-akademiya-crystal.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-fallenstar
+  image: refs/c-akademiya-fallenstar.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-moondragon
+  image: refs/c-akademiya-moondragon.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-moonstag
+  image: refs/c-akademiya-moonstag.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-owl
+  image: refs/c-akademiya-owl.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-pineguard
+  image: refs/c-akademiya-pineguard.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-prism
+  image: refs/c-akademiya-prism.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-seerowl
+  image: refs/c-akademiya-seerowl.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-stag
+  image: refs/c-akademiya-stag.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-stardragon
+  image: refs/c-akademiya-stardragon.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: akademiya-student
+  image: refs/c-akademiya-student.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: akademiya-wanderstar
+  image: refs/c-akademiya-wanderstar.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-gatekeeper
+  image: refs/c-plotina-gatekeeper.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: plotina-harpooner
+  image: refs/c-plotina-harpooner.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: plotina-lockguard
+  image: refs/c-plotina-lockguard.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: plotina-seawitch
+  image: refs/c-plotina-seawitch.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: plotina-stormbird
+  image: refs/c-plotina-stormbird.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-stormbull
+  image: refs/c-plotina-stormbull.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-stormtitan
+  image: refs/c-plotina-stormtitan.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-tempestbull
+  image: refs/c-plotina-tempestbull.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-thunderbird
+  image: refs/c-plotina-thunderbird.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-tidegiant
+  image: refs/c-plotina-tidegiant.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-tidewitch
+  image: refs/c-plotina-tidewitch.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: plotina-triton
+  image: refs/c-plotina-triton.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-tritonherd
+  image: refs/c-plotina-tritonherd.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: plotina-whaler
+  image: refs/c-plotina-whaler.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-bearguard
+  image: refs/c-ostrog-bearguard.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-bearknight
+  image: refs/c-ostrog-bearknight.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-druzhinnik
+  image: refs/c-ostrog-druzhinnik.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-icegiant
+  image: refs/c-ostrog-icegiant.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: ostrog-mammothtower
+  image: refs/c-ostrog-mammothtower.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: ostrog-recruit
+  image: refs/c-ostrog-recruit.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-shaman
+  image: refs/c-ostrog-shaman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-skiarcher
+  image: refs/c-ostrog-skiarcher.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-snowarcher
+  image: refs/c-ostrog-snowarcher.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-snowgiant
+  image: refs/c-ostrog-snowgiant.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: ostrog-thundershaman
+  image: refs/c-ostrog-thundershaman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: ostrog-warmammoth
+  image: refs/c-ostrog-warmammoth.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: ostrog-wolf
+  image: refs/c-ostrog-wolf.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: ostrog-wolfrider
+  image: refs/c-ostrog-wolfrider.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-camel
+  image: refs/c-bazar-camel.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: bazar-caravanox
+  image: refs/c-bazar-caravanox.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: bazar-carpetace
+  image: refs/c-bazar-carpetace.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-carpetrider
+  image: refs/c-bazar-carpetrider.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-cutpurse
+  image: refs/c-bazar-cutpurse.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-djinn
+  image: refs/c-bazar-djinn.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: bazar-djinnchanger
+  image: refs/c-bazar-djinnchanger.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: bazar-goldserpent
+  image: refs/c-bazar-goldserpent.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: bazar-miragemaster
+  image: refs/c-bazar-miragemaster.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-mirrorman
+  image: refs/c-bazar-mirrorman.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-peppermaster
+  image: refs/c-bazar-peppermaster.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-pepperthrower
+  image: refs/c-bazar-pepperthrower.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-pickpocket
+  image: refs/c-bazar-pickpocket.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: bazar-sandserpent
+  image: refs/c-bazar-sandserpent.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: kurgany-ancestoreagle
+  image: refs/c-kurgany-ancestoreagle.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-barrowidol
+  image: refs/c-kurgany-barrowidol.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: kurgany-barrowkhan
+  image: refs/c-kurgany-barrowkhan.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-barrowknight
+  image: refs/c-kurgany-barrowknight.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-boneeagle
+  image: refs/c-kurgany-boneeagle.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'
+- name: kurgany-bronzeknight
+  image: refs/c-kurgany-bronzeknight.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-ghosthorse
+  image: refs/c-kurgany-ghosthorse.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-greatancestor
+  image: refs/c-kurgany-greatancestor.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-mourner
+  image: refs/c-kurgany-mourner.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kurgany-riderless
+  image: refs/c-kurgany-riderless.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-seeress
+  image: refs/c-kurgany-seeress.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same character as <ref_image_0>: same outfit, weapon, colours and gender. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic person with natural adult proportions and a weathered expressive face, believable wool, linen, leather, wood and iron with wear and dirt, Slavic medieval fantasy. Whole
+    figure in frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi,
+    no outlines. No text.'
+- name: kurgany-shadowherd
+  image: refs/c-kurgany-shadowherd.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-shadowwanderer
+  image: refs/c-kurgany-shadowwanderer.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same spirit as <ref_image_0>: same design, shape and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face or clothes).
+    A semi-realistic eerie translucent apparition with soft glow and drifting mist, believable folds of its shroud. Whole figure in frame from the lowest point to the very top, three-quarter view facing
+    right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.'
+- name: kurgany-stonebaba
+  image: refs/c-kurgany-stonebaba.png
+  image2: refs/z-portrait.png
+  width: 768
+  height: 1024
+  prompt: 'The same creature as <ref_image_0>: same design, shape, parts and colours. Painted with only the oil painting technique and warm lighting of <ref_image_1> (its brushwork, not its person, face
+    or clothes). A semi-realistic believable creature with correct anatomy and real textures of fur, feathers, scales, skin, bark, stone or water as appropriate, Slavic fantasy bestiary. Whole figure in
+    frame from the lowest point to the very top, three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines.
+    No text.'

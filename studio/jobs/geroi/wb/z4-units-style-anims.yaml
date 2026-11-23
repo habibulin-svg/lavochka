@@ -1,0 +1,183 @@
+# Проба стиля: анимации 4 существ в живописном стиле (2026-11-23)
+workflow: wan22_14b_i2v
+server: comfy-big
+license: Apache-2.0 (Wan 2.2 I2V A14B + lightx2v)
+ext: mp4
+seeds:
+- 7
+defaults:
+  negative: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, text, letters, subtitles, camera movement, zoom, walking
+    away, background objects
+items:
+- name: neutral-bandit-idle
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bandit-walk
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bandit-attack
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays
+    exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bandit-hit
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-bandit-defend
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-bandit-death
+  image: z3b-bandit/neutral-bandit-33.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bear-idle
+  image: z3-units-style/neutral-bear-11.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bear-walk
+  image: z3-units-style/neutral-bear-11.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bear-attack
+  image: z3-units-style/neutral-bear-11.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays
+    exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: neutral-bear-hit
+  image: z3-units-style/neutral-bear-11.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-bear-defend
+  image: z3-units-style/neutral-bear-11.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: neutral-bear-death
+  image: z3-units-style/neutral-bear-11.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-militia-idle
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-militia-walk
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-militia-attack
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays
+    exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-militia-hit
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: zatulye-militia-defend
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: zatulye-militia-death
+  image: z3-units-style/zatulye-militia-11.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-vityaz-idle
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: The character stands on the spot, breathes calmly, shifts its weight a little and looks around. The camera is completely static, locked off, the character stays in the same place in the centre
+    of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-vityaz-walk
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: The character walks on the spot in a steady marching rhythm, legs and arms moving, without moving across the frame. The camera is completely static, locked off, the character stays in the same
+    place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-vityaz-attack
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: 'Seen from the side: the character lunges forward to the right and makes one strong attack to the right, then pulls back and returns to its pose. Its weapon or body keeps the same shape. The camera
+    is completely static, locked off, the character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays
+    exactly the same.'
+  frames: 41
+  width: 480
+  height: 640
+- name: zatulye-vityaz-hit
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: 'The character is struck: it flinches and recoils half a step backwards to the left, then recovers to its pose. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 33
+  width: 480
+  height: 640
+- name: zatulye-vityaz-defend
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: The character braces itself and takes a guarded defensive stance, shielding its body, then holds this guard. The camera is completely static, locked off, the character stays in the same place
+    in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.
+  frames: 33
+  width: 480
+  height: 640
+- name: zatulye-vityaz-death
+  image: z3-units-style/zatulye-vityaz-11.png
+  prompt: 'The character is defeated: it quickly drops and falls flat onto its side on the ground within the first second and then lies completely still. The camera is completely static, locked off, the
+    character stays in the same place in the centre of the frame; plain flat light grey background stays empty and unchanged; the hand-painted oil painting style stays exactly the same.'
+  frames: 41
+  width: 480
+  height: 640

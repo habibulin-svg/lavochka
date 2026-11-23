@@ -1,0 +1,94 @@
+# Поля боя в живописной манере фонов городов (2026-11-24)
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds:
+- 11
+- 33
+defaults:
+  steps: 20
+  ref_mp: 1.0
+  width: 1920
+  height: 1088
+items:
+- name: field-ash
+  image: refs/f-ash.png
+  image2: refs/t-kuznya-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of dark volcanic ash ground with a few glowing lava cracks at the edges, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-coast
+  image: refs/f-coast.png
+  image2: refs/t-plotina-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a sandy beach with sea surf at the top edge, in the exact painterly brushwork, palette and natural light of <ref_image_1>. Keep the same
+    composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone, sand or snow,
+    soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle. No text.
+- name: field-crater
+  image: refs/f-crater.png
+  image2: refs/t-kurgany-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a round crater of cracked dry earth ringed by grass and bushes, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-darkkeep
+  image: refs/f-darkkeep.png
+  image2: refs/t-kuznya-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of the dark flagstone floor of a ruined castle courtyard with stone walls at the edges, in the exact painterly brushwork, palette and natural
+    light of <ref_image_1>. Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures
+    of grass, earth, stone, sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals,
+    no buildings in the middle. No text.
+- name: field-ford
+  image: refs/f-ford.png
+  image2: refs/z-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a grassy meadow with a shallow river at the top edge, in the exact painterly brushwork, palette and natural light of <ref_image_1>. Keep
+    the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-heart
+  image: refs/f-heart.png
+  image2: refs/t-akademiya-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a round arena of cracked golden earth ringed by old stones, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-heath
+  image: refs/f-heath.png
+  image2: refs/t-kurgany-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a heather moor with standing stones and purple heather at the edges, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-meadow
+  image: refs/f-meadow.png
+  image2: refs/z-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of an open summer meadow with birch trees at the edge, in the exact painterly brushwork, palette and natural light of <ref_image_1>. Keep the
+    same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone, sand
+    or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle. No
+    text.
+- name: field-pine
+  image: refs/f-pine.png
+  image2: refs/t-akademiya-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a forest clearing with tall pines at the edges, in the exact painterly brushwork, palette and natural light of <ref_image_1>. Keep the same
+    composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone, sand or snow,
+    soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle. No text.
+- name: field-saltflat
+  image: refs/f-saltflat.png
+  image2: refs/t-bazar-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a white cracked salt flat with sand dunes on the horizon, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.
+- name: field-snow
+  image: refs/f-snow.png
+  image2: refs/t-ostrog-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of deep trodden snow with snowy firs at the edges, in the exact painterly brushwork, palette and natural light of <ref_image_1>. Keep the same
+    composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone, sand or snow,
+    soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle. No text.
+- name: field-swamp
+  image: refs/f-swamp.png
+  image2: refs/t-zatonye-site.png
+  prompt: Repaint <ref_image_0> as a hand-painted oil painting of a marshy meadow with a little stream and puddles at the edges, in the exact painterly brushwork, palette and natural light of <ref_image_1>.
+    Keep the same composition and the same high camera angle looking down on the ground as in <ref_image_0>, with the wide open flat ground in the middle. Believable natural textures of grass, earth, stone,
+    sand or snow, soft and low in contrast in the middle so that small figures stand out on it, richer detail only at the edges. Not cartoon, no outlines, no people, no animals, no buildings in the middle.
+    No text.

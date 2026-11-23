@@ -2,11 +2,12 @@
 # «Герои»: собирать атласы существ по мере готовности роликов (партия w8-units-anims): все 6 роликов есть → video_atlas.py.
 # Пока ComfyUI занят — BiRefNet на CPU; очередь пуста — на GPU. Выход — G:/temp/geroi-wb/atlas-all/<id>.webp/json.
 # bash studio/post/atlas_worker.sh   (выходит, когда собраны все существа из w7)
-SRC=/g/ai/out/webbook/geroi/w8-units-anims
-OUT=/g/temp/geroi-wb/atlas-all
+# живописная партия: STAGE=p2-units-paint-anims LIST=p1-units-paint OUT=/g/temp/geroi-wb/atlas-paint bash studio/post/atlas_worker.sh
+SRC=/g/ai/out/webbook/geroi/${STAGE:-w8-units-anims}
+OUT=${OUT:-/g/temp/geroi-wb/atlas-all}
 PY="G:/ai/venvs/3d/Scripts/python.exe"
 mkdir -p "$OUT"
-ids() { grep -E "^- name: " /g/Claude/Shish/studio/jobs/geroi/wb/w7-units-refine.yaml | sed 's/- name: //'; }
+ids() { grep -E "^- name: " /g/Claude/Shish/studio/jobs/geroi/wb/${LIST:-w7-units-refine}.yaml | sed 's/- name: //'; }
 while :; do
   left=0
   for id in $(ids); do

@@ -1,0 +1,38 @@
+# Проба стиля существ (2026-11-23): облик прежний, письмо — как портреты героев (масло, полуреализм)
+workflow: flux3_klein_ref2
+server: comfy-big
+license: FLUX Kommunity License v1.0 (FLUX 3 Image Klein)
+seeds: [11, 33]
+defaults: {steps: 20, ref_mp: 0.6, width: 768, height: 1024}
+items:
+- name: zatulye-militia
+  image: refs/c-zatulye-militia.png
+  image2: refs/z-portrait.png
+  prompt: &h >-
+    The same character as <ref_image_0> with the same outfit, weapon and colours, but painted as a semi-realistic hand-painted oil illustration
+    in the exact painterly brushwork, palette and lighting of <ref_image_1>: a real adult man with natural proportions and a weathered face,
+    believable wool, linen, leather and iron with wear and dirt, Slavic medieval fantasy. Full figure standing, three-quarter view facing right,
+    from the feet to the top of the head all in frame, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.
+- name: zatulye-vityaz
+  image: refs/c-zatulye-vityaz.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: >-
+    The same mounted knight as <ref_image_0> with the same armour, horse, weapon and colours, but painted as a semi-realistic hand-painted oil illustration
+    in the exact painterly brushwork, palette and lighting of <ref_image_1>: a real adult warrior with natural proportions on a real horse with correct anatomy,
+    believable mail, plate, leather and cloth with wear, Slavic medieval fantasy. Whole horse and rider in frame, three-quarter view facing right,
+    plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, not chibi, no outlines. No text.
+- name: neutral-bandit
+  image: refs/c-neutral-bandit.png
+  image2: refs/z-portrait.png
+  prompt: *h
+- name: neutral-bear
+  image: refs/c-neutral-bear.png
+  image2: refs/z-portrait.png
+  width: 1024
+  height: 768
+  prompt: >-
+    The same bear as <ref_image_0>, but painted as a semi-realistic hand-painted oil illustration in the exact painterly brushwork, palette and lighting of <ref_image_1>:
+    a real huge brown forest bear with correct anatomy, heavy dense fur, powerful paws and claws, fierce eyes. Whole animal in frame, standing on four legs,
+    three-quarter view facing right, plain flat light grey background, soft warm light from the left, faint contact shadow. Not cartoon, no outlines. No text.
