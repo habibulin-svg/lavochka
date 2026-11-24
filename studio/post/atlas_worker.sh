@@ -7,7 +7,7 @@ SRC=/g/ai/out/webbook/geroi/${STAGE:-w8-units-anims}
 OUT=${OUT:-/g/temp/geroi-wb/atlas-all}
 PY="G:/ai/venvs/3d/Scripts/python.exe"
 mkdir -p "$OUT"
-ids() { grep -E "^- name: " /g/Claude/Shish/studio/jobs/geroi/wb/${LIST:-w7-units-refine}.yaml | sed 's/- name: //'; }
+ids() { grep -E "^- name: " /g/Claude/Shish/studio/jobs/geroi/wb/${LIST:-w7-units-refine}.yaml | sed 's/- name: //' | if [ -n "$REV" ]; then tac; else cat; fi; }
 while :; do
   left=0
   for id in $(ids); do
