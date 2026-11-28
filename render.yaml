@@ -1,10 +1,13 @@
 # Render.com: New → Blueprint → этот репозиторий (сборник лежит в папке lavochka). Бесплатный тариф засыпает после 15 минут простоя.
+# С 2026-11-28 Render только отвечает 301 на lavochka-games.ru (server/index.ts) — живёт последняя удачная сборка,
+# новые не запускаются (кончался лимит сборочных минут бесплатного тарифа, сыпались письма о неудачных деплоях).
 services:
   - type: web
     name: vecherom-na-lavochke
     runtime: node
     plan: free
     rootDir: lavochka
+    autoDeployTrigger: off
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health

@@ -65,7 +65,7 @@ describe('geroi/advbot: ИИ карты', () => {
     };
     expect(score('hard', 'easy', 6)).toBeGreaterThanOrEqual(5);
     expect(score('medium', 'easy', 6)).toBeGreaterThanOrEqual(5);
-  });
+  }, 90_000); // 12 полных партий: в одиночку ~23 с, под нагрузкой полного прогона не укладывался в 30 с
 
   it('«Острова»: бот плывёт на лодке и доходит до чужого замка', () => {
     for (const seed of [1, 2]) {

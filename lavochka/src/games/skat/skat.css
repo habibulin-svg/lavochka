@@ -13,3 +13,7 @@
 }
 .sk-row { flex: 1 1 100%; display: flex; gap: 6px; }
 .sk-row > .btn.sk-opt { flex: 1 1 30%; font-size: 13px; }
+
+.sk-row { flex: 1 1 100%; display: flex; gap: 6px; align-items: center; justify-content: center; }
+.sk-row > .btn.sk-q { flex: 0 0 auto; min-width: 44px; }
+.sk-n { min-width: 60px; text-align: center; font-size: 20px; font-weight: 700; }

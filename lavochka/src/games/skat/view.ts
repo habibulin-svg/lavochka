@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { sameCard, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { BASE, countOf, legal, nextBid, type Contract, type Event, type GameKind, type View } from './engine';
+import { BASE, BIDS, countOf, legal, nextBid, type Contract, type Event, type GameKind, type View } from './engine';
 import { SEATS, GAME_RU } from './def';
 import './skat.css';
 
@@ -63,6 +63,9 @@ class SkatView extends TrickView<View, Event> {
     this.extras = { schneider: false, schwarz: false, ouvert: false };
   }
 
+  private bidN = 0;
+  private bidFor = -1;
+
   protected override buttons(v: View, seat: number): boolean {
     if (v.phase === 'bid') {
       if (v.bidStage === 3) {
@@ -72,8 +75,18 @@ class SkatView extends TrickView<View, Event> {
         return true;
       }
       if (seat === v.asker) {
-        const n = nextBid(v);
-        this.btns.appendChild(h(`<div class="tv-ask">Торгуйтесь с ${this.plain(v.listener!)}: назовите ${n} или пас.</div>`));
+        // назвать можно любую ставку из таблицы выше текущей — по очереди или сразу прыжком
+        const first = nextBid(v);
+        if (this.bidFor !== v.bid) ((this.bidFor = v.bid), (this.bidN = first));
+        const i = Math.max(BIDS.indexOf(this.bidN), BIDS.indexOf(first));
+        const n = BIDS[i];
+        this.btns.appendChild(h(`<div class="tv-ask">Торгуйтесь с ${this.plain(v.listener!)}: назовите ставку (не меньше ${first}) или пас.</div>`));
+        const row = h('<div class="sk-row"></div>');
+        this.button('−', 'sk-q', () => ((this.bidN = BIDS[i - 1]), this.renderButtons()), n <= first, row);
+        row.appendChild(h(`<div class="sk-n">${n}</div>`));
+        this.button('+', 'sk-q', () => ((this.bidN = BIDS[i + 1]), this.renderButtons()), i >= BIDS.length - 1, row);
+        this.button('+5 ступеней', 'sk-q', () => ((this.bidN = BIDS[Math.min(BIDS.length - 1, i + 5)]), this.renderButtons()), i >= BIDS.length - 1, row);
+        this.btns.appendChild(row);
         this.button(`${n}!`, 'primary', () => this.send({ type: 'bid', n }));
       } else {
         this.btns.appendChild(h(`<div class="tv-ask">${this.plain(v.asker!)} называет ${v.bid}. Держите?</div>`));
