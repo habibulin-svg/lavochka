@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { sameCard, SUIT_NAME, SUIT_SYM, type Card } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { canClaim, canClose, canExchange, canMeld, countOf, legal, lowTrump, marriages, meldValue, score, type Event, type View } from './engine';
+import { canClaim, canClose, canExchange, canMeld, countOf, legal, lowTrump, marriages, meldValue, POWER, score, type Event, type View } from './engine';
 import { SEATS, cn } from './def';
 import './schnapsen.css';
 
@@ -43,6 +43,7 @@ class SchnapsenView extends TrickView<View, Event> {
       },
       tricks: (p) => v.tricks[p],
       trump: v.trump,
+      power: (c) => POWER[c.r],
       trumpCard: v.closed ? null : v.trumpCard,
       center: `Козырь: <span class="${red ? 'red' : ''}">${SUIT_SYM[v.trump]}</span> ${SUIT_NAME[v.trump]}<small>${state} · до ${v.cfg.target}</small>`,
     };

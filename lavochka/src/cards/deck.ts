@@ -36,8 +36,10 @@ export function shuffledDeck(size: 24 | 32 | 36 | 52 | 54, rng: Rng): Card[] {
   return shuffle(makeDeck(size), rng);
 }
 
-/** Сортировка руки: по масти (козырь в конце), внутри — по старшинству. */
-export function sortHand(hand: Card[], trump?: Suit | null): Card[] {
+/** Сортировка руки: по масти (козырь в конце), внутри — по старшинству.
+ *  power — сила карты в этой игре (тысяча, бура: десятка старше короля); по умолчанию — номинал. */
+export function sortHand(hand: Card[], trump?: Suit | null, power?: (c: Card) => number): Card[] {
   const order = (s: Suit) => (s === trump ? 9 : SUITS.indexOf(s));
-  return hand.slice().sort((a, b) => order(a.s) - order(b.s) || a.r - b.r);
+  const pw = power ?? ((c: Card) => c.r);
+  return hand.slice().sort((a, b) => order(a.s) - order(b.s) || pw(a) - pw(b));
 }

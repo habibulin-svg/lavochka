@@ -38,6 +38,8 @@ export interface TrickModel {
   trump?: Suit | null;
   /** свой порядок карт в руке (по умолчанию — по мастям, козырь справа) */
   sort?: (hand: Card[]) => Card[];
+  /** сила карты внутри масти (десятка старше короля и т. п.) — для сортировки руки */
+  power?: (card: Card) => number;
   /** Открытая карта козыря у колоды (если есть). */
   trumpCard?: Card | null;
   /** Надпись посередине над взяткой: контракт, заказ. */
@@ -201,7 +203,7 @@ export abstract class TrickView<V, E> implements GameView<V, E> {
       const a = this.anchor(m, seat);
       const me = seat === this.viewer;
       const up = me ? this.faceUp(m, seat) : !!m.open?.(seat);
-      const list = up ? (m.sort ? m.sort(m.hand(seat)) : sortHand(m.hand(seat), m.trump ?? undefined)) : [];
+      const list = up ? (m.sort ? m.sort(m.hand(seat)) : sortHand(m.hand(seat), m.trump ?? undefined, m.power)) : [];
       // гасим неходовые, только когда в руке есть чем ходить (в торговле/заказе — нет)
       const anyOk = up && list.some((c) => m.canPlay(c));
       for (let k = 0; k < cnt; k++) {

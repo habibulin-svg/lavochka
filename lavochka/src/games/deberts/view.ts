@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { sameCard, SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { canSwap, countOf, legal, pairs, teamOf, type Event, type View } from './engine';
+import { canSwap, countOf, legal, pairs, teamOf, type Event, type View, power } from './engine';
 import { SEATS } from './def';
 import './deberts.css';
 
@@ -35,6 +35,7 @@ class DebertsView extends TrickView<View, Event> {
       plate: (p) => (v.trump ? `<i>${teamPts(p)}</i>${v.taker === p ? ' <b title="Играет">★</b>' : ''}` : ''),
       tricks: (p) => v.tricks[p],
       trump: v.trump ?? undefined,
+      power: (c) => power(c, v.trump as Suit),
       trumpCard: v.up,
       center,
     };

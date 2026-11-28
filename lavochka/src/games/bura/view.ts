@@ -6,7 +6,7 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck, deckStyle } from '../../cards/render';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, type Point, type StageItem } from '../../cards/stage';
-import { combosIn, COMBO_NAME, covers, deckLeft, handCount, handSize, maxLead, target, type Event, type View } from './engine';
+import { POWER, combosIn, COMBO_NAME, covers, deckLeft, handCount, handSize, maxLead, target, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './bura.css';
 
@@ -127,7 +127,7 @@ class BuraView implements GameView<View, Event> {
       const a = this.anchor(v, seat);
       const me = seat === this.viewer;
       const up = this.faceUp(v, seat);
-      const list = up ? sortHand(v.hands[seat], v.trump) : [];
+      const list = up ? sortHand(v.hands[seat], v.trump, (c) => POWER[c.r]) : [];
       for (let k = 0; k < n; k++) {
         if (me) {
           const p = fan(n, k, a.x, a.y, g.port ? 300 : 300, g.port ? 104 : 110, 20, 12);

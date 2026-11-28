@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { sameCard, SUIT_NAME, SUIT_SYM, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { available, canDeclare, canMarriage, canSwap, countOf, fritz, legal, other, rostCombo, type Event, type View } from './engine';
+import { available, canDeclare, canMarriage, canSwap, countOf, fritz, legal, other, rostCombo, type Event, type View, power } from './engine';
 import { cn, comboText, SEATS } from './def';
 import './terc.css';
 
@@ -36,6 +36,7 @@ class TercView extends TrickView<View, Event> {
       },
       tricks: (p) => v.tricks[p],
       trump: v.trump,
+      power: (c) => power(c, v.trump),
       trumpCard: v.trumpCard,
       center: `Терц: козырь ${sym(v.trump)} ${SUIT_NAME[v.trump]}<small>${stage} · до ${v.cfg.target}</small>`,
     };

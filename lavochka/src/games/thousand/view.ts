@@ -8,7 +8,7 @@ import type { GameView, ViewCtx } from '../../core/view';
 import { preloadDeck, deckStyle } from '../../cards/render';
 import { sameCard, sortHand, SUIT_SYM, type Card } from '../../cards/deck';
 import { CardStage, cardKey, fan, portraitHand, type Point, type StageItem } from '../../cards/stage';
-import { canRospis, handCount, legalCards, marriageFor, marriageValue, maxBid, prikupRedeal, rospisPay, type Event, type MarriageKind, type View } from './engine';
+import { ACES, fourAces, MARRIAGE, marriagesIn, POWER, canRospis, handCount, legalCards, marriageFor, marriageValue, maxBid, prikupRedeal, rospisPay, type Event, type MarriageKind, type View } from './engine';
 import { SEATS } from './def';
 import './thousand.css';
 
@@ -149,7 +149,7 @@ class ThousandView implements GameView<View, Event> {
       const a = this.anchor(v, seat);
       const up = this.faceUp(v, seat);
       const me = seat === this.viewer;
-      const list = up ? sortHand(v.hands[seat], v.trump) : [];
+      const list = up ? sortHand(v.hands[seat], v.trump, (c) => POWER[c.r]) : [];
       const playable = me ? this.playable(v) : [];
       for (let k = 0; k < n; k++) {
         if (me) {
@@ -283,6 +283,48 @@ class ThousandView implements GameView<View, Event> {
     this.btns.appendChild(b);
   }
 
+  /** Почему потолок такой: 120 + марьяжи на руке. */
+  private capWhy(hand: Card[], aces: boolean): string {
+    const ms = marriagesIn(hand).map((x) => `${SUIT_SYM[x]} ${MARRIAGE[x]}`);
+    if (aces && fourAces(hand)) ms.push(`тузы ${ACES}`);
+    return ms.length ? ` (120 + ${ms.join(' + ')})` : ' (без марьяжа — 120)';
+  }
+
+  /** Свободная ставка: − значение + и кнопка; шаг торговли, от min до max включительно. */
+  private stepper(min: number, max: number, step: number, label: (v: number) => string, on: (v: number) => void) {
+    let val = min;
+    const box = h(`<div class="th-step"><button class="btn th-m" aria-label="Меньше">−</button><input class="th-val" type="number" inputmode="numeric" min="${min}" max="${max}" step="${step}" value="${min}"><button class="btn th-p" aria-label="Больше">+</button></div>`);
+    const inp = box.querySelector('input') as HTMLInputElement;
+    const minus = box.querySelector('.th-m') as HTMLButtonElement;
+    const plus = box.querySelector('.th-p') as HTMLButtonElement;
+    const go = h<HTMLButtonElement>('<button class="btn primary"></button>');
+    const snap = (x: number) => Math.min(max, Math.max(min, min + Math.round((x - min) / step) * step));
+    const set = (x: number) => {
+      val = snap(x);
+      inp.value = String(val);
+      minus.disabled = val <= min;
+      plus.disabled = val >= max;
+      go.textContent = label(val);
+    };
+    minus.onclick = () => set(val - step);
+    plus.onclick = () => set(val + step);
+    inp.onchange = () => set(Number(inp.value) || min);
+    inp.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        set(Number(inp.value) || min);
+        go.click();
+      }
+      if (e.key !== 'Escape') e.stopPropagation();
+    };
+    go.onclick = () => {
+      Sound.unlock();
+      on(val);
+    };
+    set(min);
+    this.btns.appendChild(box);
+    this.btns.appendChild(go);
+  }
+
   private renderButtons() {
     this.btns.innerHTML = '';
     const v = this.v;
@@ -298,16 +340,9 @@ class ThousandView implements GameView<View, Event> {
     if (v.phase === 'bid') {
       const max = maxBid(hand, v.cfg.aces);
       const next = v.bid + v.cfg.step;
-      this.btns.appendChild(h(`<div class="th-ask">Торговля: сейчас ${v.bid}${v.bidder >= 0 ? ` (${esc(this.plain(v.bidder))})` : ''}. Вам можно до ${max}.</div>`));
-      const row = h('<div class="th-row"></div>');
-      for (const add of [0, 5, 10, 20]) {
-        const val = next + add;
-        if (val > max) break;
-        const b = h<HTMLButtonElement>(`<button class="btn ${add === 0 ? 'primary' : ''}">${val}</button>`);
-        b.onclick = () => this.send({ type: 'bid', value: val });
-        row.appendChild(b);
-      }
-      this.btns.appendChild(row);
+      this.btns.appendChild(h(`<div class="th-ask">Торговля: сейчас ${v.bid}${v.bidder >= 0 ? ` (${esc(this.plain(v.bidder))})` : ''}. Вам можно до ${max}${this.capWhy(hand, v.cfg.aces)}.</div>`));
+      if (next <= max) this.stepper(next, max, v.cfg.step, (val) => `Заказать ${val}`, (val) => this.send({ type: 'bid', value: val }));
+      else this.btns.appendChild(h('<div class="th-why">Перебить нечем: без марьяжа — не больше 120.</div>'));
       this.button('Пас', false, () => this.send({ type: 'pass' }));
       return;
     }
@@ -333,16 +368,12 @@ class ThousandView implements GameView<View, Event> {
     if (v.phase === 'raise') {
       const max = Math.max(v.bid, maxBid(hand, v.cfg.aces));
       this.btns.appendChild(h(`<div class="th-ask">Заказ ${v.bid}. Поднять?</div>`));
-      const row = h('<div class="th-row"></div>');
       this.button(`Играю ${v.bid}`, true, () => this.send({ type: 'raise', value: v.bid }));
-      for (const add of [10, 20, 30, 50]) {
-        const val = v.bid + add;
-        if (val > max) break;
-        const b = h<HTMLButtonElement>(`<button class="btn">${val}</button>`);
-        b.onclick = () => this.send({ type: 'raise', value: val });
-        row.appendChild(b);
+      const step = v.cfg.step;
+      if (v.bid + step <= max) {
+        this.btns.appendChild(h(`<div class="th-why">Поднять можно до ${max}${this.capWhy(hand, v.cfg.aces)}.</div>`));
+        this.stepper(v.bid + step, max, step, (val) => `Поднять до ${val}`, (val) => this.send({ type: 'raise', value: val }));
       }
-      this.btns.appendChild(row);
       if (canRospis(v)) this.button(`Расписаться (${v.dark ? -2 * v.bid : -v.bid}, соперникам по ${rospisPay(v)})`, false, () => this.send({ type: 'rospis' }), 'th-rospis');
       return;
     }

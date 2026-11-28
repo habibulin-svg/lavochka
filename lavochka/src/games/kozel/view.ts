@@ -2,9 +2,9 @@
  * на табличках — «рога» пары. Ход — касание подсвеченной карты. */
 import { Sound } from '../../core/audio';
 import type { GameView } from '../../core/view';
-import { sameCard, SUIT_NAME, SUIT_SYM, type Card } from '../../cards/deck';
+import { sameCard, SUIT_NAME, SUIT_SYM, SUITS, type Card } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { countOf, legal, POINTS, team, type Event, type View } from './engine';
+import { countOf, isTrump, legal, POINTS, power, team, type Event, type View } from './engine';
 import { SEATS } from './def';
 import './kozel.css';
 
@@ -27,6 +27,11 @@ class KozelView extends TrickView<View, Event> {
       plate: (p) => `<i title="Рога пары">🐐 ${v.horns[team(p)]}</i>`,
       tricks: (p) => v.tricks[p],
       trump: v.trump,
+      // козыри (все валеты и дамы + козырная масть) — одной группой справа, по силе
+      sort: (hand) => {
+        const grp = (c: Card) => (isTrump(c, v.trump) ? 9 : SUITS.indexOf(c.s));
+        return hand.slice().sort((a, b) => grp(a) - grp(b) || power(a, v.trump) - power(b, v.trump));
+      },
       center: `Козырь: <span class="${red ? 'red' : ''}">${SUIT_SYM[v.trump]}</span> ${SUIT_NAME[v.trump]}<small>очки пар: ${v.pts[0]} — ${v.pts[1]}${v.eggs > 1 ? ` · кон ×${v.eggs}` : ''}</small>`,
     };
   }

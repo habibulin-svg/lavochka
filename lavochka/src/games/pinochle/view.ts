@@ -5,7 +5,7 @@ import { h } from '../../core/util';
 import type { GameView } from '../../core/view';
 import { SUIT_NAME, SUIT_SYM, SUITS, type Card, type Suit } from '../../cards/deck';
 import { TrickView, type TrickModel } from '../../cards/trickview';
-import { countOf, duo, legal, meldOptions, minBid, pairs, PASS, sameP, teamOf, type Event, type PCard, type View } from './engine';
+import { countOf, duo, power, legal, meldOptions, minBid, pairs, PASS, sameP, teamOf, type Event, type PCard, type View } from './engine';
 import { SEATS } from './def';
 import './pinochle.css';
 
@@ -40,6 +40,7 @@ class PinochleView extends TrickView<View, Event> {
       },
       tricks: (p) => v.tricks[p],
       trump: v.trump ?? undefined,
+      power,
       center,
     };
   }
